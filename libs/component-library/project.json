@@ -7,6 +7,11 @@
   "targets": {
     "add-component": {
       "executor": "@nx-extend/shadcn-ui:add"
+    },
+    "storybook": {
+      "options": {
+        "port": 3005
+      }
     }
   }
 }

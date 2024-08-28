@@ -10,6 +10,6 @@
   },
   "aliases": {
     "components": "@letta-web/component-library",
-    "utils": "@letta-web/utils"
+    "utils": "@letta-web/core-style-config"
   }
 }

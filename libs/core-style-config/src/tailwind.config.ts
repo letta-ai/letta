@@ -15,6 +15,9 @@ export function buildConfig(appDir: string): Config {
     ],
     theme: {
       extend: {
+        fontSize: {
+          base: '0.875rem',
+        },
         colors: {
           border: 'hsl(var(--border))',
           input: 'hsl(var(--input))',
