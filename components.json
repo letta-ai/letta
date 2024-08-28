@@ -1,0 +1,15 @@
+{
+  "$schema": "https://ui.shadcn.com/schema.json",
+  "style": "default",
+  "rsc": true,
+  "tailwind": {
+    "config": "libs/utils/tailwind.config.js",
+    "css": "libs/utils/global.css",
+    "baseColor": "neutral",
+    "cssVariables": true
+  },
+  "aliases": {
+    "components": "@letta-web/component-library",
+    "utils": "@letta-web/utils"
+  }
+}
