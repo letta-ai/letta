@@ -1,0 +1,9 @@
+{
+  "name": "letta-e2e",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/letta-e2e/src",
+  "tags": [],
+  "implicitDependencies": ["letta"],
+  "// targets": "to see all targets run: nx show project letta-e2e --web",
+  "targets": {}
+}
