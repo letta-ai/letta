@@ -13,7 +13,7 @@ type Story = StoryObj<typeof Button>;
 
 export const Primary = {
   args: {
-    children: 'Hello'
+    children: 'Hello',
   },
 };
 
@@ -21,6 +21,6 @@ export const Heading: Story = {
   args: {},
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    expect(canvas.getByText(/Welcome to Button!/gi)).toBeTruthy();
+    await expect(canvas.getByText(/Welcome to Button!/gi)).toBeTruthy();
   },
 };
