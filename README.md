@@ -14,6 +14,7 @@ Then run the following commands to setup the environment:
 
 ```sh
 npm install
+npm run setup
 ```
 
 ## Running Letta Locally
