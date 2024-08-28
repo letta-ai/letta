@@ -19,7 +19,7 @@
       "$letta/*": ["apps/letta/src/shared/*"],
       "@letta-web/component-library": ["libs/component-library/src/index.tsx"],
       "@letta-web/component-library/*": ["component-library/src/*"],
-      "@letta-web/utils": ["libs/utils/src/index.ts"],
+      "@letta-web/utils": ["libs/core-style-config/src/index.ts"],
       "@letta-web/utils/*": ["utils/src/*"]
     }
   },

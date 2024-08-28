@@ -53,6 +53,22 @@
   }
 }
 
+:root {
+  --font-sans: 'Overused Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI',
+    'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans',
+    'Helvetica Neue', sans-serif;
+  --font-serif: Georgia, Times, serif;
+  --font-mono: Menlo, Courier, monospace;
+}
+
+@font-face {
+  font-family: 'Overused Grotesk';
+  src: url('../fonts/variable/OverusedGrotesk-VF.woff2')
+      format('woff2 supports variations'),
+    url('../fonts/variable/OverusedGrotesk-VF.woff2') format('woff2-variations');
+  font-weight: 300 900;
+}
+
 @layer base {
   * {
     @apply border-border;
