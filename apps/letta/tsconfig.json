@@ -25,7 +25,8 @@
     "**/*.jsx",
     "../../apps/letta/.next/types/**/*.ts",
     "../../dist/apps/letta/.next/types/**/*.ts",
-    "next-env.d.ts"
+    "next-env.d.ts",
+    ".next/types/**/*.ts"
   ],
   "exclude": ["node_modules", "jest.config.ts", "**/*.spec.ts", "**/*.test.ts"]
 }
