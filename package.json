@@ -10,6 +10,10 @@
     "prepare": "husky install",
     "setup": "nx g @letta-web/configure:setup",
     "component-libray": "nx run component-library:storybook",
+    "database:generate": "nx run database:generate",
+    "database:migrate": "nx run database:migrate",
+    "database:check": "nx run database:check",
+    "database:studio": "nx run database:studio",
     "cl": "npm run component-libray"
   },
   "private": true,

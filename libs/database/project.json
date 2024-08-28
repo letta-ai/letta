@@ -5,5 +5,34 @@
   "projectType": "library",
   "tags": [],
   "// targets": "to see all targets run: nx show project database --web",
-  "targets": {}
+  "targets": {
+    "generate": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "libs/database",
+        "command": "drizzle-kit generate"
+      }
+    },
+    "migrate": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "libs/database",
+        "command": "drizzle-kit migrate"
+      }
+    },
+    "check": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "libs/database",
+        "command": "drizzle-kit check"
+      }
+    },
+    "studio": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "libs/database",
+        "command": "drizzle-kit studio"
+      }
+    }
+  }
 }
