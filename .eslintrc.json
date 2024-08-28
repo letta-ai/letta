@@ -8,22 +8,26 @@
       "rules": {
         "@typescript-eslint/consistent-type-imports": "error",
         "@typescript-eslint/explicit-function-return-type": "error",
-        "@typescript-eslint/await-thenable": "error",
         "@typescript-eslint/class-literal-property-style": "error",
         "@typescript-eslint/consistent-generic-constructors": ["error", "constructor"],
         "@typescript-eslint/consistent-indexed-object-style": ["error", "record"],
         "@typescript-eslint/consistent-type-assertions": "error",
         "@typescript-eslint/consistent-type-definitions": "error",
-        "@typescript-eslint/consistent-type-exports": "error",
+        "func-style": ["error", "declaration", { "allowArrowFunctions": false }],
         "max-params": "off",
         "@typescript-eslint/max-params": ["error", { "max": 3 }],
         "@typescript-eslint/naming-convention":[
-          { "selector": "variableLike", "format": ["camelCase"] },
-          { "selector": "variable", "modifiers": ["const"], "format": ["UPPER_CASE"] },
+          "error",
+          { "selector": "variableLike", "format": ["camelCase", "UPPER_CASE", "PascalCase"] },
+          { "selector": "variable", "modifiers": ["const"], "format": ["UPPER_CASE", "camelCase", "PascalCase"] },
+          {
+            "selector": "variable",
+            "modifiers": ["destructured"],
+            "format": null
+          },
           { "selector": "typeLike", "format": ["PascalCase"] },
           { "selector": "enumMember", "format": ["UPPER_CASE"] }
         ],
-        "no-array-delete": "error",
         "@typescript-eslint/no-base-to-string": "error",
         "@typescript-eslint/no-confusing-non-null-assertion": "error",
         "@typescript-eslint/no-confusing-void-expression": "error",
@@ -121,5 +125,11 @@
       "extends": ["plugin:@nx/javascript"],
       "rules": {}
     }
-  ]
+  ],
+  "parser": "@typescript-eslint/parser",
+  "parserOptions": {
+    "project": ["tsconfig.*?.json"],
+    "sourceType": "module",
+    "ecmaVersion": 2020
+  }
 }
