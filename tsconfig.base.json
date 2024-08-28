@@ -16,11 +16,11 @@
     "baseUrl": ".",
     "strictNullChecks": true,
     "paths": {
+      "$letta/*": ["apps/letta/src/shared/*"],
       "@letta-web/component-library": ["libs/component-library/src/index.tsx"],
       "@letta-web/component-library/*": ["component-library/src/*"],
       "@letta-web/utils": ["libs/utils/src/index.ts"],
-      "@letta-web/utils/*": ["utils/src/*"],
-      "$letta/*": ["apps/letta/src/shared/*"]
+      "@letta-web/utils/*": ["utils/src/*"]
     }
   },
   "exclude": ["node_modules", "tmp", "*.config.js", "*.config.ts"]
