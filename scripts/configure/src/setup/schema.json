@@ -12,6 +12,24 @@
         "index": 0
       },
       "x-prompt": "What is the DATABASE_URL?"
+    },
+    "GOOGLE_CLIENT_ID": {
+      "type": "string",
+      "description": "",
+      "$default": {
+        "$source": "argv",
+        "index": 1
+      },
+      "x-prompt": "What is the GOOGLE_CLIENT_ID?"
+    },
+    "GOOGLE_CLIENT_SECRET": {
+      "type": "string",
+      "description": "",
+      "$default": {
+        "$source": "argv",
+        "index": 2
+      },
+      "x-prompt": "What is the GOOGLE_CLIENT_SECRET?"
     }
   },
   "required": ["DATABASE_URL"]

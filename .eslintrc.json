@@ -75,6 +75,10 @@
             "selector": "variable",
             "modifiers": ["destructured"],
             "format": null
+          },
+          {
+            "selector": ["typeProperty", "objectLiteralProperty"],
+            "format": null
           }
         ],
         "@typescript-eslint/no-unused-vars": "error",
