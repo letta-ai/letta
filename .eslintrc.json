@@ -104,7 +104,7 @@
           "error",
           {
             "enforceBuildableLibDependency": true,
-            "allow": [],
+            "allow": ["$letta/**"],
             "depConstraints": [
               {
                 "sourceTag": "*",

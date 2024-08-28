@@ -1,4 +1,5 @@
 import { Button } from '@letta-web/component-library';
+import { makeHello } from '$letta/client/test';
 
 export default function Index() {
   /*
@@ -9,7 +10,7 @@ export default function Index() {
   return (
     <div>
       <div className="wrapper">
-        <Button>Click me</Button>
+        <Button>{makeHello()}</Button>
       </div>
     </div>
   );
