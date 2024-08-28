@@ -14,7 +14,13 @@
     "skipLibCheck": true,
     "skipDefaultLibCheck": true,
     "baseUrl": ".",
-    "strictNullChecks": true
+    "strictNullChecks": true,
+    "paths": {
+      "@letta-web/component-library": ["libs/component-library/src/index.tsx"],
+      "@letta-web/component-library/*": ["component-library/src/*"],
+      "@letta-web/utils": ["libs/utils/src/index.ts"],
+      "@letta-web/utils/*": ["utils/src/*"]
+    }
   },
   "exclude": ["node_modules", "tmp", "*.config.js", "*.config.ts"]
 }

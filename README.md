@@ -23,3 +23,9 @@ To run the dev server for your app, use:
 ```sh
 npm run dev
 ```
+
+## Adding Component to the Library
+To pull from shadCN run this:
+```
+nx run component-library:add-component {component-name}
+```
