@@ -6,14 +6,6 @@ on:
       - main
   pull_request:
 
-env:
-  IMAGE_NAME: 'letta-web'
-  PROJECT_ID: 'memgpt-428419'
-  AR_REPO_LOCATION: 'us-central1'
-  AR_URL: 'us-central1-docker.pkg.dev/memgpt-428419/letta-web'
-  SERVICE_ACCOUNT: 'github-actions-service-account@memgpt-428419.iam.gserviceaccount.com'
-  WORKLOAD_IDENTITY_PROVIDER: 'projects/231889654562/locations/global/workloadIdentityPools/letta-web-dev-pool/providers/github-actions-provider'
-
 permissions:
   actions: read
   contents: read
@@ -44,48 +36,4 @@ jobs:
       # - run: npx nx-cloud record -- echo Hello World
       # Nx Affected runs only tasks affected by the changes in this PR/commit. Learn more: https://nx.dev/ci/features/affected
       - run: npx nx affected -t lint build
-
-  deploy:
-    environment: Development
-    runs-on: ubuntu-latest
-
-    permissions:
-      contents: 'read'
-      id-token: 'write'
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-
-      - name: Google Auth
-        id: auth
-        uses: 'google-github-actions/auth@v2'
-        with:
-          token_format: 'access_token'
-          project_id: ${{ env.PROJECT_ID }}
-          service_account: ${{ env.SERVICE_ACCOUNT }}
-          workload_identity_provider: ${{ env.WORKLOAD_IDENTITY_PROVIDER }}
-
-      - name: Docker Auth
-        id: docker-auth
-        uses: 'docker/login-action@v1'
-        with:
-          username: 'oauth2accesstoken'
-          password: '${{ steps.auth.outputs.access_token }}'
-          registry: '${{ env.AR_REPO_LOCATION }}-docker.pkg.dev'
-
-
-      - name: Build and Push Container
-        run: |-
-          docker build -t "${{ env.AR_URL }}/${{ env.IMAGE_NAME }}:${{ github.sha }}" ./
-          docker push "${{ env.AR_URL }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
-
-      - name: Deploy
-        run: |-
-          gcloud run deploy letta-web \
-          --region us-west1 \
-          --image us-west1-docker.pkg.dev/memgpt-428419/letta-web/letta-web:$GITHUB_SHA \
-          --platform "managed" \
-          --port 80 \
-          --quiet
 
