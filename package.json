@@ -4,6 +4,9 @@
   "license": "MIT",
   "scripts": {
     "dev": "nx dev letta",
+    "start": "nx start letta -p 8080",
+    "gcp-build": "",
+    "build": "nx build letta --prod",
     "format": "nx format:write",
     "lint": "npx nx run-many --all --skip-nx-cache --parallel --targets=lint",
     "type-check": "nx run-many --all --skip-nx-cache --parallel --targets=type-check",
@@ -107,7 +110,7 @@
     "vite": "^5.0.0"
   },
   "engines": {
-    "node": "v20.16.0",
-    "npm": "10.8.1"
+    "node": "22.7.0",
+    "npm": "10.8.2"
   }
 }
