@@ -39,31 +39,52 @@ jobs:
 
   deploy:
     runs-on: ubuntu-latest
+
+    env:
+      PROJECT_ID: ${{ secrets.PROJECT_ID }}
+      REGION: ${{ secrets.REGION }}
+      APP_NAME: ${{ secrets.DEV_APP_NAME }}
+      REGISTRY_NAME: ${{ secrets.ARTIFACT_REGISTRY_NAME }}
+      SERVICE_ACCOUNT_EMAIL: ${{ secrets.SERVICE_ACCOUNT_EMAIL }}
+
+
     permissions:
       contents: 'read'
       id-token: 'write'
 
     steps:
-      - id: 'auth'
-        uses: 'google-github-actions/auth@v2'
-        with:
-          workload_identity_provider: 'projects/123456789/locations/global/workloadIdentityPools/my-pool/providers/my-provider'
-          service_account: 'my-service-account@my-project.iam.gserviceaccount.com'
-      - name: Generate deployment_env.yaml file
-        run: sh ./github/scripts/migrate.sh
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
-          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
-          GOOGLE_REDIRECT_URI: ${{ secrets.GOOGLE_REDIRECT_URI }}
-          REDIS_HOST: ${{ secrets.REDIS_HOST }}
-          REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
-          REDIS_PORT: ${{ secrets.REDIS_PORT }}
-      - id: 'deploy'
-        uses: 'google-github-actions/deploy-appengine@v2'
-        with:
-          project_id: 'memgpt-428419'
+      - name: Checkout
+        uses: actions/checkout@v3
 
-      # Example of using the output
-      - id: 'test'
-        run: 'curl "${{ steps.deploy.outputs.version_url }}"'
+      - uses: 'google-github-actions/auth@v2'
+        with:
+          project_id: $PROJECT_ID
+          workload_identity_provider: 'projects/231889654562/locations/global/workloadIdentityPools/github/providers/letta-web'
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v1
+
+      - name: Authorize Docker push
+        run: gcloud auth configure-docker $REGION-docker.pkg.dev
+
+      - name: Build and tag the docker image
+        run: |-
+          docker build --build-arg NODE_ENV=dev . --tag $REGION-docker.pkg.dev/$PROJECT_ID/$REGISTRY_NAME/$APP_NAME:$GITHUB_SHA
+
+      - name: Push the image to the Google Artifact Registry (GAR)
+        run: |-
+          docker push $REGION-docker.pkg.dev/$PROJECT_ID/$REGISTRY_NAME/$APP_NAME:$GITHUB_SHA
+
+      # - name: Build and push the Docker image
+      #   run: |-
+      #     gcloud builds submit . --tag $REGION-docker.pkg.dev/$PROJECT_ID/$REGISTRY_NAME/$APP_NAME:$GITHUB_SHA
+
+      - name: Deploy
+        run: |-
+          gcloud run deploy $APP_NAME \
+          --region $REGION \
+          --image $REGION-docker.pkg.dev/$PROJECT_ID/$REGISTRY_NAME/$APP_NAME:$GITHUB_SHA \
+          --platform "managed" \
+          --service-account $SERVICE_ACCOUNT_EMAIL \
+          --port 80 \
+          --quiet
