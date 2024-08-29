@@ -59,7 +59,6 @@ jobs:
       - uses: 'google-github-actions/auth@v2'
         with:
           project_id: memgpt-428419
-          service_account: letta-web-deployment-sa@memgpt-428419.iam.gserviceaccount.com
           workload_identity_provider: 'projects/231889654562/locations/global/workloadIdentityPools/github/providers/letta-web'
 
       - name: Set up Cloud SDK
@@ -88,3 +87,4 @@ jobs:
           --platform "managed" \
           --port 80 \
           --quiet
+
