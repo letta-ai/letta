@@ -7,11 +7,12 @@ on:
   pull_request:
 
 env:
-  PROJECT_ID: ${{ secrets.PROJECT_ID }}
-  REGION: ${{ secrets.REGION }}
-  APP_NAME: ${{ secrets.DEV_APP_NAME }}
-  REGISTRY_NAME: ${{ secrets.ARTIFACT_REGISTRY_NAME }}
-  SERVICE_ACCOUNT_EMAIL: ${{ secrets.SERVICE_ACCOUNT_EMAIL }}
+  IMAGE_NAME: 'letta-web'
+  PROJECT_ID: 'memgpt-428419'
+  AR_REPO_LOCATION: 'us-central1'
+  AR_URL: 'us-central1-docker.pkg.dev/memgpt-428419/letta-web'
+  SERVICE_ACCOUNT: 'github-actions-service-account@memgpt-428419.iam.gserviceaccount.com'
+  WORKLOAD_IDENTITY_PROVIDER: 'projects/231889654562/locations/global/workloadIdentityPools/letta-web-dev-pool/providers/github-actions-provider'
 
 permissions:
   actions: read
@@ -56,12 +57,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - uses: 'google-github-actions/auth@v2'
+      - name: Google Auth
+        id: auth
+        uses: 'google-github-actions/auth@v2'
         with:
           token_format: 'access_token'
-          project_id: memgpt-428419
-          service_account: letta-web-deployment-sa@memgpt-428419.iam.gserviceaccount.com
-          workload_identity_provider: 'projects/231889654562/locations/global/workloadIdentityPools/github/providers/letta-web'
+          project_id: ${{ env.PROJECT_ID }}
+          service_account: ${{ env.SERVICE_ACCOUNT }}
+          workload_identity_provider: ${{ env.WORKLOAD_IDENTITY_PROVIDER }}
 
       - name: Docker Auth
         id: docker-auth
@@ -69,15 +72,13 @@ jobs:
         with:
           username: 'oauth2accesstoken'
           password: '${{ steps.auth.outputs.access_token }}'
-          registry: 'us-west1-docker.pkg.dev'
+          registry: '${{ env.AR_REPO_LOCATION }}-docker.pkg.dev'
 
-      - name: Build and tag the docker image
-        run: |-
-          docker build --build-arg NODE_ENV=dev . --tag us-west1-docker.pkg.dev/memgpt-428419/letta-web/letta-web:$GITHUB_SHA
 
-      - name: Push the image to the Google Artifact Registry (GAR)
+      - name: Build and Push Container
         run: |-
-          docker push us-west1-docker.pkg.dev/memgpt-428419/letta-web/letta-web:$GITHUB_SHA
+          docker build -t "${{ env.AR_URL }}/${{ env.IMAGE_NAME }}:${{ github.sha }}" ./
+          docker push "${{ env.AR_URL }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
 
       - name: Deploy
         run: |-
