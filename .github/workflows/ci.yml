@@ -51,7 +51,7 @@ jobs:
         uses: actions/checkout@v3
 
       - name: PRINT SHA
-        run: docker push us-west1-docker.pkg.dev/memgpt-428419/letta-web/letta-web:$GITHUB_SHA
+        run: docker push us-west1-docker.pkg.dev/memgpt-428419/letta-web/letta-web:43543
 
 
 #      - uses: 'google-github-actions/auth@v2'
