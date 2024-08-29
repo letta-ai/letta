@@ -6,13 +6,16 @@ on:
       - main
   pull_request:
 
-permissions:
-  actions: read
-  contents: read
-
 env:
   PROJECT_ID: ${{ secrets.PROJECT_ID }}
   REGION: ${{ secrets.REGION }}
+  APP_NAME: ${{ secrets.DEV_APP_NAME }}
+  REGISTRY_NAME: ${{ secrets.ARTIFACT_REGISTRY_NAME }}
+  SERVICE_ACCOUNT_EMAIL: ${{ secrets.SERVICE_ACCOUNT_EMAIL }}
+
+permissions:
+  actions: read
+  contents: read
 
 jobs:
   main:
@@ -61,26 +64,28 @@ jobs:
         uses: google-github-actions/setup-gcloud@v1
 
       - name: Authorize Docker push
-        run: gcloud auth configure-docker ${{ secrets.REGION }}-docker.pkg.dev
+        run: gcloud auth configure-docker $REGION-docker.pkg.dev
+        env:
+          REGION: ${{ secrets.REGION }}
 
       - name: Build and tag the docker image
         run: |-
-          docker build --build-arg NODE_ENV=dev . --tag ${{ secrets.REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ secrets.ARTIFACT_REGISTRY_NAME }}/${{ secrets.APP_NAME }}:${{ github.sha }}
+          docker build --build-arg NODE_ENV=dev . --tag $REGION-docker.pkg.dev/$PROJECT_ID/$REGISTRY_NAME/$APP_NAME:$GITHUB_SHA
 
       - name: Push the image to the Google Artifact Registry (GAR)
         run: |-
-          docker push ${{ secrets.REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ secrets.ARTIFACT_REGISTRY_NAME }}/${{ secrets.APP_NAME }}:$GITHUB_SHA
+          docker push $REGION-docker.pkg.dev/$PROJECT_ID/$REGISTRY_NAME/$APP_NAME:$GITHUB_SHA
 
       # - name: Build and push the Docker image
       #   run: |-
-      #     gcloud builds submit . --tag ${{ secrets.REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ secrets.ARTIFACT_REGISTRY_NAME }}/${{ secrets.APP_NAME }}:$GITHUB_SHA
+      #     gcloud builds submit . --tag $REGION-docker.pkg.dev/$PROJECT_ID/$REGISTRY_NAME/$APP_NAME:$GITHUB_SHA
 
       - name: Deploy
         run: |-
-          gcloud run deploy ${{ secrets.APP_NAME }} \
-          --region ${{ secrets.REGION }} \
-          --image ${{ secrets.REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ secrets.ARTIFACT_REGISTRY_NAME }}/${{ secrets.APP_NAME }}:${{ github.sha }} \
+          gcloud run deploy $APP_NAME \
+          --region $REGION \
+          --image $REGION-docker.pkg.dev/$PROJECT_ID/$REGISTRY_NAME/$APP_NAME:$GITHUB_SHA \
           --platform "managed" \
-          --service-account ${{ secrets.SERVICE_ACCOUNT_EMAIL }} \
+          --service-account $SERVICE_ACCOUNT_EMAIL \
           --port 80 \
           --quiet
