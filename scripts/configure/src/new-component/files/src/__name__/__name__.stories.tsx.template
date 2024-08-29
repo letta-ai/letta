@@ -1,0 +1,10 @@
+import type { Meta, StoryObj } from '@storybook/react';
+import { <%= name %> } from './<%= name %>';
+
+const meta: Meta<typeof <%= name %>> = {
+  component: <%= name %>,
+  title: '<%= name %>',
+};
+
+export default meta;
+type Story = StoryObj<typeof <%= name %>>;

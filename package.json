@@ -13,11 +13,13 @@
     "prepare": "husky install",
     "setup": "nx g @letta-web/configure:setup",
     "component-libray": "nx run component-library:storybook",
+    "component-libray:new": "nx g @letta-web/configure:new-component",
     "database:generate": "nx run database:generate",
     "database:migrate": "nx run database:migrate",
     "database:check": "nx run database:check",
     "database:studio": "nx run database:studio",
-    "cl": "npm run component-libray"
+    "cl": "npm run component-libray",
+    "cl:n": "npm run component-libray:new"
   },
   "private": true,
   "dependencies": {
