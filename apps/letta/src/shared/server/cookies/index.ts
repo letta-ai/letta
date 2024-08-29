@@ -1,24 +1,13 @@
 'use server';
 import { cookies } from 'next/headers';
-
-export interface CookieSessionType {
-  sessionId: string;
-}
-
-export enum CookieNames {
-  CSRF_PROTECTION = 'CSRF_PROTECTION',
-  LETTA_SESSION = '__LETTA_SESSION__',
-}
-
-export interface CookieTypePayload {
-  [CookieNames.LETTA_SESSION]: CookieSessionType;
-  [CookieNames.CSRF_PROTECTION]: string;
-}
+import type { CookieTypePayload } from './types';
+import { CookieNames } from './types';
 
 interface RequestCookieInterface {
   httpOnly: boolean;
   path: string;
   secure: boolean;
+  expires?: Date;
 }
 
 const cookieConfiguration: Record<
@@ -39,9 +28,13 @@ const cookieConfiguration: Record<
 
 export async function setCookie<CookieName extends CookieNames>(
   name: CookieName,
-  payload: CookieTypePayload[CookieName]
+  payload: CookieTypePayload[CookieName],
+  extraConfig?: Partial<RequestCookieInterface>
 ) {
-  cookies().set(name, JSON.stringify(payload), cookieConfiguration[name]);
+  cookies().set(name, JSON.stringify(payload), {
+    ...cookieConfiguration[name],
+    ...extraConfig,
+  });
 }
 
 export async function getCookie<CookieName extends CookieNames>(
@@ -54,4 +47,10 @@ export async function getCookie<CookieName extends CookieNames>(
   }
 
   return JSON.parse(cookie.value);
+}
+
+export async function deleteCookie<CookieName extends CookieNames>(
+  name: CookieName
+) {
+  cookies().delete(name);
 }

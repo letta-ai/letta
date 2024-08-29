@@ -3,6 +3,7 @@ import type { AuthProviderContextSchema } from '../types';
 import type { ProviderUserPayload, SupportedProviders } from '$letta/types';
 import type { NextRequest } from 'next/server';
 import { jwtDecode } from 'jwt-decode';
+import { signInUserFromProviderLogin } from '$letta/server/auth';
 
 interface GoogleJWTResponse {
   iss: string;
@@ -69,20 +70,28 @@ export async function GET(
   req: NextRequest,
   context: AuthProviderContextSchema
 ) {
-  const code = req.nextUrl.searchParams.get('code');
+  try {
+    const code = req.nextUrl.searchParams.get('code');
 
-  if (!code) {
-    return new Response('No code provided', { status: 400 });
+    if (!code) {
+      return new Response('No code provided', { status: 400 });
+    }
+
+    const userPayload = await getUserDetailsFromProvider(
+      context.params.provider,
+      code
+    );
+
+    await signInUserFromProviderLogin(userPayload);
+
+    return new Response('Successfully signed in', {
+      status: 302,
+      headers: {
+        location: '/',
+      },
+    });
+  } catch (e) {
+    console.error(e);
+    return new Response('Error signing in', { status: 500 });
   }
-
-  const userPayload = await getUserDetailsFromProvider(
-    context.params.provider,
-    code
-  );
-
-  return new Response(JSON.stringify(userPayload), {
-    headers: {
-      'content-type': 'application/json',
-    },
-  });
 }

@@ -25,7 +25,8 @@
       "@letta-web/database": ["libs/database/src/index.ts"],
       "@letta-web/environmental-variables": [
         "libs/environmental-variables/src/index.ts"
-      ]
+      ],
+      "@letta-web/redis": ["libs/redis/src/index.ts"]
     }
   },
   "exclude": ["node_modules", "tmp", "*.config.js", "*.config.ts"]

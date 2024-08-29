@@ -4,8 +4,12 @@ This is the monorepo for all internal Letta web projects. It uses [Nx](https://n
 
 ## Getting Started
 
-You must have node.js to run this project, please install `nvm` from [here](https://github.com/nvm-sh/nvm) and then run:
+### Prerequisites
+* Docker
+* `nvm` from [here](https://github.com/nvm-sh/nvm) and then run:
 
+
+Run the following commands
 ```sh
 nvm use
 ```
@@ -22,6 +26,7 @@ npm run setup
 To run the dev server for your app, use:
 
 ```sh
+docker compose up
 npm run dev
 ```
 
