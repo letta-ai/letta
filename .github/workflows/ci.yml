@@ -58,7 +58,7 @@ jobs:
 
       - uses: 'google-github-actions/auth@v2'
         with:
-          project_id: $PROJECT_ID
+          project_id: ${{ secrets.PROJECT_ID }}
           workload_identity_provider: 'projects/231889654562/locations/global/workloadIdentityPools/github/providers/letta-web'
 
       - name: Set up Cloud SDK
