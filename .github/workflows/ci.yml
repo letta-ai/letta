@@ -12,7 +12,7 @@ env:
   AR_REPO_LOCATION: 'us-central1'
   AR_URL: 'us-central1-docker.pkg.dev/memgpt-428419/letta-web'
   SERVICE_ACCOUNT: 'github-actions-service-account@memgpt-428419.iam.gserviceaccount.com'
-  WORKLOAD_IDENTITY_PROVIDER: 'projects/231889654562/locations/global/workloadIdentityPools/github/providers/letta-web'
+  WORKLOAD_IDENTITY_PROVIDER: 'projects/231889654562/locations/global/workloadIdentityPools/letta-web-dev-pool/providers/github-actions-provider'
 
 permissions:
   actions: read
