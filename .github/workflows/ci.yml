@@ -19,6 +19,7 @@ permissions:
 
 jobs:
   main:
+    environment: dev
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -66,9 +67,6 @@ jobs:
 
       - name: Authorize Docker push
         run: gcloud auth configure-docker us-west1-docker.pkg.dev
-
-      - name: Login to docker
-        run: gcloud auth print-access-token | docker login -u oauth2accesstoken --password-stdin https://us-west3-docker.pkg.dev
 
       - name: Build and tag the docker image
         run: |-
