@@ -19,7 +19,6 @@ permissions:
 
 jobs:
   main:
-    environment: dev
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -46,6 +45,7 @@ jobs:
       - run: npx nx affected -t lint build
 
   deploy:
+    environment: Development
     runs-on: ubuntu-latest
 
     permissions:
