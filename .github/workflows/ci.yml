@@ -6,6 +6,13 @@ on:
       - main
   pull_request:
 
+env:
+  PROJECT_ID: ${{ secrets.PROJECT_ID }}
+  REGION: ${{ secrets.REGION }}
+  APP_NAME: ${{ secrets.DEV_APP_NAME }}
+  REGISTRY_NAME: ${{ secrets.ARTIFACT_REGISTRY_NAME }}
+  SERVICE_ACCOUNT_EMAIL: ${{ secrets.SERVICE_ACCOUNT_EMAIL }}
+
 permissions:
   actions: read
   contents: read
@@ -40,14 +47,6 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
 
-    env:
-      PROJECT_ID: ${{ secrets.PROJECT_ID }}
-      REGION: ${{ secrets.REGION }}
-      APP_NAME: ${{ secrets.DEV_APP_NAME }}
-      REGISTRY_NAME: ${{ secrets.ARTIFACT_REGISTRY_NAME }}
-      SERVICE_ACCOUNT_EMAIL: ${{ secrets.SERVICE_ACCOUNT_EMAIL }}
-
-
     permissions:
       contents: 'read'
       id-token: 'write'
@@ -58,7 +57,7 @@ jobs:
 
       - uses: 'google-github-actions/auth@v2'
         with:
-          project_id: ${{ secrets.PROJECT_ID }}
+          project_id: $PROJECT_ID
           workload_identity_provider: 'projects/231889654562/locations/global/workloadIdentityPools/github/providers/letta-web'
 
       - name: Set up Cloud SDK
