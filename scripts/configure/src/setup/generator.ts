@@ -8,7 +8,6 @@ import type { SetupGeneratorSchema } from './schema';
 
 
 
-
 export async function setupGenerator(
   tree: Tree,
   options: SetupGeneratorSchema
