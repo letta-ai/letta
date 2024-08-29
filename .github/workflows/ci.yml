@@ -10,6 +10,10 @@ permissions:
   actions: read
   contents: read
 
+env:
+  PROJECT_ID: ${{ secrets.PROJECT_ID }}
+  REGION: ${{ secrets.REGION }}
+
 jobs:
   main:
     runs-on: ubuntu-latest
