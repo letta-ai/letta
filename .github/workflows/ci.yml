@@ -46,43 +46,41 @@ jobs:
 
   deploy:
     runs-on: ubuntu-latest
-
-    permissions:
-      contents: 'read'
-      id-token: 'write'
-
     steps:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - uses: 'google-github-actions/auth@v2'
-        with:
-          project_id: ${{ secrets.PROJECT_ID }}
-          workload_identity_provider: 'projects/231889654562/locations/global/workloadIdentityPools/github/providers/letta-web'
+      - name: PRINT SHA
+        run: echo $GITHUB_SHA
 
-      - name: Set up Cloud SDK
-        uses: google-github-actions/setup-gcloud@v1
-
-      - name: Authorize Docker push
-        run: gcloud auth configure-docker us-west1-docker.pkg.dev
-
-      - name: Build and tag the docker image
-        run: |-
-          docker build --build-arg NODE_ENV=dev . --tag us-west1-docker.pkg.dev/memgpt-428419/letta-web/letta-web:$GITHUB_SHA
-
-      - name: Push the image to the Google Artifact Registry (GAR)
-        run: |-
-          docker push us-west1-docker.pkg.dev/memgpt-428419/letta-web/letta-web:$GITHUB_SHA
-
-      # - name: Build and push the Docker image
-      #   run: |-
-      #     gcloud builds submit . --tag $REGION-docker.pkg.dev/$PROJECT_ID/$REGISTRY_NAME/$APP_NAME:$GITHUB_SHA
-
-      - name: Deploy
-        run: |-
-          gcloud run deploy letta-web \
-          --region us-west1 \
-          --image us-west1-docker.pkg.dev/memgpt-428419/letta-web/letta-web:$GITHUB_SHA \
-          --platform "managed" \
-          --port 80 \
-          --quiet
+#      - uses: 'google-github-actions/auth@v2'
+#        with:
+#          project_id: ${{ secrets.PROJECT_ID }}
+#          workload_identity_provider: 'projects/231889654562/locations/global/workloadIdentityPools/github/providers/letta-web'
+#
+#      - name: Set up Cloud SDK
+#        uses: google-github-actions/setup-gcloud@v1
+#
+#      - name: Authorize Docker push
+#        run: gcloud auth configure-docker us-west1-docker.pkg.dev
+#
+#      - name: Build and tag the docker image
+#        run: |-
+#          docker build --build-arg NODE_ENV=dev . --tag us-west1-docker.pkg.dev/memgpt-428419/letta-web/letta-web:$GITHUB_SHA
+#
+#      - name: Push the image to the Google Artifact Registry (GAR)
+#        run: |-
+#          docker push us-west1-docker.pkg.dev/memgpt-428419/letta-web/letta-web:$GITHUB_SHA
+#
+#      # - name: Build and push the Docker image
+#      #   run: |-
+#      #     gcloud builds submit . --tag $REGION-docker.pkg.dev/$PROJECT_ID/$REGISTRY_NAME/$APP_NAME:$GITHUB_SHA
+#
+#      - name: Deploy
+#        run: |-
+#          gcloud run deploy letta-web \
+#          --region us-west1 \
+#          --image us-west1-docker.pkg.dev/memgpt-428419/letta-web/letta-web:$GITHUB_SHA \
+#          --platform "managed" \
+#          --port 80 \
+#          --quiet
