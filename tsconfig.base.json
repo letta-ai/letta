@@ -27,7 +27,8 @@
         "libs/environmental-variables/src/index.ts"
       ],
       "@letta-web/redis": ["libs/redis/src/index.ts"]
-    }
+    },
+    "jsx": "react"
   },
   "exclude": ["node_modules", "tmp", "*.config.js", "*.config.ts"]
 }

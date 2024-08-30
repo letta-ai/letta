@@ -3,10 +3,10 @@ import { <%= name %> } from './<%= name %>';
 
 const meta: Meta<typeof <%= name %>> = {
   component: <%= name %>,
-  title: '<%= name %>',
+  title: 'Components/<%= name %>',
 };
 
 export default meta;
 type Story = StoryObj<typeof <%= name %>>;
 
-export const Primary = {};
+export const Primary: Story = {};

@@ -3,15 +3,21 @@ import React from 'react';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@letta-web/core-style-config';
 
-const typographyVariants = cva('', {
+const typographyVariants = cva('text-foreground', {
   variants: {
     variant: {
       heading1: 'text-4xl font-medium',
-      body: 'text-base font-normal',
+      body: 'text-base ',
     },
     color: {
-      default: 'text-black',
+      default: '',
+      black: 'text-black',
+      primary: 'text-primary',
+      muted: 'text-muted',
       white: 'text-white',
+    },
+    bold: {
+      true: 'font-semibold',
     },
   },
   defaultVariants: {
@@ -21,7 +27,9 @@ const typographyVariants = cva('', {
 });
 
 type TypographyProps = HTMLProps<HTMLElement> &
-  VariantProps<typeof typographyVariants>;
+  VariantProps<typeof typographyVariants> & {
+    overrideEl?: 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6' | 'p';
+  };
 
 const variantToElement = {
   heading1: 'h1',
@@ -29,12 +37,12 @@ const variantToElement = {
 };
 
 export function Typography(props: TypographyProps) {
-  const { className, variant, ...rest } = props;
+  const { className, overrideEl, variant, ...rest } = props;
 
-  const Element = variantToElement[variant || 'body'] || 'p';
+  const Element = variantToElement[overrideEl || variant || 'body'] || 'p';
 
   return React.createElement(Element, {
-    className: cn(typographyVariants({ variant, className })),
+    className: cn(typographyVariants({ ...rest, className })),
     ...rest,
   });
 }

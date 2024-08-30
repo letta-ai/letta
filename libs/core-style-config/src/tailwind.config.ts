@@ -24,6 +24,7 @@ export function buildConfig(appDir: string): Config {
           ring: 'hsl(var(--ring))',
           background: 'hsl(var(--background))',
           foreground: 'hsl(var(--foreground))',
+          ['on-transparent']: 'hsl(var(--on-transparent))',
           primary: {
             DEFAULT: 'hsl(var(--primary))',
             foreground: 'hsl(var(--primary-foreground))',
@@ -31,6 +32,10 @@ export function buildConfig(appDir: string): Config {
           secondary: {
             DEFAULT: 'hsl(var(--secondary))',
             foreground: 'hsl(var(--secondary-foreground))',
+          },
+          tertiary: {
+            DEFAULT: 'hsl(var(--tertiary))',
+            foreground: 'hsl(var(--tertiary-foreground))',
           },
           destructive: {
             DEFAULT: 'hsl(var(--destructive))',
@@ -54,9 +59,7 @@ export function buildConfig(appDir: string): Config {
           },
         },
         borderRadius: {
-          lg: `var(--radius)`,
-          md: `calc(var(--radius) - 2px)`,
-          sm: 'calc(var(--radius) - 4px)',
+          DEFAULT: `var(--radius)`,
         },
         keyframes: {
           'accordion-down': {
@@ -74,6 +77,7 @@ export function buildConfig(appDir: string): Config {
         },
       },
     },
+    darkMode: ['class', '[data-mode="dark"]'],
     plugins: [TailwindAnimate],
   };
 }

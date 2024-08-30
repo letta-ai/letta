@@ -3,7 +3,7 @@ import { MarketingButton } from './MarketingButton';
 
 const meta: Meta<typeof MarketingButton> = {
   component: MarketingButton,
-  title: 'MarketingButton',
+  title: 'Components/MarketingButton',
 };
 export default meta;
 type Story = StoryObj<typeof MarketingButton>;

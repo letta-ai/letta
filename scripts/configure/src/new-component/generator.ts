@@ -1,12 +1,9 @@
 import type {
   Tree} from '@nx/devkit';
-import { workspaceRoot
-} from '@nx/devkit';
 import {
   formatFiles,
   generateFiles
 } from '@nx/devkit';
-import fs from 'fs';
 import * as path from 'path';
 import type { NewComponentGeneratorSchema } from './schema';
 
