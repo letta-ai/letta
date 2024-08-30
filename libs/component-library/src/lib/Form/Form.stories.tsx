@@ -3,7 +3,7 @@ import { Form } from './Form';
 
 const meta: Meta<typeof Form> = {
   component: Form,
-  title: 'Components/Form',
+  title: 'Core/Form',
 };
 
 export default meta;

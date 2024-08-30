@@ -1,10 +1,10 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { Input } from './Input';
-import { wrapWithFormContext } from '../../helpers';
+import { generateWrapWithFormContext } from '../../helpers';
 
 const meta: Meta<typeof Input> = {
   component: Input,
-  title: 'Components/Input',
+  title: 'Core/Input',
 };
 
 export default meta;
@@ -15,5 +15,9 @@ export const Primary: Story = {
     label: 'Username',
     placeholder: 'Enter your username',
   },
-  decorators: [wrapWithFormContext],
+  decorators: [
+    generateWrapWithFormContext({
+      alternativeText: 'Use <RawInput /> instead if you dont need the Form',
+    }),
+  ],
 };

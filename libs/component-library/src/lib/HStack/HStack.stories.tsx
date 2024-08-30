@@ -3,7 +3,7 @@ import { HStack } from './HStack';
 import { Primary as FrameStory } from '../Frame/Frame.stories';
 const meta: Meta<typeof HStack> = {
   component: HStack,
-  title: 'Components/HStack',
+  title: 'Framing/HStack',
 };
 
 export default meta;

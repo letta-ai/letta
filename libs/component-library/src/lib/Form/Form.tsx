@@ -8,6 +8,7 @@ import { Controller, FormProvider, useFormContext } from 'react-hook-form';
 
 import { LabelPrimitive } from '../../primitives';
 import { cn } from '@letta-web/core-style-config';
+import { InputContainerPrimitive } from '../../primitives';
 
 const Form = FormProvider;
 
@@ -73,7 +74,7 @@ const FormItem = React.forwardRef<
 
   return (
     <FormItemContext.Provider value={{ id }}>
-      <div
+      <InputContainerPrimitive
         ref={ref}
         className={cn('flex flex-col gap-[6px]', className)}
         {...props}

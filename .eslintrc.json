@@ -79,7 +79,6 @@
             "format": null
           }
         ],
-        "rules": {
           "@typescript-eslint/no-unused-vars": [
             "error",
             {
@@ -91,8 +90,7 @@
               "varsIgnorePattern": "^_",
               "ignoreRestSiblings": true
             }
-          ]
-        },
+          ],
         "@typescript-eslint/no-base-to-string": "error",
         "@typescript-eslint/no-confusing-non-null-assertion": "error",
         "@typescript-eslint/no-confusing-void-expression": "error",

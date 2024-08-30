@@ -3,7 +3,7 @@ import { Typography } from './Typography';
 
 const meta: Meta<typeof Typography> = {
   component: Typography,
-  title: 'Components/Typography',
+  title: 'Core/Typography',
 };
 
 export default meta;

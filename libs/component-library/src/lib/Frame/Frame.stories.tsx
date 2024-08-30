@@ -3,7 +3,7 @@ import { Frame } from './Frame';
 
 const meta: Meta<typeof Frame> = {
   component: Frame,
-  title: 'Components/Frame',
+  title: 'Framing/Frame',
 };
 
 export default meta;

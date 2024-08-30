@@ -4,7 +4,7 @@ import { Primary as FrameStory } from '../Frame/Frame.stories';
 
 const meta: Meta<typeof VStack> = {
   component: VStack,
-  title: 'Components/VStack',
+  title: 'Framing/VStack',
 };
 
 export default meta;

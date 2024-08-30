@@ -1,1 +1,1 @@
-export * from './wrapWithFormContext/wrapWithFormContext';
+export * from './generateWrapWithFormContext/generateWrapWithFormContext';

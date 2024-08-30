@@ -1,4 +1,4 @@
-import type { PropsWithChildren } from 'react';
+import type { ChangeEvent, PropsWithChildren } from 'react';
 import { useEffect } from 'react';
 import * as React from 'react';
 import { useCallback, useMemo } from 'react';
@@ -128,7 +128,7 @@ function PanelHeader(props: PanelHeaderProps) {
   const { title } = props;
 
   return (
-    <div className="w-full flex flex-row bg-background-grey-darker items-center border-b space-between px-5 h-[42px]">
+    <div className="w-full flex flex-row bg-background-grey-darker items-center border-b space-between px-3 h-[42px]">
       <Typography bold>{title}</Typography>
     </div>
   );
@@ -144,7 +144,7 @@ function PanelContent(props: PanelContentProps) {
   return (
     <div className="flex-1 h-full rounded-sm border flex flex-col">
       <PanelHeader title={title} />
-      <div className="flex flex-1 bg-white">{props.children}</div>
+      <div className="flex flex-1 bg-background">{props.children}</div>
     </div>
   );
 }
@@ -219,6 +219,48 @@ export function PanelRenderArea() {
           <div className="contents" id={`panel-${panelId}`} key={panelId}></div>
         ))}
       </div>
+    </div>
+  );
+}
+
+type PanelBarProps = PropsWithChildren<{
+  actions: React.ReactNode;
+}>;
+
+export function PanelBar(props: PanelBarProps) {
+  return (
+    <div className="flex items-center justify-between w-full flex-row h-[42px] gap-3">
+      <>{props.children}</>
+      <div className="px-2">{props.actions}</div>
+    </div>
+  );
+}
+
+interface PanelSearchProps {
+  placeholder: string;
+  onChange: (value: string) => void;
+  value: string;
+}
+
+export function PanelSearch(props: PanelSearchProps) {
+  const { placeholder, value, onChange } = props;
+
+  const handleChange = useCallback(
+    function handleChange(event: ChangeEvent<HTMLInputElement>) {
+      onChange(event.target.value);
+    },
+    [onChange]
+  );
+
+  return (
+    <div className="flex flex-row w-full items-center border-b space-between px-3 h-[42px]">
+      <input
+        type="text"
+        placeholder={placeholder}
+        className="w-full bg-transparent border-none text-base outline-none"
+        value={value}
+        onChange={handleChange}
+      />
     </div>
   );
 }

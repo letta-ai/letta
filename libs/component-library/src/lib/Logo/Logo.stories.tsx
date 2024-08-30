@@ -3,7 +3,7 @@ import { Logo } from './Logo';
 
 const meta: Meta<typeof Logo> = {
   component: Logo,
-  title: 'Components/Logo',
+  title: 'Marketing/Logo',
 };
 
 export default meta;

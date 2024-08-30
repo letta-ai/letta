@@ -3,22 +3,25 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import { ButtonPrimitive } from '../../primitives';
 import { cn } from '@letta-web/core-style-config';
 
-const buttonVariants = cva('rounded cursor-pointer inline-flex gap-2', {
-  variants: {
-    variant: {
-      primary: 'bg-primary text-white border-primary border',
-      secondary: 'bg-secondary text-secondary-foreground border',
-      tertiary: 'bg-tertiary text-tertiary-foreground border',
+const buttonVariants = cva(
+  'rounded items-center cursor-pointer inline-flex gap-2 whitespace-nowrap',
+  {
+    variants: {
+      variant: {
+        primary: 'bg-primary text-white border-primary border',
+        secondary: 'bg-secondary text-secondary-foreground border',
+        tertiary: 'bg-tertiary text-tertiary-foreground border',
+      },
+      size: {
+        default: 'px-4 py-1 h-[32px] text-base font-medium',
+      },
     },
-    size: {
-      default: 'px-4 py-1',
+    defaultVariants: {
+      variant: 'primary',
+      size: 'default',
     },
-  },
-  defaultVariants: {
-    variant: 'primary',
-    size: 'default',
-  },
-});
+  }
+);
 
 export type ButtonProps = Omit<
   React.HTMLAttributes<HTMLAnchorElement | HTMLButtonElement> &
