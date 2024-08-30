@@ -79,7 +79,20 @@
             "format": null
           }
         ],
-        "@typescript-eslint/no-unused-vars": "error",
+        "rules": {
+          "@typescript-eslint/no-unused-vars": [
+            "error",
+            {
+              "args": "all",
+              "argsIgnorePattern": "^_",
+              "caughtErrors": "all",
+              "caughtErrorsIgnorePattern": "^_",
+              "destructuredArrayIgnorePattern": "^_",
+              "varsIgnorePattern": "^_",
+              "ignoreRestSiblings": true
+            }
+          ]
+        },
         "@typescript-eslint/no-base-to-string": "error",
         "@typescript-eslint/no-confusing-non-null-assertion": "error",
         "@typescript-eslint/no-confusing-void-expression": "error",
