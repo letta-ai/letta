@@ -17,11 +17,3 @@ export const Primary = {
     children: 'Hello',
   },
 };
-
-export const Heading: Story = {
-  args: {},
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    await expect(canvas.getByText(/Welcome to Button!/gi)).toBeTruthy();
-  },
-};

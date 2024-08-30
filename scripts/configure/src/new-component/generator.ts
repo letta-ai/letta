@@ -6,6 +6,7 @@ import {
   formatFiles,
   generateFiles
 } from '@nx/devkit';
+import fs from 'fs';
 import * as path from 'path';
 import type { NewComponentGeneratorSchema } from './schema';
 
@@ -18,12 +19,24 @@ export async function newComponentGenerator(
     throw new Error('Name must be in PascalCase');
   }
 
+  // add the component to the index.ts file
+  const indexContent = tree.read('libs/component-library/src/index.tsx')?.toString();
+
+  if (!indexContent) {
+    throw new Error('Could not find index.tsx file');
+  }
+
+
   // check if the component already exists
-  if (tree.exists(path.join(workspaceRoot, 'libs/component-library/src/lib', options.name, `${options.name}.tsx`))) {
+  if (tree.exists(path.join('libs/component-library/src/lib', options.name, `${options.name}.tsx`))) {
     throw new Error(`Component ${options.name} already exists`);
   }
 
-  generateFiles(tree, path.join(__dirname, 'files'), path.join(workspaceRoot, 'libs/component-library/src/lib'), options);
+  generateFiles(tree, path.join(__dirname, 'files'), path.join('libs/component-library/src/lib'), options);
+
+  const newContents = `${indexContent}\nexport * from './lib/${options.name}/${options.name}';`;
+
+  tree.write('libs/component-library/src/index.tsx', newContents);
 
   await formatFiles(tree);
 }
