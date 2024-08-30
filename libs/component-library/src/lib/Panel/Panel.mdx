@@ -1,0 +1,38 @@
+import { Meta } from '@storybook/addon-docs';
+import { Button, Panel, PanelManager, PanelRenderArea } from '@letta-web/component-library';
+
+<Meta title="Reference/Panel" />
+
+# Panel
+Panels are used to manage the layout of the Agent Development Environment. They can be moved, resized, and docked to different areas of the screen.
+
+## Usage
+
+
+<div className="flex flex-col gap-4">
+  <PanelManager>
+    <div className="gap-3 flex">
+      <Panel id={['test']} trigger={<Button label="Activate Panel 1" />} title="Main panel 1">
+        <div style={{ padding: '1rem' }}>
+          Panel Content
+        </div>
+      </Panel>
+
+      <Panel id={['test', 'data']} trigger={<Button label="Activate The subpanel" />} title="Sub panel 1">
+        <div style={{ padding: '1rem' }}>
+          Panel Content
+        </div>
+      </Panel>
+
+      <Panel id={['different']} trigger={<Button label="Activate Another panel" />} title="Main panel 2">
+        <div style={{ padding: '1rem' }}>
+          Panel Content
+        </div>
+      </Panel>
+    </div>
+
+
+    <PanelRenderArea />
+
+  </PanelManager>
+</div>

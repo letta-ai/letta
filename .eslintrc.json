@@ -42,8 +42,7 @@
           "error",
           {
             "selector": "default",
-            "format": ["camelCase"],
-            "leadingUnderscore": "forbid"
+            "format": ["camelCase"]
           },
           {
             "selector": "typeLike",
@@ -63,8 +62,7 @@
           },
           {
             "selector": "variableLike",
-            "format": ["PascalCase", "camelCase"],
-            "leadingUnderscore": "forbid"
+            "format": ["PascalCase", "camelCase"]
           },
           {
             "selector": "variable",
@@ -104,15 +102,6 @@
         "@typescript-eslint/no-invalid-this": "error",
         "@typescript-eslint/no-invalid-void-type": "error",
         "no-magic-numbers": "off",
-        "@typescript-eslint/no-magic-numbers": [
-          "error",
-          {
-            "ignoreTypeIndexes": true,
-            "ignoreEnums": true,
-            "ignoreNumericLiteralTypes": true,
-            "ignoreReadonlyClassProperties": true
-          }
-        ],
         "@typescript-eslint/no-misused-new": "error",
         "@typescript-eslint/no-misused-promises": "error",
         "@typescript-eslint/no-mixed-enums": "error",

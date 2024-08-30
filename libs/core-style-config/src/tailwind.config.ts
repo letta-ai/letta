@@ -22,7 +22,10 @@ export function buildConfig(appDir: string): Config {
           border: 'hsl(var(--border))',
           input: 'hsl(var(--input))',
           ring: 'hsl(var(--ring))',
-          background: 'hsl(var(--background))',
+          background: {
+            DEFAULT: 'hsl(var(--background))',
+            'grey-darker': 'hsl(var(--background-grey-darker))',
+          },
           foreground: 'hsl(var(--foreground))',
           ['on-transparent']: 'hsl(var(--on-transparent))',
           primary: {
@@ -60,6 +63,7 @@ export function buildConfig(appDir: string): Config {
         },
         borderRadius: {
           DEFAULT: `var(--radius)`,
+          sm: '3px',
         },
         keyframes: {
           'accordion-down': {
