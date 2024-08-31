@@ -1,7 +1,7 @@
 import type { PropsWithChildren, ElementType } from 'react';
 import React from 'react';
 import { useForm } from 'react-hook-form';
-import { FormField, Form } from '../../lib/Form/Form';
+import { FormField, Form } from '../../lib/form/Form/Form';
 
 type WrapWithFormContextProps = PropsWithChildren<{
   alternativeText?: string;

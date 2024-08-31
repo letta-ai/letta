@@ -12,6 +12,18 @@
         "index": 0
       },
       "x-prompt": "What is the name of your component, make sure it is in PascalCase"
+    },
+    "category": {
+      "type": "string",
+      "description": "The category of the component",
+      "enum": [
+        "core",
+        "panels",
+        "framing",
+        "marketing"
+      ],
+      "default": "core",
+      "x-prompt": "What is the category of your component?"
     }
   },
   "required": ["name"]

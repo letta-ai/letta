@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { Input } from './Input';
-import { generateWrapWithFormContext } from '../../helpers';
+import { generateWrapWithFormContext } from '../../../helpers';
 
 const meta: Meta<typeof Input> = {
   component: Input,

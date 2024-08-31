@@ -25,6 +25,7 @@ export function buildConfig(appDir: string): Config {
           background: {
             DEFAULT: 'hsl(var(--background))',
             'grey-darker': 'hsl(var(--background-grey-darker))',
+            grey: 'hsl(var(--background-grey))',
           },
           foreground: 'hsl(var(--foreground))',
           ['on-transparent']: 'hsl(var(--on-transparent))',

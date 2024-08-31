@@ -4,7 +4,7 @@ import * as React from 'react';
 import { useCallback, useMemo } from 'react';
 import { createContext } from 'react';
 import ReactDOM from 'react-dom';
-import { Typography } from '../Typography/Typography';
+import { Typography } from '../../core/Typography/Typography';
 
 type PanelId = string[];
 
@@ -149,6 +149,9 @@ function PanelContent(props: PanelContentProps) {
   );
 }
 
+// eslint-disable-next-line @typescript-eslint/naming-convention
+export const For_storybook_use_only__PanelContent = PanelContent;
+
 interface PanelContextData {
   id: PanelId;
 }
@@ -158,11 +161,12 @@ const PanelContext = createContext<PanelContextData | undefined>(undefined);
 type PanelProps = PanelContentProps &
   PropsWithChildren<{
     id: PanelId;
+    defaultOpen?: boolean;
     trigger: React.ReactElement;
   }>;
 
 export function Panel(props: PanelProps) {
-  const { id } = props;
+  const { id, defaultOpen } = props;
   // panels must be nested within a PanelManager
   const { addPanel, deactivatePanel, activatePanel, getIsPanelActive } =
     usePanelManagerContext();
@@ -177,6 +181,15 @@ export function Panel(props: PanelProps) {
   useEffect(() => {
     addPanel(id);
   }, [addPanel, id]);
+
+  useEffect(() => {
+    if (defaultOpen) {
+      // we need to wait for the PanelRenderArea to mount so the react-dom attachment can work
+      setTimeout(() => {
+        activatePanel(id);
+      }, 0);
+    }
+  }, [activatePanel, defaultOpen, id]);
 
   const isPanelActive = useMemo(
     () => getIsPanelActive(id),
@@ -198,6 +211,7 @@ export function Panel(props: PanelProps) {
     <PanelContext.Provider value={value}>
       {React.cloneElement(props.trigger, {
         onClick: handleTriggerClick,
+        active: isPanelActive,
       })}
       {isPanelActive &&
         ReactDOM.createPortal(
@@ -219,48 +233,6 @@ export function PanelRenderArea() {
           <div className="contents" id={`panel-${panelId}`} key={panelId}></div>
         ))}
       </div>
-    </div>
-  );
-}
-
-type PanelBarProps = PropsWithChildren<{
-  actions: React.ReactNode;
-}>;
-
-export function PanelBar(props: PanelBarProps) {
-  return (
-    <div className="flex items-center justify-between w-full flex-row h-[42px] gap-3">
-      <>{props.children}</>
-      <div className="px-2">{props.actions}</div>
-    </div>
-  );
-}
-
-interface PanelSearchProps {
-  placeholder: string;
-  onChange: (value: string) => void;
-  value: string;
-}
-
-export function PanelSearch(props: PanelSearchProps) {
-  const { placeholder, value, onChange } = props;
-
-  const handleChange = useCallback(
-    function handleChange(event: ChangeEvent<HTMLInputElement>) {
-      onChange(event.target.value);
-    },
-    [onChange]
-  );
-
-  return (
-    <div className="flex flex-row w-full items-center border-b space-between px-3 h-[42px]">
-      <input
-        type="text"
-        placeholder={placeholder}
-        className="w-full bg-transparent border-none text-base outline-none"
-        value={value}
-        onChange={handleChange}
-      />
     </div>
   );
 }

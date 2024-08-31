@@ -31,7 +31,7 @@ export async function newComponentGenerator(
 
   generateFiles(tree, path.join(__dirname, 'files'), path.join('libs/component-library/src/lib'), options);
 
-  const newContents = `${indexContent}\nexport * from './lib/${options.name}/${options.name}';`;
+  const newContents = `${indexContent}\nexport * from './lib/${options.category}/${options.name}/${options.name}';`;
 
   tree.write('libs/component-library/src/index.tsx', newContents);
 

@@ -12,7 +12,7 @@
     "type-check": "nx run-many --all --skip-nx-cache --parallel --targets=type-check",
     "prepare": "husky install",
     "setup": "nx g @letta-web/configure:setup",
-    "component-libray": "nx run component-library:storybook",
+    "component-libray": "nx run component-library:storybook --docs",
     "component-libray:new": "nx g @letta-web/configure:new-component",
     "database:generate": "nx run database:generate",
     "database:migrate": "nx run database:migrate",

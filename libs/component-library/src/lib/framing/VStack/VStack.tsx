@@ -1,5 +1,5 @@
-import type { StackPrimitiveProps } from '../../primitives';
-import { StackPrimitive } from '../../primitives';
+import type { StackPrimitiveProps } from '../../../primitives';
+import { StackPrimitive } from '../../../primitives';
 import { cn } from '@letta-web/core-style-config';
 import * as React from 'react';
 

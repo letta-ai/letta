@@ -34,6 +34,7 @@
     --radius: 0.375rem;
 
     --background-grey-darker: 210, 40%, 96%;
+    --background-grey: 0, 0%, 99%;
   }
 
   .dark {

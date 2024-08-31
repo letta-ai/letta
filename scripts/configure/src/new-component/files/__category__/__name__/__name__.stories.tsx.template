@@ -3,7 +3,7 @@ import { <%= name %> } from './<%= name %>';
 
 const meta: Meta<typeof <%= name %>> = {
   component: <%= name %>,
-  title: 'OrganizeMe/<%= name %>',
+  title: '<%= category %>/<%= name %>',
 };
 
 export default meta;

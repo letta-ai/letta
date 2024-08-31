@@ -1,5 +1,5 @@
-import type { FrameProps } from '../../lib/Frame/Frame';
-import { Frame } from '../../lib/Frame/Frame';
+import type { FrameProps } from '../../lib/framing/Frame/Frame';
+import { Frame } from '../../lib/framing/Frame/Frame';
 import { cn } from '@letta-web/core-style-config';
 import * as React from 'react';
 import type { VariantProps } from 'class-variance-authority';

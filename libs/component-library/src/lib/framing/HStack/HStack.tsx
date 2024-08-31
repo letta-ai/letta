@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { cn } from '@letta-web/core-style-config';
-import type { StackPrimitiveProps } from '../../primitives';
-import { StackPrimitive } from '../../primitives';
+import type { StackPrimitiveProps } from '../../../primitives';
+import { StackPrimitive } from '../../../primitives';
 
 export type HStackProps = StackPrimitiveProps;
 

@@ -5,4 +5,7 @@ export const storybookTheme = create({
   fontBase: 'Overused Grotesk, sans-serif',
   brandTitle: 'LettaBook',
   brandTarget: '_self',
+  barBg: '#F1F5F9',
+  appBg: '#fff',
+  brandImage: './letta-logo.svg',
 });

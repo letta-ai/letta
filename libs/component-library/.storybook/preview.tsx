@@ -11,10 +11,10 @@ import {
   Primary,
   Controls,
   Stories,
+  Source,
 } from '@storybook/blocks';
 
 export const parameters: Preview = {
-  tags: ['autodocs'],
   decorators: [
     withThemeByClassName<ReactRenderer>({
       themes: {
@@ -29,17 +29,21 @@ export const parameters: Preview = {
       </div>
     ),
   ],
+  tags: ['autodocs'],
   parameters: {
-    page: () => (
-      <>
-        <Title />
-        <Subtitle />
-        <Description />
-        <Primary />
-        <Controls />
-        <Stories />
-      </>
-    ),
+    docs: {
+      page: () => (
+        <>
+          <Title />
+          <Subtitle />
+          <Description />
+          <Primary />
+          <Source />
+          <Controls />
+          <Stories />
+        </>
+      ),
+    },
   },
 };
 

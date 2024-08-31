@@ -2,7 +2,7 @@ import * as React from 'react';
 import { cva, type VariantProps } from 'class-variance-authority';
 
 import { cn } from '@letta-web/core-style-config';
-import { ButtonPrimitive } from '../../primitives';
+import { ButtonPrimitive } from '../../../primitives';
 
 const buttonVariants = cva('px-6 py-3 cursor-pointer inline-flex gap-2', {
   variants: {

@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { cva, type VariantProps } from 'class-variance-authority';
-import { ButtonPrimitive } from '../../primitives';
+import { ButtonPrimitive } from '../../../primitives';
 import { cn } from '@letta-web/core-style-config';
 
 const buttonVariants = cva(

@@ -5,11 +5,11 @@ import {
   FormControl,
   FormDescription,
   FormMessage,
-} from '../Form/Form';
-import type { InputPrimitiveProps } from '../../primitives';
-import { InputContainerPrimitive } from '../../primitives';
-import { LabelPrimitive } from '../../primitives';
-import { InputPrimitive } from '../../primitives';
+} from '../../form/Form/Form';
+import type { InputPrimitiveProps } from '../../../primitives';
+import { InputContainerPrimitive } from '../../../primitives';
+import { LabelPrimitive } from '../../../primitives';
+import { InputPrimitive } from '../../../primitives';
 
 export interface InputProps extends InputPrimitiveProps {
   label: string;

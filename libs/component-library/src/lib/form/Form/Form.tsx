@@ -6,9 +6,11 @@ import { Slot } from '@radix-ui/react-slot';
 import type { ControllerProps, FieldPath, FieldValues } from 'react-hook-form';
 import { Controller, FormProvider, useFormContext } from 'react-hook-form';
 
-import { LabelPrimitive } from '../../primitives';
+import { LabelPrimitive } from '../../../primitives';
 import { cn } from '@letta-web/core-style-config';
-import { InputContainerPrimitive } from '../../primitives';
+import { InputContainerPrimitive } from '../../../primitives';
+
+export { useForm } from 'react-hook-form';
 
 const Form = FormProvider;
 

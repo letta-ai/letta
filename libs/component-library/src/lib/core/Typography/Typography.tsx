@@ -6,8 +6,8 @@ import { cn } from '@letta-web/core-style-config';
 const typographyVariants = cva('text-foreground', {
   variants: {
     variant: {
-      heading1: 'text-4xl font-medium',
-      body: 'text-base ',
+      heading1: 'text-xl font-medium',
+      body: 'text-base',
     },
     color: {
       default: '',
@@ -42,7 +42,7 @@ export function Typography(props: TypographyProps) {
   const Element = variantToElement[overrideEl || variant || 'body'] || 'p';
 
   return React.createElement(Element, {
-    className: cn(typographyVariants({ ...rest, className })),
+    className: cn(typographyVariants({ ...rest, variant, className })),
     ...rest,
   });
 }
