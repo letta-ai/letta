@@ -8,7 +8,7 @@ export * from './lib/framing/VStack/VStack';
 
 export * from './lib/marketing/Logo/Logo';
 
-export * from './lib/form/Form/Form';
+export * from './lib/core/Form/Form';
 
 export * from './primitives/LabelPrimitive/LabelPrimitive';
 
@@ -17,3 +17,6 @@ export * from './lib/core/Input/Input';
 export * from './lib/panels/Panel/Panel';
 
 export * from './lib/panels/PanelBar/PanelBar';
+export * from './lib/icons';
+
+export * from './lib/core/Alert/Alert';

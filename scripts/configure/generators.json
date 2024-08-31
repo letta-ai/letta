@@ -9,6 +9,11 @@
       "factory": "./src/new-component/generator",
       "schema": "./src/new-component/schema.json",
       "description": "new-component generator"
+    },
+    "generate-icons": {
+      "factory": "./src/generate-icons/generator",
+      "schema": "./src/generate-icons/schema.json",
+      "description": "generate-icons generator"
     }
   }
 }
