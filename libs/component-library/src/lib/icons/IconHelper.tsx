@@ -6,8 +6,8 @@ import type { IconProps } from '@radix-ui/react-icons/dist/types';
 export * from './index';
 
 interface IconWrapperProps {
-  // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
   Icon: React.ForwardRefExoticComponent<
+    // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
     IconProps & React.RefAttributes<SVGSVGElement>
   >;
   name: string;

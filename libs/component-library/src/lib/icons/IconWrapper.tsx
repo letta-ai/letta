@@ -7,6 +7,7 @@ const iconWrapperVariants = cva('inline-flex items-center justify-center', {
   variants: {
     color: {
       primary: 'text-primary',
+      warning: '!text-warning',
       default: 'text-foreground',
     },
   },

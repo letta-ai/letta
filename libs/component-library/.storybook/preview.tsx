@@ -29,8 +29,16 @@ export const parameters: Preview = {
       </div>
     ),
   ],
+
   tags: ['autodocs'],
   parameters: {
+    options: {
+      storySort: {
+        method: '',
+        order: ['Concepts'],
+        locales: '',
+      },
+    },
     docs: {
       page: () => (
         <>

@@ -57,6 +57,7 @@ export const Primary: Story = {
   decorators: [
     (Story) => {
       return (
+        // eslint-disable-next-line react/jsx-pascal-case
         <For_storybook_use_only__PanelContent title="Panel">
           <Story />
         </For_storybook_use_only__PanelContent>

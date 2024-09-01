@@ -8,6 +8,8 @@ const alertVariants = cva(
     variants: {
       variant: {
         default: 'bg-background text-foreground',
+        warning:
+          'bg-warning-highlight border-warning-foreground text-warning-highlight-foreground',
         destructive:
           'border-destructive/50 text-destructive dark:border-destructive [&>svg]:text-destructive',
       },
@@ -17,6 +19,8 @@ const alertVariants = cva(
     },
   }
 );
+
+export type AlertVariants = 'default' | 'destructive' | 'warning';
 
 export type AlertPrimitiveProps = React.HTMLAttributes<HTMLDivElement> &
   VariantProps<typeof alertVariants>;
@@ -39,9 +43,14 @@ const AlertTitle = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <h5
     ref={ref}
-    className={cn('mb-1 font-medium leading-none tracking-tight', className)}
+    className={cn(
+      'py-[5px] font-medium leading-none tracking-tight',
+      className
+    )}
     {...props}
-  />
+  >
+    {props.children}
+  </h5>
 ));
 AlertTitle.displayName = 'AlertTitle';
 

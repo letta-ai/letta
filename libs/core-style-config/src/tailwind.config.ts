@@ -24,8 +24,14 @@ export function buildConfig(appDir: string): Config {
           ring: 'hsl(var(--ring))',
           background: {
             DEFAULT: 'hsl(var(--background))',
-            'grey-darker': 'hsl(var(--background-grey-darker))',
-            grey: 'hsl(var(--background-grey))',
+          },
+          'background-grey': {
+            DEFAULT: 'hsl(var(--background-grey))',
+            foreground: 'hsl(var(--background-grey-foreground))',
+          },
+          'background-greyer': {
+            DEFAULT: 'hsl(var(--background-greyer))',
+            foreground: 'hsl(var(--background-greyer-foreground))',
           },
           foreground: 'hsl(var(--foreground))',
           ['on-transparent']: 'hsl(var(--on-transparent))',
@@ -52,6 +58,14 @@ export function buildConfig(appDir: string): Config {
           accent: {
             DEFAULT: 'hsl(var(--accent))',
             foreground: 'hsl(var(--accent-foreground))',
+          },
+          warning: {
+            DEFAULT: 'hsl(var(--warning))',
+            foreground: 'hsl(var(--warning-foreground))',
+          },
+          'warning-highlight': {
+            DEFAULT: 'hsl(var(--warning-highlight))',
+            foreground: 'hsl(var(--warning-highlight-foreground))',
           },
           popover: {
             DEFAULT: 'hsl(var(--popover))',

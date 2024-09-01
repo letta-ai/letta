@@ -25,7 +25,7 @@ export const Primary: Story = {
       },
     },
     variant: {
-      options: ['default', 'destructive'],
+      options: ['default', 'destructive', 'warning'],
       control: { type: 'radio' },
     },
   },
