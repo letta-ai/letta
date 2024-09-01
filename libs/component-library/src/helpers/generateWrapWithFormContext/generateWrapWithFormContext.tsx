@@ -2,6 +2,7 @@ import type { PropsWithChildren, ElementType } from 'react';
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { FormField, Form } from '../../lib/core/Form/Form';
+import { Alert } from '../../lib/core/Alert/Alert';
 
 type WrapWithFormContextProps = PropsWithChildren<{
   alternativeText?: string;
@@ -13,15 +14,20 @@ function WrapWithFormContextComponent(props: WrapWithFormContextProps) {
 
   return (
     <Form {...form}>
-      <div className="bg-yellow-50 border-yellow-200 p-4 border rounded mb-4">
-        This component requires you to wrap it with a Form component, it wont
-        work by itself. {alternativeText}
-      </div>
-      <FormField
-        control={form.control}
-        name="username"
-        render={() => <span>{props.children}</span>}
-      />
+      <form className={'flex flex-col gap-3'}>
+        <Alert
+          title={`  This component requires you to wrap it with a Form component, it wont
+        work by itself.`}
+          variant="warning"
+        >
+          {alternativeText}
+        </Alert>
+        <FormField
+          control={form.control}
+          name="username"
+          render={() => <span>{props.children}</span>}
+        />
+      </form>
     </Form>
   );
 }

@@ -1,52 +1,26 @@
 import * as React from 'react';
-import {
-  FormItem,
-  FormLabel,
-  FormControl,
-  FormDescription,
-  FormMessage,
-} from '../Form/Form';
-import type { InputPrimitiveProps } from '../../../primitives';
-import { InputContainerPrimitive } from '../../../primitives';
-import { LabelPrimitive } from '../../../primitives';
-import { InputPrimitive } from '../../../primitives';
+import { makeRawInput, makeInput } from '../Form/Form';
+import { cn } from '@letta-web/core-style-config';
+import { BASE_INPUT_HEIGHT } from '../../../constants';
 
-export interface InputProps extends InputPrimitiveProps {
-  label: string;
-  hideLabel?: boolean;
-  description?: string;
-}
+type InputPrimitiveProps = React.InputHTMLAttributes<HTMLInputElement>;
 
-export function Input(props: InputProps) {
-  const { label, hideLabel, description, ...inputProps } = props;
+const InputPrimitive = React.forwardRef<HTMLInputElement, InputPrimitiveProps>(
+  ({ className, type, ...props }, ref) => {
+    return (
+      <input
+        type={type}
+        className={cn(
+          'flex px-3 py-2 w-full rounded-md border border-input bg-transparent text-base transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50',
+          BASE_INPUT_HEIGHT,
+          className
+        )}
+        ref={ref}
+        {...props}
+      />
+    );
+  }
+);
 
-  return (
-    <FormItem>
-      <FormLabel className={hideLabel ? 'sr-only' : ''}>{label}</FormLabel>
-      <FormControl>
-        <InputPrimitive {...inputProps} />
-      </FormControl>
-      {description && <FormDescription>{description}</FormDescription>}
-      <FormMessage />
-    </FormItem>
-  );
-}
-
-export interface RawInputProps extends InputPrimitiveProps {
-  label: string;
-  id: string;
-  hideLabel?: boolean;
-}
-
-export function RawInput(props: RawInputProps) {
-  const { label, hideLabel, ...inputProps } = props;
-
-  return (
-    <InputContainerPrimitive>
-      <LabelPrimitive htmlFor={props.id} className={hideLabel ? 'sr-only' : ''}>
-        {label}
-      </LabelPrimitive>
-      <InputPrimitive {...inputProps} />
-    </InputContainerPrimitive>
-  );
-}
+export const Input = makeInput(InputPrimitive, 'Input');
+export const RawInput = makeRawInput(InputPrimitive, 'RawInput');

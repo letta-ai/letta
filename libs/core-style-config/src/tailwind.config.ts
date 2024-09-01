@@ -15,14 +15,18 @@ export function buildConfig(appDir: string): Config {
     ],
     theme: {
       extend: {
+        transitionProperty: {
+          width: 'width',
+        },
         fontSize: {
-          base: '0.875rem',
+          base: 'var(--font-size-base)',
         },
         colors: {
           border: 'hsl(var(--border))',
           input: 'hsl(var(--input))',
           ring: 'hsl(var(--ring))',
           background: {
+            light: 'hsl(var(--background-light))',
             DEFAULT: 'hsl(var(--background))',
           },
           'background-grey': {
@@ -33,19 +37,27 @@ export function buildConfig(appDir: string): Config {
             DEFAULT: 'hsl(var(--background-greyer))',
             foreground: 'hsl(var(--background-greyer-foreground))',
           },
+          'background-black': {
+            DEFAULT: 'hsl(var(--background-black))',
+            foreground: 'hsl(var(--background-black-foreground))',
+          },
           foreground: 'hsl(var(--foreground))',
           ['on-transparent']: 'hsl(var(--on-transparent))',
           primary: {
             DEFAULT: 'hsl(var(--primary))',
             foreground: 'hsl(var(--primary-foreground))',
+            light: 'hsl(var(--primary-light))',
           },
           secondary: {
             DEFAULT: 'hsl(var(--secondary))',
+            light: 'hsl(var(--secondary-light))',
             foreground: 'hsl(var(--secondary-foreground))',
           },
           tertiary: {
             DEFAULT: 'hsl(var(--tertiary))',
             foreground: 'hsl(var(--tertiary-foreground))',
+            dark: 'hsl(var(--tertiary-dark))',
+            light: 'hsl(var(--tertiary-light))',
           },
           destructive: {
             DEFAULT: 'hsl(var(--destructive))',
@@ -63,9 +75,9 @@ export function buildConfig(appDir: string): Config {
             DEFAULT: 'hsl(var(--warning))',
             foreground: 'hsl(var(--warning-foreground))',
           },
-          'warning-highlight': {
-            DEFAULT: 'hsl(var(--warning-highlight))',
-            foreground: 'hsl(var(--warning-highlight-foreground))',
+          'background-warning': {
+            DEFAULT: 'hsl(var(--background-warning))',
+            foreground: 'hsl(var(--background-warning-foreground))',
           },
           popover: {
             DEFAULT: 'hsl(var(--popover))',

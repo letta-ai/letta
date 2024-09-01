@@ -14,8 +14,32 @@ export const Primary: Story = {
     label: 'Hello',
   },
   argTypes: {
+    fullHeight: {
+      control: {
+        type: 'boolean',
+      },
+    },
+    fullWidth: {
+      control: {
+        type: 'boolean',
+      },
+    },
+    active: {
+      control: {
+        type: 'boolean',
+      },
+    },
+    busy: {
+      control: {
+        type: 'boolean',
+      },
+    },
     variant: {
-      options: ['primary', 'secondary', 'tertiary'],
+      options: ['default', 'inline-panel'],
+      control: { type: 'radio' },
+    },
+    color: {
+      options: ['primary', 'secondary', 'tertiary', 'destructive'],
       control: { type: 'radio' },
     },
   },

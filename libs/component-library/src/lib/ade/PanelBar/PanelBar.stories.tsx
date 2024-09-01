@@ -5,7 +5,7 @@ import { Button } from '../../core/Button/Button';
 
 const meta: Meta<typeof PanelBar> = {
   component: PanelBar,
-  title: 'panels/PanelBar',
+  title: 'ADE/PanelBar',
 };
 
 export default meta;
@@ -35,8 +35,8 @@ export const Primary: Story = {
       options: ['With Buttons', 'No Buttons'],
       mapping: {
         'With Buttons': [
-          <Button variant="secondary" label="Next" />,
-          <Button variant="secondary" label="Next" />,
+          <Button color="secondary" label="Next" />,
+          <Button color="secondary" label="Next" />,
         ],
         'No Buttons': [],
       },

@@ -5,7 +5,7 @@ import React from 'react';
 
 const meta: Meta<typeof Panel> = {
   component: Panel,
-  title: 'Panels/Panel',
+  title: 'ADE/Panel',
 };
 export default meta;
 type Story = StoryObj<typeof Panel>;

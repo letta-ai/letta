@@ -18,7 +18,7 @@
       "description": "The category of the component",
       "enum": [
         "core",
-        "panels",
+        "ade",
         "framing",
         "marketing"
       ],

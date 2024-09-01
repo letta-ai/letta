@@ -1,6 +1,8 @@
 import type { PropsWithChildren } from 'react';
 import { type ChangeEvent, useCallback } from 'react';
 import * as React from 'react';
+import { ChevronLeftIcon } from '../../icons';
+import { Button } from '../../core/Button/Button';
 
 interface PanelSearchProps {
   placeholder: string;
@@ -44,12 +46,13 @@ export function PanelBar(props: PanelBarProps) {
   return (
     <div className="flex items-center border-b justify-between w-full flex-row h-[42px] gap-3">
       {onReturn && (
-        <button
+        <Button
+          label="Return"
+          color="tertiary"
+          preIcon={<ChevronLeftIcon />}
           onClick={onReturn}
-          className="h-full px-3 text-base bg-background-grey border-r"
-        >
-          Return
-        </button>
+          variant="inline-panel"
+        ></Button>
       )}
       <div className="w-full flex-row flex items-center gap-2">
         {props.onSearch && (

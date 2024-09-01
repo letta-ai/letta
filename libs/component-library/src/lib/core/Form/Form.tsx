@@ -1,18 +1,34 @@
 'use client';
 
 import * as React from 'react';
-import type * as RadixLabelPrimitive from '@radix-ui/react-label';
+import * as RadixLabelPrimitive from '@radix-ui/react-label';
 import { Slot } from '@radix-ui/react-slot';
 import type { ControllerProps, FieldPath, FieldValues } from 'react-hook-form';
 import { Controller, FormProvider, useFormContext } from 'react-hook-form';
 
-import { LabelPrimitive } from '../../../primitives';
 import { cn } from '@letta-web/core-style-config';
-import { InputContainerPrimitive } from '../../../primitives';
+import { cva, type VariantProps } from 'class-variance-authority';
 
 export { useForm } from 'react-hook-form';
 
 const Form = FormProvider;
+
+const labelVariants = cva(
+  'text-base font-semibold leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70'
+);
+
+const LabelPrimitive = React.forwardRef<
+  React.ElementRef<typeof RadixLabelPrimitive.Root>,
+  React.ComponentPropsWithoutRef<typeof RadixLabelPrimitive.Root> &
+    VariantProps<typeof labelVariants>
+>(({ className, ...props }, ref) => (
+  <RadixLabelPrimitive.Root
+    ref={ref}
+    className={cn(labelVariants(), className)}
+    {...props}
+  />
+));
+LabelPrimitive.displayName = RadixLabelPrimitive.Root.displayName;
 
 interface FormFieldContextValue<
   TFieldValues extends FieldValues = FieldValues,
@@ -68,6 +84,19 @@ const FormItemContext = React.createContext<FormItemContextValue>(
   {} as FormItemContextValue
 );
 
+const InputWrapper = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
+>(({ className, ...props }, ref) => {
+  return (
+    <div
+      ref={ref}
+      className={cn('flex flex-col gap-[6px]', className)}
+      {...props}
+    />
+  );
+});
+
 const FormItem = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
@@ -76,14 +105,90 @@ const FormItem = React.forwardRef<
 
   return (
     <FormItemContext.Provider value={{ id }}>
-      <InputContainerPrimitive
-        ref={ref}
-        className={cn('flex flex-col gap-[6px]', className)}
-        {...props}
-      />
+      <InputWrapper ref={ref} className={className} {...props} />
     </FormItemContext.Provider>
   );
 });
+
+export function RawFormItem(props: React.HTMLAttributes<HTMLDivElement>) {
+  return <InputWrapper {...props} />;
+}
+
+export interface InputContainerProps {
+  label: string;
+  hideLabel?: boolean;
+  description?: string;
+  children: React.ReactNode;
+}
+
+export function InputContainer(props: InputContainerProps) {
+  const { label, hideLabel, description, children } = props;
+
+  return (
+    <FormItem>
+      <FormLabel className={hideLabel ? 'sr-only' : ''}>{label}</FormLabel>
+      <FormControl>{children}</FormControl>
+      {description && <FormDescription>{description}</FormDescription>}
+      <FormMessage />
+    </FormItem>
+  );
+}
+
+export interface RawInputContainerProps extends InputContainerProps {
+  id: string;
+}
+
+export function RawInputContainer(props: RawInputContainerProps) {
+  return (
+    <InputWrapper>
+      <LabelPrimitive
+        htmlFor={props.id}
+        className={props.hideLabel ? 'sr-only' : ''}
+      >
+        {props.label}
+      </LabelPrimitive>
+      {props.children}
+    </InputWrapper>
+  );
+}
+
+type MakeInputProps<T> = InputContainerProps & T;
+type MakeRawInputProps<T> = RawInputContainerProps & T;
+
+export function makeInput<T>(
+  Input: React.ComponentType<T>,
+  componentName: string
+) {
+  function InputWrapper(props: MakeInputProps<T>) {
+    return (
+      <InputContainer {...props}>
+        <Input {...props} />
+      </InputContainer>
+    );
+  }
+
+  InputWrapper.displayName = componentName;
+
+  return InputWrapper;
+}
+
+export function makeRawInput<T>(
+  Input: React.ComponentType<T>,
+  componentName: string
+) {
+  function RawInputWrapper(props: MakeRawInputProps<T>) {
+    return (
+      <RawInputContainer {...props}>
+        <Input {...props} />
+      </RawInputContainer>
+    );
+  }
+
+  RawInputWrapper.displayName = componentName;
+
+  return RawInputWrapper;
+}
+
 FormItem.displayName = 'FormItem';
 
 const FormLabel = React.forwardRef<
@@ -124,21 +229,30 @@ const FormControl = React.forwardRef<
 });
 FormControl.displayName = 'FormControl';
 
-const FormDescription = React.forwardRef<
-  HTMLParagraphElement,
-  React.HTMLAttributes<HTMLParagraphElement>
->(({ className, ...props }, ref) => {
+interface RawFormDescriptionProps {
+  children: React.ReactNode;
+  id: string;
+}
+
+function RawFormDescription(props: RawFormDescriptionProps) {
+  const { children, id } = props;
+
+  return (
+    <p id={id} className="text-[0.8rem] text-muted-foreground">
+      {children}
+    </p>
+  );
+}
+
+function FormDescription(props: Omit<RawFormDescriptionProps, 'id'>) {
+  const { children } = props;
   const { formDescriptionId } = useFormField();
 
   return (
-    <p
-      ref={ref}
-      id={formDescriptionId}
-      className={cn('text-[0.8rem] text-muted-foreground', className)}
-      {...props}
-    />
+    <RawFormDescription id={formDescriptionId}>{children}</RawFormDescription>
   );
-});
+}
+
 FormDescription.displayName = 'FormDescription';
 
 const FormMessage = React.forwardRef<
@@ -165,13 +279,4 @@ const FormMessage = React.forwardRef<
 });
 FormMessage.displayName = 'FormMessage';
 
-export {
-  useFormField,
-  Form,
-  FormItem,
-  FormLabel,
-  FormControl,
-  FormDescription,
-  FormMessage,
-  FormField,
-};
+export { useFormField, Form, FormControl, FormField };

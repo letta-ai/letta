@@ -8,36 +8,48 @@
 
 @layer base {
   :root {
+    --font-size-base: 0.875rem;
+
     --background: 0 0% 100%;
+    --background-light: 0 0% 98%;
     --foreground: 240 10% 3.9%;
 
     --on-transparent: 0, 0%, 0%;
+
     --card: 0 0% 100%;
     --card-foreground: 240 10% 3.9%;
+
     --popover: 0 0% 100%;
     --popover-foreground: 240 10% 3.9%;
+
     --primary: 205.2,100%,50%;
     --primary-foreground: 0 0% 98%;
-    --secondary: 0 0% 20%;
+    --primary-light: 205, 100%, 60%;
+
+    --secondary: 0 0% 0%;
     --secondary-foreground: 0 0% 100%;
+    --secondary-light: 0, 0%, 10%;
+
     --tertiary: 0 0% 100%;
     --tertiary-foreground:  240 10% 3.9%;
+    --tertiary-light: 210, 40%, 98%;
+    --tertiary-dark: 210, 40%, 96%;
+
     --muted: 218, 11%, 65%;
     --muted-foreground: 240 3.8% 46.1%;
+
     --accent: 240 4.8% 95.9%;
     --accent-foreground: 240 5.9% 10%;
+
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
-    --border: 214, 32%, 91%;
-    --input: 240 5.9% 90%;
-    --ring: 205.2,100%,50%;
-    --radius: 0.375rem;
 
     --warning: 40, 100%, 50%;
     --warning-foreground:  40, 100%, 85%;
 
-    --warning-highlight: 39, 100%, 94%;
-    --warning-highlight-foreground: 39, 100%, 10%;
+    --background-warning: 39, 100%, 94%;
+    --background-warning-foreground: 39, 100%, 10%;
+
 
     --background-grey-foreground: 240 10% 3.9%;
     --background-grey: 0, 0%, 99%;
@@ -45,6 +57,13 @@
     --background-greyer: 210, 40%, 96%;
     --background-greyer-foreground: 240 10% 3.9%;
 
+    --background-black: 0, 0%, 0%;
+    --background-black-foreground: 240 10% 3.9%;
+
+    --border: 214, 32%, 91%;
+    --input: 240 5.9% 90%;
+    --ring: 205.2,100%,50%;
+    --radius: 0.375rem;
   }
 
   .dark {
@@ -70,6 +89,7 @@
     --accent-foreground: 0 0% 98%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
+
     --border: 240 3.7% 15.9%;
     --input: 240 3.7% 15.9%;
     --ring: 240 4.9% 83.9%;

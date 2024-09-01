@@ -10,13 +10,13 @@ export * from './lib/marketing/Logo/Logo';
 
 export * from './lib/core/Form/Form';
 
-export * from './primitives/LabelPrimitive/LabelPrimitive';
-
 export * from './lib/core/Input/Input';
 
-export * from './lib/panels/Panel/Panel';
+export * from './lib/ade/Panel/Panel';
 
-export * from './lib/panels/PanelBar/PanelBar';
+export * from './lib/ade/PanelBar/PanelBar';
 export * from './lib/icons';
 
 export * from './lib/core/Alert/Alert';
+
+export * from './lib/core/Select/Select';

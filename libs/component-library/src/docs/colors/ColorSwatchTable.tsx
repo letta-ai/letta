@@ -3,7 +3,9 @@ import React from 'react';
 interface ColorSwatchesProps {
   colors: {
     default: string;
-    foreground: string;
+    foreground?: string;
+    dark?: string;
+    light?: string;
   };
   notes?: string;
   name: string;
@@ -24,11 +26,18 @@ function ColorSwatch({ color }: ColorSwatchProps) {
   );
 }
 
+const baseColors: ColorSwatchesProps['colors'] = {
+  default: '',
+  foreground: '',
+  dark: '',
+  light: '',
+};
+
 function ColorSwatches({ colors, name, notes }: ColorSwatchesProps) {
   return (
     <tr className="">
       <td className="text-sm! font-semibold">{name}</td>
-      {Object.values(colors).map((color) => (
+      {Object.values({ ...baseColors, ...colors }).map((color) => (
         <td className="text-center">
           {color ? <ColorSwatch key={color} color={color} /> : 'N/A'}
         </td>
@@ -59,6 +68,8 @@ export function ColorSwatchTable() {
             <th></th>
             <th>Default</th>
             <th>Foreground</th>
+            <th>Dark</th>
+            <th>Light</th>
             <th>Notes</th>
           </tr>
         </thead>
@@ -67,6 +78,7 @@ export function ColorSwatchTable() {
             colors={{
               default: 'bg-primary',
               foreground: 'bg-primary-foreground',
+              light: 'bg-primary-light',
             }}
             name="Primary"
           />
@@ -74,6 +86,7 @@ export function ColorSwatchTable() {
             colors={{
               default: 'bg-secondary',
               foreground: 'bg-secondary-foreground',
+              light: 'bg-secondary-light',
             }}
             name="Secondary"
           />
@@ -81,6 +94,8 @@ export function ColorSwatchTable() {
             colors={{
               default: 'bg-tertiary',
               foreground: 'bg-tertiary-foreground',
+              dark: 'bg-tertiary-dark',
+              light: 'bg-tertiary-light',
             }}
             name="Tertiary"
           />
@@ -88,6 +103,7 @@ export function ColorSwatchTable() {
             colors={{
               default: 'bg-background',
               foreground: 'bg-foreground',
+              light: 'bg-background-light',
             }}
             name="Background"
             notes="Used for the background in the app"
@@ -110,6 +126,19 @@ export function ColorSwatchTable() {
           />
           <ColorSwatches
             colors={{
+              default: 'bg-border',
+            }}
+            name="Border"
+          />
+          <ColorSwatches
+            colors={{
+              default: 'bg-ring',
+            }}
+            name="Ring"
+            notes="Used for focus states"
+          />
+          <ColorSwatches
+            colors={{
               default: 'bg-muted',
               foreground: 'bg-muted-foreground',
             }}
@@ -125,10 +154,17 @@ export function ColorSwatchTable() {
           />
           <ColorSwatches
             colors={{
-              default: 'bg-warning-highlight',
-              foreground: 'bg-warning-highlight-foreground',
+              default: 'bg-background-warning',
+              foreground: 'bg-background-warning-foreground',
             }}
-            name="Warning Highlight"
+            name="Background Warning"
+          />
+          <ColorSwatches
+            colors={{
+              default: 'bg-destructive',
+              foreground: 'bg-destructive-foreground',
+            }}
+            name="Destructive"
           />
         </tbody>
       </table>

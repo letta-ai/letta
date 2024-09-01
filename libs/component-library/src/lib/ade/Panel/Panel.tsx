@@ -128,7 +128,7 @@ function PanelHeader(props: PanelHeaderProps) {
   const { title } = props;
 
   return (
-    <div className="w-full flex flex-row bg-background-grey-darker items-center border-b space-between px-3 h-[42px]">
+    <div className="w-full flex flex-row bg-background-greyer items-center border-b space-between px-3 h-[42px]">
       <Typography bold>{title}</Typography>
     </div>
   );
@@ -227,7 +227,7 @@ export function PanelRenderArea() {
   const { allPanels } = usePanelManagerContext();
 
   return (
-    <div className="bg-gray-50 p-5 w-full">
+    <div className="p-5 w-full">
       <div className="flex flex-row gap-3 h-full w-full flex-wrap">
         {Array.from(allPanels).map((panelId) => (
           <div className="contents" id={`panel-${panelId}`} key={panelId}></div>

@@ -6,6 +6,42 @@ import { cn } from '@letta-web/core-style-config';
 
 const frameVariants = cva('', {
   variants: {
+    fullWidth: {
+      true: 'w-full',
+    },
+    fullHeight: {
+      true: 'h-full',
+    },
+    color: {
+      background: 'bg-background',
+      'background-grey': 'bg-background-grey',
+      'background-greyer': 'bg-background-greyer',
+      'background-black': 'bg-background-black',
+    },
+    borderColor: {
+      true: 'border-border',
+    },
+    border: {
+      true: 'border',
+    },
+    borderY: {
+      true: 'border-t border-b',
+    },
+    borderX: {
+      true: 'border-l border-r',
+    },
+    borderRight: {
+      true: 'border-r',
+    },
+    borderLeft: {
+      true: 'border-l',
+    },
+    borderTop: {
+      true: 'border-t',
+    },
+    borderBottom: {
+      true: 'border-b',
+    },
     padding: {
       xxsmall: 'p-2.5',
       xsmall: 'p-3',
@@ -50,9 +86,6 @@ const frameVariants = cva('', {
     },
     rounded: {
       true: 'rounded',
-    },
-    border: {
-      true: 'border',
     },
   },
   defaultVariants: {},
