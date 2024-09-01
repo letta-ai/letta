@@ -39,85 +39,99 @@ function ColorSwatches({ colors, name, notes }: ColorSwatchesProps) {
 }
 
 export function ColorSwatchTable() {
+  const [darkMode, setDarkMode] = React.useState(false);
+
   return (
-    <table className="border-none">
-      <thead>
-        <tr>
-          <th></th>
-          <th>Default</th>
-          <th>Foreground</th>
-          <th>Notes</th>
-        </tr>
-      </thead>
-      <tbody>
-        <ColorSwatches
-          colors={{
-            default: 'bg-primary',
-            foreground: 'bg-primary-foreground',
-          }}
-          name="Primary"
-        />
-        <ColorSwatches
-          colors={{
-            default: 'bg-secondary',
-            foreground: 'bg-secondary-foreground',
-          }}
-          name="Secondary"
-        />
-        <ColorSwatches
-          colors={{
-            default: 'bg-tertiary',
-            foreground: 'bg-tertiary-foreground',
-          }}
-          name="Tertiary"
-        />
-        <ColorSwatches
-          colors={{
-            default: 'bg-background',
-            foreground: 'bg-foreground',
-          }}
-          name="Background"
-          notes="Used for the background in the app"
-        />
-        <ColorSwatches
-          colors={{
-            default: 'bg-background-grey',
-            foreground: 'bg-background-grey-foreground',
-          }}
-          name="Background Grey"
-          notes="Used for grey backgrounds in the app"
-        />
-        <ColorSwatches
-          colors={{
-            default: 'bg-background-greyer',
-            foreground: 'bg-background-greyer-foreground',
-          }}
-          name="Background Greyer"
-          notes="Used for even more grey backgrounds in the app"
-        />
-        <ColorSwatches
-          colors={{
-            default: 'bg-muted',
-            foreground: 'bg-muted-foreground',
-          }}
-          name="Muted"
-          notes="Used for disabled states"
-        />
-        <ColorSwatches
-          colors={{
-            default: 'bg-warning',
-            foreground: 'bg-warning-foreground',
-          }}
-          name="Warning"
-        />
-        <ColorSwatches
-          colors={{
-            default: 'bg-warning-highlight',
-            foreground: 'bg-warning-highlight-foreground',
-          }}
-          name="Warning Highlight"
-        />
-      </tbody>
-    </table>
+    <div>
+      <div>
+        <label className="text-sm! font-medium flex gap-2 border rounded-sm py-2 px-3">
+          <input
+            type="checkbox"
+            checked={darkMode}
+            onChange={() => setDarkMode(!darkMode)}
+          />
+          Show dark mode colors
+        </label>
+      </div>
+      <table className={darkMode ? 'dark' : ''}>
+        <thead>
+          <tr>
+            <th></th>
+            <th>Default</th>
+            <th>Foreground</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          <ColorSwatches
+            colors={{
+              default: 'bg-primary',
+              foreground: 'bg-primary-foreground',
+            }}
+            name="Primary"
+          />
+          <ColorSwatches
+            colors={{
+              default: 'bg-secondary',
+              foreground: 'bg-secondary-foreground',
+            }}
+            name="Secondary"
+          />
+          <ColorSwatches
+            colors={{
+              default: 'bg-tertiary',
+              foreground: 'bg-tertiary-foreground',
+            }}
+            name="Tertiary"
+          />
+          <ColorSwatches
+            colors={{
+              default: 'bg-background',
+              foreground: 'bg-foreground',
+            }}
+            name="Background"
+            notes="Used for the background in the app"
+          />
+          <ColorSwatches
+            colors={{
+              default: 'bg-background-grey',
+              foreground: 'bg-background-grey-foreground',
+            }}
+            name="Background Grey"
+            notes="Used for grey backgrounds in the app"
+          />
+          <ColorSwatches
+            colors={{
+              default: 'bg-background-greyer',
+              foreground: 'bg-background-greyer-foreground',
+            }}
+            name="Background Greyer"
+            notes="Used for even more grey backgrounds in the app"
+          />
+          <ColorSwatches
+            colors={{
+              default: 'bg-muted',
+              foreground: 'bg-muted-foreground',
+            }}
+            name="Muted"
+            notes="Used for disabled states"
+          />
+          <ColorSwatches
+            colors={{
+              default: 'bg-warning',
+              foreground: 'bg-warning-foreground',
+            }}
+            name="Warning"
+          />
+          <ColorSwatches
+            colors={{
+              default: 'bg-warning-highlight',
+              foreground: 'bg-warning-highlight-foreground',
+            }}
+            name="Warning Highlight"
+          />
+        </tbody>
+      </table>
+    </div>
   );
 }
