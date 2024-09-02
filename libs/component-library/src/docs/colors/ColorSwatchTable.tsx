@@ -3,9 +3,9 @@ import React from 'react';
 interface ColorSwatchesProps {
   colors: {
     default: string;
-    foreground?: string;
-    dark?: string;
-    light?: string;
+    content?: string;
+    active?: string;
+    hover?: string;
   };
   notes?: string;
   name: string;
@@ -28,9 +28,9 @@ function ColorSwatch({ color }: ColorSwatchProps) {
 
 const baseColors: ColorSwatchesProps['colors'] = {
   default: '',
-  foreground: '',
-  dark: '',
-  light: '',
+  content: '',
+  active: '',
+  hover: '',
 };
 
 function ColorSwatches({ colors, name, notes }: ColorSwatchesProps) {
@@ -67,9 +67,9 @@ export function ColorSwatchTable() {
           <tr>
             <th></th>
             <th>Default</th>
-            <th>Foreground</th>
-            <th>Dark</th>
-            <th>Light</th>
+            <th>Content</th>
+            <th>Active</th>
+            <th>Hover</th>
             <th>Notes</th>
           </tr>
         </thead>
@@ -77,33 +77,33 @@ export function ColorSwatchTable() {
           <ColorSwatches
             colors={{
               default: 'bg-primary',
-              foreground: 'bg-primary-foreground',
-              light: 'bg-primary-light',
+              content: 'bg-primary-content',
+              hover: 'bg-primary-hover',
             }}
             name="Primary"
           />
           <ColorSwatches
             colors={{
               default: 'bg-secondary',
-              foreground: 'bg-secondary-foreground',
-              light: 'bg-secondary-light',
+              content: 'bg-secondary-content',
+              hover: 'bg-secondary-hover',
             }}
             name="Secondary"
           />
           <ColorSwatches
             colors={{
               default: 'bg-tertiary',
-              foreground: 'bg-tertiary-foreground',
-              dark: 'bg-tertiary-dark',
-              light: 'bg-tertiary-light',
+              content: 'bg-tertiary-content',
+              active: 'bg-tertiary-active',
+              hover: 'bg-tertiary-hover',
             }}
             name="Tertiary"
           />
           <ColorSwatches
             colors={{
               default: 'bg-background',
-              foreground: 'bg-foreground',
-              light: 'bg-background-light',
+              content: 'bg-content',
+              hover: 'bg-background-hover',
             }}
             name="Background"
             notes="Used for the background in the app"
@@ -111,7 +111,7 @@ export function ColorSwatchTable() {
           <ColorSwatches
             colors={{
               default: 'bg-background-grey',
-              foreground: 'bg-background-grey-foreground',
+              content: 'bg-background-grey-content',
             }}
             name="Background Grey"
             notes="Used for grey backgrounds in the app"
@@ -119,7 +119,7 @@ export function ColorSwatchTable() {
           <ColorSwatches
             colors={{
               default: 'bg-background-greyer',
-              foreground: 'bg-background-greyer-foreground',
+              content: 'bg-background-greyer-content',
             }}
             name="Background Greyer"
             notes="Used for even more grey backgrounds in the app"
@@ -140,7 +140,7 @@ export function ColorSwatchTable() {
           <ColorSwatches
             colors={{
               default: 'bg-muted',
-              foreground: 'bg-muted-foreground',
+              content: 'bg-muted-content',
             }}
             name="Muted"
             notes="Used for disabled states"
@@ -148,21 +148,21 @@ export function ColorSwatchTable() {
           <ColorSwatches
             colors={{
               default: 'bg-warning',
-              foreground: 'bg-warning-foreground',
+              content: 'bg-warning-content',
             }}
             name="Warning"
           />
           <ColorSwatches
             colors={{
               default: 'bg-background-warning',
-              foreground: 'bg-background-warning-foreground',
+              content: 'bg-background-warning-content',
             }}
             name="Background Warning"
           />
           <ColorSwatches
             colors={{
               default: 'bg-destructive',
-              foreground: 'bg-destructive-foreground',
+              content: 'bg-destructive-content',
             }}
             name="Destructive"
           />

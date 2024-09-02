@@ -54,18 +54,18 @@ function SelectPrimitive(props: SelectProps) {
             'border border-solid h-[auto] px-2 py-1 min-h-[36px]! text-base rounded',
             BASE_INPUT_HEIGHT
           ),
-        placeholder: () => cn('text-muted-foreground'),
+        placeholder: () => cn('text-muted-content'),
         menu: () => cn('mt-1 bg-background rounded border'),
-        option: () => cn('px-3 py-2  hover:bg-background-light'),
+        option: () => cn('px-3 py-2  hover:bg-background-hover'),
         noOptionsMessage: () => cn('py-3 px-3'),
         valueContainer: () => cn('flex items-center gap-2'),
         groupHeading: () =>
           cn(
-            'border-b px-3 mt-3 pb-2 text-sm font-medium text-tertiary-foreground'
+            'border-b px-3 mt-3 pb-2 text-sm font-medium text-tertiary-content'
           ),
         multiValue: () =>
           cn(
-            'bg-tertiary-dark h-[21px] gap-2 px-1 text-tertiary-foreground rounded-sm px-2'
+            'bg-tertiary-dark h-[21px] gap-2 px-1 text-tertiary-content rounded-sm px-2'
           ),
       }}
       {...props}

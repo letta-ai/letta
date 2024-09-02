@@ -10,7 +10,7 @@ const alertVariants = cva(
     variants: {
       variant: {
         warning:
-          'bg-background-warning border-warning-foreground text-background-warning-foreground',
+          'bg-background-warning border-warning-content text-background-warning-content',
       },
     },
     defaultVariants: {

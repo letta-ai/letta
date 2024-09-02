@@ -3,7 +3,7 @@ import React from 'react';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@letta-web/core-style-config';
 
-const typographyVariants = cva('text-foreground', {
+const typographyVariants = cva('text-content', {
   variants: {
     variant: {
       heading1: 'text-xl font-medium',

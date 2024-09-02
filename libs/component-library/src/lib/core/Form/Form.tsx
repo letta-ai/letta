@@ -238,7 +238,7 @@ function RawFormDescription(props: RawFormDescriptionProps) {
   const { children, id } = props;
 
   return (
-    <p id={id} className="text-[0.8rem] text-muted-foreground">
+    <p id={id} className="text-[0.8rem] text-muted-content">
       {children}
     </p>
   );
