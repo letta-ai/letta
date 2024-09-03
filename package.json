@@ -21,7 +21,8 @@
     "database:studio": "nx run database:studio",
     "cl": "npm run component-libray",
     "cl:new": "npm run component-libray:new",
-    "cl:generate-icons": "nx g @letta-web/configure:generate-icons"
+    "cl:generate-icons": "nx g @letta-web/configure:generate-icons",
+    "agents-api:generate": "nx run letta-agents-api:generate"
   },
   "private": true,
   "dependencies": {
@@ -36,6 +37,7 @@
     "@storybook/addon-docs": "^8.2.9",
     "@storybook/addon-themes": "^8.2.9",
     "@t3-oss/env-nextjs": "^0.11.1",
+    "@tanstack/react-query": "^5.53.3",
     "@tanstack/react-table": "^8.20.5",
     "axios": "^1.7.5",
     "class-variance-authority": "^0.7.0",
@@ -59,6 +61,7 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@7nohe/openapi-react-query-codegen": "^1.6.0",
     "@babel/core": "^7.14.5",
     "@babel/preset-react": "^7.14.5",
     "@neondatabase/serverless": "^0.9.4",

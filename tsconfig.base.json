@@ -26,6 +26,7 @@
       "@letta-web/environmental-variables": [
         "libs/environmental-variables/src/index.ts"
       ],
+      "@letta-web/letta-agents-api": ["libs/letta-agents-api/src/index.ts"],
       "@letta-web/redis": ["libs/redis/src/index.ts"]
     },
     "jsx": "react"

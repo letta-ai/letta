@@ -1,0 +1,7039 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "MemGPT API",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/api/auth": {
+      "post": {
+        "tags": ["auth"],
+        "summary": "Authenticate User",
+        "description": "Authenticates the user and sends response with User related data.\n\nCurrently, this is a placeholder that simply returns a UUID placeholder",
+        "operationId": "authenticate_user_api_auth_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuthRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/users": {
+      "get": {
+        "tags": ["admin"],
+        "summary": "Get All Users",
+        "description": "Get a list of all users in the database",
+        "operationId": "get_all_users_admin_users_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": 50,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/User"
+                  },
+                  "title": "Response Get All Users Admin Users Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["admin"],
+        "summary": "Create User",
+        "description": "Create a new user in the database",
+        "operationId": "create_user_admin_users_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["admin"],
+        "summary": "Delete User",
+        "operationId": "delete_user_admin_users_delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "The user_id key to be deleted.",
+              "title": "User Id"
+            },
+            "description": "The user_id key to be deleted."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/users/keys": {
+      "post": {
+        "tags": ["admin"],
+        "summary": "Create New Api Key",
+        "description": "Create a new API key for a user",
+        "operationId": "create_new_api_key_admin_users_keys_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/APIKeyCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIKey"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": ["admin"],
+        "summary": "Get Api Keys",
+        "description": "Get a list of all API keys for a user",
+        "operationId": "get_api_keys_admin_users_keys_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "The unique identifier of the user.",
+              "title": "User Id"
+            },
+            "description": "The unique identifier of the user."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/APIKey"
+                  },
+                  "title": "Response Get Api Keys Admin Users Keys Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["admin"],
+        "summary": "Delete Api Key",
+        "operationId": "delete_api_key_admin_users_keys_delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "api_key",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "The API key to be deleted.",
+              "title": "Api Key"
+            },
+            "description": "The API key to be deleted."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIKey"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/tools/{tool_name}": {
+      "delete": {
+        "tags": ["tools"],
+        "summary": "Delete Tool",
+        "description": "Delete a tool by name",
+        "operationId": "delete_tool_admin_tools__tool_name__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "tool_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Tool Name"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": ["tools"],
+        "summary": "Get Tool",
+        "description": "Get a tool by name",
+        "operationId": "get_tool_admin_tools__tool_name__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "tool_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Tool Name"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Tool-Output"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/tools": {
+      "get": {
+        "tags": ["tools"],
+        "summary": "List All Tools",
+        "description": "Get a list of all tools available to agents created by a user",
+        "operationId": "list_all_tools_admin_tools_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListToolsResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      },
+      "post": {
+        "tags": ["tools"],
+        "summary": "Create Tool",
+        "description": "Create a new tool",
+        "operationId": "create_tool_admin_tools_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateToolRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Tool-Output"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/admin/agents": {
+      "get": {
+        "tags": ["agents"],
+        "summary": "Get All Agents",
+        "description": "Get a list of all agents in the database",
+        "operationId": "get_all_agents_api_admin_agents_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/AgentState"
+                  },
+                  "type": "array",
+                  "title": "Response Get All Agents Api Admin Agents Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/agents": {
+      "get": {
+        "tags": ["agents"],
+        "summary": "List Agents",
+        "description": "List all agents associated with a given user.\n\nThis endpoint retrieves a list of all agents and their configurations associated with the specified user ID.",
+        "operationId": "list_agents_api_agents_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/AgentState"
+                  },
+                  "type": "array",
+                  "title": "Response List Agents Api Agents Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      },
+      "post": {
+        "tags": ["agents"],
+        "summary": "Create Agent",
+        "description": "Create a new agent with the specified configuration.",
+        "operationId": "create_agent_api_agents_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAgent"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentState"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/agents/{agent_id}": {
+      "post": {
+        "tags": ["agents"],
+        "summary": "Update Agent",
+        "description": "Update an exsiting agent",
+        "operationId": "update_agent_api_agents__agent_id__post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Agent Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateAgentState"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentState"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": ["agents"],
+        "summary": "Get Agent State",
+        "description": "Get the state of the agent.",
+        "operationId": "get_agent_state_api_agents__agent_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Agent Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentState"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["agents"],
+        "summary": "Delete Agent",
+        "description": "Delete an agent.",
+        "operationId": "delete_agent_api_agents__agent_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Agent Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agents/{agent_id}/sources": {
+      "get": {
+        "tags": ["agents"],
+        "summary": "Get Agent Sources",
+        "description": "Get the sources associated with an agent.",
+        "operationId": "get_agent_sources_api_agents__agent_id__sources_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Agent Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Source"
+                  },
+                  "title": "Response Get Agent Sources Api Agents  Agent Id  Sources Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agents/{agent_id}/memory/messages": {
+      "get": {
+        "tags": ["agents"],
+        "summary": "Get Agent In Context Messages",
+        "description": "Retrieve the messages in the context of a specific agent.",
+        "operationId": "get_agent_in_context_messages_api_agents__agent_id__memory_messages_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Agent Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/memgpt__schemas__message__Message"
+                  },
+                  "title": "Response Get Agent In Context Messages Api Agents  Agent Id  Memory Messages Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agents/{agent_id}/memory": {
+      "get": {
+        "tags": ["agents"],
+        "summary": "Get Agent Memory",
+        "description": "Retrieve the memory state of a specific agent.\n\nThis endpoint fetches the current memory state of the agent identified by the user ID and agent ID.",
+        "operationId": "get_agent_memory_api_agents__agent_id__memory_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Agent Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Memory"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["agents"],
+        "summary": "Update Agent Memory",
+        "description": "Update the core memory of a specific agent.\n\nThis endpoint accepts new memory contents (human and persona) and updates the core memory of the agent identified by the user ID and agent ID.",
+        "operationId": "update_agent_memory_api_agents__agent_id__memory_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Agent Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "title": "Request"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Memory"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agents/{agent_id}/memory/recall": {
+      "get": {
+        "tags": ["agents"],
+        "summary": "Get Agent Recall Memory Summary",
+        "description": "Retrieve the summary of the recall memory of a specific agent.",
+        "operationId": "get_agent_recall_memory_summary_api_agents__agent_id__memory_recall_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Agent Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecallMemorySummary"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agents/{agent_id}/memory/archival": {
+      "get": {
+        "tags": ["agents"],
+        "summary": "Get Agent Archival Memory Summary",
+        "description": "Retrieve the summary of the archival memory of a specific agent.",
+        "operationId": "get_agent_archival_memory_summary_api_agents__agent_id__memory_archival_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Agent Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ArchivalMemorySummary"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agents/{agent_id}/archival": {
+      "get": {
+        "tags": ["agents"],
+        "summary": "Get Agent Archival Memory",
+        "description": "Retrieve the memories in an agent's archival memory store (paginated query).",
+        "operationId": "get_agent_archival_memory_api_agents__agent_id__archival_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Agent Id"
+            }
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Unique ID of the memory to start the query range at.",
+              "title": "After"
+            },
+            "description": "Unique ID of the memory to start the query range at."
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Unique ID of the memory to end the query range at.",
+              "title": "Before"
+            },
+            "description": "Unique ID of the memory to end the query range at."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "How many results to include in the response.",
+              "title": "Limit"
+            },
+            "description": "How many results to include in the response."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Passage"
+                  },
+                  "title": "Response Get Agent Archival Memory Api Agents  Agent Id  Archival Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["agents"],
+        "summary": "Insert Agent Archival Memory",
+        "description": "Insert a memory into an agent's archival memory store.",
+        "operationId": "insert_agent_archival_memory_api_agents__agent_id__archival_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Agent Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateArchivalMemory"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Passage"
+                  },
+                  "title": "Response Insert Agent Archival Memory Api Agents  Agent Id  Archival Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agents/{agent_id}/archival/{memory_id}": {
+      "delete": {
+        "tags": ["agents"],
+        "summary": "Delete Agent Archival Memory",
+        "description": "Delete a memory from an agent's archival memory store.",
+        "operationId": "delete_agent_archival_memory_api_agents__agent_id__archival__memory_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Agent Id"
+            }
+          },
+          {
+            "name": "memory_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Memory Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agents/{agent_id}/messages/context/": {
+      "get": {
+        "tags": ["agents"],
+        "summary": "Get Agent Messages In Context",
+        "description": "Retrieve the in-context messages of a specific agent. Paginated, provide start and count to iterate.",
+        "operationId": "get_agent_messages_in_context_api_agents__agent_id__messages_context__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Agent Id"
+            }
+          },
+          {
+            "name": "start",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "Message index to start on (reverse chronological).",
+              "title": "Start"
+            },
+            "description": "Message index to start on (reverse chronological)."
+          },
+          {
+            "name": "count",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "How many messages to retrieve.",
+              "title": "Count"
+            },
+            "description": "How many messages to retrieve."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/memgpt__schemas__message__Message"
+                  },
+                  "title": "Response Get Agent Messages In Context Api Agents  Agent Id  Messages Context  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agents/{agent_id}/messages": {
+      "get": {
+        "tags": ["agents"],
+        "summary": "Get Agent Messages",
+        "description": "Retrieve message history for an agent.",
+        "operationId": "get_agent_messages_api_agents__agent_id__messages_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Agent Id"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Message before which to retrieve the returned messages.",
+              "title": "Before"
+            },
+            "description": "Message before which to retrieve the returned messages."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "description": "Maximum number of messages to retrieve.",
+              "default": 10,
+              "title": "Limit"
+            },
+            "description": "Maximum number of messages to retrieve."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/memgpt__schemas__message__Message"
+                  },
+                  "title": "Response Get Agent Messages Api Agents  Agent Id  Messages Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["agents"],
+        "summary": "Send Message",
+        "description": "Process a user message and return the agent's response.\n\nThis endpoint accepts a message from a user and processes it through the agent.\nIt can optionally stream the response if 'stream' is set to True.",
+        "operationId": "send_message_api_agents__agent_id__messages_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Agent Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MemGPTRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemGPTResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/blocks": {
+      "get": {
+        "tags": ["block"],
+        "summary": "List Blocks",
+        "operationId": "list_blocks_api_blocks_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "label",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Labels to include (e.g. human, persona)",
+              "title": "Label"
+            },
+            "description": "Labels to include (e.g. human, persona)"
+          },
+          {
+            "name": "templates_only",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Whether to include only templates",
+              "default": true,
+              "title": "Templates Only"
+            },
+            "description": "Whether to include only templates"
+          },
+          {
+            "name": "name",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Name of the block",
+              "title": "Name"
+            },
+            "description": "Name of the block"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Block"
+                  },
+                  "title": "Response List Blocks Api Blocks Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["block"],
+        "summary": "Create Block",
+        "operationId": "create_block_api_blocks_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateBlock"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Block"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/blocks/{block_id}": {
+      "post": {
+        "tags": ["block"],
+        "summary": "Update Block",
+        "operationId": "update_block_api_blocks__block_id__post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "block_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Block Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateBlock"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Block"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["block"],
+        "summary": "Delete Block",
+        "operationId": "delete_block_api_blocks__block_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "block_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Block Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Block"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": ["block"],
+        "summary": "Get Block",
+        "operationId": "get_block_api_blocks__block_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "block_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Block Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Block"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/jobs": {
+      "get": {
+        "tags": ["jobs"],
+        "summary": "List Jobs",
+        "operationId": "list_jobs_api_jobs_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Job"
+                  },
+                  "type": "array",
+                  "title": "Response List Jobs Api Jobs Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/jobs/active": {
+      "get": {
+        "tags": ["jobs"],
+        "summary": "List Active Jobs",
+        "operationId": "list_active_jobs_api_jobs_active_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Job"
+                  },
+                  "type": "array",
+                  "title": "Response List Active Jobs Api Jobs Active Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/jobs/{job_id}": {
+      "get": {
+        "tags": ["jobs"],
+        "summary": "Get Job",
+        "operationId": "get_job_api_jobs__job_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Job Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Job"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/models": {
+      "get": {
+        "tags": ["models"],
+        "summary": "List Models",
+        "operationId": "list_models_api_models_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListModelsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tools/{tool_id}": {
+      "delete": {
+        "tags": ["tools"],
+        "summary": "Delete Tool",
+        "description": "Delete a tool by name",
+        "operationId": "delete_tool_api_tools__tool_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "tool_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Tool Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": ["tools"],
+        "summary": "Get Tool",
+        "description": "Get a tool by name",
+        "operationId": "get_tool_api_tools__tool_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "tool_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Tool Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Tool-Output"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["tools"],
+        "summary": "Update Tool",
+        "description": "Update an existing tool",
+        "operationId": "update_tool_api_tools__tool_id__post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "tool_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Tool Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ToolUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Tool-Output"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tools/name/{tool_name}": {
+      "get": {
+        "tags": ["tools"],
+        "summary": "Get Tool Id",
+        "description": "Get a tool by name",
+        "operationId": "get_tool_id_api_tools_name__tool_name__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "tool_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Tool Name"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string",
+                  "title": "Response Get Tool Id Api Tools Name  Tool Name  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tools": {
+      "get": {
+        "tags": ["tools"],
+        "summary": "List All Tools",
+        "description": "Get a list of all tools available to agents created by a user",
+        "operationId": "list_all_tools_api_tools_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Tool-Output"
+                  },
+                  "type": "array",
+                  "title": "Response List All Tools Api Tools Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      },
+      "post": {
+        "tags": ["tools"],
+        "summary": "Create Tool",
+        "description": "Create a new tool",
+        "operationId": "create_tool_api_tools_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ToolCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Tool-Output"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/sources/{source_id}": {
+      "get": {
+        "tags": ["sources"],
+        "summary": "Get Source",
+        "description": "Get all sources",
+        "operationId": "get_source_api_sources__source_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "source_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Source Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Source"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["sources"],
+        "summary": "Update Source",
+        "description": "Update the name or documentation of an existing data source.",
+        "operationId": "update_source_api_sources__source_id__post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "source_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Source Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SourceUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Source"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["sources"],
+        "summary": "Delete Source",
+        "description": "Delete a data source.",
+        "operationId": "delete_source_api_sources__source_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "source_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Source Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sources/name/{source_name}": {
+      "get": {
+        "tags": ["sources"],
+        "summary": "Get Source Id By Name",
+        "description": "Get a source by name",
+        "operationId": "get_source_id_by_name_api_sources_name__source_name__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "source_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Source Name"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string",
+                  "title": "Response Get Source Id By Name Api Sources Name  Source Name  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sources": {
+      "get": {
+        "tags": ["sources"],
+        "summary": "List Sources",
+        "description": "List all data sources created by a user.",
+        "operationId": "list_sources_api_sources_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Source"
+                  },
+                  "type": "array",
+                  "title": "Response List Sources Api Sources Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      },
+      "post": {
+        "tags": ["sources"],
+        "summary": "Create Source",
+        "description": "Create a new data source.",
+        "operationId": "create_source_api_sources_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SourceCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Source"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/sources/{source_id}/attach": {
+      "post": {
+        "tags": ["sources"],
+        "summary": "Attach Source To Agent",
+        "description": "Attach a data source to an existing agent.",
+        "operationId": "attach_source_to_agent_api_sources__source_id__attach_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "source_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Source Id"
+            }
+          },
+          {
+            "name": "agent_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "The unique identifier of the agent to attach the source to.",
+              "title": "Agent Id"
+            },
+            "description": "The unique identifier of the agent to attach the source to."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Source"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sources/{source_id}/detach": {
+      "post": {
+        "tags": ["sources"],
+        "summary": "Detach Source From Agent",
+        "description": "Detach a data source from an existing agent.",
+        "operationId": "detach_source_from_agent_api_sources__source_id__detach_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "source_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Source Id"
+            }
+          },
+          {
+            "name": "agent_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "The unique identifier of the agent to detach the source from.",
+              "title": "Agent Id"
+            },
+            "description": "The unique identifier of the agent to detach the source from."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sources/status/{job_id}": {
+      "get": {
+        "tags": ["sources"],
+        "summary": "Get Job",
+        "description": "Get the status of a job.",
+        "operationId": "get_job_api_sources_status__job_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Job Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Job"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sources/{source_id}/upload": {
+      "post": {
+        "tags": ["sources"],
+        "summary": "Upload File To Source",
+        "description": "Upload a file to a data source.",
+        "operationId": "upload_file_to_source_api_sources__source_id__upload_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "source_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Source Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_file_to_source_api_sources__source_id__upload_post"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Job"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sources/{source_id}/passages ": {
+      "get": {
+        "tags": ["sources"],
+        "summary": "List Passages",
+        "description": "List all passages associated with a data source.",
+        "operationId": "list_passages_api_sources__source_id__passages__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "source_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Source Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Passage"
+                  },
+                  "title": "Response List Passages Api Sources  Source Id  Passages  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sources/{source_id}/documents": {
+      "get": {
+        "tags": ["sources"],
+        "summary": "List Documents",
+        "description": "List all documents associated with a data source.",
+        "operationId": "list_documents_api_sources__source_id__documents_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "source_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Source Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Document"
+                  },
+                  "title": "Response List Documents Api Sources  Source Id  Documents Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/config/llm": {
+      "get": {
+        "tags": ["config"],
+        "summary": "Get Llm Configs",
+        "description": "Retrieve the base configuration for the server.",
+        "operationId": "get_llm_configs_api_config_llm_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/LLMConfig"
+                  },
+                  "type": "array",
+                  "title": "Response Get Llm Configs Api Config Llm Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/config/embedding": {
+      "get": {
+        "tags": ["config"],
+        "summary": "Get Embedding Configs",
+        "description": "Retrieve the base configuration for the server.",
+        "operationId": "get_embedding_configs_api_config_embedding_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/EmbeddingConfig"
+                  },
+                  "type": "array",
+                  "title": "Response Get Embedding Configs Api Config Embedding Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "APIKey": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^sk-[a-fA-F0-9]{8}",
+            "title": "Id",
+            "description": "The human-friendly ID of the Sk",
+            "examples": [["sk-123e4567-e89b-12d3-a456-426614174000"]]
+          },
+          "user_id": {
+            "type": "string",
+            "title": "User Id",
+            "description": "The unique identifier of the user associated with the token."
+          },
+          "key": {
+            "type": "string",
+            "title": "Key",
+            "description": "The key value."
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "Name of the token."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["user_id", "key", "name"],
+        "title": "APIKey"
+      },
+      "APIKeyCreate": {
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "title": "User Id",
+            "description": "The unique identifier of the user associated with the token."
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name",
+            "description": "Name of the token."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["user_id"],
+        "title": "APIKeyCreate"
+      },
+      "AgentState": {
+        "properties": {
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description",
+            "description": "The description of the agent."
+          },
+          "metadata_": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata ",
+            "description": "The metadata of the agent."
+          },
+          "user_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Id",
+            "description": "The user id of the agent."
+          },
+          "id": {
+            "type": "string",
+            "pattern": "^agent-[a-fA-F0-9]{8}",
+            "title": "Id",
+            "description": "The human-friendly ID of the Agent",
+            "examples": [["agent-123e4567-e89b-12d3-a456-426614174000"]]
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "The name of the agent."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "The datetime the agent was created."
+          },
+          "message_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message Ids",
+            "description": "The ids of the messages in the agent's in-context memory."
+          },
+          "memory": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Memory"
+              }
+            ],
+            "description": "The in-context memory of the agent."
+          },
+          "tools": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tools",
+            "description": "The tools used by the agent."
+          },
+          "system": {
+            "type": "string",
+            "title": "System",
+            "description": "The system prompt used by the agent."
+          },
+          "llm_config": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LLMConfig"
+              }
+            ],
+            "description": "The LLM configuration used by the agent."
+          },
+          "embedding_config": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/EmbeddingConfig"
+              }
+            ],
+            "description": "The embedding configuration used by the agent."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "tools",
+          "system",
+          "llm_config",
+          "embedding_config"
+        ],
+        "title": "AgentState",
+        "description": "Representation of an agent's state."
+      },
+      "ArchivalMemorySummary": {
+        "properties": {
+          "size": {
+            "type": "integer",
+            "title": "Size",
+            "description": "Number of rows in archival memory"
+          }
+        },
+        "type": "object",
+        "required": ["size"],
+        "title": "ArchivalMemorySummary"
+      },
+      "AssistantFile": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "The unique identifier of the file."
+          },
+          "object": {
+            "type": "string",
+            "title": "Object",
+            "default": "assistant.file"
+          },
+          "created_at": {
+            "type": "integer",
+            "title": "Created At",
+            "description": "The unix timestamp of when the file was created."
+          },
+          "assistant_id": {
+            "type": "string",
+            "title": "Assistant Id",
+            "description": "The unique identifier of the assistant."
+          }
+        },
+        "type": "object",
+        "required": ["id", "created_at", "assistant_id"],
+        "title": "AssistantFile"
+      },
+      "AssistantMessage-Input": {
+        "properties": {
+          "content": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Content"
+          },
+          "role": {
+            "type": "string",
+            "title": "Role",
+            "default": "assistant"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "tool_calls": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/memgpt__schemas__openai__chat_completion_request__ToolCall"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tool Calls"
+          }
+        },
+        "type": "object",
+        "title": "AssistantMessage"
+      },
+      "AssistantMessage-Output": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "date": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Date"
+          },
+          "assistant_message": {
+            "type": "string",
+            "title": "Assistant Message"
+          }
+        },
+        "type": "object",
+        "required": ["id", "date", "assistant_message"],
+        "title": "AssistantMessage"
+      },
+      "AuthRequest": {
+        "properties": {
+          "password": {
+            "type": "string",
+            "title": "Password",
+            "description": "Admin password provided when starting the MemGPT server"
+          }
+        },
+        "type": "object",
+        "title": "AuthRequest"
+      },
+      "AuthResponse": {
+        "properties": {
+          "uuid": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Uuid",
+            "description": "UUID of the user"
+          },
+          "is_admin": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Admin",
+            "description": "Whether the user is an admin"
+          }
+        },
+        "type": "object",
+        "required": ["uuid"],
+        "title": "AuthResponse"
+      },
+      "Block": {
+        "properties": {
+          "value": {
+            "type": "string",
+            "title": "Value",
+            "description": "Value of the block."
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit",
+            "description": "Character limit of the block.",
+            "default": 2000
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name",
+            "description": "Name of the block."
+          },
+          "template": {
+            "type": "boolean",
+            "title": "Template",
+            "description": "Whether the block is a template (e.g. saved human/persona options).",
+            "default": false
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label",
+            "description": "Label of the block (e.g. 'human', 'persona')."
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description",
+            "description": "Description of the block."
+          },
+          "metadata_": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata ",
+            "description": "Metadata of the block.",
+            "default": {}
+          },
+          "user_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Id",
+            "description": "The unique identifier of the user associated with the block."
+          },
+          "id": {
+            "type": "string",
+            "pattern": "^block-[a-fA-F0-9]{8}",
+            "title": "Id",
+            "description": "The human-friendly ID of the Block",
+            "examples": [["block-123e4567-e89b-12d3-a456-426614174000"]]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["value"],
+        "title": "Block",
+        "description": "Block of the LLM context"
+      },
+      "Body_upload_file_to_source_api_sources__source_id__upload_post": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "format": "binary",
+            "title": "File"
+          }
+        },
+        "type": "object",
+        "required": ["file"],
+        "title": "Body_upload_file_to_source_api_sources__source_id__upload_post"
+      },
+      "ChatCompletionRequest": {
+        "properties": {
+          "model": {
+            "type": "string",
+            "title": "Model"
+          },
+          "messages": {
+            "items": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/SystemMessage"
+                },
+                {
+                  "$ref": "#/components/schemas/UserMessage"
+                },
+                {
+                  "$ref": "#/components/schemas/AssistantMessage-Input"
+                },
+                {
+                  "$ref": "#/components/schemas/ToolMessage"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Messages"
+          },
+          "frequency_penalty": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Frequency Penalty",
+            "default": 0
+          },
+          "logit_bias": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "integer"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Logit Bias"
+          },
+          "logprobs": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Logprobs",
+            "default": false
+          },
+          "top_logprobs": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Top Logprobs"
+          },
+          "max_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Tokens"
+          },
+          "n": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "N",
+            "default": 1
+          },
+          "presence_penalty": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Presence Penalty",
+            "default": 0
+          },
+          "response_format": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ResponseFormat"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "seed": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seed"
+          },
+          "stop": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stop"
+          },
+          "stream": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stream",
+            "default": false
+          },
+          "temperature": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Temperature",
+            "default": 1
+          },
+          "top_p": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Top P",
+            "default": 1
+          },
+          "user": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User"
+          },
+          "tools": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/Tool-Input"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tools"
+          },
+          "tool_choice": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": ["none", "auto"]
+              },
+              {
+                "$ref": "#/components/schemas/ToolFunctionChoice"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tool Choice",
+            "default": "none"
+          },
+          "functions": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/FunctionSchema"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Functions"
+          },
+          "function_call": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": ["none", "auto"]
+              },
+              {
+                "$ref": "#/components/schemas/FunctionCall-Input"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Function Call"
+          }
+        },
+        "type": "object",
+        "required": ["model", "messages"],
+        "title": "ChatCompletionRequest",
+        "description": "https://platform.openai.com/docs/api-reference/chat/create"
+      },
+      "ChatCompletionResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "choices": {
+            "items": {
+              "$ref": "#/components/schemas/Choice"
+            },
+            "type": "array",
+            "title": "Choices"
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model"
+          },
+          "system_fingerprint": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "System Fingerprint"
+          },
+          "object": {
+            "type": "string",
+            "enum": ["chat.completion"],
+            "const": "chat.completion",
+            "title": "Object",
+            "default": "chat.completion"
+          },
+          "usage": {
+            "$ref": "#/components/schemas/UsageStatistics"
+          }
+        },
+        "type": "object",
+        "required": ["id", "choices", "created", "usage"],
+        "title": "ChatCompletionResponse",
+        "description": "https://platform.openai.com/docs/api-reference/chat/object"
+      },
+      "Choice": {
+        "properties": {
+          "finish_reason": {
+            "type": "string",
+            "title": "Finish Reason"
+          },
+          "index": {
+            "type": "integer",
+            "title": "Index"
+          },
+          "message": {
+            "$ref": "#/components/schemas/memgpt__schemas__openai__chat_completion_response__Message"
+          },
+          "logprobs": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "anyOf": [
+                    {
+                      "items": {
+                        "$ref": "#/components/schemas/MessageContentLogProb"
+                      },
+                      "type": "array"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Logprobs"
+          }
+        },
+        "type": "object",
+        "required": ["finish_reason", "index", "message"],
+        "title": "Choice"
+      },
+      "CreateAgent": {
+        "properties": {
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description",
+            "description": "The description of the agent."
+          },
+          "metadata_": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata ",
+            "description": "The metadata of the agent."
+          },
+          "user_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Id",
+            "description": "The user id of the agent."
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name",
+            "description": "The name of the agent."
+          },
+          "message_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message Ids",
+            "description": "The ids of the messages in the agent's in-context memory."
+          },
+          "memory": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Memory"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The in-context memory of the agent."
+          },
+          "tools": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tools",
+            "description": "The tools used by the agent."
+          },
+          "system": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "System",
+            "description": "The system prompt used by the agent."
+          },
+          "llm_config": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LLMConfig"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The LLM configuration used by the agent."
+          },
+          "embedding_config": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EmbeddingConfig"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The embedding configuration used by the agent."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "CreateAgent"
+      },
+      "CreateArchivalMemory": {
+        "properties": {
+          "text": {
+            "type": "string",
+            "title": "Text",
+            "description": "Text to write to archival memory."
+          }
+        },
+        "type": "object",
+        "required": ["text"],
+        "title": "CreateArchivalMemory"
+      },
+      "CreateAssistantFileRequest": {
+        "properties": {
+          "file_id": {
+            "type": "string",
+            "title": "File Id",
+            "description": "The unique identifier of the file."
+          }
+        },
+        "type": "object",
+        "required": ["file_id"],
+        "title": "CreateAssistantFileRequest"
+      },
+      "CreateAssistantRequest": {
+        "properties": {
+          "model": {
+            "type": "string",
+            "title": "Model",
+            "description": "The model to use for the assistant."
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "The name of the assistant."
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "description": "The description of the assistant."
+          },
+          "instructions": {
+            "type": "string",
+            "title": "Instructions",
+            "description": "The instructions for the assistant."
+          },
+          "tools": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tools",
+            "description": "The tools used by the assistant."
+          },
+          "file_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "File Ids",
+            "description": "List of file IDs associated with the assistant."
+          },
+          "metadata": {
+            "type": "object",
+            "title": "Metadata",
+            "description": "Metadata associated with the assistant."
+          },
+          "embedding_model": {
+            "type": "string",
+            "title": "Embedding Model",
+            "description": "The model to use for the assistant."
+          }
+        },
+        "type": "object",
+        "required": ["model", "name", "instructions"],
+        "title": "CreateAssistantRequest"
+      },
+      "CreateBlock": {
+        "properties": {
+          "value": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value",
+            "description": "Value of the block."
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit",
+            "description": "Character limit of the block.",
+            "default": 2000
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name",
+            "description": "Name of the block."
+          },
+          "template": {
+            "type": "boolean",
+            "title": "Template",
+            "default": true
+          },
+          "label": {
+            "type": "string",
+            "title": "Label",
+            "description": "Label of the block."
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description",
+            "description": "Description of the block."
+          },
+          "metadata_": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata ",
+            "description": "Metadata of the block.",
+            "default": {}
+          },
+          "user_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Id",
+            "description": "The unique identifier of the user associated with the block."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["label"],
+        "title": "CreateBlock",
+        "description": "Create a block"
+      },
+      "CreateMessageRequest": {
+        "properties": {
+          "role": {
+            "type": "string",
+            "title": "Role",
+            "description": "Role of the message sender (either 'user' or 'system')"
+          },
+          "content": {
+            "type": "string",
+            "title": "Content",
+            "description": "The message content to be processed by the agent."
+          },
+          "file_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File Ids",
+            "description": "List of file IDs associated with the message."
+          },
+          "metadata": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata",
+            "description": "Metadata associated with the message."
+          }
+        },
+        "type": "object",
+        "required": ["role", "content"],
+        "title": "CreateMessageRequest"
+      },
+      "CreateRunRequest": {
+        "properties": {
+          "assistant_id": {
+            "type": "string",
+            "title": "Assistant Id",
+            "description": "The unique identifier of the assistant."
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model",
+            "description": "The model used by the run."
+          },
+          "instructions": {
+            "type": "string",
+            "title": "Instructions",
+            "description": "The instructions for the run."
+          },
+          "additional_instructions": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Additional Instructions",
+            "description": "Additional instructions for the run."
+          },
+          "tools": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/memgpt__schemas__openai__openai__ToolCall"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tools",
+            "description": "The tools used by the run (overrides assistant)."
+          },
+          "metadata": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata",
+            "description": "Metadata associated with the run."
+          }
+        },
+        "type": "object",
+        "required": ["assistant_id", "instructions"],
+        "title": "CreateRunRequest"
+      },
+      "CreateThreadRequest": {
+        "properties": {
+          "messages": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Messages",
+            "description": "List of message IDs associated with the thread."
+          },
+          "metadata": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata",
+            "description": "Metadata associated with the thread."
+          },
+          "assistant_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assistant Name",
+            "description": "The name of the assistant (i.e. MemGPT preset)"
+          }
+        },
+        "type": "object",
+        "title": "CreateThreadRequest"
+      },
+      "CreateThreadRunRequest": {
+        "properties": {
+          "assistant_id": {
+            "type": "string",
+            "title": "Assistant Id",
+            "description": "The unique identifier of the assistant."
+          },
+          "thread": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/OpenAIThread"
+              }
+            ],
+            "description": "The thread to run."
+          },
+          "model": {
+            "type": "string",
+            "title": "Model",
+            "description": "The model used by the run."
+          },
+          "instructions": {
+            "type": "string",
+            "title": "Instructions",
+            "description": "The instructions for the run."
+          },
+          "tools": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/memgpt__schemas__openai__openai__ToolCall"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tools",
+            "description": "The tools used by the run (overrides assistant)."
+          },
+          "metadata": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata",
+            "description": "Metadata associated with the run."
+          }
+        },
+        "type": "object",
+        "required": ["assistant_id", "thread", "model", "instructions"],
+        "title": "CreateThreadRunRequest"
+      },
+      "CreateToolRequest": {
+        "properties": {
+          "json_schema": {
+            "type": "object",
+            "title": "Json Schema",
+            "description": "JSON schema of the tool."
+          },
+          "source_code": {
+            "type": "string",
+            "title": "Source Code",
+            "description": "The source code of the function."
+          },
+          "source_type": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": ["python"],
+                "const": "python"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Type",
+            "description": "The type of the source code."
+          },
+          "tags": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tags",
+            "description": "Metadata tags."
+          }
+        },
+        "type": "object",
+        "required": ["json_schema", "source_code"],
+        "title": "CreateToolRequest"
+      },
+      "DeleteAssistantFileResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "The unique identifier of the file."
+          },
+          "object": {
+            "type": "string",
+            "title": "Object",
+            "default": "assistant.file.deleted"
+          },
+          "deleted": {
+            "type": "boolean",
+            "title": "Deleted",
+            "description": "Whether the file was deleted."
+          }
+        },
+        "type": "object",
+        "required": ["id", "deleted"],
+        "title": "DeleteAssistantFileResponse"
+      },
+      "DeleteAssistantResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "The unique identifier of the agent."
+          },
+          "object": {
+            "type": "string",
+            "title": "Object",
+            "default": "assistant.deleted"
+          },
+          "deleted": {
+            "type": "boolean",
+            "title": "Deleted",
+            "description": "Whether the agent was deleted."
+          }
+        },
+        "type": "object",
+        "required": ["id", "deleted"],
+        "title": "DeleteAssistantResponse"
+      },
+      "DeleteThreadResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "The unique identifier of the agent."
+          },
+          "object": {
+            "type": "string",
+            "title": "Object",
+            "default": "thread.deleted"
+          },
+          "deleted": {
+            "type": "boolean",
+            "title": "Deleted",
+            "description": "Whether the agent was deleted."
+          }
+        },
+        "type": "object",
+        "required": ["id", "deleted"],
+        "title": "DeleteThreadResponse"
+      },
+      "Document": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^doc-[a-fA-F0-9]{8}",
+            "title": "Id",
+            "description": "The human-friendly ID of the Doc",
+            "examples": [["doc-123e4567-e89b-12d3-a456-426614174000"]]
+          },
+          "text": {
+            "type": "string",
+            "title": "Text",
+            "description": "The text of the document."
+          },
+          "source_id": {
+            "type": "string",
+            "title": "Source Id",
+            "description": "The unique identifier of the source associated with the document."
+          },
+          "user_id": {
+            "type": "string",
+            "title": "User Id",
+            "description": "The unique identifier of the user associated with the document."
+          },
+          "metadata_": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata ",
+            "description": "The metadata of the document.",
+            "default": {}
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["text", "source_id", "user_id"],
+        "title": "Document",
+        "description": "Representation of a single document (broken up into `Passage` objects)"
+      },
+      "EmbeddingConfig": {
+        "properties": {
+          "embedding_endpoint_type": {
+            "type": "string",
+            "title": "Embedding Endpoint Type",
+            "description": "The endpoint type for the model."
+          },
+          "embedding_endpoint": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Embedding Endpoint",
+            "description": "The endpoint for the model (`None` if local)."
+          },
+          "embedding_model": {
+            "type": "string",
+            "title": "Embedding Model",
+            "description": "The model for the embedding."
+          },
+          "embedding_dim": {
+            "type": "integer",
+            "title": "Embedding Dim",
+            "description": "The dimension of the embedding."
+          },
+          "embedding_chunk_size": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Embedding Chunk Size",
+            "description": "The chunk size of the embedding.",
+            "default": 300
+          },
+          "azure_endpoint": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Azure Endpoint",
+            "description": "The Azure endpoint for the model."
+          },
+          "azure_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Azure Version",
+            "description": "The Azure version for the model."
+          },
+          "azure_deployment": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Azure Deployment",
+            "description": "The Azure deployment for the model."
+          }
+        },
+        "type": "object",
+        "required": [
+          "embedding_endpoint_type",
+          "embedding_model",
+          "embedding_dim"
+        ],
+        "title": "EmbeddingConfig",
+        "description": "Embedding model configuration"
+      },
+      "Function": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "The name of the function."
+          },
+          "arguments": {
+            "type": "string",
+            "title": "Arguments",
+            "description": "The arguments of the function."
+          }
+        },
+        "type": "object",
+        "required": ["name", "arguments"],
+        "title": "Function"
+      },
+      "FunctionCall-Input": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          }
+        },
+        "type": "object",
+        "required": ["name"],
+        "title": "FunctionCall"
+      },
+      "FunctionCallDelta": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "arguments": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Arguments"
+          }
+        },
+        "type": "object",
+        "required": ["name", "arguments"],
+        "title": "FunctionCallDelta"
+      },
+      "FunctionCallMessage": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "date": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Date"
+          },
+          "function_call": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/memgpt__schemas__memgpt_message__FunctionCall"
+              },
+              {
+                "$ref": "#/components/schemas/FunctionCallDelta"
+              }
+            ],
+            "title": "Function Call"
+          }
+        },
+        "type": "object",
+        "required": ["id", "date", "function_call"],
+        "title": "FunctionCallMessage",
+        "description": "{\n    \"function_call\": {\n        \"name\": function_call.function.name,\n        \"arguments\": function_call.function.arguments,\n    },\n    \"id\": str(msg_obj.id),\n    \"date\": msg_obj.created_at.isoformat(),\n}"
+      },
+      "FunctionReturn": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "date": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Date"
+          },
+          "function_return": {
+            "type": "string",
+            "title": "Function Return"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["success", "error"],
+            "title": "Status"
+          }
+        },
+        "type": "object",
+        "required": ["id", "date", "function_return", "status"],
+        "title": "FunctionReturn",
+        "description": "{\n    \"function_return\": msg,\n    \"status\": \"success\" or \"error\",\n    \"id\": str(msg_obj.id),\n    \"date\": msg_obj.created_at.isoformat(),\n}"
+      },
+      "FunctionSchema": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "parameters": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parameters"
+          }
+        },
+        "type": "object",
+        "required": ["name"],
+        "title": "FunctionSchema"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "ImageFile": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "title": "Type",
+            "default": "image_file"
+          },
+          "file_id": {
+            "type": "string",
+            "title": "File Id"
+          }
+        },
+        "type": "object",
+        "required": ["file_id"],
+        "title": "ImageFile"
+      },
+      "InternalMonologue": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "date": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Date"
+          },
+          "internal_monologue": {
+            "type": "string",
+            "title": "Internal Monologue"
+          }
+        },
+        "type": "object",
+        "required": ["id", "date", "internal_monologue"],
+        "title": "InternalMonologue",
+        "description": "{\n    \"internal_monologue\": msg,\n    \"date\": msg_obj.created_at.isoformat() if msg_obj is not None else get_utc_time().isoformat(),\n    \"id\": str(msg_obj.id) if msg_obj is not None else None,\n}"
+      },
+      "Job": {
+        "properties": {
+          "metadata_": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata ",
+            "description": "The metadata of the job.",
+            "default": {}
+          },
+          "id": {
+            "type": "string",
+            "pattern": "^job-[a-fA-F0-9]{8}",
+            "title": "Id",
+            "description": "The human-friendly ID of the Job",
+            "examples": [["job-123e4567-e89b-12d3-a456-426614174000"]]
+          },
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/JobStatus"
+              }
+            ],
+            "description": "The status of the job.",
+            "default": "created"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "The unix timestamp of when the job was created."
+          },
+          "completed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At",
+            "description": "The unix timestamp of when the job was completed."
+          },
+          "user_id": {
+            "type": "string",
+            "title": "User Id",
+            "description": "The unique identifier of the user associated with the job."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["user_id"],
+        "title": "Job",
+        "description": "Representation of offline jobs."
+      },
+      "JobStatus": {
+        "type": "string",
+        "enum": ["created", "running", "completed", "failed", "pending"],
+        "title": "JobStatus"
+      },
+      "LLMConfig": {
+        "properties": {
+          "model": {
+            "type": "string",
+            "title": "Model",
+            "description": "LLM model name. "
+          },
+          "model_endpoint_type": {
+            "type": "string",
+            "title": "Model Endpoint Type",
+            "description": "The endpoint type for the model."
+          },
+          "model_endpoint": {
+            "type": "string",
+            "title": "Model Endpoint",
+            "description": "The endpoint for the model."
+          },
+          "model_wrapper": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Wrapper",
+            "description": "The wrapper for the model."
+          },
+          "context_window": {
+            "type": "integer",
+            "title": "Context Window",
+            "description": "The context window size for the model."
+          }
+        },
+        "type": "object",
+        "required": [
+          "model",
+          "model_endpoint_type",
+          "model_endpoint",
+          "context_window"
+        ],
+        "title": "LLMConfig"
+      },
+      "LegacyFunctionCallMessage": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "date": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Date"
+          },
+          "function_call": {
+            "type": "string",
+            "title": "Function Call"
+          }
+        },
+        "type": "object",
+        "required": ["id", "date", "function_call"],
+        "title": "LegacyFunctionCallMessage"
+      },
+      "ListMessagesResponse": {
+        "properties": {
+          "messages": {
+            "items": {
+              "$ref": "#/components/schemas/OpenAIMessage"
+            },
+            "type": "array",
+            "title": "Messages",
+            "description": "List of message objects."
+          }
+        },
+        "type": "object",
+        "required": ["messages"],
+        "title": "ListMessagesResponse"
+      },
+      "ListModelsResponse": {
+        "properties": {
+          "models": {
+            "items": {
+              "$ref": "#/components/schemas/LLMConfig"
+            },
+            "type": "array",
+            "title": "Models",
+            "description": "List of model configurations."
+          }
+        },
+        "type": "object",
+        "required": ["models"],
+        "title": "ListModelsResponse"
+      },
+      "ListToolsResponse": {
+        "properties": {
+          "tools": {
+            "items": {
+              "$ref": "#/components/schemas/Tool-Output"
+            },
+            "type": "array",
+            "title": "Tools",
+            "description": "List of tools (functions)."
+          }
+        },
+        "type": "object",
+        "required": ["tools"],
+        "title": "ListToolsResponse"
+      },
+      "LogProbToken": {
+        "properties": {
+          "token": {
+            "type": "string",
+            "title": "Token"
+          },
+          "logprob": {
+            "type": "number",
+            "title": "Logprob"
+          },
+          "bytes": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "integer"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bytes"
+          }
+        },
+        "type": "object",
+        "required": ["token", "logprob", "bytes"],
+        "title": "LogProbToken"
+      },
+      "MemGPTRequest": {
+        "properties": {
+          "messages": {
+            "items": {
+              "$ref": "#/components/schemas/MessageCreate"
+            },
+            "type": "array",
+            "title": "Messages",
+            "description": "The messages to be sent to the agent."
+          },
+          "run_async": {
+            "type": "boolean",
+            "title": "Run Async",
+            "description": "Whether to asynchronously send the messages to the agent.",
+            "default": false
+          },
+          "stream_steps": {
+            "type": "boolean",
+            "title": "Stream Steps",
+            "description": "Flag to determine if the response should be streamed. Set to True for streaming agent steps.",
+            "default": false
+          },
+          "stream_tokens": {
+            "type": "boolean",
+            "title": "Stream Tokens",
+            "description": "Flag to determine if individual tokens should be streamed. Set to True for token streaming (requires stream_steps = True).",
+            "default": false
+          },
+          "return_message_object": {
+            "type": "boolean",
+            "title": "Return Message Object",
+            "description": "Set True to return the raw Message object. Set False to return the Message in the format of the MemGPT API.",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": ["messages"],
+        "title": "MemGPTRequest"
+      },
+      "MemGPTResponse": {
+        "properties": {
+          "messages": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/memgpt__schemas__message__Message"
+                },
+                "type": "array"
+              },
+              {
+                "items": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/InternalMonologue"
+                    },
+                    {
+                      "$ref": "#/components/schemas/FunctionCallMessage"
+                    },
+                    {
+                      "$ref": "#/components/schemas/FunctionReturn"
+                    }
+                  ]
+                },
+                "type": "array"
+              },
+              {
+                "items": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/InternalMonologue"
+                    },
+                    {
+                      "$ref": "#/components/schemas/AssistantMessage-Output"
+                    },
+                    {
+                      "$ref": "#/components/schemas/LegacyFunctionCallMessage"
+                    },
+                    {
+                      "$ref": "#/components/schemas/FunctionReturn"
+                    }
+                  ]
+                },
+                "type": "array"
+              }
+            ],
+            "title": "Messages",
+            "description": "The messages returned by the agent."
+          },
+          "usage": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/MemGPTUsageStatistics"
+              }
+            ],
+            "description": "The usage statistics of the agent."
+          }
+        },
+        "type": "object",
+        "required": ["messages", "usage"],
+        "title": "MemGPTResponse"
+      },
+      "MemGPTUsageStatistics": {
+        "properties": {
+          "completion_tokens": {
+            "type": "integer",
+            "title": "Completion Tokens",
+            "description": "The number of tokens generated by the agent.",
+            "default": 0
+          },
+          "prompt_tokens": {
+            "type": "integer",
+            "title": "Prompt Tokens",
+            "description": "The number of tokens in the prompt.",
+            "default": 0
+          },
+          "total_tokens": {
+            "type": "integer",
+            "title": "Total Tokens",
+            "description": "The total number of tokens processed by the agent.",
+            "default": 0
+          },
+          "step_count": {
+            "type": "integer",
+            "title": "Step Count",
+            "description": "The number of steps taken by the agent.",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "title": "MemGPTUsageStatistics"
+      },
+      "Memory": {
+        "properties": {
+          "memory": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/Block"
+            },
+            "type": "object",
+            "title": "Memory",
+            "description": "Mapping from memory block section to memory block."
+          }
+        },
+        "type": "object",
+        "title": "Memory",
+        "description": "Represents the in-context memory of the agent"
+      },
+      "MessageContentLogProb": {
+        "properties": {
+          "token": {
+            "type": "string",
+            "title": "Token"
+          },
+          "logprob": {
+            "type": "number",
+            "title": "Logprob"
+          },
+          "bytes": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "integer"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bytes"
+          },
+          "top_logprobs": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/LogProbToken"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Top Logprobs"
+          }
+        },
+        "type": "object",
+        "required": ["token", "logprob", "bytes", "top_logprobs"],
+        "title": "MessageContentLogProb"
+      },
+      "MessageCreate": {
+        "properties": {
+          "role": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/MessageRole"
+              }
+            ],
+            "description": "The role of the participant."
+          },
+          "text": {
+            "type": "string",
+            "title": "Text",
+            "description": "The text of the message."
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name",
+            "description": "The name of the participant."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["role", "text"],
+        "title": "MessageCreate",
+        "description": "Request to create a message"
+      },
+      "MessageFile": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "The unique identifier of the file."
+          },
+          "object": {
+            "type": "string",
+            "title": "Object",
+            "default": "thread.message.file"
+          },
+          "created_at": {
+            "type": "integer",
+            "title": "Created At",
+            "description": "The unix timestamp of when the file was created."
+          },
+          "message_id": {
+            "type": "string",
+            "title": "Message Id",
+            "description": "The unique identifier of the message."
+          }
+        },
+        "type": "object",
+        "required": ["id", "created_at", "message_id"],
+        "title": "MessageFile"
+      },
+      "MessageRole": {
+        "type": "string",
+        "enum": ["assistant", "user", "tool", "function", "system"],
+        "title": "MessageRole"
+      },
+      "ModifyMessageRequest": {
+        "properties": {
+          "metadata": {
+            "type": "object",
+            "title": "Metadata",
+            "description": "Metadata associated with the message."
+          }
+        },
+        "type": "object",
+        "title": "ModifyMessageRequest"
+      },
+      "ModifyRunRequest": {
+        "properties": {
+          "metadata": {
+            "type": "object",
+            "title": "Metadata",
+            "description": "Metadata associated with the run."
+          }
+        },
+        "type": "object",
+        "title": "ModifyRunRequest"
+      },
+      "ModifyThreadRequest": {
+        "properties": {
+          "metadata": {
+            "type": "object",
+            "title": "Metadata",
+            "description": "Metadata associated with the thread."
+          }
+        },
+        "type": "object",
+        "title": "ModifyThreadRequest"
+      },
+      "OpenAIAssistant": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "The unique identifier of the assistant."
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "The name of the assistant."
+          },
+          "object": {
+            "type": "string",
+            "title": "Object",
+            "default": "assistant"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description",
+            "description": "The description of the assistant."
+          },
+          "created_at": {
+            "type": "integer",
+            "title": "Created At",
+            "description": "The unix timestamp of when the assistant was created."
+          },
+          "model": {
+            "type": "string",
+            "title": "Model",
+            "description": "The model used by the assistant."
+          },
+          "instructions": {
+            "type": "string",
+            "title": "Instructions",
+            "description": "The instructions for the assistant."
+          },
+          "tools": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tools",
+            "description": "The tools used by the assistant."
+          },
+          "file_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File Ids",
+            "description": "List of file IDs associated with the assistant."
+          },
+          "metadata": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata",
+            "description": "Metadata associated with the assistant."
+          }
+        },
+        "type": "object",
+        "required": ["id", "name", "created_at", "model", "instructions"],
+        "title": "OpenAIAssistant",
+        "description": "Represents an OpenAI assistant (equivalent to MemGPT preset)"
+      },
+      "OpenAIError": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "title": "Code",
+            "description": "The error code."
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "description": "The error message."
+          }
+        },
+        "type": "object",
+        "required": ["code", "message"],
+        "title": "OpenAIError"
+      },
+      "OpenAIMessage": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "The unique identifier of the message."
+          },
+          "object": {
+            "type": "string",
+            "title": "Object",
+            "default": "thread.message"
+          },
+          "created_at": {
+            "type": "integer",
+            "title": "Created At",
+            "description": "The unix timestamp of when the message was created."
+          },
+          "thread_id": {
+            "type": "string",
+            "title": "Thread Id",
+            "description": "The unique identifier of the thread."
+          },
+          "role": {
+            "type": "string",
+            "title": "Role",
+            "description": "Role of the message sender (either 'user' or 'system')"
+          },
+          "content": {
+            "items": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/Text"
+                },
+                {
+                  "$ref": "#/components/schemas/ImageFile"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Content",
+            "description": "The message content to be processed by the agent."
+          },
+          "assistant_id": {
+            "type": "string",
+            "title": "Assistant Id",
+            "description": "The unique identifier of the assistant."
+          },
+          "run_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Run Id",
+            "description": "The unique identifier of the run."
+          },
+          "file_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File Ids",
+            "description": "List of file IDs associated with the message."
+          },
+          "metadata": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata",
+            "description": "Metadata associated with the message."
+          }
+        },
+        "type": "object",
+        "required": ["id", "created_at", "thread_id", "role", "assistant_id"],
+        "title": "OpenAIMessage"
+      },
+      "OpenAIMessageCreationStep": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "title": "Type",
+            "default": "message_creation"
+          },
+          "message_id": {
+            "type": "string",
+            "title": "Message Id",
+            "description": "The unique identifier of the message."
+          }
+        },
+        "type": "object",
+        "required": ["message_id"],
+        "title": "OpenAIMessageCreationStep"
+      },
+      "OpenAIRun": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "The unique identifier of the run."
+          },
+          "object": {
+            "type": "string",
+            "title": "Object",
+            "default": "thread.run"
+          },
+          "created_at": {
+            "type": "integer",
+            "title": "Created At",
+            "description": "The unix timestamp of when the run was created."
+          },
+          "thread_id": {
+            "type": "string",
+            "title": "Thread Id",
+            "description": "The unique identifier of the thread."
+          },
+          "assistant_id": {
+            "type": "string",
+            "title": "Assistant Id",
+            "description": "The unique identifier of the assistant."
+          },
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "description": "The status of the run."
+          },
+          "required_action": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RequiredAction"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The required action of the run."
+          },
+          "last_error": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OpenAIError"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The last error of the run."
+          },
+          "expires_at": {
+            "type": "integer",
+            "title": "Expires At",
+            "description": "The unix timestamp of when the run expires."
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At",
+            "description": "The unix timestamp of when the run started."
+          },
+          "cancelled_at": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cancelled At",
+            "description": "The unix timestamp of when the run was cancelled."
+          },
+          "failed_at": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Failed At",
+            "description": "The unix timestamp of when the run failed."
+          },
+          "completed_at": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At",
+            "description": "The unix timestamp of when the run completed."
+          },
+          "model": {
+            "type": "string",
+            "title": "Model",
+            "description": "The model used by the run."
+          },
+          "instructions": {
+            "type": "string",
+            "title": "Instructions",
+            "description": "The instructions for the run."
+          },
+          "tools": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/memgpt__schemas__openai__openai__ToolCall"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tools",
+            "description": "The tools used by the run."
+          },
+          "file_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File Ids",
+            "description": "List of file IDs associated with the run."
+          },
+          "metadata": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata",
+            "description": "Metadata associated with the run."
+          },
+          "usage": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OpenAIUsage"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The usage of the run."
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "created_at",
+          "thread_id",
+          "assistant_id",
+          "status",
+          "expires_at",
+          "model",
+          "instructions"
+        ],
+        "title": "OpenAIRun"
+      },
+      "OpenAIRunStep": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "The unique identifier of the run step."
+          },
+          "object": {
+            "type": "string",
+            "title": "Object",
+            "default": "thread.run.step"
+          },
+          "created_at": {
+            "type": "integer",
+            "title": "Created At",
+            "description": "The unix timestamp of when the run step was created."
+          },
+          "assistant_id": {
+            "type": "string",
+            "title": "Assistant Id",
+            "description": "The unique identifier of the assistant."
+          },
+          "thread_id": {
+            "type": "string",
+            "title": "Thread Id",
+            "description": "The unique identifier of the thread."
+          },
+          "run_id": {
+            "type": "string",
+            "title": "Run Id",
+            "description": "The unique identifier of the run."
+          },
+          "type": {
+            "type": "string",
+            "title": "Type",
+            "description": "The type of the run step."
+          },
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "description": "The status of the run step."
+          },
+          "step_defaults": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OpenAIToolCallsStep"
+              },
+              {
+                "$ref": "#/components/schemas/OpenAIMessageCreationStep"
+              }
+            ],
+            "title": "Step Defaults",
+            "description": "The step defaults."
+          },
+          "last_error": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OpenAIError"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The last error of the run step."
+          },
+          "expired_at": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expired At",
+            "description": "The unix timestamp of when the run step expired."
+          },
+          "failed_at": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Failed At",
+            "description": "The unix timestamp of when the run failed."
+          },
+          "completed_at": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At",
+            "description": "The unix timestamp of when the run completed."
+          },
+          "usage": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OpenAIUsage"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The usage of the run."
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "created_at",
+          "assistant_id",
+          "thread_id",
+          "run_id",
+          "type",
+          "status",
+          "step_defaults"
+        ],
+        "title": "OpenAIRunStep"
+      },
+      "OpenAIThread": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "The unique identifier of the thread."
+          },
+          "object": {
+            "type": "string",
+            "title": "Object",
+            "default": "thread"
+          },
+          "created_at": {
+            "type": "integer",
+            "title": "Created At",
+            "description": "The unix timestamp of when the thread was created."
+          },
+          "metadata": {
+            "type": "object",
+            "title": "Metadata",
+            "description": "Metadata associated with the thread."
+          }
+        },
+        "type": "object",
+        "required": ["id", "created_at"],
+        "title": "OpenAIThread",
+        "description": "Represents an OpenAI thread (equivalent to MemGPT agent)"
+      },
+      "OpenAIToolCallsStep": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "title": "Type",
+            "default": "tool_calls"
+          },
+          "tool_calls": {
+            "items": {
+              "$ref": "#/components/schemas/memgpt__schemas__openai__openai__ToolCall"
+            },
+            "type": "array",
+            "title": "Tool Calls",
+            "description": "The tool calls."
+          }
+        },
+        "type": "object",
+        "required": ["tool_calls"],
+        "title": "OpenAIToolCallsStep"
+      },
+      "OpenAIUsage": {
+        "properties": {
+          "completion_tokens": {
+            "type": "integer",
+            "title": "Completion Tokens",
+            "description": "The number of tokens used for the run."
+          },
+          "prompt_tokens": {
+            "type": "integer",
+            "title": "Prompt Tokens",
+            "description": "The number of tokens used for the prompt."
+          },
+          "total_tokens": {
+            "type": "integer",
+            "title": "Total Tokens",
+            "description": "The total number of tokens used for the run."
+          }
+        },
+        "type": "object",
+        "required": ["completion_tokens", "prompt_tokens", "total_tokens"],
+        "title": "OpenAIUsage"
+      },
+      "Passage": {
+        "properties": {
+          "user_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Id",
+            "description": "The unique identifier of the user associated with the passage."
+          },
+          "agent_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent Id",
+            "description": "The unique identifier of the agent associated with the passage."
+          },
+          "source_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Id",
+            "description": "The data source of the passage."
+          },
+          "doc_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Doc Id",
+            "description": "The unique identifier of the document associated with the passage."
+          },
+          "metadata_": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata ",
+            "description": "The metadata of the passage.",
+            "default": {}
+          },
+          "id": {
+            "type": "string",
+            "pattern": "^passage-[a-fA-F0-9]{8}",
+            "title": "Id",
+            "description": "The human-friendly ID of the Passage",
+            "examples": [["passage-123e4567-e89b-12d3-a456-426614174000"]]
+          },
+          "text": {
+            "type": "string",
+            "title": "Text",
+            "description": "The text of the passage."
+          },
+          "embedding": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Embedding",
+            "description": "The embedding of the passage."
+          },
+          "embedding_config": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EmbeddingConfig"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The embedding configuration used by the passage."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "The creation date of the passage."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["text", "embedding", "embedding_config"],
+        "title": "Passage"
+      },
+      "RecallMemorySummary": {
+        "properties": {
+          "size": {
+            "type": "integer",
+            "title": "Size",
+            "description": "Number of rows in recall memory"
+          }
+        },
+        "type": "object",
+        "required": ["size"],
+        "title": "RecallMemorySummary"
+      },
+      "RequiredAction": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "title": "Type",
+            "default": "submit_tool_outputs"
+          },
+          "submit_tool_outputs": {
+            "items": {
+              "$ref": "#/components/schemas/memgpt__schemas__openai__openai__ToolCall"
+            },
+            "type": "array",
+            "title": "Submit Tool Outputs"
+          }
+        },
+        "type": "object",
+        "required": ["submit_tool_outputs"],
+        "title": "RequiredAction"
+      },
+      "ResponseFormat": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "pattern": "^(text|json_object)$",
+            "title": "Type",
+            "default": "text"
+          }
+        },
+        "type": "object",
+        "title": "ResponseFormat"
+      },
+      "Source": {
+        "properties": {
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description",
+            "description": "The description of the source."
+          },
+          "embedding_config": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/EmbeddingConfig"
+              }
+            ],
+            "description": "The embedding configuration used by the source."
+          },
+          "metadata_": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata ",
+            "description": "Metadata associated with the source."
+          },
+          "id": {
+            "type": "string",
+            "pattern": "^source-[a-fA-F0-9]{8}",
+            "title": "Id",
+            "description": "The human-friendly ID of the Source",
+            "examples": [["source-123e4567-e89b-12d3-a456-426614174000"]]
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "The name of the source."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "The creation date of the source."
+          },
+          "user_id": {
+            "type": "string",
+            "title": "User Id",
+            "description": "The ID of the user that created the source."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["embedding_config", "name", "user_id"],
+        "title": "Source"
+      },
+      "SourceCreate": {
+        "properties": {
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description",
+            "description": "The description of the source."
+          },
+          "embedding_config": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EmbeddingConfig"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The embedding configuration used by the passage."
+          },
+          "metadata_": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata ",
+            "description": "Metadata associated with the source."
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "The name of the source."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["name"],
+        "title": "SourceCreate"
+      },
+      "SourceUpdate": {
+        "properties": {
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description",
+            "description": "The description of the source."
+          },
+          "embedding_config": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EmbeddingConfig"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The embedding configuration used by the passage."
+          },
+          "metadata_": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata ",
+            "description": "Metadata associated with the source."
+          },
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "The ID of the source."
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name",
+            "description": "The name of the source."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["id"],
+        "title": "SourceUpdate"
+      },
+      "SubmitToolOutputsToRunRequest": {
+        "properties": {
+          "tools_outputs": {
+            "items": {
+              "$ref": "#/components/schemas/ToolCallOutput"
+            },
+            "type": "array",
+            "title": "Tools Outputs",
+            "description": "The tool outputs to submit."
+          }
+        },
+        "type": "object",
+        "required": ["tools_outputs"],
+        "title": "SubmitToolOutputsToRunRequest"
+      },
+      "SystemMessage": {
+        "properties": {
+          "content": {
+            "type": "string",
+            "title": "Content"
+          },
+          "role": {
+            "type": "string",
+            "title": "Role",
+            "default": "system"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          }
+        },
+        "type": "object",
+        "required": ["content"],
+        "title": "SystemMessage"
+      },
+      "Text": {
+        "properties": {
+          "object": {
+            "type": "string",
+            "title": "Object",
+            "default": "text"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text",
+            "description": "The text content to be processed by the agent."
+          }
+        },
+        "type": "object",
+        "required": ["text"],
+        "title": "Text"
+      },
+      "Tool-Input": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": ["function"],
+            "const": "function",
+            "title": "Type",
+            "default": "function"
+          },
+          "function": {
+            "$ref": "#/components/schemas/FunctionSchema"
+          }
+        },
+        "type": "object",
+        "required": ["function"],
+        "title": "Tool"
+      },
+      "Tool-Output": {
+        "properties": {
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description",
+            "description": "The description of the tool."
+          },
+          "source_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Type",
+            "description": "The type of the source code."
+          },
+          "module": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Module",
+            "description": "The module of the function."
+          },
+          "user_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Id",
+            "description": "The unique identifier of the user associated with the function."
+          },
+          "id": {
+            "type": "string",
+            "pattern": "^tool-[a-fA-F0-9]{8}",
+            "title": "Id",
+            "description": "The human-friendly ID of the Tool",
+            "examples": [["tool-123e4567-e89b-12d3-a456-426614174000"]]
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "The name of the function."
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tags",
+            "description": "Metadata tags."
+          },
+          "source_code": {
+            "type": "string",
+            "title": "Source Code",
+            "description": "The source code of the function."
+          },
+          "json_schema": {
+            "type": "object",
+            "title": "Json Schema",
+            "description": "The JSON schema of the function."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["name", "tags", "source_code"],
+        "title": "Tool"
+      },
+      "ToolCallFunction-Input": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "arguments": {
+            "type": "string",
+            "title": "Arguments"
+          }
+        },
+        "type": "object",
+        "required": ["name", "arguments"],
+        "title": "ToolCallFunction"
+      },
+      "ToolCallFunction-Output": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "The name of the function to call"
+          },
+          "arguments": {
+            "type": "string",
+            "title": "Arguments",
+            "description": "The arguments to pass to the function (JSON dump)"
+          }
+        },
+        "type": "object",
+        "required": ["name", "arguments"],
+        "title": "ToolCallFunction"
+      },
+      "ToolCallOutput": {
+        "properties": {
+          "tool_call_id": {
+            "type": "string",
+            "title": "Tool Call Id",
+            "description": "The unique identifier of the tool call."
+          },
+          "output": {
+            "type": "string",
+            "title": "Output",
+            "description": "The output of the tool call."
+          }
+        },
+        "type": "object",
+        "required": ["tool_call_id", "output"],
+        "title": "ToolCallOutput"
+      },
+      "ToolCreate": {
+        "properties": {
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description",
+            "description": "The description of the tool."
+          },
+          "source_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Type",
+            "description": "The type of the source code."
+          },
+          "module": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Module",
+            "description": "The module of the function."
+          },
+          "user_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Id",
+            "description": "The unique identifier of the user associated with the function."
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name",
+            "description": "The name of the function (auto-generated from source_code if not provided)."
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tags",
+            "description": "Metadata tags."
+          },
+          "source_code": {
+            "type": "string",
+            "title": "Source Code",
+            "description": "The source code of the function."
+          },
+          "json_schema": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Json Schema",
+            "description": "The JSON schema of the function (auto-generated from source_code if not provided)"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["tags", "source_code"],
+        "title": "ToolCreate"
+      },
+      "ToolFunctionChoice": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": ["function"],
+            "const": "function",
+            "title": "Type",
+            "default": "function"
+          },
+          "function": {
+            "$ref": "#/components/schemas/FunctionCall-Input"
+          }
+        },
+        "type": "object",
+        "required": ["function"],
+        "title": "ToolFunctionChoice"
+      },
+      "ToolMessage": {
+        "properties": {
+          "content": {
+            "type": "string",
+            "title": "Content"
+          },
+          "role": {
+            "type": "string",
+            "title": "Role",
+            "default": "tool"
+          },
+          "tool_call_id": {
+            "type": "string",
+            "title": "Tool Call Id"
+          }
+        },
+        "type": "object",
+        "required": ["content", "tool_call_id"],
+        "title": "ToolMessage"
+      },
+      "ToolUpdate": {
+        "properties": {
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description",
+            "description": "The description of the tool."
+          },
+          "source_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Type",
+            "description": "The type of the source code."
+          },
+          "module": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Module",
+            "description": "The module of the function."
+          },
+          "user_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Id",
+            "description": "The unique identifier of the user associated with the function."
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name",
+            "description": "The name of the function."
+          },
+          "tags": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tags",
+            "description": "Metadata tags."
+          },
+          "source_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Code",
+            "description": "The source code of the function."
+          },
+          "json_schema": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Json Schema",
+            "description": "The JSON schema of the function."
+          },
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "The unique identifier of the tool."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["id"],
+        "title": "ToolUpdate"
+      },
+      "UpdateAgentState": {
+        "properties": {
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description",
+            "description": "The description of the agent."
+          },
+          "metadata_": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata ",
+            "description": "The metadata of the agent."
+          },
+          "user_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Id",
+            "description": "The user id of the agent."
+          },
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "The id of the agent."
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name",
+            "description": "The name of the agent."
+          },
+          "tools": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tools",
+            "description": "The tools used by the agent."
+          },
+          "system": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "System",
+            "description": "The system prompt used by the agent."
+          },
+          "llm_config": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LLMConfig"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The LLM configuration used by the agent."
+          },
+          "embedding_config": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EmbeddingConfig"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The embedding configuration used by the agent."
+          },
+          "message_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message Ids",
+            "description": "The ids of the messages in the agent's in-context memory."
+          },
+          "memory": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Memory"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The in-context memory of the agent."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["id"],
+        "title": "UpdateAgentState"
+      },
+      "UpdateBlock": {
+        "properties": {
+          "value": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value",
+            "description": "Value of the block."
+          },
+          "limit": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Limit",
+            "description": "Character limit of the block.",
+            "default": 2000
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name",
+            "description": "Name of the block."
+          },
+          "template": {
+            "type": "boolean",
+            "title": "Template",
+            "description": "Whether the block is a template (e.g. saved human/persona options).",
+            "default": false
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label",
+            "description": "Label of the block (e.g. 'human', 'persona')."
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description",
+            "description": "Description of the block."
+          },
+          "metadata_": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata ",
+            "description": "Metadata of the block.",
+            "default": {}
+          },
+          "user_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Id",
+            "description": "The unique identifier of the user associated with the block."
+          },
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "The unique identifier of the block."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["id"],
+        "title": "UpdateBlock",
+        "description": "Update a block"
+      },
+      "UsageStatistics": {
+        "properties": {
+          "completion_tokens": {
+            "type": "integer",
+            "title": "Completion Tokens",
+            "default": 0
+          },
+          "prompt_tokens": {
+            "type": "integer",
+            "title": "Prompt Tokens",
+            "default": 0
+          },
+          "total_tokens": {
+            "type": "integer",
+            "title": "Total Tokens",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "title": "UsageStatistics"
+      },
+      "User": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^user-[a-fA-F0-9]{8}",
+            "title": "Id",
+            "description": "The human-friendly ID of the User",
+            "examples": [["user-123e4567-e89b-12d3-a456-426614174000"]]
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "The name of the user."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "The creation date of the user."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["name"],
+        "title": "User"
+      },
+      "UserCreate": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name",
+            "description": "The name of the user."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "UserCreate"
+      },
+      "UserMessage": {
+        "properties": {
+          "content": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              }
+            ],
+            "title": "Content"
+          },
+          "role": {
+            "type": "string",
+            "title": "Role",
+            "default": "user"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          }
+        },
+        "type": "object",
+        "required": ["content"],
+        "title": "UserMessage"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          }
+        },
+        "type": "object",
+        "required": ["loc", "msg", "type"],
+        "title": "ValidationError"
+      },
+      "memgpt__schemas__memgpt_message__FunctionCall": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "arguments": {
+            "type": "string",
+            "title": "Arguments"
+          }
+        },
+        "type": "object",
+        "required": ["name", "arguments"],
+        "title": "FunctionCall"
+      },
+      "memgpt__schemas__message__Message": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^message-[a-fA-F0-9]{8}",
+            "title": "Id",
+            "description": "The human-friendly ID of the Message",
+            "examples": [["message-123e4567-e89b-12d3-a456-426614174000"]]
+          },
+          "role": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/MessageRole"
+              }
+            ],
+            "description": "The role of the participant."
+          },
+          "text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Text",
+            "description": "The text of the message."
+          },
+          "user_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Id",
+            "description": "The unique identifier of the user."
+          },
+          "agent_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent Id",
+            "description": "The unique identifier of the agent."
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model",
+            "description": "The model used to make the function call."
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name",
+            "description": "The name of the participant."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "The time the message was created."
+          },
+          "tool_calls": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/memgpt__schemas__openai__chat_completions__ToolCall"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tool Calls",
+            "description": "The list of tool calls requested."
+          },
+          "tool_call_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tool Call Id",
+            "description": "The id of the tool call."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["role"],
+        "title": "Message",
+        "description": "Representation of a message sent.\n\nMessages can be:\n- agent->user (role=='agent')\n- user->agent and system->agent (role=='user')\n- or function/tool call returns (role=='function'/'tool')."
+      },
+      "memgpt__schemas__openai__chat_completion_request__ToolCall": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["function"],
+            "const": "function",
+            "title": "Type",
+            "default": "function"
+          },
+          "function": {
+            "$ref": "#/components/schemas/ToolCallFunction-Input"
+          }
+        },
+        "type": "object",
+        "required": ["id", "function"],
+        "title": "ToolCall"
+      },
+      "memgpt__schemas__openai__chat_completion_response__FunctionCall": {
+        "properties": {
+          "arguments": {
+            "type": "string",
+            "title": "Arguments"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          }
+        },
+        "type": "object",
+        "required": ["arguments", "name"],
+        "title": "FunctionCall"
+      },
+      "memgpt__schemas__openai__chat_completion_response__Message": {
+        "properties": {
+          "content": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Content"
+          },
+          "tool_calls": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/memgpt__schemas__openai__chat_completion_response__ToolCall"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tool Calls"
+          },
+          "role": {
+            "type": "string",
+            "title": "Role"
+          },
+          "function_call": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/memgpt__schemas__openai__chat_completion_response__FunctionCall"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": ["role"],
+        "title": "Message"
+      },
+      "memgpt__schemas__openai__chat_completion_response__ToolCall": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["function"],
+            "const": "function",
+            "title": "Type",
+            "default": "function"
+          },
+          "function": {
+            "$ref": "#/components/schemas/memgpt__schemas__openai__chat_completion_response__FunctionCall"
+          }
+        },
+        "type": "object",
+        "required": ["id", "function"],
+        "title": "ToolCall"
+      },
+      "memgpt__schemas__openai__chat_completions__ToolCall": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "The ID of the tool call"
+          },
+          "type": {
+            "type": "string",
+            "title": "Type",
+            "default": "function"
+          },
+          "function": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ToolCallFunction-Output"
+              }
+            ],
+            "description": "The arguments and name for the function"
+          }
+        },
+        "type": "object",
+        "required": ["id", "function"],
+        "title": "ToolCall"
+      },
+      "memgpt__schemas__openai__openai__ToolCall": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "The unique identifier of the tool call."
+          },
+          "type": {
+            "type": "string",
+            "title": "Type",
+            "default": "function"
+          },
+          "function": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Function"
+              }
+            ],
+            "description": "The function call."
+          }
+        },
+        "type": "object",
+        "required": ["id", "function"],
+        "title": "ToolCall"
+      }
+    },
+    "securitySchemes": {
+      "HTTPBearer": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    }
+  },
+  "servers": [
+    {
+      "url": "http://memgpt.localhost"
+    },
+    {
+      "url": "http://localhost:8283"
+    },
+    {
+      "url": "http://localhost:8083"
+    }
+  ]
+}
