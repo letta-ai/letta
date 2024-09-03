@@ -33,6 +33,7 @@
     "@storybook/addon-docs": "^8.2.9",
     "@storybook/addon-themes": "^8.2.9",
     "@t3-oss/env-nextjs": "^0.11.1",
+    "@tanstack/react-table": "^8.20.5",
     "axios": "^1.7.5",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",

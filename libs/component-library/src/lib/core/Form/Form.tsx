@@ -8,7 +8,7 @@ import { Controller, FormProvider, useFormContext } from 'react-hook-form';
 
 import { cn } from '@letta-web/core-style-config';
 import { cva, type VariantProps } from 'class-variance-authority';
-import { useMemo } from 'react';
+import { useId, useMemo } from 'react';
 
 export { useForm } from 'react-hook-form';
 
@@ -141,7 +141,7 @@ export interface InputContainerProps {
   description?: string;
   inline?: boolean;
   fullWidth?: boolean;
-  children: React.ReactNode;
+  children?: React.ReactNode;
 }
 
 export function InputContainer(props: InputContainerProps) {
@@ -172,14 +172,16 @@ export function InputContainer(props: InputContainerProps) {
 }
 
 export interface RawInputContainerProps extends InputContainerProps {
-  id: string;
+  id?: string;
 }
 
 export function RawInputContainer(props: RawInputContainerProps) {
-  const { label, id, hideLabel, inline, description, children } = props;
+  const { label, id, hideLabel, inline, fullWidth, description, children } =
+    props;
 
   return (
     <InputWrapper
+      fullWidth={fullWidth}
       inputAndLabel={
         <>
           <LabelPrimitive htmlFor={id} className={hideLabel ? 'sr-only' : ''}>
@@ -189,7 +191,7 @@ export function RawInputContainer(props: RawInputContainerProps) {
         </>
       }
       otherContent={
-        <RawFormDescription id={id}>{description}</RawFormDescription>
+        <RawFormDescription id={id || ''}>{description}</RawFormDescription>
       }
       inline={inline}
     ></InputWrapper>
@@ -227,8 +229,14 @@ export function makeRawInput<T>(
   options?: MakeInputOptions
 ) {
   function RawInputWrapper(props: MakeRawInputProps<T>) {
+    const baseId = useId();
+
     return (
-      <RawInputContainer {...props} inline={options?.inline}>
+      <RawInputContainer
+        {...props}
+        id={baseId || props.id}
+        inline={options?.inline}
+      >
         <Input {...props} />
       </RawInputContainer>
     );
