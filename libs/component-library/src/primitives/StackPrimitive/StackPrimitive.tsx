@@ -8,8 +8,8 @@ const stackVariants = cva('flex', {
   variants: {
     gap: {
       text: 'gap',
-      small: 'gap-2',
-      true: 'gap-4',
+      small: 'gap-1',
+      true: 'gap-2',
     },
     justify: {
       spaceBetween: 'justify-between',

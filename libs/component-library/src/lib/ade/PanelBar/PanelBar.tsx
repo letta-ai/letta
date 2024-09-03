@@ -1,8 +1,9 @@
 import type { PropsWithChildren } from 'react';
 import { type ChangeEvent, useCallback } from 'react';
 import * as React from 'react';
-import { ChevronLeftIcon } from '../../icons';
+import { ChevronLeftIcon, MagnifyingGlassIcon } from '../../icons';
 import { Button } from '../../core/Button/Button';
+import { HStack } from '../../framing/HStack/HStack';
 
 interface PanelSearchProps {
   placeholder: string;
@@ -21,7 +22,8 @@ function PanelSearch(props: PanelSearchProps) {
   );
 
   return (
-    <div className="flex flex-row w-full items-center space-between px-3 h-[42px]">
+    <HStack align="center" paddingLeft="xsmall" fullWidth>
+      <MagnifyingGlassIcon />
       <input
         type="text"
         placeholder={placeholder}
@@ -29,7 +31,7 @@ function PanelSearch(props: PanelSearchProps) {
         value={value}
         onChange={handleChange}
       />
-    </div>
+    </HStack>
   );
 }
 
@@ -44,7 +46,7 @@ type PanelBarProps = PropsWithChildren<{
 export function PanelBar(props: PanelBarProps) {
   const { onReturn } = props;
   return (
-    <div className="flex items-center border-b justify-between w-full flex-row h-panel gap-3">
+    <div className="flex items-center border-b justify-between w-full flex-row h-panel">
       {onReturn && (
         <Button
           label="Return"
