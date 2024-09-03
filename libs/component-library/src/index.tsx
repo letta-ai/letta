@@ -28,3 +28,9 @@ export * from './lib/core/DataTable/DataTable';
 export * from './lib/core/Dialog/Dialog';
 
 export * from './lib/core/Popover/Popover';
+
+export * from './lib/core/Code/Code';
+
+export * from './lib/reusable/CopyButton/CopyButton';
+
+export * from './lib/reusable/DownloadButton/DownloadButton';

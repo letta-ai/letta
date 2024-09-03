@@ -49,6 +49,7 @@ function SelectPrimitive(props: SelectProps) {
         noOptionsMessage: () => ({ fontSize: 'var(--font-size-base)' }),
       }}
       classNames={{
+        container: () => 'min-w-[200px]',
         control: () =>
           cn(
             'border border-solid h-[auto] px-2 py-1 min-h-[36px]! text-base rounded',

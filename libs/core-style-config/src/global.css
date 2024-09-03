@@ -105,7 +105,7 @@
     'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans',
     'Helvetica Neue', sans-serif;
   --font-serif: Georgia, Times, serif;
-  --font-mono: Menlo, Courier, monospace;
+  --font-mono: 'Fira Code', Menlo, Courier, monospace;
 }
 
 @font-face {
@@ -114,6 +114,13 @@
       format('woff2 supports variations'),
     url('../fonts/variable/OverusedGrotesk-VF.woff2') format('woff2-variations');
   font-weight: 300 900;
+}
+
+@font-face {
+  font-family: 'Fira Code';
+  src: url('../fonts/variable/FiraCode-VF.ttf')
+      format('truetype supports variations'),
+    url('../fonts/variable/FiraCode-VF.ttf') format('truetype supports variations');
 }
 
 * {

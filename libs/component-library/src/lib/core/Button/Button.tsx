@@ -3,9 +3,10 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import { ButtonPrimitive, SpinnerPrimitive } from '../../../primitives';
 import { cn } from '@letta-web/core-style-config';
 import { useMemo } from 'react';
+import { Slot } from '@radix-ui/react-slot';
 
 const buttonVariants = cva(
-  'items-center cursor-pointer inline-flex gap-2 whitespace-nowrap transition-width duration-200 ease-in-out',
+  'items-center cursor-pointer inline-flex  whitespace-nowrap transition-width duration-200 ease-in-out',
   {
     variants: {
       fullWidth: {
@@ -28,7 +29,8 @@ const buttonVariants = cva(
           'bg-destructive hover:bg-destructive-hover text-white border-transparent',
       },
       size: {
-        default: 'px-4 py-1 h-[32px] text-base font-medium',
+        default: 'px-4 py-1 h-[32px] text-base font-medium gap-2',
+        small: 'px-3 py-1 h-[28px] text-sm font-medium gap-1',
       },
       active: {
         true: '',
@@ -73,21 +75,24 @@ export function Button(props: ButtonProps) {
     active,
     fullWidth,
     fullHeight,
+    size,
     ...rest
   } = props;
 
   const iconToRender = useMemo(() => {
+    const iconSize = size === 'small' ? 'w-3 h-3' : 'w-3 h-3';
+
     if (busy) {
-      return <SpinnerPrimitive className="w-3 h-3" />;
+      return <SpinnerPrimitive className={iconSize} />;
     }
 
-    return preIcon;
-  }, [busy, preIcon]);
+    return <Slot className={iconSize}>{preIcon}</Slot>;
+  }, [busy, preIcon, size]);
 
   return (
     <ButtonPrimitive
       className={cn(
-        buttonVariants({ color, variant, fullWidth, fullHeight, active })
+        buttonVariants({ color, size, variant, fullWidth, fullHeight, active })
       )}
       {...rest}
     >

@@ -4,12 +4,11 @@ import { cn } from '@letta-web/core-style-config';
 import * as React from 'react';
 import type { VariantProps } from 'class-variance-authority';
 import { cva } from 'class-variance-authority';
-
 const stackVariants = cva('flex', {
   variants: {
     gap: {
       text: 'gap',
-      small: 'gap-3',
+      small: 'gap-2',
       true: 'gap-4',
     },
     justify: {
@@ -36,7 +35,10 @@ export function StackPrimitive({
   ...props
 }: StackPrimitiveProps) {
   return (
-    <Frame className={cn(stackVariants({ ...props, className }))} {...props}>
+    <Frame
+      className={cn(stackVariants({ ...props, gap, className }))}
+      {...props}
+    >
       {children}
     </Frame>
   );

@@ -2,7 +2,6 @@ import * as React from 'react';
 import 'tailwindcss/tailwind.css';
 import '../../core-style-config/src/global.css';
 import './storybook.css';
-import 'prismjs/themes/prism-coy.css';
 
 import { Preview, ReactRenderer } from '@storybook/react';
 import { withThemeByClassName } from '@storybook/addon-themes';

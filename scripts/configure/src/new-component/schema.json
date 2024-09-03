@@ -18,6 +18,7 @@
       "description": "The category of the component",
       "enum": [
         "core",
+        "reusable",
         "ade",
         "framing",
         "marketing"
