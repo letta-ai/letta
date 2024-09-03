@@ -19,7 +19,10 @@ export function buildConfig(appDir: string): Config {
           width: 'width',
         },
         fontSize: {
+          sm: 'var(--font-size-sm)',
           base: 'var(--font-size-base)',
+          lg: 'var(--font-size-lg)',
+          xl: 'var(--font-size-xl)',
         },
         colors: {
           border: 'hsl(var(--border))',

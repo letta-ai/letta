@@ -24,3 +24,7 @@ export * from './lib/core/Select/Select';
 export * from './lib/core/Toggle/Toggle';
 
 export * from './lib/core/DataTable/DataTable';
+
+export * from './lib/core/Dialog/Dialog';
+
+export * from './lib/core/Popover/Popover';

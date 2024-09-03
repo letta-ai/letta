@@ -9,6 +9,9 @@
 @layer base {
   :root {
     --font-size-base: 0.875rem;
+    --font-size-sm: 0.75rem;
+    --font-size-lg: 1rem;
+    --font-size-xl: 1.125rem;
 
     --background: 0 0% 100%;
     --background-hover: 0 0% 98%;
