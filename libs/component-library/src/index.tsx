@@ -20,3 +20,5 @@ export * from './lib/icons';
 export * from './lib/core/Alert/Alert';
 
 export * from './lib/core/Select/Select';
+
+export * from './lib/core/Toggle/Toggle';

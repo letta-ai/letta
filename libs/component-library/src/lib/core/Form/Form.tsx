@@ -8,6 +8,7 @@ import { Controller, FormProvider, useFormContext } from 'react-hook-form';
 
 import { cn } from '@letta-web/core-style-config';
 import { cva, type VariantProps } from 'class-variance-authority';
+import { useMemo } from 'react';
 
 export { useForm } from 'react-hook-form';
 
@@ -84,52 +85,88 @@ const FormItemContext = React.createContext<FormItemContextValue>(
   {} as FormItemContextValue
 );
 
-const InputWrapper = React.forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => {
-  return (
-    <div
-      ref={ref}
-      className={cn('flex flex-col gap-[6px]', className)}
-      {...props}
-    />
-  );
-});
+interface InputWrapperProps {
+  inline?: boolean;
+  fullWidth?: boolean;
+  inputAndLabel: React.ReactNode;
+  otherContent: React.ReactNode;
+}
 
-const FormItem = React.forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => {
+function InputWrapper({
+  inline,
+  fullWidth,
+  inputAndLabel,
+  otherContent,
+}: InputWrapperProps) {
+  const className = useMemo(() => {
+    return cn('flex flex-col gap-[6px]', fullWidth ? 'w-full' : 'w-fit');
+  }, [fullWidth]);
+
+  if (inline) {
+    return (
+      <div className={className}>
+        <div className="flex gap-2 justify-between items-center">
+          {inputAndLabel}
+        </div>
+        <div>{otherContent}</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className={className}>
+      {inputAndLabel}
+      {otherContent}
+    </div>
+  );
+}
+
+interface FormItemProps {
+  children: React.ReactNode;
+}
+
+function FormItem({ children }: FormItemProps) {
   const id = React.useId();
 
   return (
     <FormItemContext.Provider value={{ id }}>
-      <InputWrapper ref={ref} className={className} {...props} />
+      {children}
     </FormItemContext.Provider>
   );
-});
-
-export function RawFormItem(props: React.HTMLAttributes<HTMLDivElement>) {
-  return <InputWrapper {...props} />;
 }
 
 export interface InputContainerProps {
   label: string;
   hideLabel?: boolean;
   description?: string;
+  inline?: boolean;
+  fullWidth?: boolean;
   children: React.ReactNode;
 }
 
 export function InputContainer(props: InputContainerProps) {
-  const { label, hideLabel, description, children } = props;
+  const { label, hideLabel, fullWidth, description, inline, children } = props;
 
   return (
     <FormItem>
-      <FormLabel className={hideLabel ? 'sr-only' : ''}>{label}</FormLabel>
-      <FormControl>{children}</FormControl>
-      {description && <FormDescription>{description}</FormDescription>}
-      <FormMessage />
+      <InputWrapper
+        fullWidth={fullWidth}
+        inline={inline}
+        inputAndLabel={
+          <>
+            <FormLabel className={hideLabel ? 'sr-only' : ''}>
+              {label}
+            </FormLabel>
+            <FormControl>{children}</FormControl>
+          </>
+        }
+        otherContent={
+          <>
+            {description && <FormDescription>{description}</FormDescription>}
+            <FormMessage />
+          </>
+        }
+      />
     </FormItem>
   );
 }
@@ -139,29 +176,41 @@ export interface RawInputContainerProps extends InputContainerProps {
 }
 
 export function RawInputContainer(props: RawInputContainerProps) {
+  const { label, id, hideLabel, inline, description, children } = props;
+
   return (
-    <InputWrapper>
-      <LabelPrimitive
-        htmlFor={props.id}
-        className={props.hideLabel ? 'sr-only' : ''}
-      >
-        {props.label}
-      </LabelPrimitive>
-      {props.children}
-    </InputWrapper>
+    <InputWrapper
+      inputAndLabel={
+        <>
+          <LabelPrimitive htmlFor={id} className={hideLabel ? 'sr-only' : ''}>
+            {label}
+          </LabelPrimitive>
+          {children}
+        </>
+      }
+      otherContent={
+        <RawFormDescription id={id}>{description}</RawFormDescription>
+      }
+      inline={inline}
+    ></InputWrapper>
   );
 }
 
 type MakeInputProps<T> = InputContainerProps & T;
 type MakeRawInputProps<T> = RawInputContainerProps & T;
 
+interface MakeInputOptions {
+  inline?: boolean;
+}
+
 export function makeInput<T>(
   Input: React.ComponentType<T>,
-  componentName: string
+  componentName: string,
+  options?: MakeInputOptions
 ) {
   function InputWrapper(props: MakeInputProps<T>) {
     return (
-      <InputContainer {...props}>
+      <InputContainer {...props} inline={options?.inline}>
         <Input {...props} />
       </InputContainer>
     );
@@ -174,11 +223,12 @@ export function makeInput<T>(
 
 export function makeRawInput<T>(
   Input: React.ComponentType<T>,
-  componentName: string
+  componentName: string,
+  options?: MakeInputOptions
 ) {
   function RawInputWrapper(props: MakeRawInputProps<T>) {
     return (
-      <RawInputContainer {...props}>
+      <RawInputContainer {...props} inline={options?.inline}>
         <Input {...props} />
       </RawInputContainer>
     );
