@@ -1,3 +1,4 @@
+'use client';
 import * as React from 'react';
 import ReactSelect, { components } from 'react-select';
 import { cn } from '@letta-web/core-style-config';

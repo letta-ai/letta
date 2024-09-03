@@ -7,9 +7,12 @@ import { cva } from 'class-variance-authority';
 const stackVariants = cva('flex', {
   variants: {
     gap: {
+      false: 'gap-0',
       text: 'gap',
       small: 'gap-1',
       true: 'gap-2',
+      medium: 'gap-3',
+      large: 'gap-4',
     },
     justify: {
       spaceBetween: 'justify-between',

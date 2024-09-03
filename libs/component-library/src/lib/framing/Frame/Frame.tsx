@@ -13,10 +13,11 @@ const frameVariants = cva('', {
       true: 'h-full',
     },
     color: {
-      background: 'bg-background',
-      'background-grey': 'bg-background-grey',
-      'background-greyer': 'bg-background-greyer',
-      'background-black': 'bg-background-black',
+      background: 'bg-background bg-background-content',
+      'background-grey': 'bg-background-grey bg-background-grey-content',
+      'background-greyer':
+        'bg-background-greyer text-background-greyer-content',
+      'background-black': 'bg-background-black text-background-black-content',
     },
     borderColor: {
       true: 'border-border',
@@ -99,8 +100,52 @@ export function Frame({
   children,
   ...props
 }: PropsWithChildren<FrameProps>) {
+  const {
+    fullWidth,
+    fullHeight,
+    color,
+    borderColor,
+    border,
+    borderY,
+    borderX,
+    borderRight,
+    borderLeft,
+    borderTop,
+    borderBottom,
+    padding,
+    paddingY,
+    paddingX,
+    paddingTop,
+    paddingBottom,
+    paddingLeft,
+    paddingRight,
+    ...rest
+  } = props;
+
+  const frameVariantsClasses = frameVariants({
+    fullWidth,
+    fullHeight,
+    color,
+    borderColor,
+    border,
+    borderY,
+    borderX,
+    borderRight,
+    borderLeft,
+    borderTop,
+    borderBottom,
+    padding,
+    paddingY,
+    paddingX,
+    paddingTop,
+    paddingBottom,
+    paddingLeft,
+    paddingRight,
+    className,
+  });
+
   return (
-    <div className={cn(frameVariants({ ...props, className }))} {...props}>
+    <div className={cn(frameVariantsClasses)} {...rest}>
       {children}
     </div>
   );

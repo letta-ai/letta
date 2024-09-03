@@ -1,12 +1,13 @@
+'use client';
 import type { HTMLProps } from 'react';
 import React from 'react';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@letta-web/core-style-config';
 
-const typographyVariants = cva('text-content', {
+const typographyVariants = cva('', {
   variants: {
     variant: {
-      heading1: 'text-xl font-medium',
+      heading1: 'text-xl',
       body: 'text-base',
     },
     color: {

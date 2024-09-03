@@ -1,3 +1,4 @@
+'use client';
 import type { PropsWithChildren } from 'react';
 import { useEffect } from 'react';
 import * as React from 'react';

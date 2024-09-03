@@ -8,13 +8,15 @@ const logoVariants = cva('', {
     color: {
       black: 'text-black',
       white: 'text-white',
+      inherit: 'text-inherit',
     },
     size: {
       default: 'h-[24px] w-[24px]',
+      large: 'h-[64px] w-[64px]',
     },
   },
   defaultVariants: {
-    color: 'black',
+    color: 'inherit',
     size: 'default',
   },
 });

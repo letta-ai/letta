@@ -1,3 +1,4 @@
+'use client';
 import * as React from 'react';
 import { makeRawInput, makeInput } from '../Form/Form';
 import { cn } from '@letta-web/core-style-config';

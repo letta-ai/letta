@@ -3,20 +3,22 @@ import { cva, type VariantProps } from 'class-variance-authority';
 
 import { cn } from '@letta-web/core-style-config';
 import { ButtonPrimitive } from '../../../primitives';
+import { forwardRef } from 'react';
 
-const buttonVariants = cva('px-6 py-3 cursor-pointer inline-flex gap-2', {
-  variants: {
-    variant: {
-      primaryLight: 'bg-white text-black',
-      primaryDark: 'bg-black text-white',
-      secondaryDark: 'bg-transparent text-black border-black border',
-      secondaryLight: 'bg-transparent text-white border ',
+const buttonVariants = cva(
+  'px-9 py-2.5 cursor-pointer items-center inline-flex gap-3',
+  {
+    variants: {
+      variant: {
+        primary: 'bg-foreground bg-background-hover',
+        secondary: 'bg-transparent text-muted border-muted border border-solid',
+      },
     },
-  },
-  defaultVariants: {
-    variant: 'primaryLight',
-  },
-});
+    defaultVariants: {
+      variant: 'primary',
+    },
+  }
+);
 
 export type MarketingButtonProps = React.HTMLAttributes<
   HTMLAnchorElement | HTMLButtonElement
@@ -28,15 +30,16 @@ export type MarketingButtonProps = React.HTMLAttributes<
     preIcon?: React.ReactNode;
   };
 
-export function MarketingButton({
-  className,
-  preIcon,
-  variant,
-  label,
-  ...props
-}: MarketingButtonProps) {
+export const MarketingButton = forwardRef<
+  HTMLButtonElement,
+  MarketingButtonProps
+>(function MarketingButton(
+  { className, preIcon, variant, label, ...props },
+  ref
+) {
   return (
     <ButtonPrimitive
+      ref={ref}
       className={cn(buttonVariants({ variant, className }))}
       {...props}
     >
@@ -44,4 +47,4 @@ export function MarketingButton({
       {label}
     </ButtonPrimitive>
   );
-}
+});

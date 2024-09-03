@@ -14,12 +14,7 @@ export const Primary: Story = {
   },
   argTypes: {
     variant: {
-      options: [
-        'primaryLight',
-        'primaryDark',
-        'secondaryDark',
-        'secondaryLight',
-      ],
+      options: ['primary', 'secondary'],
       control: { type: 'radio' },
     },
   },
