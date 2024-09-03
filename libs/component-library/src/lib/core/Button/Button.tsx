@@ -29,8 +29,8 @@ const buttonVariants = cva(
           'bg-destructive hover:bg-destructive-hover text-white border-transparent',
       },
       size: {
-        default: 'px-4 py-1 h-[32px] text-base font-medium gap-2',
-        small: 'px-3 py-1 h-[28px] text-sm font-medium gap-1',
+        default: 'px-4 py-1 h-biHeight text-base font-medium gap-2',
+        small: 'px-3 py-1 h-biHeight-sm text-sm font-medium gap-2',
       },
       active: {
         true: '',

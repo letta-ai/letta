@@ -44,11 +44,12 @@ type PanelBarProps = PropsWithChildren<{
 export function PanelBar(props: PanelBarProps) {
   const { onReturn } = props;
   return (
-    <div className="flex items-center border-b justify-between w-full flex-row h-[42px] gap-3">
+    <div className="flex items-center border-b justify-between w-full flex-row h-panel gap-3">
       {onReturn && (
         <Button
           label="Return"
           color="tertiary"
+          size="small"
           preIcon={<ChevronLeftIcon />}
           onClick={onReturn}
           variant="inline-panel"

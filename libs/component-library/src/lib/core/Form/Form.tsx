@@ -15,7 +15,7 @@ export { useForm } from 'react-hook-form';
 const Form = FormProvider;
 
 const labelVariants = cva(
-  'text-base font-semibold leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70'
+  'text-base font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70'
 );
 
 const LabelPrimitive = React.forwardRef<

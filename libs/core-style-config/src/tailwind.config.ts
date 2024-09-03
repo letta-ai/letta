@@ -18,6 +18,11 @@ export function buildConfig(appDir: string): Config {
         transitionProperty: {
           width: 'width',
         },
+        height: {
+          biHeight: 'var(--button-input-height)',
+          'biHeight-sm': 'var(--button-input-height-sm)',
+          panel: 'var(--panel-row-height)',
+        },
         fontSize: {
           sm: 'var(--font-size-sm)',
           base: 'var(--font-size-base)',

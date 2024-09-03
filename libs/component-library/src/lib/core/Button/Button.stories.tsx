@@ -24,6 +24,10 @@ export const Primary: Story = {
         type: 'boolean',
       },
     },
+    size: {
+      options: ['default', 'small'],
+      control: { type: 'radio' },
+    },
     active: {
       control: {
         type: 'boolean',

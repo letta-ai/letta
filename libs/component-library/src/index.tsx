@@ -34,3 +34,5 @@ export * from './lib/core/Code/Code';
 export * from './lib/reusable/CopyButton/CopyButton';
 
 export * from './lib/reusable/DownloadButton/DownloadButton';
+
+export * from './lib/core/Avatar/Avatar';

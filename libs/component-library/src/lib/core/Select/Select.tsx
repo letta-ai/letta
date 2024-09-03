@@ -1,7 +1,6 @@
 import * as React from 'react';
 import ReactSelect, { components } from 'react-select';
 import { cn } from '@letta-web/core-style-config';
-import { BASE_INPUT_HEIGHT } from '../../../constants';
 import type { ReactNode } from 'react';
 import { CaretDownIcon, Cross2Icon } from '../../icons';
 import { makeInput, makeRawInput } from '../Form/Form';
@@ -53,7 +52,7 @@ function SelectPrimitive(props: SelectProps) {
         control: () =>
           cn(
             'border border-solid h-[auto] px-2 py-1 min-h-[36px]! text-base rounded',
-            BASE_INPUT_HEIGHT
+            'h-biHeight'
           ),
         placeholder: () => cn('text-muted-content'),
         menu: () => cn('mt-1 bg-background rounded border'),

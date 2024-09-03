@@ -16,6 +16,15 @@ export const Primary: Story = {
     border: false,
   },
   argTypes: {
+    color: {
+      options: [
+        'background',
+        'background-grey',
+        'background-greyer',
+        'background-black',
+      ],
+      control: { type: 'radio' },
+    },
     padding: {
       options: ['xxsmall', 'xsmall', 'small', 'true'],
       control: { type: 'radio' },

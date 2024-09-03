@@ -128,7 +128,7 @@ function PanelHeader(props: PanelHeaderProps) {
   const { title } = props;
 
   return (
-    <div className="w-full flex flex-row bg-background-greyer items-center border-b space-between px-3 h-[42px]">
+    <div className="w-full flex flex-row bg-background-greyer items-center border-b space-between px-3 h-panel">
       <Typography bold>{title}</Typography>
     </div>
   );
