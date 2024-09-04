@@ -1,4 +1,5 @@
 import './global.css';
+import { QueryClientProviders } from './QueryClientProviders';
 
 export const metadata = {
   title: 'Welcome to letta',
@@ -12,7 +13,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <QueryClientProviders>{children}</QueryClientProviders>
+      </body>
     </html>
   );
 }

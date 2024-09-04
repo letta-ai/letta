@@ -61,6 +61,8 @@ export type ButtonProps = Omit<
       preIcon?: React.ReactNode;
       label?: string;
       busy?: boolean;
+      href?: string;
+      target?: string;
     },
   'children' | 'className'
 >;

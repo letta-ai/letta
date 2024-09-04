@@ -16,6 +16,7 @@ export const environment = createEnv({
     REDIS_HOST: z.string().optional(),
     REDIS_PORT: z.string().optional(),
     REDIS_PASSWORD: z.string().optional(),
+    LETTA_AGENTS_ENDPOINT: z.string(),
   },
   runtimeEnv: {
     GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
@@ -24,5 +25,6 @@ export const environment = createEnv({
     REDIS_HOST: process.env.REDIS_HOST,
     REDIS_PORT: process.env.REDIS_PORT,
     REDIS_PASSWORD: process.env.REDIS_PASSWORD,
+    LETTA_AGENTS_ENDPOINT: process.env.LETTA_AGENTS_ENDPOINT,
   },
 });

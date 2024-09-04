@@ -18,7 +18,7 @@ const typographyVariants = cva('', {
       white: 'text-white',
     },
     bold: {
-      true: 'font-semibold',
+      true: 'font-medium',
     },
   },
   defaultVariants: {

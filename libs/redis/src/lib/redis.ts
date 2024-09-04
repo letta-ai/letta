@@ -40,7 +40,7 @@ function createRedisInstance() {
     });
 
     return redis;
-  } catch (e) {
+  } catch (_) {
     throw new Error(`[Redis] Could not create a Redis instance`);
   }
 }
@@ -59,7 +59,7 @@ export async function getRedisData<Type extends RedisTypes = RedisTypes>(
 
   try {
     return JSON.parse(res);
-  } catch (e) {
+  } catch (_) {
     return null;
   }
 }

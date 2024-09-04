@@ -17,6 +17,8 @@ import {
   TableRow,
 } from '../Table/Table';
 import { RawInput } from '../Input/Input';
+import { cva, type VariantProps } from 'class-variance-authority';
+import { cn } from '@letta-web/core-style-config';
 
 interface TableBodyContentProps<Data> {
   table: UseReactTableType<Data>;
@@ -47,7 +49,10 @@ function TableBodyContent<Data>(props: TableBodyContentProps<Data>) {
         {table.getRowModel().rows.map((row) => (
           <TableRow key={row.id} data-state={row.getIsSelected() && 'selected'}>
             {row.getVisibleCells().map((cell) => (
-              <TableCell key={cell.id}>
+              <TableCell
+                align={cell.column.columnDef.meta?.style.columnAlign}
+                key={cell.id}
+              >
                 {flexRender(cell.column.columnDef.cell, cell.getContext())}
               </TableCell>
             ))}
@@ -61,14 +66,26 @@ function TableBodyContent<Data>(props: TableBodyContentProps<Data>) {
     <TableBody>
       <TableRow>
         <TableCell colSpan={columnLength} className="h-24 text-center">
-          {noResultsText}
+          {noResultsText || 'No results found'}
         </TableCell>
       </TableRow>
     </TableBody>
   );
 }
 
-interface DataTableProps<TData, TValue> {
+const dataTableVariants = cva('', {
+  variants: {
+    variant: {
+      default: 'rounded-md border',
+      minimal: 'border-none',
+    },
+  },
+  defaultVariants: {
+    variant: 'default',
+  },
+});
+
+interface DataTablePropsBase<TData, TValue> {
   columns: Array<ColumnDef<TData, TValue>>;
   data: TData[];
   onSearch?: (search: string) => void;
@@ -77,8 +94,11 @@ interface DataTableProps<TData, TValue> {
   noResultsText?: string;
 }
 
+type DataTableProps<TData, TValue> = DataTablePropsBase<TData, TValue> &
+  VariantProps<typeof dataTableVariants>;
+
 export function DataTable<TData, TValue>(props: DataTableProps<TData, TValue>) {
-  const { columns, data, isLoading, noResultsText } = props;
+  const { columns, variant, data, isLoading, noResultsText } = props;
 
   const table = useReactTable({
     data,
@@ -98,14 +118,17 @@ export function DataTable<TData, TValue>(props: DataTableProps<TData, TValue>) {
           value={props.searchValue}
         />
       )}
-      <div className="rounded-md border">
+      <div className={cn(dataTableVariants({ variant }))}>
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => {
                   return (
-                    <TableHead key={header.id}>
+                    <TableHead
+                      align={header.column.columnDef.meta?.style.columnAlign}
+                      key={header.id}
+                    >
                       {header.isPlaceholder
                         ? null
                         : flexRender(

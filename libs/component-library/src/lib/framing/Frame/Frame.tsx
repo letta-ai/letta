@@ -18,6 +18,7 @@ const frameVariants = cva('', {
       'background-greyer':
         'bg-background-greyer text-background-greyer-content',
       'background-black': 'bg-background-black text-background-black-content',
+      tertiary: 'bg-tertiary text-tertiary-content',
     },
     borderColor: {
       true: 'border-border',
@@ -93,11 +94,14 @@ const frameVariants = cva('', {
 });
 
 export type FrameProps = React.HTMLAttributes<HTMLDivElement> &
-  VariantProps<typeof frameVariants>;
+  VariantProps<typeof frameVariants> & {
+    as?: React.ElementType;
+  };
 
 export function Frame({
   className,
   children,
+  as,
   ...props
 }: PropsWithChildren<FrameProps>) {
   const {
@@ -108,6 +112,7 @@ export function Frame({
     border,
     borderY,
     borderX,
+    rounded,
     borderRight,
     borderLeft,
     borderTop,
@@ -131,6 +136,7 @@ export function Frame({
     borderY,
     borderX,
     borderRight,
+    rounded,
     borderLeft,
     borderTop,
     borderBottom,
@@ -144,9 +150,11 @@ export function Frame({
     className,
   });
 
+  const Component = as || 'div';
+
   return (
-    <div className={cn(frameVariantsClasses)} {...rest}>
+    <Component className={cn(frameVariantsClasses)} {...rest}>
       {children}
-    </div>
+    </Component>
   );
 }
