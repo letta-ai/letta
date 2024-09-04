@@ -40,3 +40,7 @@ export * from './lib/core/Avatar/Avatar';
 export * from './lib/ade/PanelItem/PanelItem';
 
 export * from './lib/ade/PanelHeader/PanelHeader';
+
+export * from './lib/core/Card/Card';
+
+export * from './lib/reusable/ToggleCard/ToggleCard';
