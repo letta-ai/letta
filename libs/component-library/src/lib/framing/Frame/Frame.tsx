@@ -13,8 +13,9 @@ const frameVariants = cva('', {
       true: 'h-full',
     },
     color: {
-      background: 'bg-background bg-background-content',
-      'background-grey': 'bg-background-grey bg-background-grey-content',
+      transparent: 'bg-transparent',
+      background: 'bg-background text-background-content',
+      'background-grey': 'bg-background-grey text-background-grey-content',
       'background-greyer':
         'bg-background-greyer text-background-greyer-content',
       'background-black': 'bg-background-black text-background-black-content',
@@ -45,18 +46,24 @@ const frameVariants = cva('', {
       true: 'border-b',
     },
     padding: {
+      xxxxsmall: 'p-1',
+      xxxsmall: 'p-2',
       xxsmall: 'p-2.5',
       xsmall: 'p-3',
       small: 'p-4',
       true: 'p-5',
     },
     paddingY: {
+      xxxxsmall: 'py-1',
+      xxxsmall: 'py-2',
       xxsmall: 'py-2.5',
       xsmall: 'py-3',
       small: 'py-4',
       true: 'py-5',
     },
     paddingX: {
+      xxxxsmall: 'px-1',
+      xxxsmall: 'px-2',
       xxsmall: 'px-2.5',
       xsmall: 'px-3',
       small: 'px-4',

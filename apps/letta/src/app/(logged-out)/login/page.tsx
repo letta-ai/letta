@@ -3,7 +3,7 @@ import { LoginComponent } from './LoginComponent';
 
 function LoginPage() {
   return (
-    <HStack gap={false} className="h-[100vh]" fullHeight>
+    <HStack gap={false} className="login-container h-[100vh]" fullHeight>
       <Frame fullWidth className="relative overflow-hidden">
         <img
           alt=""

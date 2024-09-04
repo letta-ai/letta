@@ -6,6 +6,11 @@ import { useCallback, useMemo } from 'react';
 import { createContext } from 'react';
 import ReactDOM from 'react-dom';
 import { Typography } from '../../core/Typography/Typography';
+import { Slot } from '@radix-ui/react-slot';
+import { HStack } from '../../framing/HStack/HStack';
+import type { VariantProps } from 'class-variance-authority';
+import { cva } from 'class-variance-authority';
+import { cn } from '@letta-web/core-style-config';
 
 type PanelId = string[];
 
@@ -49,22 +54,6 @@ export function PanelManager(props: PanelManagerProps) {
     [activePanels]
   );
 
-  const activatePanel = useCallback(function activatePanel(panelId: PanelId) {
-    // add the panelid to the activePanels array
-    // remove any panelids that are a subset of the panelid
-    // e.g. if panelId is ['a', 'b'], remove ['a', 'b', 'c'] and ['a', 'b']
-
-    // also activate the parent panel if it is not already active
-
-    setActivePanels((prev) => {
-      return prev
-        .filter((id) => {
-          return !panelId.every((panelId) => id.includes(panelId));
-        })
-        .concat(panelId.map((v, index) => panelId.slice(0, index + 1)));
-    });
-  }, []);
-
   const deactivatePanel = useCallback(function deactivatePanel(
     panelId: PanelId
   ) {
@@ -83,6 +72,39 @@ export function PanelManager(props: PanelManagerProps) {
       return activePanels.some((id) => id.join('-') === panelId.join('-'));
     },
     [activePanels]
+  );
+
+  const activatePanel = useCallback(
+    function activatePanel(panelId: PanelId) {
+      // add the panelid to the activePanels array
+      // remove any panelids that are a subset of the panelid
+      // e.g. if panelId is ['a', 'b'], remove ['a', 'b', 'c'] and ['a', 'b']
+      // if panelId is ['a', 'c'], remove ['a', 'b']
+
+      // also activate the parent panel if it is not already active
+      // remove siblings of the parent panel
+
+      deactivatePanel(['sidebar']);
+
+      setActivePanels((prev) => {
+        const newActivePanels = prev.filter((id) => {
+          return !panelId.every((panelId) => id.includes(panelId));
+        });
+
+        const parentPanelId = panelId.slice(0, panelId.length - 1);
+
+        if (
+          !newActivePanels.some(
+            (id) => id.join('-') === parentPanelId.join('-')
+          )
+        ) {
+          newActivePanels.push(parentPanelId);
+        }
+
+        return newActivePanels.concat([panelId]);
+      });
+    },
+    [deactivatePanel]
   );
 
   const addPanel = useCallback(function addPanel(panelId: PanelId) {
@@ -129,21 +151,41 @@ function PanelHeader(props: PanelHeaderProps) {
   const { title } = props;
 
   return (
-    <div className="w-full flex flex-row bg-background-greyer items-center border-b space-between px-3 h-panel">
+    <HStack
+      color="background-greyer"
+      align="center"
+      padding="xxsmall"
+      borderBottom
+      className="h-panel"
+    >
       <Typography bold>{title}</Typography>
-    </div>
+    </HStack>
   );
 }
 
-type PanelContentProps = PropsWithChildren<{
-  title: string;
-}>;
+const panelVariants = cva('h-full rounded-sm border flex flex-col', {
+  variants: {
+    width: {
+      compact: 'w-[400px] max-w-[400px]',
+      full: 'w-full flex-1',
+    },
+  },
+  defaultVariants: {
+    width: 'full',
+  },
+});
+
+type PanelContentProps = PropsWithChildren<
+  VariantProps<typeof panelVariants> & {
+    title: string;
+  }
+>;
 
 function PanelContent(props: PanelContentProps) {
-  const { title } = props;
+  const { title, width } = props;
 
   return (
-    <div className="flex-1 h-full rounded-sm border flex flex-col">
+    <div className={cn(panelVariants({ width }))}>
       <PanelHeader title={title} />
       <div className="flex flex-1 bg-background">{props.children}</div>
     </div>
@@ -210,10 +252,13 @@ export function Panel(props: PanelProps) {
 
   return (
     <PanelContext.Provider value={value}>
-      {React.cloneElement(props.trigger, {
-        onClick: handleTriggerClick,
-        active: isPanelActive,
-      })}
+      <Slot
+        onClick={handleTriggerClick}
+        // @ts-expect-error - this is allowed
+        isActive={isPanelActive}
+      >
+        {props.trigger}
+      </Slot>
       {isPanelActive &&
         ReactDOM.createPortal(
           <PanelContent {...props}>{props.children}</PanelContent>,
@@ -228,7 +273,7 @@ export function PanelRenderArea() {
   const { allPanels } = usePanelManagerContext();
 
   return (
-    <div className="p-5 w-full">
+    <div className="w-full h-full">
       <div className="flex flex-row gap-3 h-full w-full flex-wrap">
         {Array.from(allPanels).map((panelId) => (
           <div className="contents" id={`panel-${panelId}`} key={panelId}></div>

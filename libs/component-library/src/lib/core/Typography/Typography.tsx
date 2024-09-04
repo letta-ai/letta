@@ -9,6 +9,7 @@ const typographyVariants = cva('', {
     variant: {
       heading1: 'text-xl',
       body: 'text-base',
+      body2: 'text-sm',
     },
     color: {
       default: '',
@@ -35,6 +36,7 @@ type TypographyProps = HTMLProps<HTMLElement> &
 const variantToElement = {
   heading1: 'h1',
   body: 'p',
+  body2: 'p',
 };
 
 export function Typography(props: TypographyProps) {

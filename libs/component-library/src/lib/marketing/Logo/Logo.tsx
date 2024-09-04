@@ -11,6 +11,7 @@ const logoVariants = cva('', {
       inherit: 'text-inherit',
     },
     size: {
+      small: 'h-[16px] w-[16px]',
       default: 'h-[24px] w-[24px]',
       large: 'h-[64px] w-[64px]',
     },

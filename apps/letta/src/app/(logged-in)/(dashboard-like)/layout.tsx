@@ -5,6 +5,7 @@ import { Frame, HStack, Logo, VStack } from '@letta-web/component-library';
 import Link from 'next/link';
 import { DashboardNavigation } from './DashboardNavigation';
 import { DASHBOARD_HEADER_HEIGHT } from '$letta/client/common';
+import './DashboardLike.scss';
 
 const SIDEBAR_WIDTH = 'w-[350px] min-w-[350px]';
 
@@ -47,7 +48,7 @@ export default async function DashboardLikeLayout(
   const { children } = props;
 
   return (
-    <div className="w-[100vw] h-[100vh]">
+    <div className="pageFadeIn w-[100vw] h-[100vh]">
       <HStack gap={false} fullHeight fullWidth>
         <Sidebar />
         <Frame fullHeight fullWidth>

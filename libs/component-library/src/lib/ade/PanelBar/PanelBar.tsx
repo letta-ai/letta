@@ -46,7 +46,7 @@ type PanelBarProps = PropsWithChildren<{
 export function PanelBar(props: PanelBarProps) {
   const { onReturn } = props;
   return (
-    <div className="flex items-center border-b justify-between w-full flex-row h-panel">
+    <div className="flex w-full items-center border-b justify-between flex-row h-panel">
       {onReturn && (
         <Button
           label="Return"

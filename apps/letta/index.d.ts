@@ -1,7 +1,18 @@
+import '@tanstack/react-table';
+import type { RowData } from '@tanstack/react-table';
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 declare module '*.svg' {
   const content: any;
   // eslint-disable-next-line @typescript-eslint/naming-convention
   export const ReactComponent: any;
   export default content;
+}
+
+declare module '@tanstack/react-table' {
+  interface ColumnMeta<TData extends RowData, TValue> {
+    style: {
+      columnAlign: 'center' | 'left' | 'right';
+    };
+  }
 }
