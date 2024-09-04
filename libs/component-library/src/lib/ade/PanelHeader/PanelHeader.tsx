@@ -4,6 +4,7 @@ import { HStack } from '../../framing/HStack/HStack';
 import { Typography } from '../../core/Typography/Typography';
 import { Button } from '../../core/Button/Button';
 import { usePanelContext, usePanelManagerContext } from '../Panel/Panel';
+import { Cross2Icon } from '../../icons';
 
 interface PanelHeaderProps {
   title: string;
@@ -34,12 +35,19 @@ export function PanelHeader(props: PanelHeaderProps) {
     >
       <Typography bold>{title}</Typography>
       <HStack fullHeight align="center">
-        <Button
-          onClick={handleDeactivatePanel}
-          label="Close"
-          size="small"
-          color="tertiary"
-        />
+        {showSave ? (
+          <Button
+            onClick={handleDeactivatePanel}
+            label="Close"
+            size="small"
+            color="tertiary"
+          />
+        ) : (
+          <button onClick={handleDeactivatePanel} className="flex items-center">
+            <Cross2Icon />
+            <span className="sr-only">Close</span>
+          </button>
+        )}
         {showSave && (
           <Button
             busy={isSaving}

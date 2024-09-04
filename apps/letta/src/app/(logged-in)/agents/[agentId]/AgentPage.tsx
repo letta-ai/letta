@@ -1,18 +1,20 @@
 'use client';
 import React from 'react';
 import {
+  Button,
   Frame,
   HStack,
+  Logo,
   PanelManager,
   PanelRenderArea,
   Typography,
   VStack,
 } from '@letta-web/component-library';
-import { ADEHeader } from './ADEHeader/ADEHeader';
 import { NavigationItem } from './common/ADENavigationItem/ADENavigationItem';
 import { ToolsPanel } from './ToolsPanel/ToolsPanel';
 import { DataSourcesPanel } from './DataSourcesPanel/DataSourcesPanel';
 import { ModelPanel } from './ModelPanel/ModelPanel';
+import { AgentSimulator } from './AgentSimulator/AgentSimulator';
 
 interface SidebarGroupProps {
   title: string;
@@ -65,10 +67,32 @@ function ADESidebar() {
   );
 }
 
+function ADEHeader() {
+  return (
+    <HStack
+      justify="spaceBetween"
+      align="center"
+      padding="xxsmall"
+      className="h-[48px] min-h-[48px]"
+      fullWidth
+      color="background-black"
+    >
+      <div>
+        <Logo size="small" color="white" />
+      </div>
+      <HStack>
+        <AgentSimulator />
+        <Button color="primary" size="small" label="Deployment Instructions" />
+      </HStack>
+    </HStack>
+  );
+}
+
 export function AgentPage() {
   return (
     <PanelManager>
       <VStack
+        overflow="hidden"
         color="background-grey"
         className="w-[100vw] h-[100vh]"
         fullHeight
@@ -76,9 +100,9 @@ export function AgentPage() {
         gap={false}
       >
         <ADEHeader />
-        <HStack fullWidth fullHeight gap={false}>
+        <HStack className="h-[0] flex-1" overflowY="auto" fullWidth gap={false}>
           <ADESidebar />
-          <Frame padding="xxxsmall" fullWidth fullHeight>
+          <Frame padding="xxxsmall" overflow="hidden" fullWidth fullHeight>
             <PanelRenderArea />
           </Frame>
         </HStack>

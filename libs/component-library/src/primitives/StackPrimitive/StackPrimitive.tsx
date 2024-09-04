@@ -4,6 +4,8 @@ import { cn } from '@letta-web/core-style-config';
 import * as React from 'react';
 import type { VariantProps } from 'class-variance-authority';
 import { cva } from 'class-variance-authority';
+import type { ElementRef } from 'react';
+import { forwardRef } from 'react';
 const stackVariants = cva('flex', {
   variants: {
     gap: {
@@ -31,18 +33,17 @@ export type StackPrimitiveProps = React.PropsWithChildren<
   FrameProps & VariantProps<typeof stackVariants>
 >;
 
-export function StackPrimitive({
-  className,
-  gap,
-  children,
-  ...props
-}: StackPrimitiveProps) {
+export const StackPrimitive = forwardRef<
+  ElementRef<typeof Frame>,
+  StackPrimitiveProps
+>(function StackPrimitive({ className, gap, children, ...props }, ref) {
   return (
     <Frame
+      ref={ref}
       className={cn(stackVariants({ ...props, gap, className }))}
       {...props}
     >
       {children}
     </Frame>
   );
-}
+});

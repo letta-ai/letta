@@ -9,6 +9,7 @@ import { Slot } from '@radix-ui/react-slot';
 import type { VariantProps } from 'class-variance-authority';
 import { cva } from 'class-variance-authority';
 import { cn } from '@letta-web/core-style-config';
+import { ErrorBoundary } from 'react-error-boundary';
 
 type PanelId = string[];
 
@@ -174,7 +175,9 @@ function PanelContent(props: PanelContentProps) {
 
   return (
     <div className={cn(panelVariants({ width }))}>
-      <div className="flex flex-1 flex-col bg-background">{props.children}</div>
+      <div className="h-full flex flex-1 flex-col bg-background">
+        {props.children}
+      </div>
     </div>
   );
 }
@@ -240,9 +243,16 @@ export function Panel(props: PanelProps) {
       >
         {props.trigger}
       </Slot>
+
       {isPanelActive &&
         ReactDOM.createPortal(
-          <PanelContent {...props}>{props.children}</PanelContent>,
+          <ErrorBoundary
+            fallbackRender={function FallbackComponent() {
+              return <div>Something went wrong</div>;
+            }}
+          >
+            <PanelContent {...props} />
+          </ErrorBoundary>,
           // @ts-expect-error - we know this is a string
           document.getElementById(`panel-${id.join('-')}`)
         )}

@@ -1,5 +1,6 @@
 import * as React from 'react';
 import type { PropsWithChildren } from 'react';
+import { forwardRef } from 'react';
 import type { VariantProps } from 'class-variance-authority';
 import { cva } from 'class-variance-authority';
 import { cn } from '@letta-web/core-style-config';
@@ -11,6 +12,9 @@ const frameVariants = cva('', {
     },
     fullHeight: {
       true: 'h-full',
+    },
+    collapseHeight: {
+      true: 'h-0 flex-1',
     },
     color: {
       transparent: 'bg-transparent',
@@ -96,6 +100,18 @@ const frameVariants = cva('', {
     rounded: {
       true: 'rounded',
     },
+    overflow: {
+      hidden: 'overflow-hidden',
+      auto: 'overflow-auto',
+    },
+    overflowY: {
+      hidden: 'overflow-y-hidden',
+      auto: 'overflow-y-auto',
+    },
+    overflowX: {
+      hidden: 'overflow-x-hidden',
+      auto: 'overflow-x-auto',
+    },
   },
   defaultVariants: {},
 });
@@ -105,63 +121,68 @@ export type FrameProps = React.HTMLAttributes<HTMLDivElement> &
     as?: React.ElementType;
   };
 
-export function Frame({
-  className,
-  children,
-  as,
-  ...props
-}: PropsWithChildren<FrameProps>) {
-  const {
-    fullWidth,
-    fullHeight,
-    color,
-    borderColor,
-    border,
-    borderY,
-    borderX,
-    rounded,
-    borderRight,
-    borderLeft,
-    borderTop,
-    borderBottom,
-    padding,
-    paddingY,
-    paddingX,
-    paddingTop,
-    paddingBottom,
-    paddingLeft,
-    paddingRight,
-    ...rest
-  } = props;
+export const Frame = forwardRef<HTMLElement, PropsWithChildren<FrameProps>>(
+  function Frame({ className, children, as, ...props }, ref) {
+    const {
+      fullWidth,
+      fullHeight,
+      color,
+      borderColor,
+      border,
+      borderY,
+      borderX,
+      rounded,
+      borderRight,
+      borderLeft,
+      borderTop,
+      borderBottom,
+      padding,
+      paddingY,
+      paddingX,
+      collapseHeight,
+      paddingTop,
+      paddingBottom,
+      paddingLeft,
+      paddingRight,
+      overflow,
+      overflowY,
+      overflowX,
+      ...rest
+    } = props;
 
-  const frameVariantsClasses = frameVariants({
-    fullWidth,
-    fullHeight,
-    color,
-    borderColor,
-    border,
-    borderY,
-    borderX,
-    borderRight,
-    rounded,
-    borderLeft,
-    borderTop,
-    borderBottom,
-    padding,
-    paddingY,
-    paddingX,
-    paddingTop,
-    paddingBottom,
-    paddingLeft,
-    paddingRight,
-    className,
-  });
+    const frameVariantsClasses = frameVariants({
+      fullWidth,
+      fullHeight,
+      color,
+      borderColor,
+      border,
+      borderY,
+      borderX,
+      borderRight,
+      rounded,
+      borderLeft,
+      borderTop,
+      borderBottom,
+      padding,
+      paddingY,
+      paddingX,
+      paddingTop,
+      paddingBottom,
+      paddingLeft,
+      paddingRight,
+      overflow,
+      collapseHeight,
+      overflowY,
+      overflowX,
+      className,
+    });
 
-  const Component = as || 'div';
+    const Component = as || 'div';
 
-  return (
-    <Component className={cn(frameVariantsClasses)} {...rest}>
-      {children}
-    </Component>
-  );
-}
+    return (
+      <Component ref={ref} className={cn(frameVariantsClasses)} {...rest}>
+        {children}
+      </Component>
+    );
+  }
+);

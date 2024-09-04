@@ -27,6 +27,8 @@ const buttonVariants = cva(
         tertiary: 'bg-tertiary hover:bg-tertiary-hover text-tertiary-content ',
         destructive:
           'bg-destructive hover:bg-destructive-hover text-white border-transparent',
+        black:
+          'bg-background-black text-background-black-content hover:bg-background-black-hover border-transparent',
       },
       size: {
         default: 'px-4 py-1 h-biHeight text-base font-medium gap-2',
@@ -62,6 +64,7 @@ export type ButtonProps = Omit<
       label?: string;
       busy?: boolean;
       href?: string;
+      hideLabel?: boolean;
       target?: string;
       type?: 'button' | 'reset' | 'submit';
     },
@@ -79,6 +82,7 @@ export function Button(props: ButtonProps) {
     fullWidth,
     fullHeight,
     size,
+    hideLabel,
     ...rest
   } = props;
 
@@ -100,7 +104,11 @@ export function Button(props: ButtonProps) {
       {...rest}
     >
       {iconToRender}
-      {label}
+      {hideLabel ? (
+        <span className="sr-only">{label}</span>
+      ) : (
+        <span>{label}</span>
+      )}
     </ButtonPrimitive>
   );
 }
