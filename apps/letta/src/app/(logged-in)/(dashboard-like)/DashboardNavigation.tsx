@@ -18,7 +18,7 @@ function NavigationItem(props: NavigationItemProps) {
 
   const isActive = useMemo(() => {
     return pathname === href;
-  }, [href]);
+  }, [href, pathname]);
 
   return (
     <Frame as="li" fullWidth>

@@ -1,24 +1,33 @@
 import { environment } from '@letta-web/environmental-variables';
 import axios from 'axios';
+import type { NextRequest } from 'next/server';
 interface NextContext {
   params: {
     route: string[];
   };
 }
 
-export async function handler(req: Request, context: NextContext) {
+export async function handler(req: NextRequest, context: NextContext) {
   const path = context.params.route.join('/');
+
+  const payload = req.body ? await req.json() : undefined;
 
   const response = await axios({
     method: req.method,
     url: `${environment.LETTA_AGENTS_ENDPOINT}/${path}`,
-    data: req.body,
+    data: payload,
     headers: {
       Authorization: 'Bearer password',
     },
   });
 
-  return new Response(JSON.stringify(response.data), {
+  let data = response.data;
+
+  if (typeof data === 'object') {
+    data = JSON.stringify(data);
+  }
+
+  return new Response(data, {
     status: response.status,
     headers: {
       'Content-Type': 'application/json',

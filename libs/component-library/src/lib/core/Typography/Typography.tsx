@@ -40,12 +40,12 @@ const variantToElement = {
 };
 
 export function Typography(props: TypographyProps) {
-  const { className, overrideEl, variant, ...rest } = props;
+  const { className, overrideEl, variant, bold, ...rest } = props;
 
   const Element = variantToElement[overrideEl || variant || 'body'] || 'p';
 
   return React.createElement(Element, {
-    className: cn(typographyVariants({ ...rest, variant, className })),
+    className: cn(typographyVariants({ ...rest, bold, variant, className })),
     ...rest,
   });
 }

@@ -36,3 +36,7 @@ export * from './lib/reusable/CopyButton/CopyButton';
 export * from './lib/reusable/DownloadButton/DownloadButton';
 
 export * from './lib/core/Avatar/Avatar';
+
+export * from './lib/ade/PanelItem/PanelItem';
+
+export * from './lib/ade/PanelHeader/PanelHeader';

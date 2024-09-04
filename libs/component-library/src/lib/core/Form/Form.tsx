@@ -12,8 +12,6 @@ import { useId, useMemo } from 'react';
 
 export { useForm } from 'react-hook-form';
 
-const Form = FormProvider;
-
 const labelVariants = cva(
   'text-base font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70'
 );
@@ -337,4 +335,10 @@ const FormMessage = React.forwardRef<
 });
 FormMessage.displayName = 'FormMessage';
 
-export { useFormField, Form, FormControl, FormField };
+type FormProps = React.HTMLAttributes<HTMLFormElement>;
+
+function Form(props: FormProps) {
+  return <form {...props} className="contents" />;
+}
+
+export { useFormField, Form, FormProvider, FormControl, FormField };

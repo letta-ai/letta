@@ -50,6 +50,7 @@ function TableBodyContent<Data>(props: TableBodyContentProps<Data>) {
           <TableRow key={row.id} data-state={row.getIsSelected() && 'selected'}>
             {row.getVisibleCells().map((cell) => (
               <TableCell
+                // @ts-expect-error need to fix this type
                 align={cell.column.columnDef.meta?.style.columnAlign}
                 key={cell.id}
               >
@@ -126,6 +127,7 @@ export function DataTable<TData, TValue>(props: DataTableProps<TData, TValue>) {
                 {headerGroup.headers.map((header) => {
                   return (
                     <TableHead
+                      // @ts-expect-error need to fix this type
                       align={header.column.columnDef.meta?.style.columnAlign}
                       key={header.id}
                     >

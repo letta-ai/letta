@@ -13,8 +13,8 @@ export function BorderTopIcon(props: IconWrappedProps) {
         xmlns="http://www.w3.org/2000/svg"
       >
         <path
-          fill-rule="evenodd"
-          clip-rule="evenodd"
+          fillRule="evenodd"
+          clipRule="evenodd"
           d="M14 1.75L1 1.75L1 0.249999L14 0.25L14 1.75Z"
           fill="currentColor"
         />

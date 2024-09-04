@@ -1,5 +1,6 @@
 'use client';
 import * as React from 'react';
+import type { MultiValue, SingleValue } from 'react-select';
 import ReactSelect, { components } from 'react-select';
 import { cn } from '@letta-web/core-style-config';
 import type { ReactNode } from 'react';
@@ -17,7 +18,9 @@ interface SelectProps {
   isClearable?: boolean;
   isSearchable?: boolean;
   isDisabled?: boolean;
+  onSelect?: (value: MultiValue<OptionType> | SingleValue<OptionType>) => void;
   options: OptionType[];
+  value?: OptionType | OptionType[];
   noOptionsMessage?: (obj: { inputValue: string }) => ReactNode;
 }
 
@@ -25,6 +28,10 @@ function SelectPrimitive(props: SelectProps) {
   return (
     <ReactSelect
       unstyled
+      onChange={(value) => {
+        props.onSelect?.(value);
+      }}
+      value={props.value}
       /* eslint-disable */
       components={{
         DropdownIndicator: CaretDownIcon,

@@ -12,10 +12,7 @@ function generateOAuthStep1URL(provider: SupportedProviders) {
   }
 }
 
-export async function GET(
-  request: Request,
-  context: AuthProviderContextSchema
-) {
+export async function GET(e: Request, context: AuthProviderContextSchema) {
   const urlToRedirect = generateOAuthStep1URL(context.params.provider);
 
   return NextResponse.redirect(urlToRedirect, { status: 302 });

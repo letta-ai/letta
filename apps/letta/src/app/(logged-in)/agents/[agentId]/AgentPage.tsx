@@ -12,6 +12,7 @@ import { ADEHeader } from './ADEHeader/ADEHeader';
 import { NavigationItem } from './common/ADENavigationItem/ADENavigationItem';
 import { ToolsPanel } from './ToolsPanel/ToolsPanel';
 import { DataSourcesPanel } from './DataSourcesPanel/DataSourcesPanel';
+import { ModelPanel } from './ModelPanel/ModelPanel';
 
 interface SidebarGroupProps {
   title: string;
@@ -23,12 +24,13 @@ function SidebarGroup(props: SidebarGroupProps) {
 
   return (
     <VStack borderBottom gap={false} color="transparent" as="section">
-      <HStack className="h-[36px]" padding="xxsmall" align="center">
-        <Typography
-          className="border-b border-primary border-b-2"
-          bold
-          variant="body2"
-        >
+      <HStack
+        color="background-greyer"
+        className="h-[36px]"
+        padding="xxsmall"
+        align="center"
+      >
+        <Typography bold variant="body2">
           {title}
         </Typography>
       </HStack>
@@ -50,7 +52,7 @@ function ADESidebar() {
       color="background"
     >
       <SidebarGroup title="Core Details">
-        <NavigationItem title="Model" />
+        <ModelPanel />
         <NavigationItem title="Parameters" />
       </SidebarGroup>
       <SidebarGroup title="Powers">
@@ -63,7 +65,7 @@ function ADESidebar() {
   );
 }
 
-export function AgentsAgentPage() {
+export function AgentPage() {
   return (
     <PanelManager>
       <VStack

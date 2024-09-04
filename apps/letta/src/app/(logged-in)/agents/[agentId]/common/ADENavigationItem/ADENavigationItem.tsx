@@ -30,8 +30,16 @@ export function NavigationItem(props: NavigationItemProps) {
         <Typography variant="body2">{title}</Typography>
       </div>
       <HStack align="center">
-        {preview}
-        {isActive ? <Cross2Icon className="w-2.5" /> : <CaretRightIcon />}
+        <Typography variant="body2" color="muted">
+          {preview}
+        </Typography>
+        <HStack align="center" className="w-3">
+          {isActive ? (
+            <Cross2Icon className="w-2.5" />
+          ) : (
+            <CaretRightIcon className="" />
+          )}
+        </HStack>
       </HStack>
     </HStack>
   );

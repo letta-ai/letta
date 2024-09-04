@@ -1,7 +1,7 @@
 import type { PropsWithChildren, ElementType } from 'react';
 import React from 'react';
 import { useForm } from 'react-hook-form';
-import { FormField, Form } from '../../lib/core/Form/Form';
+import { FormField, FormProvider } from '../../lib/core/Form/Form';
 import { Alert } from '../../lib/core/Alert/Alert';
 
 type WrapWithFormContextProps = PropsWithChildren<{
@@ -13,7 +13,7 @@ function WrapWithFormContextComponent(props: WrapWithFormContextProps) {
   const form = useForm();
 
   return (
-    <Form {...form}>
+    <FormProvider {...form}>
       <form className={'flex flex-col gap-3'}>
         <Alert
           title={`  This component requires you to wrap it with a Form component, it wont
@@ -28,7 +28,7 @@ function WrapWithFormContextComponent(props: WrapWithFormContextProps) {
           render={() => <span>{props.children}</span>}
         />
       </form>
-    </Form>
+    </FormProvider>
   );
 }
 

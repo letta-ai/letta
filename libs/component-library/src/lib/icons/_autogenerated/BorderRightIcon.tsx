@@ -13,8 +13,8 @@ export function BorderRightIcon(props: IconWrappedProps) {
         xmlns="http://www.w3.org/2000/svg"
       >
         <path
-          fill-rule="evenodd"
-          clip-rule="evenodd"
+          fillRule="evenodd"
+          clipRule="evenodd"
           d="M13.25 1L13.25 14L14.75 14L14.75 1L13.25 1Z"
           fill="currentColor"
         />

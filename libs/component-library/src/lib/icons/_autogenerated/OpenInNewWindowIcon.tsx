@@ -13,8 +13,8 @@ export function OpenInNewWindowIcon(props: IconWrappedProps) {
         xmlns="http://www.w3.org/2000/svg"
       >
         <path
-          fill-rule="evenodd"
-          clip-rule="evenodd"
+          fillRule="evenodd"
+          clipRule="evenodd"
           d="M13 12C13 12.5523 12.5523 13 12 13H8.5C8.22386 13 8 12.7761 8 12.5C8 12.2239 8.22386 12 8.5 12H12V3H3V6.5C3 6.77614 2.77614 7 2.5 7C2.22386 7 2 6.77614 2 6.5V3C2 2.44771 2.44771 2 3 2H12C12.5523 2 13 2.44771 13 3V12Z"
           fill="currentColor"
         />

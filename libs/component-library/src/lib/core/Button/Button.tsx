@@ -63,6 +63,7 @@ export type ButtonProps = Omit<
       busy?: boolean;
       href?: string;
       target?: string;
+      type?: 'button' | 'reset' | 'submit';
     },
   'children' | 'className'
 >;

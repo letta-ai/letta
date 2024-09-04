@@ -5,9 +5,7 @@ import * as React from 'react';
 import { useCallback, useMemo } from 'react';
 import { createContext } from 'react';
 import ReactDOM from 'react-dom';
-import { Typography } from '../../core/Typography/Typography';
 import { Slot } from '@radix-ui/react-slot';
-import { HStack } from '../../framing/HStack/HStack';
 import type { VariantProps } from 'class-variance-authority';
 import { cva } from 'class-variance-authority';
 import { cn } from '@letta-web/core-style-config';
@@ -28,7 +26,7 @@ const PanelManagerContext = createContext<PanelManagerContextData | undefined>(
   undefined
 );
 
-function usePanelManagerContext() {
+export function usePanelManagerContext() {
   const context = React.useContext(PanelManagerContext);
   if (!context) {
     throw new Error(
@@ -143,24 +141,18 @@ export function PanelManager(props: PanelManagerProps) {
   );
 }
 
-interface PanelHeaderProps {
-  title: string;
+interface PanelContextData {
+  id: PanelId;
 }
 
-function PanelHeader(props: PanelHeaderProps) {
-  const { title } = props;
+const PanelContext = createContext<PanelContextData | undefined>(undefined);
 
-  return (
-    <HStack
-      color="background-greyer"
-      align="center"
-      padding="xxsmall"
-      borderBottom
-      className="h-panel"
-    >
-      <Typography bold>{title}</Typography>
-    </HStack>
-  );
+export function usePanelContext() {
+  const context = React.useContext(PanelContext);
+  if (!context) {
+    throw new Error('usePanelContext must be used within a Panel');
+  }
+  return context;
 }
 
 const panelVariants = cva('h-full rounded-sm border flex flex-col', {
@@ -175,31 +167,20 @@ const panelVariants = cva('h-full rounded-sm border flex flex-col', {
   },
 });
 
-type PanelContentProps = PropsWithChildren<
-  VariantProps<typeof panelVariants> & {
-    title: string;
-  }
->;
+type PanelContentProps = PropsWithChildren<VariantProps<typeof panelVariants>>;
 
 function PanelContent(props: PanelContentProps) {
-  const { title, width } = props;
+  const { width } = props;
 
   return (
     <div className={cn(panelVariants({ width }))}>
-      <PanelHeader title={title} />
-      <div className="flex flex-1 bg-background">{props.children}</div>
+      <div className="flex flex-1 flex-col bg-background">{props.children}</div>
     </div>
   );
 }
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
 export const For_storybook_use_only__PanelContent = PanelContent;
-
-interface PanelContextData {
-  id: PanelId;
-}
-
-const PanelContext = createContext<PanelContextData | undefined>(undefined);
 
 type PanelProps = PanelContentProps &
   PropsWithChildren<{

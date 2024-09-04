@@ -9,7 +9,7 @@ We use forms to collect user input. We use [react-hook-form](https://react-hook-
 Below is an example of how to use the Form component to create a form with a username and email field.
 
 ```tsx
-import { Form, FormField, Input, useForm } from '@letta-web/component-library';
+import { FormProvider, FormField, Input, useForm } from '@letta-web/component-library';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 
@@ -29,7 +29,7 @@ export const ExampleForm = () => {
   };
 
   return (
-    <Form {...form}>
+    <FormProvider {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="w-2/3 space-y-6">
          <FormField
           control={form.control}
@@ -47,7 +47,7 @@ export const ExampleForm = () => {
         />
         <button type="submit">Submit</button>
       </form>
-    </Form>
+    </FormProvider>
   );
 };
 ```
