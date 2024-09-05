@@ -13,7 +13,6 @@ type Story = StoryObj<typeof Panel>;
 export const Primary: Story = {
   args: {
     children: 'Hello',
-    title: 'asb',
     defaultOpen: true,
     id: ['fsd'],
     trigger: <Button label="Pannel Trigger" />,

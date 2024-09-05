@@ -11,6 +11,7 @@ import './Code.scss';
 import { CopyButton } from '../../reusable/CopyButton/CopyButton';
 import { DownloadButton } from '../../reusable/DownloadButton/DownloadButton';
 import { HStack } from '../../framing/HStack/HStack';
+import { makeRawInput } from '../Form/Form';
 
 export type SupportedLangauges = 'javascript' | 'python' | 'typescript';
 
@@ -18,6 +19,7 @@ interface CodeProps {
   language: SupportedLangauges;
   code: string;
   onSetCode?: (code: string) => void;
+  toolbarPosition?: 'bottom' | 'top';
   inline?: boolean;
 }
 
@@ -28,27 +30,31 @@ const languageToFileNameMap: Record<SupportedLangauges, string> = {
 };
 
 export function Code(props: CodeProps) {
-  const { language, code, onSetCode, inline } = props;
+  const { language, code, onSetCode, toolbarPosition, inline } = props;
 
   if (inline) {
     return <code className={`language-${language}`}>{code}</code>;
   }
 
+  const toolbar = (
+    <div className="py-1 px-2 border-b border-t flex justify-between">
+      <div></div>
+      <HStack gap="small">
+        <DownloadButton
+          fileName={languageToFileNameMap[language]}
+          textToDownload={code}
+          size="small"
+        />
+        <CopyButton textToCopy={code} size="small" />
+      </HStack>
+    </div>
+  );
+
   return (
-    <div className="rounded border">
-      <div className="py-1 px-2 border-b flex justify-between">
-        <div></div>
-        <HStack gap="small">
-          <DownloadButton
-            fileName={languageToFileNameMap[language]}
-            textToDownload={code}
-            size="small"
-          />
-          <CopyButton textToCopy={code} size="small" />
-        </HStack>
-      </div>
+    <div className="rounded border w-full">
+      {toolbarPosition === 'top' && toolbar}
       <Editor
-        className="editor"
+        className="editor w-full"
         value={code}
         disabled={!onSetCode}
         onValueChange={(code) => {
@@ -75,6 +81,10 @@ export function Code(props: CodeProps) {
           outline: 0,
         }}
       />
+      {toolbarPosition === 'bottom' && toolbar}
     </div>
   );
 }
+
+export const CodeEditor = makeRawInput(Code, 'CodeEditor');
+export const RawCodeEditor = makeRawInput(Code, 'RawCodeEditor');

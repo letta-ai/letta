@@ -52,6 +52,7 @@ export function PanelBar(props: PanelBarProps) {
           label="Return"
           color="tertiary"
           size="small"
+          type="button"
           preIcon={<ChevronLeftIcon />}
           onClick={onReturn}
           variant="inline-panel"

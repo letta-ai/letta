@@ -2,13 +2,15 @@ import * as React from 'react';
 import { Frame } from '../../framing/Frame/Frame';
 import type { PropsWithChildren } from 'react';
 
-type CardProps = PropsWithChildren<Record<never, string>>;
+type CardProps = PropsWithChildren<{
+  className?: string;
+}>;
 
 export function Card(props: CardProps) {
-  const { children } = props;
+  const { children, className } = props;
 
   return (
-    <Frame border fullWidth padding="xsmall" rounded>
+    <Frame className={className} border fullWidth padding="xsmall" rounded>
       {children}
     </Frame>
   );

@@ -10,6 +10,12 @@ import type { VariantProps } from 'class-variance-authority';
 import { cva } from 'class-variance-authority';
 import { cn } from '@letta-web/core-style-config';
 import { ErrorBoundary } from 'react-error-boundary';
+import {
+  PanelGroup as ResizablePanelGroup,
+  Panel as ResizablePanel,
+  PanelResizeHandle as ResizablePanelResizeHandle,
+  PanelResizeHandle,
+} from 'react-resizable-panels';
 
 type PanelId = string[];
 
@@ -73,38 +79,31 @@ export function PanelManager(props: PanelManagerProps) {
     [activePanels]
   );
 
-  const activatePanel = useCallback(
-    function activatePanel(panelId: PanelId) {
-      // add the panelid to the activePanels array
-      // remove any panelids that are a subset of the panelid
-      // e.g. if panelId is ['a', 'b'], remove ['a', 'b', 'c'] and ['a', 'b']
-      // if panelId is ['a', 'c'], remove ['a', 'b']
+  const activatePanel = useCallback(function activatePanel(panelId: PanelId) {
+    // add the panelid to the activePanels array
+    // remove any panelids that are a subset of the panelid
+    // e.g. if panelId is ['a', 'b'], remove ['a', 'b', 'c'] and ['a', 'b']
+    // if panelId is ['a', 'c'], remove ['a', 'b']
 
-      // also activate the parent panel if it is not already active
-      // remove siblings of the parent panel
+    // also activate the parent panel if it is not already active
+    // remove siblings of the parent panel
 
-      deactivatePanel(['sidebar']);
-
-      setActivePanels((prev) => {
-        const newActivePanels = prev.filter((id) => {
-          return !panelId.every((panelId) => id.includes(panelId));
-        });
-
-        const parentPanelId = panelId.slice(0, panelId.length - 1);
-
-        if (
-          !newActivePanels.some(
-            (id) => id.join('-') === parentPanelId.join('-')
-          )
-        ) {
-          newActivePanels.push(parentPanelId);
-        }
-
-        return newActivePanels.concat([panelId]);
+    setActivePanels((prev) => {
+      const newActivePanels = prev.filter((id) => {
+        return !panelId.every((panelId) => id.includes(panelId));
       });
-    },
-    [deactivatePanel]
-  );
+
+      const parentPanelId = panelId.slice(0, panelId.length - 1);
+
+      if (
+        !newActivePanels.some((id) => id.join('-') === parentPanelId.join('-'))
+      ) {
+        newActivePanels.push(parentPanelId);
+      }
+
+      return newActivePanels.concat([panelId]);
+    });
+  }, []);
 
   const addPanel = useCallback(function addPanel(panelId: PanelId) {
     setAllPanels((prev) => {
@@ -156,11 +155,11 @@ export function usePanelContext() {
   return context;
 }
 
-const panelVariants = cva('h-full rounded-sm border flex flex-col', {
+const panelVariants = cva('h-full rounded-sm border-l flex flex-col', {
   variants: {
     width: {
-      compact: 'w-[400px] max-w-[400px]',
-      full: 'w-full flex-1',
+      compact: '',
+      full: '',
     },
   },
   defaultVariants: {
@@ -175,7 +174,7 @@ function PanelContent(props: PanelContentProps) {
 
   return (
     <div className={cn(panelVariants({ width }))}>
-      <div className="h-full flex flex-1 flex-col bg-background">
+      <div className=" flex flex-1 h-0 flex-col bg-background">
         {props.children}
       </div>
     </div>
@@ -260,15 +259,57 @@ export function Panel(props: PanelProps) {
   );
 }
 
-export function PanelRenderArea() {
-  const { allPanels } = usePanelManagerContext();
+interface PanelRenderAreaProps {
+  initialPositions?: string[];
+}
+
+export function PanelRenderArea(props: PanelRenderAreaProps) {
+  const { allPanels, activePanels } = usePanelManagerContext();
+  const [positions] = React.useState(props.initialPositions || []);
+
+  // order panels by given positions, all other panels will be rendered at the end
+
+  const panelsOrdered = useMemo(
+    () =>
+      Array.from(allPanels).sort((a, b) => {
+        const parentA = a.split('-')[0];
+        const parentB = b.split('-')[0];
+
+        const positionA = positions.indexOf(parentA);
+        const positionB = positions.indexOf(parentB);
+
+        if (positionA > positionB) return -1;
+        if (positionA < positionB) return 1;
+
+        return 0;
+      }),
+    [allPanels, positions]
+  );
+
+  const activePanelSet = useMemo(() => {
+    return new Set(activePanels.map((panelId) => panelId.join('-')));
+  }, [activePanels]);
 
   return (
     <div className="w-full h-full">
-      <div className="flex flex-row gap-3 h-full w-full flex-wrap">
-        {Array.from(allPanels).map((panelId) => (
-          <div className="contents" id={`panel-${panelId}`} key={panelId}></div>
-        ))}
+      <div className="w-full flex h-full">
+        <ResizablePanelGroup direction="horizontal">
+          {panelsOrdered.map((panelId) => (
+            <>
+              <ResizablePanel
+                hidden={!activePanelSet.has(panelId)}
+                key={panelId}
+              >
+                <div
+                  className="contents"
+                  id={`panel-${panelId}`}
+                  key={panelId}
+                ></div>
+              </ResizablePanel>
+              <PanelResizeHandle />
+            </>
+          ))}
+        </ResizablePanelGroup>
       </div>
     </div>
   );

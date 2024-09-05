@@ -114,7 +114,6 @@
         "@typescript-eslint/no-invalid-void-type": "error",
         "no-magic-numbers": "off",
         "@typescript-eslint/no-misused-new": "error",
-        "@typescript-eslint/no-misused-promises": "error",
         "@typescript-eslint/no-mixed-enums": "error",
         "@typescript-eslint/no-namespace": "error",
         "@typescript-eslint/no-non-null-asserted-nullish-coalescing": "error",

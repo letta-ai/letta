@@ -2,27 +2,64 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import {
   Button,
+  CodeEditor,
+  createPageRouter,
+  Form,
+  FormField,
+  FormProvider,
+  Input,
   Panel,
   PanelBar,
+  PanelExpandedList,
   PanelHeader,
-  PanelItem,
+  RawInput,
+  Skeleton,
   ToggleCard,
+  useForm,
   VStack,
 } from '@letta-web/component-library';
 import { NavigationItem } from '../common/ADENavigationItem/ADENavigationItem';
 import { useCurrentAgent, useCurrentAgentId } from '../hooks';
-import type { AgentState } from '@letta-web/letta-agents-api';
+import type { AgentState, Tool_Output } from '@letta-web/letta-agents-api';
+import {
+  useToolsServiceCreateToolApiToolsPost,
+  useToolsServiceGetToolApiToolsToolIdGet,
+  UseToolsServiceGetToolApiToolsToolIdGetKeyFn,
+  UseToolsServiceListAllToolsApiToolsGetKeyFn,
+  useToolsServiceUpdateToolApiToolsToolIdPost,
+} from '@letta-web/letta-agents-api';
 import {
   UseAgentsServiceGetAgentStateApiAgentsAgentIdGetKeyFn,
   useAgentsServiceUpdateAgentApiAgentsAgentIdPost,
   useToolsServiceListAllToolsApiToolsGet,
 } from '@letta-web/letta-agents-api';
 import { useQueryClient } from '@tanstack/react-query';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
+
+const { PanelRouter, usePanelRouteData, usePanelPageContext } =
+  createPageRouter(
+    {
+      editTool: {
+        state: z.object({
+          toolId: z.string(),
+          toolName: z.string(),
+        }),
+      },
+      root: {
+        state: z.object({}),
+      },
+    },
+    {
+      initialPage: 'root',
+    }
+  );
 
 function ToolsList() {
   const currentAgentId = useCurrentAgentId();
   const { tools: currentToolNames } = useCurrentAgent();
   const { data: allTools } = useToolsServiceListAllToolsApiToolsGet();
+  const { setCurrentPage } = usePanelPageContext();
 
   const { mutate } = useAgentsServiceUpdateAgentApiAgentsAgentIdPost({
     onMutate: async (variables) => {
@@ -85,7 +122,7 @@ function ToolsList() {
         },
       });
     },
-    [currentAgentId, currentToolNames, mutate, queryClient]
+    [currentAgentId, currentToolNames, mutate]
   );
 
   const currentToolsAsSet = useMemo(() => {
@@ -93,48 +130,294 @@ function ToolsList() {
   }, [currentToolNames]);
 
   return (
-    <PanelItem>
+    <PanelExpandedList>
       <VStack fullWidth gap="small">
         {(allTools || []).map((tool) => {
           return (
             <ToggleCard
               key={tool.id}
               title={tool.name}
+              description={tool.description || ''}
               checked={currentToolsAsSet.has(tool.name)}
               onChange={(checked) => {
                 handleToggleCardChange(tool.name, checked);
               }}
+              actions={
+                <Button
+                  onClick={() => {
+                    setCurrentPage('editTool', {
+                      toolId: tool.id,
+                      toolName: tool.name,
+                    });
+                  }}
+                  label="Configure"
+                  size="small"
+                  color="tertiary"
+                />
+              }
             />
           );
         })}
       </VStack>
-    </PanelItem>
+    </PanelExpandedList>
+  );
+}
+
+const createToolSchema = z.object({
+  name: z.string(),
+  sourceCode: z.string(),
+});
+
+function ToolCreator() {
+  const { setCurrentPage } = usePanelPageContext();
+  const queryClient = useQueryClient();
+
+  const { mutate, isPending: isCreatingTool } =
+    useToolsServiceCreateToolApiToolsPost({
+      onSuccess: async () => {
+        await queryClient.invalidateQueries({
+          queryKey: UseToolsServiceListAllToolsApiToolsGetKeyFn(),
+        });
+      },
+    });
+
+  const form = useForm<z.infer<typeof createToolSchema>>({
+    resolver: zodResolver(createToolSchema),
+  });
+
+  const handleSubmit = useCallback(
+    (values: z.infer<typeof createToolSchema>) => {
+      mutate({
+        requestBody: {
+          tags: [],
+          name: values.name,
+          source_code: values.sourceCode,
+        },
+      });
+    },
+    [mutate]
+  );
+
+  return (
+    <FormProvider {...form}>
+      <Form onSubmit={form.handleSubmit(handleSubmit)}>
+        <PanelBar
+          onReturn={() => {
+            setCurrentPage('root');
+          }}
+          actions={
+            <Button
+              type="submit"
+              label="Create"
+              size="small"
+              color="secondary"
+              busy={isCreatingTool}
+            />
+          }
+        ></PanelBar>
+        <PanelExpandedList>
+          <FormField
+            control={form.control}
+            name="name"
+            render={({ field }) => <Input label="Name" {...field} />}
+          />
+          <FormField
+            control={form.control}
+            name="sourceCode"
+            render={({ field }) => (
+              <CodeEditor
+                fullWidth
+                toolbarPosition="bottom"
+                language="python"
+                code={field.value}
+                onSetCode={field.onChange}
+                label="Source Code"
+              />
+            )}
+          />
+        </PanelExpandedList>
+      </Form>
+    </FormProvider>
+  );
+}
+
+const editToolSchema = z.object({
+  sourceCode: z.string(),
+  description: z.string(),
+});
+
+interface ToolEditorProps {
+  initialTool?: Tool_Output;
+  isLoading: boolean;
+}
+
+function ToolEditor(props: ToolEditorProps) {
+  const { initialTool, isLoading } = props;
+  const { setCurrentPage } = usePanelPageContext();
+  const queryClient = useQueryClient();
+
+  const { mutate, isPending: isUpdatingTool } =
+    useToolsServiceUpdateToolApiToolsToolIdPost({
+      onSuccess: async () => {
+        await queryClient.invalidateQueries({
+          queryKey: UseToolsServiceGetToolApiToolsToolIdGetKeyFn({
+            toolId: initialTool?.id || '',
+          }),
+        });
+      },
+    });
+
+  const form = useForm<z.infer<typeof editToolSchema>>({
+    resolver: zodResolver(editToolSchema),
+    defaultValues: {
+      sourceCode: initialTool?.source_code || '',
+      description: initialTool?.description || '',
+    },
+  });
+
+  const handleSubmit = useCallback(
+    (values: z.infer<typeof editToolSchema>) => {
+      mutate({
+        toolId: initialTool?.id || '',
+        requestBody: {
+          id: initialTool?.id || '',
+          description: values.description,
+          source_code: values.sourceCode,
+        },
+      });
+    },
+    [initialTool?.id, mutate]
+  );
+
+  return (
+    <FormProvider {...form}>
+      <Form onSubmit={form.handleSubmit(handleSubmit)}>
+        <PanelBar
+          onReturn={() => {
+            setCurrentPage('root');
+          }}
+          actions={
+            <Button
+              type="submit"
+              label="Save"
+              size="small"
+              color="secondary"
+              busy={isUpdatingTool}
+            />
+          }
+        ></PanelBar>
+        <PanelExpandedList>
+          {isLoading ? (
+            <Skeleton className="w-full h-[300px]" />
+          ) : (
+            <>
+              <RawInput
+                value={initialTool?.name}
+                fullWidth
+                disabled
+                label="Name"
+              />
+              <FormField
+                control={form.control}
+                name="sourceCode"
+                render={({ field }) => (
+                  <CodeEditor
+                    fullWidth
+                    toolbarPosition="bottom"
+                    language="python"
+                    code={field.value}
+                    onSetCode={field.onChange}
+                    label="Source Code"
+                  />
+                )}
+              />
+            </>
+          )}
+        </PanelExpandedList>
+      </Form>
+    </FormProvider>
+  );
+}
+
+function EditToolPage() {
+  const { toolId, toolName } = usePanelRouteData<'editTool'>();
+  const { data, isLoading } = useToolsServiceGetToolApiToolsToolIdGet(
+    {
+      toolId,
+    },
+    undefined,
+    {
+      enabled: !!toolId,
+    }
+  );
+
+  const isNewTool = useMemo(() => {
+    return !toolId;
+  }, [toolId]);
+
+  const pageName = useMemo(() => {
+    return isNewTool ? 'Create Tool' : toolName;
+  }, [isNewTool]);
+
+  return (
+    <>
+      <PanelHeader title={['Tools', pageName]} />
+      {isNewTool ? (
+        <ToolCreator />
+      ) : (
+        <ToolEditor
+          initialTool={data}
+          key={data?.source_code}
+          isLoading={isLoading}
+        />
+      )}
+    </>
+  );
+}
+
+function ToolsListPage() {
+  const { setCurrentPage } = usePanelPageContext();
+  const [search, setSearch] = useState('');
+
+  return (
+    <>
+      <PanelHeader title="Tools" />
+      <PanelBar
+        searchValue={search}
+        onSearch={(value) => {
+          setSearch(value);
+        }}
+        actions={
+          <>
+            <Button
+              onClick={() => {
+                setCurrentPage('editTool', { toolId: '', toolName: '' });
+              }}
+              size="small"
+              color="secondary"
+              label="Create Tool"
+            />
+          </>
+        }
+      />
+      <ToolsList />
+    </>
   );
 }
 
 export function ToolsPanel() {
-  const [search, setSearch] = useState('');
-
   return (
     <Panel
       width="compact"
       id={['sidebar', 'tools']}
       trigger={<NavigationItem title="Tools" />}
     >
-      <PanelHeader title="Tools" />
-      <PanelBar
-        onSearch={(value) => {
-          setSearch(value);
+      <PanelRouter
+        pages={{
+          editTool: <EditToolPage />,
+          root: <ToolsListPage />,
         }}
-        searchValue={search}
-        actions={
-          <>
-            {/*<Button size="small" color="tertiary" label="Import Tool" />*/}
-            <Button size="small" color="secondary" label="Add Tool" />
-          </>
-        }
       />
-      <ToolsList />
     </Panel>
   );
 }

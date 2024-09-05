@@ -27,9 +27,9 @@ function SidebarGroup(props: SidebarGroupProps) {
   return (
     <VStack borderBottom gap={false} color="transparent" as="section">
       <HStack
-        color="background-greyer"
-        className="h-[36px]"
+        className="h-[43px]"
         padding="xxsmall"
+        borderBottom
         align="center"
       >
         <Typography bold variant="body2">
@@ -48,10 +48,10 @@ function ADESidebar() {
     <VStack
       borderRight
       gap={false}
+      color="background-greyer"
       as="nav"
       fullHeight
       className="w-[250px] min-w-[250px]"
-      color="background"
     >
       <SidebarGroup title="Core Details">
         <ModelPanel />
@@ -102,8 +102,8 @@ export function AgentPage() {
         <ADEHeader />
         <HStack className="h-[0] flex-1" overflowY="auto" fullWidth gap={false}>
           <ADESidebar />
-          <Frame padding="xxxsmall" overflow="hidden" fullWidth fullHeight>
-            <PanelRenderArea />
+          <Frame overflow="hidden" fullWidth fullHeight>
+            <PanelRenderArea initialPositions={['sidebar']} />
           </Frame>
         </HStack>
       </VStack>

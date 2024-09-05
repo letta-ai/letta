@@ -7,7 +7,7 @@ import { usePanelContext, usePanelManagerContext } from '../Panel/Panel';
 import { Cross2Icon } from '../../icons';
 
 interface PanelHeaderProps {
-  title: string;
+  title: string[] | string;
   showSave?: boolean;
   isSaving?: boolean;
 }
@@ -33,17 +33,35 @@ export function PanelHeader(props: PanelHeaderProps) {
       justify="spaceBetween"
       className="h-panel"
     >
-      <Typography bold>{title}</Typography>
+      {Array.isArray(title) ? (
+        <HStack gap="small">
+          {title.map((t, i) => (
+            <>
+              <Typography key={i} bold>
+                {t}
+              </Typography>
+              {i < title.length - 1 && <Typography>/</Typography>}
+            </>
+          ))}
+        </HStack>
+      ) : (
+        <Typography bold>{title}</Typography>
+      )}
       <HStack fullHeight align="center">
         {showSave ? (
           <Button
             onClick={handleDeactivatePanel}
             label="Close"
             size="small"
+            type="button"
             color="tertiary"
           />
         ) : (
-          <button onClick={handleDeactivatePanel} className="flex items-center">
+          <button
+            type="button"
+            onClick={handleDeactivatePanel}
+            className="flex items-center"
+          >
             <Cross2Icon />
             <span className="sr-only">Close</span>
           </button>

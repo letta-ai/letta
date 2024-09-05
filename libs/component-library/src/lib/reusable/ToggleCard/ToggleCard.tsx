@@ -3,7 +3,6 @@ import { Card } from '../../core/Card/Card';
 import { VStack } from '../../framing/VStack/VStack';
 import { HStack } from '../../framing/HStack/HStack';
 import { Typography } from '../../core/Typography/Typography';
-import { Frame } from '../../framing/Frame/Frame';
 import { RawToggle } from '../../core/Toggle/Toggle';
 
 interface ToggleCardProps {
@@ -21,7 +20,7 @@ export function ToggleCard(props: ToggleCardProps) {
 
   return (
     <Card>
-      <VStack gap="small" fullWidth>
+      <VStack fullHeight fullWidth>
         <HStack justify="spaceBetween" fullWidth align="center">
           <VStack gap="text">
             <HStack align="center">
@@ -45,8 +44,16 @@ export function ToggleCard(props: ToggleCardProps) {
             />
           </HStack>
         </HStack>
-        {description && <Typography variant="body">{description}</Typography>}
-        {actions && <Frame>{actions}</Frame>}
+        {description && (
+          <VStack fullHeight>
+            <Typography variant="body">{description}</Typography>
+          </VStack>
+        )}
+        {actions && (
+          <HStack justify="spaceBetween" paddingTop="small">
+            {actions}
+          </HStack>
+        )}
       </VStack>
     </Card>
   );

@@ -82,7 +82,7 @@ export function ModelPanel() {
       }
     >
       <FormProvider {...form}>
-        <Form onSubmit={void form.handleSubmit(onSubmit)}>
+        <Form onSubmit={form.handleSubmit(onSubmit)}>
           <PanelHeader
             title="Current Model"
             showSave

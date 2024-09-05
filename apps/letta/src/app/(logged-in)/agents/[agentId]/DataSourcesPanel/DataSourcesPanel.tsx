@@ -9,7 +9,6 @@ export function DataSourcesPanel() {
   return (
     <Panel
       width="compact"
-      title="Data Sources"
       id={['sidebar', 'data-sources']}
       trigger={<NavigationItem title="Data Sources" />}
     >
