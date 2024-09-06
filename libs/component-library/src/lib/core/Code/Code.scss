@@ -421,19 +421,24 @@ pre > code.diff-highlight .token.token.inserted:not(.prefix) *::selection {
   fill: transparent;
 }
 
-.editor {
-  position: relative;
-  font-family: var(--font-mono);
-  font-size: var(--font-size-sm);
+:root {
+  --editor-lineNumber-gutter-width: 60px;
 }
 
-.editor #codeArea {
+.editor {
+  position: relative;
+  font-family: var(--font-mono) monospace !important;
+  font-size: var(--font-size-sm);
+  height: 100%;
+}
+
+.editor textarea {
   outline: none;
-  padding-left: 60px !important;
+  padding-left: calc(var(--editor-lineNumber-gutter-width) + 20px) !important;
 }
 
 .editor pre {
-  padding-left: 60px !important;
+  padding-left: calc(var(--editor-lineNumber-gutter-width) + 20px) !important;
 }
 
 .editor .editorLineNumber {
@@ -441,19 +446,25 @@ pre > code.diff-highlight .token.token.inserted:not(.prefix) *::selection {
   left: 0;
   color: hsl(var(--muted));
   text-align: right;
-  width: 24px;
+  width: 37px;
   font-weight: 100;
   z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 
 .editor:before {
   content: "";
   position: absolute;
+  font-family: var(--font-mono) monospace !important;
   top: 0;
   left: 0;
-  width: 40px;
+  font-size: var(--font-size-sm);
+  width: var(--editor-lineNumber-gutter-width);
   height: 100%;
+  border-right: 1px solid hsl(var(--border));
   background-color: hsl( var(--background-greyer));
   z-index: 1;
 }

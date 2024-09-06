@@ -1,24 +1,47 @@
 'use client';
 
-import React from 'react';
+import React, { useId } from 'react';
 import Editor from 'react-simple-code-editor';
 import { highlight, languages } from 'prismjs/components/prism-core';
 import 'prismjs/components/prism-clike';
 import 'prismjs/components/prism-python';
 import 'prismjs/components/prism-javascript';
 import 'prismjs/components/prism-typescript';
+import 'prismjs/components/prism-markup-templating';
+import 'prismjs/components/prism-django';
 import './Code.scss';
 import { CopyButton } from '../../reusable/CopyButton/CopyButton';
 import { DownloadButton } from '../../reusable/DownloadButton/DownloadButton';
 import { HStack } from '../../framing/HStack/HStack';
 import { makeRawInput } from '../Form/Form';
+import { Frame } from '../../framing/Frame/Frame';
+import type { VariantProps } from 'class-variance-authority';
+import { cva } from 'class-variance-authority';
+import { cn } from '@letta-web/core-style-config';
 
-export type SupportedLangauges = 'javascript' | 'python' | 'typescript';
+export type SupportedLangauges =
+  | 'django'
+  | 'javascript'
+  | 'python'
+  | 'typescript';
 
-interface CodeProps {
+const codeVariants = cva('', {
+  variants: {
+    variant: {
+      default: 'rounded border',
+      minimal: '',
+    },
+  },
+  defaultVariants: {
+    variant: 'default',
+  },
+});
+
+interface CodeProps extends VariantProps<typeof codeVariants> {
   language: SupportedLangauges;
   code: string;
   onSetCode?: (code: string) => void;
+  fullHeight?: boolean;
   toolbarPosition?: 'bottom' | 'top';
   inline?: boolean;
 }
@@ -27,10 +50,21 @@ const languageToFileNameMap: Record<SupportedLangauges, string> = {
   javascript: 'file.js',
   python: 'file.py',
   typescript: 'file.ts',
+  django: 'file.jinja',
 };
 
 export function Code(props: CodeProps) {
-  const { language, code, onSetCode, toolbarPosition, inline } = props;
+  const {
+    language,
+    code,
+    variant,
+    onSetCode,
+    toolbarPosition,
+    inline,
+    fullHeight,
+  } = props;
+
+  const id = useId();
 
   if (inline) {
     return <code className={`language-${language}`}>{code}</code>;
@@ -51,7 +85,11 @@ export function Code(props: CodeProps) {
   );
 
   return (
-    <div className="rounded border w-full">
+    <Frame
+      className={cn(codeVariants({ variant }))}
+      fullHeight={fullHeight}
+      fullWidth
+    >
       {toolbarPosition === 'top' && toolbar}
       <Editor
         className="editor w-full"
@@ -74,7 +112,7 @@ export function Code(props: CodeProps) {
             .join('\n')
         }
         padding={10}
-        textareaId="codeArea"
+        textareaId={id}
         style={{
           fontFamily: 'inherit',
           fontSize: '14px',
@@ -82,7 +120,7 @@ export function Code(props: CodeProps) {
         }}
       />
       {toolbarPosition === 'bottom' && toolbar}
-    </div>
+    </Frame>
   );
 }
 

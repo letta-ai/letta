@@ -88,6 +88,7 @@ const FormItemContext = React.createContext<FormItemContextValue>(
 interface InputWrapperProps {
   inline?: boolean;
   fullWidth?: boolean;
+  fullHeight?: boolean;
   inputAndLabel: React.ReactNode;
   otherContent: React.ReactNode;
 }
@@ -95,12 +96,17 @@ interface InputWrapperProps {
 function InputWrapper({
   inline,
   fullWidth,
+  fullHeight,
   inputAndLabel,
   otherContent,
 }: InputWrapperProps) {
   const className = useMemo(() => {
-    return cn('flex flex-col gap-[6px]', fullWidth ? 'w-full' : 'w-fit');
-  }, [fullWidth]);
+    return cn(
+      'flex flex-col gap-[6px]',
+      fullWidth ? 'w-full' : 'w-fit',
+      fullHeight ? 'h-full' : ''
+    );
+  }, [fullHeight, fullWidth]);
 
   if (inline) {
     return (
@@ -141,16 +147,26 @@ export interface InputContainerProps {
   description?: string;
   inline?: boolean;
   fullWidth?: boolean;
+  fullHeight?: boolean;
   children?: React.ReactNode;
 }
 
 export function InputContainer(props: InputContainerProps) {
-  const { label, hideLabel, fullWidth, description, inline, children } = props;
+  const {
+    label,
+    hideLabel,
+    fullWidth,
+    fullHeight,
+    description,
+    inline,
+    children,
+  } = props;
 
   return (
     <FormItem>
       <InputWrapper
         fullWidth={fullWidth}
+        fullHeight={fullHeight}
         inline={inline}
         inputAndLabel={
           <>
@@ -176,12 +192,21 @@ export interface RawInputContainerProps extends InputContainerProps {
 }
 
 export function RawInputContainer(props: RawInputContainerProps) {
-  const { label, id, hideLabel, inline, fullWidth, description, children } =
-    props;
+  const {
+    label,
+    id,
+    hideLabel,
+    fullHeight,
+    inline,
+    fullWidth,
+    description,
+    children,
+  } = props;
 
   return (
     <InputWrapper
       fullWidth={fullWidth}
+      fullHeight={fullHeight}
       inputAndLabel={
         <>
           <LabelPrimitive htmlFor={id} className={hideLabel ? 'sr-only' : ''}>

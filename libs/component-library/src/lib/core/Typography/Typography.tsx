@@ -21,6 +21,9 @@ const typographyVariants = cva('', {
     bold: {
       true: 'font-medium',
     },
+    noWrap: {
+      true: 'whitespace-nowrap',
+    },
   },
   defaultVariants: {
     variant: 'body',
@@ -40,12 +43,14 @@ const variantToElement = {
 };
 
 export function Typography(props: TypographyProps) {
-  const { className, overrideEl, variant, bold, ...rest } = props;
+  const { className, overrideEl, noWrap, variant, bold, ...rest } = props;
 
   const Element = variantToElement[overrideEl || variant || 'body'] || 'p';
 
   return React.createElement(Element, {
-    className: cn(typographyVariants({ ...rest, bold, variant, className })),
+    className: cn(
+      typographyVariants({ ...rest, noWrap, bold, variant, className })
+    ),
     ...rest,
   });
 }

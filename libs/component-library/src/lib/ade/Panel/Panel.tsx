@@ -18,13 +18,25 @@ import {
 import { Logo } from '../../marketing/Logo/Logo';
 import { VStack } from '../../framing/VStack/VStack';
 import { Typography } from '../../core/Typography/Typography';
+import { useLocalStorage } from '@mantine/hooks';
 
-type PanelId = string[];
+const panelRegistry = [
+  ['sidebar', 'data-sources'],
+  ['sidebar', 'archival-memories'],
+  ['sidebar', 'model'],
+  ['sidebar', 'memory-blocks'],
+  ['sidebar', 'tools'],
+  ['sidebar', 'variables'],
+  ['chat-simulator'],
+  ['context-editor'],
+];
+
+type PanelId = (typeof panelRegistry)[number];
+
+const ALL_PANELS = new Set(panelRegistry.map((id) => id.join('-')));
 
 interface PanelManagerContextData {
   activePanels: PanelId[];
-  allPanels: Set<string>;
-  addPanel: (panelId: PanelId) => void;
   getIsPanelActive: (panelId: PanelId) => boolean;
   hasActiveSubPanel: (panelId: PanelId) => boolean;
   activatePanel: (panelId: PanelId) => void;
@@ -48,8 +60,11 @@ export function usePanelManagerContext() {
 type PanelManagerProps = PropsWithChildren<Record<never, string>>;
 
 export function PanelManager(props: PanelManagerProps) {
-  const [activePanels, setActivePanels] = React.useState<PanelId[]>([]);
-  const [allPanels, setAllPanels] = React.useState<Set<string>>(new Set());
+  const [activePanels, setActivePanels] = useLocalStorage<PanelId[]>({
+    defaultValue: [],
+    key: 'panel-manager-active-panels',
+  });
+
   const { children } = props;
 
   const hasActiveSubPanel = useCallback(
@@ -61,18 +76,18 @@ export function PanelManager(props: PanelManagerProps) {
     [activePanels]
   );
 
-  const deactivatePanel = useCallback(function deactivatePanel(
-    panelId: PanelId
-  ) {
-    // remove all panelids that match the panelid or are a subset of the panelid
-    // e.g. if panelId is ['a', 'b'], remove ['a', 'b', 'c'] and ['a', 'b']
-    setActivePanels((prev) =>
-      prev.filter((id) => {
-        return !panelId.every((panelId) => id.includes(panelId));
-      })
-    );
-  },
-  []);
+  const deactivatePanel = useCallback(
+    function deactivatePanel(panelId: PanelId) {
+      // remove all panelids that match the panelid or are a subset of the panelid
+      // e.g. if panelId is ['a', 'b'], remove ['a', 'b', 'c'] and ['a', 'b']
+      setActivePanels((prev) =>
+        prev.filter((id) => {
+          return !panelId.every((panelId) => id.includes(panelId));
+        })
+      );
+    },
+    [setActivePanels]
+  );
 
   const getIsPanelActive = useCallback(
     function isPanelActive(panelId: PanelId) {
@@ -81,58 +96,51 @@ export function PanelManager(props: PanelManagerProps) {
     [activePanels]
   );
 
-  const activatePanel = useCallback(function activatePanel(panelId: PanelId) {
-    // add the panelid to the activePanels array
-    // remove any panelids that are a subset of the panelid
-    // e.g. if panelId is ['a', 'b'], remove ['a', 'b', 'c'] and ['a', 'b']
-    // if panelId is ['a', 'c'], remove ['a', 'b']
+  const activatePanel = useCallback(
+    function activatePanel(panelId: PanelId) {
+      // add the panelid to the activePanels array
+      // remove any panelids that are a subset of the panelid
+      // e.g. if panelId is ['a', 'b'], remove ['a', 'b', 'c'] and ['a', 'b']
+      // if panelId is ['a', 'c'], remove ['a', 'b']
 
-    // also activate the parent panel if it is not already active
-    // remove siblings of the parent panel
+      // also activate the parent panel if it is not already active
+      // remove siblings of the parent panel
 
-    setActivePanels((prev) => {
-      const newActivePanels = prev.filter((id) => {
-        return !panelId.every((panelId) => id.includes(panelId));
+      setActivePanels((prev) => {
+        const newActivePanels = prev.filter((id) => {
+          return !panelId.every((panelId) => id.includes(panelId));
+        });
+
+        const parentPanelId = panelId.slice(0, panelId.length - 1);
+
+        if (
+          !newActivePanels.some(
+            (id) => id.join('-') === parentPanelId.join('-')
+          )
+        ) {
+          newActivePanels.push(parentPanelId);
+        }
+
+        return newActivePanels.concat([panelId]);
       });
-
-      const parentPanelId = panelId.slice(0, panelId.length - 1);
-
-      if (
-        !newActivePanels.some((id) => id.join('-') === parentPanelId.join('-'))
-      ) {
-        newActivePanels.push(parentPanelId);
-      }
-
-      return newActivePanels.concat([panelId]);
-    });
-  }, []);
-
-  const addPanel = useCallback(function addPanel(panelId: PanelId) {
-    setAllPanels((prev) => {
-      const newSet = new Set(prev);
-      newSet.add(panelId.join('-'));
-      return newSet;
-    });
-  }, []);
+    },
+    [setActivePanels]
+  );
 
   const value = useMemo(
     () => ({
       activePanels,
-      allPanels,
       getIsPanelActive,
       hasActiveSubPanel,
       activatePanel,
       deactivatePanel,
-      addPanel,
     }),
     [
       activePanels,
-      allPanels,
       getIsPanelActive,
       hasActiveSubPanel,
       activatePanel,
       deactivatePanel,
-      addPanel,
     ]
   );
 
@@ -196,7 +204,7 @@ type PanelProps = PanelContentProps &
 export function Panel(props: PanelProps) {
   const { id, defaultOpen } = props;
   // panels must be nested within a PanelManager
-  const { addPanel, deactivatePanel, activatePanel, getIsPanelActive } =
+  const { deactivatePanel, activatePanel, getIsPanelActive } =
     usePanelManagerContext();
 
   const value = useMemo(
@@ -205,10 +213,6 @@ export function Panel(props: PanelProps) {
     }),
     [id]
   );
-
-  useEffect(() => {
-    addPanel(id);
-  }, [addPanel, id]);
 
   useEffect(() => {
     if (defaultOpen) {
@@ -235,6 +239,7 @@ export function Panel(props: PanelProps) {
     [id, isPanelActive, activatePanel, deactivatePanel]
   );
 
+  console.log(`panel-${id.join('-')}`);
   return (
     <PanelContext.Provider value={value}>
       <Slot
@@ -266,14 +271,14 @@ interface PanelRenderAreaProps {
 }
 
 export function PanelRenderArea(props: PanelRenderAreaProps) {
-  const { allPanels, activePanels } = usePanelManagerContext();
+  const { activePanels } = usePanelManagerContext();
   const [positions] = React.useState(props.initialPositions || []);
 
   // order panels by given positions, all other panels will be rendered at the end
 
   const panelsOrdered = useMemo(
     () =>
-      Array.from(allPanels).sort((a, b) => {
+      Array.from(ALL_PANELS).sort((a, b) => {
         const parentA = a.split('-')[0];
         const parentB = b.split('-')[0];
 
@@ -285,7 +290,7 @@ export function PanelRenderArea(props: PanelRenderAreaProps) {
 
         return 0;
       }),
-    [allPanels, positions]
+    [positions]
   );
 
   const activePanelSet = useMemo(() => {

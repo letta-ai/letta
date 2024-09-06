@@ -16,6 +16,8 @@ import { DataSourcesPanel } from './DataSourcesPanel/DataSourcesPanel';
 import { ModelPanel } from './ModelPanel/ModelPanel';
 import { AgentSimulator } from './AgentSimulator/AgentSimulator';
 import { VariablesPanel } from './VariablesPanel/VariablesPanel';
+import { MemoryBlocksPanel } from './MemoryBlocksPanel/MemoryBlocksPanel';
+import { ContextEditorPanel } from './ContextEditorPanel/ContextEditorPanel';
 
 interface SidebarGroupProps {
   title: string;
@@ -54,10 +56,10 @@ function ADESidebar() {
       </SidebarGroup>
       <SidebarGroup title="Configure">
         <VariablesPanel />
-        <ADENavigationItem title="Memory Blocks" />
+        <MemoryBlocksPanel />
         <DataSourcesPanel />
         <ToolsPanel />
-        <ADENavigationItem title="Context Editor" />
+        <ContextEditorPanel />
       </SidebarGroup>
       <SidebarGroup title="Test">
         {/*<ArchivalMemoriesPanel />*/}
@@ -99,11 +101,17 @@ export function AgentPage() {
         gap={false}
       >
         <ADEHeader />
-        <HStack collapseHeight overflowY="auto" fullWidth gap={false}>
-          <ADESidebar />
+        <HStack
+          collapseHeight
+          overflowY="auto"
+          fullWidth
+          gap={false}
+          className="flex-row-reverse"
+        >
           <Frame overflow="hidden" className="relative" fullWidth fullHeight>
-            <PanelRenderArea initialPositions={['sidebar']} />
+            <PanelRenderArea />
           </Frame>
+          <ADESidebar />
         </HStack>
       </VStack>
     </PanelManager>

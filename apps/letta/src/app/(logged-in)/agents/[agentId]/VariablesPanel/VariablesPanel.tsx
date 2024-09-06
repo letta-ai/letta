@@ -216,7 +216,7 @@ function VariableHome() {
 
             return (
               <Button
-                label="View/Edit"
+                label="Edit"
                 color="tertiary"
                 size="small"
                 onClick={() => {

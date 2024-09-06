@@ -36,6 +36,7 @@ export function PanelHeader(props: PanelHeaderProps) {
           {title.map((t, i) => (
             <>
               <button
+                key={i}
                 onClick={() => {
                   if (i === 0 && onGoBack) {
                     onGoBack();
@@ -46,7 +47,7 @@ export function PanelHeader(props: PanelHeaderProps) {
                   {t}
                 </Typography>
               </button>
-              {i < title.length - 1 && <Typography>/</Typography>}
+              {i < title.length - 1 && <Typography key={`${i}n`}>/</Typography>}
             </>
           ))}
           {onGoBack && (
