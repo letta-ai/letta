@@ -1,4 +1,5 @@
 import React, { forwardRef } from 'react';
+import Link from 'next/link';
 
 type PossibleRootType = HTMLAnchorElement | HTMLButtonElement;
 
@@ -28,9 +29,10 @@ export const ButtonPrimitive = forwardRef<
 >(function ButtonPrimitive({ children, ...props }, ref) {
   if (isAnchorElement(props) && isAnchorRef(ref)) {
     return (
-      <a ref={ref} {...props}>
+      // @ts-expect-error this is a valid anchor element
+      <Link href={props.href} ref={ref} {...props}>
         {children}
-      </a>
+      </Link>
     );
   }
 

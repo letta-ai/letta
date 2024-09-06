@@ -49,6 +49,7 @@ function ContextWindowPreview(props: ContextWindowPreviewProps) {
       const key = value?.replace('{{', '').replace('}}', '');
 
       return (
+        // @ts-expect-error - y
         <span key={index} className={`rounded-md p-1 ${colorMap[key]}`}>
           {/* @ts-expect-error - y */}
           {contextWindowVariableMap[key]}
@@ -79,6 +80,7 @@ export function ContextEditorPanel() {
         const value = contextWindowValues.find((value) => value === line);
         const key = value?.replace('{{', '').replace('}}', '');
 
+        // @ts-expect-error - y
         return acc + (contextWindowVariableMap[key] || '').length;
       }
       return acc + line.length;

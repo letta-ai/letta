@@ -1,5 +1,5 @@
 <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <path fill-rule="evenodd" clip-rule="evenodd" d="M1.75 1L1.75 14L0.249999 14L0.25 1L1.75 1Z" fill="currentColor" />
+  <path fillRule="evenodd" clipRule="evenodd" d="M1.75 1L1.75 14L0.249999 14L0.25 1L1.75 1Z" fill="currentColor" />
   <rect x="10" y="7" width="1" height="1" rx=".5" transform="rotate(90 10 7)" fill="currentColor" />
   <rect x="10" y="13" width="1" height="1" rx=".5" transform="rotate(90 10 13)" fill="currentColor" />
   <rect x="12" y="7" width="1" height="1" rx=".5" transform="rotate(90 12 7)" fill="currentColor" />

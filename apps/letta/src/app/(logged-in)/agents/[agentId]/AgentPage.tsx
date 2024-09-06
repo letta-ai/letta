@@ -1,12 +1,18 @@
 'use client';
 import React from 'react';
 import {
+  ArrowUpIcon,
   Button,
+  CaretDownIcon,
   Frame,
+  HomeIcon,
   HStack,
+  KeyIcon,
+  LifebuoyIcon,
   Logo,
   PanelManager,
   PanelRenderArea,
+  Popover,
   Typography,
   VStack,
 } from '@letta-web/component-library';
@@ -18,17 +24,71 @@ import { AgentSimulator } from './AgentSimulator/AgentSimulator';
 import { VariablesPanel } from './VariablesPanel/VariablesPanel';
 import { MemoryBlocksPanel } from './MemoryBlocksPanel/MemoryBlocksPanel';
 import { ContextEditorPanel } from './ContextEditorPanel/ContextEditorPanel';
+import { CurrentUserDetailsBlock } from '$letta/client/common';
 
 interface SidebarGroupProps {
   title: string;
   children: React.ReactNode;
 }
 
+function NavOverlay() {
+  return (
+    <Popover
+      trigger={
+        <HStack align="center">
+          <Logo size="small" color="white" />
+          <CaretDownIcon className="w-1.5" color="white" />
+        </HStack>
+      }
+      align="start"
+    >
+      <CurrentUserDetailsBlock />
+      <Frame borderTop color="background-greyer" as="nav">
+        <VStack as="ul" paddingY="xxsmall" paddingX="xxxsmall">
+          <Button
+            href="/project"
+            color="tertiary-transparent"
+            preIcon={<ArrowUpIcon />}
+            label="Return to Project"
+          />
+          <Button
+            href="/"
+            color="tertiary-transparent"
+            label="Dashboard"
+            preIcon={<HomeIcon />}
+          />
+          <Button
+            target="_blank"
+            href="/api-keys"
+            color="tertiary-transparent"
+            label="API Keys"
+            preIcon={<KeyIcon />}
+          />
+
+          <Button
+            target="_blank"
+            href="/support"
+            color="tertiary-transparent"
+            label="Support"
+            preIcon={<LifebuoyIcon />}
+          />
+        </VStack>
+      </Frame>
+    </Popover>
+  );
+}
+
 function SidebarGroup(props: SidebarGroupProps) {
   const { title, children } = props;
 
   return (
-    <VStack borderBottom gap={false} color="transparent" as="section">
+    <VStack
+      borderBottom
+      paddingBottom
+      gap={false}
+      color="transparent"
+      as="section"
+    >
       <HStack className="h-[43px]" paddingX="xxsmall" align="center">
         <Typography bold variant="body2">
           {title}
@@ -79,9 +139,8 @@ function ADEHeader() {
       fullWidth
       color="background-black"
     >
-      <div>
-        <Logo size="small" color="white" />
-      </div>
+      <NavOverlay />
+
       <HStack>
         <Button color="primary" size="small" label="Deployment Instructions" />
       </HStack>

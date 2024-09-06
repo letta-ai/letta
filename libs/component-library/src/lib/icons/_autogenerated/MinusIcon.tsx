@@ -6,17 +6,15 @@ export function MinusIcon(props: IconWrappedProps) {
   return (
     <IconWrapper {...props}>
       <svg
-        width="15"
-        height="15"
-        viewBox="0 0 15 15"
+        width="16"
+        height="16"
+        viewBox="0 0 16 16"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
       >
         <path
-          fillRule="evenodd"
-          clipRule="evenodd"
-          d="M2.25 7.5C2.25 7.22386 2.47386 7 2.75 7H12.25C12.5261 7 12.75 7.22386 12.75 7.5C12.75 7.77614 12.5261 8 12.25 8H2.75C2.47386 8 2.25 7.77614 2.25 7.5Z"
-          fill="currentColor"
+          d="M3.75 7.25C3.33579 7.25 3 7.58579 3 8C3 8.41421 3.33579 8.75 3.75 8.75L12.25 8.75C12.6642 8.75 13 8.41421 13 8C13 7.58579 12.6642 7.25 12.25 7.25H3.75Z"
+          fill="black"
         />
       </svg>
     </IconWrapper>

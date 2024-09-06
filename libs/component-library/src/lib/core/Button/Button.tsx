@@ -21,6 +21,8 @@ const buttonVariants = cva(
         default: 'rounded border',
       },
       color: {
+        'tertiary-transparent':
+          'bg-transparent border-none hover:bg-tertiary-hover text-tertiary-content',
         primary:
           'bg-primary hover:bg-primary-hover text-white border-transparent',
         secondary: 'bg-secondary text-secondary-content border-transparent',

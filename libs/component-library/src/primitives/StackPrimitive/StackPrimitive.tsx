@@ -23,6 +23,7 @@ const stackVariants = cva('flex', {
       end: 'justify-end',
     },
     align: {
+      start: 'items-start',
       center: 'items-center',
     },
   },
