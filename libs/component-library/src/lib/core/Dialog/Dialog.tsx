@@ -4,7 +4,9 @@ import * as React from 'react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { X } from 'lucide-react';
 import { cn } from '@letta-web/core-style-config';
+import type { ButtonProps } from '../Button/Button';
 import { Button } from '../Button/Button';
+import { useCallback } from 'react';
 
 const DialogRoot = DialogPrimitive.Root;
 
@@ -119,9 +121,11 @@ interface DialogProps {
   children?: React.ReactNode;
   trigger?: React.ReactNode;
   confirmText?: string;
+  confirmColor?: ButtonProps['color'];
   isConfirmBusy?: boolean;
   cancelText?: string;
   onConfirm?: () => void;
+  onSubmit?: (e: React.FormEvent<HTMLFormElement>) => void;
   hideCancel?: boolean;
 }
 
@@ -133,20 +137,42 @@ export function Dialog(props: DialogProps) {
     children,
     isConfirmBusy,
     trigger,
+    confirmColor = 'secondary',
     cancelText = 'Cancel',
     confirmText = 'Confirm',
+    onSubmit,
     onConfirm,
     hideCancel,
   } = props;
 
+  const handleSubmit = useCallback(
+    (e: React.FormEvent<HTMLFormElement>) => {
+      if (onConfirm) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        onConfirm();
+
+        return;
+      }
+
+      if (onSubmit) {
+        onSubmit(e);
+      }
+
+      return;
+    },
+    [onConfirm, onSubmit]
+  );
+
   return (
     <DialogRoot open={isOpen} onOpenChange={onOpenChange}>
       {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
-      <DialogContent>
+      <DialogContent aria-describedby="">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
-        <form className="contents">
+        <form onSubmit={handleSubmit} className="contents">
           {children}
           <DialogFooter>
             {!hideCancel && (
@@ -155,10 +181,9 @@ export function Dialog(props: DialogProps) {
               </DialogClose>
             )}
             <Button
-              color="secondary"
-              type="button"
+              color={confirmColor}
+              type="submit"
               busy={isConfirmBusy}
-              onClick={onConfirm}
               label={confirmText}
             />
           </DialogFooter>

@@ -16,11 +16,6 @@ const agentsColumns: Array<ColumnDef<AgentState>> = [
   {
     id: 'actions',
     header: '',
-    meta: {
-      style: {
-        columnAlign: 'end',
-      },
-    },
     accessorKey: 'id',
     cell: (cell) => {
       return (

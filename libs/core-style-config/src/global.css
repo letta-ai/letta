@@ -26,9 +26,9 @@
     --popover: 0 0% 100%;
     --popover-content: 240 10% 3.9%;
 
-    --primary: 205.2,100%,50%;
+    --primary: 240, 92%, 35%;
     --primary-content: 0 0% 98%;
-    --primary-hover: 205, 100%, 60%;
+    --primary-hover: 240, 54%, 48%;
 
     --secondary: 0 0% 0%;
     --secondary-content: 0 0% 100%;
@@ -56,7 +56,7 @@
 
 
     --background-grey-content: 240 10% 3.9%;
-    --background-grey: 0, 0%, 99%;
+    --background-grey: 210, 10%, 96%;
 
     --background-greyer: 210, 40%, 96%;
     --background-greyer-content: 240 10% 3.9%;
@@ -66,7 +66,7 @@
 
     --border: 214, 32%, 91%;
     --input: 240 5.9% 90%;
-    --ring: 205.2,100%,50%;
+    --ring: var(--primary);
     --radius: 0.375rem;
 
     --button-input-height: 36px;

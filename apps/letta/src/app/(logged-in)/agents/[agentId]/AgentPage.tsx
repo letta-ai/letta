@@ -10,12 +10,12 @@ import {
   Typography,
   VStack,
 } from '@letta-web/component-library';
-import { NavigationItem } from './common/ADENavigationItem/ADENavigationItem';
+import { ADENavigationItem } from './common/ADENavigationItem/ADENavigationItem';
 import { ToolsPanel } from './ToolsPanel/ToolsPanel';
 import { DataSourcesPanel } from './DataSourcesPanel/DataSourcesPanel';
 import { ModelPanel } from './ModelPanel/ModelPanel';
 import { AgentSimulator } from './AgentSimulator/AgentSimulator';
-import { ArchivalMemoriesPanel } from './ArchivalMemoriesPanel/ArchivalMemoriesPanel';
+import { VariablesPanel } from './VariablesPanel/VariablesPanel';
 
 interface SidebarGroupProps {
   title: string;
@@ -27,17 +27,12 @@ function SidebarGroup(props: SidebarGroupProps) {
 
   return (
     <VStack borderBottom gap={false} color="transparent" as="section">
-      <HStack
-        className="h-[43px]"
-        padding="xxsmall"
-        borderBottom
-        align="center"
-      >
+      <HStack className="h-[43px]" paddingX="xxsmall" align="center">
         <Typography bold variant="body2">
           {title}
         </Typography>
       </HStack>
-      <VStack gap={false} as="ul">
+      <VStack gap="small" as="ul">
         {children}
       </VStack>
     </VStack>
@@ -48,21 +43,25 @@ function ADESidebar() {
   return (
     <VStack
       borderRight
-      gap={false}
       color="background-grey"
       as="nav"
       fullHeight
       className="w-[250px] min-w-[250px]"
     >
-      <SidebarGroup title="Core Details">
+      <SidebarGroup title="Base">
         <ModelPanel />
-        <NavigationItem title="Parameters" />
+        <ADENavigationItem title="Parameters" />
       </SidebarGroup>
-      <SidebarGroup title="Powers">
-        <NavigationItem title="Core Memories" />
-        <ArchivalMemoriesPanel />
+      <SidebarGroup title="Configure">
+        <VariablesPanel />
+        <ADENavigationItem title="Memory Blocks" />
         <DataSourcesPanel />
         <ToolsPanel />
+        <ADENavigationItem title="Context Editor" />
+      </SidebarGroup>
+      <SidebarGroup title="Test">
+        {/*<ArchivalMemoriesPanel />*/}
+        <AgentSimulator />
       </SidebarGroup>
     </VStack>
   );
@@ -82,7 +81,6 @@ function ADEHeader() {
         <Logo size="small" color="white" />
       </div>
       <HStack>
-        <AgentSimulator />
         <Button color="primary" size="small" label="Deployment Instructions" />
       </HStack>
     </HStack>
@@ -101,9 +99,9 @@ export function AgentPage() {
         gap={false}
       >
         <ADEHeader />
-        <HStack className="h-[0] flex-1" overflowY="auto" fullWidth gap={false}>
+        <HStack collapseHeight overflowY="auto" fullWidth gap={false}>
           <ADESidebar />
-          <Frame overflow="hidden" fullWidth fullHeight>
+          <Frame overflow="hidden" className="relative" fullWidth fullHeight>
             <PanelRenderArea initialPositions={['sidebar']} />
           </Frame>
         </HStack>

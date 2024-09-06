@@ -21,7 +21,7 @@ export * from './lib/core/Alert/Alert';
 
 export * from './lib/core/Select/Select';
 
-export * from './lib/core/Toggle/Toggle';
+export * from './lib/core/Switch/Switch';
 
 export * from './lib/core/DataTable/DataTable';
 
@@ -54,3 +54,5 @@ export * from './lib/core/Skeleton/Skeleton';
 export * from './lib/core/LettaLoader/LettaLoader';
 
 export * from './lib/ade/LettaLoaderPanel/LettaLoaderPanel';
+
+export * from './lib/core/ToggleGroup/ToggleGroup';

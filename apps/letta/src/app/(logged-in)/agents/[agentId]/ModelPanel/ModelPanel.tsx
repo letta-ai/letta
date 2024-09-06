@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo } from 'react';
-import { NavigationItem } from '../common/ADENavigationItem/ADENavigationItem';
+import { ADENavigationItem } from '../common/ADENavigationItem/ADENavigationItem';
 import {
   FormProvider,
   FormField,
@@ -82,7 +82,10 @@ export function ModelPanel() {
       width="compact"
       id={['sidebar', 'model']}
       trigger={
-        <NavigationItem title="Model" preview={currentAgent.llm_config.model} />
+        <ADENavigationItem
+          title="Model"
+          preview={currentAgent.llm_config.model}
+        />
       }
     >
       <FormProvider {...form}>

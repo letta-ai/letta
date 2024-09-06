@@ -16,12 +16,12 @@ import {
   ActionCard,
   useForm,
   VStack,
-  RawToggle,
+  RawSwitch,
   LettaLoaderPanel,
   Frame,
   HStack,
 } from '@letta-web/component-library';
-import { NavigationItem } from '../common/ADENavigationItem/ADENavigationItem';
+import { ADENavigationItem } from '../common/ADENavigationItem/ADENavigationItem';
 import { useCurrentAgent, useCurrentAgentId } from '../hooks';
 import type { AgentState, Tool_Output } from '@letta-web/letta-agents-api';
 import {
@@ -144,7 +144,7 @@ function ToolsList() {
               title={tool.name}
               description={tool.description || ''}
               mainAction={
-                <RawToggle
+                <RawSwitch
                   hideLabel
                   label={
                     currentToolsAsSet.has(tool.name)
@@ -424,7 +424,7 @@ export function ToolsPanel() {
     <Panel
       width="compact"
       id={['sidebar', 'tools']}
-      trigger={<NavigationItem title="Tools" />}
+      trigger={<ADENavigationItem title="Tools" />}
     >
       <PanelRouter
         pages={{

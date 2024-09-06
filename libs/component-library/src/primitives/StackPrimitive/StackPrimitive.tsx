@@ -15,6 +15,7 @@ const stackVariants = cva('flex', {
       true: 'gap-2',
       medium: 'gap-3',
       large: 'gap-4',
+      form: 'gap-4',
     },
     justify: {
       spaceBetween: 'justify-between',

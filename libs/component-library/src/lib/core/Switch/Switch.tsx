@@ -25,7 +25,7 @@ const SwitchPrimitive = React.forwardRef<
   </SwitchPrimitives.Root>
 ));
 
-export const Toggle = makeInput(SwitchPrimitive, 'Toggle', { inline: true });
-export const RawToggle = makeRawInput(SwitchPrimitive, 'RawToggle', {
+export const Switch = makeInput(SwitchPrimitive, 'Switch', { inline: true });
+export const RawSwitch = makeRawInput(SwitchPrimitive, 'RawSwitch', {
   inline: true,
 });

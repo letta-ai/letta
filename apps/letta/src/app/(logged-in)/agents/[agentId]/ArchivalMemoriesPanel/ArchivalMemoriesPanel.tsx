@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { NavigationItem } from '../common/ADENavigationItem/ADENavigationItem';
+import { ADENavigationItem } from '../common/ADENavigationItem/ADENavigationItem';
 import {
   ActionCard,
   Button,
@@ -11,6 +11,7 @@ import {
   PanelHeader,
   PanelLastElement,
   TrashIcon,
+  useForm,
 } from '@letta-web/component-library';
 import { z } from 'zod';
 import type { Passage } from '@letta-web/letta-agents-api';
@@ -21,21 +22,21 @@ import {
 } from '@letta-web/letta-agents-api';
 import { useCurrentAgentId } from '../hooks';
 import { useQueryClient } from '@tanstack/react-query';
+import { zodResolver } from '@hookform/resolvers/zod';
 
-const { PanelRouter, usePanelRouteData, usePanelPageContext } =
-  createPageRouter(
-    {
-      createMemory: {
-        state: z.object({}),
-      },
-      memory: {
-        state: z.object({}),
-      },
+const { PanelRouter, usePanelPageContext } = createPageRouter(
+  {
+    createMemory: {
+      state: z.object({}),
     },
-    {
-      initialPage: 'memory',
-    }
-  );
+    memory: {
+      state: z.object({}),
+    },
+  },
+  {
+    initialPage: 'memory',
+  }
+);
 
 interface MemoryItemProps {
   memory: Passage;
@@ -166,8 +167,19 @@ function MemoryRootPage() {
   );
 }
 
+const createMemorySchema = z.object({
+  text: z.string(),
+});
+
 function CreateMemoryPage() {
   const { setCurrentPage } = usePanelPageContext();
+
+  const form = useForm({
+    resolver: zodResolver(createMemorySchema),
+    defaultValues: {
+      text: '',
+    },
+  });
 
   return (
     <div>
@@ -186,7 +198,7 @@ export function ArchivalMemoriesPanel() {
     <Panel
       width="compact"
       id={['sidebar', 'archival-memories']}
-      trigger={<NavigationItem title="Archival Memories" />}
+      trigger={<ADENavigationItem title="Archival Memories" />}
     >
       <PanelRouter
         pages={{

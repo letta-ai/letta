@@ -5,6 +5,7 @@ import {
   HStack,
   Typography,
 } from '@letta-web/component-library';
+import { cn } from '@letta-web/core-style-config';
 
 interface NavigationItemProps {
   title: string;
@@ -13,32 +14,41 @@ interface NavigationItemProps {
   isActive?: boolean;
 }
 
-export function NavigationItem(props: NavigationItemProps) {
+export function ADENavigationItem(props: NavigationItemProps) {
   const { title, isActive, onClick, preview } = props;
 
   return (
-    <HStack
-      paddingX="xxsmall"
-      as="button"
-      onClick={onClick}
-      className="hover:bg-tertiary-hover cursor-pointer h-[37px]"
-      color="transparent"
-      justify="spaceBetween"
-      align="center"
-    >
-      <div>
-        <Typography variant="body2">{title}</Typography>
-      </div>
-      <HStack align="center">
-        <Typography variant="body2" color="muted">
-          {preview}
-        </Typography>
-        <HStack align="center" className="w-3">
-          {isActive ? (
-            <Cross2Icon className="w-2.5" />
-          ) : (
-            <CaretRightIcon className="" />
-          )}
+    <HStack fullWidth align="center" paddingX="xxsmall">
+      <HStack
+        fullWidth
+        paddingX="xxsmall"
+        as="button"
+        rounded
+        onClick={onClick}
+        className={cn(
+          'hover:bg-tertiary-hover cursor-pointer h-[37px]',
+          isActive
+            ? 'bg-primary text-primary-content hover:bg-primary-hover'
+            : ''
+        )}
+        color="transparent"
+        justify="spaceBetween"
+        align="center"
+      >
+        <div>
+          <Typography variant="body2">{title}</Typography>
+        </div>
+        <HStack align="center">
+          <Typography variant="body2" color="muted">
+            {preview}
+          </Typography>
+          <HStack align="center" className="w-3">
+            {isActive ? (
+              <Cross2Icon className="w-2.5" />
+            ) : (
+              <CaretRightIcon className="" />
+            )}
+          </HStack>
         </HStack>
       </HStack>
     </HStack>

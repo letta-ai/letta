@@ -8,7 +8,9 @@ import { Controller, FormProvider, useFormContext } from 'react-hook-form';
 
 import { cn } from '@letta-web/core-style-config';
 import { cva, type VariantProps } from 'class-variance-authority';
+import type { PropsWithChildren } from 'react';
 import { useId, useMemo } from 'react';
+import { HStack } from '../../framing/HStack/HStack';
 
 export { useForm } from 'react-hook-form';
 
@@ -334,6 +336,19 @@ const FormMessage = React.forwardRef<
   );
 });
 FormMessage.displayName = 'FormMessage';
+
+type FormActionsProps = PropsWithChildren<{
+  startAction?: React.ReactNode;
+}>;
+
+export function FormActions({ children, startAction }: FormActionsProps) {
+  return (
+    <div className="flex gap-4 justify-between">
+      {startAction ? startAction : <div />}
+      <HStack>{children}</HStack>
+    </div>
+  );
+}
 
 type FormProps = React.HTMLAttributes<HTMLFormElement>;
 

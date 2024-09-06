@@ -6,7 +6,7 @@ import {
   PanelBar,
   PanelHeader,
 } from '@letta-web/component-library';
-import { NavigationItem } from '../common/ADENavigationItem/ADENavigationItem';
+import { ADENavigationItem } from '../common/ADENavigationItem/ADENavigationItem';
 
 export function DataSourcesPanel() {
   const [search, setSearch] = useState('');
@@ -15,7 +15,7 @@ export function DataSourcesPanel() {
     <Panel
       width="compact"
       id={['sidebar', 'data-sources']}
-      trigger={<NavigationItem title="Data Sources" />}
+      trigger={<ADENavigationItem title="Data Sources" />}
     >
       <PanelHeader title="Data Sources" />
       <PanelBar

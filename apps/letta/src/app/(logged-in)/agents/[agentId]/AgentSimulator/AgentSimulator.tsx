@@ -13,6 +13,7 @@ import {
 import React, { useEffect, useMemo, useRef } from 'react';
 import { useAgentsServiceGetAgentMessagesApiAgentsAgentIdMessagesGet } from '@letta-web/letta-agents-api';
 import { useCurrentAgentId } from '../hooks';
+import { ADENavigationItem } from '../common/ADENavigationItem/ADENavigationItem';
 
 interface MessageProps {
   id: string;
@@ -146,15 +147,7 @@ export function AgentSimulator() {
   return (
     <Panel
       id={['chat-simulator']}
-      trigger={
-        <Button
-          color="black"
-          hideLabel
-          size="small"
-          label="Launch Chat"
-          preIcon={<ChatBubbleIcon />}
-        />
-      }
+      trigger={<ADENavigationItem title="Chat Simulator" />}
     >
       <PanelHeader title="Simulator" />
       <Chatroom />

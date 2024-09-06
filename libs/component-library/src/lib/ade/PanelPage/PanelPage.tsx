@@ -29,6 +29,7 @@ export function createPageRouter<
   PageKey extends string,
   ThisRouter extends GenericRouter<PageKey>
 >(
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   router: ThisRouter,
   options: CreatePageRouterOptions<
     keyof ThisRouter extends string ? keyof ThisRouter : never

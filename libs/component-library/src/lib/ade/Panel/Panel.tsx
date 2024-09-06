@@ -13,9 +13,11 @@ import { ErrorBoundary } from 'react-error-boundary';
 import {
   PanelGroup as ResizablePanelGroup,
   Panel as ResizablePanel,
-  PanelResizeHandle as ResizablePanelResizeHandle,
   PanelResizeHandle,
 } from 'react-resizable-panels';
+import { Logo } from '../../marketing/Logo/Logo';
+import { VStack } from '../../framing/VStack/VStack';
+import { Typography } from '../../core/Typography/Typography';
 
 type PanelId = string[];
 
@@ -287,27 +289,63 @@ export function PanelRenderArea(props: PanelRenderAreaProps) {
   );
 
   const activePanelSet = useMemo(() => {
-    return new Set(activePanels.map((panelId) => panelId.join('-')));
+    return new Set(
+      activePanels.map((panelId) => panelId.join('-')).filter(Boolean)
+    );
   }, [activePanels]);
 
   return (
-    <ResizablePanelGroup direction="horizontal">
-      {panelsOrdered.map((panelId) => (
-        <>
-          <ResizablePanel
-            defaultSize={300}
-            hidden={!activePanelSet.has(panelId)}
-            key={panelId}
-          >
-            <div
-              className="contents"
-              id={`panel-${panelId}`}
+    <>
+      <VStack
+        gap="large"
+        fullWidth
+        fullHeight
+        align="center"
+        justify="center"
+        className="absolute z-0"
+      >
+        <Logo color="muted" size="large" />
+        <Typography bold color="muted">
+          No panels open
+        </Typography>
+      </VStack>
+      <ResizablePanelGroup className="relative z-[1]" direction="horizontal">
+        {panelsOrdered.map((panelId) => (
+          <>
+            <ResizablePanel
+              defaultSize={300}
+              hidden={!activePanelSet.has(panelId)}
               key={panelId}
-            ></div>
-          </ResizablePanel>
-          <PanelResizeHandle />
-        </>
-      ))}
-    </ResizablePanelGroup>
+            >
+              <div
+                className="contents"
+                id={`panel-${panelId}`}
+                key={panelId}
+              ></div>
+            </ResizablePanel>
+            <PanelResizeHandle />
+          </>
+        ))}
+      </ResizablePanelGroup>
+    </>
+  );
+}
+
+interface PanelPageProps {
+  header: React.ReactNode;
+  bar?: React.ReactNode;
+}
+
+export function PanelPage(props: PropsWithChildren<PanelPageProps>) {
+  const { header, bar, children } = props;
+
+  return (
+    <VStack collapseHeight fullWidth fullHeight gap={false}>
+      {header}
+      {bar}
+      <VStack collapseHeight fullWidth fullHeight gap={false}>
+        {children}
+      </VStack>
+    </VStack>
   );
 }
