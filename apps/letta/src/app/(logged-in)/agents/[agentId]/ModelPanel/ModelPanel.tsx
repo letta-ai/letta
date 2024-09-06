@@ -9,6 +9,10 @@ import {
   Form,
   PanelItem,
   PanelHeader,
+  PanelBar,
+  Button,
+  HStack,
+  PanelLastElement,
 } from '@letta-web/component-library';
 import { useCurrentAgent } from '../hooks';
 import { z } from 'zod';
@@ -83,13 +87,8 @@ export function ModelPanel() {
     >
       <FormProvider {...form}>
         <Form onSubmit={form.handleSubmit(onSubmit)}>
-          <PanelHeader
-            title="Current Model"
-            showSave
-            isSaving={isUpdateAgentModelPending}
-          />
-
-          <PanelItem>
+          <PanelHeader title="Current Model" />
+          <PanelLastElement>
             <FormField
               control={form.control}
               name="model"
@@ -105,7 +104,17 @@ export function ModelPanel() {
                 />
               )}
             />
-          </PanelItem>
+            <HStack justify="spaceBetween">
+              <div />
+              <Button
+                type="submit"
+                size="small"
+                color="secondary"
+                label="Update"
+                busy={isUpdateAgentModelPending}
+              />
+            </HStack>
+          </PanelLastElement>
         </Form>
       </FormProvider>
     </Panel>

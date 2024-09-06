@@ -23,6 +23,10 @@ export function buildConfig(appDir: string): Config {
           'biHeight-sm': 'var(--button-input-height-sm)',
           panel: 'var(--panel-row-height)',
         },
+        width: {
+          biWidth: 'var(--button-input-height)',
+          'biWidth-sm': 'var(--button-input-height-sm)',
+        },
         fontSize: {
           sm: 'var(--font-size-sm)',
           base: 'var(--font-size-base)',

@@ -10,7 +10,13 @@ interface NextContext {
 export async function handler(req: NextRequest, context: NextContext) {
   const path = context.params.route.join('/');
 
-  const payload = req.body ? await req.json() : undefined;
+  let payload = undefined;
+
+  try {
+    payload = await req.json();
+  } catch (e) {
+    // do nothing
+  }
 
   const response = await axios({
     method: req.method,

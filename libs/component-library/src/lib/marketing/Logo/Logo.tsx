@@ -22,7 +22,7 @@ const logoVariants = cva('', {
   },
 });
 
-interface LogoBaseProps extends VariantProps<typeof logoVariants> {
+export interface LogoBaseProps extends VariantProps<typeof logoVariants> {
   className?: string;
 }
 

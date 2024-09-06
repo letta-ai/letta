@@ -1,13 +1,13 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { ToggleCard } from './ToggleCard';
+import { ActionCard } from './ActionCard';
 
-const meta: Meta<typeof ToggleCard> = {
-  component: ToggleCard,
-  title: 'reusable/ToggleCard',
+const meta: Meta<typeof ActionCard> = {
+  component: ActionCard,
+  title: 'reusable/ActionCard',
 };
 
 export default meta;
-type Story = StoryObj<typeof ToggleCard>;
+type Story = StoryObj<typeof ActionCard>;
 
 export const Primary: Story = {
   argTypes: {

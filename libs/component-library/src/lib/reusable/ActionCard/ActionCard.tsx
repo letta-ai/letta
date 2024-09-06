@@ -3,20 +3,18 @@ import { Card } from '../../core/Card/Card';
 import { VStack } from '../../framing/VStack/VStack';
 import { HStack } from '../../framing/HStack/HStack';
 import { Typography } from '../../core/Typography/Typography';
-import { RawToggle } from '../../core/Toggle/Toggle';
 
 interface ToggleCardProps {
   title: string;
   subtitle?: string;
   icon?: React.ReactNode;
-  checked: boolean;
-  onChange: (checked: boolean) => void;
+  mainAction?: React.ReactNode;
   description?: string;
   actions?: React.ReactNode;
 }
 
-export function ToggleCard(props: ToggleCardProps) {
-  const { title, icon, checked, onChange, description, actions } = props;
+export function ActionCard(props: ToggleCardProps) {
+  const { title, icon, mainAction, description, actions } = props;
 
   return (
     <Card>
@@ -33,16 +31,7 @@ export function ToggleCard(props: ToggleCardProps) {
               </Typography>
             )}
           </VStack>
-          <HStack align="center">
-            <RawToggle
-              label={`Toggle ${title}`}
-              hideLabel
-              checked={checked}
-              onClick={() => {
-                onChange(!checked);
-              }}
-            />
-          </HStack>
+          <HStack align="center">{mainAction}</HStack>
         </HStack>
         {description && (
           <VStack fullHeight>

@@ -37,6 +37,9 @@ const buttonVariants = cva(
       active: {
         true: '',
       },
+      hideLabel: {
+        true: '',
+      },
     },
     compoundVariants: [
       {
@@ -47,6 +50,16 @@ const buttonVariants = cva(
       {
         variant: 'inline-panel',
         className: 'h-full',
+      },
+      {
+        hideLabel: true,
+        size: 'small',
+        className: 'w-biWidth-sm p-0 items-center justify-center flex',
+      },
+      {
+        hideLabel: true,
+        size: 'default',
+        className: 'w-biWidth p-0 items-center justify-center flex',
       },
     ],
     defaultVariants: {
@@ -99,7 +112,15 @@ export function Button(props: ButtonProps) {
   return (
     <ButtonPrimitive
       className={cn(
-        buttonVariants({ color, size, variant, fullWidth, fullHeight, active })
+        buttonVariants({
+          color,
+          hideLabel,
+          size,
+          variant,
+          fullWidth,
+          fullHeight,
+          active,
+        })
       )}
       {...rest}
     >

@@ -2,18 +2,16 @@ import * as React from 'react';
 import { useCallback } from 'react';
 import { HStack } from '../../framing/HStack/HStack';
 import { Typography } from '../../core/Typography/Typography';
-import { Button } from '../../core/Button/Button';
 import { usePanelContext, usePanelManagerContext } from '../Panel/Panel';
 import { Cross2Icon } from '../../icons';
 
-interface PanelHeaderProps {
+export interface PanelHeaderProps {
   title: string[] | string;
-  showSave?: boolean;
-  isSaving?: boolean;
+  onGoBack?: () => void;
 }
 
 export function PanelHeader(props: PanelHeaderProps) {
-  const { title, showSave, isSaving } = props;
+  const { title, onGoBack } = props;
   const { id } = usePanelContext();
   const { deactivatePanel } = usePanelManagerContext();
 
@@ -26,7 +24,7 @@ export function PanelHeader(props: PanelHeaderProps) {
 
   return (
     <HStack
-      color="background-greyer"
+      color="background"
       align="center"
       padding="xxsmall"
       borderBottom
@@ -37,45 +35,41 @@ export function PanelHeader(props: PanelHeaderProps) {
         <HStack gap="small">
           {title.map((t, i) => (
             <>
-              <Typography key={i} bold>
-                {t}
-              </Typography>
+              <button
+                onClick={() => {
+                  if (i === 0 && onGoBack) {
+                    onGoBack();
+                  }
+                }}
+              >
+                <Typography className="hover:underline" key={i} bold>
+                  {t}
+                </Typography>
+              </button>
               {i < title.length - 1 && <Typography>/</Typography>}
             </>
           ))}
+          {onGoBack && (
+            <button
+              type="button"
+              onClick={onGoBack}
+              className="flex items-center text-xs rounded-full bg-background-greyer px-2"
+            >
+              Go back
+            </button>
+          )}
         </HStack>
       ) : (
         <Typography bold>{title}</Typography>
       )}
-      <HStack fullHeight align="center">
-        {showSave ? (
-          <Button
-            onClick={handleDeactivatePanel}
-            label="Close"
-            size="small"
-            type="button"
-            color="tertiary"
-          />
-        ) : (
-          <button
-            type="button"
-            onClick={handleDeactivatePanel}
-            className="flex items-center"
-          >
-            <Cross2Icon />
-            <span className="sr-only">Close</span>
-          </button>
-        )}
-        {showSave && (
-          <Button
-            busy={isSaving}
-            type="submit"
-            label="Save"
-            size="small"
-            color="secondary"
-          />
-        )}
-      </HStack>
+      <button
+        type="button"
+        onClick={handleDeactivatePanel}
+        className="flex items-center"
+      >
+        <Cross2Icon />
+        <span className="sr-only">Close</span>
+      </button>
     </HStack>
   );
 }

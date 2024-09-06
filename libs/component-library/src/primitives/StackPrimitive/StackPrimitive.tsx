@@ -19,6 +19,7 @@ const stackVariants = cva('flex', {
     justify: {
       spaceBetween: 'justify-between',
       center: 'justify-center',
+      end: 'justify-end',
     },
     align: {
       center: 'items-center',

@@ -119,6 +119,7 @@ interface DialogProps {
   children?: React.ReactNode;
   trigger?: React.ReactNode;
   confirmText?: string;
+  isConfirmBusy?: boolean;
   cancelText?: string;
   onConfirm?: () => void;
   hideCancel?: boolean;
@@ -130,6 +131,7 @@ export function Dialog(props: DialogProps) {
     onOpenChange,
     title,
     children,
+    isConfirmBusy,
     trigger,
     cancelText = 'Cancel',
     confirmText = 'Confirm',
@@ -152,7 +154,13 @@ export function Dialog(props: DialogProps) {
                 <Button label={cancelText} color="tertiary" />
               </DialogClose>
             )}
-            <Button color="secondary" onClick={onConfirm} label={confirmText} />
+            <Button
+              color="secondary"
+              type="button"
+              busy={isConfirmBusy}
+              onClick={onConfirm}
+              label={confirmText}
+            />
           </DialogFooter>
         </form>
       </DialogContent>

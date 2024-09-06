@@ -291,26 +291,23 @@ export function PanelRenderArea(props: PanelRenderAreaProps) {
   }, [activePanels]);
 
   return (
-    <div className="w-full h-full">
-      <div className="w-full flex h-full">
-        <ResizablePanelGroup direction="horizontal">
-          {panelsOrdered.map((panelId) => (
-            <>
-              <ResizablePanel
-                hidden={!activePanelSet.has(panelId)}
-                key={panelId}
-              >
-                <div
-                  className="contents"
-                  id={`panel-${panelId}`}
-                  key={panelId}
-                ></div>
-              </ResizablePanel>
-              <PanelResizeHandle />
-            </>
-          ))}
-        </ResizablePanelGroup>
-      </div>
-    </div>
+    <ResizablePanelGroup direction="horizontal">
+      {panelsOrdered.map((panelId) => (
+        <>
+          <ResizablePanel
+            defaultSize={300}
+            hidden={!activePanelSet.has(panelId)}
+            key={panelId}
+          >
+            <div
+              className="contents"
+              id={`panel-${panelId}`}
+              key={panelId}
+            ></div>
+          </ResizablePanel>
+          <PanelResizeHandle />
+        </>
+      ))}
+    </ResizablePanelGroup>
   );
 }

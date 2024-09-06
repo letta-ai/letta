@@ -10,13 +10,16 @@ import {
   Input,
   Panel,
   PanelBar,
-  PanelExpandedList,
+  PanelLastElement,
   PanelHeader,
   RawInput,
-  Skeleton,
-  ToggleCard,
+  ActionCard,
   useForm,
   VStack,
+  RawToggle,
+  LettaLoaderPanel,
+  Frame,
+  HStack,
 } from '@letta-web/component-library';
 import { NavigationItem } from '../common/ADENavigationItem/ADENavigationItem';
 import { useCurrentAgent, useCurrentAgentId } from '../hooks';
@@ -58,7 +61,8 @@ const { PanelRouter, usePanelRouteData, usePanelPageContext } =
 function ToolsList() {
   const currentAgentId = useCurrentAgentId();
   const { tools: currentToolNames } = useCurrentAgent();
-  const { data: allTools } = useToolsServiceListAllToolsApiToolsGet();
+  const { data: allTools, isLoading } =
+    useToolsServiceListAllToolsApiToolsGet();
   const { setCurrentPage } = usePanelPageContext();
 
   const { mutate } = useAgentsServiceUpdateAgentApiAgentsAgentIdPost({
@@ -130,18 +134,32 @@ function ToolsList() {
   }, [currentToolNames]);
 
   return (
-    <PanelExpandedList>
+    <PanelLastElement>
       <VStack fullWidth gap="small">
+        {isLoading && <LettaLoaderPanel />}
         {(allTools || []).map((tool) => {
           return (
-            <ToggleCard
+            <ActionCard
               key={tool.id}
               title={tool.name}
               description={tool.description || ''}
-              checked={currentToolsAsSet.has(tool.name)}
-              onChange={(checked) => {
-                handleToggleCardChange(tool.name, checked);
-              }}
+              mainAction={
+                <RawToggle
+                  hideLabel
+                  label={
+                    currentToolsAsSet.has(tool.name)
+                      ? `Enable ${tool.name}`
+                      : `Disable ${tool.name}`
+                  }
+                  checked={currentToolsAsSet.has(tool.name)}
+                  onChange={() => {
+                    handleToggleCardChange(
+                      tool.name,
+                      !currentToolsAsSet.has(tool.name)
+                    );
+                  }}
+                />
+              }
               actions={
                 <Button
                   onClick={() => {
@@ -159,7 +177,7 @@ function ToolsList() {
           );
         })}
       </VStack>
-    </PanelExpandedList>
+    </PanelLastElement>
   );
 }
 
@@ -169,7 +187,6 @@ const createToolSchema = z.object({
 });
 
 function ToolCreator() {
-  const { setCurrentPage } = usePanelPageContext();
   const queryClient = useQueryClient();
 
   const { mutate, isPending: isCreatingTool } =
@@ -183,6 +200,9 @@ function ToolCreator() {
 
   const form = useForm<z.infer<typeof createToolSchema>>({
     resolver: zodResolver(createToolSchema),
+    defaultValues: {
+      sourceCode: '',
+    },
   });
 
   const handleSubmit = useCallback(
@@ -201,25 +221,11 @@ function ToolCreator() {
   return (
     <FormProvider {...form}>
       <Form onSubmit={form.handleSubmit(handleSubmit)}>
-        <PanelBar
-          onReturn={() => {
-            setCurrentPage('root');
-          }}
-          actions={
-            <Button
-              type="submit"
-              label="Create"
-              size="small"
-              color="secondary"
-              busy={isCreatingTool}
-            />
-          }
-        ></PanelBar>
-        <PanelExpandedList>
+        <PanelLastElement>
           <FormField
             control={form.control}
             name="name"
-            render={({ field }) => <Input label="Name" {...field} />}
+            render={({ field }) => <Input fullWidth label="Name" {...field} />}
           />
           <FormField
             control={form.control}
@@ -235,7 +241,15 @@ function ToolCreator() {
               />
             )}
           />
-        </PanelExpandedList>
+          <HStack fullWidth justify="end">
+            <Button
+              type="submit"
+              label="Create"
+              color="secondary"
+              busy={isCreatingTool}
+            />
+          </HStack>
+        </PanelLastElement>
       </Form>
     </FormProvider>
   );
@@ -253,7 +267,6 @@ interface ToolEditorProps {
 
 function ToolEditor(props: ToolEditorProps) {
   const { initialTool, isLoading } = props;
-  const { setCurrentPage } = usePanelPageContext();
   const queryClient = useQueryClient();
 
   const { mutate, isPending: isUpdatingTool } =
@@ -292,23 +305,9 @@ function ToolEditor(props: ToolEditorProps) {
   return (
     <FormProvider {...form}>
       <Form onSubmit={form.handleSubmit(handleSubmit)}>
-        <PanelBar
-          onReturn={() => {
-            setCurrentPage('root');
-          }}
-          actions={
-            <Button
-              type="submit"
-              label="Save"
-              size="small"
-              color="secondary"
-              busy={isUpdatingTool}
-            />
-          }
-        ></PanelBar>
-        <PanelExpandedList>
+        <PanelLastElement>
           {isLoading ? (
-            <Skeleton className="w-full h-[300px]" />
+            <LettaLoaderPanel />
           ) : (
             <>
               <RawInput
@@ -331,15 +330,25 @@ function ToolEditor(props: ToolEditorProps) {
                   />
                 )}
               />
+              <HStack fullWidth justify="end">
+                <Button
+                  type="submit"
+                  label="Save"
+                  color="secondary"
+                  busy={isUpdatingTool}
+                />
+              </HStack>
             </>
           )}
-        </PanelExpandedList>
+        </PanelLastElement>
       </Form>
     </FormProvider>
   );
 }
 
 function EditToolPage() {
+  const { setCurrentPage } = usePanelPageContext();
+
   const { toolId, toolName } = usePanelRouteData<'editTool'>();
   const { data, isLoading } = useToolsServiceGetToolApiToolsToolIdGet(
     {
@@ -361,7 +370,12 @@ function EditToolPage() {
 
   return (
     <>
-      <PanelHeader title={['Tools', pageName]} />
+      <PanelHeader
+        onGoBack={() => {
+          setCurrentPage('root');
+        }}
+        title={['Tools', pageName]}
+      />
       {isNewTool ? (
         <ToolCreator />
       ) : (

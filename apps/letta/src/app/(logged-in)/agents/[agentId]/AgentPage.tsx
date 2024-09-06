@@ -15,6 +15,7 @@ import { ToolsPanel } from './ToolsPanel/ToolsPanel';
 import { DataSourcesPanel } from './DataSourcesPanel/DataSourcesPanel';
 import { ModelPanel } from './ModelPanel/ModelPanel';
 import { AgentSimulator } from './AgentSimulator/AgentSimulator';
+import { ArchivalMemoriesPanel } from './ArchivalMemoriesPanel/ArchivalMemoriesPanel';
 
 interface SidebarGroupProps {
   title: string;
@@ -48,7 +49,7 @@ function ADESidebar() {
     <VStack
       borderRight
       gap={false}
-      color="background-greyer"
+      color="background-grey"
       as="nav"
       fullHeight
       className="w-[250px] min-w-[250px]"
@@ -59,7 +60,7 @@ function ADESidebar() {
       </SidebarGroup>
       <SidebarGroup title="Powers">
         <NavigationItem title="Core Memories" />
-        <NavigationItem title="Archival Memories" />
+        <ArchivalMemoriesPanel />
         <DataSourcesPanel />
         <ToolsPanel />
       </SidebarGroup>
