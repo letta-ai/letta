@@ -3,7 +3,6 @@ import {
   ActionCard,
   Button,
   createPageRouter,
-  Dialog,
   Form,
   FormActions,
   FormField,
@@ -96,7 +95,7 @@ function EditMemoryForm({ block, onClose }: EditMemoryFormProps) {
     (data: z.infer<typeof editMemoryBlockFormSchema>) => {
       console.log(data);
     },
-    [form]
+    []
   );
 
   return (

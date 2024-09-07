@@ -1,3 +1,4 @@
+'use client';
 import { webApi, webApiQueryKeys } from '$letta/client';
 
 export function useCurrentUser() {

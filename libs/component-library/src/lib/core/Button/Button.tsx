@@ -15,6 +15,11 @@ const buttonVariants = cva(
       fullHeight: {
         true: 'h-full',
       },
+      align: {
+        center: 'justify-center',
+        left: 'justify-start',
+        right: 'justify-end',
+      },
       variant: {
         'inline-panel':
           'h-full px-3 text-base first:border-l-0 border-l last:border-r-0 border-r',
@@ -76,6 +81,7 @@ export type ButtonProps = Omit<
   React.HTMLAttributes<HTMLAnchorElement | HTMLButtonElement> &
     VariantProps<typeof buttonVariants> & {
       preIcon?: React.ReactNode;
+      postIcon?: React.ReactNode;
       label?: string;
       busy?: boolean;
       href?: string;
@@ -89,27 +95,31 @@ export type ButtonProps = Omit<
 export function Button(props: ButtonProps) {
   const {
     preIcon,
+    postIcon,
     label,
     color,
     busy,
     variant,
     active,
     fullWidth,
+    align,
     fullHeight,
     size,
     hideLabel,
     ...rest
   } = props;
 
-  const iconToRender = useMemo(() => {
-    const iconSize = size === 'small' ? 'w-3 h-3' : 'w-3 h-3';
+  const iconSize = useMemo(() => {
+    return size === 'small' ? 'w-3 h-3' : 'w-3 h-3';
+  }, [size]);
 
+  const iconToRender = useMemo(() => {
     if (busy) {
       return <SpinnerPrimitive className={iconSize} />;
     }
 
     return <Slot className={iconSize}>{preIcon}</Slot>;
-  }, [busy, preIcon, size]);
+  }, [iconSize, busy, preIcon]);
 
   return (
     <ButtonPrimitive
@@ -117,6 +127,7 @@ export function Button(props: ButtonProps) {
         buttonVariants({
           color,
           hideLabel,
+          align,
           size,
           variant,
           fullWidth,
@@ -132,6 +143,7 @@ export function Button(props: ButtonProps) {
       ) : (
         <span>{label}</span>
       )}
+      {postIcon && <Slot className={iconSize}>{postIcon}</Slot>}
     </ButtonPrimitive>
   );
 }

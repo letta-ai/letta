@@ -10,11 +10,12 @@ interface ToggleCardProps {
   icon?: React.ReactNode;
   mainAction?: React.ReactNode;
   description?: string;
+  children?: React.ReactNode;
   actions?: React.ReactNode;
 }
 
 export function ActionCard(props: ToggleCardProps) {
-  const { title, icon, mainAction, description, actions } = props;
+  const { title, icon, mainAction, children, description, actions } = props;
 
   return (
     <Card>
@@ -38,6 +39,7 @@ export function ActionCard(props: ToggleCardProps) {
             <Typography variant="body">{description}</Typography>
           </VStack>
         )}
+        {children}
         {actions && (
           <HStack justify="spaceBetween" paddingTop="small">
             {actions}

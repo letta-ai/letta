@@ -1,7 +1,6 @@
 import {
   Avatar,
   Button,
-  ChatBubbleIcon,
   Frame,
   HStack,
   Panel,

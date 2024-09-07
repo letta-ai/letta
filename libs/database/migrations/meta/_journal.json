@@ -8,6 +8,13 @@
       "when": 1724887696378,
       "tag": "0000_curious_sabretooth",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1725670432207,
+      "tag": "0001_nice_mad_thinker",
+      "breakpoints": true
     }
   ]
 }

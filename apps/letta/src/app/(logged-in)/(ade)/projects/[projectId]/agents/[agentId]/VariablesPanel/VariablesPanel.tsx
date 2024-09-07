@@ -102,7 +102,7 @@ function CreateVariableModal() {
     (e: z.infer<typeof createVariableFormSchema>) => {
       console.log(e);
     },
-    [form]
+    []
   );
 
   return (

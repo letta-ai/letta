@@ -26,7 +26,7 @@ npm run setup
 To run the dev server for your app, use:
 
 ```sh
-docker compose up -d redis
+docker compose up -d redis postgres
 npm run dev
 ```
 

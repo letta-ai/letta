@@ -24,6 +24,11 @@ const typographyVariants = cva('', {
     noWrap: {
       true: 'whitespace-nowrap',
     },
+    align: {
+      center: 'text-center',
+      left: 'text-left',
+      right: 'text-right',
+    },
   },
   defaultVariants: {
     variant: 'body',

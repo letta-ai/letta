@@ -14,7 +14,11 @@ export const organizations = pgTable('organizations', {
 
 export const orgRelationsTable = relations(organizations, ({ many }) => ({
   users: many(users),
-  apiKeys: many(lettaAgentsAPIKeys),
+  apiKeys: many(lettaAPIKeys),
+  projects: many(projects),
+  testingAgents: many(testingAgents),
+  sourceAgents: many(sourceAgents),
+  deployedAgents: many(deployedAgents),
 }));
 
 export const signupMethodsEnum = pgEnum('signup_methods', ['google', 'email']);
@@ -42,11 +46,12 @@ export const userRelations = relations(users, ({ one }) => ({
   }),
 }));
 
-export const lettaAgentsAPIKeys = pgTable('letta_agents_api_keys', {
+export const lettaAPIKeys = pgTable('letta_api_keys', {
   id: uuid('id')
     .primaryKey()
     .default(sql`gen_random_uuid()`),
   apiKey: text('api_key').notNull().unique(),
+  salt: text('salt').notNull(),
   organizationId: uuid('organization_id').notNull(),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at')
@@ -55,11 +60,97 @@ export const lettaAgentsAPIKeys = pgTable('letta_agents_api_keys', {
 });
 
 export const lettaAgentsAPIKeyRelations = relations(
-  lettaAgentsAPIKeys,
+  lettaAPIKeys,
   ({ one }) => ({
     organization: one(organizations, {
-      fields: [lettaAgentsAPIKeys.organizationId],
+      fields: [lettaAPIKeys.organizationId],
       references: [organizations.id],
     }),
   })
 );
+
+export const projects = pgTable('projects', {
+  id: uuid('id')
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  name: text('name').notNull(),
+  organizationId: uuid('organization_id').notNull(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at')
+    .notNull()
+    .$onUpdate(() => new Date()),
+});
+
+export const projectRelations = relations(projects, ({ one }) => ({
+  organization: one(organizations, {
+    fields: [projects.organizationId],
+    references: [organizations.id],
+  }),
+}));
+
+export const testingAgents = pgTable('testing_agents', {
+  agentId: text('agent_id').primaryKey(),
+  name: text('name').notNull(),
+  organizationId: uuid('organization_id').notNull(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at')
+    .notNull()
+    .$onUpdate(() => new Date()),
+});
+
+export const testingAgentRelations = relations(
+  testingAgents,
+  ({ one, many }) => ({
+    organization: one(organizations, {
+      fields: [testingAgents.organizationId],
+      references: [organizations.id],
+    }),
+    sourceAgents: many(sourceAgents),
+  })
+);
+
+export const sourceAgents = pgTable('source_agents', {
+  agentId: text('agent_id').primaryKey(),
+  name: text('name').notNull(),
+  organizationId: uuid('organization_id').notNull(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at')
+    .notNull()
+    .$onUpdate(() => new Date()),
+});
+
+export const sourceAgentRelations = relations(
+  sourceAgents,
+  ({ one, many }) => ({
+    organization: one(organizations, {
+      fields: [sourceAgents.organizationId],
+      references: [organizations.id],
+    }),
+    testingAgent: one(testingAgents, {
+      fields: [sourceAgents.agentId],
+      references: [testingAgents.agentId],
+    }),
+    deployedAgents: many(deployedAgents),
+  })
+);
+
+export const deployedAgents = pgTable('deployed_agents', {
+  agentId: text('agent_id').primaryKey(),
+  name: text('name').notNull(),
+  organizationId: uuid('organization_id').notNull(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at')
+    .notNull()
+    .$onUpdate(() => new Date()),
+});
+
+export const deployedAgentRelations = relations(deployedAgents, ({ one }) => ({
+  organization: one(organizations, {
+    fields: [deployedAgents.organizationId],
+    references: [organizations.id],
+  }),
+  sourceAgent: one(sourceAgents, {
+    fields: [deployedAgents.agentId],
+    references: [sourceAgents.agentId],
+  }),
+}));

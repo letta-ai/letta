@@ -21,6 +21,7 @@ const stackVariants = cva('flex', {
       spaceBetween: 'justify-between',
       center: 'justify-center',
       end: 'justify-end',
+      start: 'justify-start',
     },
     align: {
       start: 'items-start',
@@ -39,11 +40,14 @@ export type StackPrimitiveProps = React.PropsWithChildren<
 export const StackPrimitive = forwardRef<
   ElementRef<typeof Frame>,
   StackPrimitiveProps
->(function StackPrimitive({ className, gap, children, ...props }, ref) {
+>(function StackPrimitive(
+  { className, justify, gap, children, ...props },
+  ref
+) {
   return (
     <Frame
       ref={ref}
-      className={cn(stackVariants({ ...props, gap, className }))}
+      className={cn(stackVariants({ ...props, justify, gap, className }))}
       {...props}
     >
       {children}

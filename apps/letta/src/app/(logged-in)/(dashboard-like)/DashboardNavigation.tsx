@@ -1,7 +1,14 @@
 'use client';
 import type { ReactNode } from 'react';
 import { useMemo } from 'react';
-import { Frame, HStack, Typography } from '@letta-web/component-library';
+import {
+  CircleStackIcon,
+  FolderIcon,
+  Frame,
+  HStack,
+  KeyIcon,
+  Typography,
+} from '@letta-web/component-library';
 import Link from 'next/link';
 import { cn } from '@letta-web/core-style-config';
 import { usePathname } from 'next/navigation';
@@ -47,10 +54,17 @@ function NavigationItem(props: NavigationItemProps) {
 export function DashboardNavigation() {
   return (
     <Frame as="ul" fullWidth fullHeight>
-      <NavigationItem href="/" label="Agents" />
-      <NavigationItem href="/data-sources" label="Data Sources" />
-      <NavigationItem href="/tools" label="Tools" />
-      <NavigationItem href="/api-keys" label="API Keys" />
+      <NavigationItem
+        href="/projects"
+        label="All Projects"
+        icon={<FolderIcon />}
+      />
+      <NavigationItem
+        href="/data-sources"
+        label="Data Sources"
+        icon={<CircleStackIcon />}
+      />
+      <NavigationItem href="/api-keys" label="API Keys" icon={<KeyIcon />} />
     </Frame>
   );
 }

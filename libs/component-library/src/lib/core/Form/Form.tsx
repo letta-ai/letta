@@ -114,7 +114,7 @@ function InputWrapper({
         <div className="flex gap-2 justify-between items-center">
           {inputAndLabel}
         </div>
-        <div>{otherContent}</div>
+        {otherContent && <div>{otherContent}</div>}
       </div>
     );
   }
@@ -216,7 +216,9 @@ export function RawInputContainer(props: RawInputContainerProps) {
         </>
       }
       otherContent={
-        <RawFormDescription id={id || ''}>{description}</RawFormDescription>
+        description && (
+          <RawFormDescription id={id || ''}>{description}</RawFormDescription>
+        )
       }
       inline={inline}
     ></InputWrapper>

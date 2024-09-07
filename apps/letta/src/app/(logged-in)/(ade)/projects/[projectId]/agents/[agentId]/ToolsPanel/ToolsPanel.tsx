@@ -18,7 +18,6 @@ import {
   VStack,
   RawSwitch,
   LettaLoaderPanel,
-  Frame,
   HStack,
 } from '@letta-web/component-library';
 import { ADENavigationItem } from '../common/ADENavigationItem/ADENavigationItem';
@@ -366,7 +365,7 @@ function EditToolPage() {
 
   const pageName = useMemo(() => {
     return isNewTool ? 'Create Tool' : toolName;
-  }, [isNewTool]);
+  }, [toolName, isNewTool]);
 
   return (
     <>

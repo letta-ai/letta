@@ -4,10 +4,13 @@ import React from 'react';
 import { Frame, HStack, Logo, VStack } from '@letta-web/component-library';
 import Link from 'next/link';
 import { DashboardNavigation } from './DashboardNavigation';
-import { DASHBOARD_HEADER_HEIGHT } from '$letta/client/common';
+import {
+  CurrentUserDetailsBlock,
+  DASHBOARD_HEADER_HEIGHT,
+} from '$letta/client/common';
 import './DashboardLike.scss';
 
-const SIDEBAR_WIDTH = 'w-[350px] min-w-[350px]';
+const SIDEBAR_WIDTH = 'w-[250px] min-w-[250px]';
 
 function Sidebar() {
   return (
@@ -23,6 +26,7 @@ function Sidebar() {
         paddingX="small"
         fullWidth
         borderBottom
+        justify="spaceBetween"
         className={DASHBOARD_HEADER_HEIGHT}
       >
         <Link href="/">
@@ -31,9 +35,12 @@ function Sidebar() {
           </HStack>
         </Link>
       </HStack>
-      <Frame as="nav" fullWidth fullHeight>
+      <VStack gap={false} as="nav" fullWidth fullHeight>
         <DashboardNavigation />
-      </Frame>
+        <Frame borderTop fullWidth>
+          <CurrentUserDetailsBlock />
+        </Frame>
+      </VStack>
     </VStack>
   );
 }

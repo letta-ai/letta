@@ -11,7 +11,6 @@ import {
   PanelHeader,
   PanelLastElement,
   TrashIcon,
-  useForm,
 } from '@letta-web/component-library';
 import { z } from 'zod';
 import type { Passage } from '@letta-web/letta-agents-api';
@@ -22,7 +21,6 @@ import {
 } from '@letta-web/letta-agents-api';
 import { useCurrentAgentId } from '../hooks';
 import { useQueryClient } from '@tanstack/react-query';
-import { zodResolver } from '@hookform/resolvers/zod';
 
 const { PanelRouter, usePanelPageContext } = createPageRouter(
   {
@@ -167,19 +165,8 @@ function MemoryRootPage() {
   );
 }
 
-const createMemorySchema = z.object({
-  text: z.string(),
-});
-
 function CreateMemoryPage() {
   const { setCurrentPage } = usePanelPageContext();
-
-  const form = useForm({
-    resolver: zodResolver(createMemorySchema),
-    defaultValues: {
-      text: '',
-    },
-  });
 
   return (
     <div>

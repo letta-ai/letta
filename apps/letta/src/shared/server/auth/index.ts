@@ -1,11 +1,18 @@
 'use server';
 import type { ProviderUserPayload } from '$letta/types';
-import { db, organizations, users } from '@letta-web/database';
+import {
+  db,
+  organizations,
+  projects,
+  testingAgents,
+  users,
+} from '@letta-web/database';
 import { eq } from 'drizzle-orm';
 import type { UserSession } from '$letta/types/user';
 import { deleteCookie, getCookie, setCookie } from '$letta/server/cookies';
 import { deleteRedisData, getRedisData, setRedisData } from '@letta-web/redis';
 import { CookieNames } from '$letta/server/cookies/types';
+import { redirect } from 'next/navigation';
 
 async function createUserAndOrganization(
   userData: ProviderUserPayload
@@ -17,17 +24,28 @@ async function createUserAndOrganization(
     })
     .returning({ organizationId: organizations.id });
 
-  const [createdUser] = await db
-    .insert(users)
-    .values({
+  const [[createdUser]] = await Promise.all([
+    db
+      .insert(users)
+      .values({
+        organizationId: createdOrg.organizationId,
+        name: userData.name,
+        imageUrl: userData.imageUrl,
+        email: userData.email,
+        providerId: userData.uniqueId,
+        signupMethod: userData.provider,
+      })
+      .returning({ userId: users.id }),
+    db.insert(projects).values({
       organizationId: createdOrg.organizationId,
-      name: userData.name,
-      imageUrl: userData.imageUrl,
-      email: userData.email,
-      providerId: userData.uniqueId,
-      signupMethod: userData.provider,
-    })
-    .returning({ userId: users.id });
+      name: 'My first project',
+    }),
+    db.insert(testingAgents).values({
+      organizationId: createdOrg.organizationId,
+      name: 'My first agent',
+      agentId: 'agent-cfcbc295-b906-4b62-ab85-de77a77c27b7',
+    }),
+  ]);
 
   return {
     email: userData.email,
@@ -101,9 +119,28 @@ export async function getUser() {
   const user = await getRedisData('userSession', session.sessionId);
 
   if (!user) {
-    await signOutUser();
+    redirect('/signout');
     return null;
   }
 
+  const userFromDb = await db.query.users.findFirst({
+    where: eq(users.id, user.id),
+  });
+
+  if (!userFromDb) {
+    redirect('/signout');
+    return;
+  }
+
   return user;
+}
+
+export async function getUserOrganizationIdOrThrow() {
+  const user = await getUser();
+
+  if (!user) {
+    throw new Error('User not found');
+  }
+
+  return user.organizationId;
 }

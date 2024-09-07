@@ -8,11 +8,24 @@ import {
 import GoogleLogo from './google-logo.png';
 import Image from 'next/image';
 import type { ElementRef } from 'react';
+import { useMemo } from 'react';
 import { useEffect, useCallback, useRef } from 'react';
 import { isNull } from 'lodash-es';
 import './Login.scss';
+import { useSearchParams } from 'next/navigation';
+import { isTextALoginError, LoginErrorsMap } from '$letta/any/errors';
 
 export function LoginComponent() {
+  const searchParams = useSearchParams();
+
+  const errorMessage = useMemo(() => {
+    const message = searchParams.get('errorCode');
+
+    if (isTextALoginError(message)) {
+      return LoginErrorsMap[message];
+    }
+  }, [searchParams]);
+
   const marketingButtonRef = useRef<ElementRef<typeof MarketingButton>>(null);
   const logoRef = useRef<HTMLDivElement>(null);
 
@@ -60,29 +73,38 @@ export function LoginComponent() {
   }, []);
 
   return (
-    <VStack className="w-[300px] gap-[36px]" align="center">
-      <VStack align="center" gap="large">
-        <div className="relative" ref={logoRef}>
-          <Logo size="large" />
+    <VStack align="center" className="relative" fullWidth>
+      {errorMessage && (
+        <div className="fade-in-0 absolute top-[-90px] slide-in-from-bottom-2 text-mono mt-4 bg-white text-black animate-in  p-1 px-4 rounded">
+          {errorMessage}
         </div>
-        <Typography variant="heading1">Sign in to Letta</Typography>
-      </VStack>
-      <MarketingButton
-        onClick={spinOnClick}
-        ref={marketingButtonRef}
-        href="/auth/google/init"
-        variant="secondary"
-        preIcon={
-          <div>
-            <Image width={16} height={16} src={GoogleLogo} alt="" />
+      )}
+      <VStack className="w-[300px] gap-[36px]" align="center">
+        <VStack align="center" gap="large">
+          <div className="relative" ref={logoRef}>
+            <Logo size="large" />
           </div>
-        }
-        label="Continue with Google"
-      />
-      <Typography>
-        By clicking the button above, you agree to our terms of service and
-        privacy policy
-      </Typography>
+          <Typography bold variant="heading1">
+            Sign in to Letta
+          </Typography>
+        </VStack>
+        <MarketingButton
+          onClick={spinOnClick}
+          ref={marketingButtonRef}
+          href="/auth/google/init"
+          variant="secondary"
+          preIcon={
+            <div>
+              <Image width={16} height={16} src={GoogleLogo} alt="" />
+            </div>
+          }
+          label="Continue with Google"
+        />
+        <Typography>
+          By clicking the button above, you agree to our terms of service and
+          privacy policy
+        </Typography>
+      </VStack>
     </VStack>
   );
 }

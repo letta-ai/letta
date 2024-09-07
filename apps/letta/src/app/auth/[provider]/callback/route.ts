@@ -4,6 +4,7 @@ import type { ProviderUserPayload, SupportedProviders } from '$letta/types';
 import type { NextRequest } from 'next/server';
 import { jwtDecode } from 'jwt-decode';
 import { signInUserFromProviderLogin } from '$letta/server/auth';
+import { LoginErrorsEnum } from '$letta/any/errors';
 
 interface GoogleJWTResponse {
   iss: string;
@@ -92,6 +93,11 @@ export async function GET(
     });
   } catch (e) {
     console.error(e);
-    return new Response('Error signing in', { status: 500 });
+    return new Response('Error signing in', {
+      status: 302,
+      headers: {
+        location: `/login?errorCode=${LoginErrorsEnum.UNKNOWN_ERROR_CONTACT_SUPPORT}`,
+      },
+    });
   }
 }

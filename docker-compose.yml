@@ -13,8 +13,24 @@ services:
       volumes:
         - ./data:/data
       command: redis-server --appendonly yes
+    postgres:
+      image: postgres:alpine
+      container_name: postgres
+      healthcheck:
+          test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+          interval: 1s
+          timeout: 3s
+          retries: 5
+      ports:
+          - "5432:5432"
+      environment:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: letta
     web:
       depends_on:
+        postgres:
+          condition: service_healthy
         redis:
           condition: service_healthy
       container_name: letta-web

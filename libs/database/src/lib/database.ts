@@ -3,6 +3,7 @@ import { config } from 'dotenv';
 import { resolve } from 'path';
 
 import * as schema from '../schemas';
+// @ts-expect-error - this is a valid import
 import postgres from 'postgres';
 
 config({ path: resolve(__dirname, '.env') });
