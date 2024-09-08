@@ -1,17 +1,13 @@
 'use client';
 
-import { DashboardHeader } from '$letta/client/common';
 import {
   ActionCard,
-  Avatar,
   Button,
   Card,
   DashboardEmptyArea,
-  DashboardPageLayout,
   DashboardPageSection,
   HStack,
   PlusIcon,
-  RawToggleGroup,
   Skeleton,
   Typography,
   VStack,
@@ -106,7 +102,7 @@ function TestingAgentsList(props: TestingAgentsListProps) {
   if (!agents) {
     return (
       <VStack fullHeight fullWidth>
-        {new Array(RECENT_AGENTS_TO_DISPLAY).fill(null).map((e, index) => (
+        {new Array(RECENT_AGENTS_TO_DISPLAY).fill(null).map((_u, index) => (
           <Skeleton key={index} className={TESTING_CARD_HEIGHT_CLASS} />
         ))}
       </VStack>
@@ -115,27 +111,29 @@ function TestingAgentsList(props: TestingAgentsListProps) {
 
   if (agents.length === 0) {
     return (
-      <DashboardEmptyArea
-        message="You have no agents in this project"
-        action={
-          <Button
-            preIcon={<PlusIcon />}
-            size="small"
-            label="Create an agent"
-            color="secondary"
-            href={`/projects/${currentProjectId}/agents/new`}
-          />
-        }
-      />
+      <VStack fullHeight fullWidth style={{ height: testingPageHeight }}>
+        <DashboardEmptyArea
+          message="You have no agents in this project"
+          action={
+            <Button
+              preIcon={<PlusIcon />}
+              size="small"
+              label="Create an agent"
+              color="secondary"
+              href={`/projects/${currentProjectId}/agents/new`}
+            />
+          }
+        />
+      </VStack>
     );
   }
 
   return (
-    <>
+    <VStack fullWidth>
       {agents.map((agent) => (
         <TestingAgentCard key={agent.id} id={agent.id} name={agent.name} />
       ))}
-    </>
+    </VStack>
   );
 }
 
@@ -155,7 +153,7 @@ function TestingAgentsSection() {
 
   const agentCount = useMemo(() => data?.body.length ?? 0, [data]);
   const agentsList = useMemo(
-    () => data?.body.slice(0, RECENT_AGENTS_TO_DISPLAY) ?? [],
+    () => data?.body.slice(0, RECENT_AGENTS_TO_DISPLAY),
     [data]
   );
 
@@ -171,7 +169,7 @@ function TestingAgentsSection() {
         title="Recent Agents"
         actions={
           <>
-            {agentCount > 3 && (
+            {agentCount > RECENT_AGENTS_TO_DISPLAY + 1 && (
               <Button
                 size="small"
                 label="See all agents"
@@ -183,7 +181,7 @@ function TestingAgentsSection() {
             {agentCount >= 1 && (
               <Button
                 size="small"
-                label="Create a testing agent"
+                label="Create an agent"
                 preIcon={<PlusIcon />}
                 color="secondary"
                 href={`/projects/${currentProjectId}/agents/new`}
@@ -192,7 +190,7 @@ function TestingAgentsSection() {
           </>
         }
       >
-        <HStack fullWidth style={{ height: testingPageHeight }}>
+        <HStack fullWidth>
           <TestingAgentsList agents={agentsList} />
         </HStack>
       </DashboardPageSection>
@@ -204,37 +202,9 @@ function ProjectPage() {
   const { name } = useCurrentProject();
 
   return (
-    <DashboardPageLayout
-      header={
-        <DashboardHeader
-          icon={<Avatar name={name} />}
-          title={name}
-          actions={
-            <RawToggleGroup
-              value="homepage"
-              label="Choose a section"
-              hideLabel
-              items={[
-                {
-                  label: 'Project Home',
-                  value: 'homepage',
-                },
-                {
-                  label: 'Deployment',
-                  value: 'deployment',
-                },
-                {
-                  label: 'Analytics',
-                  value: 'analytics',
-                },
-              ]}
-            />
-          }
-        />
-      }
-    >
+    <>
       <TestingAgentsSection />
-    </DashboardPageLayout>
+    </>
   );
 }
 

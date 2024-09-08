@@ -1,6 +1,12 @@
 import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
 import type { projectsContract } from '$letta/any/contracts/projects';
-import { db, projects, testingAgents } from '@letta-web/database';
+import {
+  db,
+  projects,
+  sourceAgents,
+  sourceAgentsStatus,
+  testingAgents,
+} from '@letta-web/database';
 import { getUserOrganizationIdOrThrow } from '$letta/server/auth';
 import { eq, and, like } from 'drizzle-orm';
 import type { contracts } from '$letta/any/contracts';
@@ -183,6 +189,78 @@ export async function createProjectTestingAgent(
       id: agent.id,
       name: 'New Agent',
       updatedAt: new Date().toISOString(),
+    },
+  };
+}
+
+type CreateProjectSourceAgentFromTestingAgentRequest = ServerInferRequest<
+  typeof contracts.projects.createProjectSourceAgentFromTestingAgent
+>;
+type CreateProjectSourceAgentFromTestingAgentResponse = ServerInferResponses<
+  typeof contracts.projects.createProjectSourceAgentFromTestingAgent
+>;
+
+export async function createProjectSourceAgentFromTestingAgent(
+  req: CreateProjectSourceAgentFromTestingAgentRequest
+): Promise<CreateProjectSourceAgentFromTestingAgentResponse> {
+  const { projectId } = req.params;
+  const { testingAgentId } = req.body;
+  const organizationId = await getUserOrganizationIdOrThrow();
+
+  const testingAgent = await db.query.testingAgents.findFirst({
+    where: eq(testingAgents.id, testingAgentId),
+  });
+
+  if (!testingAgent) {
+    return {
+      status: 404,
+      body: {},
+    };
+  }
+
+  const existingSourceAgentCount = await db.query.sourceAgents.findMany({
+    where: eq(sourceAgents.testingAgentId, testingAgentId),
+    columns: {
+      id: true,
+    },
+  });
+
+  const version = `${existingSourceAgentCount.length + 1}`;
+
+  const sourceAgentName = `Deployed ${testingAgent.name} ${version}`;
+
+  const [sourceAgent] = await db
+    .insert(sourceAgents)
+    .values({
+      version,
+      testingAgentId: testingAgent.id,
+      // TODO: create duplicate of this agentId
+      agentId: testingAgent.agentId,
+      projectId,
+      organizationId,
+      name: sourceAgentName,
+    })
+    .returning({
+      id: sourceAgents.id,
+    });
+
+  const defaultStatus = 'live';
+
+  await db.insert(sourceAgentsStatus).values({
+    status: defaultStatus,
+    id: sourceAgent.id,
+  });
+
+  return {
+    status: 201,
+    body: {
+      name: sourceAgentName,
+      testingAgentId: testingAgent.id,
+      id: sourceAgent.id,
+      status: defaultStatus,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      version,
     },
   };
 }

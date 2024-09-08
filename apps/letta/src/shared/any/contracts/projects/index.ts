@@ -62,6 +62,54 @@ const createProjectTestingAgentContract = c.mutation({
   },
 });
 
+/* Get Deployed Agents */
+const ProjectDeployedAgentSchema = z.object({
+  name: z.string(),
+  id: z.string(),
+  testingAgentId: z.string(),
+  status: z.enum(['live', 'offline']),
+  version: z.string(),
+  updatedAt: z.string(),
+  createdAt: z.string(),
+});
+
+const ProjectDeployedAgentsSchema = z.array(ProjectDeployedAgentSchema);
+
+export type ProjectDeployedAgentSchemaType = z.infer<
+  typeof ProjectDeployedAgentSchema
+>;
+export type ProjectDeployedAgentsSchemaType = z.infer<
+  typeof ProjectDeployedAgentsSchema
+>;
+
+const getProjectDeployedAgentsContract = c.query({
+  method: 'GET',
+  path: '/projects/:projectId/source-agents',
+  pathParams: z.object({
+    projectId: z.string(),
+  }),
+  responses: {
+    200: ProjectDeployedAgentsSchema,
+  },
+});
+
+/* Deploy Testing Agent */
+const CreateSourceAgentFromAgentBodySchema = z.object({
+  testingAgentId: z.string(),
+});
+
+const createSourceAgentFromTestingAgentContract = c.mutation({
+  method: 'POST',
+  path: '/projects/:projectId/source-agents',
+  pathParams: z.object({
+    projectId: z.string(),
+  }),
+  body: CreateSourceAgentFromAgentBodySchema,
+  responses: {
+    201: ProjectDeployedAgentSchema,
+  },
+});
+
 export const projectsContract = c.router({
   getProjects: c.query({
     method: 'GET',
@@ -94,6 +142,9 @@ export const projectsContract = c.router({
   }),
   createProject: createProjectContract,
   createProjectTestingAgent: createProjectTestingAgentContract,
+  getProjectDeployedAgents: getProjectDeployedAgentsContract,
+  createProjectSourceAgentFromTestingAgent:
+    createSourceAgentFromTestingAgentContract,
 });
 
 export const projectsQueryClientKeys = {

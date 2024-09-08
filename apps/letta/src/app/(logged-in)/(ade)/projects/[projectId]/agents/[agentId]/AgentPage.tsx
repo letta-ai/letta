@@ -27,6 +27,7 @@ import { VariablesPanel } from './VariablesPanel/VariablesPanel';
 import { MemoryBlocksPanel } from './MemoryBlocksPanel/MemoryBlocksPanel';
 import { ContextEditorPanel } from './ContextEditorPanel/ContextEditorPanel';
 import { CurrentUserDetailsBlock } from '$letta/client/common';
+import { useCurrentProjectId } from '../../../../../(dashboard-like)/projects/[projectId]/hooks';
 
 interface SidebarGroupProps {
   title: string;
@@ -34,6 +35,8 @@ interface SidebarGroupProps {
 }
 
 function NavOverlay() {
+  const currentProjectId = useCurrentProjectId();
+
   return (
     <Popover
       trigger={
@@ -48,7 +51,7 @@ function NavOverlay() {
       <Frame borderTop color="background-greyer" as="nav">
         <VStack as="ul" paddingY="xxsmall" paddingX="xxxsmall">
           <Button
-            href="/project"
+            href={`/projects/${currentProjectId}`}
             color="tertiary-transparent"
             preIcon={<ArrowUpIcon />}
             label="Return to Project"

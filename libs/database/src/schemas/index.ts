@@ -117,6 +117,11 @@ export const testingAgentRelations = relations(
   })
 );
 
+const sourceAgentsStatusEnum = pgEnum('source_agents_enum', [
+  'live',
+  'offline',
+]);
+
 export const sourceAgents = pgTable('source_agents', {
   id: uuid('id')
     .primaryKey()
@@ -126,6 +131,7 @@ export const sourceAgents = pgTable('source_agents', {
   projectId: uuid('project_id').notNull(),
   testingAgentId: text('testing_agent_id').notNull(),
   agentId: text('agent_id').notNull().unique(),
+  version: text('agent_id').notNull().unique(),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at')
     .notNull()
@@ -147,6 +153,28 @@ export const sourceAgentRelations = relations(
     project: one(projects, {
       fields: [sourceAgents.projectId],
       references: [projects.id],
+    }),
+    status: one(sourceAgentsStatus, {
+      fields: [sourceAgents.id],
+      references: [sourceAgentsStatus.id],
+    }),
+  })
+);
+
+export const sourceAgentsStatus = pgTable('source_agent_status_table', {
+  id: uuid('id').primaryKey(),
+  status: sourceAgentsStatusEnum('status').notNull(),
+  updatedAt: timestamp('updated_at')
+    .notNull()
+    .$onUpdate(() => new Date()),
+});
+
+export const sourceAgentsStatusRelation = relations(
+  sourceAgentsStatus,
+  ({ one }) => ({
+    sourceAgent: one(sourceAgents, {
+      fields: [sourceAgentsStatus.id],
+      references: [sourceAgents.id],
     }),
   })
 );

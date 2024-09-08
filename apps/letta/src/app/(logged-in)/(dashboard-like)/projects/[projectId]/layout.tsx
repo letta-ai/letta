@@ -8,6 +8,15 @@ import {
 } from '@tanstack/react-query';
 import { getProjectById } from '$letta/server/router/projects';
 import { redirect } from 'next/navigation';
+import {
+  Avatar,
+  Button,
+  DashboardPageLayout,
+  HStack,
+  RawToggleGroup,
+} from '@letta-web/component-library';
+import { DashboardHeader } from '$letta/client/common';
+import { ProjectPageNavigation } from './ProjectPageNavigation';
 
 interface ProjectPageWrapperProps {
   params: {
@@ -24,7 +33,7 @@ async function ProjectPageLayout(props: ProjectPageWrapperProps) {
     params: { projectId },
   });
 
-  if (!project.body) {
+  if (!project.body || project.status !== 200) {
     redirect('/projects');
     return;
   }
@@ -38,7 +47,17 @@ async function ProjectPageLayout(props: ProjectPageWrapperProps) {
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
-      {props.children}
+      <DashboardPageLayout
+        header={
+          <DashboardHeader
+            icon={<Avatar name={project.body.name} />}
+            title={project.body.name}
+            actions={<ProjectPageNavigation />}
+          />
+        }
+      >
+        {props.children}
+      </DashboardPageLayout>
     </HydrationBoundary>
   );
 }

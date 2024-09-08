@@ -19,6 +19,7 @@ export function DashboardEmptyArea(props: DashboardEmptyAreaProps) {
     >
       <VStack
         rounded
+        className="fade-in-0"
         fullWidth
         border
         align="center"

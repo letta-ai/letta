@@ -52,7 +52,12 @@ const buttonVariants = cva(
       {
         color: 'tertiary',
         active: true,
-        className: 'bg-tertiary-dark',
+        className: 'bg-tertiary-active',
+      },
+      {
+        color: 'tertiary-transparent',
+        active: true,
+        className: 'bg-tertiary-active',
       },
       {
         variant: 'inline-panel',
