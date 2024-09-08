@@ -15,6 +15,9 @@ export function buildConfig(appDir: string): Config {
     ],
     theme: {
       extend: {
+        gap: {
+          2: 'var(--default-gap)',
+        },
         transitionProperty: {
           width: 'width',
         },

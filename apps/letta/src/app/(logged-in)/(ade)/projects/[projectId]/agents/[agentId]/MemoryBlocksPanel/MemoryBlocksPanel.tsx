@@ -24,7 +24,7 @@ import {
 } from '@letta-web/letta-agents-api';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ADENavigationItem } from '../common/ADENavigationItem/ADENavigationItem';
-import { useCurrentAgentId } from '../hooks';
+import { useCurrentAgent, useCurrentAgentId } from '../hooks';
 
 const { PanelRouter, usePanelRouteData, usePanelPageContext } =
   createPageRouter(
@@ -155,7 +155,7 @@ function EditMemory() {
 function MemoryHome() {
   const { setCurrentPage } = usePanelPageContext();
   const [search, setSearch] = useState('');
-  const agentId = useCurrentAgentId();
+  const { id: agentId } = useCurrentAgent();
   const { data } = useAgentsServiceGetAgentMemoryApiAgentsAgentIdMemoryGet({
     agentId,
   });

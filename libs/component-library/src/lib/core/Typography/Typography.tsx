@@ -8,6 +8,7 @@ const typographyVariants = cva('', {
   variants: {
     variant: {
       heading1: 'text-xl',
+      heading2: 'text-lg',
       body: 'text-base',
       body2: 'text-sm',
     },
@@ -43,6 +44,7 @@ type TypographyProps = HTMLProps<HTMLElement> &
 
 const variantToElement = {
   heading1: 'h1',
+  heading2: 'h2',
   body: 'p',
   body2: 'p',
 };

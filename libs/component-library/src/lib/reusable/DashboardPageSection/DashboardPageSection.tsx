@@ -1,0 +1,26 @@
+import * as React from 'react';
+import type { PropsWithChildren } from 'react';
+import { VStack } from '../../framing/VStack/VStack';
+import { Typography } from '../../core/Typography/Typography';
+import { HStack } from '../../framing/HStack/HStack';
+
+type DashboardPageSectionProps = PropsWithChildren<{
+  title?: string;
+  actions?: React.ReactNode;
+}>;
+
+export function DashboardPageSection(props: DashboardPageSectionProps) {
+  const { children, actions, title } = props;
+
+  return (
+    <VStack padding fullWidth borderBottom>
+      {title && (
+        <HStack align="center" justify="spaceBetween">
+          <Typography variant="heading2">{title}</Typography>
+          <HStack>{actions}</HStack>
+        </HStack>
+      )}
+      {children}
+    </VStack>
+  );
+}

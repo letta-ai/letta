@@ -6,7 +6,7 @@ interface DashboardHeaderProps {
   actions?: React.ReactNode;
 }
 
-export const DASHBOARD_HEADER_HEIGHT = 'h-[60px] max-h-[60px] min-h-[60px]';
+export const DASHBOARD_HEADER_HEIGHT = ' min-h-[60px]';
 
 export function DashboardHeader(props: DashboardHeaderProps) {
   const { title, actions, icon } = props;
@@ -15,6 +15,7 @@ export function DashboardHeader(props: DashboardHeaderProps) {
     <HStack
       align="center"
       as="header"
+      wrap
       className={DASHBOARD_HEADER_HEIGHT}
       justify="spaceBetween"
       fullWidth

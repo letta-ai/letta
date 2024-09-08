@@ -15,6 +15,7 @@ const stackVariants = cva('flex', {
       true: 'gap-2',
       medium: 'gap-3',
       large: 'gap-4',
+      xlarge: 'gap-6',
       form: 'gap-4',
     },
     justify: {
@@ -26,6 +27,9 @@ const stackVariants = cva('flex', {
     align: {
       start: 'items-start',
       center: 'items-center',
+    },
+    wrap: {
+      true: 'flex-wrap',
     },
   },
   defaultVariants: {
@@ -41,13 +45,13 @@ export const StackPrimitive = forwardRef<
   ElementRef<typeof Frame>,
   StackPrimitiveProps
 >(function StackPrimitive(
-  { className, justify, gap, children, ...props },
+  { className, justify, wrap, gap, children, ...props },
   ref
 ) {
   return (
     <Frame
       ref={ref}
-      className={cn(stackVariants({ ...props, justify, gap, className }))}
+      className={cn(stackVariants({ ...props, wrap, justify, gap, className }))}
       {...props}
     >
       {children}

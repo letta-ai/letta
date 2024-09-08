@@ -1,8 +1,9 @@
 import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
 import type { projectsContract } from '$letta/any/contracts/projects';
-import { db, projects } from '@letta-web/database';
+import { db, projects, testingAgents } from '@letta-web/database';
 import { getUserOrganizationIdOrThrow } from '$letta/server/auth';
 import { eq, and, like } from 'drizzle-orm';
+import type { contracts } from '$letta/any/contracts';
 
 type ResponseShapes = ServerInferResponses<typeof projectsContract>;
 type GetProjectsRequest = ServerInferRequest<
@@ -36,6 +37,152 @@ export async function getProjects(
         name: project.name,
         id: project.id,
       })),
+    },
+  };
+}
+
+type GetProjectByIdResponse = ServerInferResponses<
+  typeof contracts.projects.getProjectById
+>;
+type GetProjectByIdRequest = ServerInferRequest<
+  typeof contracts.projects.getProjectById
+>;
+
+export async function getProjectById(
+  req: GetProjectByIdRequest
+): Promise<GetProjectByIdResponse> {
+  const { projectId } = req.params;
+
+  const organizationId = await getUserOrganizationIdOrThrow();
+
+  const project = await db.query.projects.findFirst({
+    where: and(
+      eq(projects.id, projectId),
+      eq(projects.organizationId, organizationId)
+    ),
+    columns: {
+      name: true,
+      id: true,
+    },
+  });
+
+  if (!project) {
+    return {
+      status: 404,
+      body: 'Project not found',
+    };
+  }
+
+  return {
+    status: 200,
+    body: {
+      name: project.name,
+      id: project.id,
+    },
+  };
+}
+
+type GetProjectTestingAgentsResponse = ServerInferResponses<
+  typeof contracts.projects.getProjectTestingAgents
+>;
+type GetProjectTestingAgentsRequest = ServerInferRequest<
+  typeof contracts.projects.getProjectTestingAgents
+>;
+
+export async function getProjectTestingAgents(
+  req: GetProjectTestingAgentsRequest
+): Promise<GetProjectTestingAgentsResponse> {
+  const { projectId } = req.params;
+
+  const organizationId = await getUserOrganizationIdOrThrow();
+
+  const agents = await db.query.testingAgents.findMany({
+    where: and(
+      eq(testingAgents.projectId, projectId),
+      eq(testingAgents.organizationId, organizationId)
+    ),
+    columns: {
+      name: true,
+      id: true,
+      updatedAt: true,
+    },
+  });
+
+  return {
+    status: 200,
+    body: agents.map((agent) => ({
+      name: agent.name,
+      id: agent.id,
+      updatedAt: agent.updatedAt.toISOString(),
+    })),
+  };
+}
+
+type CreateProjectRequest = ServerInferRequest<
+  typeof contracts.projects.createProject
+>;
+type CreateProjectResponse = ServerInferResponses<
+  typeof contracts.projects.createProject
+>;
+
+export async function createProject(
+  req: CreateProjectRequest
+): Promise<CreateProjectResponse> {
+  const { name } = req.body;
+
+  const organizationId = await getUserOrganizationIdOrThrow();
+
+  const [project] = await db
+    .insert(projects)
+    .values({
+      name,
+      organizationId,
+    })
+    .returning({
+      id: projects.id,
+    });
+
+  return {
+    status: 201,
+    body: {
+      name: name,
+      id: project.id,
+    },
+  };
+}
+
+type CreateProjectTestingAgentRequest = ServerInferRequest<
+  typeof contracts.projects.createProjectTestingAgent
+>;
+type CreateProjectTestingAgentResponse = ServerInferResponses<
+  typeof contracts.projects.createProjectTestingAgent
+>;
+
+export async function createProjectTestingAgent(
+  req: CreateProjectTestingAgentRequest
+): Promise<CreateProjectTestingAgentResponse> {
+  const { projectId } = req.params;
+
+  const organizationId = await getUserOrganizationIdOrThrow();
+
+  const [agent] = await db
+    .insert(testingAgents)
+    .values({
+      projectId,
+      organizationId,
+      name: 'New Agent',
+      agentId: 'agent-cfcbc295-b906-4b62-ab85-de77a77c27b7',
+    })
+    .returning({
+      id: testingAgents.id,
+    });
+
+  return {
+    status: 201,
+    body: {
+      id: agent.id,
+      name: 'New Agent',
+      updatedAt: new Date().toISOString(),
     },
   };
 }

@@ -72,6 +72,7 @@ const frameVariants = cva('', {
       xsmall: 'px-3',
       small: 'px-4',
       true: 'px-5',
+      large: 'px-6',
     },
     paddingTop: {
       xxsmall: 'pt-2.5',
@@ -174,6 +175,7 @@ export const Frame = forwardRef<HTMLElement, PropsWithChildren<FrameProps>>(
       collapseHeight,
       overflowY,
       overflowX,
+
       className,
     });
 

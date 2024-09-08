@@ -8,8 +8,8 @@ export function useCurrentProjectId() {
 export function useCurrentProject() {
   const projectId = useCurrentProjectId();
 
-  const { data } = webApi.project.getProjectById.useQuery({
-    queryKey: webApiQueryKeys.project.getProjectById(projectId),
+  const { data } = webApi.projects.getProjectById.useQuery({
+    queryKey: webApiQueryKeys.projects.getProjectById(projectId),
     queryData: {
       params: {
         projectId,

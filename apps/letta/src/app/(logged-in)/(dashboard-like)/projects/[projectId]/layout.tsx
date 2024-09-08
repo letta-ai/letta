@@ -6,7 +6,7 @@ import {
   HydrationBoundary,
   QueryClient,
 } from '@tanstack/react-query';
-import { getProjectById } from '$letta/server/router/project';
+import { getProjectById } from '$letta/server/router/projects';
 import { redirect } from 'next/navigation';
 
 interface ProjectPageWrapperProps {
@@ -30,7 +30,7 @@ async function ProjectPageLayout(props: ProjectPageWrapperProps) {
   }
 
   await queryClient.prefetchQuery({
-    queryKey: webApiQueryKeys.project.getProjectById(projectId),
+    queryKey: webApiQueryKeys.projects.getProjectById(projectId),
     queryFn: () => ({
       body: project.body,
     }),

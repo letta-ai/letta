@@ -1,12 +1,6 @@
 'use server';
 import type { ProviderUserPayload } from '$letta/types';
-import {
-  db,
-  organizations,
-  projects,
-  testingAgents,
-  users,
-} from '@letta-web/database';
+import { db, organizations, projects, users } from '@letta-web/database';
 import { eq } from 'drizzle-orm';
 import type { UserSession } from '$letta/types/user';
 import { deleteCookie, getCookie, setCookie } from '$letta/server/cookies';
@@ -39,11 +33,6 @@ async function createUserAndOrganization(
     db.insert(projects).values({
       organizationId: createdOrg.organizationId,
       name: 'My first project',
-    }),
-    db.insert(testingAgents).values({
-      organizationId: createdOrg.organizationId,
-      name: 'My first agent',
-      agentId: 'agent-cfcbc295-b906-4b62-ab85-de77a77c27b7',
     }),
   ]);
 

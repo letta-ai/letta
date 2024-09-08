@@ -89,9 +89,13 @@ export const projectRelations = relations(projects, ({ one }) => ({
 }));
 
 export const testingAgents = pgTable('testing_agents', {
-  agentId: text('agent_id').primaryKey(),
+  id: uuid('id')
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  agentId: text('agent_id').notNull().unique(),
   name: text('name').notNull(),
   organizationId: uuid('organization_id').notNull(),
+  projectId: uuid('project_id').notNull(),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at')
     .notNull()
@@ -105,14 +109,23 @@ export const testingAgentRelations = relations(
       fields: [testingAgents.organizationId],
       references: [organizations.id],
     }),
+    project: one(projects, {
+      fields: [testingAgents.projectId],
+      references: [projects.id],
+    }),
     sourceAgents: many(sourceAgents),
   })
 );
 
 export const sourceAgents = pgTable('source_agents', {
-  agentId: text('agent_id').primaryKey(),
+  id: uuid('id')
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
   name: text('name').notNull(),
   organizationId: uuid('organization_id').notNull(),
+  projectId: uuid('project_id').notNull(),
+  testingAgentId: text('testing_agent_id').notNull(),
+  agentId: text('agent_id').notNull().unique(),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at')
     .notNull()
@@ -127,16 +140,24 @@ export const sourceAgentRelations = relations(
       references: [organizations.id],
     }),
     testingAgent: one(testingAgents, {
-      fields: [sourceAgents.agentId],
+      fields: [sourceAgents.testingAgentId],
       references: [testingAgents.agentId],
     }),
     deployedAgents: many(deployedAgents),
+    project: one(projects, {
+      fields: [sourceAgents.projectId],
+      references: [projects.id],
+    }),
   })
 );
 
 export const deployedAgents = pgTable('deployed_agents', {
-  agentId: text('agent_id').primaryKey(),
+  id: uuid('id')
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
   name: text('name').notNull(),
+  sourceAgentId: uuid('source_agent_id').notNull(),
+  agentId: text('agent_id').notNull().unique(),
   organizationId: uuid('organization_id').notNull(),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at')
@@ -150,7 +171,7 @@ export const deployedAgentRelations = relations(deployedAgents, ({ one }) => ({
     references: [organizations.id],
   }),
   sourceAgent: one(sourceAgents, {
-    fields: [deployedAgents.agentId],
-    references: [sourceAgents.agentId],
+    fields: [deployedAgents.sourceAgentId],
+    references: [sourceAgents.id],
   }),
 }));

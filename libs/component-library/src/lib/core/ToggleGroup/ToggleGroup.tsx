@@ -112,11 +112,15 @@ interface ToggleGroupProps extends Omit<ToggleGroupSingleProps, 'type'> {
 }
 
 function ToggleGroupWrapper(props: ToggleGroupProps) {
-  const { items, size } = props;
+  const { items, size, value, onValueChange } = props;
 
   return (
     <Frame>
-      <ToggleGroupRoot type="single" {...props}>
+      <ToggleGroupRoot
+        type="single"
+        value={value}
+        onValueChange={onValueChange}
+      >
         {items.map((item) => (
           <ToggleGroupItem size={size} key={item.value} value={item.value}>
             {item.icon}

@@ -62,17 +62,20 @@
           },
           {
             "selector": "variableLike",
-            "format": ["PascalCase", "camelCase"]
+            "format": ["PascalCase", "camelCase"],
+            "leadingUnderscore": "allow"
           },
           {
             "selector": "variable",
             "modifiers": ["const"],
-            "format": ["UPPER_CASE", "camelCase", "PascalCase"]
+            "format": ["UPPER_CASE", "camelCase", "PascalCase"],
+            "leadingUnderscore": "allow"
           },
           {
             "selector": "variable",
             "modifiers": ["destructured"],
-            "format": null
+            "format": null,
+            "leadingUnderscore": "allow"
           },
           {
             "selector": ["typeProperty", "objectLiteralProperty"],

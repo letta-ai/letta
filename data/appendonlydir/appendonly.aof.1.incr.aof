@@ -148,3 +148,22 @@ $48
 userSession:df55e7cd-68c4-4b87-a090-a6c57c51136d
 $16
 1756951384878000
+*2
+$6
+SELECT
+$1
+0
+*3
+$3
+set
+$48
+userSession:62967ea7-0703-4b6c-9e66-38c4bc49fa16
+$258
+{"email":"shub@memgpt.ai","name":"Shubham Naik","imageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJGVlkF_-yvvUxptTKaAdFz6lDX8RHdB2HuoTdiavtrmzOArw=s96-c","id":"b8cd582b-abd8-4902-afb0-7eef4a35e81b","organizationId":"d88f5b8a-db8f-4105-a73c-5e4448b3b443"}
+*3
+$9
+PEXPIREAT
+$48
+userSession:62967ea7-0703-4b6c-9e66-38c4bc49fa16
+$16
+1757290707917000

@@ -3,6 +3,7 @@ import { WarningIcon } from '../../icons';
 import { useMemo } from 'react';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@letta-web/core-style-config';
+import { HStack } from '../../framing/HStack/HStack';
 
 const alertVariants = cva(
   'relative w-full items-start flex rounded-lg border px-4 py-3  text-sm gap-3',
@@ -26,6 +27,7 @@ interface AlertProps extends VariantProps<typeof alertVariants> {
   className?: string;
   title: React.ReactNode;
   icon?: React.ReactNode;
+  action?: React.ReactNode;
 }
 
 const iconMap: Partial<Record<AlertVariants, React.ReactNode>> = {
@@ -33,7 +35,7 @@ const iconMap: Partial<Record<AlertVariants, React.ReactNode>> = {
 };
 
 export function Alert(props: AlertProps) {
-  const { children, className, title, icon, variant } = props;
+  const { children, action, className, title, icon, variant } = props;
 
   const defaultIcon = useMemo(() => {
     return iconMap[variant || ''];
@@ -42,8 +44,11 @@ export function Alert(props: AlertProps) {
   return (
     <div role="alert" className={cn(alertVariants({ variant }), className)}>
       <div className="[&>svg]:h-[14px]">{icon || defaultIcon}</div>
-      <div className="flex flex-col text-base gap">
-        <h5 className="font-medium mt-[2px]">{title}</h5>
+      <div className="flex flex-col w-full text-base gap">
+        <HStack fullWidth gap="small" justify="spaceBetween" align="center">
+          <h5 className="font-medium mt-[2px]">{title}</h5>
+          {action}
+        </HStack>
         {children && <p>{children}</p>}
       </div>
     </div>

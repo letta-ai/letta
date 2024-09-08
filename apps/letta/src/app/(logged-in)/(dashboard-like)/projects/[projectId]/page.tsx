@@ -6,16 +6,199 @@ import {
   Avatar,
   Button,
   Card,
+  DashboardEmptyArea,
   DashboardPageLayout,
-  DashboardSearchBar,
+  DashboardPageSection,
   HStack,
+  PlusIcon,
   RawToggleGroup,
+  Skeleton,
   Typography,
   VStack,
 } from '@letta-web/component-library';
-import React from 'react';
-import { useCurrentProject } from './hooks';
-import { ArrowRight } from 'lucide-react';
+import React, { useMemo } from 'react';
+import { useCurrentProject, useCurrentProjectId } from './hooks';
+import { webApi, webApiQueryKeys } from '$letta/client';
+import type { ProjectTestingAgentType } from '$letta/any/contracts/projects';
+
+interface TestingAgentCardProps {
+  id: string;
+  name: string;
+}
+
+function TestingAgentCard(props: TestingAgentCardProps) {
+  const { id, name } = props;
+  const projectId = useCurrentProjectId();
+  return (
+    <ActionCard
+      title={name}
+      mainAction={
+        <HStack>
+          <Button
+            href={`/projects/${projectId}/agents/${id}`}
+            color="tertiary"
+            label="View / Edit Agent"
+          />
+          <Button
+            href={`/projects/${projectId}/agents/${id}/deploy`}
+            color="primary"
+            label="Deploy Agent"
+          />
+        </HStack>
+      }
+    />
+  );
+}
+
+interface DeployedAgentCardProps {
+  status: 'live' | 'offline';
+  name: string;
+  id: string;
+  deployedAt: Date;
+}
+
+function DeployedAgentCard(props: DeployedAgentCardProps) {
+  const { status, name, deployedAt, id } = props;
+  const projectId = useCurrentProjectId();
+  return (
+    <Card>
+      <HStack justify="spaceBetween">
+        <HStack gap="medium" align="center">
+          <div
+            className={`rounded-full bg-${
+              status === 'live' ? 'green' : 'red'
+            }-400 w-[10px] h-[10px]`}
+          />
+          <VStack gap={false} justify="start">
+            <Typography align="left" bold>
+              {name}
+            </Typography>
+            <Typography color="muted" variant="body2">
+              Deployed {deployedAt.toDateString()}
+            </Typography>
+          </VStack>
+        </HStack>
+        <HStack align="center">
+          <Button
+            href={`/projects/${projectId}/agents/${id}/deploy`}
+            color="tertiary"
+            label="See Deployment"
+          />
+        </HStack>
+      </HStack>
+    </Card>
+  );
+}
+
+interface TestingAgentsListProps {
+  agents?: ProjectTestingAgentType[];
+}
+
+const RECENT_AGENTS_TO_DISPLAY = 3;
+const TESTING_CARD_HEIGHT = '62px';
+const TESTING_CARD_HEIGHT_CLASS = 'h-[62px]';
+const testingPageHeight = `calc((var(--default-gap) * 2) + (${TESTING_CARD_HEIGHT} * ${RECENT_AGENTS_TO_DISPLAY}))`;
+
+function TestingAgentsList(props: TestingAgentsListProps) {
+  const currentProjectId = useCurrentProjectId();
+  const { agents } = props;
+
+  if (!agents) {
+    return (
+      <VStack fullHeight fullWidth>
+        {new Array(RECENT_AGENTS_TO_DISPLAY).fill(null).map((e, index) => (
+          <Skeleton key={index} className={TESTING_CARD_HEIGHT_CLASS} />
+        ))}
+      </VStack>
+    );
+  }
+
+  if (agents.length === 0) {
+    return (
+      <DashboardEmptyArea
+        message="You have no agents in this project"
+        action={
+          <Button
+            preIcon={<PlusIcon />}
+            size="small"
+            label="Create an agent"
+            color="secondary"
+            href={`/projects/${currentProjectId}/agents/new`}
+          />
+        }
+      />
+    );
+  }
+
+  return (
+    <>
+      {agents.map((agent) => (
+        <TestingAgentCard key={agent.id} id={agent.id} name={agent.name} />
+      ))}
+    </>
+  );
+}
+
+function TestingAgentsSection() {
+  const currentProjectId = useCurrentProjectId();
+  const { data } = webApi.projects.getProjectTestingAgents.useQuery({
+    queryKey: webApiQueryKeys.projects.getProjectTestingAgentsWithSearch(
+      currentProjectId,
+      { search: '', limit: RECENT_AGENTS_TO_DISPLAY + 1 }
+    ),
+    queryData: {
+      params: {
+        projectId: currentProjectId,
+      },
+    },
+  });
+
+  const agentCount = useMemo(() => data?.body.length ?? 0, [data]);
+  const agentsList = useMemo(
+    () => data?.body.slice(0, RECENT_AGENTS_TO_DISPLAY) ?? [],
+    [data]
+  );
+
+  return (
+    <>
+      {/*{agentCount === 0 && (*/}
+      {/*  <Alert*/}
+      {/*    title="You have no testing agents in this project"*/}
+      {/*    action={<Button size="small" postIcon={<ArrowRightIcon />} label="Create a testing agent" color="secondary" href={`/projects/${currentProjectId}/agents/new`} />}*/}
+      {/*  />*/}
+      {/*)}*/}
+      <DashboardPageSection
+        title="Recent Agents"
+        actions={
+          <>
+            {agentCount > 3 && (
+              <Button
+                size="small"
+                label="See all agents"
+                color="tertiary"
+                href={`/projects/${currentProjectId}/agents`}
+              />
+            )}
+            {/* This button should only be displayed if we have agents, otherwise we show an alert that asks them to do so instead */}
+            {agentCount >= 1 && (
+              <Button
+                size="small"
+                label="Create a testing agent"
+                preIcon={<PlusIcon />}
+                color="secondary"
+                href={`/projects/${currentProjectId}/agents/new`}
+              />
+            )}
+          </>
+        }
+      >
+        <HStack fullWidth style={{ height: testingPageHeight }}>
+          <TestingAgentsList agents={agentsList} />
+        </HStack>
+      </DashboardPageSection>
+    </>
+  );
+}
 
 function ProjectPage() {
   const { name } = useCurrentProject();
@@ -50,64 +233,7 @@ function ProjectPage() {
         />
       }
     >
-      <VStack borderBottom padding>
-        <VStack>
-          <HStack align="center" justify="spaceBetween">
-            <Typography bold>Recent Testing Agents</Typography>
-            <DashboardSearchBar
-              onSearch={() => {
-                return;
-              }}
-              searchPlaceholder=""
-              searchValue="Search Testing Agents"
-            />
-          </HStack>
-          {new Array(3).fill(0).map((v, index) => (
-            <ActionCard
-              key={index}
-              title={`Agent 423${index}`}
-              mainAction={
-                <HStack>
-                  <Button color="tertiary" label="View / Edit Agent" />
-                  <Button color="primary" label="Deploy Agent" />
-                </HStack>
-              }
-            />
-          ))}
-        </VStack>
-      </VStack>
-      <VStack borderBottom padding>
-        <VStack>
-          <HStack align="center" justify="spaceBetween">
-            <Typography bold>Deployed Agents</Typography>
-            <Button
-              color="tertiary"
-              postIcon={<ArrowRight />}
-              label="See All Deployments"
-            />
-          </HStack>
-          {new Array(3).fill(0).map((v, index) => (
-            <Card key={index}>
-              <HStack justify="spaceBetween">
-                <HStack gap="medium" align="center">
-                  <div className="rounded-full bg-green-400 w-[10px] h-[10px]" />
-                  <VStack gap={false} justify="start">
-                    <Typography align="left" bold>
-                      Agent 423{index}
-                    </Typography>
-                    <Typography color="muted" variant="body2">
-                      Deployed 2 days ago
-                    </Typography>
-                  </VStack>
-                </HStack>
-                <HStack align="center">
-                  <Button color="tertiary" label="See Deployment" />
-                </HStack>
-              </HStack>
-            </Card>
-          ))}
-        </VStack>
-      </VStack>
+      <TestingAgentsSection />
     </DashboardPageLayout>
   );
 }

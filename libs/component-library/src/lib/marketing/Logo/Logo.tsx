@@ -9,6 +9,7 @@ const logoVariants = cva('', {
       black: 'text-black',
       white: 'text-white',
       inherit: 'text-inherit',
+      error: 'text-destructive',
       muted: 'text-muted',
     },
     size: {

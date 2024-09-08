@@ -1,6 +1,8 @@
 'use client';
 import React from 'react';
 import {
+  ADEHeader,
+  ADEPage,
   ArrowUpIcon,
   Button,
   CaretDownIcon,
@@ -129,50 +131,28 @@ function ADESidebar() {
   );
 }
 
-function ADEHeader() {
-  return (
-    <HStack
-      justify="spaceBetween"
-      align="center"
-      padding="xxsmall"
-      className="h-[48px] min-h-[48px]"
-      fullWidth
-      color="background-black"
-    >
-      <NavOverlay />
-
-      <HStack>
-        <Button color="primary" size="small" label="Deployment Instructions" />
-      </HStack>
-    </HStack>
-  );
-}
-
 export function AgentPage() {
   return (
     <PanelManager>
-      <VStack
-        overflow="hidden"
-        color="background-grey"
-        className="w-[100vw] h-[100vh]"
-        fullHeight
-        fullWidth
-        gap={false}
+      <ADEPage
+        header={
+          <ADEHeader>
+            <NavOverlay />
+            <HStack>
+              <Button
+                color="primary"
+                size="small"
+                label="Deployment Instructions"
+              />
+            </HStack>
+          </ADEHeader>
+        }
       >
-        <ADEHeader />
-        <HStack
-          collapseHeight
-          overflowY="auto"
-          fullWidth
-          gap={false}
-          className="flex-row-reverse"
-        >
-          <Frame overflow="hidden" className="relative" fullWidth fullHeight>
-            <PanelRenderArea />
-          </Frame>
-          <ADESidebar />
-        </HStack>
-      </VStack>
+        <Frame overflow="hidden" className="relative" fullWidth fullHeight>
+          <PanelRenderArea />
+        </Frame>
+        <ADESidebar />
+      </ADEPage>
     </PanelManager>
   );
 }

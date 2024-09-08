@@ -98,7 +98,7 @@ function ToolsList() {
 
       return { previousAgentState };
     },
-    onError: (a, b, context) => {
+    onError: (_a, _b, context) => {
       if (context?.previousAgentState) {
         queryClient.setQueryData(
           UseAgentsServiceGetAgentStateApiAgentsAgentIdGetKeyFn({

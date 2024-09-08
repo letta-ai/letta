@@ -8,6 +8,8 @@
 
 @layer base {
   :root {
+    --default-gap: 0.5rem;
+
     --font-size-sm: 0.8rem;
 
     --font-size-base: 0.875rem;
