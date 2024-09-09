@@ -5,9 +5,12 @@ import { cn } from '@letta-web/core-style-config';
 import type { VariantProps } from 'class-variance-authority';
 import { cva } from 'class-variance-authority';
 import { Slot } from '@radix-ui/react-slot';
+import { useCopyToClipboard } from '../../hooks';
+import { Button } from '../Button/Button';
+import { CheckIcon, ClipboardIcon } from '../../icons';
 
 const inputVariants = cva(
-  'flex gap-2 px-3 py-2 w-full rounded-md border border-input text-base transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-content focus-visible:outline-none focus-within:ring-1 focus-within:ring-ring disabled:cursor-not-allowed disabled:opacity-50',
+  'flex gap-2 px-3 items-center w-full rounded-md border border-input text-base transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-content focus-visible:outline-none focus-within:ring-1 focus-within:ring-ring disabled:cursor-not-allowed disabled:opacity-50',
   {
     variants: {
       color: {
@@ -38,11 +41,43 @@ type InputPrimitiveProps = Omit<
   VariantProps<typeof inputVariants> & {
     preIcon?: React.ReactNode;
     hideLabel?: boolean;
+    allowCopy?: boolean;
   };
+
+interface CopyButtonProps {
+  text: string;
+}
+
+function CopyButton({ text }: CopyButtonProps) {
+  const { isCopied, copyToClipboard } = useCopyToClipboard({
+    textToCopy: text,
+  });
+
+  return (
+    <Button
+      onClick={copyToClipboard}
+      color="tertiary-transparent"
+      label="Copy"
+      hideLabel
+      size="small"
+      preIcon={isCopied ? <CheckIcon /> : <ClipboardIcon />}
+    />
+  );
+}
 
 const InputPrimitive = React.forwardRef<HTMLInputElement, InputPrimitiveProps>(
   (
-    { className, hideLabel, fullWidth, preIcon, type, size, color, ...props },
+    {
+      className,
+      hideLabel,
+      fullWidth,
+      allowCopy,
+      preIcon,
+      type,
+      size,
+      color,
+      ...props
+    },
     ref
   ) => {
     return (
@@ -54,6 +89,7 @@ const InputPrimitive = React.forwardRef<HTMLInputElement, InputPrimitiveProps>(
           ref={ref}
           {...props}
         />
+        {allowCopy && <CopyButton text={(props.value || '').toString()} />}
       </div>
     );
   }

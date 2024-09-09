@@ -13,6 +13,7 @@ import { deleteCookie, getCookie, setCookie } from '$letta/server/cookies';
 import { deleteRedisData, getRedisData, setRedisData } from '@letta-web/redis';
 import { CookieNames } from '$letta/server/cookies/types';
 import { redirect } from 'next/navigation';
+import bcrypt from 'bcrypt';
 
 async function createUserAndOrganization(
   userData: ProviderUserPayload
@@ -24,9 +25,7 @@ async function createUserAndOrganization(
     })
     .returning({ organizationId: organizations.id });
 
-  const { accessPassword } = await generateAccessToken(
-    createdOrg.organizationId
-  );
+  const { apiKey } = await generateAPIKey(createdOrg.organizationId);
 
   const [[createdUser]] = await Promise.all([
     db
@@ -45,8 +44,9 @@ async function createUserAndOrganization(
       name: 'My first project',
     }),
     db.insert(lettaAPIKeys).values({
+      name: 'Default API key',
       organizationId: createdOrg.organizationId,
-      apiKey: accessPassword,
+      apiKey,
     }),
   ]);
 
@@ -148,19 +148,19 @@ export async function getUserOrganizationIdOrThrow() {
   return user.organizationId;
 }
 
-export async function generateAccessToken(organizationId: string) {
-  const accessPassword = crypto.randomUUID();
+export async function generateAPIKey(organizationId: string) {
+  const apiKey = crypto.randomUUID();
 
   return {
-    accessToken: atob(`${organizationId}:${accessPassword}`),
-    accessPassword,
+    accessToken: btoa(`${organizationId}:${apiKey}`),
+    apiKey,
   };
 }
 
 export async function parseAccessToken(accessToken: string) {
   const response = btoa(accessToken);
 
-  const [organizationId, accessPassword] = btoa(response).split(':');
+  const [organizationId, accessPassword] = atob(response).split(':');
 
   return {
     organizationId,

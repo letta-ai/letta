@@ -18,6 +18,7 @@ export function DashboardStatusComponent(props: DashboardStatusComponentProps) {
   const {
     emptyMessage,
     isError,
+    errorMessage,
     errorAction,
     loadingMessage,
     isLoading,
@@ -30,11 +31,11 @@ export function DashboardStatusComponent(props: DashboardStatusComponentProps) {
     }
 
     if (isError) {
-      return isError;
+      return errorMessage || 'An error occurred, please contact support.';
     }
 
     return emptyMessage;
-  }, [isLoading, isError, emptyMessage, loadingMessage]);
+  }, [isLoading, isError, emptyMessage, loadingMessage, errorMessage]);
 
   const action = useMemo(() => {
     if (isLoading) {

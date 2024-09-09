@@ -9,6 +9,9 @@ const buttonVariants = cva(
   'items-center cursor-pointer inline-flex  whitespace-nowrap transition-width duration-200 ease-in-out',
   {
     variants: {
+      disabled: {
+        true: 'cursor-not-allowed opacity-50',
+      },
       fullWidth: {
         true: 'w-full justify-center',
       },
@@ -90,6 +93,7 @@ export type ButtonProps = Omit<
       label?: string;
       busy?: boolean;
       href?: string;
+      disabled?: boolean;
       hideLabel?: boolean;
       target?: string;
       type?: 'button' | 'reset' | 'submit';
@@ -136,6 +140,7 @@ export function Button(props: ButtonProps) {
           size,
           variant,
           fullWidth,
+          disabled: rest.disabled,
           fullHeight,
           active,
         })

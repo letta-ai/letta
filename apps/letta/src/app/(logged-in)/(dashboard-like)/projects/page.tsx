@@ -17,6 +17,7 @@ import {
   FormField,
   Input,
   FormProvider,
+  DashboardPageSection,
 } from '@letta-web/component-library';
 import { webApi, webApiQueryKeys } from '$letta/client';
 import { useDebouncedValue } from '@mantine/hooks';
@@ -125,7 +126,7 @@ function ProjectsList(props: ProjectsListProps) {
   }
 
   return (
-    <VStack padding>
+    <DashboardPageSection>
       {data.body.projects.map((project) => (
         <Card key={project.id} className="flex-1 h-[150px]">
           <HStack align="center" fullHeight>
@@ -141,7 +142,7 @@ function ProjectsList(props: ProjectsListProps) {
           </HStack>
         </Card>
       ))}
-    </VStack>
+    </DashboardPageSection>
   );
 }
 

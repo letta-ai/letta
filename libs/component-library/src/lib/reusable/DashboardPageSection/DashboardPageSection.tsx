@@ -7,13 +7,14 @@ import { HStack } from '../../framing/HStack/HStack';
 type DashboardPageSectionProps = PropsWithChildren<{
   title?: string;
   actions?: React.ReactNode;
+  borderBottom?: boolean;
 }>;
 
 export function DashboardPageSection(props: DashboardPageSectionProps) {
-  const { children, actions, title } = props;
+  const { children, actions, title, borderBottom } = props;
 
   return (
-    <VStack padding fullWidth borderBottom>
+    <VStack padding="dashboard" fullWidth borderBottom={borderBottom}>
       {title && (
         <HStack className="h-biHeight-sm" align="center" justify="spaceBetween">
           <Typography variant="heading2">{title}</Typography>

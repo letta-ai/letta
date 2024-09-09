@@ -30,6 +30,9 @@ const typographyVariants = cva('', {
       left: 'text-left',
       right: 'text-right',
     },
+    underline: {
+      true: 'underline',
+    },
   },
   defaultVariants: {
     variant: 'body',
@@ -39,7 +42,7 @@ const typographyVariants = cva('', {
 
 type TypographyProps = HTMLProps<HTMLElement> &
   VariantProps<typeof typographyVariants> & {
-    overrideEl?: 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6' | 'p';
+    overrideEl?: 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6' | 'p' | 'span';
   };
 
 const variantToElement = {
@@ -52,7 +55,7 @@ const variantToElement = {
 export function Typography(props: TypographyProps) {
   const { className, overrideEl, noWrap, variant, bold, ...rest } = props;
 
-  const Element = variantToElement[overrideEl || variant || 'body'] || 'p';
+  const Element = overrideEl || variantToElement[variant || 'body'] || 'p';
 
   return React.createElement(Element, {
     className: cn(

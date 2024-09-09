@@ -22,6 +22,13 @@
       "when": 1725900840795,
       "tag": "0002_steep_doctor_doom",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1725908610242,
+      "tag": "0003_mysterious_stephen_strange",
+      "breakpoints": true
     }
   ]
 }

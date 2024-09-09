@@ -50,6 +50,7 @@ const frameVariants = cva('', {
       true: 'border-b',
     },
     padding: {
+      dashboard: 'py-3 px-4',
       xxxxsmall: 'p-1',
       xxxsmall: 'p-2',
       xxsmall: 'p-2.5',

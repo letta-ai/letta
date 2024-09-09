@@ -122,11 +122,13 @@ interface DialogProps {
   trigger?: React.ReactNode;
   confirmText?: string;
   confirmColor?: ButtonProps['color'];
+  preventCloseFromOutside?: boolean;
   isConfirmBusy?: boolean;
   cancelText?: string;
   onConfirm?: () => void;
   onSubmit?: (e: React.FormEvent<HTMLFormElement>) => void;
   hideCancel?: boolean;
+  hideConfirm?: boolean;
 }
 
 export function Dialog(props: DialogProps) {
@@ -138,11 +140,13 @@ export function Dialog(props: DialogProps) {
     isConfirmBusy,
     trigger,
     confirmColor = 'secondary',
+    preventCloseFromOutside,
     cancelText = 'Cancel',
     confirmText = 'Confirm',
     onSubmit,
     onConfirm,
     hideCancel,
+    hideConfirm,
   } = props;
 
   const handleSubmit = useCallback(
@@ -168,7 +172,18 @@ export function Dialog(props: DialogProps) {
   return (
     <DialogRoot open={isOpen} onOpenChange={onOpenChange}>
       {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
-      <DialogContent aria-describedby="">
+      <DialogContent
+        onInteractOutside={(e) => {
+          if (preventCloseFromOutside) {
+            e.preventDefault();
+            e.stopPropagation();
+            return e;
+          }
+
+          return e;
+        }}
+        aria-describedby=""
+      >
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
@@ -180,12 +195,14 @@ export function Dialog(props: DialogProps) {
                 <Button label={cancelText} color="tertiary" />
               </DialogClose>
             )}
-            <Button
-              color={confirmColor}
-              type="submit"
-              busy={isConfirmBusy}
-              label={confirmText}
-            />
+            {!hideConfirm && (
+              <Button
+                color={confirmColor}
+                type="submit"
+                busy={isConfirmBusy}
+                label={confirmText}
+              />
+            )}
           </DialogFooter>
         </form>
       </DialogContent>

@@ -70,3 +70,6 @@ export * from './lib/ade/ADEPage/ADEPage';
 export * from './lib/reusable/DashboardPageSection/DashboardPageSection';
 
 export * from './lib/reusable/DashboardEmptyArea/DashboardEmptyArea';
+export * from './lib/hooks';
+
+export * from './lib/core/DropdownMenu/DropdownMenu';

@@ -50,6 +50,7 @@ export const lettaAPIKeys = pgTable('letta_api_keys', {
   id: uuid('id')
     .primaryKey()
     .default(sql`gen_random_uuid()`),
+  name: text('name').notNull(),
   apiKey: text('api_key').notNull().unique(),
   organizationId: uuid('organization_id').notNull(),
   createdAt: timestamp('created_at').notNull().defaultNow(),

@@ -28,7 +28,7 @@ export function DashboardHeader(props: DashboardHeaderProps) {
           {title}
         </Typography>
       </HStack>
-      <HStack>{actions}</HStack>
+      <HStack align="center">{actions}</HStack>
     </HStack>
   );
 }

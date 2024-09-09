@@ -19,6 +19,8 @@ import {
 import { RawInput } from '../Input/Input';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@letta-web/core-style-config';
+import { Button } from '../Button/Button';
+import { useEffect } from 'react';
 
 interface TableBodyContentProps<Data> {
   table: UseReactTableType<Data>;
@@ -93,19 +95,41 @@ interface DataTablePropsBase<TData, TValue> {
   searchValue?: string;
   isLoading?: boolean;
   noResultsText?: string;
+  hasNextPage?: boolean;
+  hasPreviousPage?: boolean;
+  onNextPage?: () => void;
+  onPreviousPage?: () => void;
+  showPagination?: boolean;
 }
 
 type DataTableProps<TData, TValue> = DataTablePropsBase<TData, TValue> &
   VariantProps<typeof dataTableVariants>;
 
 export function DataTable<TData, TValue>(props: DataTableProps<TData, TValue>) {
-  const { columns, variant, data, isLoading, noResultsText } = props;
+  const {
+    hasNextPage,
+    hasPreviousPage,
+    onNextPage,
+    onPreviousPage,
+    columns,
+    variant,
+    data,
+    isLoading,
+    noResultsText,
+    showPagination,
+  } = props;
 
   const table = useReactTable({
     data,
     columns,
     getCoreRowModel: getCoreRowModel(),
   });
+
+  useEffect(() => {
+    if (data.length === 0 && hasPreviousPage && !isLoading) {
+      onPreviousPage?.();
+    }
+  }, [data.length, hasPreviousPage, isLoading, onPreviousPage]);
 
   return (
     <div className="flex flex-col gap-2">
@@ -151,6 +175,33 @@ export function DataTable<TData, TValue>(props: DataTableProps<TData, TValue>) {
           />
         </Table>
       </div>
+      {showPagination && (
+        <div className="flex items-center justify-end space-x-2 py-4">
+          <div />
+          <div className="space-x-2">
+            {onPreviousPage && (
+              <Button
+                onClick={() => {
+                  onPreviousPage();
+                }}
+                color="tertiary"
+                disabled={!hasPreviousPage}
+                label="Previous"
+              ></Button>
+            )}
+            {onNextPage && (
+              <Button
+                onClick={() => {
+                  onNextPage();
+                }}
+                color="tertiary"
+                disabled={!hasNextPage}
+                label="Next"
+              />
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

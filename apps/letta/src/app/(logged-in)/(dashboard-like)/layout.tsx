@@ -58,7 +58,7 @@ export default async function DashboardLikeLayout(
     <div className="pageFadeIn w-[100vw] h-[100vh]">
       <HStack gap={false} fullHeight fullWidth>
         <Sidebar />
-        <Frame fullHeight fullWidth>
+        <Frame overflow="auto" fullHeight fullWidth>
           {children}
         </Frame>
       </HStack>
