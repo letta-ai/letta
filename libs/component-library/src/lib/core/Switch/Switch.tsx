@@ -7,7 +7,9 @@ import { makeInput, makeRawInput } from '../Form/Form';
 
 const SwitchPrimitive = React.forwardRef<
   React.ElementRef<typeof SwitchPrimitives.Root>,
-  React.ComponentPropsWithoutRef<typeof SwitchPrimitives.Root>
+  React.ComponentPropsWithoutRef<typeof SwitchPrimitives.Root> & {
+    reverse?: boolean;
+  }
 >(({ className, ...props }, ref) => (
   <SwitchPrimitives.Root
     className={cn(

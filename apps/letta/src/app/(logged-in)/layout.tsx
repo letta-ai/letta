@@ -9,6 +9,7 @@ import {
 } from '@tanstack/react-query';
 import { userQueryClientKeys } from '$letta/any/contracts/user';
 import { LettaAgentsAPIWrapper } from '@letta-web/letta-agents-api';
+import { GlobalSessionSettingsProvider } from '$letta/client/hooks/session';
 
 interface InAppProps {
   children: ReactNode;
@@ -34,8 +35,10 @@ export default async function LoggedInLayout(props: InAppProps) {
   }
 
   return (
-    <HydrationBoundary state={dehydrate(queryClient)}>
-      <LettaAgentsAPIWrapper>{children}</LettaAgentsAPIWrapper>
-    </HydrationBoundary>
+    <GlobalSessionSettingsProvider>
+      <HydrationBoundary state={dehydrate(queryClient)}>
+        <LettaAgentsAPIWrapper>{children}</LettaAgentsAPIWrapper>
+      </HydrationBoundary>
+    </GlobalSessionSettingsProvider>
   );
 }

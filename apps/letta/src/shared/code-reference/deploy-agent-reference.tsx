@@ -10,6 +10,10 @@ import React, { useState } from 'react';
 import { environment } from '@letta-web/environmental-variables';
 import { pdkContracts } from '$letta/pdk/contracts';
 import { V1_ROUTE } from '$letta/pdk/shared';
+import {
+  ACCESS_TOKEN_PLACEHOLDER,
+  CodeWithAPIKeyInjection,
+} from '$letta/client/common';
 
 interface DeployAgentInstructionsCurlProps {
   sourceAgentId: string;
@@ -26,12 +30,12 @@ export function DeployAgentInstructionsCurl(
         To use this agent, first you need to create a testing agent.
       </Typography>
       <Frame paddingY="xsmall">
-        <Code
+        <CodeWithAPIKeyInjection
           toolbarPosition="bottom"
           language="bash"
           code={`curl -X POST ${environment.NEXT_PUBLIC_CURRENT_HOST}${V1_ROUTE}${pdkContracts.agents.createAgent.path} \\
   -H 'Content-Type: application/json' \\
-  -H 'Authorization: Bearer YOUR-API-KEY' \\
+  -H 'Authorization: Bearer ${ACCESS_TOKEN_PLACEHOLDER}' \\
   -d '{
     "sourceAgentId": "${sourceAgentId}",
     "variables": {
@@ -53,12 +57,12 @@ export function DeployAgentInstructionsCurl(
         returned from the above request.
       </Typography>
       <Frame paddingY="xsmall">
-        <Code
+        <CodeWithAPIKeyInjection
           toolbarPosition="bottom"
           language="bash"
           code={`curl -X POST ${environment.NEXT_PUBLIC_CURRENT_HOST}${V1_ROUTE}${pdkContracts.agents.chatWithAgent.path} \\
   -H 'Content-Type: application/json' \\
-  -H 'Authorization: Bearer YOUR-API-KEY' \\
+  -H 'Authorization: Bearer ${ACCESS_TOKEN_PLACEHOLDER}' \\
   -d '{
     "message": "Hello",
     "variables": {
@@ -117,8 +121,8 @@ export function DeployAgentUsageInstructions(
           }}
           items={[
             { label: 'Curl', value: 'bash' },
-            { label: 'Python', value: 'python' },
-            { label: 'JavaScript', value: 'javascript' },
+            // { label: 'Python', value: 'python' },
+            // { label: 'JavaScript', value: 'javascript' },
           ]}
         />
       </HStack>

@@ -5,16 +5,24 @@ import { GenericSearchSchema } from '$letta/any/contracts/shared';
 
 const c = initContract();
 
-export const APIKeySchema = z.object({
+export const PublicAPIKeySchema = z.object({
   id: z.string(),
   name: z.string(),
   createdAt: z.string(),
   updatedAt: z.string(),
 });
 
-export const APIKeysSchema = z.array(APIKeySchema);
+export const SpecificAPIKeySchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  apiKey: z.string(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
 
-export type APIKeyType = z.infer<typeof APIKeySchema>;
+export const APIKeysSchema = z.array(PublicAPIKeySchema);
+
+export type APIKeyType = z.infer<typeof PublicAPIKeySchema>;
 
 export type APIKeysType = z.infer<typeof APIKeysSchema>;
 
@@ -59,13 +67,26 @@ const deleteAPIKeyContract = c.mutation({
   },
 });
 
+const getAPIKeyContract = c.query({
+  method: 'GET',
+  path: '/api-keys/:apiKeyId',
+  pathParams: z.object({
+    apiKeyId: z.string(),
+  }),
+  responses: {
+    200: SpecificAPIKeySchema,
+  },
+});
+
 export const apiKeysContracts = {
   createAPIKey: createAPIKeyContract,
   getAPIKeys: getAPIKeysContract,
   deleteAPIKey: deleteAPIKeyContract,
+  getAPIKey: getAPIKeyContract,
 };
 
 export const apiKeysQueryKeys = {
   getAPIKeys: ['api-keys'],
   getAPIKeysWithSearch: (search: GenericSearch) => ['api-keys', search],
+  getApiKey: (apiKeyId: string) => ['api-keys', apiKeyId],
 };

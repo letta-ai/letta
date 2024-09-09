@@ -6,7 +6,6 @@ import {
 import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
 import type { contracts } from '$letta/any/contracts';
 import { and, eq } from 'drizzle-orm';
-import bcrypt from 'bcrypt';
 
 type CreateAPIKeyPayload = ServerInferRequest<
   typeof contracts.apiKeys.createAPIKey
@@ -21,20 +20,18 @@ export async function createAPIKey(
   const { name } = req.body;
 
   const organizationId = await getUserOrganizationIdOrThrow();
-  const { apiKey, accessToken } = await generateAPIKey(organizationId);
-
-  const hashedApiKey = await bcrypt.hash(apiKey, 10);
+  const apiKey = await generateAPIKey(organizationId);
 
   await db.insert(lettaAPIKeys).values({
     name,
     organizationId,
-    apiKey: hashedApiKey,
+    apiKey,
   });
 
   return {
     status: 200,
     body: {
-      apiKey: accessToken,
+      apiKey,
     },
   };
 }
@@ -107,5 +104,54 @@ export async function deleteAPIKey(
   return {
     status: 200,
     body: null,
+  };
+}
+
+type GetAPIKeyRequest = ServerInferRequest<typeof contracts.apiKeys.getAPIKey>;
+
+type GetAPIKeyResponse = ServerInferResponses<
+  typeof contracts.apiKeys.getAPIKey
+>;
+
+export async function getAPIKey(
+  req: GetAPIKeyRequest
+): Promise<GetAPIKeyResponse> {
+  const { apiKeyId } = req.params;
+
+  const organizationId = await getUserOrganizationIdOrThrow();
+
+  const where = [eq(lettaAPIKeys.organizationId, organizationId)];
+
+  if (apiKeyId !== 'first') {
+    where.push(eq(lettaAPIKeys.id, apiKeyId));
+  }
+
+  const apiKey = await db.query.lettaAPIKeys.findFirst({
+    where: and(...where),
+    columns: {
+      id: true,
+      name: true,
+      apiKey: true,
+      createdAt: true,
+      updatedAt: true,
+    },
+  });
+
+  if (!apiKey) {
+    return {
+      status: 404,
+      body: null,
+    };
+  }
+
+  return {
+    status: 200,
+    body: {
+      id: apiKey.id,
+      name: apiKey.name,
+      apiKey: apiKey.apiKey,
+      createdAt: apiKey.createdAt.toISOString(),
+      updatedAt: apiKey.updatedAt.toISOString(),
+    },
   };
 }

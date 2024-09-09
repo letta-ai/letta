@@ -85,11 +85,8 @@ function CreateAPIKeyDialog() {
           <>
             <Alert variant="warning" title="API Key Created">
               <Typography>
-                We have generated you an API Key,{' '}
-                <Typography underline overrideEl="span" bold>
-                  it cannot be displayed again after this
-                </Typography>
-                , please make sure to store it safely.
+                We have generated you an API Key, please make sure to store it
+                safely.
               </Typography>
               <HStack paddingY="small">
                 <DownloadButton
@@ -278,16 +275,16 @@ function APIKeysPage() {
         />
       }
     >
-      <DashboardPageSection>
-        {(!apiKeys || apiKeys.length === 0) && offset === 0 ? (
-          <DashboardStatusComponent
-            emptyMessage="No API keys found"
-            emptyAction={<CreateAPIKeyDialog />}
-            isLoading={!apiKeys}
-            loadingMessage="Loading API keys"
-            isError={isError}
-          />
-        ) : (
+      {(!apiKeys || apiKeys.length === 0) && offset === 0 ? (
+        <DashboardStatusComponent
+          emptyMessage="No API keys found"
+          emptyAction={<CreateAPIKeyDialog />}
+          isLoading={!apiKeys}
+          loadingMessage="Loading API keys"
+          isError={isError}
+        />
+      ) : (
+        <DashboardPageSection>
           <DataTable
             isLoading={isFetching}
             hasNextPage={hasNextPage}
@@ -298,8 +295,8 @@ function APIKeysPage() {
             columns={apiKeysColumns}
             data={apiKeys || []}
           />
-        )}
-      </DashboardPageSection>
+        </DashboardPageSection>
+      )}
     </DashboardPageLayout>
   );
 }

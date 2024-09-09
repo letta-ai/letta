@@ -9,7 +9,7 @@ import { pdkRouter } from '$letta/pdk/router';
 import bcrypt from 'bcrypt';
 import { parseAccessToken } from '$letta/server/auth';
 import { db, lettaAPIKeys } from '@letta-web/database';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { V1_ROUTE } from '$letta/pdk/shared';
 
 function isErrorResponse(error: unknown): error is TsRestHttpError {
@@ -49,11 +49,11 @@ export const handler = createNextHandler(pdkContracts, pdkRouter, {
   handlerType: 'app-router',
   requestMiddleware: [
     tsr.middleware<{ organizationId: string }>(async (request) => {
-      const accessToken = request.headers
+      const apiKey = request.headers
         .get('Authorization')
         ?.replace('Bearer ', '');
 
-      if (!accessToken) {
+      if (!apiKey) {
         return TsRestResponse.fromJson(
           {
             message: 'Please include Authorization: Bearer {your-api-token}',
@@ -62,50 +62,19 @@ export const handler = createNextHandler(pdkContracts, pdkRouter, {
         );
       }
 
-      const { organizationId, accessPassword } = await parseAccessToken(
-        accessToken
-      );
-
-      const isValidUUID = /^[0-9a-fA-F]{24}$/.test(organizationId);
-
-      if (!isValidUUID) {
-        return TsRestResponse.fromJson(
-          {
-            message: 'Unauthorized',
-          },
-          { status: 401 }
-        );
-      }
+      const { organizationId } = await parseAccessToken(apiKey);
 
       const key = await db.query.lettaAPIKeys.findFirst({
-        where: eq(lettaAPIKeys.organizationId, organizationId),
+        where: and(
+          eq(lettaAPIKeys.apiKey, apiKey),
+          eq(lettaAPIKeys.organizationId, organizationId)
+        ),
         columns: {
           apiKey: true,
         },
       });
 
       if (!key) {
-        return TsRestResponse.fromJson(
-          {
-            message: 'Unauthorized',
-          },
-          { status: 401 }
-        );
-      }
-
-      try {
-        await new Promise((resolve, reject) =>
-          bcrypt.compare(accessPassword, key.apiKey, function (_err, isValid) {
-            if (isValid) {
-              resolve(true);
-
-              return;
-            }
-
-            reject(isValid);
-          })
-        );
-      } catch (_err) {
         return TsRestResponse.fromJson(
           {
             message: 'Unauthorized',

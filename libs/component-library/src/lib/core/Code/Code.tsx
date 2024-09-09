@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useId } from 'react';
+import React, { useId, useMemo } from 'react';
 import Editor from 'react-simple-code-editor';
 import { highlight, languages } from 'prismjs/components/prism-core';
 import 'prismjs/components/prism-clike';
@@ -39,9 +39,9 @@ const codeVariants = cva('', {
   },
 });
 
-interface CodeProps extends VariantProps<typeof codeVariants> {
+export interface CodeProps extends VariantProps<typeof codeVariants> {
   language: SupportedLangauges;
-
+  toolbarAction?: React.ReactNode;
   code: string;
   onSetCode?: (code: string) => void;
   fullHeight?: boolean;
@@ -66,27 +66,31 @@ export function Code(props: CodeProps) {
     toolbarPosition,
     inline,
     fullHeight,
+    toolbarAction,
   } = props;
 
   const id = useId();
 
+  const toolbar = useMemo(
+    () => (
+      <div className="py-1 px-2 border-b border-t flex justify-between">
+        <HStack align="center">{toolbarAction}</HStack>
+        <HStack gap="small">
+          <DownloadButton
+            fileName={languageToFileNameMap[language]}
+            textToDownload={code}
+            size="small"
+          />
+          <CopyButton textToCopy={code} size="small" />
+        </HStack>
+      </div>
+    ),
+    [code, language, toolbarAction]
+  );
+
   if (inline) {
     return <code className={`language-${language}`}>{code}</code>;
   }
-
-  const toolbar = (
-    <div className="py-1 px-2 border-b border-t flex justify-between">
-      <div></div>
-      <HStack gap="small">
-        <DownloadButton
-          fileName={languageToFileNameMap[language]}
-          textToDownload={code}
-          size="small"
-        />
-        <CopyButton textToCopy={code} size="small" />
-      </HStack>
-    </div>
-  );
 
   return (
     <Frame

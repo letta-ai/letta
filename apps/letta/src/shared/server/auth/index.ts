@@ -13,7 +13,6 @@ import { deleteCookie, getCookie, setCookie } from '$letta/server/cookies';
 import { deleteRedisData, getRedisData, setRedisData } from '@letta-web/redis';
 import { CookieNames } from '$letta/server/cookies/types';
 import { redirect } from 'next/navigation';
-import bcrypt from 'bcrypt';
 
 async function createUserAndOrganization(
   userData: ProviderUserPayload
@@ -25,7 +24,7 @@ async function createUserAndOrganization(
     })
     .returning({ organizationId: organizations.id });
 
-  const { apiKey } = await generateAPIKey(createdOrg.organizationId);
+  const apiKey = await generateAPIKey(createdOrg.organizationId);
 
   const [[createdUser]] = await Promise.all([
     db
@@ -151,16 +150,11 @@ export async function getUserOrganizationIdOrThrow() {
 export async function generateAPIKey(organizationId: string) {
   const apiKey = crypto.randomUUID();
 
-  return {
-    accessToken: btoa(`${organizationId}:${apiKey}`),
-    apiKey,
-  };
+  return btoa(`${organizationId}:${apiKey}`);
 }
 
 export async function parseAccessToken(accessToken: string) {
-  const response = btoa(accessToken);
-
-  const [organizationId, accessPassword] = atob(response).split(':');
+  const [organizationId, accessPassword] = atob(accessToken).split(':');
 
   return {
     organizationId,
