@@ -6,7 +6,6 @@ import {
 } from '@ts-rest/serverless/next';
 import { pdkContracts } from '$letta/pdk/contracts';
 import { pdkRouter } from '$letta/pdk/router';
-import bcrypt from 'bcrypt';
 import { parseAccessToken } from '$letta/server/auth';
 import { db, lettaAPIKeys } from '@letta-web/database';
 import { and, eq } from 'drizzle-orm';
@@ -16,7 +15,7 @@ function isErrorResponse(error: unknown): error is TsRestHttpError {
   return error instanceof TsRestHttpError;
 }
 
-export const handler = createNextHandler(pdkContracts, pdkRouter, {
+const handler = createNextHandler(pdkContracts, pdkRouter, {
   basePath: V1_ROUTE,
   jsonQuery: true,
   errorHandler: (error) => {

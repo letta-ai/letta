@@ -8,6 +8,7 @@ import {
 import GoogleLogo from './google-logo.png';
 import Image from 'next/image';
 import type { ElementRef } from 'react';
+import { Suspense } from 'react';
 import { useMemo } from 'react';
 import { useEffect, useCallback, useRef } from 'react';
 import { isNull } from 'lodash-es';
@@ -15,7 +16,7 @@ import './Login.scss';
 import { useSearchParams } from 'next/navigation';
 import { isTextALoginError, LoginErrorsMap } from '$letta/any/errors';
 
-export function LoginComponent() {
+function LoginErrorBanner() {
   const searchParams = useSearchParams();
 
   const errorMessage = useMemo(() => {
@@ -26,6 +27,18 @@ export function LoginComponent() {
     }
   }, [searchParams]);
 
+  if (!errorMessage) {
+    return null;
+  }
+
+  return (
+    <div className="fade-in-0 absolute top-[-90px] slide-in-from-bottom-2 text-mono mt-4 bg-white text-black animate-in  p-1 px-4 rounded">
+      {errorMessage}
+    </div>
+  );
+}
+
+export function LoginComponent() {
   const marketingButtonRef = useRef<ElementRef<typeof MarketingButton>>(null);
   const logoRef = useRef<HTMLDivElement>(null);
 
@@ -74,11 +87,9 @@ export function LoginComponent() {
 
   return (
     <VStack align="center" className="relative" fullWidth>
-      {errorMessage && (
-        <div className="fade-in-0 absolute top-[-90px] slide-in-from-bottom-2 text-mono mt-4 bg-white text-black animate-in  p-1 px-4 rounded">
-          {errorMessage}
-        </div>
-      )}
+      <Suspense>
+        <LoginErrorBanner />
+      </Suspense>
       <VStack className="w-[300px] gap-[36px]" align="center">
         <VStack align="center" gap="large">
           <div className="relative" ref={logoRef}>

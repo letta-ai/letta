@@ -2,7 +2,7 @@
 
 import React, { useId, useMemo } from 'react';
 import Editor from 'react-simple-code-editor';
-import { highlight, languages } from 'prismjs/components/prism-core';
+import { highlight, languages } from 'prismjs';
 import 'prismjs/components/prism-clike';
 import 'prismjs/components/prism-python';
 import 'prismjs/components/prism-javascript';
@@ -111,7 +111,7 @@ export function Code(props: CodeProps) {
           onSetCode(code);
         }}
         highlight={(code) =>
-          highlight(code, languages[language])
+          highlight(code, languages[language], language)
             .split('\n')
             .map(
               (line, i) =>

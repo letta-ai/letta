@@ -2,7 +2,7 @@ import { createNextHandler } from '@ts-rest/serverless/next';
 import { contracts } from '$letta/any/contracts';
 import { router } from '$letta/server/router';
 
-export const handler = createNextHandler(contracts, router, {
+const handler = createNextHandler(contracts, router, {
   basePath: '/api',
   jsonQuery: true,
   responseValidation: true,

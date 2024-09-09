@@ -4,7 +4,6 @@ import { config } from 'dotenv';
 import { resolve } from 'path';
 
 import * as schema from '../schemas';
-// @ts-expect-error - this is a valid import
 import postgres from 'postgres';
 
 config({ path: resolve(__dirname, '.env') });
@@ -19,7 +18,7 @@ declare global {
 let db: PostgresJsDatabase<typeof schema>;
 
 if (process.env.NODE_ENV === 'production') {
-  db = drizzle(postgres(process.env.DATABASE_URL), {
+  db = drizzle(postgres(process.env.DATABASE_URL!), {
     schema,
   });
 } else {

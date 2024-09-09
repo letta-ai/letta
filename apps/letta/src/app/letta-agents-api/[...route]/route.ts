@@ -7,7 +7,7 @@ interface NextContext {
   };
 }
 
-export async function handler(req: NextRequest, context: NextContext) {
+async function handler(req: NextRequest, context: NextContext) {
   const path = context.params.route.join('/');
 
   let payload = undefined;

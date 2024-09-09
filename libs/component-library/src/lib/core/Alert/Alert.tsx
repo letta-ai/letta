@@ -34,11 +34,23 @@ const iconMap: Partial<Record<AlertVariants, React.ReactNode>> = {
   warning: <WarningIcon color="warning" />,
 };
 
+function isInIconMap(icon: unknown): icon is keyof typeof iconMap {
+  if (typeof icon !== 'string') {
+    return false;
+  }
+
+  return Object.prototype.hasOwnProperty.call(iconMap, icon);
+}
+
 export function Alert(props: AlertProps) {
   const { children, action, className, title, icon, variant } = props;
 
   const defaultIcon = useMemo(() => {
-    return iconMap[variant || ''];
+    if (isInIconMap(variant)) {
+      return iconMap[variant];
+    }
+
+    return null;
   }, [variant]);
 
   return (
