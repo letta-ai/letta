@@ -41,6 +41,12 @@ export function SourceAgentCard(props: DeployedAgentCardProps) {
           </HStack>
           <HStack align="center">
             <Button
+              href={`/projects/${id}/deployments/${id}`}
+              color="tertiary-transparent"
+              label="View Deployed Agents"
+            />
+
+            <Button
               active={open}
               onClick={() => setOpen((v) => !v)}
               color="tertiary"

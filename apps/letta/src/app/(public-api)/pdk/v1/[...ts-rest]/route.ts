@@ -1,6 +1,7 @@
 import {
   createNextHandler,
   tsr,
+  TsRestHttpError,
   TsRestResponse,
 } from '@ts-rest/serverless/next';
 import { pdkContracts } from '$letta/pdk/contracts';
@@ -11,9 +12,39 @@ import { db, lettaAPIKeys } from '@letta-web/database';
 import { eq } from 'drizzle-orm';
 import { V1_ROUTE } from '$letta/pdk/shared';
 
+function isErrorResponse(error: unknown): error is TsRestHttpError {
+  return error instanceof TsRestHttpError;
+}
+
 export const handler = createNextHandler(pdkContracts, pdkRouter, {
   basePath: V1_ROUTE,
   jsonQuery: true,
+  errorHandler: (error) => {
+    if (isErrorResponse(error)) {
+      if (error.statusCode === 404 && !error.body) {
+        return TsRestResponse.fromJson(
+          {
+            message: 'Not found',
+          },
+          { status: 404 }
+        );
+      }
+
+      return TsRestResponse.fromJson(
+        {
+          message: error.body.message,
+        },
+        { status: error.statusCode }
+      );
+    }
+
+    return TsRestResponse.fromJson(
+      {
+        message: 'An error occurred',
+      },
+      { status: 500 }
+    );
+  },
   responseValidation: true,
   handlerType: 'app-router',
   requestMiddleware: [
@@ -34,6 +65,17 @@ export const handler = createNextHandler(pdkContracts, pdkRouter, {
       const { organizationId, accessPassword } = await parseAccessToken(
         accessToken
       );
+
+      const isValidUUID = /^[0-9a-fA-F]{24}$/.test(organizationId);
+
+      if (!isValidUUID) {
+        return TsRestResponse.fromJson(
+          {
+            message: 'Unauthorized',
+          },
+          { status: 401 }
+        );
+      }
 
       const key = await db.query.lettaAPIKeys.findFirst({
         where: eq(lettaAPIKeys.organizationId, organizationId),

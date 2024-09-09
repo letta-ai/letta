@@ -33,7 +33,7 @@ function StageAgentButton(props: StageAgentDialogProps) {
           queryKey: webApiQueryKeys.projects.getProjectSourceAgents(projectId),
         });
 
-        push(`/projects/${projectId}/deployment`);
+        push(`/projects/${projectId}/deployments`);
       },
     });
 

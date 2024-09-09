@@ -21,10 +21,10 @@ export function ProjectPageNavigation() {
         href={`/projects/${projectId}`}
       />
       <Button
-        active={afterIdElements === '/deployment'}
+        active={afterIdElements === '/deployments'}
         color="tertiary-transparent"
         label="Deployment"
-        href={`/projects/${projectId}/deployment`}
+        href={`/projects/${projectId}/deployments`}
       />
       <Button
         active={afterIdElements === '/analytics'}
