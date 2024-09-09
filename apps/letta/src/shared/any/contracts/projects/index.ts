@@ -82,12 +82,13 @@ export type ProjectDeployedAgentsSchemaType = z.infer<
   typeof ProjectDeployedAgentsSchema
 >;
 
-const getProjectDeployedAgentsContract = c.query({
+const getProjectSourceAgentsContract = c.query({
   method: 'GET',
   path: '/projects/:projectId/source-agents',
   pathParams: z.object({
     projectId: z.string(),
   }),
+  query: GenericSearchSchema,
   responses: {
     200: ProjectDeployedAgentsSchema,
   },
@@ -142,7 +143,7 @@ export const projectsContract = c.router({
   }),
   createProject: createProjectContract,
   createProjectTestingAgent: createProjectTestingAgentContract,
-  getProjectDeployedAgents: getProjectDeployedAgentsContract,
+  getProjectSourceAgents: getProjectSourceAgentsContract,
   createProjectSourceAgentFromTestingAgent:
     createSourceAgentFromTestingAgentContract,
 });
@@ -163,4 +164,13 @@ export const projectsQueryClientKeys = {
     projectId: string,
     search: GenericSearch
   ) => ['project', projectId, 'testing-agents', search],
+  getProjectSourceAgents: (projectId: string) => [
+    'project',
+    projectId,
+    'source-agents',
+  ],
+  getProjectSourceAgentsWithSearch: (
+    projectId: string,
+    search: GenericSearch
+  ) => ['project', projectId, 'source-agents', search],
 };

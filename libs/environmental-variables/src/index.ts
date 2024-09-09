@@ -3,7 +3,6 @@ import { createEnv } from '@t3-oss/env-nextjs';
 import { z } from 'zod';
 import { config } from 'dotenv';
 import { resolve } from 'path';
-import * as process from 'node:process';
 
 config({ path: resolve(__dirname, '.env') });
 
@@ -18,6 +17,9 @@ export const environment = createEnv({
     REDIS_PASSWORD: z.string().optional(),
     LETTA_AGENTS_ENDPOINT: z.string(),
   },
+  client: {
+    NEXT_PUBLIC_CURRENT_HOST: z.string(),
+  },
   runtimeEnv: {
     GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
     GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
@@ -26,5 +28,6 @@ export const environment = createEnv({
     REDIS_PORT: process.env.REDIS_PORT,
     REDIS_PASSWORD: process.env.REDIS_PASSWORD,
     LETTA_AGENTS_ENDPOINT: process.env.LETTA_AGENTS_ENDPOINT,
+    NEXT_PUBLIC_CURRENT_HOST: process.env.NEXT_PUBLIC_CURRENT_HOST,
   },
 });

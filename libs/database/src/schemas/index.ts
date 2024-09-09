@@ -51,7 +51,6 @@ export const lettaAPIKeys = pgTable('letta_api_keys', {
     .primaryKey()
     .default(sql`gen_random_uuid()`),
   apiKey: text('api_key').notNull().unique(),
-  salt: text('salt').notNull(),
   organizationId: uuid('organization_id').notNull(),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at')
@@ -117,7 +116,7 @@ export const testingAgentRelations = relations(
   })
 );
 
-const sourceAgentsStatusEnum = pgEnum('source_agents_enum', [
+export const sourceAgentsStatusEnum = pgEnum('source_agents_enum', [
   'live',
   'offline',
 ]);
@@ -131,7 +130,7 @@ export const sourceAgents = pgTable('source_agents', {
   projectId: uuid('project_id').notNull(),
   testingAgentId: text('testing_agent_id').notNull(),
   agentId: text('agent_id').notNull().unique(),
-  version: text('agent_id').notNull().unique(),
+  version: text('version').notNull().unique(),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at')
     .notNull()

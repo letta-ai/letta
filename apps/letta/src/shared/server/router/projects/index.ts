@@ -99,14 +99,22 @@ export async function getProjectTestingAgents(
   req: GetProjectTestingAgentsRequest
 ): Promise<GetProjectTestingAgentsResponse> {
   const { projectId } = req.params;
-
+  const { search, offset, limit } = req.query;
   const organizationId = await getUserOrganizationIdOrThrow();
 
+  const where = [
+    eq(testingAgents.organizationId, organizationId),
+    eq(testingAgents.projectId, projectId),
+  ];
+
+  if (search) {
+    where.push(like(testingAgents.name, search || '%'));
+  }
+
   const agents = await db.query.testingAgents.findMany({
-    where: and(
-      eq(testingAgents.projectId, projectId),
-      eq(testingAgents.organizationId, organizationId)
-    ),
+    where: and(...where),
+    limit,
+    offset,
     columns: {
       name: true,
       id: true,
@@ -262,5 +270,56 @@ export async function createProjectSourceAgentFromTestingAgent(
       updatedAt: new Date().toISOString(),
       version,
     },
+  };
+}
+
+type GetProjectSourceAgentsRequest = ServerInferRequest<
+  typeof contracts.projects.getProjectSourceAgents
+>;
+type GetProjectSourceAgentsResponse = ServerInferResponses<
+  typeof contracts.projects.getProjectSourceAgents
+>;
+
+export async function getProjectSourceAgents(
+  req: GetProjectSourceAgentsRequest
+): Promise<GetProjectSourceAgentsResponse> {
+  const organizationId = await getUserOrganizationIdOrThrow();
+  const { projectId } = req.params;
+  const { search, offset, limit } = req.query;
+
+  const where = [
+    eq(sourceAgents.organizationId, organizationId),
+    eq(sourceAgents.projectId, projectId),
+  ];
+
+  if (search) {
+    where.push(like(sourceAgents.name, search || '%'));
+  }
+
+  const existingSourceAgentCount = await db.query.sourceAgents.findMany({
+    where: and(...where),
+    limit,
+    offset,
+    columns: {
+      id: true,
+      name: true,
+      testingAgentId: true,
+      createdAt: true,
+      updatedAt: true,
+      version: true,
+    },
+    with: {
+      status: true,
+    },
+  });
+
+  return {
+    status: 200,
+    body: existingSourceAgentCount.map(({ status, ...rest }) => ({
+      ...rest,
+      createdAt: rest.createdAt.toISOString(),
+      updatedAt: rest.updatedAt.toISOString(),
+      status: status.status,
+    })),
   };
 }

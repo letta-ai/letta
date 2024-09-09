@@ -1,6 +1,12 @@
 'use server';
 import type { ProviderUserPayload } from '$letta/types';
-import { db, organizations, projects, users } from '@letta-web/database';
+import {
+  db,
+  lettaAPIKeys,
+  organizations,
+  projects,
+  users,
+} from '@letta-web/database';
 import { eq } from 'drizzle-orm';
 import type { UserSession } from '$letta/types/user';
 import { deleteCookie, getCookie, setCookie } from '$letta/server/cookies';
@@ -18,6 +24,10 @@ async function createUserAndOrganization(
     })
     .returning({ organizationId: organizations.id });
 
+  const { accessPassword } = await generateAccessToken(
+    createdOrg.organizationId
+  );
+
   const [[createdUser]] = await Promise.all([
     db
       .insert(users)
@@ -33,6 +43,10 @@ async function createUserAndOrganization(
     db.insert(projects).values({
       organizationId: createdOrg.organizationId,
       name: 'My first project',
+    }),
+    db.insert(lettaAPIKeys).values({
+      organizationId: createdOrg.organizationId,
+      apiKey: accessPassword,
     }),
   ]);
 
@@ -132,4 +146,24 @@ export async function getUserOrganizationIdOrThrow() {
   }
 
   return user.organizationId;
+}
+
+export async function generateAccessToken(organizationId: string) {
+  const accessPassword = crypto.randomUUID();
+
+  return {
+    accessToken: atob(`${organizationId}:${accessPassword}`),
+    accessPassword,
+  };
+}
+
+export async function parseAccessToken(accessToken: string) {
+  const response = btoa(accessToken);
+
+  const [organizationId, accessPassword] = btoa(response).split(':');
+
+  return {
+    organizationId,
+    accessPassword,
+  };
 }

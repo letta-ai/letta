@@ -3,19 +3,53 @@
 import {
   ActionCard,
   Button,
-  Card,
   DashboardEmptyArea,
   DashboardPageSection,
   HStack,
   PlusIcon,
   Skeleton,
-  Typography,
   VStack,
 } from '@letta-web/component-library';
-import React, { useMemo } from 'react';
-import { useCurrentProject, useCurrentProjectId } from './hooks';
+import React, { useCallback, useMemo } from 'react';
+import { useCurrentProjectId } from './hooks';
 import { webApi, webApiQueryKeys } from '$letta/client';
 import type { ProjectTestingAgentType } from '$letta/any/contracts/projects';
+import { useQueryClient } from '@tanstack/react-query';
+import { useRouter } from 'next/navigation';
+
+interface StageAgentDialogProps {
+  testingAgentId: string;
+}
+
+function StageAgentButton(props: StageAgentDialogProps) {
+  const { testingAgentId } = props;
+  const { push } = useRouter();
+  const projectId = useCurrentProjectId();
+  const queryClient = useQueryClient();
+  const { mutate, isPending } =
+    webApi.projects.createProjectSourceAgentFromTestingAgent.useMutation({
+      onSuccess: () => {
+        void queryClient.invalidateQueries({
+          queryKey: webApiQueryKeys.projects.getProjectSourceAgents(projectId),
+        });
+
+        push(`/projects/${projectId}/deployment`);
+      },
+    });
+
+  const handleCreateSourceAgent = useCallback(() => {
+    mutate({ body: { testingAgentId }, params: { projectId } });
+  }, [mutate, testingAgentId, projectId]);
+
+  return (
+    <Button
+      busy={isPending}
+      onClick={handleCreateSourceAgent}
+      label="Stage Agent"
+      color="primary"
+    />
+  );
+}
 
 interface TestingAgentCardProps {
   id: string;
@@ -35,54 +69,10 @@ function TestingAgentCard(props: TestingAgentCardProps) {
             color="tertiary"
             label="View / Edit Agent"
           />
-          <Button
-            href={`/projects/${projectId}/agents/${id}/deploy`}
-            color="primary"
-            label="Deploy Agent"
-          />
+          <StageAgentButton testingAgentId={id} />
         </HStack>
       }
     />
-  );
-}
-
-interface DeployedAgentCardProps {
-  status: 'live' | 'offline';
-  name: string;
-  id: string;
-  deployedAt: Date;
-}
-
-function DeployedAgentCard(props: DeployedAgentCardProps) {
-  const { status, name, deployedAt, id } = props;
-  const projectId = useCurrentProjectId();
-  return (
-    <Card>
-      <HStack justify="spaceBetween">
-        <HStack gap="medium" align="center">
-          <div
-            className={`rounded-full bg-${
-              status === 'live' ? 'green' : 'red'
-            }-400 w-[10px] h-[10px]`}
-          />
-          <VStack gap={false} justify="start">
-            <Typography align="left" bold>
-              {name}
-            </Typography>
-            <Typography color="muted" variant="body2">
-              Deployed {deployedAt.toDateString()}
-            </Typography>
-          </VStack>
-        </HStack>
-        <HStack align="center">
-          <Button
-            href={`/projects/${projectId}/agents/${id}/deploy`}
-            color="tertiary"
-            label="See Deployment"
-          />
-        </HStack>
-      </HStack>
-    </Card>
   );
 }
 
@@ -199,8 +189,6 @@ function TestingAgentsSection() {
 }
 
 function ProjectPage() {
-  const { name } = useCurrentProject();
-
   return (
     <>
       <TestingAgentsSection />

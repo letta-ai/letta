@@ -8,13 +8,7 @@ import {
 } from '@tanstack/react-query';
 import { getProjectById } from '$letta/server/router/projects';
 import { redirect } from 'next/navigation';
-import {
-  Avatar,
-  Button,
-  DashboardPageLayout,
-  HStack,
-  RawToggleGroup,
-} from '@letta-web/component-library';
+import { Avatar, DashboardPageLayout } from '@letta-web/component-library';
 import { DashboardHeader } from '$letta/client/common';
 import { ProjectPageNavigation } from './ProjectPageNavigation';
 

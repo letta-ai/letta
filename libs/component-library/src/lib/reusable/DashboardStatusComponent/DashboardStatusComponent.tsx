@@ -74,7 +74,7 @@ export function DashboardStatusComponent(props: DashboardStatusComponentProps) {
           size="large"
         />
         {message || 'Reticulating splines...'}
-        <div className="absolute top-[100%] mt-6">{action}</div>
+        <div className="absolute top-[100%] mt-4">{action}</div>
       </VStack>
     </VStack>
   );

@@ -9,6 +9,7 @@ import 'prismjs/components/prism-javascript';
 import 'prismjs/components/prism-typescript';
 import 'prismjs/components/prism-markup-templating';
 import 'prismjs/components/prism-django';
+import 'prismjs/components/prism-bash';
 import './Code.scss';
 import { CopyButton } from '../../reusable/CopyButton/CopyButton';
 import { DownloadButton } from '../../reusable/DownloadButton/DownloadButton';
@@ -20,6 +21,7 @@ import { cva } from 'class-variance-authority';
 import { cn } from '@letta-web/core-style-config';
 
 export type SupportedLangauges =
+  | 'bash'
   | 'django'
   | 'javascript'
   | 'python'
@@ -39,6 +41,7 @@ const codeVariants = cva('', {
 
 interface CodeProps extends VariantProps<typeof codeVariants> {
   language: SupportedLangauges;
+
   code: string;
   onSetCode?: (code: string) => void;
   fullHeight?: boolean;
@@ -51,6 +54,7 @@ const languageToFileNameMap: Record<SupportedLangauges, string> = {
   python: 'file.py',
   typescript: 'file.ts',
   django: 'file.jinja',
+  bash: 'file.sh',
 };
 
 export function Code(props: CodeProps) {

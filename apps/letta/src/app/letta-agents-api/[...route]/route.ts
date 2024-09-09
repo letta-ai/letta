@@ -14,7 +14,7 @@ export async function handler(req: NextRequest, context: NextContext) {
 
   try {
     payload = await req.json();
-  } catch (e) {
+  } catch (_err) {
     // do nothing
   }
 

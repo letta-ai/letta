@@ -21,16 +21,16 @@ export function ProjectPageNavigation() {
         href={`/projects/${projectId}`}
       />
       <Button
-        active={afterIdElements === '/sources'}
-        color="tertiary-transparent"
-        label="Sources"
-        href={`/projects/${projectId}/sources`}
-      />
-      <Button
         active={afterIdElements === '/deployment'}
         color="tertiary-transparent"
         label="Deployment"
         href={`/projects/${projectId}/deployment`}
+      />
+      <Button
+        active={afterIdElements === '/analytics'}
+        color="tertiary-transparent"
+        label="Analytics"
+        href={`/projects/${projectId}/analytics`}
       />
     </HStack>
   );

@@ -24,7 +24,7 @@ import {
 } from '@letta-web/letta-agents-api';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ADENavigationItem } from '../common/ADENavigationItem/ADENavigationItem';
-import { useCurrentAgent, useCurrentAgentId } from '../hooks';
+import { useCurrentAgent } from '../hooks';
 
 const { PanelRouter, usePanelRouteData, usePanelPageContext } =
   createPageRouter(

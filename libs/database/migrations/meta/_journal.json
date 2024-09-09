@@ -15,6 +15,13 @@
       "when": 1725754671999,
       "tag": "0001_tricky_otto_octavius",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1725900840795,
+      "tag": "0002_steep_doctor_doom",
+      "breakpoints": true
     }
   ]
 }
