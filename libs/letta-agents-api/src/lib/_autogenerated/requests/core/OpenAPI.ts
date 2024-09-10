@@ -41,16 +41,14 @@ export type OpenAPIConfig = {
 };
 
 export const OpenAPI: OpenAPIConfig = {
-  BASE: process.env.LETTA_AGENTS_ENDPOINT || '',
+  BASE: 'http://memgpt.localhost',
   CREDENTIALS: 'include',
   ENCODE_PATH: undefined,
-  HEADERS: {
-    Authorization: `Bearer password`,
-  },
+  HEADERS: undefined,
   PASSWORD: undefined,
   TOKEN: undefined,
   USERNAME: undefined,
-  VERSION: '0.1.0',
+  VERSION: '1.0.0',
   WITH_CREDENTIALS: false,
   interceptors: {
     request: new Interceptors(),

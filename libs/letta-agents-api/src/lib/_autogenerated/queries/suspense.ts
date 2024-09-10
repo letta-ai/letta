@@ -4,97 +4,17 @@ import { UseQueryOptions, useSuspenseQuery } from '@tanstack/react-query';
 import {
   AdminService,
   AgentsService,
-  BlockService,
-  ConfigService,
+  BlocksService,
   JobsService,
+  LlmsService,
   ModelsService,
   SourcesService,
   ToolsService,
+  UsersService,
 } from '../requests/services.gen';
 import * as Common from './common';
-export const useAdminServiceGetAllUsersAdminUsersGetSuspense = <
-  TData = Common.AdminServiceGetAllUsersAdminUsersGetDefaultResponse,
-  TError = unknown,
-  TQueryKey extends Array<unknown> = unknown[]
->(
-  {
-    cursor,
-    limit,
-  }: {
-    cursor?: string;
-    limit?: number;
-  } = {},
-  queryKey?: TQueryKey,
-  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
-) =>
-  useSuspenseQuery<TData, TError>({
-    queryKey: Common.UseAdminServiceGetAllUsersAdminUsersGetKeyFn(
-      { cursor, limit },
-      queryKey
-    ),
-    queryFn: () =>
-      AdminService.getAllUsersAdminUsersGet({ cursor, limit }) as TData,
-    ...options,
-  });
-export const useAdminServiceGetApiKeysAdminUsersKeysGetSuspense = <
-  TData = Common.AdminServiceGetApiKeysAdminUsersKeysGetDefaultResponse,
-  TError = unknown,
-  TQueryKey extends Array<unknown> = unknown[]
->(
-  {
-    userId,
-  }: {
-    userId: string;
-  },
-  queryKey?: TQueryKey,
-  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
-) =>
-  useSuspenseQuery<TData, TError>({
-    queryKey: Common.UseAdminServiceGetApiKeysAdminUsersKeysGetKeyFn(
-      { userId },
-      queryKey
-    ),
-    queryFn: () =>
-      AdminService.getApiKeysAdminUsersKeysGet({ userId }) as TData,
-    ...options,
-  });
-export const useToolsServiceGetToolAdminToolsToolNameGetSuspense = <
-  TData = Common.ToolsServiceGetToolAdminToolsToolNameGetDefaultResponse,
-  TError = unknown,
-  TQueryKey extends Array<unknown> = unknown[]
->(
-  {
-    toolName,
-  }: {
-    toolName: string;
-  },
-  queryKey?: TQueryKey,
-  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
-) =>
-  useSuspenseQuery<TData, TError>({
-    queryKey: Common.UseToolsServiceGetToolAdminToolsToolNameGetKeyFn(
-      { toolName },
-      queryKey
-    ),
-    queryFn: () =>
-      ToolsService.getToolAdminToolsToolNameGet({ toolName }) as TData,
-    ...options,
-  });
-export const useToolsServiceListAllToolsAdminToolsGetSuspense = <
-  TData = Common.ToolsServiceListAllToolsAdminToolsGetDefaultResponse,
-  TError = unknown,
-  TQueryKey extends Array<unknown> = unknown[]
->(
-  queryKey?: TQueryKey,
-  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
-) =>
-  useSuspenseQuery<TData, TError>({
-    queryKey: Common.UseToolsServiceListAllToolsAdminToolsGetKeyFn(queryKey),
-    queryFn: () => ToolsService.listAllToolsAdminToolsGet() as TData,
-    ...options,
-  });
-export const useToolsServiceGetToolApiToolsToolIdGetSuspense = <
-  TData = Common.ToolsServiceGetToolApiToolsToolIdGetDefaultResponse,
+export const useToolsServiceGetToolSuspense = <
+  TData = Common.ToolsServiceGetToolDefaultResponse,
   TError = unknown,
   TQueryKey extends Array<unknown> = unknown[]
 >(
@@ -107,15 +27,12 @@ export const useToolsServiceGetToolApiToolsToolIdGetSuspense = <
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
 ) =>
   useSuspenseQuery<TData, TError>({
-    queryKey: Common.UseToolsServiceGetToolApiToolsToolIdGetKeyFn(
-      { toolId },
-      queryKey
-    ),
-    queryFn: () => ToolsService.getToolApiToolsToolIdGet({ toolId }) as TData,
+    queryKey: Common.UseToolsServiceGetToolKeyFn({ toolId }, queryKey),
+    queryFn: () => ToolsService.getTool({ toolId }) as TData,
     ...options,
   });
-export const useToolsServiceGetToolIdApiToolsNameToolNameGetSuspense = <
-  TData = Common.ToolsServiceGetToolIdApiToolsNameToolNameGetDefaultResponse,
+export const useToolsServiceGetToolIdByNameSuspense = <
+  TData = Common.ToolsServiceGetToolIdByNameDefaultResponse,
   TError = unknown,
   TQueryKey extends Array<unknown> = unknown[]
 >(
@@ -128,16 +45,15 @@ export const useToolsServiceGetToolIdApiToolsNameToolNameGetSuspense = <
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
 ) =>
   useSuspenseQuery<TData, TError>({
-    queryKey: Common.UseToolsServiceGetToolIdApiToolsNameToolNameGetKeyFn(
+    queryKey: Common.UseToolsServiceGetToolIdByNameKeyFn(
       { toolName },
       queryKey
     ),
-    queryFn: () =>
-      ToolsService.getToolIdApiToolsNameToolNameGet({ toolName }) as TData,
+    queryFn: () => ToolsService.getToolIdByName({ toolName }) as TData,
     ...options,
   });
-export const useToolsServiceListAllToolsApiToolsGetSuspense = <
-  TData = Common.ToolsServiceListAllToolsApiToolsGetDefaultResponse,
+export const useToolsServiceListToolsSuspense = <
+  TData = Common.ToolsServiceListToolsDefaultResponse,
   TError = unknown,
   TQueryKey extends Array<unknown> = unknown[]
 >(
@@ -145,12 +61,51 @@ export const useToolsServiceListAllToolsApiToolsGetSuspense = <
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
 ) =>
   useSuspenseQuery<TData, TError>({
-    queryKey: Common.UseToolsServiceListAllToolsApiToolsGetKeyFn(queryKey),
-    queryFn: () => ToolsService.listAllToolsApiToolsGet() as TData,
+    queryKey: Common.UseToolsServiceListToolsKeyFn(queryKey),
+    queryFn: () => ToolsService.listTools() as TData,
     ...options,
   });
-export const useAgentsServiceGetAllAgentsApiAdminAgentsGetSuspense = <
-  TData = Common.AgentsServiceGetAllAgentsApiAdminAgentsGetDefaultResponse,
+export const useSourcesServiceGetSourceSuspense = <
+  TData = Common.SourcesServiceGetSourceDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[]
+>(
+  {
+    sourceId,
+  }: {
+    sourceId: string;
+  },
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
+) =>
+  useSuspenseQuery<TData, TError>({
+    queryKey: Common.UseSourcesServiceGetSourceKeyFn({ sourceId }, queryKey),
+    queryFn: () => SourcesService.getSource({ sourceId }) as TData,
+    ...options,
+  });
+export const useSourcesServiceGetSourceIdByNameSuspense = <
+  TData = Common.SourcesServiceGetSourceIdByNameDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[]
+>(
+  {
+    sourceName,
+  }: {
+    sourceName: string;
+  },
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
+) =>
+  useSuspenseQuery<TData, TError>({
+    queryKey: Common.UseSourcesServiceGetSourceIdByNameKeyFn(
+      { sourceName },
+      queryKey
+    ),
+    queryFn: () => SourcesService.getSourceIdByName({ sourceName }) as TData,
+    ...options,
+  });
+export const useSourcesServiceListSourcesSuspense = <
+  TData = Common.SourcesServiceListSourcesDefaultResponse,
   TError = unknown,
   TQueryKey extends Array<unknown> = unknown[]
 >(
@@ -158,13 +113,54 @@ export const useAgentsServiceGetAllAgentsApiAdminAgentsGetSuspense = <
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
 ) =>
   useSuspenseQuery<TData, TError>({
-    queryKey:
-      Common.UseAgentsServiceGetAllAgentsApiAdminAgentsGetKeyFn(queryKey),
-    queryFn: () => AgentsService.getAllAgentsApiAdminAgentsGet() as TData,
+    queryKey: Common.UseSourcesServiceListSourcesKeyFn(queryKey),
+    queryFn: () => SourcesService.listSources() as TData,
     ...options,
   });
-export const useAgentsServiceListAgentsApiAgentsGetSuspense = <
-  TData = Common.AgentsServiceListAgentsApiAgentsGetDefaultResponse,
+export const useSourcesServiceListSourcePassagesSuspense = <
+  TData = Common.SourcesServiceListSourcePassagesDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[]
+>(
+  {
+    sourceId,
+  }: {
+    sourceId: string;
+  },
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
+) =>
+  useSuspenseQuery<TData, TError>({
+    queryKey: Common.UseSourcesServiceListSourcePassagesKeyFn(
+      { sourceId },
+      queryKey
+    ),
+    queryFn: () => SourcesService.listSourcePassages({ sourceId }) as TData,
+    ...options,
+  });
+export const useSourcesServiceListSourceDocumentsSuspense = <
+  TData = Common.SourcesServiceListSourceDocumentsDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[]
+>(
+  {
+    sourceId,
+  }: {
+    sourceId: string;
+  },
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
+) =>
+  useSuspenseQuery<TData, TError>({
+    queryKey: Common.UseSourcesServiceListSourceDocumentsKeyFn(
+      { sourceId },
+      queryKey
+    ),
+    queryFn: () => SourcesService.listSourceDocuments({ sourceId }) as TData,
+    ...options,
+  });
+export const useAgentsServiceListAgentsSuspense = <
+  TData = Common.AgentsServiceListAgentsDefaultResponse,
   TError = unknown,
   TQueryKey extends Array<unknown> = unknown[]
 >(
@@ -172,12 +168,12 @@ export const useAgentsServiceListAgentsApiAgentsGetSuspense = <
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
 ) =>
   useSuspenseQuery<TData, TError>({
-    queryKey: Common.UseAgentsServiceListAgentsApiAgentsGetKeyFn(queryKey),
-    queryFn: () => AgentsService.listAgentsApiAgentsGet() as TData,
+    queryKey: Common.UseAgentsServiceListAgentsKeyFn(queryKey),
+    queryFn: () => AgentsService.listAgents() as TData,
     ...options,
   });
-export const useAgentsServiceGetAgentStateApiAgentsAgentIdGetSuspense = <
-  TData = Common.AgentsServiceGetAgentStateApiAgentsAgentIdGetDefaultResponse,
+export const useAgentsServiceGetAgentSuspense = <
+  TData = Common.AgentsServiceGetAgentDefaultResponse,
   TError = unknown,
   TQueryKey extends Array<unknown> = unknown[]
 >(
@@ -190,68 +186,55 @@ export const useAgentsServiceGetAgentStateApiAgentsAgentIdGetSuspense = <
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
 ) =>
   useSuspenseQuery<TData, TError>({
-    queryKey: Common.UseAgentsServiceGetAgentStateApiAgentsAgentIdGetKeyFn(
+    queryKey: Common.UseAgentsServiceGetAgentKeyFn({ agentId }, queryKey),
+    queryFn: () => AgentsService.getAgent({ agentId }) as TData,
+    ...options,
+  });
+export const useAgentsServiceGetAgentSourcesSuspense = <
+  TData = Common.AgentsServiceGetAgentSourcesDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[]
+>(
+  {
+    agentId,
+  }: {
+    agentId: string;
+  },
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
+) =>
+  useSuspenseQuery<TData, TError>({
+    queryKey: Common.UseAgentsServiceGetAgentSourcesKeyFn(
+      { agentId },
+      queryKey
+    ),
+    queryFn: () => AgentsService.getAgentSources({ agentId }) as TData,
+    ...options,
+  });
+export const useAgentsServiceListAgentInContextMessagesSuspense = <
+  TData = Common.AgentsServiceListAgentInContextMessagesDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[]
+>(
+  {
+    agentId,
+  }: {
+    agentId: string;
+  },
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
+) =>
+  useSuspenseQuery<TData, TError>({
+    queryKey: Common.UseAgentsServiceListAgentInContextMessagesKeyFn(
       { agentId },
       queryKey
     ),
     queryFn: () =>
-      AgentsService.getAgentStateApiAgentsAgentIdGet({ agentId }) as TData,
+      AgentsService.listAgentInContextMessages({ agentId }) as TData,
     ...options,
   });
-export const useAgentsServiceGetAgentSourcesApiAgentsAgentIdSourcesGetSuspense =
-  <
-    TData = Common.AgentsServiceGetAgentSourcesApiAgentsAgentIdSourcesGetDefaultResponse,
-    TError = unknown,
-    TQueryKey extends Array<unknown> = unknown[]
-  >(
-    {
-      agentId,
-    }: {
-      agentId: string;
-    },
-    queryKey?: TQueryKey,
-    options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
-  ) =>
-    useSuspenseQuery<TData, TError>({
-      queryKey:
-        Common.UseAgentsServiceGetAgentSourcesApiAgentsAgentIdSourcesGetKeyFn(
-          { agentId },
-          queryKey
-        ),
-      queryFn: () =>
-        AgentsService.getAgentSourcesApiAgentsAgentIdSourcesGet({
-          agentId,
-        }) as TData,
-      ...options,
-    });
-export const useAgentsServiceGetAgentInContextMessagesApiAgentsAgentIdMemoryMessagesGetSuspense =
-  <
-    TData = Common.AgentsServiceGetAgentInContextMessagesApiAgentsAgentIdMemoryMessagesGetDefaultResponse,
-    TError = unknown,
-    TQueryKey extends Array<unknown> = unknown[]
-  >(
-    {
-      agentId,
-    }: {
-      agentId: string;
-    },
-    queryKey?: TQueryKey,
-    options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
-  ) =>
-    useSuspenseQuery<TData, TError>({
-      queryKey:
-        Common.UseAgentsServiceGetAgentInContextMessagesApiAgentsAgentIdMemoryMessagesGetKeyFn(
-          { agentId },
-          queryKey
-        ),
-      queryFn: () =>
-        AgentsService.getAgentInContextMessagesApiAgentsAgentIdMemoryMessagesGet(
-          { agentId }
-        ) as TData,
-      ...options,
-    });
-export const useAgentsServiceGetAgentMemoryApiAgentsAgentIdMemoryGetSuspense = <
-  TData = Common.AgentsServiceGetAgentMemoryApiAgentsAgentIdMemoryGetDefaultResponse,
+export const useAgentsServiceGetAgentMemorySuspense = <
+  TData = Common.AgentsServiceGetAgentMemoryDefaultResponse,
   TError = unknown,
   TQueryKey extends Array<unknown> = unknown[]
 >(
@@ -264,168 +247,174 @@ export const useAgentsServiceGetAgentMemoryApiAgentsAgentIdMemoryGetSuspense = <
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
 ) =>
   useSuspenseQuery<TData, TError>({
-    queryKey:
-      Common.UseAgentsServiceGetAgentMemoryApiAgentsAgentIdMemoryGetKeyFn(
-        { agentId },
-        queryKey
-      ),
+    queryKey: Common.UseAgentsServiceGetAgentMemoryKeyFn({ agentId }, queryKey),
+    queryFn: () => AgentsService.getAgentMemory({ agentId }) as TData,
+    ...options,
+  });
+export const useAgentsServiceGetAgentRecallMemorySummarySuspense = <
+  TData = Common.AgentsServiceGetAgentRecallMemorySummaryDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[]
+>(
+  {
+    agentId,
+  }: {
+    agentId: string;
+  },
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
+) =>
+  useSuspenseQuery<TData, TError>({
+    queryKey: Common.UseAgentsServiceGetAgentRecallMemorySummaryKeyFn(
+      { agentId },
+      queryKey
+    ),
     queryFn: () =>
-      AgentsService.getAgentMemoryApiAgentsAgentIdMemoryGet({
+      AgentsService.getAgentRecallMemorySummary({ agentId }) as TData,
+    ...options,
+  });
+export const useAgentsServiceGetAgentArchivalMemorySummarySuspense = <
+  TData = Common.AgentsServiceGetAgentArchivalMemorySummaryDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[]
+>(
+  {
+    agentId,
+  }: {
+    agentId: string;
+  },
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
+) =>
+  useSuspenseQuery<TData, TError>({
+    queryKey: Common.UseAgentsServiceGetAgentArchivalMemorySummaryKeyFn(
+      { agentId },
+      queryKey
+    ),
+    queryFn: () =>
+      AgentsService.getAgentArchivalMemorySummary({ agentId }) as TData,
+    ...options,
+  });
+export const useAgentsServiceListAgentArchivalMemorySuspense = <
+  TData = Common.AgentsServiceListAgentArchivalMemoryDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[]
+>(
+  {
+    after,
+    agentId,
+    before,
+    limit,
+  }: {
+    after?: number;
+    agentId: string;
+    before?: number;
+    limit?: number;
+  },
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
+) =>
+  useSuspenseQuery<TData, TError>({
+    queryKey: Common.UseAgentsServiceListAgentArchivalMemoryKeyFn(
+      { after, agentId, before, limit },
+      queryKey
+    ),
+    queryFn: () =>
+      AgentsService.listAgentArchivalMemory({
+        after,
         agentId,
+        before,
+        limit,
       }) as TData,
     ...options,
   });
-export const useAgentsServiceGetAgentRecallMemorySummaryApiAgentsAgentIdMemoryRecallGetSuspense =
-  <
-    TData = Common.AgentsServiceGetAgentRecallMemorySummaryApiAgentsAgentIdMemoryRecallGetDefaultResponse,
-    TError = unknown,
-    TQueryKey extends Array<unknown> = unknown[]
-  >(
-    {
-      agentId,
-    }: {
-      agentId: string;
-    },
-    queryKey?: TQueryKey,
-    options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
-  ) =>
-    useSuspenseQuery<TData, TError>({
-      queryKey:
-        Common.UseAgentsServiceGetAgentRecallMemorySummaryApiAgentsAgentIdMemoryRecallGetKeyFn(
-          { agentId },
-          queryKey
-        ),
-      queryFn: () =>
-        AgentsService.getAgentRecallMemorySummaryApiAgentsAgentIdMemoryRecallGet(
-          { agentId }
-        ) as TData,
-      ...options,
-    });
-export const useAgentsServiceGetAgentArchivalMemorySummaryApiAgentsAgentIdMemoryArchivalGetSuspense =
-  <
-    TData = Common.AgentsServiceGetAgentArchivalMemorySummaryApiAgentsAgentIdMemoryArchivalGetDefaultResponse,
-    TError = unknown,
-    TQueryKey extends Array<unknown> = unknown[]
-  >(
-    {
-      agentId,
-    }: {
-      agentId: string;
-    },
-    queryKey?: TQueryKey,
-    options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
-  ) =>
-    useSuspenseQuery<TData, TError>({
-      queryKey:
-        Common.UseAgentsServiceGetAgentArchivalMemorySummaryApiAgentsAgentIdMemoryArchivalGetKeyFn(
-          { agentId },
-          queryKey
-        ),
-      queryFn: () =>
-        AgentsService.getAgentArchivalMemorySummaryApiAgentsAgentIdMemoryArchivalGet(
-          { agentId }
-        ) as TData,
-      ...options,
-    });
-export const useAgentsServiceGetAgentArchivalMemoryApiAgentsAgentIdArchivalGetSuspense =
-  <
-    TData = Common.AgentsServiceGetAgentArchivalMemoryApiAgentsAgentIdArchivalGetDefaultResponse,
-    TError = unknown,
-    TQueryKey extends Array<unknown> = unknown[]
-  >(
-    {
-      after,
-      agentId,
-      before,
-      limit,
-    }: {
-      after?: number;
-      agentId: string;
-      before?: number;
-      limit?: number;
-    },
-    queryKey?: TQueryKey,
-    options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
-  ) =>
-    useSuspenseQuery<TData, TError>({
-      queryKey:
-        Common.UseAgentsServiceGetAgentArchivalMemoryApiAgentsAgentIdArchivalGetKeyFn(
-          { after, agentId, before, limit },
-          queryKey
-        ),
-      queryFn: () =>
-        AgentsService.getAgentArchivalMemoryApiAgentsAgentIdArchivalGet({
-          after,
-          agentId,
-          before,
-          limit,
-        }) as TData,
-      ...options,
-    });
-export const useAgentsServiceGetAgentMessagesInContextApiAgentsAgentIdMessagesContextGetSuspense =
-  <
-    TData = Common.AgentsServiceGetAgentMessagesInContextApiAgentsAgentIdMessagesContextGetDefaultResponse,
-    TError = unknown,
-    TQueryKey extends Array<unknown> = unknown[]
-  >(
-    {
-      agentId,
-      count,
-      start,
-    }: {
-      agentId: string;
-      count: number;
-      start: number;
-    },
-    queryKey?: TQueryKey,
-    options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
-  ) =>
-    useSuspenseQuery<TData, TError>({
-      queryKey:
-        Common.UseAgentsServiceGetAgentMessagesInContextApiAgentsAgentIdMessagesContextGetKeyFn(
-          { agentId, count, start },
-          queryKey
-        ),
-      queryFn: () =>
-        AgentsService.getAgentMessagesInContextApiAgentsAgentIdMessagesContextGet(
-          { agentId, count, start }
-        ) as TData,
-      ...options,
-    });
-export const useAgentsServiceGetAgentMessagesApiAgentsAgentIdMessagesGetSuspense =
-  <
-    TData = Common.AgentsServiceGetAgentMessagesApiAgentsAgentIdMessagesGetDefaultResponse,
-    TError = unknown,
-    TQueryKey extends Array<unknown> = unknown[]
-  >(
-    {
-      agentId,
-      before,
-      limit,
-    }: {
-      agentId: string;
-      before?: string;
-      limit?: number;
-    },
-    queryKey?: TQueryKey,
-    options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
-  ) =>
-    useSuspenseQuery<TData, TError>({
-      queryKey:
-        Common.UseAgentsServiceGetAgentMessagesApiAgentsAgentIdMessagesGetKeyFn(
-          { agentId, before, limit },
-          queryKey
-        ),
-      queryFn: () =>
-        AgentsService.getAgentMessagesApiAgentsAgentIdMessagesGet({
-          agentId,
-          before,
-          limit,
-        }) as TData,
-      ...options,
-    });
-export const useBlockServiceListBlocksApiBlocksGetSuspense = <
-  TData = Common.BlockServiceListBlocksApiBlocksGetDefaultResponse,
+export const useAgentsServiceListAgentMessagesSuspense = <
+  TData = Common.AgentsServiceListAgentMessagesDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[]
+>(
+  {
+    agentId,
+    before,
+    limit,
+    msgObject,
+  }: {
+    agentId: string;
+    before?: string;
+    limit?: number;
+    msgObject?: boolean;
+  },
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
+) =>
+  useSuspenseQuery<TData, TError>({
+    queryKey: Common.UseAgentsServiceListAgentMessagesKeyFn(
+      { agentId, before, limit, msgObject },
+      queryKey
+    ),
+    queryFn: () =>
+      AgentsService.listAgentMessages({
+        agentId,
+        before,
+        limit,
+        msgObject,
+      }) as TData,
+    ...options,
+  });
+export const useModelsServiceListModelsSuspense = <
+  TData = Common.ModelsServiceListModelsDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[]
+>(
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
+) =>
+  useSuspenseQuery<TData, TError>({
+    queryKey: Common.UseModelsServiceListModelsKeyFn(queryKey),
+    queryFn: () => ModelsService.listModels() as TData,
+    ...options,
+  });
+export const useModelsServiceListEmbeddingModelsSuspense = <
+  TData = Common.ModelsServiceListEmbeddingModelsDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[]
+>(
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
+) =>
+  useSuspenseQuery<TData, TError>({
+    queryKey: Common.UseModelsServiceListEmbeddingModelsKeyFn(queryKey),
+    queryFn: () => ModelsService.listEmbeddingModels() as TData,
+    ...options,
+  });
+export const useLlmsServiceListModelsSuspense = <
+  TData = Common.LlmsServiceListModelsDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[]
+>(
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
+) =>
+  useSuspenseQuery<TData, TError>({
+    queryKey: Common.UseLlmsServiceListModelsKeyFn(queryKey),
+    queryFn: () => LlmsService.listModels() as TData,
+    ...options,
+  });
+export const useLlmsServiceListEmbeddingModelsSuspense = <
+  TData = Common.LlmsServiceListEmbeddingModelsDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[]
+>(
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
+) =>
+  useSuspenseQuery<TData, TError>({
+    queryKey: Common.UseLlmsServiceListEmbeddingModelsKeyFn(queryKey),
+    queryFn: () => LlmsService.listEmbeddingModels() as TData,
+    ...options,
+  });
+export const useBlocksServiceListMemoryBlocksSuspense = <
+  TData = Common.BlocksServiceListMemoryBlocksDefaultResponse,
   TError = unknown,
   TQueryKey extends Array<unknown> = unknown[]
 >(
@@ -442,20 +431,16 @@ export const useBlockServiceListBlocksApiBlocksGetSuspense = <
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
 ) =>
   useSuspenseQuery<TData, TError>({
-    queryKey: Common.UseBlockServiceListBlocksApiBlocksGetKeyFn(
+    queryKey: Common.UseBlocksServiceListMemoryBlocksKeyFn(
       { label, name, templatesOnly },
       queryKey
     ),
     queryFn: () =>
-      BlockService.listBlocksApiBlocksGet({
-        label,
-        name,
-        templatesOnly,
-      }) as TData,
+      BlocksService.listMemoryBlocks({ label, name, templatesOnly }) as TData,
     ...options,
   });
-export const useBlockServiceGetBlockApiBlocksBlockIdGetSuspense = <
-  TData = Common.BlockServiceGetBlockApiBlocksBlockIdGetDefaultResponse,
+export const useBlocksServiceGetMemoryBlockSuspense = <
+  TData = Common.BlocksServiceGetMemoryBlockDefaultResponse,
   TError = unknown,
   TQueryKey extends Array<unknown> = unknown[]
 >(
@@ -468,16 +453,12 @@ export const useBlockServiceGetBlockApiBlocksBlockIdGetSuspense = <
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
 ) =>
   useSuspenseQuery<TData, TError>({
-    queryKey: Common.UseBlockServiceGetBlockApiBlocksBlockIdGetKeyFn(
-      { blockId },
-      queryKey
-    ),
-    queryFn: () =>
-      BlockService.getBlockApiBlocksBlockIdGet({ blockId }) as TData,
+    queryKey: Common.UseBlocksServiceGetMemoryBlockKeyFn({ blockId }, queryKey),
+    queryFn: () => BlocksService.getMemoryBlock({ blockId }) as TData,
     ...options,
   });
-export const useJobsServiceListJobsApiJobsGetSuspense = <
-  TData = Common.JobsServiceListJobsApiJobsGetDefaultResponse,
+export const useJobsServiceListJobsSuspense = <
+  TData = Common.JobsServiceListJobsDefaultResponse,
   TError = unknown,
   TQueryKey extends Array<unknown> = unknown[]
 >(
@@ -485,12 +466,12 @@ export const useJobsServiceListJobsApiJobsGetSuspense = <
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
 ) =>
   useSuspenseQuery<TData, TError>({
-    queryKey: Common.UseJobsServiceListJobsApiJobsGetKeyFn(queryKey),
-    queryFn: () => JobsService.listJobsApiJobsGet() as TData,
+    queryKey: Common.UseJobsServiceListJobsKeyFn(queryKey),
+    queryFn: () => JobsService.listJobs() as TData,
     ...options,
   });
-export const useJobsServiceListActiveJobsApiJobsActiveGetSuspense = <
-  TData = Common.JobsServiceListActiveJobsApiJobsActiveGetDefaultResponse,
+export const useJobsServiceListActiveJobsSuspense = <
+  TData = Common.JobsServiceListActiveJobsDefaultResponse,
   TError = unknown,
   TQueryKey extends Array<unknown> = unknown[]
 >(
@@ -498,13 +479,12 @@ export const useJobsServiceListActiveJobsApiJobsActiveGetSuspense = <
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
 ) =>
   useSuspenseQuery<TData, TError>({
-    queryKey:
-      Common.UseJobsServiceListActiveJobsApiJobsActiveGetKeyFn(queryKey),
-    queryFn: () => JobsService.listActiveJobsApiJobsActiveGet() as TData,
+    queryKey: Common.UseJobsServiceListActiveJobsKeyFn(queryKey),
+    queryFn: () => JobsService.listActiveJobs() as TData,
     ...options,
   });
-export const useJobsServiceGetJobApiJobsJobIdGetSuspense = <
-  TData = Common.JobsServiceGetJobApiJobsJobIdGetDefaultResponse,
+export const useJobsServiceGetJobSuspense = <
+  TData = Common.JobsServiceGetJobDefaultResponse,
   TError = unknown,
   TQueryKey extends Array<unknown> = unknown[]
 >(
@@ -517,190 +497,83 @@ export const useJobsServiceGetJobApiJobsJobIdGetSuspense = <
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
 ) =>
   useSuspenseQuery<TData, TError>({
-    queryKey: Common.UseJobsServiceGetJobApiJobsJobIdGetKeyFn(
-      { jobId },
-      queryKey
-    ),
-    queryFn: () => JobsService.getJobApiJobsJobIdGet({ jobId }) as TData,
+    queryKey: Common.UseJobsServiceGetJobKeyFn({ jobId }, queryKey),
+    queryFn: () => JobsService.getJob({ jobId }) as TData,
     ...options,
   });
-export const useModelsServiceListModelsApiModelsGetSuspense = <
-  TData = Common.ModelsServiceListModelsApiModelsGetDefaultResponse,
-  TError = unknown,
-  TQueryKey extends Array<unknown> = unknown[]
->(
-  queryKey?: TQueryKey,
-  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
-) =>
-  useSuspenseQuery<TData, TError>({
-    queryKey: Common.UseModelsServiceListModelsApiModelsGetKeyFn(queryKey),
-    queryFn: () => ModelsService.listModelsApiModelsGet() as TData,
-    ...options,
-  });
-export const useSourcesServiceGetSourceApiSourcesSourceIdGetSuspense = <
-  TData = Common.SourcesServiceGetSourceApiSourcesSourceIdGetDefaultResponse,
+export const useUsersServiceListUsersSuspense = <
+  TData = Common.UsersServiceListUsersDefaultResponse,
   TError = unknown,
   TQueryKey extends Array<unknown> = unknown[]
 >(
   {
-    sourceId,
+    cursor,
+    limit,
   }: {
-    sourceId: string;
+    cursor?: string;
+    limit?: number;
+  } = {},
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
+) =>
+  useSuspenseQuery<TData, TError>({
+    queryKey: Common.UseUsersServiceListUsersKeyFn({ cursor, limit }, queryKey),
+    queryFn: () => UsersService.listUsers({ cursor, limit }) as TData,
+    ...options,
+  });
+export const useUsersServiceListApiKeysSuspense = <
+  TData = Common.UsersServiceListApiKeysDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[]
+>(
+  {
+    userId,
+  }: {
+    userId: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
 ) =>
   useSuspenseQuery<TData, TError>({
-    queryKey: Common.UseSourcesServiceGetSourceApiSourcesSourceIdGetKeyFn(
-      { sourceId },
-      queryKey
-    ),
-    queryFn: () =>
-      SourcesService.getSourceApiSourcesSourceIdGet({ sourceId }) as TData,
+    queryKey: Common.UseUsersServiceListApiKeysKeyFn({ userId }, queryKey),
+    queryFn: () => UsersService.listApiKeys({ userId }) as TData,
     ...options,
   });
-export const useSourcesServiceGetSourceIdByNameApiSourcesNameSourceNameGetSuspense =
-  <
-    TData = Common.SourcesServiceGetSourceIdByNameApiSourcesNameSourceNameGetDefaultResponse,
-    TError = unknown,
-    TQueryKey extends Array<unknown> = unknown[]
-  >(
-    {
-      sourceName,
-    }: {
-      sourceName: string;
-    },
-    queryKey?: TQueryKey,
-    options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
-  ) =>
-    useSuspenseQuery<TData, TError>({
-      queryKey:
-        Common.UseSourcesServiceGetSourceIdByNameApiSourcesNameSourceNameGetKeyFn(
-          { sourceName },
-          queryKey
-        ),
-      queryFn: () =>
-        SourcesService.getSourceIdByNameApiSourcesNameSourceNameGet({
-          sourceName,
-        }) as TData,
-      ...options,
-    });
-export const useSourcesServiceListSourcesApiSourcesGetSuspense = <
-  TData = Common.SourcesServiceListSourcesApiSourcesGetDefaultResponse,
-  TError = unknown,
-  TQueryKey extends Array<unknown> = unknown[]
->(
-  queryKey?: TQueryKey,
-  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
-) =>
-  useSuspenseQuery<TData, TError>({
-    queryKey: Common.UseSourcesServiceListSourcesApiSourcesGetKeyFn(queryKey),
-    queryFn: () => SourcesService.listSourcesApiSourcesGet() as TData,
-    ...options,
-  });
-export const useSourcesServiceGetJobApiSourcesStatusJobIdGetSuspense = <
-  TData = Common.SourcesServiceGetJobApiSourcesStatusJobIdGetDefaultResponse,
+export const useAdminServiceListUsersSuspense = <
+  TData = Common.AdminServiceListUsersDefaultResponse,
   TError = unknown,
   TQueryKey extends Array<unknown> = unknown[]
 >(
   {
-    jobId,
+    cursor,
+    limit,
   }: {
-    jobId: string;
+    cursor?: string;
+    limit?: number;
+  } = {},
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
+) =>
+  useSuspenseQuery<TData, TError>({
+    queryKey: Common.UseAdminServiceListUsersKeyFn({ cursor, limit }, queryKey),
+    queryFn: () => AdminService.listUsers({ cursor, limit }) as TData,
+    ...options,
+  });
+export const useAdminServiceListApiKeysSuspense = <
+  TData = Common.AdminServiceListApiKeysDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[]
+>(
+  {
+    userId,
+  }: {
+    userId: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
 ) =>
   useSuspenseQuery<TData, TError>({
-    queryKey: Common.UseSourcesServiceGetJobApiSourcesStatusJobIdGetKeyFn(
-      { jobId },
-      queryKey
-    ),
-    queryFn: () =>
-      SourcesService.getJobApiSourcesStatusJobIdGet({ jobId }) as TData,
+    queryKey: Common.UseAdminServiceListApiKeysKeyFn({ userId }, queryKey),
+    queryFn: () => AdminService.listApiKeys({ userId }) as TData,
     ...options,
   });
-export const useSourcesServiceListPassagesApiSourcesSourceIdPassagesGetSuspense =
-  <
-    TData = Common.SourcesServiceListPassagesApiSourcesSourceIdPassagesGetDefaultResponse,
-    TError = unknown,
-    TQueryKey extends Array<unknown> = unknown[]
-  >(
-    {
-      sourceId,
-    }: {
-      sourceId: string;
-    },
-    queryKey?: TQueryKey,
-    options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
-  ) =>
-    useSuspenseQuery<TData, TError>({
-      queryKey:
-        Common.UseSourcesServiceListPassagesApiSourcesSourceIdPassagesGetKeyFn(
-          { sourceId },
-          queryKey
-        ),
-      queryFn: () =>
-        SourcesService.listPassagesApiSourcesSourceIdPassagesGet({
-          sourceId,
-        }) as TData,
-      ...options,
-    });
-export const useSourcesServiceListDocumentsApiSourcesSourceIdDocumentsGetSuspense =
-  <
-    TData = Common.SourcesServiceListDocumentsApiSourcesSourceIdDocumentsGetDefaultResponse,
-    TError = unknown,
-    TQueryKey extends Array<unknown> = unknown[]
-  >(
-    {
-      sourceId,
-    }: {
-      sourceId: string;
-    },
-    queryKey?: TQueryKey,
-    options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
-  ) =>
-    useSuspenseQuery<TData, TError>({
-      queryKey:
-        Common.UseSourcesServiceListDocumentsApiSourcesSourceIdDocumentsGetKeyFn(
-          { sourceId },
-          queryKey
-        ),
-      queryFn: () =>
-        SourcesService.listDocumentsApiSourcesSourceIdDocumentsGet({
-          sourceId,
-        }) as TData,
-      ...options,
-    });
-export const useConfigServiceGetLlmConfigsApiConfigLlmGetSuspense = <
-  TData = Common.ConfigServiceGetLlmConfigsApiConfigLlmGetDefaultResponse,
-  TError = unknown,
-  TQueryKey extends Array<unknown> = unknown[]
->(
-  queryKey?: TQueryKey,
-  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
-) =>
-  useSuspenseQuery<TData, TError>({
-    queryKey:
-      Common.UseConfigServiceGetLlmConfigsApiConfigLlmGetKeyFn(queryKey),
-    queryFn: () => ConfigService.getLlmConfigsApiConfigLlmGet() as TData,
-    ...options,
-  });
-export const useConfigServiceGetEmbeddingConfigsApiConfigEmbeddingGetSuspense =
-  <
-    TData = Common.ConfigServiceGetEmbeddingConfigsApiConfigEmbeddingGetDefaultResponse,
-    TError = unknown,
-    TQueryKey extends Array<unknown> = unknown[]
-  >(
-    queryKey?: TQueryKey,
-    options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
-  ) =>
-    useSuspenseQuery<TData, TError>({
-      queryKey:
-        Common.UseConfigServiceGetEmbeddingConfigsApiConfigEmbeddingGetKeyFn(
-          queryKey
-        ),
-      queryFn: () =>
-        ConfigService.getEmbeddingConfigsApiConfigEmbeddingGet() as TData,
-      ...options,
-    });

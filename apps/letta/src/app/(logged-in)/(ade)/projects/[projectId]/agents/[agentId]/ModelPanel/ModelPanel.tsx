@@ -16,8 +16,8 @@ import { useCurrentAgent } from '../hooks';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
-  useAgentsServiceUpdateAgentApiAgentsAgentIdPost,
-  useModelsServiceListModelsApiModelsGet,
+  useAgentsServiceUpdateAgent,
+  useModelsServiceListModels,
 } from '@letta-web/letta-agents-api';
 
 const modelSelectorSchema = z.object({
@@ -30,15 +30,15 @@ const modelSelectorSchema = z.object({
 export function ModelPanel() {
   const currentAgent = useCurrentAgent();
   const { mutate, isPending: isUpdateAgentModelPending } =
-    useAgentsServiceUpdateAgentApiAgentsAgentIdPost();
-  const { data: modelsList } = useModelsServiceListModelsApiModelsGet();
+    useAgentsServiceUpdateAgent();
+  const { data: modelsList } = useModelsServiceListModels();
 
   const formattedModelsList = useMemo(() => {
     if (!modelsList) {
       return [];
     }
 
-    return modelsList.models.map((model) => ({
+    return modelsList.map((model) => ({
       label: model.model,
       value: model.model,
     }));
@@ -60,7 +60,7 @@ export function ModelPanel() {
         return;
       }
 
-      const llmConfig = modelsList.models.find(
+      const llmConfig = modelsList.find(
         (model) => model.model === values.model.value
       );
 

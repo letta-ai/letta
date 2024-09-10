@@ -2,370 +2,24 @@
   "openapi": "3.1.0",
   "info": {
     "title": "MemGPT API",
-    "version": "0.1.0"
+    "summary": "Create LLM agents with long-term memory and custom tools \ud83d\udcda\ud83e\udd99",
+    "version": "1.0.0"
   },
   "paths": {
-    "/api/auth": {
-      "post": {
-        "tags": ["auth"],
-        "summary": "Authenticate User",
-        "description": "Authenticates the user and sends response with User related data.\n\nCurrently, this is a placeholder that simply returns a UUID placeholder",
-        "operationId": "authenticate_user_api_auth_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AuthRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AuthResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/admin/users": {
-      "get": {
-        "tags": ["admin"],
-        "summary": "Get All Users",
-        "description": "Get a list of all users in the database",
-        "operationId": "get_all_users_admin_users_get",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "cursor",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Cursor"
-            }
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "integer"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "default": 50,
-              "title": "Limit"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/User"
-                  },
-                  "title": "Response Get All Users Admin Users Get"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "tags": ["admin"],
-        "summary": "Create User",
-        "description": "Create a new user in the database",
-        "operationId": "create_user_admin_users_post",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UserCreate"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/User"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "delete": {
-        "tags": ["admin"],
-        "summary": "Delete User",
-        "operationId": "delete_user_admin_users_delete",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "user_id",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "description": "The user_id key to be deleted.",
-              "title": "User Id"
-            },
-            "description": "The user_id key to be deleted."
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/User"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/admin/users/keys": {
-      "post": {
-        "tags": ["admin"],
-        "summary": "Create New Api Key",
-        "description": "Create a new API key for a user",
-        "operationId": "create_new_api_key_admin_users_keys_post",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/APIKeyCreate"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/APIKey"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "get": {
-        "tags": ["admin"],
-        "summary": "Get Api Keys",
-        "description": "Get a list of all API keys for a user",
-        "operationId": "get_api_keys_admin_users_keys_get",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "user_id",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "description": "The unique identifier of the user.",
-              "title": "User Id"
-            },
-            "description": "The unique identifier of the user."
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/APIKey"
-                  },
-                  "title": "Response Get Api Keys Admin Users Keys Get"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "delete": {
-        "tags": ["admin"],
-        "summary": "Delete Api Key",
-        "operationId": "delete_api_key_admin_users_keys_delete",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "api_key",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "description": "The API key to be deleted.",
-              "title": "Api Key"
-            },
-            "description": "The API key to be deleted."
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/APIKey"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/admin/tools/{tool_name}": {
+    "/v1/tools/{tool_id}": {
       "delete": {
         "tags": ["tools"],
         "summary": "Delete Tool",
         "description": "Delete a tool by name",
-        "operationId": "delete_tool_admin_tools__tool_name__delete",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
+        "operationId": "delete_tool",
         "parameters": [
           {
-            "name": "tool_name",
+            "name": "tool_id",
             "in": "path",
             "required": true,
             "schema": {
               "type": "string",
-              "title": "Tool Name"
+              "title": "Tool Id"
             }
           }
         ],
@@ -393,21 +47,16 @@
       "get": {
         "tags": ["tools"],
         "summary": "Get Tool",
-        "description": "Get a tool by name",
-        "operationId": "get_tool_admin_tools__tool_name__get",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
+        "description": "Get a tool by ID",
+        "operationId": "get_tool",
         "parameters": [
           {
-            "name": "tool_name",
+            "name": "tool_id",
             "in": "path",
             "required": true,
             "schema": {
               "type": "string",
-              "title": "Tool Name"
+              "title": "Tool Id"
             }
           }
         ],
@@ -433,46 +82,32 @@
             }
           }
         }
-      }
-    },
-    "/admin/tools": {
-      "get": {
+      },
+      "patch": {
         "tags": ["tools"],
-        "summary": "List All Tools",
-        "description": "Get a list of all tools available to agents created by a user",
-        "operationId": "list_all_tools_admin_tools_get",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ListToolsResponse"
-                }
-              }
+        "summary": "Update Tool",
+        "description": "Update an existing tool",
+        "operationId": "update_tool",
+        "parameters": [
+          {
+            "name": "tool_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Tool Id"
             }
           }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ]
-      },
-      "post": {
-        "tags": ["tools"],
-        "summary": "Create Tool",
-        "description": "Create a new tool",
-        "operationId": "create_tool_admin_tools_post",
+        ],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateToolRequest"
+                "$ref": "#/components/schemas/ToolUpdate"
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "200": {
@@ -495,20 +130,300 @@
               }
             }
           }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ]
+        }
       }
     },
-    "/api/admin/agents": {
+    "/v1/tools/name/{tool_name}": {
       "get": {
-        "tags": ["agents"],
-        "summary": "Get All Agents",
-        "description": "Get a list of all agents in the database",
-        "operationId": "get_all_agents_api_admin_agents_get",
+        "tags": ["tools"],
+        "summary": "Get Tool Id",
+        "description": "Get a tool ID by name",
+        "operationId": "get_tool_id_by_name",
+        "parameters": [
+          {
+            "name": "tool_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Tool Name"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string",
+                  "title": "Response Get Tool Id By Name"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/tools/": {
+      "get": {
+        "tags": ["tools"],
+        "summary": "List All Tools",
+        "description": "Get a list of all tools available to agents created by a user",
+        "operationId": "list_tools",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Tool-Output"
+                  },
+                  "title": "Response List Tools"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["tools"],
+        "summary": "Create Tool",
+        "description": "Create a new tool",
+        "operationId": "create_tool",
+        "parameters": [
+          {
+            "name": "update",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Update"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ToolCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Tool-Output"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/sources/{source_id}": {
+      "get": {
+        "tags": ["sources"],
+        "summary": "Get Source",
+        "description": "Get all sources",
+        "operationId": "get_source",
+        "parameters": [
+          {
+            "name": "source_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Source Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Source"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": ["sources"],
+        "summary": "Update Source",
+        "description": "Update the name or documentation of an existing data source.",
+        "operationId": "update_source",
+        "parameters": [
+          {
+            "name": "source_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Source Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SourceUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Source"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["sources"],
+        "summary": "Delete Source",
+        "description": "Delete a data source.",
+        "operationId": "delete_source",
+        "parameters": [
+          {
+            "name": "source_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Source Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/sources/name/{source_name}": {
+      "get": {
+        "tags": ["sources"],
+        "summary": "Get Source Id By Name",
+        "description": "Get a source by name",
+        "operationId": "get_source_id_by_name",
+        "parameters": [
+          {
+            "name": "source_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Source Name"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string",
+                  "title": "Response Get Source Id By Name"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/sources/": {
+      "get": {
+        "tags": ["sources"],
+        "summary": "List Sources",
+        "description": "List all data sources created by a user.",
+        "operationId": "list_sources",
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -516,28 +431,304 @@
               "application/json": {
                 "schema": {
                   "items": {
-                    "$ref": "#/components/schemas/AgentState"
+                    "$ref": "#/components/schemas/Source"
                   },
                   "type": "array",
-                  "title": "Response Get All Agents Api Admin Agents Get"
+                  "title": "Response List Sources"
                 }
               }
             }
           }
+        }
+      },
+      "post": {
+        "tags": ["sources"],
+        "summary": "Create Source",
+        "description": "Create a new data source.",
+        "operationId": "create_source",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SourceCreate"
+              }
+            }
+          },
+          "required": true
         },
-        "security": [
-          {
-            "HTTPBearer": []
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Source"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
           }
-        ]
+        }
       }
     },
-    "/api/agents": {
+    "/v1/sources/{source_id}/attach": {
+      "post": {
+        "tags": ["sources"],
+        "summary": "Attach Source To Agent",
+        "description": "Attach a data source to an existing agent.",
+        "operationId": "attach_agent_to_source",
+        "parameters": [
+          {
+            "name": "source_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Source Id"
+            }
+          },
+          {
+            "name": "agent_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "The unique identifier of the agent to attach the source to.",
+              "title": "Agent Id"
+            },
+            "description": "The unique identifier of the agent to attach the source to."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Source"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/sources/{source_id}/detach": {
+      "post": {
+        "tags": ["sources"],
+        "summary": "Detach Source From Agent",
+        "description": "Detach a data source from an existing agent.",
+        "operationId": "detach_agent_from_source",
+        "parameters": [
+          {
+            "name": "source_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Source Id"
+            }
+          },
+          {
+            "name": "agent_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "The unique identifier of the agent to detach the source from.",
+              "title": "Agent Id"
+            },
+            "description": "The unique identifier of the agent to detach the source from."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/sources/{source_id}/upload": {
+      "post": {
+        "tags": ["sources"],
+        "summary": "Upload File To Source",
+        "description": "Upload a file to a data source.",
+        "operationId": "upload_file_to_source",
+        "parameters": [
+          {
+            "name": "source_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Source Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_file_to_source"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Job"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/sources/{source_id}/passages": {
+      "get": {
+        "tags": ["sources"],
+        "summary": "List Passages",
+        "description": "List all passages associated with a data source.",
+        "operationId": "list_source_passages",
+        "parameters": [
+          {
+            "name": "source_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Source Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Passage"
+                  },
+                  "title": "Response List Source Passages"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/sources/{source_id}/documents": {
+      "get": {
+        "tags": ["sources"],
+        "summary": "List Documents",
+        "description": "List all documents associated with a data source.",
+        "operationId": "list_source_documents",
+        "parameters": [
+          {
+            "name": "source_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Source Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Document"
+                  },
+                  "title": "Response List Source Documents"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/agents/": {
       "get": {
         "tags": ["agents"],
         "summary": "List Agents",
-        "description": "List all agents associated with a given user.\n\nThis endpoint retrieves a list of all agents and their configurations associated with the specified user ID.",
-        "operationId": "list_agents_api_agents_get",
+        "description": "List all agents associated with a given user.\nThis endpoint retrieves a list of all agents and their configurations associated with the specified user ID.",
+        "operationId": "list_agents",
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -548,23 +739,18 @@
                     "$ref": "#/components/schemas/AgentState"
                   },
                   "type": "array",
-                  "title": "Response List Agents Api Agents Get"
+                  "title": "Response List Agents"
                 }
               }
             }
           }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ]
+        }
       },
       "post": {
         "tags": ["agents"],
         "summary": "Create Agent",
         "description": "Create a new agent with the specified configuration.",
-        "operationId": "create_agent_api_agents_post",
+        "operationId": "create_agent",
         "requestBody": {
           "content": {
             "application/json": {
@@ -596,25 +782,15 @@
               }
             }
           }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ]
+        }
       }
     },
-    "/api/agents/{agent_id}": {
-      "post": {
+    "/v1/agents/{agent_id}": {
+      "patch": {
         "tags": ["agents"],
         "summary": "Update Agent",
         "description": "Update an exsiting agent",
-        "operationId": "update_agent_api_agents__agent_id__post",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
+        "operationId": "update_agent",
         "parameters": [
           {
             "name": "agent_id",
@@ -663,12 +839,7 @@
         "tags": ["agents"],
         "summary": "Get Agent State",
         "description": "Get the state of the agent.",
-        "operationId": "get_agent_state_api_agents__agent_id__get",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
+        "operationId": "get_agent",
         "parameters": [
           {
             "name": "agent_id",
@@ -707,12 +878,7 @@
         "tags": ["agents"],
         "summary": "Delete Agent",
         "description": "Delete an agent.",
-        "operationId": "delete_agent_api_agents__agent_id__delete",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
+        "operationId": "delete_agent",
         "parameters": [
           {
             "name": "agent_id",
@@ -746,17 +912,12 @@
         }
       }
     },
-    "/api/agents/{agent_id}/sources": {
+    "/v1/agents/{agent_id}/sources": {
       "get": {
         "tags": ["agents"],
         "summary": "Get Agent Sources",
         "description": "Get the sources associated with an agent.",
-        "operationId": "get_agent_sources_api_agents__agent_id__sources_get",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
+        "operationId": "get_agent_sources",
         "parameters": [
           {
             "name": "agent_id",
@@ -778,7 +939,7 @@
                   "items": {
                     "$ref": "#/components/schemas/Source"
                   },
-                  "title": "Response Get Agent Sources Api Agents  Agent Id  Sources Get"
+                  "title": "Response Get Agent Sources"
                 }
               }
             }
@@ -796,17 +957,12 @@
         }
       }
     },
-    "/api/agents/{agent_id}/memory/messages": {
+    "/v1/agents/{agent_id}/memory/messages": {
       "get": {
         "tags": ["agents"],
         "summary": "Get Agent In Context Messages",
         "description": "Retrieve the messages in the context of a specific agent.",
-        "operationId": "get_agent_in_context_messages_api_agents__agent_id__memory_messages_get",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
+        "operationId": "list_agent_in_context_messages",
         "parameters": [
           {
             "name": "agent_id",
@@ -828,7 +984,7 @@
                   "items": {
                     "$ref": "#/components/schemas/memgpt__schemas__message__Message"
                   },
-                  "title": "Response Get Agent In Context Messages Api Agents  Agent Id  Memory Messages Get"
+                  "title": "Response List Agent In Context Messages"
                 }
               }
             }
@@ -846,17 +1002,12 @@
         }
       }
     },
-    "/api/agents/{agent_id}/memory": {
+    "/v1/agents/{agent_id}/memory": {
       "get": {
         "tags": ["agents"],
         "summary": "Get Agent Memory",
-        "description": "Retrieve the memory state of a specific agent.\n\nThis endpoint fetches the current memory state of the agent identified by the user ID and agent ID.",
-        "operationId": "get_agent_memory_api_agents__agent_id__memory_get",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
+        "description": "Retrieve the memory state of a specific agent.\nThis endpoint fetches the current memory state of the agent identified by the user ID and agent ID.",
+        "operationId": "get_agent_memory",
         "parameters": [
           {
             "name": "agent_id",
@@ -891,16 +1042,11 @@
           }
         }
       },
-      "post": {
+      "patch": {
         "tags": ["agents"],
         "summary": "Update Agent Memory",
-        "description": "Update the core memory of a specific agent.\n\nThis endpoint accepts new memory contents (human and persona) and updates the core memory of the agent identified by the user ID and agent ID.",
-        "operationId": "update_agent_memory_api_agents__agent_id__memory_post",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
+        "description": "Update the core memory of a specific agent.\nThis endpoint accepts new memory contents (human and persona) and updates the core memory of the agent identified by the user ID and agent ID.",
+        "operationId": "update_agent_memory",
         "parameters": [
           {
             "name": "agent_id",
@@ -947,17 +1093,12 @@
         }
       }
     },
-    "/api/agents/{agent_id}/memory/recall": {
+    "/v1/agents/{agent_id}/memory/recall": {
       "get": {
         "tags": ["agents"],
         "summary": "Get Agent Recall Memory Summary",
         "description": "Retrieve the summary of the recall memory of a specific agent.",
-        "operationId": "get_agent_recall_memory_summary_api_agents__agent_id__memory_recall_get",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
+        "operationId": "get_agent_recall_memory_summary",
         "parameters": [
           {
             "name": "agent_id",
@@ -993,17 +1134,12 @@
         }
       }
     },
-    "/api/agents/{agent_id}/memory/archival": {
+    "/v1/agents/{agent_id}/memory/archival": {
       "get": {
         "tags": ["agents"],
         "summary": "Get Agent Archival Memory Summary",
         "description": "Retrieve the summary of the archival memory of a specific agent.",
-        "operationId": "get_agent_archival_memory_summary_api_agents__agent_id__memory_archival_get",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
+        "operationId": "get_agent_archival_memory_summary",
         "parameters": [
           {
             "name": "agent_id",
@@ -1039,17 +1175,12 @@
         }
       }
     },
-    "/api/agents/{agent_id}/archival": {
+    "/v1/agents/{agent_id}/archival": {
       "get": {
         "tags": ["agents"],
         "summary": "Get Agent Archival Memory",
         "description": "Retrieve the memories in an agent's archival memory store (paginated query).",
-        "operationId": "get_agent_archival_memory_api_agents__agent_id__archival_get",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
+        "operationId": "list_agent_archival_memory",
         "parameters": [
           {
             "name": "agent_id",
@@ -1125,7 +1256,7 @@
                   "items": {
                     "$ref": "#/components/schemas/Passage"
                   },
-                  "title": "Response Get Agent Archival Memory Api Agents  Agent Id  Archival Get"
+                  "title": "Response List Agent Archival Memory"
                 }
               }
             }
@@ -1146,12 +1277,7 @@
         "tags": ["agents"],
         "summary": "Insert Agent Archival Memory",
         "description": "Insert a memory into an agent's archival memory store.",
-        "operationId": "insert_agent_archival_memory_api_agents__agent_id__archival_post",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
+        "operationId": "create_agent_archival_memory",
         "parameters": [
           {
             "name": "agent_id",
@@ -1183,7 +1309,7 @@
                   "items": {
                     "$ref": "#/components/schemas/Passage"
                   },
-                  "title": "Response Insert Agent Archival Memory Api Agents  Agent Id  Archival Post"
+                  "title": "Response Create Agent Archival Memory"
                 }
               }
             }
@@ -1201,17 +1327,12 @@
         }
       }
     },
-    "/api/agents/{agent_id}/archival/{memory_id}": {
+    "/v1/agents/{agent_id}/archival/{memory_id}": {
       "delete": {
         "tags": ["agents"],
         "summary": "Delete Agent Archival Memory",
         "description": "Delete a memory from an agent's archival memory store.",
-        "operationId": "delete_agent_archival_memory_api_agents__agent_id__archival__memory_id__delete",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
+        "operationId": "delete_agent_archival_memory",
         "parameters": [
           {
             "name": "agent_id",
@@ -1254,89 +1375,12 @@
         }
       }
     },
-    "/api/agents/{agent_id}/messages/context/": {
-      "get": {
-        "tags": ["agents"],
-        "summary": "Get Agent Messages In Context",
-        "description": "Retrieve the in-context messages of a specific agent. Paginated, provide start and count to iterate.",
-        "operationId": "get_agent_messages_in_context_api_agents__agent_id__messages_context__get",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "agent_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Agent Id"
-            }
-          },
-          {
-            "name": "start",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "description": "Message index to start on (reverse chronological).",
-              "title": "Start"
-            },
-            "description": "Message index to start on (reverse chronological)."
-          },
-          {
-            "name": "count",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "description": "How many messages to retrieve.",
-              "title": "Count"
-            },
-            "description": "How many messages to retrieve."
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/memgpt__schemas__message__Message"
-                  },
-                  "title": "Response Get Agent Messages In Context Api Agents  Agent Id  Messages Context  Get"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/agents/{agent_id}/messages": {
+    "/v1/agents/{agent_id}/messages": {
       "get": {
         "tags": ["agents"],
         "summary": "Get Agent Messages",
         "description": "Retrieve message history for an agent.",
-        "operationId": "get_agent_messages_api_agents__agent_id__messages_get",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
+        "operationId": "list_agent_messages",
         "parameters": [
           {
             "name": "agent_id",
@@ -1376,6 +1420,18 @@
               "title": "Limit"
             },
             "description": "Maximum number of messages to retrieve."
+          },
+          {
+            "name": "msg_object",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "If true, returns Message objects. If false, return MemGPTMessage objects.",
+              "default": false,
+              "title": "Msg Object"
+            },
+            "description": "If true, returns Message objects. If false, return MemGPTMessage objects."
           }
         ],
         "responses": {
@@ -1388,7 +1444,7 @@
                   "items": {
                     "$ref": "#/components/schemas/memgpt__schemas__message__Message"
                   },
-                  "title": "Response Get Agent Messages Api Agents  Agent Id  Messages Get"
+                  "title": "Response List Agent Messages"
                 }
               }
             }
@@ -1408,13 +1464,8 @@
       "post": {
         "tags": ["agents"],
         "summary": "Send Message",
-        "description": "Process a user message and return the agent's response.\n\nThis endpoint accepts a message from a user and processes it through the agent.\nIt can optionally stream the response if 'stream' is set to True.",
-        "operationId": "send_message_api_agents__agent_id__messages_post",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
+        "description": "Process a user message and return the agent's response.\nThis endpoint accepts a message from a user and processes it through the agent.\nIt can optionally stream the response if 'stream_steps' or 'stream_tokens' is set to True.",
+        "operationId": "create_agent_message",
         "parameters": [
           {
             "name": "agent_id",
@@ -1460,16 +1511,117 @@
         }
       }
     },
-    "/api/blocks": {
-      "get": {
-        "tags": ["block"],
-        "summary": "List Blocks",
-        "operationId": "list_blocks_api_blocks_get",
-        "security": [
+    "/v1/agents/{agent_id}/messages/{message_id}": {
+      "patch": {
+        "tags": ["agents"],
+        "summary": "Update Message",
+        "description": "Update the details of a message associated with an agent.",
+        "operationId": "update_agent_message",
+        "parameters": [
           {
-            "HTTPBearer": []
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Agent Id"
+            }
+          },
+          {
+            "name": "message_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Message Id"
+            }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateMessage"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/memgpt__schemas__message__Message"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/models/": {
+      "get": {
+        "tags": ["models", "llms"],
+        "summary": "List Llm Backends",
+        "operationId": "list_models",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/LLMConfig"
+                  },
+                  "type": "array",
+                  "title": "Response List Models"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/models/embedding": {
+      "get": {
+        "tags": ["models", "llms"],
+        "summary": "List Embedding Backends",
+        "operationId": "list_embedding_models",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/EmbeddingConfig"
+                  },
+                  "type": "array",
+                  "title": "Response List Embedding Models"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/blocks/": {
+      "get": {
+        "tags": ["blocks"],
+        "summary": "List Blocks",
+        "operationId": "list_memory_blocks",
         "parameters": [
           {
             "name": "label",
@@ -1530,7 +1682,7 @@
                   "items": {
                     "$ref": "#/components/schemas/Block"
                   },
-                  "title": "Response List Blocks Api Blocks Get"
+                  "title": "Response List Memory Blocks"
                 }
               }
             }
@@ -1548,14 +1700,9 @@
         }
       },
       "post": {
-        "tags": ["block"],
+        "tags": ["blocks"],
         "summary": "Create Block",
-        "operationId": "create_block_api_blocks_post",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
+        "operationId": "create_memory_block",
         "requestBody": {
           "required": true,
           "content": {
@@ -1590,16 +1737,11 @@
         }
       }
     },
-    "/api/blocks/{block_id}": {
-      "post": {
-        "tags": ["block"],
+    "/v1/blocks/{block_id}": {
+      "patch": {
+        "tags": ["blocks"],
         "summary": "Update Block",
-        "operationId": "update_block_api_blocks__block_id__post",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
+        "operationId": "update_memory_block",
         "parameters": [
           {
             "name": "block_id",
@@ -1645,14 +1787,9 @@
         }
       },
       "delete": {
-        "tags": ["block"],
+        "tags": ["blocks"],
         "summary": "Delete Block",
-        "operationId": "delete_block_api_blocks__block_id__delete",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
+        "operationId": "delete_memory_block",
         "parameters": [
           {
             "name": "block_id",
@@ -1688,14 +1825,9 @@
         }
       },
       "get": {
-        "tags": ["block"],
+        "tags": ["blocks"],
         "summary": "Get Block",
-        "operationId": "get_block_api_blocks__block_id__get",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
+        "operationId": "get_memory_block",
         "parameters": [
           {
             "name": "block_id",
@@ -1731,11 +1863,12 @@
         }
       }
     },
-    "/api/jobs": {
+    "/v1/jobs/": {
       "get": {
         "tags": ["jobs"],
         "summary": "List Jobs",
-        "operationId": "list_jobs_api_jobs_get",
+        "description": "List all jobs.",
+        "operationId": "list_jobs",
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -1746,24 +1879,20 @@
                     "$ref": "#/components/schemas/Job"
                   },
                   "type": "array",
-                  "title": "Response List Jobs Api Jobs Get"
+                  "title": "Response List Jobs"
                 }
               }
             }
           }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ]
+        }
       }
     },
-    "/api/jobs/active": {
+    "/v1/jobs/active": {
       "get": {
         "tags": ["jobs"],
         "summary": "List Active Jobs",
-        "operationId": "list_active_jobs_api_jobs_active_get",
+        "description": "List all active jobs.",
+        "operationId": "list_active_jobs",
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -1774,728 +1903,20 @@
                     "$ref": "#/components/schemas/Job"
                   },
                   "type": "array",
-                  "title": "Response List Active Jobs Api Jobs Active Get"
+                  "title": "Response List Active Jobs"
                 }
               }
             }
           }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ]
+        }
       }
     },
-    "/api/jobs/{job_id}": {
+    "/v1/jobs/{job_id}": {
       "get": {
         "tags": ["jobs"],
         "summary": "Get Job",
-        "operationId": "get_job_api_jobs__job_id__get",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "job_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Job Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Job"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/models": {
-      "get": {
-        "tags": ["models"],
-        "summary": "List Models",
-        "operationId": "list_models_api_models_get",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ListModelsResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/tools/{tool_id}": {
-      "delete": {
-        "tags": ["tools"],
-        "summary": "Delete Tool",
-        "description": "Delete a tool by name",
-        "operationId": "delete_tool_api_tools__tool_id__delete",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "tool_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Tool Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "get": {
-        "tags": ["tools"],
-        "summary": "Get Tool",
-        "description": "Get a tool by name",
-        "operationId": "get_tool_api_tools__tool_id__get",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "tool_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Tool Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Tool-Output"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "tags": ["tools"],
-        "summary": "Update Tool",
-        "description": "Update an existing tool",
-        "operationId": "update_tool_api_tools__tool_id__post",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "tool_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Tool Id"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ToolUpdate"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Tool-Output"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/tools/name/{tool_name}": {
-      "get": {
-        "tags": ["tools"],
-        "summary": "Get Tool Id",
-        "description": "Get a tool by name",
-        "operationId": "get_tool_id_api_tools_name__tool_name__get",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "tool_name",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Tool Name"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "string",
-                  "title": "Response Get Tool Id Api Tools Name  Tool Name  Get"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/tools": {
-      "get": {
-        "tags": ["tools"],
-        "summary": "List All Tools",
-        "description": "Get a list of all tools available to agents created by a user",
-        "operationId": "list_all_tools_api_tools_get",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/Tool-Output"
-                  },
-                  "type": "array",
-                  "title": "Response List All Tools Api Tools Get"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ]
-      },
-      "post": {
-        "tags": ["tools"],
-        "summary": "Create Tool",
-        "description": "Create a new tool",
-        "operationId": "create_tool_api_tools_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ToolCreate"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Tool-Output"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ]
-      }
-    },
-    "/api/sources/{source_id}": {
-      "get": {
-        "tags": ["sources"],
-        "summary": "Get Source",
-        "description": "Get all sources",
-        "operationId": "get_source_api_sources__source_id__get",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "source_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Source Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Source"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "tags": ["sources"],
-        "summary": "Update Source",
-        "description": "Update the name or documentation of an existing data source.",
-        "operationId": "update_source_api_sources__source_id__post",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "source_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Source Id"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/SourceUpdate"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Source"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "delete": {
-        "tags": ["sources"],
-        "summary": "Delete Source",
-        "description": "Delete a data source.",
-        "operationId": "delete_source_api_sources__source_id__delete",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "source_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Source Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/sources/name/{source_name}": {
-      "get": {
-        "tags": ["sources"],
-        "summary": "Get Source Id By Name",
-        "description": "Get a source by name",
-        "operationId": "get_source_id_by_name_api_sources_name__source_name__get",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "source_name",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Source Name"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "string",
-                  "title": "Response Get Source Id By Name Api Sources Name  Source Name  Get"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/sources": {
-      "get": {
-        "tags": ["sources"],
-        "summary": "List Sources",
-        "description": "List all data sources created by a user.",
-        "operationId": "list_sources_api_sources_get",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/Source"
-                  },
-                  "type": "array",
-                  "title": "Response List Sources Api Sources Get"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ]
-      },
-      "post": {
-        "tags": ["sources"],
-        "summary": "Create Source",
-        "description": "Create a new data source.",
-        "operationId": "create_source_api_sources_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/SourceCreate"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Source"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ]
-      }
-    },
-    "/api/sources/{source_id}/attach": {
-      "post": {
-        "tags": ["sources"],
-        "summary": "Attach Source To Agent",
-        "description": "Attach a data source to an existing agent.",
-        "operationId": "attach_source_to_agent_api_sources__source_id__attach_post",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "source_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Source Id"
-            }
-          },
-          {
-            "name": "agent_id",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "description": "The unique identifier of the agent to attach the source to.",
-              "title": "Agent Id"
-            },
-            "description": "The unique identifier of the agent to attach the source to."
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Source"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/sources/{source_id}/detach": {
-      "post": {
-        "tags": ["sources"],
-        "summary": "Detach Source From Agent",
-        "description": "Detach a data source from an existing agent.",
-        "operationId": "detach_source_from_agent_api_sources__source_id__detach_post",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "source_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Source Id"
-            }
-          },
-          {
-            "name": "agent_id",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "description": "The unique identifier of the agent to detach the source from.",
-              "title": "Agent Id"
-            },
-            "description": "The unique identifier of the agent to detach the source from."
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/sources/status/{job_id}": {
-      "get": {
-        "tags": ["sources"],
-        "summary": "Get Job",
         "description": "Get the status of a job.",
-        "operationId": "get_job_api_sources_status__job_id__get",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
+        "operationId": "get_job",
         "parameters": [
           {
             "name": "job_id",
@@ -2531,34 +1952,85 @@
         }
       }
     },
-    "/api/sources/{source_id}/upload": {
-      "post": {
-        "tags": ["sources"],
-        "summary": "Upload File To Source",
-        "description": "Upload a file to a data source.",
-        "operationId": "upload_file_to_source_api_sources__source_id__upload_post",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
+    "/v1/admin/users/": {
+      "get": {
+        "tags": ["users", "admin", "admin"],
+        "summary": "Get All Users",
+        "description": "Get a list of all users in the database",
+        "operationId": "list_users",
         "parameters": [
           {
-            "name": "source_id",
-            "in": "path",
-            "required": true,
+            "name": "cursor",
+            "in": "query",
+            "required": false,
             "schema": {
-              "type": "string",
-              "title": "Source Id"
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": 50,
+              "title": "Limit"
             }
           }
         ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/User"
+                  },
+                  "title": "Response List Users"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["users", "admin", "admin"],
+        "summary": "Create User",
+        "description": "Create a new user in the database",
+        "operationId": "create_user",
         "requestBody": {
           "required": true,
           "content": {
-            "multipart/form-data": {
+            "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Body_upload_file_to_source_api_sources__source_id__upload_post"
+                "$ref": "#/components/schemas/UserCreate"
               }
             }
           }
@@ -2569,7 +2041,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Job"
+                  "$ref": "#/components/schemas/User"
                 }
               }
             }
@@ -2585,28 +2057,22 @@
             }
           }
         }
-      }
-    },
-    "/api/sources/{source_id}/passages ": {
-      "get": {
-        "tags": ["sources"],
-        "summary": "List Passages",
-        "description": "List all passages associated with a data source.",
-        "operationId": "list_passages_api_sources__source_id__passages__get",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
+      },
+      "delete": {
+        "tags": ["users", "admin", "admin"],
+        "summary": "Delete User",
+        "operationId": "delete_user",
         "parameters": [
           {
-            "name": "source_id",
-            "in": "path",
+            "name": "user_id",
+            "in": "query",
             "required": true,
             "schema": {
               "type": "string",
-              "title": "Source Id"
-            }
+              "description": "The user_id key to be deleted.",
+              "title": "User Id"
+            },
+            "description": "The user_id key to be deleted."
           }
         ],
         "responses": {
@@ -2615,11 +2081,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/Passage"
-                  },
-                  "title": "Response List Passages Api Sources  Source Id  Passages  Get"
+                  "$ref": "#/components/schemas/User"
                 }
               }
             }
@@ -2637,26 +2099,61 @@
         }
       }
     },
-    "/api/sources/{source_id}/documents": {
-      "get": {
-        "tags": ["sources"],
-        "summary": "List Documents",
-        "description": "List all documents associated with a data source.",
-        "operationId": "list_documents_api_sources__source_id__documents_get",
-        "security": [
-          {
-            "HTTPBearer": []
+    "/v1/admin/users/keys": {
+      "post": {
+        "tags": ["users", "admin"],
+        "summary": "Create New Api Key",
+        "description": "Create a new API key for a user",
+        "operationId": "create_api_key",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/APIKeyCreate"
+              }
+            }
           }
-        ],
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIKey"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": ["users", "admin"],
+        "summary": "Get Api Keys",
+        "description": "Get a list of all API keys for a user",
+        "operationId": "list_api_keys",
         "parameters": [
           {
-            "name": "source_id",
-            "in": "path",
+            "name": "user_id",
+            "in": "query",
             "required": true,
             "schema": {
               "type": "string",
-              "title": "Source Id"
-            }
+              "description": "The unique identifier of the user.",
+              "title": "User Id"
+            },
+            "description": "The unique identifier of the user."
           }
         ],
         "responses": {
@@ -2667,9 +2164,49 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/Document"
+                    "$ref": "#/components/schemas/APIKey"
                   },
-                  "title": "Response List Documents Api Sources  Source Id  Documents Get"
+                  "title": "Response List Api Keys"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["users", "admin"],
+        "summary": "Delete Api Key",
+        "operationId": "delete_api_key",
+        "parameters": [
+          {
+            "name": "api_key",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "The API key to be deleted.",
+              "title": "Api Key"
+            },
+            "description": "The API key to be deleted."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIKey"
                 }
               }
             }
@@ -2687,62 +2224,44 @@
         }
       }
     },
-    "/api/config/llm": {
-      "get": {
-        "tags": ["config"],
-        "summary": "Get Llm Configs",
-        "description": "Retrieve the base configuration for the server.",
-        "operationId": "get_llm_configs_api_config_llm_get",
+    "/v1/auth": {
+      "post": {
+        "tags": ["auth"],
+        "summary": "Authenticate User",
+        "description": "Authenticates the user and sends response with User related data.\n\nCurrently, this is a placeholder that simply returns a UUID placeholder",
+        "operationId": "authenticate_user_v1_auth_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuthRequest"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/LLMConfig"
-                  },
-                  "type": "array",
-                  "title": "Response Get Llm Configs Api Config Llm Get"
+                  "$ref": "#/components/schemas/AuthResponse"
                 }
               }
             }
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ]
-      }
-    },
-    "/api/config/embedding": {
-      "get": {
-        "tags": ["config"],
-        "summary": "Get Embedding Configs",
-        "description": "Retrieve the base configuration for the server.",
-        "operationId": "get_embedding_configs_api_config_embedding_get",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
+          },
+          "422": {
+            "description": "Validation Error",
             "content": {
               "application/json": {
                 "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/EmbeddingConfig"
-                  },
-                  "type": "array",
-                  "title": "Response Get Embedding Configs Api Config Embedding Get"
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
           }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ]
+        }
       }
     }
   },
@@ -2922,7 +2441,7 @@
           "embedding_config"
         ],
         "title": "AgentState",
-        "description": "Representation of an agent's state."
+        "description": "Representation of an agent's state. This is the state of the agent at a given time, and is persisted in the DB backend. The state has all the information needed to recreate a persisted agent.\n\nParameters:\n    id (str): The unique identifier of the agent.\n    name (str): The name of the agent (must be unique to the user).\n    created_at (datetime): The datetime the agent was created.\n    message_ids (List[str]): The ids of the messages in the agent's in-context memory.\n    memory (Memory): The in-context memory of the agent.\n    tools (List[str]): The tools used by the agent. This includes any memory editing functions specified in `memory`.\n    system (str): The system prompt used by the agent.\n    llm_config (LLMConfig): The LLM configuration used by the agent.\n    embedding_config (EmbeddingConfig): The embedding configuration used by the agent."
       },
       "ArchivalMemorySummary": {
         "properties": {
@@ -2963,7 +2482,7 @@
         "required": ["id", "created_at", "assistant_id"],
         "title": "AssistantFile"
       },
-      "AssistantMessage-Input": {
+      "AssistantMessage": {
         "properties": {
           "content": {
             "anyOf": [
@@ -3008,26 +2527,6 @@
           }
         },
         "type": "object",
-        "title": "AssistantMessage"
-      },
-      "AssistantMessage-Output": {
-        "properties": {
-          "id": {
-            "type": "string",
-            "title": "Id"
-          },
-          "date": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Date"
-          },
-          "assistant_message": {
-            "type": "string",
-            "title": "Assistant Message"
-          }
-        },
-        "type": "object",
-        "required": ["id", "date", "assistant_message"],
         "title": "AssistantMessage"
       },
       "AuthRequest": {
@@ -3158,9 +2657,9 @@
         "type": "object",
         "required": ["value"],
         "title": "Block",
-        "description": "Block of the LLM context"
+        "description": "A Block represents a reserved section of the LLM's context window which is editable. `Block` objects contained in the `Memory` object, which is able to edit the Block values.\n\nParameters:\n    name (str): The name of the block.\n    value (str): The value of the block. This is the string that is represented in the context window.\n    limit (int): The character limit of the block.\n    template (bool): Whether the block is a template (e.g. saved human/persona options). Non-template blocks are not stored in the database and are ephemeral, while templated blocks are stored in the database.\n    label (str): The label of the block (e.g. 'human', 'persona'). This defines a category for the block.\n    description (str): Description of the block.\n    metadata_ (Dict): Metadata of the block.\n    user_id (str): The unique identifier of the user associated with the block."
       },
-      "Body_upload_file_to_source_api_sources__source_id__upload_post": {
+      "Body_upload_file_to_source": {
         "properties": {
           "file": {
             "type": "string",
@@ -3170,7 +2669,7 @@
         },
         "type": "object",
         "required": ["file"],
-        "title": "Body_upload_file_to_source_api_sources__source_id__upload_post"
+        "title": "Body_upload_file_to_source"
       },
       "ChatCompletionRequest": {
         "properties": {
@@ -3188,7 +2687,7 @@
                   "$ref": "#/components/schemas/UserMessage"
                 },
                 {
-                  "$ref": "#/components/schemas/AssistantMessage-Input"
+                  "$ref": "#/components/schemas/AssistantMessage"
                 },
                 {
                   "$ref": "#/components/schemas/ToolMessage"
@@ -3743,12 +3242,6 @@
           "value": {
             "anyOf": [
               {
-                "items": {
-                  "type": "string"
-                },
-                "type": "array"
-              },
-              {
                 "type": "string"
               },
               {
@@ -4044,52 +3537,6 @@
         "required": ["assistant_id", "thread", "model", "instructions"],
         "title": "CreateThreadRunRequest"
       },
-      "CreateToolRequest": {
-        "properties": {
-          "json_schema": {
-            "type": "object",
-            "title": "Json Schema",
-            "description": "JSON schema of the tool."
-          },
-          "source_code": {
-            "type": "string",
-            "title": "Source Code",
-            "description": "The source code of the function."
-          },
-          "source_type": {
-            "anyOf": [
-              {
-                "type": "string",
-                "enum": ["python"],
-                "const": "python"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Source Type",
-            "description": "The type of the source code."
-          },
-          "tags": {
-            "anyOf": [
-              {
-                "items": {
-                  "type": "string"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Tags",
-            "description": "Metadata tags."
-          }
-        },
-        "type": "object",
-        "required": ["json_schema", "source_code"],
-        "title": "CreateToolRequest"
-      },
       "DeleteAssistantFileResponse": {
         "properties": {
           "id": {
@@ -4286,7 +3733,7 @@
           "embedding_dim"
         ],
         "title": "EmbeddingConfig",
-        "description": "Embedding model configuration"
+        "description": "Embedding model configuration. This object specifies all the information necessary to access an embedding model to usage with MemGPT, except for secret keys.\n\nAttributes:\n    embedding_endpoint_type (str): The endpoint type for the model.\n    embedding_endpoint (str): The endpoint for the model.\n    embedding_model (str): The model for the embedding.\n    embedding_dim (int): The dimension of the embedding.\n    embedding_chunk_size (int): The chunk size of the embedding.\n    azure_endpoint (:obj:`str`, optional): The Azure endpoint for the model (Azure only).\n    azure_version (str): The Azure version for the model (Azure only).\n    azure_deployment (str): The Azure deployment for the model (Azure only)."
       },
       "Function": {
         "properties": {
@@ -4316,88 +3763,20 @@
         "required": ["name"],
         "title": "FunctionCall"
       },
-      "FunctionCallDelta": {
+      "FunctionCall-Output": {
         "properties": {
-          "name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Name"
-          },
           "arguments": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "string",
             "title": "Arguments"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
           }
         },
         "type": "object",
-        "required": ["name", "arguments"],
-        "title": "FunctionCallDelta"
-      },
-      "FunctionCallMessage": {
-        "properties": {
-          "id": {
-            "type": "string",
-            "title": "Id"
-          },
-          "date": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Date"
-          },
-          "function_call": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/memgpt__schemas__memgpt_message__FunctionCall"
-              },
-              {
-                "$ref": "#/components/schemas/FunctionCallDelta"
-              }
-            ],
-            "title": "Function Call"
-          }
-        },
-        "type": "object",
-        "required": ["id", "date", "function_call"],
-        "title": "FunctionCallMessage",
-        "description": "{\n    \"function_call\": {\n        \"name\": function_call.function.name,\n        \"arguments\": function_call.function.arguments,\n    },\n    \"id\": str(msg_obj.id),\n    \"date\": msg_obj.created_at.isoformat(),\n}"
-      },
-      "FunctionReturn": {
-        "properties": {
-          "id": {
-            "type": "string",
-            "title": "Id"
-          },
-          "date": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Date"
-          },
-          "function_return": {
-            "type": "string",
-            "title": "Function Return"
-          },
-          "status": {
-            "type": "string",
-            "enum": ["success", "error"],
-            "title": "Status"
-          }
-        },
-        "type": "object",
-        "required": ["id", "date", "function_return", "status"],
-        "title": "FunctionReturn",
-        "description": "{\n    \"function_return\": msg,\n    \"status\": \"success\" or \"error\",\n    \"id\": str(msg_obj.id),\n    \"date\": msg_obj.created_at.isoformat(),\n}"
+        "required": ["arguments", "name"],
+        "title": "FunctionCall"
       },
       "FunctionSchema": {
         "properties": {
@@ -4461,27 +3840,6 @@
         "required": ["file_id"],
         "title": "ImageFile"
       },
-      "InternalMonologue": {
-        "properties": {
-          "id": {
-            "type": "string",
-            "title": "Id"
-          },
-          "date": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Date"
-          },
-          "internal_monologue": {
-            "type": "string",
-            "title": "Internal Monologue"
-          }
-        },
-        "type": "object",
-        "required": ["id", "date", "internal_monologue"],
-        "title": "InternalMonologue",
-        "description": "{\n    \"internal_monologue\": msg,\n    \"date\": msg_obj.created_at.isoformat() if msg_obj is not None else get_utc_time().isoformat(),\n    \"id\": str(msg_obj.id) if msg_obj is not None else None,\n}"
-      },
       "Job": {
         "properties": {
           "metadata_": {
@@ -4542,12 +3900,13 @@
         "type": "object",
         "required": ["user_id"],
         "title": "Job",
-        "description": "Representation of offline jobs."
+        "description": "Representation of offline jobs, used for tracking status of data loading tasks (involving parsing and embedding documents).\n\nParameters:\n    id (str): The unique identifier of the job.\n    status (JobStatus): The status of the job.\n    created_at (datetime): The unix timestamp of when the job was created.\n    completed_at (datetime): The unix timestamp of when the job was completed.\n    user_id (str): The unique identifier of the user associated with the."
       },
       "JobStatus": {
         "type": "string",
         "enum": ["created", "running", "completed", "failed", "pending"],
-        "title": "JobStatus"
+        "title": "JobStatus",
+        "description": "Status of the job."
       },
       "LLMConfig": {
         "properties": {
@@ -4591,27 +3950,8 @@
           "model_endpoint",
           "context_window"
         ],
-        "title": "LLMConfig"
-      },
-      "LegacyFunctionCallMessage": {
-        "properties": {
-          "id": {
-            "type": "string",
-            "title": "Id"
-          },
-          "date": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Date"
-          },
-          "function_call": {
-            "type": "string",
-            "title": "Function Call"
-          }
-        },
-        "type": "object",
-        "required": ["id", "date", "function_call"],
-        "title": "LegacyFunctionCallMessage"
+        "title": "LLMConfig",
+        "description": "Configuration for a Language Model (LLM) model. This object specifies all the information necessary to access an LLM model to usage with MemGPT, except for secret keys.\n\nAttributes:\n    model (str): The name of the LLM model.\n    model_endpoint_type (str): The endpoint type for the model.\n    model_endpoint (str): The endpoint for the model.\n    model_wrapper (str): The wrapper for the model.\n    context_window (int): The context window size for the model."
       },
       "ListMessagesResponse": {
         "properties": {
@@ -4627,36 +3967,6 @@
         "type": "object",
         "required": ["messages"],
         "title": "ListMessagesResponse"
-      },
-      "ListModelsResponse": {
-        "properties": {
-          "models": {
-            "items": {
-              "$ref": "#/components/schemas/LLMConfig"
-            },
-            "type": "array",
-            "title": "Models",
-            "description": "List of model configurations."
-          }
-        },
-        "type": "object",
-        "required": ["models"],
-        "title": "ListModelsResponse"
-      },
-      "ListToolsResponse": {
-        "properties": {
-          "tools": {
-            "items": {
-              "$ref": "#/components/schemas/Tool-Output"
-            },
-            "type": "array",
-            "title": "Tools",
-            "description": "List of tools (functions)."
-          }
-        },
-        "type": "object",
-        "required": ["tools"],
-        "title": "ListToolsResponse"
       },
       "LogProbToken": {
         "properties": {
@@ -4686,6 +3996,23 @@
         "type": "object",
         "required": ["token", "logprob", "bytes"],
         "title": "LogProbToken"
+      },
+      "MemGPTMessage": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "date": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Date"
+          }
+        },
+        "type": "object",
+        "required": ["id", "date"],
+        "title": "MemGPTMessage",
+        "description": "Base class for simplified MemGPT message response type. This is intended to be used for developers who want the internal monologue, function calls, and function returns in a simplified format that does not include additional information other than the content and timestamp.\n\nAttributes:\n    id (str): The ID of the message\n    date (datetime): The date the message was created in ISO format"
       },
       "MemGPTRequest": {
         "properties": {
@@ -4738,36 +4065,7 @@
               },
               {
                 "items": {
-                  "anyOf": [
-                    {
-                      "$ref": "#/components/schemas/InternalMonologue"
-                    },
-                    {
-                      "$ref": "#/components/schemas/FunctionCallMessage"
-                    },
-                    {
-                      "$ref": "#/components/schemas/FunctionReturn"
-                    }
-                  ]
-                },
-                "type": "array"
-              },
-              {
-                "items": {
-                  "anyOf": [
-                    {
-                      "$ref": "#/components/schemas/InternalMonologue"
-                    },
-                    {
-                      "$ref": "#/components/schemas/AssistantMessage-Output"
-                    },
-                    {
-                      "$ref": "#/components/schemas/LegacyFunctionCallMessage"
-                    },
-                    {
-                      "$ref": "#/components/schemas/FunctionReturn"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/MemGPTMessage"
                 },
                 "type": "array"
               }
@@ -4786,7 +4084,8 @@
         },
         "type": "object",
         "required": ["messages", "usage"],
-        "title": "MemGPTResponse"
+        "title": "MemGPTResponse",
+        "description": "Response object from an agent interaction, consisting of the new messages generated by the agent and usage statistics.\nThe type of the returned messages can be either `Message` or `MemGPTMessage`, depending on what was specified in the request.\n\nAttributes:\n    messages (List[Union[Message, MemGPTMessage]]): The messages returned by the agent.\n    usage (MemGPTUsageStatistics): The usage statistics"
       },
       "MemGPTUsageStatistics": {
         "properties": {
@@ -4816,7 +4115,8 @@
           }
         },
         "type": "object",
-        "title": "MemGPTUsageStatistics"
+        "title": "MemGPTUsageStatistics",
+        "description": "Usage statistics for the agent interaction.\n\nAttributes:\n    completion_tokens (int): The number of tokens generated by the agent.\n    prompt_tokens (int): The number of tokens in the prompt.\n    total_tokens (int): The total number of tokens processed by the agent.\n    step_count (int): The number of steps taken by the agent."
       },
       "Memory": {
         "properties": {
@@ -4827,11 +4127,17 @@
             "type": "object",
             "title": "Memory",
             "description": "Mapping from memory block section to memory block."
+          },
+          "prompt_template": {
+            "type": "string",
+            "title": "Prompt Template",
+            "description": "Jinja2 template for compiling memory blocks into a prompt string",
+            "default": "{% for block in memory.values() %}<{{ block.name }} characters=\"{{ block.value|length }}/{{ block.limit }}\">\n{{ block.value }}\n</{{ block.name }}>{% if not loop.last %}\n{% endif %}{% endfor %}"
           }
         },
         "type": "object",
         "title": "Memory",
-        "description": "Represents the in-context memory of the agent"
+        "description": "Represents the in-context memory of the agent. This includes both the `Block` objects (labelled by sections), as well as tools to edit the blocks.\n\nAttributes:\n    memory (Dict[str, Block]): Mapping from memory block section to memory block."
       },
       "MessageContentLogProb": {
         "properties": {
@@ -5683,7 +4989,8 @@
         "additionalProperties": false,
         "type": "object",
         "required": ["text", "embedding", "embedding_config"],
-        "title": "Passage"
+        "title": "Passage",
+        "description": "Representation of a passage, which is stored in archival memory.\n\nParameters:\n    text (str): The text of the passage.\n    embedding (List[float]): The embedding of the passage.\n    embedding_config (EmbeddingConfig): The embedding configuration used by the passage.\n    created_at (datetime): The creation date of the passage.\n    user_id (str): The unique identifier of the user associated with the passage.\n    agent_id (str): The unique identifier of the agent associated with the passage.\n    source_id (str): The data source of the passage.\n    doc_id (str): The unique identifier of the document associated with the passage."
       },
       "RecallMemorySummary": {
         "properties": {
@@ -5789,7 +5096,8 @@
         "additionalProperties": false,
         "type": "object",
         "required": ["embedding_config", "name", "user_id"],
-        "title": "Source"
+        "title": "Source",
+        "description": "Representation of a source, which is a collection of documents and passages.\n\nParameters:\n    id (str): The ID of the source\n    name (str): The name of the source.\n    embedding_config (EmbeddingConfig): The embedding configuration used by the source.\n    created_at (datetime): The creation date of the source.\n    user_id (str): The ID of the user that created the source.\n    metadata_ (dict): Metadata associated with the source.\n    description (str): The description of the source."
       },
       "SourceCreate": {
         "properties": {
@@ -6059,22 +5367,8 @@
         "additionalProperties": false,
         "type": "object",
         "required": ["name", "tags", "source_code"],
-        "title": "Tool"
-      },
-      "ToolCallFunction-Input": {
-        "properties": {
-          "name": {
-            "type": "string",
-            "title": "Name"
-          },
-          "arguments": {
-            "type": "string",
-            "title": "Arguments"
-          }
-        },
-        "type": "object",
-        "required": ["name", "arguments"],
-        "title": "ToolCallFunction"
+        "title": "Tool",
+        "description": "Representation of a tool, which is a function that can be called by the agent.\n\nParameters:\n    id (str): The unique identifier of the tool.\n    name (str): The name of the function.\n    tags (List[str]): Metadata tags.\n    source_code (str): The source code of the function.\n    json_schema (Dict): The JSON schema of the function."
       },
       "ToolCallFunction-Output": {
         "properties": {
@@ -6493,12 +5787,6 @@
           "value": {
             "anyOf": [
               {
-                "items": {
-                  "type": "string"
-                },
-                "type": "array"
-              },
-              {
                 "type": "string"
               },
               {
@@ -6600,6 +5888,82 @@
         "title": "UpdateBlock",
         "description": "Update a block"
       },
+      "UpdateMessage": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "The id of the message."
+          },
+          "role": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MessageRole"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The role of the participant."
+          },
+          "text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Text",
+            "description": "The text of the message."
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name",
+            "description": "The name of the participant."
+          },
+          "tool_calls": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/memgpt__schemas__openai__chat_completions__ToolCall-Input"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tool Calls",
+            "description": "The list of tool calls requested."
+          },
+          "tool_call_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tool Call Id",
+            "description": "The id of the tool call."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["id"],
+        "title": "UpdateMessage",
+        "description": "Request to update a message"
+      },
       "UsageStatistics": {
         "properties": {
           "completion_tokens": {
@@ -6645,7 +6009,8 @@
         "additionalProperties": false,
         "type": "object",
         "required": ["name"],
-        "title": "User"
+        "title": "User",
+        "description": "Representation of a user.\n\nParameters:\n    id (str): The unique identifier of the user.\n    name (str): The name of the user.\n    created_at (datetime): The creation date of the user."
       },
       "UserCreate": {
         "properties": {
@@ -6731,21 +6096,6 @@
         "type": "object",
         "required": ["loc", "msg", "type"],
         "title": "ValidationError"
-      },
-      "memgpt__schemas__memgpt_message__FunctionCall": {
-        "properties": {
-          "name": {
-            "type": "string",
-            "title": "Name"
-          },
-          "arguments": {
-            "type": "string",
-            "title": "Arguments"
-          }
-        },
-        "type": "object",
-        "required": ["name", "arguments"],
-        "title": "FunctionCall"
       },
       "memgpt__schemas__message__Message": {
         "properties": {
@@ -6834,7 +6184,7 @@
             "anyOf": [
               {
                 "items": {
-                  "$ref": "#/components/schemas/memgpt__schemas__openai__chat_completions__ToolCall"
+                  "$ref": "#/components/schemas/memgpt__schemas__openai__chat_completions__ToolCall-Output"
                 },
                 "type": "array"
               },
@@ -6862,7 +6212,7 @@
         "type": "object",
         "required": ["role"],
         "title": "Message",
-        "description": "Representation of a message sent.\n\nMessages can be:\n- agent->user (role=='agent')\n- user->agent and system->agent (role=='user')\n- or function/tool call returns (role=='function'/'tool')."
+        "description": "MemGPT's internal representation of a message. Includes methods to convert to/from LLM provider formats.\n\nAttributes:\n    id (str): The unique identifier of the message.\n    role (MessageRole): The role of the participant.\n    text (str): The text of the message.\n    user_id (str): The unique identifier of the user.\n    agent_id (str): The unique identifier of the agent.\n    model (str): The model used to make the function call.\n    name (str): The name of the participant.\n    created_at (datetime): The time the message was created.\n    tool_calls (List[ToolCall]): The list of tool calls requested.\n    tool_call_id (str): The id of the tool call."
       },
       "memgpt__schemas__openai__chat_completion_request__ToolCall": {
         "properties": {
@@ -6878,27 +6228,27 @@
             "default": "function"
           },
           "function": {
-            "$ref": "#/components/schemas/ToolCallFunction-Input"
+            "$ref": "#/components/schemas/memgpt__schemas__openai__chat_completion_request__ToolCallFunction"
           }
         },
         "type": "object",
         "required": ["id", "function"],
         "title": "ToolCall"
       },
-      "memgpt__schemas__openai__chat_completion_response__FunctionCall": {
+      "memgpt__schemas__openai__chat_completion_request__ToolCallFunction": {
         "properties": {
-          "arguments": {
-            "type": "string",
-            "title": "Arguments"
-          },
           "name": {
             "type": "string",
             "title": "Name"
+          },
+          "arguments": {
+            "type": "string",
+            "title": "Arguments"
           }
         },
         "type": "object",
-        "required": ["arguments", "name"],
-        "title": "FunctionCall"
+        "required": ["name", "arguments"],
+        "title": "ToolCallFunction"
       },
       "memgpt__schemas__openai__chat_completion_response__Message": {
         "properties": {
@@ -6934,7 +6284,7 @@
           "function_call": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/memgpt__schemas__openai__chat_completion_response__FunctionCall"
+                "$ref": "#/components/schemas/FunctionCall-Output"
               },
               {
                 "type": "null"
@@ -6960,14 +6310,39 @@
             "default": "function"
           },
           "function": {
-            "$ref": "#/components/schemas/memgpt__schemas__openai__chat_completion_response__FunctionCall"
+            "$ref": "#/components/schemas/FunctionCall-Output"
           }
         },
         "type": "object",
         "required": ["id", "function"],
         "title": "ToolCall"
       },
-      "memgpt__schemas__openai__chat_completions__ToolCall": {
+      "memgpt__schemas__openai__chat_completions__ToolCall-Input": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "The ID of the tool call"
+          },
+          "type": {
+            "type": "string",
+            "title": "Type",
+            "default": "function"
+          },
+          "function": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/memgpt__schemas__openai__chat_completions__ToolCallFunction"
+              }
+            ],
+            "description": "The arguments and name for the function"
+          }
+        },
+        "type": "object",
+        "required": ["id", "function"],
+        "title": "ToolCall"
+      },
+      "memgpt__schemas__openai__chat_completions__ToolCall-Output": {
         "properties": {
           "id": {
             "type": "string",
@@ -6991,6 +6366,23 @@
         "type": "object",
         "required": ["id", "function"],
         "title": "ToolCall"
+      },
+      "memgpt__schemas__openai__chat_completions__ToolCallFunction": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "The name of the function to call"
+          },
+          "arguments": {
+            "type": "string",
+            "title": "Arguments",
+            "description": "The arguments to pass to the function (JSON dump)"
+          }
+        },
+        "type": "object",
+        "required": ["name", "arguments"],
+        "title": "ToolCallFunction"
       },
       "memgpt__schemas__openai__openai__ToolCall": {
         "properties": {
@@ -7016,12 +6408,6 @@
         "type": "object",
         "required": ["id", "function"],
         "title": "ToolCall"
-      }
-    },
-    "securitySchemes": {
-      "HTTPBearer": {
-        "type": "http",
-        "scheme": "bearer"
       }
     }
   },

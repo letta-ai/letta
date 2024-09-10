@@ -18,10 +18,7 @@ import {
 } from '@letta-web/component-library';
 import { z } from 'zod';
 import type { Block } from '@letta-web/letta-agents-api';
-import {
-  useAgentsServiceGetAgentMemoryApiAgentsAgentIdMemoryGet,
-  useBlockServiceGetBlockApiBlocksBlockIdGet,
-} from '@letta-web/letta-agents-api';
+import { useBlocksServiceGetMemoryBlock } from '@letta-web/letta-agents-api';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ADENavigationItem } from '../common/ADENavigationItem/ADENavigationItem';
 import { useCurrentAgent } from '../hooks';
@@ -126,7 +123,7 @@ function EditMemory() {
   const { blockId } = usePanelRouteData<'editMemory'>();
   const { setCurrentPage } = usePanelPageContext();
 
-  const { data } = useBlockServiceGetBlockApiBlocksBlockIdGet({
+  const { data } = useBlocksServiceGetMemoryBlock({
     blockId,
   });
 
@@ -155,14 +152,11 @@ function EditMemory() {
 function MemoryHome() {
   const { setCurrentPage } = usePanelPageContext();
   const [search, setSearch] = useState('');
-  const { id: agentId } = useCurrentAgent();
-  const { data } = useAgentsServiceGetAgentMemoryApiAgentsAgentIdMemoryGet({
-    agentId,
-  });
+  const { memory } = useCurrentAgent();
 
   const memories = useMemo(() => {
-    return data?.memory || {};
-  }, [data]);
+    return memory?.memory || {};
+  }, [memory]);
 
   const memoriesList = useMemo(() => {
     return Object.values(memories).filter((m) =>

@@ -24,17 +24,18 @@ import { ADENavigationItem } from '../common/ADENavigationItem/ADENavigationItem
 import { useCurrentAgent, useCurrentAgentId } from '../hooks';
 import type { AgentState, Tool_Output } from '@letta-web/letta-agents-api';
 import {
-  useToolsServiceCreateToolApiToolsPost,
-  useToolsServiceGetToolApiToolsToolIdGet,
-  UseToolsServiceGetToolApiToolsToolIdGetKeyFn,
-  UseToolsServiceListAllToolsApiToolsGetKeyFn,
-  useToolsServiceUpdateToolApiToolsToolIdPost,
+  useToolsServiceCreateTool,
+  useToolsServiceGetTool,
+  UseToolsServiceGetToolKeyFn,
+  useToolsServiceUpdateTool,
 } from '@letta-web/letta-agents-api';
 import {
-  UseAgentsServiceGetAgentStateApiAgentsAgentIdGetKeyFn,
-  useAgentsServiceUpdateAgentApiAgentsAgentIdPost,
-  useToolsServiceListAllToolsApiToolsGet,
+  UseAgentsServiceGetAgentKeyFn,
+  useAgentsServiceUpdateAgent,
+  useToolsServiceListTools,
+  UseToolsServiceListToolsKeyFn,
 } from '@letta-web/letta-agents-api';
+
 import { useQueryClient } from '@tanstack/react-query';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -60,14 +61,13 @@ const { PanelRouter, usePanelRouteData, usePanelPageContext } =
 function ToolsList() {
   const currentAgentId = useCurrentAgentId();
   const { tools: currentToolNames } = useCurrentAgent();
-  const { data: allTools, isLoading } =
-    useToolsServiceListAllToolsApiToolsGet();
+  const { data: allTools, isLoading } = useToolsServiceListTools();
   const { setCurrentPage } = usePanelPageContext();
 
-  const { mutate } = useAgentsServiceUpdateAgentApiAgentsAgentIdPost({
+  const { mutate } = useAgentsServiceUpdateAgent({
     onMutate: async (variables) => {
       await queryClient.cancelQueries({
-        queryKey: UseAgentsServiceGetAgentStateApiAgentsAgentIdGetKeyFn({
+        queryKey: UseAgentsServiceGetAgentKeyFn({
           agentId: currentAgentId,
         }),
       });
@@ -75,13 +75,13 @@ function ToolsList() {
       const previousAgentState = queryClient.getQueryData<
         AgentState | undefined
       >(
-        UseAgentsServiceGetAgentStateApiAgentsAgentIdGetKeyFn({
+        UseAgentsServiceGetAgentKeyFn({
           agentId: currentAgentId,
         })
       );
 
       queryClient.setQueryData<AgentState | undefined>(
-        UseAgentsServiceGetAgentStateApiAgentsAgentIdGetKeyFn({
+        UseAgentsServiceGetAgentKeyFn({
           agentId: currentAgentId,
         }),
         (oldData) => {
@@ -101,7 +101,7 @@ function ToolsList() {
     onError: (_aw, _b, context) => {
       if (context?.previousAgentState) {
         queryClient.setQueryData(
-          UseAgentsServiceGetAgentStateApiAgentsAgentIdGetKeyFn({
+          UseAgentsServiceGetAgentKeyFn({
             agentId: currentAgentId,
           }),
           context.previousAgentState
@@ -188,14 +188,13 @@ const createToolSchema = z.object({
 function ToolCreator() {
   const queryClient = useQueryClient();
 
-  const { mutate, isPending: isCreatingTool } =
-    useToolsServiceCreateToolApiToolsPost({
-      onSuccess: async () => {
-        await queryClient.invalidateQueries({
-          queryKey: UseToolsServiceListAllToolsApiToolsGetKeyFn(),
-        });
-      },
-    });
+  const { mutate, isPending: isCreatingTool } = useToolsServiceCreateTool({
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: UseToolsServiceListToolsKeyFn(),
+      });
+    },
+  });
 
   const form = useForm<z.infer<typeof createToolSchema>>({
     resolver: zodResolver(createToolSchema),
@@ -268,16 +267,15 @@ function ToolEditor(props: ToolEditorProps) {
   const { initialTool, isLoading } = props;
   const queryClient = useQueryClient();
 
-  const { mutate, isPending: isUpdatingTool } =
-    useToolsServiceUpdateToolApiToolsToolIdPost({
-      onSuccess: async () => {
-        await queryClient.invalidateQueries({
-          queryKey: UseToolsServiceGetToolApiToolsToolIdGetKeyFn({
-            toolId: initialTool?.id || '',
-          }),
-        });
-      },
-    });
+  const { mutate, isPending: isUpdatingTool } = useToolsServiceUpdateTool({
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: UseToolsServiceGetToolKeyFn({
+          toolId: initialTool?.id || '',
+        }),
+      });
+    },
+  });
 
   const form = useForm<z.infer<typeof editToolSchema>>({
     resolver: zodResolver(editToolSchema),
@@ -349,7 +347,7 @@ function EditToolPage() {
   const { setCurrentPage } = usePanelPageContext();
 
   const { toolId, toolName } = usePanelRouteData<'editTool'>();
-  const { data, isLoading } = useToolsServiceGetToolApiToolsToolIdGet(
+  const { data, isLoading } = useToolsServiceGetTool(
     {
       toolId,
     },

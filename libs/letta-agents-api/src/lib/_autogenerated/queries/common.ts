@@ -5,171 +5,191 @@ import {
   AdminService,
   AgentsService,
   AuthService,
-  BlockService,
-  ConfigService,
+  BlocksService,
   JobsService,
+  LlmsService,
   ModelsService,
   SourcesService,
   ToolsService,
+  UsersService,
 } from '../requests/services.gen';
-export type AdminServiceGetAllUsersAdminUsersGetDefaultResponse = Awaited<
-  ReturnType<typeof AdminService.getAllUsersAdminUsersGet>
+export type ToolsServiceGetToolDefaultResponse = Awaited<
+  ReturnType<typeof ToolsService.getTool>
 >;
-export type AdminServiceGetAllUsersAdminUsersGetQueryResult<
-  TData = AdminServiceGetAllUsersAdminUsersGetDefaultResponse,
+export type ToolsServiceGetToolQueryResult<
+  TData = ToolsServiceGetToolDefaultResponse,
   TError = unknown
 > = UseQueryResult<TData, TError>;
-export const useAdminServiceGetAllUsersAdminUsersGetKey =
-  'AdminServiceGetAllUsersAdminUsersGet';
-export const UseAdminServiceGetAllUsersAdminUsersGetKeyFn = (
-  {
-    cursor,
-    limit,
-  }: {
-    cursor?: string;
-    limit?: number;
-  } = {},
-  queryKey?: Array<unknown>
-) => [
-  useAdminServiceGetAllUsersAdminUsersGetKey,
-  ...(queryKey ?? [{ cursor, limit }]),
-];
-export type AdminServiceGetApiKeysAdminUsersKeysGetDefaultResponse = Awaited<
-  ReturnType<typeof AdminService.getApiKeysAdminUsersKeysGet>
->;
-export type AdminServiceGetApiKeysAdminUsersKeysGetQueryResult<
-  TData = AdminServiceGetApiKeysAdminUsersKeysGetDefaultResponse,
-  TError = unknown
-> = UseQueryResult<TData, TError>;
-export const useAdminServiceGetApiKeysAdminUsersKeysGetKey =
-  'AdminServiceGetApiKeysAdminUsersKeysGet';
-export const UseAdminServiceGetApiKeysAdminUsersKeysGetKeyFn = (
-  {
-    userId,
-  }: {
-    userId: string;
-  },
-  queryKey?: Array<unknown>
-) => [
-  useAdminServiceGetApiKeysAdminUsersKeysGetKey,
-  ...(queryKey ?? [{ userId }]),
-];
-export type ToolsServiceGetToolAdminToolsToolNameGetDefaultResponse = Awaited<
-  ReturnType<typeof ToolsService.getToolAdminToolsToolNameGet>
->;
-export type ToolsServiceGetToolAdminToolsToolNameGetQueryResult<
-  TData = ToolsServiceGetToolAdminToolsToolNameGetDefaultResponse,
-  TError = unknown
-> = UseQueryResult<TData, TError>;
-export const useToolsServiceGetToolAdminToolsToolNameGetKey =
-  'ToolsServiceGetToolAdminToolsToolNameGet';
-export const UseToolsServiceGetToolAdminToolsToolNameGetKeyFn = (
-  {
-    toolName,
-  }: {
-    toolName: string;
-  },
-  queryKey?: Array<unknown>
-) => [
-  useToolsServiceGetToolAdminToolsToolNameGetKey,
-  ...(queryKey ?? [{ toolName }]),
-];
-export type ToolsServiceListAllToolsAdminToolsGetDefaultResponse = Awaited<
-  ReturnType<typeof ToolsService.listAllToolsAdminToolsGet>
->;
-export type ToolsServiceListAllToolsAdminToolsGetQueryResult<
-  TData = ToolsServiceListAllToolsAdminToolsGetDefaultResponse,
-  TError = unknown
-> = UseQueryResult<TData, TError>;
-export const useToolsServiceListAllToolsAdminToolsGetKey =
-  'ToolsServiceListAllToolsAdminToolsGet';
-export const UseToolsServiceListAllToolsAdminToolsGetKeyFn = (
-  queryKey?: Array<unknown>
-) => [useToolsServiceListAllToolsAdminToolsGetKey, ...(queryKey ?? [])];
-export type ToolsServiceGetToolApiToolsToolIdGetDefaultResponse = Awaited<
-  ReturnType<typeof ToolsService.getToolApiToolsToolIdGet>
->;
-export type ToolsServiceGetToolApiToolsToolIdGetQueryResult<
-  TData = ToolsServiceGetToolApiToolsToolIdGetDefaultResponse,
-  TError = unknown
-> = UseQueryResult<TData, TError>;
-export const useToolsServiceGetToolApiToolsToolIdGetKey =
-  'ToolsServiceGetToolApiToolsToolIdGet';
-export const UseToolsServiceGetToolApiToolsToolIdGetKeyFn = (
+export const useToolsServiceGetToolKey = 'ToolsServiceGetTool';
+export const UseToolsServiceGetToolKeyFn = (
   {
     toolId,
   }: {
     toolId: string;
   },
   queryKey?: Array<unknown>
-) => [
-  useToolsServiceGetToolApiToolsToolIdGetKey,
-  ...(queryKey ?? [{ toolId }]),
-];
-export type ToolsServiceGetToolIdApiToolsNameToolNameGetDefaultResponse =
-  Awaited<ReturnType<typeof ToolsService.getToolIdApiToolsNameToolNameGet>>;
-export type ToolsServiceGetToolIdApiToolsNameToolNameGetQueryResult<
-  TData = ToolsServiceGetToolIdApiToolsNameToolNameGetDefaultResponse,
+) => [useToolsServiceGetToolKey, ...(queryKey ?? [{ toolId }])];
+export type ToolsServiceGetToolIdByNameDefaultResponse = Awaited<
+  ReturnType<typeof ToolsService.getToolIdByName>
+>;
+export type ToolsServiceGetToolIdByNameQueryResult<
+  TData = ToolsServiceGetToolIdByNameDefaultResponse,
   TError = unknown
 > = UseQueryResult<TData, TError>;
-export const useToolsServiceGetToolIdApiToolsNameToolNameGetKey =
-  'ToolsServiceGetToolIdApiToolsNameToolNameGet';
-export const UseToolsServiceGetToolIdApiToolsNameToolNameGetKeyFn = (
+export const useToolsServiceGetToolIdByNameKey = 'ToolsServiceGetToolIdByName';
+export const UseToolsServiceGetToolIdByNameKeyFn = (
   {
     toolName,
   }: {
     toolName: string;
   },
   queryKey?: Array<unknown>
-) => [
-  useToolsServiceGetToolIdApiToolsNameToolNameGetKey,
-  ...(queryKey ?? [{ toolName }]),
+) => [useToolsServiceGetToolIdByNameKey, ...(queryKey ?? [{ toolName }])];
+export type ToolsServiceListToolsDefaultResponse = Awaited<
+  ReturnType<typeof ToolsService.listTools>
+>;
+export type ToolsServiceListToolsQueryResult<
+  TData = ToolsServiceListToolsDefaultResponse,
+  TError = unknown
+> = UseQueryResult<TData, TError>;
+export const useToolsServiceListToolsKey = 'ToolsServiceListTools';
+export const UseToolsServiceListToolsKeyFn = (queryKey?: Array<unknown>) => [
+  useToolsServiceListToolsKey,
+  ...(queryKey ?? []),
 ];
-export type ToolsServiceListAllToolsApiToolsGetDefaultResponse = Awaited<
-  ReturnType<typeof ToolsService.listAllToolsApiToolsGet>
+export type SourcesServiceGetSourceDefaultResponse = Awaited<
+  ReturnType<typeof SourcesService.getSource>
 >;
-export type ToolsServiceListAllToolsApiToolsGetQueryResult<
-  TData = ToolsServiceListAllToolsApiToolsGetDefaultResponse,
+export type SourcesServiceGetSourceQueryResult<
+  TData = SourcesServiceGetSourceDefaultResponse,
   TError = unknown
 > = UseQueryResult<TData, TError>;
-export const useToolsServiceListAllToolsApiToolsGetKey =
-  'ToolsServiceListAllToolsApiToolsGet';
-export const UseToolsServiceListAllToolsApiToolsGetKeyFn = (
+export const useSourcesServiceGetSourceKey = 'SourcesServiceGetSource';
+export const UseSourcesServiceGetSourceKeyFn = (
+  {
+    sourceId,
+  }: {
+    sourceId: string;
+  },
   queryKey?: Array<unknown>
-) => [useToolsServiceListAllToolsApiToolsGetKey, ...(queryKey ?? [])];
-export type AgentsServiceGetAllAgentsApiAdminAgentsGetDefaultResponse = Awaited<
-  ReturnType<typeof AgentsService.getAllAgentsApiAdminAgentsGet>
+) => [useSourcesServiceGetSourceKey, ...(queryKey ?? [{ sourceId }])];
+export type SourcesServiceGetSourceIdByNameDefaultResponse = Awaited<
+  ReturnType<typeof SourcesService.getSourceIdByName>
 >;
-export type AgentsServiceGetAllAgentsApiAdminAgentsGetQueryResult<
-  TData = AgentsServiceGetAllAgentsApiAdminAgentsGetDefaultResponse,
+export type SourcesServiceGetSourceIdByNameQueryResult<
+  TData = SourcesServiceGetSourceIdByNameDefaultResponse,
   TError = unknown
 > = UseQueryResult<TData, TError>;
-export const useAgentsServiceGetAllAgentsApiAdminAgentsGetKey =
-  'AgentsServiceGetAllAgentsApiAdminAgentsGet';
-export const UseAgentsServiceGetAllAgentsApiAdminAgentsGetKeyFn = (
+export const useSourcesServiceGetSourceIdByNameKey =
+  'SourcesServiceGetSourceIdByName';
+export const UseSourcesServiceGetSourceIdByNameKeyFn = (
+  {
+    sourceName,
+  }: {
+    sourceName: string;
+  },
   queryKey?: Array<unknown>
-) => [useAgentsServiceGetAllAgentsApiAdminAgentsGetKey, ...(queryKey ?? [])];
-export type AgentsServiceListAgentsApiAgentsGetDefaultResponse = Awaited<
-  ReturnType<typeof AgentsService.listAgentsApiAgentsGet>
+) => [useSourcesServiceGetSourceIdByNameKey, ...(queryKey ?? [{ sourceName }])];
+export type SourcesServiceListSourcesDefaultResponse = Awaited<
+  ReturnType<typeof SourcesService.listSources>
 >;
-export type AgentsServiceListAgentsApiAgentsGetQueryResult<
-  TData = AgentsServiceListAgentsApiAgentsGetDefaultResponse,
+export type SourcesServiceListSourcesQueryResult<
+  TData = SourcesServiceListSourcesDefaultResponse,
   TError = unknown
 > = UseQueryResult<TData, TError>;
-export const useAgentsServiceListAgentsApiAgentsGetKey =
-  'AgentsServiceListAgentsApiAgentsGet';
-export const UseAgentsServiceListAgentsApiAgentsGetKeyFn = (
+export const useSourcesServiceListSourcesKey = 'SourcesServiceListSources';
+export const UseSourcesServiceListSourcesKeyFn = (
   queryKey?: Array<unknown>
-) => [useAgentsServiceListAgentsApiAgentsGetKey, ...(queryKey ?? [])];
-export type AgentsServiceGetAgentStateApiAgentsAgentIdGetDefaultResponse =
-  Awaited<ReturnType<typeof AgentsService.getAgentStateApiAgentsAgentIdGet>>;
-export type AgentsServiceGetAgentStateApiAgentsAgentIdGetQueryResult<
-  TData = AgentsServiceGetAgentStateApiAgentsAgentIdGetDefaultResponse,
+) => [useSourcesServiceListSourcesKey, ...(queryKey ?? [])];
+export type SourcesServiceListSourcePassagesDefaultResponse = Awaited<
+  ReturnType<typeof SourcesService.listSourcePassages>
+>;
+export type SourcesServiceListSourcePassagesQueryResult<
+  TData = SourcesServiceListSourcePassagesDefaultResponse,
   TError = unknown
 > = UseQueryResult<TData, TError>;
-export const useAgentsServiceGetAgentStateApiAgentsAgentIdGetKey =
-  'AgentsServiceGetAgentStateApiAgentsAgentIdGet';
-export const UseAgentsServiceGetAgentStateApiAgentsAgentIdGetKeyFn = (
+export const useSourcesServiceListSourcePassagesKey =
+  'SourcesServiceListSourcePassages';
+export const UseSourcesServiceListSourcePassagesKeyFn = (
+  {
+    sourceId,
+  }: {
+    sourceId: string;
+  },
+  queryKey?: Array<unknown>
+) => [useSourcesServiceListSourcePassagesKey, ...(queryKey ?? [{ sourceId }])];
+export type SourcesServiceListSourceDocumentsDefaultResponse = Awaited<
+  ReturnType<typeof SourcesService.listSourceDocuments>
+>;
+export type SourcesServiceListSourceDocumentsQueryResult<
+  TData = SourcesServiceListSourceDocumentsDefaultResponse,
+  TError = unknown
+> = UseQueryResult<TData, TError>;
+export const useSourcesServiceListSourceDocumentsKey =
+  'SourcesServiceListSourceDocuments';
+export const UseSourcesServiceListSourceDocumentsKeyFn = (
+  {
+    sourceId,
+  }: {
+    sourceId: string;
+  },
+  queryKey?: Array<unknown>
+) => [useSourcesServiceListSourceDocumentsKey, ...(queryKey ?? [{ sourceId }])];
+export type AgentsServiceListAgentsDefaultResponse = Awaited<
+  ReturnType<typeof AgentsService.listAgents>
+>;
+export type AgentsServiceListAgentsQueryResult<
+  TData = AgentsServiceListAgentsDefaultResponse,
+  TError = unknown
+> = UseQueryResult<TData, TError>;
+export const useAgentsServiceListAgentsKey = 'AgentsServiceListAgents';
+export const UseAgentsServiceListAgentsKeyFn = (queryKey?: Array<unknown>) => [
+  useAgentsServiceListAgentsKey,
+  ...(queryKey ?? []),
+];
+export type AgentsServiceGetAgentDefaultResponse = Awaited<
+  ReturnType<typeof AgentsService.getAgent>
+>;
+export type AgentsServiceGetAgentQueryResult<
+  TData = AgentsServiceGetAgentDefaultResponse,
+  TError = unknown
+> = UseQueryResult<TData, TError>;
+export const useAgentsServiceGetAgentKey = 'AgentsServiceGetAgent';
+export const UseAgentsServiceGetAgentKeyFn = (
+  {
+    agentId,
+  }: {
+    agentId: string;
+  },
+  queryKey?: Array<unknown>
+) => [useAgentsServiceGetAgentKey, ...(queryKey ?? [{ agentId }])];
+export type AgentsServiceGetAgentSourcesDefaultResponse = Awaited<
+  ReturnType<typeof AgentsService.getAgentSources>
+>;
+export type AgentsServiceGetAgentSourcesQueryResult<
+  TData = AgentsServiceGetAgentSourcesDefaultResponse,
+  TError = unknown
+> = UseQueryResult<TData, TError>;
+export const useAgentsServiceGetAgentSourcesKey =
+  'AgentsServiceGetAgentSources';
+export const UseAgentsServiceGetAgentSourcesKeyFn = (
+  {
+    agentId,
+  }: {
+    agentId: string;
+  },
+  queryKey?: Array<unknown>
+) => [useAgentsServiceGetAgentSourcesKey, ...(queryKey ?? [{ agentId }])];
+export type AgentsServiceListAgentInContextMessagesDefaultResponse = Awaited<
+  ReturnType<typeof AgentsService.listAgentInContextMessages>
+>;
+export type AgentsServiceListAgentInContextMessagesQueryResult<
+  TData = AgentsServiceListAgentInContextMessagesDefaultResponse,
+  TError = unknown
+> = UseQueryResult<TData, TError>;
+export const useAgentsServiceListAgentInContextMessagesKey =
+  'AgentsServiceListAgentInContextMessages';
+export const UseAgentsServiceListAgentInContextMessagesKeyFn = (
   {
     agentId,
   }: {
@@ -177,217 +197,175 @@ export const UseAgentsServiceGetAgentStateApiAgentsAgentIdGetKeyFn = (
   },
   queryKey?: Array<unknown>
 ) => [
-  useAgentsServiceGetAgentStateApiAgentsAgentIdGetKey,
+  useAgentsServiceListAgentInContextMessagesKey,
   ...(queryKey ?? [{ agentId }]),
 ];
-export type AgentsServiceGetAgentSourcesApiAgentsAgentIdSourcesGetDefaultResponse =
-  Awaited<
-    ReturnType<typeof AgentsService.getAgentSourcesApiAgentsAgentIdSourcesGet>
-  >;
-export type AgentsServiceGetAgentSourcesApiAgentsAgentIdSourcesGetQueryResult<
-  TData = AgentsServiceGetAgentSourcesApiAgentsAgentIdSourcesGetDefaultResponse,
-  TError = unknown
-> = UseQueryResult<TData, TError>;
-export const useAgentsServiceGetAgentSourcesApiAgentsAgentIdSourcesGetKey =
-  'AgentsServiceGetAgentSourcesApiAgentsAgentIdSourcesGet';
-export const UseAgentsServiceGetAgentSourcesApiAgentsAgentIdSourcesGetKeyFn = (
-  {
-    agentId,
-  }: {
-    agentId: string;
-  },
-  queryKey?: Array<unknown>
-) => [
-  useAgentsServiceGetAgentSourcesApiAgentsAgentIdSourcesGetKey,
-  ...(queryKey ?? [{ agentId }]),
-];
-export type AgentsServiceGetAgentInContextMessagesApiAgentsAgentIdMemoryMessagesGetDefaultResponse =
-  Awaited<
-    ReturnType<
-      typeof AgentsService.getAgentInContextMessagesApiAgentsAgentIdMemoryMessagesGet
-    >
-  >;
-export type AgentsServiceGetAgentInContextMessagesApiAgentsAgentIdMemoryMessagesGetQueryResult<
-  TData = AgentsServiceGetAgentInContextMessagesApiAgentsAgentIdMemoryMessagesGetDefaultResponse,
-  TError = unknown
-> = UseQueryResult<TData, TError>;
-export const useAgentsServiceGetAgentInContextMessagesApiAgentsAgentIdMemoryMessagesGetKey =
-  'AgentsServiceGetAgentInContextMessagesApiAgentsAgentIdMemoryMessagesGet';
-export const UseAgentsServiceGetAgentInContextMessagesApiAgentsAgentIdMemoryMessagesGetKeyFn =
-  (
-    {
-      agentId,
-    }: {
-      agentId: string;
-    },
-    queryKey?: Array<unknown>
-  ) => [
-    useAgentsServiceGetAgentInContextMessagesApiAgentsAgentIdMemoryMessagesGetKey,
-    ...(queryKey ?? [{ agentId }]),
-  ];
-export type AgentsServiceGetAgentMemoryApiAgentsAgentIdMemoryGetDefaultResponse =
-  Awaited<
-    ReturnType<typeof AgentsService.getAgentMemoryApiAgentsAgentIdMemoryGet>
-  >;
-export type AgentsServiceGetAgentMemoryApiAgentsAgentIdMemoryGetQueryResult<
-  TData = AgentsServiceGetAgentMemoryApiAgentsAgentIdMemoryGetDefaultResponse,
-  TError = unknown
-> = UseQueryResult<TData, TError>;
-export const useAgentsServiceGetAgentMemoryApiAgentsAgentIdMemoryGetKey =
-  'AgentsServiceGetAgentMemoryApiAgentsAgentIdMemoryGet';
-export const UseAgentsServiceGetAgentMemoryApiAgentsAgentIdMemoryGetKeyFn = (
-  {
-    agentId,
-  }: {
-    agentId: string;
-  },
-  queryKey?: Array<unknown>
-) => [
-  useAgentsServiceGetAgentMemoryApiAgentsAgentIdMemoryGetKey,
-  ...(queryKey ?? [{ agentId }]),
-];
-export type AgentsServiceGetAgentRecallMemorySummaryApiAgentsAgentIdMemoryRecallGetDefaultResponse =
-  Awaited<
-    ReturnType<
-      typeof AgentsService.getAgentRecallMemorySummaryApiAgentsAgentIdMemoryRecallGet
-    >
-  >;
-export type AgentsServiceGetAgentRecallMemorySummaryApiAgentsAgentIdMemoryRecallGetQueryResult<
-  TData = AgentsServiceGetAgentRecallMemorySummaryApiAgentsAgentIdMemoryRecallGetDefaultResponse,
-  TError = unknown
-> = UseQueryResult<TData, TError>;
-export const useAgentsServiceGetAgentRecallMemorySummaryApiAgentsAgentIdMemoryRecallGetKey =
-  'AgentsServiceGetAgentRecallMemorySummaryApiAgentsAgentIdMemoryRecallGet';
-export const UseAgentsServiceGetAgentRecallMemorySummaryApiAgentsAgentIdMemoryRecallGetKeyFn =
-  (
-    {
-      agentId,
-    }: {
-      agentId: string;
-    },
-    queryKey?: Array<unknown>
-  ) => [
-    useAgentsServiceGetAgentRecallMemorySummaryApiAgentsAgentIdMemoryRecallGetKey,
-    ...(queryKey ?? [{ agentId }]),
-  ];
-export type AgentsServiceGetAgentArchivalMemorySummaryApiAgentsAgentIdMemoryArchivalGetDefaultResponse =
-  Awaited<
-    ReturnType<
-      typeof AgentsService.getAgentArchivalMemorySummaryApiAgentsAgentIdMemoryArchivalGet
-    >
-  >;
-export type AgentsServiceGetAgentArchivalMemorySummaryApiAgentsAgentIdMemoryArchivalGetQueryResult<
-  TData = AgentsServiceGetAgentArchivalMemorySummaryApiAgentsAgentIdMemoryArchivalGetDefaultResponse,
-  TError = unknown
-> = UseQueryResult<TData, TError>;
-export const useAgentsServiceGetAgentArchivalMemorySummaryApiAgentsAgentIdMemoryArchivalGetKey =
-  'AgentsServiceGetAgentArchivalMemorySummaryApiAgentsAgentIdMemoryArchivalGet';
-export const UseAgentsServiceGetAgentArchivalMemorySummaryApiAgentsAgentIdMemoryArchivalGetKeyFn =
-  (
-    {
-      agentId,
-    }: {
-      agentId: string;
-    },
-    queryKey?: Array<unknown>
-  ) => [
-    useAgentsServiceGetAgentArchivalMemorySummaryApiAgentsAgentIdMemoryArchivalGetKey,
-    ...(queryKey ?? [{ agentId }]),
-  ];
-export type AgentsServiceGetAgentArchivalMemoryApiAgentsAgentIdArchivalGetDefaultResponse =
-  Awaited<
-    ReturnType<
-      typeof AgentsService.getAgentArchivalMemoryApiAgentsAgentIdArchivalGet
-    >
-  >;
-export type AgentsServiceGetAgentArchivalMemoryApiAgentsAgentIdArchivalGetQueryResult<
-  TData = AgentsServiceGetAgentArchivalMemoryApiAgentsAgentIdArchivalGetDefaultResponse,
-  TError = unknown
-> = UseQueryResult<TData, TError>;
-export const useAgentsServiceGetAgentArchivalMemoryApiAgentsAgentIdArchivalGetKey =
-  'AgentsServiceGetAgentArchivalMemoryApiAgentsAgentIdArchivalGet';
-export const UseAgentsServiceGetAgentArchivalMemoryApiAgentsAgentIdArchivalGetKeyFn =
-  (
-    {
-      after,
-      agentId,
-      before,
-      limit,
-    }: {
-      after?: number;
-      agentId: string;
-      before?: number;
-      limit?: number;
-    },
-    queryKey?: Array<unknown>
-  ) => [
-    useAgentsServiceGetAgentArchivalMemoryApiAgentsAgentIdArchivalGetKey,
-    ...(queryKey ?? [{ after, agentId, before, limit }]),
-  ];
-export type AgentsServiceGetAgentMessagesInContextApiAgentsAgentIdMessagesContextGetDefaultResponse =
-  Awaited<
-    ReturnType<
-      typeof AgentsService.getAgentMessagesInContextApiAgentsAgentIdMessagesContextGet
-    >
-  >;
-export type AgentsServiceGetAgentMessagesInContextApiAgentsAgentIdMessagesContextGetQueryResult<
-  TData = AgentsServiceGetAgentMessagesInContextApiAgentsAgentIdMessagesContextGetDefaultResponse,
-  TError = unknown
-> = UseQueryResult<TData, TError>;
-export const useAgentsServiceGetAgentMessagesInContextApiAgentsAgentIdMessagesContextGetKey =
-  'AgentsServiceGetAgentMessagesInContextApiAgentsAgentIdMessagesContextGet';
-export const UseAgentsServiceGetAgentMessagesInContextApiAgentsAgentIdMessagesContextGetKeyFn =
-  (
-    {
-      agentId,
-      count,
-      start,
-    }: {
-      agentId: string;
-      count: number;
-      start: number;
-    },
-    queryKey?: Array<unknown>
-  ) => [
-    useAgentsServiceGetAgentMessagesInContextApiAgentsAgentIdMessagesContextGetKey,
-    ...(queryKey ?? [{ agentId, count, start }]),
-  ];
-export type AgentsServiceGetAgentMessagesApiAgentsAgentIdMessagesGetDefaultResponse =
-  Awaited<
-    ReturnType<typeof AgentsService.getAgentMessagesApiAgentsAgentIdMessagesGet>
-  >;
-export type AgentsServiceGetAgentMessagesApiAgentsAgentIdMessagesGetQueryResult<
-  TData = AgentsServiceGetAgentMessagesApiAgentsAgentIdMessagesGetDefaultResponse,
-  TError = unknown
-> = UseQueryResult<TData, TError>;
-export const useAgentsServiceGetAgentMessagesApiAgentsAgentIdMessagesGetKey =
-  'AgentsServiceGetAgentMessagesApiAgentsAgentIdMessagesGet';
-export const UseAgentsServiceGetAgentMessagesApiAgentsAgentIdMessagesGetKeyFn =
-  (
-    {
-      agentId,
-      before,
-      limit,
-    }: {
-      agentId: string;
-      before?: string;
-      limit?: number;
-    },
-    queryKey?: Array<unknown>
-  ) => [
-    useAgentsServiceGetAgentMessagesApiAgentsAgentIdMessagesGetKey,
-    ...(queryKey ?? [{ agentId, before, limit }]),
-  ];
-export type BlockServiceListBlocksApiBlocksGetDefaultResponse = Awaited<
-  ReturnType<typeof BlockService.listBlocksApiBlocksGet>
+export type AgentsServiceGetAgentMemoryDefaultResponse = Awaited<
+  ReturnType<typeof AgentsService.getAgentMemory>
 >;
-export type BlockServiceListBlocksApiBlocksGetQueryResult<
-  TData = BlockServiceListBlocksApiBlocksGetDefaultResponse,
+export type AgentsServiceGetAgentMemoryQueryResult<
+  TData = AgentsServiceGetAgentMemoryDefaultResponse,
   TError = unknown
 > = UseQueryResult<TData, TError>;
-export const useBlockServiceListBlocksApiBlocksGetKey =
-  'BlockServiceListBlocksApiBlocksGet';
-export const UseBlockServiceListBlocksApiBlocksGetKeyFn = (
+export const useAgentsServiceGetAgentMemoryKey = 'AgentsServiceGetAgentMemory';
+export const UseAgentsServiceGetAgentMemoryKeyFn = (
+  {
+    agentId,
+  }: {
+    agentId: string;
+  },
+  queryKey?: Array<unknown>
+) => [useAgentsServiceGetAgentMemoryKey, ...(queryKey ?? [{ agentId }])];
+export type AgentsServiceGetAgentRecallMemorySummaryDefaultResponse = Awaited<
+  ReturnType<typeof AgentsService.getAgentRecallMemorySummary>
+>;
+export type AgentsServiceGetAgentRecallMemorySummaryQueryResult<
+  TData = AgentsServiceGetAgentRecallMemorySummaryDefaultResponse,
+  TError = unknown
+> = UseQueryResult<TData, TError>;
+export const useAgentsServiceGetAgentRecallMemorySummaryKey =
+  'AgentsServiceGetAgentRecallMemorySummary';
+export const UseAgentsServiceGetAgentRecallMemorySummaryKeyFn = (
+  {
+    agentId,
+  }: {
+    agentId: string;
+  },
+  queryKey?: Array<unknown>
+) => [
+  useAgentsServiceGetAgentRecallMemorySummaryKey,
+  ...(queryKey ?? [{ agentId }]),
+];
+export type AgentsServiceGetAgentArchivalMemorySummaryDefaultResponse = Awaited<
+  ReturnType<typeof AgentsService.getAgentArchivalMemorySummary>
+>;
+export type AgentsServiceGetAgentArchivalMemorySummaryQueryResult<
+  TData = AgentsServiceGetAgentArchivalMemorySummaryDefaultResponse,
+  TError = unknown
+> = UseQueryResult<TData, TError>;
+export const useAgentsServiceGetAgentArchivalMemorySummaryKey =
+  'AgentsServiceGetAgentArchivalMemorySummary';
+export const UseAgentsServiceGetAgentArchivalMemorySummaryKeyFn = (
+  {
+    agentId,
+  }: {
+    agentId: string;
+  },
+  queryKey?: Array<unknown>
+) => [
+  useAgentsServiceGetAgentArchivalMemorySummaryKey,
+  ...(queryKey ?? [{ agentId }]),
+];
+export type AgentsServiceListAgentArchivalMemoryDefaultResponse = Awaited<
+  ReturnType<typeof AgentsService.listAgentArchivalMemory>
+>;
+export type AgentsServiceListAgentArchivalMemoryQueryResult<
+  TData = AgentsServiceListAgentArchivalMemoryDefaultResponse,
+  TError = unknown
+> = UseQueryResult<TData, TError>;
+export const useAgentsServiceListAgentArchivalMemoryKey =
+  'AgentsServiceListAgentArchivalMemory';
+export const UseAgentsServiceListAgentArchivalMemoryKeyFn = (
+  {
+    after,
+    agentId,
+    before,
+    limit,
+  }: {
+    after?: number;
+    agentId: string;
+    before?: number;
+    limit?: number;
+  },
+  queryKey?: Array<unknown>
+) => [
+  useAgentsServiceListAgentArchivalMemoryKey,
+  ...(queryKey ?? [{ after, agentId, before, limit }]),
+];
+export type AgentsServiceListAgentMessagesDefaultResponse = Awaited<
+  ReturnType<typeof AgentsService.listAgentMessages>
+>;
+export type AgentsServiceListAgentMessagesQueryResult<
+  TData = AgentsServiceListAgentMessagesDefaultResponse,
+  TError = unknown
+> = UseQueryResult<TData, TError>;
+export const useAgentsServiceListAgentMessagesKey =
+  'AgentsServiceListAgentMessages';
+export const UseAgentsServiceListAgentMessagesKeyFn = (
+  {
+    agentId,
+    before,
+    limit,
+    msgObject,
+  }: {
+    agentId: string;
+    before?: string;
+    limit?: number;
+    msgObject?: boolean;
+  },
+  queryKey?: Array<unknown>
+) => [
+  useAgentsServiceListAgentMessagesKey,
+  ...(queryKey ?? [{ agentId, before, limit, msgObject }]),
+];
+export type ModelsServiceListModelsDefaultResponse = Awaited<
+  ReturnType<typeof ModelsService.listModels>
+>;
+export type ModelsServiceListModelsQueryResult<
+  TData = ModelsServiceListModelsDefaultResponse,
+  TError = unknown
+> = UseQueryResult<TData, TError>;
+export const useModelsServiceListModelsKey = 'ModelsServiceListModels';
+export const UseModelsServiceListModelsKeyFn = (queryKey?: Array<unknown>) => [
+  useModelsServiceListModelsKey,
+  ...(queryKey ?? []),
+];
+export type ModelsServiceListEmbeddingModelsDefaultResponse = Awaited<
+  ReturnType<typeof ModelsService.listEmbeddingModels>
+>;
+export type ModelsServiceListEmbeddingModelsQueryResult<
+  TData = ModelsServiceListEmbeddingModelsDefaultResponse,
+  TError = unknown
+> = UseQueryResult<TData, TError>;
+export const useModelsServiceListEmbeddingModelsKey =
+  'ModelsServiceListEmbeddingModels';
+export const UseModelsServiceListEmbeddingModelsKeyFn = (
+  queryKey?: Array<unknown>
+) => [useModelsServiceListEmbeddingModelsKey, ...(queryKey ?? [])];
+export type LlmsServiceListModelsDefaultResponse = Awaited<
+  ReturnType<typeof LlmsService.listModels>
+>;
+export type LlmsServiceListModelsQueryResult<
+  TData = LlmsServiceListModelsDefaultResponse,
+  TError = unknown
+> = UseQueryResult<TData, TError>;
+export const useLlmsServiceListModelsKey = 'LlmsServiceListModels';
+export const UseLlmsServiceListModelsKeyFn = (queryKey?: Array<unknown>) => [
+  useLlmsServiceListModelsKey,
+  ...(queryKey ?? []),
+];
+export type LlmsServiceListEmbeddingModelsDefaultResponse = Awaited<
+  ReturnType<typeof LlmsService.listEmbeddingModels>
+>;
+export type LlmsServiceListEmbeddingModelsQueryResult<
+  TData = LlmsServiceListEmbeddingModelsDefaultResponse,
+  TError = unknown
+> = UseQueryResult<TData, TError>;
+export const useLlmsServiceListEmbeddingModelsKey =
+  'LlmsServiceListEmbeddingModels';
+export const UseLlmsServiceListEmbeddingModelsKeyFn = (
+  queryKey?: Array<unknown>
+) => [useLlmsServiceListEmbeddingModelsKey, ...(queryKey ?? [])];
+export type BlocksServiceListMemoryBlocksDefaultResponse = Awaited<
+  ReturnType<typeof BlocksService.listMemoryBlocks>
+>;
+export type BlocksServiceListMemoryBlocksQueryResult<
+  TData = BlocksServiceListMemoryBlocksDefaultResponse,
+  TError = unknown
+> = UseQueryResult<TData, TError>;
+export const useBlocksServiceListMemoryBlocksKey =
+  'BlocksServiceListMemoryBlocks';
+export const UseBlocksServiceListMemoryBlocksKeyFn = (
   {
     label,
     name,
@@ -399,315 +377,216 @@ export const UseBlockServiceListBlocksApiBlocksGetKeyFn = (
   } = {},
   queryKey?: Array<unknown>
 ) => [
-  useBlockServiceListBlocksApiBlocksGetKey,
+  useBlocksServiceListMemoryBlocksKey,
   ...(queryKey ?? [{ label, name, templatesOnly }]),
 ];
-export type BlockServiceGetBlockApiBlocksBlockIdGetDefaultResponse = Awaited<
-  ReturnType<typeof BlockService.getBlockApiBlocksBlockIdGet>
+export type BlocksServiceGetMemoryBlockDefaultResponse = Awaited<
+  ReturnType<typeof BlocksService.getMemoryBlock>
 >;
-export type BlockServiceGetBlockApiBlocksBlockIdGetQueryResult<
-  TData = BlockServiceGetBlockApiBlocksBlockIdGetDefaultResponse,
+export type BlocksServiceGetMemoryBlockQueryResult<
+  TData = BlocksServiceGetMemoryBlockDefaultResponse,
   TError = unknown
 > = UseQueryResult<TData, TError>;
-export const useBlockServiceGetBlockApiBlocksBlockIdGetKey =
-  'BlockServiceGetBlockApiBlocksBlockIdGet';
-export const UseBlockServiceGetBlockApiBlocksBlockIdGetKeyFn = (
+export const useBlocksServiceGetMemoryBlockKey = 'BlocksServiceGetMemoryBlock';
+export const UseBlocksServiceGetMemoryBlockKeyFn = (
   {
     blockId,
   }: {
     blockId: string;
   },
   queryKey?: Array<unknown>
-) => [
-  useBlockServiceGetBlockApiBlocksBlockIdGetKey,
-  ...(queryKey ?? [{ blockId }]),
-];
-export type JobsServiceListJobsApiJobsGetDefaultResponse = Awaited<
-  ReturnType<typeof JobsService.listJobsApiJobsGet>
+) => [useBlocksServiceGetMemoryBlockKey, ...(queryKey ?? [{ blockId }])];
+export type JobsServiceListJobsDefaultResponse = Awaited<
+  ReturnType<typeof JobsService.listJobs>
 >;
-export type JobsServiceListJobsApiJobsGetQueryResult<
-  TData = JobsServiceListJobsApiJobsGetDefaultResponse,
+export type JobsServiceListJobsQueryResult<
+  TData = JobsServiceListJobsDefaultResponse,
   TError = unknown
 > = UseQueryResult<TData, TError>;
-export const useJobsServiceListJobsApiJobsGetKey =
-  'JobsServiceListJobsApiJobsGet';
-export const UseJobsServiceListJobsApiJobsGetKeyFn = (
-  queryKey?: Array<unknown>
-) => [useJobsServiceListJobsApiJobsGetKey, ...(queryKey ?? [])];
-export type JobsServiceListActiveJobsApiJobsActiveGetDefaultResponse = Awaited<
-  ReturnType<typeof JobsService.listActiveJobsApiJobsActiveGet>
->;
-export type JobsServiceListActiveJobsApiJobsActiveGetQueryResult<
-  TData = JobsServiceListActiveJobsApiJobsActiveGetDefaultResponse,
-  TError = unknown
-> = UseQueryResult<TData, TError>;
-export const useJobsServiceListActiveJobsApiJobsActiveGetKey =
-  'JobsServiceListActiveJobsApiJobsActiveGet';
-export const UseJobsServiceListActiveJobsApiJobsActiveGetKeyFn = (
-  queryKey?: Array<unknown>
-) => [useJobsServiceListActiveJobsApiJobsActiveGetKey, ...(queryKey ?? [])];
-export type JobsServiceGetJobApiJobsJobIdGetDefaultResponse = Awaited<
-  ReturnType<typeof JobsService.getJobApiJobsJobIdGet>
->;
-export type JobsServiceGetJobApiJobsJobIdGetQueryResult<
-  TData = JobsServiceGetJobApiJobsJobIdGetDefaultResponse,
-  TError = unknown
-> = UseQueryResult<TData, TError>;
-export const useJobsServiceGetJobApiJobsJobIdGetKey =
-  'JobsServiceGetJobApiJobsJobIdGet';
-export const UseJobsServiceGetJobApiJobsJobIdGetKeyFn = (
-  {
-    jobId,
-  }: {
-    jobId: string;
-  },
-  queryKey?: Array<unknown>
-) => [useJobsServiceGetJobApiJobsJobIdGetKey, ...(queryKey ?? [{ jobId }])];
-export type ModelsServiceListModelsApiModelsGetDefaultResponse = Awaited<
-  ReturnType<typeof ModelsService.listModelsApiModelsGet>
->;
-export type ModelsServiceListModelsApiModelsGetQueryResult<
-  TData = ModelsServiceListModelsApiModelsGetDefaultResponse,
-  TError = unknown
-> = UseQueryResult<TData, TError>;
-export const useModelsServiceListModelsApiModelsGetKey =
-  'ModelsServiceListModelsApiModelsGet';
-export const UseModelsServiceListModelsApiModelsGetKeyFn = (
-  queryKey?: Array<unknown>
-) => [useModelsServiceListModelsApiModelsGetKey, ...(queryKey ?? [])];
-export type SourcesServiceGetSourceApiSourcesSourceIdGetDefaultResponse =
-  Awaited<ReturnType<typeof SourcesService.getSourceApiSourcesSourceIdGet>>;
-export type SourcesServiceGetSourceApiSourcesSourceIdGetQueryResult<
-  TData = SourcesServiceGetSourceApiSourcesSourceIdGetDefaultResponse,
-  TError = unknown
-> = UseQueryResult<TData, TError>;
-export const useSourcesServiceGetSourceApiSourcesSourceIdGetKey =
-  'SourcesServiceGetSourceApiSourcesSourceIdGet';
-export const UseSourcesServiceGetSourceApiSourcesSourceIdGetKeyFn = (
-  {
-    sourceId,
-  }: {
-    sourceId: string;
-  },
-  queryKey?: Array<unknown>
-) => [
-  useSourcesServiceGetSourceApiSourcesSourceIdGetKey,
-  ...(queryKey ?? [{ sourceId }]),
-];
-export type SourcesServiceGetSourceIdByNameApiSourcesNameSourceNameGetDefaultResponse =
-  Awaited<
-    ReturnType<
-      typeof SourcesService.getSourceIdByNameApiSourcesNameSourceNameGet
-    >
-  >;
-export type SourcesServiceGetSourceIdByNameApiSourcesNameSourceNameGetQueryResult<
-  TData = SourcesServiceGetSourceIdByNameApiSourcesNameSourceNameGetDefaultResponse,
-  TError = unknown
-> = UseQueryResult<TData, TError>;
-export const useSourcesServiceGetSourceIdByNameApiSourcesNameSourceNameGetKey =
-  'SourcesServiceGetSourceIdByNameApiSourcesNameSourceNameGet';
-export const UseSourcesServiceGetSourceIdByNameApiSourcesNameSourceNameGetKeyFn =
-  (
-    {
-      sourceName,
-    }: {
-      sourceName: string;
-    },
-    queryKey?: Array<unknown>
-  ) => [
-    useSourcesServiceGetSourceIdByNameApiSourcesNameSourceNameGetKey,
-    ...(queryKey ?? [{ sourceName }]),
-  ];
-export type SourcesServiceListSourcesApiSourcesGetDefaultResponse = Awaited<
-  ReturnType<typeof SourcesService.listSourcesApiSourcesGet>
->;
-export type SourcesServiceListSourcesApiSourcesGetQueryResult<
-  TData = SourcesServiceListSourcesApiSourcesGetDefaultResponse,
-  TError = unknown
-> = UseQueryResult<TData, TError>;
-export const useSourcesServiceListSourcesApiSourcesGetKey =
-  'SourcesServiceListSourcesApiSourcesGet';
-export const UseSourcesServiceListSourcesApiSourcesGetKeyFn = (
-  queryKey?: Array<unknown>
-) => [useSourcesServiceListSourcesApiSourcesGetKey, ...(queryKey ?? [])];
-export type SourcesServiceGetJobApiSourcesStatusJobIdGetDefaultResponse =
-  Awaited<ReturnType<typeof SourcesService.getJobApiSourcesStatusJobIdGet>>;
-export type SourcesServiceGetJobApiSourcesStatusJobIdGetQueryResult<
-  TData = SourcesServiceGetJobApiSourcesStatusJobIdGetDefaultResponse,
-  TError = unknown
-> = UseQueryResult<TData, TError>;
-export const useSourcesServiceGetJobApiSourcesStatusJobIdGetKey =
-  'SourcesServiceGetJobApiSourcesStatusJobIdGet';
-export const UseSourcesServiceGetJobApiSourcesStatusJobIdGetKeyFn = (
-  {
-    jobId,
-  }: {
-    jobId: string;
-  },
-  queryKey?: Array<unknown>
-) => [
-  useSourcesServiceGetJobApiSourcesStatusJobIdGetKey,
-  ...(queryKey ?? [{ jobId }]),
-];
-export type SourcesServiceListPassagesApiSourcesSourceIdPassagesGetDefaultResponse =
-  Awaited<
-    ReturnType<typeof SourcesService.listPassagesApiSourcesSourceIdPassagesGet>
-  >;
-export type SourcesServiceListPassagesApiSourcesSourceIdPassagesGetQueryResult<
-  TData = SourcesServiceListPassagesApiSourcesSourceIdPassagesGetDefaultResponse,
-  TError = unknown
-> = UseQueryResult<TData, TError>;
-export const useSourcesServiceListPassagesApiSourcesSourceIdPassagesGetKey =
-  'SourcesServiceListPassagesApiSourcesSourceIdPassagesGet';
-export const UseSourcesServiceListPassagesApiSourcesSourceIdPassagesGetKeyFn = (
-  {
-    sourceId,
-  }: {
-    sourceId: string;
-  },
-  queryKey?: Array<unknown>
-) => [
-  useSourcesServiceListPassagesApiSourcesSourceIdPassagesGetKey,
-  ...(queryKey ?? [{ sourceId }]),
-];
-export type SourcesServiceListDocumentsApiSourcesSourceIdDocumentsGetDefaultResponse =
-  Awaited<
-    ReturnType<
-      typeof SourcesService.listDocumentsApiSourcesSourceIdDocumentsGet
-    >
-  >;
-export type SourcesServiceListDocumentsApiSourcesSourceIdDocumentsGetQueryResult<
-  TData = SourcesServiceListDocumentsApiSourcesSourceIdDocumentsGetDefaultResponse,
-  TError = unknown
-> = UseQueryResult<TData, TError>;
-export const useSourcesServiceListDocumentsApiSourcesSourceIdDocumentsGetKey =
-  'SourcesServiceListDocumentsApiSourcesSourceIdDocumentsGet';
-export const UseSourcesServiceListDocumentsApiSourcesSourceIdDocumentsGetKeyFn =
-  (
-    {
-      sourceId,
-    }: {
-      sourceId: string;
-    },
-    queryKey?: Array<unknown>
-  ) => [
-    useSourcesServiceListDocumentsApiSourcesSourceIdDocumentsGetKey,
-    ...(queryKey ?? [{ sourceId }]),
-  ];
-export type ConfigServiceGetLlmConfigsApiConfigLlmGetDefaultResponse = Awaited<
-  ReturnType<typeof ConfigService.getLlmConfigsApiConfigLlmGet>
->;
-export type ConfigServiceGetLlmConfigsApiConfigLlmGetQueryResult<
-  TData = ConfigServiceGetLlmConfigsApiConfigLlmGetDefaultResponse,
-  TError = unknown
-> = UseQueryResult<TData, TError>;
-export const useConfigServiceGetLlmConfigsApiConfigLlmGetKey =
-  'ConfigServiceGetLlmConfigsApiConfigLlmGet';
-export const UseConfigServiceGetLlmConfigsApiConfigLlmGetKeyFn = (
-  queryKey?: Array<unknown>
-) => [useConfigServiceGetLlmConfigsApiConfigLlmGetKey, ...(queryKey ?? [])];
-export type ConfigServiceGetEmbeddingConfigsApiConfigEmbeddingGetDefaultResponse =
-  Awaited<
-    ReturnType<typeof ConfigService.getEmbeddingConfigsApiConfigEmbeddingGet>
-  >;
-export type ConfigServiceGetEmbeddingConfigsApiConfigEmbeddingGetQueryResult<
-  TData = ConfigServiceGetEmbeddingConfigsApiConfigEmbeddingGetDefaultResponse,
-  TError = unknown
-> = UseQueryResult<TData, TError>;
-export const useConfigServiceGetEmbeddingConfigsApiConfigEmbeddingGetKey =
-  'ConfigServiceGetEmbeddingConfigsApiConfigEmbeddingGet';
-export const UseConfigServiceGetEmbeddingConfigsApiConfigEmbeddingGetKeyFn = (
-  queryKey?: Array<unknown>
-) => [
-  useConfigServiceGetEmbeddingConfigsApiConfigEmbeddingGetKey,
+export const useJobsServiceListJobsKey = 'JobsServiceListJobs';
+export const UseJobsServiceListJobsKeyFn = (queryKey?: Array<unknown>) => [
+  useJobsServiceListJobsKey,
   ...(queryKey ?? []),
 ];
-export type AuthServiceAuthenticateUserApiAuthPostMutationResult = Awaited<
-  ReturnType<typeof AuthService.authenticateUserApiAuthPost>
+export type JobsServiceListActiveJobsDefaultResponse = Awaited<
+  ReturnType<typeof JobsService.listActiveJobs>
 >;
-export type AdminServiceCreateUserAdminUsersPostMutationResult = Awaited<
-  ReturnType<typeof AdminService.createUserAdminUsersPost>
+export type JobsServiceListActiveJobsQueryResult<
+  TData = JobsServiceListActiveJobsDefaultResponse,
+  TError = unknown
+> = UseQueryResult<TData, TError>;
+export const useJobsServiceListActiveJobsKey = 'JobsServiceListActiveJobs';
+export const UseJobsServiceListActiveJobsKeyFn = (
+  queryKey?: Array<unknown>
+) => [useJobsServiceListActiveJobsKey, ...(queryKey ?? [])];
+export type JobsServiceGetJobDefaultResponse = Awaited<
+  ReturnType<typeof JobsService.getJob>
 >;
-export type AdminServiceCreateNewApiKeyAdminUsersKeysPostMutationResult =
-  Awaited<ReturnType<typeof AdminService.createNewApiKeyAdminUsersKeysPost>>;
-export type ToolsServiceCreateToolAdminToolsPostMutationResult = Awaited<
-  ReturnType<typeof ToolsService.createToolAdminToolsPost>
+export type JobsServiceGetJobQueryResult<
+  TData = JobsServiceGetJobDefaultResponse,
+  TError = unknown
+> = UseQueryResult<TData, TError>;
+export const useJobsServiceGetJobKey = 'JobsServiceGetJob';
+export const UseJobsServiceGetJobKeyFn = (
+  {
+    jobId,
+  }: {
+    jobId: string;
+  },
+  queryKey?: Array<unknown>
+) => [useJobsServiceGetJobKey, ...(queryKey ?? [{ jobId }])];
+export type UsersServiceListUsersDefaultResponse = Awaited<
+  ReturnType<typeof UsersService.listUsers>
 >;
-export type ToolsServiceUpdateToolApiToolsToolIdPostMutationResult = Awaited<
-  ReturnType<typeof ToolsService.updateToolApiToolsToolIdPost>
+export type UsersServiceListUsersQueryResult<
+  TData = UsersServiceListUsersDefaultResponse,
+  TError = unknown
+> = UseQueryResult<TData, TError>;
+export const useUsersServiceListUsersKey = 'UsersServiceListUsers';
+export const UseUsersServiceListUsersKeyFn = (
+  {
+    cursor,
+    limit,
+  }: {
+    cursor?: string;
+    limit?: number;
+  } = {},
+  queryKey?: Array<unknown>
+) => [useUsersServiceListUsersKey, ...(queryKey ?? [{ cursor, limit }])];
+export type UsersServiceListApiKeysDefaultResponse = Awaited<
+  ReturnType<typeof UsersService.listApiKeys>
 >;
-export type ToolsServiceCreateToolApiToolsPostMutationResult = Awaited<
-  ReturnType<typeof ToolsService.createToolApiToolsPost>
+export type UsersServiceListApiKeysQueryResult<
+  TData = UsersServiceListApiKeysDefaultResponse,
+  TError = unknown
+> = UseQueryResult<TData, TError>;
+export const useUsersServiceListApiKeysKey = 'UsersServiceListApiKeys';
+export const UseUsersServiceListApiKeysKeyFn = (
+  {
+    userId,
+  }: {
+    userId: string;
+  },
+  queryKey?: Array<unknown>
+) => [useUsersServiceListApiKeysKey, ...(queryKey ?? [{ userId }])];
+export type AdminServiceListUsersDefaultResponse = Awaited<
+  ReturnType<typeof AdminService.listUsers>
 >;
-export type AgentsServiceCreateAgentApiAgentsPostMutationResult = Awaited<
-  ReturnType<typeof AgentsService.createAgentApiAgentsPost>
+export type AdminServiceListUsersQueryResult<
+  TData = AdminServiceListUsersDefaultResponse,
+  TError = unknown
+> = UseQueryResult<TData, TError>;
+export const useAdminServiceListUsersKey = 'AdminServiceListUsers';
+export const UseAdminServiceListUsersKeyFn = (
+  {
+    cursor,
+    limit,
+  }: {
+    cursor?: string;
+    limit?: number;
+  } = {},
+  queryKey?: Array<unknown>
+) => [useAdminServiceListUsersKey, ...(queryKey ?? [{ cursor, limit }])];
+export type AdminServiceListApiKeysDefaultResponse = Awaited<
+  ReturnType<typeof AdminService.listApiKeys>
 >;
-export type AgentsServiceUpdateAgentApiAgentsAgentIdPostMutationResult =
-  Awaited<ReturnType<typeof AgentsService.updateAgentApiAgentsAgentIdPost>>;
-export type AgentsServiceUpdateAgentMemoryApiAgentsAgentIdMemoryPostMutationResult =
-  Awaited<
-    ReturnType<typeof AgentsService.updateAgentMemoryApiAgentsAgentIdMemoryPost>
-  >;
-export type AgentsServiceInsertAgentArchivalMemoryApiAgentsAgentIdArchivalPostMutationResult =
-  Awaited<
-    ReturnType<
-      typeof AgentsService.insertAgentArchivalMemoryApiAgentsAgentIdArchivalPost
-    >
-  >;
-export type AgentsServiceSendMessageApiAgentsAgentIdMessagesPostMutationResult =
-  Awaited<
-    ReturnType<typeof AgentsService.sendMessageApiAgentsAgentIdMessagesPost>
-  >;
-export type BlockServiceCreateBlockApiBlocksPostMutationResult = Awaited<
-  ReturnType<typeof BlockService.createBlockApiBlocksPost>
+export type AdminServiceListApiKeysQueryResult<
+  TData = AdminServiceListApiKeysDefaultResponse,
+  TError = unknown
+> = UseQueryResult<TData, TError>;
+export const useAdminServiceListApiKeysKey = 'AdminServiceListApiKeys';
+export const UseAdminServiceListApiKeysKeyFn = (
+  {
+    userId,
+  }: {
+    userId: string;
+  },
+  queryKey?: Array<unknown>
+) => [useAdminServiceListApiKeysKey, ...(queryKey ?? [{ userId }])];
+export type ToolsServiceCreateToolMutationResult = Awaited<
+  ReturnType<typeof ToolsService.createTool>
 >;
-export type BlockServiceUpdateBlockApiBlocksBlockIdPostMutationResult = Awaited<
-  ReturnType<typeof BlockService.updateBlockApiBlocksBlockIdPost>
+export type SourcesServiceCreateSourceMutationResult = Awaited<
+  ReturnType<typeof SourcesService.createSource>
 >;
-export type SourcesServiceUpdateSourceApiSourcesSourceIdPostMutationResult =
-  Awaited<ReturnType<typeof SourcesService.updateSourceApiSourcesSourceIdPost>>;
-export type SourcesServiceCreateSourceApiSourcesPostMutationResult = Awaited<
-  ReturnType<typeof SourcesService.createSourceApiSourcesPost>
+export type SourcesServiceAttachAgentToSourceMutationResult = Awaited<
+  ReturnType<typeof SourcesService.attachAgentToSource>
 >;
-export type SourcesServiceAttachSourceToAgentApiSourcesSourceIdAttachPostMutationResult =
-  Awaited<
-    ReturnType<
-      typeof SourcesService.attachSourceToAgentApiSourcesSourceIdAttachPost
-    >
-  >;
-export type SourcesServiceDetachSourceFromAgentApiSourcesSourceIdDetachPostMutationResult =
-  Awaited<
-    ReturnType<
-      typeof SourcesService.detachSourceFromAgentApiSourcesSourceIdDetachPost
-    >
-  >;
-export type SourcesServiceUploadFileToSourceApiSourcesSourceIdUploadPostMutationResult =
-  Awaited<
-    ReturnType<
-      typeof SourcesService.uploadFileToSourceApiSourcesSourceIdUploadPost
-    >
-  >;
-export type AdminServiceDeleteUserAdminUsersDeleteMutationResult = Awaited<
-  ReturnType<typeof AdminService.deleteUserAdminUsersDelete>
+export type SourcesServiceDetachAgentFromSourceMutationResult = Awaited<
+  ReturnType<typeof SourcesService.detachAgentFromSource>
 >;
-export type AdminServiceDeleteApiKeyAdminUsersKeysDeleteMutationResult =
-  Awaited<ReturnType<typeof AdminService.deleteApiKeyAdminUsersKeysDelete>>;
-export type ToolsServiceDeleteToolAdminToolsToolNameDeleteMutationResult =
-  Awaited<ReturnType<typeof ToolsService.deleteToolAdminToolsToolNameDelete>>;
-export type ToolsServiceDeleteToolApiToolsToolIdDeleteMutationResult = Awaited<
-  ReturnType<typeof ToolsService.deleteToolApiToolsToolIdDelete>
+export type SourcesServiceUploadFileToSourceMutationResult = Awaited<
+  ReturnType<typeof SourcesService.uploadFileToSource>
 >;
-export type AgentsServiceDeleteAgentApiAgentsAgentIdDeleteMutationResult =
-  Awaited<ReturnType<typeof AgentsService.deleteAgentApiAgentsAgentIdDelete>>;
-export type AgentsServiceDeleteAgentArchivalMemoryApiAgentsAgentIdArchivalMemoryIdDeleteMutationResult =
-  Awaited<
-    ReturnType<
-      typeof AgentsService.deleteAgentArchivalMemoryApiAgentsAgentIdArchivalMemoryIdDelete
-    >
-  >;
-export type BlockServiceDeleteBlockApiBlocksBlockIdDeleteMutationResult =
-  Awaited<ReturnType<typeof BlockService.deleteBlockApiBlocksBlockIdDelete>>;
-export type SourcesServiceDeleteSourceApiSourcesSourceIdDeleteMutationResult =
-  Awaited<
-    ReturnType<typeof SourcesService.deleteSourceApiSourcesSourceIdDelete>
-  >;
+export type AgentsServiceCreateAgentMutationResult = Awaited<
+  ReturnType<typeof AgentsService.createAgent>
+>;
+export type AgentsServiceCreateAgentArchivalMemoryMutationResult = Awaited<
+  ReturnType<typeof AgentsService.createAgentArchivalMemory>
+>;
+export type AgentsServiceCreateAgentMessageMutationResult = Awaited<
+  ReturnType<typeof AgentsService.createAgentMessage>
+>;
+export type BlocksServiceCreateMemoryBlockMutationResult = Awaited<
+  ReturnType<typeof BlocksService.createMemoryBlock>
+>;
+export type UsersServiceCreateUserMutationResult = Awaited<
+  ReturnType<typeof UsersService.createUser>
+>;
+export type UsersServiceCreateApiKeyMutationResult = Awaited<
+  ReturnType<typeof UsersService.createApiKey>
+>;
+export type AdminServiceCreateUserMutationResult = Awaited<
+  ReturnType<typeof AdminService.createUser>
+>;
+export type AdminServiceCreateApiKeyMutationResult = Awaited<
+  ReturnType<typeof AdminService.createApiKey>
+>;
+export type AuthServiceAuthenticateUserV1AuthPostMutationResult = Awaited<
+  ReturnType<typeof AuthService.authenticateUserV1AuthPost>
+>;
+export type ToolsServiceUpdateToolMutationResult = Awaited<
+  ReturnType<typeof ToolsService.updateTool>
+>;
+export type SourcesServiceUpdateSourceMutationResult = Awaited<
+  ReturnType<typeof SourcesService.updateSource>
+>;
+export type AgentsServiceUpdateAgentMutationResult = Awaited<
+  ReturnType<typeof AgentsService.updateAgent>
+>;
+export type AgentsServiceUpdateAgentMemoryMutationResult = Awaited<
+  ReturnType<typeof AgentsService.updateAgentMemory>
+>;
+export type AgentsServiceUpdateAgentMessageMutationResult = Awaited<
+  ReturnType<typeof AgentsService.updateAgentMessage>
+>;
+export type BlocksServiceUpdateMemoryBlockMutationResult = Awaited<
+  ReturnType<typeof BlocksService.updateMemoryBlock>
+>;
+export type ToolsServiceDeleteToolMutationResult = Awaited<
+  ReturnType<typeof ToolsService.deleteTool>
+>;
+export type SourcesServiceDeleteSourceMutationResult = Awaited<
+  ReturnType<typeof SourcesService.deleteSource>
+>;
+export type AgentsServiceDeleteAgentMutationResult = Awaited<
+  ReturnType<typeof AgentsService.deleteAgent>
+>;
+export type AgentsServiceDeleteAgentArchivalMemoryMutationResult = Awaited<
+  ReturnType<typeof AgentsService.deleteAgentArchivalMemory>
+>;
+export type BlocksServiceDeleteMemoryBlockMutationResult = Awaited<
+  ReturnType<typeof BlocksService.deleteMemoryBlock>
+>;
+export type UsersServiceDeleteUserMutationResult = Awaited<
+  ReturnType<typeof UsersService.deleteUser>
+>;
+export type UsersServiceDeleteApiKeyMutationResult = Awaited<
+  ReturnType<typeof UsersService.deleteApiKey>
+>;
+export type AdminServiceDeleteUserMutationResult = Awaited<
+  ReturnType<typeof AdminService.deleteUser>
+>;
+export type AdminServiceDeleteApiKeyMutationResult = Awaited<
+  ReturnType<typeof AdminService.deleteApiKey>
+>;

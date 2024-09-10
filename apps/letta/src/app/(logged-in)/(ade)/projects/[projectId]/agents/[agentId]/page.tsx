@@ -1,7 +1,7 @@
 import { AgentPage } from './AgentPage';
 import {
   AgentsService,
-  UseAgentsServiceGetAgentStateApiAgentsAgentIdGetKeyFn,
+  UseAgentsServiceGetAgentKeyFn,
 } from '@letta-web/letta-agents-api';
 import {
   dehydrate,
@@ -39,12 +39,12 @@ async function AgentsAgentPage(context: AgentsAgentPageProps) {
 
   const { agentId } = testingAgent;
 
-  const agent = await AgentsService.getAgentStateApiAgentsAgentIdGet({
+  const agent = await AgentsService.getAgent({
     agentId,
   });
 
   await queryClient.prefetchQuery({
-    queryKey: UseAgentsServiceGetAgentStateApiAgentsAgentIdGetKeyFn({
+    queryKey: UseAgentsServiceGetAgentKeyFn({
       agentId: testingAgentId,
     }),
     queryFn: () => agent,

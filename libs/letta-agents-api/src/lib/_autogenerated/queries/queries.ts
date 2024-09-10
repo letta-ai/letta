@@ -10,21 +10,21 @@ import {
   AdminService,
   AgentsService,
   AuthService,
-  BlockService,
-  ConfigService,
+  BlocksService,
   JobsService,
+  LlmsService,
   ModelsService,
   SourcesService,
   ToolsService,
+  UsersService,
 } from '../requests/services.gen';
 import {
   APIKeyCreate,
   AuthRequest,
-  Body_upload_file_to_source_api_sources__source_id__upload_post,
+  Body_upload_file_to_source,
   CreateAgent,
   CreateArchivalMemory,
   CreateBlock,
-  CreateToolRequest,
   MemGPTRequest,
   SourceCreate,
   SourceUpdate,
@@ -32,92 +32,12 @@ import {
   ToolUpdate,
   UpdateAgentState,
   UpdateBlock,
+  UpdateMessage,
   UserCreate,
 } from '../requests/types.gen';
 import * as Common from './common';
-export const useAdminServiceGetAllUsersAdminUsersGet = <
-  TData = Common.AdminServiceGetAllUsersAdminUsersGetDefaultResponse,
-  TError = unknown,
-  TQueryKey extends Array<unknown> = unknown[]
->(
-  {
-    cursor,
-    limit,
-  }: {
-    cursor?: string;
-    limit?: number;
-  } = {},
-  queryKey?: TQueryKey,
-  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
-) =>
-  useQuery<TData, TError>({
-    queryKey: Common.UseAdminServiceGetAllUsersAdminUsersGetKeyFn(
-      { cursor, limit },
-      queryKey
-    ),
-    queryFn: () =>
-      AdminService.getAllUsersAdminUsersGet({ cursor, limit }) as TData,
-    ...options,
-  });
-export const useAdminServiceGetApiKeysAdminUsersKeysGet = <
-  TData = Common.AdminServiceGetApiKeysAdminUsersKeysGetDefaultResponse,
-  TError = unknown,
-  TQueryKey extends Array<unknown> = unknown[]
->(
-  {
-    userId,
-  }: {
-    userId: string;
-  },
-  queryKey?: TQueryKey,
-  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
-) =>
-  useQuery<TData, TError>({
-    queryKey: Common.UseAdminServiceGetApiKeysAdminUsersKeysGetKeyFn(
-      { userId },
-      queryKey
-    ),
-    queryFn: () =>
-      AdminService.getApiKeysAdminUsersKeysGet({ userId }) as TData,
-    ...options,
-  });
-export const useToolsServiceGetToolAdminToolsToolNameGet = <
-  TData = Common.ToolsServiceGetToolAdminToolsToolNameGetDefaultResponse,
-  TError = unknown,
-  TQueryKey extends Array<unknown> = unknown[]
->(
-  {
-    toolName,
-  }: {
-    toolName: string;
-  },
-  queryKey?: TQueryKey,
-  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
-) =>
-  useQuery<TData, TError>({
-    queryKey: Common.UseToolsServiceGetToolAdminToolsToolNameGetKeyFn(
-      { toolName },
-      queryKey
-    ),
-    queryFn: () =>
-      ToolsService.getToolAdminToolsToolNameGet({ toolName }) as TData,
-    ...options,
-  });
-export const useToolsServiceListAllToolsAdminToolsGet = <
-  TData = Common.ToolsServiceListAllToolsAdminToolsGetDefaultResponse,
-  TError = unknown,
-  TQueryKey extends Array<unknown> = unknown[]
->(
-  queryKey?: TQueryKey,
-  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
-) =>
-  useQuery<TData, TError>({
-    queryKey: Common.UseToolsServiceListAllToolsAdminToolsGetKeyFn(queryKey),
-    queryFn: () => ToolsService.listAllToolsAdminToolsGet() as TData,
-    ...options,
-  });
-export const useToolsServiceGetToolApiToolsToolIdGet = <
-  TData = Common.ToolsServiceGetToolApiToolsToolIdGetDefaultResponse,
+export const useToolsServiceGetTool = <
+  TData = Common.ToolsServiceGetToolDefaultResponse,
   TError = unknown,
   TQueryKey extends Array<unknown> = unknown[]
 >(
@@ -130,15 +50,12 @@ export const useToolsServiceGetToolApiToolsToolIdGet = <
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
 ) =>
   useQuery<TData, TError>({
-    queryKey: Common.UseToolsServiceGetToolApiToolsToolIdGetKeyFn(
-      { toolId },
-      queryKey
-    ),
-    queryFn: () => ToolsService.getToolApiToolsToolIdGet({ toolId }) as TData,
+    queryKey: Common.UseToolsServiceGetToolKeyFn({ toolId }, queryKey),
+    queryFn: () => ToolsService.getTool({ toolId }) as TData,
     ...options,
   });
-export const useToolsServiceGetToolIdApiToolsNameToolNameGet = <
-  TData = Common.ToolsServiceGetToolIdApiToolsNameToolNameGetDefaultResponse,
+export const useToolsServiceGetToolIdByName = <
+  TData = Common.ToolsServiceGetToolIdByNameDefaultResponse,
   TError = unknown,
   TQueryKey extends Array<unknown> = unknown[]
 >(
@@ -151,16 +68,15 @@ export const useToolsServiceGetToolIdApiToolsNameToolNameGet = <
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
 ) =>
   useQuery<TData, TError>({
-    queryKey: Common.UseToolsServiceGetToolIdApiToolsNameToolNameGetKeyFn(
+    queryKey: Common.UseToolsServiceGetToolIdByNameKeyFn(
       { toolName },
       queryKey
     ),
-    queryFn: () =>
-      ToolsService.getToolIdApiToolsNameToolNameGet({ toolName }) as TData,
+    queryFn: () => ToolsService.getToolIdByName({ toolName }) as TData,
     ...options,
   });
-export const useToolsServiceListAllToolsApiToolsGet = <
-  TData = Common.ToolsServiceListAllToolsApiToolsGetDefaultResponse,
+export const useToolsServiceListTools = <
+  TData = Common.ToolsServiceListToolsDefaultResponse,
   TError = unknown,
   TQueryKey extends Array<unknown> = unknown[]
 >(
@@ -168,12 +84,51 @@ export const useToolsServiceListAllToolsApiToolsGet = <
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
 ) =>
   useQuery<TData, TError>({
-    queryKey: Common.UseToolsServiceListAllToolsApiToolsGetKeyFn(queryKey),
-    queryFn: () => ToolsService.listAllToolsApiToolsGet() as TData,
+    queryKey: Common.UseToolsServiceListToolsKeyFn(queryKey),
+    queryFn: () => ToolsService.listTools() as TData,
     ...options,
   });
-export const useAgentsServiceGetAllAgentsApiAdminAgentsGet = <
-  TData = Common.AgentsServiceGetAllAgentsApiAdminAgentsGetDefaultResponse,
+export const useSourcesServiceGetSource = <
+  TData = Common.SourcesServiceGetSourceDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[]
+>(
+  {
+    sourceId,
+  }: {
+    sourceId: string;
+  },
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
+) =>
+  useQuery<TData, TError>({
+    queryKey: Common.UseSourcesServiceGetSourceKeyFn({ sourceId }, queryKey),
+    queryFn: () => SourcesService.getSource({ sourceId }) as TData,
+    ...options,
+  });
+export const useSourcesServiceGetSourceIdByName = <
+  TData = Common.SourcesServiceGetSourceIdByNameDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[]
+>(
+  {
+    sourceName,
+  }: {
+    sourceName: string;
+  },
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
+) =>
+  useQuery<TData, TError>({
+    queryKey: Common.UseSourcesServiceGetSourceIdByNameKeyFn(
+      { sourceName },
+      queryKey
+    ),
+    queryFn: () => SourcesService.getSourceIdByName({ sourceName }) as TData,
+    ...options,
+  });
+export const useSourcesServiceListSources = <
+  TData = Common.SourcesServiceListSourcesDefaultResponse,
   TError = unknown,
   TQueryKey extends Array<unknown> = unknown[]
 >(
@@ -181,13 +136,54 @@ export const useAgentsServiceGetAllAgentsApiAdminAgentsGet = <
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
 ) =>
   useQuery<TData, TError>({
-    queryKey:
-      Common.UseAgentsServiceGetAllAgentsApiAdminAgentsGetKeyFn(queryKey),
-    queryFn: () => AgentsService.getAllAgentsApiAdminAgentsGet() as TData,
+    queryKey: Common.UseSourcesServiceListSourcesKeyFn(queryKey),
+    queryFn: () => SourcesService.listSources() as TData,
     ...options,
   });
-export const useAgentsServiceListAgentsApiAgentsGet = <
-  TData = Common.AgentsServiceListAgentsApiAgentsGetDefaultResponse,
+export const useSourcesServiceListSourcePassages = <
+  TData = Common.SourcesServiceListSourcePassagesDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[]
+>(
+  {
+    sourceId,
+  }: {
+    sourceId: string;
+  },
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
+) =>
+  useQuery<TData, TError>({
+    queryKey: Common.UseSourcesServiceListSourcePassagesKeyFn(
+      { sourceId },
+      queryKey
+    ),
+    queryFn: () => SourcesService.listSourcePassages({ sourceId }) as TData,
+    ...options,
+  });
+export const useSourcesServiceListSourceDocuments = <
+  TData = Common.SourcesServiceListSourceDocumentsDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[]
+>(
+  {
+    sourceId,
+  }: {
+    sourceId: string;
+  },
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
+) =>
+  useQuery<TData, TError>({
+    queryKey: Common.UseSourcesServiceListSourceDocumentsKeyFn(
+      { sourceId },
+      queryKey
+    ),
+    queryFn: () => SourcesService.listSourceDocuments({ sourceId }) as TData,
+    ...options,
+  });
+export const useAgentsServiceListAgents = <
+  TData = Common.AgentsServiceListAgentsDefaultResponse,
   TError = unknown,
   TQueryKey extends Array<unknown> = unknown[]
 >(
@@ -195,12 +191,12 @@ export const useAgentsServiceListAgentsApiAgentsGet = <
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
 ) =>
   useQuery<TData, TError>({
-    queryKey: Common.UseAgentsServiceListAgentsApiAgentsGetKeyFn(queryKey),
-    queryFn: () => AgentsService.listAgentsApiAgentsGet() as TData,
+    queryKey: Common.UseAgentsServiceListAgentsKeyFn(queryKey),
+    queryFn: () => AgentsService.listAgents() as TData,
     ...options,
   });
-export const useAgentsServiceGetAgentStateApiAgentsAgentIdGet = <
-  TData = Common.AgentsServiceGetAgentStateApiAgentsAgentIdGetDefaultResponse,
+export const useAgentsServiceGetAgent = <
+  TData = Common.AgentsServiceGetAgentDefaultResponse,
   TError = unknown,
   TQueryKey extends Array<unknown> = unknown[]
 >(
@@ -213,16 +209,55 @@ export const useAgentsServiceGetAgentStateApiAgentsAgentIdGet = <
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
 ) =>
   useQuery<TData, TError>({
-    queryKey: Common.UseAgentsServiceGetAgentStateApiAgentsAgentIdGetKeyFn(
+    queryKey: Common.UseAgentsServiceGetAgentKeyFn({ agentId }, queryKey),
+    queryFn: () => AgentsService.getAgent({ agentId }) as TData,
+    ...options,
+  });
+export const useAgentsServiceGetAgentSources = <
+  TData = Common.AgentsServiceGetAgentSourcesDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[]
+>(
+  {
+    agentId,
+  }: {
+    agentId: string;
+  },
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
+) =>
+  useQuery<TData, TError>({
+    queryKey: Common.UseAgentsServiceGetAgentSourcesKeyFn(
+      { agentId },
+      queryKey
+    ),
+    queryFn: () => AgentsService.getAgentSources({ agentId }) as TData,
+    ...options,
+  });
+export const useAgentsServiceListAgentInContextMessages = <
+  TData = Common.AgentsServiceListAgentInContextMessagesDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[]
+>(
+  {
+    agentId,
+  }: {
+    agentId: string;
+  },
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
+) =>
+  useQuery<TData, TError>({
+    queryKey: Common.UseAgentsServiceListAgentInContextMessagesKeyFn(
       { agentId },
       queryKey
     ),
     queryFn: () =>
-      AgentsService.getAgentStateApiAgentsAgentIdGet({ agentId }) as TData,
+      AgentsService.listAgentInContextMessages({ agentId }) as TData,
     ...options,
   });
-export const useAgentsServiceGetAgentSourcesApiAgentsAgentIdSourcesGet = <
-  TData = Common.AgentsServiceGetAgentSourcesApiAgentsAgentIdSourcesGetDefaultResponse,
+export const useAgentsServiceGetAgentMemory = <
+  TData = Common.AgentsServiceGetAgentMemoryDefaultResponse,
   TError = unknown,
   TQueryKey extends Array<unknown> = unknown[]
 >(
@@ -235,45 +270,12 @@ export const useAgentsServiceGetAgentSourcesApiAgentsAgentIdSourcesGet = <
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
 ) =>
   useQuery<TData, TError>({
-    queryKey:
-      Common.UseAgentsServiceGetAgentSourcesApiAgentsAgentIdSourcesGetKeyFn(
-        { agentId },
-        queryKey
-      ),
-    queryFn: () =>
-      AgentsService.getAgentSourcesApiAgentsAgentIdSourcesGet({
-        agentId,
-      }) as TData,
+    queryKey: Common.UseAgentsServiceGetAgentMemoryKeyFn({ agentId }, queryKey),
+    queryFn: () => AgentsService.getAgentMemory({ agentId }) as TData,
     ...options,
   });
-export const useAgentsServiceGetAgentInContextMessagesApiAgentsAgentIdMemoryMessagesGet =
-  <
-    TData = Common.AgentsServiceGetAgentInContextMessagesApiAgentsAgentIdMemoryMessagesGetDefaultResponse,
-    TError = unknown,
-    TQueryKey extends Array<unknown> = unknown[]
-  >(
-    {
-      agentId,
-    }: {
-      agentId: string;
-    },
-    queryKey?: TQueryKey,
-    options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
-  ) =>
-    useQuery<TData, TError>({
-      queryKey:
-        Common.UseAgentsServiceGetAgentInContextMessagesApiAgentsAgentIdMemoryMessagesGetKeyFn(
-          { agentId },
-          queryKey
-        ),
-      queryFn: () =>
-        AgentsService.getAgentInContextMessagesApiAgentsAgentIdMemoryMessagesGet(
-          { agentId }
-        ) as TData,
-      ...options,
-    });
-export const useAgentsServiceGetAgentMemoryApiAgentsAgentIdMemoryGet = <
-  TData = Common.AgentsServiceGetAgentMemoryApiAgentsAgentIdMemoryGetDefaultResponse,
+export const useAgentsServiceGetAgentRecallMemorySummary = <
+  TData = Common.AgentsServiceGetAgentRecallMemorySummaryDefaultResponse,
   TError = unknown,
   TQueryKey extends Array<unknown> = unknown[]
 >(
@@ -286,136 +288,71 @@ export const useAgentsServiceGetAgentMemoryApiAgentsAgentIdMemoryGet = <
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
 ) =>
   useQuery<TData, TError>({
-    queryKey:
-      Common.UseAgentsServiceGetAgentMemoryApiAgentsAgentIdMemoryGetKeyFn(
-        { agentId },
-        queryKey
-      ),
+    queryKey: Common.UseAgentsServiceGetAgentRecallMemorySummaryKeyFn(
+      { agentId },
+      queryKey
+    ),
     queryFn: () =>
-      AgentsService.getAgentMemoryApiAgentsAgentIdMemoryGet({
+      AgentsService.getAgentRecallMemorySummary({ agentId }) as TData,
+    ...options,
+  });
+export const useAgentsServiceGetAgentArchivalMemorySummary = <
+  TData = Common.AgentsServiceGetAgentArchivalMemorySummaryDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[]
+>(
+  {
+    agentId,
+  }: {
+    agentId: string;
+  },
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
+) =>
+  useQuery<TData, TError>({
+    queryKey: Common.UseAgentsServiceGetAgentArchivalMemorySummaryKeyFn(
+      { agentId },
+      queryKey
+    ),
+    queryFn: () =>
+      AgentsService.getAgentArchivalMemorySummary({ agentId }) as TData,
+    ...options,
+  });
+export const useAgentsServiceListAgentArchivalMemory = <
+  TData = Common.AgentsServiceListAgentArchivalMemoryDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[]
+>(
+  {
+    after,
+    agentId,
+    before,
+    limit,
+  }: {
+    after?: number;
+    agentId: string;
+    before?: number;
+    limit?: number;
+  },
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
+) =>
+  useQuery<TData, TError>({
+    queryKey: Common.UseAgentsServiceListAgentArchivalMemoryKeyFn(
+      { after, agentId, before, limit },
+      queryKey
+    ),
+    queryFn: () =>
+      AgentsService.listAgentArchivalMemory({
+        after,
         agentId,
+        before,
+        limit,
       }) as TData,
     ...options,
   });
-export const useAgentsServiceGetAgentRecallMemorySummaryApiAgentsAgentIdMemoryRecallGet =
-  <
-    TData = Common.AgentsServiceGetAgentRecallMemorySummaryApiAgentsAgentIdMemoryRecallGetDefaultResponse,
-    TError = unknown,
-    TQueryKey extends Array<unknown> = unknown[]
-  >(
-    {
-      agentId,
-    }: {
-      agentId: string;
-    },
-    queryKey?: TQueryKey,
-    options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
-  ) =>
-    useQuery<TData, TError>({
-      queryKey:
-        Common.UseAgentsServiceGetAgentRecallMemorySummaryApiAgentsAgentIdMemoryRecallGetKeyFn(
-          { agentId },
-          queryKey
-        ),
-      queryFn: () =>
-        AgentsService.getAgentRecallMemorySummaryApiAgentsAgentIdMemoryRecallGet(
-          { agentId }
-        ) as TData,
-      ...options,
-    });
-export const useAgentsServiceGetAgentArchivalMemorySummaryApiAgentsAgentIdMemoryArchivalGet =
-  <
-    TData = Common.AgentsServiceGetAgentArchivalMemorySummaryApiAgentsAgentIdMemoryArchivalGetDefaultResponse,
-    TError = unknown,
-    TQueryKey extends Array<unknown> = unknown[]
-  >(
-    {
-      agentId,
-    }: {
-      agentId: string;
-    },
-    queryKey?: TQueryKey,
-    options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
-  ) =>
-    useQuery<TData, TError>({
-      queryKey:
-        Common.UseAgentsServiceGetAgentArchivalMemorySummaryApiAgentsAgentIdMemoryArchivalGetKeyFn(
-          { agentId },
-          queryKey
-        ),
-      queryFn: () =>
-        AgentsService.getAgentArchivalMemorySummaryApiAgentsAgentIdMemoryArchivalGet(
-          { agentId }
-        ) as TData,
-      ...options,
-    });
-export const useAgentsServiceGetAgentArchivalMemoryApiAgentsAgentIdArchivalGet =
-  <
-    TData = Common.AgentsServiceGetAgentArchivalMemoryApiAgentsAgentIdArchivalGetDefaultResponse,
-    TError = unknown,
-    TQueryKey extends Array<unknown> = unknown[]
-  >(
-    {
-      after,
-      agentId,
-      before,
-      limit,
-    }: {
-      after?: number;
-      agentId: string;
-      before?: number;
-      limit?: number;
-    },
-    queryKey?: TQueryKey,
-    options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
-  ) =>
-    useQuery<TData, TError>({
-      queryKey:
-        Common.UseAgentsServiceGetAgentArchivalMemoryApiAgentsAgentIdArchivalGetKeyFn(
-          { after, agentId, before, limit },
-          queryKey
-        ),
-      queryFn: () =>
-        AgentsService.getAgentArchivalMemoryApiAgentsAgentIdArchivalGet({
-          after,
-          agentId,
-          before,
-          limit,
-        }) as TData,
-      ...options,
-    });
-export const useAgentsServiceGetAgentMessagesInContextApiAgentsAgentIdMessagesContextGet =
-  <
-    TData = Common.AgentsServiceGetAgentMessagesInContextApiAgentsAgentIdMessagesContextGetDefaultResponse,
-    TError = unknown,
-    TQueryKey extends Array<unknown> = unknown[]
-  >(
-    {
-      agentId,
-      count,
-      start,
-    }: {
-      agentId: string;
-      count: number;
-      start: number;
-    },
-    queryKey?: TQueryKey,
-    options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
-  ) =>
-    useQuery<TData, TError>({
-      queryKey:
-        Common.UseAgentsServiceGetAgentMessagesInContextApiAgentsAgentIdMessagesContextGetKeyFn(
-          { agentId, count, start },
-          queryKey
-        ),
-      queryFn: () =>
-        AgentsService.getAgentMessagesInContextApiAgentsAgentIdMessagesContextGet(
-          { agentId, count, start }
-        ) as TData,
-      ...options,
-    });
-export const useAgentsServiceGetAgentMessagesApiAgentsAgentIdMessagesGet = <
-  TData = Common.AgentsServiceGetAgentMessagesApiAgentsAgentIdMessagesGetDefaultResponse,
+export const useAgentsServiceListAgentMessages = <
+  TData = Common.AgentsServiceListAgentMessagesDefaultResponse,
   TError = unknown,
   TQueryKey extends Array<unknown> = unknown[]
 >(
@@ -423,30 +360,84 @@ export const useAgentsServiceGetAgentMessagesApiAgentsAgentIdMessagesGet = <
     agentId,
     before,
     limit,
+    msgObject,
   }: {
     agentId: string;
     before?: string;
     limit?: number;
+    msgObject?: boolean;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
 ) =>
   useQuery<TData, TError>({
-    queryKey:
-      Common.UseAgentsServiceGetAgentMessagesApiAgentsAgentIdMessagesGetKeyFn(
-        { agentId, before, limit },
-        queryKey
-      ),
+    queryKey: Common.UseAgentsServiceListAgentMessagesKeyFn(
+      { agentId, before, limit, msgObject },
+      queryKey
+    ),
     queryFn: () =>
-      AgentsService.getAgentMessagesApiAgentsAgentIdMessagesGet({
+      AgentsService.listAgentMessages({
         agentId,
         before,
         limit,
+        msgObject,
       }) as TData,
     ...options,
   });
-export const useBlockServiceListBlocksApiBlocksGet = <
-  TData = Common.BlockServiceListBlocksApiBlocksGetDefaultResponse,
+export const useModelsServiceListModels = <
+  TData = Common.ModelsServiceListModelsDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[]
+>(
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
+) =>
+  useQuery<TData, TError>({
+    queryKey: Common.UseModelsServiceListModelsKeyFn(queryKey),
+    queryFn: () => ModelsService.listModels() as TData,
+    ...options,
+  });
+export const useModelsServiceListEmbeddingModels = <
+  TData = Common.ModelsServiceListEmbeddingModelsDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[]
+>(
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
+) =>
+  useQuery<TData, TError>({
+    queryKey: Common.UseModelsServiceListEmbeddingModelsKeyFn(queryKey),
+    queryFn: () => ModelsService.listEmbeddingModels() as TData,
+    ...options,
+  });
+export const useLlmsServiceListModels = <
+  TData = Common.LlmsServiceListModelsDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[]
+>(
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
+) =>
+  useQuery<TData, TError>({
+    queryKey: Common.UseLlmsServiceListModelsKeyFn(queryKey),
+    queryFn: () => LlmsService.listModels() as TData,
+    ...options,
+  });
+export const useLlmsServiceListEmbeddingModels = <
+  TData = Common.LlmsServiceListEmbeddingModelsDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[]
+>(
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
+) =>
+  useQuery<TData, TError>({
+    queryKey: Common.UseLlmsServiceListEmbeddingModelsKeyFn(queryKey),
+    queryFn: () => LlmsService.listEmbeddingModels() as TData,
+    ...options,
+  });
+export const useBlocksServiceListMemoryBlocks = <
+  TData = Common.BlocksServiceListMemoryBlocksDefaultResponse,
   TError = unknown,
   TQueryKey extends Array<unknown> = unknown[]
 >(
@@ -463,20 +454,16 @@ export const useBlockServiceListBlocksApiBlocksGet = <
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
 ) =>
   useQuery<TData, TError>({
-    queryKey: Common.UseBlockServiceListBlocksApiBlocksGetKeyFn(
+    queryKey: Common.UseBlocksServiceListMemoryBlocksKeyFn(
       { label, name, templatesOnly },
       queryKey
     ),
     queryFn: () =>
-      BlockService.listBlocksApiBlocksGet({
-        label,
-        name,
-        templatesOnly,
-      }) as TData,
+      BlocksService.listMemoryBlocks({ label, name, templatesOnly }) as TData,
     ...options,
   });
-export const useBlockServiceGetBlockApiBlocksBlockIdGet = <
-  TData = Common.BlockServiceGetBlockApiBlocksBlockIdGetDefaultResponse,
+export const useBlocksServiceGetMemoryBlock = <
+  TData = Common.BlocksServiceGetMemoryBlockDefaultResponse,
   TError = unknown,
   TQueryKey extends Array<unknown> = unknown[]
 >(
@@ -489,16 +476,12 @@ export const useBlockServiceGetBlockApiBlocksBlockIdGet = <
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
 ) =>
   useQuery<TData, TError>({
-    queryKey: Common.UseBlockServiceGetBlockApiBlocksBlockIdGetKeyFn(
-      { blockId },
-      queryKey
-    ),
-    queryFn: () =>
-      BlockService.getBlockApiBlocksBlockIdGet({ blockId }) as TData,
+    queryKey: Common.UseBlocksServiceGetMemoryBlockKeyFn({ blockId }, queryKey),
+    queryFn: () => BlocksService.getMemoryBlock({ blockId }) as TData,
     ...options,
   });
-export const useJobsServiceListJobsApiJobsGet = <
-  TData = Common.JobsServiceListJobsApiJobsGetDefaultResponse,
+export const useJobsServiceListJobs = <
+  TData = Common.JobsServiceListJobsDefaultResponse,
   TError = unknown,
   TQueryKey extends Array<unknown> = unknown[]
 >(
@@ -506,12 +489,12 @@ export const useJobsServiceListJobsApiJobsGet = <
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
 ) =>
   useQuery<TData, TError>({
-    queryKey: Common.UseJobsServiceListJobsApiJobsGetKeyFn(queryKey),
-    queryFn: () => JobsService.listJobsApiJobsGet() as TData,
+    queryKey: Common.UseJobsServiceListJobsKeyFn(queryKey),
+    queryFn: () => JobsService.listJobs() as TData,
     ...options,
   });
-export const useJobsServiceListActiveJobsApiJobsActiveGet = <
-  TData = Common.JobsServiceListActiveJobsApiJobsActiveGetDefaultResponse,
+export const useJobsServiceListActiveJobs = <
+  TData = Common.JobsServiceListActiveJobsDefaultResponse,
   TError = unknown,
   TQueryKey extends Array<unknown> = unknown[]
 >(
@@ -519,13 +502,12 @@ export const useJobsServiceListActiveJobsApiJobsActiveGet = <
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
 ) =>
   useQuery<TData, TError>({
-    queryKey:
-      Common.UseJobsServiceListActiveJobsApiJobsActiveGetKeyFn(queryKey),
-    queryFn: () => JobsService.listActiveJobsApiJobsActiveGet() as TData,
+    queryKey: Common.UseJobsServiceListActiveJobsKeyFn(queryKey),
+    queryFn: () => JobsService.listActiveJobs() as TData,
     ...options,
   });
-export const useJobsServiceGetJobApiJobsJobIdGet = <
-  TData = Common.JobsServiceGetJobApiJobsJobIdGetDefaultResponse,
+export const useJobsServiceGetJob = <
+  TData = Common.JobsServiceGetJobDefaultResponse,
   TError = unknown,
   TQueryKey extends Array<unknown> = unknown[]
 >(
@@ -538,349 +520,88 @@ export const useJobsServiceGetJobApiJobsJobIdGet = <
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
 ) =>
   useQuery<TData, TError>({
-    queryKey: Common.UseJobsServiceGetJobApiJobsJobIdGetKeyFn(
-      { jobId },
-      queryKey
-    ),
-    queryFn: () => JobsService.getJobApiJobsJobIdGet({ jobId }) as TData,
+    queryKey: Common.UseJobsServiceGetJobKeyFn({ jobId }, queryKey),
+    queryFn: () => JobsService.getJob({ jobId }) as TData,
     ...options,
   });
-export const useModelsServiceListModelsApiModelsGet = <
-  TData = Common.ModelsServiceListModelsApiModelsGetDefaultResponse,
-  TError = unknown,
-  TQueryKey extends Array<unknown> = unknown[]
->(
-  queryKey?: TQueryKey,
-  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
-) =>
-  useQuery<TData, TError>({
-    queryKey: Common.UseModelsServiceListModelsApiModelsGetKeyFn(queryKey),
-    queryFn: () => ModelsService.listModelsApiModelsGet() as TData,
-    ...options,
-  });
-export const useSourcesServiceGetSourceApiSourcesSourceIdGet = <
-  TData = Common.SourcesServiceGetSourceApiSourcesSourceIdGetDefaultResponse,
+export const useUsersServiceListUsers = <
+  TData = Common.UsersServiceListUsersDefaultResponse,
   TError = unknown,
   TQueryKey extends Array<unknown> = unknown[]
 >(
   {
-    sourceId,
+    cursor,
+    limit,
   }: {
-    sourceId: string;
+    cursor?: string;
+    limit?: number;
+  } = {},
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
+) =>
+  useQuery<TData, TError>({
+    queryKey: Common.UseUsersServiceListUsersKeyFn({ cursor, limit }, queryKey),
+    queryFn: () => UsersService.listUsers({ cursor, limit }) as TData,
+    ...options,
+  });
+export const useUsersServiceListApiKeys = <
+  TData = Common.UsersServiceListApiKeysDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[]
+>(
+  {
+    userId,
+  }: {
+    userId: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
 ) =>
   useQuery<TData, TError>({
-    queryKey: Common.UseSourcesServiceGetSourceApiSourcesSourceIdGetKeyFn(
-      { sourceId },
-      queryKey
-    ),
-    queryFn: () =>
-      SourcesService.getSourceApiSourcesSourceIdGet({ sourceId }) as TData,
+    queryKey: Common.UseUsersServiceListApiKeysKeyFn({ userId }, queryKey),
+    queryFn: () => UsersService.listApiKeys({ userId }) as TData,
     ...options,
   });
-export const useSourcesServiceGetSourceIdByNameApiSourcesNameSourceNameGet = <
-  TData = Common.SourcesServiceGetSourceIdByNameApiSourcesNameSourceNameGetDefaultResponse,
+export const useAdminServiceListUsers = <
+  TData = Common.AdminServiceListUsersDefaultResponse,
   TError = unknown,
   TQueryKey extends Array<unknown> = unknown[]
 >(
   {
-    sourceName,
+    cursor,
+    limit,
   }: {
-    sourceName: string;
+    cursor?: string;
+    limit?: number;
+  } = {},
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
+) =>
+  useQuery<TData, TError>({
+    queryKey: Common.UseAdminServiceListUsersKeyFn({ cursor, limit }, queryKey),
+    queryFn: () => AdminService.listUsers({ cursor, limit }) as TData,
+    ...options,
+  });
+export const useAdminServiceListApiKeys = <
+  TData = Common.AdminServiceListApiKeysDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[]
+>(
+  {
+    userId,
+  }: {
+    userId: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
 ) =>
   useQuery<TData, TError>({
-    queryKey:
-      Common.UseSourcesServiceGetSourceIdByNameApiSourcesNameSourceNameGetKeyFn(
-        { sourceName },
-        queryKey
-      ),
-    queryFn: () =>
-      SourcesService.getSourceIdByNameApiSourcesNameSourceNameGet({
-        sourceName,
-      }) as TData,
+    queryKey: Common.UseAdminServiceListApiKeysKeyFn({ userId }, queryKey),
+    queryFn: () => AdminService.listApiKeys({ userId }) as TData,
     ...options,
   });
-export const useSourcesServiceListSourcesApiSourcesGet = <
-  TData = Common.SourcesServiceListSourcesApiSourcesGetDefaultResponse,
-  TError = unknown,
-  TQueryKey extends Array<unknown> = unknown[]
->(
-  queryKey?: TQueryKey,
-  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
-) =>
-  useQuery<TData, TError>({
-    queryKey: Common.UseSourcesServiceListSourcesApiSourcesGetKeyFn(queryKey),
-    queryFn: () => SourcesService.listSourcesApiSourcesGet() as TData,
-    ...options,
-  });
-export const useSourcesServiceGetJobApiSourcesStatusJobIdGet = <
-  TData = Common.SourcesServiceGetJobApiSourcesStatusJobIdGetDefaultResponse,
-  TError = unknown,
-  TQueryKey extends Array<unknown> = unknown[]
->(
-  {
-    jobId,
-  }: {
-    jobId: string;
-  },
-  queryKey?: TQueryKey,
-  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
-) =>
-  useQuery<TData, TError>({
-    queryKey: Common.UseSourcesServiceGetJobApiSourcesStatusJobIdGetKeyFn(
-      { jobId },
-      queryKey
-    ),
-    queryFn: () =>
-      SourcesService.getJobApiSourcesStatusJobIdGet({ jobId }) as TData,
-    ...options,
-  });
-export const useSourcesServiceListPassagesApiSourcesSourceIdPassagesGet = <
-  TData = Common.SourcesServiceListPassagesApiSourcesSourceIdPassagesGetDefaultResponse,
-  TError = unknown,
-  TQueryKey extends Array<unknown> = unknown[]
->(
-  {
-    sourceId,
-  }: {
-    sourceId: string;
-  },
-  queryKey?: TQueryKey,
-  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
-) =>
-  useQuery<TData, TError>({
-    queryKey:
-      Common.UseSourcesServiceListPassagesApiSourcesSourceIdPassagesGetKeyFn(
-        { sourceId },
-        queryKey
-      ),
-    queryFn: () =>
-      SourcesService.listPassagesApiSourcesSourceIdPassagesGet({
-        sourceId,
-      }) as TData,
-    ...options,
-  });
-export const useSourcesServiceListDocumentsApiSourcesSourceIdDocumentsGet = <
-  TData = Common.SourcesServiceListDocumentsApiSourcesSourceIdDocumentsGetDefaultResponse,
-  TError = unknown,
-  TQueryKey extends Array<unknown> = unknown[]
->(
-  {
-    sourceId,
-  }: {
-    sourceId: string;
-  },
-  queryKey?: TQueryKey,
-  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
-) =>
-  useQuery<TData, TError>({
-    queryKey:
-      Common.UseSourcesServiceListDocumentsApiSourcesSourceIdDocumentsGetKeyFn(
-        { sourceId },
-        queryKey
-      ),
-    queryFn: () =>
-      SourcesService.listDocumentsApiSourcesSourceIdDocumentsGet({
-        sourceId,
-      }) as TData,
-    ...options,
-  });
-export const useConfigServiceGetLlmConfigsApiConfigLlmGet = <
-  TData = Common.ConfigServiceGetLlmConfigsApiConfigLlmGetDefaultResponse,
-  TError = unknown,
-  TQueryKey extends Array<unknown> = unknown[]
->(
-  queryKey?: TQueryKey,
-  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
-) =>
-  useQuery<TData, TError>({
-    queryKey:
-      Common.UseConfigServiceGetLlmConfigsApiConfigLlmGetKeyFn(queryKey),
-    queryFn: () => ConfigService.getLlmConfigsApiConfigLlmGet() as TData,
-    ...options,
-  });
-export const useConfigServiceGetEmbeddingConfigsApiConfigEmbeddingGet = <
-  TData = Common.ConfigServiceGetEmbeddingConfigsApiConfigEmbeddingGetDefaultResponse,
-  TError = unknown,
-  TQueryKey extends Array<unknown> = unknown[]
->(
-  queryKey?: TQueryKey,
-  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
-) =>
-  useQuery<TData, TError>({
-    queryKey:
-      Common.UseConfigServiceGetEmbeddingConfigsApiConfigEmbeddingGetKeyFn(
-        queryKey
-      ),
-    queryFn: () =>
-      ConfigService.getEmbeddingConfigsApiConfigEmbeddingGet() as TData,
-    ...options,
-  });
-export const useAuthServiceAuthenticateUserApiAuthPost = <
-  TData = Common.AuthServiceAuthenticateUserApiAuthPostMutationResult,
-  TError = unknown,
-  TContext = unknown
->(
-  options?: Omit<
-    UseMutationOptions<
-      TData,
-      TError,
-      {
-        requestBody: AuthRequest;
-      },
-      TContext
-    >,
-    'mutationFn'
-  >
-) =>
-  useMutation<
-    TData,
-    TError,
-    {
-      requestBody: AuthRequest;
-    },
-    TContext
-  >({
-    mutationFn: ({ requestBody }) =>
-      AuthService.authenticateUserApiAuthPost({
-        requestBody,
-      }) as unknown as Promise<TData>,
-    ...options,
-  });
-export const useAdminServiceCreateUserAdminUsersPost = <
-  TData = Common.AdminServiceCreateUserAdminUsersPostMutationResult,
-  TError = unknown,
-  TContext = unknown
->(
-  options?: Omit<
-    UseMutationOptions<
-      TData,
-      TError,
-      {
-        requestBody: UserCreate;
-      },
-      TContext
-    >,
-    'mutationFn'
-  >
-) =>
-  useMutation<
-    TData,
-    TError,
-    {
-      requestBody: UserCreate;
-    },
-    TContext
-  >({
-    mutationFn: ({ requestBody }) =>
-      AdminService.createUserAdminUsersPost({
-        requestBody,
-      }) as unknown as Promise<TData>,
-    ...options,
-  });
-export const useAdminServiceCreateNewApiKeyAdminUsersKeysPost = <
-  TData = Common.AdminServiceCreateNewApiKeyAdminUsersKeysPostMutationResult,
-  TError = unknown,
-  TContext = unknown
->(
-  options?: Omit<
-    UseMutationOptions<
-      TData,
-      TError,
-      {
-        requestBody: APIKeyCreate;
-      },
-      TContext
-    >,
-    'mutationFn'
-  >
-) =>
-  useMutation<
-    TData,
-    TError,
-    {
-      requestBody: APIKeyCreate;
-    },
-    TContext
-  >({
-    mutationFn: ({ requestBody }) =>
-      AdminService.createNewApiKeyAdminUsersKeysPost({
-        requestBody,
-      }) as unknown as Promise<TData>,
-    ...options,
-  });
-export const useToolsServiceCreateToolAdminToolsPost = <
-  TData = Common.ToolsServiceCreateToolAdminToolsPostMutationResult,
-  TError = unknown,
-  TContext = unknown
->(
-  options?: Omit<
-    UseMutationOptions<
-      TData,
-      TError,
-      {
-        requestBody: CreateToolRequest;
-      },
-      TContext
-    >,
-    'mutationFn'
-  >
-) =>
-  useMutation<
-    TData,
-    TError,
-    {
-      requestBody: CreateToolRequest;
-    },
-    TContext
-  >({
-    mutationFn: ({ requestBody }) =>
-      ToolsService.createToolAdminToolsPost({
-        requestBody,
-      }) as unknown as Promise<TData>,
-    ...options,
-  });
-export const useToolsServiceUpdateToolApiToolsToolIdPost = <
-  TData = Common.ToolsServiceUpdateToolApiToolsToolIdPostMutationResult,
-  TError = unknown,
-  TContext = unknown
->(
-  options?: Omit<
-    UseMutationOptions<
-      TData,
-      TError,
-      {
-        requestBody: ToolUpdate;
-        toolId: string;
-      },
-      TContext
-    >,
-    'mutationFn'
-  >
-) =>
-  useMutation<
-    TData,
-    TError,
-    {
-      requestBody: ToolUpdate;
-      toolId: string;
-    },
-    TContext
-  >({
-    mutationFn: ({ requestBody, toolId }) =>
-      ToolsService.updateToolApiToolsToolIdPost({
-        requestBody,
-        toolId,
-      }) as unknown as Promise<TData>,
-    ...options,
-  });
-export const useToolsServiceCreateToolApiToolsPost = <
-  TData = Common.ToolsServiceCreateToolApiToolsPostMutationResult,
+export const useToolsServiceCreateTool = <
+  TData = Common.ToolsServiceCreateToolMutationResult,
   TError = unknown,
   TContext = unknown
 >(
@@ -890,6 +611,7 @@ export const useToolsServiceCreateToolApiToolsPost = <
       TError,
       {
         requestBody: ToolCreate;
+        update?: boolean;
       },
       TContext
     >,
@@ -901,17 +623,150 @@ export const useToolsServiceCreateToolApiToolsPost = <
     TError,
     {
       requestBody: ToolCreate;
+      update?: boolean;
+    },
+    TContext
+  >({
+    mutationFn: ({ requestBody, update }) =>
+      ToolsService.createTool({
+        requestBody,
+        update,
+      }) as unknown as Promise<TData>,
+    ...options,
+  });
+export const useSourcesServiceCreateSource = <
+  TData = Common.SourcesServiceCreateSourceMutationResult,
+  TError = unknown,
+  TContext = unknown
+>(
+  options?: Omit<
+    UseMutationOptions<
+      TData,
+      TError,
+      {
+        requestBody: SourceCreate;
+      },
+      TContext
+    >,
+    'mutationFn'
+  >
+) =>
+  useMutation<
+    TData,
+    TError,
+    {
+      requestBody: SourceCreate;
     },
     TContext
   >({
     mutationFn: ({ requestBody }) =>
-      ToolsService.createToolApiToolsPost({
-        requestBody,
+      SourcesService.createSource({ requestBody }) as unknown as Promise<TData>,
+    ...options,
+  });
+export const useSourcesServiceAttachAgentToSource = <
+  TData = Common.SourcesServiceAttachAgentToSourceMutationResult,
+  TError = unknown,
+  TContext = unknown
+>(
+  options?: Omit<
+    UseMutationOptions<
+      TData,
+      TError,
+      {
+        agentId: string;
+        sourceId: string;
+      },
+      TContext
+    >,
+    'mutationFn'
+  >
+) =>
+  useMutation<
+    TData,
+    TError,
+    {
+      agentId: string;
+      sourceId: string;
+    },
+    TContext
+  >({
+    mutationFn: ({ agentId, sourceId }) =>
+      SourcesService.attachAgentToSource({
+        agentId,
+        sourceId,
       }) as unknown as Promise<TData>,
     ...options,
   });
-export const useAgentsServiceCreateAgentApiAgentsPost = <
-  TData = Common.AgentsServiceCreateAgentApiAgentsPostMutationResult,
+export const useSourcesServiceDetachAgentFromSource = <
+  TData = Common.SourcesServiceDetachAgentFromSourceMutationResult,
+  TError = unknown,
+  TContext = unknown
+>(
+  options?: Omit<
+    UseMutationOptions<
+      TData,
+      TError,
+      {
+        agentId: string;
+        sourceId: string;
+      },
+      TContext
+    >,
+    'mutationFn'
+  >
+) =>
+  useMutation<
+    TData,
+    TError,
+    {
+      agentId: string;
+      sourceId: string;
+    },
+    TContext
+  >({
+    mutationFn: ({ agentId, sourceId }) =>
+      SourcesService.detachAgentFromSource({
+        agentId,
+        sourceId,
+      }) as unknown as Promise<TData>,
+    ...options,
+  });
+export const useSourcesServiceUploadFileToSource = <
+  TData = Common.SourcesServiceUploadFileToSourceMutationResult,
+  TError = unknown,
+  TContext = unknown
+>(
+  options?: Omit<
+    UseMutationOptions<
+      TData,
+      TError,
+      {
+        formData: Body_upload_file_to_source;
+        sourceId: string;
+      },
+      TContext
+    >,
+    'mutationFn'
+  >
+) =>
+  useMutation<
+    TData,
+    TError,
+    {
+      formData: Body_upload_file_to_source;
+      sourceId: string;
+    },
+    TContext
+  >({
+    mutationFn: ({ formData, sourceId }) =>
+      SourcesService.uploadFileToSource({
+        formData,
+        sourceId,
+      }) as unknown as Promise<TData>,
+    ...options,
+  });
+export const useAgentsServiceCreateAgent = <
+  TData = Common.AgentsServiceCreateAgentMutationResult,
   TError = unknown,
   TContext = unknown
 >(
@@ -936,99 +791,16 @@ export const useAgentsServiceCreateAgentApiAgentsPost = <
     TContext
   >({
     mutationFn: ({ requestBody }) =>
-      AgentsService.createAgentApiAgentsPost({
-        requestBody,
-      }) as unknown as Promise<TData>,
+      AgentsService.createAgent({ requestBody }) as unknown as Promise<TData>,
     ...options,
   });
-export const useAgentsServiceUpdateAgentApiAgentsAgentIdPost = <
-  TData = Common.AgentsServiceUpdateAgentApiAgentsAgentIdPostMutationResult,
+export const useAgentsServiceCreateAgentArchivalMemory = <
+  TData = Common.AgentsServiceCreateAgentArchivalMemoryMutationResult,
   TError = unknown,
   TContext = unknown
 >(
   options?: Omit<
     UseMutationOptions<
-      TData,
-      TError,
-      {
-        agentId: string;
-        requestBody: UpdateAgentState;
-      },
-      TContext
-    >,
-    'mutationFn'
-  >
-) =>
-  useMutation<
-    TData,
-    TError,
-    {
-      agentId: string;
-      requestBody: UpdateAgentState;
-    },
-    TContext
-  >({
-    mutationFn: ({ agentId, requestBody }) =>
-      AgentsService.updateAgentApiAgentsAgentIdPost({
-        agentId,
-        requestBody,
-      }) as unknown as Promise<TData>,
-    ...options,
-  });
-export const useAgentsServiceUpdateAgentMemoryApiAgentsAgentIdMemoryPost = <
-  TData = Common.AgentsServiceUpdateAgentMemoryApiAgentsAgentIdMemoryPostMutationResult,
-  TError = unknown,
-  TContext = unknown
->(
-  options?: Omit<
-    UseMutationOptions<
-      TData,
-      TError,
-      {
-        agentId: string;
-        requestBody: { [key: string]: unknown };
-      },
-      TContext
-    >,
-    'mutationFn'
-  >
-) =>
-  useMutation<
-    TData,
-    TError,
-    {
-      agentId: string;
-      requestBody: { [key: string]: unknown };
-    },
-    TContext
-  >({
-    mutationFn: ({ agentId, requestBody }) =>
-      AgentsService.updateAgentMemoryApiAgentsAgentIdMemoryPost({
-        agentId,
-        requestBody,
-      }) as unknown as Promise<TData>,
-    ...options,
-  });
-export const useAgentsServiceInsertAgentArchivalMemoryApiAgentsAgentIdArchivalPost =
-  <
-    TData = Common.AgentsServiceInsertAgentArchivalMemoryApiAgentsAgentIdArchivalPostMutationResult,
-    TError = unknown,
-    TContext = unknown
-  >(
-    options?: Omit<
-      UseMutationOptions<
-        TData,
-        TError,
-        {
-          agentId: string;
-          requestBody: CreateArchivalMemory;
-        },
-        TContext
-      >,
-      'mutationFn'
-    >
-  ) =>
-    useMutation<
       TData,
       TError,
       {
@@ -1036,16 +808,28 @@ export const useAgentsServiceInsertAgentArchivalMemoryApiAgentsAgentIdArchivalPo
         requestBody: CreateArchivalMemory;
       },
       TContext
-    >({
-      mutationFn: ({ agentId, requestBody }) =>
-        AgentsService.insertAgentArchivalMemoryApiAgentsAgentIdArchivalPost({
-          agentId,
-          requestBody,
-        }) as unknown as Promise<TData>,
-      ...options,
-    });
-export const useAgentsServiceSendMessageApiAgentsAgentIdMessagesPost = <
-  TData = Common.AgentsServiceSendMessageApiAgentsAgentIdMessagesPostMutationResult,
+    >,
+    'mutationFn'
+  >
+) =>
+  useMutation<
+    TData,
+    TError,
+    {
+      agentId: string;
+      requestBody: CreateArchivalMemory;
+    },
+    TContext
+  >({
+    mutationFn: ({ agentId, requestBody }) =>
+      AgentsService.createAgentArchivalMemory({
+        agentId,
+        requestBody,
+      }) as unknown as Promise<TData>,
+    ...options,
+  });
+export const useAgentsServiceCreateAgentMessage = <
+  TData = Common.AgentsServiceCreateAgentMessageMutationResult,
   TError = unknown,
   TContext = unknown
 >(
@@ -1072,14 +856,14 @@ export const useAgentsServiceSendMessageApiAgentsAgentIdMessagesPost = <
     TContext
   >({
     mutationFn: ({ agentId, requestBody }) =>
-      AgentsService.sendMessageApiAgentsAgentIdMessagesPost({
+      AgentsService.createAgentMessage({
         agentId,
         requestBody,
       }) as unknown as Promise<TData>,
     ...options,
   });
-export const useBlockServiceCreateBlockApiBlocksPost = <
-  TData = Common.BlockServiceCreateBlockApiBlocksPostMutationResult,
+export const useBlocksServiceCreateMemoryBlock = <
+  TData = Common.BlocksServiceCreateMemoryBlockMutationResult,
   TError = unknown,
   TContext = unknown
 >(
@@ -1104,13 +888,13 @@ export const useBlockServiceCreateBlockApiBlocksPost = <
     TContext
   >({
     mutationFn: ({ requestBody }) =>
-      BlockService.createBlockApiBlocksPost({
+      BlocksService.createMemoryBlock({
         requestBody,
       }) as unknown as Promise<TData>,
     ...options,
   });
-export const useBlockServiceUpdateBlockApiBlocksBlockIdPost = <
-  TData = Common.BlockServiceUpdateBlockApiBlocksBlockIdPostMutationResult,
+export const useUsersServiceCreateUser = <
+  TData = Common.UsersServiceCreateUserMutationResult,
   TError = unknown,
   TContext = unknown
 >(
@@ -1119,8 +903,7 @@ export const useBlockServiceUpdateBlockApiBlocksBlockIdPost = <
       TData,
       TError,
       {
-        blockId: string;
-        requestBody: UpdateBlock;
+        requestBody: UserCreate;
       },
       TContext
     >,
@@ -1131,20 +914,168 @@ export const useBlockServiceUpdateBlockApiBlocksBlockIdPost = <
     TData,
     TError,
     {
-      blockId: string;
-      requestBody: UpdateBlock;
+      requestBody: UserCreate;
     },
     TContext
   >({
-    mutationFn: ({ blockId, requestBody }) =>
-      BlockService.updateBlockApiBlocksBlockIdPost({
-        blockId,
+    mutationFn: ({ requestBody }) =>
+      UsersService.createUser({ requestBody }) as unknown as Promise<TData>,
+    ...options,
+  });
+export const useUsersServiceCreateApiKey = <
+  TData = Common.UsersServiceCreateApiKeyMutationResult,
+  TError = unknown,
+  TContext = unknown
+>(
+  options?: Omit<
+    UseMutationOptions<
+      TData,
+      TError,
+      {
+        requestBody: APIKeyCreate;
+      },
+      TContext
+    >,
+    'mutationFn'
+  >
+) =>
+  useMutation<
+    TData,
+    TError,
+    {
+      requestBody: APIKeyCreate;
+    },
+    TContext
+  >({
+    mutationFn: ({ requestBody }) =>
+      UsersService.createApiKey({ requestBody }) as unknown as Promise<TData>,
+    ...options,
+  });
+export const useAdminServiceCreateUser = <
+  TData = Common.AdminServiceCreateUserMutationResult,
+  TError = unknown,
+  TContext = unknown
+>(
+  options?: Omit<
+    UseMutationOptions<
+      TData,
+      TError,
+      {
+        requestBody: UserCreate;
+      },
+      TContext
+    >,
+    'mutationFn'
+  >
+) =>
+  useMutation<
+    TData,
+    TError,
+    {
+      requestBody: UserCreate;
+    },
+    TContext
+  >({
+    mutationFn: ({ requestBody }) =>
+      AdminService.createUser({ requestBody }) as unknown as Promise<TData>,
+    ...options,
+  });
+export const useAdminServiceCreateApiKey = <
+  TData = Common.AdminServiceCreateApiKeyMutationResult,
+  TError = unknown,
+  TContext = unknown
+>(
+  options?: Omit<
+    UseMutationOptions<
+      TData,
+      TError,
+      {
+        requestBody: APIKeyCreate;
+      },
+      TContext
+    >,
+    'mutationFn'
+  >
+) =>
+  useMutation<
+    TData,
+    TError,
+    {
+      requestBody: APIKeyCreate;
+    },
+    TContext
+  >({
+    mutationFn: ({ requestBody }) =>
+      AdminService.createApiKey({ requestBody }) as unknown as Promise<TData>,
+    ...options,
+  });
+export const useAuthServiceAuthenticateUserV1AuthPost = <
+  TData = Common.AuthServiceAuthenticateUserV1AuthPostMutationResult,
+  TError = unknown,
+  TContext = unknown
+>(
+  options?: Omit<
+    UseMutationOptions<
+      TData,
+      TError,
+      {
+        requestBody: AuthRequest;
+      },
+      TContext
+    >,
+    'mutationFn'
+  >
+) =>
+  useMutation<
+    TData,
+    TError,
+    {
+      requestBody: AuthRequest;
+    },
+    TContext
+  >({
+    mutationFn: ({ requestBody }) =>
+      AuthService.authenticateUserV1AuthPost({
         requestBody,
       }) as unknown as Promise<TData>,
     ...options,
   });
-export const useSourcesServiceUpdateSourceApiSourcesSourceIdPost = <
-  TData = Common.SourcesServiceUpdateSourceApiSourcesSourceIdPostMutationResult,
+export const useToolsServiceUpdateTool = <
+  TData = Common.ToolsServiceUpdateToolMutationResult,
+  TError = unknown,
+  TContext = unknown
+>(
+  options?: Omit<
+    UseMutationOptions<
+      TData,
+      TError,
+      {
+        requestBody: ToolUpdate;
+        toolId: string;
+      },
+      TContext
+    >,
+    'mutationFn'
+  >
+) =>
+  useMutation<
+    TData,
+    TError,
+    {
+      requestBody: ToolUpdate;
+      toolId: string;
+    },
+    TContext
+  >({
+    mutationFn: ({ requestBody, toolId }) =>
+      ToolsService.updateTool({
+        requestBody,
+        toolId,
+      }) as unknown as Promise<TData>,
+    ...options,
+  });
+export const useSourcesServiceUpdateSource = <
+  TData = Common.SourcesServiceUpdateSourceMutationResult,
   TError = unknown,
   TContext = unknown
 >(
@@ -1171,14 +1102,14 @@ export const useSourcesServiceUpdateSourceApiSourcesSourceIdPost = <
     TContext
   >({
     mutationFn: ({ requestBody, sourceId }) =>
-      SourcesService.updateSourceApiSourcesSourceIdPost({
+      SourcesService.updateSource({
         requestBody,
         sourceId,
       }) as unknown as Promise<TData>,
     ...options,
   });
-export const useSourcesServiceCreateSourceApiSourcesPost = <
-  TData = Common.SourcesServiceCreateSourceApiSourcesPostMutationResult,
+export const useAgentsServiceUpdateAgent = <
+  TData = Common.AgentsServiceUpdateAgentMutationResult,
   TError = unknown,
   TContext = unknown
 >(
@@ -1187,7 +1118,8 @@ export const useSourcesServiceCreateSourceApiSourcesPost = <
       TData,
       TError,
       {
-        requestBody: SourceCreate;
+        agentId: string;
+        requestBody: UpdateAgentState;
       },
       TContext
     >,
@@ -1198,98 +1130,65 @@ export const useSourcesServiceCreateSourceApiSourcesPost = <
     TData,
     TError,
     {
-      requestBody: SourceCreate;
+      agentId: string;
+      requestBody: UpdateAgentState;
     },
     TContext
   >({
-    mutationFn: ({ requestBody }) =>
-      SourcesService.createSourceApiSourcesPost({
+    mutationFn: ({ agentId, requestBody }) =>
+      AgentsService.updateAgent({
+        agentId,
         requestBody,
       }) as unknown as Promise<TData>,
     ...options,
   });
-export const useSourcesServiceAttachSourceToAgentApiSourcesSourceIdAttachPost =
-  <
-    TData = Common.SourcesServiceAttachSourceToAgentApiSourcesSourceIdAttachPostMutationResult,
-    TError = unknown,
-    TContext = unknown
-  >(
-    options?: Omit<
-      UseMutationOptions<
-        TData,
-        TError,
-        {
-          agentId: string;
-          sourceId: string;
-        },
-        TContext
-      >,
-      'mutationFn'
-    >
-  ) =>
-    useMutation<
+export const useAgentsServiceUpdateAgentMemory = <
+  TData = Common.AgentsServiceUpdateAgentMemoryMutationResult,
+  TError = unknown,
+  TContext = unknown
+>(
+  options?: Omit<
+    UseMutationOptions<
       TData,
       TError,
       {
         agentId: string;
-        sourceId: string;
+        requestBody: { [key: string]: unknown };
       },
       TContext
-    >({
-      mutationFn: ({ agentId, sourceId }) =>
-        SourcesService.attachSourceToAgentApiSourcesSourceIdAttachPost({
-          agentId,
-          sourceId,
-        }) as unknown as Promise<TData>,
-      ...options,
-    });
-export const useSourcesServiceDetachSourceFromAgentApiSourcesSourceIdDetachPost =
-  <
-    TData = Common.SourcesServiceDetachSourceFromAgentApiSourcesSourceIdDetachPostMutationResult,
-    TError = unknown,
-    TContext = unknown
-  >(
-    options?: Omit<
-      UseMutationOptions<
-        TData,
-        TError,
-        {
-          agentId: string;
-          sourceId: string;
-        },
-        TContext
-      >,
-      'mutationFn'
-    >
-  ) =>
-    useMutation<
+    >,
+    'mutationFn'
+  >
+) =>
+  useMutation<
+    TData,
+    TError,
+    {
+      agentId: string;
+      requestBody: { [key: string]: unknown };
+    },
+    TContext
+  >({
+    mutationFn: ({ agentId, requestBody }) =>
+      AgentsService.updateAgentMemory({
+        agentId,
+        requestBody,
+      }) as unknown as Promise<TData>,
+    ...options,
+  });
+export const useAgentsServiceUpdateAgentMessage = <
+  TData = Common.AgentsServiceUpdateAgentMessageMutationResult,
+  TError = unknown,
+  TContext = unknown
+>(
+  options?: Omit<
+    UseMutationOptions<
       TData,
       TError,
       {
         agentId: string;
-        sourceId: string;
-      },
-      TContext
-    >({
-      mutationFn: ({ agentId, sourceId }) =>
-        SourcesService.detachSourceFromAgentApiSourcesSourceIdDetachPost({
-          agentId,
-          sourceId,
-        }) as unknown as Promise<TData>,
-      ...options,
-    });
-export const useSourcesServiceUploadFileToSourceApiSourcesSourceIdUploadPost = <
-  TData = Common.SourcesServiceUploadFileToSourceApiSourcesSourceIdUploadPostMutationResult,
-  TError = unknown,
-  TContext = unknown
->(
-  options?: Omit<
-    UseMutationOptions<
-      TData,
-      TError,
-      {
-        formData: Body_upload_file_to_source_api_sources__source_id__upload_post;
-        sourceId: string;
+        messageId: string;
+        requestBody: UpdateMessage;
       },
       TContext
     >,
@@ -1300,20 +1199,22 @@ export const useSourcesServiceUploadFileToSourceApiSourcesSourceIdUploadPost = <
     TData,
     TError,
     {
-      formData: Body_upload_file_to_source_api_sources__source_id__upload_post;
-      sourceId: string;
+      agentId: string;
+      messageId: string;
+      requestBody: UpdateMessage;
     },
     TContext
   >({
-    mutationFn: ({ formData, sourceId }) =>
-      SourcesService.uploadFileToSourceApiSourcesSourceIdUploadPost({
-        formData,
-        sourceId,
+    mutationFn: ({ agentId, messageId, requestBody }) =>
+      AgentsService.updateAgentMessage({
+        agentId,
+        messageId,
+        requestBody,
       }) as unknown as Promise<TData>,
     ...options,
   });
-export const useAdminServiceDeleteUserAdminUsersDelete = <
-  TData = Common.AdminServiceDeleteUserAdminUsersDeleteMutationResult,
+export const useBlocksServiceUpdateMemoryBlock = <
+  TData = Common.BlocksServiceUpdateMemoryBlockMutationResult,
   TError = unknown,
   TContext = unknown
 >(
@@ -1322,7 +1223,8 @@ export const useAdminServiceDeleteUserAdminUsersDelete = <
       TData,
       TError,
       {
-        userId: string;
+        blockId: string;
+        requestBody: UpdateBlock;
       },
       TContext
     >,
@@ -1333,80 +1235,20 @@ export const useAdminServiceDeleteUserAdminUsersDelete = <
     TData,
     TError,
     {
-      userId: string;
+      blockId: string;
+      requestBody: UpdateBlock;
     },
     TContext
   >({
-    mutationFn: ({ userId }) =>
-      AdminService.deleteUserAdminUsersDelete({
-        userId,
+    mutationFn: ({ blockId, requestBody }) =>
+      BlocksService.updateMemoryBlock({
+        blockId,
+        requestBody,
       }) as unknown as Promise<TData>,
     ...options,
   });
-export const useAdminServiceDeleteApiKeyAdminUsersKeysDelete = <
-  TData = Common.AdminServiceDeleteApiKeyAdminUsersKeysDeleteMutationResult,
-  TError = unknown,
-  TContext = unknown
->(
-  options?: Omit<
-    UseMutationOptions<
-      TData,
-      TError,
-      {
-        apiKey: string;
-      },
-      TContext
-    >,
-    'mutationFn'
-  >
-) =>
-  useMutation<
-    TData,
-    TError,
-    {
-      apiKey: string;
-    },
-    TContext
-  >({
-    mutationFn: ({ apiKey }) =>
-      AdminService.deleteApiKeyAdminUsersKeysDelete({
-        apiKey,
-      }) as unknown as Promise<TData>,
-    ...options,
-  });
-export const useToolsServiceDeleteToolAdminToolsToolNameDelete = <
-  TData = Common.ToolsServiceDeleteToolAdminToolsToolNameDeleteMutationResult,
-  TError = unknown,
-  TContext = unknown
->(
-  options?: Omit<
-    UseMutationOptions<
-      TData,
-      TError,
-      {
-        toolName: string;
-      },
-      TContext
-    >,
-    'mutationFn'
-  >
-) =>
-  useMutation<
-    TData,
-    TError,
-    {
-      toolName: string;
-    },
-    TContext
-  >({
-    mutationFn: ({ toolName }) =>
-      ToolsService.deleteToolAdminToolsToolNameDelete({
-        toolName,
-      }) as unknown as Promise<TData>,
-    ...options,
-  });
-export const useToolsServiceDeleteToolApiToolsToolIdDelete = <
-  TData = Common.ToolsServiceDeleteToolApiToolsToolIdDeleteMutationResult,
+export const useToolsServiceDeleteTool = <
+  TData = Common.ToolsServiceDeleteToolMutationResult,
   TError = unknown,
   TContext = unknown
 >(
@@ -1431,109 +1273,11 @@ export const useToolsServiceDeleteToolApiToolsToolIdDelete = <
     TContext
   >({
     mutationFn: ({ toolId }) =>
-      ToolsService.deleteToolApiToolsToolIdDelete({
-        toolId,
-      }) as unknown as Promise<TData>,
+      ToolsService.deleteTool({ toolId }) as unknown as Promise<TData>,
     ...options,
   });
-export const useAgentsServiceDeleteAgentApiAgentsAgentIdDelete = <
-  TData = Common.AgentsServiceDeleteAgentApiAgentsAgentIdDeleteMutationResult,
-  TError = unknown,
-  TContext = unknown
->(
-  options?: Omit<
-    UseMutationOptions<
-      TData,
-      TError,
-      {
-        agentId: string;
-      },
-      TContext
-    >,
-    'mutationFn'
-  >
-) =>
-  useMutation<
-    TData,
-    TError,
-    {
-      agentId: string;
-    },
-    TContext
-  >({
-    mutationFn: ({ agentId }) =>
-      AgentsService.deleteAgentApiAgentsAgentIdDelete({
-        agentId,
-      }) as unknown as Promise<TData>,
-    ...options,
-  });
-export const useAgentsServiceDeleteAgentArchivalMemoryApiAgentsAgentIdArchivalMemoryIdDelete =
-  <
-    TData = Common.AgentsServiceDeleteAgentArchivalMemoryApiAgentsAgentIdArchivalMemoryIdDeleteMutationResult,
-    TError = unknown,
-    TContext = unknown
-  >(
-    options?: Omit<
-      UseMutationOptions<
-        TData,
-        TError,
-        {
-          agentId: string;
-          memoryId: string;
-        },
-        TContext
-      >,
-      'mutationFn'
-    >
-  ) =>
-    useMutation<
-      TData,
-      TError,
-      {
-        agentId: string;
-        memoryId: string;
-      },
-      TContext
-    >({
-      mutationFn: ({ agentId, memoryId }) =>
-        AgentsService.deleteAgentArchivalMemoryApiAgentsAgentIdArchivalMemoryIdDelete(
-          { agentId, memoryId }
-        ) as unknown as Promise<TData>,
-      ...options,
-    });
-export const useBlockServiceDeleteBlockApiBlocksBlockIdDelete = <
-  TData = Common.BlockServiceDeleteBlockApiBlocksBlockIdDeleteMutationResult,
-  TError = unknown,
-  TContext = unknown
->(
-  options?: Omit<
-    UseMutationOptions<
-      TData,
-      TError,
-      {
-        blockId: string;
-      },
-      TContext
-    >,
-    'mutationFn'
-  >
-) =>
-  useMutation<
-    TData,
-    TError,
-    {
-      blockId: string;
-    },
-    TContext
-  >({
-    mutationFn: ({ blockId }) =>
-      BlockService.deleteBlockApiBlocksBlockIdDelete({
-        blockId,
-      }) as unknown as Promise<TData>,
-    ...options,
-  });
-export const useSourcesServiceDeleteSourceApiSourcesSourceIdDelete = <
-  TData = Common.SourcesServiceDeleteSourceApiSourcesSourceIdDeleteMutationResult,
+export const useSourcesServiceDeleteSource = <
+  TData = Common.SourcesServiceDeleteSourceMutationResult,
   TError = unknown,
   TContext = unknown
 >(
@@ -1558,8 +1302,214 @@ export const useSourcesServiceDeleteSourceApiSourcesSourceIdDelete = <
     TContext
   >({
     mutationFn: ({ sourceId }) =>
-      SourcesService.deleteSourceApiSourcesSourceIdDelete({
-        sourceId,
+      SourcesService.deleteSource({ sourceId }) as unknown as Promise<TData>,
+    ...options,
+  });
+export const useAgentsServiceDeleteAgent = <
+  TData = Common.AgentsServiceDeleteAgentMutationResult,
+  TError = unknown,
+  TContext = unknown
+>(
+  options?: Omit<
+    UseMutationOptions<
+      TData,
+      TError,
+      {
+        agentId: string;
+      },
+      TContext
+    >,
+    'mutationFn'
+  >
+) =>
+  useMutation<
+    TData,
+    TError,
+    {
+      agentId: string;
+    },
+    TContext
+  >({
+    mutationFn: ({ agentId }) =>
+      AgentsService.deleteAgent({ agentId }) as unknown as Promise<TData>,
+    ...options,
+  });
+export const useAgentsServiceDeleteAgentArchivalMemory = <
+  TData = Common.AgentsServiceDeleteAgentArchivalMemoryMutationResult,
+  TError = unknown,
+  TContext = unknown
+>(
+  options?: Omit<
+    UseMutationOptions<
+      TData,
+      TError,
+      {
+        agentId: string;
+        memoryId: string;
+      },
+      TContext
+    >,
+    'mutationFn'
+  >
+) =>
+  useMutation<
+    TData,
+    TError,
+    {
+      agentId: string;
+      memoryId: string;
+    },
+    TContext
+  >({
+    mutationFn: ({ agentId, memoryId }) =>
+      AgentsService.deleteAgentArchivalMemory({
+        agentId,
+        memoryId,
       }) as unknown as Promise<TData>,
+    ...options,
+  });
+export const useBlocksServiceDeleteMemoryBlock = <
+  TData = Common.BlocksServiceDeleteMemoryBlockMutationResult,
+  TError = unknown,
+  TContext = unknown
+>(
+  options?: Omit<
+    UseMutationOptions<
+      TData,
+      TError,
+      {
+        blockId: string;
+      },
+      TContext
+    >,
+    'mutationFn'
+  >
+) =>
+  useMutation<
+    TData,
+    TError,
+    {
+      blockId: string;
+    },
+    TContext
+  >({
+    mutationFn: ({ blockId }) =>
+      BlocksService.deleteMemoryBlock({ blockId }) as unknown as Promise<TData>,
+    ...options,
+  });
+export const useUsersServiceDeleteUser = <
+  TData = Common.UsersServiceDeleteUserMutationResult,
+  TError = unknown,
+  TContext = unknown
+>(
+  options?: Omit<
+    UseMutationOptions<
+      TData,
+      TError,
+      {
+        userId: string;
+      },
+      TContext
+    >,
+    'mutationFn'
+  >
+) =>
+  useMutation<
+    TData,
+    TError,
+    {
+      userId: string;
+    },
+    TContext
+  >({
+    mutationFn: ({ userId }) =>
+      UsersService.deleteUser({ userId }) as unknown as Promise<TData>,
+    ...options,
+  });
+export const useUsersServiceDeleteApiKey = <
+  TData = Common.UsersServiceDeleteApiKeyMutationResult,
+  TError = unknown,
+  TContext = unknown
+>(
+  options?: Omit<
+    UseMutationOptions<
+      TData,
+      TError,
+      {
+        apiKey: string;
+      },
+      TContext
+    >,
+    'mutationFn'
+  >
+) =>
+  useMutation<
+    TData,
+    TError,
+    {
+      apiKey: string;
+    },
+    TContext
+  >({
+    mutationFn: ({ apiKey }) =>
+      UsersService.deleteApiKey({ apiKey }) as unknown as Promise<TData>,
+    ...options,
+  });
+export const useAdminServiceDeleteUser = <
+  TData = Common.AdminServiceDeleteUserMutationResult,
+  TError = unknown,
+  TContext = unknown
+>(
+  options?: Omit<
+    UseMutationOptions<
+      TData,
+      TError,
+      {
+        userId: string;
+      },
+      TContext
+    >,
+    'mutationFn'
+  >
+) =>
+  useMutation<
+    TData,
+    TError,
+    {
+      userId: string;
+    },
+    TContext
+  >({
+    mutationFn: ({ userId }) =>
+      AdminService.deleteUser({ userId }) as unknown as Promise<TData>,
+    ...options,
+  });
+export const useAdminServiceDeleteApiKey = <
+  TData = Common.AdminServiceDeleteApiKeyMutationResult,
+  TError = unknown,
+  TContext = unknown
+>(
+  options?: Omit<
+    UseMutationOptions<
+      TData,
+      TError,
+      {
+        apiKey: string;
+      },
+      TContext
+    >,
+    'mutationFn'
+  >
+) =>
+  useMutation<
+    TData,
+    TError,
+    {
+      apiKey: string;
+    },
+    TContext
+  >({
+    mutationFn: ({ apiKey }) =>
+      AdminService.deleteApiKey({ apiKey }) as unknown as Promise<TData>,
     ...options,
   });

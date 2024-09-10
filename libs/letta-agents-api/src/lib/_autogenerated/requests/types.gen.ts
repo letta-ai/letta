@@ -31,7 +31,18 @@ export type APIKeyCreate = {
 };
 
 /**
- * Representation of an agent's state.
+ * Representation of an agent's state. This is the state of the agent at a given time, and is persisted in the DB backend. The state has all the information needed to recreate a persisted agent.
+ *
+ * Parameters:
+ * id (str): The unique identifier of the agent.
+ * name (str): The name of the agent (must be unique to the user).
+ * created_at (datetime): The datetime the agent was created.
+ * message_ids (List[str]): The ids of the messages in the agent's in-context memory.
+ * memory (Memory): The in-context memory of the agent.
+ * tools (List[str]): The tools used by the agent. This includes any memory editing functions specified in `memory`.
+ * system (str): The system prompt used by the agent.
+ * llm_config (LLMConfig): The LLM configuration used by the agent.
+ * embedding_config (EmbeddingConfig): The embedding configuration used by the agent.
  */
 export type AgentState = {
   /**
@@ -109,17 +120,11 @@ export type AssistantFile = {
   assistant_id: string;
 };
 
-export type AssistantMessage_Input = {
+export type AssistantMessage = {
   content?: string | null;
   role?: string;
   name?: string | null;
   tool_calls?: Array<memgpt__schemas__openai__chat_completion_request__ToolCall> | null;
-};
-
-export type AssistantMessage_Output = {
-  id: string;
-  date: string;
-  assistant_message: string;
 };
 
 export type AuthRequest = {
@@ -141,7 +146,17 @@ export type AuthResponse = {
 };
 
 /**
- * Block of the LLM context
+ * A Block represents a reserved section of the LLM's context window which is editable. `Block` objects contained in the `Memory` object, which is able to edit the Block values.
+ *
+ * Parameters:
+ * name (str): The name of the block.
+ * value (str): The value of the block. This is the string that is represented in the context window.
+ * limit (int): The character limit of the block.
+ * template (bool): Whether the block is a template (e.g. saved human/persona options). Non-template blocks are not stored in the database and are ephemeral, while templated blocks are stored in the database.
+ * label (str): The label of the block (e.g. 'human', 'persona'). This defines a category for the block.
+ * description (str): Description of the block.
+ * metadata_ (Dict): Metadata of the block.
+ * user_id (str): The unique identifier of the user associated with the block.
  */
 export type Block = {
   /**
@@ -184,7 +199,7 @@ export type Block = {
   id?: string;
 };
 
-export type Body_upload_file_to_source_api_sources__source_id__upload_post = {
+export type Body_upload_file_to_source = {
   file: Blob | File;
 };
 
@@ -193,9 +208,7 @@ export type Body_upload_file_to_source_api_sources__source_id__upload_post = {
  */
 export type ChatCompletionRequest = {
   model: string;
-  messages: Array<
-    SystemMessage | UserMessage | AssistantMessage_Input | ToolMessage
-  >;
+  messages: Array<SystemMessage | UserMessage | AssistantMessage | ToolMessage>;
   frequency_penalty?: number | null;
   logit_bias?: {
     [key: string]: number;
@@ -230,6 +243,8 @@ export type ChatCompletionResponse = {
   object?: 'chat.completion';
   usage: UsageStatistics;
 };
+
+export type object = 'chat.completion';
 
 export type Choice = {
   finish_reason: string;
@@ -343,7 +358,7 @@ export type CreateBlock = {
   /**
    * Value of the block.
    */
-  value?: Array<string> | string | null;
+  value?: string | null;
   /**
    * Character limit of the block.
    */
@@ -469,27 +484,6 @@ export type CreateThreadRunRequest = {
   } | null;
 };
 
-export type CreateToolRequest = {
-  /**
-   * JSON schema of the tool.
-   */
-  json_schema: {
-    [key: string]: unknown;
-  };
-  /**
-   * The source code of the function.
-   */
-  source_code: string;
-  /**
-   * The type of the source code.
-   */
-  source_type?: 'python' | null;
-  /**
-   * Metadata tags.
-   */
-  tags?: Array<string> | null;
-};
-
 export type DeleteAssistantFileResponse = {
   /**
    * The unique identifier of the file.
@@ -555,7 +549,17 @@ export type Document = {
 };
 
 /**
- * Embedding model configuration
+ * Embedding model configuration. This object specifies all the information necessary to access an embedding model to usage with MemGPT, except for secret keys.
+ *
+ * Attributes:
+ * embedding_endpoint_type (str): The endpoint type for the model.
+ * embedding_endpoint (str): The endpoint for the model.
+ * embedding_model (str): The model for the embedding.
+ * embedding_dim (int): The dimension of the embedding.
+ * embedding_chunk_size (int): The chunk size of the embedding.
+ * azure_endpoint (:obj:`str`, optional): The Azure endpoint for the model (Azure only).
+ * azure_version (str): The Azure version for the model (Azure only).
+ * azure_deployment (str): The Azure deployment for the model (Azure only).
  */
 export type EmbeddingConfig = {
   /**
@@ -607,45 +611,10 @@ export type FunctionCall_Input = {
   name: string;
 };
 
-export type FunctionCallDelta = {
-  name: string | null;
-  arguments: string | null;
+export type FunctionCall_Output = {
+  arguments: string;
+  name: string;
 };
-
-/**
- * {
- * "function_call": {
- * "name": function_call.function.name,
- * "arguments": function_call.function.arguments,
- * },
- * "id": str(msg_obj.id),
- * "date": msg_obj.created_at.isoformat(),
- * }
- */
-export type FunctionCallMessage = {
-  id: string;
-  date: string;
-  function_call:
-    | memgpt__schemas__memgpt_message__FunctionCall
-    | FunctionCallDelta;
-};
-
-/**
- * {
- * "function_return": msg,
- * "status": "success" or "error",
- * "id": str(msg_obj.id),
- * "date": msg_obj.created_at.isoformat(),
- * }
- */
-export type FunctionReturn = {
-  id: string;
-  date: string;
-  function_return: string;
-  status: 'success' | 'error';
-};
-
-export type status = 'success' | 'error';
 
 export type FunctionSchema = {
   name: string;
@@ -665,20 +634,14 @@ export type ImageFile = {
 };
 
 /**
- * {
- * "internal_monologue": msg,
- * "date": msg_obj.created_at.isoformat() if msg_obj is not None else get_utc_time().isoformat(),
- * "id": str(msg_obj.id) if msg_obj is not None else None,
- * }
- */
-export type InternalMonologue = {
-  id: string;
-  date: string;
-  internal_monologue: string;
-};
-
-/**
- * Representation of offline jobs.
+ * Representation of offline jobs, used for tracking status of data loading tasks (involving parsing and embedding documents).
+ *
+ * Parameters:
+ * id (str): The unique identifier of the job.
+ * status (JobStatus): The status of the job.
+ * created_at (datetime): The unix timestamp of when the job was created.
+ * completed_at (datetime): The unix timestamp of when the job was completed.
+ * user_id (str): The unique identifier of the user associated with the.
  */
 export type Job = {
   /**
@@ -709,6 +672,9 @@ export type Job = {
   user_id: string;
 };
 
+/**
+ * Status of the job.
+ */
 export type JobStatus =
   | 'created'
   | 'running'
@@ -716,6 +682,16 @@ export type JobStatus =
   | 'failed'
   | 'pending';
 
+/**
+ * Configuration for a Language Model (LLM) model. This object specifies all the information necessary to access an LLM model to usage with MemGPT, except for secret keys.
+ *
+ * Attributes:
+ * model (str): The name of the LLM model.
+ * model_endpoint_type (str): The endpoint type for the model.
+ * model_endpoint (str): The endpoint for the model.
+ * model_wrapper (str): The wrapper for the model.
+ * context_window (int): The context window size for the model.
+ */
 export type LLMConfig = {
   /**
    * LLM model name.
@@ -739,12 +715,6 @@ export type LLMConfig = {
   context_window: number;
 };
 
-export type LegacyFunctionCallMessage = {
-  id: string;
-  date: string;
-  function_call: string;
-};
-
 export type ListMessagesResponse = {
   /**
    * List of message objects.
@@ -752,24 +722,22 @@ export type ListMessagesResponse = {
   messages: Array<OpenAIMessage>;
 };
 
-export type ListModelsResponse = {
-  /**
-   * List of model configurations.
-   */
-  models: Array<LLMConfig>;
-};
-
-export type ListToolsResponse = {
-  /**
-   * List of tools (functions).
-   */
-  tools: Array<Tool_Output>;
-};
-
 export type LogProbToken = {
   token: string;
   logprob: number;
   bytes: Array<number> | null;
+};
+
+/**
+ * Base class for simplified MemGPT message response type. This is intended to be used for developers who want the internal monologue, function calls, and function returns in a simplified format that does not include additional information other than the content and timestamp.
+ *
+ * Attributes:
+ * id (str): The ID of the message
+ * date (datetime): The date the message was created in ISO format
+ */
+export type MemGPTMessage = {
+  id: string;
+  date: string;
 };
 
 export type MemGPTRequest = {
@@ -795,25 +763,34 @@ export type MemGPTRequest = {
   return_message_object?: boolean;
 };
 
+/**
+ * Response object from an agent interaction, consisting of the new messages generated by the agent and usage statistics.
+ * The type of the returned messages can be either `Message` or `MemGPTMessage`, depending on what was specified in the request.
+ *
+ * Attributes:
+ * messages (List[Union[Message, MemGPTMessage]]): The messages returned by the agent.
+ * usage (MemGPTUsageStatistics): The usage statistics
+ */
 export type MemGPTResponse = {
   /**
    * The messages returned by the agent.
    */
-  messages:
-    | Array<memgpt__schemas__message__Message>
-    | Array<InternalMonologue | FunctionCallMessage | FunctionReturn>
-    | Array<
-        | InternalMonologue
-        | AssistantMessage_Output
-        | LegacyFunctionCallMessage
-        | FunctionReturn
-      >;
+  messages: Array<memgpt__schemas__message__Message> | Array<MemGPTMessage>;
   /**
    * The usage statistics of the agent.
    */
   usage: MemGPTUsageStatistics;
 };
 
+/**
+ * Usage statistics for the agent interaction.
+ *
+ * Attributes:
+ * completion_tokens (int): The number of tokens generated by the agent.
+ * prompt_tokens (int): The number of tokens in the prompt.
+ * total_tokens (int): The total number of tokens processed by the agent.
+ * step_count (int): The number of steps taken by the agent.
+ */
 export type MemGPTUsageStatistics = {
   /**
    * The number of tokens generated by the agent.
@@ -834,7 +811,10 @@ export type MemGPTUsageStatistics = {
 };
 
 /**
- * Represents the in-context memory of the agent
+ * Represents the in-context memory of the agent. This includes both the `Block` objects (labelled by sections), as well as tools to edit the blocks.
+ *
+ * Attributes:
+ * memory (Dict[str, Block]): Mapping from memory block section to memory block.
  */
 export type Memory = {
   /**
@@ -843,6 +823,10 @@ export type Memory = {
   memory?: {
     [key: string]: Block;
   };
+  /**
+   * Jinja2 template for compiling memory blocks into a prompt string
+   */
+  prompt_template?: string;
 };
 
 export type MessageContentLogProb = {
@@ -1199,6 +1183,19 @@ export type OpenAIUsage = {
   total_tokens: number;
 };
 
+/**
+ * Representation of a passage, which is stored in archival memory.
+ *
+ * Parameters:
+ * text (str): The text of the passage.
+ * embedding (List[float]): The embedding of the passage.
+ * embedding_config (EmbeddingConfig): The embedding configuration used by the passage.
+ * created_at (datetime): The creation date of the passage.
+ * user_id (str): The unique identifier of the user associated with the passage.
+ * agent_id (str): The unique identifier of the agent associated with the passage.
+ * source_id (str): The data source of the passage.
+ * doc_id (str): The unique identifier of the document associated with the passage.
+ */
 export type Passage = {
   /**
    * The unique identifier of the user associated with the passage.
@@ -1260,6 +1257,18 @@ export type ResponseFormat = {
   type?: string;
 };
 
+/**
+ * Representation of a source, which is a collection of documents and passages.
+ *
+ * Parameters:
+ * id (str): The ID of the source
+ * name (str): The name of the source.
+ * embedding_config (EmbeddingConfig): The embedding configuration used by the source.
+ * created_at (datetime): The creation date of the source.
+ * user_id (str): The ID of the user that created the source.
+ * metadata_ (dict): Metadata associated with the source.
+ * description (str): The description of the source.
+ */
 export type Source = {
   /**
    * The description of the source.
@@ -1367,6 +1376,16 @@ export type Tool_Input = {
 
 export type type = 'function';
 
+/**
+ * Representation of a tool, which is a function that can be called by the agent.
+ *
+ * Parameters:
+ * id (str): The unique identifier of the tool.
+ * name (str): The name of the function.
+ * tags (List[str]): Metadata tags.
+ * source_code (str): The source code of the function.
+ * json_schema (Dict): The JSON schema of the function.
+ */
 export type Tool_Output = {
   /**
    * The description of the tool.
@@ -1406,11 +1425,6 @@ export type Tool_Output = {
   json_schema?: {
     [key: string]: unknown;
   };
-};
-
-export type ToolCallFunction_Input = {
-  name: string;
-  arguments: string;
 };
 
 export type ToolCallFunction_Output = {
@@ -1580,7 +1594,7 @@ export type UpdateBlock = {
   /**
    * Value of the block.
    */
-  value?: Array<string> | string | null;
+  value?: string | null;
   /**
    * Character limit of the block.
    */
@@ -1617,12 +1631,50 @@ export type UpdateBlock = {
   id: string;
 };
 
+/**
+ * Request to update a message
+ */
+export type UpdateMessage = {
+  /**
+   * The id of the message.
+   */
+  id: string;
+  /**
+   * The role of the participant.
+   */
+  role?: MessageRole | null;
+  /**
+   * The text of the message.
+   */
+  text?: string | null;
+  /**
+   * The name of the participant.
+   */
+  name?: string | null;
+  /**
+   * The list of tool calls requested.
+   */
+  tool_calls?: Array<memgpt__schemas__openai__chat_completions__ToolCall_Input> | null;
+  /**
+   * The id of the tool call.
+   */
+  tool_call_id?: string | null;
+};
+
 export type UsageStatistics = {
   completion_tokens?: number;
   prompt_tokens?: number;
   total_tokens?: number;
 };
 
+/**
+ * Representation of a user.
+ *
+ * Parameters:
+ * id (str): The unique identifier of the user.
+ * name (str): The name of the user.
+ * created_at (datetime): The creation date of the user.
+ */
 export type User = {
   /**
    * The human-friendly ID of the User
@@ -1657,18 +1709,20 @@ export type ValidationError = {
   type: string;
 };
 
-export type memgpt__schemas__memgpt_message__FunctionCall = {
-  name: string;
-  arguments: string;
-};
-
 /**
- * Representation of a message sent.
+ * MemGPT's internal representation of a message. Includes methods to convert to/from LLM provider formats.
  *
- * Messages can be:
- * - agent->user (role=='agent')
- * - user->agent and system->agent (role=='user')
- * - or function/tool call returns (role=='function'/'tool').
+ * Attributes:
+ * id (str): The unique identifier of the message.
+ * role (MessageRole): The role of the participant.
+ * text (str): The text of the message.
+ * user_id (str): The unique identifier of the user.
+ * agent_id (str): The unique identifier of the agent.
+ * model (str): The model used to make the function call.
+ * name (str): The name of the participant.
+ * created_at (datetime): The time the message was created.
+ * tool_calls (List[ToolCall]): The list of tool calls requested.
+ * tool_call_id (str): The id of the tool call.
  */
 export type memgpt__schemas__message__Message = {
   /**
@@ -1706,7 +1760,7 @@ export type memgpt__schemas__message__Message = {
   /**
    * The list of tool calls requested.
    */
-  tool_calls?: Array<memgpt__schemas__openai__chat_completions__ToolCall> | null;
+  tool_calls?: Array<memgpt__schemas__openai__chat_completions__ToolCall_Output> | null;
   /**
    * The id of the tool call.
    */
@@ -1716,28 +1770,41 @@ export type memgpt__schemas__message__Message = {
 export type memgpt__schemas__openai__chat_completion_request__ToolCall = {
   id: string;
   type?: 'function';
-  function: ToolCallFunction_Input;
+  function: memgpt__schemas__openai__chat_completion_request__ToolCallFunction;
 };
 
-export type memgpt__schemas__openai__chat_completion_response__FunctionCall = {
-  arguments: string;
-  name: string;
-};
+export type memgpt__schemas__openai__chat_completion_request__ToolCallFunction =
+  {
+    name: string;
+    arguments: string;
+  };
 
 export type memgpt__schemas__openai__chat_completion_response__Message = {
   content?: string | null;
   tool_calls?: Array<memgpt__schemas__openai__chat_completion_response__ToolCall> | null;
   role: string;
-  function_call?: memgpt__schemas__openai__chat_completion_response__FunctionCall | null;
+  function_call?: FunctionCall_Output | null;
 };
 
 export type memgpt__schemas__openai__chat_completion_response__ToolCall = {
   id: string;
   type?: 'function';
-  function: memgpt__schemas__openai__chat_completion_response__FunctionCall;
+  function: FunctionCall_Output;
 };
 
-export type memgpt__schemas__openai__chat_completions__ToolCall = {
+export type memgpt__schemas__openai__chat_completions__ToolCall_Input = {
+  /**
+   * The ID of the tool call
+   */
+  id: string;
+  type?: string;
+  /**
+   * The arguments and name for the function
+   */
+  function: memgpt__schemas__openai__chat_completions__ToolCallFunction;
+};
+
+export type memgpt__schemas__openai__chat_completions__ToolCall_Output = {
   /**
    * The ID of the tool call
    */
@@ -1747,6 +1814,17 @@ export type memgpt__schemas__openai__chat_completions__ToolCall = {
    * The arguments and name for the function
    */
   function: ToolCallFunction_Output;
+};
+
+export type memgpt__schemas__openai__chat_completions__ToolCallFunction = {
+  /**
+   * The name of the function to call
+   */
+  name: string;
+  /**
+   * The arguments to pass to the function (JSON dump)
+   */
+  arguments: string;
 };
 
 export type memgpt__schemas__openai__openai__ToolCall = {
@@ -1761,184 +1839,180 @@ export type memgpt__schemas__openai__openai__ToolCall = {
   function: Function;
 };
 
-export type AuthenticateUserApiAuthPostData = {
-  requestBody: AuthRequest;
-};
-
-export type AuthenticateUserApiAuthPostResponse = AuthResponse;
-
-export type GetAllUsersAdminUsersGetData = {
-  cursor?: string | null;
-  limit?: number | null;
-};
-
-export type GetAllUsersAdminUsersGetResponse = Array<User>;
-
-export type CreateUserAdminUsersPostData = {
-  requestBody: UserCreate;
-};
-
-export type CreateUserAdminUsersPostResponse = User;
-
-export type DeleteUserAdminUsersDeleteData = {
-  /**
-   * The user_id key to be deleted.
-   */
-  userId: string;
-};
-
-export type DeleteUserAdminUsersDeleteResponse = User;
-
-export type CreateNewApiKeyAdminUsersKeysPostData = {
-  requestBody: APIKeyCreate;
-};
-
-export type CreateNewApiKeyAdminUsersKeysPostResponse = APIKey;
-
-export type GetApiKeysAdminUsersKeysGetData = {
-  /**
-   * The unique identifier of the user.
-   */
-  userId: string;
-};
-
-export type GetApiKeysAdminUsersKeysGetResponse = Array<APIKey>;
-
-export type DeleteApiKeyAdminUsersKeysDeleteData = {
-  /**
-   * The API key to be deleted.
-   */
-  apiKey: string;
-};
-
-export type DeleteApiKeyAdminUsersKeysDeleteResponse = APIKey;
-
-export type DeleteToolAdminToolsToolNameDeleteData = {
-  toolName: string;
-};
-
-export type DeleteToolAdminToolsToolNameDeleteResponse = unknown;
-
-export type GetToolAdminToolsToolNameGetData = {
-  toolName: string;
-};
-
-export type GetToolAdminToolsToolNameGetResponse = Tool_Output;
-
-export type ListAllToolsAdminToolsGetResponse = ListToolsResponse;
-
-export type CreateToolAdminToolsPostData = {
-  requestBody: CreateToolRequest;
-};
-
-export type CreateToolAdminToolsPostResponse = Tool_Output;
-
-export type DeleteToolApiToolsToolIdDeleteData = {
+export type DeleteToolData = {
   toolId: string;
 };
 
-export type DeleteToolApiToolsToolIdDeleteResponse = unknown;
+export type DeleteToolResponse = unknown;
 
-export type GetToolApiToolsToolIdGetData = {
+export type GetToolData = {
   toolId: string;
 };
 
-export type GetToolApiToolsToolIdGetResponse = Tool_Output;
+export type GetToolResponse = Tool_Output;
 
-export type UpdateToolApiToolsToolIdPostData = {
+export type UpdateToolData = {
   requestBody: ToolUpdate;
   toolId: string;
 };
 
-export type UpdateToolApiToolsToolIdPostResponse = Tool_Output;
+export type UpdateToolResponse = Tool_Output;
 
-export type GetToolIdApiToolsNameToolNameGetData = {
+export type GetToolIdByNameData = {
   toolName: string;
 };
 
-export type GetToolIdApiToolsNameToolNameGetResponse = string;
+export type GetToolIdByNameResponse = string;
 
-export type ListAllToolsApiToolsGetResponse = Array<Tool_Output>;
+export type ListToolsResponse = Array<Tool_Output>;
 
-export type CreateToolApiToolsPostData = {
+export type CreateToolData = {
   requestBody: ToolCreate;
+  update?: boolean;
 };
 
-export type CreateToolApiToolsPostResponse = Tool_Output;
+export type CreateToolResponse = Tool_Output;
 
-export type GetAllAgentsApiAdminAgentsGetResponse = Array<AgentState>;
+export type GetSourceData = {
+  sourceId: string;
+};
 
-export type ListAgentsApiAgentsGetResponse = Array<AgentState>;
+export type GetSourceResponse = Source;
 
-export type CreateAgentApiAgentsPostData = {
+export type UpdateSourceData = {
+  requestBody: SourceUpdate;
+  sourceId: string;
+};
+
+export type UpdateSourceResponse = Source;
+
+export type DeleteSourceData = {
+  sourceId: string;
+};
+
+export type DeleteSourceResponse = unknown;
+
+export type GetSourceIdByNameData = {
+  sourceName: string;
+};
+
+export type GetSourceIdByNameResponse = string;
+
+export type ListSourcesResponse = Array<Source>;
+
+export type CreateSourceData = {
+  requestBody: SourceCreate;
+};
+
+export type CreateSourceResponse = Source;
+
+export type AttachAgentToSourceData = {
+  /**
+   * The unique identifier of the agent to attach the source to.
+   */
+  agentId: string;
+  sourceId: string;
+};
+
+export type AttachAgentToSourceResponse = Source;
+
+export type DetachAgentFromSourceData = {
+  /**
+   * The unique identifier of the agent to detach the source from.
+   */
+  agentId: string;
+  sourceId: string;
+};
+
+export type DetachAgentFromSourceResponse = unknown;
+
+export type UploadFileToSourceData = {
+  formData: Body_upload_file_to_source;
+  sourceId: string;
+};
+
+export type UploadFileToSourceResponse = Job;
+
+export type ListSourcePassagesData = {
+  sourceId: string;
+};
+
+export type ListSourcePassagesResponse = Array<Passage>;
+
+export type ListSourceDocumentsData = {
+  sourceId: string;
+};
+
+export type ListSourceDocumentsResponse = Array<Document>;
+
+export type ListAgentsResponse = Array<AgentState>;
+
+export type CreateAgentData = {
   requestBody: CreateAgent;
 };
 
-export type CreateAgentApiAgentsPostResponse = AgentState;
+export type CreateAgentResponse = AgentState;
 
-export type UpdateAgentApiAgentsAgentIdPostData = {
+export type UpdateAgentData = {
   agentId: string;
   requestBody: UpdateAgentState;
 };
 
-export type UpdateAgentApiAgentsAgentIdPostResponse = AgentState;
+export type UpdateAgentResponse = AgentState;
 
-export type GetAgentStateApiAgentsAgentIdGetData = {
+export type GetAgentData = {
   agentId: string;
 };
 
-export type GetAgentStateApiAgentsAgentIdGetResponse = AgentState;
+export type GetAgentResponse = AgentState;
 
-export type DeleteAgentApiAgentsAgentIdDeleteData = {
+export type DeleteAgentData = {
   agentId: string;
 };
 
-export type DeleteAgentApiAgentsAgentIdDeleteResponse = unknown;
+export type DeleteAgentResponse = unknown;
 
-export type GetAgentSourcesApiAgentsAgentIdSourcesGetData = {
+export type GetAgentSourcesData = {
   agentId: string;
 };
 
-export type GetAgentSourcesApiAgentsAgentIdSourcesGetResponse = Array<Source>;
+export type GetAgentSourcesResponse = Array<Source>;
 
-export type GetAgentInContextMessagesApiAgentsAgentIdMemoryMessagesGetData = {
+export type ListAgentInContextMessagesData = {
   agentId: string;
 };
 
-export type GetAgentInContextMessagesApiAgentsAgentIdMemoryMessagesGetResponse =
+export type ListAgentInContextMessagesResponse =
   Array<memgpt__schemas__message__Message>;
 
-export type GetAgentMemoryApiAgentsAgentIdMemoryGetData = {
+export type GetAgentMemoryData = {
   agentId: string;
 };
 
-export type GetAgentMemoryApiAgentsAgentIdMemoryGetResponse = Memory;
+export type GetAgentMemoryResponse = Memory;
 
-export type UpdateAgentMemoryApiAgentsAgentIdMemoryPostData = {
+export type UpdateAgentMemoryData = {
   agentId: string;
   requestBody: {
     [key: string]: unknown;
   };
 };
 
-export type UpdateAgentMemoryApiAgentsAgentIdMemoryPostResponse = Memory;
+export type UpdateAgentMemoryResponse = Memory;
 
-export type GetAgentRecallMemorySummaryApiAgentsAgentIdMemoryRecallGetData = {
+export type GetAgentRecallMemorySummaryData = {
   agentId: string;
 };
 
-export type GetAgentRecallMemorySummaryApiAgentsAgentIdMemoryRecallGetResponse =
-  RecallMemorySummary;
+export type GetAgentRecallMemorySummaryResponse = RecallMemorySummary;
 
-export type GetAgentArchivalMemorySummaryApiAgentsAgentIdMemoryArchivalGetData =
-  {
-    agentId: string;
-  };
+export type GetAgentArchivalMemorySummaryData = {
+  agentId: string;
+};
 
-export type GetAgentArchivalMemorySummaryApiAgentsAgentIdMemoryArchivalGetResponse =
-  ArchivalMemorySummary;
+export type GetAgentArchivalMemorySummaryResponse = ArchivalMemorySummary;
 
-export type GetAgentArchivalMemoryApiAgentsAgentIdArchivalGetData = {
+export type ListAgentArchivalMemoryData = {
   /**
    * Unique ID of the memory to start the query range at.
    */
@@ -1954,42 +2028,23 @@ export type GetAgentArchivalMemoryApiAgentsAgentIdArchivalGetData = {
   limit?: number | null;
 };
 
-export type GetAgentArchivalMemoryApiAgentsAgentIdArchivalGetResponse =
-  Array<Passage>;
+export type ListAgentArchivalMemoryResponse = Array<Passage>;
 
-export type InsertAgentArchivalMemoryApiAgentsAgentIdArchivalPostData = {
+export type CreateAgentArchivalMemoryData = {
   agentId: string;
   requestBody: CreateArchivalMemory;
 };
 
-export type InsertAgentArchivalMemoryApiAgentsAgentIdArchivalPostResponse =
-  Array<Passage>;
+export type CreateAgentArchivalMemoryResponse = Array<Passage>;
 
-export type DeleteAgentArchivalMemoryApiAgentsAgentIdArchivalMemoryIdDeleteData =
-  {
-    agentId: string;
-    memoryId: string;
-  };
-
-export type DeleteAgentArchivalMemoryApiAgentsAgentIdArchivalMemoryIdDeleteResponse =
-  unknown;
-
-export type GetAgentMessagesInContextApiAgentsAgentIdMessagesContextGetData = {
+export type DeleteAgentArchivalMemoryData = {
   agentId: string;
-  /**
-   * How many messages to retrieve.
-   */
-  count: number;
-  /**
-   * Message index to start on (reverse chronological).
-   */
-  start: number;
+  memoryId: string;
 };
 
-export type GetAgentMessagesInContextApiAgentsAgentIdMessagesContextGetResponse =
-  Array<memgpt__schemas__message__Message>;
+export type DeleteAgentArchivalMemoryResponse = unknown;
 
-export type GetAgentMessagesApiAgentsAgentIdMessagesGetData = {
+export type ListAgentMessagesData = {
   agentId: string;
   /**
    * Message before which to retrieve the returned messages.
@@ -1999,19 +2054,35 @@ export type GetAgentMessagesApiAgentsAgentIdMessagesGetData = {
    * Maximum number of messages to retrieve.
    */
   limit?: number;
+  /**
+   * If true, returns Message objects. If false, return MemGPTMessage objects.
+   */
+  msgObject?: boolean;
 };
 
-export type GetAgentMessagesApiAgentsAgentIdMessagesGetResponse =
+export type ListAgentMessagesResponse =
   Array<memgpt__schemas__message__Message>;
 
-export type SendMessageApiAgentsAgentIdMessagesPostData = {
+export type CreateAgentMessageData = {
   agentId: string;
   requestBody: MemGPTRequest;
 };
 
-export type SendMessageApiAgentsAgentIdMessagesPostResponse = MemGPTResponse;
+export type CreateAgentMessageResponse = MemGPTResponse;
 
-export type ListBlocksApiBlocksGetData = {
+export type UpdateAgentMessageData = {
+  agentId: string;
+  messageId: string;
+  requestBody: UpdateMessage;
+};
+
+export type UpdateAgentMessageResponse = memgpt__schemas__message__Message;
+
+export type ListModelsResponse = Array<LLMConfig>;
+
+export type ListEmbeddingModelsResponse = Array<EmbeddingConfig>;
+
+export type ListMemoryBlocksData = {
   /**
    * Labels to include (e.g. human, persona)
    */
@@ -2026,230 +2097,99 @@ export type ListBlocksApiBlocksGetData = {
   templatesOnly?: boolean;
 };
 
-export type ListBlocksApiBlocksGetResponse = Array<Block>;
+export type ListMemoryBlocksResponse = Array<Block>;
 
-export type CreateBlockApiBlocksPostData = {
+export type CreateMemoryBlockData = {
   requestBody: CreateBlock;
 };
 
-export type CreateBlockApiBlocksPostResponse = Block;
+export type CreateMemoryBlockResponse = Block;
 
-export type UpdateBlockApiBlocksBlockIdPostData = {
+export type UpdateMemoryBlockData = {
   blockId: string;
   requestBody: UpdateBlock;
 };
 
-export type UpdateBlockApiBlocksBlockIdPostResponse = Block;
+export type UpdateMemoryBlockResponse = Block;
 
-export type DeleteBlockApiBlocksBlockIdDeleteData = {
+export type DeleteMemoryBlockData = {
   blockId: string;
 };
 
-export type DeleteBlockApiBlocksBlockIdDeleteResponse = Block;
+export type DeleteMemoryBlockResponse = Block;
 
-export type GetBlockApiBlocksBlockIdGetData = {
+export type GetMemoryBlockData = {
   blockId: string;
 };
 
-export type GetBlockApiBlocksBlockIdGetResponse = Block;
+export type GetMemoryBlockResponse = Block;
 
-export type ListJobsApiJobsGetResponse = Array<Job>;
+export type ListJobsResponse = Array<Job>;
 
-export type ListActiveJobsApiJobsActiveGetResponse = Array<Job>;
+export type ListActiveJobsResponse = Array<Job>;
 
-export type GetJobApiJobsJobIdGetData = {
+export type GetJobData = {
   jobId: string;
 };
 
-export type GetJobApiJobsJobIdGetResponse = Job;
+export type GetJobResponse = Job;
 
-export type ListModelsApiModelsGetResponse = ListModelsResponse;
-
-export type GetSourceApiSourcesSourceIdGetData = {
-  sourceId: string;
+export type ListUsersData = {
+  cursor?: string | null;
+  limit?: number | null;
 };
 
-export type GetSourceApiSourcesSourceIdGetResponse = Source;
+export type ListUsersResponse = Array<User>;
 
-export type UpdateSourceApiSourcesSourceIdPostData = {
-  requestBody: SourceUpdate;
-  sourceId: string;
+export type CreateUserData = {
+  requestBody: UserCreate;
 };
 
-export type UpdateSourceApiSourcesSourceIdPostResponse = Source;
+export type CreateUserResponse = User;
 
-export type DeleteSourceApiSourcesSourceIdDeleteData = {
-  sourceId: string;
-};
-
-export type DeleteSourceApiSourcesSourceIdDeleteResponse = unknown;
-
-export type GetSourceIdByNameApiSourcesNameSourceNameGetData = {
-  sourceName: string;
-};
-
-export type GetSourceIdByNameApiSourcesNameSourceNameGetResponse = string;
-
-export type ListSourcesApiSourcesGetResponse = Array<Source>;
-
-export type CreateSourceApiSourcesPostData = {
-  requestBody: SourceCreate;
-};
-
-export type CreateSourceApiSourcesPostResponse = Source;
-
-export type AttachSourceToAgentApiSourcesSourceIdAttachPostData = {
+export type DeleteUserData = {
   /**
-   * The unique identifier of the agent to attach the source to.
+   * The user_id key to be deleted.
    */
-  agentId: string;
-  sourceId: string;
+  userId: string;
 };
 
-export type AttachSourceToAgentApiSourcesSourceIdAttachPostResponse = Source;
+export type DeleteUserResponse = User;
 
-export type DetachSourceFromAgentApiSourcesSourceIdDetachPostData = {
+export type CreateApiKeyData = {
+  requestBody: APIKeyCreate;
+};
+
+export type CreateApiKeyResponse = APIKey;
+
+export type ListApiKeysData = {
   /**
-   * The unique identifier of the agent to detach the source from.
+   * The unique identifier of the user.
    */
-  agentId: string;
-  sourceId: string;
+  userId: string;
 };
 
-export type DetachSourceFromAgentApiSourcesSourceIdDetachPostResponse = unknown;
+export type ListApiKeysResponse = Array<APIKey>;
 
-export type GetJobApiSourcesStatusJobIdGetData = {
-  jobId: string;
+export type DeleteApiKeyData = {
+  /**
+   * The API key to be deleted.
+   */
+  apiKey: string;
 };
 
-export type GetJobApiSourcesStatusJobIdGetResponse = Job;
+export type DeleteApiKeyResponse = APIKey;
 
-export type UploadFileToSourceApiSourcesSourceIdUploadPostData = {
-  formData: Body_upload_file_to_source_api_sources__source_id__upload_post;
-  sourceId: string;
+export type AuthenticateUserV1AuthPostData = {
+  requestBody: AuthRequest;
 };
 
-export type UploadFileToSourceApiSourcesSourceIdUploadPostResponse = Job;
-
-export type ListPassagesApiSourcesSourceIdPassagesGetData = {
-  sourceId: string;
-};
-
-export type ListPassagesApiSourcesSourceIdPassagesGetResponse = Array<Passage>;
-
-export type ListDocumentsApiSourcesSourceIdDocumentsGetData = {
-  sourceId: string;
-};
-
-export type ListDocumentsApiSourcesSourceIdDocumentsGetResponse =
-  Array<Document>;
-
-export type GetLlmConfigsApiConfigLlmGetResponse = Array<LLMConfig>;
-
-export type GetEmbeddingConfigsApiConfigEmbeddingGetResponse =
-  Array<EmbeddingConfig>;
+export type AuthenticateUserV1AuthPostResponse = AuthResponse;
 
 export type $OpenApiTs = {
-  '/api/auth': {
-    post: {
-      req: AuthenticateUserApiAuthPostData;
-      res: {
-        /**
-         * Successful Response
-         */
-        200: AuthResponse;
-        /**
-         * Validation Error
-         */
-        422: HTTPValidationError;
-      };
-    };
-  };
-  '/admin/users': {
-    get: {
-      req: GetAllUsersAdminUsersGetData;
-      res: {
-        /**
-         * Successful Response
-         */
-        200: Array<User>;
-        /**
-         * Validation Error
-         */
-        422: HTTPValidationError;
-      };
-    };
-    post: {
-      req: CreateUserAdminUsersPostData;
-      res: {
-        /**
-         * Successful Response
-         */
-        200: User;
-        /**
-         * Validation Error
-         */
-        422: HTTPValidationError;
-      };
-    };
+  '/v1/tools/{tool_id}': {
     delete: {
-      req: DeleteUserAdminUsersDeleteData;
-      res: {
-        /**
-         * Successful Response
-         */
-        200: User;
-        /**
-         * Validation Error
-         */
-        422: HTTPValidationError;
-      };
-    };
-  };
-  '/admin/users/keys': {
-    post: {
-      req: CreateNewApiKeyAdminUsersKeysPostData;
-      res: {
-        /**
-         * Successful Response
-         */
-        200: APIKey;
-        /**
-         * Validation Error
-         */
-        422: HTTPValidationError;
-      };
-    };
-    get: {
-      req: GetApiKeysAdminUsersKeysGetData;
-      res: {
-        /**
-         * Successful Response
-         */
-        200: Array<APIKey>;
-        /**
-         * Validation Error
-         */
-        422: HTTPValidationError;
-      };
-    };
-    delete: {
-      req: DeleteApiKeyAdminUsersKeysDeleteData;
-      res: {
-        /**
-         * Successful Response
-         */
-        200: APIKey;
-        /**
-         * Validation Error
-         */
-        422: HTTPValidationError;
-      };
-    };
-  };
-  '/admin/tools/{tool_name}': {
-    delete: {
-      req: DeleteToolAdminToolsToolNameDeleteData;
+      req: DeleteToolData;
       res: {
         /**
          * Successful Response
@@ -2262,7 +2202,20 @@ export type $OpenApiTs = {
       };
     };
     get: {
-      req: GetToolAdminToolsToolNameGetData;
+      req: GetToolData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: Tool_Output;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+    patch: {
+      req: UpdateToolData;
       res: {
         /**
          * Successful Response
@@ -2275,73 +2228,9 @@ export type $OpenApiTs = {
       };
     };
   };
-  '/admin/tools': {
+  '/v1/tools/name/{tool_name}': {
     get: {
-      res: {
-        /**
-         * Successful Response
-         */
-        200: ListToolsResponse;
-      };
-    };
-    post: {
-      req: CreateToolAdminToolsPostData;
-      res: {
-        /**
-         * Successful Response
-         */
-        200: Tool_Output;
-        /**
-         * Validation Error
-         */
-        422: HTTPValidationError;
-      };
-    };
-  };
-  '/api/tools/{tool_id}': {
-    delete: {
-      req: DeleteToolApiToolsToolIdDeleteData;
-      res: {
-        /**
-         * Successful Response
-         */
-        200: unknown;
-        /**
-         * Validation Error
-         */
-        422: HTTPValidationError;
-      };
-    };
-    get: {
-      req: GetToolApiToolsToolIdGetData;
-      res: {
-        /**
-         * Successful Response
-         */
-        200: Tool_Output;
-        /**
-         * Validation Error
-         */
-        422: HTTPValidationError;
-      };
-    };
-    post: {
-      req: UpdateToolApiToolsToolIdPostData;
-      res: {
-        /**
-         * Successful Response
-         */
-        200: Tool_Output;
-        /**
-         * Validation Error
-         */
-        422: HTTPValidationError;
-      };
-    };
-  };
-  '/api/tools/name/{tool_name}': {
-    get: {
-      req: GetToolIdApiToolsNameToolNameGetData;
+      req: GetToolIdByNameData;
       res: {
         /**
          * Successful Response
@@ -2354,7 +2243,7 @@ export type $OpenApiTs = {
       };
     };
   };
-  '/api/tools': {
+  '/v1/tools/': {
     get: {
       res: {
         /**
@@ -2364,7 +2253,7 @@ export type $OpenApiTs = {
       };
     };
     post: {
-      req: CreateToolApiToolsPostData;
+      req: CreateToolData;
       res: {
         /**
          * Successful Response
@@ -2377,371 +2266,9 @@ export type $OpenApiTs = {
       };
     };
   };
-  '/api/admin/agents': {
+  '/v1/sources/{source_id}': {
     get: {
-      res: {
-        /**
-         * Successful Response
-         */
-        200: Array<AgentState>;
-      };
-    };
-  };
-  '/api/agents': {
-    get: {
-      res: {
-        /**
-         * Successful Response
-         */
-        200: Array<AgentState>;
-      };
-    };
-    post: {
-      req: CreateAgentApiAgentsPostData;
-      res: {
-        /**
-         * Successful Response
-         */
-        200: AgentState;
-        /**
-         * Validation Error
-         */
-        422: HTTPValidationError;
-      };
-    };
-  };
-  '/api/agents/{agent_id}': {
-    post: {
-      req: UpdateAgentApiAgentsAgentIdPostData;
-      res: {
-        /**
-         * Successful Response
-         */
-        200: AgentState;
-        /**
-         * Validation Error
-         */
-        422: HTTPValidationError;
-      };
-    };
-    get: {
-      req: GetAgentStateApiAgentsAgentIdGetData;
-      res: {
-        /**
-         * Successful Response
-         */
-        200: AgentState;
-        /**
-         * Validation Error
-         */
-        422: HTTPValidationError;
-      };
-    };
-    delete: {
-      req: DeleteAgentApiAgentsAgentIdDeleteData;
-      res: {
-        /**
-         * Successful Response
-         */
-        200: unknown;
-        /**
-         * Validation Error
-         */
-        422: HTTPValidationError;
-      };
-    };
-  };
-  '/api/agents/{agent_id}/sources': {
-    get: {
-      req: GetAgentSourcesApiAgentsAgentIdSourcesGetData;
-      res: {
-        /**
-         * Successful Response
-         */
-        200: Array<Source>;
-        /**
-         * Validation Error
-         */
-        422: HTTPValidationError;
-      };
-    };
-  };
-  '/api/agents/{agent_id}/memory/messages': {
-    get: {
-      req: GetAgentInContextMessagesApiAgentsAgentIdMemoryMessagesGetData;
-      res: {
-        /**
-         * Successful Response
-         */
-        200: Array<memgpt__schemas__message__Message>;
-        /**
-         * Validation Error
-         */
-        422: HTTPValidationError;
-      };
-    };
-  };
-  '/api/agents/{agent_id}/memory': {
-    get: {
-      req: GetAgentMemoryApiAgentsAgentIdMemoryGetData;
-      res: {
-        /**
-         * Successful Response
-         */
-        200: Memory;
-        /**
-         * Validation Error
-         */
-        422: HTTPValidationError;
-      };
-    };
-    post: {
-      req: UpdateAgentMemoryApiAgentsAgentIdMemoryPostData;
-      res: {
-        /**
-         * Successful Response
-         */
-        200: Memory;
-        /**
-         * Validation Error
-         */
-        422: HTTPValidationError;
-      };
-    };
-  };
-  '/api/agents/{agent_id}/memory/recall': {
-    get: {
-      req: GetAgentRecallMemorySummaryApiAgentsAgentIdMemoryRecallGetData;
-      res: {
-        /**
-         * Successful Response
-         */
-        200: RecallMemorySummary;
-        /**
-         * Validation Error
-         */
-        422: HTTPValidationError;
-      };
-    };
-  };
-  '/api/agents/{agent_id}/memory/archival': {
-    get: {
-      req: GetAgentArchivalMemorySummaryApiAgentsAgentIdMemoryArchivalGetData;
-      res: {
-        /**
-         * Successful Response
-         */
-        200: ArchivalMemorySummary;
-        /**
-         * Validation Error
-         */
-        422: HTTPValidationError;
-      };
-    };
-  };
-  '/api/agents/{agent_id}/archival': {
-    get: {
-      req: GetAgentArchivalMemoryApiAgentsAgentIdArchivalGetData;
-      res: {
-        /**
-         * Successful Response
-         */
-        200: Array<Passage>;
-        /**
-         * Validation Error
-         */
-        422: HTTPValidationError;
-      };
-    };
-    post: {
-      req: InsertAgentArchivalMemoryApiAgentsAgentIdArchivalPostData;
-      res: {
-        /**
-         * Successful Response
-         */
-        200: Array<Passage>;
-        /**
-         * Validation Error
-         */
-        422: HTTPValidationError;
-      };
-    };
-  };
-  '/api/agents/{agent_id}/archival/{memory_id}': {
-    delete: {
-      req: DeleteAgentArchivalMemoryApiAgentsAgentIdArchivalMemoryIdDeleteData;
-      res: {
-        /**
-         * Successful Response
-         */
-        200: unknown;
-        /**
-         * Validation Error
-         */
-        422: HTTPValidationError;
-      };
-    };
-  };
-  '/api/agents/{agent_id}/messages/context/': {
-    get: {
-      req: GetAgentMessagesInContextApiAgentsAgentIdMessagesContextGetData;
-      res: {
-        /**
-         * Successful Response
-         */
-        200: Array<memgpt__schemas__message__Message>;
-        /**
-         * Validation Error
-         */
-        422: HTTPValidationError;
-      };
-    };
-  };
-  '/api/agents/{agent_id}/messages': {
-    get: {
-      req: GetAgentMessagesApiAgentsAgentIdMessagesGetData;
-      res: {
-        /**
-         * Successful Response
-         */
-        200: Array<memgpt__schemas__message__Message>;
-        /**
-         * Validation Error
-         */
-        422: HTTPValidationError;
-      };
-    };
-    post: {
-      req: SendMessageApiAgentsAgentIdMessagesPostData;
-      res: {
-        /**
-         * Successful Response
-         */
-        200: MemGPTResponse;
-        /**
-         * Validation Error
-         */
-        422: HTTPValidationError;
-      };
-    };
-  };
-  '/api/blocks': {
-    get: {
-      req: ListBlocksApiBlocksGetData;
-      res: {
-        /**
-         * Successful Response
-         */
-        200: Array<Block>;
-        /**
-         * Validation Error
-         */
-        422: HTTPValidationError;
-      };
-    };
-    post: {
-      req: CreateBlockApiBlocksPostData;
-      res: {
-        /**
-         * Successful Response
-         */
-        200: Block;
-        /**
-         * Validation Error
-         */
-        422: HTTPValidationError;
-      };
-    };
-  };
-  '/api/blocks/{block_id}': {
-    post: {
-      req: UpdateBlockApiBlocksBlockIdPostData;
-      res: {
-        /**
-         * Successful Response
-         */
-        200: Block;
-        /**
-         * Validation Error
-         */
-        422: HTTPValidationError;
-      };
-    };
-    delete: {
-      req: DeleteBlockApiBlocksBlockIdDeleteData;
-      res: {
-        /**
-         * Successful Response
-         */
-        200: Block;
-        /**
-         * Validation Error
-         */
-        422: HTTPValidationError;
-      };
-    };
-    get: {
-      req: GetBlockApiBlocksBlockIdGetData;
-      res: {
-        /**
-         * Successful Response
-         */
-        200: Block;
-        /**
-         * Validation Error
-         */
-        422: HTTPValidationError;
-      };
-    };
-  };
-  '/api/jobs': {
-    get: {
-      res: {
-        /**
-         * Successful Response
-         */
-        200: Array<Job>;
-      };
-    };
-  };
-  '/api/jobs/active': {
-    get: {
-      res: {
-        /**
-         * Successful Response
-         */
-        200: Array<Job>;
-      };
-    };
-  };
-  '/api/jobs/{job_id}': {
-    get: {
-      req: GetJobApiJobsJobIdGetData;
-      res: {
-        /**
-         * Successful Response
-         */
-        200: Job;
-        /**
-         * Validation Error
-         */
-        422: HTTPValidationError;
-      };
-    };
-  };
-  '/api/models': {
-    get: {
-      res: {
-        /**
-         * Successful Response
-         */
-        200: ListModelsResponse;
-      };
-    };
-  };
-  '/api/sources/{source_id}': {
-    get: {
-      req: GetSourceApiSourcesSourceIdGetData;
+      req: GetSourceData;
       res: {
         /**
          * Successful Response
@@ -2753,8 +2280,8 @@ export type $OpenApiTs = {
         422: HTTPValidationError;
       };
     };
-    post: {
-      req: UpdateSourceApiSourcesSourceIdPostData;
+    patch: {
+      req: UpdateSourceData;
       res: {
         /**
          * Successful Response
@@ -2767,7 +2294,7 @@ export type $OpenApiTs = {
       };
     };
     delete: {
-      req: DeleteSourceApiSourcesSourceIdDeleteData;
+      req: DeleteSourceData;
       res: {
         /**
          * Successful Response
@@ -2780,9 +2307,9 @@ export type $OpenApiTs = {
       };
     };
   };
-  '/api/sources/name/{source_name}': {
+  '/v1/sources/name/{source_name}': {
     get: {
-      req: GetSourceIdByNameApiSourcesNameSourceNameGetData;
+      req: GetSourceIdByNameData;
       res: {
         /**
          * Successful Response
@@ -2795,7 +2322,7 @@ export type $OpenApiTs = {
       };
     };
   };
-  '/api/sources': {
+  '/v1/sources/': {
     get: {
       res: {
         /**
@@ -2805,7 +2332,7 @@ export type $OpenApiTs = {
       };
     };
     post: {
-      req: CreateSourceApiSourcesPostData;
+      req: CreateSourceData;
       res: {
         /**
          * Successful Response
@@ -2818,9 +2345,9 @@ export type $OpenApiTs = {
       };
     };
   };
-  '/api/sources/{source_id}/attach': {
+  '/v1/sources/{source_id}/attach': {
     post: {
-      req: AttachSourceToAgentApiSourcesSourceIdAttachPostData;
+      req: AttachAgentToSourceData;
       res: {
         /**
          * Successful Response
@@ -2833,9 +2360,9 @@ export type $OpenApiTs = {
       };
     };
   };
-  '/api/sources/{source_id}/detach': {
+  '/v1/sources/{source_id}/detach': {
     post: {
-      req: DetachSourceFromAgentApiSourcesSourceIdDetachPostData;
+      req: DetachAgentFromSourceData;
       res: {
         /**
          * Successful Response
@@ -2848,24 +2375,9 @@ export type $OpenApiTs = {
       };
     };
   };
-  '/api/sources/status/{job_id}': {
-    get: {
-      req: GetJobApiSourcesStatusJobIdGetData;
-      res: {
-        /**
-         * Successful Response
-         */
-        200: Job;
-        /**
-         * Validation Error
-         */
-        422: HTTPValidationError;
-      };
-    };
-  };
-  '/api/sources/{source_id}/upload': {
+  '/v1/sources/{source_id}/upload': {
     post: {
-      req: UploadFileToSourceApiSourcesSourceIdUploadPostData;
+      req: UploadFileToSourceData;
       res: {
         /**
          * Successful Response
@@ -2878,9 +2390,9 @@ export type $OpenApiTs = {
       };
     };
   };
-  '/api/sources/{source_id}/passages ': {
+  '/v1/sources/{source_id}/passages': {
     get: {
-      req: ListPassagesApiSourcesSourceIdPassagesGetData;
+      req: ListSourcePassagesData;
       res: {
         /**
          * Successful Response
@@ -2893,9 +2405,9 @@ export type $OpenApiTs = {
       };
     };
   };
-  '/api/sources/{source_id}/documents': {
+  '/v1/sources/{source_id}/documents': {
     get: {
-      req: ListDocumentsApiSourcesSourceIdDocumentsGetData;
+      req: ListSourceDocumentsData;
       res: {
         /**
          * Successful Response
@@ -2908,7 +2420,245 @@ export type $OpenApiTs = {
       };
     };
   };
-  '/api/config/llm': {
+  '/v1/agents/': {
+    get: {
+      res: {
+        /**
+         * Successful Response
+         */
+        200: Array<AgentState>;
+      };
+    };
+    post: {
+      req: CreateAgentData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: AgentState;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/agents/{agent_id}': {
+    patch: {
+      req: UpdateAgentData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: AgentState;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+    get: {
+      req: GetAgentData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: AgentState;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+    delete: {
+      req: DeleteAgentData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: unknown;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/agents/{agent_id}/sources': {
+    get: {
+      req: GetAgentSourcesData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: Array<Source>;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/agents/{agent_id}/memory/messages': {
+    get: {
+      req: ListAgentInContextMessagesData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: Array<memgpt__schemas__message__Message>;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/agents/{agent_id}/memory': {
+    get: {
+      req: GetAgentMemoryData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: Memory;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+    patch: {
+      req: UpdateAgentMemoryData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: Memory;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/agents/{agent_id}/memory/recall': {
+    get: {
+      req: GetAgentRecallMemorySummaryData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: RecallMemorySummary;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/agents/{agent_id}/memory/archival': {
+    get: {
+      req: GetAgentArchivalMemorySummaryData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: ArchivalMemorySummary;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/agents/{agent_id}/archival': {
+    get: {
+      req: ListAgentArchivalMemoryData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: Array<Passage>;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+    post: {
+      req: CreateAgentArchivalMemoryData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: Array<Passage>;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/agents/{agent_id}/archival/{memory_id}': {
+    delete: {
+      req: DeleteAgentArchivalMemoryData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: unknown;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/agents/{agent_id}/messages': {
+    get: {
+      req: ListAgentMessagesData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: Array<memgpt__schemas__message__Message>;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+    post: {
+      req: CreateAgentMessageData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: MemGPTResponse;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/agents/{agent_id}/messages/{message_id}': {
+    patch: {
+      req: UpdateAgentMessageData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: memgpt__schemas__message__Message;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/models/': {
     get: {
       res: {
         /**
@@ -2918,13 +2668,214 @@ export type $OpenApiTs = {
       };
     };
   };
-  '/api/config/embedding': {
+  '/v1/models/embedding': {
     get: {
       res: {
         /**
          * Successful Response
          */
         200: Array<EmbeddingConfig>;
+      };
+    };
+  };
+  '/v1/blocks/': {
+    get: {
+      req: ListMemoryBlocksData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: Array<Block>;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+    post: {
+      req: CreateMemoryBlockData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: Block;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/blocks/{block_id}': {
+    patch: {
+      req: UpdateMemoryBlockData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: Block;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+    delete: {
+      req: DeleteMemoryBlockData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: Block;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+    get: {
+      req: GetMemoryBlockData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: Block;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/jobs/': {
+    get: {
+      res: {
+        /**
+         * Successful Response
+         */
+        200: Array<Job>;
+      };
+    };
+  };
+  '/v1/jobs/active': {
+    get: {
+      res: {
+        /**
+         * Successful Response
+         */
+        200: Array<Job>;
+      };
+    };
+  };
+  '/v1/jobs/{job_id}': {
+    get: {
+      req: GetJobData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: Job;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/admin/users/': {
+    get: {
+      req: ListUsersData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: Array<User>;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+    post: {
+      req: CreateUserData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: User;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+    delete: {
+      req: DeleteUserData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: User;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/admin/users/keys': {
+    post: {
+      req: CreateApiKeyData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: APIKey;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+    get: {
+      req: ListApiKeysData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: Array<APIKey>;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+    delete: {
+      req: DeleteApiKeyData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: APIKey;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/auth': {
+    post: {
+      req: AuthenticateUserV1AuthPostData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: AuthResponse;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
       };
     };
   };

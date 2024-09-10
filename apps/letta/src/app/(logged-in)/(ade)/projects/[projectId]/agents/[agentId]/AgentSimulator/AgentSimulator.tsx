@@ -10,7 +10,7 @@ import {
   VStack,
 } from '@letta-web/component-library';
 import React, { useEffect, useMemo, useRef } from 'react';
-import { useAgentsServiceGetAgentMessagesApiAgentsAgentIdMessagesGet } from '@letta-web/letta-agents-api';
+import { useAgentsServiceListAgentMessages } from '@letta-web/letta-agents-api';
 import { useCurrentAgentId } from '../hooks';
 import { ADENavigationItem } from '../common/ADENavigationItem/ADENavigationItem';
 
@@ -52,7 +52,7 @@ function Messages() {
   const ref = useRef<HTMLDivElement>(null);
 
   const currentAgentId = useCurrentAgentId();
-  const { data } = useAgentsServiceGetAgentMessagesApiAgentsAgentIdMessagesGet({
+  const { data } = useAgentsServiceListAgentMessages({
     agentId: currentAgentId,
   });
 

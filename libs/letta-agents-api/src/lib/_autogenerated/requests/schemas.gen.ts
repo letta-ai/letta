@@ -172,7 +172,18 @@ export const $AgentState = {
   type: 'object',
   required: ['name', 'tools', 'system', 'llm_config', 'embedding_config'],
   title: 'AgentState',
-  description: "Representation of an agent's state.",
+  description: `Representation of an agent's state. This is the state of the agent at a given time, and is persisted in the DB backend. The state has all the information needed to recreate a persisted agent.
+
+Parameters:
+    id (str): The unique identifier of the agent.
+    name (str): The name of the agent (must be unique to the user).
+    created_at (datetime): The datetime the agent was created.
+    message_ids (List[str]): The ids of the messages in the agent's in-context memory.
+    memory (Memory): The in-context memory of the agent.
+    tools (List[str]): The tools used by the agent. This includes any memory editing functions specified in \`memory\`.
+    system (str): The system prompt used by the agent.
+    llm_config (LLMConfig): The LLM configuration used by the agent.
+    embedding_config (EmbeddingConfig): The embedding configuration used by the agent.`,
 } as const;
 
 export const $ArchivalMemorySummary = {
@@ -216,7 +227,7 @@ export const $AssistantFile = {
   title: 'AssistantFile',
 } as const;
 
-export const $AssistantMessage_Input = {
+export const $AssistantMessage = {
   properties: {
     content: {
       anyOf: [
@@ -261,27 +272,6 @@ export const $AssistantMessage_Input = {
     },
   },
   type: 'object',
-  title: 'AssistantMessage',
-} as const;
-
-export const $AssistantMessage_Output = {
-  properties: {
-    id: {
-      type: 'string',
-      title: 'Id',
-    },
-    date: {
-      type: 'string',
-      format: 'date-time',
-      title: 'Date',
-    },
-    assistant_message: {
-      type: 'string',
-      title: 'Assistant Message',
-    },
-  },
-  type: 'object',
-  required: ['id', 'date', 'assistant_message'],
   title: 'AssistantMessage',
 } as const;
 
@@ -417,10 +407,20 @@ export const $Block = {
   type: 'object',
   required: ['value'],
   title: 'Block',
-  description: 'Block of the LLM context',
+  description: `A Block represents a reserved section of the LLM's context window which is editable. \`Block\` objects contained in the \`Memory\` object, which is able to edit the Block values.
+
+Parameters:
+    name (str): The name of the block.
+    value (str): The value of the block. This is the string that is represented in the context window.
+    limit (int): The character limit of the block.
+    template (bool): Whether the block is a template (e.g. saved human/persona options). Non-template blocks are not stored in the database and are ephemeral, while templated blocks are stored in the database.
+    label (str): The label of the block (e.g. 'human', 'persona'). This defines a category for the block.
+    description (str): Description of the block.
+    metadata_ (Dict): Metadata of the block.
+    user_id (str): The unique identifier of the user associated with the block.`,
 } as const;
 
-export const $Body_upload_file_to_source_api_sources__source_id__upload_post = {
+export const $Body_upload_file_to_source = {
   properties: {
     file: {
       type: 'string',
@@ -430,7 +430,7 @@ export const $Body_upload_file_to_source_api_sources__source_id__upload_post = {
   },
   type: 'object',
   required: ['file'],
-  title: 'Body_upload_file_to_source_api_sources__source_id__upload_post',
+  title: 'Body_upload_file_to_source',
 } as const;
 
 export const $ChatCompletionRequest = {
@@ -449,7 +449,7 @@ export const $ChatCompletionRequest = {
             $ref: '#/components/schemas/UserMessage',
           },
           {
-            $ref: '#/components/schemas/AssistantMessage-Input',
+            $ref: '#/components/schemas/AssistantMessage',
           },
           {
             $ref: '#/components/schemas/ToolMessage',
@@ -1011,12 +1011,6 @@ export const $CreateBlock = {
     value: {
       anyOf: [
         {
-          items: {
-            type: 'string',
-          },
-          type: 'array',
-        },
-        {
           type: 'string',
         },
         {
@@ -1318,53 +1312,6 @@ export const $CreateThreadRunRequest = {
   title: 'CreateThreadRunRequest',
 } as const;
 
-export const $CreateToolRequest = {
-  properties: {
-    json_schema: {
-      type: 'object',
-      title: 'Json Schema',
-      description: 'JSON schema of the tool.',
-    },
-    source_code: {
-      type: 'string',
-      title: 'Source Code',
-      description: 'The source code of the function.',
-    },
-    source_type: {
-      anyOf: [
-        {
-          type: 'string',
-          enum: ['python'],
-          const: 'python',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Source Type',
-      description: 'The type of the source code.',
-    },
-    tags: {
-      anyOf: [
-        {
-          items: {
-            type: 'string',
-          },
-          type: 'array',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Tags',
-      description: 'Metadata tags.',
-    },
-  },
-  type: 'object',
-  required: ['json_schema', 'source_code'],
-  title: 'CreateToolRequest',
-} as const;
-
 export const $DeleteAssistantFileResponse = {
   properties: {
     id: {
@@ -1564,7 +1511,17 @@ export const $EmbeddingConfig = {
   type: 'object',
   required: ['embedding_endpoint_type', 'embedding_model', 'embedding_dim'],
   title: 'EmbeddingConfig',
-  description: 'Embedding model configuration',
+  description: `Embedding model configuration. This object specifies all the information necessary to access an embedding model to usage with MemGPT, except for secret keys.
+
+Attributes:
+    embedding_endpoint_type (str): The endpoint type for the model.
+    embedding_endpoint (str): The endpoint for the model.
+    embedding_model (str): The model for the embedding.
+    embedding_dim (int): The dimension of the embedding.
+    embedding_chunk_size (int): The chunk size of the embedding.
+    azure_endpoint (:obj:\`str\`, optional): The Azure endpoint for the model (Azure only).
+    azure_version (str): The Azure version for the model (Azure only).
+    azure_deployment (str): The Azure deployment for the model (Azure only).`,
 } as const;
 
 export const $Function = {
@@ -1597,102 +1554,20 @@ export const $FunctionCall_Input = {
   title: 'FunctionCall',
 } as const;
 
-export const $FunctionCallDelta = {
+export const $FunctionCall_Output = {
   properties: {
-    name: {
-      anyOf: [
-        {
-          type: 'string',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Name',
-    },
     arguments: {
-      anyOf: [
-        {
-          type: 'string',
-        },
-        {
-          type: 'null',
-        },
-      ],
+      type: 'string',
       title: 'Arguments',
     },
-  },
-  type: 'object',
-  required: ['name', 'arguments'],
-  title: 'FunctionCallDelta',
-} as const;
-
-export const $FunctionCallMessage = {
-  properties: {
-    id: {
+    name: {
       type: 'string',
-      title: 'Id',
-    },
-    date: {
-      type: 'string',
-      format: 'date-time',
-      title: 'Date',
-    },
-    function_call: {
-      anyOf: [
-        {
-          $ref: '#/components/schemas/memgpt__schemas__memgpt_message__FunctionCall',
-        },
-        {
-          $ref: '#/components/schemas/FunctionCallDelta',
-        },
-      ],
-      title: 'Function Call',
+      title: 'Name',
     },
   },
   type: 'object',
-  required: ['id', 'date', 'function_call'],
-  title: 'FunctionCallMessage',
-  description: `{
-    "function_call": {
-        "name": function_call.function.name,
-        "arguments": function_call.function.arguments,
-    },
-    "id": str(msg_obj.id),
-    "date": msg_obj.created_at.isoformat(),
-}`,
-} as const;
-
-export const $FunctionReturn = {
-  properties: {
-    id: {
-      type: 'string',
-      title: 'Id',
-    },
-    date: {
-      type: 'string',
-      format: 'date-time',
-      title: 'Date',
-    },
-    function_return: {
-      type: 'string',
-      title: 'Function Return',
-    },
-    status: {
-      type: 'string',
-      enum: ['success', 'error'],
-      title: 'Status',
-    },
-  },
-  type: 'object',
-  required: ['id', 'date', 'function_return', 'status'],
-  title: 'FunctionReturn',
-  description: `{
-    "function_return": msg,
-    "status": "success" or "error",
-    "id": str(msg_obj.id),
-    "date": msg_obj.created_at.isoformat(),
-}`,
+  required: ['arguments', 'name'],
+  title: 'FunctionCall',
 } as const;
 
 export const $FunctionSchema = {
@@ -1760,32 +1635,6 @@ export const $ImageFile = {
   title: 'ImageFile',
 } as const;
 
-export const $InternalMonologue = {
-  properties: {
-    id: {
-      type: 'string',
-      title: 'Id',
-    },
-    date: {
-      type: 'string',
-      format: 'date-time',
-      title: 'Date',
-    },
-    internal_monologue: {
-      type: 'string',
-      title: 'Internal Monologue',
-    },
-  },
-  type: 'object',
-  required: ['id', 'date', 'internal_monologue'],
-  title: 'InternalMonologue',
-  description: `{
-    "internal_monologue": msg,
-    "date": msg_obj.created_at.isoformat() if msg_obj is not None else get_utc_time().isoformat(),
-    "id": str(msg_obj.id) if msg_obj is not None else None,
-}`,
-} as const;
-
 export const $Job = {
   properties: {
     metadata_: {
@@ -1846,13 +1695,21 @@ export const $Job = {
   type: 'object',
   required: ['user_id'],
   title: 'Job',
-  description: 'Representation of offline jobs.',
+  description: `Representation of offline jobs, used for tracking status of data loading tasks (involving parsing and embedding documents).
+
+Parameters:
+    id (str): The unique identifier of the job.
+    status (JobStatus): The status of the job.
+    created_at (datetime): The unix timestamp of when the job was created.
+    completed_at (datetime): The unix timestamp of when the job was completed.
+    user_id (str): The unique identifier of the user associated with the.`,
 } as const;
 
 export const $JobStatus = {
   type: 'string',
   enum: ['created', 'running', 'completed', 'failed', 'pending'],
   title: 'JobStatus',
+  description: 'Status of the job.',
 } as const;
 
 export const $LLMConfig = {
@@ -1898,27 +1755,14 @@ export const $LLMConfig = {
     'context_window',
   ],
   title: 'LLMConfig',
-} as const;
+  description: `Configuration for a Language Model (LLM) model. This object specifies all the information necessary to access an LLM model to usage with MemGPT, except for secret keys.
 
-export const $LegacyFunctionCallMessage = {
-  properties: {
-    id: {
-      type: 'string',
-      title: 'Id',
-    },
-    date: {
-      type: 'string',
-      format: 'date-time',
-      title: 'Date',
-    },
-    function_call: {
-      type: 'string',
-      title: 'Function Call',
-    },
-  },
-  type: 'object',
-  required: ['id', 'date', 'function_call'],
-  title: 'LegacyFunctionCallMessage',
+Attributes:
+    model (str): The name of the LLM model.
+    model_endpoint_type (str): The endpoint type for the model.
+    model_endpoint (str): The endpoint for the model.
+    model_wrapper (str): The wrapper for the model.
+    context_window (int): The context window size for the model.`,
 } as const;
 
 export const $ListMessagesResponse = {
@@ -1935,38 +1779,6 @@ export const $ListMessagesResponse = {
   type: 'object',
   required: ['messages'],
   title: 'ListMessagesResponse',
-} as const;
-
-export const $ListModelsResponse = {
-  properties: {
-    models: {
-      items: {
-        $ref: '#/components/schemas/LLMConfig',
-      },
-      type: 'array',
-      title: 'Models',
-      description: 'List of model configurations.',
-    },
-  },
-  type: 'object',
-  required: ['models'],
-  title: 'ListModelsResponse',
-} as const;
-
-export const $ListToolsResponse = {
-  properties: {
-    tools: {
-      items: {
-        $ref: '#/components/schemas/Tool-Output',
-      },
-      type: 'array',
-      title: 'Tools',
-      description: 'List of tools (functions).',
-    },
-  },
-  type: 'object',
-  required: ['tools'],
-  title: 'ListToolsResponse',
 } as const;
 
 export const $LogProbToken = {
@@ -1997,6 +1809,28 @@ export const $LogProbToken = {
   type: 'object',
   required: ['token', 'logprob', 'bytes'],
   title: 'LogProbToken',
+} as const;
+
+export const $MemGPTMessage = {
+  properties: {
+    id: {
+      type: 'string',
+      title: 'Id',
+    },
+    date: {
+      type: 'string',
+      format: 'date-time',
+      title: 'Date',
+    },
+  },
+  type: 'object',
+  required: ['id', 'date'],
+  title: 'MemGPTMessage',
+  description: `Base class for simplified MemGPT message response type. This is intended to be used for developers who want the internal monologue, function calls, and function returns in a simplified format that does not include additional information other than the content and timestamp.
+
+Attributes:
+    id (str): The ID of the message
+    date (datetime): The date the message was created in ISO format`,
 } as const;
 
 export const $MemGPTRequest = {
@@ -2054,36 +1888,7 @@ export const $MemGPTResponse = {
         },
         {
           items: {
-            anyOf: [
-              {
-                $ref: '#/components/schemas/InternalMonologue',
-              },
-              {
-                $ref: '#/components/schemas/FunctionCallMessage',
-              },
-              {
-                $ref: '#/components/schemas/FunctionReturn',
-              },
-            ],
-          },
-          type: 'array',
-        },
-        {
-          items: {
-            anyOf: [
-              {
-                $ref: '#/components/schemas/InternalMonologue',
-              },
-              {
-                $ref: '#/components/schemas/AssistantMessage-Output',
-              },
-              {
-                $ref: '#/components/schemas/LegacyFunctionCallMessage',
-              },
-              {
-                $ref: '#/components/schemas/FunctionReturn',
-              },
-            ],
+            $ref: '#/components/schemas/MemGPTMessage',
           },
           type: 'array',
         },
@@ -2103,6 +1908,12 @@ export const $MemGPTResponse = {
   type: 'object',
   required: ['messages', 'usage'],
   title: 'MemGPTResponse',
+  description: `Response object from an agent interaction, consisting of the new messages generated by the agent and usage statistics.
+The type of the returned messages can be either \`Message\` or \`MemGPTMessage\`, depending on what was specified in the request.
+
+Attributes:
+    messages (List[Union[Message, MemGPTMessage]]): The messages returned by the agent.
+    usage (MemGPTUsageStatistics): The usage statistics`,
 } as const;
 
 export const $MemGPTUsageStatistics = {
@@ -2134,6 +1945,13 @@ export const $MemGPTUsageStatistics = {
   },
   type: 'object',
   title: 'MemGPTUsageStatistics',
+  description: `Usage statistics for the agent interaction.
+
+Attributes:
+    completion_tokens (int): The number of tokens generated by the agent.
+    prompt_tokens (int): The number of tokens in the prompt.
+    total_tokens (int): The total number of tokens processed by the agent.
+    step_count (int): The number of steps taken by the agent.`,
 } as const;
 
 export const $Memory = {
@@ -2146,10 +1964,23 @@ export const $Memory = {
       title: 'Memory',
       description: 'Mapping from memory block section to memory block.',
     },
+    prompt_template: {
+      type: 'string',
+      title: 'Prompt Template',
+      description:
+        'Jinja2 template for compiling memory blocks into a prompt string',
+      default: `{% for block in memory.values() %}<{{ block.name }} characters="{{ block.value|length }}/{{ block.limit }}">
+{{ block.value }}
+</{{ block.name }}>{% if not loop.last %}
+{% endif %}{% endfor %}`,
+    },
   },
   type: 'object',
   title: 'Memory',
-  description: 'Represents the in-context memory of the agent',
+  description: `Represents the in-context memory of the agent. This includes both the \`Block\` objects (labelled by sections), as well as tools to edit the blocks.
+
+Attributes:
+    memory (Dict[str, Block]): Mapping from memory block section to memory block.`,
 } as const;
 
 export const $MessageContentLogProb = {
@@ -3022,6 +2853,17 @@ export const $Passage = {
   type: 'object',
   required: ['text', 'embedding', 'embedding_config'],
   title: 'Passage',
+  description: `Representation of a passage, which is stored in archival memory.
+
+Parameters:
+    text (str): The text of the passage.
+    embedding (List[float]): The embedding of the passage.
+    embedding_config (EmbeddingConfig): The embedding configuration used by the passage.
+    created_at (datetime): The creation date of the passage.
+    user_id (str): The unique identifier of the user associated with the passage.
+    agent_id (str): The unique identifier of the agent associated with the passage.
+    source_id (str): The data source of the passage.
+    doc_id (str): The unique identifier of the document associated with the passage.`,
 } as const;
 
 export const $RecallMemorySummary = {
@@ -3132,6 +2974,16 @@ export const $Source = {
   type: 'object',
   required: ['embedding_config', 'name', 'user_id'],
   title: 'Source',
+  description: `Representation of a source, which is a collection of documents and passages.
+
+Parameters:
+    id (str): The ID of the source
+    name (str): The name of the source.
+    embedding_config (EmbeddingConfig): The embedding configuration used by the source.
+    created_at (datetime): The creation date of the source.
+    user_id (str): The ID of the user that created the source.
+    metadata_ (dict): Metadata associated with the source.
+    description (str): The description of the source.`,
 } as const;
 
 export const $SourceCreate = {
@@ -3410,22 +3262,14 @@ export const $Tool_Output = {
   type: 'object',
   required: ['name', 'tags', 'source_code'],
   title: 'Tool',
-} as const;
+  description: `Representation of a tool, which is a function that can be called by the agent.
 
-export const $ToolCallFunction_Input = {
-  properties: {
-    name: {
-      type: 'string',
-      title: 'Name',
-    },
-    arguments: {
-      type: 'string',
-      title: 'Arguments',
-    },
-  },
-  type: 'object',
-  required: ['name', 'arguments'],
-  title: 'ToolCallFunction',
+Parameters:
+    id (str): The unique identifier of the tool.
+    name (str): The name of the function.
+    tags (List[str]): Metadata tags.
+    source_code (str): The source code of the function.
+    json_schema (Dict): The JSON schema of the function.`,
 } as const;
 
 export const $ToolCallFunction_Output = {
@@ -3856,12 +3700,6 @@ export const $UpdateBlock = {
     value: {
       anyOf: [
         {
-          items: {
-            type: 'string',
-          },
-          type: 'array',
-        },
-        {
           type: 'string',
         },
         {
@@ -3966,6 +3804,83 @@ export const $UpdateBlock = {
   description: 'Update a block',
 } as const;
 
+export const $UpdateMessage = {
+  properties: {
+    id: {
+      type: 'string',
+      title: 'Id',
+      description: 'The id of the message.',
+    },
+    role: {
+      anyOf: [
+        {
+          $ref: '#/components/schemas/MessageRole',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      description: 'The role of the participant.',
+    },
+    text: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Text',
+      description: 'The text of the message.',
+    },
+    name: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Name',
+      description: 'The name of the participant.',
+    },
+    tool_calls: {
+      anyOf: [
+        {
+          items: {
+            $ref: '#/components/schemas/memgpt__schemas__openai__chat_completions__ToolCall-Input',
+          },
+          type: 'array',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Tool Calls',
+      description: 'The list of tool calls requested.',
+    },
+    tool_call_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Tool Call Id',
+      description: 'The id of the tool call.',
+    },
+  },
+  additionalProperties: false,
+  type: 'object',
+  required: ['id'],
+  title: 'UpdateMessage',
+  description: 'Request to update a message',
+} as const;
+
 export const $UsageStatistics = {
   properties: {
     completion_tokens: {
@@ -4013,6 +3928,12 @@ export const $User = {
   type: 'object',
   required: ['name'],
   title: 'User',
+  description: `Representation of a user.
+
+Parameters:
+    id (str): The unique identifier of the user.
+    name (str): The name of the user.
+    created_at (datetime): The creation date of the user.`,
 } as const;
 
 export const $UserCreate = {
@@ -4103,22 +4024,6 @@ export const $ValidationError = {
   title: 'ValidationError',
 } as const;
 
-export const $memgpt__schemas__memgpt_message__FunctionCall = {
-  properties: {
-    name: {
-      type: 'string',
-      title: 'Name',
-    },
-    arguments: {
-      type: 'string',
-      title: 'Arguments',
-    },
-  },
-  type: 'object',
-  required: ['name', 'arguments'],
-  title: 'FunctionCall',
-} as const;
-
 export const $memgpt__schemas__message__Message = {
   properties: {
     id: {
@@ -4206,7 +4111,7 @@ export const $memgpt__schemas__message__Message = {
       anyOf: [
         {
           items: {
-            $ref: '#/components/schemas/memgpt__schemas__openai__chat_completions__ToolCall',
+            $ref: '#/components/schemas/memgpt__schemas__openai__chat_completions__ToolCall-Output',
           },
           type: 'array',
         },
@@ -4234,12 +4139,19 @@ export const $memgpt__schemas__message__Message = {
   type: 'object',
   required: ['role'],
   title: 'Message',
-  description: `Representation of a message sent.
+  description: `MemGPT's internal representation of a message. Includes methods to convert to/from LLM provider formats.
 
-Messages can be:
-- agent->user (role=='agent')
-- user->agent and system->agent (role=='user')
-- or function/tool call returns (role=='function'/'tool').`,
+Attributes:
+    id (str): The unique identifier of the message.
+    role (MessageRole): The role of the participant.
+    text (str): The text of the message.
+    user_id (str): The unique identifier of the user.
+    agent_id (str): The unique identifier of the agent.
+    model (str): The model used to make the function call.
+    name (str): The name of the participant.
+    created_at (datetime): The time the message was created.
+    tool_calls (List[ToolCall]): The list of tool calls requested.
+    tool_call_id (str): The id of the tool call.`,
 } as const;
 
 export const $memgpt__schemas__openai__chat_completion_request__ToolCall = {
@@ -4256,7 +4168,7 @@ export const $memgpt__schemas__openai__chat_completion_request__ToolCall = {
       default: 'function',
     },
     function: {
-      $ref: '#/components/schemas/ToolCallFunction-Input',
+      $ref: '#/components/schemas/memgpt__schemas__openai__chat_completion_request__ToolCallFunction',
     },
   },
   type: 'object',
@@ -4264,21 +4176,21 @@ export const $memgpt__schemas__openai__chat_completion_request__ToolCall = {
   title: 'ToolCall',
 } as const;
 
-export const $memgpt__schemas__openai__chat_completion_response__FunctionCall =
+export const $memgpt__schemas__openai__chat_completion_request__ToolCallFunction =
   {
     properties: {
-      arguments: {
-        type: 'string',
-        title: 'Arguments',
-      },
       name: {
         type: 'string',
         title: 'Name',
       },
+      arguments: {
+        type: 'string',
+        title: 'Arguments',
+      },
     },
     type: 'object',
-    required: ['arguments', 'name'],
-    title: 'FunctionCall',
+    required: ['name', 'arguments'],
+    title: 'ToolCallFunction',
   } as const;
 
 export const $memgpt__schemas__openai__chat_completion_response__Message = {
@@ -4315,7 +4227,7 @@ export const $memgpt__schemas__openai__chat_completion_response__Message = {
     function_call: {
       anyOf: [
         {
-          $ref: '#/components/schemas/memgpt__schemas__openai__chat_completion_response__FunctionCall',
+          $ref: '#/components/schemas/FunctionCall-Output',
         },
         {
           type: 'null',
@@ -4342,7 +4254,7 @@ export const $memgpt__schemas__openai__chat_completion_response__ToolCall = {
       default: 'function',
     },
     function: {
-      $ref: '#/components/schemas/memgpt__schemas__openai__chat_completion_response__FunctionCall',
+      $ref: '#/components/schemas/FunctionCall-Output',
     },
   },
   type: 'object',
@@ -4350,7 +4262,33 @@ export const $memgpt__schemas__openai__chat_completion_response__ToolCall = {
   title: 'ToolCall',
 } as const;
 
-export const $memgpt__schemas__openai__chat_completions__ToolCall = {
+export const $memgpt__schemas__openai__chat_completions__ToolCall_Input = {
+  properties: {
+    id: {
+      type: 'string',
+      title: 'Id',
+      description: 'The ID of the tool call',
+    },
+    type: {
+      type: 'string',
+      title: 'Type',
+      default: 'function',
+    },
+    function: {
+      allOf: [
+        {
+          $ref: '#/components/schemas/memgpt__schemas__openai__chat_completions__ToolCallFunction',
+        },
+      ],
+      description: 'The arguments and name for the function',
+    },
+  },
+  type: 'object',
+  required: ['id', 'function'],
+  title: 'ToolCall',
+} as const;
+
+export const $memgpt__schemas__openai__chat_completions__ToolCall_Output = {
   properties: {
     id: {
       type: 'string',
@@ -4374,6 +4312,24 @@ export const $memgpt__schemas__openai__chat_completions__ToolCall = {
   type: 'object',
   required: ['id', 'function'],
   title: 'ToolCall',
+} as const;
+
+export const $memgpt__schemas__openai__chat_completions__ToolCallFunction = {
+  properties: {
+    name: {
+      type: 'string',
+      title: 'Name',
+      description: 'The name of the function to call',
+    },
+    arguments: {
+      type: 'string',
+      title: 'Arguments',
+      description: 'The arguments to pass to the function (JSON dump)',
+    },
+  },
+  type: 'object',
+  required: ['name', 'arguments'],
+  title: 'ToolCallFunction',
 } as const;
 
 export const $memgpt__schemas__openai__openai__ToolCall = {

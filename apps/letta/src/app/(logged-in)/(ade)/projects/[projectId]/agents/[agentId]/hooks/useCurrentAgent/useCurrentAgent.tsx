@@ -1,11 +1,11 @@
 import { useCurrentAgentId } from '../useCurrentAgentId/useCurrentAgentId';
 import type { AgentState } from '@letta-web/letta-agents-api';
-import { useAgentsServiceGetAgentStateApiAgentsAgentIdGet } from '@letta-web/letta-agents-api';
+import { useAgentsServiceGetAgent } from '@letta-web/letta-agents-api';
 
 export function useCurrentAgent() {
   const agentId = useCurrentAgentId();
 
-  const { data } = useAgentsServiceGetAgentStateApiAgentsAgentIdGet({
+  const { data } = useAgentsServiceGetAgent({
     agentId,
   });
 
