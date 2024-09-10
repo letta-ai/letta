@@ -188,7 +188,7 @@ function MemoryHome() {
         />
       }
     >
-      {!data ? (
+      {!memory ? (
         <LettaLoaderPanel />
       ) : (
         <VStack padding="xxsmall">
