@@ -13,7 +13,7 @@ import {
 import React, { useCallback, useMemo } from 'react';
 import { useCurrentProjectId } from './hooks';
 import { webApi, webApiQueryKeys } from '$letta/client';
-import type { ProjectTestingAgentType } from '$letta/any/contracts/projects';
+import type { ProjectTestingAgentType } from '$letta/web-api/contracts/projects';
 import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 

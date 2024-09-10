@@ -7,7 +7,7 @@ import {
   HydrationBoundary,
   QueryClient,
 } from '@tanstack/react-query';
-import { userQueryClientKeys } from '$letta/any/contracts/user';
+import { userQueryClientKeys } from '$letta/web-api/contracts/user';
 import { LettaAgentsAPIWrapper } from '@letta-web/letta-agents-api';
 import { GlobalSessionSettingsProvider } from '$letta/client/hooks/session';
 

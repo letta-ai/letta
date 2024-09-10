@@ -1,5 +1,5 @@
 import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
-import type { contracts } from '$letta/any/contracts';
+import type { contracts } from '$letta/web-api/contracts';
 import { db, emailWhitelist } from '@letta-web/database';
 import { eq, like } from 'drizzle-orm';
 

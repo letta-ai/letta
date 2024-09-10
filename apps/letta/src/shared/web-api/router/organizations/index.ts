@@ -1,7 +1,7 @@
 import { db, lettaAPIKeys } from '@letta-web/database';
 import { getUserOrganizationIdOrThrow } from '$letta/server/auth';
 import type { ServerInferResponses } from '@ts-rest/core';
-import type { contracts } from '$letta/any/contracts';
+import type { contracts } from '$letta/web-api/contracts';
 import { eq } from 'drizzle-orm';
 
 type GetCurrentOrganizationResponse = ServerInferResponses<

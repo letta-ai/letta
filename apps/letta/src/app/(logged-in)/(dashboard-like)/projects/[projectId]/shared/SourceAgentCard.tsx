@@ -7,7 +7,7 @@ import {
   VStack,
 } from '@letta-web/component-library';
 import React from 'react';
-import { DeployAgentUsageInstructions } from '$letta/code-reference/deploy-agent-reference';
+import { DeployAgentUsageInstructions } from '$letta/client/code-reference/deploy-agent-reference';
 
 interface DeployedAgentCardProps {
   status: 'live' | 'offline';

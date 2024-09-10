@@ -6,7 +6,7 @@ import {
   HydrationBoundary,
   QueryClient,
 } from '@tanstack/react-query';
-import { getProjectById } from '$letta/server/router/projects';
+import { getProjectById } from '$letta/web-api/router/projects';
 import { redirect } from 'next/navigation';
 import { Avatar, DashboardPageLayout } from '@letta-web/component-library';
 import { ProjectPageNavigation } from './ProjectPageNavigation';

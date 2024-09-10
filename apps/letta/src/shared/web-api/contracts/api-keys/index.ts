@@ -1,7 +1,7 @@
 import { initContract } from '@ts-rest/core';
 import { z } from 'zod';
-import type { GenericSearch } from '$letta/any/contracts/shared';
-import { GenericSearchSchema } from '$letta/any/contracts/shared';
+import type { GenericSearch } from '$letta/web-api/contracts/shared';
+import { GenericSearchSchema } from '$letta/web-api/contracts/shared';
 
 const c = initContract();
 

@@ -25,7 +25,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { webApi, webApiQueryKeys } from '$letta/client';
 import type { ColumnDef } from '@tanstack/react-table';
 import { useQueryClient } from '@tanstack/react-query';
-import type { WhitelistedEmailType } from '$letta/any/contracts/admin/whitelisted-emails';
+import type { WhitelistedEmailType } from '$letta/web-api/contracts/admin/whitelisted-emails';
 
 const AddWhitelistedEmailSchema = z.object({
   email: z.string().email(),

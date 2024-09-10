@@ -4,9 +4,8 @@ import React from 'react';
 import { getOrganizationFromOrganizationId, getUser } from '$letta/server/auth';
 import { redirect } from 'next/navigation';
 import { QueryClient } from '@tanstack/react-query';
-import { queryClientKeys } from '$letta/any/contracts';
+import { queryClientKeys } from '$letta/web-api/contracts';
 import { Frame, HStack, Logo, VStack } from '@letta-web/component-library';
-import { DASHBOARD_HEADER_HEIGHT } from '$letta/client/common';
 import Link from 'next/link';
 import { AdminNavigation } from './_components/AdminNavigation/AdminNavigation';
 const SIDEBAR_WIDTH = 'w-[250px] min-w-[250px]';
@@ -31,7 +30,7 @@ function Sidebar() {
         borderBottom
         color="background-black"
         justify="spaceBetween"
-        className={DASHBOARD_HEADER_HEIGHT}
+        className="h-[64px]"
       >
         <Link href="/">
           <HStack fullWidth align="center">

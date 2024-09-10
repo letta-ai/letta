@@ -8,7 +8,7 @@ import {
 import {
   adminWhitelistedEmailsContract,
   adminWhitelistedEmailsQueryKeys,
-} from '$letta/any/contracts/admin/whitelisted-emails';
+} from '$letta/web-api/contracts/admin/whitelisted-emails';
 
 export const contracts = {
   user: userContract,

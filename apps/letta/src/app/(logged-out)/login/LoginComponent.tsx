@@ -14,7 +14,7 @@ import { useEffect, useCallback, useRef } from 'react';
 import { isNull } from 'lodash-es';
 import './Login.scss';
 import { useSearchParams } from 'next/navigation';
-import { isTextALoginError, LoginErrorsMap } from '$letta/any/errors';
+import { isTextALoginError, LoginErrorsMap } from '$letta/errors';
 
 function LoginErrorBanner() {
   const searchParams = useSearchParams();

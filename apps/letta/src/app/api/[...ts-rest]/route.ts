@@ -3,8 +3,8 @@ import {
   tsr,
   TsRestResponse,
 } from '@ts-rest/serverless/next';
-import { contracts } from '$letta/any/contracts';
-import { router } from '$letta/server/router';
+import { contracts } from '$letta/web-api/contracts';
+import { router } from '$letta/web-api/router';
 import {
   getOrganizationFromOrganizationId,
   getUserOrganizationIdOrThrow,

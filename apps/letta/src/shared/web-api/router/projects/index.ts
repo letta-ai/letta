@@ -1,5 +1,5 @@
 import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
-import type { projectsContract } from '$letta/any/contracts/projects';
+import type { projectsContract } from '$letta/web-api/contracts/projects';
 import {
   db,
   projects,
@@ -9,7 +9,7 @@ import {
 } from '@letta-web/database';
 import { getUserOrganizationIdOrThrow } from '$letta/server/auth';
 import { eq, and, like } from 'drizzle-orm';
-import type { contracts } from '$letta/any/contracts';
+import type { contracts } from '$letta/web-api/contracts';
 
 type ResponseShapes = ServerInferResponses<typeof projectsContract>;
 type GetProjectsRequest = ServerInferRequest<

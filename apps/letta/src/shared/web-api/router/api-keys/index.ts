@@ -5,7 +5,7 @@ import {
   getUserOrganizationIdOrThrow,
 } from '$letta/server/auth';
 import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
-import type { contracts } from '$letta/any/contracts';
+import type { contracts } from '$letta/web-api/contracts';
 import { and, eq } from 'drizzle-orm';
 
 type CreateAPIKeyPayload = ServerInferRequest<

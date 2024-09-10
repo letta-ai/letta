@@ -4,7 +4,7 @@ import type { ProviderUserPayload, SupportedProviders } from '$letta/types';
 import type { NextRequest } from 'next/server';
 import { jwtDecode } from 'jwt-decode';
 import { signInUserFromProviderLogin } from '$letta/server/auth';
-import { LoginErrorsEnum } from '$letta/any/errors';
+import { LoginErrorsEnum } from '$letta/errors';
 
 interface GoogleJWTResponse {
   iss: string;
