@@ -6,7 +6,10 @@ import {
 } from '@ts-rest/serverless/next';
 import { pdkContracts } from '$letta/pdk/contracts';
 import { pdkRouter } from '$letta/pdk/router';
-import { parseAccessToken } from '$letta/server/auth';
+import {
+  parseAccessToken,
+  verifyAndReturnAPIKeyDetails,
+} from '$letta/server/auth';
 import { db, lettaAPIKeys } from '@letta-web/database';
 import { and, eq } from 'drizzle-orm';
 import { V1_ROUTE } from '$letta/pdk/shared';
@@ -52,28 +55,9 @@ const handler = createNextHandler(pdkContracts, pdkRouter, {
         .get('Authorization')
         ?.replace('Bearer ', '');
 
-      if (!apiKey) {
-        return TsRestResponse.fromJson(
-          {
-            message: 'Please include Authorization: Bearer {your-api-token}',
-          },
-          { status: 401 }
-        );
-      }
+      const keyDetails = await verifyAndReturnAPIKeyDetails(apiKey);
 
-      const { organizationId } = await parseAccessToken(apiKey);
-
-      const key = await db.query.lettaAPIKeys.findFirst({
-        where: and(
-          eq(lettaAPIKeys.apiKey, apiKey),
-          eq(lettaAPIKeys.organizationId, organizationId)
-        ),
-        columns: {
-          apiKey: true,
-        },
-      });
-
-      if (!key) {
+      if (!keyDetails) {
         return TsRestResponse.fromJson(
           {
             message: 'Unauthorized',
@@ -82,7 +66,7 @@ const handler = createNextHandler(pdkContracts, pdkRouter, {
         );
       }
 
-      request.organizationId = organizationId;
+      request.organizationId = keyDetails.organizationId;
     }),
   ],
 });

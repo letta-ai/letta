@@ -1,13 +1,14 @@
-'use server';
 import type { NextRequest } from 'next/server';
-import { getUser } from '$letta/server/auth';
+import { verifyAndReturnAPIKeyDetails } from '$letta/server/auth';
 import type { HandlerContext } from '$letta/sdk';
 import { makeRequestToSDK } from '$letta/sdk';
 
 async function handler(req: NextRequest, context: HandlerContext) {
-  const user = await getUser();
+  const apiKey = req.headers.get('Authorization')?.replace('Bearer ', '');
 
-  if (!user) {
+  const keyDetails = await verifyAndReturnAPIKeyDetails(apiKey);
+
+  if (!keyDetails) {
     return new Response(
       JSON.stringify({
         message: 'Unauthorized',
@@ -21,7 +22,7 @@ async function handler(req: NextRequest, context: HandlerContext) {
     );
   }
 
-  return makeRequestToSDK(req, context, user.id);
+  return makeRequestToSDK(req, context, keyDetails.userId);
 }
 
 export {

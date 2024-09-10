@@ -50,6 +50,13 @@
       "when": 1725923377413,
       "tag": "0006_yielding_stingray",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1725991478356,
+      "tag": "0007_third_proteus",
+      "breakpoints": true
     }
   ]
 }

@@ -8,13 +8,14 @@ import {
   projects,
   users,
 } from '@letta-web/database';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import type { UserSession } from '$letta/types/user';
 import { deleteCookie, getCookie, setCookie } from '$letta/server/cookies';
 import { deleteRedisData, getRedisData, setRedisData } from '@letta-web/redis';
 import { CookieNames } from '$letta/server/cookies/types';
 import { redirect } from 'next/navigation';
 import { LoginErrorsEnum } from '$letta/any/errors';
+import { TsRestResponse } from '@ts-rest/serverless/next.cjs';
 
 function isLettaEmail(email: string) {
   return email.endsWith('@letta.com') || email.endsWith('@memgpt.ai');
@@ -80,12 +81,14 @@ async function createUserAndOrganization(
       organizationId,
       name: 'My first project',
     }),
-    db.insert(lettaAPIKeys).values({
-      name: 'Default API key',
-      organizationId,
-      apiKey,
-    }),
   ]);
+
+  await db.insert(lettaAPIKeys).values({
+    name: 'Default API key',
+    organizationId,
+    userId: createdUser.userId,
+    apiKey,
+  });
 
   return {
     email: userData.email,
@@ -225,4 +228,29 @@ export async function parseAccessToken(accessToken: string) {
     organizationId,
     accessPassword,
   };
+}
+
+export async function verifyAndReturnAPIKeyDetails(apiKey?: string) {
+  if (!apiKey) {
+    return null;
+  }
+
+  const { organizationId } = await parseAccessToken(apiKey);
+
+  const key = await db.query.lettaAPIKeys.findFirst({
+    where: and(
+      eq(lettaAPIKeys.apiKey, apiKey),
+      eq(lettaAPIKeys.organizationId, organizationId)
+    ),
+    columns: {
+      organizationId: true,
+      userId: true,
+    },
+  });
+
+  if (!key) {
+    return null;
+  }
+
+  return key;
 }
