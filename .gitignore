@@ -50,3 +50,5 @@ storybook-static
 .env
 deployment_env.yaml
 
+data/dump.rdb
+
