@@ -2,7 +2,7 @@ import * as React from 'react';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { ButtonPrimitive, SpinnerPrimitive } from '../../../primitives';
 import { cn } from '@letta-web/core-style-config';
-import { useMemo } from 'react';
+import { forwardRef, useMemo } from 'react';
 import { Slot } from '@radix-ui/react-slot';
 
 const buttonVariants = cva(
@@ -101,7 +101,10 @@ export type ButtonProps = Omit<
   'children' | 'className'
 >;
 
-export function Button(props: ButtonProps) {
+export const Button = forwardRef<
+  HTMLAnchorElement | HTMLButtonElement,
+  ButtonProps
+>(function Button(props, ref) {
   const {
     preIcon,
     postIcon,
@@ -132,6 +135,7 @@ export function Button(props: ButtonProps) {
 
   return (
     <ButtonPrimitive
+      ref={ref}
       className={cn(
         buttonVariants({
           color,
@@ -156,4 +160,4 @@ export function Button(props: ButtonProps) {
       {postIcon && <Slot className={iconSize}>{postIcon}</Slot>}
     </ButtonPrimitive>
   );
-}
+});
