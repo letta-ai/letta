@@ -1,6 +1,7 @@
 import { db, lettaAPIKeys } from '@letta-web/database';
 import {
   generateAPIKey,
+  getUser,
   getUserOrganizationIdOrThrow,
 } from '$letta/server/auth';
 import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
@@ -19,12 +20,18 @@ export async function createAPIKey(
 ): Promise<CreateAPIKeyResponse> {
   const { name } = req.body;
 
-  const organizationId = await getUserOrganizationIdOrThrow();
-  const apiKey = await generateAPIKey(organizationId);
+  const user = await getUser();
+
+  if (!user) {
+    throw new Error('User not found');
+  }
+
+  const apiKey = await generateAPIKey(user.organizationId);
 
   await db.insert(lettaAPIKeys).values({
     name,
-    organizationId,
+    userId: user.id,
+    organizationId: user.organizationId,
     apiKey,
   });
 

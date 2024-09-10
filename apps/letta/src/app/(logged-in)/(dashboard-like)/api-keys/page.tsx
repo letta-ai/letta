@@ -21,6 +21,7 @@ import {
   HStack,
   Input,
   PlusIcon,
+  RawInput,
   TrashIcon,
   Typography,
   useForm,
@@ -162,6 +163,40 @@ function DeleteAPIKeyDialog(props: DeleteAPIKeyDialogProps) {
   );
 }
 
+interface ViewAPIKeyDialogProps {
+  apiKeyId: string;
+  name: string;
+}
+
+function ViewAPIKeyDialog(props: ViewAPIKeyDialogProps) {
+  const { apiKeyId, name } = props;
+  const { data } = webApi.apiKeys.getAPIKey.useQuery({
+    queryKey: webApiQueryKeys.apiKeys.getApiKey(apiKeyId),
+    queryData: {
+      params: {
+        apiKeyId,
+      },
+    },
+  });
+
+  return (
+    <Dialog
+      trigger={<DropdownMenuLabel text="View API Key" />}
+      title={`Viewing ${name}`}
+    >
+      <RawInput
+        allowCopy
+        fullWidth
+        label="API Key"
+        value={data?.body.apiKey}
+        readOnly
+        disabled
+        showVisibilityControls
+      />
+    </Dialog>
+  );
+}
+
 const apiKeysColumns: Array<ColumnDef<APIKeyType>> = [
   {
     header: 'Name',
@@ -189,6 +224,10 @@ const apiKeysColumns: Array<ColumnDef<APIKeyType>> = [
             />
           </DropdownMenuTrigger>
           <DropdownMenuContent>
+            <ViewAPIKeyDialog
+              apiKeyId={cell.row.original.id}
+              name={cell.row.original.name}
+            />
             <DeleteAPIKeyDialog
               name={cell.row.original.name}
               apiKeyId={cell.row.original.id}

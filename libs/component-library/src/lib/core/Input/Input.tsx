@@ -7,10 +7,12 @@ import { cva } from 'class-variance-authority';
 import { Slot } from '@radix-ui/react-slot';
 import { useCopyToClipboard } from '../../hooks';
 import { Button } from '../Button/Button';
-import { CheckIcon, ClipboardIcon } from '../../icons';
+import { CheckIcon, ClipboardIcon, EyeOpenIcon } from '../../icons';
+import { useMemo } from 'react';
+import { EyeOffIcon } from 'lucide-react';
 
 const inputVariants = cva(
-  'flex gap-2 px-3 items-center w-full rounded-md border border-input text-base transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-content focus-visible:outline-none focus-within:ring-1 focus-within:ring-ring disabled:cursor-not-allowed disabled:opacity-50',
+  'flex gap-2 px-3 items-center w-full rounded-md border border-input text-base transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-content focus-visible:outline-none focus-within:ring-1 focus-within:ring-ring disabled:cursor-not-allowed disabled:bg-background-grey disabled:text-background-content disabled:placeholder-text-muted-content',
   {
     variants: {
       color: {
@@ -42,6 +44,7 @@ type InputPrimitiveProps = Omit<
     preIcon?: React.ReactNode;
     hideLabel?: boolean;
     allowCopy?: boolean;
+    showVisibilityControls?: boolean;
   };
 
 interface CopyButtonProps {
@@ -59,6 +62,7 @@ function CopyButton({ text }: CopyButtonProps) {
       color="tertiary-transparent"
       label="Copy"
       hideLabel
+      type="button"
       size="small"
       preIcon={isCopied ? <CheckIcon /> : <ClipboardIcon />}
     />
@@ -74,21 +78,45 @@ const InputPrimitive = React.forwardRef<HTMLInputElement, InputPrimitiveProps>(
       allowCopy,
       preIcon,
       type,
+      showVisibilityControls,
       size,
       color,
       ...props
     },
     ref
   ) => {
+    const [visibility, setVisibility] = React.useState(false);
+
+    const typeOverride = useMemo(() => {
+      if (showVisibilityControls) {
+        return visibility ? type : 'password';
+      }
+
+      return type;
+    }, [showVisibilityControls, visibility, type]);
+
     return (
       <div className={cn(inputVariants({ fullWidth, size, color, className }))}>
         <Slot className="w-4 h-auto">{preIcon}</Slot>
         <input
-          type={type}
-          className="w-full h-full focus:outline-none"
-          ref={ref}
           {...props}
+          type={typeOverride}
+          className="w-full h-full focus:outline-none bg-transparent"
+          ref={ref}
         />
+        {showVisibilityControls && (
+          <Button
+            onClick={() => {
+              setVisibility((prev) => !prev);
+            }}
+            type="button"
+            preIcon={visibility ? <EyeOffIcon /> : <EyeOpenIcon />}
+            color="tertiary-transparent"
+            label={visibility ? 'Hide' : 'Show'}
+            hideLabel
+            size="small"
+          />
+        )}
         {allowCopy && <CopyButton text={(props.value || '').toString()} />}
       </div>
     );
