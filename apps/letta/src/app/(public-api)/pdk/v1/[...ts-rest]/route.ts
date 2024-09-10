@@ -6,12 +6,7 @@ import {
 } from '@ts-rest/serverless/next';
 import { pdkContracts } from '$letta/pdk/contracts';
 import { pdkRouter } from '$letta/pdk/router';
-import {
-  parseAccessToken,
-  verifyAndReturnAPIKeyDetails,
-} from '$letta/server/auth';
-import { db, lettaAPIKeys } from '@letta-web/database';
-import { and, eq } from 'drizzle-orm';
+import { verifyAndReturnAPIKeyDetails } from '$letta/server/auth';
 import { V1_ROUTE } from '$letta/pdk/shared';
 
 function isErrorResponse(error: unknown): error is TsRestHttpError {
