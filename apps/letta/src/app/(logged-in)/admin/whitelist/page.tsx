@@ -20,7 +20,6 @@ import {
   TrashIcon,
   useForm,
 } from '@letta-web/component-library';
-import { DashboardHeader } from '$letta/client/common';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { webApi, webApiQueryKeys } from '$letta/client';
@@ -239,15 +238,11 @@ function EmailWhitelistPage() {
 
   return (
     <DashboardPageLayout
-      header={
-        <DashboardHeader
-          title="Email Whitelist"
-          actions={
-            <>
-              <CreateEmailWhitelist />
-            </>
-          }
-        />
+      title="Email Whitelist"
+      actions={
+        <>
+          <CreateEmailWhitelist />
+        </>
       }
     >
       {(!emailWhitelist || emailWhitelist.length === 0) && offset === 0 ? (

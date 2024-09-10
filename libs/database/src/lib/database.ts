@@ -12,7 +12,7 @@ config({ path: resolve(__dirname, '.env') });
 // dev issue only
 declare global {
   // eslint-disable-next-line no-var -- only var works here
-  var db: PostgresJsDatabase<typeof schema> | undefined;
+  var db: PostgresJsDatabase<typeof schema>;
 }
 
 let db: PostgresJsDatabase<typeof schema>;
@@ -22,6 +22,7 @@ if (process.env.NODE_ENV === 'production') {
     schema,
   });
 } else {
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
   if (!global.db)
     global.db = drizzle(postgres(process.env.DATABASE_URL!), {
       schema,

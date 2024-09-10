@@ -1,6 +1,5 @@
 'use client';
 import React, { useCallback } from 'react';
-import { DashboardHeader } from '$letta/client/common';
 import {
   Avatar,
   Button,
@@ -151,20 +150,16 @@ function ProjectsPage() {
 
   return (
     <DashboardPageLayout
-      header={
-        <DashboardHeader
-          title="Projects"
-          actions={
-            <>
-              <DashboardSearchBar
-                searchPlaceholder="Search projects"
-                searchValue={search}
-                onSearch={setSearch}
-              />
-              <CreateProjectDialog />
-            </>
-          }
-        />
+      title="Projects"
+      actions={
+        <>
+          <DashboardSearchBar
+            searchPlaceholder="Search projects"
+            searchValue={search}
+            onSearch={setSearch}
+          />
+          <CreateProjectDialog />
+        </>
       }
     >
       <ProjectsList search={search} />

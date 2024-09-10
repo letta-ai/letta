@@ -29,17 +29,34 @@ PopoverContent.displayName = PopoverPrimitive.Content.displayName;
 
 export interface PopoverProps {
   trigger: React.ReactNode;
+  triggerAsChild?: boolean;
   children: React.ReactNode;
+  defaultOpen?: boolean;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
   align?: 'center' | 'end' | 'start';
   offset?: number;
 }
 
 export function Popover(props: PopoverProps) {
-  const { trigger, offset, align, children } = props;
+  const {
+    trigger,
+    triggerAsChild,
+    open,
+    onOpenChange,
+    defaultOpen,
+    offset,
+    align,
+    children,
+  } = props;
 
   return (
-    <PopoverRoot>
-      <PopoverTrigger>{trigger}</PopoverTrigger>
+    <PopoverRoot
+      open={open}
+      onOpenChange={onOpenChange}
+      defaultOpen={defaultOpen}
+    >
+      <PopoverTrigger asChild={triggerAsChild}>{trigger}</PopoverTrigger>
       <PopoverContent sideOffset={offset} align={align}>
         {children}
       </PopoverContent>

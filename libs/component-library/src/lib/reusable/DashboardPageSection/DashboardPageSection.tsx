@@ -14,7 +14,12 @@ export function DashboardPageSection(props: DashboardPageSectionProps) {
   const { children, actions, title, borderBottom } = props;
 
   return (
-    <VStack padding="dashboard" fullWidth borderBottom={borderBottom}>
+    <VStack
+      paddingX="small"
+      paddingY="small"
+      fullWidth
+      borderBottom={borderBottom}
+    >
       {title && (
         <HStack className="h-biHeight-lg" align="center" justify="spaceBetween">
           <Typography variant="heading2">{title}</Typography>

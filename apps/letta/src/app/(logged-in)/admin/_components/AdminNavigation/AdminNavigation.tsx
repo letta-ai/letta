@@ -2,7 +2,6 @@
 import type { ReactNode } from 'react';
 import { useMemo } from 'react';
 import {
-  ArrowLeftIcon,
   Frame,
   HomeIcon,
   HStack,

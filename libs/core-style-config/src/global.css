@@ -78,20 +78,35 @@
   }
 
   .dark {
+    /*--primary: 10, 100%, 60%;*/
+    /*--primary-content: 240 5.9% 10%;*/
+    /*--primary-hover: 10, 100%, 67%;*/
+
     --on-transparent: 100, 100%, 100%;
+
     --background: 240 10% 3.9%;
+    --background-hover: 240 10% 3.9%;
+
+    --background-grey: 0, 0%, 13%;
+    --background-grey-content: 0 0% 100%;
+
+    --background-greyer: 200, 3%, 17%;
+    --background-greyer-content: 0 0% 100%;
+
+
+
     --content: 0 0% 98%;
     --card: 240 10% 3.9%;
     --card-content: 0 0% 98%;
     --popover: 240 10% 3.9%;
     --popover-content: 0 0% 98%;
-    --primary-content: 240 5.9% 10%;
 
     --secondary: 0 0% 100%;
     --secondary-content: 0 0% 20%;
+
     --tertiary: 0 0% 0%;
     --tertiary-content:  0 0% 100%;
-
+    --tertiary-active: 200, 3%, 17%;
 
     --muted: 240 3.7% 15.9%;
     --muted-content: 240 5% 64.9%;
@@ -101,9 +116,12 @@
     --destructive: 0 62.8% 30.6%;
     --destructive-content: 0 0% 98%;
 
-    --border: 240 3.7% 15.9%;
+    --border: 200, 3%, 17%;
     --input: 240 3.7% 15.9%;
     --ring: 240 4.9% 83.9%;
+
+
+
 
   }
 }
@@ -131,6 +149,10 @@
     url('../fonts/variable/FiraCode-VF.ttf') format('truetype supports variations');
 }
 
+.dark  * {
+  border-color: hsl(var(--border));
+}
+
 * {
   box-sizing: border-box;
 }
@@ -142,6 +164,10 @@
   body {
     @apply bg-background text-content;
     font-feature-settings: 'rlig' 1, 'calt' 1;
+
+
   }
+
+
 }
 

@@ -58,6 +58,11 @@ const buttonVariants = cva(
         className: 'bg-tertiary-active',
       },
       {
+        color: 'primary',
+        active: true,
+        className: 'border-white',
+      },
+      {
         color: 'tertiary-transparent',
         active: true,
         className: 'bg-tertiary-active',
@@ -122,7 +127,7 @@ export const Button = forwardRef<
   } = props;
 
   const iconSize = useMemo(() => {
-    return size === 'small' ? 'w-3 h-3' : 'w-3 h-3';
+    return size === 'small' ? 'w-3 h-3' : 'w-[16px] h-[16px] mt-[2px]';
   }, [size]);
 
   const iconToRender = useMemo(() => {

@@ -377,10 +377,23 @@ export function FormActions({ children, startAction }: FormActionsProps) {
   );
 }
 
-type FormProps = React.HTMLAttributes<HTMLFormElement>;
+const formVariants = cva('contents', {
+  variants: {
+    variant: {
+      contained: 'flex flex-col gap-6 w-full max-w-[500px]',
+    },
+  },
+  defaultVariants: {
+    variant: 'contained',
+  },
+});
+
+type FormProps = React.HTMLAttributes<HTMLFormElement> &
+  VariantProps<typeof formVariants>;
 
 function Form(props: FormProps) {
-  return <form {...props} className="contents" />;
+  const { variant, ...rest } = props;
+  return <form {...rest} className={cn(formVariants({ variant }))} />;
 }
 
 export { useFormField, Form, FormProvider, FormControl, FormField };

@@ -62,10 +62,16 @@ export function DashboardStatusComponent(props: DashboardStatusComponentProps) {
   }, [isError, isLoading]);
 
   return (
-    <VStack fullHeight fullWidth align="center" justify="center">
+    <VStack
+      fullHeight
+      fullWidth
+      className="min-h-[400px]"
+      align="center"
+      justify="center"
+    >
       <VStack
         gap="xlarge"
-        className="relative mt-[-50px]"
+        className="relative mt-[-50px] "
         align="center"
         justify="center"
       >

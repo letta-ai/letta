@@ -9,7 +9,6 @@ import {
 import { getProjectById } from '$letta/server/router/projects';
 import { redirect } from 'next/navigation';
 import { Avatar, DashboardPageLayout } from '@letta-web/component-library';
-import { DashboardHeader } from '$letta/client/common';
 import { ProjectPageNavigation } from './ProjectPageNavigation';
 
 interface ProjectPageWrapperProps {
@@ -42,13 +41,9 @@ async function ProjectPageLayout(props: ProjectPageWrapperProps) {
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
       <DashboardPageLayout
-        header={
-          <DashboardHeader
-            icon={<Avatar name={project.body.name} />}
-            title={project.body.name}
-            actions={<ProjectPageNavigation />}
-          />
-        }
+        icon={<Avatar name={project.body.name} />}
+        title={project.body.name}
+        actions={<ProjectPageNavigation />}
       >
         {props.children}
       </DashboardPageLayout>

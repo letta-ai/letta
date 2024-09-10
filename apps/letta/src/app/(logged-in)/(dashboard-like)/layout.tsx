@@ -1,9 +1,9 @@
 'use server';
 import type { ReactNode } from 'react';
 import React from 'react';
-import { Frame, HStack } from '@letta-web/component-library';
+import { Frame, HStack, VStack } from '@letta-web/component-library';
 import './DashboardLike.scss';
-import { DashboardSidebar } from './_components/DashboardSidebar.tsx/DashboardSidebar';
+import { DashboardHeader } from './_components/DashboardHeader/DashboardHeader';
 
 interface DashboardLikeLayoutProps {
   children: ReactNode;
@@ -16,12 +16,21 @@ export default async function DashboardLikeLayout(
 
   return (
     <div className="pageFadeIn w-[100vw] h-[100vh]">
-      <HStack gap={false} fullHeight fullWidth>
-        <DashboardSidebar />
-        <Frame overflow="auto" fullHeight fullWidth>
+      <VStack overflow="auto" gap={false} fullHeight fullWidth>
+        <HStack
+          align="center"
+          fullWidth
+          borderBottom
+          color="primary"
+          justify="start"
+          className="h-[64px]"
+        >
+          <DashboardHeader />
+        </HStack>
+        <Frame className="max-w-[1440px] mx-[auto]" fullHeight fullWidth>
           {children}
         </Frame>
-      </HStack>
+      </VStack>
     </div>
   );
 }

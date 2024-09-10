@@ -26,7 +26,6 @@ import {
   Typography,
   useForm,
 } from '@letta-web/component-library';
-import { DashboardHeader } from '$letta/client/common';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { webApi, webApiQueryKeys } from '$letta/client';
@@ -214,7 +213,7 @@ const apiKeysColumns: Array<ColumnDef<APIKeyType>> = [
     cell: ({ cell }) => {
       return (
         <DropdownMenu>
-          <DropdownMenuTrigger>
+          <DropdownMenuTrigger asChild>
             <Button
               color="tertiary-transparent"
               label="Actions"
@@ -303,15 +302,11 @@ function APIKeysPage() {
 
   return (
     <DashboardPageLayout
-      header={
-        <DashboardHeader
-          title="API Keys"
-          actions={
-            <>
-              <CreateAPIKeyDialog />
-            </>
-          }
-        />
+      title="API Keys"
+      actions={
+        <>
+          <CreateAPIKeyDialog />
+        </>
       }
     >
       {(!apiKeys || apiKeys.length === 0) && offset === 0 ? (

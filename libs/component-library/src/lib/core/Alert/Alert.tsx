@@ -58,7 +58,7 @@ export function Alert(props: AlertProps) {
       <div className="[&>svg]:h-[14px]">{icon || defaultIcon}</div>
       <div className="flex flex-col w-full text-base gap">
         <HStack fullWidth gap="small" justify="spaceBetween" align="center">
-          <h5 className="font-medium mt-[2px]">{title}</h5>
+          <h5 className="font-medium">{title}</h5>
           {action}
         </HStack>
         {children && <p>{children}</p>}

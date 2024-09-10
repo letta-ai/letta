@@ -24,6 +24,7 @@ const frameVariants = cva('', {
         'bg-background-greyer text-background-greyer-content',
       'background-black': 'bg-background-black text-background-black-content',
       tertiary: 'bg-tertiary text-tertiary-content',
+      primary: 'bg-primary text-primary-content',
     },
     borderColor: {
       true: 'border-border',
@@ -50,7 +51,6 @@ const frameVariants = cva('', {
       true: 'border-b',
     },
     padding: {
-      dashboard: 'py-3 px-4',
       xxxxsmall: 'p-1',
       xxxsmall: 'p-2',
       xxsmall: 'p-2.5',
@@ -114,6 +114,9 @@ const frameVariants = cva('', {
       hidden: 'overflow-x-hidden',
       auto: 'overflow-x-auto',
     },
+    flexHeight: {
+      true: 1,
+    },
   },
   defaultVariants: {},
 });
@@ -145,6 +148,7 @@ export const Frame = forwardRef<HTMLElement, PropsWithChildren<FrameProps>>(
       paddingTop,
       paddingBottom,
       paddingLeft,
+      flexHeight,
       paddingRight,
       overflow,
       overflowY,
@@ -161,6 +165,7 @@ export const Frame = forwardRef<HTMLElement, PropsWithChildren<FrameProps>>(
       borderY,
       borderX,
       borderRight,
+      flexHeight,
       rounded,
       borderLeft,
       borderTop,

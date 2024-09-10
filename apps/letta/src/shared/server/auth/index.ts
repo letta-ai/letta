@@ -15,7 +15,6 @@ import { deleteRedisData, getRedisData, setRedisData } from '@letta-web/redis';
 import { CookieNames } from '$letta/server/cookies/types';
 import { redirect } from 'next/navigation';
 import { LoginErrorsEnum } from '$letta/any/errors';
-import { TsRestResponse } from '@ts-rest/serverless/next.cjs';
 
 function isLettaEmail(email: string) {
   return email.endsWith('@letta.com') || email.endsWith('@memgpt.ai');

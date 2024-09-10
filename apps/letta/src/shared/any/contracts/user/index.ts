@@ -11,16 +11,33 @@ export const PublicUserSchema = z.object({
   id: z.string(),
 });
 
+const getUserContract = c.query({
+  method: 'GET',
+  path: '/user/self',
+  responses: {
+    200: PublicUserSchema,
+  },
+});
+
+/* Update User */
+export const UpdateUserPayloadSchema = z.object({
+  name: z.string(),
+});
+
+const updateCurrentUserContract = c.mutation({
+  method: 'PUT',
+  path: '/user/self',
+  body: UpdateUserPayloadSchema,
+  responses: {
+    200: PublicUserSchema,
+  },
+});
+
+export const userContract = c.router({
+  getCurrentUser: getUserContract,
+  updateCurrentUser: updateCurrentUserContract,
+});
+
 export const userQueryClientKeys = {
   getCurrentUser: ['user', 'self'],
 };
-
-export const userContract = c.router({
-  getCurrentUser: c.query({
-    method: 'GET',
-    path: '/user/self',
-    responses: {
-      200: PublicUserSchema,
-    },
-  }),
-});

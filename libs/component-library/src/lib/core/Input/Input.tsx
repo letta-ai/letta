@@ -12,9 +12,12 @@ import { useMemo } from 'react';
 import { EyeOffIcon } from 'lucide-react';
 
 const inputVariants = cva(
-  'flex gap-2 px-3 items-center w-full rounded-md border border-input text-base transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-content focus-visible:outline-none focus-within:ring-1 focus-within:ring-ring disabled:cursor-not-allowed disabled:bg-background-grey disabled:text-background-content disabled:placeholder-text-muted-content',
+  'flex gap-2 px-3 items-center w-full rounded-md border border-input text-base transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-content focus-visible:outline-none focus-within:ring-1 focus-within:ring-ring',
   {
     variants: {
+      disabled: {
+        true: '',
+      },
       color: {
         default: 'bg-background text-background-content',
         grey: 'bg-background-grey text-background-content',
@@ -29,6 +32,13 @@ const inputVariants = cva(
         false: 'w-auto',
       },
     },
+    compoundVariants: [
+      {
+        disabled: true,
+        className:
+          'cursor-not-allowed bg-background-grey text-background-content',
+      },
+    ],
     defaultVariants: {
       color: 'default',
       size: 'default',
@@ -75,6 +85,7 @@ const InputPrimitive = React.forwardRef<HTMLInputElement, InputPrimitiveProps>(
       className,
       hideLabel,
       fullWidth,
+      disabled,
       allowCopy,
       preIcon,
       type,
@@ -96,10 +107,15 @@ const InputPrimitive = React.forwardRef<HTMLInputElement, InputPrimitiveProps>(
     }, [showVisibilityControls, visibility, type]);
 
     return (
-      <div className={cn(inputVariants({ fullWidth, size, color, className }))}>
+      <div
+        className={cn(
+          inputVariants({ disabled, fullWidth, size, color, className })
+        )}
+      >
         <Slot className="w-4 h-auto">{preIcon}</Slot>
         <input
           {...props}
+          disabled={disabled}
           type={typeOverride}
           className="w-full h-full focus:outline-none bg-transparent"
           ref={ref}
