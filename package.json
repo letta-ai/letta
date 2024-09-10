@@ -56,6 +56,7 @@
     "jwt-decode": "^4.0.0",
     "lucide-react": "^0.395.0",
     "next": "14.2.3",
+    "nextjs-toploader": "^3.6.15",
     "postgres": "^3.4.4",
     "prismjs": "^1.29.0",
     "react": "18.3.1",

@@ -1,49 +1,9 @@
 'use server';
 import type { ReactNode } from 'react';
 import React from 'react';
-import { Frame, HStack, Logo, VStack } from '@letta-web/component-library';
-import Link from 'next/link';
-import { DashboardNavigation } from './_components/DashboardNavigation/DashboardNavigation';
-import {
-  CurrentUserDetailsBlock,
-  DASHBOARD_HEADER_HEIGHT,
-} from '$letta/client/common';
+import { Frame, HStack } from '@letta-web/component-library';
 import './DashboardLike.scss';
-
-const SIDEBAR_WIDTH = 'w-[250px] min-w-[250px]';
-
-function Sidebar() {
-  return (
-    <VStack
-      align="center"
-      gap={false}
-      fullHeight
-      borderRight
-      className={SIDEBAR_WIDTH}
-    >
-      <HStack
-        align="center"
-        paddingX="small"
-        fullWidth
-        borderBottom
-        justify="spaceBetween"
-        className={DASHBOARD_HEADER_HEIGHT}
-      >
-        <Link href="/">
-          <HStack fullWidth align="center">
-            <Logo /> Letta
-          </HStack>
-        </Link>
-      </HStack>
-      <VStack gap={false} as="nav" fullWidth fullHeight>
-        <DashboardNavigation />
-        <Frame borderTop fullWidth>
-          <CurrentUserDetailsBlock />
-        </Frame>
-      </VStack>
-    </VStack>
-  );
-}
+import { DashboardSidebar } from './_components/DashboardSidebar.tsx/DashboardSidebar';
 
 interface DashboardLikeLayoutProps {
   children: ReactNode;
@@ -57,7 +17,7 @@ export default async function DashboardLikeLayout(
   return (
     <div className="pageFadeIn w-[100vw] h-[100vh]">
       <HStack gap={false} fullHeight fullWidth>
-        <Sidebar />
+        <DashboardSidebar />
         <Frame overflow="auto" fullHeight fullWidth>
           {children}
         </Frame>

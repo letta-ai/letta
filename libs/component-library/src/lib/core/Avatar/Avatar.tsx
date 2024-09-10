@@ -72,7 +72,10 @@ export function Avatar(props: AvatarProps) {
   return (
     <AvatarRoot>
       <AvatarImage src={imageSrc} alt={name} />
-      <AvatarFallback style={{ background: getBackgroundFromName(name) }}>
+      <AvatarFallback
+        className="font-normal"
+        style={{ background: getBackgroundFromName(name) }}
+      >
         {initials}
       </AvatarFallback>
     </AvatarRoot>

@@ -1,5 +1,7 @@
 import './global.css';
-import { QueryClientProviders } from './QueryClientProviders';
+import NextTopLoader from 'nextjs-toploader';
+
+import { QueryClientProviders } from './_components/QueryClientProviders/QueryClientProviders';
 
 export const metadata = {
   title: 'Letta',
@@ -89,6 +91,11 @@ export default function RootLayout({
         <meta name="theme-color" content="#ffffff" />
       </head>
       <body className="overflow-hidden">
+        <NextTopLoader
+          showSpinner={false}
+          shadow="none"
+          color="hsl(var(--primary))"
+        />
         <QueryClientProviders>{children}</QueryClientProviders>
       </body>
     </html>

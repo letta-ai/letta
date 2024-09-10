@@ -1,7 +1,10 @@
 'use client';
 import type { ReactNode } from 'react';
+import React from 'react';
 import { useMemo } from 'react';
 import {
+  Avatar,
+  Button,
   CircleStackIcon,
   FolderIcon,
   Frame,
@@ -9,11 +12,14 @@ import {
   KeyIcon,
   Logo,
   Typography,
+  VStack,
 } from '@letta-web/component-library';
 import Link from 'next/link';
 import { cn } from '@letta-web/core-style-config';
 import { usePathname } from 'next/navigation';
 import { webApi, webApiQueryKeys } from '$letta/client';
+import { DASHBOARD_HEADER_HEIGHT } from '$letta/client/common';
+import { useCurrentUser } from '$letta/client/hooks';
 
 interface NavigationItemProps {
   href: string;
@@ -67,7 +73,7 @@ function AdminNav() {
   );
 }
 
-export function DashboardNavigation() {
+function DashboardNavigation() {
   return (
     <Frame as="ul" fullWidth fullHeight>
       <NavigationItem
@@ -83,5 +89,45 @@ export function DashboardNavigation() {
       <NavigationItem href="/api-keys" label="API Keys" icon={<KeyIcon />} />
       <AdminNav />
     </Frame>
+  );
+}
+
+const SIDEBAR_WIDTH = 'w-[250px] min-w-[250px]';
+
+export function DashboardSidebar() {
+  const { name } = useCurrentUser();
+  return (
+    <VStack
+      align="center"
+      gap={false}
+      fullHeight
+      borderRight
+      className={SIDEBAR_WIDTH}
+    >
+      <HStack
+        align="center"
+        paddingX="small"
+        fullWidth
+        borderBottom
+        justify="spaceBetween"
+        className={DASHBOARD_HEADER_HEIGHT}
+      >
+        <Link href="/">
+          <HStack fullWidth align="center">
+            <Logo /> Letta
+          </HStack>
+        </Link>
+        <Button
+          href="/settings"
+          label="Settings"
+          preIcon={<Avatar name={name} />}
+          hideLabel
+          color="tertiary-transparent"
+        />
+      </HStack>
+      <VStack gap={false} as="nav" fullWidth fullHeight>
+        <DashboardNavigation />
+      </VStack>
+    </VStack>
   );
 }
