@@ -92,11 +92,23 @@ export async function GET(
       },
     });
   } catch (e) {
-    console.error(e);
+    console.log(e);
+    const errorCode = (() => {
+      if (e instanceof Error) {
+        if (Object.values(LoginErrorsEnum).some((code) => code === e.message)) {
+          return e.message;
+        }
+
+        return LoginErrorsEnum.UNKNOWN_ERROR_CONTACT_SUPPORT;
+      }
+
+      return LoginErrorsEnum.UNKNOWN_ERROR_CONTACT_SUPPORT;
+    })();
+
     return new Response('Error signing in', {
       status: 302,
       headers: {
-        location: `/login?errorCode=${LoginErrorsEnum.UNKNOWN_ERROR_CONTACT_SUPPORT}`,
+        location: `/login?errorCode=${errorCode}`,
       },
     });
   }

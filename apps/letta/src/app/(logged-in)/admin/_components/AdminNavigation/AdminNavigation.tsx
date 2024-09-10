@@ -2,16 +2,17 @@
 import type { ReactNode } from 'react';
 import { useMemo } from 'react';
 import {
-  CircleStackIcon,
-  FolderIcon,
+  ArrowLeftIcon,
   Frame,
+  HomeIcon,
   HStack,
-  KeyIcon,
   Typography,
 } from '@letta-web/component-library';
 import Link from 'next/link';
 import { cn } from '@letta-web/core-style-config';
 import { usePathname } from 'next/navigation';
+import { ListIcon } from 'lucide-react';
+import { Slot } from '@radix-ui/react-slot';
 
 interface NavigationItemProps {
   href: string;
@@ -43,7 +44,7 @@ function NavigationItem(props: NavigationItemProps) {
           fullWidth
           align="center"
         >
-          {icon}
+          <Slot className="w-4">{icon}</Slot>
           <Typography>{label}</Typography>
         </HStack>
       </Link>
@@ -51,20 +52,15 @@ function NavigationItem(props: NavigationItemProps) {
   );
 }
 
-export function DashboardNavigation() {
+export function AdminNavigation() {
   return (
     <Frame as="ul" fullWidth fullHeight>
+      <NavigationItem href="/admin" label="Home" icon={<HomeIcon />} />
       <NavigationItem
-        href="/projects"
-        label="All Projects"
-        icon={<FolderIcon />}
+        href="/admin/whitelist"
+        label="Manage Whitelist"
+        icon={<ListIcon />}
       />
-      <NavigationItem
-        href="/data-sources"
-        label="Data Sources"
-        icon={<CircleStackIcon />}
-      />
-      <NavigationItem href="/api-keys" label="API Keys" icon={<KeyIcon />} />
     </Frame>
   );
 }

@@ -1,12 +1,40 @@
-import { createNextHandler } from '@ts-rest/serverless/next';
+import {
+  createNextHandler,
+  tsr,
+  TsRestResponse,
+} from '@ts-rest/serverless/next';
 import { contracts } from '$letta/any/contracts';
 import { router } from '$letta/server/router';
+import {
+  getOrganizationFromOrganizationId,
+  getUserOrganizationIdOrThrow,
+} from '$letta/server/auth';
 
 const handler = createNextHandler(contracts, router, {
   basePath: '/api',
   jsonQuery: true,
   responseValidation: true,
   handlerType: 'app-router',
+  requestMiddleware: [
+    tsr.middleware(async (req) => {
+      if (new URL(req.url).pathname.includes('admin')) {
+        const organizationId = await getUserOrganizationIdOrThrow();
+
+        const organization = await getOrganizationFromOrganizationId(
+          organizationId
+        );
+
+        if (!organization?.isAdmin) {
+          return TsRestResponse.fromJson(
+            {
+              message: 'Unauthorized',
+            },
+            { status: 401 }
+          );
+        }
+      }
+    }),
+  ],
 });
 
 export {

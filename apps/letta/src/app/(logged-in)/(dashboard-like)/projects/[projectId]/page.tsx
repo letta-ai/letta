@@ -107,7 +107,6 @@ function TestingAgentsList(props: TestingAgentsListProps) {
           action={
             <Button
               preIcon={<PlusIcon />}
-              size="small"
               label="Create an agent"
               color="secondary"
               href={`/projects/${currentProjectId}/agents/new`}
@@ -170,7 +169,6 @@ function TestingAgentsSection() {
             {/* This button should only be displayed if we have agents, otherwise we show an alert that asks them to do so instead */}
             {agentCount >= 1 && (
               <Button
-                size="small"
                 label="Create an agent"
                 preIcon={<PlusIcon />}
                 color="secondary"

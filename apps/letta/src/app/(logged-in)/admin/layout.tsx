@@ -1,16 +1,19 @@
 'use server';
 import type { ReactNode } from 'react';
 import React from 'react';
+import { getOrganizationFromOrganizationId, getUser } from '$letta/server/auth';
+import { redirect } from 'next/navigation';
+import { QueryClient } from '@tanstack/react-query';
+import { queryClientKeys } from '$letta/any/contracts';
 import { Frame, HStack, Logo, VStack } from '@letta-web/component-library';
+import { DASHBOARD_HEADER_HEIGHT } from '$letta/client/common';
 import Link from 'next/link';
-import { DashboardNavigation } from './_components/DashboardNavigation/DashboardNavigation';
-import {
-  CurrentUserDetailsBlock,
-  DASHBOARD_HEADER_HEIGHT,
-} from '$letta/client/common';
-import './DashboardLike.scss';
-
+import { AdminNavigation } from './_components/AdminNavigation/AdminNavigation';
 const SIDEBAR_WIDTH = 'w-[250px] min-w-[250px]';
+
+interface InAppProps {
+  children: ReactNode;
+}
 
 function Sidebar() {
   return (
@@ -26,33 +29,50 @@ function Sidebar() {
         paddingX="small"
         fullWidth
         borderBottom
+        color="background-black"
         justify="spaceBetween"
         className={DASHBOARD_HEADER_HEIGHT}
       >
         <Link href="/">
           <HStack fullWidth align="center">
-            <Logo /> Letta
+            <Logo /> Letta Admin
           </HStack>
         </Link>
       </HStack>
       <VStack gap={false} as="nav" fullWidth fullHeight>
-        <DashboardNavigation />
-        <Frame borderTop fullWidth>
-          <CurrentUserDetailsBlock />
-        </Frame>
+        <AdminNavigation />
       </VStack>
     </VStack>
   );
 }
 
-interface DashboardLikeLayoutProps {
-  children: ReactNode;
-}
-
-export default async function DashboardLikeLayout(
-  props: DashboardLikeLayoutProps
-) {
+export default async function LoggedInLayout(props: InAppProps) {
   const { children } = props;
+  const queryClient = new QueryClient();
+  const user = await getUser();
+
+  if (!user) {
+    redirect('/');
+
+    return null;
+  }
+
+  const organization = await getOrganizationFromOrganizationId(
+    user.organizationId
+  );
+
+  if (!organization?.isAdmin) {
+    redirect('/');
+
+    return null;
+  }
+
+  await queryClient.prefetchQuery({
+    queryKey: queryClientKeys.organizations.getCurrentOrganization,
+    queryFn: () => ({
+      body: organization,
+    }),
+  });
 
   return (
     <div className="pageFadeIn w-[100vw] h-[100vh]">

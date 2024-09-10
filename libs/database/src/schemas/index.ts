@@ -1,11 +1,30 @@
-import { pgTable, uuid, text, pgEnum, timestamp } from 'drizzle-orm/pg-core';
+import {
+  pgTable,
+  uuid,
+  text,
+  pgEnum,
+  timestamp,
+  boolean,
+} from 'drizzle-orm/pg-core';
 import { sql, relations } from 'drizzle-orm';
+
+export const emailWhitelist = pgTable('email_whitelist', {
+  id: uuid('id')
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  email: text('email').notNull().unique(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at')
+    .notNull()
+    .$onUpdate(() => new Date()),
+});
 
 export const organizations = pgTable('organizations', {
   id: uuid('id')
     .primaryKey()
     .default(sql`gen_random_uuid()`),
   name: text('name').notNull(),
+  isAdmin: boolean('is_admin').notNull().default(false),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at')
     .notNull()
@@ -32,7 +51,10 @@ export const users = pgTable('users', {
   email: text('email').notNull().unique(),
   name: text('name').notNull(),
   imageUrl: text('image_url').notNull(),
-  organizationId: uuid('organization_id').notNull(),
+  organizationId: uuid('organization_id')
+    .notNull()
+    .references(() => organizations.id, { onDelete: 'cascade' })
+    .notNull(),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at')
     .notNull()
@@ -52,7 +74,10 @@ export const lettaAPIKeys = pgTable('letta_api_keys', {
     .default(sql`gen_random_uuid()`),
   name: text('name').notNull(),
   apiKey: text('api_key').notNull().unique(),
-  organizationId: uuid('organization_id').notNull(),
+  organizationId: uuid('organization_id')
+    .notNull()
+    .references(() => organizations.id, { onDelete: 'cascade' })
+    .notNull(),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at')
     .notNull()
@@ -74,7 +99,10 @@ export const projects = pgTable('projects', {
     .primaryKey()
     .default(sql`gen_random_uuid()`),
   name: text('name').notNull(),
-  organizationId: uuid('organization_id').notNull(),
+  organizationId: uuid('organization_id')
+    .notNull()
+    .references(() => organizations.id, { onDelete: 'cascade' })
+    .notNull(),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at')
     .notNull()
@@ -94,7 +122,10 @@ export const testingAgents = pgTable('testing_agents', {
     .default(sql`gen_random_uuid()`),
   agentId: text('agent_id').notNull().unique(),
   name: text('name').notNull(),
-  organizationId: uuid('organization_id').notNull(),
+  organizationId: uuid('organization_id')
+    .notNull()
+    .references(() => organizations.id, { onDelete: 'cascade' })
+    .notNull(),
   projectId: uuid('project_id').notNull(),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at')
@@ -127,7 +158,10 @@ export const sourceAgents = pgTable('source_agents', {
     .primaryKey()
     .default(sql`gen_random_uuid()`),
   name: text('name').notNull(),
-  organizationId: uuid('organization_id').notNull(),
+  organizationId: uuid('organization_id')
+    .notNull()
+    .references(() => organizations.id, { onDelete: 'cascade' })
+    .notNull(),
   projectId: uuid('project_id').notNull(),
   testingAgentId: text('testing_agent_id').notNull(),
   agentId: text('agent_id').notNull().unique(),
@@ -186,7 +220,10 @@ export const deployedAgents = pgTable('deployed_agents', {
   name: text('name').notNull(),
   sourceAgentId: uuid('source_agent_id').notNull(),
   agentId: text('agent_id').notNull().unique(),
-  organizationId: uuid('organization_id').notNull(),
+  organizationId: uuid('organization_id')
+    .notNull()
+    .references(() => organizations.id, { onDelete: 'cascade' })
+    .notNull(),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at')
     .notNull()

@@ -29,6 +29,27 @@
       "when": 1725908610242,
       "tag": "0003_mysterious_stephen_strange",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1725922495988,
+      "tag": "0004_bouncy_baron_zemo",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1725922859830,
+      "tag": "0005_absent_hellfire_club",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1725923377413,
+      "tag": "0006_yielding_stingray",
+      "breakpoints": true
     }
   ]
 }

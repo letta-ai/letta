@@ -2,6 +2,7 @@
 import type { ProviderUserPayload } from '$letta/types';
 import {
   db,
+  emailWhitelist,
   lettaAPIKeys,
   organizations,
   projects,
@@ -13,24 +14,61 @@ import { deleteCookie, getCookie, setCookie } from '$letta/server/cookies';
 import { deleteRedisData, getRedisData, setRedisData } from '@letta-web/redis';
 import { CookieNames } from '$letta/server/cookies/types';
 import { redirect } from 'next/navigation';
+import { LoginErrorsEnum } from '$letta/any/errors';
+
+function isLettaEmail(email: string) {
+  return email.endsWith('@letta.com') || email.endsWith('@memgpt.ai');
+}
+
+async function handleLettaUserCreation() {
+  // lookup letta admin organization
+  const lettaOrg = await db.query.organizations.findFirst({
+    where: eq(organizations.isAdmin, true),
+  });
+
+  let organizationId = lettaOrg?.id;
+
+  if (!organizationId) {
+    // create letta admin organization
+    const [{ organizationId: madeOrgId }] = await db
+      .insert(organizations)
+      .values({
+        name: 'Letta',
+        isAdmin: true,
+      })
+      .returning({ organizationId: organizations.id });
+
+    organizationId = madeOrgId;
+  }
+
+  return organizationId;
+}
 
 async function createUserAndOrganization(
   userData: ProviderUserPayload
 ): Promise<UserSession> {
-  const [createdOrg] = await db
-    .insert(organizations)
-    .values({
-      name: `${userData.name}'s organization`,
-    })
-    .returning({ organizationId: organizations.id });
+  let organizationId = '';
 
-  const apiKey = await generateAPIKey(createdOrg.organizationId);
+  if (isLettaEmail(userData.email)) {
+    organizationId = await handleLettaUserCreation();
+  } else {
+    const [createdOrg] = await db
+      .insert(organizations)
+      .values({
+        name: `${userData.name}'s organization`,
+      })
+      .returning({ organizationId: organizations.id });
+
+    organizationId = createdOrg.organizationId;
+  }
+
+  const apiKey = await generateAPIKey(organizationId);
 
   const [[createdUser]] = await Promise.all([
     db
       .insert(users)
       .values({
-        organizationId: createdOrg.organizationId,
+        organizationId,
         name: userData.name,
         imageUrl: userData.imageUrl,
         email: userData.email,
@@ -39,12 +77,12 @@ async function createUserAndOrganization(
       })
       .returning({ userId: users.id }),
     db.insert(projects).values({
-      organizationId: createdOrg.organizationId,
+      organizationId,
       name: 'My first project',
     }),
     db.insert(lettaAPIKeys).values({
       name: 'Default API key',
-      organizationId: createdOrg.organizationId,
+      organizationId,
       apiKey,
     }),
   ]);
@@ -54,13 +92,30 @@ async function createUserAndOrganization(
     name: userData.name,
     imageUrl: userData.imageUrl,
     id: createdUser.userId,
-    organizationId: createdOrg.organizationId,
+    organizationId: organizationId,
   };
+}
+
+async function isUserInWhitelist(email: string) {
+  // some hardcoding to allow letta and memgpt.ai emails bypass the whitelist
+  if (isLettaEmail(email)) {
+    return true;
+  }
+
+  const exists = await db.query.emailWhitelist.findFirst({
+    where: eq(emailWhitelist.email, email),
+  });
+
+  return !!exists;
 }
 
 async function findOrCreateUserAndOrganizationFromProviderLogin(
   userData: ProviderUserPayload
 ): Promise<UserSession> {
+  if (!(await isUserInWhitelist(userData.email))) {
+    throw new Error(LoginErrorsEnum.USER_NOT_IN_WHITELIST);
+  }
+
   const user = await db.query.users.findFirst({
     where: eq(users.providerId, userData.uniqueId),
   });
@@ -109,6 +164,16 @@ export async function signOutUser() {
   await deleteCookie(CookieNames.LETTA_SESSION);
 
   await deleteRedisData('userSession', session.sessionId);
+}
+
+export async function getOrganizationFromOrganizationId(
+  organizationId: string
+) {
+  const organization = await db.query.organizations.findFirst({
+    where: eq(organizations.id, organizationId),
+  });
+
+  return organization;
 }
 
 export async function getUser() {
