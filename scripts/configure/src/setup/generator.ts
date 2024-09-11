@@ -26,7 +26,7 @@ export async function setupGenerator(
   // generates the .env file for the database
   generateFiles(tree, path.join(__dirname, 'files'), path.join('.'), {
     ...LOCAL_DEFAULT_OPTIONS,
-    options,
+    ...options,
   });
 
 }
