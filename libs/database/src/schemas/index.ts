@@ -55,6 +55,7 @@ export const users = pgTable('users', {
     .notNull()
     .references(() => organizations.id, { onDelete: 'cascade' })
     .notNull(),
+  lettaAgentsId: text('letta_agents_id').notNull().unique(),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at')
     .notNull()

@@ -19,7 +19,7 @@ export function DashboardPageLayout(props: DashboardPageLayoutProps) {
         align="center"
         as="header"
         wrap
-        className="h-biHeight-lg"
+        className="min-h-biHeight-lg"
         justify="spaceBetween"
         fullWidth
         paddingX="small"

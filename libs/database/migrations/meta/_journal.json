@@ -57,6 +57,13 @@
       "when": 1725991478356,
       "tag": "0007_third_proteus",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1726011030997,
+      "tag": "0008_fair_taskmaster",
+      "breakpoints": true
     }
   ]
 }

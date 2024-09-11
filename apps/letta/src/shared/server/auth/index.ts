@@ -70,6 +70,7 @@ async function createUserAndOrganization(
       .values({
         organizationId,
         name: userData.name,
+        lettaAgentsId: userData.uniqueId,
         imageUrl: userData.imageUrl,
         email: userData.email,
         providerId: userData.uniqueId,

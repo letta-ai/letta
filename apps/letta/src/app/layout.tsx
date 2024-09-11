@@ -89,6 +89,7 @@ export default function RootLayout({
         <meta name="msapplication-TileColor" content="#ffffff" />
         <meta name="msapplication-TileImage" content="/ms-icon-144x144.png" />
         <meta name="theme-color" content="#ffffff" />
+        <title>Letta</title>
       </head>
       <body className="overflow-hidden">
         <NextTopLoader showSpinner={false} shadow="none" color="white" />
