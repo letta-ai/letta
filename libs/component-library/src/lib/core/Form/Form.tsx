@@ -384,7 +384,7 @@ const formVariants = cva('contents', {
     },
   },
   defaultVariants: {
-    variant: 'contained',
+    variant: '',
   },
 });
 
