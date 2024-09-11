@@ -383,9 +383,7 @@ const formVariants = cva('contents', {
       contained: 'flex flex-col gap-6 w-full max-w-[500px]',
     },
   },
-  defaultVariants: {
-    variant: '',
-  },
+  defaultVariants: {},
 });
 
 type FormProps = React.HTMLAttributes<HTMLFormElement> &
