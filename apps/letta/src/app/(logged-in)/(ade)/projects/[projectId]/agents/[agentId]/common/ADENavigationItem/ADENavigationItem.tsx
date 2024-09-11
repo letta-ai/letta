@@ -18,10 +18,10 @@ export function ADENavigationItem(props: NavigationItemProps) {
   const { title, isActive, onClick, preview } = props;
 
   return (
-    <HStack fullWidth align="center" paddingX="xxsmall">
+    <HStack fullWidth align="center" paddingX="small">
       <HStack
         fullWidth
-        paddingX="xxsmall"
+        paddingX="small"
         as="button"
         rounded
         onClick={onClick}

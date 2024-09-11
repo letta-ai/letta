@@ -29,7 +29,7 @@ export function DeployAgentInstructionsCurl(
       <Typography align="left" variant="body">
         To use this agent, first you need to create a testing agent.
       </Typography>
-      <Frame paddingY="xsmall">
+      <Frame paddingY="medium">
         <CodeWithAPIKeyInjection
           toolbarPosition="bottom"
           language="bash"
@@ -45,7 +45,7 @@ export function DeployAgentInstructionsCurl(
         />
       </Frame>
       <Typography bold>Expected Response</Typography>
-      <Frame paddingY="xsmall">
+      <Frame paddingY="medium">
         <Code
           language="javascript"
           code={`{ sourceAgentId: 'some-id-here' }`}
@@ -56,7 +56,7 @@ export function DeployAgentInstructionsCurl(
         Then you can proceed to chat with the agent with the `sourceAgentId`
         returned from the above request.
       </Typography>
-      <Frame paddingY="xsmall">
+      <Frame paddingY="medium">
         <CodeWithAPIKeyInjection
           toolbarPosition="bottom"
           language="bash"

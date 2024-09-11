@@ -49,7 +49,7 @@ function NavOverlay() {
     >
       <CurrentUserDetailsBlock />
       <Frame borderTop color="background-greyer" as="nav">
-        <VStack as="ul" paddingY="xxsmall" paddingX="xxxsmall">
+        <VStack as="ul" paddingY="small" paddingX="xsmall">
           <Button
             href={`/projects/${currentProjectId}`}
             color="tertiary-transparent"
@@ -94,7 +94,7 @@ function SidebarGroup(props: SidebarGroupProps) {
       color="transparent"
       as="section"
     >
-      <HStack className="h-[43px]" paddingX="xxsmall" align="center">
+      <HStack className="h-[43px]" paddingX="small" align="center">
         <Typography bold variant="body2">
           {title}
         </Typography>

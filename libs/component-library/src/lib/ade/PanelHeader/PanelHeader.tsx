@@ -26,7 +26,7 @@ export function PanelHeader(props: PanelHeaderProps) {
     <HStack
       color="background"
       align="center"
-      padding="xxsmall"
+      padding="small"
       borderBottom
       justify="spaceBetween"
       className="h-panel"

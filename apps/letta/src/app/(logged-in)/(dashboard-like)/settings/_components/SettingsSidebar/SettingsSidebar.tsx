@@ -32,7 +32,7 @@ function SidebarMenuItem(props: SidebarMenuItemProps) {
 
 export function SettingsSidebar() {
   return (
-    <HStack paddingLeft paddingY="small" as="aside" className="w-[250px]">
+    <HStack paddingLeft paddingY="large" as="aside" className="w-[250px]">
       <VStack fullWidth as="nav">
         <VStack fullWidth as="ul">
           <SidebarMenuItem

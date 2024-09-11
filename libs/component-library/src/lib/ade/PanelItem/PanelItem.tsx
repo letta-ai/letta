@@ -6,7 +6,7 @@ type PanelContentProps = PropsWithChildren<Record<never, string>>;
 
 export function PanelItem(props: PanelContentProps) {
   return (
-    <Frame paddingX="xxsmall" paddingY="xsmall">
+    <Frame paddingX="small" paddingY="medium">
       {props.children}
     </Frame>
   );

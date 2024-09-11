@@ -10,7 +10,7 @@ export function ADEHeader(props: ADEHeaderProps) {
     <HStack
       justify="spaceBetween"
       align="center"
-      padding="xxsmall"
+      padding="small"
       className="h-[48px] min-h-[48px]"
       fullWidth
       color="background-black"

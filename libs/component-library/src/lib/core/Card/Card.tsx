@@ -10,7 +10,7 @@ export function Card(props: CardProps) {
   const { children, className } = props;
 
   return (
-    <Frame className={className} border fullWidth padding="xsmall" rounded>
+    <Frame className={className} border fullWidth padding="medium" rounded>
       {children}
     </Frame>
   );

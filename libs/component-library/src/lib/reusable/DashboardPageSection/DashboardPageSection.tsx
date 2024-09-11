@@ -15,8 +15,8 @@ export function DashboardPageSection(props: DashboardPageSectionProps) {
 
   return (
     <VStack
-      paddingX="small"
-      paddingY="small"
+      paddingX="large"
+      paddingY="large"
       fullWidth
       borderBottom={borderBottom}
     >

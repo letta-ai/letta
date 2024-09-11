@@ -25,7 +25,7 @@ function Sidebar() {
     >
       <HStack
         align="center"
-        paddingX="small"
+        paddingX="large"
         fullWidth
         borderBottom
         color="background-black"

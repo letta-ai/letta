@@ -17,7 +17,7 @@ export function CurrentUserDetailsBlock() {
   });
 
   return (
-    <HStack padding="small" align="center">
+    <HStack padding="large" align="center">
       <Avatar name={name} />
       <VStack gap={false} fullWidth align="start">
         <Typography bold>{name}</Typography>

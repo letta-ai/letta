@@ -88,7 +88,7 @@ function CreateAPIKeyDialog() {
                 We have generated you an API Key, please make sure to store it
                 safely.
               </Typography>
-              <HStack paddingY="small">
+              <HStack paddingY="large">
                 <DownloadButton
                   textToDownload={generatedKey}
                   fileName="api-key.txt"

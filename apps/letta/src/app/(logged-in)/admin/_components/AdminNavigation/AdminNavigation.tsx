@@ -38,8 +38,8 @@ function NavigationItem(props: NavigationItemProps) {
             'hover:bg-tertiary-hover',
             isActive && 'bg-tertiary-active'
           )}
-          padding="xsmall"
-          paddingY="xxsmall"
+          padding="medium"
+          paddingY="small"
           fullWidth
           align="center"
         >

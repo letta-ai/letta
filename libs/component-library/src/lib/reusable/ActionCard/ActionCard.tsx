@@ -41,7 +41,7 @@ export function ActionCard(props: ToggleCardProps) {
         )}
         {children}
         {actions && (
-          <HStack justify="spaceBetween" paddingTop="small">
+          <HStack justify="spaceBetween" paddingTop="large">
             {actions}
           </HStack>
         )}

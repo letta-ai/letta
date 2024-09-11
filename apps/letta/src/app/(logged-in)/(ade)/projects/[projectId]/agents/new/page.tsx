@@ -148,7 +148,7 @@ function NewAgentPage() {
           className="max-w-[600px] max-h-[350px]"
           fullHeight
           fullWidth
-          paddingY="small"
+          paddingY="large"
           paddingX="large"
           border
           rounded

@@ -11,7 +11,7 @@ export function PanelLastElement(props: PanelExpandedListProps) {
   return (
     <VStack
       overflow="auto"
-      padding="xxsmall"
+      padding="small"
       fullWidth
       gap="medium"
       collapseHeight

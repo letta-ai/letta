@@ -22,8 +22,8 @@ export function DashboardPageLayout(props: DashboardPageLayoutProps) {
         className="min-h-biHeight-lg"
         justify="spaceBetween"
         fullWidth
-        paddingX="small"
-        paddingTop="small"
+        paddingX="large"
+        paddingTop="large"
       >
         <HStack align="center">
           {icon}

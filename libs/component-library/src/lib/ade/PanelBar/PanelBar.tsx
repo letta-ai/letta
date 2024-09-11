@@ -22,7 +22,7 @@ function PanelSearch(props: PanelSearchProps) {
   );
 
   return (
-    <HStack align="center" paddingLeft="xsmall" fullWidth>
+    <HStack align="center" paddingLeft="medium" fullWidth>
       <MagnifyingGlassIcon />
       <input
         type="text"

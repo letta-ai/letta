@@ -191,7 +191,7 @@ function MemoryHome() {
       {!memory ? (
         <LettaLoaderPanel />
       ) : (
-        <VStack padding="xxsmall">
+        <VStack padding="small">
           {memoriesList.map((block) => (
             <ActionCard
               title={block.name || 'Unnamed Block'}

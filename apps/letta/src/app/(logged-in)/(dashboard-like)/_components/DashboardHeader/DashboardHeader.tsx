@@ -109,11 +109,11 @@ function DashboardNavigation() {
       }
       align="start"
     >
-      <VStack as="nav" padding="xxxxsmall" rounded color="background-grey">
+      <VStack as="nav" padding="xxsmall" rounded color="background-grey">
         <VStack gap="small">
           <VStack
             onClick={handleCloseOnClickInside}
-            padding="xxxxsmall"
+            padding="xxsmall"
             rounded
             color="background"
           >
@@ -133,7 +133,7 @@ function DashboardNavigation() {
               icon={<DatabaseIcon />}
             />
           </VStack>
-          <VStack padding="xxxxsmall" rounded color="background">
+          <VStack padding="xxsmall" rounded color="background">
             <NavButton href="/settings" label="Settings" icon={<CogIcon />} />
             <AdminNav />
             {/*<ThemeSwitcher />*/}
@@ -153,7 +153,7 @@ export function DashboardHeader() {
       fullWidth
       justify="spaceBetween"
       align="center"
-      paddingX="small"
+      paddingX="large"
       className="max-w-[1440px] mx-[auto]"
     >
       <HStack gap="large" align="center">

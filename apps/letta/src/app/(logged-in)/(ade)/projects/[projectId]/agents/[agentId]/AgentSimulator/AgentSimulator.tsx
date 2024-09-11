@@ -98,7 +98,7 @@ function Messages() {
   }, [messageGroups]);
 
   return (
-    <VStack ref={ref} fullWidth collapseHeight overflowY="auto" padding="small">
+    <VStack ref={ref} fullWidth collapseHeight overflowY="auto" padding="large">
       {messageGroups.map((messageGroup) => (
         <MessageGroup key={messageGroup.id} {...messageGroup} />
       ))}
@@ -108,8 +108,8 @@ function Messages() {
 
 function ChatInput() {
   return (
-    <Frame paddingX="xsmall" paddingBottom>
-      <VStack rounded border fullWidth padding="small" borderTop>
+    <Frame paddingX="medium" paddingBottom>
+      <VStack rounded border fullWidth padding="large" borderTop>
         <textarea className="w-full" rows={3} />
         <HStack justify="spaceBetween">
           <div />
@@ -126,7 +126,7 @@ function Chatroom() {
       <PanelBar>
         <HStack
           fullWidth
-          paddingX="xxsmall"
+          paddingX="small"
           align="center"
           justify="spaceBetween"
         >
