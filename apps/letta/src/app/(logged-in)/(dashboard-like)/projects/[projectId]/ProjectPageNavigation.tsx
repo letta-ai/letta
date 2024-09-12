@@ -1,11 +1,11 @@
 'use client';
-import { Button, HStack } from '@letta-web/component-library';
+import { Avatar, Button, HStack, VStack } from '@letta-web/component-library';
 import React, { useMemo } from 'react';
 import { useCurrentProject } from './hooks';
 import { usePathname } from 'next/navigation';
 
 export function ProjectPageNavigation() {
-  const { id: projectId } = useCurrentProject();
+  const { id: projectId, name } = useCurrentProject();
   const pathname = usePathname();
 
   const afterIdElements = useMemo(() => {
@@ -13,25 +13,37 @@ export function ProjectPageNavigation() {
   }, [pathname]);
 
   return (
-    <HStack>
-      <Button
-        active={afterIdElements === '/'}
-        color="tertiary-transparent"
-        label="Project Home"
-        href={`/projects/${projectId}`}
-      />
-      <Button
-        active={afterIdElements === '/deployments'}
-        color="tertiary-transparent"
-        label="Deployment"
-        href={`/projects/${projectId}/deployments`}
-      />
-      <Button
-        active={afterIdElements === '/analytics'}
-        color="tertiary-transparent"
-        label="Analytics"
-        href={`/projects/${projectId}/analytics`}
-      />
-    </HStack>
+    <VStack paddingX="large" gap="large" paddingY>
+      <HStack align="center">
+        <Avatar name={name} />
+        {name}
+      </HStack>
+      <VStack className="min-w-[250px]">
+        <Button
+          active={afterIdElements === '/'}
+          color="tertiary-transparent"
+          label="Project Home"
+          href={`/projects/${projectId}`}
+        />
+        <Button
+          active={afterIdElements.startsWith('/staging')}
+          color="tertiary-transparent"
+          label="Staging"
+          href={`/projects/${projectId}/staging`}
+        />
+        <Button
+          active={afterIdElements.startsWith('/deployments')}
+          color="tertiary-transparent"
+          label="Deployments"
+          href={`/projects/${projectId}/deployments`}
+        />
+        <Button
+          active={afterIdElements === '/analytics'}
+          color="tertiary-transparent"
+          label="Analytics"
+          href={`/projects/${projectId}/analytics`}
+        />
+      </VStack>
+    </VStack>
   );
 }

@@ -192,42 +192,6 @@ function EmailWhitelistPage() {
       },
     });
 
-  const handleNextPage = useCallback(() => {
-    if (isFetching) {
-      return;
-    }
-
-    setOffset((prev) => prev + PAGE_SIZE);
-  }, [isFetching]);
-
-  const handlePreviousPage = useCallback(() => {
-    if (isFetching) {
-      return;
-    }
-
-    setOffset((prev) => prev - PAGE_SIZE);
-  }, [isFetching]);
-
-  const hasNextPage = useMemo(() => {
-    if (isFetching) {
-      return false;
-    }
-
-    if (data?.status === 200) {
-      return data.body.length >= PAGE_SIZE;
-    }
-
-    return false;
-  }, [data?.body.length, data?.status, isFetching]);
-
-  const hasPreviousPage = useMemo(() => {
-    if (isFetching) {
-      return false;
-    }
-
-    return offset > 0;
-  }, [isFetching, offset]);
-
   const emailWhitelist = useMemo(() => {
     if (data?.status === 200) {
       return data.body;
@@ -257,10 +221,9 @@ function EmailWhitelistPage() {
         <DashboardPageSection>
           <DataTable
             isLoading={isFetching}
-            hasNextPage={hasNextPage}
-            hasPreviousPage={hasPreviousPage}
-            onNextPage={handleNextPage}
-            onPreviousPage={handlePreviousPage}
+            limit={PAGE_SIZE}
+            offset={offset}
+            onSetOffset={setOffset}
             showPagination
             columns={emailWhitelistColumns}
             data={emailWhitelist || []}

@@ -23,7 +23,7 @@ export default async function DashboardLikeLayout(
           borderBottom
           color="primary"
           justify="start"
-          className="h-[64px]"
+          className="min-h-[64px] h-[64px]"
         >
           <DashboardHeader />
         </HStack>

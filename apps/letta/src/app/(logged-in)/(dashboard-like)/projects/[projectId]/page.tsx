@@ -4,6 +4,7 @@ import {
   ActionCard,
   Button,
   DashboardEmptyArea,
+  DashboardPageLayout,
   DashboardPageSection,
   HStack,
   PlusIcon,
@@ -33,7 +34,7 @@ function StageAgentButton(props: StageAgentDialogProps) {
           queryKey: webApiQueryKeys.projects.getProjectSourceAgents(projectId),
         });
 
-        push(`/projects/${projectId}/deployments`);
+        push(`/projects/${projectId}/staging`);
       },
     });
 
@@ -171,7 +172,7 @@ function TestingAgentsSection() {
               <Button
                 label="Create an agent"
                 preIcon={<PlusIcon />}
-                color="secondary"
+                color="tertiary"
                 href={`/projects/${currentProjectId}/agents/new`}
               />
             )}
@@ -188,9 +189,9 @@ function TestingAgentsSection() {
 
 function ProjectPage() {
   return (
-    <>
+    <DashboardPageLayout title="Project Home">
       <TestingAgentsSection />
-    </>
+    </DashboardPageLayout>
   );
 }
 

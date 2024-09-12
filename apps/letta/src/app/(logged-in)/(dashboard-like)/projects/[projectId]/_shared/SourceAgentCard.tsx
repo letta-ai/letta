@@ -8,6 +8,7 @@ import {
 } from '@letta-web/component-library';
 import React from 'react';
 import { DeployAgentUsageInstructions } from '$letta/client/code-reference/deploy-agent-reference';
+import { useCurrentProjectId } from '../hooks';
 
 interface DeployedAgentCardProps {
   status: 'live' | 'offline';
@@ -18,6 +19,7 @@ interface DeployedAgentCardProps {
 
 export function SourceAgentCard(props: DeployedAgentCardProps) {
   const { status, name, deployedAt, id } = props;
+  const projectId = useCurrentProjectId();
   const [open, setOpen] = React.useState(false);
 
   return (
@@ -41,7 +43,7 @@ export function SourceAgentCard(props: DeployedAgentCardProps) {
           </HStack>
           <HStack align="center">
             <Button
-              href={`/projects/${id}/deployments/${id}`}
+              href={`/projects/${projectId}/deployments?stagingAgentId=${id}&stagingAgentName=${name}`}
               color="tertiary-transparent"
               label="View Deployed Agents"
             />
@@ -50,7 +52,7 @@ export function SourceAgentCard(props: DeployedAgentCardProps) {
               active={open}
               onClick={() => setOpen((v) => !v)}
               color="tertiary"
-              label={open ? 'Hide Instructions' : 'Usage Instructions'}
+              label={open ? 'Hide Instructions' : 'Deployment Instructions'}
             />
           </HStack>
         </HStack>

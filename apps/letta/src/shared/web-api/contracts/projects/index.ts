@@ -62,8 +62,8 @@ const createProjectTestingAgentContract = c.mutation({
   },
 });
 
-/* Get Deployed Agents */
-const ProjectDeployedAgentSchema = z.object({
+/* Get Source Agents */
+const ProjectSourceAgentSchema = z.object({
   name: z.string(),
   id: z.string(),
   testingAgentId: z.string(),
@@ -73,10 +73,10 @@ const ProjectDeployedAgentSchema = z.object({
   createdAt: z.string(),
 });
 
-const ProjectDeployedAgentsSchema = z.array(ProjectDeployedAgentSchema);
+const ProjectDeployedAgentsSchema = z.array(ProjectSourceAgentSchema);
 
 export type ProjectDeployedAgentSchemaType = z.infer<
-  typeof ProjectDeployedAgentSchema
+  typeof ProjectSourceAgentSchema
 >;
 export type ProjectDeployedAgentsSchemaType = z.infer<
   typeof ProjectDeployedAgentsSchema
@@ -107,7 +107,56 @@ const createSourceAgentFromTestingAgentContract = c.mutation({
   }),
   body: CreateSourceAgentFromAgentBodySchema,
   responses: {
-    201: ProjectDeployedAgentSchema,
+    201: ProjectSourceAgentSchema,
+  },
+});
+
+/* Get Single Source Agent */
+const getSourceAgentContract = c.query({
+  method: 'GET',
+  path: '/projects/:projectId/source-agents/:sourceAgentId',
+  pathParams: z.object({
+    projectId: z.string(),
+    sourceAgentId: z.string(),
+  }),
+  responses: {
+    200: ProjectSourceAgentSchema,
+  },
+});
+
+/* Get Deployed Agents */
+const DeployedAgentSchema = z.object({
+  name: z.string(),
+  id: z.string(),
+  sourceAgentId: z.string(),
+  agentId: z.string(),
+  createdAt: z.string(),
+});
+
+const DeployedAgentsSchema = z.array(DeployedAgentSchema);
+
+export type DeployedAgentType = z.infer<typeof DeployedAgentSchema>;
+export type DeployedAgentsType = z.infer<typeof DeployedAgentsSchema>;
+const GetDeployedAgentsQuerySchema = z.object({
+  search: z.string().optional(),
+  offset: z.number().optional(),
+  limit: z.number().optional(),
+  sourceAgentId: z.string().optional(),
+});
+
+export type GetDeployedAgentsQueryType = z.infer<
+  typeof GetDeployedAgentsQuerySchema
+>;
+
+const getDeployedAgentsContract = c.query({
+  method: 'GET',
+  path: '/projects/:projectId/deployed-agents',
+  pathParams: z.object({
+    projectId: z.string(),
+  }),
+  query: GetDeployedAgentsQuerySchema,
+  responses: {
+    200: DeployedAgentsSchema,
   },
 });
 
@@ -146,6 +195,8 @@ export const projectsContract = c.router({
   getProjectSourceAgents: getProjectSourceAgentsContract,
   createProjectSourceAgentFromTestingAgent:
     createSourceAgentFromTestingAgentContract,
+  getProjectSourceAgent: getSourceAgentContract,
+  getDeployedAgents: getDeployedAgentsContract,
 });
 
 export const projectsQueryClientKeys = {
@@ -173,4 +224,19 @@ export const projectsQueryClientKeys = {
     projectId: string,
     search: GenericSearch
   ) => ['project', projectId, 'source-agents', search],
+  getSourceAgentContract: (projectId: string, sourceAgentId: string) => [
+    'project',
+    projectId,
+    'source-agents',
+    sourceAgentId,
+  ],
+  getDeployedAgents: (projectId: string) => [
+    'project',
+    projectId,
+    'deployed-agents',
+  ],
+  getDeployedAgentsWithSearch: (
+    projectId: string,
+    search: GetDeployedAgentsQueryType
+  ) => ['project', projectId, 'deployed-agents', search],
 };

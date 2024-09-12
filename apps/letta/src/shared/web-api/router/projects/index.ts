@@ -2,6 +2,7 @@ import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
 import type { projectsContract } from '$letta/web-api/contracts/projects';
 import {
   db,
+  deployedAgents,
   projects,
   sourceAgents,
   sourceAgentsStatus,
@@ -235,7 +236,7 @@ export async function createProjectSourceAgentFromTestingAgent(
 
   const version = `${existingSourceAgentCount.length + 1}`;
 
-  const sourceAgentName = `Deployed ${testingAgent.name} ${version}`;
+  const sourceAgentName = `Staged ${testingAgent.name} ${version}`;
 
   const [sourceAgent] = await db
     .insert(sourceAgents)
@@ -320,6 +321,109 @@ export async function getProjectSourceAgents(
       createdAt: rest.createdAt.toISOString(),
       updatedAt: rest.updatedAt.toISOString(),
       status: status.status,
+    })),
+  };
+}
+
+type GetProjectSourceAgentRequest = ServerInferRequest<
+  typeof contracts.projects.getProjectSourceAgent
+>;
+
+type GetProjectSourceAgentResponse = ServerInferResponses<
+  typeof contracts.projects.getProjectSourceAgent
+>;
+
+export async function getProjectSourceAgent(
+  req: GetProjectSourceAgentRequest
+): Promise<GetProjectSourceAgentResponse> {
+  const organizationId = await getUserOrganizationIdOrThrow();
+  const { projectId, sourceAgentId } = req.params;
+
+  const sourceAgent = await db.query.sourceAgents.findFirst({
+    where: and(
+      eq(sourceAgents.organizationId, organizationId),
+      eq(sourceAgents.projectId, projectId),
+      eq(sourceAgents.id, sourceAgentId)
+    ),
+    columns: {
+      id: true,
+      name: true,
+      testingAgentId: true,
+      createdAt: true,
+      updatedAt: true,
+      version: true,
+    },
+    with: {
+      status: true,
+    },
+  });
+
+  if (!sourceAgent) {
+    return {
+      status: 404,
+      body: {},
+    };
+  }
+
+  return {
+    status: 200,
+    body: {
+      ...sourceAgent,
+      createdAt: sourceAgent.createdAt.toISOString(),
+      updatedAt: sourceAgent.updatedAt.toISOString(),
+      status: sourceAgent.status.status,
+    },
+  };
+}
+
+type GetProjectDeployedAgentsRequest = ServerInferRequest<
+  typeof contracts.projects.getDeployedAgents
+>;
+
+type GetProjectDeployedAgentsResponse = ServerInferResponses<
+  typeof contracts.projects.getDeployedAgents
+>;
+
+export async function getDeployedAgents(
+  req: GetProjectDeployedAgentsRequest
+): Promise<GetProjectDeployedAgentsResponse> {
+  const organizationId = await getUserOrganizationIdOrThrow();
+  const { projectId } = req.params;
+  const { search, offset, limit, sourceAgentId } = req.query;
+
+  const where = [
+    eq(deployedAgents.organizationId, organizationId),
+    eq(deployedAgents.projectId, projectId),
+  ];
+
+  if (sourceAgentId) {
+    where.push(eq(deployedAgents.sourceAgentId, sourceAgentId));
+  }
+
+  if (search) {
+    where.push(like(deployedAgents.name, search || '%'));
+  }
+
+  const existingSourceAgentCount = await db.query.deployedAgents.findMany({
+    where: and(...where),
+    limit,
+    offset,
+    columns: {
+      id: true,
+      name: true,
+      sourceAgentId: true,
+      createdAt: true,
+      agentId: true,
+      updatedAt: true,
+    },
+  });
+
+  return {
+    status: 200,
+    body: existingSourceAgentCount.map(({ ...rest }) => ({
+      ...rest,
+      createdAt: rest.createdAt.toISOString(),
+      updatedAt: rest.updatedAt.toISOString(),
     })),
   };
 }

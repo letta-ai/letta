@@ -15,7 +15,7 @@ import { HStack } from '../../framing/HStack/HStack';
 export { useForm } from 'react-hook-form';
 
 const labelVariants = cva(
-  'text-base font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70'
+  'text-base font-medium leading-none whitespace-nowrap peer-disabled:cursor-not-allowed peer-disabled:opacity-70'
 );
 
 const LabelPrimitive = React.forwardRef<
@@ -262,7 +262,7 @@ export function makeRawInput<T>(
       <RawInputContainer
         {...props}
         id={baseId || props.id}
-        inline={options?.inline}
+        inline={options?.inline || props.inline}
       >
         <Input {...props} />
       </RawInputContainer>

@@ -65,6 +65,7 @@ export function DeployAgentInstructionsCurl(
   -H 'Authorization: Bearer ${ACCESS_TOKEN_PLACEHOLDER}' \\
   -d '{
     "message": "Hello",
+    "name": "Optional Name",
     "variables": {
       "key": "value"
     }

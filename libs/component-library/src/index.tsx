@@ -73,3 +73,5 @@ export * from './lib/reusable/DashboardEmptyArea/DashboardEmptyArea';
 export * from './lib/hooks';
 
 export * from './lib/core/DropdownMenu/DropdownMenu';
+
+export * from './lib/core/Breadcrumb/Breadcrumb';

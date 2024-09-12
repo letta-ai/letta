@@ -118,11 +118,14 @@ export const projects = pgTable('projects', {
     .$onUpdate(() => new Date()),
 });
 
-export const projectRelations = relations(projects, ({ one }) => ({
+export const projectRelations = relations(projects, ({ one, many }) => ({
   organization: one(organizations, {
     fields: [projects.organizationId],
     references: [organizations.id],
   }),
+  sourceAgents: many(sourceAgents),
+  testingAgents: many(testingAgents),
+  deployedAgents: many(deployedAgents),
 }));
 
 export const testingAgents = pgTable('testing_agents', {
@@ -228,6 +231,7 @@ export const deployedAgents = pgTable('deployed_agents', {
     .default(sql`gen_random_uuid()`),
   name: text('name').notNull(),
   sourceAgentId: uuid('source_agent_id').notNull(),
+  projectId: uuid('project_id').notNull(),
   agentId: text('agent_id').notNull().unique(),
   organizationId: uuid('organization_id')
     .notNull()
@@ -247,5 +251,9 @@ export const deployedAgentRelations = relations(deployedAgents, ({ one }) => ({
   sourceAgent: one(sourceAgents, {
     fields: [deployedAgents.sourceAgentId],
     references: [sourceAgents.id],
+  }),
+  project: one(projects, {
+    fields: [deployedAgents.projectId],
+    references: [projects.id],
   }),
 }));

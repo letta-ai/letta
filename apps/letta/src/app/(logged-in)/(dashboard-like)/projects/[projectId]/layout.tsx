@@ -8,7 +8,7 @@ import {
 } from '@tanstack/react-query';
 import { getProjectById } from '$letta/web-api/router/projects';
 import { redirect } from 'next/navigation';
-import { Avatar, DashboardPageLayout } from '@letta-web/component-library';
+import { Frame, HStack, VStack } from '@letta-web/component-library';
 import { ProjectPageNavigation } from './ProjectPageNavigation';
 
 interface ProjectPageWrapperProps {
@@ -40,13 +40,14 @@ async function ProjectPageLayout(props: ProjectPageWrapperProps) {
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
-      <DashboardPageLayout
-        icon={<Avatar name={project.body.name} />}
-        title={project.body.name}
-        actions={<ProjectPageNavigation />}
-      >
-        {props.children}
-      </DashboardPageLayout>
+      <Frame fullHeight fullWidth>
+        <HStack fullHeight fullWidth>
+          <VStack borderRight>
+            <ProjectPageNavigation />
+          </VStack>
+          {props.children}
+        </HStack>
+      </Frame>
     </HydrationBoundary>
   );
 }

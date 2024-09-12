@@ -37,6 +37,7 @@ export async function createAgent(
   const [deployedAgent] = await db
     .insert(deployedAgents)
     .values({
+      projectId: sourceAgent.projectId,
       name: sourceAgent.name,
       // TODO make another one
       agentId: sourceAgent.agentId,

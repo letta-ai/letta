@@ -64,6 +64,13 @@
       "when": 1726011030997,
       "tag": "0008_fair_taskmaster",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1726096863690,
+      "tag": "0009_striped_killraven",
+      "breakpoints": true
     }
   ]
 }

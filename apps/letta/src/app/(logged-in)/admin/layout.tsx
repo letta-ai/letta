@@ -30,7 +30,7 @@ function Sidebar() {
         borderBottom
         color="background-black"
         justify="spaceBetween"
-        className="h-[64px]"
+        className="min-h-[64px] h-[64px]"
       >
         <Link href="/">
           <HStack fullWidth align="center">
