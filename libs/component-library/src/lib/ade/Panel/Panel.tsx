@@ -239,7 +239,6 @@ export function Panel(props: PanelProps) {
     [id, isPanelActive, activatePanel, deactivatePanel]
   );
 
-  console.log(`panel-${id.join('-')}`);
   return (
     <PanelContext.Provider value={value}>
       <Slot

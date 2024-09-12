@@ -1,2 +1,2 @@
-export * from './useCurrentAgentId/useCurrentAgentId';
+export * from './useCurrentAgentId/useCurrentTestingAgentId';
 export * from './useCurrentAgent/useCurrentAgent';

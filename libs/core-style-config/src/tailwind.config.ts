@@ -79,6 +79,10 @@ export function buildConfig(appDir: string): Config {
             DEFAULT: 'hsl(var(--destructive))',
             content: 'hsl(var(--destructive-content))',
           },
+          positive: {
+            DEFAULT: 'hsl(var(--positive))',
+            content: 'hsl(var(--positive-content))',
+          },
           muted: {
             DEFAULT: 'hsl(var(--muted))',
             content: 'hsl(var(--muted-content))',

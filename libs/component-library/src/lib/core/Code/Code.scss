@@ -432,16 +432,16 @@ pre > code.diff-highlight .token.token.inserted:not(.prefix) *::selection {
   height: 100%;
 }
 
-.editor textarea {
+.editor.line-numbers textarea {
   outline: none;
   padding-left: calc(var(--editor-lineNumber-gutter-width) + 20px) !important;
 }
 
-.editor pre {
+.editor.line-numbers pre {
   padding-left: calc(var(--editor-lineNumber-gutter-width) + 20px) !important;
 }
 
-.editor .editorLineNumber {
+.editor.line-numbers .editorLineNumber {
   position: absolute;
   left: 0;
   color: hsl(var(--muted));
@@ -455,7 +455,7 @@ pre > code.diff-highlight .token.token.inserted:not(.prefix) *::selection {
 }
 
 
-.editor:before {
+.editor.line-numbers:before {
   content: "";
   position: absolute;
   font-family: var(--font-mono) monospace !important;

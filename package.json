@@ -67,6 +67,7 @@
     "react-resizable-panels": "^2.1.2",
     "react-select": "^5.8.0",
     "react-simple-code-editor": "^0.14.1",
+    "react-textarea-autosize": "^8.5.3",
     "tailwind-merge": "^2.3.0",
     "tailwindcss-animate": "^1.0.7",
     "tslib": "^2.3.0",

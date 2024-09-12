@@ -1,8 +1,10 @@
-'use server';
 import type { NextRequest } from 'next/server';
 import { getUser } from '$letta/server/auth';
 import type { HandlerContext } from '$letta/sdk';
 import { makeRequestToSDK } from '$letta/sdk';
+
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
 async function handler(req: NextRequest, context: HandlerContext) {
   const user = await getUser();

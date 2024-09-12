@@ -117,6 +117,10 @@ const frameVariants = cva('', {
     flexHeight: {
       true: 1,
     },
+    position: {
+      absolute: 'absolute',
+      relative: 'relative',
+    },
   },
   defaultVariants: {},
 });
@@ -146,6 +150,7 @@ export const Frame = forwardRef<HTMLElement, PropsWithChildren<FrameProps>>(
       paddingX,
       collapseHeight,
       paddingTop,
+      position,
       paddingBottom,
       paddingLeft,
       flexHeight,
@@ -166,6 +171,7 @@ export const Frame = forwardRef<HTMLElement, PropsWithChildren<FrameProps>>(
       borderX,
       borderRight,
       flexHeight,
+      position,
       rounded,
       borderLeft,
       borderTop,

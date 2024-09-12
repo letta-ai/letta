@@ -43,6 +43,8 @@ export interface CodeProps extends VariantProps<typeof codeVariants> {
   language: SupportedLangauges;
   toolbarAction?: React.ReactNode;
   code: string;
+  showLineNumbers?: boolean;
+  border?: boolean;
   onSetCode?: (code: string) => void;
   fullHeight?: boolean;
   toolbarPosition?: 'bottom' | 'top';
@@ -63,6 +65,7 @@ export function Code(props: CodeProps) {
     code,
     variant,
     onSetCode,
+    showLineNumbers = true,
     toolbarPosition,
     inline,
     fullHeight,
@@ -100,7 +103,7 @@ export function Code(props: CodeProps) {
     >
       {toolbarPosition === 'top' && toolbar}
       <Editor
-        className="editor w-full"
+        className={cn('editor w-full', showLineNumbers && 'line-numbers')}
         value={code}
         disabled={!onSetCode}
         onValueChange={(code) => {
@@ -110,15 +113,21 @@ export function Code(props: CodeProps) {
 
           onSetCode(code);
         }}
-        highlight={(code) =>
-          highlight(code, languages[language], language)
-            .split('\n')
-            .map(
-              (line, i) =>
-                `<span class='editorLineNumber'>${i + 1}</span>${line}`
-            )
-            .join('\n')
-        }
+        highlight={(code) => {
+          let res = highlight(code, languages[language], language);
+
+          if (showLineNumbers) {
+            res = res
+              .split('\n')
+              .map(
+                (line, i) =>
+                  `<span class='editorLineNumber'>${i + 1}</span>${line}`
+              )
+              .join('\n');
+          }
+
+          return res;
+        }}
         padding={10}
         textareaId={id}
         style={{

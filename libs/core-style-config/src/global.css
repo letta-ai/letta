@@ -75,6 +75,9 @@
     --button-input-height-sm: 28px;
     --button-input-height-lg: 54px;
     --panel-row-height: 42px;
+
+    --positive: 145, 67%, 41%;
+    --positive-content: 0 0% 100%;
   }
 
   .dark {

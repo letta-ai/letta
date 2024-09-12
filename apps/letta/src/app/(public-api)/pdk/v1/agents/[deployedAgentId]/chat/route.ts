@@ -77,7 +77,6 @@ export async function POST(request: NextRequest, context: Context) {
 
   const responseStream = new TransformStream();
   const writer = responseStream.writable.getWriter();
-  const encoder = new TextEncoder();
 
   let closed = false;
 
@@ -122,11 +121,12 @@ export async function POST(request: NextRequest, context: Context) {
 
       if (e.eventPhase === eventsource.CLOSED) {
         closed = true;
+        void responseStream.writable.close();
         void writer.close();
         return;
       }
 
-      void writer.write(encoder.encode(e.data));
+      void writer.write(`data: ${e.data}\n\n`);
     };
 
     eventsource.onerror = () => {

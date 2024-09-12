@@ -1,6 +1,6 @@
 import { useParams } from 'next/navigation';
 
-export function useCurrentAgentId() {
+export function useCurrentTestingAgentId() {
   const { agentId } = useParams<{ agentId: string }>();
 
   return agentId;

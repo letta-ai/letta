@@ -18,6 +18,8 @@ const typographyVariants = cva('', {
       primary: 'text-primary',
       muted: 'text-muted',
       white: 'text-white',
+      positive: 'text-positive',
+      destructive: 'text-destructive',
     },
     bold: {
       true: 'font-medium',
@@ -32,6 +34,9 @@ const typographyVariants = cva('', {
     },
     underline: {
       true: 'underline',
+    },
+    italic: {
+      true: 'italic',
     },
   },
   defaultVariants: {
