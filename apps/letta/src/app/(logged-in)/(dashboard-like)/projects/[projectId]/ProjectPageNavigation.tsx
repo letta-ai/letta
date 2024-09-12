@@ -37,12 +37,6 @@ export function ProjectPageNavigation() {
           label="Deployments"
           href={`/projects/${projectId}/deployments`}
         />
-        <Button
-          active={afterIdElements === '/analytics'}
-          color="tertiary-transparent"
-          label="Analytics"
-          href={`/projects/${projectId}/analytics`}
-        />
       </VStack>
     </VStack>
   );

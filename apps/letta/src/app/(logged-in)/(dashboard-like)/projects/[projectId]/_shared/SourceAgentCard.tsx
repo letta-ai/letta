@@ -9,16 +9,22 @@ import {
 import React from 'react';
 import { DeployAgentUsageInstructions } from '$letta/client/code-reference/deploy-agent-reference';
 import { useCurrentProjectId } from '../hooks';
+import type { SourceAgentType } from '$letta/web-api/contracts/projects';
 
 interface DeployedAgentCardProps {
-  status: 'live' | 'offline';
-  name: string;
-  id: string;
-  deployedAt: string;
+  agent: SourceAgentType;
 }
 
 export function SourceAgentCard(props: DeployedAgentCardProps) {
-  const { status, name, deployedAt, id } = props;
+  const { agent } = props;
+  const {
+    status,
+    version,
+    deployedAgentCount,
+    name,
+    createdAt: deployedAt,
+    id,
+  } = agent;
   const projectId = useCurrentProjectId();
   const [open, setOpen] = React.useState(false);
 
@@ -34,7 +40,7 @@ export function SourceAgentCard(props: DeployedAgentCardProps) {
             />
             <VStack gap={false} justify="start">
               <Typography align="left" bold>
-                {name}
+                {name} (version: {version})
               </Typography>
               <Typography color="muted" variant="body2">
                 Deployed at {deployedAt}
@@ -45,7 +51,7 @@ export function SourceAgentCard(props: DeployedAgentCardProps) {
             <Button
               href={`/projects/${projectId}/deployments?stagingAgentId=${id}&stagingAgentName=${name}`}
               color="tertiary-transparent"
-              label="View Deployed Agents"
+              label={`View Deployed Agents (${deployedAgentCount})`}
             />
 
             <Button

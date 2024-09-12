@@ -67,6 +67,7 @@ const ProjectSourceAgentSchema = z.object({
   name: z.string(),
   id: z.string(),
   testingAgentId: z.string(),
+  deployedAgentCount: z.number(),
   status: z.enum(['live', 'offline']),
   version: z.string(),
   updatedAt: z.string(),
@@ -75,12 +76,8 @@ const ProjectSourceAgentSchema = z.object({
 
 const ProjectDeployedAgentsSchema = z.array(ProjectSourceAgentSchema);
 
-export type ProjectDeployedAgentSchemaType = z.infer<
-  typeof ProjectSourceAgentSchema
->;
-export type ProjectDeployedAgentsSchemaType = z.infer<
-  typeof ProjectDeployedAgentsSchema
->;
+export type SourceAgentType = z.infer<typeof ProjectSourceAgentSchema>;
+export type SourceAgentsType = z.infer<typeof ProjectDeployedAgentsSchema>;
 
 const getProjectSourceAgentsContract = c.query({
   method: 'GET',
@@ -131,6 +128,8 @@ const DeployedAgentSchema = z.object({
   sourceAgentId: z.string(),
   agentId: z.string(),
   createdAt: z.string(),
+  messageCount: z.number(),
+  lastActiveAt: z.string(),
 });
 
 const DeployedAgentsSchema = z.array(DeployedAgentSchema);

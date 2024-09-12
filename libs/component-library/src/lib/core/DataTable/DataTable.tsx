@@ -27,6 +27,7 @@ import { DashboardStatusComponent } from '../../reusable/DashboardStatusComponen
 interface TableBodyContentProps<Data> {
   table: UseReactTableType<Data>;
   columnLength: number;
+  onRowClick?: (row: Data) => void;
   isLoading?: boolean;
   noResultsAction?: React.ReactNode;
   noResultsText?: string;
@@ -37,6 +38,7 @@ function TableBodyContent<Data>(props: TableBodyContentProps<Data>) {
   const {
     table,
     columnLength,
+    onRowClick,
     loadingText,
     noResultsAction,
     isLoading,
@@ -64,7 +66,16 @@ function TableBodyContent<Data>(props: TableBodyContentProps<Data>) {
     return (
       <TableBody>
         {table.getRowModel().rows.map((row) => (
-          <TableRow key={row.id} data-state={row.getIsSelected() && 'selected'}>
+          <TableRow
+            className={
+              onRowClick ? 'cursor-pointer hover:bg-tertiary-hover' : ''
+            }
+            onClick={() => {
+              onRowClick?.(row.original);
+            }}
+            key={row.id}
+            data-state={row.getIsSelected() && 'selected'}
+          >
             {row.getVisibleCells().map((cell) => (
               <TableCell
                 align={cell.column.columnDef.meta?.style.columnAlign}
@@ -102,6 +113,7 @@ interface DataTablePropsBase<TData, TValue> {
   data: TData[];
   onSearch?: (search: string) => void;
   searchValue?: string;
+  onRowClick?: (row: TData) => void;
   isLoading?: boolean;
   loadingText?: string;
   noResultsText?: string;
@@ -127,6 +139,7 @@ export function DataTable<TData, TValue>(props: DataTableProps<TData, TValue>) {
     limit = 0,
     offset = 0,
     isLoading,
+    onRowClick,
     className,
     noResultsText,
     showPagination,
@@ -222,6 +235,7 @@ export function DataTable<TData, TValue>(props: DataTableProps<TData, TValue>) {
           </TableHeader>
           <TableBodyContent
             table={table}
+            onRowClick={onRowClick}
             loadingText={loadingText}
             noResultsAction={noResultsAction}
             columnLength={columns.length}

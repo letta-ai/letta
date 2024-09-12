@@ -71,6 +71,20 @@
       "when": 1726096863690,
       "tag": "0009_striped_killraven",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1726160001018,
+      "tag": "0010_groovy_the_enforcers",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1726161438540,
+      "tag": "0011_organic_roughhouse",
+      "breakpoints": true
     }
   ]
 }

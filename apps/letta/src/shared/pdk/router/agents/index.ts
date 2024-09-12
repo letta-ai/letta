@@ -1,8 +1,16 @@
 import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
 import type { pdkContracts } from '../../contracts';
 import type { AuthedRequestType } from '../../shared';
-import { db, deployedAgents, sourceAgents } from '@letta-web/database';
-import { and, eq } from 'drizzle-orm';
+import {
+  db,
+  deployedAgents,
+  deployedAgentsStatistics,
+  sourceAgents,
+  sourceAgentsStatistics,
+} from '@letta-web/database';
+import { and, eq, sql } from 'drizzle-orm';
+import { copyAgentById } from '$letta/server';
+import * as crypto from 'node:crypto';
 
 type CreateAgentRequestType = ServerInferRequest<
   typeof pdkContracts.agents.createAgent
@@ -34,17 +42,44 @@ export async function createAgent(
     };
   }
 
+  const copiedAgent = await copyAgentById(
+    sourceAgent.agentId,
+    crypto.randomUUID()
+  );
+
+  if (!copiedAgent.id) {
+    return {
+      status: 500,
+      body: {
+        message: 'Failed to copy agent',
+      },
+    };
+  }
+
   const [deployedAgent] = await db
     .insert(deployedAgents)
     .values({
       projectId: sourceAgent.projectId,
       name: sourceAgent.name,
-      // TODO make another one
-      agentId: sourceAgent.agentId,
+      agentId: copiedAgent.id,
       sourceAgentId: sourceAgentId,
       organizationId,
     })
     .returning({ id: deployedAgents.id });
+
+  await Promise.all([
+    db.insert(deployedAgentsStatistics).values({
+      id: deployedAgent.id,
+      messageCount: 0,
+      lastActiveAt: new Date(),
+    }),
+    db
+      .update(sourceAgentsStatistics)
+      .set({
+        deployedAgentCount: sql`${sourceAgentsStatistics.deployedAgentCount} + 1`,
+      })
+      .where(eq(sourceAgentsStatistics.id, sourceAgent.id)),
+  ]);
 
   return {
     status: 201,
@@ -54,41 +89,13 @@ export async function createAgent(
   };
 }
 
-type ChatWithAgentRequestType = ServerInferRequest<
-  typeof pdkContracts.agents.chatWithAgent
->;
-type ChatWithAgentResponseType = ServerInferResponses<
-  typeof pdkContracts.agents.chatWithAgent
->;
-
-export async function chatWithAgent(
-  req: ChatWithAgentRequestType,
-  context: AuthedRequestType
-): Promise<ChatWithAgentResponseType> {
-  const { deployedAgentId } = req.params;
-  const { message } = req.body;
-  const { organizationId } = context.request;
-
-  const deployedAgent = await db.query.deployedAgents.findFirst({
-    where: and(
-      eq(deployedAgents.organizationId, organizationId),
-      eq(deployedAgents.id, deployedAgentId)
-    ),
-  });
-
-  if (!deployedAgent) {
-    return {
-      status: 404,
-      body: {
-        message: 'Agent not found',
-      },
-    };
-  }
+export async function chatWithAgent() {
+  // This is a stub, the actual implementation of this code is in `/pdk/v1/agents/[deployedAgentId]/chat/route.ts`
 
   return {
-    status: 201,
+    status: 501,
     body: {
-      message: `Response from agent ${deployedAgent.name} - ${message}`,
+      message: 'Not implemented',
     },
   };
 }

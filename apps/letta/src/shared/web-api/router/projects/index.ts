@@ -5,12 +5,15 @@ import {
   deployedAgents,
   projects,
   sourceAgents,
+  sourceAgentsStatistics,
   sourceAgentsStatus,
   testingAgents,
 } from '@letta-web/database';
 import { getUserOrganizationIdOrThrow } from '$letta/server/auth';
-import { eq, and, like } from 'drizzle-orm';
+import { eq, and, like, desc } from 'drizzle-orm';
 import type { contracts } from '$letta/web-api/contracts';
+import { copyAgentById } from '$letta/server';
+import crypto from 'node:crypto';
 
 type ResponseShapes = ServerInferResponses<typeof projectsContract>;
 type GetProjectsRequest = ServerInferRequest<
@@ -236,15 +239,28 @@ export async function createProjectSourceAgentFromTestingAgent(
 
   const version = `${existingSourceAgentCount.length + 1}`;
 
-  const sourceAgentName = `Staged ${testingAgent.name} ${version}`;
+  const sourceAgentName = `Staged ${testingAgent.name}`;
+
+  const copiedAgent = await copyAgentById(
+    testingAgent.agentId,
+    crypto.randomUUID()
+  );
+
+  if (!copiedAgent.id) {
+    return {
+      status: 500,
+      body: {
+        message: 'Failed to copy agent',
+      },
+    };
+  }
 
   const [sourceAgent] = await db
     .insert(sourceAgents)
     .values({
       version,
       testingAgentId: testingAgent.id,
-      // TODO: create duplicate of this agentId
-      agentId: testingAgent.agentId,
+      agentId: copiedAgent.id,
       projectId,
       organizationId,
       name: sourceAgentName,
@@ -255,10 +271,16 @@ export async function createProjectSourceAgentFromTestingAgent(
 
   const defaultStatus = 'live';
 
-  await db.insert(sourceAgentsStatus).values({
-    status: defaultStatus,
-    id: sourceAgent.id,
-  });
+  await Promise.all([
+    db.insert(sourceAgentsStatus).values({
+      status: defaultStatus,
+      id: sourceAgent.id,
+    }),
+    db.insert(sourceAgentsStatistics).values({
+      id: sourceAgent.id,
+      deployedAgentCount: 0,
+    }),
+  ]);
 
   return {
     status: 201,
@@ -297,10 +319,11 @@ export async function getProjectSourceAgents(
     where.push(like(sourceAgents.name, search || '%'));
   }
 
-  const existingSourceAgentCount = await db.query.sourceAgents.findMany({
+  const sourceAgentsList = await db.query.sourceAgents.findMany({
     where: and(...where),
     limit,
     offset,
+    orderBy: [desc(sourceAgents.createdAt)],
     columns: {
       id: true,
       name: true,
@@ -311,13 +334,18 @@ export async function getProjectSourceAgents(
     },
     with: {
       status: true,
+      sourceAgentsStatistics: true,
     },
   });
 
   return {
     status: 200,
-    body: existingSourceAgentCount.map(({ status, ...rest }) => ({
-      ...rest,
+    body: sourceAgentsList.map(({ status, ...rest }) => ({
+      id: rest.id,
+      name: rest.name,
+      testingAgentId: rest.testingAgentId,
+      version: rest.version,
+      deployedAgentCount: rest.sourceAgentsStatistics.deployedAgentCount,
       createdAt: rest.createdAt.toISOString(),
       updatedAt: rest.updatedAt.toISOString(),
       status: status.status,
@@ -354,6 +382,7 @@ export async function getProjectSourceAgent(
       version: true,
     },
     with: {
+      sourceAgentsStatistics: true,
       status: true,
     },
   });
@@ -368,7 +397,11 @@ export async function getProjectSourceAgent(
   return {
     status: 200,
     body: {
-      ...sourceAgent,
+      id: sourceAgent.id,
+      name: sourceAgent.name,
+      testingAgentId: sourceAgent.testingAgentId,
+      version: sourceAgent.version,
+      deployedAgentCount: sourceAgent.sourceAgentsStatistics.deployedAgentCount,
       createdAt: sourceAgent.createdAt.toISOString(),
       updatedAt: sourceAgent.updatedAt.toISOString(),
       status: sourceAgent.status.status,
@@ -416,14 +449,22 @@ export async function getDeployedAgents(
       agentId: true,
       updatedAt: true,
     },
+    with: {
+      deployedAgentsStatistics: true,
+    },
   });
 
   return {
     status: 200,
-    body: existingSourceAgentCount.map(({ ...rest }) => ({
-      ...rest,
-      createdAt: rest.createdAt.toISOString(),
-      updatedAt: rest.updatedAt.toISOString(),
+    body: existingSourceAgentCount.map((agent) => ({
+      id: agent.id,
+      name: agent.name,
+      sourceAgentId: agent.sourceAgentId,
+      agentId: agent.agentId,
+      messageCount: agent.deployedAgentsStatistics.messageCount,
+      lastActiveAt: agent.deployedAgentsStatistics.lastActiveAt.toISOString(),
+      createdAt: agent.createdAt.toISOString(),
+      updatedAt: agent.updatedAt.toISOString(),
     })),
   };
 }

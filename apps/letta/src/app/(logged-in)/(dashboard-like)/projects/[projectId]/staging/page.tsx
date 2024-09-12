@@ -52,7 +52,12 @@ function ProjectStagingList(props: ProjectStagingListProps) {
     return (
       <DashboardStatusComponent
         emptyMessage="There are no agents to stage. Return to the project home and stage a Agent"
-        emptyAction={<Button href="/" label="Return to project home" />}
+        emptyAction={
+          <Button
+            href={`/projects/${currentProjectId}`}
+            label="Return to project home"
+          />
+        }
         isLoading={isLoading}
       />
     );
@@ -61,13 +66,7 @@ function ProjectStagingList(props: ProjectStagingListProps) {
   return (
     <>
       {sourceAgents.map((agent) => (
-        <SourceAgentCard
-          key={agent.id}
-          name={agent.name}
-          status={agent.status}
-          id={agent.id}
-          deployedAt={agent.createdAt}
-        />
+        <SourceAgentCard key={agent.id} agent={agent} />
       ))}
       {hasNextPage && (
         <Button

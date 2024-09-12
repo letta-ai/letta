@@ -1,6 +1,7 @@
 'use client';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import type { OptionType } from '@letta-web/component-library';
+import { Frame } from '@letta-web/component-library';
 import {
   ActionCard,
   Button,
@@ -41,50 +42,60 @@ function DeployedAgentView(props: DeployedAgentViewProps) {
   });
 
   return (
-    <VStack
-      className="absolute animate-in slide-in-from-left-0 w-[90%] right-0"
-      color="background"
-      rounded
-      border
-      fullHeight
-      fullWidth
-    >
-      <HStack
-        padding
-        paddingY="small"
-        borderBottom
-        align="center"
+    <div className="contents">
+      <Frame
+        onClick={onClose}
+        color="background-black"
+        fullHeight
         fullWidth
-        justify="spaceBetween"
+        className="absolute z-[1] fade-in-5 opacity-10"
+        rounded
+      />
+      <VStack
+        className="absolute z-10 animate-in slide-in-from-right-10 w-[50%] right-0"
+        color="background"
+        rounded
+        border
+        fullHeight
+        fullWidth
       >
-        <Typography bold variant="heading2">
-          {name}
-        </Typography>
-        <HStack>
-          <Button color="tertiary" label="Open in ADE" />
-          <Button
-            onClick={onClose}
-            color="tertiary-transparent"
-            label="Close"
-            hideLabel
-            preIcon={<Cross2Icon />}
-          />
+        <HStack
+          padding
+          paddingY="small"
+          borderBottom
+          align="center"
+          fullWidth
+          justify="spaceBetween"
+        >
+          <Typography bold variant="heading2">
+            {name}
+          </Typography>
+          <HStack>
+            <Button color="tertiary" label="Open in ADE" />
+            <Button
+              onClick={onClose}
+              color="tertiary-transparent"
+              label="Close"
+              hideLabel
+              preIcon={<Cross2Icon />}
+            />
+          </HStack>
         </HStack>
-      </HStack>
-      <VStack padding paddingY="small" overflowY="auto" collapseHeight>
-        {!data ? (
-          <VStack align="center" justify="center" fullHeight fullWidth>
-            <LettaLoader size="large" />
-          </VStack>
-        ) : (
-          <VStack gap>
-            <ActionCard title="View Variables" />
-            <ActionCard title="View Memories" />
-            <ActionCard title="Explore Messages" />
-          </VStack>
-        )}
+        <VStack padding paddingY="small" overflowY="auto" collapseHeight>
+          {!data ? (
+            <VStack align="center" justify="center" fullHeight fullWidth>
+              <LettaLoader size="large" />
+            </VStack>
+          ) : (
+            <VStack gap>
+              <ActionCard title="View Variables" />
+              <ActionCard title="View Memories" />
+              <ActionCard title="Explore Messages" />
+            </VStack>
+          )}
+        </VStack>
       </VStack>
-    </VStack>
+    </div>
   );
 }
 
@@ -123,27 +134,20 @@ function DeployedAgentList(props: DeployedAgentListProps) {
   const DeployedAgentColumns: Array<ColumnDef<DeployedAgentType>> = useMemo(
     () => [
       {
+        id: 'id',
+        accessorKey: 'id',
+      },
+      {
         header: 'Name',
         accessorKey: 'name',
       },
       {
-        header: '',
-        accessorKey: 'id',
-        meta: {
-          style: {
-            columnAlign: 'right',
-          },
-        },
-        cell: ({ cell }) => (
-          <Button
-            onClick={() => {
-              setSelectedAgent(cell.row.original);
-            }}
-            color="tertiary"
-            active={selectedAgent?.id === cell.row.original.id}
-            label="Details"
-          />
-        ),
+        header: 'Messages',
+        accessorKey: 'messageCount',
+      },
+      {
+        header: 'Last Active',
+        accessorKey: 'lastActiveAt',
       },
     ],
     [selectedAgent]
@@ -156,6 +160,9 @@ function DeployedAgentList(props: DeployedAgentListProps) {
   return (
     <HStack className="relative" fullHeight fullWidth>
       <DataTable
+        onRowClick={(row) => {
+          setSelectedAgent(row);
+        }}
         fullHeight
         className="min-h-[400px]"
         limit={AGENT_LIMIT}

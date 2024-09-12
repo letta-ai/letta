@@ -30,13 +30,23 @@ const createAgentContract = c.mutation({
 });
 
 /* Chat With Agent */
-const ChatWithAgentBodySchema = z.object({
+export const ChatWithAgentBodySchema = z.object({
   message: z.string(),
-  variables: z.record(z.string(), z.any()),
+  stream: z.boolean().optional(),
+  variables: z.record(z.string(), z.any()).optional(),
+});
+
+export const ChatWithAgentParamsSchema = z.object({
+  deployedAgentId: z.string(),
 });
 
 const ChatWithAgentResponseSchema = z.object({
-  message: z.string(),
+  messages: z.array(
+    z.object({
+      role: z.string(),
+      text: z.string(),
+    })
+  ),
 });
 
 const ChatWithAgentNotFoundResponseSchema = z.object({
@@ -46,9 +56,7 @@ const ChatWithAgentNotFoundResponseSchema = z.object({
 const chatWithAgentContract = c.mutation({
   path: '/agents/:deployedAgentId/chat',
   method: 'POST',
-  pathParams: z.object({
-    deployedAgentId: z.string(),
-  }),
+  pathParams: ChatWithAgentParamsSchema,
   contentType: 'application/json',
   body: ChatWithAgentBodySchema,
   responses: {

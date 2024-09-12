@@ -5,6 +5,7 @@ import {
   pgEnum,
   timestamp,
   boolean,
+  bigint,
 } from 'drizzle-orm/pg-core';
 import { sql, relations } from 'drizzle-orm';
 
@@ -204,11 +205,36 @@ export const sourceAgentRelations = relations(
       fields: [sourceAgents.id],
       references: [sourceAgentsStatus.id],
     }),
+    sourceAgentsStatistics: one(sourceAgentsStatistics, {
+      fields: [sourceAgents.id],
+      references: [sourceAgentsStatistics.id],
+    }),
+  })
+);
+
+export const sourceAgentsStatistics = pgTable('source_agents_statistics', {
+  id: uuid('id')
+    .primaryKey()
+    .references(() => sourceAgents.id, { onDelete: 'cascade' }),
+  deployedAgentCount: bigint('deployed_agent_count', { mode: 'number' })
+    .notNull()
+    .default(0),
+});
+
+export const sourceAgentsStatisticsRelation = relations(
+  sourceAgentsStatistics,
+  ({ one }) => ({
+    sourceAgent: one(sourceAgents, {
+      fields: [sourceAgentsStatistics.id],
+      references: [sourceAgents.id],
+    }),
   })
 );
 
 export const sourceAgentsStatus = pgTable('source_agent_status_table', {
-  id: uuid('id').primaryKey(),
+  id: uuid('id')
+    .primaryKey()
+    .references(() => sourceAgents.id, { onDelete: 'cascade' }),
   status: sourceAgentsStatusEnum('status').notNull(),
   updatedAt: timestamp('updated_at')
     .notNull()
@@ -256,4 +282,28 @@ export const deployedAgentRelations = relations(deployedAgents, ({ one }) => ({
     fields: [deployedAgents.projectId],
     references: [projects.id],
   }),
+  deployedAgentsStatistics: one(deployedAgentsStatistics, {
+    fields: [deployedAgents.id],
+    references: [deployedAgentsStatistics.id],
+  }),
 }));
+
+export const deployedAgentsStatistics = pgTable('deployed_agents_statistics', {
+  id: uuid('id')
+    .primaryKey()
+    .references(() => deployedAgents.id, { onDelete: 'cascade' }),
+  messageCount: bigint('message_count', { mode: 'number' })
+    .notNull()
+    .default(0),
+  lastActiveAt: timestamp('last_active_at').notNull().defaultNow(),
+});
+
+export const deployedAgentsStatisticsRelation = relations(
+  deployedAgentsStatistics,
+  ({ one }) => ({
+    deployedAgent: one(deployedAgents, {
+      fields: [deployedAgentsStatistics.id],
+      references: [deployedAgents.id],
+    }),
+  })
+);
