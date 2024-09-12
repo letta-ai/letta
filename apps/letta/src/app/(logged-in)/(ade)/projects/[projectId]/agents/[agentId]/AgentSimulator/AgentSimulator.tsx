@@ -69,6 +69,7 @@ function extractMessage(
           <MessageWrapper
             header={
               <>
+                <Typography bold>Function Response</Typography>
                 <Typography
                   bold
                   color={
@@ -79,7 +80,6 @@ function extractMessage(
                 >
                   [{agentMessage.status}]
                 </Typography>
-                <Typography bold>Function Response</Typography>
               </>
             }
           >
