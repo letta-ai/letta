@@ -11,8 +11,6 @@ import {
   LettaLoaderPanel,
   Panel,
   PanelBar,
-  PanelHeader,
-  PanelPage,
   TextArea,
   useForm,
   VStack,
@@ -135,29 +133,22 @@ function EditMemory() {
   const { blockId } = usePanelRouteData<'editMemory'>();
   const { setCurrentPage } = usePanelPageContext();
 
+  const handleGoBack = useCallback(() => {
+    setCurrentPage('memoryHome', {});
+  }, [setCurrentPage]);
+
   const { data } = useBlocksServiceGetMemoryBlock({
     blockId,
   });
 
-  const handleGoBack = useCallback(() => {
-    setCurrentPage('memoryHome');
-  }, [setCurrentPage]);
-
   return (
-    <PanelPage
-      header={
-        <PanelHeader
-          title={['Memory Blocks', 'Edit Memory Block']}
-          onGoBack={handleGoBack}
-        />
-      }
-    >
+    <>
       {!data ? (
         <LettaLoaderPanel />
       ) : (
         <EditMemoryForm block={data} onClose={handleGoBack} />
       )}
-    </PanelPage>
+    </>
   );
 }
 
