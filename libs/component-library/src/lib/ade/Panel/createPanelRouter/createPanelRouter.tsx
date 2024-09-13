@@ -11,10 +11,12 @@ import type { PanelPageChildrenType } from '../Panel';
 import { PanelPage } from '../Panel';
 import { PanelHeader } from '../../PanelHeader/PanelHeader';
 
+type PageTitle = string | ((values: ZodType['_output']) => string);
+
 export type GenericPanelRouter<PageKey extends string> = Record<
   PageKey,
   {
-    title: string;
+    title: PageTitle;
     state: ZodType;
   }
 >;
@@ -82,23 +84,40 @@ export function createPageRouter<
       [currentPage, handleSetCurrentPage, state]
     );
 
+    const getTitleGivenState = useCallback(
+      (title: PageTitle, state?: ThisRouter[PageKeys]['state']['_output']) => {
+        if (typeof title === 'function') {
+          return title(state);
+        }
+
+        return title;
+      },
+      []
+    );
+
     const title = useMemo(() => {
       if (currentPage === rootPageKey) {
-        return router[rootPageKey].title;
+        return getTitleGivenState(router[rootPageKey].title, {});
       }
 
       return [
         {
-          title: router[rootPageKey].title,
+          title: getTitleGivenState(router[rootPageKey].title, {}),
           onClick: () => {
             handleSetCurrentPage(rootPageKey);
           },
         },
         {
-          title: router[currentPage].title,
+          title: getTitleGivenState(router[currentPage].title, state),
         },
       ];
-    }, [currentPage, handleSetCurrentPage, rootPageKey]);
+    }, [
+      currentPage,
+      getTitleGivenState,
+      handleSetCurrentPage,
+      rootPageKey,
+      state,
+    ]);
 
     const CurrentPageComponent = useMemo(() => {
       return pages[currentPage];

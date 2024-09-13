@@ -43,7 +43,7 @@ const { PanelRouter, usePanelRouteData, usePanelPageContext } =
   createPageRouter(
     {
       editTool: {
-        title: 'Edit Tool',
+        title: ({ toolId }) => (toolId ? 'Edit Tool' : 'Create Tool'),
         state: z.object({
           toolId: z.string(),
           toolName: z.string(),
@@ -267,6 +267,7 @@ interface ToolEditorProps {
 function ToolEditor(props: ToolEditorProps) {
   const { initialTool, isLoading } = props;
   const queryClient = useQueryClient();
+  const { setCurrentPage } = usePanelPageContext();
 
   const { mutate, isPending: isUpdatingTool } = useToolsServiceUpdateTool({
     onSuccess: async () => {
@@ -303,40 +304,50 @@ function ToolEditor(props: ToolEditorProps) {
   return (
     <FormProvider {...form}>
       <Form onSubmit={form.handleSubmit(handleSubmit)}>
-        {isLoading ? (
-          <LettaLoaderPanel />
-        ) : (
-          <>
-            <RawInput
-              value={initialTool?.name}
-              fullWidth
-              disabled
-              label="Name"
-            />
-            <FormField
-              control={form.control}
-              name="sourceCode"
-              render={({ field }) => (
-                <CodeEditor
-                  fullWidth
-                  toolbarPosition="bottom"
-                  language="python"
-                  code={field.value}
-                  onSetCode={field.onChange}
-                  label="Source Code"
-                />
-              )}
-            />
-            <HStack fullWidth justify="end">
-              <Button
-                type="submit"
-                label="Save"
-                color="secondary"
-                busy={isUpdatingTool}
+        <PanelLastElement>
+          {isLoading ? (
+            <LettaLoaderPanel />
+          ) : (
+            <>
+              <RawInput
+                value={initialTool?.name}
+                fullWidth
+                disabled
+                label="Name"
               />
-            </HStack>
-          </>
-        )}
+              <FormField
+                control={form.control}
+                name="sourceCode"
+                render={({ field }) => (
+                  <CodeEditor
+                    fullWidth
+                    toolbarPosition="bottom"
+                    language="python"
+                    code={field.value}
+                    onSetCode={field.onChange}
+                    label="Source Code"
+                  />
+                )}
+              />
+              <HStack fullWidth justify="end">
+                <Button
+                  type="button"
+                  label="Cancel"
+                  color="tertiary"
+                  onClick={() => {
+                    setCurrentPage('root', {});
+                  }}
+                />
+                <Button
+                  type="submit"
+                  label="Save"
+                  color="secondary"
+                  busy={isUpdatingTool}
+                />
+              </HStack>
+            </>
+          )}
+        </PanelLastElement>
       </Form>
     </FormProvider>
   );

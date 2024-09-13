@@ -118,6 +118,7 @@ function ADESidebar() {
       color="background-grey"
       as="nav"
       fullHeight
+      overflowY="auto"
       className="w-[250px] min-w-[250px]"
     >
       <SidebarGroup title="Base">

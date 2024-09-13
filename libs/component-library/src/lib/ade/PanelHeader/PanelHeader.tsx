@@ -11,7 +11,7 @@ import {
   usePanelContext,
   usePanelManagerContext,
 } from '../Panel/Panel';
-import { Cross2Icon } from '../../icons';
+import { Cross2Icon, DragHandleDots2Icon } from '../../icons';
 import ReactDOM from 'react-dom';
 
 interface PanelBreadcrumbItem {
@@ -199,7 +199,6 @@ export function PanelHeader(props: PanelHeaderProps) {
   return (
     <div>
       <HStack
-        onMouseDown={handleReorderStart}
         id={getPanelHeaderElId(id)}
         color="background"
         align="center"
@@ -208,6 +207,9 @@ export function PanelHeader(props: PanelHeaderProps) {
         justify="spaceBetween"
         className="h-panel"
       >
+        <div onMouseDown={handleReorderStart}>
+          <DragHandleDots2Icon />
+        </div>
         <Title title={title} />
         <button
           type="button"
