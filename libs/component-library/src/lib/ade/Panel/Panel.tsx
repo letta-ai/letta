@@ -1,44 +1,30 @@
 'use client';
 import type { PropsWithChildren } from 'react';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import * as React from 'react';
 import { useCallback, useMemo } from 'react';
 import { createContext } from 'react';
 import ReactDOM from 'react-dom';
 import { Slot } from '@radix-ui/react-slot';
-import type { VariantProps } from 'class-variance-authority';
-import { cva } from 'class-variance-authority';
-import { cn } from '@letta-web/core-style-config';
 import { ErrorBoundary } from 'react-error-boundary';
-import {
-  PanelGroup as ResizablePanelGroup,
-  Panel as ResizablePanel,
-  PanelResizeHandle,
-} from 'react-resizable-panels';
+
 import { Logo } from '../../marketing/Logo/Logo';
 import { VStack } from '../../framing/VStack/VStack';
 import { Typography } from '../../core/Typography/Typography';
 import { useLocalStorage } from '@mantine/hooks';
+import { Frame } from '../../framing/Frame/Frame';
+import { HStack } from '../../framing/HStack/HStack';
+import { PanelHeader } from '../PanelHeader/PanelHeader';
+import { cn } from '@letta-web/core-style-config';
 
-const panelRegistry = [
-  ['sidebar', 'data-sources'],
-  ['sidebar', 'archival-memories'],
-  ['sidebar', 'model'],
-  ['sidebar', 'memory-blocks'],
-  ['sidebar', 'tools'],
-  ['sidebar', 'variables'],
-  ['chat-simulator'],
-  ['context-editor'],
-];
-
-type PanelId = (typeof panelRegistry)[number];
-
-const ALL_PANELS = new Set(panelRegistry.map((id) => id.join('-')));
+type PanelId = string;
 
 interface PanelManagerContextData {
-  activePanels: PanelId[];
+  activePanels: Set<PanelId>;
+  setPanelWidth: (panelId: PanelId, width: number) => void;
+  changePanelOrder: (panelId: PanelId, index: number) => void;
+  activePanelWidths: Record<PanelId, number>;
   getIsPanelActive: (panelId: PanelId) => boolean;
-  hasActiveSubPanel: (panelId: PanelId) => boolean;
   activatePanel: (panelId: PanelId) => void;
   deactivatePanel: (panelId: PanelId) => void;
 }
@@ -60,86 +46,177 @@ export function usePanelManagerContext() {
 type PanelManagerProps = PropsWithChildren<Record<never, string>>;
 
 export function PanelManager(props: PanelManagerProps) {
-  const [activePanels, setActivePanels] = useLocalStorage<PanelId[]>({
-    defaultValue: [],
+  const [activePanels, setActivePanels] = useLocalStorage<Set<PanelId>>({
+    defaultValue: new Set(),
+    deserialize: (value) => {
+      if (!value) return new Set();
+
+      return new Set(value.split(','));
+    },
+    serialize: (value) => Array.from(value).join(','),
     key: 'panel-manager-active-panels',
   });
 
-  const { children } = props;
+  const activePanelsAsArray = useMemo(() => {
+    return Array.from(activePanels);
+  }, [activePanels]);
 
-  const hasActiveSubPanel = useCallback(
-    function hasActiveSubPanel(panelId: PanelId) {
-      return activePanels.some((id) =>
-        panelId.every((panelId) => id.includes(panelId))
-      );
-    },
-    [activePanels]
-  );
+  const [activePanelWidths, setActivePanelWidths] = useLocalStorage<
+    Record<PanelId, number>
+  >({
+    defaultValue: {},
+    key: 'panel-manager-active-panel-widths',
+  });
 
-  const deactivatePanel = useCallback(
-    function deactivatePanel(panelId: PanelId) {
-      // remove all panelids that match the panelid or are a subset of the panelid
-      // e.g. if panelId is ['a', 'b'], remove ['a', 'b', 'c'] and ['a', 'b']
-      setActivePanels((prev) =>
-        prev.filter((id) => {
-          return !panelId.every((panelId) => id.includes(panelId));
-        })
-      );
+  const changePanelOrder = useCallback(
+    function changePanelOrder(panelId: PanelId, index: number) {
+      setActivePanels((prev) => {
+        const newActivePanels = new Set(prev);
+        const activePanelIds = Array.from(newActivePanels);
+        const currentIndex = activePanelIds.indexOf(panelId);
+
+        if (currentIndex === -1) {
+          return prev;
+        }
+
+        // handle the index being out of bounds
+        if (index < 0) {
+          index = 0;
+        } else if (index >= activePanelIds.length) {
+          index = activePanelIds.length - 1;
+        }
+
+        // remove the panel from the current index
+        activePanelIds.splice(currentIndex, 1);
+
+        // insert the panel at the new index
+        activePanelIds.splice(index, 0, panelId);
+
+        return new Set(activePanelIds);
+      });
     },
     [setActivePanels]
   );
 
+  const handleSetPanelWidth = useCallback(
+    function setPanelWidth(panelId: PanelId, desiredWidth: number) {
+      const totalWidthInPx =
+        getPanelRenderElement().getBoundingClientRect().width;
+
+      // desiredWidth is a percentage
+      // panels are in order of appearance, so to set the desiredWidth of one panel, we reduce the size of the next panel over, if the panelId is the last panel, we don't need to do anything
+      setActivePanelWidths((prev) => {
+        const newActivePanelWidths = { ...prev };
+        const currentPanelIndex = activePanelsAsArray.indexOf(panelId);
+        const nextPanelId = activePanelsAsArray[currentPanelIndex + 1];
+
+        if (!nextPanelId) {
+          return prev;
+        }
+
+        const currentPanelWidth = newActivePanelWidths[panelId];
+        const neighbourPanelWidth = newActivePanelWidths[nextPanelId];
+
+        // total width of all the panels in % excluding the current panel
+        const amountToReduce = desiredWidth - currentPanelWidth;
+        const neighbourPanelNewWidth = neighbourPanelWidth - amountToReduce;
+
+        const neighbourPanelNewWidthInPx =
+          (neighbourPanelNewWidth / 100) * totalWidthInPx;
+
+        // the desired width cannot be less than 200px or the nextPanelCurrentWidth cannot be less than 200px
+        // first convert the percentage to px
+        const desiredWidthInPx = (desiredWidth / 100) * totalWidthInPx;
+
+        if (desiredWidthInPx < 200 || neighbourPanelNewWidthInPx < 200) {
+          return prev;
+        }
+
+        newActivePanelWidths[nextPanelId] = neighbourPanelNewWidth;
+        newActivePanelWidths[panelId] = desiredWidth;
+
+        return newActivePanelWidths;
+      });
+    },
+    [activePanelsAsArray, setActivePanelWidths]
+  );
+
+  const { children } = props;
+
+  const deactivatePanel = useCallback(
+    function deactivatePanel(panelId: PanelId) {
+      setActivePanels((prev) => {
+        const newActivePanels = new Set(prev);
+        newActivePanels.delete(panelId);
+
+        setActivePanelWidths((prevPanelWidth) => {
+          // reset all panel widths to equal each other
+          const newActivePanelWidths = { ...prevPanelWidth };
+          const activePanelIds = Array.from(newActivePanels);
+          const width = 100 / activePanelIds.length;
+
+          activePanelIds.forEach((id) => {
+            newActivePanelWidths[id] = width;
+          });
+
+          return newActivePanelWidths;
+        });
+
+        return newActivePanels;
+      });
+    },
+    [setActivePanelWidths, setActivePanels]
+  );
+
   const getIsPanelActive = useCallback(
     function isPanelActive(panelId: PanelId) {
-      return activePanels.some((id) => id.join('-') === panelId.join('-'));
+      return activePanels.has(panelId);
     },
     [activePanels]
   );
 
   const activatePanel = useCallback(
     function activatePanel(panelId: PanelId) {
-      // add the panelid to the activePanels array
-      // remove any panelids that are a subset of the panelid
-      // e.g. if panelId is ['a', 'b'], remove ['a', 'b', 'c'] and ['a', 'b']
-      // if panelId is ['a', 'c'], remove ['a', 'b']
-
-      // also activate the parent panel if it is not already active
-      // remove siblings of the parent panel
-
       setActivePanels((prev) => {
-        const newActivePanels = prev.filter((id) => {
-          return !panelId.every((panelId) => id.includes(panelId));
+        const newActivePanels = new Set(prev);
+        newActivePanels.add(panelId);
+
+        setActivePanelWidths((prev) => {
+          // reset all panel widths to equal each other
+          const newActivePanelWidths = { ...prev };
+          const activePanelIds = Array.from(newActivePanels);
+          const width = 100 / activePanelIds.length;
+
+          activePanelIds.forEach((id) => {
+            newActivePanelWidths[id] = width;
+          });
+
+          return newActivePanelWidths;
         });
 
-        const parentPanelId = panelId.slice(0, panelId.length - 1);
-
-        if (
-          !newActivePanels.some(
-            (id) => id.join('-') === parentPanelId.join('-')
-          )
-        ) {
-          newActivePanels.push(parentPanelId);
-        }
-
-        return newActivePanels.concat([panelId]);
+        return newActivePanels;
       });
     },
-    [setActivePanels]
+    [setActivePanelWidths, setActivePanels]
   );
 
   const value = useMemo(
     () => ({
       activePanels,
       getIsPanelActive,
-      hasActiveSubPanel,
+      changePanelOrder,
       activatePanel,
+      setPanelWidth: handleSetPanelWidth,
+      activePanelWidths,
       deactivatePanel,
     }),
     [
       activePanels,
       getIsPanelActive,
-      hasActiveSubPanel,
+      changePanelOrder,
       activatePanel,
+      handleSetPanelWidth,
+      activePanelWidths,
       deactivatePanel,
     ]
   );
@@ -149,6 +226,26 @@ export function PanelManager(props: PanelManagerProps) {
       {children}
     </PanelManagerContext.Provider>
   );
+}
+
+export function getPanelElId(panelId: PanelId) {
+  return `panel-${panelId}`;
+}
+
+export function getPanelHeaderElId(panelId: PanelId) {
+  return `panel-header-${panelId}`;
+}
+
+export function getPanelDragToHandleElId(
+  panelId: PanelId,
+  type: 'end' | 'start'
+) {
+  return `panel-drag-to-handle-${panelId}-${type}`;
+}
+
+export function getPanelRenderElement() {
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  return document.getElementById('letta-web-panel-render-area')!;
 }
 
 interface PanelContextData {
@@ -165,29 +262,158 @@ export function usePanelContext() {
   return context;
 }
 
-const panelVariants = cva('h-full rounded-sm border-l flex flex-col', {
-  variants: {
-    width: {
-      compact: '',
-      full: '',
+interface ResizeHandleProps {
+  panelId: PanelId;
+}
+
+function ResizeHandle(props: ResizeHandleProps) {
+  const { panelId } = props;
+  const { setPanelWidth } = usePanelManagerContext();
+  const isDragging = useRef(false);
+
+  const handleStartDrag = useCallback(() => {
+    isDragging.current = true;
+  }, []);
+
+  useEffect(() => {
+    function handleEndDrag() {
+      isDragging.current = false;
+    }
+
+    window.addEventListener('mouseup', handleEndDrag);
+
+    return () => {
+      window.removeEventListener('mouseup', handleEndDrag);
+    };
+  }, []);
+
+  const handleSetWidth = useCallback(
+    (event: MouseEvent) => {
+      if (!isDragging.current) {
+        return;
+      }
+
+      const { width } = getPanelRenderElement().getBoundingClientRect();
+
+      const panelLeft = document
+        .getElementById(getPanelElId(panelId))
+        ?.getBoundingClientRect().left;
+
+      if (!panelLeft) {
+        throw new Error('Panel not found');
+      }
+
+      const nextWidth = ((event.clientX - panelLeft) / width) * 100;
+
+      setPanelWidth(panelId, nextWidth);
     },
-  },
-  defaultVariants: {
-    width: 'full',
-  },
-});
+    [panelId, setPanelWidth]
+  );
 
-type PanelContentProps = PropsWithChildren<VariantProps<typeof panelVariants>>;
+  useEffect(() => {
+    function handleMouseMove(event: MouseEvent) {
+      handleSetWidth(event);
+    }
 
-function PanelContent(props: PanelContentProps) {
-  const { width } = props;
+    window.addEventListener('mousemove', handleMouseMove);
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+    };
+  }, [handleSetWidth]);
 
   return (
-    <div className={cn(panelVariants({ width }))}>
-      <div className=" flex flex-1 h-0 flex-col bg-background">
-        {props.children}
-      </div>
-    </div>
+    <Frame
+      onMouseDown={handleStartDrag}
+      color="background-grey"
+      fullHeight
+      className="absolute right-0 top-0 w-[1px] cursor-ew-resize"
+    />
+  );
+}
+
+interface DragToHandleProps {
+  id: PanelId;
+  type: 'end' | 'start';
+}
+
+export const DRAG_TO_HANDLE_CLASSNAME = 'drag-to-handle';
+
+function DragToHandle(props: DragToHandleProps) {
+  const { id, type } = props;
+
+  return (
+    <div
+      id={getPanelDragToHandleElId(id, type)}
+      className={cn(
+        DRAG_TO_HANDLE_CLASSNAME,
+        type === 'start' ? 'left-0' : 'right-0',
+        'absolute pointer-events-none top-0 bg-transparent opacity-20 w-[2px] h-full  z-[2]'
+      )}
+    />
+  );
+}
+
+type PanelContentProps = PropsWithChildren<{
+  id: PanelId;
+  title?: string;
+}>;
+
+function PanelContent(props: PanelContentProps) {
+  const { children, id, title } = props;
+  const { activePanelWidths, activePanels } = usePanelManagerContext();
+  const mounted = useRef(false);
+
+  const panelWidth = useMemo(() => {
+    return activePanelWidths[id];
+  }, [activePanelWidths, id]);
+
+  useEffect(() => {
+    // sort the panels by their order of appearance on mount
+    const activePanelIds = Array.from(activePanels);
+    const allChildren = getPanelRenderElement().children;
+
+    const sortedChildren = Array.from(allChildren).sort((a, b) => {
+      return (
+        activePanelIds.indexOf(a.id.replace('panel-', '')) -
+        activePanelIds.indexOf(b.id.replace('panel-', ''))
+      );
+    });
+
+    getPanelRenderElement().innerHTML = '';
+    sortedChildren.forEach((child) => {
+      getPanelRenderElement().appendChild(child);
+    });
+
+    mounted.current = true;
+  }, [activePanels]);
+
+  return (
+    <HStack
+      id={getPanelElId(id)}
+      fullHeight
+      color="background"
+      border
+      style={{ width: `${panelWidth}%` }}
+      className="relative"
+    >
+      <DragToHandle id={id} type="start" />
+      <ErrorBoundary
+        fallbackRender={function FallbackComponent() {
+          return <div>Something went wrong</div>;
+        }}
+      >
+        {title ? (
+          <PanelPage header={<PanelHeader title={title} />}>
+            {children}
+          </PanelPage>
+        ) : (
+          children
+        )}
+      </ErrorBoundary>
+      <DragToHandle id={id} type="end" />
+      <ResizeHandle panelId={id} />
+    </HStack>
   );
 }
 
@@ -202,7 +428,7 @@ type PanelProps = PanelContentProps &
   }>;
 
 export function Panel(props: PanelProps) {
-  const { id, defaultOpen } = props;
+  const { id, defaultOpen, children } = props;
   // panels must be nested within a PanelManager
   const { deactivatePanel, activatePanel, getIsPanelActive } =
     usePanelManagerContext();
@@ -216,10 +442,7 @@ export function Panel(props: PanelProps) {
 
   useEffect(() => {
     if (defaultOpen) {
-      // we need to wait for the PanelRenderArea to mount so the react-dom attachment can work
-      setTimeout(() => {
-        activatePanel(id);
-      }, 0);
+      activatePanel(id);
     }
   }, [activatePanel, defaultOpen, id]);
 
@@ -248,58 +471,22 @@ export function Panel(props: PanelProps) {
       >
         {props.trigger}
       </Slot>
-
       {isPanelActive &&
         ReactDOM.createPortal(
-          <ErrorBoundary
-            fallbackRender={function FallbackComponent() {
-              return <div>Something went wrong</div>;
-            }}
-          >
-            <PanelContent {...props} />
-          </ErrorBoundary>,
-          // @ts-expect-error - we know this is a string
-          document.getElementById(`panel-${id.join('-')}`)
+          <PanelContent title={props.title} id={id}>
+            {children}
+          </PanelContent>,
+          getPanelRenderElement()
         )}
     </PanelContext.Provider>
   );
 }
 
-interface PanelRenderAreaProps {
-  initialPositions?: string[];
-}
+export const LETTA_DRAGGABLE_AREA_ID = 'letta-web-draggable-area';
 
-export function PanelRenderArea(props: PanelRenderAreaProps) {
-  const { activePanels } = usePanelManagerContext();
-  const [positions] = React.useState(props.initialPositions || []);
-
-  // order panels by given positions, all other panels will be rendered at the end
-
-  const panelsOrdered = useMemo(
-    () =>
-      Array.from(ALL_PANELS).sort((a, b) => {
-        const parentA = a.split('-')[0];
-        const parentB = b.split('-')[0];
-
-        const positionA = positions.indexOf(parentA);
-        const positionB = positions.indexOf(parentB);
-
-        if (positionA > positionB) return -1;
-        if (positionA < positionB) return 1;
-
-        return 0;
-      }),
-    [positions]
-  );
-
-  const activePanelSet = useMemo(() => {
-    return new Set(
-      activePanels.map((panelId) => panelId.join('-')).filter(Boolean)
-    );
-  }, [activePanels]);
-
+export function PanelRenderArea() {
   return (
-    <>
+    <Frame position="relative" fullWidth fullHeight>
       <VStack
         gap="large"
         fullWidth
@@ -313,40 +500,31 @@ export function PanelRenderArea(props: PanelRenderAreaProps) {
           No panels open
         </Typography>
       </VStack>
-      <ResizablePanelGroup className="relative z-[1]" direction="horizontal">
-        {panelsOrdered.map((panelId) => (
-          <>
-            <ResizablePanel
-              defaultSize={300}
-              hidden={!activePanelSet.has(panelId)}
-              key={panelId}
-            >
-              <div
-                className="contents"
-                id={`panel-${panelId}`}
-                key={panelId}
-              ></div>
-            </ResizablePanel>
-            <PanelResizeHandle />
-          </>
-        ))}
-      </ResizablePanelGroup>
-    </>
+      <div
+        id="letta-web-panel-render-area"
+        className="relative w-full z-[1] flex flex-row h-full"
+      ></div>
+      <div
+        id={LETTA_DRAGGABLE_AREA_ID}
+        className="absolute w-[0] h-[0] top-0 left-0  z-[2]"
+      ></div>
+    </Frame>
   );
 }
 
-interface PanelPageProps {
+export type PanelPageChildrenType = React.ReactNode;
+
+export interface PanelPageProps {
   header: React.ReactNode;
-  bar?: React.ReactNode;
+  children: PanelPageChildrenType;
 }
 
-export function PanelPage(props: PropsWithChildren<PanelPageProps>) {
-  const { header, bar, children } = props;
+export function PanelPage(props: PanelPageProps) {
+  const { header, children } = props;
 
   return (
-    <VStack collapseHeight fullWidth fullHeight gap={false}>
+    <VStack fullHeight fullWidth gap={false}>
       {header}
-      {bar}
       <VStack collapseHeight fullWidth fullHeight gap={false}>
         {children}
       </VStack>

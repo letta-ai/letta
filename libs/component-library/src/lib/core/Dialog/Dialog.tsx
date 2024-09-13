@@ -7,6 +7,8 @@ import { cn } from '@letta-web/core-style-config';
 import type { ButtonProps } from '../Button/Button';
 import { Button } from '../Button/Button';
 import { useCallback } from 'react';
+import type { VariantProps } from 'class-variance-authority';
+import { cva } from 'class-variance-authority';
 
 const DialogRoot = DialogPrimitive.Root;
 
@@ -114,7 +116,20 @@ const DialogDescription = React.forwardRef<
 ));
 DialogDescription.displayName = DialogPrimitive.Description.displayName;
 
-interface DialogProps {
+const dialogVariants = cva('', {
+  variants: {
+    size: {
+      small: 'max-w-sm',
+      medium: 'max-w-md',
+      large: 'max-w-[800px]',
+    },
+  },
+  defaultVariants: {
+    size: 'medium',
+  },
+});
+
+interface DialogProps extends VariantProps<typeof dialogVariants> {
   isOpen?: boolean;
   onOpenChange?: (open: boolean) => void;
   title?: string;
@@ -146,6 +161,7 @@ export function Dialog(props: DialogProps) {
     onSubmit,
     onConfirm,
     hideCancel,
+    size,
     hideConfirm,
   } = props;
 
@@ -173,6 +189,7 @@ export function Dialog(props: DialogProps) {
     <DialogRoot open={isOpen} onOpenChange={onOpenChange}>
       {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
       <DialogContent
+        className={dialogVariants({ size })}
         onInteractOutside={(e) => {
           if (preventCloseFromOutside) {
             e.preventDefault();

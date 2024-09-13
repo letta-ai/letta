@@ -7,10 +7,14 @@ import React, {
   useState,
 } from 'react';
 import type { ZodType } from 'zod';
+import type { PanelPageChildrenType } from '../Panel';
+import { PanelPage } from '../Panel';
+import { PanelHeader } from '../../PanelHeader/PanelHeader';
 
-type GenericRouter<PageKey extends string> = Record<
+export type GenericPanelRouter<PageKey extends string> = Record<
   PageKey,
   {
+    title: string;
     state: ZodType;
   }
 >;
@@ -27,7 +31,7 @@ interface CreatePageRouterOptions<PageKey extends string> {
 
 export function createPageRouter<
   PageKey extends string,
-  ThisRouter extends GenericRouter<PageKey>
+  ThisRouter extends GenericPanelRouter<PageKey>
 >(
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   router: ThisRouter,
@@ -48,11 +52,12 @@ export function createPageRouter<
   });
 
   interface RouterProviderProps {
-    pages: Record<PageKeys, React.ReactNode>;
+    rootPageKey: PageKeys;
+    pages: Record<PageKeys, PanelPageChildrenType>;
   }
 
   function RouterProvider(props: RouterProviderProps) {
-    const { pages } = props;
+    const { pages, rootPageKey } = props;
     const [currentPage, setCurrentPage] = useState<PageKeys>(
       options.initialPage
     );
@@ -77,13 +82,33 @@ export function createPageRouter<
       [currentPage, handleSetCurrentPage, state]
     );
 
+    const title = useMemo(() => {
+      if (currentPage === rootPageKey) {
+        return router[rootPageKey].title;
+      }
+
+      return [
+        {
+          title: router[rootPageKey].title,
+          onClick: () => {
+            handleSetCurrentPage(rootPageKey);
+          },
+        },
+        {
+          title: router[currentPage].title,
+        },
+      ];
+    }, [currentPage, handleSetCurrentPage, rootPageKey]);
+
     const CurrentPageComponent = useMemo(() => {
       return pages[currentPage];
     }, [currentPage, pages]);
 
     return (
       <RouterContext.Provider value={contextValue}>
-        {CurrentPageComponent}
+        <PanelPage header={<PanelHeader title={title} />}>
+          {CurrentPageComponent}
+        </PanelPage>
       </RouterContext.Provider>
     );
   }

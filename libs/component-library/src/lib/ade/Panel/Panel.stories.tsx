@@ -14,7 +14,7 @@ export const Primary: Story = {
   args: {
     children: 'Hello',
     defaultOpen: true,
-    id: ['fsd'],
+    id: 'fsd',
     trigger: <Button label="Pannel Trigger" />,
   },
   argTypes: {

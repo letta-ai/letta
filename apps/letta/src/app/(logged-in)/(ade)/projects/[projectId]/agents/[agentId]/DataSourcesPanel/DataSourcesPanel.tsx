@@ -1,11 +1,6 @@
 'use client';
 import React, { useState } from 'react';
-import {
-  Button,
-  Panel,
-  PanelBar,
-  PanelHeader,
-} from '@letta-web/component-library';
+import { Button, Panel, PanelBar } from '@letta-web/component-library';
 import { ADENavigationItem } from '../common/ADENavigationItem/ADENavigationItem';
 
 export function DataSourcesPanel() {
@@ -13,11 +8,10 @@ export function DataSourcesPanel() {
 
   return (
     <Panel
-      width="compact"
-      id={['sidebar', 'data-sources']}
+      title="Data Sources"
+      id="data-sources-panel"
       trigger={<ADENavigationItem title="Data Sources" />}
     >
-      <PanelHeader title="Data Sources" />
       <PanelBar
         onSearch={(value) => {
           setSearch(value);

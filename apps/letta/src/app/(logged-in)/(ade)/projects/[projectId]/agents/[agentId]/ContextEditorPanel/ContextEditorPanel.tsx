@@ -4,8 +4,6 @@ import {
   HStack,
   Panel,
   PanelBar,
-  PanelHeader,
-  PanelPage,
   RawCodeEditor,
   Typography,
 } from '@letta-web/component-library';
@@ -91,40 +89,35 @@ export function ContextEditorPanel() {
 
   return (
     <Panel
-      id={['context-editor']}
+      id="context-editor"
+      title="Context Editor"
       trigger={<ADENavigationItem title="Context Editor" />}
     >
-      <PanelPage
-        header={<PanelHeader title="Context Editor" />}
-        bar={
-          <PanelBar
-            actions={
-              <Typography noWrap variant="body2">
-                {currentContextWindowLength} / {MAX_CONTEXT_WINDOW_LENGTH}{' '}
-                characters
-              </Typography>
-            }
-          ></PanelBar>
+      <PanelBar
+        actions={
+          <Typography noWrap variant="body2">
+            {currentContextWindowLength} / {MAX_CONTEXT_WINDOW_LENGTH}{' '}
+            characters
+          </Typography>
         }
-      >
-        <HStack fullHeight fullWidth>
-          <Frame fullHeight fullWidth>
-            <RawCodeEditor
-              variant="minimal"
-              hideLabel
-              fullWidth
-              fullHeight
-              label="Edit Context Window"
-              language="django"
-              code={contextWindow}
-              onSetCode={setContextWindow}
-            />
-          </Frame>
-          <Frame fullHeight fullWidth>
-            <ContextWindowPreview contextWindow={contextWindow} />
-          </Frame>
-        </HStack>
-      </PanelPage>
+      ></PanelBar>
+      <HStack fullHeight fullWidth>
+        <Frame fullHeight fullWidth>
+          <RawCodeEditor
+            variant="minimal"
+            hideLabel
+            fullWidth
+            fullHeight
+            label="Edit Context Window"
+            language="django"
+            code={contextWindow}
+            onSetCode={setContextWindow}
+          />
+        </Frame>
+        <Frame fullHeight fullWidth>
+          <ContextWindowPreview contextWindow={contextWindow} />
+        </Frame>
+      </HStack>
     </Panel>
   );
 }

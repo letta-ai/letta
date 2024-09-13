@@ -44,6 +44,7 @@ export function CodeWithAPIKeyInjection(props: CodeWithAPIKeyInjectionProps) {
               setShowAPIKeysInCode((v) => !v);
             }}
           />
+          {props.toolbarAction}
         </HStack>
       }
       code={codeWithAPIKey}

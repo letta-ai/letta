@@ -2,11 +2,13 @@ import {
   Code,
   Frame,
   HStack,
+  LettaLoader,
+  RawSwitch,
   RawToggleGroup,
   Typography,
   VStack,
 } from '@letta-web/component-library';
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { environment } from '@letta-web/environmental-variables';
 import { pdkContracts } from '$letta/pdk/contracts';
 import { V1_ROUTE } from '$letta/pdk/shared';
@@ -14,18 +16,58 @@ import {
   ACCESS_TOKEN_PLACEHOLDER,
   CodeWithAPIKeyInjection,
 } from '$letta/client/common';
+import { webApi, webApiQueryKeys } from '$letta/client';
 
 interface DeployAgentInstructionsCurlProps {
   sourceAgentId: string;
+  projectId: string;
 }
 
 export function DeployAgentInstructionsCurl(
   props: DeployAgentInstructionsCurlProps
 ) {
-  const { sourceAgentId } = props;
+  const { sourceAgentId, projectId } = props;
+  const [deploymentAgentHasLoaded, setDeploymentAgentHasLoaded] =
+    useState(false);
+  const [showPartTwo, setShowPartTwo] = useState(false);
+  const [useDeploymentAgentId, setUseDeploymentAgentId] =
+    useState<boolean>(true);
+  const { data } = webApi.projects.getDeployedAgents.useQuery({
+    queryKey: webApiQueryKeys.projects.getDeployedAgentsWithSearch(projectId, {
+      sourceAgentId: sourceAgentId,
+      limit: 1,
+    }),
+    refetchInterval: !deploymentAgentHasLoaded ? 5000 : false,
+    queryData: {
+      query: {
+        sourceAgentId: sourceAgentId,
+        limit: 1,
+      },
+      params: {
+        projectId: projectId,
+      },
+    },
+  });
+
+  const deploymentAgent = useMemo(() => {
+    return data?.body?.[0];
+  }, [data]);
+
+  useEffect(() => {
+    if (deploymentAgent) {
+      setDeploymentAgentHasLoaded(true);
+      setShowPartTwo(true);
+    }
+  }, [deploymentAgent]);
+
+  const deploymentAgentToUse = useMemo(() => {
+    return useDeploymentAgentId && deploymentAgent?.id
+      ? deploymentAgent.id
+      : 'YOUR_AGENT_ID_HERE';
+  }, [useDeploymentAgentId, deploymentAgent]);
 
   return (
-    <VStack gap="text">
+    <VStack className="max-w-[750px]" fullWidth gap="text">
       <Typography align="left" variant="body">
         To use this agent, first you need to create a testing agent.
       </Typography>
@@ -48,19 +90,37 @@ export function DeployAgentInstructionsCurl(
       <Frame paddingY="medium">
         <Code
           language="javascript"
-          code={`{ sourceAgentId: 'some-id-here' }`}
+          code={`{ deploymentAgentId: 'some-id-here' }`}
         />
       </Frame>
 
-      <Typography align="left" variant="body">
-        Then you can proceed to chat with the agent with the `sourceAgentId`
-        returned from the above request.
-      </Typography>
-      <Frame paddingY="medium">
-        <CodeWithAPIKeyInjection
-          toolbarPosition="bottom"
-          language="bash"
-          code={`curl -X POST ${environment.NEXT_PUBLIC_CURRENT_HOST}${V1_ROUTE}${pdkContracts.agents.chatWithAgent.path} \\
+      {showPartTwo ? (
+        <>
+          <Typography align="left" variant="body">
+            Then you can proceed to chat with the agent with the
+            `deploymentAgentId` returned from the above request.
+          </Typography>
+          <Frame paddingY="medium">
+            <CodeWithAPIKeyInjection
+              toolbarAction={
+                deploymentAgent?.id && (
+                  <RawSwitch
+                    label="Use most recent deployed agent ID"
+                    checked={useDeploymentAgentId}
+                    onClick={() => {
+                      setUseDeploymentAgentId((v) => !v);
+                    }}
+                  />
+                )
+              }
+              toolbarPosition="bottom"
+              language="bash"
+              code={`curl -X POST ${
+                environment.NEXT_PUBLIC_CURRENT_HOST
+              }${V1_ROUTE}${pdkContracts.agents.chatWithAgent.path.replace(
+                ':deployedAgentId',
+                deploymentAgentToUse
+              )} \\
   -H 'Content-Type: application/json' \\
   -H 'Authorization: Bearer ${ACCESS_TOKEN_PLACEHOLDER}' \\
   -d '{
@@ -70,8 +130,33 @@ export function DeployAgentInstructionsCurl(
       "key": "value"
     }
   }'`}
-        />
-      </Frame>
+            />
+          </Frame>
+        </>
+      ) : (
+        <HStack
+          rounded
+          align="center"
+          border
+          color="background-greyer"
+          padding="small"
+        >
+          <div>
+            <LettaLoader size="small" />
+          </div>
+          <Typography>
+            Waiting for you to deploy an agent to show the next step.
+          </Typography>
+
+          <button
+            onClick={() => {
+              setShowPartTwo(true);
+            }}
+          >
+            <Typography underline>See it anyway?</Typography>
+          </button>
+        </HStack>
+      )}
     </VStack>
   );
 }
@@ -84,13 +169,19 @@ function isSupportedLanguage(language: string): language is SupportedLanguages {
 interface RenderInstructionsProps {
   language: SupportedLanguages;
   sourceAgentId: string;
+  projectId: string;
 }
 
 function RenderInstructions(props: RenderInstructionsProps) {
-  const { language, sourceAgentId } = props;
+  const { language, sourceAgentId, projectId } = props;
 
   if (language === 'bash') {
-    return <DeployAgentInstructionsCurl sourceAgentId={sourceAgentId} />;
+    return (
+      <DeployAgentInstructionsCurl
+        projectId={projectId}
+        sourceAgentId={sourceAgentId}
+      />
+    );
   }
 
   return null;
@@ -98,12 +189,13 @@ function RenderInstructions(props: RenderInstructionsProps) {
 
 interface DeployAgentUsageInstructionsProps {
   sourceAgentId: string;
+  projectId: string;
 }
 
 export function DeployAgentUsageInstructions(
   props: DeployAgentUsageInstructionsProps
 ) {
-  const { sourceAgentId } = props;
+  const { sourceAgentId, projectId } = props;
   const [language, setLanguage] = useState<SupportedLanguages>('bash');
 
   return (
@@ -127,7 +219,11 @@ export function DeployAgentUsageInstructions(
           ]}
         />
       </HStack>
-      <RenderInstructions sourceAgentId={sourceAgentId} language={language} />
+      <RenderInstructions
+        projectId={projectId}
+        sourceAgentId={sourceAgentId}
+        language={language}
+      />
     </VStack>
   );
 }

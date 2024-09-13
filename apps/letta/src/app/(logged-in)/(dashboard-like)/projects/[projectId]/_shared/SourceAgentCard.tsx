@@ -64,7 +64,10 @@ export function SourceAgentCard(props: DeployedAgentCardProps) {
         </HStack>
         {open && (
           <Frame border padding="large" rounded>
-            <DeployAgentUsageInstructions sourceAgentId={id} />
+            <DeployAgentUsageInstructions
+              projectId={projectId}
+              sourceAgentId={id}
+            />
           </Frame>
         )}
       </VStack>

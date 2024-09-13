@@ -11,8 +11,6 @@ import {
   Input,
   Panel,
   PanelBar,
-  PanelHeader,
-  PanelPage,
   RawInput,
   ToggleGroup,
   useForm,
@@ -27,11 +25,13 @@ const { PanelRouter, usePanelRouteData, usePanelPageContext } =
   createPageRouter(
     {
       editVariable: {
+        title: 'Edit Variable',
         state: z.object({
           variableId: z.string(),
         }),
       },
       variableHome: {
+        title: 'Variables',
         state: z.object({}),
       },
     },
@@ -232,24 +232,20 @@ function VariableHome() {
     }, [setCurrentPage]);
 
   return (
-    <PanelPage
-      header={<PanelHeader title="Variables" />}
-      bar={
-        <PanelBar
-          onSearch={(value) => {
-            setSearch(value);
-          }}
-          searchValue={search}
-          actions={<CreateVariableModal />}
-        />
-      }
-    >
+    <>
+      <PanelBar
+        onSearch={(value) => {
+          setSearch(value);
+        }}
+        searchValue={search}
+        actions={<CreateVariableModal />}
+      />
       <DataTable
         columns={variableTableColumns}
         variant="minimal"
         data={tempVariables}
       />
-    </PanelPage>
+    </>
   );
 }
 
@@ -300,73 +296,62 @@ function EditVariable() {
   });
 
   return (
-    <PanelPage
-      header={
-        <PanelHeader
-          onGoBack={() => {
-            setCurrentPage('variableHome');
-          }}
-          title={['Variables', 'Edit Variable']}
-        />
-      }
-    >
-      <FormProvider {...form}>
-        <VStack padding gap="form">
-          <Form>
-            <RawInput
-              fullWidth
-              label="Key"
-              value={currentVariable.key}
-              disabled
-            />
-            <FormField
-              name="description"
-              render={({ field }) => (
-                <Input fullWidth label="Description" {...field} />
-              )}
-            />
-            <FormField
-              name="defaultValue"
-              render={({ field }) => (
-                <Input
-                  fullWidth
-                  description="This is the default value if no value is set for an Agent"
-                  label="Default Value"
-                  {...field}
-                />
-              )}
-            />
-            <RawInput
-              fullWidth
-              label="Scope"
-              value={currentVariable.scope}
-              disabled
-            />
-            <FormActions startAction={<DeleteVariableDialog />}>
-              <Button
-                color="tertiary"
-                label="Cancel"
-                onClick={() => {
-                  setCurrentPage('variableHome');
-                }}
+    <FormProvider {...form}>
+      <VStack padding gap="form">
+        <Form>
+          <RawInput
+            fullWidth
+            label="Key"
+            value={currentVariable.key}
+            disabled
+          />
+          <FormField
+            name="description"
+            render={({ field }) => (
+              <Input fullWidth label="Description" {...field} />
+            )}
+          />
+          <FormField
+            name="defaultValue"
+            render={({ field }) => (
+              <Input
+                fullWidth
+                description="This is the default value if no value is set for an Agent"
+                label="Default Value"
+                {...field}
               />
-              <Button label="Update Variable" type="submit" />
-            </FormActions>
-          </Form>
-        </VStack>
-      </FormProvider>
-    </PanelPage>
+            )}
+          />
+          <RawInput
+            fullWidth
+            label="Scope"
+            value={currentVariable.scope}
+            disabled
+          />
+          <FormActions startAction={<DeleteVariableDialog />}>
+            <Button
+              color="tertiary"
+              label="Cancel"
+              onClick={() => {
+                setCurrentPage('variableHome');
+              }}
+            />
+            <Button label="Update Variable" type="submit" />
+          </FormActions>
+        </Form>
+      </VStack>
+    </FormProvider>
   );
 }
 
 export function VariablesPanel() {
   return (
     <Panel
-      width="compact"
-      id={['sidebar', 'variables']}
+      id="variables-panel"
       trigger={<ADENavigationItem title="Variables" />}
     >
       <PanelRouter
+        rootPageKey="variableHome"
         pages={{
           variableHome: <VariableHome />,
           editVariable: <EditVariable />,

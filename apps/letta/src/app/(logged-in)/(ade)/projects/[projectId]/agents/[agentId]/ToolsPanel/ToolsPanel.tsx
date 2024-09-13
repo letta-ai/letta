@@ -11,7 +11,6 @@ import {
   Panel,
   PanelBar,
   PanelLastElement,
-  PanelHeader,
   RawInput,
   ActionCard,
   useForm,
@@ -44,12 +43,14 @@ const { PanelRouter, usePanelRouteData, usePanelPageContext } =
   createPageRouter(
     {
       editTool: {
+        title: 'Edit Tool',
         state: z.object({
           toolId: z.string(),
           toolName: z.string(),
         }),
       },
       root: {
+        title: 'Tools',
         state: z.object({}),
       },
     },
@@ -302,51 +303,47 @@ function ToolEditor(props: ToolEditorProps) {
   return (
     <FormProvider {...form}>
       <Form onSubmit={form.handleSubmit(handleSubmit)}>
-        <PanelLastElement>
-          {isLoading ? (
-            <LettaLoaderPanel />
-          ) : (
-            <>
-              <RawInput
-                value={initialTool?.name}
-                fullWidth
-                disabled
-                label="Name"
-              />
-              <FormField
-                control={form.control}
-                name="sourceCode"
-                render={({ field }) => (
-                  <CodeEditor
-                    fullWidth
-                    toolbarPosition="bottom"
-                    language="python"
-                    code={field.value}
-                    onSetCode={field.onChange}
-                    label="Source Code"
-                  />
-                )}
-              />
-              <HStack fullWidth justify="end">
-                <Button
-                  type="submit"
-                  label="Save"
-                  color="secondary"
-                  busy={isUpdatingTool}
+        {isLoading ? (
+          <LettaLoaderPanel />
+        ) : (
+          <>
+            <RawInput
+              value={initialTool?.name}
+              fullWidth
+              disabled
+              label="Name"
+            />
+            <FormField
+              control={form.control}
+              name="sourceCode"
+              render={({ field }) => (
+                <CodeEditor
+                  fullWidth
+                  toolbarPosition="bottom"
+                  language="python"
+                  code={field.value}
+                  onSetCode={field.onChange}
+                  label="Source Code"
                 />
-              </HStack>
-            </>
-          )}
-        </PanelLastElement>
+              )}
+            />
+            <HStack fullWidth justify="end">
+              <Button
+                type="submit"
+                label="Save"
+                color="secondary"
+                busy={isUpdatingTool}
+              />
+            </HStack>
+          </>
+        )}
       </Form>
     </FormProvider>
   );
 }
 
 function EditToolPage() {
-  const { setCurrentPage } = usePanelPageContext();
-
-  const { toolId, toolName } = usePanelRouteData<'editTool'>();
+  const { toolId } = usePanelRouteData<'editTool'>();
   const { data, isLoading } = useToolsServiceGetTool(
     {
       toolId,
@@ -361,18 +358,8 @@ function EditToolPage() {
     return !toolId;
   }, [toolId]);
 
-  const pageName = useMemo(() => {
-    return isNewTool ? 'Create Tool' : toolName;
-  }, [toolName, isNewTool]);
-
   return (
     <>
-      <PanelHeader
-        onGoBack={() => {
-          setCurrentPage('root');
-        }}
-        title={['Tools', pageName]}
-      />
       {isNewTool ? (
         <ToolCreator />
       ) : (
@@ -392,7 +379,6 @@ function ToolsListPage() {
 
   return (
     <>
-      <PanelHeader title="Tools" />
       <PanelBar
         searchValue={search}
         onSearch={(value) => {
@@ -418,12 +404,9 @@ function ToolsListPage() {
 
 export function ToolsPanel() {
   return (
-    <Panel
-      width="compact"
-      id={['sidebar', 'tools']}
-      trigger={<ADENavigationItem title="Tools" />}
-    >
+    <Panel id="tools-panel" trigger={<ADENavigationItem title="Tools" />}>
       <PanelRouter
+        rootPageKey="root"
         pages={{
           editTool: <EditToolPage />,
           root: <ToolsListPage />,

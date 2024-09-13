@@ -183,13 +183,27 @@ export async function createProjectTestingAgent(
 
   const organizationId = await getUserOrganizationIdOrThrow();
 
+  const newAgent = await copyAgentById(
+    'agent-cfcbc295-b906-4b62-ab85-de77a77c27b7',
+    crypto.randomUUID()
+  );
+
+  if (!newAgent.id) {
+    return {
+      status: 500,
+      body: {
+        message: 'Failed to create agent',
+      },
+    };
+  }
+
   const [agent] = await db
     .insert(testingAgents)
     .values({
       projectId,
       organizationId,
       name: 'New Agent',
-      agentId: 'agent-cfcbc295-b906-4b62-ab85-de77a77c27b7',
+      agentId: newAgent.id,
     })
     .returning({
       id: testingAgents.id,
@@ -285,6 +299,7 @@ export async function createProjectSourceAgentFromTestingAgent(
   return {
     status: 201,
     body: {
+      deployedAgentCount: 0,
       name: sourceAgentName,
       testingAgentId: testingAgent.id,
       id: sourceAgent.id,

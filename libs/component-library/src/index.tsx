@@ -39,13 +39,11 @@ export * from './lib/core/Avatar/Avatar';
 
 export * from './lib/ade/PanelItem/PanelItem';
 
-export * from './lib/ade/PanelHeader/PanelHeader';
-
 export * from './lib/core/Card/Card';
 
 export * from './lib/reusable/ActionCard/ActionCard';
 
-export * from './lib/ade/PanelPage/PanelPage';
+export * from './lib/ade/Panel/createPanelRouter/createPanelRouter';
 
 export * from './lib/ade/PanelLastElement/PanelLastElement';
 
@@ -75,3 +73,5 @@ export * from './lib/hooks';
 export * from './lib/core/DropdownMenu/DropdownMenu';
 
 export * from './lib/core/Breadcrumb/Breadcrumb';
+
+export * from './lib/core/TextArea/TextArea';

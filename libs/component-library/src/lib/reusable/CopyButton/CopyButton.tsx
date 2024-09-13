@@ -19,6 +19,7 @@ export function CopyButton(props: CopyButtonProps) {
     <Button
       size={size}
       color="tertiary"
+      type="button"
       preIcon={isCopied ? <CheckIcon /> : <ClipboardIcon />}
       label={isCopied ? 'Copied' : copyButtonText}
       onClick={() => {

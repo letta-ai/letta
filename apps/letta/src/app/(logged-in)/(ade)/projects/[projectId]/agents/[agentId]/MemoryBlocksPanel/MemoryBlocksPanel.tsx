@@ -13,6 +13,7 @@ import {
   PanelBar,
   PanelHeader,
   PanelPage,
+  TextArea,
   useForm,
   VStack,
 } from '@letta-web/component-library';
@@ -27,11 +28,13 @@ const { PanelRouter, usePanelRouteData, usePanelPageContext } =
   createPageRouter(
     {
       editMemory: {
+        title: 'Edit',
         state: z.object({
           blockId: z.string(),
         }),
       },
       memoryHome: {
+        title: 'Memory Blocks',
         state: z.object({}),
       },
     },
@@ -96,26 +99,35 @@ function EditMemoryForm({ block, onClose }: EditMemoryFormProps) {
   );
 
   return (
-    <FormProvider {...form}>
-      <Form onSubmit={form.handleSubmit(handleSubmit)}>
-        <FormField
-          name="name"
-          render={({ field }) => <Input fullWidth label="Name" {...field} />}
-        />
-        <FormField
-          name="label"
-          render={({ field }) => <Input fullWidth label="Label" {...field} />}
-        />
-        <FormField
-          name="content"
-          render={({ field }) => <Input fullWidth label="Content" {...field} />}
-        />
-        <FormActions>
-          <Button type="button" onClick={onClose} label="Cancel" />
-          <Button type="submit" label="Save" />
-        </FormActions>
-      </Form>
-    </FormProvider>
+    <VStack gap="form" padding="small">
+      <FormProvider {...form}>
+        <Form onSubmit={form.handleSubmit(handleSubmit)}>
+          <FormField
+            name="name"
+            render={({ field }) => <Input fullWidth label="Name" {...field} />}
+          />
+          <FormField
+            name="label"
+            render={({ field }) => <Input fullWidth label="Label" {...field} />}
+          />
+          <FormField
+            name="content"
+            render={({ field }) => (
+              <TextArea fullWidth label="Content" {...field} />
+            )}
+          />
+          <FormActions>
+            <Button
+              color="tertiary"
+              type="button"
+              onClick={onClose}
+              label="Cancel"
+            />
+            <Button color="secondary" type="submit" label="Save" />
+          </FormActions>
+        </Form>
+      </FormProvider>
+    </VStack>
   );
 }
 
@@ -172,26 +184,18 @@ function MemoryHome() {
   );
 
   return (
-    <PanelPage
-      header={<PanelHeader title="Memory Blocks" />}
-      bar={
-        <PanelBar
-          searchValue={search}
-          onSearch={setSearch}
-          actions={
-            <Button
-              color="secondary"
-              label="Create Memory Block"
-              size="small"
-            />
-          }
-        />
-      }
-    >
+    <>
+      <PanelBar
+        searchValue={search}
+        onSearch={setSearch}
+        actions={
+          <Button color="secondary" label="Create Memory Block" size="small" />
+        }
+      />
       {!memory ? (
         <LettaLoaderPanel />
       ) : (
-        <VStack padding="small">
+        <VStack overflowY="auto" collapseHeight padding="small">
           {memoriesList.map((block) => (
             <ActionCard
               title={block.name || 'Unnamed Block'}
@@ -214,17 +218,18 @@ function MemoryHome() {
           ))}
         </VStack>
       )}
-    </PanelPage>
+    </>
   );
 }
 
 export function MemoryBlocksPanel() {
   return (
     <Panel
-      id={['sidebar', 'memory-blocks']}
+      id="memory-blocks-panel"
       trigger={<ADENavigationItem title="Memory Blocks" />}
     >
       <PanelRouter
+        rootPageKey="memoryHome"
         pages={{
           memoryHome: <MemoryHome />,
           editMemory: <EditMemory />,

@@ -7,7 +7,6 @@ import {
   LettaLoader,
   Panel,
   PanelBar,
-  PanelHeader,
   Typography,
   VStack,
 } from '@letta-web/component-library';
@@ -607,7 +606,7 @@ function Chatroom() {
   const { sendMessage, isPending } = useSendMessage();
 
   return (
-    <VStack collapseHeight gap={false} fullWidth>
+    <VStack fullHeight gap={false} fullWidth>
       <PanelBar>
         <HStack
           fullWidth
@@ -632,10 +631,10 @@ function Chatroom() {
 export function AgentSimulator() {
   return (
     <Panel
-      id={['chat-simulator']}
+      id="chat-simulator"
       trigger={<ADENavigationItem title="Chat Simulator" />}
+      title="Simulator"
     >
-      <PanelHeader title="Simulator" />
       <Chatroom />
     </Panel>
   );

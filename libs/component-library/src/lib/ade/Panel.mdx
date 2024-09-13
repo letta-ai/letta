@@ -9,10 +9,10 @@ Panels are used to manage the layout of the Agent Development Environment. They 
 
 ## Usage
 
-<div className="flex flex-col gap-4">
+<div className="flex flex-col gap-4 h-[800px]">
   <PanelManager>
-    <div className="gap-3 flex">
-      <Panel id={['test']} trigger={<Button label="Activate Panel 1" />} title="Main panel 1">
+    <div className="gap-3 flex ">
+      <Panel id="test" trigger={<Button label="Activate Panel 1" />} title="Main panel 1">
         <PanelBar
           actions={(
             <Button variant="default" color="secondary" label="Button 1" />
@@ -21,18 +21,16 @@ Panels are used to manage the layout of the Agent Development Environment. They 
         </PanelBar>
 
       </Panel>
-
-      <Panel id={['test', 'data']} trigger={<Button label="Activate The subpanel" />} title="Sub panel 1">
+      <Panel id='different' trigger={<Button label="Activate Another panel" />} title="Main panel 2">
         <span className="text-content">Panel Content</span>
-
       </Panel>
-
-      <Panel id={['different']} trigger={<Button label="Activate Another panel" />} title="Main panel 2">
+      <Panel id='swag' trigger={<Button label="Activate Another panel" />} title="Main panel 3">
+        <span className="text-content">Panel Content</span>
+      </Panel>
+      <Panel id='twag' trigger={<Button label="Activate Another panel" />} title="Main panel 4">
         <span className="text-content">Panel Content</span>
       </Panel>
     </div>
-
-
     <PanelRenderArea />
 
   </PanelManager>

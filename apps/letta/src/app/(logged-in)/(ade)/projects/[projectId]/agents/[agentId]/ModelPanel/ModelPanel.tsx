@@ -7,10 +7,8 @@ import {
   Select,
   useForm,
   Form,
-  PanelHeader,
   Button,
   HStack,
-  PanelLastElement,
 } from '@letta-web/component-library';
 import { useCurrentAgent } from '../hooks';
 import { z } from 'zod';
@@ -77,8 +75,8 @@ export function ModelPanel() {
 
   return (
     <Panel
-      width="compact"
-      id={['sidebar', 'model']}
+      id="model-panel"
+      title="Current Model"
       trigger={
         <ADENavigationItem
           title="Model"
@@ -88,34 +86,31 @@ export function ModelPanel() {
     >
       <FormProvider {...form}>
         <Form onSubmit={form.handleSubmit(onSubmit)}>
-          <PanelHeader title="Current Model" />
-          <PanelLastElement>
-            <FormField
-              control={form.control}
-              name="model"
-              render={({ field }) => (
-                <Select
-                  fullWidth
-                  onSelect={(value) => {
-                    field.onChange(value);
-                  }}
-                  value={field.value}
-                  label="Model"
-                  options={formattedModelsList}
-                />
-              )}
-            />
-            <HStack justify="spaceBetween">
-              <div />
-              <Button
-                type="submit"
-                size="small"
-                color="secondary"
-                label="Update"
-                busy={isUpdateAgentModelPending}
+          <FormField
+            control={form.control}
+            name="model"
+            render={({ field }) => (
+              <Select
+                fullWidth
+                onSelect={(value) => {
+                  field.onChange(value);
+                }}
+                value={field.value}
+                label="Model"
+                options={formattedModelsList}
               />
-            </HStack>
-          </PanelLastElement>
+            )}
+          />
+          <HStack justify="spaceBetween">
+            <div />
+            <Button
+              type="submit"
+              size="small"
+              color="secondary"
+              label="Update"
+              busy={isUpdateAgentModelPending}
+            />
+          </HStack>
         </Form>
       </FormProvider>
     </Panel>

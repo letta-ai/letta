@@ -50,6 +50,7 @@ export function DownloadButton(props: CopyButtonProps) {
   return (
     <Button
       size={size}
+      type="button"
       color="tertiary"
       preIcon={isCopied ? <CheckIcon /> : <DownloadIcon />}
       label={isCopied ? 'Download started' : downloadButtonText}
