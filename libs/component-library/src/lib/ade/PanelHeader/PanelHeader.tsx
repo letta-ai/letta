@@ -126,7 +126,7 @@ export function PanelHeader(props: PanelHeaderProps) {
       Array.from(
         document.getElementsByClassName(DRAG_TO_HANDLE_CLASSNAME)
       ).forEach((el) => {
-        el.classList.remove('bg-primary');
+        el.classList.remove('active-drag');
       });
 
       if (typeof closestElementIndex.current === 'number') {
@@ -176,9 +176,9 @@ export function PanelHeader(props: PanelHeaderProps) {
         ).forEach(
           (el) => {
             if (el.id === closestItem.elId) {
-              el.classList.add('bg-primary');
+              el.classList.add('active-drag');
             } else {
-              el.classList.remove('bg-primary');
+              el.classList.remove('active-drag');
             }
           },
           [closestItem]

@@ -16,6 +16,7 @@ import { Frame } from '../../framing/Frame/Frame';
 import { HStack } from '../../framing/HStack/HStack';
 import { PanelHeader } from '../PanelHeader/PanelHeader';
 import { cn } from '@letta-web/core-style-config';
+import './Panel.scss';
 
 type PanelId = string;
 
