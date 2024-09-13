@@ -3,6 +3,7 @@ import type { StorybookConfig } from '@storybook/react-vite';
 import { nxViteTsPaths } from '@nx/vite/plugins/nx-tsconfig-paths.plugin';
 import { mergeConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import * as path from 'node:path';
 
 const config: StorybookConfig = {
   stories: ['../src/**/*.@(mdx|stories.@(js|jsx|ts|tsx))'],
@@ -20,10 +21,18 @@ const config: StorybookConfig = {
   docs: {
     defaultName: 'Documentation',
   },
-  viteFinal: async (config) =>
-    mergeConfig(config, {
+  viteFinal: async (config) => {
+    const nextConfig = mergeConfig(config, {
       plugins: [react(), nxViteTsPaths()],
-    }),
+    });
+
+    nextConfig.resolve.alias = {
+      ...nextConfig.resolve.alias,
+      'next/link': path.resolve(__dirname, '..', 'src', 'stubs', 'Link.tsx'),
+    };
+
+    return nextConfig;
+  },
 };
 
 export default config;
