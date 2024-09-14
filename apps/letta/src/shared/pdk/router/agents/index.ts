@@ -89,13 +89,17 @@ export async function createAgent(
   };
 }
 
-export async function chatWithAgent() {
+type ChatWithAgentResponseType = ServerInferResponses<
+  typeof pdkContracts.agents.chatWithAgent
+>;
+
+export async function chatWithAgent(): Promise<ChatWithAgentResponseType> {
   // This is a stub, the actual implementation of this code is in `/pdk/v1/agents/[deployedAgentId]/chat/route.ts`
 
   return {
-    status: 501,
+    status: 201,
     body: {
-      message: 'Not implemented',
+      messages: [],
     },
   };
 }

@@ -248,6 +248,7 @@ function Messages(props: MessagesProps) {
 
     const preMessages = data.pages
       .flat()
+      // @ts-expect-error - the typing is wrong
       .map((message) => extractMessage(message))
       .filter((message) => !!message)
       .sort(
@@ -403,10 +404,11 @@ function useSendMessage() {
         try {
           const extracted = AgentMessageSchema.parse(JSON.parse(e.data));
 
-          queryClient.setQueriesData<InfiniteData<AgentMessage[]> | undefined>(
+          queryClient.setQueriesData<InfiniteData<AgentMessage[]>>(
             {
               queryKey: UseAgentsServiceGetAgentKeyFn({ agentId: id }),
             },
+            // @ts-expect-error - the typing is wrong
             (oldData) => {
               if (!oldData) {
                 return oldData;

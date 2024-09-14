@@ -244,8 +244,6 @@ export type ChatCompletionResponse = {
   usage: UsageStatistics;
 };
 
-export type object = 'chat.completion';
-
 export type Choice = {
   finish_reason: string;
   index: number;
