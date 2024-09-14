@@ -37,7 +37,7 @@ const handler = createNextHandler(pdkContracts, pdkRouter, {
 
     return TsRestResponse.fromJson(
       {
-        message: 'An error occurred',
+        message: 'An error occurred.',
       },
       { status: 500 }
     );
