@@ -3,8 +3,23 @@ import { Card } from '../../core/Card/Card';
 import { VStack } from '../../framing/VStack/VStack';
 import { HStack } from '../../framing/HStack/HStack';
 import { Typography } from '../../core/Typography/Typography';
+import type { VariantProps } from 'class-variance-authority';
+import { cva } from 'class-variance-authority';
+import { cn } from '@letta-web/core-style-config';
 
-interface ToggleCardProps {
+const actionCardVariants = cva('', {
+  variants: {
+    size: {
+      default: '',
+      medium: 'max-w-[300px]',
+    },
+  },
+  defaultVariants: {
+    size: 'default',
+  },
+});
+
+interface ToggleCardProps extends VariantProps<typeof actionCardVariants> {
   title: string;
   subtitle?: string;
   icon?: React.ReactNode;
@@ -18,7 +33,7 @@ export function ActionCard(props: ToggleCardProps) {
   const { title, icon, mainAction, children, description, actions } = props;
 
   return (
-    <Card>
+    <Card className={cn(actionCardVariants(props))}>
       <VStack fullHeight fullWidth>
         <HStack justify="spaceBetween" fullWidth align="center">
           <VStack gap="text">

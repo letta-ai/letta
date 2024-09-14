@@ -11,6 +11,7 @@ import {
   HStack,
   Logo,
   Popover,
+  Typography,
   VStack,
 } from '@letta-web/component-library';
 import { useCurrentUser } from '$letta/client/hooks';
@@ -96,16 +97,14 @@ function DashboardNavigation() {
     <Popover
       open={open}
       onOpenChange={setOpen}
-      triggerAsChild
       trigger={
-        <Button
-          size="small"
-          color="primary"
-          hideLabel
-          preIcon={open ? <Cross2Icon /> : <HamburgerMenuIcon />}
-          active={open}
-          label="Navigation"
-        />
+        <HStack gap="large" align="center">
+          {open ? <Cross2Icon /> : <HamburgerMenuIcon />}
+          <HStack>
+            <Logo />
+            <Typography className="text-lg">Letta</Typography>
+          </HStack>
+        </HStack>
       }
       align="start"
     >
@@ -145,6 +144,26 @@ function DashboardNavigation() {
   );
 }
 
+function SubRoute() {
+  const pathname = usePathname();
+
+  const subRouteHref = pathname.split('/')[1];
+  const subRouteName = pathname.split('/')[1].replace(/\/|-/g, ' ');
+
+  if (!subRouteName) {
+    return null;
+  }
+
+  return (
+    <>
+      /
+      <Link className="hover:underline capitalize" href={`/${subRouteHref}`}>
+        {subRouteName}
+      </Link>
+    </>
+  );
+}
+
 export function DashboardHeader() {
   const { name } = useCurrentUser();
 
@@ -157,12 +176,11 @@ export function DashboardHeader() {
       className="max-w-[1440px] mx-[auto]"
     >
       <HStack gap="large" align="center">
-        <DashboardNavigation />
-        <Link href="/projects">
-          <HStack fullWidth align="center">
-            <Logo /> Letta
-          </HStack>
-        </Link>
+        <HStack fullWidth align="center">
+          <DashboardNavigation />
+
+          <SubRoute />
+        </HStack>
       </HStack>
       <div>
         <Button

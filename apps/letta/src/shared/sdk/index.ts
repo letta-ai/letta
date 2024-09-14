@@ -83,6 +83,41 @@ async function handleEventStreamRequest(
   });
 }
 
+async function handleMultipartFileUpload(
+  req: NextRequest,
+  context: HandlerContext,
+  userId: string
+) {
+  // get file from multipart/form-data
+  const formData = await req.formData();
+
+  const path = context.params.route.join('/');
+
+  const response = await axios({
+    method: req.method,
+    url: `${environment.LETTA_AGENTS_ENDPOINT}/${path}`,
+    data: formData,
+    headers: {
+      Authorization: 'Bearer password',
+      USER_ID: userId,
+    },
+    validateStatus: () => true,
+  });
+
+  let data = response.data;
+
+  if (typeof data === 'object') {
+    data = JSON.stringify(data);
+  }
+
+  return new Response(data, {
+    status: response.status,
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+}
+
 export async function makeRequestToSDK(
   req: NextRequest,
   context: HandlerContext,
@@ -90,6 +125,10 @@ export async function makeRequestToSDK(
 ) {
   if (req.headers.get('Accept') === 'text/event-stream') {
     return handleEventStreamRequest(req, context);
+  }
+
+  if (req.headers.get('Content-Type')?.startsWith('multipart/form-data')) {
+    return handleMultipartFileUpload(req, context, userId);
   }
 
   const path = context.params.route.join('/');

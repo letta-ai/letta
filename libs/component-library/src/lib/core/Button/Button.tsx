@@ -74,12 +74,14 @@ const buttonVariants = cva(
       {
         hideLabel: true,
         size: 'small',
-        className: 'w-biWidth-sm p-0 items-center justify-center flex',
+        className:
+          'w-biWidth-sm min-w-biWidth-sm p-0 items-center justify-center flex',
       },
       {
         hideLabel: true,
         size: 'default',
-        className: 'w-biWidth p-0 items-center justify-center flex',
+        className:
+          'w-biWidth min-w-biWidth p-0 items-center justify-center flex',
       },
     ],
     defaultVariants: {

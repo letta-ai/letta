@@ -57,8 +57,6 @@ export * from './lib/core/ToggleGroup/ToggleGroup';
 
 export * from './lib/reusable/DashboardPageLayout/DashboardPageLayout';
 
-export * from './lib/reusable/DashboardSearchBar/DashboardSearchBar';
-
 export * from './lib/reusable/DashboardStatusComponent/DashboardStatusComponent';
 
 export * from './lib/ade/ADEHeader/ADEHeader';
@@ -75,3 +73,7 @@ export * from './lib/core/DropdownMenu/DropdownMenu';
 export * from './lib/core/Breadcrumb/Breadcrumb';
 
 export * from './lib/core/TextArea/TextArea';
+
+export * from './lib/reusable/DashboardWithSidebarWrapper/DashboardWithSidebarWrapper';
+
+export * from './lib/core/SingleFileUpload/SingleFileUpload';

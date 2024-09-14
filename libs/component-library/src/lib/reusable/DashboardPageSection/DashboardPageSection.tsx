@@ -3,16 +3,56 @@ import type { PropsWithChildren } from 'react';
 import { VStack } from '../../framing/VStack/VStack';
 import { HStack } from '../../framing/HStack/HStack';
 import { Typography } from '../../core/Typography/Typography';
+import { RawInput } from '../../core/Input/Input';
+import { SearchIcon } from 'lucide-react';
 
-type DashboardPageSectionProps = PropsWithChildren<{
-  actions?: React.ReactNode;
-  fullHeight?: boolean;
-  borderBottom?: boolean;
-  title?: string;
-}>;
+interface DashboardSearchBarProps {
+  onSearch: (searchTerm: string) => void;
+  searchPlaceholder: string;
+  searchValue: string;
+}
+
+function DashboardSearchBar(props: DashboardSearchBarProps) {
+  const { onSearch, searchPlaceholder, searchValue } = props;
+  return (
+    <HStack>
+      <RawInput
+        preIcon={<SearchIcon />}
+        hideLabel
+        role="search"
+        label="Search"
+        fullWidth
+        placeholder={searchPlaceholder}
+        value={searchValue}
+        onChange={(e) => {
+          onSearch(e.target.value);
+        }}
+      />
+    </HStack>
+  );
+}
+
+type DashboardPageSectionProps = PropsWithChildren<
+  Partial<DashboardSearchBarProps> & {
+    actions?: React.ReactNode;
+
+    fullHeight?: boolean;
+    borderBottom?: boolean;
+    title?: string;
+  }
+>;
 
 export function DashboardPageSection(props: DashboardPageSectionProps) {
-  const { children, actions, fullHeight, title, borderBottom } = props;
+  const {
+    children,
+    actions,
+    fullHeight,
+    title,
+    borderBottom,
+    searchPlaceholder,
+    searchValue,
+    onSearch,
+  } = props;
 
   return (
     <VStack
@@ -23,13 +63,21 @@ export function DashboardPageSection(props: DashboardPageSectionProps) {
       borderBottom={borderBottom}
     >
       {title && (
-        <HStack className="h-biHeight-lg" align="center" justify="spaceBetween">
+        <HStack align="end" justify="spaceBetween">
           <Typography bold variant="heading2">
             {title}
           </Typography>
           <HStack>{actions}</HStack>
         </HStack>
       )}
+      {onSearch && (
+        <DashboardSearchBar
+          searchPlaceholder={searchPlaceholder || ''}
+          searchValue={searchValue || ''}
+          onSearch={onSearch}
+        />
+      )}
+
       {children}
     </VStack>
   );

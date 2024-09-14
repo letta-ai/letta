@@ -3,10 +3,8 @@ import React, { useCallback } from 'react';
 import {
   Avatar,
   Button,
-  Card,
   DashboardStatusComponent,
   DashboardPageLayout,
-  DashboardSearchBar,
   HStack,
   PlusIcon,
   Typography,
@@ -17,6 +15,7 @@ import {
   Input,
   FormProvider,
   DashboardPageSection,
+  ActionCard,
 } from '@letta-web/component-library';
 import { webApi, webApiQueryKeys } from '$letta/client';
 import { useDebouncedValue } from '@mantine/hooks';
@@ -125,23 +124,36 @@ function ProjectsList(props: ProjectsListProps) {
   }
 
   return (
-    <DashboardPageSection>
-      {data.body.projects.map((project) => (
-        <Card key={project.id} className="flex-1 h-[150px]">
-          <HStack align="center" fullHeight>
-            <HStack fullWidth align="center" fullHeight>
-              <Avatar name={project.name} />
-              <Typography bold>{project.name}</Typography>
-            </HStack>
+    <>
+      <HStack>
+        {data.body.projects.map((project) => (
+          <ActionCard
+            size="medium"
+            key={project.id}
+            title={project.name}
+            icon={<Avatar name={project.name} />}
+          >
+            <VStack paddingY="small" rounded>
+              <HStack justify="spaceBetween">
+                <Typography bold>Deployed Agents</Typography>{' '}
+                <Typography>N/A</Typography>
+              </HStack>
+              <HStack justify="spaceBetween">
+                <Typography bold>Total Messages</Typography>{' '}
+                <Typography>N/A</Typography>
+              </HStack>
+            </VStack>
             <Button
               color="tertiary"
+              align="center"
+              fullWidth
               label="View Project"
               href={`/projects/${project.id}`}
             />
-          </HStack>
-        </Card>
-      ))}
-    </DashboardPageSection>
+          </ActionCard>
+        ))}
+      </HStack>
+    </>
   );
 }
 
@@ -153,16 +165,17 @@ function ProjectsPage() {
       title="Projects"
       actions={
         <>
-          <DashboardSearchBar
-            searchPlaceholder="Search projects"
-            searchValue={search}
-            onSearch={setSearch}
-          />
           <CreateProjectDialog />
         </>
       }
     >
-      <ProjectsList search={search} />
+      <DashboardPageSection
+        searchPlaceholder="Search projects"
+        searchValue={search}
+        onSearch={setSearch}
+      >
+        <ProjectsList search={search} />
+      </DashboardPageSection>
     </DashboardPageLayout>
   );
 }

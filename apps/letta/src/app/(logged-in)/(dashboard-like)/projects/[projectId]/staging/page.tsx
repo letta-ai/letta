@@ -4,7 +4,6 @@ import {
   Button,
   DashboardPageLayout,
   DashboardPageSection,
-  DashboardSearchBar,
   DashboardStatusComponent,
 } from '@letta-web/component-library';
 import { webApi, webApiQueryKeys } from '$letta/client';
@@ -86,17 +85,12 @@ function ProjectStagingPage() {
   const [debouncedSearch] = useDebouncedValue(search, 500);
 
   return (
-    <DashboardPageLayout
-      title="Staged Agents"
-      actions={
-        <DashboardSearchBar
-          onSearch={setSearch}
-          searchValue={search}
-          searchPlaceholder="Search staged agents"
-        />
-      }
-    >
-      <DashboardPageSection>
+    <DashboardPageLayout title="Staged Agents">
+      <DashboardPageSection
+        onSearch={setSearch}
+        searchValue={search}
+        searchPlaceholder="Search staged agents"
+      >
         <ProjectStagingList search={debouncedSearch} />
       </DashboardPageSection>
     </DashboardPageLayout>

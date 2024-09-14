@@ -4,6 +4,7 @@ import { HStack } from '../../framing/HStack/HStack';
 import { Typography } from '../../core/Typography/Typography';
 import type { BreadcrumbProps } from '../../core/Breadcrumb/Breadcrumb';
 import { Breadcrumb } from '../../core/Breadcrumb/Breadcrumb';
+import { Frame } from '../../framing/Frame/Frame';
 
 interface TitleProps {
   title?: BreadcrumbProps['items'] | string;
@@ -38,7 +39,7 @@ export function DashboardPageLayout(props: DashboardPageLayoutProps) {
   return (
     <VStack gap={false} fullWidth fullHeight>
       <HStack
-        align="center"
+        align="end"
         as="header"
         wrap
         className="min-h-biHeight-lg h-biHeight-lg"
