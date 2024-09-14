@@ -12,6 +12,12 @@
       "options": {
         "port": 3005
       }
+    },
+    "type-check": {
+      "executor": "@webpro/nx-tsc:tsc",
+      "options": {
+        "tsConfig": ["tsconfig.json"]
+      }
     }
   }
 }
