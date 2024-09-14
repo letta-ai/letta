@@ -52,3 +52,4 @@ deployment_env.yaml
 
 data/dump.rdb
 
+tsconfig.tsbuildinfo
