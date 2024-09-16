@@ -30,7 +30,7 @@ import { ContextEditorPanel } from './ContextEditorPanel/ContextEditorPanel';
 import { CurrentUserDetailsBlock } from '$letta/client/common';
 import { useCurrentProjectId } from '../../../../../(dashboard-like)/projects/[projectId]/hooks';
 import { useQueryClient } from '@tanstack/react-query';
-import { webApi, webApiQueryKeys } from '$letta/client';
+import { webApi, webApiQueryKeys, useFeatureFlag } from '$letta/client';
 import { useCurrentTestingAgentId } from './hooks';
 import { DeployAgentUsageInstructions } from '$letta/client/code-reference/deploy-agent-reference';
 
@@ -112,6 +112,12 @@ function SidebarGroup(props: SidebarGroupProps) {
 }
 
 function ADESidebar() {
+  const { data: showVariablesEditor } = useFeatureFlag('SHOW_VARIABLES_EDITOR');
+  const { data: showParametersEditor } = useFeatureFlag(
+    'SHOW_PARAMETERS_EDITOR'
+  );
+  const { data: showContextEditor } = useFeatureFlag('SHOW_CONTEXT_EDITOR');
+
   return (
     <VStack
       borderRight
@@ -123,14 +129,14 @@ function ADESidebar() {
     >
       <SidebarGroup title="Base">
         <ModelPanel />
-        <ADENavigationItem title="Parameters" />
+        {showParametersEditor && <ADENavigationItem title="Parameters" />}
       </SidebarGroup>
       <SidebarGroup title="Configure">
-        <VariablesPanel />
+        {showVariablesEditor && <VariablesPanel />}
         <MemoryBlocksPanel />
         <DataSourcesPanel />
         <ToolsPanel />
-        <ContextEditorPanel />
+        {showContextEditor && <ContextEditorPanel />}
       </SidebarGroup>
       <SidebarGroup title="Test">
         {/*<ArchivalMemoriesPanel />*/}
