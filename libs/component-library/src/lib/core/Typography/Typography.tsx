@@ -4,7 +4,7 @@ import React from 'react';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@letta-web/core-style-config';
 
-const typographyVariants = cva('', {
+const typographyVariants = cva('break-words', {
   variants: {
     variant: {
       heading1: 'text-xl',

@@ -9,6 +9,7 @@ import { Controller, FormProvider, useFormContext } from 'react-hook-form';
 import { cn } from '@letta-web/core-style-config';
 import { cva, type VariantProps } from 'class-variance-authority';
 import type { PropsWithChildren } from 'react';
+import { forwardRef } from 'react';
 import { useId, useMemo } from 'react';
 import { HStack } from '../../framing/HStack/HStack';
 
@@ -237,17 +238,17 @@ export function makeInput<T>(
   componentName: string,
   options?: MakeInputOptions
 ) {
-  function InputWrapper(props: MakeInputProps<T>) {
+  function InputWrapper(props: MakeInputProps<T>, ref: any) {
     return (
       <InputContainer {...props} inline={options?.inline}>
-        <Input {...props} />
+        <Input ref={ref} {...props} />
       </InputContainer>
     );
   }
 
   InputWrapper.displayName = componentName;
 
-  return InputWrapper;
+  return forwardRef<any, MakeInputProps<T>>(InputWrapper);
 }
 
 export function makeRawInput<T>(

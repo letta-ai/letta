@@ -22,7 +22,7 @@ import {
   AgentMessageSchema,
   AgentsService,
   type ListAgentMessagesResponse,
-  UseAgentsServiceGetAgentKeyFn,
+  UseAgentsServiceListAgentMessagesKeyFn,
   UserMessageMessageSchema,
 } from '@letta-web/letta-agents-api';
 import { useCurrentAgent } from '../hooks';
@@ -217,7 +217,7 @@ function Messages(props: MessagesProps) {
     unknown[],
     { before?: string }
   >({
-    queryKey: UseAgentsServiceGetAgentKeyFn({ agentId: id }),
+    queryKey: UseAgentsServiceListAgentMessagesKeyFn({ agentId: id }),
     queryFn: async (query) => {
       const res = AgentsService.listAgentMessages({
         agentId: id,
@@ -338,7 +338,7 @@ function useSendMessage() {
 
       queryClient.setQueriesData<InfiniteData<AgentMessage[]> | undefined>(
         {
-          queryKey: UseAgentsServiceGetAgentKeyFn({ agentId: id }),
+          queryKey: UseAgentsServiceListAgentMessagesKeyFn({ agentId: id }),
         },
         (oldData) => {
           if (!oldData) {
@@ -406,7 +406,7 @@ function useSendMessage() {
 
           queryClient.setQueriesData<InfiniteData<AgentMessage[]>>(
             {
-              queryKey: UseAgentsServiceGetAgentKeyFn({ agentId: id }),
+              queryKey: UseAgentsServiceListAgentMessagesKeyFn({ agentId: id }),
             },
             // @ts-expect-error - the typing is wrong
             (oldData) => {
@@ -493,7 +493,7 @@ function useSendMessage() {
 
         if (e.eventPhase === eventsource.CLOSED) {
           void queryClient.invalidateQueries({
-            queryKey: UseAgentsServiceGetAgentKeyFn({ agentId: id }),
+            queryKey: UseAgentsServiceListAgentMessagesKeyFn({ agentId: id }),
           });
 
           setIsPending(false);

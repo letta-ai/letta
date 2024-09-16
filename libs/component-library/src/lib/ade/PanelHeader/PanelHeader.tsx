@@ -1,5 +1,12 @@
 import * as React from 'react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  Fragment,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { HStack } from '../../framing/HStack/HStack';
 import { Typography } from '../../core/Typography/Typography';
 import {
@@ -30,7 +37,7 @@ function Title(props: TitleProps) {
     return (
       <HStack gap="small">
         {title.map((t, i) => (
-          <>
+          <Fragment key={`${i}n`}>
             <button
               key={i}
               onClick={() => {
@@ -44,7 +51,7 @@ function Title(props: TitleProps) {
               </Typography>
             </button>
             {i < title.length - 1 && <Typography key={`${i}n`}>/</Typography>}
-          </>
+          </Fragment>
         ))}
       </HStack>
     );

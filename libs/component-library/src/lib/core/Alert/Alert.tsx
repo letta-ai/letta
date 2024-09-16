@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { WarningIcon } from '../../icons';
+import { InformationCircleIcon, WarningIcon } from '../../icons';
 import { useMemo } from 'react';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@letta-web/core-style-config';
@@ -10,6 +10,7 @@ const alertVariants = cva(
   {
     variants: {
       variant: {
+        info: 'bg-background-grey border-grey-content text-background-grey-content',
         warning:
           'bg-background-warning border-warning-content text-background-warning-content',
       },
@@ -20,7 +21,7 @@ const alertVariants = cva(
   }
 );
 
-type AlertVariants = 'warning';
+type AlertVariants = 'info' | 'warning';
 
 interface AlertProps extends VariantProps<typeof alertVariants> {
   children?: React.ReactNode;
@@ -32,6 +33,7 @@ interface AlertProps extends VariantProps<typeof alertVariants> {
 
 const iconMap: Partial<Record<AlertVariants, React.ReactNode>> = {
   warning: <WarningIcon color="warning" />,
+  info: <InformationCircleIcon color="muted" />,
 };
 
 function isInIconMap(icon: unknown): icon is keyof typeof iconMap {

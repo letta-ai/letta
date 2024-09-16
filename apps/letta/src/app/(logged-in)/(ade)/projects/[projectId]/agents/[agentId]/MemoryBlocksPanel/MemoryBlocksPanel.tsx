@@ -7,20 +7,27 @@ import {
   FormActions,
   FormField,
   FormProvider,
-  Input,
   LettaLoaderPanel,
   Panel,
   PanelBar,
+  PanelElementsList,
+  RawInput,
   TextArea,
   useForm,
   VStack,
 } from '@letta-web/component-library';
 import { z } from 'zod';
 import type { Block } from '@letta-web/letta-agents-api';
+import { useAgentsServiceUpdateAgent } from '@letta-web/letta-agents-api';
+import {
+  UseAgentsServiceGetAgentKeyFn,
+  useBlocksServiceUpdateMemoryBlock,
+} from '@letta-web/letta-agents-api';
 import { useBlocksServiceGetMemoryBlock } from '@letta-web/letta-agents-api';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ADENavigationItem } from '../common/ADENavigationItem/ADENavigationItem';
 import { useCurrentAgent } from '../hooks';
+import { useQueryClient } from '@tanstack/react-query';
 
 const { PanelRouter, usePanelRouteData, usePanelPageContext } =
   createPageRouter(
@@ -69,47 +76,89 @@ interface EditMemoryFormProps {
 }
 
 const editMemoryBlockFormSchema = z.object({
-  name: z.string(),
-  label: z
-    .string()
-    .regex(
-      /^[a-zA-Z_][a-zA-Z0-9_-]*$/,
-      'Key must be alphanumeric, and can only contain underscores and dashes'
-    ),
-  content: z.string(),
+  value: z.string(),
 });
 
 function EditMemoryForm({ block, onClose }: EditMemoryFormProps) {
+  const { mutate: mutateBlock, isPending: isPendingMutateBlock } =
+    useBlocksServiceUpdateMemoryBlock();
+
+  const { mutate: updateAgent, isPending: isUpdatingAgent } =
+    useAgentsServiceUpdateAgent();
+  const queryClient = useQueryClient();
+  const { id: agentId, memory } = useCurrentAgent();
+
   const form = useForm<z.infer<typeof editMemoryBlockFormSchema>>({
     resolver: zodResolver(editMemoryBlockFormSchema),
     defaultValues: {
-      name: block.name || '',
-      label: block.label || '',
-      content: block.value,
+      value: block.value,
     },
   });
 
   const handleSubmit = useCallback(
     (data: z.infer<typeof editMemoryBlockFormSchema>) => {
-      console.log(data);
+      const nextMemory: Record<string, Block> = {
+        ...memory?.memory,
+        [block.label || '']: {
+          ...memory?.memory?.[block.label || ''],
+          ...data,
+        } as Block,
+      };
+
+      updateAgent({
+        agentId,
+        requestBody: {
+          id: agentId,
+          memory: {
+            ...memory,
+            memory: nextMemory,
+          },
+        },
+      });
+
+      mutateBlock(
+        {
+          blockId: block.id || '',
+          requestBody: {
+            id: block.id || '',
+            value: data.value,
+          },
+        },
+        {
+          onSuccess: () => {
+            void queryClient.invalidateQueries({
+              queryKey: UseAgentsServiceGetAgentKeyFn({
+                agentId,
+              }),
+            });
+          },
+        }
+      );
     },
-    []
+    [
+      agentId,
+      block.id,
+      block.label,
+      memory,
+      mutateBlock,
+      queryClient,
+      updateAgent,
+    ]
   );
 
   return (
-    <VStack gap="form" padding="small">
+    <PanelElementsList>
       <FormProvider {...form}>
         <Form onSubmit={form.handleSubmit(handleSubmit)}>
-          <FormField
-            name="name"
-            render={({ field }) => <Input fullWidth label="Name" {...field} />}
+          <RawInput disabled fullWidth label="Name" value={block.name || ''} />
+          <RawInput
+            disabled
+            fullWidth
+            label="Label"
+            value={block.label || ''}
           />
           <FormField
-            name="label"
-            render={({ field }) => <Input fullWidth label="Label" {...field} />}
-          />
-          <FormField
-            name="content"
+            name="value"
             render={({ field }) => (
               <TextArea fullWidth label="Content" {...field} />
             )}
@@ -121,11 +170,16 @@ function EditMemoryForm({ block, onClose }: EditMemoryFormProps) {
               onClick={onClose}
               label="Cancel"
             />
-            <Button color="secondary" type="submit" label="Save" />
+            <Button
+              color="secondary"
+              type="submit"
+              busy={isPendingMutateBlock || isUpdatingAgent}
+              label="Save"
+            />
           </FormActions>
         </Form>
       </FormProvider>
-    </VStack>
+    </PanelElementsList>
   );
 }
 

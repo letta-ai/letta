@@ -50,7 +50,6 @@ function UploadFileDialog() {
 
   const onSubmit = useCallback(
     (values: UploadToFormValues) => {
-      console.log(values.file);
       mutate({
         formData: { file: values.file },
         sourceId: dataSourceId,
@@ -135,7 +134,6 @@ function DataSourceInfo() {
       .filter((row) => row.detail !== undefined);
   }, [data]);
 
-  console.log(data);
   return <DataTable columns={columns} data={tableData} />;
 }
 

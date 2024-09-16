@@ -8,6 +8,7 @@ const c = initContract();
 export const ProjectTestingAgentSchema = z.object({
   name: z.string(),
   id: z.string(),
+  agentId: z.string(),
   updatedAt: z.string(),
 });
 
@@ -159,6 +160,19 @@ const getDeployedAgentsContract = c.query({
   },
 });
 
+/* Get Project Testing Agent */
+const getProjectTestingAgentContract = c.query({
+  method: 'GET',
+  path: '/projects/:projectId/testing-agents/:testingAgentId',
+  pathParams: z.object({
+    projectId: z.string(),
+    testingAgentId: z.string(),
+  }),
+  responses: {
+    200: ProjectTestingAgentSchema,
+  },
+});
+
 export const projectsContract = c.router({
   getProjects: c.query({
     method: 'GET',
@@ -178,6 +192,7 @@ export const projectsContract = c.router({
       200: PartialProjectSchema,
     },
   }),
+  getProjectTestingAgent: getProjectTestingAgentContract,
   getProjectTestingAgents: c.query({
     method: 'GET',
     path: '/projects/:projectId/testing-agents',
@@ -238,4 +253,10 @@ export const projectsQueryClientKeys = {
     projectId: string,
     search: GetDeployedAgentsQueryType
   ) => ['project', projectId, 'deployed-agents', search],
+  getProjectTestingAgent: (projectId: string, testingAgentId: string) => [
+    'project',
+    projectId,
+    'testing-agents',
+    testingAgentId,
+  ],
 };

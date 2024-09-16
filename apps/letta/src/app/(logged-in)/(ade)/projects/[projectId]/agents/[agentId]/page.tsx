@@ -12,6 +12,7 @@ import React from 'react';
 import { db, testingAgents } from '@letta-web/database';
 import { eq } from 'drizzle-orm';
 import { redirect } from 'next/navigation';
+import { webApiQueryKeys } from '$letta/client';
 
 interface AgentsAgentPageProps {
   params: {
@@ -43,12 +44,23 @@ async function AgentsAgentPage(context: AgentsAgentPageProps) {
     agentId,
   });
 
-  await queryClient.prefetchQuery({
-    queryKey: UseAgentsServiceGetAgentKeyFn({
-      agentId: testingAgentId,
+  await Promise.all([
+    queryClient.prefetchQuery({
+      queryKey: UseAgentsServiceGetAgentKeyFn({
+        agentId,
+      }),
+      queryFn: () => agent,
     }),
-    queryFn: () => agent,
-  });
+    queryClient.prefetchQuery({
+      queryKey: webApiQueryKeys.projects.getProjectTestingAgent(
+        context.params.projectId,
+        testingAgentId
+      ),
+      queryFn: () => ({
+        body: testingAgent,
+      }),
+    }),
+  ]);
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>

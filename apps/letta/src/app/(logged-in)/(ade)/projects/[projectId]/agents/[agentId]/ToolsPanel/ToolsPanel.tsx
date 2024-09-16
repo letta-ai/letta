@@ -20,7 +20,7 @@ import {
   HStack,
 } from '@letta-web/component-library';
 import { ADENavigationItem } from '../common/ADENavigationItem/ADENavigationItem';
-import { useCurrentAgent, useCurrentTestingAgentId } from '../hooks';
+import { useCurrentAgent } from '../hooks';
 import type { AgentState, Tool_Output } from '@letta-web/letta-agents-api';
 import {
   useToolsServiceCreateTool,
@@ -60,8 +60,7 @@ const { PanelRouter, usePanelRouteData, usePanelPageContext } =
   );
 
 function ToolsList() {
-  const currentAgentId = useCurrentTestingAgentId();
-  const { tools: currentToolNames } = useCurrentAgent();
+  const { id: currentAgentId, tools: currentToolNames } = useCurrentAgent();
   const { data: allTools, isLoading } = useToolsServiceListTools();
   const { setCurrentPage } = usePanelPageContext();
 

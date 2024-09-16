@@ -92,7 +92,6 @@ export async function GET(
       },
     });
   } catch (e) {
-    console.log(e);
     const errorCode = (() => {
       if (e instanceof Error) {
         if (Object.values(LoginErrorsEnum).some((code) => code === e.message)) {

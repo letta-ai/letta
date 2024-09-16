@@ -121,6 +121,7 @@ export async function getProjectTestingAgents(
     offset,
     columns: {
       name: true,
+      agentId: true,
       id: true,
       updatedAt: true,
     },
@@ -131,6 +132,7 @@ export async function getProjectTestingAgents(
     body: agents.map((agent) => ({
       name: agent.name,
       id: agent.id,
+      agentId: agent.agentId,
       updatedAt: agent.updatedAt.toISOString(),
     })),
   };
@@ -212,6 +214,7 @@ export async function createProjectTestingAgent(
   return {
     status: 201,
     body: {
+      agentId: newAgent.id,
       id: agent.id,
       name: 'New Agent',
       updatedAt: new Date().toISOString(),
@@ -481,5 +484,51 @@ export async function getDeployedAgents(
       createdAt: agent.createdAt.toISOString(),
       updatedAt: agent.updatedAt.toISOString(),
     })),
+  };
+}
+
+type GetProjectTestingAgentRequest = ServerInferRequest<
+  typeof contracts.projects.getProjectTestingAgent
+>;
+
+type GetProjectTestingAgentResponse = ServerInferResponses<
+  typeof contracts.projects.getProjectTestingAgent
+>;
+
+export async function getProjectTestingAgent(
+  req: GetProjectTestingAgentRequest
+): Promise<GetProjectTestingAgentResponse> {
+  const organizationId = await getUserOrganizationIdOrThrow();
+  const { projectId, testingAgentId } = req.params;
+
+  const testingAgent = await db.query.testingAgents.findFirst({
+    where: and(
+      eq(testingAgents.organizationId, organizationId),
+      eq(testingAgents.projectId, projectId),
+      eq(testingAgents.id, testingAgentId)
+    ),
+    columns: {
+      id: true,
+      name: true,
+      updatedAt: true,
+      agentId: true,
+    },
+  });
+
+  if (!testingAgent) {
+    return {
+      status: 404,
+      body: {},
+    };
+  }
+
+  return {
+    status: 200,
+    body: {
+      agentId: testingAgent.agentId,
+      id: testingAgent.id,
+      name: testingAgent.name,
+      updatedAt: testingAgent.updatedAt.toISOString(),
+    },
   };
 }

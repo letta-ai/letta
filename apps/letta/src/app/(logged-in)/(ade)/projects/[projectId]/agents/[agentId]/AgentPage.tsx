@@ -33,6 +33,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { webApi, webApiQueryKeys, useFeatureFlag } from '$letta/client';
 import { useCurrentTestingAgentId } from './hooks';
 import { DeployAgentUsageInstructions } from '$letta/client/code-reference/deploy-agent-reference';
+import { ArchivalMemoriesPanel } from './ArchivalMemoriesPanel/ArchivalMemoriesPanel';
 
 interface SidebarGroupProps {
   title: string;
@@ -139,7 +140,7 @@ function ADESidebar() {
         {showContextEditor && <ContextEditorPanel />}
       </SidebarGroup>
       <SidebarGroup title="Test">
-        {/*<ArchivalMemoriesPanel />*/}
+        <ArchivalMemoriesPanel />
         <AgentSimulator />
       </SidebarGroup>
     </VStack>
