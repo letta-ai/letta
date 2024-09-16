@@ -504,8 +504,8 @@ function useSendMessage() {
               };
             }
           );
-        } catch (e) {
-          console.error(e);
+        } catch (_e) {
+          // ignore
         }
 
         if (e.eventPhase === eventsource.CLOSED) {
