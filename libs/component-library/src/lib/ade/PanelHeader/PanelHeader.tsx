@@ -114,6 +114,7 @@ export function PanelHeader(props: PanelHeaderProps) {
   const handleReorderStart = useCallback(() => {
     // disable all user-select
     document.body.style.userSelect = 'none';
+    document.body.style.cursor = 'grabbing';
 
     setIsDragging(true);
   }, []);
@@ -122,6 +123,7 @@ export function PanelHeader(props: PanelHeaderProps) {
     if (isDragging && draggableElement.current) {
       // enable all user-select
       document.body.style.userSelect = 'auto';
+      document.body.style.cursor = 'auto';
 
       Array.from(
         document.getElementsByClassName(DRAG_TO_HANDLE_CLASSNAME)
@@ -207,7 +209,7 @@ export function PanelHeader(props: PanelHeaderProps) {
         justify="spaceBetween"
         className="h-panel"
       >
-        <div onMouseDown={handleReorderStart}>
+        <div className="cursor-grab" onMouseDown={handleReorderStart}>
           <DragHandleDots2Icon />
         </div>
         <Title title={title} />
