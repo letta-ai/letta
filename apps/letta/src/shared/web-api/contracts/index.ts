@@ -9,12 +9,17 @@ import {
   adminWhitelistedEmailsContract,
   adminWhitelistedEmailsQueryKeys,
 } from '$letta/web-api/contracts/admin/whitelisted-emails';
+import {
+  featureFlagsContracts,
+  featureFlagsQueryClientKeys,
+} from '$letta/web-api/contracts/feature-flags';
 
 export const contracts = {
   user: userContract,
   projects: projectsContract,
   organizations: organizationsContract,
   apiKeys: apiKeysContracts,
+  featureFlags: featureFlagsContracts,
   admin: {
     whitelistedEmails: adminWhitelistedEmailsContract,
   },
@@ -25,6 +30,7 @@ export const queryClientKeys = {
   projects: projectsQueryClientKeys,
   organizations: organizationsQueryClientKeys,
   apiKeys: apiKeysQueryKeys,
+  featureFlags: featureFlagsQueryClientKeys,
   admin: {
     whitelistedEmails: adminWhitelistedEmailsQueryKeys,
   },

@@ -8,6 +8,7 @@ import {
   Typography,
 } from '@letta-web/component-library';
 import { ADENavigationItem } from '../common/ADENavigationItem/ADENavigationItem';
+import { useFeatureFlag } from '$letta/client/hooks/useFeatureFlag/useFeatureFlag';
 
 const initalContextWindow = `{{SYSTEM_PROMPT}}
 {{VARIABLES.USER_NAME}}
@@ -67,6 +68,7 @@ function ContextWindowPreview(props: ContextWindowPreviewProps) {
 const MAX_CONTEXT_WINDOW_LENGTH = 1500;
 
 export function ContextEditorPanel() {
+  const { data: isEnabled } = useFeatureFlag('SHOW_CONTEXT_EDITOR');
   const [contextWindow, setContextWindow] = useState(initalContextWindow);
 
   const currentContextWindowLength = useMemo(() => {
@@ -86,6 +88,10 @@ export function ContextEditorPanel() {
 
     return contextWindowLength;
   }, [contextWindow]);
+
+  if (!isEnabled) {
+    return null;
+  }
 
   return (
     <Panel

@@ -17,6 +17,7 @@ export const environment = createEnv({
     REDIS_PASSWORD: z.string().optional(),
     LETTA_AGENTS_ENDPOINT: z.string().optional(),
     MIXPANEL_TOKEN: z.string().optional(),
+    LAUNCH_DARKLY_SDK_KEY: z.string().optional(),
   },
   client: {
     NEXT_PUBLIC_CURRENT_HOST: z.string(),
@@ -31,5 +32,6 @@ export const environment = createEnv({
     LETTA_AGENTS_ENDPOINT: process.env.LETTA_AGENTS_ENDPOINT,
     NEXT_PUBLIC_CURRENT_HOST: process.env.NEXT_PUBLIC_CURRENT_HOST,
     MIXPANEL_TOKEN: process.env.MIXPANEL_TOKEN,
+    LAUNCH_DARKLY_SDK_KEY: process.env.LAUNCH_DARKLY_SDK_KEY,
   },
 });

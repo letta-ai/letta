@@ -10,6 +10,8 @@ import {
 import { userQueryClientKeys } from '$letta/web-api/contracts/user';
 import { LettaAgentsAPIWrapper } from '@letta-web/letta-agents-api';
 import { GlobalSessionSettingsProvider } from '$letta/client/hooks/session';
+import { getUserFlags } from '@letta-web/feature-flags';
+import { queryClientKeys } from '$letta/web-api/contracts';
 
 interface InAppProps {
   children: ReactNode;
@@ -32,6 +34,22 @@ export default async function LoggedInLayout(props: InAppProps) {
     redirect('/login');
 
     return null;
+  }
+
+  const featureFlags = await Promise.race([
+    getUserFlags({
+      userId: user?.id,
+    }),
+    new Promise((resolve) => setTimeout(resolve, 150)),
+  ]);
+
+  if (featureFlags) {
+    await queryClient.prefetchQuery({
+      queryKey: queryClientKeys.featureFlags.getFeatureFlags,
+      queryFn: () => ({
+        body: featureFlags,
+      }),
+    });
   }
 
   return (
