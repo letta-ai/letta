@@ -3,7 +3,7 @@ import React, { useCallback } from 'react';
 import {
   Avatar,
   Button,
-  DashboardStatusComponent,
+  LoadingEmptyStatusComponent,
   DashboardPageLayout,
   HStack,
   PlusIcon,
@@ -109,7 +109,7 @@ function ProjectsList(props: ProjectsListProps) {
 
   if (!data || isError || data.body.projects.length === 0) {
     return (
-      <DashboardStatusComponent
+      <LoadingEmptyStatusComponent
         isLoading={!data}
         isError={isError}
         emptyMessage={

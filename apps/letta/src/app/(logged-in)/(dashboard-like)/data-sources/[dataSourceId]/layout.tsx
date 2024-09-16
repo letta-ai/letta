@@ -53,13 +53,13 @@ async function DataSourcePageLayout(props: ProjectPageWrapperProps) {
         }
         navigationItems={[
           {
-            label: 'Files',
+            label: 'Source Info',
             href: `/data-sources/${dataSourceId}`,
           },
-          {
-            label: 'Settings',
-            href: `/data-sources/${dataSourceId}/settings`,
-          },
+          // {
+          //   label: 'Settings',
+          //   href: `/data-sources/${dataSourceId}/settings`,
+          // },
         ]}
       >
         {props.children}

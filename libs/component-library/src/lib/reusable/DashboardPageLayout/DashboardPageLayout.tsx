@@ -4,7 +4,6 @@ import { HStack } from '../../framing/HStack/HStack';
 import { Typography } from '../../core/Typography/Typography';
 import type { BreadcrumbProps } from '../../core/Breadcrumb/Breadcrumb';
 import { Breadcrumb } from '../../core/Breadcrumb/Breadcrumb';
-import { Frame } from '../../framing/Frame/Frame';
 
 interface TitleProps {
   title?: BreadcrumbProps['items'] | string;

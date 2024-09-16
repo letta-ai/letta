@@ -1,11 +1,11 @@
 import * as React from 'react';
 import { VStack } from '../../framing/VStack/VStack';
 
-interface PanelExpandedListProps {
+interface PanelElementsListProps {
   children: React.ReactNode;
 }
 
-export function PanelLastElement(props: PanelExpandedListProps) {
+export function PanelElementsList(props: PanelElementsListProps) {
   const { children } = props;
 
   return (

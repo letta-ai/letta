@@ -150,7 +150,7 @@ function DeployedAgentList(props: DeployedAgentListProps) {
         accessorKey: 'lastActiveAt',
       },
     ],
-    [selectedAgent]
+    []
   );
 
   const deployedAgents = useMemo(() => {

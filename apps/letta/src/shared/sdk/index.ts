@@ -1,5 +1,5 @@
 import type { NextRequest } from 'next/server';
-import axios from 'axios';
+import axios, { isAxiosError } from 'axios';
 import { environment } from '@letta-web/environmental-variables';
 import { EventSource } from 'extended-eventsource';
 
@@ -135,32 +135,52 @@ export async function makeRequestToSDK(
 
   let payload = undefined;
 
+  const queryParameters = req.nextUrl.searchParams.toString();
+
   try {
     payload = await req.json();
   } catch (_err) {
     // do nothing
   }
 
-  const response = await axios({
-    method: req.method,
-    url: `${environment.LETTA_AGENTS_ENDPOINT}/${path}`,
-    data: payload,
-    headers: {
-      Authorization: 'Bearer password',
-      USER_ID: userId,
-    },
-  });
+  try {
+    const response = await axios({
+      method: req.method,
+      url: `${environment.LETTA_AGENTS_ENDPOINT}/${path}?${queryParameters}`,
+      data: payload,
+      headers: {
+        Authorization: 'Bearer password',
+        USER_ID: userId,
+      },
+    });
 
-  let data = response.data;
+    let data = response.data;
 
-  if (typeof data === 'object') {
-    data = JSON.stringify(data);
+    if (typeof data === 'object') {
+      data = JSON.stringify(data);
+    }
+
+    return new Response(data, {
+      status: response.status,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+  } catch (e) {
+    if (isAxiosError(e)) {
+      return new Response(JSON.stringify(e.response?.data), {
+        status: e.response?.status || 500,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+    }
+
+    return new Response('Unhandled error', {
+      status: 500,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
   }
-
-  return new Response(data, {
-    status: response.status,
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  });
 }

@@ -4,7 +4,7 @@ import {
   Button,
   DashboardPageLayout,
   DashboardPageSection,
-  DashboardStatusComponent,
+  LoadingEmptyStatusComponent,
   DataTable,
   Dialog,
   FormField,
@@ -129,7 +129,7 @@ function DataSourcesTable() {
 
   if (!data || data.length === 0) {
     return (
-      <DashboardStatusComponent
+      <LoadingEmptyStatusComponent
         emptyMessage="No Data Sources found"
         isLoading={!isLoading}
         loadingMessage="Loading Data Sources"

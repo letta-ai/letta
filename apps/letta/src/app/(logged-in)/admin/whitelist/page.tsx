@@ -5,7 +5,7 @@ import {
   Button,
   DashboardPageLayout,
   DashboardPageSection,
-  DashboardStatusComponent,
+  LoadingEmptyStatusComponent,
   DataTable,
   Dialog,
   DotsHorizontalIcon,
@@ -210,7 +210,7 @@ function EmailWhitelistPage() {
       }
     >
       {(!emailWhitelist || emailWhitelist.length === 0) && offset === 0 ? (
-        <DashboardStatusComponent
+        <LoadingEmptyStatusComponent
           emptyMessage="Nothing in our whitelist? Weird..."
           emptyAction={<CreateEmailWhitelist />}
           isLoading={!emailWhitelist}

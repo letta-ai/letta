@@ -7,7 +7,7 @@ import {
   CopyButton,
   DashboardPageLayout,
   DashboardPageSection,
-  DashboardStatusComponent,
+  LoadingEmptyStatusComponent,
   DataTable,
   Dialog,
   DotsHorizontalIcon,
@@ -274,7 +274,7 @@ function APIKeysPage() {
       }
     >
       {(!apiKeys || apiKeys.length === 0) && offset === 0 ? (
-        <DashboardStatusComponent
+        <LoadingEmptyStatusComponent
           emptyMessage="No API keys found"
           emptyAction={<CreateAPIKeyDialog />}
           isLoading={!apiKeys}

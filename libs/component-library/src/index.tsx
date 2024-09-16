@@ -45,7 +45,7 @@ export * from './lib/reusable/ActionCard/ActionCard';
 
 export * from './lib/ade/Panel/createPanelRouter/createPanelRouter';
 
-export * from './lib/ade/PanelLastElement/PanelLastElement';
+export * from './lib/ade/PanelElementsList/PanelElementsList';
 
 export * from './lib/core/Skeleton/Skeleton';
 
@@ -57,7 +57,7 @@ export * from './lib/core/ToggleGroup/ToggleGroup';
 
 export * from './lib/reusable/DashboardPageLayout/DashboardPageLayout';
 
-export * from './lib/reusable/DashboardStatusComponent/DashboardStatusComponent';
+export * from './lib/reusable/LoadingEmptyStatusComponent/LoadingEmptyStatusComponent';
 
 export * from './lib/ade/ADEHeader/ADEHeader';
 

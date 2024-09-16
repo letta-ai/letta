@@ -1,3 +1,6 @@
+/*
+ * Right now only trigger events on the server side only!
+ */
 import * as mixpanel from 'mixpanel';
 import { environment } from '@letta-web/environmental-variables';
 import type { AnalyticsEvent, AnalyticsEventProperties } from './events';

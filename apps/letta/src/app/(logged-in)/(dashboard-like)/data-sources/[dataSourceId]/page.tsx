@@ -1,5 +1,5 @@
 'use client';
-import React, { useCallback } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import {
   Button,
   DashboardPageLayout,
@@ -11,13 +11,11 @@ import {
   SingleFileUpload,
   useForm,
 } from '@letta-web/component-library';
-import type { Document } from '@letta-web/letta-agents-api';
+import { useSourcesServiceGetSource } from '@letta-web/letta-agents-api';
 import { UseSourcesServiceListSourceDocumentsKeyFn } from '@letta-web/letta-agents-api';
 import { useSourcesServiceUploadFileToSource } from '@letta-web/letta-agents-api';
-import { useSourcesServiceListSourceDocuments } from '@letta-web/letta-agents-api';
 import { useCurrentDataSourceId } from './hooks';
 import type { ColumnDef } from '@tanstack/react-table';
-import { get } from 'lodash-es';
 import { FileUpIcon } from 'lucide-react';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -83,43 +81,85 @@ function UploadFileDialog() {
   );
 }
 
-const dataSourceColumns: Array<ColumnDef<Document>> = [
+// const dataSourceColumns: Array<ColumnDef<Document>> = [
+//   {
+//     header: 'File Name',
+//     accessorFn: (row) => get(row.metadata_, 'filename', ''),
+//   },
+//   {
+//     header: 'Size',
+//     accessorFn: (row) => row.text.length,
+//   },
+//   {
+//     header: '',
+//     id: 'actions',
+//     accessorKey: 'id',
+//   },
+// ];
+
+const columns: Array<
+  ColumnDef<{
+    detail: string;
+    name: string;
+  }>
+> = [
   {
-    header: 'File Name',
-    accessorFn: (row) => get(row.metadata_, 'filename', ''),
+    header: 'Name',
+    accessorKey: 'name',
   },
   {
-    header: 'Size',
-    accessorFn: (row) => row.text.length,
-  },
-  {
-    header: '',
-    id: 'actions',
-    accessorKey: 'id',
+    header: 'Detail',
+    accessorKey: 'detail',
   },
 ];
 
-function DataSourceList() {
+function DataSourceInfo() {
   const dataSourceId = useCurrentDataSourceId();
-  const { data } = useSourcesServiceListSourceDocuments({
+  const { data } = useSourcesServiceGetSource({
     sourceId: dataSourceId,
   });
 
-  return (
-    <DataTable
-      columns={dataSourceColumns}
-      data={data || []}
-      isLoading={!data}
-      noResultsText="There are no files in this datasource"
-    />
-  );
+  const tableData = useMemo(() => {
+    if (!data?.embedding_config) {
+      return [];
+    }
+
+    return Object.entries({
+      ...data.embedding_config,
+      ...data.metadata_,
+    })
+      .map(([key, value]) => ({
+        name: key,
+        detail: typeof value === 'string' ? value : JSON.stringify(value),
+      }))
+      .filter((row) => row.detail !== undefined);
+  }, [data]);
+
+  console.log(data);
+  return <DataTable columns={columns} data={tableData} />;
 }
+
+// function DataSourceList() {
+//   const dataSourceId = useCurrentDataSourceId();
+//   const { data } = useSourcesServiceListSourceDocuments({
+//     sourceId: dataSourceId,
+//   });
+//
+//   return (
+//     <DataTable
+//       columns={dataSourceColumns}
+//       data={data || []}
+//       isLoading={!data}
+//       noResultsText="There are no files in this datasource"
+//     />
+//   );
+// }
 
 function DataSourceHomePage() {
   return (
-    <DashboardPageLayout title="Files" actions={<UploadFileDialog />}>
+    <DashboardPageLayout title="Source Info" actions={<UploadFileDialog />}>
       <DashboardPageSection>
-        <DataSourceList />
+        <DataSourceInfo />
       </DashboardPageSection>
     </DashboardPageLayout>
   );

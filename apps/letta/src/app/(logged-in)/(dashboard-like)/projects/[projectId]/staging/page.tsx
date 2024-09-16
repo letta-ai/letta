@@ -4,7 +4,7 @@ import {
   Button,
   DashboardPageLayout,
   DashboardPageSection,
-  DashboardStatusComponent,
+  LoadingEmptyStatusComponent,
 } from '@letta-web/component-library';
 import { webApi, webApiQueryKeys } from '$letta/client';
 import { useCurrentProjectId } from '../hooks';
@@ -49,7 +49,7 @@ function ProjectStagingList(props: ProjectStagingListProps) {
 
   if (sourceAgents.length === 0) {
     return (
-      <DashboardStatusComponent
+      <LoadingEmptyStatusComponent
         emptyMessage="There are no agents to stage. Return to the project home and stage a Agent"
         emptyAction={
           <Button

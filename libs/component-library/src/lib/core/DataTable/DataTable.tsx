@@ -22,7 +22,7 @@ import { cn } from '@letta-web/core-style-config';
 import { Button } from '../Button/Button';
 import type { Dispatch, SetStateAction } from 'react';
 import { useCallback, useEffect, useMemo } from 'react';
-import { DashboardStatusComponent } from '../../reusable/DashboardStatusComponent/DashboardStatusComponent';
+import { LoadingEmptyStatusComponent } from '../../reusable/LoadingEmptyStatusComponent/LoadingEmptyStatusComponent';
 
 interface TableBodyContentProps<Data> {
   table: UseReactTableType<Data>;
@@ -50,7 +50,7 @@ function TableBodyContent<Data>(props: TableBodyContentProps<Data>) {
       <TableBody>
         <TableRow>
           <TableCell colSpan={columnLength} className="h-full min-h-24">
-            <DashboardStatusComponent
+            <LoadingEmptyStatusComponent
               loadingMessage={loadingText}
               emptyAction={noResultsAction}
               emptyMessage={noResultsText || 'No results found'}

@@ -14,7 +14,9 @@ interface DashboardStatusComponentProps {
   isError?: boolean;
 }
 
-export function DashboardStatusComponent(props: DashboardStatusComponentProps) {
+export function LoadingEmptyStatusComponent(
+  props: DashboardStatusComponentProps
+) {
   const {
     emptyMessage,
     isError,
