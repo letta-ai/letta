@@ -8,6 +8,7 @@ import {
   Panel,
   PanelBar,
   Typography,
+  usePanelContext,
   VStack,
 } from '@letta-web/component-library';
 import React, {
@@ -208,6 +209,7 @@ interface MessagesProps {
 function Messages(props: MessagesProps) {
   const { isSendingMessage } = props;
   const ref = useRef<HTMLDivElement>(null);
+  const hasScrolledInitially = useRef(false);
 
   const { id } = useCurrentAgent();
   const { data, hasNextPage, fetchNextPage, isFetching } = useInfiniteQuery<
@@ -283,13 +285,28 @@ function Messages(props: MessagesProps) {
     return groupedMessages;
   }, [data]);
 
+  const { isPanelActive } = usePanelContext();
+
   useEffect(() => {
     if (ref.current) {
+      if (messageGroups.length > 0) {
+        setTimeout(() => {
+          if (!ref.current) {
+            return;
+          }
+
+          if (!hasScrolledInitially.current) {
+            ref.current.scrollTop = ref.current.scrollHeight;
+            hasScrolledInitially.current = true;
+          }
+        }, 10);
+      }
+
       if (isSendingMessage) {
         ref.current.scrollTop = ref.current.scrollHeight;
       }
     }
-  }, [messageGroups, isSendingMessage]);
+  }, [messageGroups, isPanelActive, isSendingMessage]);
 
   return (
     <VStack

@@ -251,6 +251,7 @@ export function getPanelRenderElement() {
 
 interface PanelContextData {
   id: PanelId;
+  isPanelActive: boolean;
 }
 
 const PanelContext = createContext<PanelContextData | undefined>(undefined);
@@ -437,11 +438,17 @@ export function Panel(props: PanelProps) {
   const { deactivatePanel, activatePanel, getIsPanelActive } =
     usePanelManagerContext();
 
+  const isPanelActive = useMemo(
+    () => getIsPanelActive(id),
+    [getIsPanelActive, id]
+  );
+
   const value = useMemo(
     () => ({
       id: id,
+      isPanelActive,
     }),
-    [id]
+    [id, isPanelActive]
   );
 
   useEffect(() => {
@@ -449,11 +456,6 @@ export function Panel(props: PanelProps) {
       activatePanel(id);
     }
   }, [activatePanel, defaultOpen, id]);
-
-  const isPanelActive = useMemo(
-    () => getIsPanelActive(id),
-    [getIsPanelActive, id]
-  );
 
   const handleTriggerClick = useCallback(
     function handleTriggerClick() {
