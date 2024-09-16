@@ -8,4 +8,5 @@ export interface SetupGeneratorSchema {
   REDIS_PORT: string;
   LETTA_AGENTS_ENDPOINT: string;
   NEXT_PUBLIC_CURRENT_HOST: string;
+  MIXPANEL_TOKEN: string;
 }

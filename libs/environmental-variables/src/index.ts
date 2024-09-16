@@ -16,6 +16,7 @@ export const environment = createEnv({
     REDIS_PORT: z.string().optional(),
     REDIS_PASSWORD: z.string().optional(),
     LETTA_AGENTS_ENDPOINT: z.string(),
+    MIXPANEL_TOKEN: z.string().optional(),
   },
   client: {
     NEXT_PUBLIC_CURRENT_HOST: z.string(),
@@ -29,5 +30,6 @@ export const environment = createEnv({
     REDIS_PASSWORD: process.env.REDIS_PASSWORD,
     LETTA_AGENTS_ENDPOINT: process.env.LETTA_AGENTS_ENDPOINT,
     NEXT_PUBLIC_CURRENT_HOST: process.env.NEXT_PUBLIC_CURRENT_HOST,
+    MIXPANEL_TOKEN: process.env.MIXPANEL_TOKEN,
   },
 });

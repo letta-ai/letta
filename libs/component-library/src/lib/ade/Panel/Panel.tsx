@@ -274,11 +274,14 @@ function ResizeHandle(props: ResizeHandleProps) {
 
   const handleStartDrag = useCallback(() => {
     isDragging.current = true;
+    document.body.style.userSelect = 'none';
   }, []);
 
   useEffect(() => {
     function handleEndDrag() {
       isDragging.current = false;
+      document.body.style.userSelect = 'auto';
+      document.body.style.cursor = 'auto';
     }
 
     window.addEventListener('mouseup', handleEndDrag);

@@ -15,6 +15,7 @@ import { deleteRedisData, getRedisData, setRedisData } from '@letta-web/redis';
 import { CookieNames } from '$letta/server/cookies/types';
 import { redirect } from 'next/navigation';
 import { LoginErrorsEnum } from '$letta/errors';
+import { AnalyticsEvent, trackEvent, trackUser } from '@letta-web/analytics';
 
 function isLettaEmail(email: string) {
   return email.endsWith('@letta.com') || email.endsWith('@memgpt.ai');
@@ -99,6 +100,26 @@ async function createUserAndOrganization(
   };
 }
 
+async function findExistingUser(
+  userData: ProviderUserPayload
+): Promise<UserSession | null> {
+  const user = await db.query.users.findFirst({
+    where: eq(users.providerId, userData.uniqueId),
+  });
+
+  if (!user) {
+    return null;
+  }
+
+  return {
+    email: user.email,
+    id: user.id,
+    organizationId: user.organizationId,
+    imageUrl: user.imageUrl,
+    name: user.name,
+  };
+}
+
 async function isUserInWhitelist(email: string) {
   // some hardcoding to allow letta and memgpt.ai emails bypass the whitelist
   if (isLettaEmail(email)) {
@@ -119,12 +140,28 @@ async function findOrCreateUserAndOrganizationFromProviderLogin(
     throw new Error(LoginErrorsEnum.USER_NOT_IN_WHITELIST);
   }
 
-  const user = await db.query.users.findFirst({
-    where: eq(users.providerId, userData.uniqueId),
-  });
+  let isNewUser = false;
+  let user = await findExistingUser(userData);
 
   if (!user) {
-    return createUserAndOrganization(userData);
+    isNewUser = true;
+    user = await createUserAndOrganization(userData);
+  }
+
+  trackUser({
+    userId: user.id,
+    name: user.name,
+    email: user.email,
+  });
+
+  if (isNewUser) {
+    trackEvent(AnalyticsEvent.USER_CREATED, {
+      userId: user.id,
+    });
+  } else {
+    trackEvent(AnalyticsEvent.USER_LOGGED_IN, {
+      userId: user.id,
+    });
   }
 
   return {

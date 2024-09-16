@@ -84,6 +84,15 @@
         "index": 8
       },
       "x-prompt": "What is the NEXT_PUBLIC_CURRENT_HOST? (leave blank for local-dev default)"
+    },
+    "MIXPANEL_TOKEN": {
+      "type": "string",
+      "description": "",
+      "$default": {
+        "$source": "argv",
+        "index": 9
+      },
+      "x-prompt": "What is your MIXPANEL_TOKEN? (very optional)"
     }
   },
   "required": ["DATABASE_URL"]
