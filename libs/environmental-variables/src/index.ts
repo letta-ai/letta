@@ -20,7 +20,7 @@ export const environment = createEnv({
     LAUNCH_DARKLY_SDK_KEY: z.string().optional(),
   },
   client: {
-    NEXT_PUBLIC_CURRENT_HOST: z.string(),
+    NEXT_PUBLIC_CURRENT_HOST: z.string().optional(),
   },
   runtimeEnv: {
     GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
