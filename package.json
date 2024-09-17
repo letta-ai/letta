@@ -146,7 +146,7 @@
     "nx": "19.6.3",
     "postcss": "8.4.38",
     "prettier": "^2.6.2",
-    "react-resizable-panels": "^2.1.2",
+    "react-resizable-panels": "^2.1.3",
     "redis": "^4.7.0",
     "redis-om": "^0.4.6",
     "storybook": "8.2.9",
