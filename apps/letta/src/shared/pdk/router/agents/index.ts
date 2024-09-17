@@ -23,13 +23,13 @@ export async function createAgent(
   req: CreateAgentRequestType,
   context: AuthedRequestType
 ): Promise<CreateAgentResponseType> {
-  const { sourceAgentId } = req.body;
+  const { sourceAgentKey } = req.body;
   const { organizationId } = context.request;
 
   const sourceAgent = await db.query.sourceAgents.findFirst({
     where: and(
       eq(sourceAgents.organizationId, organizationId),
-      eq(sourceAgents.id, sourceAgentId)
+      eq(sourceAgents.key, sourceAgentKey)
     ),
   });
 
@@ -60,9 +60,10 @@ export async function createAgent(
     .insert(deployedAgents)
     .values({
       projectId: sourceAgent.projectId,
-      name: sourceAgent.name,
+      key: crypto.randomUUID(),
       agentId: copiedAgent.id,
-      sourceAgentId: sourceAgentId,
+      sourceAgentKey: sourceAgent.key,
+      sourceAgentId: sourceAgent.id,
       organizationId,
     })
     .returning({ id: deployedAgents.id });

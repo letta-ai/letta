@@ -1,7 +1,5 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import {
-  ActionCard,
-  Badge,
   Button,
   Dialog,
   LoadingEmptyStatusComponent,
@@ -15,21 +13,23 @@ import { useCurrentProjectId } from '../../../../../../(dashboard-like)/projects
 import { useQueryClient } from '@tanstack/react-query';
 import { webApi, webApiQueryKeys } from '$letta/client';
 import { DeployAgentUsageInstructions } from '$letta/client/code-reference/deploy-agent-reference';
+import { SourceAgentCard } from '$letta/client/components/SourceAgentCard/SourceAgentCard';
 
 function StageAndDeployDialog() {
   const testingAgentId = useCurrentTestingAgentId();
   const projectId = useCurrentProjectId();
   const queryClient = useQueryClient();
 
-  const [sourceAgentId, setSourceAgentId] = useState<string>();
+  const [sourceAgentKey, setSourceAgentKey] = useState<string>();
   const { mutate, isPending } =
     webApi.projects.createProjectSourceAgentFromTestingAgent.useMutation({
       onSuccess: (response) => {
         void queryClient.invalidateQueries({
           queryKey: webApiQueryKeys.projects.getProjectSourceAgents(projectId),
+          exact: false,
         });
 
-        setSourceAgentId(response.body.id);
+        setSourceAgentKey(response.body.key);
       },
     });
 
@@ -37,7 +37,7 @@ function StageAndDeployDialog() {
     mutate({ body: { testingAgentId }, params: { projectId } });
   }, [mutate, testingAgentId, projectId]);
 
-  if (sourceAgentId) {
+  if (sourceAgentKey) {
     return (
       <Dialog
         size="large"
@@ -45,12 +45,12 @@ function StageAndDeployDialog() {
         hideConfirm
         onOpenChange={(open) => {
           if (!open) {
-            setSourceAgentId(undefined);
+            setSourceAgentKey(undefined);
           }
         }}
       >
         <DeployAgentUsageInstructions
-          sourceAgentId={sourceAgentId}
+          sourceAgentKey={sourceAgentKey}
           projectId={projectId}
         />
       </Dialog>
@@ -80,7 +80,7 @@ export function StagedAgentsPanel() {
   const [searchValue, setSearchValue] = useState('');
   const { data, hasNextPage, fetchNextPage } =
     webApi.projects.getProjectSourceAgents.useInfiniteQuery({
-      queryKey: webApiQueryKeys.projects.getProjectTestingAgentsWithSearch(
+      queryKey: webApiQueryKeys.projects.getProjectSourceAgentsWithSearch(
         currentProjectId,
         {
           search: searchValue,
@@ -131,21 +131,12 @@ export function StagedAgentsPanel() {
         ) : (
           <VStack>
             {sourceAgents.map((agent) => (
-              <ActionCard
-                mainAction={
-                  <Button
-                    target="_blank"
-                    color="tertiary"
-                    size="small"
-                    label="View Deployed Agents"
-                    href={`/projects/${currentProjectId}/deployments?stagingAgentId=${agent.id}&stagingAgentName=${agent.name}`}
-                  />
-                }
-                title={agent.name}
-                subtitle={`Staged at ${agent.createdAt}`}
-                key={agent.id}
-                icon={<Badge content={`v${agent.version}`} />}
-              ></ActionCard>
+              <SourceAgentCard
+                {...agent}
+                key={agent.key}
+                agentKey={agent.key}
+                currentProjectId={currentProjectId}
+              />
             ))}
             {hasNextPage && (
               <Button

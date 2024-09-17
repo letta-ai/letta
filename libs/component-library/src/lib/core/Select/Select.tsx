@@ -14,6 +14,12 @@ export interface OptionType {
   options?: OptionType[];
 }
 
+export function isMultiValue(
+  value: MultiValue<OptionType> | SingleValue<OptionType>
+): value is MultiValue<OptionType> {
+  return Array.isArray(value);
+}
+
 interface BaseSelectProps {
   isMulti?: boolean;
   isClearable?: boolean;

@@ -1,7 +1,7 @@
 'use client';
 import React, { useMemo } from 'react';
 import type { CodeProps } from '@letta-web/component-library';
-import { HStack, LettaLoader } from '@letta-web/component-library';
+import { LettaLoader } from '@letta-web/component-library';
 import { RawSwitch } from '@letta-web/component-library';
 import { Code } from '@letta-web/component-library';
 import { webApi, webApiQueryKeys } from '$letta/client';
@@ -35,7 +35,7 @@ export function CodeWithAPIKeyInjection(props: CodeWithAPIKeyInjectionProps) {
     <Code
       {...props}
       toolbarAction={
-        <HStack align="center">
+        <>
           {isLoading && showAPIKeysInCode && <LettaLoader size="small" />}
           <RawSwitch
             label="Show API Key"
@@ -45,7 +45,7 @@ export function CodeWithAPIKeyInjection(props: CodeWithAPIKeyInjectionProps) {
             }}
           />
           {props.toolbarAction}
-        </HStack>
+        </>
       }
       code={codeWithAPIKey}
     />

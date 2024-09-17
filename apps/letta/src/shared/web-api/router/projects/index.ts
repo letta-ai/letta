@@ -14,6 +14,12 @@ import { eq, and, like, desc } from 'drizzle-orm';
 import type { contracts } from '$letta/web-api/contracts';
 import { copyAgentById } from '$letta/server';
 import crypto from 'node:crypto';
+import {
+  adjectives,
+  animals,
+  colors,
+  uniqueNamesGenerator,
+} from 'unique-names-generator';
 
 type ResponseShapes = ServerInferResponses<typeof projectsContract>;
 type GetProjectsRequest = ServerInferRequest<
@@ -256,7 +262,11 @@ export async function createProjectSourceAgentFromTestingAgent(
 
   const version = `${existingSourceAgentCount.length + 1}`;
 
-  const sourceAgentName = `Staged ${testingAgent.name}`;
+  const randomName = uniqueNamesGenerator({
+    dictionaries: [adjectives, adjectives, animals, colors],
+    length: 4,
+    separator: '-',
+  });
 
   const copiedAgent = await copyAgentById(
     testingAgent.agentId,
@@ -280,7 +290,7 @@ export async function createProjectSourceAgentFromTestingAgent(
       agentId: copiedAgent.id,
       projectId,
       organizationId,
-      name: sourceAgentName,
+      key: randomName,
     })
     .returning({
       id: sourceAgents.id,
@@ -303,7 +313,7 @@ export async function createProjectSourceAgentFromTestingAgent(
     status: 201,
     body: {
       deployedAgentCount: 0,
-      name: sourceAgentName,
+      key: randomName,
       testingAgentId: testingAgent.id,
       id: sourceAgent.id,
       status: defaultStatus,
@@ -334,7 +344,7 @@ export async function getProjectSourceAgents(
   ];
 
   if (search) {
-    where.push(like(sourceAgents.name, search || '%'));
+    where.push(like(sourceAgents.key, search || '%'));
   }
 
   if (testingAgentId) {
@@ -348,7 +358,7 @@ export async function getProjectSourceAgents(
     orderBy: [desc(sourceAgents.createdAt)],
     columns: {
       id: true,
-      name: true,
+      key: true,
       testingAgentId: true,
       createdAt: true,
       updatedAt: true,
@@ -367,7 +377,7 @@ export async function getProjectSourceAgents(
         .slice(0, limit)
         .map(({ status, ...rest }) => ({
           id: rest.id,
-          name: rest.name,
+          key: rest.key,
           testingAgentId: rest.testingAgentId,
           version: rest.version,
           deployedAgentCount: rest.sourceAgentsStatistics.deployedAgentCount,
@@ -402,7 +412,7 @@ export async function getProjectSourceAgent(
     ),
     columns: {
       id: true,
-      name: true,
+      key: true,
       testingAgentId: true,
       createdAt: true,
       updatedAt: true,
@@ -425,7 +435,7 @@ export async function getProjectSourceAgent(
     status: 200,
     body: {
       id: sourceAgent.id,
-      name: sourceAgent.name,
+      key: sourceAgent.key,
       testingAgentId: sourceAgent.testingAgentId,
       version: sourceAgent.version,
       deployedAgentCount: sourceAgent.sourceAgentsStatistics.deployedAgentCount,
@@ -449,7 +459,7 @@ export async function getDeployedAgents(
 ): Promise<GetProjectDeployedAgentsResponse> {
   const organizationId = await getUserOrganizationIdOrThrow();
   const { projectId } = req.params;
-  const { search, offset, limit, sourceAgentId } = req.query;
+  const { search, offset, limit, sourceAgentId, sourceAgentKey } = req.query;
 
   const where = [
     eq(deployedAgents.organizationId, organizationId),
@@ -460,8 +470,12 @@ export async function getDeployedAgents(
     where.push(eq(deployedAgents.sourceAgentId, sourceAgentId));
   }
 
+  if (sourceAgentKey) {
+    where.push(eq(deployedAgents.sourceAgentKey, sourceAgentKey));
+  }
+
   if (search) {
-    where.push(like(deployedAgents.name, search || '%'));
+    where.push(like(deployedAgents.key, search || '%'));
   }
 
   const existingSourceAgentCount = await db.query.deployedAgents.findMany({
@@ -470,7 +484,7 @@ export async function getDeployedAgents(
     offset,
     columns: {
       id: true,
-      name: true,
+      key: true,
       sourceAgentId: true,
       createdAt: true,
       agentId: true,
@@ -485,7 +499,7 @@ export async function getDeployedAgents(
     status: 200,
     body: existingSourceAgentCount.map((agent) => ({
       id: agent.id,
-      name: agent.name,
+      key: agent.key,
       sourceAgentId: agent.sourceAgentId,
       agentId: agent.agentId,
       messageCount: agent.deployedAgentsStatistics.messageCount,

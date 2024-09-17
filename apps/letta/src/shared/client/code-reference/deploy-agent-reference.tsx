@@ -19,14 +19,12 @@ import {
 import { webApi, webApiQueryKeys } from '$letta/client';
 
 interface DeployAgentInstructionsCurlProps {
-  sourceAgentId: string;
+  sourceAgentKey: string;
   projectId: string;
 }
 
-export function DeployAgentInstructionsCurl(
-  props: DeployAgentInstructionsCurlProps
-) {
-  const { sourceAgentId, projectId } = props;
+function DeployAgentInstructionsCurl(props: DeployAgentInstructionsCurlProps) {
+  const { sourceAgentKey, projectId } = props;
   const [deploymentAgentHasLoaded, setDeploymentAgentHasLoaded] =
     useState(false);
   const [showPartTwo, setShowPartTwo] = useState(false);
@@ -34,13 +32,13 @@ export function DeployAgentInstructionsCurl(
     useState<boolean>(true);
   const { data } = webApi.projects.getDeployedAgents.useQuery({
     queryKey: webApiQueryKeys.projects.getDeployedAgentsWithSearch(projectId, {
-      sourceAgentId: sourceAgentId,
+      sourceAgentKey,
       limit: 1,
     }),
     refetchInterval: !deploymentAgentHasLoaded ? 5000 : false,
     queryData: {
       query: {
-        sourceAgentId: sourceAgentId,
+        sourceAgentKey,
         limit: 1,
       },
       params: {
@@ -79,7 +77,7 @@ export function DeployAgentInstructionsCurl(
   -H 'Content-Type: application/json' \\
   -H 'Authorization: Bearer ${ACCESS_TOKEN_PLACEHOLDER}' \\
   -d '{
-    "sourceAgentId": "${sourceAgentId}",
+    "sourceAgentKey": "${sourceAgentKey}",
     "variables": {
       "key": "value"
     }
@@ -115,7 +113,7 @@ export function DeployAgentInstructionsCurl(
               }
               toolbarPosition="bottom"
               language="bash"
-              code={`curl -X POST ${
+              code={`curl -N -X POST ${
                 environment.NEXT_PUBLIC_CURRENT_HOST
               }${V1_ROUTE}${pdkContracts.agents.chatWithAgent.path.replace(
                 ':deployedAgentId',
@@ -125,7 +123,7 @@ export function DeployAgentInstructionsCurl(
   -H 'Authorization: Bearer ${ACCESS_TOKEN_PLACEHOLDER}' \\
   -d '{
     "message": "Hello",
-    "name": "Optional Name",
+    "stream": true,
     "variables": {
       "key": "value"
     }
@@ -168,18 +166,18 @@ function isSupportedLanguage(language: string): language is SupportedLanguages {
 
 interface RenderInstructionsProps {
   language: SupportedLanguages;
-  sourceAgentId: string;
+  sourceAgentKey: string;
   projectId: string;
 }
 
 function RenderInstructions(props: RenderInstructionsProps) {
-  const { language, sourceAgentId, projectId } = props;
+  const { language, sourceAgentKey, projectId } = props;
 
   if (language === 'bash') {
     return (
       <DeployAgentInstructionsCurl
         projectId={projectId}
-        sourceAgentId={sourceAgentId}
+        sourceAgentKey={sourceAgentKey}
       />
     );
   }
@@ -188,14 +186,14 @@ function RenderInstructions(props: RenderInstructionsProps) {
 }
 
 interface DeployAgentUsageInstructionsProps {
-  sourceAgentId: string;
+  sourceAgentKey: string;
   projectId: string;
 }
 
 export function DeployAgentUsageInstructions(
   props: DeployAgentUsageInstructionsProps
 ) {
-  const { sourceAgentId, projectId } = props;
+  const { sourceAgentKey, projectId } = props;
   const [language, setLanguage] = useState<SupportedLanguages>('bash');
 
   return (
@@ -221,7 +219,7 @@ export function DeployAgentUsageInstructions(
       </HStack>
       <RenderInstructions
         projectId={projectId}
-        sourceAgentId={sourceAgentId}
+        sourceAgentKey={sourceAgentKey}
         language={language}
       />
     </VStack>

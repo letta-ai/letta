@@ -9,7 +9,7 @@ import {
 import { webApi, webApiQueryKeys } from '$letta/client';
 import { useCurrentProjectId } from '../hooks';
 import { useDebouncedValue } from '@mantine/hooks';
-import { SourceAgentCard } from '../_shared/SourceAgentCard';
+import { SourceAgentCard } from '$letta/client/components/SourceAgentCard/SourceAgentCard';
 
 const PAGE_SIZE = 20;
 
@@ -65,7 +65,12 @@ function ProjectStagingList(props: ProjectStagingListProps) {
   return (
     <>
       {sourceAgents.map((agent) => (
-        <SourceAgentCard key={agent.id} agent={agent} />
+        <SourceAgentCard
+          {...agent}
+          key={agent.id}
+          currentProjectId={currentProjectId}
+          agentKey={agent.key}
+        />
       ))}
       {hasNextPage && (
         <Button

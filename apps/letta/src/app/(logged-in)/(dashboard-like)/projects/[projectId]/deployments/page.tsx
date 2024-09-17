@@ -1,5 +1,6 @@
 'use client';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { isMultiValue, RawSelect } from '@letta-web/component-library';
 import type { OptionType } from '@letta-web/component-library';
 import { Frame } from '@letta-web/component-library';
 import {
@@ -17,16 +18,16 @@ import {
   HStack,
   RawAsyncSelect,
   RawInput,
-  Skeleton,
 } from '@letta-web/component-library';
 import { SearchIcon } from 'lucide-react';
 import { webApi, webApiQueryKeys } from '$letta/client';
 import { useCurrentProjectId } from '../hooks';
-import { useSearchParams } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import type { ColumnDef } from '@tanstack/react-table';
 import type { DeployedAgentType } from '$letta/web-api/contracts/projects';
 import { useDebouncedValue } from '@mantine/hooks';
 import { useAgentsServiceGetAgent } from '@letta-web/letta-agents-api';
+import { useRouter } from 'next/navigation';
 
 interface DeployedAgentViewProps {
   agent: DeployedAgentType;
@@ -35,7 +36,7 @@ interface DeployedAgentViewProps {
 
 function DeployedAgentView(props: DeployedAgentViewProps) {
   const { agent, onClose } = props;
-  const { name } = agent;
+  const { key } = agent;
 
   const { data } = useAgentsServiceGetAgent({
     agentId: agent.agentId,
@@ -68,7 +69,7 @@ function DeployedAgentView(props: DeployedAgentViewProps) {
           justify="spaceBetween"
         >
           <Typography bold variant="heading2">
-            {name}
+            {key}
           </Typography>
           <HStack>
             <Button color="tertiary" label="Open in ADE" />
@@ -117,13 +118,13 @@ function DeployedAgentList(props: DeployedAgentListProps) {
       currentProjectId,
       {
         search: search,
-        sourceAgentId: filterBy?.value,
+        sourceAgentKey: filterBy?.value,
       }
     ),
     queryData: {
       query: {
         search,
-        sourceAgentId: filterBy?.value,
+        sourceAgentKey: filterBy?.value,
         offset,
         limit: AGENT_LIMIT,
       },
@@ -209,11 +210,13 @@ function FilterBySourceAgentComponent(
   const currentProjectId = useCurrentProjectId();
   const { filterBy, onFilterChange } = props;
 
+  const router = useRouter();
+  const pathname = usePathname();
   const params = useSearchParams();
 
   const initialFilter = useMemo(() => {
-    const value = params.get('stagingAgentId');
-    const label = params.get('stagingAgentName');
+    const value = params.get('stagingAgentKey');
+    const label = params.get('stagingAgentKey');
 
     if (value && label) {
       return { value, label };
@@ -243,12 +246,22 @@ function FilterBySourceAgentComponent(
       }
 
       return response.body.sourceAgents.map((agent) => ({
-        label: agent.name,
-        value: agent.id,
+        label: agent.key,
+        value: agent.key,
       }));
     },
     [currentProjectId]
   );
+
+  useEffect(() => {
+    const nextURLSearchParams = new URLSearchParams();
+
+    if (filterBy) {
+      nextURLSearchParams.set('stagingAgentKey', filterBy.value);
+    }
+
+    router.replace(`${pathname}?${nextURLSearchParams.toString()}`);
+  }, [filterBy, router, pathname]);
 
   const defaultOptions = useMemo(() => {
     if (!data?.body) {
@@ -258,11 +271,11 @@ function FilterBySourceAgentComponent(
     let hasInitialFilter = false;
 
     const arr = data.body.sourceAgents.map((agent) => {
-      if (initialFilter && agent.id === initialFilter.value) {
+      if (initialFilter && agent.key === initialFilter.value) {
         hasInitialFilter = true;
       }
 
-      return { label: agent.name, value: agent.id };
+      return { label: agent.key, value: agent.key };
     });
 
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
@@ -274,7 +287,14 @@ function FilterBySourceAgentComponent(
   }, [data?.body, initialFilter]);
 
   if (!defaultOptions) {
-    return <Skeleton className="h-biHeight w-[150px]" />;
+    return (
+      <RawSelect
+        options={[]}
+        isLoading
+        label="Filter by Source Agent"
+        placeholder="Filter"
+      />
+    );
   }
 
   return (
@@ -282,6 +302,16 @@ function FilterBySourceAgentComponent(
       value={filterBy}
       cacheOptions
       isSearchable
+      onSelect={(value) => {
+        if (isMultiValue(value)) {
+          onFilterChange(value[0]);
+          return;
+        } else {
+          if (value) {
+            onFilterChange(value);
+          }
+        }
+      }}
       loadOptions={handleLoadOptions}
       label="Filter by Source Agent"
       placeholder="Filter"

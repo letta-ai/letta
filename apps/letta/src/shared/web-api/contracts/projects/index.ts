@@ -65,7 +65,7 @@ const createProjectTestingAgentContract = c.mutation({
 
 /* Get Source Agents */
 const ProjectSourceAgentSchema = z.object({
-  name: z.string(),
+  key: z.string(),
   id: z.string(),
   testingAgentId: z.string(),
   deployedAgentCount: z.number(),
@@ -139,7 +139,7 @@ const getSourceAgentContract = c.query({
 
 /* Get Deployed Agents */
 const DeployedAgentSchema = z.object({
-  name: z.string(),
+  key: z.string(),
   id: z.string(),
   sourceAgentId: z.string(),
   agentId: z.string(),
@@ -157,6 +157,7 @@ const GetDeployedAgentsQuerySchema = z.object({
   offset: z.number().optional(),
   limit: z.number().optional(),
   sourceAgentId: z.string().optional(),
+  sourceAgentKey: z.string().optional(),
 });
 
 export type GetDeployedAgentsQueryType = z.infer<
@@ -242,7 +243,7 @@ export const projectsQueryClientKeys = {
   ],
   getProjectTestingAgentsWithSearch: (
     projectId: string,
-    search: SearchSourceAgentsQueryType
+    search: GenericSearch
   ) => ['project', projectId, 'testing-agents', search],
   getProjectSourceAgents: (projectId: string) => [
     'project',
@@ -251,8 +252,8 @@ export const projectsQueryClientKeys = {
   ],
   getProjectSourceAgentsWithSearch: (
     projectId: string,
-    search: GenericSearch
-  ) => ['project', projectId, 'source-agents', search],
+    search: SearchSourceAgentsQueryType
+  ) => [...projectsQueryClientKeys.getProjectSourceAgents(projectId), search],
   getSourceAgentContract: (projectId: string, sourceAgentId: string) => [
     'project',
     projectId,

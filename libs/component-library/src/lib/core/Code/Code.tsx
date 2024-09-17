@@ -76,8 +76,13 @@ export function Code(props: CodeProps) {
 
   const toolbar = useMemo(
     () => (
-      <div className="py-1 px-2 border-b border-t flex justify-between">
-        <HStack align="center">{toolbarAction}</HStack>
+      <HStack
+        align="center"
+        className="py-1 px-2 border-b border-t flex justify-between"
+      >
+        <HStack wrap align="center">
+          {toolbarAction}
+        </HStack>
         <HStack gap="small">
           <DownloadButton
             fileName={languageToFileNameMap[language]}
@@ -86,7 +91,7 @@ export function Code(props: CodeProps) {
           />
           <CopyButton textToCopy={code} size="small" />
         </HStack>
-      </div>
+      </HStack>
     ),
     [code, language, toolbarAction]
   );

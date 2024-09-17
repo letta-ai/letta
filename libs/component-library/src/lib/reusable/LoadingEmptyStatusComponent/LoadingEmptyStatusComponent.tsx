@@ -82,7 +82,9 @@ export function LoadingEmptyStatusComponent(
           color={stateColor}
           size="large"
         />
-        {message || 'Reticulating splines...'}
+        <div className="max-w-[400px] text-center">
+          {message || 'Reticulating splines...'}
+        </div>
         <div className="absolute top-[100%] mt-4">{action}</div>
       </VStack>
     </VStack>
