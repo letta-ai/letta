@@ -1,5 +1,5 @@
 'use client';
-import React, { useCallback, useMemo } from 'react';
+import React, { Fragment, useCallback, useEffect, useMemo } from 'react';
 import {
   Button,
   DashboardPageLayout,
@@ -8,10 +8,19 @@ import {
   Dialog,
   FormField,
   FormProvider,
+  HStack,
+  IndeterminateProgress,
   SingleFileUpload,
+  Typography,
   useForm,
+  VStack,
 } from '@letta-web/component-library';
-import { useSourcesServiceGetSource } from '@letta-web/letta-agents-api';
+import type { Job } from '@letta-web/letta-agents-api';
+import {
+  useJobsServiceListActiveJobs,
+  UseJobsServiceListActiveJobsKeyFn,
+  useSourcesServiceGetSource,
+} from '@letta-web/letta-agents-api';
 import { UseSourcesServiceListSourceDocumentsKeyFn } from '@letta-web/letta-agents-api';
 import { useSourcesServiceUploadFileToSource } from '@letta-web/letta-agents-api';
 import { useCurrentDataSourceId } from './hooks';
@@ -38,6 +47,10 @@ function UploadFileDialog() {
         }),
       });
 
+      void queryClient.invalidateQueries({
+        queryKey: UseJobsServiceListActiveJobsKeyFn(),
+      });
+
       setIsDialogOpen(false);
     },
   });
@@ -47,6 +60,12 @@ function UploadFileDialog() {
     resolver: zodResolver(uploadToFormValuesSchema),
     mode: 'onChange',
   });
+
+  useEffect(() => {
+    return () => {
+      form.reset();
+    };
+  }, [form]);
 
   const onSubmit = useCallback(
     (values: UploadToFormValues) => {
@@ -153,10 +172,66 @@ function DataSourceInfo() {
 //   );
 // }
 
+interface JobItemProps {
+  job: Job;
+}
+
+function JobItem(props: JobItemProps) {
+  const { job } = props;
+  const { metadata_ } = job;
+
+  const contentName = useMemo(() => {
+    const filename = metadata_?.filename;
+
+    if (typeof filename === 'string') {
+      return `Processing ${filename}`;
+    }
+
+    return 'Processing unknown file';
+  }, [metadata_?.filename]);
+
+  return (
+    <HStack fullWidth>
+      <IndeterminateProgress
+        content={contentName}
+        statusMessage="Indeterminate time"
+      />
+    </HStack>
+  );
+}
+
+function DashboardJobList() {
+  const { data } = useJobsServiceListActiveJobs(undefined, {
+    refetchInterval: 5000,
+  });
+
+  if (!data || data?.length === 0) {
+    return null;
+  }
+
+  return (
+    <VStack gap={false} fullWidth border rounded>
+      <HStack padding="small" borderBottom>
+        <Typography bold>Active Jobs</Typography>
+      </HStack>
+      <VStack paddingX="small" paddingY="large" gap="large" fullWidth>
+        {data?.map((job, index) => (
+          <Fragment key={job.id}>
+            <JobItem key={job.id} job={job} />
+            {index !== data.length - 1 && <HStack fullWidth border />}
+          </Fragment>
+        ))}
+      </VStack>
+    </VStack>
+  );
+}
+
 function DataSourceHomePage() {
   return (
     <DashboardPageLayout title="Source Info" actions={<UploadFileDialog />}>
       <DashboardPageSection>
+        <DashboardJobList />
+
         <DataSourceInfo />
       </DashboardPageSection>
     </DashboardPageLayout>

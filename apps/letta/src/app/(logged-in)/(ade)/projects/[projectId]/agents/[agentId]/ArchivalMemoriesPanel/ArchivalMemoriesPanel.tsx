@@ -13,7 +13,7 @@ import {
   LettaLoaderPanel,
   Panel,
   PanelBar,
-  PanelElementsList,
+  PanelMainContent,
   TextArea,
   TrashIcon,
   useForm,
@@ -137,11 +137,11 @@ function MemoriesList() {
   }
 
   return (
-    <PanelElementsList>
+    <PanelMainContent>
       {allMemories.map((memory) => {
         return <MemoryItem key={memory.id} memory={memory} />;
       })}
-    </PanelElementsList>
+    </PanelMainContent>
   );
 }
 
@@ -216,7 +216,7 @@ function CreateMemoryPage() {
   return (
     <FormProvider {...form}>
       <Form onSubmit={form.handleSubmit(handleSubmit)}>
-        <PanelElementsList>
+        <PanelMainContent>
           <Alert variant="info" title="Info">
             An agent memory is a passage of text that the agent can remember and
             refer back to. This content will not be transferred when staging an
@@ -243,7 +243,7 @@ function CreateMemoryPage() {
               busy={isPending}
             />
           </HStack>
-        </PanelElementsList>
+        </PanelMainContent>
       </Form>
     </FormProvider>
   );

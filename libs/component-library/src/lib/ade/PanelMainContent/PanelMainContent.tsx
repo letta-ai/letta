@@ -5,7 +5,7 @@ interface PanelElementsListProps {
   children: React.ReactNode;
 }
 
-export function PanelElementsList(props: PanelElementsListProps) {
+export function PanelMainContent(props: PanelElementsListProps) {
   const { children } = props;
 
   return (

@@ -193,9 +193,7 @@ function StageAndDeployDialog() {
       title="Are you sure you want to stage your agent?"
       onConfirm={handleCreateSourceAgent}
       isConfirmBusy={isPending}
-      trigger={
-        <Button color="primary" size="small" label="Deployment Instructions" />
-      }
+      trigger={<Button color="primary" size="small" label="Stage Agent" />}
     >
       This will allow your agent to be deployed to the cloud and used in
       production. Are you sure you want to stage your agent?

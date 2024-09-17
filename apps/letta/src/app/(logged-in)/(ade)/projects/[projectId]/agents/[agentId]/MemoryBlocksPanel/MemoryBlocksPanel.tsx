@@ -10,7 +10,7 @@ import {
   LettaLoaderPanel,
   Panel,
   PanelBar,
-  PanelElementsList,
+  PanelMainContent,
   RawInput,
   TextArea,
   useForm,
@@ -147,7 +147,7 @@ function EditMemoryForm({ block, onClose }: EditMemoryFormProps) {
   );
 
   return (
-    <PanelElementsList>
+    <PanelMainContent>
       <FormProvider {...form}>
         <Form onSubmit={form.handleSubmit(handleSubmit)}>
           <RawInput disabled fullWidth label="Name" value={block.name || ''} />
@@ -179,7 +179,7 @@ function EditMemoryForm({ block, onClose }: EditMemoryFormProps) {
           </FormActions>
         </Form>
       </FormProvider>
-    </PanelElementsList>
+    </PanelMainContent>
   );
 }
 

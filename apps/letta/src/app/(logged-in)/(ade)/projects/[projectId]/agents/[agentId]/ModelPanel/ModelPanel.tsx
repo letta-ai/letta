@@ -9,6 +9,7 @@ import {
   Form,
   Button,
   HStack,
+  PanelMainContent,
 } from '@letta-web/component-library';
 import { useCurrentAgent } from '../hooks';
 import { z } from 'zod';
@@ -84,35 +85,37 @@ export function ModelPanel() {
         />
       }
     >
-      <FormProvider {...form}>
-        <Form onSubmit={form.handleSubmit(onSubmit)}>
-          <FormField
-            control={form.control}
-            name="model"
-            render={({ field }) => (
-              <Select
-                fullWidth
-                onSelect={(value) => {
-                  field.onChange(value);
-                }}
-                value={field.value}
-                label="Model"
-                options={formattedModelsList}
-              />
-            )}
-          />
-          <HStack justify="spaceBetween">
-            <div />
-            <Button
-              type="submit"
-              size="small"
-              color="secondary"
-              label="Update"
-              busy={isUpdateAgentModelPending}
+      <PanelMainContent>
+        <FormProvider {...form}>
+          <Form onSubmit={form.handleSubmit(onSubmit)}>
+            <FormField
+              control={form.control}
+              name="model"
+              render={({ field }) => (
+                <Select
+                  fullWidth
+                  onSelect={(value) => {
+                    field.onChange(value);
+                  }}
+                  value={field.value}
+                  label="Model"
+                  options={formattedModelsList}
+                />
+              )}
             />
-          </HStack>
-        </Form>
-      </FormProvider>
+            <HStack justify="spaceBetween">
+              <div />
+              <Button
+                type="submit"
+                size="small"
+                color="secondary"
+                label="Update"
+                busy={isUpdateAgentModelPending}
+              />
+            </HStack>
+          </Form>
+        </FormProvider>
+      </PanelMainContent>
     </Panel>
   );
 }

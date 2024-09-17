@@ -9,7 +9,7 @@ import {
   LoadingEmptyStatusComponent,
   Panel,
   PanelBar,
-  PanelElementsList,
+  PanelMainContent,
   VStack,
 } from '@letta-web/component-library';
 import { ADENavigationItem } from '../common/ADENavigationItem/ADENavigationItem';
@@ -81,7 +81,7 @@ function ViewAttachedDataSourcePage() {
           </>
         }
       />
-      <PanelElementsList>
+      <PanelMainContent>
         <VStack fullWidth gap="small">
           {!filteredAgentSources ||
             (filteredAgentSources.length === 0 && (
@@ -117,7 +117,7 @@ function ViewAttachedDataSourcePage() {
             />
           ))}
         </VStack>
-      </PanelElementsList>
+      </PanelMainContent>
     </>
   );
 }
@@ -216,7 +216,7 @@ function AttachDataSourcePage() {
           setSearch(value);
         }}
       />
-      <PanelElementsList>
+      <PanelMainContent>
         <VStack fullWidth gap="small">
           {!filteredSources ||
             (filteredSources.length === 0 && (
@@ -249,7 +249,7 @@ function AttachDataSourcePage() {
             />
           ))}
         </VStack>
-      </PanelElementsList>
+      </PanelMainContent>
     </>
   );
 }

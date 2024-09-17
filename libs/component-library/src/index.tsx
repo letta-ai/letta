@@ -45,7 +45,7 @@ export * from './lib/reusable/ActionCard/ActionCard';
 
 export * from './lib/ade/Panel/createPanelRouter/createPanelRouter';
 
-export * from './lib/ade/PanelElementsList/PanelElementsList';
+export * from './lib/ade/PanelMainContent/PanelMainContent';
 
 export * from './lib/core/Skeleton/Skeleton';
 
@@ -77,3 +77,5 @@ export * from './lib/core/TextArea/TextArea';
 export * from './lib/reusable/DashboardWithSidebarWrapper/DashboardWithSidebarWrapper';
 
 export * from './lib/core/SingleFileUpload/SingleFileUpload';
+
+export * from './lib/core/IndeterminateProgress/IndeterminateProgress';

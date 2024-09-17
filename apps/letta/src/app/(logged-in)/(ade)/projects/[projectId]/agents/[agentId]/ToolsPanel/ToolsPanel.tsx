@@ -10,7 +10,7 @@ import {
   Input,
   Panel,
   PanelBar,
-  PanelElementsList,
+  PanelMainContent,
   RawInput,
   ActionCard,
   useForm,
@@ -133,7 +133,7 @@ function ToolsList() {
   }, [currentToolNames]);
 
   return (
-    <PanelElementsList>
+    <PanelMainContent>
       <VStack fullWidth gap="small">
         {isLoading && <LettaLoaderPanel />}
         {(allTools || []).map((tool) => {
@@ -176,7 +176,7 @@ function ToolsList() {
           );
         })}
       </VStack>
-    </PanelElementsList>
+    </PanelMainContent>
   );
 }
 
@@ -219,7 +219,7 @@ function ToolCreator() {
   return (
     <FormProvider {...form}>
       <Form onSubmit={form.handleSubmit(handleSubmit)}>
-        <PanelElementsList>
+        <PanelMainContent>
           <FormField
             control={form.control}
             name="name"
@@ -247,7 +247,7 @@ function ToolCreator() {
               busy={isCreatingTool}
             />
           </HStack>
-        </PanelElementsList>
+        </PanelMainContent>
       </Form>
     </FormProvider>
   );
@@ -303,7 +303,7 @@ function ToolEditor(props: ToolEditorProps) {
   return (
     <FormProvider {...form}>
       <Form onSubmit={form.handleSubmit(handleSubmit)}>
-        <PanelElementsList>
+        <PanelMainContent>
           {isLoading ? (
             <LettaLoaderPanel />
           ) : (
@@ -346,7 +346,7 @@ function ToolEditor(props: ToolEditorProps) {
               </HStack>
             </>
           )}
-        </PanelElementsList>
+        </PanelMainContent>
       </Form>
     </FormProvider>
   );
