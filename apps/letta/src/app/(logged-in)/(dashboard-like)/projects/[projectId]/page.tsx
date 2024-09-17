@@ -6,6 +6,7 @@ import {
   DashboardEmptyArea,
   DashboardPageLayout,
   DashboardPageSection,
+  Dialog,
   HStack,
   PlusIcon,
   Skeleton,
@@ -43,12 +44,16 @@ function StageAgentButton(props: StageAgentDialogProps) {
   }, [mutate, testingAgentId, projectId]);
 
   return (
-    <Button
-      busy={isPending}
-      onClick={handleCreateSourceAgent}
-      label="Stage Agent"
-      color="primary"
-    />
+    <Dialog
+      title="Stage Agent"
+      onConfirm={handleCreateSourceAgent}
+      trigger={<Button label="Stage Agent" color="primary" />}
+      confirmText="Stage Agent"
+      isConfirmBusy={isPending}
+    >
+      This will stage the agent for deployment. Are you sure you want to
+      proceed?
+    </Dialog>
   );
 }
 

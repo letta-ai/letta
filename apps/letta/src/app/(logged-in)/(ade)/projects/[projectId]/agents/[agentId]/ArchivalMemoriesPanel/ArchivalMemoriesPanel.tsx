@@ -118,9 +118,15 @@ function MemoryItem(props: MemoryItemProps) {
 function MemoriesList() {
   const { id: currentAgentId } = useCurrentAgent();
 
-  const { data, isLoading } = useAgentsServiceListAgentArchivalMemory({
-    agentId: currentAgentId,
-  });
+  const { data, isLoading } = useAgentsServiceListAgentArchivalMemory(
+    {
+      agentId: currentAgentId,
+    },
+    undefined,
+    {
+      refetchInterval: 5000,
+    }
+  );
 
   const allMemories = useMemo(() => {
     return data || [];

@@ -6,7 +6,6 @@ import {
   HStack,
   LettaLoader,
   Panel,
-  PanelBar,
   Typography,
   usePanelContext,
   VStack,
@@ -626,19 +625,6 @@ function Chatroom() {
 
   return (
     <VStack fullHeight gap={false} fullWidth>
-      <PanelBar>
-        <HStack
-          fullWidth
-          paddingX="small"
-          align="center"
-          justify="spaceBetween"
-        >
-          <Typography>Agent</Typography>
-          <HStack>
-            <Button color="tertiary" size="small" label="Options" />
-          </HStack>
-        </HStack>
-      </PanelBar>
       <VStack gap="large" collapseHeight>
         <Messages isSendingMessage={isPending} />
         <ChatInput sendMessage={sendMessage} isSendingMessage={isPending} />

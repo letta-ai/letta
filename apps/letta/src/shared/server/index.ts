@@ -1,9 +1,27 @@
-import { AgentsService } from '@letta-web/letta-agents-api';
+import { AgentsService, SourcesService } from '@letta-web/letta-agents-api';
 
 export async function copyAgentById(agentId: string, name: string) {
-  const currentAgent = await AgentsService.getAgent({
-    agentId: agentId,
-  });
+  const [currentAgent, agentSources] = await Promise.all([
+    AgentsService.getAgent({
+      agentId: agentId,
+    }),
+    AgentsService.getAgentSources({
+      agentId: agentId,
+    }),
+  ]);
+
+  await Promise.all(
+    agentSources.map(async (source) => {
+      if (!source.id || !currentAgent.id) {
+        return;
+      }
+
+      await SourcesService.attachAgentToSource({
+        agentId: currentAgent.id,
+        sourceId: source.id,
+      });
+    })
+  );
 
   return AgentsService.createAgent({
     requestBody: {
