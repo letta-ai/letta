@@ -75,10 +75,25 @@ const ProjectSourceAgentSchema = z.object({
   createdAt: z.string(),
 });
 
-const ProjectDeployedAgentsSchema = z.array(ProjectSourceAgentSchema);
+const ProjectSourceAgentsSchema = z.array(ProjectSourceAgentSchema);
+const ProjectSourceAgentsResponseSchema = z.object({
+  sourceAgents: ProjectSourceAgentsSchema,
+  hasNextPage: z.boolean(),
+});
 
 export type SourceAgentType = z.infer<typeof ProjectSourceAgentSchema>;
-export type SourceAgentsType = z.infer<typeof ProjectDeployedAgentsSchema>;
+export type SourceAgentsType = z.infer<typeof ProjectSourceAgentsSchema>;
+
+const SearchSourceAgentsQuerySchema = z.object({
+  testingAgentId: z.string().optional(),
+  search: z.string().optional(),
+  offset: z.number().optional(),
+  limit: z.number().optional(),
+});
+
+type SearchSourceAgentsQueryType = z.infer<
+  typeof SearchSourceAgentsQuerySchema
+>;
 
 const getProjectSourceAgentsContract = c.query({
   method: 'GET',
@@ -86,9 +101,9 @@ const getProjectSourceAgentsContract = c.query({
   pathParams: z.object({
     projectId: z.string(),
   }),
-  query: GenericSearchSchema,
+  query: SearchSourceAgentsQuerySchema,
   responses: {
-    200: ProjectDeployedAgentsSchema,
+    200: ProjectSourceAgentsResponseSchema,
   },
 });
 
@@ -227,7 +242,7 @@ export const projectsQueryClientKeys = {
   ],
   getProjectTestingAgentsWithSearch: (
     projectId: string,
-    search: GenericSearch
+    search: SearchSourceAgentsQueryType
   ) => ['project', projectId, 'testing-agents', search],
   getProjectSourceAgents: (projectId: string) => [
     'project',

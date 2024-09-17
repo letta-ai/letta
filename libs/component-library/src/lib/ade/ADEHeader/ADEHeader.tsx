@@ -13,7 +13,7 @@ export function ADEHeader(props: ADEHeaderProps) {
       padding="small"
       className="h-[48px] min-h-[48px]"
       fullWidth
-      color="background-black"
+      color="primary"
     >
       {props.children}
     </HStack>

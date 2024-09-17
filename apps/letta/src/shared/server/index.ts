@@ -10,20 +10,7 @@ export async function copyAgentById(agentId: string, name: string) {
     }),
   ]);
 
-  await Promise.all(
-    agentSources.map(async (source) => {
-      if (!source.id || !currentAgent.id) {
-        return;
-      }
-
-      await SourcesService.attachAgentToSource({
-        agentId: currentAgent.id,
-        sourceId: source.id,
-      });
-    })
-  );
-
-  return AgentsService.createAgent({
+  const nextAgent = await AgentsService.createAgent({
     requestBody: {
       tools: currentAgent.tools,
       name: name,
@@ -34,4 +21,23 @@ export async function copyAgentById(agentId: string, name: string) {
       llm_config: currentAgent.llm_config,
     },
   });
+
+  if (!nextAgent?.id) {
+    throw new Error('Failed to clone agent');
+  }
+
+  await Promise.all(
+    agentSources.map(async (source) => {
+      if (!source.id || !currentAgent.id) {
+        return;
+      }
+
+      await SourcesService.attachAgentToSource({
+        agentId: nextAgent.id || '',
+        sourceId: source.id,
+      });
+    })
+  );
+
+  return nextAgent;
 }

@@ -1,12 +1,11 @@
 'use client';
-import React, { useCallback, useState } from 'react';
+import React from 'react';
 import {
   ADEHeader,
   ADEPage,
   ArrowUpIcon,
   Button,
   CaretDownIcon,
-  Dialog,
   Frame,
   HStack,
   KeyIcon,
@@ -28,12 +27,10 @@ import { MemoryBlocksPanel } from './MemoryBlocksPanel/MemoryBlocksPanel';
 import { ContextEditorPanel } from './ContextEditorPanel/ContextEditorPanel';
 import { CurrentUserDetailsBlock } from '$letta/client/common';
 import { useCurrentProjectId } from '../../../../../(dashboard-like)/projects/[projectId]/hooks';
-import { useQueryClient } from '@tanstack/react-query';
-import { webApi, webApiQueryKeys, useFeatureFlag } from '$letta/client';
-import { useCurrentTestingAgentId } from './hooks';
-import { DeployAgentUsageInstructions } from '$letta/client/code-reference/deploy-agent-reference';
+import { useFeatureFlag } from '$letta/client';
 import { ArchivalMemoriesPanel } from './ArchivalMemoriesPanel/ArchivalMemoriesPanel';
 import { DatabaseIcon } from 'lucide-react';
+import { StagedAgentsPanel } from './StagedAgentsPanel/StagedAgentsPanel';
 
 interface SidebarGroupProps {
   title: string;
@@ -147,60 +144,6 @@ function ADESidebar() {
   );
 }
 
-function StageAndDeployDialog() {
-  const testingAgentId = useCurrentTestingAgentId();
-  const projectId = useCurrentProjectId();
-  const queryClient = useQueryClient();
-
-  const [sourceAgentId, setSourceAgentId] = useState<string>();
-  const { mutate, isPending } =
-    webApi.projects.createProjectSourceAgentFromTestingAgent.useMutation({
-      onSuccess: (response) => {
-        void queryClient.invalidateQueries({
-          queryKey: webApiQueryKeys.projects.getProjectSourceAgents(projectId),
-        });
-
-        setSourceAgentId(response.body.id);
-      },
-    });
-
-  const handleCreateSourceAgent = useCallback(() => {
-    mutate({ body: { testingAgentId }, params: { projectId } });
-  }, [mutate, testingAgentId, projectId]);
-
-  if (sourceAgentId) {
-    return (
-      <Dialog
-        size="large"
-        title="Congratulations! Your agent has been staged."
-        hideConfirm
-        onOpenChange={(open) => {
-          if (!open) {
-            setSourceAgentId(undefined);
-          }
-        }}
-      >
-        <DeployAgentUsageInstructions
-          sourceAgentId={sourceAgentId}
-          projectId={projectId}
-        />
-      </Dialog>
-    );
-  }
-
-  return (
-    <Dialog
-      title="Are you sure you want to stage your agent?"
-      onConfirm={handleCreateSourceAgent}
-      isConfirmBusy={isPending}
-      trigger={<Button color="primary" size="small" label="Stage Agent" />}
-    >
-      This will allow your agent to be deployed to the cloud and used in
-      production. Are you sure you want to stage your agent?
-    </Dialog>
-  );
-}
-
 export function AgentPage() {
   return (
     <PanelManager>
@@ -209,7 +152,7 @@ export function AgentPage() {
           <ADEHeader>
             <NavOverlay />
             <HStack>
-              <StageAndDeployDialog />
+              <StagedAgentsPanel />
             </HStack>
           </ADEHeader>
         }

@@ -228,7 +228,7 @@ function FilterBySourceAgentComponent(
 
   const { data } = webApi.projects.getProjectSourceAgents.useQuery({
     queryKey: webApiQueryKeys.projects.getProjectSourceAgents(currentProjectId),
-    queryData: { params: { projectId: currentProjectId } },
+    queryData: { params: { projectId: currentProjectId }, query: {} },
   });
 
   const handleLoadOptions = useCallback(
@@ -242,7 +242,7 @@ function FilterBySourceAgentComponent(
         return [];
       }
 
-      return response.body.map((agent) => ({
+      return response.body.sourceAgents.map((agent) => ({
         label: agent.name,
         value: agent.id,
       }));
@@ -257,7 +257,7 @@ function FilterBySourceAgentComponent(
 
     let hasInitialFilter = false;
 
-    const arr = data.body.map((agent) => {
+    const arr = data.body.sourceAgents.map((agent) => {
       if (initialFilter && agent.id === initialFilter.value) {
         hasInitialFilter = true;
       }

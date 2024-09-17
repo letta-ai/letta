@@ -39,13 +39,15 @@ export function ActionCard(props: ToggleCardProps) {
           <VStack gap="text">
             <HStack align="center">
               {icon}
-              <Typography bold>{title}</Typography>
+              <VStack gap={false} align="start">
+                <Typography bold>{title}</Typography>
+                {props.subtitle && (
+                  <Typography variant="body2" color="muted">
+                    {props.subtitle}
+                  </Typography>
+                )}
+              </VStack>
             </HStack>
-            {props.subtitle && (
-              <Typography variant="body2" color="muted">
-                {props.subtitle}
-              </Typography>
-            )}
           </VStack>
           <HStack align="center">{mainAction}</HStack>
         </HStack>

@@ -326,7 +326,7 @@ export async function getProjectSourceAgents(
 ): Promise<GetProjectSourceAgentsResponse> {
   const organizationId = await getUserOrganizationIdOrThrow();
   const { projectId } = req.params;
-  const { search, offset, limit } = req.query;
+  const { search, offset, testingAgentId, limit } = req.query;
 
   const where = [
     eq(sourceAgents.organizationId, organizationId),
@@ -337,9 +337,13 @@ export async function getProjectSourceAgents(
     where.push(like(sourceAgents.name, search || '%'));
   }
 
+  if (testingAgentId) {
+    where.push(eq(sourceAgents.testingAgentId, testingAgentId));
+  }
+
   const sourceAgentsList = await db.query.sourceAgents.findMany({
     where: and(...where),
-    limit,
+    limit: (limit || 10) + 1,
     offset,
     orderBy: [desc(sourceAgents.createdAt)],
     columns: {
@@ -358,16 +362,21 @@ export async function getProjectSourceAgents(
 
   return {
     status: 200,
-    body: sourceAgentsList.map(({ status, ...rest }) => ({
-      id: rest.id,
-      name: rest.name,
-      testingAgentId: rest.testingAgentId,
-      version: rest.version,
-      deployedAgentCount: rest.sourceAgentsStatistics.deployedAgentCount,
-      createdAt: rest.createdAt.toISOString(),
-      updatedAt: rest.updatedAt.toISOString(),
-      status: status.status,
-    })),
+    body: {
+      sourceAgents: sourceAgentsList
+        .slice(0, limit)
+        .map(({ status, ...rest }) => ({
+          id: rest.id,
+          name: rest.name,
+          testingAgentId: rest.testingAgentId,
+          version: rest.version,
+          deployedAgentCount: rest.sourceAgentsStatistics.deployedAgentCount,
+          createdAt: rest.createdAt.toISOString(),
+          updatedAt: rest.updatedAt.toISOString(),
+          status: status.status,
+        })),
+      hasNextPage: sourceAgentsList.length === limit,
+    },
   };
 }
 

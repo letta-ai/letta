@@ -59,6 +59,11 @@ export function buildConfig(appDir: string): Config {
           },
           content: 'hsl(var(--content))',
           ['on-transparent']: 'hsl(var(--on-transparent))',
+          'primary-alt': {
+            DEFAULT: 'hsl(var(--primary-alt))',
+            content: 'hsl(var(--primary-alt-content))',
+            hover: 'hsl(var(--primary-alt-hover))',
+          },
           primary: {
             DEFAULT: 'hsl(var(--primary))',
             content: 'hsl(var(--primary-content))',

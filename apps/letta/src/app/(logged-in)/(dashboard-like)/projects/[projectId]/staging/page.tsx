@@ -37,14 +37,14 @@ function ProjectStagingList(props: ProjectStagingListProps) {
       }),
       initialPageParam: { offset: 0, limit: PAGE_SIZE },
       getNextPageParam: (lastPage, allPages) => {
-        return lastPage.body.length >= PAGE_SIZE
+        return lastPage.body.hasNextPage
           ? { limit: PAGE_SIZE, offset: allPages.length * PAGE_SIZE }
           : undefined;
       },
     });
 
   const sourceAgents = useMemo(() => {
-    return (data?.pages || []).flatMap((v) => v.body);
+    return (data?.pages || []).flatMap((v) => v.body.sourceAgents);
   }, [data]);
 
   if (sourceAgents.length === 0) {
