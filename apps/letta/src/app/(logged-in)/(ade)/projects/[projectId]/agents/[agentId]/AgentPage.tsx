@@ -31,6 +31,7 @@ import { useFeatureFlag } from '$letta/client';
 import { ArchivalMemoriesPanel } from './ArchivalMemoriesPanel/ArchivalMemoriesPanel';
 import { DatabaseIcon } from 'lucide-react';
 import { StagedAgentsPanel } from './StagedAgentsPanel/StagedAgentsPanel';
+import { ConfigPanel } from './ConfigPanel/ConfigPanel';
 
 interface SidebarGroupProps {
   title: string;
@@ -127,6 +128,7 @@ function ADESidebar() {
     >
       <SidebarGroup title="Base">
         <ModelPanel />
+        <ConfigPanel />
         {showParametersEditor && <ADENavigationItem title="Parameters" />}
       </SidebarGroup>
       <SidebarGroup title="Configure">
