@@ -6,6 +6,7 @@ import { Typography } from '../../core/Typography/Typography';
 import type { VariantProps } from 'class-variance-authority';
 import { cva } from 'class-variance-authority';
 import { cn } from '@letta-web/core-style-config';
+import './ActionCard.scss';
 
 const actionCardVariants = cva('', {
   variants: {
@@ -33,11 +34,17 @@ export function ActionCard(props: ToggleCardProps) {
   const { title, icon, mainAction, children, description, actions } = props;
 
   return (
-    <Card className={cn(actionCardVariants(props))}>
+    <Card className={cn(actionCardVariants(props), 'action-card')}>
       <VStack fullHeight fullWidth>
-        <HStack justify="spaceBetween" fullWidth align="center">
+        <HStack
+          wrap
+          className="action-card-header"
+          justify="spaceBetween"
+          fullWidth
+          align="center"
+        >
           <VStack gap="text">
-            <HStack align="center">
+            <HStack className="action-card-titlearea" align="center">
               {icon}
               <VStack gap={false} align="start">
                 <Typography bold>{title}</Typography>

@@ -79,3 +79,5 @@ export * from './lib/reusable/DashboardWithSidebarWrapper/DashboardWithSidebarWr
 export * from './lib/core/SingleFileUpload/SingleFileUpload';
 
 export * from './lib/core/IndeterminateProgress/IndeterminateProgress';
+
+export * from './lib/core/Badge/Badge';

@@ -1,6 +1,7 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import {
   ActionCard,
+  Badge,
   Button,
   Dialog,
   LoadingEmptyStatusComponent,
@@ -143,11 +144,7 @@ export function StagedAgentsPanel() {
                 title={agent.name}
                 subtitle={`Staged at ${agent.createdAt}`}
                 key={agent.id}
-                icon={
-                  <div className="text-xs bg-background-grey rounded-full px-4 py-1">
-                    v{agent.version}
-                  </div>
-                }
+                icon={<Badge content={`v${agent.version}`} />}
               ></ActionCard>
             ))}
             {hasNextPage && (

@@ -1,0 +1,10 @@
+.action-card {
+  container-type: inline-size;
+}
+
+@container (max-width: 350px) {
+  .action-card-titlearea {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
