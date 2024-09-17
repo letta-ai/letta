@@ -473,7 +473,7 @@ export function Panel(props: PanelProps) {
       <Slot
         onClick={handleTriggerClick}
         // @ts-expect-error - this is allowed
-        isActive={isPanelActive}
+        active={isPanelActive}
       >
         {props.trigger}
       </Slot>

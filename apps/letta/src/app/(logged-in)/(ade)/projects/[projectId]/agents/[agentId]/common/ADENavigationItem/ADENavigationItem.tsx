@@ -11,11 +11,11 @@ interface NavigationItemProps {
   title: string;
   preview?: React.ReactNode;
   onClick?: () => void;
-  isActive?: boolean;
+  active?: boolean;
 }
 
 export function ADENavigationItem(props: NavigationItemProps) {
-  const { title, isActive, onClick, preview } = props;
+  const { title, active, onClick, preview } = props;
 
   return (
     <HStack fullWidth align="center" paddingX="small">
@@ -27,9 +27,7 @@ export function ADENavigationItem(props: NavigationItemProps) {
         onClick={onClick}
         className={cn(
           'hover:bg-tertiary-hover cursor-pointer h-[37px]',
-          isActive
-            ? 'bg-primary text-primary-content hover:bg-primary-hover'
-            : ''
+          active ? 'bg-primary text-primary-content hover:bg-primary-hover' : ''
         )}
         color="transparent"
         justify="spaceBetween"
@@ -43,7 +41,7 @@ export function ADENavigationItem(props: NavigationItemProps) {
             {preview}
           </Typography>
           <HStack align="center" className="w-3">
-            {isActive ? (
+            {active ? (
               <Cross2Icon className="w-2.5" />
             ) : (
               <CaretRightIcon className="" />
