@@ -110,6 +110,7 @@ const getProjectSourceAgentsContract = c.query({
 /* Deploy Testing Agent */
 const CreateSourceAgentFromAgentBodySchema = z.object({
   testingAgentId: z.string(),
+  migrateExistingAgents: z.boolean().optional(),
 });
 
 const createSourceAgentFromTestingAgentContract = c.mutation({

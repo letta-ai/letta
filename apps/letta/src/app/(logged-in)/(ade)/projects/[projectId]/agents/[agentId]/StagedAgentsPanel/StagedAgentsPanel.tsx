@@ -2,73 +2,99 @@ import React, { useCallback, useMemo, useState } from 'react';
 import {
   Button,
   Dialog,
+  FormField,
+  FormProvider,
+  HStack,
   LoadingEmptyStatusComponent,
   Panel,
   PanelBar,
   PanelMainContent,
+  Switch,
+  useForm,
   VStack,
 } from '@letta-web/component-library';
 import { useCurrentTestingAgentId } from '../hooks';
 import { useCurrentProjectId } from '../../../../../../(dashboard-like)/projects/[projectId]/hooks';
 import { useQueryClient } from '@tanstack/react-query';
 import { webApi, webApiQueryKeys } from '$letta/client';
-import { DeployAgentUsageInstructions } from '$letta/client/code-reference/deploy-agent-reference';
 import { SourceAgentCard } from '$letta/client/components/SourceAgentCard/SourceAgentCard';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
 
-function StageAndDeployDialog() {
+interface StageAndDeployDialogProps {
+  hasExistingStagedAgents?: boolean;
+}
+
+const StageAndDeployFormSchema = z.object({
+  migrateExistingAgents: z.boolean(),
+});
+
+function StageAndDeployDialog(props: StageAndDeployDialogProps) {
+  const { hasExistingStagedAgents } = props;
   const testingAgentId = useCurrentTestingAgentId();
   const projectId = useCurrentProjectId();
   const queryClient = useQueryClient();
 
-  const [sourceAgentKey, setSourceAgentKey] = useState<string>();
+  const form = useForm({
+    resolver: zodResolver(StageAndDeployFormSchema),
+    defaultValues: {
+      migrateExistingAgents: true,
+    },
+  });
+
   const { mutate, isPending } =
     webApi.projects.createProjectSourceAgentFromTestingAgent.useMutation({
-      onSuccess: (response) => {
+      onSuccess: () => {
         void queryClient.invalidateQueries({
           queryKey: webApiQueryKeys.projects.getProjectSourceAgents(projectId),
           exact: false,
         });
-
-        setSourceAgentKey(response.body.key);
       },
     });
 
-  const handleCreateSourceAgent = useCallback(() => {
-    mutate({ body: { testingAgentId }, params: { projectId } });
-  }, [mutate, testingAgentId, projectId]);
+  const handleCreateSourceAgent = useCallback(
+    (values: z.infer<typeof StageAndDeployFormSchema>) => {
+      const { migrateExistingAgents } = values;
 
-  if (sourceAgentKey) {
-    return (
-      <Dialog
-        size="large"
-        title="Congratulations! Your agent has been staged."
-        hideConfirm
-        onOpenChange={(open) => {
-          if (!open) {
-            setSourceAgentKey(undefined);
-          }
-        }}
-      >
-        <DeployAgentUsageInstructions
-          sourceAgentKey={sourceAgentKey}
-          projectId={projectId}
-        />
-      </Dialog>
-    );
-  }
+      mutate({
+        body: { testingAgentId, migrateExistingAgents },
+        params: { projectId },
+      });
+    },
+    [mutate, testingAgentId, projectId]
+  );
 
   return (
-    <Dialog
-      title="Are you sure you want to stage your agent?"
-      onConfirm={handleCreateSourceAgent}
-      isConfirmBusy={isPending}
-      trigger={
-        <Button color="secondary" size="small" label="Stage a new version" />
-      }
-    >
-      This will allow your agent to be deployed to the cloud and used in
-      production. Are you sure you want to stage your agent?
-    </Dialog>
+    <FormProvider {...form}>
+      <Dialog
+        title="Are you sure you want to stage your agent?"
+        onSubmit={form.handleSubmit(handleCreateSourceAgent)}
+        isConfirmBusy={isPending}
+        trigger={
+          <Button color="secondary" size="small" label="Stage a new version" />
+        }
+      >
+        <VStack gap="form">
+          {hasExistingStagedAgents && (
+            <HStack border padding="small" rounded>
+              <FormField
+                name="migrateExistingAgents"
+                render={({ field }) => (
+                  <Switch
+                    checked={field.value}
+                    description="This will migrate your previous deployed agents to the new version automatically."
+                    {...field}
+                    label="Migrate existing deployed agents"
+                  />
+                )}
+              />
+            </HStack>
+          )}
+          This will allow your agent to be deployed to the cloud and used in
+          production. Are you sure you want to stage your agent?
+        </VStack>
+      </Dialog>
+    </FormProvider>
   );
 }
 
@@ -119,7 +145,13 @@ export function StagedAgentsPanel() {
       <PanelBar
         searchValue={searchValue}
         onSearch={setSearchValue}
-        actions={<StageAndDeployDialog />}
+        actions={
+          <StageAndDeployDialog
+            hasExistingStagedAgents={
+              !!(sourceAgents && sourceAgents.length >= 1)
+            }
+          />
+        }
       />
       <PanelMainContent>
         {!sourceAgents || sourceAgents.length === 0 ? (
@@ -133,6 +165,7 @@ export function StagedAgentsPanel() {
             {sourceAgents.map((agent) => (
               <SourceAgentCard
                 {...agent}
+                variant="compact"
                 key={agent.key}
                 agentKey={agent.key}
                 currentProjectId={currentProjectId}

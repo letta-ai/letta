@@ -197,7 +197,7 @@ export function DeployAgentUsageInstructions(
   const [language, setLanguage] = useState<SupportedLanguages>('bash');
 
   return (
-    <VStack>
+    <VStack fullWidth>
       <HStack justify="spaceBetween">
         <Typography bold>Usage Instructions</Typography>
         <RawToggleGroup

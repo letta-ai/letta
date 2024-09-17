@@ -1,3 +1,4 @@
+import type { AgentState } from '@letta-web/letta-agents-api';
 import { AgentsService, SourcesService } from '@letta-web/letta-agents-api';
 
 export async function copyAgentById(agentId: string, name: string) {
@@ -40,4 +41,45 @@ export async function copyAgentById(agentId: string, name: string) {
   );
 
   return nextAgent;
+}
+
+interface MigrateToNewAgentArgs {
+  agentTemplate: AgentState;
+  agentIdToMigrate: string;
+  agentDatasourcesIds: string[];
+}
+
+export async function migrateToNewAgent(options: MigrateToNewAgentArgs) {
+  const { agentTemplate, agentIdToMigrate, agentDatasourcesIds } = options;
+  const oldDatasources = await AgentsService.getAgentSources({
+    agentId: agentIdToMigrate,
+  });
+
+  // TODO: https://linear.app/letta/issue/LET-91/handle-detach-datasource-in-migration
+  const _datasourcesToDetach = oldDatasources.filter(
+    ({ id }) =>
+      !agentDatasourcesIds.some((newDatasource) => newDatasource === id)
+  );
+
+  const datasourceIdsToAttach = agentDatasourcesIds.filter(
+    (id) => !oldDatasources.some((oldDatasource) => oldDatasource.id === id)
+  );
+
+  await AgentsService.updateAgent({
+    agentId: agentIdToMigrate,
+    requestBody: {
+      id: agentIdToMigrate,
+      memory: agentTemplate.memory,
+      tools: agentTemplate.tools,
+    },
+  });
+
+  await Promise.all(
+    datasourceIdsToAttach.map(async (datasource) => {
+      return SourcesService.attachAgentToSource({
+        agentId: agentIdToMigrate,
+        sourceId: datasource || '',
+      });
+    })
+  );
 }

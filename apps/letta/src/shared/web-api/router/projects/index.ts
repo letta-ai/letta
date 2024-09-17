@@ -12,7 +12,7 @@ import {
 import { getUserOrganizationIdOrThrow } from '$letta/server/auth';
 import { eq, and, like, desc } from 'drizzle-orm';
 import type { contracts } from '$letta/web-api/contracts';
-import { copyAgentById } from '$letta/server';
+import { copyAgentById, migrateToNewAgent } from '$letta/server';
 import crypto from 'node:crypto';
 import {
   adjectives,
@@ -20,6 +20,7 @@ import {
   colors,
   uniqueNamesGenerator,
 } from 'unique-names-generator';
+import { AgentsService } from '@letta-web/letta-agents-api';
 
 type ResponseShapes = ServerInferResponses<typeof projectsContract>;
 type GetProjectsRequest = ServerInferRequest<
@@ -239,7 +240,7 @@ export async function createProjectSourceAgentFromTestingAgent(
   req: CreateProjectSourceAgentFromTestingAgentRequest
 ): Promise<CreateProjectSourceAgentFromTestingAgentResponse> {
   const { projectId } = req.params;
-  const { testingAgentId } = req.body;
+  const { testingAgentId, migrateExistingAgents } = req.body;
   const organizationId = await getUserOrganizationIdOrThrow();
 
   const testingAgent = await db.query.testingAgents.findFirst({
@@ -308,6 +309,51 @@ export async function createProjectSourceAgentFromTestingAgent(
       deployedAgentCount: 0,
     }),
   ]);
+
+  // do this as a job at a later time
+  if (migrateExistingAgents) {
+    const lastSourceAgent = await db.query.sourceAgents.findFirst({
+      where: and(
+        eq(sourceAgents.testingAgentId, testingAgent.id),
+        eq(sourceAgents.version, `${existingSourceAgentCount.length}`)
+      ),
+      orderBy: [desc(sourceAgents.createdAt)],
+    });
+
+    if (lastSourceAgent) {
+      const ids = await db.query.deployedAgents.findMany({
+        where: eq(deployedAgents.sourceAgentId, lastSourceAgent.id),
+        columns: {
+          id: true,
+          agentId: true,
+        },
+      });
+
+      const newDatasources = await AgentsService.getAgentSources({
+        agentId: copiedAgent.id || '',
+      });
+
+      await Promise.all(
+        ids.map(async ({ agentId }) => {
+          return migrateToNewAgent({
+            agentTemplate: copiedAgent,
+            agentIdToMigrate: agentId,
+            agentDatasourcesIds: newDatasources
+              .map(({ id }) => id)
+              .filter(Boolean) as string[],
+          });
+        })
+      );
+
+      await db
+        .update(deployedAgents)
+        .set({
+          sourceAgentId: sourceAgent.id,
+          sourceAgentKey: randomName,
+        })
+        .where(eq(deployedAgents.sourceAgentId, lastSourceAgent.id));
+    }
+  }
 
   return {
     status: 201,

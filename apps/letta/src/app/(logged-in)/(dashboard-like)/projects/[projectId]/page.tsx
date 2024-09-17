@@ -6,56 +6,15 @@ import {
   DashboardEmptyArea,
   DashboardPageLayout,
   DashboardPageSection,
-  Dialog,
   HStack,
   PlusIcon,
   Skeleton,
   VStack,
 } from '@letta-web/component-library';
-import React, { useCallback, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { useCurrentProjectId } from './hooks';
 import { webApi, webApiQueryKeys } from '$letta/client';
 import type { ProjectTestingAgentType } from '$letta/web-api/contracts/projects';
-import { useQueryClient } from '@tanstack/react-query';
-import { useRouter } from 'next/navigation';
-
-interface StageAgentDialogProps {
-  testingAgentId: string;
-}
-
-function StageAgentButton(props: StageAgentDialogProps) {
-  const { testingAgentId } = props;
-  const { push } = useRouter();
-  const projectId = useCurrentProjectId();
-  const queryClient = useQueryClient();
-  const { mutate, isPending } =
-    webApi.projects.createProjectSourceAgentFromTestingAgent.useMutation({
-      onSuccess: () => {
-        void queryClient.invalidateQueries({
-          queryKey: webApiQueryKeys.projects.getProjectSourceAgents(projectId),
-        });
-
-        push(`/projects/${projectId}/staging`);
-      },
-    });
-
-  const handleCreateSourceAgent = useCallback(() => {
-    mutate({ body: { testingAgentId }, params: { projectId } });
-  }, [mutate, testingAgentId, projectId]);
-
-  return (
-    <Dialog
-      title="Stage Agent"
-      onConfirm={handleCreateSourceAgent}
-      trigger={<Button label="Stage Agent" color="primary" />}
-      confirmText="Stage Agent"
-      isConfirmBusy={isPending}
-    >
-      This will stage the agent for deployment. Are you sure you want to
-      proceed?
-    </Dialog>
-  );
-}
 
 interface TestingAgentCardProps {
   id: string;
@@ -72,10 +31,9 @@ function TestingAgentCard(props: TestingAgentCardProps) {
         <HStack>
           <Button
             href={`/projects/${projectId}/agents/${id}`}
-            color="tertiary"
-            label="View / Edit Agent"
+            color="secondary"
+            label="Open in ADE"
           />
-          <StageAgentButton testingAgentId={id} />
         </HStack>
       }
     />
