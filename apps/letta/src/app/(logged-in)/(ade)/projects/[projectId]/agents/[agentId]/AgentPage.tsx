@@ -8,7 +8,6 @@ import {
   CaretDownIcon,
   Dialog,
   Frame,
-  HomeIcon,
   HStack,
   KeyIcon,
   LifebuoyIcon,
@@ -34,6 +33,7 @@ import { webApi, webApiQueryKeys, useFeatureFlag } from '$letta/client';
 import { useCurrentTestingAgentId } from './hooks';
 import { DeployAgentUsageInstructions } from '$letta/client/code-reference/deploy-agent-reference';
 import { ArchivalMemoriesPanel } from './ArchivalMemoriesPanel/ArchivalMemoriesPanel';
+import { DatabaseIcon } from 'lucide-react';
 
 interface SidebarGroupProps {
   title: string;
@@ -63,10 +63,11 @@ function NavOverlay() {
             label="Return to Project"
           />
           <Button
-            href="/"
+            href="/data-sources"
+            target="_blank"
             color="tertiary-transparent"
-            label="Dashboard"
-            preIcon={<HomeIcon />}
+            label="Data Sources"
+            preIcon={<DatabaseIcon />}
           />
           <Button
             target="_blank"
@@ -75,7 +76,6 @@ function NavOverlay() {
             label="API Keys"
             preIcon={<KeyIcon />}
           />
-
           <Button
             target="_blank"
             href="/support"

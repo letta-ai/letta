@@ -125,13 +125,13 @@ const dataSourceColumn: Array<ColumnDef<Source>> = [
 ];
 
 function DataSourcesTable() {
-  const { data, isLoading, isError } = useSourcesServiceListSources();
+  const { data, isError } = useSourcesServiceListSources();
 
   if (!data || data.length === 0) {
     return (
       <LoadingEmptyStatusComponent
         emptyMessage="No Data Sources found"
-        isLoading={!isLoading}
+        isLoading={!data}
         loadingMessage="Loading Data Sources"
         isError={isError}
       />
