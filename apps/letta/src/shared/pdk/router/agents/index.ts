@@ -6,9 +6,8 @@ import {
   deployedAgents,
   deployedAgentsStatistics,
   sourceAgents,
-  sourceAgentsStatistics,
 } from '@letta-web/database';
-import { and, eq, sql } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { copyAgentById } from '$letta/server';
 import * as crypto from 'node:crypto';
 
@@ -74,12 +73,6 @@ export async function createAgent(
       messageCount: 0,
       lastActiveAt: new Date(),
     }),
-    db
-      .update(sourceAgentsStatistics)
-      .set({
-        deployedAgentCount: sql`${sourceAgentsStatistics.deployedAgentCount} + 1`,
-      })
-      .where(eq(sourceAgentsStatistics.id, sourceAgent.id)),
   ]);
 
   return {

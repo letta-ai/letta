@@ -81,3 +81,5 @@ export * from './lib/core/SingleFileUpload/SingleFileUpload';
 export * from './lib/core/IndeterminateProgress/IndeterminateProgress';
 
 export * from './lib/core/Badge/Badge';
+
+export * from './lib/core/InputFilter/InputFilter';

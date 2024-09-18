@@ -11,9 +11,9 @@ export function ADEHeader(props: ADEHeaderProps) {
       justify="spaceBetween"
       align="center"
       padding="small"
-      className="h-[48px] min-h-[48px]"
+      className="h-[48px] min-h-[48px] relative"
       fullWidth
-      color="primary"
+      color="background-black"
     >
       {props.children}
     </HStack>

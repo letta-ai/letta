@@ -60,10 +60,10 @@ const styles = {
 };
 
 const classNames = {
-  container: () => 'min-w-[200px]',
+  container: () => 'min-w-[200px] w-full',
   control: () =>
     cn(
-      'border border-solid h-[auto] px-2 py-1 min-h-[36px]! text-base rounded',
+      'border bg-background border-solid h-[auto] px-2 py-1 min-h-[36px]! w-full text-base rounded',
       'h-biHeight'
     ),
   placeholder: () => cn('text-muted-content'),
@@ -88,6 +88,7 @@ function AsyncSelectPrimitive(props: AsyncSelectProps) {
   return (
     <AsyncReactSelect
       unstyled
+      menuPortalTarget={document.body}
       onChange={(value) => {
         props.onSelect?.(value);
       }}
@@ -108,6 +109,7 @@ function SelectPrimitive(props: SelectProps) {
   return (
     <ReactSelect
       unstyled
+      menuPortalTarget={document.body}
       onChange={(value) => {
         props.onSelect?.(value);
       }}

@@ -1,5 +1,7 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import {
+  ActionCard,
+  Badge,
   Button,
   Dialog,
   FormField,
@@ -17,9 +19,9 @@ import { useCurrentTestingAgentId } from '../hooks';
 import { useCurrentProjectId } from '../../../../../../(dashboard-like)/projects/[projectId]/hooks';
 import { useQueryClient } from '@tanstack/react-query';
 import { webApi, webApiQueryKeys } from '$letta/client';
-import { SourceAgentCard } from '$letta/client/components/SourceAgentCard/SourceAgentCard';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { DeployAgentUsageInstructions } from '$letta/client/code-reference/deploy-agent-reference';
 
 interface StageAndDeployDialogProps {
   hasExistingStagedAgents?: boolean;
@@ -34,6 +36,7 @@ function StageAndDeployDialog(props: StageAndDeployDialogProps) {
   const testingAgentId = useCurrentTestingAgentId();
   const projectId = useCurrentProjectId();
   const queryClient = useQueryClient();
+  const [open, setOpen] = useState(false);
 
   const form = useForm({
     resolver: zodResolver(StageAndDeployFormSchema),
@@ -49,6 +52,9 @@ function StageAndDeployDialog(props: StageAndDeployDialogProps) {
           queryKey: webApiQueryKeys.projects.getProjectSourceAgents(projectId),
           exact: false,
         });
+
+        setOpen(false);
+        form.reset();
       },
     });
 
@@ -67,6 +73,8 @@ function StageAndDeployDialog(props: StageAndDeployDialogProps) {
   return (
     <FormProvider {...form}>
       <Dialog
+        onOpenChange={setOpen}
+        isOpen={open}
         title="Are you sure you want to stage your agent?"
         onSubmit={form.handleSubmit(handleCreateSourceAgent)}
         isConfirmBusy={isPending}
@@ -100,8 +108,57 @@ function StageAndDeployDialog(props: StageAndDeployDialogProps) {
 
 const PAGE_SIZE = 10;
 
+interface SourceAgentCardProps {
+  version: string;
+  createdAt: string;
+  agentKey: string;
+  currentProjectId: string;
+}
+
+function SourceAgentCard(props: SourceAgentCardProps) {
+  const { version, createdAt, agentKey, currentProjectId } = props;
+  const [showDeploymentInstructions, setShowDeploymentInstructions] =
+    React.useState(false);
+
+  return (
+    <ActionCard
+      mainAction={
+        <HStack>
+          <Button
+            size="small"
+            color="tertiary"
+            onClick={() => {
+              setShowDeploymentInstructions((v) => !v);
+            }}
+            active={showDeploymentInstructions}
+            label="Instructions"
+          />
+          <Button
+            target="_blank"
+            color="tertiary"
+            size="small"
+            label="Deployed Agents"
+            href={`/projects/${currentProjectId}/deployments?stagingAgentKey=${agentKey}`}
+          />
+        </HStack>
+      }
+      title={agentKey}
+      subtitle={`Staged at ${createdAt}`}
+      icon={<Badge content={`v${version}`} />}
+    >
+      {showDeploymentInstructions && (
+        <DeployAgentUsageInstructions
+          sourceAgentKey={agentKey}
+          projectId={currentProjectId}
+        />
+      )}
+    </ActionCard>
+  );
+}
+
 export function StagedAgentsPanel() {
   const testingAgentId = useCurrentTestingAgentId();
+
   const currentProjectId = useCurrentProjectId();
   const [searchValue, setSearchValue] = useState('');
   const { data, hasNextPage, fetchNextPage } =
@@ -116,6 +173,7 @@ export function StagedAgentsPanel() {
       queryData: ({ pageParam }) => ({
         params: { projectId: currentProjectId },
         query: {
+          testingAgentId,
           offset: pageParam.offset,
           limit: pageParam.limit,
         },
@@ -165,7 +223,6 @@ export function StagedAgentsPanel() {
             {sourceAgents.map((agent) => (
               <SourceAgentCard
                 {...agent}
-                variant="compact"
                 key={agent.key}
                 agentKey={agent.key}
                 currentProjectId={currentProjectId}

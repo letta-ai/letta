@@ -93,12 +93,14 @@ export async function migrateToNewAgent(options: MigrateToNewAgentArgs) {
     },
   });
 
-  await Promise.all(
-    datasourceIdsToAttach.map(async (datasource) => {
-      return SourcesService.attachAgentToSource({
-        agentId: agentIdToMigrate,
-        sourceId: datasource || '',
-      });
-    })
-  );
+  await Promise.all([
+    Promise.all(
+      datasourceIdsToAttach.map(async (datasource) => {
+        return SourcesService.attachAgentToSource({
+          agentId: agentIdToMigrate,
+          sourceId: datasource || '',
+        });
+      })
+    ),
+  ]);
 }

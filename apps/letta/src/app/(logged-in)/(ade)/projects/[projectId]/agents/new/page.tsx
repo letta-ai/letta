@@ -8,7 +8,6 @@ import {
   Card,
   HStack,
   LettaLoader,
-  Skeleton,
   Typography,
   VStack,
 } from '@letta-web/component-library';
@@ -34,7 +33,7 @@ function AgentRecipeCard(props: AgentRecipeCardProps) {
     >
       <Card className=" hover:bg-tertiary-hover ">
         <VStack align="center">
-          <Skeleton className="w-[150px] h-[150px]" />
+          <div className="bg-gray-100 w-[150px] h-[150px]" />
           <Typography bold variant="heading2">
             {name}
           </Typography>

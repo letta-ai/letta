@@ -47,6 +47,40 @@ const createProjectContract = c.mutation({
   },
 });
 
+/* Update Project Testing Agent */
+export const UpdateProjectTestingAgentPayloadSchema = z.object({
+  name: z.string().optional(),
+});
+
+const updateProjectTestingAgentContract = c.mutation({
+  method: 'PATCH',
+  path: '/projects/:projectId/testing-agents/:testingAgentId',
+  pathParams: z.object({
+    projectId: z.string(),
+    testingAgentId: z.string(),
+  }),
+  body: UpdateProjectTestingAgentPayloadSchema,
+  responses: {
+    200: ProjectTestingAgentSchema,
+  },
+});
+
+/* Delete Project Testing Agent */
+const deleteProjectTestingAgentContract = c.mutation({
+  method: 'DELETE',
+  path: '/projects/:projectId/testing-agents/:testingAgentId',
+  pathParams: z.object({
+    projectId: z.string(),
+    testingAgentId: z.string(),
+  }),
+  body: z.undefined(),
+  responses: {
+    200: z.object({
+      success: z.boolean(),
+    }),
+  },
+});
+
 /* Create Project Testing Agent */
 export const CreateProjectTestingAgentPayloadSchema = z.object({
   recipeId: z
@@ -76,7 +110,7 @@ const ProjectSourceAgentSchema = z.object({
   key: z.string(),
   id: z.string(),
   testingAgentId: z.string(),
-  deployedAgentCount: z.number(),
+  testingAgentName: z.string().optional(),
   status: z.enum(['live', 'offline']),
   version: z.string(),
   updatedAt: z.string(),
@@ -94,6 +128,7 @@ export type SourceAgentsType = z.infer<typeof ProjectSourceAgentsSchema>;
 
 const SearchSourceAgentsQuerySchema = z.object({
   testingAgentId: z.string().optional(),
+  includeTestingAgentInfo: z.boolean().optional(),
   search: z.string().optional(),
   offset: z.number().optional(),
   limit: z.number().optional(),
@@ -198,6 +233,27 @@ const getProjectTestingAgentContract = c.query({
   },
 });
 
+/* Get Deployed Agents Count By Source Agent */
+const GetDeployedAgentsCountBySourceAgentQuerySchema = z.object({
+  sourceAgentId: z.string(),
+});
+
+const GetDeployedAgentsCountBySourceAgentResponseSchema = z.object({
+  count: z.number(),
+});
+
+const getDeployedAgentsCountBySourceAgentContract = c.query({
+  method: 'GET',
+  path: '/projects/:projectId/deployed-agents/count',
+  pathParams: z.object({
+    projectId: z.string(),
+  }),
+  query: GetDeployedAgentsCountBySourceAgentQuerySchema,
+  responses: {
+    200: GetDeployedAgentsCountBySourceAgentResponseSchema,
+  },
+});
+
 export const projectsContract = c.router({
   getProjects: c.query({
     method: 'GET',
@@ -218,6 +274,8 @@ export const projectsContract = c.router({
     },
   }),
   getProjectTestingAgent: getProjectTestingAgentContract,
+  updateProjectTestingAgent: updateProjectTestingAgentContract,
+  deleteProjectTestingAgent: deleteProjectTestingAgentContract,
   getProjectTestingAgents: c.query({
     method: 'GET',
     path: '/projects/:projectId/testing-agents',
@@ -236,6 +294,8 @@ export const projectsContract = c.router({
     createSourceAgentFromTestingAgentContract,
   getProjectSourceAgent: getSourceAgentContract,
   getDeployedAgents: getDeployedAgentsContract,
+  getDeployedAgentsCountBySourceAgent:
+    getDeployedAgentsCountBySourceAgentContract,
 });
 
 export const projectsQueryClientKeys = {
@@ -284,4 +344,8 @@ export const projectsQueryClientKeys = {
     'testing-agents',
     testingAgentId,
   ],
+  getDeployedAgentsCountBySourceAgent: (
+    projectId: string,
+    sourceAgentId: string
+  ) => ['project', projectId, 'deployed-agents', 'count', { sourceAgentId }],
 };

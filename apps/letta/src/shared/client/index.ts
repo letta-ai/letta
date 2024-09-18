@@ -13,4 +13,3 @@ export const webApi = initTsrReactQuery(contracts, {
 export const webApiQueryKeys = queryClientKeys;
 
 export * from './hooks/useFeatureFlag/useFeatureFlag';
-export * from './components';

@@ -1,6 +1,10 @@
 'use client';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { isMultiValue, RawSelect } from '@letta-web/component-library';
+import {
+  InputFilter,
+  isMultiValue,
+  RawSelect,
+} from '@letta-web/component-library';
 import type { OptionType } from '@letta-web/component-library';
 import { Frame } from '@letta-web/component-library';
 import {
@@ -19,7 +23,7 @@ import {
   RawAsyncSelect,
   RawInput,
 } from '@letta-web/component-library';
-import { SearchIcon } from 'lucide-react';
+import { FilterIcon, SearchIcon } from 'lucide-react';
 import { webApi, webApiQueryKeys } from '$letta/client';
 import { useCurrentProjectId } from '../hooks';
 import { usePathname, useSearchParams } from 'next/navigation';
@@ -245,10 +249,13 @@ function FilterBySourceAgentComponent(
         return [];
       }
 
-      return response.body.sourceAgents.map((agent) => ({
-        label: agent.key,
-        value: agent.key,
-      }));
+      return [
+        ...response.body.sourceAgents.map((agent) => ({
+          label: agent.key,
+          value: agent.key,
+        })),
+        { label: 'None', value: '' },
+      ];
     },
     [currentProjectId]
   );
@@ -283,6 +290,8 @@ function FilterBySourceAgentComponent(
       arr.unshift(initialFilter);
     }
 
+    arr.unshift({ label: 'None', value: '' });
+
     return arr;
   }, [data?.body, initialFilter]);
 
@@ -291,7 +300,10 @@ function FilterBySourceAgentComponent(
       <RawSelect
         options={[]}
         isLoading
-        label="Filter by Source Agent"
+        inline
+        fullWidth
+        preLabelIcon={<FilterIcon className="w-4" />}
+        label="from the staged agent:"
         placeholder="Filter"
       />
     );
@@ -312,9 +324,12 @@ function FilterBySourceAgentComponent(
           }
         }
       }}
+      fullWidth
+      inline
       loadOptions={handleLoadOptions}
-      label="Filter by Source Agent"
-      placeholder="Filter"
+      preLabelIcon={<FilterIcon className="w-4" />}
+      label="from the staged agent:"
+      placeholder="Staged Agent Name"
       defaultOptions={defaultOptions}
     />
   );
@@ -330,22 +345,25 @@ function DeployedAgentsPage() {
     <DashboardPageLayout title="Deployed Agents">
       <DashboardPageSection fullHeight>
         <VStack fullHeight fullWidth>
-          <HStack fullWidth>
+          <VStack gap={false} fullWidth>
             <RawInput
               onChange={(e) => {
                 setSearch(e.target.value);
               }}
               value={search}
               preIcon={<SearchIcon />}
+              hideLabel
               label="Search deployed agents by name"
               placeholder="Agent name"
               fullWidth
             />
-            <FilterBySourceAgentComponent
-              filterBy={filterBy}
-              onFilterChange={setFilterBy}
-            />
-          </HStack>
+            <InputFilter>
+              <FilterBySourceAgentComponent
+                filterBy={filterBy}
+                onFilterChange={setFilterBy}
+              />
+            </InputFilter>
+          </VStack>
           <DeployedAgentList search={debouncedSearch} filterBy={filterBy} />
         </VStack>
       </DashboardPageSection>

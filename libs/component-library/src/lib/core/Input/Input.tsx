@@ -10,9 +10,12 @@ import { Button } from '../Button/Button';
 import { CheckIcon, ClipboardIcon, EyeOpenIcon } from '../../icons';
 import { useMemo } from 'react';
 import { EyeOffIcon } from 'lucide-react';
+import { SpinnerPrimitive } from '../../../primitives';
+import { HStack } from '../../framing/HStack/HStack';
+import { VStack } from '../../framing/VStack/VStack';
 
 const inputVariants = cva(
-  'flex gap-2 px-3 items-center w-full rounded-md border border-input text-base transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-content focus-visible:outline-none focus-within:ring-1 focus-within:ring-ring',
+  'flex  items-center w-full overflow-hidden rounded-md border border-input text-base transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-content focus-visible:outline-none focus-within:ring-1 focus-within:ring-ring',
   {
     variants: {
       disabled: {
@@ -21,11 +24,6 @@ const inputVariants = cva(
       color: {
         default: 'bg-background text-background-content',
         grey: 'bg-background-grey text-background-content',
-      },
-      size: {
-        default: 'h-biHeight',
-        small: 'h-biHeight-sm',
-        large: 'h-biHeight-lg',
       },
       fullWidth: {
         true: 'w-full',
@@ -41,20 +39,35 @@ const inputVariants = cva(
     ],
     defaultVariants: {
       color: 'default',
-      size: 'default',
     },
   }
 );
+
+const innerInputVariants = cva('px-3 gap-2', {
+  variants: {
+    size: {
+      default: 'h-biHeight',
+      small: 'h-biHeight-sm',
+      large: 'h-biHeight-lg',
+    },
+  },
+  defaultVariants: {
+    size: 'default',
+  },
+});
 
 type InputPrimitiveProps = Omit<
   React.InputHTMLAttributes<HTMLInputElement>,
   'size'
 > &
+  VariantProps<typeof innerInputVariants> &
   VariantProps<typeof inputVariants> & {
     preIcon?: React.ReactNode;
+    bottomContent?: React.ReactNode;
     hideLabel?: boolean;
     allowCopy?: boolean;
     showVisibilityControls?: boolean;
+    isUpdating?: boolean;
   };
 
 interface CopyButtonProps {
@@ -87,6 +100,7 @@ const InputPrimitive = React.forwardRef<HTMLInputElement, InputPrimitiveProps>(
       fullWidth,
       disabled,
       allowCopy,
+      isUpdating,
       preIcon,
       type,
       showVisibilityControls,
@@ -107,34 +121,41 @@ const InputPrimitive = React.forwardRef<HTMLInputElement, InputPrimitiveProps>(
     }, [showVisibilityControls, visibility, type]);
 
     return (
-      <div
-        className={cn(
-          inputVariants({ disabled, fullWidth, size, color, className })
-        )}
+      <VStack
+        gap={false}
+        fullWidth={fullWidth}
+        className={cn(inputVariants({ disabled, fullWidth, color, className }))}
       >
-        <Slot className="w-4 h-auto">{preIcon}</Slot>
-        <input
-          {...props}
-          disabled={disabled}
-          type={typeOverride}
-          className="w-full h-full focus:outline-none bg-transparent"
-          ref={ref}
-        />
-        {showVisibilityControls && (
-          <Button
-            onClick={() => {
-              setVisibility((prev) => !prev);
-            }}
-            type="button"
-            preIcon={visibility ? <EyeOffIcon /> : <EyeOpenIcon />}
-            color="tertiary-transparent"
-            label={visibility ? 'Hide' : 'Show'}
-            hideLabel
-            size="small"
+        <HStack
+          align="center"
+          className={cn(innerInputVariants({ size }))}
+          fullWidth={fullWidth}
+        >
+          <Slot className="w-4 h-auto">{preIcon}</Slot>
+          <input
+            {...props}
+            disabled={disabled}
+            type={typeOverride}
+            className="w-full h-full focus:outline-none bg-transparent"
+            ref={ref}
           />
-        )}
-        {allowCopy && <CopyButton text={(props.value || '').toString()} />}
-      </div>
+          {showVisibilityControls && (
+            <Button
+              onClick={() => {
+                setVisibility((prev) => !prev);
+              }}
+              type="button"
+              preIcon={visibility ? <EyeOffIcon /> : <EyeOpenIcon />}
+              color="tertiary-transparent"
+              label={visibility ? 'Hide' : 'Show'}
+              hideLabel
+              size="small"
+            />
+          )}
+          {isUpdating && <SpinnerPrimitive className="w-3 h-3" />}
+          {allowCopy && <CopyButton text={(props.value || '').toString()} />}
+        </HStack>
+      </VStack>
     );
   }
 );

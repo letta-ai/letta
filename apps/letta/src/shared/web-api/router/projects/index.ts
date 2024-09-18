@@ -10,7 +10,7 @@ import {
   testingAgents,
 } from '@letta-web/database';
 import { getUserOrganizationIdOrThrow } from '$letta/server/auth';
-import { eq, and, like, desc } from 'drizzle-orm';
+import { eq, and, like, desc, count } from 'drizzle-orm';
 import type { contracts } from '$letta/web-api/contracts';
 import {
   copyAgentById,
@@ -27,6 +27,7 @@ import {
 import { AgentsService } from '@letta-web/letta-agents-api';
 import type { AgentTemplate } from '$letta/types';
 import { AgentTemplateVariant } from '$letta/types';
+import { capitalize } from 'lodash-es';
 
 type ResponseShapes = ServerInferResponses<typeof projectsContract>;
 type GetProjectsRequest = ServerInferRequest<
@@ -138,6 +139,7 @@ export async function getProjectTestingAgents(
       id: true,
       updatedAt: true,
     },
+    orderBy: [desc(testingAgents.createdAt)],
   });
 
   return {
@@ -384,6 +386,12 @@ const agentTemplates: Record<AgentTemplateVariant, AgentTemplate> = {
   },
 };
 
+const RECIPIE_NAME_TO_FRIENDLY_NAME: Record<string, string> = {
+  customer_support: 'Customer Support',
+  fantasy_roleplay: 'Fantasy Roleplay',
+  data_collector: 'Data Collector',
+};
+
 export async function createProjectTestingAgent(
   req: CreateProjectTestingAgentRequest
 ): Promise<CreateProjectTestingAgentResponse> {
@@ -407,12 +415,26 @@ export async function createProjectTestingAgent(
     };
   }
 
+  const randomName = uniqueNamesGenerator({
+    dictionaries: [adjectives, colors],
+    length: 2,
+    separator: ' ',
+  });
+
+  const nameParts = [randomName];
+
+  if (recipeId && RECIPIE_NAME_TO_FRIENDLY_NAME[recipeId]) {
+    nameParts.push(RECIPIE_NAME_TO_FRIENDLY_NAME[recipeId]);
+  }
+
+  const name = capitalize(`${nameParts.join(' ')} agent`);
+
   const [agent] = await db
     .insert(testingAgents)
     .values({
       projectId,
       organizationId,
-      name: 'New Agent',
+      name,
       agentId: newAgent.id,
     })
     .returning({
@@ -424,8 +446,109 @@ export async function createProjectTestingAgent(
     body: {
       agentId: newAgent.id,
       id: agent.id,
-      name: 'New Agent',
+      name,
       updatedAt: new Date().toISOString(),
+    },
+  };
+}
+
+type UpdateProjectTestingAgentRequest = ServerInferRequest<
+  typeof contracts.projects.updateProjectTestingAgent
+>;
+
+type UpdateProjectTestingAgentResponse = ServerInferResponses<
+  typeof contracts.projects.updateProjectTestingAgent
+>;
+
+export async function updateProjectTestingAgent(
+  req: UpdateProjectTestingAgentRequest
+): Promise<UpdateProjectTestingAgentResponse> {
+  const { projectId, testingAgentId } = req.params;
+
+  const organizationId = await getUserOrganizationIdOrThrow();
+
+  const testingAgent = await db.query.testingAgents.findFirst({
+    where: and(
+      eq(testingAgents.organizationId, organizationId),
+      eq(testingAgents.projectId, projectId),
+      eq(testingAgents.id, testingAgentId)
+    ),
+  });
+
+  if (!testingAgent) {
+    return {
+      status: 404,
+      body: {},
+    };
+  }
+
+  const { name } = req.body;
+
+  if (!name) {
+    return {
+      status: 400,
+      body: {
+        message: 'Name is required',
+      },
+    };
+  }
+
+  await db
+    .update(testingAgents)
+    .set({
+      name,
+    })
+    .where(eq(testingAgents.id, testingAgentId));
+
+  return {
+    status: 200,
+    body: {
+      name: name || testingAgent.name,
+      id: testingAgent.id,
+      agentId: testingAgent.agentId,
+      updatedAt: new Date().toISOString(),
+    },
+  };
+}
+
+type DeleteProjectTestingAgentRequest = ServerInferRequest<
+  typeof contracts.projects.deleteProjectTestingAgent
+>;
+
+type DeleteProjectTestingAgentResponse = ServerInferResponses<
+  typeof contracts.projects.deleteProjectTestingAgent
+>;
+
+export async function deleteProjectTestingAgent(
+  req: DeleteProjectTestingAgentRequest
+): Promise<DeleteProjectTestingAgentResponse> {
+  const { projectId, testingAgentId } = req.params;
+  const organizationId = await getUserOrganizationIdOrThrow();
+
+  const testingAgent = await db.query.testingAgents.findFirst({
+    where: and(
+      eq(testingAgents.organizationId, organizationId),
+      eq(testingAgents.projectId, projectId),
+      eq(testingAgents.id, testingAgentId)
+    ),
+  });
+
+  if (!testingAgent) {
+    return {
+      status: 404,
+      body: {},
+    };
+  }
+
+  await AgentsService.deleteAgent({
+    agentId: testingAgent.agentId,
+  });
+  await db.delete(testingAgents).where(eq(testingAgents.id, testingAgentId));
+
+  return {
+    status: 200,
+    body: {
+      success: true,
     },
   };
 }
@@ -507,7 +630,6 @@ export async function createProjectSourceAgentFromTestingAgent(
     }),
     db.insert(sourceAgentsStatistics).values({
       id: sourceAgent.id,
-      deployedAgentCount: 0,
     }),
   ]);
 
@@ -559,7 +681,6 @@ export async function createProjectSourceAgentFromTestingAgent(
   return {
     status: 201,
     body: {
-      deployedAgentCount: 0,
       key: randomName,
       testingAgentId: testingAgent.id,
       id: sourceAgent.id,
@@ -583,7 +704,8 @@ export async function getProjectSourceAgents(
 ): Promise<GetProjectSourceAgentsResponse> {
   const organizationId = await getUserOrganizationIdOrThrow();
   const { projectId } = req.params;
-  const { search, offset, testingAgentId, limit } = req.query;
+  const { search, offset, testingAgentId, limit, includeTestingAgentInfo } =
+    req.query;
 
   const where = [
     eq(sourceAgents.organizationId, organizationId),
@@ -614,6 +736,9 @@ export async function getProjectSourceAgents(
     with: {
       status: true,
       sourceAgentsStatistics: true,
+      ...(includeTestingAgentInfo
+        ? { testingAgent: { columns: { name: true } } }
+        : {}),
     },
   });
 
@@ -622,12 +747,12 @@ export async function getProjectSourceAgents(
     body: {
       sourceAgents: sourceAgentsList
         .slice(0, limit)
-        .map(({ status, ...rest }) => ({
+        .map(({ status, testingAgent, ...rest }) => ({
           id: rest.id,
           key: rest.key,
           testingAgentId: rest.testingAgentId,
+          testingAgentName: testingAgent?.name,
           version: rest.version,
-          deployedAgentCount: rest.sourceAgentsStatistics.deployedAgentCount,
           createdAt: rest.createdAt.toISOString(),
           updatedAt: rest.updatedAt.toISOString(),
           status: status.status,
@@ -685,7 +810,6 @@ export async function getProjectSourceAgent(
       key: sourceAgent.key,
       testingAgentId: sourceAgent.testingAgentId,
       version: sourceAgent.version,
-      deployedAgentCount: sourceAgent.sourceAgentsStatistics.deployedAgentCount,
       createdAt: sourceAgent.createdAt.toISOString(),
       updatedAt: sourceAgent.updatedAt.toISOString(),
       status: sourceAgent.status.status,
@@ -799,6 +923,40 @@ export async function getProjectTestingAgent(
       id: testingAgent.id,
       name: testingAgent.name,
       updatedAt: testingAgent.updatedAt.toISOString(),
+    },
+  };
+}
+
+type GetDeployedAgentsCountBySourceAgentRequest = ServerInferRequest<
+  typeof contracts.projects.getDeployedAgentsCountBySourceAgent
+>;
+
+type GetDeployedAgentsCountBySourceAgentResponse = ServerInferResponses<
+  typeof contracts.projects.getDeployedAgentsCountBySourceAgent
+>;
+
+export async function getDeployedAgentsCountBySourceAgent(
+  req: GetDeployedAgentsCountBySourceAgentRequest
+): Promise<GetDeployedAgentsCountBySourceAgentResponse> {
+  const organizationId = await getUserOrganizationIdOrThrow();
+  const { projectId } = req.params;
+  const { sourceAgentId } = req.query;
+
+  const [result] = await db
+    .select({ count: count() })
+    .from(deployedAgents)
+    .where(
+      and(
+        eq(deployedAgents.organizationId, organizationId),
+        eq(deployedAgents.projectId, projectId),
+        eq(deployedAgents.sourceAgentId, sourceAgentId)
+      )
+    );
+
+  return {
+    status: 200,
+    body: {
+      count: result.count,
     },
   };
 }
