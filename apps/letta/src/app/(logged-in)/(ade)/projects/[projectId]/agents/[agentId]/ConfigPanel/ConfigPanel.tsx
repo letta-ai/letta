@@ -12,8 +12,8 @@ export function ConfigPanel() {
 
   return (
     <Panel
-      title="Start using the SDK"
-      id="SDK"
+      title="Settings"
+      id="settings"
       trigger={<ADENavigationItem title="Settings" />}
     >
       <PanelMainContent>

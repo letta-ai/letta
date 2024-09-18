@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import type { AgentState } from '@letta-web/letta-agents-api';
 
 export const supportedProvidersSchema = z.enum(['google']);
 
@@ -13,4 +14,18 @@ export interface ProviderUserPayload {
   imageUrl: string;
   provider: SupportedProviders;
   name: string;
+}
+
+export interface AgentTemplate {
+  memory: AgentState['memory'];
+  tools: AgentState['tools'];
+  llm_config: AgentState['llm_config'];
+  embedding_config: AgentState['embedding_config'];
+}
+
+export enum AgentTemplateVariant {
+  CUSTOMER_SUPPORT = 'customer_support',
+  FANTASY_ROLEPLAY = 'fantasy_roleplay',
+  DATA_COLLECTOR = 'data_collector',
+  DEFAULT = 'default',
 }

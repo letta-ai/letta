@@ -16,6 +16,7 @@ import { useCurrentProjectId } from '../../../../../(dashboard-like)/projects/[p
 import { webApi, webApiQueryKeys } from '$letta/client';
 import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
+import { AgentTemplateVariant } from '$letta/types';
 
 interface AgentRecipeCardProps {
   name: string;
@@ -63,7 +64,7 @@ function CreateAgentsView() {
   });
 
   const handleCreateAgent = useCallback(
-    (recipeId: string) => {
+    (recipeId: AgentTemplateVariant) => {
       createTestingAgent({
         body: {
           recipeId,
@@ -95,23 +96,23 @@ function CreateAgentsView() {
         <HStack>
           <AgentRecipeCard
             name="Customer Support"
-            id="customer-support-agent"
+            id={AgentTemplateVariant.CUSTOMER_SUPPORT}
             onClick={() => {
-              handleCreateAgent('customer-support-agent');
+              handleCreateAgent(AgentTemplateVariant.CUSTOMER_SUPPORT);
+            }}
+          />
+          <AgentRecipeCard
+            name="Data Collector"
+            id={AgentTemplateVariant.DATA_COLLECTOR}
+            onClick={() => {
+              handleCreateAgent(AgentTemplateVariant.DATA_COLLECTOR);
             }}
           />
           <AgentRecipeCard
             name="Fantasy Roleplay"
-            id="fantasy-roleplay-agent"
+            id={AgentTemplateVariant.FANTASY_ROLEPLAY}
             onClick={() => {
-              handleCreateAgent('fantasy-roleplay-agent');
-            }}
-          />
-          <AgentRecipeCard
-            name="Group Chat Friend"
-            id="group-chat-friend-agent"
-            onClick={() => {
-              handleCreateAgent('group-chat-friend-agent');
+              handleCreateAgent(AgentTemplateVariant.FANTASY_ROLEPLAY);
             }}
           />
         </HStack>
@@ -119,6 +120,9 @@ function CreateAgentsView() {
           size="small"
           color="tertiary-transparent"
           label="or start from scratch"
+          onClick={() => {
+            handleCreateAgent(AgentTemplateVariant.DEFAULT);
+          }}
         />
       </VStack>
     </VStack>

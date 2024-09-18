@@ -2,6 +2,7 @@ import { initContract } from '@ts-rest/core';
 import { z } from 'zod';
 import type { GenericSearch } from '$letta/web-api/contracts/shared';
 import { GenericSearchSchema } from '$letta/web-api/contracts/shared';
+import { AgentTemplateVariant } from '$letta/types';
 
 const c = initContract();
 
@@ -48,7 +49,14 @@ const createProjectContract = c.mutation({
 
 /* Create Project Testing Agent */
 export const CreateProjectTestingAgentPayloadSchema = z.object({
-  recipeId: z.string().optional(),
+  recipeId: z
+    .enum([
+      AgentTemplateVariant.CUSTOMER_SUPPORT,
+      AgentTemplateVariant.DATA_COLLECTOR,
+      AgentTemplateVariant.FANTASY_ROLEPLAY,
+      AgentTemplateVariant.DEFAULT,
+    ])
+    .optional(),
 });
 
 const createProjectTestingAgentContract = c.mutation({
