@@ -14,19 +14,24 @@ declare global {
 
 let launchDarklySingleton: LDClient;
 
-if (process.env.NODE_ENV === 'production') {
-  launchDarklySingleton = ld.init(environment.LAUNCH_DARKLY_SDK_KEY, {
-    stream: false,
-  });
-} else {
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-  if (!global.launchDarklySingleton) {
-    global.launchDarklySingleton = ld.init(environment.LAUNCH_DARKLY_SDK_KEY, {
+if (environment.LAUNCH_DARKLY_SDK_KEY) {
+  if (process.env.NODE_ENV === 'production') {
+    launchDarklySingleton = ld.init(environment.LAUNCH_DARKLY_SDK_KEY, {
       stream: false,
     });
-  }
+  } else {
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    if (!global.launchDarklySingleton) {
+      global.launchDarklySingleton = ld.init(
+        environment.LAUNCH_DARKLY_SDK_KEY,
+        {
+          stream: false,
+        }
+      );
+    }
 
-  launchDarklySingleton = global.launchDarklySingleton;
+    launchDarklySingleton = global.launchDarklySingleton;
+  }
 }
 
 async function getLaunchDarklyClient() {
