@@ -88,7 +88,7 @@ function AsyncSelectPrimitive(props: AsyncSelectProps) {
   return (
     <AsyncReactSelect
       unstyled
-      menuPortalTarget={document.body}
+      menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
       onChange={(value) => {
         props.onSelect?.(value);
       }}
@@ -109,7 +109,7 @@ function SelectPrimitive(props: SelectProps) {
   return (
     <ReactSelect
       unstyled
-      menuPortalTarget={document.body}
+      menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
       onChange={(value) => {
         props.onSelect?.(value);
       }}

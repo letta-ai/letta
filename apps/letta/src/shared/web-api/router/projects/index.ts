@@ -846,7 +846,7 @@ export async function getDeployedAgents(
   }
 
   if (search) {
-    where.push(like(deployedAgents.key, search || '%'));
+    where.push(like(deployedAgents.key, `%${search}%` || '%'));
   }
 
   const existingSourceAgentCount = await db.query.deployedAgents.findMany({

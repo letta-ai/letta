@@ -273,6 +273,9 @@ export const deployedAgents = pgTable(
     sourceAgentKey: text('source_agent_key').notNull(),
     projectId: uuid('project_id').notNull(),
     agentId: text('agent_id').notNull().unique(),
+    internalAgentCountId: bigint('internal_agent_count_id', { mode: 'number' })
+      .notNull()
+      .default(0),
     organizationId: uuid('organization_id')
       .notNull()
       .references(() => organizations.id, { onDelete: 'cascade' })

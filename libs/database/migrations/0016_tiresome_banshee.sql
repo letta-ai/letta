@@ -1,0 +1,1 @@
+ALTER TABLE "deployed_agents" ALTER COLUMN "internal_agent_count_id" SET DEFAULT 0;
