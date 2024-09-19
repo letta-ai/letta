@@ -6,9 +6,8 @@ import {
   deployedAgents,
   deployedAgentsStatistics,
   sourceAgents,
-  sourceAgentsStatistics,
 } from '@letta-web/database';
-import { and, eq, sql } from 'drizzle-orm';
+import { and, desc, eq } from 'drizzle-orm';
 import { copyAgentById } from '$letta/server';
 import * as crypto from 'node:crypto';
 
@@ -47,6 +46,11 @@ export async function createAgent(
     crypto.randomUUID()
   );
 
+  const lastDeployedAgent = await db.query.deployedAgents.findFirst({
+    where: eq(deployedAgents.sourceAgentId, sourceAgent.id),
+    orderBy: [desc(deployedAgents.createdAt)],
+  });
+
   if (!copiedAgent.id) {
     return {
       status: 500,
@@ -56,12 +60,16 @@ export async function createAgent(
     };
   }
 
+  const nextInternalAgentCountId =
+    (lastDeployedAgent?.internalAgentCountId || 0) + 1;
+
   const [deployedAgent] = await db
     .insert(deployedAgents)
     .values({
       projectId: sourceAgent.projectId,
-      key: crypto.randomUUID(),
+      key: `${sourceAgentKey}-${nextInternalAgentCountId}`,
       agentId: copiedAgent.id,
+      internalAgentCountId: nextInternalAgentCountId,
       sourceAgentKey: sourceAgent.key,
       sourceAgentId: sourceAgent.id,
       organizationId,
@@ -74,12 +82,6 @@ export async function createAgent(
       messageCount: 0,
       lastActiveAt: new Date(),
     }),
-    db
-      .update(sourceAgentsStatistics)
-      .set({
-        deployedAgentCount: sql`${sourceAgentsStatistics.deployedAgentCount} + 1`,
-      })
-      .where(eq(sourceAgentsStatistics.id, sourceAgent.id)),
   ]);
 
   return {

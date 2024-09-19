@@ -86,3 +86,34 @@ export function Typography(props: TypographyProps) {
     ...rest,
   });
 }
+
+interface LoadedTypographyProps extends TypographyProps {
+  fillerText: string;
+  text?: string;
+  isLoading?: boolean;
+}
+
+export function LoadedTypography(props: LoadedTypographyProps) {
+  const { fillerText, text, isLoading, ...rest } = props;
+
+  return (
+    <div className="relative">
+      {!isLoading && text && (
+        <Typography {...rest} className="absolute right-0 text-right left-0">
+          {text}
+        </Typography>
+      )}
+      <Typography
+        {...rest}
+        role="presentation"
+        tabIndex={-1}
+        className={cn(
+          'pointer-events-none bg-gray-200 select-none  rounded text-transparent',
+          !isLoading ? 'opacity-0' : 'animate-pulse'
+        )}
+      >
+        {fillerText}
+      </Typography>
+    </div>
+  );
+}

@@ -16,6 +16,7 @@ import { CookieNames } from '$letta/server/cookies/types';
 import { redirect } from 'next/navigation';
 import { LoginErrorsEnum } from '$letta/errors';
 import { AnalyticsEvent, trackEvent, trackUser } from '@letta-web/analytics';
+import { jwtDecode } from 'jwt-decode';
 
 function isLettaEmail(email: string) {
   return email.endsWith('@letta.com') || email.endsWith('@memgpt.ai');
@@ -290,4 +291,35 @@ export async function verifyAndReturnAPIKeyDetails(apiKey?: string) {
   }
 
   return key;
+}
+
+interface GoogleJWTResponse {
+  iss: string;
+  azp: string;
+  aud: string;
+  sub: string;
+  hd: string;
+  email: string;
+  email_verified: boolean;
+  at_hash: string;
+  name: string;
+  picture: string;
+  given_name: string;
+  family_name: string;
+  iat: number;
+  exp: number;
+}
+
+export async function extractGoogleIdTokenData(
+  idToken: string
+): Promise<ProviderUserPayload> {
+  const decodedData = jwtDecode<GoogleJWTResponse>(idToken);
+
+  return {
+    email: decodedData.email,
+    uniqueId: `google-${decodedData.sub}`,
+    provider: 'google',
+    imageUrl: decodedData.picture,
+    name: decodedData.name,
+  };
 }

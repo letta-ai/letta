@@ -1,5 +1,24 @@
 import type { AgentState } from '@letta-web/letta-agents-api';
 import { AgentsService, SourcesService } from '@letta-web/letta-agents-api';
+import type { AgentTemplate } from '$letta/types';
+
+export async function createAgentFromTemplate(
+  agentTemplate: AgentTemplate,
+  name: string,
+  userId: string
+) {
+  return AgentsService.createAgent({
+    requestBody: {
+      tools: agentTemplate.tools,
+      name: name,
+      embedding_config: agentTemplate.embedding_config,
+      description: '',
+      memory: agentTemplate.memory,
+      user_id: userId,
+      llm_config: agentTemplate.llm_config,
+    },
+  });
+}
 
 export async function copyAgentById(agentId: string, name: string) {
   const [currentAgent, agentSources] = await Promise.all([
@@ -74,12 +93,14 @@ export async function migrateToNewAgent(options: MigrateToNewAgentArgs) {
     },
   });
 
-  await Promise.all(
-    datasourceIdsToAttach.map(async (datasource) => {
-      return SourcesService.attachAgentToSource({
-        agentId: agentIdToMigrate,
-        sourceId: datasource || '',
-      });
-    })
-  );
+  await Promise.all([
+    Promise.all(
+      datasourceIdsToAttach.map(async (datasource) => {
+        return SourcesService.attachAgentToSource({
+          agentId: agentIdToMigrate,
+          sourceId: datasource || '',
+        });
+      })
+    ),
+  ]);
 }

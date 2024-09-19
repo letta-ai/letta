@@ -1,10 +1,14 @@
 'use client';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { isMultiValue, RawSelect } from '@letta-web/component-library';
+import {
+  Card,
+  InputFilter,
+  isMultiValue,
+  RawSelect,
+} from '@letta-web/component-library';
 import type { OptionType } from '@letta-web/component-library';
 import { Frame } from '@letta-web/component-library';
 import {
-  ActionCard,
   Button,
   Cross2Icon,
   LettaLoader,
@@ -19,7 +23,7 @@ import {
   RawAsyncSelect,
   RawInput,
 } from '@letta-web/component-library';
-import { SearchIcon } from 'lucide-react';
+import { FilterIcon, SearchIcon } from 'lucide-react';
 import { webApi, webApiQueryKeys } from '$letta/client';
 import { useCurrentProjectId } from '../hooks';
 import { usePathname, useSearchParams } from 'next/navigation';
@@ -28,6 +32,26 @@ import type { DeployedAgentType } from '$letta/web-api/contracts/projects';
 import { useDebouncedValue } from '@mantine/hooks';
 import { useAgentsServiceGetAgent } from '@letta-web/letta-agents-api';
 import { useRouter } from 'next/navigation';
+import { Messages } from '$letta/client/components';
+
+interface AgentMessagesListProps {
+  agentId: string;
+}
+
+function AgentMessagesList(props: AgentMessagesListProps) {
+  const { agentId } = props;
+
+  return (
+    <VStack rounded border collapseHeight>
+      <HStack borderBottom paddingX="small" paddingY="small">
+        <Typography>Latest messages</Typography>
+      </HStack>
+      <VStack fullHeight overflow="hidden">
+        <Messages isSendingMessage={false} agentId={agentId} />
+      </VStack>
+    </VStack>
+  );
+}
 
 interface DeployedAgentViewProps {
   agent: DeployedAgentType;
@@ -72,7 +96,6 @@ function DeployedAgentView(props: DeployedAgentViewProps) {
             {key}
           </Typography>
           <HStack>
-            <Button color="tertiary" label="Open in ADE" />
             <Button
               onClick={onClose}
               color="tertiary-transparent"
@@ -82,16 +105,29 @@ function DeployedAgentView(props: DeployedAgentViewProps) {
             />
           </HStack>
         </HStack>
-        <VStack padding paddingY="small" overflowY="auto" collapseHeight>
+        <VStack padding paddingY="small" overflowY="hidden" fullHeight>
           {!data ? (
             <VStack align="center" justify="center" fullHeight fullWidth>
               <LettaLoader size="large" />
             </VStack>
           ) : (
-            <VStack gap>
-              <ActionCard title="View Variables" />
-              <ActionCard title="View Memories" />
-              <ActionCard title="Explore Messages" />
+            <VStack fullHeight overflow="hidden" gap>
+              <Card>
+                <VStack>
+                  <RawInput
+                    inline
+                    label="Agent ID"
+                    defaultValue={agent.id}
+                    readOnly
+                    allowCopy
+                    fullWidth
+                  />
+                  {/*<HStack fullWidth justify="end">*/}
+                  {/*  <Button label="Connection instructions" preIcon={<BotIcon />} color="tertiary" />*/}
+                  {/*</HStack>*/}
+                </VStack>
+              </Card>
+              <AgentMessagesList agentId={agent.agentId} />
             </VStack>
           )}
         </VStack>
@@ -105,28 +141,34 @@ interface DeployedAgentListProps {
   filterBy?: OptionType;
 }
 
-const AGENT_LIMIT = 20;
-
 function DeployedAgentList(props: DeployedAgentListProps) {
   const currentProjectId = useCurrentProjectId();
+  const [limit, setLimit] = useState(20);
 
   const [selectedAgent, setSelectedAgent] = useState<DeployedAgentType>();
   const { search, filterBy } = props;
   const [offset, setOffset] = useState(0);
+
+  useEffect(() => {
+    setOffset(0);
+  }, [search]);
+
   const { data } = webApi.projects.getDeployedAgents.useQuery({
     queryKey: webApiQueryKeys.projects.getDeployedAgentsWithSearch(
       currentProjectId,
       {
         search: search,
         sourceAgentKey: filterBy?.value,
+        limit,
+        offset,
       }
     ),
     queryData: {
       query: {
-        search,
+        search: search,
         sourceAgentKey: filterBy?.value,
         offset,
-        limit: AGENT_LIMIT,
+        limit,
       },
       params: { projectId: currentProjectId },
     },
@@ -135,16 +177,12 @@ function DeployedAgentList(props: DeployedAgentListProps) {
   const DeployedAgentColumns: Array<ColumnDef<DeployedAgentType>> = useMemo(
     () => [
       {
-        id: 'id',
+        header: 'Id',
         accessorKey: 'id',
       },
       {
         header: 'Name',
-        accessorKey: 'name',
-      },
-      {
-        header: 'Messages',
-        accessorKey: 'messageCount',
+        accessorKey: 'key',
       },
       {
         header: 'Last Active',
@@ -155,18 +193,22 @@ function DeployedAgentList(props: DeployedAgentListProps) {
   );
 
   const deployedAgents = useMemo(() => {
-    return data?.body || [];
+    return data?.body?.deployedAgents || [];
   }, [data]);
 
   return (
-    <HStack className="relative" fullHeight fullWidth>
+    <HStack className="relative" fullWidth>
       <DataTable
         onRowClick={(row) => {
           setSelectedAgent(row);
         }}
         fullHeight
-        className="min-h-[400px]"
-        limit={AGENT_LIMIT}
+        autofitHeight
+        minHeight={400}
+        limit={limit}
+        onLimitChange={setLimit}
+        hasNextPage={data?.body?.hasNextPage}
+        showPagination
         offset={offset}
         onSetOffset={setOffset}
         loadingText={
@@ -245,10 +287,13 @@ function FilterBySourceAgentComponent(
         return [];
       }
 
-      return response.body.sourceAgents.map((agent) => ({
-        label: agent.key,
-        value: agent.key,
-      }));
+      return [
+        ...response.body.sourceAgents.map((agent) => ({
+          label: agent.key,
+          value: agent.key,
+        })),
+        { label: '(Any Agent)', value: '' },
+      ];
     },
     [currentProjectId]
   );
@@ -283,6 +328,8 @@ function FilterBySourceAgentComponent(
       arr.unshift(initialFilter);
     }
 
+    arr.unshift({ label: '(Any Agent)', value: '' });
+
     return arr;
   }, [data?.body, initialFilter]);
 
@@ -291,7 +338,10 @@ function FilterBySourceAgentComponent(
       <RawSelect
         options={[]}
         isLoading
-        label="Filter by Source Agent"
+        inline
+        fullWidth
+        preLabelIcon={<FilterIcon className="w-4" />}
+        label="from the staged agent:"
         placeholder="Filter"
       />
     );
@@ -312,9 +362,12 @@ function FilterBySourceAgentComponent(
           }
         }
       }}
+      fullWidth
+      inline
       loadOptions={handleLoadOptions}
-      label="Filter by Source Agent"
-      placeholder="Filter"
+      preLabelIcon={<FilterIcon className="w-4" />}
+      label="from the staged agent:"
+      placeholder="Staged Agent Name"
       defaultOptions={defaultOptions}
     />
   );
@@ -328,24 +381,27 @@ function DeployedAgentsPage() {
 
   return (
     <DashboardPageLayout title="Deployed Agents">
-      <DashboardPageSection fullHeight>
+      <DashboardPageSection>
         <VStack fullHeight fullWidth>
-          <HStack fullWidth>
+          <VStack gap={false} fullWidth>
             <RawInput
               onChange={(e) => {
                 setSearch(e.target.value);
               }}
               value={search}
               preIcon={<SearchIcon />}
+              hideLabel
               label="Search deployed agents by name"
-              placeholder="Agent name"
+              placeholder="Search by name"
               fullWidth
             />
-            <FilterBySourceAgentComponent
-              filterBy={filterBy}
-              onFilterChange={setFilterBy}
-            />
-          </HStack>
+            <InputFilter>
+              <FilterBySourceAgentComponent
+                filterBy={filterBy}
+                onFilterChange={setFilterBy}
+              />
+            </InputFilter>
+          </VStack>
           <DeployedAgentList search={debouncedSearch} filterBy={filterBy} />
         </VStack>
       </DashboardPageSection>

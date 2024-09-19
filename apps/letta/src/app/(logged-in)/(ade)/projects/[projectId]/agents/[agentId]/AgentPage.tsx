@@ -32,6 +32,7 @@ import { ArchivalMemoriesPanel } from './ArchivalMemoriesPanel/ArchivalMemoriesP
 import { DatabaseIcon } from 'lucide-react';
 import { StagedAgentsPanel } from './StagedAgentsPanel/StagedAgentsPanel';
 import { ConfigPanel } from './ConfigPanel/ConfigPanel';
+import { useCurrentTestingAgent } from './hooks/useCurrentTestingAgent/useCurrentTestingAgent';
 
 interface SidebarGroupProps {
   title: string;
@@ -147,12 +148,25 @@ function ADESidebar() {
 }
 
 export function AgentPage() {
+  const { name } = useCurrentTestingAgent();
   return (
     <PanelManager>
       <ADEPage
         header={
           <ADEHeader>
             <NavOverlay />
+            <VStack
+              className="pointer-events-none"
+              fullHeight
+              fullWidth
+              position="absolute"
+              align="center"
+              justify="center"
+            >
+              <Typography className="absolute" color="white">
+                {name}
+              </Typography>
+            </VStack>
             <HStack>
               <StagedAgentsPanel />
             </HStack>

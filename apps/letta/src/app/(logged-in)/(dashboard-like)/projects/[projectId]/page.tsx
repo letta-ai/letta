@@ -15,18 +15,22 @@ import React, { useMemo } from 'react';
 import { useCurrentProjectId } from './hooks';
 import { webApi, webApiQueryKeys } from '$letta/client';
 import type { ProjectTestingAgentType } from '$letta/web-api/contracts/projects';
+import { nicelyFormattedDateAndTime } from '@letta-web/helpful-client-utils';
 
 interface TestingAgentCardProps {
   id: string;
   name: string;
+  lastUpdatedAt: string;
 }
 
 function TestingAgentCard(props: TestingAgentCardProps) {
-  const { id, name } = props;
+  const { id, name, lastUpdatedAt } = props;
   const projectId = useCurrentProjectId();
+
   return (
     <ActionCard
       title={name}
+      subtitle={`Last updated ${nicelyFormattedDateAndTime(lastUpdatedAt)}`}
       mainAction={
         <HStack>
           <Button
@@ -36,7 +40,7 @@ function TestingAgentCard(props: TestingAgentCardProps) {
           />
         </HStack>
       }
-    />
+    ></ActionCard>
   );
 }
 
@@ -84,7 +88,12 @@ function TestingAgentsList(props: TestingAgentsListProps) {
   return (
     <VStack fullWidth>
       {agents.map((agent) => (
-        <TestingAgentCard key={agent.id} id={agent.id} name={agent.name} />
+        <TestingAgentCard
+          key={agent.id}
+          id={agent.id}
+          name={agent.name}
+          lastUpdatedAt={agent.updatedAt}
+        />
       ))}
     </VStack>
   );
@@ -98,6 +107,10 @@ function TestingAgentsSection() {
       { search: '', limit: RECENT_AGENTS_TO_DISPLAY + 1 }
     ),
     queryData: {
+      query: {
+        orderBy: 'createdAt',
+        orderDirection: 'desc',
+      },
       params: {
         projectId: currentProjectId,
       },

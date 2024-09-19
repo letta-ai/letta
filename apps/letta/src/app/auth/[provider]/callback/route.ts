@@ -2,26 +2,11 @@ import axios from 'axios';
 import type { AuthProviderContextSchema } from '../types';
 import type { ProviderUserPayload, SupportedProviders } from '$letta/types';
 import type { NextRequest } from 'next/server';
-import { jwtDecode } from 'jwt-decode';
-import { signInUserFromProviderLogin } from '$letta/server/auth';
+import {
+  extractGoogleIdTokenData,
+  signInUserFromProviderLogin,
+} from '$letta/server/auth';
 import { LoginErrorsEnum } from '$letta/errors';
-
-interface GoogleJWTResponse {
-  iss: string;
-  azp: string;
-  aud: string;
-  sub: string;
-  hd: string;
-  email: string;
-  email_verified: boolean;
-  at_hash: string;
-  name: string;
-  picture: string;
-  given_name: string;
-  family_name: string;
-  iat: number;
-  exp: number;
-}
 
 interface GoogleAccessTokenResponse {
   access_token: string;
@@ -44,15 +29,7 @@ async function getAccessTokenFromGoogle(
     }
   );
 
-  const decodedData = jwtDecode<GoogleJWTResponse>(response.data.id_token);
-
-  return {
-    email: decodedData.email,
-    uniqueId: `google-${decodedData.sub}`,
-    provider: 'google',
-    imageUrl: decodedData.picture,
-    name: decodedData.name,
-  };
+  return extractGoogleIdTokenData(response.data.id_token);
 }
 
 async function getUserDetailsFromProvider(

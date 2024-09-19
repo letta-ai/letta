@@ -30,6 +30,7 @@ async function AgentsAgentPage(context: AgentsAgentPageProps) {
     where: eq(testingAgents.id, testingAgentId),
     columns: {
       agentId: true,
+      name: true,
     },
   });
 

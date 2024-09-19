@@ -119,6 +119,7 @@ const frameVariants = cva('', {
     },
     position: {
       absolute: 'absolute',
+      fixed: 'fixed',
       relative: 'relative',
     },
   },

@@ -16,18 +16,24 @@ export default async function DashboardLikeLayout(
 
   return (
     <div className="pageFadeIn w-[100vw] h-[100vh]">
-      <VStack overflow="auto" gap={false} fullHeight fullWidth>
+      <VStack
+        overflowY="auto"
+        overflowX="auto"
+        gap={false}
+        fullHeight
+        fullWidth
+      >
         <HStack
           align="center"
           fullWidth
           borderBottom
           color="primary"
           justify="start"
-          className="min-h-[64px] h-[64px]"
+          className="min-h-header h-header"
         >
           <DashboardHeader />
         </HStack>
-        <Frame className="max-w-[1440px] mx-[auto]" fullHeight fullWidth>
+        <Frame className="max-w-[1440px] mx-[auto]" fullWidth>
           {children}
         </Frame>
       </VStack>

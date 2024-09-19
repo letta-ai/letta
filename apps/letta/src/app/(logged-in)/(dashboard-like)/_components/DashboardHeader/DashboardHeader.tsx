@@ -173,7 +173,7 @@ export function DashboardHeader() {
       justify="spaceBetween"
       align="center"
       paddingX="large"
-      className="max-w-[1440px] mx-[auto]"
+      className="max-w-[1440px] h-header min-h-header mx-[auto]"
     >
       <HStack gap="large" align="center">
         <HStack fullWidth align="center">

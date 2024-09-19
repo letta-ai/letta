@@ -144,6 +144,7 @@ function FormItem({ children }: FormItemProps) {
 
 export interface InputContainerProps {
   label: string;
+  preLabelIcon?: React.ReactNode;
   hideLabel?: boolean;
   description?: string;
   inline?: boolean;
@@ -156,13 +157,13 @@ export function InputContainer(props: InputContainerProps) {
   const {
     label,
     hideLabel,
+    preLabelIcon,
     fullWidth,
     fullHeight,
     description,
     inline,
     children,
   } = props;
-
   return (
     <FormItem>
       <InputWrapper
@@ -171,7 +172,12 @@ export function InputContainer(props: InputContainerProps) {
         inline={inline}
         inputAndLabel={
           <>
-            <FormLabel className={hideLabel ? 'sr-only' : ''}>
+            <FormLabel
+              className={
+                hideLabel ? 'sr-only' : 'flex flex-row gap-1 items-center'
+              }
+            >
+              {preLabelIcon && <Slot className="h-3">{preLabelIcon}</Slot>}
               {label}
             </FormLabel>
             <FormControl>{children}</FormControl>
@@ -200,6 +206,7 @@ export function RawInputContainer(props: RawInputContainerProps) {
     fullHeight,
     inline,
     fullWidth,
+    preLabelIcon,
     description,
     children,
   } = props;
@@ -210,7 +217,13 @@ export function RawInputContainer(props: RawInputContainerProps) {
       fullHeight={fullHeight}
       inputAndLabel={
         <>
-          <LabelPrimitive htmlFor={id} className={hideLabel ? 'sr-only' : ''}>
+          <LabelPrimitive
+            htmlFor={id}
+            className={
+              hideLabel ? 'sr-only' : 'flex flex-row gap-1 items-center'
+            }
+          >
+            {preLabelIcon && <Slot className="h-3">{preLabelIcon}</Slot>}
             {label}
           </LabelPrimitive>
           {children}

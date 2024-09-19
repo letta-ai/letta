@@ -45,12 +45,18 @@ const createAPIKeyContract = c.mutation({
 });
 
 /* Get API Keys */
+
+const GetAPIKeysResponseSchema = z.object({
+  apiKeys: APIKeysSchema,
+  hasNextPage: z.boolean(),
+});
+
 const getAPIKeysContract = c.query({
   method: 'GET',
   query: GenericSearchSchema,
   path: '/api-keys',
   responses: {
-    200: APIKeysSchema,
+    200: GetAPIKeysResponseSchema,
   },
 });
 

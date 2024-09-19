@@ -2,6 +2,8 @@ import type { NextRequest } from 'next/server';
 import axios, { isAxiosError } from 'axios';
 import { environment } from '@letta-web/environmental-variables';
 import { EventSource } from 'extended-eventsource';
+import { testingAgents } from '@letta-web/database';
+import { eq } from 'drizzle-orm';
 
 export interface HandlerContext {
   params: {
@@ -155,6 +157,24 @@ export async function makeRequestToSDK(
     });
 
     let data = response.data;
+
+    if (
+      response.status === 200 &&
+      ['PATCH', 'POST', 'DELETE'].includes(req.method)
+    ) {
+      // hack to update the updatedAt field if user does anything with agents
+      if (
+        path.includes('agents') &&
+        Object.prototype.hasOwnProperty.call(payload, 'agentId')
+      ) {
+        void db
+          .update(testingAgents)
+          .set({
+            updatedAt: new Date(),
+          })
+          .where(eq(testingAgents.agentId, payload.agentId));
+      }
+    }
 
     if (typeof data === 'object') {
       data = JSON.stringify(data);

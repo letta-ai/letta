@@ -158,6 +158,7 @@ function EditMemoryForm({ block, onClose }: EditMemoryFormProps) {
             value={block.label || ''}
           />
           <FormField
+            control={form.control}
             name="value"
             render={({ field }) => (
               <TextArea fullWidth label="Content" {...field} />

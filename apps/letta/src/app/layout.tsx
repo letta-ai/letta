@@ -16,6 +16,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <link
           rel="apple-touch-icon"
           sizes="57x57"
@@ -92,7 +93,7 @@ export default function RootLayout({
         <title>Letta</title>
       </head>
       <body className="overflow-hidden">
-        <NextTopLoader showSpinner={false} shadow="none" color="white" />
+        <NextTopLoader showSpinner={false} color="#fff" zIndex={9999} />
         <ClientSideProviders>{children}</ClientSideProviders>
       </body>
     </html>

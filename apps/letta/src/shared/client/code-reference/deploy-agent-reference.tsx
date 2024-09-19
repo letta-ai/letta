@@ -48,7 +48,7 @@ function DeployAgentInstructionsCurl(props: DeployAgentInstructionsCurlProps) {
   });
 
   const deploymentAgent = useMemo(() => {
-    return data?.body?.[0];
+    return data?.body?.deployedAgents[0];
   }, [data]);
 
   useEffect(() => {

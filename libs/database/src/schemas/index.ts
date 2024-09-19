@@ -179,9 +179,9 @@ export const sourceAgents = pgTable(
       .references(() => organizations.id, { onDelete: 'cascade' })
       .notNull(),
     projectId: uuid('project_id').notNull(),
-    testingAgentId: text('testing_agent_id').notNull(),
+    testingAgentId: uuid('testing_agent_id_uuid').notNull(),
     agentId: text('agent_id').notNull().unique(),
-    version: text('version').notNull().unique(),
+    version: text('version').notNull(),
     createdAt: timestamp('created_at').notNull().defaultNow(),
     updatedAt: timestamp('updated_at')
       .notNull()
@@ -190,6 +190,11 @@ export const sourceAgents = pgTable(
   (table) => ({
     unique: {
       uniqueKey: uniqueIndex('unique_key').on(table.key, table.organizationId),
+      uniqueVersion: uniqueIndex('unique_version').on(
+        table.version,
+        table.organizationId,
+        table.testingAgentId
+      ),
     },
   })
 );
@@ -203,7 +208,7 @@ export const sourceAgentRelations = relations(
     }),
     testingAgent: one(testingAgents, {
       fields: [sourceAgents.testingAgentId],
-      references: [testingAgents.agentId],
+      references: [testingAgents.id],
     }),
     deployedAgents: many(deployedAgents),
     project: one(projects, {
@@ -225,9 +230,6 @@ export const sourceAgentsStatistics = pgTable('source_agents_statistics', {
   id: uuid('id')
     .primaryKey()
     .references(() => sourceAgents.id, { onDelete: 'cascade' }),
-  deployedAgentCount: bigint('deployed_agent_count', { mode: 'number' })
-    .notNull()
-    .default(0),
 });
 
 export const sourceAgentsStatisticsRelation = relations(
@@ -271,6 +273,9 @@ export const deployedAgents = pgTable(
     sourceAgentKey: text('source_agent_key').notNull(),
     projectId: uuid('project_id').notNull(),
     agentId: text('agent_id').notNull().unique(),
+    internalAgentCountId: bigint('internal_agent_count_id', { mode: 'number' })
+      .notNull()
+      .default(0),
     organizationId: uuid('organization_id')
       .notNull()
       .references(() => organizations.id, { onDelete: 'cascade' })
