@@ -4,9 +4,11 @@ import { HStack } from '../../framing/HStack/HStack';
 import { VStack } from '../../framing/VStack/VStack';
 import { Frame } from '../../framing/Frame/Frame';
 import { usePathname } from 'next/navigation';
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { Button } from '../../core/Button/Button';
 import './DashboardWithSidebarWrapper.scss';
+import ReactDOM from 'react-dom';
+import { ArrowLeft } from 'lucide-react';
 
 interface NavItemProps {
   label: string;
@@ -45,7 +47,7 @@ export function Navigation(props: NavigationProps) {
   const { projectTitle, items } = props;
 
   return (
-    <VStack paddingX="large" gap="large" paddingY>
+    <VStack paddingX="large" gap="large" paddingY="small">
       <HStack align="center">{projectTitle}</HStack>
       <VStack>
         {items.map((item) => (
@@ -66,17 +68,45 @@ export function DashboardWithSidebarWrapper(
   props: DashboardWithSidebarWrapperProps
 ) {
   const { navigationItems, projectTitle, children } = props;
+
+  const pathname = usePathname();
+
+  const rootPath = useMemo(() => {
+    return pathname.split('/')[1];
+  }, [pathname]);
+
+  const [mounted, setMounted] = React.useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   return (
     <Frame fullWidth>
       <HStack fullWidth>
-        <VStack gap={false} className="min-w-[250px] relative">
-          <Navigation projectTitle={projectTitle} items={navigationItems} />
-          <VStack
-            borderRight
-            fullHeight
-            className="absolute top-0 z-[-1] overflow-hidden sidebar-bar ml-[250px]"
-          />
-        </VStack>
+        {mounted &&
+          ReactDOM.createPortal(
+            <VStack fullWidth>
+              <HStack
+                align="start"
+                borderBottom
+                paddingY="xsmall"
+                paddingX="small"
+                fullWidth
+              >
+                <Button
+                  color="tertiary-transparent"
+                  preIcon={<ArrowLeft />}
+                  label="Back"
+                  align="left"
+                  fullWidth
+                  href={`/${rootPath}`}
+                />
+              </HStack>
+              <Navigation projectTitle={projectTitle} items={navigationItems} />
+            </VStack>,
+            document.getElementById('subnavigation')!
+          )}
         <VStack fullWidth paddingBottom>
           {children}
         </VStack>

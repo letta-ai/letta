@@ -14,6 +14,9 @@ export function buildConfig(appDir: string): Config {
       ...createGlobPatternsForDependencies(appDir),
     ],
     theme: {
+      screens: {
+        visibleSidebar: '840px',
+      },
       extend: {
         gap: {
           2: 'var(--default-gap)',
@@ -28,9 +31,16 @@ export function buildConfig(appDir: string): Config {
           panel: 'var(--panel-row-height)',
           header: 'var(--header-height)',
         },
+        minHeight: {
+          header: 'var(--header-height)',
+        },
         width: {
           biWidth: 'var(--button-input-height)',
           'biWidth-sm': 'var(--button-input-height-sm)',
+          sidebar: 'var(--sidebar-width)',
+        },
+        minWidth: {
+          sidebar: 'var(--sidebar-width)',
         },
         fontSize: {
           sm: 'var(--font-size-sm)',

@@ -36,7 +36,7 @@ export function DashboardPageLayout(props: DashboardPageLayoutProps) {
   const { icon, title, actions } = props;
 
   return (
-    <VStack gap={false} fullWidth>
+    <VStack className="max-w-[1440px] mx-[auto]" gap={false} fullWidth>
       <HStack
         align="end"
         as="header"

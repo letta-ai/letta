@@ -92,8 +92,12 @@ export default function RootLayout({
         <meta name="theme-color" content="#ffffff" />
         <title>Letta</title>
       </head>
-      <body className="overflow-hidden">
-        <NextTopLoader showSpinner={false} color="#fff" zIndex={9999} />
+      <body>
+        <NextTopLoader
+          showSpinner={false}
+          color="hsl(var(--primary))"
+          zIndex={9999}
+        />
         <ClientSideProviders>{children}</ClientSideProviders>
       </body>
     </html>

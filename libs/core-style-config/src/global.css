@@ -77,6 +77,8 @@
     --panel-row-height: 42px;
     --header-height: 64px;
 
+    --sidebar-width: 250px;
+
     --positive: 145, 67%, 41%;
     --positive-content: 0 0% 100%;
   }
@@ -123,6 +125,7 @@
     --border: 200, 3%, 17%;
     --input: 240 3.7% 15.9%;
     --ring: 240 4.9% 83.9%;
+
 
 
 

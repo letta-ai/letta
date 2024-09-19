@@ -15,10 +15,10 @@ async function HomePage() {
   });
 
   if (!project) {
-    return redirect('/project/new');
+    return redirect('/projects');
   }
 
-  redirect(`/projects/${project.id}`);
+  redirect(`/projects`);
 }
 
 export default HomePage;
