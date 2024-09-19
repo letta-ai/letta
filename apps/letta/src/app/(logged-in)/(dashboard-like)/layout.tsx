@@ -1,7 +1,7 @@
 'use server';
 import type { ReactNode } from 'react';
 import React from 'react';
-import { Frame, HStack, VStack } from '@letta-web/component-library';
+import { Frame, VStack } from '@letta-web/component-library';
 import './DashboardLike.scss';
 import { DashboardHeader } from './_components/DashboardHeader/DashboardHeader';
 
@@ -23,16 +23,7 @@ export default async function DashboardLikeLayout(
         fullHeight
         fullWidth
       >
-        <HStack
-          align="center"
-          fullWidth
-          borderBottom
-          color="primary"
-          justify="start"
-          className="min-h-header h-header"
-        >
-          <DashboardHeader />
-        </HStack>
+        <DashboardHeader />
         <Frame className="max-w-[1440px] mx-[auto]" fullWidth>
           {children}
         </Frame>

@@ -168,29 +168,33 @@ export function DashboardHeader() {
   const { name } = useCurrentUser();
 
   return (
-    <HStack
-      fullWidth
-      justify="spaceBetween"
-      align="center"
-      paddingX="large"
-      className="max-w-[1440px] h-header min-h-header mx-[auto]"
-    >
-      <HStack gap="large" align="center">
-        <HStack fullWidth align="center">
-          <DashboardNavigation />
+    <>
+      <HStack fullWidth color="primary">
+        <HStack
+          fullWidth
+          justify="spaceBetween"
+          align="center"
+          paddingX="large"
+          className="max-w-[1440px] h-header min-h-header mx-[auto]"
+        >
+          <HStack gap="large" align="center">
+            <HStack fullWidth align="center">
+              <DashboardNavigation />
 
-          <SubRoute />
+              <SubRoute />
+            </HStack>
+          </HStack>
+          <div>
+            <Button
+              href="/settings"
+              color="tertiary-transparent"
+              label="Settings"
+              hideLabel
+              preIcon={<Avatar name={name} />}
+            />
+          </div>
         </HStack>
       </HStack>
-      <div>
-        <Button
-          href="/settings"
-          color="tertiary-transparent"
-          label="Settings"
-          hideLabel
-          preIcon={<Avatar name={name} />}
-        />
-      </div>
-    </HStack>
+    </>
   );
 }
