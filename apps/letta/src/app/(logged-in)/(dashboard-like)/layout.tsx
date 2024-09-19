@@ -1,12 +1,17 @@
-'use server';
 import type { ReactNode } from 'react';
 import React from 'react';
-import { Frame, HStack, VStack } from '@letta-web/component-library';
+import {
+  Frame,
+  HStack,
+  UseDashboardNavigationItemsProvider,
+  VStack,
+} from '@letta-web/component-library';
 import './DashboardLike.scss';
 import {
   DashboardHeader,
   NavigationSidebar,
-} from './_components/DashboardHeader/DashboardHeader';
+  SIDEBAR_OVERLAY_MOUNT_POINT_ID,
+} from './_components/DashboardNavigation/DashboardNavigation';
 
 interface DashboardLikeLayoutProps {
   children: ReactNode;
@@ -18,15 +23,17 @@ export default async function DashboardLikeLayout(
   const { children } = props;
 
   return (
-    <div className="pageFadeIn">
-      <VStack gap={false} fullHeight fullWidth>
-        <DashboardHeader />
-        <HStack fullWidth>
-          <NavigationSidebar />
-          <VStack className="min-w-sidebar" />
-          <Frame fullWidth>{children}</Frame>
-        </HStack>
-      </VStack>
-    </div>
+    <UseDashboardNavigationItemsProvider>
+      <div className="pageFadeIn">
+        <VStack gap={false} fullHeight fullWidth>
+          <DashboardHeader />
+          <HStack fullWidth>
+            <NavigationSidebar />
+            <Frame fullWidth>{children}</Frame>
+          </HStack>
+          <div id={SIDEBAR_OVERLAY_MOUNT_POINT_ID} />
+        </VStack>
+      </div>
+    </UseDashboardNavigationItemsProvider>
   );
 }

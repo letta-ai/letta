@@ -45,6 +45,7 @@ async function DataSourcePageLayout(props: ProjectPageWrapperProps) {
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
       <DashboardWithSidebarWrapper
+        baseUrl="/data-sources"
         projectTitle={
           <>
             <Avatar name={dataSource.name} />

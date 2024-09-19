@@ -18,6 +18,12 @@ export function buildConfig(appDir: string): Config {
         visibleSidebar: '840px',
       },
       extend: {
+        zIndex: {
+          sidebarNavOverlay: '6',
+          sidebarNav: '7',
+          header: '8',
+          dialog: '9',
+        },
         gap: {
           2: 'var(--default-gap)',
         },

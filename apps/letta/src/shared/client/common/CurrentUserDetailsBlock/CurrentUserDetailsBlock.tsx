@@ -10,7 +10,12 @@ import {
 import { useCurrentUser } from '$letta/client/hooks';
 import { webApi, webApiQueryKeys } from '$letta/client';
 
-export function CurrentUserDetailsBlock() {
+interface CurrentUserDetailsBlockProps {
+  hideSettingsButton?: boolean;
+}
+
+export function CurrentUserDetailsBlock(props: CurrentUserDetailsBlockProps) {
+  const { hideSettingsButton } = props;
   const { name } = useCurrentUser();
   const { data } = webApi.organizations.getCurrentOrganization.useQuery({
     queryKey: webApiQueryKeys.organizations.getCurrentOrganization,
@@ -27,13 +32,15 @@ export function CurrentUserDetailsBlock() {
           </Typography>
         )}
       </VStack>
-      <Button
-        size="small"
-        target="_blank"
-        href="/settings"
-        color="tertiary"
-        label="Settings"
-      />
+      {!hideSettingsButton && (
+        <Button
+          size="small"
+          target="_blank"
+          href="/settings"
+          color="tertiary"
+          label="Settings"
+        />
+      )}
     </HStack>
   );
 }

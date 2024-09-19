@@ -43,6 +43,7 @@ async function ProjectPageLayout(props: ProjectPageWrapperProps) {
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
       <DashboardWithSidebarWrapper
+        baseUrl="/projects"
         projectTitle={
           <>
             <Avatar name={project.body.name} />
@@ -57,12 +58,10 @@ async function ProjectPageLayout(props: ProjectPageWrapperProps) {
           {
             label: 'Staging',
             href: `/projects/${projectId}/staging`,
-            highlightSubPaths: true,
           },
           {
             label: 'Deployments',
             href: `/projects/${projectId}/deployments`,
-            highlightSubPaths: true,
           },
         ]}
       >

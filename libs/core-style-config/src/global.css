@@ -81,6 +81,8 @@
 
     --positive: 145, 67%, 41%;
     --positive-content: 0 0% 100%;
+
+    --media-breakpoint-sidebar-visible: 840px;
   }
 
   .dark {
