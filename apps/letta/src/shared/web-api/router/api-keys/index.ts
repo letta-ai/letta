@@ -54,7 +54,7 @@ export async function getAPIKeys(
   req: GetAPIKeysRequest
 ): Promise<GetAPIKeysResponse> {
   const organizationId = await getUserOrganizationIdOrThrow();
-  const { offset, limit, search } = req.query;
+  const { offset, limit = 10, search } = req.query;
 
   const where = [eq(lettaAPIKeys.organizationId, organizationId)];
 
@@ -65,7 +65,7 @@ export async function getAPIKeys(
   const apiKeys = await db.query.lettaAPIKeys.findMany({
     where: and(...where),
     offset,
-    limit,
+    limit: limit + 1,
     columns: {
       id: true,
       name: true,
@@ -76,12 +76,15 @@ export async function getAPIKeys(
 
   return {
     status: 200,
-    body: apiKeys.map((apiKey) => ({
-      id: apiKey.id,
-      name: apiKey.name,
-      createdAt: apiKey.createdAt.toISOString(),
-      updatedAt: apiKey.updatedAt.toISOString(),
-    })),
+    body: {
+      apiKeys: apiKeys.slice(0, limit).map((apiKey) => ({
+        id: apiKey.id,
+        name: apiKey.name,
+        createdAt: apiKey.createdAt.toISOString(),
+        updatedAt: apiKey.updatedAt.toISOString(),
+      })),
+      hasNextPage: apiKeys.length > limit,
+    },
   };
 }
 

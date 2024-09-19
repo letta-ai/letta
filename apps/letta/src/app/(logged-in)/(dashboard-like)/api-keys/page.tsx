@@ -238,27 +238,26 @@ const apiKeysColumns: Array<ColumnDef<APIKeyType>> = [
   },
 ];
 
-const PAGE_SIZE = 10;
-
 function APIKeysPage() {
   const [offset, setOffset] = useState(0);
+  const [limit, setLimit] = useState(10);
 
   const { data, isFetching, isError } = webApi.apiKeys.getAPIKeys.useQuery({
     queryKey: webApiQueryKeys.apiKeys.getAPIKeysWithSearch({
       offset,
-      limit: PAGE_SIZE,
+      limit,
     }),
     queryData: {
       query: {
         offset,
-        limit: PAGE_SIZE,
+        limit,
       },
     },
   });
 
   const apiKeys = useMemo(() => {
     if (data?.status === 200) {
-      return data.body;
+      return data.body.apiKeys;
     }
 
     return undefined;
@@ -285,10 +284,13 @@ function APIKeysPage() {
         <DashboardPageSection>
           <DataTable
             isLoading={isFetching}
-            limit={PAGE_SIZE}
+            limit={limit}
             offset={offset}
+            hasNextPage={data?.body.hasNextPage}
             onSetOffset={setOffset}
             showPagination
+            autofitHeight
+            onLimitChange={setLimit}
             columns={apiKeysColumns}
             data={apiKeys || []}
           />

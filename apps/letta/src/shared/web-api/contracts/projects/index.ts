@@ -197,7 +197,7 @@ const DeployedAgentsSchema = z.array(DeployedAgentSchema);
 export type DeployedAgentType = z.infer<typeof DeployedAgentSchema>;
 export type DeployedAgentsType = z.infer<typeof DeployedAgentsSchema>;
 const GetDeployedAgentsQuerySchema = z.object({
-  search: z.string().optional(),
+  search: z.preprocess(String, z.string()).optional(),
   offset: z.number().optional(),
   limit: z.number().optional(),
   sourceAgentId: z.string().optional(),

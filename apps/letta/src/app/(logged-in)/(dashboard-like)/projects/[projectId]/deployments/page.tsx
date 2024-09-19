@@ -149,6 +149,10 @@ function DeployedAgentList(props: DeployedAgentListProps) {
   const { search, filterBy } = props;
   const [offset, setOffset] = useState(0);
 
+  useEffect(() => {
+    setOffset(0);
+  }, [search]);
+
   const { data } = webApi.projects.getDeployedAgents.useQuery({
     queryKey: webApiQueryKeys.projects.getDeployedAgentsWithSearch(
       currentProjectId,
