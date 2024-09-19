@@ -4,4 +4,4 @@ export interface AuthedRequestType {
   };
 }
 
-export const V1_ROUTE = `/pdk/v1`;
+export const V1_ROUTE = `/v1/deployment`;

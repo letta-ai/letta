@@ -63,8 +63,8 @@ export function DashboardPageSection(props: DashboardPageSectionProps) {
       borderBottom={borderBottom}
     >
       {title && (
-        <HStack align="end" justify="spaceBetween">
-          <Typography bold variant="heading2">
+        <HStack align="center" justify="spaceBetween">
+          <Typography noWrap bold variant="heading2">
             {title}
           </Typography>
           <HStack>{actions}</HStack>

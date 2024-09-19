@@ -26,6 +26,7 @@ export function buildConfig(appDir: string): Config {
           'biHeight-sm': 'var(--button-input-height-sm)',
           'biHeight-lg': 'var(--button-input-height-lg)',
           panel: 'var(--panel-row-height)',
+          header: 'var(--header-height)',
         },
         width: {
           biWidth: 'var(--button-input-height)',
