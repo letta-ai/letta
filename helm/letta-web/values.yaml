@@ -5,10 +5,10 @@
 replicaCount: 1
 
 image:
-  repository: nginx
+  repository: us-central1-docker.pkg.dev/memgpt-428419/letta/web
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
-  tag: ""
+  tag: "v0.0.1"
 
 imagePullSecrets: []
 nameOverride: ""
@@ -74,11 +74,11 @@ resources: {}
 livenessProbe:
   httpGet:
     path: /
-    port: http
+    port: 8080
 readinessProbe:
   httpGet:
     path: /
-    port: http
+    port: 8080
 
 autoscaling:
   enabled: false
