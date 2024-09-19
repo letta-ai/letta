@@ -1,5 +1,5 @@
 'use client';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import ReactDOM from 'react-dom';
 import Link from 'next/link';
 import {
@@ -27,6 +27,7 @@ import {
 import { usePathname } from 'next/navigation';
 import { webApi, webApiQueryKeys } from '$letta/client';
 import { CurrentUserDetailsBlock } from '$letta/client/common';
+import { cn } from '@letta-web/core-style-config';
 
 interface NavButtonProps {
   href: string;
@@ -170,6 +171,7 @@ export function NavigationSidebar() {
         position="fixed"
         borderRight
         justify="spaceBetween"
+        color="background"
         fullHeight
         className="z-[1] top-0 min-w-sidebar invisible visibleSidebar:visible"
       >
@@ -204,8 +206,12 @@ function ProfilePopover() {
         />
       }
     >
-      <CurrentUserDetailsBlock hideSettingsButton />
-      <SecondaryMenuItems />
+      <HStack borderBottom>
+        <CurrentUserDetailsBlock hideSettingsButton />
+      </HStack>
+      <VStack paddingY="small">
+        <SecondaryMenuItems />
+      </VStack>
     </Popover>
   );
 }
@@ -219,6 +225,12 @@ function NavigationOverlay() {
     event.stopPropagation();
 
     setOpen(false);
+  }, []);
+
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
   }, []);
 
   return (
@@ -237,7 +249,7 @@ function NavigationOverlay() {
           <Typography className="text-lg">Letta</Typography>
         </HStack>
       </HStack>
-      {open &&
+      {mounted &&
         ReactDOM.createPortal(
           <>
             <VStack
@@ -245,7 +257,10 @@ function NavigationOverlay() {
               position="fixed"
               fullHeight
               borderLeft
-              className={`top-0 min-w-sidebar z-sidebarNav transition-all duration-200 slide-in-from-left left-0 `}
+              className={cn(
+                'top-0 min-w-sidebar z-sidebarNav transition-all duration-200 slide-in-from-left left-0',
+                !open ? 'ml-[-250px]' : 'ml-0'
+              )}
               as="nav"
             >
               <VStack gap="small">
@@ -257,7 +272,10 @@ function NavigationOverlay() {
             </VStack>
             <div
               onClick={handleCloseOnClickInside}
-              className="fixed fade-in-10 inset-0 bg-black bg-opacity-50 z-sidebarNavOverlay"
+              className={cn(
+                'fixed fade-in-10 transition-all inset-0 bg-black bg-opacity-50 z-sidebarNavOverlay',
+                open ? 'opacity-100' : 'opacity-0 pointer-events-none'
+              )}
             />
           </>,
           document.getElementById(SIDEBAR_OVERLAY_MOUNT_POINT_ID)!
