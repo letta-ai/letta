@@ -21,6 +21,7 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@letta-web/core-style-config';
 import { Button } from '../Button/Button';
 import type { Dispatch, SetStateAction } from 'react';
+import { useRef } from 'react';
 import { useCallback, useEffect, useMemo } from 'react';
 import { LoadingEmptyStatusComponent } from '../../reusable/LoadingEmptyStatusComponent/LoadingEmptyStatusComponent';
 
@@ -93,6 +94,8 @@ function TableBodyContent<Data>(props: TableBodyContentProps<Data>) {
   return null;
 }
 
+const TABLE_ROW_HEIGHT = 53;
+
 const dataTableVariants = cva('', {
   variants: {
     variant: {
@@ -114,14 +117,18 @@ interface DataTablePropsBase<TData, TValue> {
   onSearch?: (search: string) => void;
   searchValue?: string;
   onRowClick?: (row: TData) => void;
+  onLimitChange?: (limit: number) => void;
   isLoading?: boolean;
   loadingText?: string;
   noResultsText?: string;
   className?: string;
   onSetOffset?: Dispatch<SetStateAction<number>>;
+  hasNextPage?: boolean;
   showPagination?: boolean;
   noResultsAction?: React.ReactNode;
+  autofitHeight?: boolean;
   limit?: number;
+  minHeight?: number;
   offset?: number;
 }
 
@@ -136,15 +143,55 @@ export function DataTable<TData, TValue>(props: DataTableProps<TData, TValue>) {
     data,
     loadingText,
     noResultsAction,
+    minHeight,
     limit = 0,
     offset = 0,
     isLoading,
     onRowClick,
+    hasNextPage,
+    autofitHeight,
     className,
     noResultsText,
     showPagination,
     fullHeight,
+    onLimitChange,
   } = props;
+
+  const tableContainerRef = useRef<HTMLDivElement>(null);
+  const mounted = useRef(false);
+
+  useEffect(() => {
+    if (autofitHeight && tableContainerRef.current) {
+      if (mounted.current) {
+        return;
+      }
+
+      // get the top position of the table
+      const top = tableContainerRef.current.getBoundingClientRect().top;
+
+      // get the height of the window
+      const windowHeight = window.innerHeight;
+
+      // calculate the height of the table
+      let height = windowHeight - top - TABLE_ROW_HEIGHT;
+
+      if (typeof minHeight === 'number') {
+        height = Math.max(height, minHeight);
+      }
+
+      // calculate the number of rows that can fit in the table
+      const rows = Math.floor(height / TABLE_ROW_HEIGHT);
+
+      tableContainerRef.current.style.minHeight = `${
+        rows * TABLE_ROW_HEIGHT
+      }px`;
+      tableContainerRef.current.style.height = `${rows * TABLE_ROW_HEIGHT}px`;
+
+      mounted.current = true;
+
+      onLimitChange?.(rows - 1);
+    }
+  }, [autofitHeight, minHeight, onLimitChange]);
 
   const handleNextPage = useCallback(() => {
     if (isLoading) {
@@ -165,14 +212,6 @@ export function DataTable<TData, TValue>(props: DataTableProps<TData, TValue>) {
       onSetOffset((prev) => prev - limit);
     }
   }, [isLoading, limit, onSetOffset]);
-
-  const hasNextPage = useMemo(() => {
-    if (isLoading) {
-      return false;
-    }
-
-    return data.length >= limit;
-  }, [data.length, isLoading, limit]);
 
   const hasPreviousPage = useMemo(() => {
     if (isLoading) {
@@ -196,6 +235,8 @@ export function DataTable<TData, TValue>(props: DataTableProps<TData, TValue>) {
 
   return (
     <div
+      ref={tableContainerRef}
+      style={{ minHeight: minHeight }}
       className={cn('flex flex-col gap-2 w-full', fullHeight ? 'h-full' : '')}
     >
       {props.onSearch && (
@@ -250,7 +291,7 @@ export function DataTable<TData, TValue>(props: DataTableProps<TData, TValue>) {
           <div className="space-x-2">
             <Button
               onClick={() => {
-                handleNextPage();
+                handlePreviousPage();
               }}
               color="tertiary"
               disabled={!hasPreviousPage}

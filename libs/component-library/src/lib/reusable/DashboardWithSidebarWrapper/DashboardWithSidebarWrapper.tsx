@@ -77,7 +77,7 @@ export function DashboardWithSidebarWrapper(
             className="absolute top-0 z-[-1] overflow-hidden sidebar-bar ml-[250px]"
           />
         </VStack>
-        <VStack fullWidth fullHeight paddingBottom>
+        <VStack fullWidth paddingBottom>
           {children}
         </VStack>
       </HStack>

@@ -830,7 +830,13 @@ export async function getDeployedAgents(
 ): Promise<GetProjectDeployedAgentsResponse> {
   const organizationId = await getUserOrganizationIdOrThrow();
   const { projectId } = req.params;
-  const { search, offset, limit, sourceAgentId, sourceAgentKey } = req.query;
+  const {
+    search,
+    offset,
+    limit = 10,
+    sourceAgentId,
+    sourceAgentKey,
+  } = req.query;
 
   const where = [
     eq(deployedAgents.organizationId, organizationId),
@@ -851,7 +857,7 @@ export async function getDeployedAgents(
 
   const existingSourceAgentCount = await db.query.deployedAgents.findMany({
     where: and(...where),
-    limit,
+    limit: limit + 1,
     offset,
     columns: {
       id: true,
@@ -861,6 +867,7 @@ export async function getDeployedAgents(
       agentId: true,
       updatedAt: true,
     },
+    orderBy: [desc(deployedAgents.createdAt)],
     with: {
       deployedAgentsStatistics: true,
     },
@@ -868,16 +875,19 @@ export async function getDeployedAgents(
 
   return {
     status: 200,
-    body: existingSourceAgentCount.map((agent) => ({
-      id: agent.id,
-      key: agent.key,
-      sourceAgentId: agent.sourceAgentId,
-      agentId: agent.agentId,
-      messageCount: agent.deployedAgentsStatistics.messageCount,
-      lastActiveAt: agent.deployedAgentsStatistics.lastActiveAt.toISOString(),
-      createdAt: agent.createdAt.toISOString(),
-      updatedAt: agent.updatedAt.toISOString(),
-    })),
+    body: {
+      deployedAgents: existingSourceAgentCount.slice(0, limit).map((agent) => ({
+        id: agent.id,
+        key: agent.key,
+        sourceAgentId: agent.sourceAgentId,
+        agentId: agent.agentId,
+        messageCount: agent.deployedAgentsStatistics.messageCount,
+        lastActiveAt: agent.deployedAgentsStatistics.lastActiveAt.toISOString(),
+        createdAt: agent.createdAt.toISOString(),
+        updatedAt: agent.updatedAt.toISOString(),
+      })),
+      hasNextPage: existingSourceAgentCount.length === limit + 1,
+    },
   };
 }
 

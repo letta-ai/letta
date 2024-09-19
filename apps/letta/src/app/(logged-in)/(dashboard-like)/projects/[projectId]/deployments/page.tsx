@@ -117,7 +117,7 @@ function DeployedAgentView(props: DeployedAgentViewProps) {
                   <RawInput
                     inline
                     label="Agent ID"
-                    defaultValue={agent.agentId}
+                    defaultValue={agent.id}
                     readOnly
                     allowCopy
                     fullWidth
@@ -141,20 +141,22 @@ interface DeployedAgentListProps {
   filterBy?: OptionType;
 }
 
-const AGENT_LIMIT = 20;
-
 function DeployedAgentList(props: DeployedAgentListProps) {
   const currentProjectId = useCurrentProjectId();
+  const [limit, setLimit] = useState(20);
 
   const [selectedAgent, setSelectedAgent] = useState<DeployedAgentType>();
   const { search, filterBy } = props;
   const [offset, setOffset] = useState(0);
+
   const { data } = webApi.projects.getDeployedAgents.useQuery({
     queryKey: webApiQueryKeys.projects.getDeployedAgentsWithSearch(
       currentProjectId,
       {
         search: search,
         sourceAgentKey: filterBy?.value,
+        limit,
+        offset,
       }
     ),
     queryData: {
@@ -162,7 +164,7 @@ function DeployedAgentList(props: DeployedAgentListProps) {
         search: search,
         sourceAgentKey: filterBy?.value,
         offset,
-        limit: AGENT_LIMIT,
+        limit,
       },
       params: { projectId: currentProjectId },
     },
@@ -187,18 +189,22 @@ function DeployedAgentList(props: DeployedAgentListProps) {
   );
 
   const deployedAgents = useMemo(() => {
-    return data?.body || [];
+    return data?.body?.deployedAgents || [];
   }, [data]);
 
   return (
-    <HStack className="relative" fullHeight fullWidth>
+    <HStack className="relative" fullWidth>
       <DataTable
         onRowClick={(row) => {
           setSelectedAgent(row);
         }}
         fullHeight
-        className="min-h-[400px]"
-        limit={AGENT_LIMIT}
+        autofitHeight
+        minHeight={400}
+        limit={limit}
+        onLimitChange={setLimit}
+        hasNextPage={data?.body?.hasNextPage}
+        showPagination
         offset={offset}
         onSetOffset={setOffset}
         loadingText={
@@ -371,7 +377,7 @@ function DeployedAgentsPage() {
 
   return (
     <DashboardPageLayout title="Deployed Agents">
-      <DashboardPageSection fullHeight>
+      <DashboardPageSection>
         <VStack fullHeight fullWidth>
           <VStack gap={false} fullWidth>
             <RawInput

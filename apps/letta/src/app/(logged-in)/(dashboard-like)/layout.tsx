@@ -18,7 +18,7 @@ export default async function DashboardLikeLayout(
     <div className="pageFadeIn w-[100vw] h-[100vh]">
       <VStack
         overflowY="auto"
-        overflowX="hidden"
+        overflowX="auto"
         gap={false}
         fullHeight
         fullWidth
@@ -33,12 +33,7 @@ export default async function DashboardLikeLayout(
         >
           <DashboardHeader />
         </HStack>
-        <Frame
-          className="max-w-[1440px] mx-[auto]"
-          overflowX="auto"
-          fullHeight
-          fullWidth
-        >
+        <Frame className="max-w-[1440px] mx-[auto]" fullWidth>
           {children}
         </Frame>
       </VStack>

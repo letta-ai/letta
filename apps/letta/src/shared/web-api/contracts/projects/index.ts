@@ -204,6 +204,11 @@ const GetDeployedAgentsQuerySchema = z.object({
   sourceAgentKey: z.string().optional(),
 });
 
+export const GetDeployedAgentsContractResponseSchema = z.object({
+  deployedAgents: DeployedAgentsSchema,
+  hasNextPage: z.boolean(),
+});
+
 export type GetDeployedAgentsQueryType = z.infer<
   typeof GetDeployedAgentsQuerySchema
 >;
@@ -216,7 +221,7 @@ const getDeployedAgentsContract = c.query({
   }),
   query: GetDeployedAgentsQuerySchema,
   responses: {
-    200: DeployedAgentsSchema,
+    200: GetDeployedAgentsContractResponseSchema,
   },
 });
 
