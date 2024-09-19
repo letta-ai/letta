@@ -15,7 +15,11 @@ import { deleteRedisData, getRedisData, setRedisData } from '@letta-web/redis';
 import { CookieNames } from '$letta/server/cookies/types';
 import { redirect } from 'next/navigation';
 import { LoginErrorsEnum } from '$letta/errors';
-import { AnalyticsEvent, trackEvent, trackUser } from '@letta-web/analytics';
+import {
+  trackServerSideEvent,
+  trackUserOnServer,
+} from '@letta-web/analytics/server';
+import { AnalyticsEvent } from '@letta-web/analytics';
 import { jwtDecode } from 'jwt-decode';
 
 function isLettaEmail(email: string) {
@@ -149,18 +153,18 @@ async function findOrCreateUserAndOrganizationFromProviderLogin(
     user = await createUserAndOrganization(userData);
   }
 
-  trackUser({
+  trackUserOnServer({
     userId: user.id,
     name: user.name,
     email: user.email,
   });
 
   if (isNewUser) {
-    trackEvent(AnalyticsEvent.USER_CREATED, {
+    trackServerSideEvent(AnalyticsEvent.USER_CREATED, {
       userId: user.id,
     });
   } else {
-    trackEvent(AnalyticsEvent.USER_LOGGED_IN, {
+    trackServerSideEvent(AnalyticsEvent.USER_LOGGED_IN, {
       userId: user.id,
     });
   }

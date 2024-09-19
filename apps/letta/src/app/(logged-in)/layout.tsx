@@ -12,6 +12,7 @@ import { LettaAgentsAPIWrapper } from '@letta-web/letta-agents-api';
 import { GlobalSessionSettingsProvider } from '$letta/client/hooks/session';
 import { getUserFlags } from '@letta-web/feature-flags';
 import { queryClientKeys } from '$letta/web-api/contracts';
+import { IdentifyUserForMixpanel } from '@letta-web/analytics/client';
 
 interface InAppProps {
   children: ReactNode;
@@ -54,6 +55,7 @@ export default async function LoggedInLayout(props: InAppProps) {
 
   return (
     <GlobalSessionSettingsProvider>
+      <IdentifyUserForMixpanel userId={user.id} />
       <HydrationBoundary state={dehydrate(queryClient)}>
         <LettaAgentsAPIWrapper>{children}</LettaAgentsAPIWrapper>
       </HydrationBoundary>

@@ -21,6 +21,7 @@ export const environment = createEnv({
   },
   client: {
     NEXT_PUBLIC_CURRENT_HOST: z.string().optional(),
+    NEXT_PUBLIC_MIXPANEL_TOKEN: z.string().optional(),
   },
   runtimeEnv: {
     GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
@@ -32,6 +33,7 @@ export const environment = createEnv({
     LETTA_AGENTS_ENDPOINT: process.env.LETTA_AGENTS_ENDPOINT,
     NEXT_PUBLIC_CURRENT_HOST: process.env.NEXT_PUBLIC_CURRENT_HOST,
     MIXPANEL_TOKEN: process.env.MIXPANEL_TOKEN,
+    NEXT_PUBLIC_MIXPANEL_TOKEN: process.env.NEXT_PUBLIC_MIXPANEL_TOKEN,
     LAUNCH_DARKLY_SDK_KEY: process.env.LAUNCH_DARKLY_SDK_KEY,
   },
 });

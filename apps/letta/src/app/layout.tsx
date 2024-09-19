@@ -2,6 +2,7 @@ import './global.css';
 import NextTopLoader from 'nextjs-toploader';
 import { ClientSideProviders } from './_components/ClientSideProviders/ClientSideProviders';
 import React from 'react';
+import { LoadMixpanelAnalytics } from '@letta-web/analytics/client';
 
 export const metadata = {
   title: 'Letta',
@@ -93,6 +94,7 @@ export default function RootLayout({
         <title>Letta</title>
       </head>
       <body>
+        <LoadMixpanelAnalytics />
         <NextTopLoader
           showSpinner={false}
           color="hsl(var(--primary))"

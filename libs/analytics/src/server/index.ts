@@ -3,7 +3,7 @@
  */
 import * as mixpanel from 'mixpanel';
 import { environment } from '@letta-web/environmental-variables';
-import type { AnalyticsEvent, AnalyticsEventProperties } from './events';
+import type { AnalyticsEvent, AnalyticsEventProperties } from '../events';
 
 let mixpanelSingleton: mixpanel.Mixpanel | null = null;
 
@@ -21,14 +21,14 @@ export interface TrackUserPayload {
   email: string;
 }
 
-export function trackUser(user: TrackUserPayload) {
+export function trackUserOnServer(user: TrackUserPayload) {
   getMixpanel().people.set(user.userId, {
     $name: user.name,
     $email: user.email,
   });
 }
 
-export function trackEvent<Event extends AnalyticsEvent>(
+export function trackServerSideEvent<Event extends AnalyticsEvent>(
   eventName: Event,
   properties: AnalyticsEventProperties[Event]
 ) {

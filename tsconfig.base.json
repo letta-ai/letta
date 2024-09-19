@@ -17,7 +17,9 @@
     "strictNullChecks": true,
     "paths": {
       "$letta/*": ["apps/letta/src/shared/*"],
-      "@letta-web/analytics": ["libs/analytics/src/index.ts"],
+      "@letta-web/analytics": ["libs/analytics/src/events.ts"],
+      "@letta-web/analytics/server": ["libs/analytics/src/server/index.ts"],
+      "@letta-web/analytics/client": ["libs/analytics/src/client/index.ts"],
       "@letta-web/component-library": ["libs/component-library/src/index.tsx"],
       "@letta-web/component-library/*": ["component-library/src/*"],
       "@letta-web/configure": ["scripts/configure/src/index.ts"],
