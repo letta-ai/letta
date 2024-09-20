@@ -43,6 +43,7 @@ export interface CodeProps extends VariantProps<typeof codeVariants> {
   language: SupportedLangauges;
   toolbarAction?: React.ReactNode;
   code: string;
+  testId?: string;
   showLineNumbers?: boolean;
   border?: boolean;
   onSetCode?: (code: string) => void;
@@ -64,6 +65,7 @@ export function Code(props: CodeProps) {
     language,
     code,
     variant,
+    testId,
     onSetCode,
     showLineNumbers = true,
     toolbarPosition,
@@ -89,11 +91,15 @@ export function Code(props: CodeProps) {
             textToDownload={code}
             size="small"
           />
-          <CopyButton textToCopy={code} size="small" />
+          <CopyButton
+            testId={`${testId}-copy-button`}
+            textToCopy={code}
+            size="small"
+          />
         </HStack>
       </HStack>
     ),
-    [code, language, toolbarAction]
+    [code, language, testId, toolbarAction]
   );
 
   if (inline) {
@@ -106,11 +112,20 @@ export function Code(props: CodeProps) {
       fullHeight={fullHeight}
       fullWidth
     >
+      <div
+        className="opacity-0 w-[0px] h-[0px] fixed z-[-1] pointer-events-none"
+        tabIndex={-1}
+        role="presentation"
+        data-testid={`${testId}-raw-code`}
+      >
+        {code}
+      </div>
       {toolbarPosition === 'top' && toolbar}
       <Editor
         className={cn('editor w-full', showLineNumbers && 'line-numbers')}
         value={code}
         disabled={!onSetCode}
+        data-testid={`${testId}-code-editor`}
         onValueChange={(code) => {
           if (!onSetCode) {
             return;

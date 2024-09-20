@@ -70,10 +70,12 @@ function CreateProjectDialog() {
         title="Create a project"
         confirmText="Create Project"
         isOpen={isOpen}
+        testId="create-project-dialog"
         onOpenChange={setIsOpen}
         onSubmit={form.handleSubmit(handleSubmit)}
         trigger={
           <Button
+            data-testid="create-project-button"
             preIcon={<PlusIcon />}
             color="primary"
             label="Create Project"
@@ -83,7 +85,12 @@ function CreateProjectDialog() {
         <VStack gap="form">
           <FormField
             render={({ field }) => (
-              <Input fullWidth {...field} label="Project Name" />
+              <Input
+                data-testid="project-name-input"
+                fullWidth
+                {...field}
+                label="Project Name"
+              />
             )}
             name="name"
           />
@@ -125,7 +132,7 @@ function ProjectsList(props: ProjectsListProps) {
 
   return (
     <>
-      <HStack>
+      <HStack wrap>
         {data.body.projects.map((project) => (
           <ActionCard
             size="medium"

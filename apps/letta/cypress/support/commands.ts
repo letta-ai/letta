@@ -1,3 +1,5 @@
+import '@testing-library/cypress/add-commands';
+
 /// <reference types="cypress" />
 
 // ***********************************************
@@ -15,7 +17,7 @@ declare namespace Cypress {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   interface Chainable<Subject> {
     googleLogin(): void;
-    cleanDatabase(): void;
+    deleteProjectsWithName(name: string): void;
   }
 }
 
@@ -34,5 +36,20 @@ Cypress.Commands.add('googleLogin', () => {
     const { id_token } = body;
 
     cy.visit(`/auth/google/atl?id_token=${id_token}`);
+  });
+});
+
+Cypress.Commands.add('deleteProjectsWithName', (name: string) => {
+  cy.googleLogin();
+
+  cy.request({
+    method: 'POST',
+    url: '/aia/clean-projects-by-name',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: {
+      name,
+    },
   });
 });

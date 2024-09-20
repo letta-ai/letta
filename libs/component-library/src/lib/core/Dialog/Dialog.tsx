@@ -131,6 +131,7 @@ const dialogVariants = cva('', {
 
 interface DialogProps extends VariantProps<typeof dialogVariants> {
   isOpen?: boolean;
+  testId?: string;
   onOpenChange?: (open: boolean) => void;
   title?: string;
   children?: React.ReactNode;
@@ -151,6 +152,7 @@ export function Dialog(props: DialogProps) {
     isOpen,
     onOpenChange,
     title,
+    testId,
     children,
     isConfirmBusy,
     trigger,
@@ -214,6 +216,7 @@ export function Dialog(props: DialogProps) {
             )}
             {!hideConfirm && (
               <Button
+                data-testid={`${testId}-confirm-button`}
                 color={confirmColor}
                 type="submit"
                 busy={isConfirmBusy}

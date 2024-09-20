@@ -39,41 +39,56 @@ async function handleEventStreamRequest(
   };
 
   setImmediate(async () => {
-    const eventsource = new EventSource(
-      `${environment.LETTA_AGENTS_ENDPOINT}/${path}`,
-      {
-        method: req.method,
-        disableRetry: true,
-        keepalive: false,
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'text/event-stream',
-        },
-        body: payload ? JSON.stringify(payload) : undefined,
-      }
-    );
+    try {
+      const eventsource = new EventSource(
+        `${environment.LETTA_AGENTS_ENDPOINT}/${path}`,
+        {
+          method: req.method,
+          disableRetry: true,
+          keepalive: false,
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'text/event-stream',
+          },
+          body: payload ? JSON.stringify(payload) : undefined,
+        }
+      );
 
-    eventsource.onmessage = (e: MessageEvent) => {
-      if (closed) {
-        return;
-      }
+      eventsource.onmessage = (e: MessageEvent) => {
+        if (closed) {
+          return;
+        }
 
-      if (e.eventPhase === eventsource.CLOSED) {
-        closed = true;
+        if (e.eventPhase === eventsource.CLOSED) {
+          closed = true;
+          void writer.close();
+          return;
+        }
+
+        void writer.write(`data: ${e.data}\n\n`);
+      };
+
+      eventsource.onerror = async () => {
+        try {
+          if (closed) {
+            return;
+          }
+
+          await writer.close();
+        } catch (_e) {
+          // do nothing
+        }
+      };
+    } catch (e) {
+      console.error(e);
+      if (isAxiosError(e)) {
+        void writer.write(`data: ${JSON.stringify(e.response?.data)}\n\n`);
         void writer.close();
-        return;
+      } else {
+        void writer.write('data: Unhandled error\n\n');
+        void writer.close();
       }
-
-      void writer.write(`data: ${e.data}\n\n`);
-    };
-
-    eventsource.onerror = () => {
-      if (closed) {
-        return;
-      }
-
-      void writer.close();
-    };
+    }
   });
 
   return new Response(responseStream.readable, {

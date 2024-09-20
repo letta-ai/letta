@@ -67,10 +67,11 @@ function DeployAgentInstructionsCurl(props: DeployAgentInstructionsCurlProps) {
   return (
     <VStack className="max-w-[750px]" fullWidth gap="text">
       <Typography align="left" variant="body">
-        First you need to deploy this agent.
+        First you need to create a deployed agent.
       </Typography>
       <Frame paddingY="medium">
         <CodeWithAPIKeyInjection
+          testId="deploy-agent-instructions"
           toolbarPosition="bottom"
           language="bash"
           code={`curl -X POST ${environment.NEXT_PUBLIC_CURRENT_HOST}${V1_ROUTE}${pdkContracts.agents.createAgent.path} \\
@@ -108,6 +109,7 @@ function DeployAgentInstructionsCurl(props: DeployAgentInstructionsCurlProps) {
                   />
                 )
               }
+              testId="chat-with-agent-instructions"
               toolbarPosition="bottom"
               language="bash"
               code={`curl -N -X POST ${

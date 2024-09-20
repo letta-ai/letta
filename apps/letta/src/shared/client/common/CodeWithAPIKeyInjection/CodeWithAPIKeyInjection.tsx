@@ -38,6 +38,7 @@ export function CodeWithAPIKeyInjection(props: CodeWithAPIKeyInjectionProps) {
         <>
           {isLoading && showAPIKeysInCode && <LettaLoader size="small" />}
           <RawSwitch
+            data-testid="show-api-key-switch"
             label="Show API Key"
             checked={showAPIKeysInCode}
             onClick={() => {

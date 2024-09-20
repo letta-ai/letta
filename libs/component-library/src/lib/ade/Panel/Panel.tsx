@@ -396,6 +396,7 @@ function PanelContent(props: PanelContentProps) {
   return (
     <HStack
       id={getPanelElId(id)}
+      data-testid={`panel-${id}`}
       fullHeight
       color="background"
       border

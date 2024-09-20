@@ -75,6 +75,7 @@ function TestingAgentsList(props: TestingAgentsListProps) {
           action={
             <Button
               preIcon={<PlusIcon />}
+              data-testid="create-agent-button"
               label="Create an agent"
               color="secondary"
               href={`/projects/${currentProjectId}/agents/new`}
@@ -147,6 +148,7 @@ function TestingAgentsSection() {
             {agentCount >= 1 && (
               <Button
                 label="Create an agent"
+                data-testid="create-agent-button"
                 preIcon={<PlusIcon />}
                 color="tertiary"
                 href={`/projects/${currentProjectId}/agents/new`}

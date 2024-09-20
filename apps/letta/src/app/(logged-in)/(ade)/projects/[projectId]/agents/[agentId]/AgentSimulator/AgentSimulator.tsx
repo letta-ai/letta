@@ -285,6 +285,7 @@ function ChatInput(props: ChatInputProps) {
         borderTop
       >
         <TextareaAutosize
+          data-testid="chat-simulator-input"
           onChange={(e) => {
             setText(e.target.value);
           }}
@@ -298,6 +299,7 @@ function ChatInput(props: ChatInputProps) {
         <HStack justify="spaceBetween">
           <div />
           <Button
+            data-testid="chat-simulator-send"
             size="small"
             type="submit"
             color="secondary"

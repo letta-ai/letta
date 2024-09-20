@@ -24,12 +24,13 @@ interface AgentRecipeCardProps {
 }
 
 function AgentRecipeCard(props: AgentRecipeCardProps) {
-  const { name, onClick } = props;
+  const { name, onClick, id } = props;
 
   return (
     <button
       className="aspect-auto w-full max-w-[33%] w-fit h-fit"
       onClick={onClick}
+      data-testid={`agent-recipe-card-${id}`}
     >
       <Card className=" hover:bg-tertiary-hover ">
         <VStack align="center">

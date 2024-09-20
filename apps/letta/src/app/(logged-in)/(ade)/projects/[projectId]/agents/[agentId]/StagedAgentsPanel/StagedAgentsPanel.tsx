@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActionCard,
   Badge,
@@ -45,6 +45,12 @@ function StageAndDeployDialog(props: StageAndDeployDialogProps) {
     },
   });
 
+  useEffect(() => {
+    if (!open) {
+      form.reset();
+    }
+  }, [form, open]);
+
   const { mutate, isPending } =
     webApi.projects.createProjectSourceAgentFromTestingAgent.useMutation({
       onSuccess: () => {
@@ -75,11 +81,17 @@ function StageAndDeployDialog(props: StageAndDeployDialogProps) {
       <Dialog
         onOpenChange={setOpen}
         isOpen={open}
+        testId="stage-agent-dialog"
         title="Are you sure you want to stage your agent?"
         onSubmit={form.handleSubmit(handleCreateSourceAgent)}
         isConfirmBusy={isPending}
         trigger={
-          <Button color="secondary" size="small" label="Stage a new version" />
+          <Button
+            data-testid="stage-new-version-button"
+            color="secondary"
+            size="small"
+            label="Stage a new version"
+          />
         }
       >
         <VStack gap="form">
@@ -89,9 +101,12 @@ function StageAndDeployDialog(props: StageAndDeployDialogProps) {
                 name="migrateExistingAgents"
                 render={({ field }) => (
                   <Switch
+                    {...field}
+                    onClick={() => {
+                      field.onChange(!field.value);
+                    }}
                     checked={field.value}
                     description="This will migrate your previous deployed agents to the new version automatically. Your migrated agents will forget all the core memory updates. Please use this option with caution."
-                    {...field}
                     label="Migrate existing deployed agents"
                   />
                 )}
@@ -110,13 +125,14 @@ const PAGE_SIZE = 10;
 
 interface SourceAgentCardProps {
   version: string;
+  index: number;
   createdAt: string;
   agentKey: string;
   currentProjectId: string;
 }
 
 function SourceAgentCard(props: SourceAgentCardProps) {
-  const { version, createdAt, agentKey, currentProjectId } = props;
+  const { version, createdAt, index, agentKey, currentProjectId } = props;
   const [showDeploymentInstructions, setShowDeploymentInstructions] =
     React.useState(false);
 
@@ -132,6 +148,7 @@ function SourceAgentCard(props: SourceAgentCardProps) {
             }}
             active={showDeploymentInstructions}
             label="Instructions"
+            data-testid={`show-deployment-instructions-${index}`}
           />
           <Button
             target="_blank"
@@ -198,7 +215,14 @@ export function StagedAgentsPanel() {
     <Panel
       title="Staging Manager"
       id="staged-agents"
-      trigger={<Button color="tertiary" size="small" label="Staging Manager" />}
+      trigger={
+        <Button
+          data-testid="open-staging-manager"
+          color="tertiary"
+          size="small"
+          label="Staging Manager"
+        />
+      }
     >
       <PanelBar
         searchValue={searchValue}
@@ -215,14 +239,14 @@ export function StagedAgentsPanel() {
         {!sourceAgents || sourceAgents.length === 0 ? (
           <LoadingEmptyStatusComponent
             isLoading={!sourceAgents}
-            emptyMessage="You haven't staged this agent yet. Click the button below to stage your agent."
-            emptyAction={<StageAndDeployDialog />}
+            emptyMessage="You haven't staged this agent yet. Click the button above to stage your agent."
           />
         ) : (
           <VStack>
-            {sourceAgents.map((agent) => (
+            {sourceAgents.map((agent, index) => (
               <SourceAgentCard
                 {...agent}
+                index={index}
                 key={agent.key}
                 agentKey={agent.key}
                 currentProjectId={currentProjectId}

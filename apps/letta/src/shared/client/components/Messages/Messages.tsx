@@ -291,6 +291,7 @@ export function Messages(props: MessagesProps) {
 
   return (
     <VStack
+      data-testid="messages-list"
       ref={ref}
       fullWidth
       collapseHeight

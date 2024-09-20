@@ -21,6 +21,7 @@ export function ADENavigationItem(props: NavigationItemProps) {
     <HStack fullWidth align="center" paddingX="small">
       <HStack
         fullWidth
+        data-testid={`ade-navigate-to:${title}`}
         paddingX="small"
         as="button"
         rounded

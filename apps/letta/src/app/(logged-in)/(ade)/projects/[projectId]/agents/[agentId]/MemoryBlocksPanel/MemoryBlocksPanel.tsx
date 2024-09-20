@@ -161,7 +161,12 @@ function EditMemoryForm({ block, onClose }: EditMemoryFormProps) {
             control={form.control}
             name="value"
             render={({ field }) => (
-              <TextArea fullWidth label="Content" {...field} />
+              <TextArea
+                data-testid="edit-memory-block-content"
+                fullWidth
+                label="Content"
+                {...field}
+              />
             )}
           />
           <FormActions>
@@ -172,6 +177,7 @@ function EditMemoryForm({ block, onClose }: EditMemoryFormProps) {
               label="Cancel"
             />
             <Button
+              data-testid="edit-memory-block-save"
               color="secondary"
               type="submit"
               busy={isPendingMutateBlock || isUpdatingAgent}
@@ -242,13 +248,14 @@ function MemoryHome() {
         <LettaLoaderPanel />
       ) : (
         <VStack overflowY="auto" collapseHeight padding="small">
-          {memoriesList.map((block) => (
+          {memoriesList.map((block, index) => (
             <ActionCard
               title={block.name || 'Unnamed Block'}
               subtitle={block.label || ''}
               key={block.id}
               mainAction={
                 <Button
+                  data-testid={`edit-memory-block-${index}`}
                   size="small"
                   color="tertiary"
                   label="Edit"
