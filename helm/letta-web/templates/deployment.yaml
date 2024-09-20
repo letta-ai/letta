@@ -56,13 +56,14 @@ spec:
           env:
             - name: NEXT_PUBLIC_CURRENT_HOST
               value: {{ .Values.env.LETTA_API_ENDPOINT | quote }}
+            {{- range $key, $value := .Values.env }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
           {{- with .Values.volumeMounts }}
           volumeMounts:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-          envFrom:
-            - secretRef:
-                name: letta-secrets
       {{- with .Values.volumes }}
       volumes:
         {{- toYaml . | nindent 8 }}
