@@ -44,7 +44,7 @@ deploy:
     @echo "🚧 Deploying Helm chart..."
     @helm upgrade --install {{HELM_CHART_NAME}} {{HELM_CHARTS_DIR}}/{{HELM_CHART_NAME}} \
         --set image.repository={{DOCKER_REGISTRY}}/web \
-        --set image.tag={{TAG}} \ \
+        --set image.tag={{TAG}} \
         --set env.DATABASE_URL="${DATABASE_URL}" \
         --set env.GOOGLE_CLIENT_ID="${GOOGLE_CLIENT_ID}" \
         --set env.GOOGLE_CLIENT_SECRET="${GOOGLE_CLIENT_SECRET}" \
