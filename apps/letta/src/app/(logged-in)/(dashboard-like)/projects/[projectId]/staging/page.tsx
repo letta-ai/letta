@@ -22,7 +22,7 @@ import { webApi, webApiQueryKeys } from '$letta/client';
 import { useCurrentProjectId } from '../hooks';
 import { useDebouncedValue } from '@mantine/hooks';
 import type { SourceAgentType } from '$letta/web-api/contracts/projects';
-import { DeployAgentUsageInstructions } from '$letta/client/code-reference/deploy-agent-reference';
+import { DeployAgentUsageInstructions } from '$letta/client/code-reference/DeployAgentUsageInstructions';
 import { FilterIcon, SearchIcon } from 'lucide-react';
 
 const PAGE_SIZE = 20;
@@ -143,8 +143,6 @@ function ProjectStagingList(props: ProjectStagingListProps) {
           : undefined;
       },
     });
-
-  console.log(data);
 
   const sourceAgents = useMemo(() => {
     return (data?.pages || []).flatMap((v) => v.body.sourceAgents);

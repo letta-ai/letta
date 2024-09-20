@@ -7,7 +7,7 @@ const c = initContract();
 const CreateAgentBodySchema = z.object({
   sourceAgentKey: z.string(),
   name: z.string().optional(),
-  variables: z.record(z.string(), z.any()),
+  variables: z.record(z.string(), z.any()).optional(),
 });
 
 const CreateAgentResponseSchema = z.object({

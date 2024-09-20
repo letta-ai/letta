@@ -181,7 +181,7 @@ function DeployedAgentList(props: DeployedAgentListProps) {
         accessorKey: 'id',
       },
       {
-        header: 'Name',
+        header: 'External Identifier',
         accessorKey: 'key',
       },
       {

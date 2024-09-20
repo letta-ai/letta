@@ -67,7 +67,7 @@ function DeployAgentInstructionsCurl(props: DeployAgentInstructionsCurlProps) {
   return (
     <VStack className="max-w-[750px]" fullWidth gap="text">
       <Typography align="left" variant="body">
-        To use this agent, first you need to create a testing agent.
+        First you need to deploy this agent.
       </Typography>
       <Frame paddingY="medium">
         <CodeWithAPIKeyInjection
@@ -77,10 +77,7 @@ function DeployAgentInstructionsCurl(props: DeployAgentInstructionsCurlProps) {
   -H 'Content-Type: application/json' \\
   -H 'Authorization: Bearer ${ACCESS_TOKEN_PLACEHOLDER}' \\
   -d '{
-    "sourceAgentKey": "${sourceAgentKey}",
-    "variables": {
-      "key": "value"
-    }
+    "sourceAgentKey": "${sourceAgentKey}"
   }'`}
         />
       </Frame>
@@ -123,10 +120,7 @@ function DeployAgentInstructionsCurl(props: DeployAgentInstructionsCurlProps) {
   -H 'Authorization: Bearer ${ACCESS_TOKEN_PLACEHOLDER}' \\
   -d '{
     "message": "Hello",
-    "stream": true,
-    "variables": {
-      "key": "value"
-    }
+    "stream": true
   }'`}
             />
           </Frame>

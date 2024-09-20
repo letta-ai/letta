@@ -21,7 +21,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { webApi, webApiQueryKeys } from '$letta/client';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { DeployAgentUsageInstructions } from '$letta/client/code-reference/deploy-agent-reference';
+import { DeployAgentUsageInstructions } from '$letta/client/code-reference/DeployAgentUsageInstructions';
 
 interface StageAndDeployDialogProps {
   hasExistingStagedAgents?: boolean;
@@ -41,7 +41,7 @@ function StageAndDeployDialog(props: StageAndDeployDialogProps) {
   const form = useForm({
     resolver: zodResolver(StageAndDeployFormSchema),
     defaultValues: {
-      migrateExistingAgents: true,
+      migrateExistingAgents: false,
     },
   });
 
@@ -90,7 +90,7 @@ function StageAndDeployDialog(props: StageAndDeployDialogProps) {
                 render={({ field }) => (
                   <Switch
                     checked={field.value}
-                    description="This will migrate your previous deployed agents to the new version automatically."
+                    description="This will migrate your previous deployed agents to the new version automatically. Your migrated agents will forget all the core memory updates. Please use this option with caution."
                     {...field}
                     label="Migrate existing deployed agents"
                   />
