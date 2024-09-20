@@ -1,0 +1,130 @@
+{
+  "$schema": "https://mintlify.com/schema.json",
+  "name": "Starter Kit",
+  "logo": {
+    "dark": "/logo/dark.svg",
+    "light": "/logo/light.svg"
+  },
+  "favicon": "/favicon.svg",
+  "colors": {
+    "primary": "#0D9373",
+    "light": "#07C983",
+    "dark": "#0D9373",
+    "anchors": {
+      "from": "#0D9373",
+      "to": "#07C983"
+    }
+  },
+  "topbarLinks": [
+    {
+      "name": "Support",
+      "url": "mailto:hi@mintlify.com"
+    }
+  ],
+  "topbarCtaButton": {
+    "name": "Dashboard",
+    "url": "https://dashboard.mintlify.com"
+  },
+  "tabs": [
+    {
+      "name": "API Reference",
+      "url": "api-reference"
+    },
+    {
+      "name": "Python SDK",
+      "url": "python-reference"
+    }
+  ],
+  "anchors": [
+    {
+      "name": "Documentation",
+      "icon": "book-open-cover",
+      "url": "https://mintlify.com/docs"
+    },
+    {
+      "name": "Community",
+      "icon": "slack",
+      "url": "https://mintlify.com/community"
+    },
+    {
+      "name": "Blog",
+      "icon": "newspaper",
+      "url": "https://mintlify.com/blog"
+    }
+  ],
+  "navigation": [
+    {
+      "group": "Get Started",
+      "pages": ["introduction", "quickstart", "development"]
+    },
+    {
+      "group": "Essentials",
+      "pages": [
+        "essentials/markdown",
+        "essentials/code",
+        "essentials/images",
+        "essentials/settings",
+        "essentials/navigation",
+        "essentials/reusable-snippets"
+      ]
+    },
+    {
+      "group": "API Documentation",
+      "pages": ["api-reference/introduction"]
+    },
+    {
+      "group": "Client",
+      "pages": ["python-reference/LocalClient", "python-reference/RESTClient"]
+    },
+    {
+      "group": "Data Models",
+      "pages": [
+        "python-reference/AgentState",
+        "python-reference/Block",
+        "python-reference/Tool",
+        "python-reference/Memory",
+        "python-reference/Job",
+        "python-reference/Passage",
+        "python-reference/Document",
+        "python-reference/LLMConfig",
+        "python-reference/EmbeddingConfig",
+        "python-reference/User"
+      ]
+    },
+    {
+      "group": "Response Models",
+      "pages": [
+        "python-reference/MemGPTResponse",
+        {
+          "group": "Message Types",
+          "pages": [
+            "python-reference/Message",
+            "python-reference/MemGPTMessage"
+          ]
+        },
+        "python-reference/MemGPTUsageStatistics"
+      ]
+    },
+
+    {
+      "group": "Connectors",
+      "pages": [
+        "python-reference/DataConnector",
+        "python-reference/DirectoryConnector"
+      ]
+    },
+    {
+      "group": "Endpoint Examples",
+      "pages": [
+        "api-reference/endpoint/get",
+        "api-reference/endpoint/create",
+        "api-reference/endpoint/delete"
+      ]
+    }
+  ],
+  "footerSocials": {
+    "x": "https://x.com/mintlify",
+    "github": "https://github.com/mintlify",
+    "linkedin": "https://www.linkedin.com/company/mintsearch"
+  }
+}
