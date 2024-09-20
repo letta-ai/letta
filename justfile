@@ -32,18 +32,35 @@ build:
 
 # Deploy the Helm chart
 deploy:
-    @echo "🚧 Deploying web service Helm chart..."
-    helm upgrade --install {{HELM_CHART_NAME}} {{HELM_CHARTS_DIR}}/{{HELM_CHART_NAME}} \
+    @echo "🚧 Deploying Helm chart..."
+    @helm upgrade --install {{HELM_CHART_NAME}} {{HELM_CHARTS_DIR}}/{{HELM_CHART_NAME}} \
         --set image.repository={{DOCKER_REGISTRY}}/web \
-        --set image.tag={{TAG}}
-    --set env.DATABASE_URL="${DATABASE_URL}" \
-    --set env.GOOGLE_CLIENT_ID="${GOOGLE_CLIENT_ID}" \
-    --set env.GOOGLE_CLIENT_SECRET="${GOOGLE_CLIENT_SECRET}" \
-    --set env.GOOGLE_REDIRECT_URI="${GOOGLE_REDIRECT_URI}" \
-    --set env.LETTA_AGENTS_ENDPOINT="${LETTA_AGENTS_ENDPOINT}" \
-    --set env.REDIS_HOST="${REDIS_HOST}"
+        --set image.tag={{TAG}} \
+        --set env.DATABASE_URL="${DATABASE_URL}" \
+        --set env.GOOGLE_CLIENT_ID="${GOOGLE_CLIENT_ID}" \
+        --set env.GOOGLE_CLIENT_SECRET="${GOOGLE_CLIENT_SECRET}" \
+        --set env.GOOGLE_REDIRECT_URI="${GOOGLE_REDIRECT_URI}" \
+        --set env.LETTA_AGENTS_ENDPOINT="${LETTA_AGENTS_ENDPOINT}" \
+        --set env.REDIS_HOST="${REDIS_HOST}"
 
 # Destroy the Helm chart
 destroy:
     @echo "🚧 Undeploying web service Helm chart..."
     helm uninstall {{HELM_CHART_NAME}}
+
+# Show environment variables on the pod
+show-env:
+    @echo "🚧 Showing environment variables..."
+    kubectl exec -it $(kubectl get pods -l app.kubernetes.io/name=letta-web -o jsonpath="{.items[0].metadata.name}") -- env
+
+# Show secret
+show-secret:
+    #!/usr/bin/env zsh
+    @echo "🚧 Showing secret..."
+    kubectl get secret letta-web-env -o yaml | grep -v '^\s*[^:]*:\s*$' | sed 's/: /: /' | awk '{print $1 " " (NF > 1 ? $2 : "")}' | while read key value; do
+        if [ -n "$value" ]; then
+            echo "$key $(echo $value | base64 --decode)"
+        else
+            echo "$key"
+        fi
+    done
