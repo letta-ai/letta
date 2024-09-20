@@ -52,6 +52,16 @@ spec:
           {{- end }}
           envFrom:
             - secretRef:
+                name: {{ include "letta-web.fullname" . }}-env
+          env:
+            - name: NEXT_PUBLIC_CURRENT_HOST
+              value: {{ .Values.env.LETTA_API_ENDPOINT | quote }}
+          {{- with .Values.volumeMounts }}
+          volumeMounts:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          envFrom:
+            - secretRef:
                 name: letta-secrets
       {{- with .Values.volumes }}
       volumes:

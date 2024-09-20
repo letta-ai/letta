@@ -1,3 +1,5 @@
+set dotenv-load
+
 PROJECT_NAME := "memgpt-428419"
 REGION := "us-central1"
 REGISTRY_NAME := "letta"
@@ -5,6 +7,10 @@ DOCKER_REGISTRY := REGION + "-docker.pkg.dev/" + PROJECT_NAME + "/" + REGISTRY_N
 HELM_CHARTS_DIR := "helm"
 HELM_CHART_NAME := "letta-web"
 TAG := "v0.0.7"
+
+REDIS_HOST := "10.167.199.148"
+POSTGRES_PRIVATE_IP := "10.104.0.3"
+DATABASE_URL := "postgres://staff:${PG_PASSWORD}@${POSTGRES_PRIVATE_IP}:5432/letta"
 
 # List all Justfile commands
 @list:
@@ -30,23 +36,14 @@ deploy:
     helm upgrade --install {{HELM_CHART_NAME}} {{HELM_CHARTS_DIR}}/{{HELM_CHART_NAME}} \
         --set image.repository={{DOCKER_REGISTRY}}/web \
         --set image.tag={{TAG}}
+    --set env.DATABASE_URL="${DATABASE_URL}" \
+    --set env.GOOGLE_CLIENT_ID="${GOOGLE_CLIENT_ID}" \
+    --set env.GOOGLE_CLIENT_SECRET="${GOOGLE_CLIENT_SECRET}" \
+    --set env.GOOGLE_REDIRECT_URI="${GOOGLE_REDIRECT_URI}" \
+    --set env.LETTA_AGENTS_ENDPOINT="${LETTA_AGENTS_ENDPOINT}" \
+    --set env.REDIS_HOST="${REDIS_HOST}"
 
 # Destroy the Helm chart
 destroy:
     @echo "🚧 Undeploying web service Helm chart..."
     helm uninstall {{HELM_CHART_NAME}}
-
-# Deploy the Helm chart to local Orbstack cluster
-deploy-local:
-    @echo "🚧 Deploying web service Helm chart to local Orbstack cluster..."
-    gcloud auth print-access-token | docker login -u oauth2accesstoken --password-stdin https://{{REGION}}-docker.pkg.dev
-    kubectl create secret docker-registry gcr-json-key \
-        --docker-server={{REGION}}-docker.pkg.dev \
-        --docker-username=oauth2accesstoken \
-        --docker-password=$(gcloud auth print-access-token) \
-        --docker-email=$(gcloud config get-value account) \
-        --dry-run=client -o yaml | kubectl apply -f -
-    helm upgrade --install {{HELM_CHART_NAME}} {{HELM_CHARTS_DIR}}/{{HELM_CHART_NAME}} \
-        --set image.repository={{DOCKER_REGISTRY}}/web \
-        --set image.tag={{TAG}} \
-        --set imagePullSecrets[0].name=gcr-json-key
