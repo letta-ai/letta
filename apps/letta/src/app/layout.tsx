@@ -87,6 +87,8 @@ export default function RootLayout({
           sizes="16x16"
           href="/seo/favicon-16x16.png"
         />
+        <link rel="icon" type="image/x-icon" href="/seo/favicon.ico" />
+        <link rel="icon" type="image/x-icon" href="/seo/favicon.svg" />
         <link rel="manifest" href="/seo/manifest.json" />
         <meta name="msapplication-TileColor" content="#ffffff" />
         <meta name="msapplication-TileImage" content="/ms-icon-144x144.png" />
