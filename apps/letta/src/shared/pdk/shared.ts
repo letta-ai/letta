@@ -4,4 +4,4 @@ export interface AuthedRequestType {
   };
 }
 
-export const V1_ROUTE = `/v1/deployment`;
+export const DEPLOYMENT_BASE_URL = `/v1/deployment`;

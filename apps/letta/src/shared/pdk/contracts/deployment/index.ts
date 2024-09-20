@@ -20,6 +20,8 @@ const CreateAgentNotFoundResponseSchema = z.object({
 
 const createAgentContract = c.mutation({
   path: '/agents',
+  summary: 'Create deployed agent',
+  operationId: 'createDeployedAgent',
   method: 'POST',
   contentType: 'application/json',
   body: CreateAgentBodySchema,
@@ -55,6 +57,8 @@ const ChatWithAgentNotFoundResponseSchema = z.object({
 
 const chatWithAgentContract = c.mutation({
   path: '/agents/:deployedAgentId/chat',
+  summary: 'Chat with deployed agent',
+  operationId: 'chatWithDeployedAgent',
   method: 'POST',
   pathParams: ChatWithAgentParamsSchema,
   contentType: 'application/json',
@@ -65,7 +69,7 @@ const chatWithAgentContract = c.mutation({
   },
 });
 
-export const agentsContracts = c.router({
+export const deploymentContracts = c.router({
   createAgent: createAgentContract,
   chatWithAgent: chatWithAgentContract,
 });

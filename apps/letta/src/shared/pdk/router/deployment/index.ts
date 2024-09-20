@@ -12,10 +12,10 @@ import { copyAgentById } from '$letta/server';
 import * as crypto from 'node:crypto';
 
 type CreateAgentRequestType = ServerInferRequest<
-  typeof pdkContracts.agents.createAgent
+  typeof pdkContracts.deployment.createAgent
 >;
 type CreateAgentResponseType = ServerInferResponses<
-  typeof pdkContracts.agents.createAgent
+  typeof pdkContracts.deployment.createAgent
 >;
 
 export async function createAgent(
@@ -93,7 +93,7 @@ export async function createAgent(
 }
 
 type ChatWithAgentResponseType = ServerInferResponses<
-  typeof pdkContracts.agents.chatWithAgent
+  typeof pdkContracts.deployment.chatWithAgent
 >;
 
 export async function chatWithAgent(): Promise<ChatWithAgentResponseType> {

@@ -7,7 +7,6 @@ import {
   Typography,
   VStack,
 } from '@letta-web/component-library';
-import { useCurrentUser } from '$letta/client/hooks';
 import { webApi, webApiQueryKeys } from '$letta/client';
 
 interface CurrentUserDetailsBlockProps {
@@ -16,16 +15,18 @@ interface CurrentUserDetailsBlockProps {
 
 export function CurrentUserDetailsBlock(props: CurrentUserDetailsBlockProps) {
   const { hideSettingsButton } = props;
-  const { name } = useCurrentUser();
+  const { data: user } = webApi.user.getCurrentUser.useQuery({
+    queryKey: webApiQueryKeys.user.getCurrentUser,
+  });
   const { data } = webApi.organizations.getCurrentOrganization.useQuery({
     queryKey: webApiQueryKeys.organizations.getCurrentOrganization,
   });
 
   return (
     <HStack padding="large" align="center">
-      <Avatar name={name} />
+      <Avatar name={user?.body.name || ''} />
       <VStack gap={false} fullWidth align="start">
-        <Typography bold>{name}</Typography>
+        <Typography bold>{user?.body.name}</Typography>
         {data && (
           <Typography variant="body2" color="muted">
             {data.body.name}

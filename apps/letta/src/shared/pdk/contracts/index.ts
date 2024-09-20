@@ -1,5 +1,5 @@
-import { agentsContracts } from '$letta/pdk/contracts/agents';
+import { deploymentContracts } from './deployment';
 
 export const pdkContracts = {
-  agents: agentsContracts,
+  deployment: deploymentContracts,
 };

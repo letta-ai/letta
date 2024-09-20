@@ -11,6 +11,13 @@
       "options": {
         "tsConfig": ["tsconfig.json"]
       }
+    },
+    "generate-openapi": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "apps/letta",
+        "command": "ts-node ./scripts/generate-openapi.ts"
+      }
     }
   }
 }

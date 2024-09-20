@@ -11,6 +11,13 @@
         "cwd": "apps/docs",
         "command": "mintlify dev --port 3001"
       }
+    },
+    "generate-openapi": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "apps/docs",
+        "command": "ts-node ./scripts/prepare-openapi.ts"
+      }
     }
   }
 }

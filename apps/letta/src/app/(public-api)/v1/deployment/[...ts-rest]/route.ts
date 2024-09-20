@@ -7,7 +7,7 @@ import {
 import { pdkContracts } from '$letta/pdk/contracts';
 import { pdkRouter } from '$letta/pdk/router';
 import { verifyAndReturnAPIKeyDetails } from '$letta/server/auth';
-import { V1_ROUTE } from '$letta/pdk/shared';
+import { DEPLOYMENT_BASE_URL } from '$letta/pdk/shared';
 import * as Sentry from '@sentry/node';
 
 function isErrorResponse(error: unknown): error is TsRestHttpError {
@@ -15,7 +15,7 @@ function isErrorResponse(error: unknown): error is TsRestHttpError {
 }
 
 const handler = createNextHandler(pdkContracts, pdkRouter, {
-  basePath: V1_ROUTE,
+  basePath: DEPLOYMENT_BASE_URL,
   jsonQuery: true,
   errorHandler: (error) => {
     if (isErrorResponse(error)) {

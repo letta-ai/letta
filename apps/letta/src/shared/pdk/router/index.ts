@@ -1,5 +1,5 @@
-import * as agentsRouter from './agents';
+import * as deploymentRouter from './deployment';
 
 export const pdkRouter = {
-  agents: agentsRouter,
+  deployment: deploymentRouter,
 };

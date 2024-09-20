@@ -1,7 +1,7 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
-import type { ChatWithAgentParamsSchema } from '$letta/pdk/contracts/agents';
-import { ChatWithAgentBodySchema } from '$letta/pdk/contracts/agents';
+import type { ChatWithAgentParamsSchema } from '$letta/pdk/contracts/deployment';
+import { ChatWithAgentBodySchema } from '$letta/pdk/contracts/deployment';
 import type { z } from 'zod';
 import { verifyAndReturnAPIKeyDetails } from '$letta/server/auth';
 import { db, deployedAgents } from '@letta-web/database';
