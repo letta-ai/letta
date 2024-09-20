@@ -28,8 +28,8 @@
  * --syntax-cursor-line: hsla(230, 8%, 24%, 0.05);
  */
 
-code[class*="language-"],
-pre[class*="language-"] {
+code[class*='language-'],
+pre[class*='language-'] {
   font-size: var(--font-size-sm);
   font-family: var(--font-mono);
   direction: ltr;
@@ -48,22 +48,22 @@ pre[class*="language-"] {
 }
 
 /* Selection */
-code[class*="language-"]::-moz-selection,
-code[class*="language-"] *::-moz-selection,
-pre[class*="language-"] *::-moz-selection {
+code[class*='language-']::-moz-selection,
+code[class*='language-'] *::-moz-selection,
+pre[class*='language-'] *::-moz-selection {
   background: hsl(230, 1%, 90%);
   color: inherit;
 }
 
-code[class*="language-"]::selection,
-code[class*="language-"] *::selection,
-pre[class*="language-"] *::selection {
+code[class*='language-']::selection,
+code[class*='language-'] *::selection,
+pre[class*='language-'] *::selection {
   background: hsl(230, 1%, 90%);
   color: inherit;
 }
 
 /* Code blocks */
-pre[class*="language-"] {
+pre[class*='language-'] {
   overflow: auto;
   border-radius: 0.3em;
 
@@ -72,10 +72,8 @@ pre[class*="language-"] {
   }
 }
 
-
-
 /* Inline code */
-:not(pre) > code[class*="language-"] {
+:not(pre) > code[class*='language-'] {
   padding: 0.2em 0.3em;
   border-radius: 0.3em;
   white-space: normal;
@@ -169,7 +167,10 @@ pre[class*="language-"] {
   color: hsl(301, 63%, 40%);
 }
 
-.language-javascript .token.template-string > .token.interpolation > .token.interpolation-punctuation.punctuation {
+.language-javascript
+  .token.template-string
+  > .token.interpolation
+  > .token.interpolation-punctuation.punctuation {
   color: hsl(344, 84%, 43%);
 }
 
@@ -296,10 +297,11 @@ div.code-toolbar > .toolbar.toolbar > .toolbar-item > span:focus {
 
 /* Hovering over a linkable line number (in the gutter area) */
 /* Requires Line Numbers plugin as well */
-pre[id].linkable-line-numbers.linkable-line-numbers span.line-numbers-rows > span:hover:before {
+pre[id].linkable-line-numbers.linkable-line-numbers
+  span.line-numbers-rows
+  > span:hover:before {
   background-color: hsla(230, 8%, 24%, 0.05);
 }
-
 
 /* Stuff in the gutter */
 .line-numbers .line-numbers-rows > span:before,
@@ -393,7 +395,6 @@ pre > code.diff-highlight .token.token.inserted:not(.prefix) *::selection {
   border-top-color: hsl(0, 0, 95%);
 }
 
-
 /* Background colour within the popup */
 .prism-previewer-angle.prism-previewer-angle:before,
 .prism-previewer-time.prism-previewer-time:before,
@@ -453,9 +454,8 @@ pre > code.diff-highlight .token.token.inserted:not(.prefix) *::selection {
   justify-content: center;
 }
 
-
 .editor.line-numbers:before {
-  content: "";
+  content: '';
   position: absolute;
   font-family: var(--font-mono) monospace !important;
   top: 0;
@@ -464,6 +464,6 @@ pre > code.diff-highlight .token.token.inserted:not(.prefix) *::selection {
   width: var(--editor-lineNumber-gutter-width);
   height: 100%;
   border-right: 1px solid hsl(var(--border));
-  background-color: hsl( var(--background-greyer));
+  background-color: hsl(var(--background-greyer));
   z-index: 1;
 }

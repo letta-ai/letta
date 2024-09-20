@@ -53,3 +53,6 @@ deployment_env.yaml
 data/dump.rdb
 
 tsconfig.tsbuildinfo
+
+# Sentry Config File
+.env.sentry-build-plugin

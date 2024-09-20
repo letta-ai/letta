@@ -1,42 +1,41 @@
 version: '3.7'
 services:
-    redis:
-      image: redis:alpine
-      container_name: redis
-      healthcheck:
-        test: [ "CMD-SHELL", "redis-cli ping | grep PONG" ]
-        interval: 1s
-        timeout: 3s
-        retries: 5
-      ports:
-        - "6379:6379"
-      volumes:
-        - ./data:/data
-      command: redis-server --appendonly yes
-    postgres:
-      image: postgres:alpine
-      container_name: postgres
-      healthcheck:
-          test: [ "CMD-SHELL", "pg_isready -U postgres" ]
-          interval: 1s
-          timeout: 3s
-          retries: 5
-      ports:
-          - "5432:5432"
-      environment:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: letta
-    web:
-      depends_on:
-        postgres:
-          condition: service_healthy
-        redis:
-          condition: service_healthy
-      container_name: letta-web
-      build:
-        context: .
-        dockerfile: Dockerfile
-      ports:
-        - "3000:3000"
-
+  redis:
+    image: redis:alpine
+    container_name: redis
+    healthcheck:
+      test: ['CMD-SHELL', 'redis-cli ping | grep PONG']
+      interval: 1s
+      timeout: 3s
+      retries: 5
+    ports:
+      - '6379:6379'
+    volumes:
+      - ./data:/data
+    command: redis-server --appendonly yes
+  postgres:
+    image: postgres:alpine
+    container_name: postgres
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 1s
+      timeout: 3s
+      retries: 5
+    ports:
+      - '5432:5432'
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: letta
+  web:
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    container_name: letta-web
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - '3000:3000'

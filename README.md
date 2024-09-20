@@ -5,11 +5,12 @@ This is the monorepo for all internal Letta web projects. It uses [Nx](https://n
 ## Getting Started
 
 ### Prerequisites
-* Docker
-* `nvm` from [here](https://github.com/nvm-sh/nvm) and then run:
 
+- Docker
+- `nvm` from [here](https://github.com/nvm-sh/nvm) and then run:
 
 Run the following commands
+
 ```sh
 nvm use
 ```
@@ -31,7 +32,9 @@ npm run dev
 ```
 
 ## Adding Component to the Library
+
 To pull from shadCN run this:
+
 ```
 nx run component-library:add-component {component-name}
 ```

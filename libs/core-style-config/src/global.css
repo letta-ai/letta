@@ -37,7 +37,7 @@
     --secondary-hover: 0, 0%, 10%;
 
     --tertiary: 0 0% 100%;
-    --tertiary-content:  240 10% 3.9%;
+    --tertiary-content: 240 10% 3.9%;
     --tertiary-hover: 210, 40%, 98%;
     --tertiary-active: 210, 40%, 96%;
 
@@ -51,11 +51,10 @@
     --destructive-content: 0 0% 98%;
 
     --warning: 40, 100%, 50%;
-    --warning-content:  40, 100%, 85%;
+    --warning-content: 40, 100%, 85%;
 
     --background-warning: 39, 100%, 94%;
     --background-warning-content: 39, 100%, 10%;
-
 
     --background-grey-content: 240 10% 3.9%;
     --background-grey: 210, 10%, 96%;
@@ -101,8 +100,6 @@
     --background-greyer: 200, 3%, 17%;
     --background-greyer-content: 0 0% 100%;
 
-
-
     --content: 0 0% 98%;
     --card: 240 10% 3.9%;
     --card-content: 0 0% 98%;
@@ -113,7 +110,7 @@
     --secondary-content: 0 0% 20%;
 
     --tertiary: 0 0% 0%;
-    --tertiary-content:  0 0% 100%;
+    --tertiary-content: 0 0% 100%;
     --tertiary-active: 200, 3%, 17%;
 
     --muted: 240 3.7% 15.9%;
@@ -127,11 +124,6 @@
     --border: 200, 3%, 17%;
     --input: 240 3.7% 15.9%;
     --ring: 240 4.9% 83.9%;
-
-
-
-
-
   }
 }
 
@@ -155,10 +147,11 @@
   font-family: 'Fira Code';
   src: url('../fonts/variable/FiraCode-VF.ttf')
       format('truetype supports variations'),
-    url('../fonts/variable/FiraCode-VF.ttf') format('truetype supports variations');
+    url('../fonts/variable/FiraCode-VF.ttf')
+      format('truetype supports variations');
 }
 
-.dark  * {
+.dark * {
   border-color: hsl(var(--border));
 }
 
@@ -173,10 +166,5 @@
   body {
     @apply bg-background text-content;
     font-feature-settings: 'rlig' 1, 'calt' 1;
-
-
   }
-
-
 }
-
