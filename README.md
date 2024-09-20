@@ -47,13 +47,17 @@ docker compose up -d redis postgres
 npm run dev
 ```
 
+Access the app at [http://localhost:3000](http://localhost:3000)
+
 ## Docs Site
 ### Running the Docs Site Locally
 To run the docs site, use:
 
 ```sh
-npm run docs:dev
+npm run docs
 ```
+
+Access the docs site at [http://localhost:3001](http://localhost:3001)
 
 ## View the Component Library
 ### Running the Component Library Locally

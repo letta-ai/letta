@@ -9,7 +9,7 @@
       "executor": "nx:run-commands",
       "options": {
         "cwd": "apps/docs",
-        "command": "mintlify dev"
+        "command": "mintlify dev --port 3001"
       }
     }
   }

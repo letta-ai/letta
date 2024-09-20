@@ -4,7 +4,7 @@
   "license": "MIT",
   "scripts": {
     "dev": "nx dev letta",
-    "docs:dev": "nx dev docs",
+    "docs": "nx dev docs",
     "start": "nx start letta -p 8080",
     "gcp-build": "",
     "build": "nx build letta --prod",
