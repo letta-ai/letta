@@ -9,8 +9,6 @@ HELM_CHART_NAME := "letta-web"
 TAG := "v0.0.7"
 
 REDIS_HOST := "10.167.199.148"
-POSTGRES_PRIVATE_IP := "10.104.0.3"
-DATABASE_URL := "postgres://staff:${PG_PASSWORD}@${POSTGRES_PRIVATE_IP}:5432/letta"
 
 # List all Justfile commands
 @list:
@@ -36,7 +34,7 @@ build:
 
 migrate:
     @echo "🚧 Running database migrations..."
-    DATABASE_URL={{DATABASE_URL}} npm run database:migrate
+    DATABASE_URL=${DATABASE_URL} npm run database:migrate
 
 
 # Deploy the Helm chart
