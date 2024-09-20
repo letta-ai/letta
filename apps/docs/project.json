@@ -8,7 +8,7 @@
     "dev": {
       "executor": "nx:run-commands",
       "options": {
-        "cwd": "libs/database",
+        "cwd": "apps/docs",
         "command": "mintlify dev"
       }
     }

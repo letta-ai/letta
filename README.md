@@ -2,6 +2,19 @@
 
 This is the monorepo for all internal Letta web projects. It uses [Nx](https://nx.dev) to manage the workspace.
 
+
+## Table of Contents
+- [Getting Started](#getting-started)
+  - [Prerequisites](#prerequisites)
+  - [Setup](#setup)
+- [Letta](#letta)
+  - [Running Letta Locally](#running-letta-locally)
+- [Docs Site](#docs-site)
+  - [Running the Docs Site Locally](#running-the-docs-site-locally)
+- [View the Component Library](#view-the-component-library)
+  - [Running the Component Library Locally](#running-the-component-library-locally)
+  - [Adding a new component](#adding-a-new-component)
+
 ## Getting Started
 
 ### Prerequisites
@@ -22,6 +35,9 @@ npm install
 npm run setup
 ```
 
+
+## Letta
+
 ## Running Letta Locally
 
 To run the dev server for your app, use:
@@ -31,10 +47,25 @@ docker compose up -d redis postgres
 npm run dev
 ```
 
-## Adding Component to the Library
+## Docs Site
+### Running the Docs Site Locally
+To run the docs site, use:
 
-To pull from shadCN run this:
-
+```sh
+npm run docs:dev
 ```
-nx run component-library:add-component {component-name}
+
+## View the Component Library
+### Running the Component Library Locally
+To run the component library, use:
+
+```sh
+npm run cl
+```
+
+### Adding a new component
+To add a new component, run the following command:
+
+```sh
+npm run cl:new {component-name}
 ```
