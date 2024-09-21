@@ -40,17 +40,17 @@
     {
       "name": "Documentation",
       "icon": "book-open-cover",
-      "url": "https://mintlify.com/docs"
+      "url": "https://docs.letta.com"
     },
     {
       "name": "Community",
-      "icon": "slack",
-      "url": "https://mintlify.com/community"
+      "icon": "discord",
+      "url": "https://discord.gg/letta"
     },
     {
-      "name": "Blog",
+      "name": "News",
       "icon": "newspaper",
-      "url": "https://mintlify.com/blog"
+      "url": "https://letta-tonik.webflow.io/news"
     }
   ],
   "navigation": [
@@ -112,8 +112,9 @@
     }
   ],
   "footerSocials": {
-    "x": "https://x.com/mintlify",
-    "github": "https://github.com/mintlify",
-    "linkedin": "https://www.linkedin.com/company/mintsearch"
-  }
+    "x": "https://x.com/letta_ai",
+    "github": "https://github.com/letta-ai",
+    "linkedin": "https://www.linkedin.com/company/letta-ai"
+  },
+  "isWhiteLabeled": true
 }
