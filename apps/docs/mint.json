@@ -7,12 +7,12 @@
   },
   "favicon": "/favicon.svg",
   "colors": {
-    "primary": "#0707AB",
+    "primary": "#3758F9",
     "light": "#fff",
-    "dark": "#0707AB",
+    "dark": "#13C296",
     "anchors": {
-      "from": "#0707AB",
-      "to": "#0707AB"
+      "from": "#3758F9",
+      "to": "#3758F9"
     }
   },
   "theme": "quill",
