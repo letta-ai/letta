@@ -97,6 +97,12 @@ import type {
   ListApiKeysResponse,
   DeleteApiKeyData,
   DeleteApiKeyResponse,
+  ListOrgsData,
+  ListOrgsResponse,
+  CreateOrganizationData,
+  CreateOrganizationResponse,
+  DeleteOrganizationData,
+  DeleteOrganizationResponse,
   AuthenticateUserV1AuthPostData,
   AuthenticateUserV1AuthPostResponse,
 } from './types.gen';
@@ -835,7 +841,7 @@ export class AgentsService {
    * @param data.before Message before which to retrieve the returned messages.
    * @param data.limit Maximum number of messages to retrieve.
    * @param data.msgObject If true, returns Message objects. If false, return MemGPTMessage objects.
-   * @returns memgpt__schemas__message__Message Successful Response
+   * @returns unknown Successful Response
    * @throws ApiError
    */
   public static listAgentMessages(
@@ -1402,6 +1408,146 @@ export class AdminService {
       url: '/v1/admin/users/keys',
       query: {
         api_key: data.apiKey,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+    });
+  }
+
+  /**
+   * Get All Orgs
+   * Get a list of all orgs in the database
+   * @param data The data for the request.
+   * @param data.cursor
+   * @param data.limit
+   * @returns Organization Successful Response
+   * @throws ApiError
+   */
+  public static listOrgs(
+    data: ListOrgsData = {}
+  ): CancelablePromise<ListOrgsResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/admin/orgs/',
+      query: {
+        cursor: data.cursor,
+        limit: data.limit,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+    });
+  }
+
+  /**
+   * Create Org
+   * Create a new org in the database
+   * @param data The data for the request.
+   * @param data.requestBody
+   * @returns Organization Successful Response
+   * @throws ApiError
+   */
+  public static createOrganization(
+    data: CreateOrganizationData
+  ): CancelablePromise<CreateOrganizationResponse> {
+    return __request(OpenAPI, {
+      method: 'POST',
+      url: '/v1/admin/orgs/',
+      body: data.requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: 'Validation Error',
+      },
+    });
+  }
+
+  /**
+   * Delete Org
+   * @param data The data for the request.
+   * @param data.orgId The org_id key to be deleted.
+   * @returns Organization Successful Response
+   * @throws ApiError
+   */
+  public static deleteOrganization(
+    data: DeleteOrganizationData
+  ): CancelablePromise<DeleteOrganizationResponse> {
+    return __request(OpenAPI, {
+      method: 'DELETE',
+      url: '/v1/admin/orgs/',
+      query: {
+        org_id: data.orgId,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+    });
+  }
+}
+
+export class OrganizationService {
+  /**
+   * Get All Orgs
+   * Get a list of all orgs in the database
+   * @param data The data for the request.
+   * @param data.cursor
+   * @param data.limit
+   * @returns Organization Successful Response
+   * @throws ApiError
+   */
+  public static listOrgs(
+    data: ListOrgsData = {}
+  ): CancelablePromise<ListOrgsResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/admin/orgs/',
+      query: {
+        cursor: data.cursor,
+        limit: data.limit,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+    });
+  }
+
+  /**
+   * Create Org
+   * Create a new org in the database
+   * @param data The data for the request.
+   * @param data.requestBody
+   * @returns Organization Successful Response
+   * @throws ApiError
+   */
+  public static createOrganization(
+    data: CreateOrganizationData
+  ): CancelablePromise<CreateOrganizationResponse> {
+    return __request(OpenAPI, {
+      method: 'POST',
+      url: '/v1/admin/orgs/',
+      body: data.requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: 'Validation Error',
+      },
+    });
+  }
+
+  /**
+   * Delete Org
+   * @param data The data for the request.
+   * @param data.orgId The org_id key to be deleted.
+   * @returns Organization Successful Response
+   * @throws ApiError
+   */
+  public static deleteOrganization(
+    data: DeleteOrganizationData
+  ): CancelablePromise<DeleteOrganizationResponse> {
+    return __request(OpenAPI, {
+      method: 'DELETE',
+      url: '/v1/admin/orgs/',
+      query: {
+        org_id: data.orgId,
       },
       errors: {
         422: 'Validation Error',

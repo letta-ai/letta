@@ -8,6 +8,7 @@ import {
   JobsService,
   LlmsService,
   ModelsService,
+  OrganizationService,
   SourcesService,
   ToolsService,
   UsersService,
@@ -575,5 +576,48 @@ export const useAdminServiceListApiKeysSuspense = <
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseAdminServiceListApiKeysKeyFn({ userId }, queryKey),
     queryFn: () => AdminService.listApiKeys({ userId }) as TData,
+    ...options,
+  });
+export const useAdminServiceListOrgsSuspense = <
+  TData = Common.AdminServiceListOrgsDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[]
+>(
+  {
+    cursor,
+    limit,
+  }: {
+    cursor?: string;
+    limit?: number;
+  } = {},
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
+) =>
+  useSuspenseQuery<TData, TError>({
+    queryKey: Common.UseAdminServiceListOrgsKeyFn({ cursor, limit }, queryKey),
+    queryFn: () => AdminService.listOrgs({ cursor, limit }) as TData,
+    ...options,
+  });
+export const useOrganizationServiceListOrgsSuspense = <
+  TData = Common.OrganizationServiceListOrgsDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[]
+>(
+  {
+    cursor,
+    limit,
+  }: {
+    cursor?: string;
+    limit?: number;
+  } = {},
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
+) =>
+  useSuspenseQuery<TData, TError>({
+    queryKey: Common.UseOrganizationServiceListOrgsKeyFn(
+      { cursor, limit },
+      queryKey
+    ),
+    queryFn: () => OrganizationService.listOrgs({ cursor, limit }) as TData,
     ...options,
   });

@@ -7,6 +7,7 @@ import {
   signInUserFromProviderLogin,
 } from '$letta/server/auth';
 import { LoginErrorsEnum } from '$letta/errors';
+import * as Sentry from '@sentry/node';
 
 interface GoogleAccessTokenResponse {
   access_token: string;
@@ -69,14 +70,19 @@ export async function GET(
       },
     });
   } catch (e) {
+    console.error(e);
     const errorCode = (() => {
       if (e instanceof Error) {
         if (Object.values(LoginErrorsEnum).some((code) => code === e.message)) {
           return e.message;
         }
 
+        Sentry.captureException(e);
+
         return LoginErrorsEnum.UNKNOWN_ERROR_CONTACT_SUPPORT;
       }
+
+      Sentry.captureException(e);
 
       return LoginErrorsEnum.UNKNOWN_ERROR_CONTACT_SUPPORT;
     })();

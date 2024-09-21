@@ -21,6 +21,7 @@ import {
 } from '@letta-web/analytics/server';
 import { AnalyticsEvent } from '@letta-web/analytics';
 import { jwtDecode } from 'jwt-decode';
+import { AdminService } from '@letta-web/letta-agents-api';
 
 function isLettaEmail(email: string) {
   return email.endsWith('@letta.com') || email.endsWith('@memgpt.ai');
@@ -33,39 +34,99 @@ async function handleLettaUserCreation() {
   });
 
   let organizationId = lettaOrg?.id;
+  let lettaOrganizationId = lettaOrg?.lettaAgentsId;
 
-  if (!organizationId) {
-    // create letta admin organization
-    const [{ organizationId: madeOrgId }] = await db
-      .insert(organizations)
-      .values({
+  if (!organizationId || !lettaOrganizationId) {
+    const lettaAgentsOrganization = await AdminService.createOrganization({
+      requestBody: {
         name: 'Letta',
-        isAdmin: true,
-      })
-      .returning({ organizationId: organizations.id });
+      },
+    });
+
+    if (!lettaAgentsOrganization?.id) {
+      throw new Error(
+        'Failed to create organization from Letta Agents Service'
+      );
+    }
+
+    // create letta admin organization
+    const [{ organizationId: madeOrgId, lettaAgentsId: madeAgentOrgId }] =
+      await db
+        .insert(organizations)
+        .values({
+          name: 'Letta',
+          isAdmin: true,
+          lettaAgentsId: lettaAgentsOrganization.id,
+        })
+        .returning({
+          organizationId: organizations.id,
+          lettaAgentsId: organizations.lettaAgentsId,
+        });
 
     organizationId = madeOrgId;
+    lettaOrganizationId = madeAgentOrgId;
   }
 
-  return organizationId;
+  return {
+    organizationId,
+    lettaOrganizationId,
+  };
 }
 
 async function createUserAndOrganization(
   userData: ProviderUserPayload
 ): Promise<UserSession> {
   let organizationId = '';
+  let lettaOrganizationId = '';
 
   if (isLettaEmail(userData.email)) {
-    organizationId = await handleLettaUserCreation();
+    const createdLettaUser = await handleLettaUserCreation();
+
+    organizationId = createdLettaUser.organizationId;
+    lettaOrganizationId = createdLettaUser.lettaOrganizationId;
   } else {
+    const organizationName = `${userData.name}'s organization`;
+
+    const lettaAgentsOrganization = await AdminService.createOrganization({
+      requestBody: {
+        name: organizationName,
+      },
+    });
+
+    if (!lettaAgentsOrganization?.id) {
+      throw new Error(
+        'Failed to create organization from Letta Agents Service'
+      );
+    }
+
     const [createdOrg] = await db
       .insert(organizations)
       .values({
-        name: `${userData.name}'s organization`,
+        name: organizationName,
+        lettaAgentsId: lettaAgentsOrganization.id,
       })
       .returning({ organizationId: organizations.id });
 
     organizationId = createdOrg.organizationId;
+  }
+
+  const lettaAgentsUser = await AdminService.createUser({
+    requestBody: {
+      name: userData.name,
+      org_id: lettaOrganizationId,
+    },
+  });
+
+  if (!lettaAgentsUser?.id) {
+    // delete organization if user creation fails
+    await Promise.all([
+      AdminService.deleteOrganization({
+        orgId: lettaOrganizationId,
+      }),
+      db.delete(organizations).where(eq(organizations.id, organizationId)),
+    ]);
+
+    throw new Error('Failed to create user from Letta Agents Service');
   }
 
   const apiKey = await generateAPIKey(organizationId);
@@ -76,7 +137,7 @@ async function createUserAndOrganization(
       .values({
         organizationId,
         name: userData.name,
-        lettaAgentsId: userData.uniqueId,
+        lettaAgentsId: lettaAgentsUser.id,
         imageUrl: userData.imageUrl,
         email: userData.email,
         providerId: userData.uniqueId,
@@ -237,6 +298,14 @@ export async function getUser() {
 
   const userFromDb = await db.query.users.findFirst({
     where: eq(users.id, user.id),
+    columns: {
+      organizationId: true,
+      id: true,
+      lettaAgentsId: true,
+      email: true,
+      imageUrl: true,
+      name: true,
+    },
   });
 
   if (!userFromDb) {
@@ -244,7 +313,7 @@ export async function getUser() {
     return;
   }
 
-  return user;
+  return userFromDb;
 }
 
 export async function getUserOrganizationIdOrThrow() {

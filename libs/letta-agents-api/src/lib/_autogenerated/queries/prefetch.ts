@@ -8,6 +8,7 @@ import {
   JobsService,
   LlmsService,
   ModelsService,
+  OrganizationService,
   SourcesService,
   ToolsService,
   UsersService,
@@ -360,4 +361,32 @@ export const prefetchUseAdminServiceListApiKeys = (
   queryClient.prefetchQuery({
     queryKey: Common.UseAdminServiceListApiKeysKeyFn({ userId }),
     queryFn: () => AdminService.listApiKeys({ userId }),
+  });
+export const prefetchUseAdminServiceListOrgs = (
+  queryClient: QueryClient,
+  {
+    cursor,
+    limit,
+  }: {
+    cursor?: string;
+    limit?: number;
+  } = {}
+) =>
+  queryClient.prefetchQuery({
+    queryKey: Common.UseAdminServiceListOrgsKeyFn({ cursor, limit }),
+    queryFn: () => AdminService.listOrgs({ cursor, limit }),
+  });
+export const prefetchUseOrganizationServiceListOrgs = (
+  queryClient: QueryClient,
+  {
+    cursor,
+    limit,
+  }: {
+    cursor?: string;
+    limit?: number;
+  } = {}
+) =>
+  queryClient.prefetchQuery({
+    queryKey: Common.UseOrganizationServiceListOrgsKeyFn({ cursor, limit }),
+    queryFn: () => OrganizationService.listOrgs({ cursor, limit }),
   });

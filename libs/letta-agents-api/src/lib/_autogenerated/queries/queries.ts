@@ -14,6 +14,7 @@ import {
   JobsService,
   LlmsService,
   ModelsService,
+  OrganizationService,
   SourcesService,
   ToolsService,
   UsersService,
@@ -26,6 +27,7 @@ import {
   CreateArchivalMemory,
   CreateBlock,
   MemGPTRequest,
+  OrganizationCreate,
   SourceCreate,
   SourceUpdate,
   ToolCreate,
@@ -600,6 +602,49 @@ export const useAdminServiceListApiKeys = <
     queryFn: () => AdminService.listApiKeys({ userId }) as TData,
     ...options,
   });
+export const useAdminServiceListOrgs = <
+  TData = Common.AdminServiceListOrgsDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[]
+>(
+  {
+    cursor,
+    limit,
+  }: {
+    cursor?: string;
+    limit?: number;
+  } = {},
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
+) =>
+  useQuery<TData, TError>({
+    queryKey: Common.UseAdminServiceListOrgsKeyFn({ cursor, limit }, queryKey),
+    queryFn: () => AdminService.listOrgs({ cursor, limit }) as TData,
+    ...options,
+  });
+export const useOrganizationServiceListOrgs = <
+  TData = Common.OrganizationServiceListOrgsDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[]
+>(
+  {
+    cursor,
+    limit,
+  }: {
+    cursor?: string;
+    limit?: number;
+  } = {},
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
+) =>
+  useQuery<TData, TError>({
+    queryKey: Common.UseOrganizationServiceListOrgsKeyFn(
+      { cursor, limit },
+      queryKey
+    ),
+    queryFn: () => OrganizationService.listOrgs({ cursor, limit }) as TData,
+    ...options,
+  });
 export const useToolsServiceCreateTool = <
   TData = Common.ToolsServiceCreateToolMutationResult,
   TError = unknown,
@@ -1007,6 +1052,68 @@ export const useAdminServiceCreateApiKey = <
   >({
     mutationFn: ({ requestBody }) =>
       AdminService.createApiKey({ requestBody }) as unknown as Promise<TData>,
+    ...options,
+  });
+export const useAdminServiceCreateOrganization = <
+  TData = Common.AdminServiceCreateOrganizationMutationResult,
+  TError = unknown,
+  TContext = unknown
+>(
+  options?: Omit<
+    UseMutationOptions<
+      TData,
+      TError,
+      {
+        requestBody: OrganizationCreate;
+      },
+      TContext
+    >,
+    'mutationFn'
+  >
+) =>
+  useMutation<
+    TData,
+    TError,
+    {
+      requestBody: OrganizationCreate;
+    },
+    TContext
+  >({
+    mutationFn: ({ requestBody }) =>
+      AdminService.createOrganization({
+        requestBody,
+      }) as unknown as Promise<TData>,
+    ...options,
+  });
+export const useOrganizationServiceCreateOrganization = <
+  TData = Common.OrganizationServiceCreateOrganizationMutationResult,
+  TError = unknown,
+  TContext = unknown
+>(
+  options?: Omit<
+    UseMutationOptions<
+      TData,
+      TError,
+      {
+        requestBody: OrganizationCreate;
+      },
+      TContext
+    >,
+    'mutationFn'
+  >
+) =>
+  useMutation<
+    TData,
+    TError,
+    {
+      requestBody: OrganizationCreate;
+    },
+    TContext
+  >({
+    mutationFn: ({ requestBody }) =>
+      OrganizationService.createOrganization({
+        requestBody,
+      }) as unknown as Promise<TData>,
     ...options,
   });
 export const useAuthServiceAuthenticateUserV1AuthPost = <
@@ -1511,5 +1618,65 @@ export const useAdminServiceDeleteApiKey = <
   >({
     mutationFn: ({ apiKey }) =>
       AdminService.deleteApiKey({ apiKey }) as unknown as Promise<TData>,
+    ...options,
+  });
+export const useAdminServiceDeleteOrganization = <
+  TData = Common.AdminServiceDeleteOrganizationMutationResult,
+  TError = unknown,
+  TContext = unknown
+>(
+  options?: Omit<
+    UseMutationOptions<
+      TData,
+      TError,
+      {
+        orgId: string;
+      },
+      TContext
+    >,
+    'mutationFn'
+  >
+) =>
+  useMutation<
+    TData,
+    TError,
+    {
+      orgId: string;
+    },
+    TContext
+  >({
+    mutationFn: ({ orgId }) =>
+      AdminService.deleteOrganization({ orgId }) as unknown as Promise<TData>,
+    ...options,
+  });
+export const useOrganizationServiceDeleteOrganization = <
+  TData = Common.OrganizationServiceDeleteOrganizationMutationResult,
+  TError = unknown,
+  TContext = unknown
+>(
+  options?: Omit<
+    UseMutationOptions<
+      TData,
+      TError,
+      {
+        orgId: string;
+      },
+      TContext
+    >,
+    'mutationFn'
+  >
+) =>
+  useMutation<
+    TData,
+    TError,
+    {
+      orgId: string;
+    },
+    TContext
+  >({
+    mutationFn: ({ orgId }) =>
+      OrganizationService.deleteOrganization({
+        orgId,
+      }) as unknown as Promise<TData>,
     ...options,
   });

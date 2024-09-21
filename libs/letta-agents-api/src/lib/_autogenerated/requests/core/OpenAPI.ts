@@ -41,7 +41,7 @@ export type OpenAPIConfig = {
 };
 
 export const OpenAPI: OpenAPIConfig = {
-  BASE: 'http://localhost:8283',
+  BASE: process.env.LETTA_AGENTS_ENDPOINT || '',
   CREDENTIALS: 'include',
   ENCODE_PATH: undefined,
   HEADERS: undefined,

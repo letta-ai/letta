@@ -26,6 +26,7 @@ export const organizations = pgTable('organizations', {
     .primaryKey()
     .default(sql`gen_random_uuid()`),
   name: text('name').notNull(),
+  lettaAgentsId: text('letta_agents_id').notNull().unique(),
   isAdmin: boolean('is_admin').notNull().default(false),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at')

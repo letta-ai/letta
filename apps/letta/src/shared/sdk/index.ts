@@ -13,7 +13,8 @@ export interface HandlerContext {
 
 async function handleEventStreamRequest(
   req: NextRequest,
-  context: HandlerContext
+  context: HandlerContext,
+  userId: string
 ) {
   const responseStream = new TransformStream();
   const writer = responseStream.writable.getWriter();
@@ -47,6 +48,7 @@ async function handleEventStreamRequest(
           disableRetry: true,
           keepalive: false,
           headers: {
+            user_id: userId,
             'Content-Type': 'application/json',
             Accept: 'text/event-stream',
           },
@@ -115,8 +117,7 @@ async function handleMultipartFileUpload(
     url: `${environment.LETTA_AGENTS_ENDPOINT}/${path}`,
     data: formData,
     headers: {
-      Authorization: 'Bearer password',
-      USER_ID: userId,
+      user_id: userId,
     },
     validateStatus: () => true,
   });
@@ -141,7 +142,7 @@ export async function makeRequestToSDK(
   userId: string
 ) {
   if (req.headers.get('Accept') === 'text/event-stream') {
-    return handleEventStreamRequest(req, context);
+    return handleEventStreamRequest(req, context, userId);
   }
 
   if (req.headers.get('Content-Type')?.startsWith('multipart/form-data')) {
@@ -166,8 +167,7 @@ export async function makeRequestToSDK(
       url: `${environment.LETTA_AGENTS_ENDPOINT}/${path}?${queryParameters}`,
       data: payload,
       headers: {
-        Authorization: 'Bearer password',
-        USER_ID: userId,
+        user_id: userId,
       },
     });
 

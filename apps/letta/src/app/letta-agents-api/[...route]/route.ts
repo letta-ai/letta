@@ -23,7 +23,7 @@ async function handler(req: NextRequest, context: HandlerContext) {
     );
   }
 
-  return makeRequestToSDK(req, context, user.id);
+  return makeRequestToSDK(req, context, user.lettaAgentsId);
 }
 
 export {

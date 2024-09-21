@@ -9,6 +9,7 @@ import {
   JobsService,
   LlmsService,
   ModelsService,
+  OrganizationService,
   SourcesService,
   ToolsService,
   UsersService,
@@ -503,6 +504,42 @@ export const UseAdminServiceListApiKeysKeyFn = (
   },
   queryKey?: Array<unknown>
 ) => [useAdminServiceListApiKeysKey, ...(queryKey ?? [{ userId }])];
+export type AdminServiceListOrgsDefaultResponse = Awaited<
+  ReturnType<typeof AdminService.listOrgs>
+>;
+export type AdminServiceListOrgsQueryResult<
+  TData = AdminServiceListOrgsDefaultResponse,
+  TError = unknown
+> = UseQueryResult<TData, TError>;
+export const useAdminServiceListOrgsKey = 'AdminServiceListOrgs';
+export const UseAdminServiceListOrgsKeyFn = (
+  {
+    cursor,
+    limit,
+  }: {
+    cursor?: string;
+    limit?: number;
+  } = {},
+  queryKey?: Array<unknown>
+) => [useAdminServiceListOrgsKey, ...(queryKey ?? [{ cursor, limit }])];
+export type OrganizationServiceListOrgsDefaultResponse = Awaited<
+  ReturnType<typeof OrganizationService.listOrgs>
+>;
+export type OrganizationServiceListOrgsQueryResult<
+  TData = OrganizationServiceListOrgsDefaultResponse,
+  TError = unknown
+> = UseQueryResult<TData, TError>;
+export const useOrganizationServiceListOrgsKey = 'OrganizationServiceListOrgs';
+export const UseOrganizationServiceListOrgsKeyFn = (
+  {
+    cursor,
+    limit,
+  }: {
+    cursor?: string;
+    limit?: number;
+  } = {},
+  queryKey?: Array<unknown>
+) => [useOrganizationServiceListOrgsKey, ...(queryKey ?? [{ cursor, limit }])];
 export type ToolsServiceCreateToolMutationResult = Awaited<
   ReturnType<typeof ToolsService.createTool>
 >;
@@ -541,6 +578,12 @@ export type AdminServiceCreateUserMutationResult = Awaited<
 >;
 export type AdminServiceCreateApiKeyMutationResult = Awaited<
   ReturnType<typeof AdminService.createApiKey>
+>;
+export type AdminServiceCreateOrganizationMutationResult = Awaited<
+  ReturnType<typeof AdminService.createOrganization>
+>;
+export type OrganizationServiceCreateOrganizationMutationResult = Awaited<
+  ReturnType<typeof OrganizationService.createOrganization>
 >;
 export type AuthServiceAuthenticateUserV1AuthPostMutationResult = Awaited<
   ReturnType<typeof AuthService.authenticateUserV1AuthPost>
@@ -589,4 +632,10 @@ export type AdminServiceDeleteUserMutationResult = Awaited<
 >;
 export type AdminServiceDeleteApiKeyMutationResult = Awaited<
   ReturnType<typeof AdminService.deleteApiKey>
+>;
+export type AdminServiceDeleteOrganizationMutationResult = Awaited<
+  ReturnType<typeof AdminService.deleteOrganization>
+>;
+export type OrganizationServiceDeleteOrganizationMutationResult = Awaited<
+  ReturnType<typeof OrganizationService.deleteOrganization>
 >;

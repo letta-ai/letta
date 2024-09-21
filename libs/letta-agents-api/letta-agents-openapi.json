@@ -1440,10 +1440,50 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/memgpt__schemas__message__Message"
-                  },
+                  "anyOf": [
+                    {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/memgpt__schemas__message__Message"
+                      }
+                    },
+                    {
+                      "type": "array",
+                      "items": {
+                        "oneOf": [
+                          {
+                            "$ref": "#/components/schemas/SystemMessage-Output"
+                          },
+                          {
+                            "$ref": "#/components/schemas/UserMessage-Output"
+                          },
+                          {
+                            "$ref": "#/components/schemas/InternalMonologue"
+                          },
+                          {
+                            "$ref": "#/components/schemas/FunctionCallMessage"
+                          },
+                          {
+                            "$ref": "#/components/schemas/FunctionReturn"
+                          },
+                          {
+                            "$ref": "#/components/schemas/AssistantMessage-Output"
+                          }
+                        ],
+                        "discriminator": {
+                          "propertyName": "message_type",
+                          "mapping": {
+                            "system_message": "#/components/schemas/SystemMessage-Output",
+                            "user_message": "#/components/schemas/UserMessage-Output",
+                            "internal_monologue": "#/components/schemas/InternalMonologue",
+                            "function_call": "#/components/schemas/FunctionCallMessage",
+                            "function_return": "#/components/schemas/FunctionReturn",
+                            "assistant_message": "#/components/schemas/AssistantMessage-Output"
+                          }
+                        }
+                      }
+                    }
+                  ],
                   "title": "Response List Agent Messages"
                 }
               }
@@ -2224,6 +2264,153 @@
         }
       }
     },
+    "/v1/admin/orgs/": {
+      "get": {
+        "tags": ["organization", "admin", "admin"],
+        "summary": "Get All Orgs",
+        "description": "Get a list of all orgs in the database",
+        "operationId": "list_orgs",
+        "parameters": [
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": 50,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Organization"
+                  },
+                  "title": "Response List Orgs"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["organization", "admin", "admin"],
+        "summary": "Create Org",
+        "description": "Create a new org in the database",
+        "operationId": "create_organization",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrganizationCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Organization"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["organization", "admin", "admin"],
+        "summary": "Delete Org",
+        "operationId": "delete_organization",
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "The org_id key to be deleted.",
+              "title": "Org Id"
+            },
+            "description": "The org_id key to be deleted."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Organization"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/auth": {
       "post": {
         "tags": ["auth"],
@@ -2482,7 +2669,7 @@
         "required": ["id", "created_at", "assistant_id"],
         "title": "AssistantFile"
       },
-      "AssistantMessage": {
+      "AssistantMessage-Input": {
         "properties": {
           "content": {
             "anyOf": [
@@ -2527,6 +2714,33 @@
           }
         },
         "type": "object",
+        "title": "AssistantMessage"
+      },
+      "AssistantMessage-Output": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "date": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Date"
+          },
+          "message_type": {
+            "type": "string",
+            "enum": ["assistant_message"],
+            "const": "assistant_message",
+            "title": "Message Type",
+            "default": "assistant_message"
+          },
+          "assistant_message": {
+            "type": "string",
+            "title": "Assistant Message"
+          }
+        },
+        "type": "object",
+        "required": ["id", "date", "assistant_message"],
         "title": "AssistantMessage"
       },
       "AuthRequest": {
@@ -2681,13 +2895,13 @@
             "items": {
               "anyOf": [
                 {
-                  "$ref": "#/components/schemas/SystemMessage"
+                  "$ref": "#/components/schemas/SystemMessage-Input"
                 },
                 {
-                  "$ref": "#/components/schemas/UserMessage"
+                  "$ref": "#/components/schemas/UserMessage-Input"
                 },
                 {
-                  "$ref": "#/components/schemas/AssistantMessage"
+                  "$ref": "#/components/schemas/AssistantMessage-Input"
                 },
                 {
                   "$ref": "#/components/schemas/ToolMessage"
@@ -3763,20 +3977,102 @@
         "required": ["name"],
         "title": "FunctionCall"
       },
-      "FunctionCall-Output": {
+      "FunctionCallDelta": {
         "properties": {
-          "arguments": {
-            "type": "string",
-            "title": "Arguments"
-          },
           "name": {
-            "type": "string",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Name"
+          },
+          "arguments": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Arguments"
           }
         },
         "type": "object",
-        "required": ["arguments", "name"],
-        "title": "FunctionCall"
+        "required": ["name", "arguments"],
+        "title": "FunctionCallDelta"
+      },
+      "FunctionCallMessage": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "date": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Date"
+          },
+          "message_type": {
+            "type": "string",
+            "enum": ["function_call"],
+            "const": "function_call",
+            "title": "Message Type",
+            "default": "function_call"
+          },
+          "function_call": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/memgpt__schemas__memgpt_message__FunctionCall"
+              },
+              {
+                "$ref": "#/components/schemas/FunctionCallDelta"
+              }
+            ],
+            "title": "Function Call"
+          }
+        },
+        "type": "object",
+        "required": ["id", "date", "function_call"],
+        "title": "FunctionCallMessage",
+        "description": "A message representing a request to call a function (generated by the LLM to trigger function execution).\n\nAttributes:\n    function_call (Union[FunctionCall, FunctionCallDelta]): The function call\n    id (str): The ID of the message\n    date (datetime): The date the message was created in ISO format"
+      },
+      "FunctionReturn": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "date": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Date"
+          },
+          "message_type": {
+            "type": "string",
+            "enum": ["function_return"],
+            "const": "function_return",
+            "title": "Message Type",
+            "default": "function_return"
+          },
+          "function_return": {
+            "type": "string",
+            "title": "Function Return"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["success", "error"],
+            "title": "Status"
+          }
+        },
+        "type": "object",
+        "required": ["id", "date", "function_return", "status"],
+        "title": "FunctionReturn",
+        "description": "A message representing the return value of a function call (generated by MemGPT executing the requested function).\n\nAttributes:\n    function_return (str): The return value of the function\n    status (Literal[\"success\", \"error\"]): The status of the function call\n    id (str): The ID of the message\n    date (datetime): The date the message was created in ISO format"
       },
       "FunctionSchema": {
         "properties": {
@@ -3839,6 +4135,34 @@
         "type": "object",
         "required": ["file_id"],
         "title": "ImageFile"
+      },
+      "InternalMonologue": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "date": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Date"
+          },
+          "message_type": {
+            "type": "string",
+            "enum": ["internal_monologue"],
+            "const": "internal_monologue",
+            "title": "Message Type",
+            "default": "internal_monologue"
+          },
+          "internal_monologue": {
+            "type": "string",
+            "title": "Internal Monologue"
+          }
+        },
+        "type": "object",
+        "required": ["id", "date", "internal_monologue"],
+        "title": "InternalMonologue",
+        "description": "Representation of an agent's internal monologue.\n\nAttributes:\n    internal_monologue (str): The internal monologue of the agent\n    id (str): The ID of the message\n    date (datetime): The date the message was created in ISO format"
       },
       "Job": {
         "properties": {
@@ -4878,6 +5202,51 @@
         "required": ["completion_tokens", "prompt_tokens", "total_tokens"],
         "title": "OpenAIUsage"
       },
+      "Organization": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^org-[a-fA-F0-9]{8}",
+            "title": "Id",
+            "description": "The human-friendly ID of the Org",
+            "examples": [["org-123e4567-e89b-12d3-a456-426614174000"]]
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "The name of the organization."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "The creation date of the user."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["name"],
+        "title": "Organization"
+      },
+      "OrganizationCreate": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name",
+            "description": "The name of the organization."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "OrganizationCreate"
+      },
       "Passage": {
         "properties": {
           "user_id": {
@@ -5222,7 +5591,7 @@
         "required": ["tools_outputs"],
         "title": "SubmitToolOutputsToRunRequest"
       },
-      "SystemMessage": {
+      "SystemMessage-Input": {
         "properties": {
           "content": {
             "type": "string",
@@ -5248,6 +5617,34 @@
         "type": "object",
         "required": ["content"],
         "title": "SystemMessage"
+      },
+      "SystemMessage-Output": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "date": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Date"
+          },
+          "message_type": {
+            "type": "string",
+            "enum": ["system_message"],
+            "const": "system_message",
+            "title": "Message Type",
+            "default": "system_message"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "type": "object",
+        "required": ["id", "date", "message"],
+        "title": "SystemMessage",
+        "description": "A message generated by the system. Never streamed back on a response, only used for cursor pagination.\n\nAttributes:\n    message (str): The message sent by the system\n    id (str): The ID of the message\n    date (datetime): The date the message was created in ISO format"
       },
       "Text": {
         "properties": {
@@ -5994,6 +6391,18 @@
             "description": "The human-friendly ID of the User",
             "examples": [["user-123e4567-e89b-12d3-a456-426614174000"]]
           },
+          "org_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Org Id",
+            "description": "The organization id of the user"
+          },
           "name": {
             "type": "string",
             "title": "Name",
@@ -6008,7 +6417,7 @@
         },
         "additionalProperties": false,
         "type": "object",
-        "required": ["name"],
+        "required": ["org_id", "name"],
         "title": "User",
         "description": "Representation of a user.\n\nParameters:\n    id (str): The unique identifier of the user.\n    name (str): The name of the user.\n    created_at (datetime): The creation date of the user."
       },
@@ -6025,13 +6434,25 @@
             ],
             "title": "Name",
             "description": "The name of the user."
+          },
+          "org_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Org Id",
+            "description": "The organization id of the user."
           }
         },
         "additionalProperties": false,
         "type": "object",
         "title": "UserCreate"
       },
-      "UserMessage": {
+      "UserMessage-Input": {
         "properties": {
           "content": {
             "anyOf": [
@@ -6068,6 +6489,34 @@
         "required": ["content"],
         "title": "UserMessage"
       },
+      "UserMessage-Output": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "date": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Date"
+          },
+          "message_type": {
+            "type": "string",
+            "enum": ["user_message"],
+            "const": "user_message",
+            "title": "Message Type",
+            "default": "user_message"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "type": "object",
+        "required": ["id", "date", "message"],
+        "title": "UserMessage",
+        "description": "A message sent by the user. Never streamed back on a response, only used for cursor pagination.\n\nAttributes:\n    message (str): The message sent by the user\n    id (str): The ID of the message\n    date (datetime): The date the message was created in ISO format"
+      },
       "ValidationError": {
         "properties": {
           "loc": {
@@ -6096,6 +6545,21 @@
         "type": "object",
         "required": ["loc", "msg", "type"],
         "title": "ValidationError"
+      },
+      "memgpt__schemas__memgpt_message__FunctionCall": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "arguments": {
+            "type": "string",
+            "title": "Arguments"
+          }
+        },
+        "type": "object",
+        "required": ["name", "arguments"],
+        "title": "FunctionCall"
       },
       "memgpt__schemas__message__Message": {
         "properties": {
@@ -6250,6 +6714,21 @@
         "required": ["name", "arguments"],
         "title": "ToolCallFunction"
       },
+      "memgpt__schemas__openai__chat_completion_response__FunctionCall": {
+        "properties": {
+          "arguments": {
+            "type": "string",
+            "title": "Arguments"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          }
+        },
+        "type": "object",
+        "required": ["arguments", "name"],
+        "title": "FunctionCall"
+      },
       "memgpt__schemas__openai__chat_completion_response__Message": {
         "properties": {
           "content": {
@@ -6284,7 +6763,7 @@
           "function_call": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/FunctionCall-Output"
+                "$ref": "#/components/schemas/memgpt__schemas__openai__chat_completion_response__FunctionCall"
               },
               {
                 "type": "null"
@@ -6310,7 +6789,7 @@
             "default": "function"
           },
           "function": {
-            "$ref": "#/components/schemas/FunctionCall-Output"
+            "$ref": "#/components/schemas/memgpt__schemas__openai__chat_completion_response__FunctionCall"
           }
         },
         "type": "object",
