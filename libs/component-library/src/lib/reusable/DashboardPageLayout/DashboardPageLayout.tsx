@@ -36,16 +36,16 @@ export function DashboardPageLayout(props: DashboardPageLayoutProps) {
   const { icon, title, actions } = props;
 
   return (
-    <VStack className="max-w-[90%] mx-[auto]" gap={false} fullWidth>
+    <VStack className="max-w-[95%] mx-[auto]" gap={false} fullWidth>
       <HStack
-        align="end"
+        align="center"
         as="header"
         wrap
-        className="min-h-biHeight-lg h-biHeight-lg"
         justify="spaceBetween"
         fullWidth
         paddingX="large"
-        paddingTop="large"
+        paddingTop="xxlarge"
+        paddingBottom="small"
       >
         <HStack align="center">
           {icon}

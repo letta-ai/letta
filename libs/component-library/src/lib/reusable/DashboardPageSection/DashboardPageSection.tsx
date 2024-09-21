@@ -57,14 +57,15 @@ export function DashboardPageSection(props: DashboardPageSectionProps) {
   return (
     <VStack
       paddingX="large"
-      paddingY="medium"
+      paddingTop="medium"
+      paddingBottom="small"
       fullHeight={fullHeight}
       fullWidth
       borderBottom={borderBottom}
     >
       {title && (
         <HStack align="center" justify="spaceBetween">
-          <Typography noWrap bold variant="heading2">
+          <Typography noWrap bold variant="heading3">
             {title}
           </Typography>
           <HStack>{actions}</HStack>

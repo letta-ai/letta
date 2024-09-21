@@ -344,9 +344,15 @@ export function DashboardHeader() {
               </HStack>
             </HStack>
           </HStack>
-          <div>
+          <HStack align="center">
+            <Button
+              color="tertiary-transparent"
+              target="_blank"
+              href="https://docs.letta.com"
+              label="Documentation"
+            />
             <ProfilePopover />
-          </div>
+          </HStack>
         </HStack>
       </HStack>
     </>
