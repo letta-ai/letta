@@ -5,11 +5,6 @@
     "dark": "/logo/dark.svg",
     "light": "/logo/light.svg"
   },
-  "font": {
-    "family": "Overused Grotesk",
-    "format": "woff2",
-    "url": "../../libs/core-style-config/fonts/variable/overused-grotesk.woff2"
-  },
   "favicon": "/favicon.svg",
   "colors": {
     "primary": "#0707AB",
