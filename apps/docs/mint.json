@@ -61,6 +61,30 @@
       "pages": ["introduction", "quickstart", "development"]
     },
     {
+      "group": "Agents", 
+      "pages": [
+        "agents/overview",
+        "agents/tools",
+        "agents/memory",
+        "agents/messages"
+      ]
+    },
+    {
+      "group": "Deployment",
+      "pages": [
+        "deployment/server",
+        "deployment/storage",
+        "deployment/deploy"
+      ]
+
+    },
+    {
+      "group": "Advanced",
+      "pages": [
+        "advanced/custom_memory"
+      ]
+    },
+    {
       "group": "Essentials",
       "pages": [
         "essentials/markdown",

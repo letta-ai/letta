@@ -1,0 +1,49 @@
+---
+title: Memory 
+description: 'Customize agent memory'
+---
+
+## Memory 
+The in-context memory of agents is represented by a `Memory` object. This object contains: 
+* A set of `Block` objects representing a segment of memory, with an associated character limit and label 
+* A set of memory editing tools
+
+### `ChatMemory` 
+By default, agents have a ChatMemory memory class, which is designed for a 1:1 chat between a human and agent. 
+
+```python
+from letta import create_client 
+from letta.schemas.memory import ChatMemory
+
+client = create_client() 
+agent_state = client.create_agent(
+    memory=ChatMemory(
+        persona="I am docbot and must answer user questions.", 
+        human="Name: Sarah"
+    )
+)
+```
+The ChatMemory class consists of:
+* A "human" and "persona" memory sections each with a 2k character limit
+* Two memory editing functions: `core_memory_replace` and `core_memory_append`
+
+### `BasicBlockMemory` 
+```python
+from letta import create_client 
+from letta.schemas.memory import ChatMemory
+
+client = create_client() 
+
+org_block = client.create_block() # TODO
+persona_block = client.create_block()  # TODO
+
+agent_state = client.create_agent(
+    memory=BasicBlockMemory(
+        blocks = [org_block, persona_block]
+    )
+)
+```
+
+
+## Blocks 
+

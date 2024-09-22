@@ -1,0 +1,94 @@
+---
+title: Overview 
+description: 'Build agents with Letta'
+---
+
+MemGPT agents are stateful LLM agents which can automatically manage long term memory, load data from external sources, and call custom tools. Unlike in other libraries, MemGPT agents are stateful, so keep track of historical interactions and reserve part of their context to read and write memories which evolve over time.
+
+
+Key features: 
+* Python SDK & REST API 
+* Persistence 
+* Tool calling (support for Langchain / CrewAI tools)
+* Memory management 
+* Deployment 
+* Streaming support 
+
+Letta manages a reasoning loop for agents. At each agent step (i.e. iteration of the loop), the state of the agent is checkpointed. This state can be re-loaded at a late point in time. 
+
+You can interact with agents from a REST API, the ADE, and Python client. As long as they are connected to the same service, all of these interfaces can be used to interact with the same agents. 
+
+## Create an agent 
+
+<CodeGroup>
+```python Python
+from letta import create_client 
+
+agent_state = client.create_agent( 
+    ...
+)
+```
+```bash CLI 
+$ letta run 
+```
+</CodeGroup>
+
+Once an agent is created, you can message it: 
+```python Python
+response = client.send_message(agent_id=agent_state.id, role="user", message="hello")
+print("Usage", response.usage)
+print("Agent messages", response.messages)
+```
+
+
+## Retrieving an agent's state 
+The agent's state is always persisted, so you can retrieve an agent's state by either its ID or name. 
+```python Python
+from letta import create_client 
+
+client = create_client() 
+
+# get an agent's state by its ID 
+agent_state = client.get_agent(agent_id="agent-38fh4798")
+
+# get an agent named "my_agent"
+agent_state = client.get_agent(
+    client.get_agent_id("my_agent")
+)
+
+# interact with the agent 
+response = client.user_message(agent_state.id, message="hello")
+```
+
+## List agents 
+
+<CodeGroup>
+```python Python
+from letta import create_client 
+client = create_client()
+
+# Returns a list of `AgentState` objects
+agents = client.list_agents() 
+```
+```bash CLI 
+$ letta list agents
+```
+</CodeGroup>
+
+
+## Delete an agent 
+<CodeGroup>
+```python Python
+from letta import create_client 
+client = create_client()
+
+# delete an agent by ID 
+client.delete_agent(agent_state.id)
+
+# delete an agent by name 
+client.delete_agent(client.get_agent_id("agent_name"))
+```
+```bash CLI 
+$ letta delete agent ${AGENT_NAME}
+```
+</CodeGroup>
