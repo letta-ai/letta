@@ -3,7 +3,8 @@
   "name": "Letta",
   "logo": {
     "dark": "/logo/dark.svg",
-    "light": "/logo/light.svg"
+    "light": "/logo/light.svg",
+    "href": "https://letta.com"
   },
   "favicon": "/favicon.svg",
   "colors": {
