@@ -1,0 +1,54 @@
+---
+title: Tools 
+description: 'Define and customize tools'
+---
+
+## Letta Tools 
+By default, agents in Letta are created with the following tools: 
+
+| Tool                        | Description                           |
+| ----------------------------| ------------------------------------- |
+| `archival_memory_search`    | Full name of user                     |
+| `archival_memory_insert`    | Reported age                          |
+| `conversation_memory_search`| Whether the user joined the community |
+
+
+### Excluding default tools 
+
+To skip adding default tools, you can add in `include_default_tools=False` to the agent creation:
+```python
+from letta import create_client 
+
+client = create_client() 
+
+# create an agent with no tools
+agent_state = client.create_agent(include_default_tools=False) 
+```
+
+## Custom Tools 
+You can create custom tools in Letta in Python. 
+
+### Adding tools to agents
+
+## External Libraries 
+Letta also has limited support for adding tools from external libraries into Letta. 
+
+### Langchain Tools 
+Letta supports adding tools from Langchain. 
+```python
+from letta.schemas.tool import Tool 
+
+tool = client.create_tool(Tool.from_langchain(...))
+```
+
+### CrewAI Tools
+Letta also supports adding tools from CrewAI. 
+```python
+from letta.schemas.tool import Tool 
+
+client.create_tool(Tool.from_crewai(...))
+```
+
+### Other libraries 
+In general, you can call tools from external libraries as long as they provide a OpenAI compatible JSON schemas. 
+

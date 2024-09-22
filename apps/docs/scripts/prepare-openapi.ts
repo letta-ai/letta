@@ -1,8 +1,9 @@
-import fs from 'fs';
-import path from 'path';
+import * as fs from 'fs';
+import * as path from 'path';
 
 import { merge, isErrorResult } from 'openapi-merge';
 import { Swagger } from 'atlassian-openapi';
+import { RESTRICTED_ROUTE_BASE_PATHS } from '../../../libs/letta-agents-api/src/lib/constants';
 
 const lettaWebOpenAPIPath = path.join(
   __dirname,
@@ -29,12 +30,21 @@ const lettaAgentsAPI = JSON.parse(
   fs.readFileSync(lettaAgentsAPIPath, 'utf8')
 ) as Swagger.SwaggerV3;
 
+// removes any routes that are restricted
+lettaAgentsAPI.paths = Object.fromEntries(
+  Object.entries(lettaAgentsAPI.paths).filter(([path]) =>
+    RESTRICTED_ROUTE_BASE_PATHS.every(
+      (restrictedPath) => !path.startsWith(restrictedPath)
+    )
+  )
+);
+
 const result = merge([
   {
-    oas: lettaWebOpenAPI,
+    oas: lettaAgentsAPI,
   },
   {
-    oas: lettaAgentsAPI,
+    oas: lettaWebOpenAPI,
   },
 ]);
 

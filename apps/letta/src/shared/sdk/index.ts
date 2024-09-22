@@ -4,6 +4,7 @@ import { environment } from '@letta-web/environmental-variables';
 import { EventSource } from 'extended-eventsource';
 import { testingAgents } from '@letta-web/database';
 import { eq } from 'drizzle-orm';
+import { RESTRICTED_ROUTE_BASE_PATHS } from '@letta-web/letta-agents-api';
 
 export interface HandlerContext {
   params: {
@@ -141,6 +142,21 @@ export async function makeRequestToSDK(
   context: HandlerContext,
   userId: string
 ) {
+  const pathname = req.nextUrl.pathname;
+
+  if (
+    RESTRICTED_ROUTE_BASE_PATHS.some((restrictedPath) =>
+      pathname.startsWith(restrictedPath)
+    )
+  ) {
+    return new Response('Not found', {
+      status: 404,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+  }
+
   if (req.headers.get('Accept') === 'text/event-stream') {
     return handleEventStreamRequest(req, context, userId);
   }
