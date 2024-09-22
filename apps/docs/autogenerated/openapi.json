@@ -2006,46 +2006,6 @@
         }
       }
     },
-    "/v1/auth": {
-      "post": {
-        "tags": ["auth"],
-        "summary": "Authenticate User",
-        "description": "Authenticates the user and sends response with User related data.\n\nCurrently, this is a placeholder that simply returns a UUID placeholder",
-        "operationId": "authenticate_user_v1_auth_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AuthRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AuthResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/v1/deployment/agents": {
       "post": {
         "summary": "Create deployed agent",
