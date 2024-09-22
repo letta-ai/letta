@@ -15,11 +15,7 @@ function Title({ title }: TitleProps) {
   }
 
   if (typeof title === 'string') {
-    return (
-      <Typography bold variant="heading1">
-        {title}
-      </Typography>
-    );
+    return <Typography variant="heading1">{title}</Typography>;
   }
 
   return <Breadcrumb items={title} />;

@@ -7,9 +7,9 @@ import { cn } from '@letta-web/core-style-config';
 const typographyVariants = cva('break-words', {
   variants: {
     variant: {
-      heading1: 'text-4xl',
-      heading2: 'text-3xl',
-      heading3: 'text-2xl',
+      heading1: 'text-[1.8rem] font-semibold',
+      heading2: 'text-[1.725rem] font-semibold',
+      heading3: 'text-[1.5rem]',
       heading4: 'text-xl',
       heading5: 'text-lg',
       body: 'text-base',
