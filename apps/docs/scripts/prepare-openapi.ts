@@ -30,7 +30,7 @@ const lettaAgentsAPI = JSON.parse(
   fs.readFileSync(lettaAgentsAPIPath, 'utf8')
 ) as Swagger.SwaggerV3;
 
-// remove any /admin routes from the letta-web-openapi.json
+// removes any routes that are restricted
 lettaAgentsAPI.paths = Object.fromEntries(
   Object.entries(lettaAgentsAPI.paths).filter(([path]) =>
     RESTRICTED_ROUTE_BASE_PATHS.every(
