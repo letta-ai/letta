@@ -95,7 +95,7 @@ export function LoginComponent() {
           <div className="relative" ref={logoRef}>
             <Logo size="large" />
           </div>
-          <Typography bold variant="heading1">
+          <Typography bold variant="heading5">
             Sign in to Letta
           </Typography>
         </VStack>

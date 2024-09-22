@@ -86,7 +86,7 @@ function CreateAgentsView() {
 
   return (
     <VStack gap={false} fullWidth align="start" justify="center">
-      <Typography bold variant="heading1">
+      <Typography bold variant="heading5">
         Create a New Agent
       </Typography>
       <Typography variant="body">
