@@ -113,8 +113,10 @@
     }
   ],
   "footerSocials": {
-    "x": "https://x.com/letta_ai",
+    "discord": "https://discord.gg/letta",
     "github": "https://github.com/letta-ai",
+    "x": "https://x.com/letta_ai",
+    "youtube": "https://youtube.com/@letta-ai",
     "linkedin": "https://www.linkedin.com/company/letta-ai"
   },
   "isWhiteLabeled": true
