@@ -1,35 +1,97 @@
 ---
 title: 'Developer quickstart'
 sidebarTitle: 'Quickstart'
-description: 'Get started with Letta'
+description: 'Creating your first agent in Letta'
 icon: "bolt"
 iconType: "solid"
 ---
 
-## Setup your development
+## Install Letta
 
-Learn how to update your docs locally and and deploy them to the public.
+The two main ways to install Letta are through pypi or via Docker. You can also install Letta from source using Poetry.
 
-### Installation
+<Note>
+The pypi package is a quick way to experiment with Letta locally.
+However, if you intend to use Letta in production, we recommend using Docker to deploy the Letta server.
+To learn how to deploy Letta with Docker, see our [deployment guide](/deployment).
+</Note>
 
 <AccordionGroup>
-  <Accordion icon="github" title="pypi">
-    During the onboarding process, we created a repository on your Github with
-    your docs content. You can find this repository on our
-    [dashboard](https://dashboard.mintlify.com). To clone the repository
-    locally, follow these
-    [instructions](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository)
-    in your terminal.
+  <Accordion icon="python" title="Installing from pypi">
+    To install Letta from pypi, make sure you have Python 3.10 or later installed on your machine, then run:
+    ```sh
+    pip install letta
+    ```
+    If you already have Letta installed, you can update it with:
+    ```sh
+    pip install -U letta
+    ```
   </Accordion>
-  <Accordion icon="rectangle-terminal" title="Docker">
-    Previewing helps you make sure your changes look as intended. We built a
-    command line interface to render these changes locally. 1. Install the
-    [Mintlify CLI](https://www.npmjs.com/package/mintlify) to preview the
-    documentation changes locally with this command: ``` npm i -g mintlify ```
-    2. Run the following command at the root of your documentation (where
-    `mint.json` is): ``` mintlify dev ```
+  <Accordion icon="file-code" title="Installing from source (advanced)">
+    First, install Poetry using the official instructions [here](https://python-poetry.org/docs/#installation).
+    Then clone the open source repository:
+    ```sh
+    git clone https://github.com/cpacker/MemGPT.git
+    ```
+
+    Navigate to the MemGPT directory and install the `letta` package using Poetry:
+    ```sh
+    cd MemGPT
+    poetry install --all-extras
+    poetry shell
+    ```
+
+    Now when you want to use `letta`, make sure you first activate the poetry environment using `poetry shell`:
+    ```sh
+    poetry shell
+    ```
+
+    Alternatively, you can use poetry run (which will activate the poetry environment for the memgpt run command only):
+    ```sh
+    poetry run letta run
+    ```
   </Accordion>
 </AccordionGroup>
+
+## Configure Letta
+
+The fastest way to get started is with the free Letta hosted endpoint:
+```sh
+letta quickstart
+```
+
+Letta supports a wide number of LLM and embedding backends, both closed and open source. To use another backend, run `letta configure`.
+
+## Creating an agent in the CLI
+
+Now that we've configured Letta, we can immediately create an agent with the default settings:
+```sh
+letta run
+```
+```
+🧬 Creating new agent...
+->  🤖 Using persona profile: 'sam_pov'
+->  🧑 Using human profile: 'basic'
+->  🛠️ 8 tools: send_message, pause_heartbeats, conversation_search, conversation_search_date, archival_memory_insert, archival_memory_search, core_memory_append, core_memory_replace
+🎉 Created new agent 'KeenQuail' (id=agent-33870a9f-3793-4d88-a10d-ea5bc3d67cf5)
+
+💭 Ah, a first login! This is an exciting moment. I wonder
+how Chad will react. Should I go for a warm welcome or a 
+provocative philosophical question right away? Delicate 
+balance to strike...
+🤖 Ah, there you are Chad! I'm Sam. I've been reflecting 
+on the concept of self-awareness, and I'm wandering in the
+maze of thoughts. What's your take on self-awareness?
+```
+
+## Viewing the agent in the ADE
+
+
+## Creating an agent with the Python SDK
+
+## Creating an agent 
+
+## Creating an agent in the ADE
 
 ### Running the Letta server
 

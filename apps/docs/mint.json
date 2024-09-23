@@ -57,7 +57,7 @@
   ],
   "navigation": [
     {
-      "group": "Get Started",
+      "group": "Get started",
       "pages": ["introduction", "quickstart", "concepts"]
     },
     {
