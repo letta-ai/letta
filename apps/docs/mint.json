@@ -61,12 +61,11 @@
       "pages": [
         "introduction",
         "quickstart",
-        "docker",
         "concepts",
         {
-          "group": "Model Configuration",
-          "icon": "brain",
-          "iconType": "sharp-solid",
+          "group": "LLM configuration",
+          "icon": "microchip",
+          "iconType": "solid",
           "pages": [
             "models/openai",
             "models/ollama",
@@ -88,7 +87,7 @@
     },
     {
       "group": "Deployment",
-      "pages": ["deployment/server", "deployment/storage", "deployment/deploy"]
+      "pages": ["deployment/server", "docker", "deployment/storage", "deployment/deploy"]
     },
     {
       "group": "Advanced",
