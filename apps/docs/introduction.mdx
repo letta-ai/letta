@@ -38,36 +38,24 @@ Letta is for developers building stateful LLM applications, such as:
 
 
 ## How do I use Letta?
-
-Letta runs as a service: to use Letta, you deploy a Letta server which powers your AI application (web app, mobile app, Discord bot, cron job, etc.).
-
-Your application state and LLM calls are managed by the Letta server,
+Letta runs as a service: to use Letta, you deploy a Letta server which powers your AI application (web app, mobile app, Discord bot, cron job, etc.). Your application state and LLM calls are managed by the Letta server,
 and your frontend application connects to the Letta server via the Letta REST APIs.
 
-### Letta ADE
+### Letta ADE (Agent Development Environment)
+The Letta ADE is web application that allows you to create, edit, and monitor agents in your Letta server.
+A free version of the ADE is available for you to use.
 
-
+<Note>We are currently piloting a new version of the ADE. Sign up [here](https://forms.letta.com/early-access) to request early access.</Note>
 
 ### Letta API
-
 The Letta server exposes the following REST APIs:
 * **[Agents API](/agents)**: deploy agents with long-term memory, custom tools, access to external data sources (RAG), multi-step reasoning, and more
 * **<Tooltip tip="Coming soon!">Stateful ChatCompletions API</Tooltip>**: an API designed to be a drop-in replacement for the standard ChatCompletions API
 
+Ff you're building an application in Python, you can use the **Letta Python SDK** to interact with Letta (instead of calling REST APIs directly) for a more seamless experience
 
-You can use the Letta framework to deploy a server and connect your application to it.
-
-There are three main ways to use Letta:
-1. **REST API**: designed for developers that want to use Letta to power their AI applications (for example, a personalized chatbot application with long-term memory)
-2. **SDK**: if you're building an application in Python, you can use the Python SDK to interact with Letta (instead of calling REST APIs directly) for a more seamless experience
-3. **CLI**: you can also create and interact with Letta agents from the command line
-
-## How do I use Letta?
-
-
-Once 
-
-Letta runs as a service - state (including agent state, user state, memories, chat history, etc.) is persisted in a database, so that your .
+### Letta CLI
+You can also create and interact with Letta agents from the command line.
 
 ## Getting started
 
