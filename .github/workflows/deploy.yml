@@ -31,7 +31,12 @@ jobs:
         with:
           version: '>= 493.0.0'
 
-      - name: 'Use gcloud CLI'
-        run: 'gcloud info'
+      - id: 'get-credentials'
+        uses: 'google-github-actions/get-gke-credentials@v2'
+        with:
+          cluster_name: 'letta'
+          location: 'us-central1'
+          project_id: 'memgpt-428419'
 
-      - run: 'gcloud auth list'
+      - id: 'get-pods'
+        run: 'kubectl get pods'
