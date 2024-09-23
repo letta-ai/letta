@@ -26,4 +26,4 @@ jobs:
           project_id: 'memgpt-428419'
           workload_identity_provider: 'projects/231889654562/locations/global/workloadIdentityPools/letta-web-dev-pool/providers/github-actions-provider'
 
-      - run: 'gcloud auth list'
+      - run: 'just authenticate'
