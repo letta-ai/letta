@@ -34,4 +34,4 @@ jobs:
       - name: 'Use gcloud CLI'
         run: 'gcloud info'
 
-      - run: 'just configure-kubectl'
+      - run: 'gcloud auth list'
