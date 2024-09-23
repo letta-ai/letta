@@ -6,6 +6,7 @@ metadata:
     {{- include "letta-web.labels" . | nindent 4 }}
 spec:
   type: {{ .Values.service.type }}
+  loadBalancerIP: {{ .Values.service.loadBalancerIP }}
   ports:
     - port: {{ .Values.service.port }}
       targetPort: 8080
