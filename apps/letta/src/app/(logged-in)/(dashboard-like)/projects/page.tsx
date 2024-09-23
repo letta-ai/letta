@@ -135,6 +135,7 @@ function ProjectsList(props: ProjectsListProps) {
       <HStack wrap>
         {data.body.projects.map((project) => (
           <ActionCard
+            fullWidthOnMobile
             size="medium"
             key={project.id}
             title={project.name}

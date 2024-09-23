@@ -302,11 +302,7 @@ function SubRoute() {
   }
 
   return (
-    <HStack
-      gap="medium"
-      align="center"
-      className="font-medium visibleSidebar:hidden flex"
-    >
+    <HStack gap="medium" align="center" className="visibleSidebar:hidden flex">
       /
       <Link className="hover:underline capitalize" href={`/${subRouteHref}`}>
         {subRouteName}

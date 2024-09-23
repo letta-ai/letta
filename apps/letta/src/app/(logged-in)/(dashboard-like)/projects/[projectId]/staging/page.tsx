@@ -50,17 +50,21 @@ function StagedAgentCard(props: StagedAgentCardProps) {
   return (
     <VStack rounded gap={false} border>
       <HStack borderBottom padding="small" align="center">
-        <HStack align="start">
+        <HStack justify="start" align="center">
           <HStack border color="background-greyer" rounded paddingX="xxsmall">
-            <Typography>
+            <Typography align="left">
               {agent.testingAgentName || '<deleted-agent>'}
             </Typography>
           </HStack>
-          /<Typography bold>{agent.key}</Typography>
+          /
+          <Typography align="left" bold>
+            {agent.key}
+          </Typography>
           <Badge content={`v${agent.version}`} />
         </HStack>
       </HStack>
       <HStack
+        wrap
         color="background-grey"
         justify="spaceBetween"
         align="center"
@@ -74,13 +78,15 @@ function StagedAgentCard(props: StagedAgentCardProps) {
             isLoading={!data}
             text={data?.body.count.toString() || '0'}
           />
-          <Typography variant="body2">
+          <Typography noWrap variant="body2">
             deployed agent{data?.body && data.body.count === 1 ? '' : 's'}
           </Typography>
         </HStack>
         <HStack>
           <Dialog
             size="large"
+            hideConfirm
+            cancelText="Close"
             trigger={
               <Button
                 color="tertiary"

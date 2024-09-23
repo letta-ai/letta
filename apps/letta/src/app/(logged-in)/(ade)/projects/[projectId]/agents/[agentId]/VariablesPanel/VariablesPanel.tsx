@@ -14,6 +14,7 @@ import {
   RawInput,
   ToggleGroup,
   useForm,
+  VariableIcon,
   VStack,
 } from '@letta-web/component-library';
 import { ADENavigationItem } from '../common/ADENavigationItem/ADENavigationItem';
@@ -348,7 +349,7 @@ export function VariablesPanel() {
   return (
     <Panel
       id="variables-panel"
-      trigger={<ADENavigationItem title="Variables" />}
+      trigger={<ADENavigationItem icon={<VariableIcon />} title="Variables" />}
     >
       <PanelRouter
         rootPageKey="variableHome"

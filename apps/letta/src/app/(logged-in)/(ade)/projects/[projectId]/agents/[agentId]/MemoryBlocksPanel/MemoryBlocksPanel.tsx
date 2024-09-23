@@ -28,6 +28,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { ADENavigationItem } from '../common/ADENavigationItem/ADENavigationItem';
 import { useCurrentAgent } from '../hooks';
 import { useQueryClient } from '@tanstack/react-query';
+import { BrickWallIcon } from 'lucide-react';
 
 const { PanelRouter, usePanelRouteData, usePanelPageContext } =
   createPageRouter(
@@ -237,13 +238,7 @@ function MemoryHome() {
 
   return (
     <>
-      <PanelBar
-        searchValue={search}
-        onSearch={setSearch}
-        actions={
-          <Button color="secondary" label="Create Memory Block" size="small" />
-        }
-      />
+      <PanelBar searchValue={search} onSearch={setSearch} />
       {!memory ? (
         <LettaLoaderPanel />
       ) : (
@@ -279,7 +274,9 @@ export function MemoryBlocksPanel() {
   return (
     <Panel
       id="memory-blocks-panel"
-      trigger={<ADENavigationItem title="Memory Blocks" />}
+      trigger={
+        <ADENavigationItem icon={<BrickWallIcon />} title="Memory Blocks" />
+      }
     >
       <PanelRouter
         rootPageKey="memoryHome"

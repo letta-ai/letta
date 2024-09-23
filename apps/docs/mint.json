@@ -142,5 +142,10 @@
     "youtube": "https://youtube.com/@letta-ai",
     "linkedin": "https://www.linkedin.com/company/letta-ai"
   },
+  "analytics": {
+    "mixpanel": {
+      "projectToken": "0790fe817b0407efb691ea896533d3ae"
+    }
+  },
   "isWhiteLabeled": true
 }

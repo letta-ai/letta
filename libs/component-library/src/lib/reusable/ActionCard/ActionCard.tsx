@@ -14,7 +14,17 @@ const actionCardVariants = cva('', {
       default: '',
       medium: 'max-w-[300px]',
     },
+    fullWidthOnMobile: {
+      true: '',
+    },
   },
+  compoundVariants: [
+    {
+      size: 'medium',
+      fullWidthOnMobile: true,
+      className: 'sm:max-w-[300px] max-w-[100%]',
+    },
+  ],
   defaultVariants: {
     size: 'default',
   },

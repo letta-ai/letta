@@ -86,7 +86,7 @@ function DeployAgentInstructionsCurl(props: DeployAgentInstructionsCurlProps) {
       <Frame paddingY="medium">
         <Code
           language="javascript"
-          code={`{ deploymentAgentId: 'some-id-here' }`}
+          code={`{ "agentDeploymentId": "some-id-here" }`}
         />
       </Frame>
 

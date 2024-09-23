@@ -29,7 +29,7 @@ import { CurrentUserDetailsBlock } from '$letta/client/common';
 import { useCurrentProjectId } from '../../../../../(dashboard-like)/projects/[projectId]/hooks';
 import { useFeatureFlag } from '$letta/client';
 import { ArchivalMemoriesPanel } from './ArchivalMemoriesPanel/ArchivalMemoriesPanel';
-import { DatabaseIcon } from 'lucide-react';
+import { DatabaseIcon, SettingsIcon } from 'lucide-react';
 import { StagedAgentsPanel } from './StagedAgentsPanel/StagedAgentsPanel';
 import { ConfigPanel } from './ConfigPanel/ConfigPanel';
 import { useCurrentTestingAgent } from './hooks/useCurrentTestingAgent/useCurrentTestingAgent';
@@ -130,7 +130,9 @@ function ADESidebar() {
       <SidebarGroup title="Base">
         <ModelPanel />
         <ConfigPanel />
-        {showParametersEditor && <ADENavigationItem title="Parameters" />}
+        {showParametersEditor && (
+          <ADENavigationItem icon={<SettingsIcon />} title="Parameters" />
+        )}
       </SidebarGroup>
       <SidebarGroup title="Configure">
         {showVariablesEditor && <VariablesPanel />}

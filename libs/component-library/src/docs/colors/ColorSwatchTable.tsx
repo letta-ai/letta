@@ -112,6 +112,7 @@ export function ColorSwatchTable() {
             colors={{
               default: 'bg-background-grey',
               content: 'bg-background-grey-content',
+              hover: 'bg-background-grey-hover',
             }}
             name="Background Grey"
             notes="Used for grey backgrounds in the app"
@@ -123,6 +124,15 @@ export function ColorSwatchTable() {
             }}
             name="Background Greyer"
             notes="Used for even more grey backgrounds in the app"
+          />
+          <ColorSwatches
+            colors={{
+              default: 'bg-background-black',
+              content: 'bg-background-black-content',
+              hover: 'bg-background-black-hover',
+            }}
+            name="Background Black"
+            notes="Used for black backgrounds in the app"
           />
           <ColorSwatches
             colors={{

@@ -29,6 +29,7 @@ import {
 import { useCurrentAgent } from '../hooks';
 import { useQueryClient } from '@tanstack/react-query';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { BrainCogIcon } from 'lucide-react';
 
 const { PanelRouter, usePanelPageContext } = createPageRouter(
   {
@@ -253,7 +254,9 @@ export function ArchivalMemoriesPanel() {
   return (
     <Panel
       id="archival-memories"
-      trigger={<ADENavigationItem title="Archival Memories" />}
+      trigger={
+        <ADENavigationItem icon={<BrainCogIcon />} title="Archival Memories" />
+      }
     >
       <PanelRouter
         rootPageKey="memory"

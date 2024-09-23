@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import {
+  DocumentIcon,
   Frame,
   HStack,
   Panel,
@@ -91,7 +92,9 @@ export function ContextEditorPanel() {
     <Panel
       id="context-editor"
       title="Context Editor"
-      trigger={<ADENavigationItem title="Context Editor" />}
+      trigger={
+        <ADENavigationItem icon={<DocumentIcon />} title="Context Editor" />
+      }
     >
       <PanelBar
         actions={

@@ -58,12 +58,14 @@
 
     --background-grey-content: 240 10% 3.9%;
     --background-grey: 210, 10%, 96%;
+    --background-grey-hover: 210, 10%, 80%;
 
     --background-greyer: 210, 40%, 96%;
     --background-greyer-content: 240 10% 3.9%;
 
     --background-black: 0, 0%, 0%;
     --background-black-content: 0 0% 100%;
+    --background-black-hover: 0, 0%, 20%;
 
     --border: 214, 32%, 91%;
     --input: 240 5.9% 90%;

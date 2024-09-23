@@ -18,6 +18,7 @@ import {
   useAgentsServiceUpdateAgent,
   useModelsServiceListModels,
 } from '@letta-web/letta-agents-api';
+import { BotIcon } from 'lucide-react';
 
 const modelSelectorSchema = z.object({
   model: z.object({
@@ -80,6 +81,7 @@ export function ModelPanel() {
       title="Current Model"
       trigger={
         <ADENavigationItem
+          icon={<BotIcon />}
           title="Model"
           preview={currentAgent.llm_config.model}
         />

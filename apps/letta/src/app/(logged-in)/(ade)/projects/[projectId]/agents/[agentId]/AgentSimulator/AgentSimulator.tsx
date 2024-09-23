@@ -1,5 +1,6 @@
 import {
   Button,
+  ChatBubbleIcon,
   Frame,
   HStack,
   LettaLoader,
@@ -336,7 +337,9 @@ export function AgentSimulator() {
   return (
     <Panel
       id="chat-simulator"
-      trigger={<ADENavigationItem title="Chat Simulator" />}
+      trigger={
+        <ADENavigationItem icon={<ChatBubbleIcon />} title="Chat Simulator" />
+      }
       title="Simulator"
     >
       <Chatroom />

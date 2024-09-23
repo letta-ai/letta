@@ -22,6 +22,7 @@ import {
 import { useCurrentAgent } from '../hooks';
 import { z } from 'zod';
 import { useQueryClient } from '@tanstack/react-query';
+import { DatabaseIcon } from 'lucide-react';
 
 const { PanelRouter, usePanelPageContext } = createPageRouter(
   {
@@ -258,7 +259,9 @@ export function DataSourcesPanel() {
   return (
     <Panel
       id="data-sources-panel"
-      trigger={<ADENavigationItem title="Data Sources" />}
+      trigger={
+        <ADENavigationItem icon={<DatabaseIcon />} title="Data Sources" />
+      }
     >
       <PanelRouter
         rootPageKey="viewAttachedDataSourcePage"

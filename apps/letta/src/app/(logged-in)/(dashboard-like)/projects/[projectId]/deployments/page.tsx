@@ -77,7 +77,7 @@ function DeployedAgentView(props: DeployedAgentViewProps) {
         rounded
       />
       <VStack
-        className="absolute z-10 animate-in slide-in-from-right-10 w-[50%] right-0"
+        className="absolute z-10 sm:animate-in slide-in-from-right-10 sm:w-[70%] right-0"
         color="background"
         rounded
         border
@@ -92,7 +92,7 @@ function DeployedAgentView(props: DeployedAgentViewProps) {
           fullWidth
           justify="spaceBetween"
         >
-          <Typography bold variant="heading2">
+          <Typography align="left" bold variant="heading4">
             {key}
           </Typography>
           <HStack>

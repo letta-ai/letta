@@ -112,7 +112,7 @@ function InputWrapper({
   if (inline) {
     return (
       <div className={className}>
-        <div className="flex gap-2 justify-between items-center">
+        <div className="flex flex-wrap pt-2 sm:pt-0 sm:flex-nowrap gap-2 justify-between items-center">
           {inputAndLabel}
         </div>
         {otherContent && <div>{otherContent}</div>}

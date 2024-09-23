@@ -38,6 +38,7 @@ import {
 import { useQueryClient } from '@tanstack/react-query';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { HammerIcon } from 'lucide-react';
 
 const { PanelRouter, usePanelRouteData, usePanelPageContext } =
   createPageRouter(
@@ -414,7 +415,10 @@ function ToolsListPage() {
 
 export function ToolsPanel() {
   return (
-    <Panel id="tools-panel" trigger={<ADENavigationItem title="Tools" />}>
+    <Panel
+      id="tools-panel"
+      trigger={<ADENavigationItem icon={<HammerIcon />} title="Tools" />}
+    >
       <PanelRouter
         rootPageKey="root"
         pages={{

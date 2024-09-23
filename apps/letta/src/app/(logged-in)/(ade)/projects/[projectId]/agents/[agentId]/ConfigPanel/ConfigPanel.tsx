@@ -23,6 +23,7 @@ import { useCurrentTestingAgent } from '../hooks/useCurrentTestingAgent/useCurre
 import { useQueryClient } from '@tanstack/react-query';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { Settings2Icon } from 'lucide-react';
 
 function EditAgentName() {
   const { name: defaultName } = useCurrentTestingAgent();
@@ -152,7 +153,7 @@ export function ConfigPanel() {
     <Panel
       title="Settings"
       id="settings"
-      trigger={<ADENavigationItem title="Settings" />}
+      trigger={<ADENavigationItem icon={<Settings2Icon />} title="Settings" />}
     >
       <PanelMainContent>
         <RawInput fullWidth label="SDK Agent ID" allowCopy defaultValue={id} />
