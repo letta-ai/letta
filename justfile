@@ -56,6 +56,7 @@ deploy: push
         --set env.MIXPANEL_TOKEN="${MIXPANEL_TOKEN}" \
         --set env.LAUNCH_DARKLY_SDK_KEY="${LAUNCH_DARKLY_SDK_KEY}" \
         --set env.SENTRY_AUTH_TOKEN="${SENTRY_AUTH_TOKEN}" \
+        --set env.NEXT_PUBLIC_CURRENT_HOST="${NEXT_PUBLIC_CURRENT_HOST}" \
         --set env.REDIS_HOST="${REDIS_HOST}"
 
 # Destroy the Helm chart

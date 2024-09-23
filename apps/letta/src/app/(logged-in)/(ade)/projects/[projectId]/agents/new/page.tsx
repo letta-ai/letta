@@ -35,7 +35,7 @@ function AgentRecipeCard(props: AgentRecipeCardProps) {
       <Card className=" hover:bg-tertiary-hover ">
         <VStack align="center">
           <div className="bg-gray-100 w-[150px] h-[150px]" />
-          <Typography bold variant="heading2">
+          <Typography bold variant="heading5">
             {name}
           </Typography>
         </VStack>
