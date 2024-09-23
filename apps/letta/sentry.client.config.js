@@ -24,5 +24,5 @@ Sentry.init({
   // Setting this option to true will print useful information to the console while you're setting up Sentry.
   debug: false,
 
-  ignoreErrors: ['NEXT_REDIRECT', 'NEXT_NOT_FOUND'],
+  ignoreErrors: ['NEXT_REDIRECT', 'NEXT_NOT_FOUND', 'User not found'],
 });
