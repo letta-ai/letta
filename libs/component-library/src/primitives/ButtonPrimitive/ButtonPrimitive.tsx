@@ -3,7 +3,10 @@ import Link from 'next/link';
 
 type PossibleRootType = HTMLAnchorElement | HTMLButtonElement;
 
-type ButtonPrimitiveProps = React.HTMLAttributes<PossibleRootType>;
+// eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
+type ButtonPrimitiveProps = React.HTMLAttributes<PossibleRootType> & {
+  preload?: boolean;
+};
 
 function isAnchorElement(
   props: ButtonPrimitiveProps
@@ -26,8 +29,17 @@ function isButtonRef(
 export const ButtonPrimitive = forwardRef<
   PossibleRootType,
   ButtonPrimitiveProps
->(function ButtonPrimitive({ children, ...props }, ref) {
+>(function ButtonPrimitive({ children, preload = true, ...props }, ref) {
   if (isAnchorElement(props) && isAnchorRef(ref)) {
+    if (!preload) {
+      return (
+        // @ts-expect-error this is a valid anchor element
+        <a href={props.href} ref={ref} {...props}>
+          {children}
+        </a>
+      );
+    }
+
     return (
       // @ts-expect-error this is a valid anchor element
       <Link href={props.href} ref={ref} {...props}>

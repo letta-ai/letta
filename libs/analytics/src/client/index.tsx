@@ -1,11 +1,12 @@
 'use client';
-import { useEffect, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { environment } from '@letta-web/environmental-variables';
 import mixpanel from 'mixpanel-browser';
 import type { AnalyticsEvent } from '../events';
 import type { AnalyticsEventProperties } from '../events';
+import { ErrorBoundary } from 'react-error-boundary';
 
-export function LoadMixpanelAnalytics() {
+function LoadMixpanelAnalyticsInner() {
   const mounted = useRef(false);
 
   useEffect(() => {
@@ -20,6 +21,24 @@ export function LoadMixpanelAnalytics() {
   return null;
 }
 
+function LogErrorLoadingMixpanelAnalytics() {
+  useEffect(() => {
+    console.error(
+      'Mixpanel token not found. Please set the MIXPANEL_TOKEN environment variable.'
+    );
+  }, []);
+
+  return null;
+}
+
+export function LoadMixpanelAnalytics() {
+  return (
+    <ErrorBoundary fallback={<LogErrorLoadingMixpanelAnalytics />}>
+      <LoadMixpanelAnalyticsInner />
+    </ErrorBoundary>
+  );
+}
+
 interface IdentifyUserProps {
   userId: string;
 }
@@ -28,7 +47,11 @@ export function IdentifyUserForMixpanel(props: IdentifyUserProps) {
   const { userId } = props;
 
   useEffect(() => {
-    mixpanel.identify(userId);
+    try {
+      mixpanel.identify(userId);
+    } catch (error) {
+      console.error('Error identifying user', error);
+    }
   }, [userId]);
 
   return null;
@@ -38,5 +61,9 @@ export function trackClientSideEvent<Event extends AnalyticsEvent>(
   eventName: Event,
   properties: AnalyticsEventProperties[Event]
 ) {
-  mixpanel.track(eventName, properties);
+  try {
+    mixpanel.track(eventName, properties);
+  } catch (error) {
+    console.error('Error tracking event', error);
+  }
 }

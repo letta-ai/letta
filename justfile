@@ -47,11 +47,15 @@ deploy: push
     helm upgrade --install {{HELM_CHART_NAME}} {{HELM_CHARTS_DIR}}/{{HELM_CHART_NAME}} \
         --set image.repository={{DOCKER_REGISTRY}}/web \
         --set image.tag={{TAG}} \
+        --set-string "podAnnotations.kubectl\.kubernetes\.io/restartedAt"="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
         --set env.DATABASE_URL="${DATABASE_URL}" \
         --set env.GOOGLE_CLIENT_ID="${GOOGLE_CLIENT_ID}" \
         --set env.GOOGLE_CLIENT_SECRET="${GOOGLE_CLIENT_SECRET}" \
         --set env.GOOGLE_REDIRECT_URI="${GOOGLE_REDIRECT_URI}" \
         --set env.LETTA_AGENTS_ENDPOINT="${LETTA_AGENTS_ENDPOINT}" \
+        --set env.MIXPANEL_TOKEN="${MIXPANEL_TOKEN}" \
+        --set env.LAUNCH_DARKLY_SDK_KEY="${LAUNCH_DARKLY_SDK_KEY}" \
+        --set env.SENTRY_AUTH_TOKEN="${SENTRY_AUTH_TOKEN}" \
         --set env.REDIS_HOST="${REDIS_HOST}"
 
 # Destroy the Helm chart
