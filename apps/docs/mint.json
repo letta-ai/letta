@@ -58,10 +58,10 @@
   "navigation": [
     {
       "group": "Get Started",
-      "pages": ["introduction", "quickstart", "concepts"]
+      "pages": ["introduction", "quickstart", "concepts", "configuration"]
     },
     {
-      "group": "Agents", 
+      "group": "Agents",
       "pages": [
         "agents/overview",
         "agents/tools",
@@ -71,18 +71,11 @@
     },
     {
       "group": "Deployment",
-      "pages": [
-        "deployment/server",
-        "deployment/storage",
-        "deployment/deploy"
-      ]
-
+      "pages": ["deployment/server", "deployment/storage", "deployment/deploy"]
     },
     {
       "group": "Advanced",
-      "pages": [
-        "advanced/custom_memory"
-      ]
+      "pages": ["advanced/custom_memory"]
     },
     {
       "group": "Essentials",

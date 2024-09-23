@@ -1,0 +1,107 @@
+---
+title: 'Model Configuration'
+description: 'Configuring LLM backends'
+---
+
+Letta is designed to be model agnostic, so you can swap out backend models anytime. 
+
+To configure LLM model endpoints, you need to specify the following enviornment variables: 
+```
+LETTA_LLM_ENDPOINT=http://host.docker.internal:11434
+LETTA_LLM_ENDPOINT_TYPE=ollama
+LETTA_LLM_MODEL=...
+LETTA_LLM_CONTEXT_WINDOW=...
+```
+
+Similarly to configure embedding model endpoints, you need to specify the following: 
+```
+LETTA_EMBEDDING_ENDPOINT=http://host.docker.internal:11434
+LETTA_EMBEDDING_ENDPOINT_TYPE=ollama
+LETTA_EMBEDDING_MODEL=...
+LETTA_EMBEDDING_DIM=...
+```
+
+
+
+## Ollama 
+ 
+> ⚠️ Make sure to use tags when downloading Ollama models!
+>
+> Don't do **`ollama pull dolphin2.2-mistral`**, instead do **`ollama pull dolphin2.2-mistral:7b-q6_K`**.
+>
+> If you don't specify a tag, Ollama may default to using a highly compressed model variant (e.g. Q4). We highly recommend **NOT** using a compression level below Q5 when using GGUF (stick to Q6 or Q8 if possible). In our testing, certain models start to become extremely unstable (when used with MemGPT) below Q6.
+
+
+### Setup Ollama 
+
+1. Download + install [Ollama](https://github.com/jmorganca/ollama) and the model you want to test with
+2. Download a model to test with by running `ollama pull <MODEL_NAME>` in the terminal (check the [Ollama model library](https://ollama.ai/library) for available models)
+
+For example, if we want to use Dolphin 2.2.1 Mistral, we can download it by running:
+
+```sh
+# Let's use the q6_K variant
+ollama pull dolphin2.2-mistral:7b-q6_K
+```
+
+```sh
+pulling manifest
+pulling d8a5ee4aba09... 100% |█████████████████████████████████████████████████████████████████████████| (4.1/4.1 GB, 20 MB/s)
+pulling a47b02e00552... 100% |██████████████████████████████████████████████████████████████████████████████| (106/106 B, 77 B/s)
+pulling 9640c2212a51... 100% |████████████████████████████████████████████████████████████████████████████████| (41/41 B, 22 B/s)
+pulling de6bcd73f9b4... 100% |████████████████████████████████████████████████████████████████████████████████| (58/58 B, 28 B/s)
+pulling 95c3d8d4429f... 100% |█████████████████████████████████████████████████████████████████████████████| (455/455 B, 330 B/s)
+verifying sha256 digest
+writing manifest
+removing any unused layers
+success
+```
+
+### Configuring with CLI 
+Configuring LLM endpoints:  
+```
+LETTA_LLM_ENDPOINT=http://host.docker.internal:11434
+LETTA_LLM_ENDPOINT_TYPE=ollama
+LETTA_LLM_MODEL=...
+LETTA_LLM_CONTEXT_WINDOW=...
+```
+
+Configuring embeddings: 
+```
+LETTA_EMBEDDING_ENDPOINT=http://host.docker.internal:11434
+LETTA_EMBEDDING_ENDPOINT_TYPE=ollama
+LETTA_EMBEDDING_MODEL=...
+LETTA_EMBEDDING_DIM=...
+```
+
+### Configuring with `docker compose`
+Configuring LLM endpoints:  
+```
+LETTA_LLM_ENDPOINT=http://host.docker.internal:11434
+LETTA_LLM_ENDPOINT_TYPE=ollama
+LETTA_LLM_MODEL=...
+LETTA_LLM_CONTEXT_WINDOW=...
+```
+
+Configuring embeddings: 
+```
+LETTA_EMBEDDING_ENDPOINT=http://host.docker.internal:11434
+LETTA_EMBEDDING_ENDPOINT_TYPE=ollama
+LETTA_EMBEDDING_MODEL=...
+LETTA_EMBEDDING_DIM=...
+```
+
+## vLLM 
+
+
+1. Download + install [vLLM](https://docs.vllm.ai/en/latest/getting_started/installation.html)
+2. Launch a vLLM **OpenAI-compatible** API server using [the official vLLM documentation](https://docs.vllm.ai/en/latest/getting_started/quickstart.html)
+
+For example, if we want to use the model `dolphin-2.2.1-mistral-7b` from [HuggingFace](https://huggingface.co/ehartford/dolphin-2.2.1-mistral-7b), we would run:
+
+```sh
+python -m vllm.entrypoints.openai.api_server \
+--model ehartford/dolphin-2.2.1-mistral-7b
+```
+
+vLLM will automatically download the model (if it's not already downloaded) and store it in your [HuggingFace cache directory](https://huggingface.co/docs/datasets/cache).
