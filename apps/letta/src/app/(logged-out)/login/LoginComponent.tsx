@@ -14,21 +14,52 @@ import { useEffect, useCallback, useRef } from 'react';
 import { isNull } from 'lodash-es';
 import './Login.scss';
 import { useSearchParams } from 'next/navigation';
-import { isTextALoginError, LoginErrorsMap } from '$letta/errors';
+import {
+  isTextALoginError,
+  LoginErrorsEnum,
+  LoginErrorsMap,
+} from '$letta/errors';
 
 function LoginErrorBanner() {
   const searchParams = useSearchParams();
 
-  const errorMessage = useMemo(() => {
-    const message = searchParams.get('errorCode');
+  const message = searchParams.get('errorCode');
 
+  const errorMessage = useMemo(() => {
     if (isTextALoginError(message)) {
       return LoginErrorsMap[message];
     }
-  }, [searchParams]);
+  }, [message]);
 
   if (!errorMessage) {
     return null;
+  }
+
+  if (message === LoginErrorsEnum.USER_NOT_IN_WHITELIST) {
+    return (
+      <div className="select-none	relative">
+        <a href="https://forms.letta.com/early-access">
+          <div className="absolute left-[-150px] top-[-50px] w-[300px] mb-[20px] whitespace-nowrap flex items-center bg-white text-black">
+            <div>JOIN OUR WAITLIST JOIN OUR WAITLIST JOIN US</div>
+          </div>
+        </a>
+        <a href="https://forms.letta.com/early-access">
+          <div className="absolute rotate-90 top-[130px] left-[-6px] w-[336px] whitespace-nowrap flex items-center bg-white text-black">
+            <div>JOIN OUR WAITLIST JOIN OUR WAITLIST JOIN US</div>
+          </div>
+        </a>
+        <a href="https://forms.letta.com/early-access">
+          <div className="absolute left-[-150px] top-[310px] rotate-180 w-[300px] mb-[20px] whitespace-nowrap flex items-center bg-white text-black">
+            <div>JOIN OUR WAITLIST JOIN OUR WAITLIST JOIN US</div>
+          </div>
+        </a>
+        <a href="https://forms.letta.com/early-access">
+          <div className="absolute rotate-[270deg] top-[130px] right-[-6px] w-[336px] whitespace-nowrap flex items-center bg-white text-black">
+            <div>JOIN OUR WAITLIST JOIN OUR WAITLIST JOIN US</div>
+          </div>
+        </a>
+      </div>
+    );
   }
 
   return (
@@ -90,6 +121,7 @@ export function LoginComponent() {
       <Suspense>
         <LoginErrorBanner />
       </Suspense>
+
       <VStack className="w-[300px] gap-[36px]" align="center">
         <VStack align="center" gap="large">
           <div className="relative" ref={logoRef}>
@@ -112,8 +144,14 @@ export function LoginComponent() {
           label="Continue with Google"
         />
         <Typography>
-          By clicking the button above, you agree to our terms of service and
-          privacy policy
+          By clicking the button above, you agree to our{' '}
+          <a className="underline" href="https://letta.com/terms-of-service">
+            terms of service
+          </a>{' '}
+          and{' '}
+          <a className="underline" href="https://letta.com/privacy-policy">
+            privacy policy
+          </a>
         </Typography>
       </VStack>
     </VStack>
