@@ -99,6 +99,7 @@ export type ButtonProps = Omit<
       postIcon?: React.ReactNode;
       label?: string;
       busy?: boolean;
+      preload?: boolean;
       href?: string;
       disabled?: boolean;
       hideLabel?: boolean;

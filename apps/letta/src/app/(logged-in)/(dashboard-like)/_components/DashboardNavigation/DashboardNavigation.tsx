@@ -31,16 +31,18 @@ import { cn } from '@letta-web/core-style-config';
 
 interface NavButtonProps {
   href: string;
+  preload?: boolean;
   label: string;
   icon?: React.ReactNode;
 }
 
 function NavButton(props: NavButtonProps) {
-  const { href, label, icon } = props;
+  const { href, preload, label, icon } = props;
   const pathname = usePathname();
 
   return (
     <Button
+      preload={preload}
       active={pathname === href}
       href={href}
       fullWidth
@@ -157,7 +159,12 @@ function SecondaryMenuItems() {
     <VStack paddingX="small" gap="small">
       <NavButton href="/settings" label="Settings" icon={<CogIcon />} />
       <AdminNav />
-      <NavButton href="/signout" label="Sign Out" icon={<ExitIcon />} />
+      <NavButton
+        preload={false}
+        href="/signout"
+        label="Sign Out"
+        icon={<ExitIcon />}
+      />
     </VStack>
   );
 }
