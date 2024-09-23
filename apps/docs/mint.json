@@ -58,7 +58,7 @@
   "navigation": [
     {
       "group": "Get Started",
-      "pages": ["introduction", "quickstart", "development"]
+      "pages": ["introduction", "quickstart", "concepts"]
     },
     {
       "group": "Agents", 

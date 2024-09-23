@@ -1,22 +1,104 @@
 ---
-title: Introduction
-description: 'Welcome to Letta'
+title: 'Welcome to Letta'
+sidebarTitle: 'Overview'
+description: 'Letta is an AI platform for building stateful LLM applications.'
+icon: "alien-8bit"
+iconType: "solid"
 ---
+
+<Note>**Letta Cloud** is our hosted service that lets you easily deploy your agents applications at scale. Sign up [here]() to request early access.</Note>
 
 <img
   className="block dark:hidden"
-  src="/images/hero-light.svg"
+  src="/images/hero_light.webp"
   alt="Hero Light"
 />
 <img
   className="hidden dark:block"
-  src="/images/hero-dark.svg"
+  src="/images/hero_dark.webp"
   alt="Hero Dark"
 />
 
-## Setting up
+## What is Letta?
 
+Letta adds state to your LLMs to give them advanced reasoning capabilities and transparent long-term memory.
+
+Letta is open source, model-agnostic, and white box. You can use any LLM you want and have full visibility into the inner workings of the agent.
+
+### Who is Letta for?
+
+Letta is for developers building stateful LLM applications. If you're building an application wtih an LLM, and you expect your AI to learn over time,. 
+
+Example stateful applications include:
+* **personalized chatbots** that require long-term memory or access to external data (e.g. healthcare chatbots)
+* **automated workflow agents** that 
+*
+
+### How do I use Letta?
+
+Letta is a platform for deploying 
+* `Agents API` 
+* Stateful `ChatCompletions API` (coming soon)
+
+You can use Letta as a backend for your AI applications - for example, you can use the Letta Agents API as an alternative to OpenAI's Assistants API to build a personalized chatbot application.
+
+Unlike OpenAI, Letta is open source, model-agnostic, and white box. A key principle of the platform is that you (the devleoper) should be able to use any LLM you want, and have full visibility into the inner workings of the agent.
+
+There are three main ways to use Letta:
+1. **REST API**: designed for developers that want to use Letta to power their AI applications (for example, a personalized chatbot application with long-term memory)
+2. **SDK**: if you're building an application in Python, you can use the Python SDK to interact with Letta (instead of calling REST APIs directly) for a more seamless experience
+3. **CLI**: you can also create and interact with Letta agents from the command line
+
+## How do I use Letta?
+
+First you deploy a Letta server and configure it with an LLM provider.
+
+Once 
+
+Letta runs as a service - state (including agent state, user state, memories, chat history, etc.) is persisted in a database, so that your .
+
+## How does it work?
+
+
+Under the hood, Letta orchestrates an "LLM OS" to manage the 
+
+Letta is designed to be model-agnostic and work with any LLM provider (including self-hosted models).
+
+## Setting up
 
 Letta is a platform for deploying 
 * Agents API 
 * Stateful `ChatCompletitions` API (coming soon) 
+
+## Getting started
+
+If you're new to Letta, start by learning the key concepts - or jump straight into creating your first agent!
+
+<CardGroup cols={3}>
+  <Card title="Intro to Letta" icon="cubes" href="/concepts">
+    Learn the key concepts behind the Letta platform
+  </Card>
+  <Card title="Quickstart" icon="bolt" href="/quickstart">
+    Create and message your first agent with the Letta CLI
+  </Card>
+  <Card title="Deploy" icon="cloud-arrow-up" href="/quickstart">
+    Learn how to deploy a Letta server and use the REST API
+  </Card>
+</CardGroup>
+
+## Tutorials
+
+Check out our [YouTube channel](https://www.youtube.com/channel/@letta-ai) for more tutorials. If you have an idea for a tutorial, let us know by suggesting an idea on Discord!
+
+<CardGroup cols={3}>
+  <Card title="ADE overview" icon="square-1" href="/quickstart">
+    Learn the basics of the Agent Development Environment (ADE)
+  </Card>
+  <Card title="Python SDK" icon="square-2" href="/quickstart">
+    Learn how to use the Letta Python SDK
+  </Card>
+  <Card title="Multi-agent example" icon="square-3" href="/quickstart">
+    Create a multi-agent recruiting workflow 
+  </Card>
+</CardGroup>
+
