@@ -1,17 +1,20 @@
 ---
 title: Tools 
 description: 'Define and customize tools'
+icon: "wrench-simple"
+iconType: "solid"
 ---
 
 ## Letta Tools 
 By default, agents in Letta are created with the following tools: 
 
-| Tool                        | Description                           |
-| ----------------------------| ------------------------------------- |
-| `archival_memory_search`    | Full name of user                     |
-| `archival_memory_insert`    | Reported age                          |
-| `conversation_memory_search`| Whether the user joined the community |
-
+| Tool                       | Description                                          |
+|----------------------------|------------------------------------------------------|
+| `send_message`             | Sends a message to the human user.                   |
+| `conversation_search`      | Search prior conversation history                    |
+| `conversation_search_date` | Search prior conversation history using a date range |
+| `archival_memory_insert`   | Add a memory to archival memory                      |
+| `archival_memory_search`   | Search archival memory via embedding search          |
 
 ### Excluding default tools 
 
@@ -26,29 +29,69 @@ agent_state = client.create_agent(include_default_tools=False)
 ```
 
 ## Custom Tools 
-You can create custom tools in Letta in Python. 
+You can create custom tools in Letta in Python. When you define the function for the tool, you must make sure to have a properly formatting docstring for Letta to parse the function schema. 
+```python
+def query_birthday_db(self, name: str): 
+    """
+    This tool queries an external database to 
+    lookup the birthday of someone given their name.
+
+    Args: 
+        name (str): The name to look up 
+
+    Returns: 
+        birthday (str): The birthday in mm-dd-yyyy format
+    
+    """
+    my_fake_data = {
+        "bob": "03-06-1997", 
+        "sarah": "03-06-1997"
+    } 
+    name = name.lower() 
+    if name not in my_fake_data: 
+        return None
+    else: 
+        return my_fake_data[name]
+
+birthday_tool = client.create_tool(query_birthday_db)
+```
 
 ### Adding tools to agents
+Once the tool is created, you can add it to an agent by passing the tool name to the `tools` parameter in the agent creation.
+```python
+agent_state = client.create_agent(
+    name="birthday_agent", 
+    tools=[birthday_tool.name], 
+)
+```
+
+
 
 ## External Libraries 
-Letta also has limited support for adding tools from external libraries into Letta. 
+Letta also has early support for adding tools from external libraries like Langchain and CrewAI.
 
 ### Langchain Tools 
 Letta supports adding tools from Langchain. 
 ```python
-from letta.schemas.tool import Tool 
+from langchain_community.tools import TavilySearchResults
+from letta.schemas.tool import Tool
 
-tool = client.create_tool(Tool.from_langchain(...))
+# convert the tool to a Letta tool 
+search_tool = Tool.from_langchain(TavilySearchResults())
+
+# persist the tool 
+client.add_tool(search_tool)
 ```
 
 ### CrewAI Tools
-Letta also supports adding tools from CrewAI. 
+Letta also supports adding tools from CrewAI. Make sure you first run `pip install 'letta[crewai-tools]'` to install the necessary dependencies.
 ```python
+from crewai_tools import ScrapeWebsiteTool
 from letta.schemas.tool import Tool 
 
-client.create_tool(Tool.from_crewai(...))
+# convert the tool to a Letta tool
+webscrape_tool = client.create_tool(Tool.from_crewai(ScrapeWebsiteTool()))
+
+# persist the tool
+client.add_tool(webscrape_tool)
 ```
-
-### Other libraries 
-In general, you can call tools from external libraries as long as they provide a OpenAI compatible JSON schemas. 
-

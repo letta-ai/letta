@@ -24,7 +24,7 @@
     }
   ],
   "topbarCtaButton": {
-    "name": "GitHub",
+    "name": "View on GitHub",
     "url": "https://github.com/letta-ai"
   },
   "tabs": [
@@ -58,10 +58,26 @@
   "navigation": [
     {
       "group": "Get Started",
-      "pages": ["introduction", "quickstart", "concepts"]
+      "pages": [
+        "introduction",
+        "quickstart",
+        "concepts",
+        {
+          "group": "LLM configuration",
+          "icon": "microchip",
+          "iconType": "solid",
+          "pages": [
+            "models/openai",
+            "models/ollama",
+            "models/anthropic",
+            "models/vllm",
+            "models/cohere"
+          ]
+        }
+      ]
     },
     {
-      "group": "Agents", 
+      "group": "Agents",
       "pages": [
         "agents/overview",
         "agents/tools",
@@ -71,29 +87,11 @@
     },
     {
       "group": "Deployment",
-      "pages": [
-        "deployment/server",
-        "deployment/storage",
-        "deployment/deploy"
-      ]
-
+      "pages": ["deployment/server", "docker", "deployment/storage", "deployment/deploy"]
     },
     {
       "group": "Advanced",
-      "pages": [
-        "advanced/custom_memory"
-      ]
-    },
-    {
-      "group": "Essentials",
-      "pages": [
-        "essentials/markdown",
-        "essentials/code",
-        "essentials/images",
-        "essentials/settings",
-        "essentials/navigation",
-        "essentials/reusable-snippets"
-      ]
+      "pages": ["advanced/memory_management", "advanced/custom_memory"]
     },
     {
       "group": "Client",
