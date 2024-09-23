@@ -6,10 +6,8 @@ REGISTRY_NAME := "letta"
 DOCKER_REGISTRY := REGION + "-docker.pkg.dev/" + PROJECT_NAME + "/" + REGISTRY_NAME
 HELM_CHARTS_DIR := "helm"
 HELM_CHART_NAME := "letta-web"
-TAG := "v0.0.7"
-
 REDIS_HOST := "10.167.199.148"
-POSTGRES_PRIVATE_IP := "10.104.0.3"
+TAG := env_var_or_default("TAG", "latest")
 
 # List all Justfile commands
 @list:
@@ -23,25 +21,30 @@ authenticate:
     @echo "🔐 Configuring Docker authentication..."
     gcloud auth configure-docker {{REGION}}-docker.pkg.dev --quiet
 
+# Configure kubectl
 configure-kubectl:
     @echo "🔧 Configuring kubectl for the Letta cluster..."
     gcloud container clusters get-credentials letta --region {{REGION}} --project {{PROJECT_NAME}}
 
-# Build and push the Docker image to the registry
+# Build the Docker images
 build:
-    @echo "🚧 Building multi-architecture web service Docker image..."
+    @echo "🚧 Building multi-architecture Docker images with tag: {{TAG}}..."
     docker buildx create --use
-    docker buildx build --platform linux/amd64,linux/arm64 -t {{DOCKER_REGISTRY}}/web:{{TAG}} --push .
+    npx concurrently \
+        "docker buildx build --progress=plain --platform linux/amd64 --target web -t {{DOCKER_REGISTRY}}/web:{{TAG}} . --load" \
+        "docker buildx build --progress=plain --platform linux/amd64 --target migrations -t {{DOCKER_REGISTRY}}/web-migrations:{{TAG}} . --load"
 
-migrate:
-    @echo "🚧 Running database migrations..."
-    DATABASE_URL={{DATABASE_URL}} npm run database:migrate
-
+# Push the Docker images to the registry
+push:
+    @echo "🚀 Pushing Docker images to registry with tag: {{TAG}}..."
+    docker push {{DOCKER_REGISTRY}}/web:{{TAG}}
+    docker push {{DOCKER_REGISTRY}}/web-migrations:{{TAG}}
 
 # Deploy the Helm chart
-deploy:
+deploy: push
     @echo "🚧 Deploying Helm chart..."
-    @helm upgrade --install {{HELM_CHART_NAME}} {{HELM_CHARTS_DIR}}/{{HELM_CHART_NAME}} \
+    kubectl delete job {{HELM_CHART_NAME}}-migration --ignore-not-found
+    helm upgrade --install {{HELM_CHART_NAME}} {{HELM_CHARTS_DIR}}/{{HELM_CHART_NAME}} \
         --set image.repository={{DOCKER_REGISTRY}}/web \
         --set image.tag={{TAG}} \
         --set env.DATABASE_URL="${DATABASE_URL}" \
@@ -62,13 +65,22 @@ show-env:
     kubectl exec -it $(kubectl get pods -l app.kubernetes.io/name=letta-web -o jsonpath="{.items[0].metadata.name}") -- env
 
 # Show secret
-show-secret:
-    #!/usr/bin/env zsh
-    @echo "🚧 Showing secret..."
-    kubectl get secret letta-web-env -o yaml | grep -v '^\s*[^:]*:\s*$' | sed 's/: /: /' | awk '{print $1 " " (NF > 1 ? $2 : "")}' | while read key value; do
-        if [ -n "$value" ]; then
-            echo "$key $(echo $value | base64 --decode)"
-        else
-            echo "$key"
-        fi
-    done
+@show-secret:
+    echo "🚧 Showing secret..."
+    kubectl get secret letta-web-env -o jsonpath='{.data}' | jq -r 'to_entries[] | "\(.key) \(.value | @base64d)"'
+
+# SSH into the pod
+ssh:
+    kubectl exec -it $(kubectl get pods -l app.kubernetes.io/name=letta-web -o jsonpath="{.items[0].metadata.name}") -- /bin/sh
+
+# Get logs
+web-logs:
+    kubectl logs $(kubectl get pods -l app.kubernetes.io/name=letta-web -o jsonpath="{.items[0].metadata.name}")
+
+# Describe the pod
+describe-web:
+    kubectl describe pod $(kubectl get pods -l app.kubernetes.io/name=letta-web -o jsonpath="{.items[0].metadata.name}")
+
+# Get migration job logs
+migration-logs:
+    kubectl logs job/{{HELM_CHART_NAME}}-migration

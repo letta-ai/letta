@@ -10,9 +10,16 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 
 # Install dependencies
-RUN npm ci --legacy-peer-deps
+RUN npm install
 
-# Rebuild the source code only when needed
+# Deps with dev dependencies for migrations
+FROM base AS deps-dev
+RUN apk add --no-cache libc6-compat
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm install --production=false
+
+# Build the application
 FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
@@ -27,10 +34,11 @@ RUN npm run build
 # ENV NEXT_TELEMETRY_DISABLED=1
 
 # Production image, copy all the files and run next
-FROM base AS runner
+FROM base AS web
 WORKDIR /app
 
 ENV NODE_ENV=production
+# TODO: remove env vars after demo day
 ENV DATABASE_URL=${DATABASE_URL}
 ENV GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
 ENV GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
@@ -69,3 +77,28 @@ ENV PORT=8080
 # server.js is created by next build from the standalone output
 # https://nextjs.org/docs/pages/api-reference/next-config-js/output
 CMD ["node", "apps/letta/server.js"]
+
+# Migration image
+FROM base AS migrations
+
+WORKDIR /app
+
+ENV NODE_ENV=production
+ENV DATABASE_URL=${DATABASE_URL}
+ENV GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+ENV GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+ENV GOOGLE_REDIRECT_URI=${GOOGLE_REDIRECT_URI}
+ENV LETTA_AGENTS_ENDPOINT=${LETTA_AGENTS_ENDPOINT}
+ENV NEXT_PUBLIC_CURRENT_HOST=${LETTA_API_ENDPOINT}
+ENV MIXPANEL_TOKEN=${MIXPANEL_TOKEN}
+ENV LAUNCH_DARKLY_SDK_KEY=${LAUNCH_DARKLY_SDK_KEY}
+
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
+
+COPY --from=deps-dev /app/node_modules ./node_modules
+COPY . .
+
+USER nextjs
+
+CMD ["npm", "run", "database:migrate:ci"]

@@ -21,6 +21,7 @@
     "component-libray:generate-icons": "nx g @letta-web/configure:generate-icons",
     "database:generate": "nx run database:generate",
     "database:migrate": "nx run database:migrate",
+    "database:migrate:ci": "cd libs/database && drizzle-kit migrate",
     "database:check": "nx run database:check",
     "database:studio": "nx run database:studio",
     "e2e:ci": "nx run-many --all --skip-nx-cache --parallel --targets=e2e",

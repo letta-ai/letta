@@ -6,9 +6,9 @@ replicaCount: 1
 
 image:
   repository: us-central1-docker.pkg.dev/memgpt-428419/letta/web
-  pullPolicy: IfNotPresent
+  pullPolicy: Always
   # Overrides the image tag whose default is the chart appVersion.
-  tag: "v0.0.1"
+  tag: "latest"
 
 imagePullSecrets: []
 nameOverride: ""

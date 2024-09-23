@@ -73,3 +73,36 @@ To add a new component, run the following command:
 ```sh
 npm run cl:new {component-name}
 ```
+
+## Development Commands
+
+This project uses [Just](https://github.com/casey/just) as a command runner. Here are some useful commands:
+
+### Authentication and Configuration
+
+- `just authenticate`: Authenticate with Google Cloud and configure Docker.
+- `just configure-kubectl`: Configure kubectl for the Letta cluster.
+
+### Building and Deploying
+
+- `just build`: Build the multi-architecture Docker image.
+- `just push`: Push the Docker image to the registry.
+- `just deploy`: Deploy the Helm chart (includes pushing the image).
+- `just destroy`: Uninstall the Helm chart.
+
+### Debugging and Monitoring
+
+- `just show-env`: Show environment variables on the pod.
+- `just show-secret`: Display decoded secrets.
+- `just ssh`: SSH into the web service pod.
+- `just web-logs`: Get logs from the web service pod.
+- `just describe-web`: Describe the web service pod.
+- `just migration-logs`: Get logs from the migration job.
+
+To see all available commands, run:
+
+```sh
+just list
+```
+
+Note: Make sure you have Just installed and properly configured before running these commands.

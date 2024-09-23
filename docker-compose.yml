@@ -37,5 +37,26 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      target: web
     ports:
       - '3000:3000'
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/letta
+      REDIS_URL: redis://redis:6379
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI}
+      LETTA_AGENTS_ENDPOINT: ${LETTA_AGENTS_ENDPOINT}
+      NEXT_PUBLIC_CURRENT_HOST: ${NEXT_PUBLIC_CURRENT_HOST}
+
+  migrations:
+    depends_on:
+      postgres:
+        condition: service_healthy
+    container_name: letta-migrations
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: migrations
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/letta
