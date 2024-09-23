@@ -87,7 +87,7 @@
     },
     {
       "group": "Deployment",
-      "pages": ["deployment/server", "docker", "deployment/storage", "deployment/deploy"]
+      "pages": ["deployment/server", "docker"]
     },
     {
       "group": "Advanced",
