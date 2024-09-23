@@ -8,8 +8,9 @@ import {
   sourceAgents,
 } from '@letta-web/database';
 import { and, desc, eq } from 'drizzle-orm';
-import { copyAgentById } from '$letta/server';
+import { copyAgentById, migrateToNewAgent } from '$letta/server';
 import * as crypto from 'node:crypto';
+import { AgentsService } from '@letta-web/letta-agents-api';
 
 type CreateAgentRequestType = ServerInferRequest<
   typeof pdkContracts.deployment.createAgent
@@ -87,7 +88,7 @@ export async function createAgent(
   return {
     status: 201,
     body: {
-      deployedAgentId: deployedAgent.id,
+      agentDeploymentId: deployedAgent.id,
     },
   };
 }
@@ -97,12 +98,114 @@ type ChatWithAgentResponseType = ServerInferResponses<
 >;
 
 export async function chatWithAgent(): Promise<ChatWithAgentResponseType> {
-  // This is a stub, the actual implementation of this code is in `/pdk/v1/agents/[deployedAgentId]/chat/route.ts`
+  // This is a stub, the actual implementation of this code is in `/v1/deployment/agents/[agentDeploymentId]/chat/route.ts`
 
   return {
     status: 201,
     body: {
       messages: [],
+    },
+  };
+}
+
+type GetDeployedAgentSDKIdRequestType = ServerInferRequest<
+  typeof pdkContracts.deployment.getDeployedAgentSdkId
+>;
+
+type GetDeployedAgentSDKIdResponseType = ServerInferResponses<
+  typeof pdkContracts.deployment.getDeployedAgentSdkId
+>;
+
+export async function getDeployedAgentSdkId(
+  req: GetDeployedAgentSDKIdRequestType
+): Promise<GetDeployedAgentSDKIdResponseType> {
+  const { agentDeploymentId } = req.params;
+
+  const deployedAgent = await db.query.deployedAgents.findFirst({
+    where: eq(deployedAgents.id, agentDeploymentId),
+  });
+
+  if (!deployedAgent) {
+    return {
+      status: 404,
+      body: {
+        message: 'Agent not found',
+      },
+    };
+  }
+
+  return {
+    status: 200,
+    body: {
+      sdkId: deployedAgent.agentId,
+    },
+  };
+}
+
+type MigrateDeployedAgentToNewSourceAgentType = ServerInferRequest<
+  typeof pdkContracts.deployment.migrateDeployedAgentToNewSourceAgent
+>;
+
+type MigrateDeployedAgentToNewSourceAgentResponseType = ServerInferResponses<
+  typeof pdkContracts.deployment.migrateDeployedAgentToNewSourceAgent
+>;
+
+export async function migrateDeployedAgentToNewSourceAgent(
+  req: MigrateDeployedAgentToNewSourceAgentType
+): Promise<MigrateDeployedAgentToNewSourceAgentResponseType> {
+  const { agentDeploymentId } = req.params;
+  const { sourceAgentKey, preserveCoreMemories } = req.body;
+
+  const deployedAgent = await db.query.deployedAgents.findFirst({
+    where: eq(deployedAgents.id, agentDeploymentId),
+  });
+
+  if (!deployedAgent) {
+    return {
+      status: 404,
+      body: {
+        message: 'Deployed Agent not found',
+      },
+    };
+  }
+
+  const sourceAgent = await db.query.sourceAgents.findFirst({
+    where: and(
+      eq(sourceAgents.organizationId, deployedAgent.organizationId),
+      eq(sourceAgents.key, sourceAgentKey)
+    ),
+  });
+
+  if (!sourceAgent) {
+    return {
+      status: 404,
+      body: {
+        message: 'Source agent not found',
+      },
+    };
+  }
+
+  const sourceSDKAgent = await AgentsService.getAgent({
+    agentId: sourceAgent.agentId,
+  });
+
+  const newDatasources = await AgentsService.getAgentSources({
+    agentId: deployedAgent.agentId || '',
+  });
+
+  await migrateToNewAgent({
+    preserveCoreMemories,
+    agentIdToMigrate: deployedAgent.agentId,
+    agentTemplate: sourceSDKAgent,
+    agentDatasourcesIds: newDatasources
+      .map((datasource) => datasource.id)
+      .filter(Boolean) as string[],
+  });
+
+  return {
+    status: 200,
+    body: {
+      agentDeploymentId,
     },
   };
 }

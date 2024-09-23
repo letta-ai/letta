@@ -1,4 +1,4 @@
-import type { AgentState } from '@letta-web/letta-agents-api';
+import type { AgentState, UpdateAgentState } from '@letta-web/letta-agents-api';
 import { AgentsService, SourcesService } from '@letta-web/letta-agents-api';
 import type { AgentTemplate } from '$letta/types';
 
@@ -64,12 +64,18 @@ export async function copyAgentById(agentId: string, name: string) {
 
 interface MigrateToNewAgentArgs {
   agentTemplate: AgentState;
+  preserveCoreMemories?: boolean;
   agentIdToMigrate: string;
   agentDatasourcesIds: string[];
 }
 
 export async function migrateToNewAgent(options: MigrateToNewAgentArgs) {
-  const { agentTemplate, agentIdToMigrate, agentDatasourcesIds } = options;
+  const {
+    agentTemplate,
+    preserveCoreMemories = false,
+    agentIdToMigrate,
+    agentDatasourcesIds,
+  } = options;
   const oldDatasources = await AgentsService.getAgentSources({
     agentId: agentIdToMigrate,
   });
@@ -84,13 +90,18 @@ export async function migrateToNewAgent(options: MigrateToNewAgentArgs) {
     (id) => !oldDatasources.some((oldDatasource) => oldDatasource.id === id)
   );
 
+  const requestBody: UpdateAgentState = {
+    id: agentIdToMigrate,
+    tools: agentTemplate.tools,
+  };
+
+  if (!preserveCoreMemories) {
+    requestBody.memory = agentTemplate.memory;
+  }
+
   await AgentsService.updateAgent({
     agentId: agentIdToMigrate,
-    requestBody: {
-      id: agentIdToMigrate,
-      memory: agentTemplate.memory,
-      tools: agentTemplate.tools,
-    },
+    requestBody: requestBody,
   });
 
   await Promise.all([

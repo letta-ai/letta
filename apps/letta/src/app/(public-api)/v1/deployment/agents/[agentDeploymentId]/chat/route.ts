@@ -36,12 +36,12 @@ export async function POST(request: NextRequest, context: Context) {
 
   const { message, stream } = body.data;
 
-  const deployedAgentId = context.params.deployedAgentId;
+  const agentDeploymentId = context.params.agentDeploymentId;
   const organizationId = keyDetails.organizationId;
 
-  if (deployedAgentId === ':deployedAgentId') {
+  if (agentDeploymentId === ':agentDeploymentId') {
     return new Response(
-      'You seem to have left :deployedAgentId in the url path instead of specifying an agent Id.',
+      'You seem to have left :agentDeploymentId in the url path instead of specifying an agent Id.',
       { status: 400 }
     );
   }
@@ -49,7 +49,7 @@ export async function POST(request: NextRequest, context: Context) {
   const deployedAgent = await db.query.deployedAgents.findFirst({
     where: and(
       eq(deployedAgents.organizationId, organizationId),
-      eq(deployedAgents.id, deployedAgentId)
+      eq(deployedAgents.id, agentDeploymentId)
     ),
   });
 

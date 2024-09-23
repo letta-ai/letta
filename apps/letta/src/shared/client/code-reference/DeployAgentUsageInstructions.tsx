@@ -115,7 +115,7 @@ function DeployAgentInstructionsCurl(props: DeployAgentInstructionsCurlProps) {
               code={`curl -N -X POST ${
                 environment.NEXT_PUBLIC_CURRENT_HOST
               }${DEPLOYMENT_BASE_URL}${pdkContracts.deployment.chatWithAgent.path.replace(
-                ':deployedAgentId',
+                ':agentDeploymentId',
                 deploymentAgentToUse
               )} \\
   -H 'Content-Type: application/json' \\

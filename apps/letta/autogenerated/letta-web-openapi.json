@@ -23,12 +23,6 @@
                   },
                   "name": {
                     "type": "string"
-                  },
-                  "variables": {
-                    "type": "object",
-                    "additionalProperties": {
-                      "nullable": true
-                    }
                   }
                 },
                 "required": ["sourceAgentKey"]
@@ -44,11 +38,11 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "deployedAgentId": {
+                    "agentDeploymentId": {
                       "type": "string"
                     }
                   },
-                  "required": ["deployedAgentId"]
+                  "required": ["agentDeploymentId"]
                 }
               }
             }
@@ -73,13 +67,13 @@
         }
       }
     },
-    "/v1/deployment/agents/{deployedAgentId}/chat": {
+    "/v1/deployment/agents/{agentDeploymentId}/chat": {
       "post": {
         "summary": "Chat with deployed agent",
         "tags": ["deployment"],
         "parameters": [
           {
-            "name": "deployedAgentId",
+            "name": "agentDeploymentId",
             "in": "path",
             "required": true,
             "schema": {
@@ -100,12 +94,6 @@
                   },
                   "stream": {
                     "type": "boolean"
-                  },
-                  "variables": {
-                    "type": "object",
-                    "additionalProperties": {
-                      "nullable": true
-                    }
                   }
                 },
                 "required": ["message"]
@@ -152,6 +140,133 @@
                     "message": {
                       "type": "string",
                       "enum": ["Agent not found"]
+                    }
+                  },
+                  "required": ["message"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/deployment/agents/{agentDeploymentId}/sdk-id": {
+      "get": {
+        "summary": "Get deployed agent SDK ID",
+        "tags": ["deployment"],
+        "parameters": [
+          {
+            "name": "agentDeploymentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "operationId": "deployment.getDeployedAgentSdkId",
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "sdkId": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["sdkId"]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "404",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "enum": ["Agent not found"]
+                    }
+                  },
+                  "required": ["message"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/deployment/agents/{agentDeploymentId}": {
+      "post": {
+        "description": "Migrate your deployed agent to a new source agent. This will overwrite the current agent's datasources, tools, and core memories. Archival and messages will be preserved.",
+        "summary": "Migrate deployed agent to new source agent",
+        "tags": ["deployment"],
+        "parameters": [
+          {
+            "name": "agentDeploymentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "operationId": "deployment.migrateDeployedAgentToNewSourceAgent",
+        "requestBody": {
+          "description": "Body",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "sourceAgentKey": {
+                    "type": "string"
+                  },
+                  "preserveCoreMemories": {
+                    "type": "boolean"
+                  }
+                },
+                "required": ["sourceAgentKey"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "agentDeploymentId": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["agentDeploymentId"]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "404",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "enum": [
+                        "Source agent not found",
+                        "Deployed Agent not found"
+                      ]
                     }
                   },
                   "required": ["message"]
