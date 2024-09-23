@@ -58,7 +58,23 @@
   "navigation": [
     {
       "group": "Get Started",
-      "pages": ["introduction", "quickstart", "concepts", "configuration"]
+      "pages": [
+        "introduction",
+        "quickstart",
+        "concepts",
+        {
+          "group": "Model Configuration",
+          "icon": "brain",
+          "iconType": "sharp-solid",
+          "pages": [
+            "models/openai",
+            "models/ollama",
+            "models/anthropic",
+            "models/azure",
+            "models/vllm"
+          ]
+        }
+      ]
     },
     {
       "group": "Agents",

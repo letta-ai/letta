@@ -1,6 +1,8 @@
 ---
 title: 'Model Configuration'
 description: 'Configuring LLM backends'
+icon: "brain"
+iconType: "solid"
 ---
 
 Letta is designed to be model agnostic, so you can swap out backend models anytime. 
@@ -20,7 +22,18 @@ LETTA_EMBEDDING_ENDPOINT_TYPE=ollama
 LETTA_EMBEDDING_MODEL=...
 LETTA_EMBEDDING_DIM=...
 ```
+ 
+## OpenAI 
+To quickly get started with 
+```
+letta quickstart --backend openai
+```
 
+## Anthropic 
+To quickly get started with Anthropic, you can run: 
+```
+letta quickstart --backend anthropic
+```
 
 
 ## Ollama 
@@ -57,39 +70,59 @@ removing any unused layers
 success
 ```
 
-### Configuring with CLI 
-Configuring LLM endpoints:  
+### Configuring with Ollama 
+<Accordion icon="message-bot" title="CLI (pypi only)">
+To configure your LLM model, modify the `[model]` section of your `~/.letta/config` file: 
+```yaml ~/.letta/config
+[model]
+model_endpoint_type = ollama
+model = dolphin2.2-mistral:7b-q6_K
+model_endpoint = http://localhost:11434
+context_window = 8192
 ```
-LETTA_LLM_ENDPOINT=http://host.docker.internal:11434
-LETTA_LLM_ENDPOINT_TYPE=ollama
-LETTA_LLM_MODEL=...
-LETTA_LLM_CONTEXT_WINDOW=...
+To configure your embedding model, modify the `[embedding]` section of your `~/.letta/config` file: 
+```yaml ~/.letta/config
+[embedding]
+embedding_endpoint_type = ollama
+embedding_endpoint = http://localhost:11434
+embedding_model = mxbai-embed-large 
+embedding_dim = 512
+embedding_chunk_size = 300
 ```
-
-Configuring embeddings: 
-```
-LETTA_EMBEDDING_ENDPOINT=http://host.docker.internal:11434
-LETTA_EMBEDDING_ENDPOINT_TYPE=ollama
-LETTA_EMBEDDING_MODEL=...
-LETTA_EMBEDDING_DIM=...
-```
-
+</Accordion>
+<Accordion icon="message-bot" title="Docker Compose">
 ### Configuring with `docker compose`
+The `compose.yaml` file uses enviornment variables to configure the LLM and embedding models. You can place these enviornment variables in either a `.env` file or set the variables. 
+
 Configuring LLM endpoints:  
 ```
 LETTA_LLM_ENDPOINT=http://host.docker.internal:11434
 LETTA_LLM_ENDPOINT_TYPE=ollama
-LETTA_LLM_MODEL=...
-LETTA_LLM_CONTEXT_WINDOW=...
+LETTA_LLM_MODEL=dolphin2.2-mistral:7b-q6_K
+LETTA_LLM_CONTEXT_WINDOW=8192
 ```
 
 Configuring embeddings: 
 ```
 LETTA_EMBEDDING_ENDPOINT=http://host.docker.internal:11434
 LETTA_EMBEDDING_ENDPOINT_TYPE=ollama
-LETTA_EMBEDDING_MODEL=...
-LETTA_EMBEDDING_DIM=...
+LETTA_EMBEDDING_MODEL=mxbai-embed-large
+LETTA_EMBEDDING_DIM=512
 ```
+</Accordion>
+<Accordion icon="message-bot" title="Python SDK">
+```python
+from memgpt import LLMConfig, EmbeddingConfig
+
+client.set_default_llm_config(
+    LLMConfig(...)
+)
+
+client.set_default_embedding_config( 
+    EmbeddingConfig(...)
+)
+```
+</Accordion>
 
 ## vLLM 
 
