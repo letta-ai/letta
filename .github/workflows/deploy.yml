@@ -26,4 +26,12 @@ jobs:
           project_id: 'memgpt-428419'
           workload_identity_provider: 'projects/231889654562/locations/global/workloadIdentityPools/letta-web-dev-pool/providers/github-actions-provider'
 
-      - run: 'just authenticate'
+      - name: 'Set up Cloud SDK'
+        uses: 'google-github-actions/setup-gcloud@v2'
+        with:
+          version: '>= 493.0.0'
+
+      - name: 'Use gcloud CLI'
+        run: 'gcloud info'
+
+      - run: 'just configure-kubectl'
