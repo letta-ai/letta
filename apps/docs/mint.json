@@ -61,6 +61,7 @@
       "pages": [
         "introduction",
         "quickstart",
+        "docker",
         "concepts",
         {
           "group": "Model Configuration",
