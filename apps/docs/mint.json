@@ -70,8 +70,8 @@
             "models/openai",
             "models/ollama",
             "models/anthropic",
-            "models/azure",
-            "models/vllm"
+            "models/vllm",
+            "models/cohere"
           ]
         }
       ]
