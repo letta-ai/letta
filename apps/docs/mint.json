@@ -91,7 +91,7 @@
     },
     {
       "group": "Advanced",
-      "pages": ["advanced/custom_memory"]
+      "pages": ["advanced/memory_management", "advanced/custom_memory"]
     },
     {
       "group": "Client",
