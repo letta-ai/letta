@@ -84,3 +84,5 @@ export * from './lib/core/Badge/Badge';
 
 export * from './lib/core/InputFilter/InputFilter';
 export * from './lib/reusable/DashboardWithSidebarWrapper/useDashboardNavigationItems/useDashboardNavigationItems';
+
+export * from './lib/core/Tooltip/Tooltip';

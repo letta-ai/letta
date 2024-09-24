@@ -24,6 +24,7 @@ export function buildConfig(appDir: string): Config {
           sidebarNav: '7',
           header: '8',
           dialog: '9',
+          tooltip: '10',
         },
         gap: {
           2: 'var(--default-gap)',

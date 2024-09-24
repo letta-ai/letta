@@ -33,6 +33,7 @@
   },
   "private": true,
   "dependencies": {
+    "@floating-ui/react": "^0.26.24",
     "@hookform/resolvers": "^3.9.0",
     "@launchdarkly/node-server-sdk": "^9.5.4",
     "@mantine/hooks": "^7.12.2",

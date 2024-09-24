@@ -3,6 +3,8 @@ import React from 'react';
 import {
   ADEHeader,
   ADEPage,
+  ArrowLeftIcon,
+  ArrowRightIcon,
   ArrowUpIcon,
   Button,
   CaretDownIcon,
@@ -33,6 +35,8 @@ import { DatabaseIcon, SettingsIcon } from 'lucide-react';
 import { StagedAgentsPanel } from './StagedAgentsPanel/StagedAgentsPanel';
 import { ConfigPanel } from './ConfigPanel/ConfigPanel';
 import { useCurrentTestingAgent } from './hooks/useCurrentTestingAgent/useCurrentTestingAgent';
+import { useLocalStorage } from '@mantine/hooks';
+import { ADESidebarProvider, useADESidebarContext } from './hooks';
 
 interface SidebarGroupProps {
   title: string;
@@ -90,6 +94,7 @@ function NavOverlay() {
 
 function SidebarGroup(props: SidebarGroupProps) {
   const { title, children } = props;
+  const { collapsed } = useADESidebarContext();
 
   return (
     <VStack
@@ -100,9 +105,11 @@ function SidebarGroup(props: SidebarGroupProps) {
       as="section"
     >
       <HStack className="h-[43px]" paddingX="small" align="center">
-        <Typography bold variant="body2">
-          {title}
-        </Typography>
+        {!collapsed && (
+          <Typography bold variant="body2">
+            {title}
+          </Typography>
+        )}
       </HStack>
       <VStack gap="small" as="ul">
         {children}
@@ -112,6 +119,10 @@ function SidebarGroup(props: SidebarGroupProps) {
 }
 
 function ADESidebar() {
+  const [collapsed, setCollapsed] = useLocalStorage({
+    defaultValue: false,
+    key: 'ADESidebarCollapsed',
+  });
   const { data: showVariablesEditor } = useFeatureFlag('SHOW_VARIABLES_EDITOR');
   const { data: showParametersEditor } = useFeatureFlag(
     'SHOW_PARAMETERS_EDITOR'
@@ -119,33 +130,54 @@ function ADESidebar() {
   const { data: showContextEditor } = useFeatureFlag('SHOW_CONTEXT_EDITOR');
 
   return (
-    <VStack
-      borderRight
-      color="background-grey"
-      as="nav"
-      fullHeight
-      overflowY="auto"
-      className="w-[250px] min-w-[250px]"
-    >
-      <SidebarGroup title="Base">
-        <ModelPanel />
-        <ConfigPanel />
-        {showParametersEditor && (
-          <ADENavigationItem icon={<SettingsIcon />} title="Parameters" />
-        )}
-      </SidebarGroup>
-      <SidebarGroup title="Configure">
-        {showVariablesEditor && <VariablesPanel />}
-        <MemoryBlocksPanel />
-        <DataSourcesPanel />
-        <ToolsPanel />
-        {showContextEditor && <ContextEditorPanel />}
-      </SidebarGroup>
-      <SidebarGroup title="Test">
-        <ArchivalMemoriesPanel />
-        <AgentSimulator />
-      </SidebarGroup>
-    </VStack>
+    <ADESidebarProvider collapsed={collapsed}>
+      <VStack
+        fullHeight
+        borderRight
+        color="background-grey"
+        as="nav"
+        justify="spaceBetween"
+        overflowY="auto"
+        overflowX="hidden"
+        className={`transition-all duration-200 ${
+          collapsed ? 'w-[55px]' : 'w-[250px]'
+        }`}
+      >
+        <VStack>
+          <SidebarGroup title="Base">
+            <ModelPanel />
+            <ConfigPanel />
+            {showParametersEditor && (
+              <ADENavigationItem icon={<SettingsIcon />} title="Parameters" />
+            )}
+          </SidebarGroup>
+          <SidebarGroup title="Configure">
+            {showVariablesEditor && <VariablesPanel />}
+            <MemoryBlocksPanel />
+            <DataSourcesPanel />
+            <ToolsPanel />
+            {showContextEditor && <ContextEditorPanel />}
+          </SidebarGroup>
+          <SidebarGroup title="Test">
+            <ArchivalMemoriesPanel />
+            <AgentSimulator />
+          </SidebarGroup>
+        </VStack>
+        <HStack paddingX="small">
+          <Button
+            tooltipPlacement="right"
+            label={collapsed ? 'Expand' : 'Collapse'}
+            hideLabel
+            active={collapsed}
+            color="tertiary-transparent"
+            preIcon={collapsed ? <ArrowRightIcon /> : <ArrowLeftIcon />}
+            onClick={() => {
+              setCollapsed(!collapsed);
+            }}
+          />
+        </HStack>
+      </VStack>
+    </ADESidebarProvider>
   );
 }
 

@@ -4,6 +4,8 @@ import { ButtonPrimitive, SpinnerPrimitive } from '../../../primitives';
 import { cn } from '@letta-web/core-style-config';
 import { forwardRef, useMemo } from 'react';
 import { Slot } from '@radix-ui/react-slot';
+import { MaybeTooltip } from '../Tooltip/Tooltip';
+import type { Placement } from '@floating-ui/react';
 
 const buttonVariants = cva(
   'items-center cursor-pointer inline-flex  whitespace-nowrap transition-width duration-200 ease-in-out',
@@ -97,6 +99,7 @@ export type ButtonProps = Omit<
     VariantProps<typeof buttonVariants> & {
       preIcon?: React.ReactNode;
       postIcon?: React.ReactNode;
+      tooltipPlacement?: Placement;
       label?: string;
       busy?: boolean;
       preload?: boolean;
@@ -118,6 +121,7 @@ export const Button = forwardRef<
     postIcon,
     label,
     color,
+    tooltipPlacement,
     busy,
     variant,
     active,
@@ -142,30 +146,37 @@ export const Button = forwardRef<
   }, [iconSize, busy, preIcon]);
 
   return (
-    <ButtonPrimitive
-      ref={ref}
-      className={cn(
-        buttonVariants({
-          color,
-          hideLabel,
-          align,
-          size,
-          variant,
-          fullWidth,
-          disabled: rest.disabled,
-          fullHeight,
-          active,
-        })
-      )}
-      {...rest}
+    <MaybeTooltip
+      asChild
+      placement={tooltipPlacement}
+      renderTooltip={hideLabel}
+      content={label}
     >
-      {iconToRender}
-      {hideLabel ? (
-        <span className="sr-only">{label}</span>
-      ) : (
-        <span>{label}</span>
-      )}
-      {postIcon && <Slot className={iconSize}>{postIcon}</Slot>}
-    </ButtonPrimitive>
+      <ButtonPrimitive
+        ref={ref}
+        className={cn(
+          buttonVariants({
+            color,
+            hideLabel,
+            align,
+            size,
+            variant,
+            fullWidth,
+            disabled: rest.disabled,
+            fullHeight,
+            active,
+          })
+        )}
+        {...rest}
+      >
+        {iconToRender}
+        {hideLabel ? (
+          <span className="sr-only">{label}</span>
+        ) : (
+          <span>{label}</span>
+        )}
+        {postIcon && <Slot className={iconSize}>{postIcon}</Slot>}
+      </ButtonPrimitive>
+    </MaybeTooltip>
   );
 });

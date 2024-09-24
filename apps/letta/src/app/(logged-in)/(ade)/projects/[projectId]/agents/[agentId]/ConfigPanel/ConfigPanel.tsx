@@ -64,6 +64,9 @@ function EditAgentName() {
     <RawInput
       fullWidth
       label="Agent Name"
+      autoComplete="off"
+      data-lpignore="true"
+      data-form-type="other"
       value={name}
       onChange={(event) => {
         setName(event.currentTarget.value);
@@ -164,6 +167,10 @@ export function ConfigPanel() {
             <Typography>
               Deleting an agent will permanently remove this agent from your
               project. It is not-recoverable.
+            </Typography>
+            <Typography>
+              Any staged or deployed agents generated from this agent will not
+              be deleted.
             </Typography>
             <HStack fullWidth justify="end">
               <DeleteAgentDialog />
