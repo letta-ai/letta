@@ -149,7 +149,7 @@ export const Button = forwardRef<
     <MaybeTooltip
       asChild
       placement={tooltipPlacement}
-      renderTooltip={hideLabel}
+      renderTooltip={!!hideLabel}
       content={label}
     >
       <ButtonPrimitive
