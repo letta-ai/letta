@@ -50,6 +50,11 @@
       "url": "https://discord.gg/letta"
     },
     {
+      "name": "Guides",
+      "icon": "lightbulb",
+      "url": "guides"
+    },
+    {
       "name": "News",
       "icon": "newspaper",
       "url": "https://letta.com/news"

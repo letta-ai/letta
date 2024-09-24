@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { jsonrepair } from 'jsonrepair';
 
 export interface AttachedAgent {
   id: string;
@@ -70,5 +71,23 @@ export const AgentMessageSchema = z.discriminatedUnion('message_type', [
   UserMessageSchema,
   SystemMessageSchema,
 ]);
+
+export const AgentMessageTypeSchema = z.enum([
+  'function_return',
+  'function_call',
+  'internal_monologue',
+  'user_message',
+  'system_message',
+]);
+
+export function safeParseFunctionCallArguments(
+  message: z.infer<typeof FunctionCallSchema>
+): Record<string, any> {
+  try {
+    return JSON.parse(jsonrepair(message.function_call.arguments || '{}'));
+  } catch (_e) {
+    return {};
+  }
+}
 
 export type AgentMessage = z.infer<typeof AgentMessageSchema>;

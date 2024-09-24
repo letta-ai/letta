@@ -1,6 +1,9 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
-import type { ChatWithAgentParamsSchema } from '$letta/pdk/contracts/deployment';
+import type {
+  ChatWithAgentBodySchemaType,
+  ChatWithAgentParamsSchema,
+} from '$letta/pdk/contracts/deployment';
 import { ChatWithAgentBodySchema } from '$letta/pdk/contracts/deployment';
 import type { z } from 'zod';
 import { verifyAndReturnAPIKeyDetails } from '$letta/server/auth';
@@ -8,13 +11,35 @@ import { db, deployedAgents } from '@letta-web/database';
 import { and, eq } from 'drizzle-orm';
 import { EventSource } from 'extended-eventsource';
 import { environment } from '@letta-web/environmental-variables';
+import type { AgentMessage } from '@letta-web/letta-agents-api';
+import { AgentMessageSchema } from '@letta-web/letta-agents-api';
 import { AgentsService } from '@letta-web/letta-agents-api';
+import { jsonrepair } from 'jsonrepair';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 interface Context {
   params: z.infer<typeof ChatWithAgentParamsSchema>;
+}
+
+interface MessageParserOptions {
+  return_message_types: ChatWithAgentBodySchemaType['return_message_types'];
+}
+
+function messagesParser(
+  message: AgentMessage,
+  options: MessageParserOptions
+): AgentMessage | null {
+  const nextMessage = { ...message };
+
+  if (options.return_message_types) {
+    if (!options.return_message_types.includes(nextMessage.message_type)) {
+      return null;
+    }
+  }
+
+  return nextMessage;
 }
 
 export async function POST(request: NextRequest, context: Context) {
@@ -34,7 +59,12 @@ export async function POST(request: NextRequest, context: Context) {
     return new Response('Agent not found', { status: 404 });
   }
 
-  const { message, stream } = body.data;
+  const {
+    message,
+    stream_tokens,
+    return_message_types,
+    return_function_calls,
+  } = body.data;
 
   const agentDeploymentId = context.params.agentDeploymentId;
   const organizationId = keyDetails.organizationId;
@@ -53,12 +83,13 @@ export async function POST(request: NextRequest, context: Context) {
     ),
   });
 
+  console.log(deployedAgent);
   if (!deployedAgent) {
     return new Response('Agent not found', { status: 404 });
   }
 
-  if (!stream) {
-    const response = await AgentsService.createAgentMessage({
+  if (!stream_tokens) {
+    const messageResponse = await AgentsService.createAgentMessage({
       agentId: deployedAgent.agentId,
       requestBody: {
         stream_tokens: false,
@@ -71,6 +102,18 @@ export async function POST(request: NextRequest, context: Context) {
         ],
       },
     });
+
+    const response = messageResponse.messages
+      .map((message) => {
+        const safeMessage = AgentMessageSchema.safeParse(message);
+
+        if (!safeMessage.success) {
+          return null;
+        }
+
+        return messagesParser(safeMessage.data, { return_message_types });
+      })
+      .filter((message) => message !== null);
 
     return NextResponse.json(response, { status: 201 });
   }
@@ -114,27 +157,75 @@ export async function POST(request: NextRequest, context: Context) {
       }
     );
 
+    let currentFunctionCall = '';
+
     eventsource.onmessage = (e: MessageEvent) => {
-      if (closed) {
-        return;
-      }
+      try {
+        if (closed) {
+          return;
+        }
 
-      if (e.eventPhase === eventsource.CLOSED) {
-        closed = true;
-        void responseStream.writable.close();
-        void writer.close();
-        return;
-      }
+        if (e.eventPhase === eventsource.CLOSED) {
+          closed = true;
+          void responseStream.writable.close();
+          void writer.close();
+          return;
+        }
 
-      void writer.write(`data: ${e.data}\n\n`);
+        if (return_message_types) {
+          try {
+            const response = JSON.parse(jsonrepair(e.data));
+
+            const agentMessage = AgentMessageSchema.safeParse(response);
+
+            if (agentMessage.success) {
+              let parsedMessage = messagesParser(agentMessage.data, {
+                return_message_types,
+              });
+
+              console.log('a', parsedMessage);
+              if (parsedMessage) {
+                if (return_function_calls) {
+                  if (parsedMessage.message_type === 'function_call') {
+                    if (parsedMessage.function_call.name) {
+                      currentFunctionCall = parsedMessage.function_call.name;
+                    }
+
+                    if (!return_function_calls.includes(currentFunctionCall)) {
+                      parsedMessage = null;
+                    }
+                  } else {
+                    // if not a function call, reset the current function call
+                    currentFunctionCall = '';
+                  }
+                }
+
+                void writer.write(`data: ${JSON.stringify(parsedMessage)}\n\n`);
+              }
+            }
+          } catch (_e) {
+            // do nothing
+          }
+
+          return;
+        }
+
+        void writer.write(`data: ${e.data}\n\n`);
+      } catch (_e) {
+        // do nothing
+      }
     };
 
     eventsource.onerror = () => {
-      if (closed) {
+      try {
+        if (closed) {
+          return;
+        }
+
+        void writer.close();
+      } catch (_e) {
         return;
       }
-
-      void writer.close();
     };
   });
 

@@ -64,6 +64,7 @@
     "drizzle-orm": "^0.33.0",
     "extended-eventsource": "^1.6.4",
     "ioredis": "^5.4.1",
+    "jsonrepair": "^3.8.1",
     "jwt-decode": "^4.0.0",
     "lucide-react": "^0.395.0",
     "mixpanel": "^0.18.0",

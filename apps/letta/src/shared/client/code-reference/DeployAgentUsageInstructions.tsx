@@ -122,7 +122,7 @@ function DeployAgentInstructionsCurl(props: DeployAgentInstructionsCurlProps) {
   -H 'Authorization: Bearer ${ACCESS_TOKEN_PLACEHOLDER}' \\
   -d '{
     "message": "Hello",
-    "stream": true
+    "stream_tokens": true
   }'`}
             />
           </Frame>

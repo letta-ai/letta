@@ -10,7 +10,12 @@ import {
 import { and, desc, eq } from 'drizzle-orm';
 import { copyAgentById, migrateToNewAgent } from '$letta/server';
 import * as crypto from 'node:crypto';
-import { AgentsService } from '@letta-web/letta-agents-api';
+import type { AgentMessage } from '@letta-web/letta-agents-api';
+import {
+  AgentMessageSchema,
+  AgentsService,
+  safeParseFunctionCallArguments,
+} from '@letta-web/letta-agents-api';
 
 type CreateAgentRequestType = ServerInferRequest<
   typeof pdkContracts.deployment.createAgent
@@ -23,8 +28,29 @@ export async function createAgent(
   req: CreateAgentRequestType,
   context: AuthedRequestType
 ): Promise<CreateAgentResponseType> {
-  const { sourceAgentKey } = req.body;
+  const { sourceAgentKey, uniqueIdentifier } = req.body;
   const { organizationId } = context.request;
+
+  if (uniqueIdentifier) {
+    const alreadyExists = await db.query.deployedAgents.findFirst({
+      where: and(
+        eq(deployedAgents.organizationId, organizationId),
+        eq(deployedAgents.key, uniqueIdentifier)
+      ),
+      columns: {
+        id: true,
+      },
+    });
+
+    if (alreadyExists) {
+      return {
+        status: 409,
+        body: {
+          message: 'An agent with the same unique identifier already exists',
+        },
+      };
+    }
+  }
 
   const sourceAgent = await db.query.sourceAgents.findFirst({
     where: and(
@@ -64,11 +90,14 @@ export async function createAgent(
   const nextInternalAgentCountId =
     (lastDeployedAgent?.internalAgentCountId || 0) + 1;
 
+  const key =
+    uniqueIdentifier || `${sourceAgentKey}-${nextInternalAgentCountId}`;
+
   const [deployedAgent] = await db
     .insert(deployedAgents)
     .values({
       projectId: sourceAgent.projectId,
-      key: `${sourceAgentKey}-${nextInternalAgentCountId}`,
+      key,
       agentId: copiedAgent.id,
       internalAgentCountId: nextInternalAgentCountId,
       sourceAgentKey: sourceAgent.key,
@@ -206,6 +235,127 @@ export async function migrateDeployedAgentToNewSourceAgent(
     status: 200,
     body: {
       agentDeploymentId,
+    },
+  };
+}
+
+type GetExistingMessagesFromDeployedAgentRequestType = ServerInferRequest<
+  typeof pdkContracts.deployment.getExistingMessagesFromAgent
+>;
+
+type GetExistingMessagesFromDeployedAgentResponseType = ServerInferResponses<
+  typeof pdkContracts.deployment.getExistingMessagesFromAgent
+>;
+
+export async function getExistingMessagesFromAgent(
+  req: GetExistingMessagesFromDeployedAgentRequestType
+): Promise<GetExistingMessagesFromDeployedAgentResponseType> {
+  const { agentDeploymentId } = req.params;
+  const {
+    before,
+    limit,
+    parse_arguments_from_function_calls,
+    return_message_types,
+  } = req.query;
+
+  const deployedAgent = await db.query.deployedAgents.findFirst({
+    where: eq(deployedAgents.id, agentDeploymentId),
+  });
+
+  if (!deployedAgent) {
+    return {
+      status: 404,
+      body: {
+        message: 'Agent not found',
+      },
+    };
+  }
+
+  let messages = (await AgentsService.listAgentMessages({
+    agentId: deployedAgent.agentId,
+    before,
+    limit,
+  })) as AgentMessage[];
+
+  if (parse_arguments_from_function_calls) {
+    messages = messages.map((message) => {
+      const parsedMessageRes = AgentMessageSchema.safeParse(message);
+
+      if (parsedMessageRes.success) {
+        const parsedMessage = parsedMessageRes.data;
+
+        if (parsedMessage.message_type === 'function_call') {
+          return {
+            ...parsedMessage,
+            arguments: safeParseFunctionCallArguments(parsedMessage),
+          };
+        }
+      }
+
+      return message;
+    }, []);
+  }
+
+  if (return_message_types) {
+    messages = messages.filter((message) =>
+      return_message_types.includes(message.message_type)
+    );
+  }
+
+  return {
+    status: 200,
+    body: {
+      messages,
+    },
+  };
+}
+
+type QueryDeployedAgentsRequestType = ServerInferRequest<
+  typeof pdkContracts.deployment.queryDeployedAgents
+>;
+
+type QueryDeployedAgentsResponseType = ServerInferResponses<
+  typeof pdkContracts.deployment.queryDeployedAgents
+>;
+
+export async function queryDeployedAgents(
+  req: QueryDeployedAgentsRequestType,
+  context: AuthedRequestType
+): Promise<QueryDeployedAgentsResponseType> {
+  const { uniqueIdentifier, sourceAgentKey, limit, offset, projectId } =
+    req.query;
+  const { organizationId } = context.request;
+
+  const queryBuilder = [eq(deployedAgents.organizationId, organizationId)];
+
+  if (projectId) {
+    queryBuilder.push(eq(deployedAgents.projectId, projectId));
+  }
+
+  if (uniqueIdentifier) {
+    queryBuilder.push(eq(deployedAgents.key, uniqueIdentifier));
+  }
+
+  if (sourceAgentKey) {
+    queryBuilder.push(eq(deployedAgents.sourceAgentKey, sourceAgentKey));
+  }
+
+  const deployedAgentsResponse = await db.query.deployedAgents.findMany({
+    where: and(...queryBuilder),
+    limit,
+    offset,
+  });
+
+  return {
+    status: 200,
+    body: {
+      deployedAgents: deployedAgentsResponse.map((deployedAgent) => ({
+        sdkId: deployedAgent.agentId,
+        id: deployedAgent.id,
+        sourceAgentKey: deployedAgent.sourceAgentKey,
+        uniqueIdentifier: deployedAgent.key,
+        createdAt: deployedAgent.createdAt.toISOString(),
+      })),
     },
   };
 }
