@@ -44,7 +44,9 @@ export const OpenAPI: OpenAPIConfig = {
   BASE: process.env.LETTA_AGENTS_ENDPOINT || '',
   CREDENTIALS: 'include',
   ENCODE_PATH: undefined,
-  HEADERS: undefined,
+  HEADERS: {
+    Authorization: `Bearer password`,
+  },
   PASSWORD: undefined,
   TOKEN: undefined,
   USERNAME: undefined,

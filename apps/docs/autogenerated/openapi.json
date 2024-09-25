@@ -6,7 +6,7 @@
   },
   "servers": [
     {
-      "url": "https://letta.com",
+      "url": "https://app.letta.com",
       "description": "Letta Hosted"
     },
     {
@@ -579,7 +579,9 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/Source"
+                }
               }
             }
           },
@@ -996,7 +998,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/memgpt__schemas__message__Message"
+                    "$ref": "#/components/schemas/letta__schemas__message__Message"
                   },
                   "title": "Response List Agent In Context Messages"
                 }
@@ -1441,11 +1443,11 @@
             "required": false,
             "schema": {
               "type": "boolean",
-              "description": "If true, returns Message objects. If false, return MemGPTMessage objects.",
+              "description": "If true, returns Message objects. If false, return LettaMessage objects.",
               "default": false,
               "title": "Msg Object"
             },
-            "description": "If true, returns Message objects. If false, return MemGPTMessage objects."
+            "description": "If true, returns Message objects. If false, return LettaMessage objects."
           }
         ],
         "responses": {
@@ -1458,7 +1460,7 @@
                     {
                       "type": "array",
                       "items": {
-                        "$ref": "#/components/schemas/memgpt__schemas__message__Message"
+                        "$ref": "#/components/schemas/letta__schemas__message__Message"
                       }
                     },
                     {
@@ -1536,7 +1538,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/MemGPTRequest"
+                "$ref": "#/components/schemas/LettaRequest"
               }
             }
           }
@@ -1547,7 +1549,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/MemGPTResponse"
+                  "$ref": "#/components/schemas/LettaResponse"
                 }
               }
             }
@@ -1607,7 +1609,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/memgpt__schemas__message__Message"
+                  "$ref": "#/components/schemas/letta__schemas__message__Message"
                 }
               }
             }
@@ -1923,17 +1925,47 @@
         "summary": "List Jobs",
         "description": "List all jobs.",
         "operationId": "list_jobs",
+        "parameters": [
+          {
+            "name": "source_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only list jobs associated with the source.",
+              "title": "Source Id"
+            },
+            "description": "Only list jobs associated with the source."
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
+                  "type": "array",
                   "items": {
                     "$ref": "#/components/schemas/Job"
                   },
-                  "type": "array",
                   "title": "Response List Jobs"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -2941,11 +2973,7 @@
             "description": "The ids of the messages in the agent's in-context memory."
           },
           "memory": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/Memory"
-              }
-            ],
+            "$ref": "#/components/schemas/Memory",
             "description": "The in-context memory of the agent."
           },
           "tools": {
@@ -2962,19 +2990,11 @@
             "description": "The system prompt used by the agent."
           },
           "llm_config": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/LLMConfig"
-              }
-            ],
+            "$ref": "#/components/schemas/LLMConfig",
             "description": "The LLM configuration used by the agent."
           },
           "embedding_config": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/EmbeddingConfig"
-              }
-            ],
+            "$ref": "#/components/schemas/EmbeddingConfig",
             "description": "The embedding configuration used by the agent."
           }
         },
@@ -3062,7 +3082,7 @@
             "anyOf": [
               {
                 "items": {
-                  "$ref": "#/components/schemas/memgpt__schemas__openai__chat_completion_request__ToolCall"
+                  "$ref": "#/components/schemas/letta__schemas__openai__chat_completion_request__ToolCall"
                 },
                 "type": "array"
               },
@@ -3108,7 +3128,7 @@
           "password": {
             "type": "string",
             "title": "Password",
-            "description": "Admin password provided when starting the MemGPT server"
+            "description": "Admin password provided when starting the Letta server"
           }
         },
         "type": "object",
@@ -3572,7 +3592,7 @@
             "title": "Index"
           },
           "message": {
-            "$ref": "#/components/schemas/memgpt__schemas__openai__chat_completion_response__Message"
+            "$ref": "#/components/schemas/letta__schemas__openai__chat_completion_response__Message"
           },
           "logprobs": {
             "anyOf": [
@@ -3981,7 +4001,7 @@
             "anyOf": [
               {
                 "items": {
-                  "$ref": "#/components/schemas/memgpt__schemas__openai__openai__ToolCall"
+                  "$ref": "#/components/schemas/letta__schemas__openai__openai__ToolCall"
                 },
                 "type": "array"
               },
@@ -4048,7 +4068,7 @@
               }
             ],
             "title": "Assistant Name",
-            "description": "The name of the assistant (i.e. MemGPT preset)"
+            "description": "The name of the assistant (i.e. Letta preset)"
           }
         },
         "type": "object",
@@ -4062,11 +4082,7 @@
             "description": "The unique identifier of the assistant."
           },
           "thread": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/OpenAIThread"
-              }
-            ],
+            "$ref": "#/components/schemas/OpenAIThread",
             "description": "The thread to run."
           },
           "model": {
@@ -4083,7 +4099,7 @@
             "anyOf": [
               {
                 "items": {
-                  "$ref": "#/components/schemas/memgpt__schemas__openai__openai__ToolCall"
+                  "$ref": "#/components/schemas/letta__schemas__openai__openai__ToolCall"
                 },
                 "type": "array"
               },
@@ -4307,7 +4323,7 @@
           "embedding_dim"
         ],
         "title": "EmbeddingConfig",
-        "description": "Embedding model configuration. This object specifies all the information necessary to access an embedding model to usage with MemGPT, except for secret keys.\n\nAttributes:\n    embedding_endpoint_type (str): The endpoint type for the model.\n    embedding_endpoint (str): The endpoint for the model.\n    embedding_model (str): The model for the embedding.\n    embedding_dim (int): The dimension of the embedding.\n    embedding_chunk_size (int): The chunk size of the embedding.\n    azure_endpoint (:obj:`str`, optional): The Azure endpoint for the model (Azure only).\n    azure_version (str): The Azure version for the model (Azure only).\n    azure_deployment (str): The Azure deployment for the model (Azure only)."
+        "description": "Embedding model configuration. This object specifies all the information necessary to access an embedding model to usage with Letta, except for secret keys.\n\nAttributes:\n    embedding_endpoint_type (str): The endpoint type for the model.\n    embedding_endpoint (str): The endpoint for the model.\n    embedding_model (str): The model for the embedding.\n    embedding_dim (int): The dimension of the embedding.\n    embedding_chunk_size (int): The chunk size of the embedding.\n    azure_endpoint (:obj:`str`, optional): The Azure endpoint for the model (Azure only).\n    azure_version (str): The Azure version for the model (Azure only).\n    azure_deployment (str): The Azure deployment for the model (Azure only)."
       },
       "Function": {
         "properties": {
@@ -4387,7 +4403,7 @@
           "function_call": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/memgpt__schemas__memgpt_message__FunctionCall"
+                "$ref": "#/components/schemas/letta__schemas__letta_message__FunctionCall"
               },
               {
                 "$ref": "#/components/schemas/FunctionCallDelta"
@@ -4432,7 +4448,7 @@
         "type": "object",
         "required": ["id", "date", "function_return", "status"],
         "title": "FunctionReturn",
-        "description": "A message representing the return value of a function call (generated by MemGPT executing the requested function).\n\nAttributes:\n    function_return (str): The return value of the function\n    status (Literal[\"success\", \"error\"]): The status of the function call\n    id (str): The ID of the message\n    date (datetime): The date the message was created in ISO format"
+        "description": "A message representing the return value of a function call (generated by Letta executing the requested function).\n\nAttributes:\n    function_return (str): The return value of the function\n    status (Literal[\"success\", \"error\"]): The status of the function call\n    id (str): The ID of the message\n    date (datetime): The date the message was created in ISO format"
       },
       "FunctionSchema": {
         "properties": {
@@ -4536,8 +4552,7 @@
               }
             ],
             "title": "Metadata ",
-            "description": "The metadata of the job.",
-            "default": {}
+            "description": "The metadata of the job."
           },
           "id": {
             "type": "string",
@@ -4547,11 +4562,7 @@
             "examples": [["job-123e4567-e89b-12d3-a456-426614174000"]]
           },
           "status": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/JobStatus"
-              }
-            ],
+            "$ref": "#/components/schemas/JobStatus",
             "description": "The status of the job.",
             "default": "created"
           },
@@ -4635,7 +4646,124 @@
           "context_window"
         ],
         "title": "LLMConfig",
-        "description": "Configuration for a Language Model (LLM) model. This object specifies all the information necessary to access an LLM model to usage with MemGPT, except for secret keys.\n\nAttributes:\n    model (str): The name of the LLM model.\n    model_endpoint_type (str): The endpoint type for the model.\n    model_endpoint (str): The endpoint for the model.\n    model_wrapper (str): The wrapper for the model.\n    context_window (int): The context window size for the model."
+        "description": "Configuration for a Language Model (LLM) model. This object specifies all the information necessary to access an LLM model to usage with Letta, except for secret keys.\n\nAttributes:\n    model (str): The name of the LLM model.\n    model_endpoint_type (str): The endpoint type for the model.\n    model_endpoint (str): The endpoint for the model.\n    model_wrapper (str): The wrapper for the model.\n    context_window (int): The context window size for the model."
+      },
+      "LettaMessage": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "date": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Date"
+          }
+        },
+        "type": "object",
+        "required": ["id", "date"],
+        "title": "LettaMessage",
+        "description": "Base class for simplified Letta message response type. This is intended to be used for developers who want the internal monologue, function calls, and function returns in a simplified format that does not include additional information other than the content and timestamp.\n\nAttributes:\n    id (str): The ID of the message\n    date (datetime): The date the message was created in ISO format"
+      },
+      "LettaRequest": {
+        "properties": {
+          "messages": {
+            "items": {
+              "$ref": "#/components/schemas/MessageCreate"
+            },
+            "type": "array",
+            "title": "Messages",
+            "description": "The messages to be sent to the agent."
+          },
+          "run_async": {
+            "type": "boolean",
+            "title": "Run Async",
+            "description": "Whether to asynchronously send the messages to the agent.",
+            "default": false
+          },
+          "stream_steps": {
+            "type": "boolean",
+            "title": "Stream Steps",
+            "description": "Flag to determine if the response should be streamed. Set to True for streaming agent steps.",
+            "default": false
+          },
+          "stream_tokens": {
+            "type": "boolean",
+            "title": "Stream Tokens",
+            "description": "Flag to determine if individual tokens should be streamed. Set to True for token streaming (requires stream_steps = True).",
+            "default": false
+          },
+          "return_message_object": {
+            "type": "boolean",
+            "title": "Return Message Object",
+            "description": "Set True to return the raw Message object. Set False to return the Message in the format of the Letta API.",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": ["messages"],
+        "title": "LettaRequest"
+      },
+      "LettaResponse": {
+        "properties": {
+          "messages": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/letta__schemas__message__Message"
+                },
+                "type": "array"
+              },
+              {
+                "items": {
+                  "$ref": "#/components/schemas/LettaMessage"
+                },
+                "type": "array"
+              }
+            ],
+            "title": "Messages",
+            "description": "The messages returned by the agent."
+          },
+          "usage": {
+            "$ref": "#/components/schemas/LettaUsageStatistics",
+            "description": "The usage statistics of the agent."
+          }
+        },
+        "type": "object",
+        "required": ["messages", "usage"],
+        "title": "LettaResponse",
+        "description": "Response object from an agent interaction, consisting of the new messages generated by the agent and usage statistics.\nThe type of the returned messages can be either `Message` or `LettaMessage`, depending on what was specified in the request.\n\nAttributes:\n    messages (List[Union[Message, LettaMessage]]): The messages returned by the agent.\n    usage (LettaUsageStatistics): The usage statistics"
+      },
+      "LettaUsageStatistics": {
+        "properties": {
+          "completion_tokens": {
+            "type": "integer",
+            "title": "Completion Tokens",
+            "description": "The number of tokens generated by the agent.",
+            "default": 0
+          },
+          "prompt_tokens": {
+            "type": "integer",
+            "title": "Prompt Tokens",
+            "description": "The number of tokens in the prompt.",
+            "default": 0
+          },
+          "total_tokens": {
+            "type": "integer",
+            "title": "Total Tokens",
+            "description": "The total number of tokens processed by the agent.",
+            "default": 0
+          },
+          "step_count": {
+            "type": "integer",
+            "title": "Step Count",
+            "description": "The number of steps taken by the agent.",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "title": "LettaUsageStatistics",
+        "description": "Usage statistics for the agent interaction.\n\nAttributes:\n    completion_tokens (int): The number of tokens generated by the agent.\n    prompt_tokens (int): The number of tokens in the prompt.\n    total_tokens (int): The total number of tokens processed by the agent.\n    step_count (int): The number of steps taken by the agent."
       },
       "ListMessagesResponse": {
         "properties": {
@@ -4681,127 +4809,6 @@
         "required": ["token", "logprob", "bytes"],
         "title": "LogProbToken"
       },
-      "MemGPTMessage": {
-        "properties": {
-          "id": {
-            "type": "string",
-            "title": "Id"
-          },
-          "date": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Date"
-          }
-        },
-        "type": "object",
-        "required": ["id", "date"],
-        "title": "MemGPTMessage",
-        "description": "Base class for simplified MemGPT message response type. This is intended to be used for developers who want the internal monologue, function calls, and function returns in a simplified format that does not include additional information other than the content and timestamp.\n\nAttributes:\n    id (str): The ID of the message\n    date (datetime): The date the message was created in ISO format"
-      },
-      "MemGPTRequest": {
-        "properties": {
-          "messages": {
-            "items": {
-              "$ref": "#/components/schemas/MessageCreate"
-            },
-            "type": "array",
-            "title": "Messages",
-            "description": "The messages to be sent to the agent."
-          },
-          "run_async": {
-            "type": "boolean",
-            "title": "Run Async",
-            "description": "Whether to asynchronously send the messages to the agent.",
-            "default": false
-          },
-          "stream_steps": {
-            "type": "boolean",
-            "title": "Stream Steps",
-            "description": "Flag to determine if the response should be streamed. Set to True for streaming agent steps.",
-            "default": false
-          },
-          "stream_tokens": {
-            "type": "boolean",
-            "title": "Stream Tokens",
-            "description": "Flag to determine if individual tokens should be streamed. Set to True for token streaming (requires stream_steps = True).",
-            "default": false
-          },
-          "return_message_object": {
-            "type": "boolean",
-            "title": "Return Message Object",
-            "description": "Set True to return the raw Message object. Set False to return the Message in the format of the MemGPT API.",
-            "default": false
-          }
-        },
-        "type": "object",
-        "required": ["messages"],
-        "title": "MemGPTRequest"
-      },
-      "MemGPTResponse": {
-        "properties": {
-          "messages": {
-            "anyOf": [
-              {
-                "items": {
-                  "$ref": "#/components/schemas/memgpt__schemas__message__Message"
-                },
-                "type": "array"
-              },
-              {
-                "items": {
-                  "$ref": "#/components/schemas/MemGPTMessage"
-                },
-                "type": "array"
-              }
-            ],
-            "title": "Messages",
-            "description": "The messages returned by the agent."
-          },
-          "usage": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/MemGPTUsageStatistics"
-              }
-            ],
-            "description": "The usage statistics of the agent."
-          }
-        },
-        "type": "object",
-        "required": ["messages", "usage"],
-        "title": "MemGPTResponse",
-        "description": "Response object from an agent interaction, consisting of the new messages generated by the agent and usage statistics.\nThe type of the returned messages can be either `Message` or `MemGPTMessage`, depending on what was specified in the request.\n\nAttributes:\n    messages (List[Union[Message, MemGPTMessage]]): The messages returned by the agent.\n    usage (MemGPTUsageStatistics): The usage statistics"
-      },
-      "MemGPTUsageStatistics": {
-        "properties": {
-          "completion_tokens": {
-            "type": "integer",
-            "title": "Completion Tokens",
-            "description": "The number of tokens generated by the agent.",
-            "default": 0
-          },
-          "prompt_tokens": {
-            "type": "integer",
-            "title": "Prompt Tokens",
-            "description": "The number of tokens in the prompt.",
-            "default": 0
-          },
-          "total_tokens": {
-            "type": "integer",
-            "title": "Total Tokens",
-            "description": "The total number of tokens processed by the agent.",
-            "default": 0
-          },
-          "step_count": {
-            "type": "integer",
-            "title": "Step Count",
-            "description": "The number of steps taken by the agent.",
-            "default": 0
-          }
-        },
-        "type": "object",
-        "title": "MemGPTUsageStatistics",
-        "description": "Usage statistics for the agent interaction.\n\nAttributes:\n    completion_tokens (int): The number of tokens generated by the agent.\n    prompt_tokens (int): The number of tokens in the prompt.\n    total_tokens (int): The total number of tokens processed by the agent.\n    step_count (int): The number of steps taken by the agent."
-      },
       "Memory": {
         "properties": {
           "memory": {
@@ -4816,7 +4823,7 @@
             "type": "string",
             "title": "Prompt Template",
             "description": "Jinja2 template for compiling memory blocks into a prompt string",
-            "default": "{% for block in memory.values() %}<{{ block.name }} characters=\"{{ block.value|length }}/{{ block.limit }}\">\n{{ block.value }}\n</{{ block.name }}>{% if not loop.last %}\n{% endif %}{% endfor %}"
+            "default": "{% for block in memory.values() %}<{{ block.label }} characters=\"{{ block.value|length }}/{{ block.limit }}\">\n{{ block.value }}\n</{{ block.label }}>{% if not loop.last %}\n{% endif %}{% endfor %}"
           }
         },
         "type": "object",
@@ -4869,11 +4876,7 @@
       "MessageCreate": {
         "properties": {
           "role": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/MessageRole"
-              }
-            ],
+            "$ref": "#/components/schemas/MessageRole",
             "description": "The role of the participant."
           },
           "text": {
@@ -5055,7 +5058,7 @@
         "type": "object",
         "required": ["id", "name", "created_at", "model", "instructions"],
         "title": "OpenAIAssistant",
-        "description": "Represents an OpenAI assistant (equivalent to MemGPT preset)"
+        "description": "Represents an OpenAI assistant (equivalent to Letta preset)"
       },
       "OpenAIError": {
         "properties": {
@@ -5303,7 +5306,7 @@
             "anyOf": [
               {
                 "items": {
-                  "$ref": "#/components/schemas/memgpt__schemas__openai__openai__ToolCall"
+                  "$ref": "#/components/schemas/letta__schemas__openai__openai__ToolCall"
                 },
                 "type": "array"
               },
@@ -5518,7 +5521,7 @@
         "type": "object",
         "required": ["id", "created_at"],
         "title": "OpenAIThread",
-        "description": "Represents an OpenAI thread (equivalent to MemGPT agent)"
+        "description": "Represents an OpenAI thread (equivalent to Letta agent)"
       },
       "OpenAIToolCallsStep": {
         "properties": {
@@ -5529,7 +5532,7 @@
           },
           "tool_calls": {
             "items": {
-              "$ref": "#/components/schemas/memgpt__schemas__openai__openai__ToolCall"
+              "$ref": "#/components/schemas/letta__schemas__openai__openai__ToolCall"
             },
             "type": "array",
             "title": "Tool Calls",
@@ -5742,7 +5745,7 @@
           },
           "submit_tool_outputs": {
             "items": {
-              "$ref": "#/components/schemas/memgpt__schemas__openai__openai__ToolCall"
+              "$ref": "#/components/schemas/letta__schemas__openai__openai__ToolCall"
             },
             "type": "array",
             "title": "Submit Tool Outputs"
@@ -5779,11 +5782,7 @@
             "description": "The description of the source."
           },
           "embedding_config": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/EmbeddingConfig"
-              }
-            ],
+            "$ref": "#/components/schemas/EmbeddingConfig",
             "description": "The embedding configuration used by the source."
           },
           "metadata_": {
@@ -6691,7 +6690,7 @@
             "anyOf": [
               {
                 "items": {
-                  "$ref": "#/components/schemas/memgpt__schemas__openai__chat_completions__ToolCall-Input"
+                  "$ref": "#/components/schemas/letta__schemas__openai__chat_completions__ToolCall-Input"
                 },
                 "type": "array"
               },
@@ -6906,7 +6905,7 @@
         "required": ["loc", "msg", "type"],
         "title": "ValidationError"
       },
-      "memgpt__schemas__memgpt_message__FunctionCall": {
+      "letta__schemas__letta_message__FunctionCall": {
         "properties": {
           "name": {
             "type": "string",
@@ -6921,7 +6920,7 @@
         "required": ["name", "arguments"],
         "title": "FunctionCall"
       },
-      "memgpt__schemas__message__Message": {
+      "letta__schemas__message__Message": {
         "properties": {
           "id": {
             "type": "string",
@@ -6931,11 +6930,7 @@
             "examples": [["message-123e4567-e89b-12d3-a456-426614174000"]]
           },
           "role": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/MessageRole"
-              }
-            ],
+            "$ref": "#/components/schemas/MessageRole",
             "description": "The role of the participant."
           },
           "text": {
@@ -7008,7 +7003,7 @@
             "anyOf": [
               {
                 "items": {
-                  "$ref": "#/components/schemas/memgpt__schemas__openai__chat_completions__ToolCall-Output"
+                  "$ref": "#/components/schemas/letta__schemas__openai__chat_completions__ToolCall-Output"
                 },
                 "type": "array"
               },
@@ -7036,9 +7031,9 @@
         "type": "object",
         "required": ["role"],
         "title": "Message",
-        "description": "MemGPT's internal representation of a message. Includes methods to convert to/from LLM provider formats.\n\nAttributes:\n    id (str): The unique identifier of the message.\n    role (MessageRole): The role of the participant.\n    text (str): The text of the message.\n    user_id (str): The unique identifier of the user.\n    agent_id (str): The unique identifier of the agent.\n    model (str): The model used to make the function call.\n    name (str): The name of the participant.\n    created_at (datetime): The time the message was created.\n    tool_calls (List[ToolCall]): The list of tool calls requested.\n    tool_call_id (str): The id of the tool call."
+        "description": "Letta's internal representation of a message. Includes methods to convert to/from LLM provider formats.\n\nAttributes:\n    id (str): The unique identifier of the message.\n    role (MessageRole): The role of the participant.\n    text (str): The text of the message.\n    user_id (str): The unique identifier of the user.\n    agent_id (str): The unique identifier of the agent.\n    model (str): The model used to make the function call.\n    name (str): The name of the participant.\n    created_at (datetime): The time the message was created.\n    tool_calls (List[ToolCall]): The list of tool calls requested.\n    tool_call_id (str): The id of the tool call."
       },
-      "memgpt__schemas__openai__chat_completion_request__ToolCall": {
+      "letta__schemas__openai__chat_completion_request__ToolCall": {
         "properties": {
           "id": {
             "type": "string",
@@ -7052,14 +7047,14 @@
             "default": "function"
           },
           "function": {
-            "$ref": "#/components/schemas/memgpt__schemas__openai__chat_completion_request__ToolCallFunction"
+            "$ref": "#/components/schemas/letta__schemas__openai__chat_completion_request__ToolCallFunction"
           }
         },
         "type": "object",
         "required": ["id", "function"],
         "title": "ToolCall"
       },
-      "memgpt__schemas__openai__chat_completion_request__ToolCallFunction": {
+      "letta__schemas__openai__chat_completion_request__ToolCallFunction": {
         "properties": {
           "name": {
             "type": "string",
@@ -7074,7 +7069,7 @@
         "required": ["name", "arguments"],
         "title": "ToolCallFunction"
       },
-      "memgpt__schemas__openai__chat_completion_response__FunctionCall": {
+      "letta__schemas__openai__chat_completion_response__FunctionCall": {
         "properties": {
           "arguments": {
             "type": "string",
@@ -7089,7 +7084,7 @@
         "required": ["arguments", "name"],
         "title": "FunctionCall"
       },
-      "memgpt__schemas__openai__chat_completion_response__Message": {
+      "letta__schemas__openai__chat_completion_response__Message": {
         "properties": {
           "content": {
             "anyOf": [
@@ -7106,7 +7101,7 @@
             "anyOf": [
               {
                 "items": {
-                  "$ref": "#/components/schemas/memgpt__schemas__openai__chat_completion_response__ToolCall"
+                  "$ref": "#/components/schemas/letta__schemas__openai__chat_completion_response__ToolCall"
                 },
                 "type": "array"
               },
@@ -7123,7 +7118,7 @@
           "function_call": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/memgpt__schemas__openai__chat_completion_response__FunctionCall"
+                "$ref": "#/components/schemas/letta__schemas__openai__chat_completion_response__FunctionCall"
               },
               {
                 "type": "null"
@@ -7135,7 +7130,7 @@
         "required": ["role"],
         "title": "Message"
       },
-      "memgpt__schemas__openai__chat_completion_response__ToolCall": {
+      "letta__schemas__openai__chat_completion_response__ToolCall": {
         "properties": {
           "id": {
             "type": "string",
@@ -7149,14 +7144,14 @@
             "default": "function"
           },
           "function": {
-            "$ref": "#/components/schemas/memgpt__schemas__openai__chat_completion_response__FunctionCall"
+            "$ref": "#/components/schemas/letta__schemas__openai__chat_completion_response__FunctionCall"
           }
         },
         "type": "object",
         "required": ["id", "function"],
         "title": "ToolCall"
       },
-      "memgpt__schemas__openai__chat_completions__ToolCall-Input": {
+      "letta__schemas__openai__chat_completions__ToolCall-Input": {
         "properties": {
           "id": {
             "type": "string",
@@ -7169,11 +7164,7 @@
             "default": "function"
           },
           "function": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/memgpt__schemas__openai__chat_completions__ToolCallFunction"
-              }
-            ],
+            "$ref": "#/components/schemas/letta__schemas__openai__chat_completions__ToolCallFunction",
             "description": "The arguments and name for the function"
           }
         },
@@ -7181,7 +7172,7 @@
         "required": ["id", "function"],
         "title": "ToolCall"
       },
-      "memgpt__schemas__openai__chat_completions__ToolCall-Output": {
+      "letta__schemas__openai__chat_completions__ToolCall-Output": {
         "properties": {
           "id": {
             "type": "string",
@@ -7194,11 +7185,7 @@
             "default": "function"
           },
           "function": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/ToolCallFunction-Output"
-              }
-            ],
+            "$ref": "#/components/schemas/ToolCallFunction-Output",
             "description": "The arguments and name for the function"
           }
         },
@@ -7206,7 +7193,7 @@
         "required": ["id", "function"],
         "title": "ToolCall"
       },
-      "memgpt__schemas__openai__chat_completions__ToolCallFunction": {
+      "letta__schemas__openai__chat_completions__ToolCallFunction": {
         "properties": {
           "name": {
             "type": "string",
@@ -7223,7 +7210,7 @@
         "required": ["name", "arguments"],
         "title": "ToolCallFunction"
       },
-      "memgpt__schemas__openai__openai__ToolCall": {
+      "letta__schemas__openai__openai__ToolCall": {
         "properties": {
           "id": {
             "type": "string",
@@ -7236,11 +7223,7 @@
             "default": "function"
           },
           "function": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/Function"
-              }
-            ],
+            "$ref": "#/components/schemas/Function",
             "description": "The function call."
           }
         },

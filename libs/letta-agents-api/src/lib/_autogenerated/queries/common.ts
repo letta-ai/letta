@@ -405,10 +405,14 @@ export type JobsServiceListJobsQueryResult<
   TError = unknown
 > = UseQueryResult<TData, TError>;
 export const useJobsServiceListJobsKey = 'JobsServiceListJobs';
-export const UseJobsServiceListJobsKeyFn = (queryKey?: Array<unknown>) => [
-  useJobsServiceListJobsKey,
-  ...(queryKey ?? []),
-];
+export const UseJobsServiceListJobsKeyFn = (
+  {
+    sourceId,
+  }: {
+    sourceId?: string;
+  } = {},
+  queryKey?: Array<unknown>
+) => [useJobsServiceListJobsKey, ...(queryKey ?? [{ sourceId }])];
 export type JobsServiceListActiveJobsDefaultResponse = Awaited<
   ReturnType<typeof JobsService.listActiveJobs>
 >;

@@ -463,12 +463,17 @@ export const useJobsServiceListJobsSuspense = <
   TError = unknown,
   TQueryKey extends Array<unknown> = unknown[]
 >(
+  {
+    sourceId,
+  }: {
+    sourceId?: string;
+  } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
 ) =>
   useSuspenseQuery<TData, TError>({
-    queryKey: Common.UseJobsServiceListJobsKeyFn(queryKey),
-    queryFn: () => JobsService.listJobs() as TData,
+    queryKey: Common.UseJobsServiceListJobsKeyFn({ sourceId }, queryKey),
+    queryFn: () => JobsService.listJobs({ sourceId }) as TData,
     ...options,
   });
 export const useJobsServiceListActiveJobsSuspense = <

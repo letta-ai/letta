@@ -286,10 +286,17 @@ export const prefetchUseBlocksServiceGetMemoryBlock = (
     queryKey: Common.UseBlocksServiceGetMemoryBlockKeyFn({ blockId }),
     queryFn: () => BlocksService.getMemoryBlock({ blockId }),
   });
-export const prefetchUseJobsServiceListJobs = (queryClient: QueryClient) =>
+export const prefetchUseJobsServiceListJobs = (
+  queryClient: QueryClient,
+  {
+    sourceId,
+  }: {
+    sourceId?: string;
+  } = {}
+) =>
   queryClient.prefetchQuery({
-    queryKey: Common.UseJobsServiceListJobsKeyFn(),
-    queryFn: () => JobsService.listJobs(),
+    queryKey: Common.UseJobsServiceListJobsKeyFn({ sourceId }),
+    queryFn: () => JobsService.listJobs({ sourceId }),
   });
 export const prefetchUseJobsServiceListActiveJobs = (
   queryClient: QueryClient

@@ -61,7 +61,7 @@ result.output.info = {
 
 result.output.servers = [
   {
-    url: 'https://letta.com',
+    url: 'https://app.letta.com',
     description: 'Letta Hosted',
   },
   {

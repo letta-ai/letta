@@ -26,7 +26,7 @@ import {
   CreateAgent,
   CreateArchivalMemory,
   CreateBlock,
-  MemGPTRequest,
+  LettaRequest,
   OrganizationCreate,
   SourceCreate,
   SourceUpdate,
@@ -487,12 +487,17 @@ export const useJobsServiceListJobs = <
   TError = unknown,
   TQueryKey extends Array<unknown> = unknown[]
 >(
+  {
+    sourceId,
+  }: {
+    sourceId?: string;
+  } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
 ) =>
   useQuery<TData, TError>({
-    queryKey: Common.UseJobsServiceListJobsKeyFn(queryKey),
-    queryFn: () => JobsService.listJobs() as TData,
+    queryKey: Common.UseJobsServiceListJobsKeyFn({ sourceId }, queryKey),
+    queryFn: () => JobsService.listJobs({ sourceId }) as TData,
     ...options,
   });
 export const useJobsServiceListActiveJobs = <
@@ -884,7 +889,7 @@ export const useAgentsServiceCreateAgentMessage = <
       TError,
       {
         agentId: string;
-        requestBody: MemGPTRequest;
+        requestBody: LettaRequest;
       },
       TContext
     >,
@@ -896,7 +901,7 @@ export const useAgentsServiceCreateAgentMessage = <
     TError,
     {
       agentId: string;
-      requestBody: MemGPTRequest;
+      requestBody: LettaRequest;
     },
     TContext
   >({

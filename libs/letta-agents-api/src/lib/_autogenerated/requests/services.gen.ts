@@ -81,6 +81,7 @@ import type {
   DeleteMemoryBlockResponse,
   GetMemoryBlockData,
   GetMemoryBlockResponse,
+  ListJobsData,
   ListJobsResponse,
   ListActiveJobsResponse,
   GetJobData,
@@ -405,7 +406,7 @@ export class SourcesService {
    * @param data The data for the request.
    * @param data.sourceId
    * @param data.agentId The unique identifier of the agent to detach the source from.
-   * @returns unknown Successful Response
+   * @returns Source Successful Response
    * @throws ApiError
    */
   public static detachAgentFromSource(
@@ -636,7 +637,7 @@ export class AgentsService {
    * Retrieve the messages in the context of a specific agent.
    * @param data The data for the request.
    * @param data.agentId
-   * @returns memgpt__schemas__message__Message Successful Response
+   * @returns letta__schemas__message__Message Successful Response
    * @throws ApiError
    */
   public static listAgentInContextMessages(
@@ -840,7 +841,7 @@ export class AgentsService {
    * @param data.agentId
    * @param data.before Message before which to retrieve the returned messages.
    * @param data.limit Maximum number of messages to retrieve.
-   * @param data.msgObject If true, returns Message objects. If false, return MemGPTMessage objects.
+   * @param data.msgObject If true, returns Message objects. If false, return LettaMessage objects.
    * @returns unknown Successful Response
    * @throws ApiError
    */
@@ -872,7 +873,7 @@ export class AgentsService {
    * @param data The data for the request.
    * @param data.agentId
    * @param data.requestBody
-   * @returns MemGPTResponse Successful Response
+   * @returns LettaResponse Successful Response
    * @throws ApiError
    */
   public static createAgentMessage(
@@ -899,7 +900,7 @@ export class AgentsService {
    * @param data.agentId
    * @param data.messageId
    * @param data.requestBody
-   * @returns memgpt__schemas__message__Message Successful Response
+   * @returns letta__schemas__message__Message Successful Response
    * @throws ApiError
    */
   public static updateAgentMessage(
@@ -1095,13 +1096,23 @@ export class JobsService {
   /**
    * List Jobs
    * List all jobs.
+   * @param data The data for the request.
+   * @param data.sourceId Only list jobs associated with the source.
    * @returns Job Successful Response
    * @throws ApiError
    */
-  public static listJobs(): CancelablePromise<ListJobsResponse> {
+  public static listJobs(
+    data: ListJobsData = {}
+  ): CancelablePromise<ListJobsResponse> {
     return __request(OpenAPI, {
       method: 'GET',
       url: '/v1/jobs/',
+      query: {
+        source_id: data.sourceId,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
     });
   }
 
