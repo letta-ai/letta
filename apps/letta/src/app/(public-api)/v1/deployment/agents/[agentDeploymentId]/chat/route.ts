@@ -135,7 +135,7 @@ export async function POST(request: NextRequest, context: Context) {
   };
 
   setImmediate(async () => {
-    const eventsource = new EventSource(
+    const eventSource = new EventSource(
       `${environment.LETTA_AGENTS_ENDPOINT}/v1/agents/${deployedAgent.agentId}/messages`,
       {
         method: 'POST',
@@ -163,16 +163,21 @@ export async function POST(request: NextRequest, context: Context) {
 
     const functionCallParser = streamedArgumentsParserGenerator();
 
-    eventsource.onmessage = (e: MessageEvent) => {
+    eventSource.onmessage = (e: MessageEvent) => {
       try {
         if (closed) {
           return;
         }
 
-        if (e.eventPhase === eventsource.CLOSED) {
+        if (e.eventPhase === eventSource.CLOSED) {
           closed = true;
           void responseStream.writable.close();
-          void writer.close();
+          eventSource.close();
+          return;
+        }
+
+        if (e.data === '[DONE]') {
+          void writer.write(`data: [DONE]\n\n`);
           return;
         }
 
@@ -246,7 +251,7 @@ export async function POST(request: NextRequest, context: Context) {
       }
     };
 
-    eventsource.onerror = () => {
+    eventSource.onerror = () => {
       try {
         if (closed) {
           return;

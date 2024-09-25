@@ -38,5 +38,11 @@
     },
     "jsx": "react"
   },
+  "ts-node": {
+    "require": ["tsconfig-paths/register"],
+    "compilerOptions": {
+      "module": "commonjs"
+    }
+  },
   "exclude": ["node_modules", "tmp", "*.config.js", "*.config.ts"]
 }
