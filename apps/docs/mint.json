@@ -67,7 +67,6 @@
         "introduction",
         "quickstart",
         "install",
-        "concepts",
         {
           "group": "LLM configuration",
           "icon": "microchip",
@@ -80,6 +79,13 @@
             "models/cohere"
           ]
         }
+      ]
+    },
+    {
+      "group": "Key concepts",
+      "pages": [
+        "concepts",
+        "letta_memgpt"
       ]
     },
     {
