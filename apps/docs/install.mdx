@@ -1,0 +1,100 @@
+---
+title: 'Installation'
+description: 'Install and setup Letta to run the server & ADE'
+icon: "docker"
+iconType: "solid"
+---
+
+## Run with `pip install`
+<iframe
+  width="560"
+  height="315"
+  src="https://www.youtube.com/embed/EOkpFDBNyEw"
+  title="Install Letta with pip"
+  frameborder="0"
+  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+  allowfullscreen
+></iframe>
+
+<Steps>
+  <Step title="Run `pip install`">
+    To install Letta, run:
+    ```
+    pip install letta
+    ```
+  </Step>
+  <Step title="Configure Letta">
+    Run `letta configure` or `letta quickstart` to configure Letta.
+
+    To customize the configuration (e.g. the LLM or embedding model to use), edit the `~/.letta/config` file.
+    ```yaml ~/.letta/config
+    [model]
+    model = gpt-4
+    model_endpoint = https://api.openai.com/v1
+    model_endpoint_type = openai
+    context_window = 8192
+
+    [embedding]
+    embedding_endpoint_type = openai
+    embedding_endpoint = https://api.openai.com/v1
+    embedding_model = text-embedding-ada-002
+    embedding_dim = 1536
+    embedding_chunk_size = 300
+    ```
+  </Step>
+  <Step title="Run the Letta server">
+    To run the Letta server, run:
+    ```
+    letta run [--debug]
+    ```
+    You can now access the ADE (in your browser) and REST API server at `http://localhost:8283`.
+  </Step>
+</Steps>
+
+
+
+## Run with Docker
+<iframe
+  width="560"
+  height="315"
+  src="https://www.youtube.com/embed/CpBfjoaULkI"
+  title="Setup Letta with docker"
+  frameborder="0"
+  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+  allowfullscreen
+></iframe>
+
+<Steps>
+  <Step title="Download the docker container">
+    To run the docker container, first clone the reposity for pull the contianer. 
+    ```
+    git clone https://github.com/cpacker/MemGPT
+    ```
+  </Step>
+  <Step title="Set enviornment variables">
+    Either set the enviornment variables in your shell on in a `.env` file. 
+    ```bash .env
+
+    # To use OpenAI 
+    OPENAI_API_KEY=...  
+
+    # To use with Ollama 
+    LETTA_LLM_ENDPOINT=http://host.docker.internal:11434
+    LETTA_LLM_ENDPOINT_TYPE=ollama
+    LETTA_LLM_MODEL=dolphin2.2-mistral:7b-q6_K
+    LETTA_LLM_CONTEXT_WINDOW=8192
+    LETTA_EMBEDDING_ENDPOINT=http://host.docker.internal:11434
+    LETTA_EMBEDDING_ENDPOINT_TYPE=ollama
+    LETTA_EMBEDDING_MODEL=mxbai-embed-large
+    LETTA_EMBEDDING_DIM=512
+
+    ```
+  </Step>
+  <Step title="View and modify the `compose.yaml` file">
+    You can view and modify the `compose.yaml` file. 
+    ```
+    docker compose up 
+    ```
+    You can now access the ADE (in your browser) and REST API server at `http://localhost:8083`.
+  </Step>
+</Steps>

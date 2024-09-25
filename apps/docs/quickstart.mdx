@@ -102,7 +102,9 @@ INFO:     Uvicorn running on http://localhost:8283 (Press CTRL+C to quit)
 ```
 
 Let's send the same agent we created in the CLI a message (copying the agent ID from the CLI output):
-```sh
+
+<CodeGroup>
+```sh REST API 
 curl --request POST \
      --url http://localhost:8283/v1/agents/agent-09950586-6313-421c-bf7e-2bba03c30826/messages \
      --header 'accept: application/json' \
@@ -120,6 +122,23 @@ curl --request POST \
 }
 '
 ```
+
+```python Python SDK 
+from letta import create_client 
+
+# connect to the server
+client = create_client(base_url="http://localhost:8283")
+
+# send a message to the agent
+response = client.send_message(
+    agent_id="agent-09950586-6313-421c-bf7e-2bba03c30826", 
+    role="user", 
+    message="hey!! how are you?"
+)
+```
+
+</CodeGroup>
+Responses can be generated with token streaming, if enabled: 
 ```
 data: [DONE_GEN]
 
