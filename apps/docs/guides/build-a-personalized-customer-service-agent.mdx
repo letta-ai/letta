@@ -1,114 +1,111 @@
-[//]: # (---)
+---
 
-[//]: # (title: Build a Personalized Customer Support Agent with Letta and React)
+title: Build a Personalized Customer Support Agent with Letta and React
 
-[//]: # (excerpt: Learn how to build a personalized customer service agent using Letta's AI platform.)
+excerpt: Learn how to build a personalized customer service agent using Letta's AI platform.
 
-[//]: # (---)
+---
 
-[//]: # ()
-[//]: # (In this guide, we'll walk you through the process of building a personalized customer service agent using Letta's AI platform.)
 
-[//]: # ()
-[//]: # (## Prerequisites)
+In this guide, we'll walk you through the process of building a personalized customer service agent using Letta's AI platform.
 
-[//]: # (You should have the following prerequisites:)
 
-[//]: # (* A Letta account - sign up [here]&#40;https://app.letta.ai/login&#41;)
+## Prerequisites
 
-[//]: # (* A basic understanding of React and Node.js)
+You should have the following prerequisites:
 
-[//]: # ()
-[//]: # (## Instructions)
+* A Letta account - sign up [here](https://app.letta.ai/login)
 
-[//]: # (### Step 1: Clone the Starter Code)
+* A basic understanding of React and Node.js
 
-[//]: # (Clone the starter code from the Letta Customer Service Agent repository:)
 
-[//]: # ()
-[//]: # (```bash)
+## Instructions
 
-[//]: # (git clone)
+### Step 1: Clone the Starter Code
 
-[//]: # (```)
+Clone the starter code from the Letta Customer Service Agent repository:
 
-[//]: # ()
-[//]: # (### Step 2: Install Dependencies)
 
-[//]: # (Navigate to the project directory and install the dependencies:)
+```bash
 
-[//]: # ()
-[//]: # (```bash)
+git clone
 
-[//]: # (cd letta-customer-service-agent-widget-example-starter)
+```
 
-[//]: # (npm install)
 
-[//]: # (```)
+### Step 2: Install Dependencies
 
-[//]: # ()
-[//]: # (### Step 3: Login to Letta and Create an Agent)
+Navigate to the project directory and install the dependencies:
 
-[//]: # (Login to your Letta account and create a new project.)
 
-[//]: # ()
-[//]: # (Create a new agent.)
+```bash
 
-[//]: # ()
-[//]: # (Pick "Customer Service" from the given reciepes.)
+cd letta-customer-service-agent-widget-example-starter
 
-[//]: # ()
-[//]: # ()
-[//]: # (### Step 4: Customize the Agent's Core Memory)
+npm install
 
-[//]: # (Navigate to "Memory Blocks" > "customer_support_agent" > "Edit" and customize the agent's responses.)
+```
 
-[//]: # ()
-[//]: # (### Step 5: Add Data Sources to the Agent)
 
-[//]: # (Navigate to "Data Sources" and press "Manage". It will open a new tab where you can add data sources to the agent.)
+### Step 3: Login to Letta and Create an Agent
 
-[//]: # ()
-[//]: # (Press "Create Data Source" and add give it the name "FAQs".)
+Login to your Letta account and create a new project.
 
-[//]: # ()
-[//]: # (Press "Upload File" and upload your data. If you do not have any data sources, you can upload this sample data that gives you facts about the planets in the solar system.)
 
-[//]: # ([Dowload Sample Data]&#40;https://sampledata.com&#41;)
+Create a new agent.
 
-[//]: # ()
-[//]: # (Now go back to the ADE and press "Attach Data Source" and attach the "FAQs" data source to the agent.)
 
-[//]: # ()
-[//]: # (### Step 6: Stage your Agent)
+Pick "Customer Service" from the given reciepes.
 
-[//]: # (Now that your agent is primed, you can get it ready to be deployed to the web. Press "Staging Manager" and press "Stage a new Version".)
 
-[//]: # ()
-[//]: # (### Step 7: Deploy your Agent)
 
-[//]: # (Back to our sample codebase, visit the `src/app/chat/bot.ts` file and replace the `stagedAgentKey` with the key of your latest staged agent.)
+### Step 4: Customize the Agent's Core Memory
 
-[//]: # ()
-[//]: # (```typescript)
+Navigate to "Memory Blocks" > "customer_support_agent" > "Edit" and customize the agent's responses.
 
-[//]: # (const stagedAgentKey = 'YOUR-STAGED-AGENT-KEY';)
 
-[//]: # (```)
+### Step 5: Add Data Sources to the Agent
 
-[//]: # ()
-[//]: # (### Step 8: Run the Application)
+Navigate to "Data Sources" and press "Manage". It will open a new tab where you can add data sources to the agent.
 
-[//]: # (Run the application:)
 
-[//]: # ()
-[//]: # (```bash)
+Press "Create Data Source" and add give it the name "FAQs".
 
-[//]: # (npm start)
 
-[//]: # (```)
+Press "Upload File" and upload your data. If you do not have any data sources, you can upload this sample data that gives you facts about the planets in the solar system.
 
-[//]: # ()
-[//]: # (### Step 9: Interact with the Agent)
+[Dowload Sample Data](https://sampledata.com)
 
-[//]: # (Visit `http://localhost:3000` enter your name and start interacting with the agent.)
+
+Now go back to the ADE and press "Attach Data Source" and attach the "FAQs" data source to the agent.
+
+
+### Step 6: Stage your Agent
+
+Now that your agent is primed, you can get it ready to be deployed to the web. Press "Staging Manager" and press "Stage a new Version".
+
+
+### Step 7: Deploy your Agent
+
+Back to our sample codebase, copy the `.env.example` file and rename it to `.env`. Replace the placeholders with your Letta API key and source agent key.
+```
+LETTA_API_KEY=<YOUR_LETTA_API_KEY>
+LETTA_SOURCE_AGENT_KEY=<YOUR_LETTA_SOURCE_AGENT_KEY>
+```
+
+
+### Step 8: Run the Application
+
+Run the application:
+
+
+```bash
+
+npm start
+
+```
+
+
+### Step 9: Interact with the Agent
+
+Visit `http://localhost:3000` enter your name and start interacting with the agent.
