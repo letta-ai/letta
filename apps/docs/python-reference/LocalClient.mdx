@@ -1,4 +1,4 @@
-<a id="memgpt.client.client.LocalClient"></a>
+<a id="letta.client.client.LocalClient"></a>
 
 ## LocalClient
 
@@ -6,7 +6,7 @@
 class LocalClient(AbstractClient)
 ```
 
-A local client for MemGPT, which corresponds to a single user.
+A local client for Letta, which corresponds to a single user.
 
 **Attributes**:
 
@@ -16,7 +16,7 @@ A local client for MemGPT, which corresponds to a single user.
 - `interface` _QueuingInterface_ - The interface for the client.
 - `server` _SyncServer_ - The server for the client.
 
-<a id="memgpt.client.client.LocalClient.__init__"></a>
+<a id="letta.client.client.LocalClient.__init__"></a>
 
 #### \_\_init\_\_
 
@@ -34,7 +34,7 @@ Initializes a new instance of Client class.
 - `user_id` _str_ - The user ID.
 - `debug` _bool_ - Whether to print debug information.
 
-<a id="memgpt.client.client.LocalClient.agent_exists"></a>
+<a id="letta.client.client.LocalClient.agent_exists"></a>
 
 #### agent\_exists
 
@@ -55,7 +55,7 @@ Check if an agent exists
 
 - `exists` _bool_ - `True` if the agent exists, `False` otherwise
 
-<a id="memgpt.client.client.LocalClient.create_agent"></a>
+<a id="letta.client.client.LocalClient.create_agent"></a>
 
 #### create\_agent
 
@@ -95,7 +95,7 @@ Create an agent
 
 - `agent_state` _AgentState_ - State of the created agent
 
-<a id="memgpt.client.client.LocalClient.update_agent"></a>
+<a id="letta.client.client.LocalClient.update_agent"></a>
 
 #### update\_agent
 
@@ -132,7 +132,7 @@ Update an existing agent
 
 - `agent_state` _AgentState_ - State of the updated agent
 
-<a id="memgpt.client.client.LocalClient.rename_agent"></a>
+<a id="letta.client.client.LocalClient.rename_agent"></a>
 
 #### rename\_agent
 
@@ -147,7 +147,7 @@ Rename an agent
 - `agent_id` _str_ - ID of the agent
 - `new_name` _str_ - New name for the agent
 
-<a id="memgpt.client.client.LocalClient.delete_agent"></a>
+<a id="letta.client.client.LocalClient.delete_agent"></a>
 
 #### delete\_agent
 
@@ -161,7 +161,7 @@ Delete an agent
 
 - `agent_id` _str_ - ID of the agent to delete
 
-<a id="memgpt.client.client.LocalClient.get_agent"></a>
+<a id="letta.client.client.LocalClient.get_agent"></a>
 
 #### get\_agent
 
@@ -180,7 +180,7 @@ Get an agent's state by it's ID.
 
 - `agent_state` _AgentState_ - State representation of the agent
 
-<a id="memgpt.client.client.LocalClient.get_agent_id"></a>
+<a id="letta.client.client.LocalClient.get_agent_id"></a>
 
 #### get\_agent\_id
 
@@ -199,7 +199,7 @@ Get the ID of an agent by name (names are unique per user)
 
 - `agent_id` _str_ - ID of the agent
 
-<a id="memgpt.client.client.LocalClient.get_in_context_memory"></a>
+<a id="letta.client.client.LocalClient.get_in_context_memory"></a>
 
 #### get\_in\_context\_memory
 
@@ -218,7 +218,7 @@ Get the in-contxt (i.e. core) memory of an agent
 
 - `memory` _Memory_ - In-context memory of the agent
 
-<a id="memgpt.client.client.LocalClient.update_in_context_memory"></a>
+<a id="letta.client.client.LocalClient.update_in_context_memory"></a>
 
 #### update\_in\_context\_memory
 
@@ -238,7 +238,7 @@ Update the in-context memory of an agent
 
 - `memory` _Memory_ - The updated in-context memory of the agent
 
-<a id="memgpt.client.client.LocalClient.get_archival_memory_summary"></a>
+<a id="letta.client.client.LocalClient.get_archival_memory_summary"></a>
 
 #### get\_archival\_memory\_summary
 
@@ -257,7 +257,7 @@ Get a summary of the archival memory of an agent
 
 - `summary` _ArchivalMemorySummary_ - Summary of the archival memory
 
-<a id="memgpt.client.client.LocalClient.get_recall_memory_summary"></a>
+<a id="letta.client.client.LocalClient.get_recall_memory_summary"></a>
 
 #### get\_recall\_memory\_summary
 
@@ -276,7 +276,7 @@ Get a summary of the recall memory of an agent
 
 - `summary` _RecallMemorySummary_ - Summary of the recall memory
 
-<a id="memgpt.client.client.LocalClient.get_in_context_messages"></a>
+<a id="letta.client.client.LocalClient.get_in_context_messages"></a>
 
 #### get\_in\_context\_messages
 
@@ -295,16 +295,19 @@ Get in-context messages of an agent
 
 - `messages` _List[Message]_ - List of in-context messages
 
-<a id="memgpt.client.client.LocalClient.send_message"></a>
+<a id="letta.client.client.LocalClient.send_message"></a>
 
 #### send\_message
 
 ```python
-def send_message(message: str,
-                 role: str,
-                 agent_id: Optional[str] = None,
-                 agent_name: Optional[str] = None,
-                 stream: Optional[bool] = False) -> MemGPTResponse
+def send_message(
+        message: str,
+        role: str,
+        agent_id: Optional[str] = None,
+        agent_name: Optional[str] = None,
+        stream_steps: bool = False,
+        stream_tokens: bool = False,
+        include_full_message: Optional[bool] = False) -> LettaResponse
 ```
 
 Send a message to an agent
@@ -320,14 +323,17 @@ Send a message to an agent
 
 **Returns**:
 
-- `response` _MemGPTResponse_ - Response from the agent
+- `response` _LettaResponse_ - Response from the agent
 
-<a id="memgpt.client.client.LocalClient.user_message"></a>
+<a id="letta.client.client.LocalClient.user_message"></a>
 
 #### user\_message
 
 ```python
-def user_message(agent_id: str, message: str) -> MemGPTResponse
+def user_message(
+        agent_id: str,
+        message: str,
+        include_full_message: Optional[bool] = False) -> LettaResponse
 ```
 
 Send a message to an agent as a user
@@ -340,14 +346,14 @@ Send a message to an agent as a user
 
 **Returns**:
 
-- `response` _MemGPTResponse_ - Response from the agent
+- `response` _LettaResponse_ - Response from the agent
 
-<a id="memgpt.client.client.LocalClient.run_command"></a>
+<a id="letta.client.client.LocalClient.run_command"></a>
 
 #### run\_command
 
 ```python
-def run_command(agent_id: str, command: str) -> MemGPTResponse
+def run_command(agent_id: str, command: str) -> LettaResponse
 ```
 
 Run a command on the agent
@@ -360,9 +366,9 @@ Run a command on the agent
 
 **Returns**:
 
-- `MemGPTResponse` - The response from the agent
+- `LettaResponse` - The response from the agent
 
-<a id="memgpt.client.client.LocalClient.create_human"></a>
+<a id="letta.client.client.LocalClient.create_human"></a>
 
 #### create\_human
 
@@ -382,7 +388,7 @@ Create a human block template (saved human string to pre-fill `ChatMemory`)
 
 - `human` _Human_ - Human block
 
-<a id="memgpt.client.client.LocalClient.create_persona"></a>
+<a id="letta.client.client.LocalClient.create_persona"></a>
 
 #### create\_persona
 
@@ -402,7 +408,7 @@ Create a persona block template (saved persona string to pre-fill `ChatMemory`)
 
 - `persona` _Persona_ - Persona block
 
-<a id="memgpt.client.client.LocalClient.list_humans"></a>
+<a id="letta.client.client.LocalClient.list_humans"></a>
 
 #### list\_humans
 
@@ -416,7 +422,7 @@ List available human block templates
 
 - `humans` _List[Human]_ - List of human blocks
 
-<a id="memgpt.client.client.LocalClient.list_personas"></a>
+<a id="letta.client.client.LocalClient.list_personas"></a>
 
 #### list\_personas
 
@@ -430,7 +436,7 @@ List available persona block templates
 
 - `personas` _List[Persona]_ - List of persona blocks
 
-<a id="memgpt.client.client.LocalClient.update_human"></a>
+<a id="letta.client.client.LocalClient.update_human"></a>
 
 #### update\_human
 
@@ -450,7 +456,7 @@ Update a human block template
 
 - `human` _Human_ - Updated human block
 
-<a id="memgpt.client.client.LocalClient.update_persona"></a>
+<a id="letta.client.client.LocalClient.update_persona"></a>
 
 #### update\_persona
 
@@ -470,7 +476,7 @@ Update a persona block template
 
 - `persona` _Persona_ - Updated persona block
 
-<a id="memgpt.client.client.LocalClient.get_persona"></a>
+<a id="letta.client.client.LocalClient.get_persona"></a>
 
 #### get\_persona
 
@@ -489,7 +495,7 @@ Get a persona block template
 
 - `persona` _Persona_ - Persona block
 
-<a id="memgpt.client.client.LocalClient.get_human"></a>
+<a id="letta.client.client.LocalClient.get_human"></a>
 
 #### get\_human
 
@@ -508,7 +514,7 @@ Get a human block template
 
 - `human` _Human_ - Human block
 
-<a id="memgpt.client.client.LocalClient.get_persona_id"></a>
+<a id="letta.client.client.LocalClient.get_persona_id"></a>
 
 #### get\_persona\_id
 
@@ -527,7 +533,7 @@ Get the ID of a persona block template
 
 - `id` _str_ - ID of the persona block
 
-<a id="memgpt.client.client.LocalClient.get_human_id"></a>
+<a id="letta.client.client.LocalClient.get_human_id"></a>
 
 #### get\_human\_id
 
@@ -546,7 +552,7 @@ Get the ID of a human block template
 
 - `id` _str_ - ID of the human block
 
-<a id="memgpt.client.client.LocalClient.delete_persona"></a>
+<a id="letta.client.client.LocalClient.delete_persona"></a>
 
 #### delete\_persona
 
@@ -560,7 +566,7 @@ Delete a persona block template
 
 - `id` _str_ - ID of the persona block
 
-<a id="memgpt.client.client.LocalClient.delete_human"></a>
+<a id="letta.client.client.LocalClient.delete_human"></a>
 
 #### delete\_human
 
@@ -574,7 +580,7 @@ Delete a human block template
 
 - `id` _str_ - ID of the human block
 
-<a id="memgpt.client.client.LocalClient.add_tool"></a>
+<a id="letta.client.client.LocalClient.add_tool"></a>
 
 #### add\_tool
 
@@ -594,7 +600,7 @@ Adds a tool directly.
 
   None
 
-<a id="memgpt.client.client.LocalClient.create_tool"></a>
+<a id="letta.client.client.LocalClient.create_tool"></a>
 
 #### create\_tool
 
@@ -619,7 +625,7 @@ Create a tool. This stores the source code of function on the server, so that th
 
 - `tool` _Tool_ - The created tool.
 
-<a id="memgpt.client.client.LocalClient.update_tool"></a>
+<a id="letta.client.client.LocalClient.update_tool"></a>
 
 #### update\_tool
 
@@ -644,7 +650,7 @@ Update a tool with provided parameters (name, func, tags)
 
 - `tool` _Tool_ - Updated tool
 
-<a id="memgpt.client.client.LocalClient.list_tools"></a>
+<a id="letta.client.client.LocalClient.list_tools"></a>
 
 #### list\_tools
 
@@ -658,12 +664,12 @@ List available tools for the user.
 
 - `tools` _List[Tool]_ - List of tools
 
-<a id="memgpt.client.client.LocalClient.get_tool"></a>
+<a id="letta.client.client.LocalClient.get_tool"></a>
 
 #### get\_tool
 
 ```python
-def get_tool(id: str) -> Tool
+def get_tool(id: str) -> Optional[Tool]
 ```
 
 Get a tool give its ID.
@@ -677,7 +683,7 @@ Get a tool give its ID.
 
 - `tool` _Tool_ - Tool
 
-<a id="memgpt.client.client.LocalClient.delete_tool"></a>
+<a id="letta.client.client.LocalClient.delete_tool"></a>
 
 #### delete\_tool
 
@@ -691,7 +697,7 @@ Delete a tool given the ID.
 
 - `id` _str_ - ID of the tool
 
-<a id="memgpt.client.client.LocalClient.get_tool_id"></a>
+<a id="letta.client.client.LocalClient.get_tool_id"></a>
 
 #### get\_tool\_id
 
@@ -710,7 +716,7 @@ Get the ID of a tool
 
 - `id` _str_ - ID of the tool (`None` if not found)
 
-<a id="memgpt.client.client.LocalClient.load_data"></a>
+<a id="letta.client.client.LocalClient.load_data"></a>
 
 #### load\_data
 
@@ -725,7 +731,7 @@ Load data into a source
 - `connector` _DataConnector_ - Data connector
 - `source_name` _str_ - Name of the source
 
-<a id="memgpt.client.client.LocalClient.load_file_into_source"></a>
+<a id="letta.client.client.LocalClient.load_file_into_source"></a>
 
 #### load\_file\_into\_source
 
@@ -746,7 +752,7 @@ Load a file into a source
 
 - `job` _Job_ - Data loading job including job status and metadata
 
-<a id="memgpt.client.client.LocalClient.create_source"></a>
+<a id="letta.client.client.LocalClient.create_source"></a>
 
 #### create\_source
 
@@ -765,7 +771,7 @@ Create a source
 
 - `source` _Source_ - Created source
 
-<a id="memgpt.client.client.LocalClient.delete_source"></a>
+<a id="letta.client.client.LocalClient.delete_source"></a>
 
 #### delete\_source
 
@@ -779,7 +785,7 @@ Delete a source
 
 - `source_id` _str_ - ID of the source
 
-<a id="memgpt.client.client.LocalClient.get_source"></a>
+<a id="letta.client.client.LocalClient.get_source"></a>
 
 #### get\_source
 
@@ -798,7 +804,7 @@ Get a source given the ID.
 
 - `source` _Source_ - Source
 
-<a id="memgpt.client.client.LocalClient.get_source_id"></a>
+<a id="letta.client.client.LocalClient.get_source_id"></a>
 
 #### get\_source\_id
 
@@ -817,7 +823,7 @@ Get the ID of a source
 
 - `source_id` _str_ - ID of the source
 
-<a id="memgpt.client.client.LocalClient.attach_source_to_agent"></a>
+<a id="letta.client.client.LocalClient.attach_source_to_agent"></a>
 
 #### attach\_source\_to\_agent
 
@@ -835,7 +841,29 @@ Attach a source to an agent
 - `source_id` _str_ - ID of the source
 - `source_name` _str_ - Name of the source
 
-<a id="memgpt.client.client.LocalClient.list_sources"></a>
+<a id="letta.client.client.LocalClient.detach_source_from_agent"></a>
+
+#### detach\_source\_from\_agent
+
+```python
+def detach_source_from_agent(agent_id: str,
+                             source_id: Optional[str] = None,
+                             source_name: Optional[str] = None)
+```
+
+Detach a source from an agent by removing all `Passage` objects that were loaded from the source from archival memory.
+
+**Arguments**:
+
+- `agent_id` _str_ - ID of the agent
+- `source_id` _str_ - ID of the source
+- `source_name` _str_ - Name of the source
+
+**Returns**:
+
+- `source` _Source_ - Detached source
+
+<a id="letta.client.client.LocalClient.list_sources"></a>
 
 #### list\_sources
 
@@ -849,7 +877,7 @@ List available sources
 
 - `sources` _List[Source]_ - List of sources
 
-<a id="memgpt.client.client.LocalClient.list_attached_sources"></a>
+<a id="letta.client.client.LocalClient.list_attached_sources"></a>
 
 #### list\_attached\_sources
 
@@ -868,7 +896,7 @@ List sources attached to an agent
 
 - `sources` _List[Source]_ - List of sources
 
-<a id="memgpt.client.client.LocalClient.update_source"></a>
+<a id="letta.client.client.LocalClient.update_source"></a>
 
 #### update\_source
 
@@ -888,7 +916,7 @@ Update a source
 
 - `source` _Source_ - Updated source
 
-<a id="memgpt.client.client.LocalClient.insert_archival_memory"></a>
+<a id="letta.client.client.LocalClient.insert_archival_memory"></a>
 
 #### insert\_archival\_memory
 
@@ -908,7 +936,7 @@ Insert archival memory into an agent
 
 - `passages` _List[Passage]_ - List of inserted passages
 
-<a id="memgpt.client.client.LocalClient.delete_archival_memory"></a>
+<a id="letta.client.client.LocalClient.delete_archival_memory"></a>
 
 #### delete\_archival\_memory
 
@@ -923,7 +951,7 @@ Delete archival memory from an agent
 - `agent_id` _str_ - ID of the agent
 - `memory_id` _str_ - ID of the memory
 
-<a id="memgpt.client.client.LocalClient.get_archival_memory"></a>
+<a id="letta.client.client.LocalClient.get_archival_memory"></a>
 
 #### get\_archival\_memory
 
@@ -948,7 +976,7 @@ Get archival memory from an agent with pagination.
 
 - `passages` _List[Passage]_ - List of passages
 
-<a id="memgpt.client.client.LocalClient.get_messages"></a>
+<a id="letta.client.client.LocalClient.get_messages"></a>
 
 #### get\_messages
 
@@ -973,7 +1001,7 @@ Get messages from an agent with pagination.
 
 - `messages` _List[Message]_ - List of messages
 
-<a id="memgpt.client.client.LocalClient.list_models"></a>
+<a id="letta.client.client.LocalClient.list_models"></a>
 
 #### list\_models
 
@@ -987,7 +1015,7 @@ List available LLM models
 
 - `models` _List[LLMConfig]_ - List of LLM models
 
-<a id="memgpt.client.client.LocalClient.list_embedding_models"></a>
+<a id="letta.client.client.LocalClient.list_embedding_models"></a>
 
 #### list\_embedding\_models
 
@@ -1000,4 +1028,107 @@ List available embedding models
 **Returns**:
 
 - `models` _List[EmbeddingConfig]_ - List of embedding models
+
+<a id="letta.client.client.LocalClient.list_blocks"></a>
+
+#### list\_blocks
+
+```python
+def list_blocks(label: Optional[str] = None,
+                templates_only: Optional[bool] = True) -> List[Block]
+```
+
+List available blocks
+
+**Arguments**:
+
+- `label` _str_ - Label of the block
+- `templates_only` _bool_ - List only templates
+  
+
+**Returns**:
+
+- `blocks` _List[Block]_ - List of blocks
+
+<a id="letta.client.client.LocalClient.create_block"></a>
+
+#### create\_block
+
+```python
+def create_block(name: str, text: str, label: Optional[str] = None) -> Block
+```
+
+Create a block
+
+**Arguments**:
+
+- `label` _str_ - Label of the block
+- `name` _str_ - Name of the block
+- `text` _str_ - Text of the block
+  
+
+**Returns**:
+
+- `block` _Block_ - Created block
+
+<a id="letta.client.client.LocalClient.update_block"></a>
+
+#### update\_block
+
+```python
+def update_block(block_id: str,
+                 name: Optional[str] = None,
+                 text: Optional[str] = None) -> Block
+```
+
+Update a block
+
+**Arguments**:
+
+- `block_id` _str_ - ID of the block
+- `name` _str_ - Name of the block
+- `text` _str_ - Text of the block
+  
+
+**Returns**:
+
+- `block` _Block_ - Updated block
+
+<a id="letta.client.client.LocalClient.get_block"></a>
+
+#### get\_block
+
+```python
+def get_block(block_id: str) -> Block
+```
+
+Get a block
+
+**Arguments**:
+
+- `block_id` _str_ - ID of the block
+  
+
+**Returns**:
+
+- `block` _Block_ - Block
+
+<a id="letta.client.client.LocalClient.delete_block"></a>
+
+#### delete\_block
+
+```python
+def delete_block(id: str) -> Block
+```
+
+Delete a block
+
+**Arguments**:
+
+- `id` _str_ - ID of the block
+  
+
+**Returns**:
+
+- `block` _Block_ - Deleted block
 

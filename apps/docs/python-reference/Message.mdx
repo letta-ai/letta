@@ -1,4 +1,4 @@
-<a id="memgpt.schemas.message.Message"></a>
+<a id="letta.schemas.message.Message"></a>
 
 ## Message
 
@@ -6,7 +6,7 @@
 class Message(BaseMessage)
 ```
 
-MemGPT's internal representation of a message. Includes methods to convert to/from LLM provider formats.
+Letta's internal representation of a message. Includes methods to convert to/from LLM provider formats.
 
 **Attributes**:
 
@@ -21,18 +21,17 @@ MemGPT's internal representation of a message. Includes methods to convert to/fr
 - `tool_calls` _List[ToolCall]_ - The list of tool calls requested.
 - `tool_call_id` _str_ - The id of the tool call.
 
-<a id="memgpt.schemas.message.Message.to_memgpt_message"></a>
+<a id="letta.schemas.message.Message.to_letta_message"></a>
 
-#### to\_memgpt\_message
+#### to\_letta\_message
 
 ```python
-def to_memgpt_message(
-) -> Union[List[MemGPTMessage], List[LegacyMemGPTMessage]]
+def to_letta_message() -> List[LettaMessage]
 ```
 
-Convert message object (in DB format) to the style used by the original MemGPT API
+Convert message object (in DB format) to the style used by the original Letta API
 
-<a id="memgpt.schemas.message.Message.dict_to_message"></a>
+<a id="letta.schemas.message.Message.dict_to_message"></a>
 
 #### dict\_to\_message
 
@@ -49,18 +48,18 @@ def dict_to_message(user_id: str,
 
 Convert a ChatCompletion message object into a Message object (synced to DB)
 
-<a id="memgpt.schemas.message.Message.to_openai_dict"></a>
+<a id="letta.schemas.message.Message.to_openai_dict"></a>
 
 #### to\_openai\_dict
 
 ```python
 def to_openai_dict(max_tool_id_length: int = TOOL_CALL_ID_MAX_LEN,
-                   put_inner_thoughts_in_kwargs: bool = True) -> dict
+                   put_inner_thoughts_in_kwargs: bool = False) -> dict
 ```
 
 Go from Message class to ChatCompletion message object
 
-<a id="memgpt.schemas.message.Message.to_anthropic_dict"></a>
+<a id="letta.schemas.message.Message.to_anthropic_dict"></a>
 
 #### to\_anthropic\_dict
 
@@ -74,7 +73,7 @@ Convert to an Anthropic message dictionary
 
 - `inner_thoughts_xml_tag` _str_ - The XML tag to wrap around inner thoughts
 
-<a id="memgpt.schemas.message.Message.to_google_ai_dict"></a>
+<a id="letta.schemas.message.Message.to_google_ai_dict"></a>
 
 #### to\_google\_ai\_dict
 
@@ -84,7 +83,7 @@ def to_google_ai_dict(put_inner_thoughts_in_kwargs: bool = True) -> dict
 
 Go from Message class to Google AI REST message object
 
-<a id="memgpt.schemas.message.Message.to_cohere_dict"></a>
+<a id="letta.schemas.message.Message.to_cohere_dict"></a>
 
 #### to\_cohere\_dict
 

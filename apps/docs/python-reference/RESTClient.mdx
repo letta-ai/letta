@@ -1,4 +1,4 @@
-<a id="memgpt.client.client.RESTClient"></a>
+<a id="letta.client.client.RESTClient"></a>
 
 ## RESTClient
 
@@ -6,19 +6,22 @@
 class RESTClient(AbstractClient)
 ```
 
-REST client for MemGPT
+REST client for Letta
 
 **Attributes**:
 
 - `base_url` _str_ - Base URL of the REST API
 - `headers` _Dict_ - Headers for the REST API (includes token)
 
-<a id="memgpt.client.client.RESTClient.__init__"></a>
+<a id="letta.client.client.RESTClient.__init__"></a>
 
 #### \_\_init\_\_
 
 ```python
-def __init__(base_url: str, token: str, debug: bool = False)
+def __init__(base_url: str,
+             token: str,
+             api_prefix: str = "v1",
+             debug: bool = False)
 ```
 
 Initializes a new instance of Client class.
@@ -29,7 +32,7 @@ Initializes a new instance of Client class.
 - `user_id` _str_ - The user ID.
 - `debug` _bool_ - Whether to print debug information.
 
-<a id="memgpt.client.client.RESTClient.agent_exists"></a>
+<a id="letta.client.client.RESTClient.agent_exists"></a>
 
 #### agent\_exists
 
@@ -49,7 +52,7 @@ Check if an agent exists
 
 - `exists` _bool_ - `True` if the agent exists, `False` otherwise
 
-<a id="memgpt.client.client.RESTClient.create_agent"></a>
+<a id="letta.client.client.RESTClient.create_agent"></a>
 
 #### create\_agent
 
@@ -89,7 +92,7 @@ Create an agent
 
 - `agent_state` _AgentState_ - State of the created agent
 
-<a id="memgpt.client.client.RESTClient.update_agent"></a>
+<a id="letta.client.client.RESTClient.update_agent"></a>
 
 #### update\_agent
 
@@ -126,7 +129,7 @@ Update an existing agent
 
 - `agent_state` _AgentState_ - State of the updated agent
 
-<a id="memgpt.client.client.RESTClient.rename_agent"></a>
+<a id="letta.client.client.RESTClient.rename_agent"></a>
 
 #### rename\_agent
 
@@ -141,7 +144,7 @@ Rename an agent
 - `agent_id` _str_ - ID of the agent
 - `new_name` _str_ - New name for the agent
 
-<a id="memgpt.client.client.RESTClient.delete_agent"></a>
+<a id="letta.client.client.RESTClient.delete_agent"></a>
 
 #### delete\_agent
 
@@ -155,7 +158,7 @@ Delete an agent
 
 - `agent_id` _str_ - ID of the agent to delete
 
-<a id="memgpt.client.client.RESTClient.get_agent"></a>
+<a id="letta.client.client.RESTClient.get_agent"></a>
 
 #### get\_agent
 
@@ -175,7 +178,7 @@ Get an agent's state by it's ID.
 
 - `agent_state` _AgentState_ - State representation of the agent
 
-<a id="memgpt.client.client.RESTClient.get_agent_id"></a>
+<a id="letta.client.client.RESTClient.get_agent_id"></a>
 
 #### get\_agent\_id
 
@@ -194,7 +197,7 @@ Get the ID of an agent by name (names are unique per user)
 
 - `agent_id` _str_ - ID of the agent
 
-<a id="memgpt.client.client.RESTClient.get_in_context_memory"></a>
+<a id="letta.client.client.RESTClient.get_in_context_memory"></a>
 
 #### get\_in\_context\_memory
 
@@ -213,7 +216,7 @@ Get the in-contxt (i.e. core) memory of an agent
 
 - `memory` _Memory_ - In-context memory of the agent
 
-<a id="memgpt.client.client.RESTClient.update_in_context_memory"></a>
+<a id="letta.client.client.RESTClient.update_in_context_memory"></a>
 
 #### update\_in\_context\_memory
 
@@ -233,7 +236,7 @@ Update the in-context memory of an agent
 
 - `memory` _Memory_ - The updated in-context memory of the agent
 
-<a id="memgpt.client.client.RESTClient.get_archival_memory_summary"></a>
+<a id="letta.client.client.RESTClient.get_archival_memory_summary"></a>
 
 #### get\_archival\_memory\_summary
 
@@ -252,7 +255,7 @@ Get a summary of the archival memory of an agent
 
 - `summary` _ArchivalMemorySummary_ - Summary of the archival memory
 
-<a id="memgpt.client.client.RESTClient.get_recall_memory_summary"></a>
+<a id="letta.client.client.RESTClient.get_recall_memory_summary"></a>
 
 #### get\_recall\_memory\_summary
 
@@ -271,7 +274,7 @@ Get a summary of the recall memory of an agent
 
 - `summary` _RecallMemorySummary_ - Summary of the recall memory
 
-<a id="memgpt.client.client.RESTClient.get_in_context_messages"></a>
+<a id="letta.client.client.RESTClient.get_in_context_messages"></a>
 
 #### get\_in\_context\_messages
 
@@ -290,12 +293,15 @@ Get in-context messages of an agent
 
 - `messages` _List[Message]_ - List of in-context messages
 
-<a id="memgpt.client.client.RESTClient.user_message"></a>
+<a id="letta.client.client.RESTClient.user_message"></a>
 
 #### user\_message
 
 ```python
-def user_message(agent_id: str, message: str) -> MemGPTResponse
+def user_message(
+        agent_id: str,
+        message: str,
+        include_full_message: Optional[bool] = False) -> LettaResponse
 ```
 
 Send a message to an agent as a user
@@ -308,9 +314,9 @@ Send a message to an agent as a user
 
 **Returns**:
 
-- `response` _MemGPTResponse_ - Response from the agent
+- `response` _LettaResponse_ - Response from the agent
 
-<a id="memgpt.client.client.RESTClient.get_archival_memory"></a>
+<a id="letta.client.client.RESTClient.get_archival_memory"></a>
 
 #### get\_archival\_memory
 
@@ -335,7 +341,7 @@ Get archival memory from an agent with pagination.
 
 - `passages` _List[Passage]_ - List of passages
 
-<a id="memgpt.client.client.RESTClient.insert_archival_memory"></a>
+<a id="letta.client.client.RESTClient.insert_archival_memory"></a>
 
 #### insert\_archival\_memory
 
@@ -355,7 +361,7 @@ Insert archival memory into an agent
 
 - `passages` _List[Passage]_ - List of inserted passages
 
-<a id="memgpt.client.client.RESTClient.delete_archival_memory"></a>
+<a id="letta.client.client.RESTClient.delete_archival_memory"></a>
 
 #### delete\_archival\_memory
 
@@ -370,7 +376,7 @@ Delete archival memory from an agent
 - `agent_id` _str_ - ID of the agent
 - `memory_id` _str_ - ID of the memory
 
-<a id="memgpt.client.client.RESTClient.get_messages"></a>
+<a id="letta.client.client.RESTClient.get_messages"></a>
 
 #### get\_messages
 
@@ -395,16 +401,20 @@ Get messages from an agent with pagination.
 
 - `messages` _List[Message]_ - List of messages
 
-<a id="memgpt.client.client.RESTClient.send_message"></a>
+<a id="letta.client.client.RESTClient.send_message"></a>
 
 #### send\_message
 
 ```python
-def send_message(agent_id: str,
-                 message: str,
-                 role: str,
-                 name: Optional[str] = None,
-                 stream: Optional[bool] = False) -> MemGPTResponse
+def send_message(
+    agent_id: str,
+    message: str,
+    role: str,
+    name: Optional[str] = None,
+    stream_steps: bool = False,
+    stream_tokens: bool = False,
+    include_full_message: Optional[bool] = False
+) -> Union[LettaResponse, Generator[LettaStreamingResponse, None, None]]
 ```
 
 Send a message to an agent
@@ -416,13 +426,14 @@ Send a message to an agent
 - `agent_id` _str_ - ID of the agent
 - `name(str)` - Name of the sender
 - `stream` _bool_ - Stream the response (default: `False`)
+- `stream_tokens` _bool_ - Stream tokens (default: `False`)
   
 
 **Returns**:
 
-- `response` _MemGPTResponse_ - Response from the agent
+- `response` _LettaResponse_ - Response from the agent
 
-<a id="memgpt.client.client.RESTClient.list_humans"></a>
+<a id="letta.client.client.RESTClient.list_humans"></a>
 
 #### list\_humans
 
@@ -436,7 +447,7 @@ List available human block templates
 
 - `humans` _List[Human]_ - List of human blocks
 
-<a id="memgpt.client.client.RESTClient.create_human"></a>
+<a id="letta.client.client.RESTClient.create_human"></a>
 
 #### create\_human
 
@@ -456,7 +467,7 @@ Create a human block template (saved human string to pre-fill `ChatMemory`)
 
 - `human` _Human_ - Human block
 
-<a id="memgpt.client.client.RESTClient.update_human"></a>
+<a id="letta.client.client.RESTClient.update_human"></a>
 
 #### update\_human
 
@@ -478,7 +489,7 @@ Update a human block template
 
 - `human` _Human_ - Updated human block
 
-<a id="memgpt.client.client.RESTClient.list_personas"></a>
+<a id="letta.client.client.RESTClient.list_personas"></a>
 
 #### list\_personas
 
@@ -492,7 +503,7 @@ List available persona block templates
 
 - `personas` _List[Persona]_ - List of persona blocks
 
-<a id="memgpt.client.client.RESTClient.create_persona"></a>
+<a id="letta.client.client.RESTClient.create_persona"></a>
 
 #### create\_persona
 
@@ -512,7 +523,7 @@ Create a persona block template (saved persona string to pre-fill `ChatMemory`)
 
 - `persona` _Persona_ - Persona block
 
-<a id="memgpt.client.client.RESTClient.update_persona"></a>
+<a id="letta.client.client.RESTClient.update_persona"></a>
 
 #### update\_persona
 
@@ -534,7 +545,7 @@ Update a persona block template
 
 - `persona` _Persona_ - Updated persona block
 
-<a id="memgpt.client.client.RESTClient.get_persona"></a>
+<a id="letta.client.client.RESTClient.get_persona"></a>
 
 #### get\_persona
 
@@ -553,7 +564,7 @@ Get a persona block template
 
 - `persona` _Persona_ - Persona block
 
-<a id="memgpt.client.client.RESTClient.get_persona_id"></a>
+<a id="letta.client.client.RESTClient.get_persona_id"></a>
 
 #### get\_persona\_id
 
@@ -572,7 +583,7 @@ Get the ID of a persona block template
 
 - `id` _str_ - ID of the persona block
 
-<a id="memgpt.client.client.RESTClient.delete_persona"></a>
+<a id="letta.client.client.RESTClient.delete_persona"></a>
 
 #### delete\_persona
 
@@ -586,7 +597,7 @@ Delete a persona block template
 
 - `id` _str_ - ID of the persona block
 
-<a id="memgpt.client.client.RESTClient.get_human"></a>
+<a id="letta.client.client.RESTClient.get_human"></a>
 
 #### get\_human
 
@@ -605,7 +616,7 @@ Get a human block template
 
 - `human` _Human_ - Human block
 
-<a id="memgpt.client.client.RESTClient.get_human_id"></a>
+<a id="letta.client.client.RESTClient.get_human_id"></a>
 
 #### get\_human\_id
 
@@ -624,7 +635,7 @@ Get the ID of a human block template
 
 - `id` _str_ - ID of the human block
 
-<a id="memgpt.client.client.RESTClient.delete_human"></a>
+<a id="letta.client.client.RESTClient.delete_human"></a>
 
 #### delete\_human
 
@@ -638,7 +649,7 @@ Delete a human block template
 
 - `id` _str_ - ID of the human block
 
-<a id="memgpt.client.client.RESTClient.get_source"></a>
+<a id="letta.client.client.RESTClient.get_source"></a>
 
 #### get\_source
 
@@ -657,7 +668,7 @@ Get a source given the ID.
 
 - `source` _Source_ - Source
 
-<a id="memgpt.client.client.RESTClient.get_source_id"></a>
+<a id="letta.client.client.RESTClient.get_source_id"></a>
 
 #### get\_source\_id
 
@@ -676,7 +687,7 @@ Get the ID of a source
 
 - `source_id` _str_ - ID of the source
 
-<a id="memgpt.client.client.RESTClient.list_sources"></a>
+<a id="letta.client.client.RESTClient.list_sources"></a>
 
 #### list\_sources
 
@@ -690,7 +701,7 @@ List available sources
 
 - `sources` _List[Source]_ - List of sources
 
-<a id="memgpt.client.client.RESTClient.delete_source"></a>
+<a id="letta.client.client.RESTClient.delete_source"></a>
 
 #### delete\_source
 
@@ -704,7 +715,7 @@ Delete a source
 
 - `source_id` _str_ - ID of the source
 
-<a id="memgpt.client.client.RESTClient.load_file_into_source"></a>
+<a id="letta.client.client.RESTClient.load_file_into_source"></a>
 
 #### load\_file\_into\_source
 
@@ -725,7 +736,7 @@ Load a file into a source
 
 - `job` _Job_ - Data loading job including job status and metadata
 
-<a id="memgpt.client.client.RESTClient.create_source"></a>
+<a id="letta.client.client.RESTClient.create_source"></a>
 
 #### create\_source
 
@@ -744,7 +755,7 @@ Create a source
 
 - `source` _Source_ - Created source
 
-<a id="memgpt.client.client.RESTClient.list_attached_sources"></a>
+<a id="letta.client.client.RESTClient.list_attached_sources"></a>
 
 #### list\_attached\_sources
 
@@ -763,7 +774,7 @@ List sources attached to an agent
 
 - `sources` _List[Source]_ - List of sources
 
-<a id="memgpt.client.client.RESTClient.update_source"></a>
+<a id="letta.client.client.RESTClient.update_source"></a>
 
 #### update\_source
 
@@ -783,7 +794,7 @@ Update a source
 
 - `source` _Source_ - Updated source
 
-<a id="memgpt.client.client.RESTClient.attach_source_to_agent"></a>
+<a id="letta.client.client.RESTClient.attach_source_to_agent"></a>
 
 #### attach\_source\_to\_agent
 
@@ -799,7 +810,7 @@ Attach a source to an agent
 - `source_id` _str_ - ID of the source
 - `source_name` _str_ - Name of the source
 
-<a id="memgpt.client.client.RESTClient.detach_source"></a>
+<a id="letta.client.client.RESTClient.detach_source"></a>
 
 #### detach\_source
 
@@ -809,7 +820,7 @@ def detach_source(source_id: str, agent_id: str)
 
 Detach a source from an agent
 
-<a id="memgpt.client.client.RESTClient.list_models"></a>
+<a id="letta.client.client.RESTClient.list_models"></a>
 
 #### list\_models
 
@@ -823,7 +834,7 @@ List available LLM models
 
 - `models` _List[LLMConfig]_ - List of LLM models
 
-<a id="memgpt.client.client.RESTClient.list_embedding_models"></a>
+<a id="letta.client.client.RESTClient.list_embedding_models"></a>
 
 #### list\_embedding\_models
 
@@ -837,7 +848,7 @@ List available embedding models
 
 - `models` _List[EmbeddingConfig]_ - List of embedding models
 
-<a id="memgpt.client.client.RESTClient.get_tool_id"></a>
+<a id="letta.client.client.RESTClient.get_tool_id"></a>
 
 #### get\_tool\_id
 
@@ -856,12 +867,12 @@ Get the ID of a tool
 
 - `id` _str_ - ID of the tool (`None` if not found)
 
-<a id="memgpt.client.client.RESTClient.create_tool"></a>
+<a id="letta.client.client.RESTClient.create_tool"></a>
 
 #### create\_tool
 
 ```python
-def create_tool(func,
+def create_tool(func: Callable,
                 name: Optional[str] = None,
                 update: Optional[bool] = True,
                 tags: Optional[List[str]] = None) -> Tool
@@ -881,14 +892,14 @@ Create a tool. This stores the source code of function on the server, so that th
 
 - `tool` _Tool_ - The created tool.
 
-<a id="memgpt.client.client.RESTClient.update_tool"></a>
+<a id="letta.client.client.RESTClient.update_tool"></a>
 
 #### update\_tool
 
 ```python
 def update_tool(id: str,
                 name: Optional[str] = None,
-                func: Optional[callable] = None,
+                func: Optional[Callable] = None,
                 tags: Optional[List[str]] = None) -> Tool
 ```
 
@@ -906,7 +917,7 @@ Update a tool with provided parameters (name, func, tags)
 
 - `tool` _Tool_ - Updated tool
 
-<a id="memgpt.client.client.RESTClient.list_tools"></a>
+<a id="letta.client.client.RESTClient.list_tools"></a>
 
 #### list\_tools
 
@@ -920,7 +931,7 @@ List available tools for the user.
 
 - `tools` _List[Tool]_ - List of tools
 
-<a id="memgpt.client.client.RESTClient.delete_tool"></a>
+<a id="letta.client.client.RESTClient.delete_tool"></a>
 
 #### delete\_tool
 
@@ -934,15 +945,34 @@ Delete a tool given the ID.
 
 - `id` _str_ - ID of the tool
 
-<a id="memgpt.client.client.RESTClient.get_tool"></a>
+<a id="letta.client.client.RESTClient.get_tool"></a>
 
 #### get\_tool
 
 ```python
-def get_tool(name: str)
+def get_tool(id: str) -> Optional[Tool]
 ```
 
 Get a tool give its ID.
+
+**Arguments**:
+
+- `id` _str_ - ID of the tool
+  
+
+**Returns**:
+
+- `tool` _Tool_ - Tool
+
+<a id="letta.client.client.RESTClient.get_tool_id"></a>
+
+#### get\_tool\_id
+
+```python
+def get_tool_id(name: str) -> Optional[str]
+```
+
+Get a tool ID by its name.
 
 **Arguments**:
 
