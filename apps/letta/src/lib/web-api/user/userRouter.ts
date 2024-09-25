@@ -1,5 +1,5 @@
 import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
-import type { userContract } from '$letta/web-api/contracts/user';
+import type { userContract } from '$letta/web-api/contracts';
 import { getUser } from '$letta/server/auth';
 import type { contracts } from '$letta/web-api/contracts';
 import { users } from '@letta-web/database';

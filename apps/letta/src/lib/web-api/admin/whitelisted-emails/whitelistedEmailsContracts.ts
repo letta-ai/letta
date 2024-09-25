@@ -3,7 +3,7 @@ import { z } from 'zod';
 import {
   type GenericSearch,
   GenericSearchSchema,
-} from '$letta/web-api/contracts/shared';
+} from '$letta/web-api/shared/sharedContracts';
 
 const c = initContract();
 

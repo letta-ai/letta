@@ -1,18 +1,21 @@
-import { userContract, userQueryClientKeys } from './user';
-import { projectsContract, projectsQueryClientKeys } from './projects';
-import { apiKeysContracts, apiKeysQueryKeys } from './api-keys';
+import { userContract, userQueryClientKeys } from './user/userContracts';
+import {
+  projectsContract,
+  projectsQueryClientKeys,
+} from './projects/projectContracts';
+import { apiKeysContracts, apiKeysQueryKeys } from './api-keys/apiKeyContracts';
 import {
   organizationsContract,
   organizationsQueryClientKeys,
-} from './organizations';
+} from './organizations/organizationsContracts';
 import {
   adminWhitelistedEmailsContract,
   adminWhitelistedEmailsQueryKeys,
-} from '$letta/web-api/contracts/admin/whitelisted-emails';
+} from './admin/whitelisted-emails/whitelistedEmailsContracts';
 import {
   featureFlagsContracts,
   featureFlagsQueryClientKeys,
-} from '$letta/web-api/contracts/feature-flags';
+} from './feature-flags/featureFlagsContracts';
 
 export const contracts = {
   user: userContract,
@@ -35,3 +38,10 @@ export const queryClientKeys = {
     whitelistedEmails: adminWhitelistedEmailsQueryKeys,
   },
 };
+
+export type * from './projects/projectContracts';
+export type * from './user/userContracts';
+export type * from './organizations/organizationsContracts';
+export type * from './api-keys/apiKeyContracts';
+export type * from './feature-flags/featureFlagsContracts';
+export type * from './admin/whitelisted-emails/whitelistedEmailsContracts';

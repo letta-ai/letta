@@ -29,7 +29,7 @@ import {
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { webApi, webApiQueryKeys } from '$letta/client';
-import type { APIKeyType } from '$letta/web-api/contracts/api-keys';
+import type { APIKeyType } from '$letta/web-api/contracts';
 import type { ColumnDef } from '@tanstack/react-table';
 import { useQueryClient } from '@tanstack/react-query';
 

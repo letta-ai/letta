@@ -1,6 +1,6 @@
 import { useParams } from 'next/navigation';
 import { webApi, webApiQueryKeys } from '$letta/client';
-import type { PartialProjectType } from '$letta/web-api/contracts/projects';
+import type { PartialProjectType } from '$letta/web-api/contracts';
 
 export function useCurrentProjectId() {
   return useParams<{ projectId: string }>().projectId;

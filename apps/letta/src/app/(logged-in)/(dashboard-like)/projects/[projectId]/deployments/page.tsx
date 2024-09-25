@@ -21,7 +21,7 @@ import {
 import { webApi, webApiQueryKeys } from '$letta/client';
 import { useCurrentProjectId } from '../hooks';
 import { useDebouncedValue } from '@mantine/hooks';
-import type { SourceAgentType } from '$letta/web-api/contracts/projects';
+import type { SourceAgentType } from '$letta/web-api/contracts';
 import { DeployAgentUsageInstructions } from '$letta/client/code-reference/DeployAgentUsageInstructions';
 import { FilterIcon, SearchIcon } from 'lucide-react';
 

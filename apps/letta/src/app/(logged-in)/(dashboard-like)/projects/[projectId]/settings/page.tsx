@@ -20,7 +20,7 @@ import { useCurrentProject, useCurrentProjectId } from '../hooks';
 import { webApi, webApiQueryKeys } from '$letta/client';
 import { useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import type { GetProjectByIdContractSuccessResponse } from '$letta/web-api/contracts/projects';
+import type { GetProjectByIdContractSuccessResponse } from '$letta/web-api/contracts';
 
 const DeleteProjectSchema = z.object({
   name: z.string(),

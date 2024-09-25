@@ -28,7 +28,7 @@ import { webApi, webApiQueryKeys } from '$letta/client';
 import { useCurrentProjectId } from '../hooks';
 import { usePathname, useSearchParams } from 'next/navigation';
 import type { ColumnDef } from '@tanstack/react-table';
-import type { DeployedAgentType } from '$letta/web-api/contracts/projects';
+import type { DeployedAgentType } from '$letta/web-api/contracts';
 import { useDebouncedValue } from '@mantine/hooks';
 import { useAgentsServiceGetAgent } from '@letta-web/letta-agents-api';
 import { useRouter } from 'next/navigation';

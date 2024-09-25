@@ -13,7 +13,7 @@ import { db, testingAgents } from '@letta-web/database';
 import { eq } from 'drizzle-orm';
 import { redirect } from 'next/navigation';
 import { webApiQueryKeys } from '$letta/client';
-import { getProjectById } from '$letta/web-api/router/projects';
+import { getProjectById } from '$letta/web-api/router';
 
 interface AgentsAgentPageProps {
   params: {

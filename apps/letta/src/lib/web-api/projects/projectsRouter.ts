@@ -1,5 +1,5 @@
 import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
-import type { projectsContract } from '$letta/web-api/contracts/projects';
+import type { projectsContract } from '$letta/web-api/contracts';
 import {
   db,
   deployedAgents,

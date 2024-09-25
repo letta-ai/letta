@@ -1,8 +1,8 @@
 import type { ServerInferResponses } from '@ts-rest/core';
 import { initContract } from '@ts-rest/core';
 import { z } from 'zod';
-import type { GenericSearch } from '$letta/web-api/contracts/shared';
-import { GenericSearchSchema } from '$letta/web-api/contracts/shared';
+import type { GenericSearch } from '$letta/web-api/shared/sharedContracts';
+import { GenericSearchSchema } from '$letta/web-api/shared/sharedContracts';
 import { AgentTemplateVariant } from '$letta/types';
 
 const c = initContract();
