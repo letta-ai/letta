@@ -3,8 +3,8 @@ import { NextResponse } from 'next/server';
 import type {
   ChatWithAgentBodySchemaType,
   ChatWithAgentParamsSchema,
-} from '$letta/pdk/contracts/deployment';
-import { ChatWithAgentBodySchema } from '$letta/pdk/contracts/deployment';
+} from '$letta/sdk/deployment/deploymentContracts';
+import { ChatWithAgentBodySchema } from '$letta/sdk/deployment/deploymentContracts';
 import type { z } from 'zod';
 import { verifyAndReturnAPIKeyDetails } from '$letta/server/auth';
 import { db, deployedAgents } from '@letta-web/database';

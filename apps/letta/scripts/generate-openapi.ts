@@ -1,12 +1,12 @@
 import { generateOpenApi } from '@ts-rest/open-api';
-import { pdkContracts } from '$letta/pdk/contracts';
+import { sdkContracts } from '$letta/sdk/contracts';
 import fs from 'fs';
 import path from 'path';
-import { DEPLOYMENT_BASE_URL } from '$letta/pdk/shared';
+import { DEPLOYMENT_BASE_URL } from '$letta/sdk/shared';
 import { isErrorResult, merge } from 'openapi-merge';
 
 const openApiDoc = generateOpenApi(
-  pdkContracts,
+  sdkContracts,
   {
     info: {
       title: 'Letta API',

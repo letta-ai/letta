@@ -4,17 +4,17 @@ import {
   TsRestHttpError,
   TsRestResponse,
 } from '@ts-rest/serverless/next';
-import { pdkContracts } from '$letta/pdk/contracts';
-import { pdkRouter } from '$letta/pdk/router';
+import { sdkContracts } from '$letta/sdk/contracts';
+import { sdkRouter } from '$letta/sdk/router';
 import { verifyAndReturnAPIKeyDetails } from '$letta/server/auth';
-import { DEPLOYMENT_BASE_URL } from '$letta/pdk/shared';
+import { DEPLOYMENT_BASE_URL } from '$letta/sdk/shared';
 import * as Sentry from '@sentry/node';
 
 function isErrorResponse(error: unknown): error is TsRestHttpError {
   return error instanceof TsRestHttpError;
 }
 
-const handler = createNextHandler(pdkContracts, pdkRouter, {
+const handler = createNextHandler(sdkContracts, sdkRouter, {
   basePath: DEPLOYMENT_BASE_URL,
   jsonQuery: true,
   errorHandler: (error) => {

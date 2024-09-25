@@ -1,6 +1,6 @@
 import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
-import type { pdkContracts } from '../../contracts';
-import type { AuthedRequestType } from '../../shared';
+import type { sdkContracts } from '../contracts';
+import type { AuthedRequestType } from '../shared';
 import {
   db,
   deployedAgents,
@@ -18,10 +18,10 @@ import {
 } from '@letta-web/letta-agents-api';
 
 type CreateAgentRequestType = ServerInferRequest<
-  typeof pdkContracts.deployment.createAgent
+  typeof sdkContracts.deployment.createAgent
 >;
 type CreateAgentResponseType = ServerInferResponses<
-  typeof pdkContracts.deployment.createAgent
+  typeof sdkContracts.deployment.createAgent
 >;
 
 export async function createAgent(
@@ -123,7 +123,7 @@ export async function createAgent(
 }
 
 type ChatWithAgentResponseType = ServerInferResponses<
-  typeof pdkContracts.deployment.chatWithAgent
+  typeof sdkContracts.deployment.chatWithAgent
 >;
 
 export async function chatWithAgent(): Promise<ChatWithAgentResponseType> {
@@ -138,11 +138,11 @@ export async function chatWithAgent(): Promise<ChatWithAgentResponseType> {
 }
 
 type GetDeployedAgentSDKIdRequestType = ServerInferRequest<
-  typeof pdkContracts.deployment.getDeployedAgentSdkId
+  typeof sdkContracts.deployment.getDeployedAgentSdkId
 >;
 
 type GetDeployedAgentSDKIdResponseType = ServerInferResponses<
-  typeof pdkContracts.deployment.getDeployedAgentSdkId
+  typeof sdkContracts.deployment.getDeployedAgentSdkId
 >;
 
 export async function getDeployedAgentSdkId(
@@ -172,11 +172,11 @@ export async function getDeployedAgentSdkId(
 }
 
 type MigrateDeployedAgentToNewSourceAgentType = ServerInferRequest<
-  typeof pdkContracts.deployment.migrateDeployedAgentToNewSourceAgent
+  typeof sdkContracts.deployment.migrateDeployedAgentToNewSourceAgent
 >;
 
 type MigrateDeployedAgentToNewSourceAgentResponseType = ServerInferResponses<
-  typeof pdkContracts.deployment.migrateDeployedAgentToNewSourceAgent
+  typeof sdkContracts.deployment.migrateDeployedAgentToNewSourceAgent
 >;
 
 export async function migrateDeployedAgentToNewSourceAgent(
@@ -240,11 +240,11 @@ export async function migrateDeployedAgentToNewSourceAgent(
 }
 
 type GetExistingMessagesFromDeployedAgentRequestType = ServerInferRequest<
-  typeof pdkContracts.deployment.getExistingMessagesFromAgent
+  typeof sdkContracts.deployment.getExistingMessagesFromAgent
 >;
 
 type GetExistingMessagesFromDeployedAgentResponseType = ServerInferResponses<
-  typeof pdkContracts.deployment.getExistingMessagesFromAgent
+  typeof sdkContracts.deployment.getExistingMessagesFromAgent
 >;
 
 export async function getExistingMessagesFromAgent(
@@ -343,11 +343,11 @@ export async function getExistingMessagesFromAgent(
 }
 
 type QueryDeployedAgentsRequestType = ServerInferRequest<
-  typeof pdkContracts.deployment.queryDeployedAgents
+  typeof sdkContracts.deployment.queryDeployedAgents
 >;
 
 type QueryDeployedAgentsResponseType = ServerInferResponses<
-  typeof pdkContracts.deployment.queryDeployedAgents
+  typeof sdkContracts.deployment.queryDeployedAgents
 >;
 
 export async function queryDeployedAgents(

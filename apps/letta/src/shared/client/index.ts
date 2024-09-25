@@ -1,8 +1,8 @@
 import { initTsrReactQuery } from '@ts-rest/react-query/v5';
 import { contracts, queryClientKeys } from '$letta/web-api/contracts';
-import { pdkContracts } from '$letta/pdk/contracts';
+import { sdkContracts } from '$letta/sdk/contracts';
 
-export const pdkApi = initTsrReactQuery(pdkContracts, {
+export const webOriginSDKApi = initTsrReactQuery(sdkContracts, {
   baseUrl: '/v1',
 });
 

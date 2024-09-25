@@ -10,8 +10,8 @@ import {
 } from '@letta-web/component-library';
 import React, { useEffect, useMemo, useState } from 'react';
 import { environment } from '@letta-web/environmental-variables';
-import { pdkContracts } from '$letta/pdk/contracts';
-import { DEPLOYMENT_BASE_URL } from '$letta/pdk/shared';
+import { sdkContracts } from '$letta/sdk/contracts';
+import { DEPLOYMENT_BASE_URL } from '$letta/sdk/shared';
 import {
   ACCESS_TOKEN_PLACEHOLDER,
   CodeWithAPIKeyInjection,
@@ -74,7 +74,7 @@ function DeployAgentInstructionsCurl(props: DeployAgentInstructionsCurlProps) {
           testId="deploy-agent-instructions"
           toolbarPosition="bottom"
           language="bash"
-          code={`curl -X POST ${environment.NEXT_PUBLIC_CURRENT_HOST}${DEPLOYMENT_BASE_URL}${pdkContracts.deployment.createAgent.path} \\
+          code={`curl -X POST ${environment.NEXT_PUBLIC_CURRENT_HOST}${DEPLOYMENT_BASE_URL}${sdkContracts.deployment.createAgent.path} \\
   -H 'Content-Type: application/json' \\
   -H 'Authorization: Bearer ${ACCESS_TOKEN_PLACEHOLDER}' \\
   -d '{
@@ -114,7 +114,7 @@ function DeployAgentInstructionsCurl(props: DeployAgentInstructionsCurlProps) {
               language="bash"
               code={`curl -N -X POST ${
                 environment.NEXT_PUBLIC_CURRENT_HOST
-              }${DEPLOYMENT_BASE_URL}${pdkContracts.deployment.chatWithAgent.path.replace(
+              }${DEPLOYMENT_BASE_URL}${sdkContracts.deployment.chatWithAgent.path.replace(
                 ':agentDeploymentId',
                 deploymentAgentToUse
               )} \\
