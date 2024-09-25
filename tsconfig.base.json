@@ -16,7 +16,7 @@
     "baseUrl": ".",
     "strictNullChecks": true,
     "paths": {
-      "$letta/*": ["apps/letta/src/shared/*"],
+      "$letta/*": ["apps/letta/src/lib/*"],
       "@letta-web/analytics": ["libs/analytics/src/events.ts"],
       "@letta-web/analytics/client": ["libs/analytics/src/client/index.tsx"],
       "@letta-web/analytics/server": ["libs/analytics/src/server/index.ts"],
