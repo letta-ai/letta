@@ -1,8 +1,8 @@
 import { generateOpenApi } from '@ts-rest/open-api';
-import { pdkContracts } from '../src/shared/pdk/contracts';
+import { pdkContracts } from '$letta/pdk/contracts';
 import fs from 'fs';
 import path from 'path';
-import { DEPLOYMENT_BASE_URL } from '../src/shared/pdk/shared';
+import { DEPLOYMENT_BASE_URL } from '$letta/pdk/shared';
 import { isErrorResult, merge } from 'openapi-merge';
 
 const openApiDoc = generateOpenApi(

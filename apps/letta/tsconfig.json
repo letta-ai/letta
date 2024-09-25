@@ -19,11 +19,6 @@
     ],
     "types": ["jest", "node"]
   },
-  "ts-node": {
-    "compilerOptions": {
-      "module": "commonjs"
-    }
-  },
   "include": [
     "**/*.ts",
     "**/*.tsx",

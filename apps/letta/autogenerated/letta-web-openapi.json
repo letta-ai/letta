@@ -21,7 +21,7 @@
                   "sourceAgentKey": {
                     "type": "string"
                   },
-                  "name": {
+                  "uniqueIdentifier": {
                     "type": "string"
                   }
                 },
@@ -63,6 +63,112 @@
                 }
               }
             }
+          },
+          "409": {
+            "description": "409",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "enum": [
+                        "An agent with the same unique identifier already exists"
+                      ]
+                    }
+                  },
+                  "required": ["message"]
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "summary": "Query deployed agents",
+        "tags": ["deployment"],
+        "parameters": [
+          {
+            "name": "uniqueIdentifier",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "projectId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sourceAgentKey",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "operationId": "deployment.queryDeployedAgents",
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "deployedAgents": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "sdkId": {
+                            "type": "string"
+                          },
+                          "uniqueIdentifier": {
+                            "type": "string"
+                          },
+                          "sourceAgentKey": {
+                            "type": "string"
+                          },
+                          "createdAt": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "sdkId",
+                          "uniqueIdentifier",
+                          "sourceAgentKey",
+                          "createdAt"
+                        ]
+                      }
+                    }
+                  },
+                  "required": ["deployedAgents"]
+                }
+              }
+            }
           }
         }
       }
@@ -92,7 +198,29 @@
                   "message": {
                     "type": "string"
                   },
-                  "stream": {
+                  "stream_tokens": {
+                    "type": "boolean"
+                  },
+                  "return_message_types": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "enum": [
+                        "function_return",
+                        "function_call",
+                        "internal_monologue",
+                        "user_message",
+                        "system_message"
+                      ]
+                    }
+                  },
+                  "return_function_calls": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "format_function_call_arguments": {
                     "type": "boolean"
                   }
                 },
@@ -112,16 +240,159 @@
                     "messages": {
                       "type": "array",
                       "items": {
-                        "type": "object",
-                        "properties": {
-                          "role": {
-                            "type": "string"
-                          },
-                          "text": {
-                            "type": "string"
-                          }
+                        "discriminator": {
+                          "propertyName": "message_type"
                         },
-                        "required": ["role", "text"]
+                        "oneOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "message_type": {
+                                "type": "string",
+                                "enum": ["function_return"]
+                              },
+                              "function_return": {
+                                "type": "string"
+                              },
+                              "status": {
+                                "type": "string"
+                              },
+                              "date": {
+                                "type": "string"
+                              },
+                              "id": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "message_type",
+                              "function_return",
+                              "status",
+                              "date",
+                              "id"
+                            ]
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "message_type": {
+                                "type": "string",
+                                "enum": ["function_call"]
+                              },
+                              "function_call": {
+                                "type": "object",
+                                "properties": {
+                                  "message_type": {
+                                    "type": "string",
+                                    "enum": ["function_call"]
+                                  },
+                                  "type": {
+                                    "type": "string",
+                                    "enum": ["function_call"]
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "arguments": {
+                                    "type": "string"
+                                  },
+                                  "formattedArguments": {
+                                    "type": "object",
+                                    "additionalProperties": {}
+                                  }
+                                }
+                              },
+                              "date": {
+                                "type": "string"
+                              },
+                              "id": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "message_type",
+                              "function_call",
+                              "date",
+                              "id"
+                            ]
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "message_type": {
+                                "type": "string",
+                                "enum": ["internal_monologue"]
+                              },
+                              "internal_monologue": {
+                                "type": "string"
+                              },
+                              "date": {
+                                "type": "string"
+                              },
+                              "id": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "message_type",
+                              "internal_monologue",
+                              "date",
+                              "id"
+                            ]
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "message_type": {
+                                "type": "string",
+                                "enum": ["user_message"]
+                              },
+                              "formattedMessage": {
+                                "type": "object",
+                                "additionalProperties": {}
+                              },
+                              "message": {
+                                "type": "string"
+                              },
+                              "date": {
+                                "type": "string"
+                              },
+                              "id": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "message_type",
+                              "message",
+                              "date",
+                              "id"
+                            ]
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "message_type": {
+                                "type": "string",
+                                "enum": ["system_message"]
+                              },
+                              "message": {
+                                "type": "string"
+                              },
+                              "date": {
+                                "type": "string"
+                              },
+                              "id": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "message_type",
+                              "message",
+                              "date",
+                              "id"
+                            ]
+                          }
+                        ]
                       }
                     }
                   },
@@ -267,6 +538,268 @@
                         "Source agent not found",
                         "Deployed Agent not found"
                       ]
+                    }
+                  },
+                  "required": ["message"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/deployment/agents/{agentDeploymentId}/messages": {
+      "get": {
+        "summary": "Get existing messages from deployed agent",
+        "tags": ["deployment"],
+        "parameters": [
+          {
+            "name": "agentDeploymentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "return_message_types",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "function_return",
+                  "function_call",
+                  "internal_monologue",
+                  "user_message",
+                  "system_message"
+                ]
+              }
+            }
+          },
+          {
+            "name": "return_function_calls",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "name": "format_function_call_arguments",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "format_user_message_arguments",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "operationId": "deployment.getExistingMessagesFromAgent",
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "messages": {
+                      "type": "array",
+                      "items": {
+                        "discriminator": {
+                          "propertyName": "message_type"
+                        },
+                        "oneOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "message_type": {
+                                "type": "string",
+                                "enum": ["function_return"]
+                              },
+                              "function_return": {
+                                "type": "string"
+                              },
+                              "status": {
+                                "type": "string"
+                              },
+                              "date": {
+                                "type": "string"
+                              },
+                              "id": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "message_type",
+                              "function_return",
+                              "status",
+                              "date",
+                              "id"
+                            ]
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "message_type": {
+                                "type": "string",
+                                "enum": ["function_call"]
+                              },
+                              "function_call": {
+                                "type": "object",
+                                "properties": {
+                                  "message_type": {
+                                    "type": "string",
+                                    "enum": ["function_call"]
+                                  },
+                                  "type": {
+                                    "type": "string",
+                                    "enum": ["function_call"]
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "arguments": {
+                                    "type": "string"
+                                  },
+                                  "formattedArguments": {
+                                    "type": "object",
+                                    "additionalProperties": {}
+                                  }
+                                }
+                              },
+                              "date": {
+                                "type": "string"
+                              },
+                              "id": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "message_type",
+                              "function_call",
+                              "date",
+                              "id"
+                            ]
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "message_type": {
+                                "type": "string",
+                                "enum": ["internal_monologue"]
+                              },
+                              "internal_monologue": {
+                                "type": "string"
+                              },
+                              "date": {
+                                "type": "string"
+                              },
+                              "id": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "message_type",
+                              "internal_monologue",
+                              "date",
+                              "id"
+                            ]
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "message_type": {
+                                "type": "string",
+                                "enum": ["user_message"]
+                              },
+                              "formattedMessage": {
+                                "type": "object",
+                                "additionalProperties": {}
+                              },
+                              "message": {
+                                "type": "string"
+                              },
+                              "date": {
+                                "type": "string"
+                              },
+                              "id": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "message_type",
+                              "message",
+                              "date",
+                              "id"
+                            ]
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "message_type": {
+                                "type": "string",
+                                "enum": ["system_message"]
+                              },
+                              "message": {
+                                "type": "string"
+                              },
+                              "date": {
+                                "type": "string"
+                              },
+                              "id": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "message_type",
+                              "message",
+                              "date",
+                              "id"
+                            ]
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  "required": ["messages"]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "404",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "enum": ["Agent not found"]
                     }
                   },
                   "required": ["message"]
