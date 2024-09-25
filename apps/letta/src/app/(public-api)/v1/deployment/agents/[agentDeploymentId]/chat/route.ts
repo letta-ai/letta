@@ -15,6 +15,7 @@ import type { AgentMessage } from '@letta-web/letta-agents-api';
 import { AgentMessageSchema } from '@letta-web/letta-agents-api';
 import { AgentsService } from '@letta-web/letta-agents-api';
 import { jsonrepair } from 'jsonrepair';
+import { validate } from 'uuid';
 import { streamedArgumentsParserGenerator } from '$letta/server';
 
 export const runtime = 'nodejs';
@@ -77,6 +78,10 @@ export async function POST(request: NextRequest, context: Context) {
       'You seem to have left :agentDeploymentId in the url path instead of specifying an agent Id.',
       { status: 400 }
     );
+  }
+
+  if (!validate(agentDeploymentId)) {
+    return new Response('Invalid agentDeploymentId', { status: 400 });
   }
 
   const deployedAgent = await db.query.deployedAgents.findFirst({

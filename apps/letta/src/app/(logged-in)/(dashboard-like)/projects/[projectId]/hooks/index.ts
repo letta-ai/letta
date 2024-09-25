@@ -1,11 +1,12 @@
 import { useParams } from 'next/navigation';
 import { webApi, webApiQueryKeys } from '$letta/client';
+import type { PartialProjectType } from '$letta/web-api/contracts/projects';
 
 export function useCurrentProjectId() {
   return useParams<{ projectId: string }>().projectId;
 }
 
-export function useCurrentProject() {
+export function useCurrentProject(): PartialProjectType {
   const projectId = useCurrentProjectId();
 
   const { data } = webApi.projects.getProjectById.useQuery({
@@ -18,7 +19,10 @@ export function useCurrentProject() {
   });
 
   if (!data) {
-    throw new Error('Redirecting to projects');
+    return {
+      id: '',
+      name: '',
+    };
   }
 
   return data.body;

@@ -1,4 +1,3 @@
-'use server';
 import React from 'react';
 import { webApiQueryKeys } from '$letta/client';
 import {
