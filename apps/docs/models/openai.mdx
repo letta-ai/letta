@@ -1,0 +1,86 @@
+---
+title: 'OpenAI'
+---
+ 
+The fastest way to get started with the OpenAI backend is to use the `quickstart` command.
+```
+letta quickstart --backend openai
+```
+For more detailed configuration, see the instructions below.
+
+## Configuring with OpenAI
+<Accordion icon="square-terminal" title="CLI (pypi only)">
+To configure your LLM model, modify the `[model]` section of your `~/.letta/config` file: 
+```yaml ~/.letta/config
+[model]
+model_endpoint_type = openai 
+model = gpt-4o-mini
+model_endpoint = https://api.openai.com/v1
+context_window = 128000
+```
+To configure your embedding model, modify the `[embedding]` section of your `~/.letta/config` file: 
+```yaml ~/.letta/config
+[embedding]
+embedding_endpoint_type = openai 
+embedding_endpoint = https://api.openai.com/v1
+embedding_model = text-embedding-ada-002 
+embedding_dim = 1536
+embedding_chunk_size = 300
+```
+</Accordion>
+<Accordion icon="docker" title="Docker Compose">
+### Configuring with `docker compose`
+The `compose.yaml` file uses enviornment variables to configure the LLM and embedding models. You can place these enviornment variables in either a `.env` file or set the variables. 
+
+Configuring LLM endpoints:  
+```
+LETTA_LLM_ENDPOINT_TYPE=openai
+LETTA_LLM_MODEL=gpt-4o-mini
+```
+
+Configuring embeddings: 
+```
+LETTA_EMBEDDING_ENDPOINT_TYPE=openai
+LETTA_EMBEDDING_MODEL=text-embedding-ada-002
+```
+</Accordion>
+<Accordion icon="python" title="Python SDK">
+You can override the default LLM config (specified in `~/.letta/config`) by providing a new `LLMConfig` object to the `set_default_llm_config` method. 
+```python
+from memgpt import LLMConfig, EmbeddingConfig
+
+# use shorthand (llm config)
+client.set_default_llm_config(
+    LLMConfig.from_default(model_name="gpt-4o-mini")
+)
+
+# provide full config (llm config)
+client.set_default_llm_config(
+    LLMConfig(
+        model="gpt-4o-mini",
+        model_endpoint_type="openai",
+        model_endpoint="https://api.openai.com/v1",
+        context_window=128000
+    )
+```
+Similarly, you can override the default embedding config by providing a new `EmbeddingConfig` object to the `set_default_embedding_config` method.
+```python
+from memgpt import EmbeddingConfig
+
+# use shorthand (embedding config)
+client.set_default_embedding_config( 
+    EmbeddingConfig.from_default(model_name="text-embedding-ada-002")
+)
+
+# provide full config (embedding config)
+client.set_default_embedding_config( 
+    EmbeddingConfig(
+        embedding_endpoint_type="openai",
+        embedding_endpoint="https://api.openai.com/v1",
+        embedding_model="text-embedding-ada-002",
+        embedding_dim=1536,
+        embedding_chunk_size=300
+    )
+)
+```
+</Accordion>
