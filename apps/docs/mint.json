@@ -127,15 +127,15 @@
     {
       "group": "Response Models",
       "pages": [
-        "python-reference/MemGPTResponse",
+        "python-reference/LettaResponse",
         {
           "group": "Message Types",
           "pages": [
             "python-reference/Message",
-            "python-reference/MemGPTMessage"
+            "python-reference/LettaMessage"
           ]
         },
-        "python-reference/MemGPTUsageStatistics"
+        "python-reference/LettaUsageStatistics"
       ]
     },
 
