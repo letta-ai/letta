@@ -1,3 +1,4 @@
+import type { ServerInferResponses } from '@ts-rest/core';
 import { initContract } from '@ts-rest/core';
 import { z } from 'zod';
 import type { GenericSearch } from '$letta/web-api/contracts/shared';
@@ -44,6 +45,38 @@ const createProjectContract = c.mutation({
   body: CreateProjectPayloadSchema,
   responses: {
     201: PartialProjectSchema,
+  },
+});
+
+/* Update Project */
+export const UpdateProjectPayloadSchema = z.object({
+  name: z.string().optional(),
+});
+
+const updateProjectContract = c.mutation({
+  method: 'PATCH',
+  path: '/projects/:projectId',
+  pathParams: z.object({
+    projectId: z.string(),
+  }),
+  body: UpdateProjectPayloadSchema,
+  responses: {
+    200: PartialProjectSchema,
+  },
+});
+
+/* Delete Project */
+const deleteProjectContract = c.mutation({
+  method: 'DELETE',
+  path: '/projects/:projectId',
+  pathParams: z.object({
+    projectId: z.string(),
+  }),
+  body: z.undefined(),
+  responses: {
+    200: z.object({
+      success: z.boolean(),
+    }),
   },
 });
 
@@ -259,6 +292,39 @@ const getDeployedAgentsCountBySourceAgentContract = c.query({
   },
 });
 
+/* Fork Testing Agent */
+const ForkTestingAgentParamsSchema = z.object({
+  projectId: z.string(),
+  testingAgentId: z.string(),
+});
+
+const forkTestingAgentContract = c.mutation({
+  method: 'POST',
+  path: '/projects/:projectId/testing-agents/:testingAgentId/fork',
+  pathParams: ForkTestingAgentParamsSchema,
+  body: z.undefined(),
+  responses: {
+    201: ProjectTestingAgentSchema,
+  },
+});
+
+/* Get Project By Id */
+const getProjectByIdContract = c.query({
+  method: 'GET',
+  path: '/projects/:projectId',
+  pathParams: z.object({
+    projectId: z.string(),
+  }),
+  responses: {
+    200: PartialProjectSchema,
+  },
+});
+
+export type GetProjectByIdContractSuccessResponse = ServerInferResponses<
+  typeof getProjectByIdContract,
+  200
+>;
+
 export const projectsContract = c.router({
   getProjects: c.query({
     method: 'GET',
@@ -268,16 +334,7 @@ export const projectsContract = c.router({
       200: PublicProjectsSchema,
     },
   }),
-  getProjectById: c.query({
-    method: 'GET',
-    path: '/projects/:projectId',
-    pathParams: z.object({
-      projectId: z.string(),
-    }),
-    responses: {
-      200: PartialProjectSchema,
-    },
-  }),
+  getProjectById: getProjectByIdContract,
   getProjectTestingAgent: getProjectTestingAgentContract,
   updateProjectTestingAgent: updateProjectTestingAgentContract,
   deleteProjectTestingAgent: deleteProjectTestingAgentContract,
@@ -301,6 +358,9 @@ export const projectsContract = c.router({
   getDeployedAgents: getDeployedAgentsContract,
   getDeployedAgentsCountBySourceAgent:
     getDeployedAgentsCountBySourceAgentContract,
+  forkTestingAgent: forkTestingAgentContract,
+  updateProject: updateProjectContract,
+  deleteProject: deleteProjectContract,
 });
 
 export const projectsQueryClientKeys = {

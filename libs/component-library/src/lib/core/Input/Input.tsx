@@ -133,6 +133,10 @@ const InputPrimitive = React.forwardRef<HTMLInputElement, InputPrimitiveProps>(
         >
           <Slot className="w-4 h-auto">{preIcon}</Slot>
           <input
+            /* Prevents autofill tools from annoying our users */
+            autoComplete="off"
+            data-lpignore="true"
+            data-form-type="other"
             {...props}
             disabled={disabled}
             type={typeOverride}

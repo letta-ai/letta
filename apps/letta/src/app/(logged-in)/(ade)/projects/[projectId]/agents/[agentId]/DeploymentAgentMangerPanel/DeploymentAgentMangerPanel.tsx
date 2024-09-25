@@ -1,55 +1,27 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   ActionCard,
   Badge,
   Button,
   Dialog,
-  FormField,
-  FormProvider,
   HStack,
   LoadingEmptyStatusComponent,
   Panel,
   PanelBar,
   PanelMainContent,
-  Switch,
-  useForm,
   VStack,
 } from '@letta-web/component-library';
 import { useCurrentTestingAgentId } from '../hooks';
 import { useCurrentProjectId } from '../../../../../../(dashboard-like)/projects/[projectId]/hooks';
 import { useQueryClient } from '@tanstack/react-query';
 import { webApi, webApiQueryKeys } from '$letta/client';
-import { z } from 'zod';
-import { zodResolver } from '@hookform/resolvers/zod';
 import { DeployAgentUsageInstructions } from '$letta/client/code-reference/DeployAgentUsageInstructions';
 
-interface StageAndDeployDialogProps {
-  hasExistingStagedAgents?: boolean;
-}
-
-const StageAndDeployFormSchema = z.object({
-  migrateExistingAgents: z.boolean(),
-});
-
-function StageAndDeployDialog(props: StageAndDeployDialogProps) {
-  const { hasExistingStagedAgents } = props;
+function StageAndDeployDialog() {
   const testingAgentId = useCurrentTestingAgentId();
   const projectId = useCurrentProjectId();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
-
-  const form = useForm({
-    resolver: zodResolver(StageAndDeployFormSchema),
-    defaultValues: {
-      migrateExistingAgents: false,
-    },
-  });
-
-  useEffect(() => {
-    if (!open) {
-      form.reset();
-    }
-  }, [form, open]);
 
   const { mutate, isPending } =
     webApi.projects.createProjectSourceAgentFromTestingAgent.useMutation({
@@ -60,64 +32,38 @@ function StageAndDeployDialog(props: StageAndDeployDialogProps) {
         });
 
         setOpen(false);
-        form.reset();
       },
     });
 
-  const handleCreateSourceAgent = useCallback(
-    (values: z.infer<typeof StageAndDeployFormSchema>) => {
-      const { migrateExistingAgents } = values;
-
-      mutate({
-        body: { testingAgentId, migrateExistingAgents },
-        params: { projectId },
-      });
-    },
-    [mutate, testingAgentId, projectId]
-  );
+  const handleCreateSourceAgent = useCallback(() => {
+    mutate({
+      body: { testingAgentId },
+      params: { projectId },
+    });
+  }, [mutate, testingAgentId, projectId]);
 
   return (
-    <FormProvider {...form}>
-      <Dialog
-        onOpenChange={setOpen}
-        isOpen={open}
-        testId="stage-agent-dialog"
-        title="Are you sure you want to stage your agent?"
-        onSubmit={form.handleSubmit(handleCreateSourceAgent)}
-        isConfirmBusy={isPending}
-        trigger={
-          <Button
-            data-testid="stage-new-version-button"
-            color="secondary"
-            size="small"
-            label="Stage a new version"
-          />
-        }
-      >
-        <VStack gap="form">
-          {hasExistingStagedAgents && (
-            <HStack border padding="small" rounded>
-              <FormField
-                name="migrateExistingAgents"
-                render={({ field }) => (
-                  <Switch
-                    {...field}
-                    onClick={() => {
-                      field.onChange(!field.value);
-                    }}
-                    checked={field.value}
-                    description="This will migrate your previous deployed agents to the new version automatically. Your migrated agents will forget all the core memory updates. Please use this option with caution."
-                    label="Migrate existing deployed agents"
-                  />
-                )}
-              />
-            </HStack>
-          )}
-          This will allow your agent to be deployed to the cloud and used in
-          production. Are you sure you want to stage your agent?
-        </VStack>
-      </Dialog>
-    </FormProvider>
+    <Dialog
+      onOpenChange={setOpen}
+      isOpen={open}
+      testId="stage-agent-dialog"
+      title="Are you sure you want to stage your agent?"
+      onSubmit={handleCreateSourceAgent}
+      isConfirmBusy={isPending}
+      trigger={
+        <Button
+          data-testid="stage-new-version-button"
+          color="secondary"
+          size="small"
+          label="Stage a new version"
+        />
+      }
+    >
+      <VStack gap="form">
+        This will allow your agent to be deployed to the cloud and used in
+        production. Are you sure you want to stage your agent?
+      </VStack>
+    </Dialog>
   );
 }
 
@@ -154,7 +100,7 @@ function SourceAgentCard(props: SourceAgentCardProps) {
             target="_blank"
             color="tertiary"
             size="small"
-            label="Deployed Agents"
+            label="Agents"
             href={`/projects/${currentProjectId}/deployments?stagingAgentKey=${agentKey}`}
           />
         </HStack>
@@ -173,7 +119,7 @@ function SourceAgentCard(props: SourceAgentCardProps) {
   );
 }
 
-export function StagedAgentsPanel() {
+export function DeploymentAgentMangerPanel() {
   const testingAgentId = useCurrentTestingAgentId();
 
   const currentProjectId = useCurrentProjectId();
@@ -213,33 +159,27 @@ export function StagedAgentsPanel() {
 
   return (
     <Panel
-      title="Staging Manager"
+      title="Deployment Manager"
       id="staged-agents"
       trigger={
         <Button
-          data-testid="open-staging-manager"
+          data-testid="open-deployment-manager"
           color="tertiary"
           size="small"
-          label="Staging Manager"
+          label="Deployment Manager"
         />
       }
     >
       <PanelBar
         searchValue={searchValue}
         onSearch={setSearchValue}
-        actions={
-          <StageAndDeployDialog
-            hasExistingStagedAgents={
-              !!(sourceAgents && sourceAgents.length >= 1)
-            }
-          />
-        }
+        actions={<StageAndDeployDialog />}
       />
       <PanelMainContent>
         {!sourceAgents || sourceAgents.length === 0 ? (
           <LoadingEmptyStatusComponent
             isLoading={!sourceAgents}
-            emptyMessage="You haven't staged this agent yet. Click the button above to stage your agent."
+            emptyMessage="You haven't staged this agent yet. Click the button above to deploy your agent template."
           />
         ) : (
           <VStack>

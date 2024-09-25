@@ -12,6 +12,7 @@ import type { PropsWithChildren } from 'react';
 import { forwardRef } from 'react';
 import { useId, useMemo } from 'react';
 import { HStack } from '../../framing/HStack/HStack';
+import { Typography } from '../Typography/Typography';
 
 export { useForm } from 'react-hook-form';
 
@@ -87,7 +88,7 @@ const FormItemContext = React.createContext<FormItemContextValue>(
 );
 
 interface InputWrapperProps {
-  inline?: boolean;
+  inline?: boolean | 'reverse';
   fullWidth?: boolean;
   fullHeight?: boolean;
   inputAndLabel: React.ReactNode;
@@ -112,7 +113,12 @@ function InputWrapper({
   if (inline) {
     return (
       <div className={className}>
-        <div className="flex flex-wrap pt-2 sm:pt-0 sm:flex-nowrap gap-2 justify-between items-center">
+        <div
+          className={cn(
+            'flex flex-wrap pt-2 sm:pt-0 sm:flex-nowrap gap-2 justify-between items-center',
+            inline === 'reverse' && 'flex-row-reverse justify-end'
+          )}
+        >
           {inputAndLabel}
         </div>
         {otherContent && <div>{otherContent}</div>}
@@ -147,7 +153,7 @@ export interface InputContainerProps {
   preLabelIcon?: React.ReactNode;
   hideLabel?: boolean;
   description?: string;
-  inline?: boolean;
+  inline?: boolean | 'reverse';
   fullWidth?: boolean;
   fullHeight?: boolean;
   children?: React.ReactNode;
@@ -243,7 +249,7 @@ type MakeInputProps<T> = InputContainerProps & T;
 type MakeRawInputProps<T> = RawInputContainerProps & T;
 
 interface MakeInputOptions {
-  inline?: boolean;
+  inline?: boolean | 'reverse';
 }
 
 export function makeInput<T>(
@@ -380,13 +386,25 @@ FormMessage.displayName = 'FormMessage';
 
 type FormActionsProps = PropsWithChildren<{
   startAction?: React.ReactNode;
+  errorMessage?: string;
 }>;
 
-export function FormActions({ children, startAction }: FormActionsProps) {
+export function FormActions({
+  children,
+  errorMessage,
+  startAction,
+}: FormActionsProps) {
   return (
     <div className="flex gap-4 justify-between">
       {startAction ? startAction : <div />}
-      <HStack>{children}</HStack>
+      <HStack align="center">
+        {errorMessage && (
+          <Typography align="right" color="destructive">
+            {errorMessage}
+          </Typography>
+        )}
+        {children}
+      </HStack>
     </div>
   );
 }

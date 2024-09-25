@@ -26,6 +26,9 @@ const frameVariants = cva('', {
       tertiary: 'bg-tertiary text-tertiary-content',
       primary: 'bg-primary text-primary-content',
     },
+    width: {
+      contained: 'max-w-[500px]',
+    },
     borderColor: {
       true: 'border-border',
     },
@@ -149,6 +152,7 @@ export const Frame = forwardRef<HTMLElement, PropsWithChildren<FrameProps>>(
       borderTop,
       borderBottom,
       padding,
+      width,
       paddingY,
       paddingX,
       collapseHeight,
@@ -175,6 +179,7 @@ export const Frame = forwardRef<HTMLElement, PropsWithChildren<FrameProps>>(
       borderRight,
       flexHeight,
       position,
+      width,
       rounded,
       borderLeft,
       borderTop,

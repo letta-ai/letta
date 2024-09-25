@@ -78,6 +78,10 @@ export function buildConfig(appDir: string): Config {
             content: 'hsl(var(--background-black-content))',
             hover: 'hsl(var(--background-black-hover))',
           },
+          'background-destructive': {
+            DEFAULT: 'hsl(var(--background-destructive))',
+            content: 'hsl(var(--background-destructive-content))',
+          },
           content: 'hsl(var(--content))',
           ['on-transparent']: 'hsl(var(--on-transparent))',
           'primary-alt': {

@@ -56,6 +56,9 @@
     --background-warning: 39, 100%, 94%;
     --background-warning-content: 39, 100%, 10%;
 
+    --background-destructive: 0, 100%, 90%;
+    --background-destructive-content: 0, 100%, 10%;
+
     --background-grey-content: 240 10% 3.9%;
     --background-grey: 210, 10%, 96%;
     --background-grey-hover: 210, 10%, 80%;

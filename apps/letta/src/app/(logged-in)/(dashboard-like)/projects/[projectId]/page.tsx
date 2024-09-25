@@ -75,7 +75,7 @@ function TestingAgentsList(props: TestingAgentsListProps) {
           action={
             <Button
               preIcon={<PlusIcon />}
-              data-testid="create-agent-button"
+              data-testid="create-agent-template-button"
               label="Create an agent"
               color="secondary"
               href={`/projects/${currentProjectId}/agents/new`}
@@ -133,7 +133,7 @@ function TestingAgentsSection() {
       {/*  />*/}
       {/*)}*/}
       <DashboardPageSection
-        title="Recent Agents"
+        title="Recent Agent Templates"
         actions={
           <>
             {agentCount > RECENT_AGENTS_TO_DISPLAY + 1 && (
@@ -147,8 +147,8 @@ function TestingAgentsSection() {
             {/* This button should only be displayed if we have agents, otherwise we show an alert that asks them to do so instead */}
             {agentCount >= 1 && (
               <Button
-                label="Create an agent"
-                data-testid="create-agent-button"
+                label="Create an agent template"
+                data-testid="create-agent-template-button"
                 preIcon={<PlusIcon />}
                 color="tertiary"
                 href={`/projects/${currentProjectId}/agents/new`}

@@ -24,7 +24,7 @@ describe('letta', () => {
     cy.findByTestId('create-project-dialog-confirm-button').click();
 
     // creates an agent
-    cy.findByTestId('create-agent-button', { timeout: 10000 }).click();
+    cy.findByTestId('create-agent-template-button', { timeout: 10000 }).click();
 
     cy.location('pathname').should('match', /\/projects\/(.+)\/agents\/new/);
 
@@ -56,7 +56,7 @@ describe('letta', () => {
     cy.findByTestId('messages-list').contains('BananaMan');
 
     // stage the agent
-    cy.findByTestId('open-staging-manager').click();
+    cy.findByTestId('open-deployment-manager').click();
 
     cy.findByTestId('stage-new-version-button').click();
 

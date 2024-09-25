@@ -9,6 +9,7 @@ import { Button } from '../Button/Button';
 import { useCallback } from 'react';
 import type { VariantProps } from 'class-variance-authority';
 import { cva } from 'class-variance-authority';
+import { Alert } from '../Alert/Alert';
 
 const DialogRoot = DialogPrimitive.Root;
 
@@ -132,6 +133,7 @@ const dialogVariants = cva('', {
 interface DialogProps extends VariantProps<typeof dialogVariants> {
   isOpen?: boolean;
   testId?: string;
+  errorMessage?: string;
   onOpenChange?: (open: boolean) => void;
   title?: string;
   children?: React.ReactNode;
@@ -150,6 +152,7 @@ interface DialogProps extends VariantProps<typeof dialogVariants> {
 export function Dialog(props: DialogProps) {
   const {
     isOpen,
+    errorMessage,
     onOpenChange,
     title,
     testId,
@@ -207,6 +210,13 @@ export function Dialog(props: DialogProps) {
           <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="contents">
+          {errorMessage && (
+            <Alert
+              title={errorMessage}
+              variant="destructive"
+              className="mb-4"
+            />
+          )}
           {children}
           <DialogFooter>
             {!hideCancel && (

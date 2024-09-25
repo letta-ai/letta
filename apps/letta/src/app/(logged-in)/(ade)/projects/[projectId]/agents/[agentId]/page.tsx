@@ -13,6 +13,7 @@ import { db, testingAgents } from '@letta-web/database';
 import { eq } from 'drizzle-orm';
 import { redirect } from 'next/navigation';
 import { webApiQueryKeys } from '$letta/client';
+import { getProjectById } from '$letta/web-api/router/projects';
 
 interface AgentsAgentPageProps {
   params: {
@@ -24,7 +25,16 @@ interface AgentsAgentPageProps {
 async function AgentsAgentPage(context: AgentsAgentPageProps) {
   const queryClient = new QueryClient();
 
-  const { agentId: testingAgentId } = context.params;
+  const { agentId: testingAgentId, projectId } = context.params;
+
+  const project = await getProjectById({
+    params: { projectId },
+  });
+
+  if (!project.body || project.status !== 200) {
+    redirect('/projects');
+    return;
+  }
 
   const testingAgent = await db.query.testingAgents.findFirst({
     where: eq(testingAgents.id, testingAgentId),
@@ -51,6 +61,12 @@ async function AgentsAgentPage(context: AgentsAgentPageProps) {
         agentId,
       }),
       queryFn: () => agent,
+    }),
+    queryClient.prefetchQuery({
+      queryKey: webApiQueryKeys.projects.getProjectById(projectId),
+      queryFn: () => ({
+        body: project.body,
+      }),
     }),
     queryClient.prefetchQuery({
       queryKey: webApiQueryKeys.projects.getProjectTestingAgent(

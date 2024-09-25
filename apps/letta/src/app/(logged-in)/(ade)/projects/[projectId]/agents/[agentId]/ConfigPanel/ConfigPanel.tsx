@@ -64,9 +64,6 @@ function EditAgentName() {
     <RawInput
       fullWidth
       label="Agent Name"
-      autoComplete="off"
-      data-lpignore="true"
-      data-form-type="other"
       value={name}
       onChange={(event) => {
         setName(event.currentTarget.value);

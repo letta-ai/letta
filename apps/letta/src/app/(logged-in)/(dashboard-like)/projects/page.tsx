@@ -143,7 +143,7 @@ function ProjectsList(props: ProjectsListProps) {
           >
             <VStack paddingY="small" rounded>
               <HStack justify="spaceBetween">
-                <Typography bold>Deployed Agents</Typography>{' '}
+                <Typography bold>Agents</Typography>{' '}
                 <Typography>N/A</Typography>
               </HStack>
               <HStack justify="spaceBetween">

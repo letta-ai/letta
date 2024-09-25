@@ -8,10 +8,8 @@ import {
 } from '@tanstack/react-query';
 import { getProjectById } from '$letta/web-api/router/projects';
 import { redirect } from 'next/navigation';
-import {
-  Avatar,
-  DashboardWithSidebarWrapper,
-} from '@letta-web/component-library';
+import { DashboardWithSidebarWrapper } from '@letta-web/component-library';
+import { ProjectAvatar } from './_components/ProjectAvatar/ProjectAvatar';
 
 interface ProjectPageWrapperProps {
   params: {
@@ -44,24 +42,23 @@ async function ProjectPageLayout(props: ProjectPageWrapperProps) {
     <HydrationBoundary state={dehydrate(queryClient)}>
       <DashboardWithSidebarWrapper
         baseUrl="/projects"
-        projectTitle={
-          <>
-            <Avatar name={project.body.name} />
-            {project.body.name}
-          </>
-        }
+        projectTitle={<ProjectAvatar />}
         navigationItems={[
           {
             label: 'Project Home',
             href: `/projects/${projectId}`,
           },
           {
-            label: 'Staging',
-            href: `/projects/${projectId}/staging`,
-          },
-          {
             label: 'Deployments',
             href: `/projects/${projectId}/deployments`,
+          },
+          {
+            label: 'Agents',
+            href: `/projects/${projectId}/agents`,
+          },
+          {
+            label: 'Settings',
+            href: `/projects/${projectId}/settings`,
           },
         ]}
       >

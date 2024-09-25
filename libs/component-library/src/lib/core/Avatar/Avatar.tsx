@@ -4,17 +4,37 @@ import * as React from 'react';
 import * as AvatarPrimitive from '@radix-ui/react-avatar';
 import { cn } from '@letta-web/core-style-config';
 import { useMemo } from 'react';
+import type { VariantProps } from 'class-variance-authority';
+import { cva } from 'class-variance-authority';
+
+const avatarVariants = cva(
+  'relative flex shrink-0 overflow-hidden text-sm rounded-md',
+  {
+    variants: {
+      size: {
+        small: 'h-biHeight-sm w-biWidth-sm',
+        medium: 'h-[36px] w-[36px]',
+        large: 'h-[48px] w-[48px]',
+      },
+    },
+    defaultVariants: {
+      size: 'medium',
+    },
+  }
+);
+
+type AvatarVariantProps = VariantProps<typeof avatarVariants>;
+
+type AvatarRootProps = AvatarVariantProps &
+  React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Root>;
 
 const AvatarRoot = React.forwardRef<
   React.ElementRef<typeof AvatarPrimitive.Root>,
-  React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Root>
->(({ className, ...props }, ref) => (
+  AvatarRootProps
+>(({ className, size, ...props }, ref) => (
   <AvatarPrimitive.Root
     ref={ref}
-    className={cn(
-      'relative flex h-[36px] w-[36px] shrink-0 overflow-hidden text-sm rounded-md',
-      className
-    )}
+    className={cn(avatarVariants({ size }), className)}
     {...props}
   />
 ));
@@ -47,7 +67,7 @@ const AvatarFallback = React.forwardRef<
 ));
 AvatarFallback.displayName = AvatarPrimitive.Fallback.displayName;
 
-interface AvatarProps {
+interface AvatarProps extends AvatarVariantProps {
   imageSrc?: string;
   name: string;
 }
@@ -62,7 +82,7 @@ function getBackgroundFromName(name: string) {
 }
 
 export function Avatar(props: AvatarProps) {
-  const { imageSrc, name = 'UU' } = props;
+  const { imageSrc, size, name = 'UU' } = props;
 
   const initials = useMemo(() => {
     const [firstName = '', lastName = ''] = (name || 'uu').split(' ');
@@ -70,7 +90,7 @@ export function Avatar(props: AvatarProps) {
   }, [name]);
 
   return (
-    <AvatarRoot>
+    <AvatarRoot size={size}>
       <AvatarImage src={imageSrc} alt={name} />
       <AvatarFallback
         className="font-normal text-black"

@@ -970,3 +970,154 @@ export async function getDeployedAgentsCountBySourceAgent(
     },
   };
 }
+
+type ForkTestingAgentRequest = ServerInferRequest<
+  typeof contracts.projects.forkTestingAgent
+>;
+
+type ForkTestingAgentResponse = ServerInferResponses<
+  typeof contracts.projects.forkTestingAgent
+>;
+
+export async function forkTestingAgent(
+  req: ForkTestingAgentRequest
+): Promise<ForkTestingAgentResponse> {
+  const { testingAgentId, projectId } = req.params;
+  const organizationId = await getUserOrganizationIdOrThrow();
+
+  const testingAgent = await db.query.testingAgents.findFirst({
+    where: and(
+      eq(testingAgents.organizationId, organizationId),
+      eq(testingAgents.projectId, projectId),
+      eq(testingAgents.id, testingAgentId)
+    ),
+  });
+
+  if (!testingAgent) {
+    return {
+      status: 404,
+      body: {},
+    };
+  }
+
+  const copiedAgent = await copyAgentById(
+    testingAgent.agentId,
+    crypto.randomUUID()
+  );
+
+  if (!copiedAgent.id) {
+    return {
+      status: 500,
+      body: {
+        message: 'Failed to copy agent',
+      },
+    };
+  }
+
+  const name = capitalize(`Forked ${testingAgent.name}`);
+
+  const [agent] = await db
+    .insert(testingAgents)
+    .values({
+      projectId: testingAgent.projectId,
+      organizationId,
+      name,
+      agentId: copiedAgent.id,
+    })
+    .returning({
+      id: testingAgents.id,
+    });
+
+  return {
+    status: 201,
+    body: {
+      agentId: copiedAgent.id,
+      id: agent.id,
+      name,
+      updatedAt: new Date().toISOString(),
+    },
+  };
+}
+
+type UpdateProjectRequest = ServerInferRequest<
+  typeof contracts.projects.updateProject
+>;
+
+type UpdateProjectResponse = ServerInferResponses<
+  typeof contracts.projects.updateProject
+>;
+
+export async function updateProject(
+  req: UpdateProjectRequest
+): Promise<UpdateProjectResponse> {
+  const { projectId } = req.params;
+  const organizationId = await getUserOrganizationIdOrThrow();
+  const { name } = req.body;
+
+  const project = await db.query.projects.findFirst({
+    where: and(
+      eq(projects.id, projectId),
+      eq(projects.organizationId, organizationId)
+    ),
+  });
+
+  if (!project) {
+    return {
+      status: 404,
+      body: {},
+    };
+  }
+
+  await db
+    .update(projects)
+    .set({
+      name,
+    })
+    .where(eq(projects.id, projectId));
+
+  return {
+    status: 200,
+    body: {
+      name: name || project.name,
+      id: project.id,
+    },
+  };
+}
+
+type DeleteProjectRequest = ServerInferRequest<
+  typeof contracts.projects.deleteProject
+>;
+
+type DeleteProjectResponse = ServerInferResponses<
+  typeof contracts.projects.deleteProject
+>;
+
+export async function deleteProject(
+  req: DeleteProjectRequest
+): Promise<DeleteProjectResponse> {
+  const { projectId } = req.params;
+  const organizationId = await getUserOrganizationIdOrThrow();
+
+  const project = await db.query.projects.findFirst({
+    where: and(
+      eq(projects.id, projectId),
+      eq(projects.organizationId, organizationId)
+    ),
+  });
+
+  if (!project) {
+    return {
+      status: 404,
+      body: {},
+    };
+  }
+
+  await db.delete(projects).where(eq(projects.id, projectId));
+
+  return {
+    status: 200,
+    body: {
+      success: true,
+    },
+  };
+}

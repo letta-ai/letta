@@ -86,3 +86,7 @@ export * from './lib/core/InputFilter/InputFilter';
 export * from './lib/reusable/DashboardWithSidebarWrapper/useDashboardNavigationItems/useDashboardNavigationItems';
 
 export * from './lib/core/Tooltip/Tooltip';
+
+export * from './lib/core/HR/HR';
+
+export * from './lib/core/Checkbox/Checkbox';
