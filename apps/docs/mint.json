@@ -66,6 +66,7 @@
       "pages": [
         "introduction",
         "quickstart",
+        "install",
         "concepts",
         {
           "group": "LLM configuration",
@@ -92,7 +93,7 @@
     },
     {
       "group": "Deployment",
-      "pages": ["deployment/server", "docker"]
+      "pages": ["deployment/server"]
     },
     {
       "group": "Advanced",
