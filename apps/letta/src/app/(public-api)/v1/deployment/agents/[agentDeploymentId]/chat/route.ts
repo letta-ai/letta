@@ -15,6 +15,7 @@ import type { AgentMessage } from '@letta-web/letta-agents-api';
 import { AgentMessageSchema } from '@letta-web/letta-agents-api';
 import { AgentsService } from '@letta-web/letta-agents-api';
 import { jsonrepair } from 'jsonrepair';
+import { streamedArgumentsParserGenerator } from '$letta/server';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -44,6 +45,7 @@ function messagesParser(
 
 export async function POST(request: NextRequest, context: Context) {
   // get headers
+
   const apiKey = request.headers.get('Authorization')?.replace('Bearer ', '');
 
   const keyDetails = await verifyAndReturnAPIKeyDetails(apiKey);
@@ -56,13 +58,14 @@ export async function POST(request: NextRequest, context: Context) {
   const body = ChatWithAgentBodySchema.safeParse(await request.json());
 
   if (!body.success) {
-    return new Response('Agent not found', { status: 404 });
+    return new Response(JSON.stringify(body.error), { status: 404 });
   }
 
   const {
     message,
     stream_tokens,
     return_message_types,
+    format_function_call_arguments,
     return_function_calls,
   } = body.data;
 
@@ -83,7 +86,6 @@ export async function POST(request: NextRequest, context: Context) {
     ),
   });
 
-  console.log(deployedAgent);
   if (!deployedAgent) {
     return new Response('Agent not found', { status: 404 });
   }
@@ -159,6 +161,8 @@ export async function POST(request: NextRequest, context: Context) {
 
     let currentFunctionCall = '';
 
+    const functionCallParser = streamedArgumentsParserGenerator();
+
     eventsource.onmessage = (e: MessageEvent) => {
       try {
         if (closed) {
@@ -183,12 +187,33 @@ export async function POST(request: NextRequest, context: Context) {
                 return_message_types,
               });
 
-              console.log('a', parsedMessage);
               if (parsedMessage) {
                 if (return_function_calls) {
                   if (parsedMessage.message_type === 'function_call') {
                     if (parsedMessage.function_call.name) {
                       currentFunctionCall = parsedMessage.function_call.name;
+                    }
+
+                    if (
+                      parsedMessage.function_call.arguments &&
+                      format_function_call_arguments
+                    ) {
+                      functionCallParser.reader(
+                        parsedMessage.function_call.arguments,
+                        (result, options) => {
+                          const passedMessage = options?.dataTransfer;
+
+                          passedMessage.function_call.formattedArguments =
+                            result;
+
+                          void writer.write(
+                            `data: ${JSON.stringify(passedMessage)}\n\n`
+                          );
+                        },
+                        { dataTransfer: parsedMessage }
+                      );
+
+                      parsedMessage = null;
                     }
 
                     if (!return_function_calls.includes(currentFunctionCall)) {
@@ -197,10 +222,15 @@ export async function POST(request: NextRequest, context: Context) {
                   } else {
                     // if not a function call, reset the current function call
                     currentFunctionCall = '';
+                    functionCallParser.clear();
                   }
                 }
 
-                void writer.write(`data: ${JSON.stringify(parsedMessage)}\n\n`);
+                if (parsedMessage) {
+                  void writer.write(
+                    `data: ${JSON.stringify(parsedMessage)}\n\n`
+                  );
+                }
               }
             }
           } catch (_e) {

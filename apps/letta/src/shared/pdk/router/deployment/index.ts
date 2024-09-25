@@ -14,7 +14,7 @@ import type { AgentMessage } from '@letta-web/letta-agents-api';
 import {
   AgentMessageSchema,
   AgentsService,
-  safeParseFunctionCallArguments,
+  safeParseArguments,
 } from '@letta-web/letta-agents-api';
 
 type CreateAgentRequestType = ServerInferRequest<
@@ -254,8 +254,10 @@ export async function getExistingMessagesFromAgent(
   const {
     before,
     limit,
-    parse_arguments_from_function_calls,
+    format_function_call_arguments,
+    return_function_calls,
     return_message_types,
+    format_user_message_arguments,
   } = req.query;
 
   const deployedAgent = await db.query.deployedAgents.findFirst({
@@ -277,29 +279,59 @@ export async function getExistingMessagesFromAgent(
     limit,
   })) as AgentMessage[];
 
-  if (parse_arguments_from_function_calls) {
-    messages = messages.map((message) => {
-      const parsedMessageRes = AgentMessageSchema.safeParse(message);
-
-      if (parsedMessageRes.success) {
-        const parsedMessage = parsedMessageRes.data;
-
-        if (parsedMessage.message_type === 'function_call') {
-          return {
-            ...parsedMessage,
-            arguments: safeParseFunctionCallArguments(parsedMessage),
-          };
+  if (
+    format_function_call_arguments ||
+    return_function_calls ||
+    return_message_types
+  ) {
+    messages = messages
+      .map((message) => {
+        if (return_message_types) {
+          if (!return_message_types.includes(message.message_type)) {
+            return null;
+          }
         }
-      }
 
-      return message;
-    }, []);
-  }
+        const parsedMessageRes = AgentMessageSchema.safeParse(message);
 
-  if (return_message_types) {
-    messages = messages.filter((message) =>
-      return_message_types.includes(message.message_type)
-    );
+        if (parsedMessageRes.success) {
+          const parsedMessage = parsedMessageRes.data;
+
+          if (parsedMessage.message_type === 'function_call') {
+            if (return_function_calls) {
+              if (
+                !return_function_calls.includes(
+                  parsedMessage.function_call.name || ''
+                )
+              ) {
+                return null;
+              }
+            }
+
+            return {
+              ...parsedMessage,
+              function_call: {
+                ...parsedMessage.function_call,
+                formattedArguments:
+                  format_function_call_arguments &&
+                  parsedMessage.function_call.arguments
+                    ? safeParseArguments(parsedMessage.function_call.arguments)
+                    : parsedMessage.function_call.formattedArguments,
+              },
+            };
+          } else if (parsedMessage.message_type === 'user_message') {
+            return {
+              ...parsedMessage,
+              formattedMessage: format_user_message_arguments
+                ? safeParseArguments(parsedMessage.message)
+                : parsedMessage.formattedMessage,
+            };
+          }
+        }
+
+        return message;
+      })
+      .filter((message) => message !== null);
   }
 
   return {

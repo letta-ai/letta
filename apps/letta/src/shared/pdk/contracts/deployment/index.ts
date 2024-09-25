@@ -64,8 +64,8 @@ export const ChatWithAgentBodySchema = z.object({
   message: z.string(),
   stream_tokens: z.boolean().optional(),
   return_message_types: AgentMessageTypeSchema.array().optional(),
-  return_function_calls: z.string().optional(),
-
+  return_function_calls: z.string().array().optional(),
+  format_function_call_arguments: z.boolean().optional(),
   // variables: z.record(z.string(), z.any()).optional(),
 });
 
@@ -166,8 +166,10 @@ const GetExistingMessagesFromDeployedAgentResponseSchema = z.object({
 });
 
 const GetExistingMessagesFromDeployedAgentQuerySchema = z.object({
-  parse_arguments_from_function_calls: z.boolean(),
   return_message_types: AgentMessageTypeSchema.array().optional(),
+  return_function_calls: z.string().array().optional(),
+  format_function_call_arguments: z.boolean().optional(),
+  format_user_message_arguments: z.boolean().optional(),
   before: z.string().optional(),
   limit: z.number().optional(),
 });

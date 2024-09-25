@@ -28,6 +28,7 @@ export const UserMessageMessageSchema = z.object({
 
 export const UserMessageSchema = z.object({
   message_type: z.literal('user_message'),
+  formattedMessage: z.record(z.unknown()).optional(),
   message: z.string(),
   date: z.string(),
   id: z.string(),
@@ -51,6 +52,7 @@ export const FunctionCallSchema = z.object({
     type: z.literal('function_call').optional(),
     name: z.string().optional(),
     arguments: z.string().optional(),
+    formattedArguments: z.record(z.unknown()).optional(),
   }),
   date: z.string(),
   id: z.string(),
@@ -80,11 +82,9 @@ export const AgentMessageTypeSchema = z.enum([
   'system_message',
 ]);
 
-export function safeParseFunctionCallArguments(
-  message: z.infer<typeof FunctionCallSchema>
-): Record<string, any> {
+export function safeParseArguments(message: string): Record<string, any> {
   try {
-    return JSON.parse(jsonrepair(message.function_call.arguments || '{}'));
+    return JSON.parse(jsonrepair(message));
   } catch (_e) {
     return {};
   }
