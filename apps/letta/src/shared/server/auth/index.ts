@@ -78,6 +78,7 @@ async function createUserAndOrganization(
 ): Promise<UserSession> {
   let organizationId = '';
   let lettaOrganizationId = '';
+  let isNewOrganization = false;
 
   if (isLettaEmail(userData.email)) {
     const createdLettaUser = await handleLettaUserCreation();
@@ -107,6 +108,7 @@ async function createUserAndOrganization(
       })
       .returning({ organizationId: organizations.id });
 
+    isNewOrganization = true;
     organizationId = createdOrg.organizationId;
   }
 
@@ -144,18 +146,22 @@ async function createUserAndOrganization(
         signupMethod: userData.provider,
       })
       .returning({ userId: users.id }),
-    db.insert(projects).values({
-      organizationId,
-      name: 'My first project',
-    }),
   ]);
 
-  await db.insert(lettaAPIKeys).values({
-    name: 'Default API key',
-    organizationId,
-    userId: createdUser.userId,
-    apiKey,
-  });
+  if (isNewOrganization) {
+    await Promise.all([
+      db.insert(lettaAPIKeys).values({
+        name: 'Default API key',
+        organizationId,
+        userId: createdUser.userId,
+        apiKey,
+      }),
+      db.insert(projects).values({
+        organizationId,
+        name: 'My first project',
+      }),
+    ]);
+  }
 
   return {
     email: userData.email,
