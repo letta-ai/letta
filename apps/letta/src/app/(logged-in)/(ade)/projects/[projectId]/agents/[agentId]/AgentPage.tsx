@@ -1,107 +1,70 @@
 'use client';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import type { panelRegistry } from './panelRegistry';
+import { usePanelManager } from './panelRegistry';
+import {
+  PanelManagerProvider,
+  PanelOpener,
+  PanelRenderer,
+} from './panelRegistry';
 import {
   ADEHeader,
   ADEPage,
-  ArrowLeftIcon,
-  ArrowRightIcon,
   ArrowUpIcon,
   Avatar,
   Button,
+  ChatBubbleIcon,
   Dialog,
   Frame,
   HStack,
   KeyIcon,
   LifebuoyIcon,
   Logo,
-  PanelManager,
-  PanelRenderArea,
+  MaybeTooltip,
   Popover,
   Typography,
   VStack,
 } from '@letta-web/component-library';
-import { ADENavigationItem } from './common/ADENavigationItem/ADENavigationItem';
-import { ToolsPanel } from './ToolsPanel/ToolsPanel';
-import { DataSourcesPanel } from './DataSourcesPanel/DataSourcesPanel';
-import { ModelPanel } from './ModelPanel/ModelPanel';
-import { AgentSimulator } from './AgentSimulator/AgentSimulator';
-import { VariablesPanel } from './VariablesPanel/VariablesPanel';
-import { MemoryBlocksPanel } from './MemoryBlocksPanel/MemoryBlocksPanel';
-import { ContextEditorPanel } from './ContextEditorPanel/ContextEditorPanel';
-import { CurrentUserDetailsBlock } from '$letta/client/common';
+import Link from 'next/link';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import {
   useCurrentProject,
   useCurrentProjectId,
 } from '../../../../../(dashboard-like)/projects/[projectId]/hooks';
-import { useFeatureFlag, webApi, webApiQueryKeys } from '$letta/client';
-import { ArchivalMemoriesPanel } from './ArchivalMemoriesPanel/ArchivalMemoriesPanel';
-import { DatabaseIcon, GitForkIcon, SettingsIcon } from 'lucide-react';
-import { DeploymentAgentMangerPanel } from './DeploymentAgentMangerPanel/DeploymentAgentMangerPanel';
-import { ConfigPanelWrapped } from './ConfigPanel/ConfigPanelWrapped';
-import { useCurrentTestingAgent } from './hooks/useCurrentTestingAgent/useCurrentTestingAgent';
-import { useDebouncedValue, useLocalStorage } from '@mantine/hooks';
 import {
-  ADESidebarProvider,
+  BotIcon,
+  BrainIcon,
+  BrickWallIcon,
+  DatabaseIcon,
+  GitForkIcon,
+  PenToolIcon,
+  Settings2Icon,
+} from 'lucide-react';
+import { cn } from '@letta-web/core-style-config';
+import { Slot } from '@radix-ui/react-slot';
+import {
   useADESidebarContext,
+  useCurrentAgent,
   useCurrentTestingAgentId,
 } from './hooks';
-import Link from 'next/link';
+import { useCurrentTestingAgent } from './hooks/useCurrentTestingAgent/useCurrentTestingAgent';
 import { useQueryClient } from '@tanstack/react-query';
+import { useDebouncedValue } from '@mantine/hooks';
+import { webApi, webApiQueryKeys } from '$letta/client';
 import { useRouter } from 'next/navigation';
 import { useCurrentUser } from '$letta/client/hooks';
+import { CurrentUserDetailsBlock } from '$letta/client/common';
+
+type PanelRegistryKeys = keyof typeof panelRegistry;
 
 interface SidebarGroupProps {
   title: string;
   children: React.ReactNode;
-}
-
-function NavOverlay() {
-  const currentProjectId = useCurrentProjectId();
-  const { name } = useCurrentUser();
-
-  return (
-    <Popover
-      trigger={
-        <HStack align="center">
-          <Avatar size="small" name={name} />
-        </HStack>
-      }
-      align="start"
-    >
-      <CurrentUserDetailsBlock />
-      <Frame borderTop color="background-greyer" as="nav">
-        <VStack as="ul" paddingY="small" paddingX="xsmall">
-          <Button
-            href={`/projects/${currentProjectId}`}
-            color="tertiary-transparent"
-            preIcon={<ArrowUpIcon />}
-            label="Return to Project"
-          />
-          <Button
-            href="/data-sources"
-            target="_blank"
-            color="tertiary-transparent"
-            label="Data Sources"
-            preIcon={<DatabaseIcon />}
-          />
-          <Button
-            target="_blank"
-            href="/api-keys"
-            color="tertiary-transparent"
-            label="API Keys"
-            preIcon={<KeyIcon />}
-          />
-          <Button
-            target="_blank"
-            href="/support"
-            color="tertiary-transparent"
-            label="Support"
-            preIcon={<LifebuoyIcon />}
-          />
-        </VStack>
-      </Frame>
-    </Popover>
-  );
 }
 
 function SidebarGroup(props: SidebarGroupProps) {
@@ -130,66 +93,145 @@ function SidebarGroup(props: SidebarGroupProps) {
   );
 }
 
-function ADESidebar() {
-  const [collapsed, setCollapsed] = useLocalStorage({
-    defaultValue: false,
-    key: 'ADESidebarCollapsed',
-  });
-  const { data: showVariablesEditor } = useFeatureFlag('SHOW_VARIABLES_EDITOR');
-  const { data: showParametersEditor } = useFeatureFlag(
-    'SHOW_PARAMETERS_EDITOR'
-  );
-  const { data: showContextEditor } = useFeatureFlag('SHOW_CONTEXT_EDITOR');
+interface AgentPanelSidebarItemProps<
+  TPanelTemplateId extends PanelRegistryKeys
+> {
+  label: string;
+  icon: React.ReactNode;
+  preview?: React.ReactNode;
+  templateId: TPanelTemplateId;
+  data: (typeof panelRegistry)[TPanelTemplateId]['data']['_output'];
+  id: string;
+}
+
+function AgentPanelSidebarItem<TPanelTemplateId extends PanelRegistryKeys>(
+  props: AgentPanelSidebarItemProps<TPanelTemplateId>
+) {
+  const { label, icon, templateId, preview, id, data } = props;
+  const { getIsPanelTemplateActive } = usePanelManager();
+
+  const isActive = useMemo(() => {
+    return getIsPanelTemplateActive(templateId);
+  }, [getIsPanelTemplateActive, templateId]);
+
+  const collapsed = false;
 
   return (
-    <ADESidebarProvider collapsed={collapsed}>
-      <VStack
-        fullHeight
-        borderRight
-        color="background-grey"
-        as="nav"
-        justify="spaceBetween"
-        overflowY="auto"
-        overflowX="hidden"
-        className={`transition-all duration-200 ${
-          collapsed ? 'w-[55px]' : 'w-[250px]'
-        }`}
-      >
-        <VStack>
-          <SidebarGroup title="Base">
-            <ModelPanel />
-            <ConfigPanelWrapped />
-            {showParametersEditor && (
-              <ADENavigationItem icon={<SettingsIcon />} title="Parameters" />
+    <MaybeTooltip renderTooltip={false} placement="right" content={label}>
+      <HStack fullWidth align="center" paddingX="small">
+        <PanelOpener id={id} templateId={templateId} data={data}>
+          <HStack
+            fullWidth
+            data-testid={`ade-navigate-to:${label}`}
+            paddingX="small"
+            rounded
+            className={cn(
+              'hover:bg-background-grey-hover cursor-pointer h-[30px]'
             )}
-          </SidebarGroup>
-          <SidebarGroup title="Configure">
-            {showVariablesEditor && <VariablesPanel />}
-            <MemoryBlocksPanel />
-            <DataSourcesPanel />
-            <ToolsPanel />
-            {showContextEditor && <ContextEditorPanel />}
-          </SidebarGroup>
-          <SidebarGroup title="Test">
-            <ArchivalMemoriesPanel />
-            <AgentSimulator />
-          </SidebarGroup>
-        </VStack>
-        <HStack paddingX="small">
-          <Button
-            tooltipPlacement="right"
-            label={collapsed ? 'Expand' : 'Collapse'}
-            hideLabel
-            active={collapsed}
-            color="tertiary-transparent"
-            preIcon={collapsed ? <ArrowRightIcon /> : <ArrowLeftIcon />}
-            onClick={() => {
-              setCollapsed(!collapsed);
-            }}
+            color="transparent"
+            justify="spaceBetween"
+            align="center"
+          >
+            <HStack align="center">
+              <Slot className="w-3 h-3">{icon}</Slot>
+              {!collapsed && (
+                <Typography noWrap variant="body2">
+                  {label}
+                </Typography>
+              )}
+            </HStack>
+            {!collapsed && (
+              <HStack align="center">
+                <Typography variant="body2" color="muted">
+                  {preview}
+                </Typography>
+                <HStack align="center" className="w-3">
+                  {isActive && (
+                    <div className="min-w-2 min-h-2 bg-background-black rounded-full" />
+                  )}
+                </HStack>
+              </HStack>
+            )}
+          </HStack>
+        </PanelOpener>
+      </HStack>
+    </MaybeTooltip>
+  );
+}
+
+function AgentPageSidebar() {
+  const currentAgent = useCurrentAgent();
+
+  return (
+    <VStack
+      fullHeight
+      borderRight
+      color="background-grey"
+      as="nav"
+      width="sidebar"
+      justify="spaceBetween"
+      overflowY="auto"
+      overflowX="hidden"
+    >
+      <VStack>
+        <SidebarGroup title="Base">
+          <AgentPanelSidebarItem
+            label="Model"
+            icon={<BotIcon />}
+            preview={currentAgent.llm_config.model}
+            templateId="model-details"
+            data={undefined}
+            id="model-details"
           />
-        </HStack>
+          <AgentPanelSidebarItem
+            label="Config"
+            icon={<Settings2Icon />}
+            templateId="agent-config"
+            data={undefined}
+            id="agent-config"
+          />
+        </SidebarGroup>
+        <SidebarGroup title="Configure">
+          <AgentPanelSidebarItem
+            label="Memory Blocks"
+            icon={<BrickWallIcon />}
+            templateId="memory-blocks"
+            data={undefined}
+            id="memory-blocks"
+          />
+          <AgentPanelSidebarItem
+            label="Data Sources"
+            icon={<DatabaseIcon />}
+            templateId="data-sources-panel"
+            data={undefined}
+            id="data-sources-panel"
+          />
+          <AgentPanelSidebarItem
+            label="Tools"
+            icon={<PenToolIcon />}
+            templateId="tools-panel"
+            data={undefined}
+            id="tools-panel"
+          />
+        </SidebarGroup>
+        <SidebarGroup title="Test">
+          <AgentPanelSidebarItem
+            label="Simulator"
+            icon={<ChatBubbleIcon />}
+            templateId="agent-simulator"
+            data={undefined}
+            id="simulator"
+          />
+          <AgentPanelSidebarItem
+            label="Archival Memories"
+            icon={<BrainIcon />}
+            templateId="archival-memories"
+            data={{}}
+            id="archival-memories"
+          />
+        </SidebarGroup>
       </VStack>
-    </ADESidebarProvider>
+    </VStack>
   );
 }
 
@@ -269,6 +311,55 @@ function InlineTestingAgentNameChanger() {
   );
 }
 
+function NavOverlay() {
+  const currentProjectId = useCurrentProjectId();
+  const { name } = useCurrentUser();
+
+  return (
+    <Popover
+      trigger={
+        <HStack align="center">
+          <Avatar size="small" name={name} />
+        </HStack>
+      }
+      align="start"
+    >
+      <CurrentUserDetailsBlock />
+      <Frame borderTop color="background-greyer" as="nav">
+        <VStack as="ul" paddingY="small" paddingX="xsmall">
+          <Button
+            href={`/projects/${currentProjectId}`}
+            color="tertiary-transparent"
+            preIcon={<ArrowUpIcon />}
+            label="Return to Project"
+          />
+          <Button
+            href="/data-sources"
+            target="_blank"
+            color="tertiary-transparent"
+            label="Data Sources"
+            preIcon={<DatabaseIcon />}
+          />
+          <Button
+            target="_blank"
+            href="/api-keys"
+            color="tertiary-transparent"
+            label="API Keys"
+            preIcon={<KeyIcon />}
+          />
+          <Button
+            target="_blank"
+            href="/support"
+            color="tertiary-transparent"
+            label="Support"
+            preIcon={<LifebuoyIcon />}
+          />
+        </VStack>
+      </Frame>
+    </Popover>
+  );
+}
+
 function ForkAgentDialog() {
   const currentTestingAgentId = useCurrentTestingAgentId();
   const { push } = useRouter();
@@ -314,10 +405,65 @@ function ForkAgentDialog() {
   );
 }
 
+function OpenDeploymentManagerPanel() {
+  return (
+    <PanelOpener templateId="deployment" id="deployment" data={undefined}>
+      <Button
+        tooltipPlacement="bottom"
+        size="small"
+        color="tertiary"
+        label="Deployment Manager"
+      ></Button>
+    </PanelOpener>
+  );
+}
+
 export function AgentPage() {
   const { name: projectName, id: projectId } = useCurrentProject();
+
   return (
-    <PanelManager>
+    <PanelManagerProvider
+      initialPositions={[
+        {
+          size: 100,
+          positions: [
+            {
+              size: 100,
+              positions: [
+                {
+                  id: 'simulator',
+                  isActive: true,
+                  templateId: 'agent-simulator',
+                  data: undefined,
+                },
+              ],
+            },
+          ],
+        },
+        {
+          size: 100,
+          positions: [
+            {
+              size: 100,
+              positions: [
+                {
+                  id: 'archival-memories',
+                  isActive: false,
+                  templateId: 'archival-memories',
+                  data: undefined,
+                },
+                {
+                  id: 'welcome',
+                  isActive: true,
+                  templateId: 'welcome-panel',
+                  data: undefined,
+                },
+              ],
+            },
+          ],
+        },
+      ]}
+    >
       <ADEPage
         header={
           <ADEHeader>
@@ -329,22 +475,21 @@ export function AgentPage() {
               <Link target="_blank" href={`/projects/${projectId}`}>
                 <Typography color="white">{projectName}</Typography>
               </Link>
-              /
-              <InlineTestingAgentNameChanger />
+              /<InlineTestingAgentNameChanger />
             </HStack>
             <HStack>
               <ForkAgentDialog />
-              <DeploymentAgentMangerPanel />
+              <OpenDeploymentManagerPanel />
               <NavOverlay />
             </HStack>
           </ADEHeader>
         }
       >
         <Frame overflow="hidden" className="relative" fullWidth fullHeight>
-          <PanelRenderArea />
+          <PanelRenderer />
         </Frame>
-        <ADESidebar />
+        <AgentPageSidebar />
       </ADEPage>
-    </PanelManager>
+    </PanelManagerProvider>
   );
 }

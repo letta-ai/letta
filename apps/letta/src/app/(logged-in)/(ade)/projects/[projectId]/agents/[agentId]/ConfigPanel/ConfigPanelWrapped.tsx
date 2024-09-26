@@ -1,4 +1,4 @@
-import type { PanelRegistryItem } from '@letta-web/component-library';
+import type { PanelTemplate } from '@letta-web/component-library';
 import {
   Button,
   Card,
@@ -191,4 +191,4 @@ export const configPanelTemplate = {
   content: ConfigPanel,
   title: 'Settings',
   data: z.undefined(),
-} satisfies PanelRegistryItem<'agent-config'>;
+} satisfies PanelTemplate<'agent-config'>;

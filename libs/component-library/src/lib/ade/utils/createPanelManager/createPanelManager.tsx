@@ -18,10 +18,11 @@ import { ADEDropdownMenu } from '../../ADEDropdownMenu/ADEDropdownMenu';
 import ReactDOM from 'react-dom';
 import { cn } from '@letta-web/core-style-config';
 import './CreatePanelManager.css';
+import { Frame } from '../../../framing/Frame/Frame';
 
 export type GenericPanelTemplateId = number | string | symbol;
 
-export interface PanelRegistryItem<
+export interface PanelTemplate<
   TPanelTemplateId extends GenericPanelTemplateId
 > {
   templateId: TPanelTemplateId;
@@ -31,15 +32,20 @@ export interface PanelRegistryItem<
 }
 
 type PanelTemplateRegistry<TPanelTemplateId extends GenericPanelTemplateId> =
-  Record<TPanelTemplateId, PanelRegistryItem<TPanelTemplateId>>;
+  Record<TPanelTemplateId, PanelTemplate<TPanelTemplateId>>;
 
 type PanelPosition = [number, number, number];
 
 interface PanelPositionItem<TPanelTemplateId extends GenericPanelTemplateId> {
   id: string;
   templateId: TPanelTemplateId;
-  data: PanelRegistryItem<TPanelTemplateId>['data']['_output'];
+  data: PanelTemplate<TPanelTemplateId>['data']['_output'];
   isActive: boolean;
+}
+
+export interface PanelDimensionType<TPositions> {
+  size: number;
+  positions: TPositions;
 }
 
 // panels exist in a three dimensional space
@@ -48,10 +54,12 @@ interface PanelPositionItem<TPanelTemplateId extends GenericPanelTemplateId> {
 // the third dimension is the tab
 export type PanelItemTabsPositions<
   TPanelTemplateId extends GenericPanelTemplateId
-> = Array<PanelPositionItem<TPanelTemplateId>>;
+> = PanelDimensionType<Array<PanelPositionItem<TPanelTemplateId>>>;
+
 export type PanelItemYPositions<
   TPanelTemplateId extends GenericPanelTemplateId
-> = Array<PanelItemTabsPositions<TPanelTemplateId>>;
+> = PanelDimensionType<Array<PanelItemTabsPositions<TPanelTemplateId>>>;
+
 export type PanelItemPositionsMatrix<
   TPanelTemplateId extends GenericPanelTemplateId
 > = Array<PanelItemYPositions<TPanelTemplateId>>;
@@ -77,6 +85,8 @@ export function createPanelManager<
 
   interface PanelManagerContextDataType {
     positions: PanelItemPositionsMatrix<RegisteredPanelTemplateId>;
+    resizeX: (x: number, size: number) => void;
+    resizeY: (x: number, y: number, size: number) => void;
     getIsPanelTemplateActive: (
       panelTemplateId: RegisteredPanelTemplateId
     ) => boolean;
@@ -91,6 +101,12 @@ export function createPanelManager<
 
   const PanelManagerContext = createContext<PanelManagerContextDataType>({
     positions: [],
+    resizeX: () => {
+      return false;
+    },
+    resizeY: () => {
+      return false;
+    },
     getIsPanelTemplateActive: () => false,
     panelIdToPositionMap: {},
     activatePanel: () => {
@@ -130,7 +146,7 @@ export function createPanelManager<
         const activeIds = new Set<PanelId>();
 
         for (let x = xPositions.length - 1; x >= 0; x--) {
-          const yPositions = xPositions[x];
+          const yPositions = xPositions[x]?.positions;
 
           if (!yPositions) {
             xPositions.splice(x, 1);
@@ -138,7 +154,7 @@ export function createPanelManager<
           }
 
           for (let y = yPositions.length - 1; y >= 0; y--) {
-            const tabPositions = yPositions[y];
+            const tabPositions = yPositions[y]?.positions;
 
             if (!tabPositions) {
               yPositions.splice(y, 1);
@@ -173,7 +189,7 @@ export function createPanelManager<
         // loop through the x, y and tab positions and remove any empty arrays
         // start from reverse to avoid index issues
         for (let x = xPositions.length - 1; x >= 0; x--) {
-          const yPositions = xPositions[x];
+          const yPositions = xPositions[x]?.positions;
 
           if (!yPositions || yPositions.length === 0) {
             xPositions.splice(x, 1);
@@ -181,7 +197,7 @@ export function createPanelManager<
           }
 
           for (let y = yPositions.length - 1; y >= 0; y--) {
-            const tabPositions = yPositions[y];
+            const tabPositions = yPositions[y].positions;
 
             if (!tabPositions || tabPositions.length === 0) {
               yPositions.splice(y, 1);
@@ -209,8 +225,8 @@ export function createPanelManager<
         const panelIdToPositionMap: Record<PanelId, PanelPosition> = {};
 
         positions.forEach((yPositions, x) => {
-          yPositions.forEach((tabPositions, y) => {
-            tabPositions.forEach((panelPosition, tab) => {
+          yPositions?.positions?.forEach((tabPositions, y) => {
+            tabPositions?.positions?.forEach((panelPosition, tab) => {
               panelIdToPositionMap[panelPosition.id] = [x, y, tab];
             });
           });
@@ -219,22 +235,33 @@ export function createPanelManager<
         const activePanelTemplates = new Set<RegisteredPanelTemplateId>();
 
         positions.forEach((yPositions) => {
-          yPositions.forEach((tabPositions) => {
-            const firstActivePanel = tabPositions.find(
+          yPositions?.positions?.forEach((tabPositions) => {
+            const firstActivePanel = tabPositions.positions.find(
               (panel) => panel.isActive
             );
 
-            tabPositions.forEach((panel) => {
-              if (firstActivePanel && firstActivePanel.id === panel.id) {
-                activePanelTemplates.add(panel.templateId);
-              }
+            tabPositions?.positions?.forEach((panel) => {
+              activePanelTemplates.add(panel.templateId);
             });
 
             if (!firstActivePanel) {
-              tabPositions[0].isActive = true;
+              tabPositions.positions[0].isActive = true;
             }
           });
         });
+
+        // loop through all x and ys and make sure sizes add up to 100 per dimension
+        const totalX = xPositions.reduce((acc, x) => acc + x.size, 0);
+
+        xPositions.forEach((x) => {
+          const totalY = x.positions.reduce((acc, y) => acc + y.size, 0);
+
+          x.size = (x.size / totalX) * 100;
+
+          x.positions.forEach((y) => {
+            y.size = (y.size / totalY) * 100;
+          });
+        }, 0);
 
         return {
           positions: xPositions,
@@ -248,6 +275,71 @@ export function createPanelManager<
     const [state, setState] = useState<PanelState>(() => {
       return reconcilePositions(initialPositions);
     });
+
+    const resizeX = useCallback((x: number, size: number) => {
+      const totalWidthInPx =
+        getPanelRenderElement().getBoundingClientRect().width;
+
+      setState((prevState) => {
+        const nextState = { ...prevState };
+
+        const currentPanelWidth = nextState.positions[x].size;
+        const neighbourPanelWidth = nextState.positions[x + 1].size;
+
+        // total width of all the panels in % excluding the current panel
+        const amountToReduce = size - currentPanelWidth;
+        const neighbourPanelNewWidth = neighbourPanelWidth - amountToReduce;
+
+        const neighbourPanelNewWidthInPx =
+          (neighbourPanelNewWidth / 100) * totalWidthInPx;
+
+        // the desired width cannot be less than 200px or the nextPanelCurrentWidth cannot be less than 200px
+        // first convert the percentage to px
+        const desiredWidthInPx = (size / 100) * totalWidthInPx;
+
+        if (desiredWidthInPx < 200 || neighbourPanelNewWidthInPx < 200) {
+          return prevState;
+        }
+
+        nextState.positions[x + 1].size = neighbourPanelNewWidth;
+        nextState.positions[x].size = size;
+
+        return nextState;
+      });
+    }, []);
+
+    const resizeY = useCallback((x: number, y: number, size: number) => {
+      const totalWidthInPx =
+        getPanelRenderElement().getBoundingClientRect().width;
+
+      setState((prevState) => {
+        const nextState = { ...prevState };
+
+        const currentPanelHeight = nextState.positions[x].positions[y].size;
+        const neighbourPanelHeight =
+          nextState.positions[x].positions[y + 1].size;
+
+        // total height of all the panels in % excluding the current panel
+        const amountToReduce = size - currentPanelHeight;
+        const neighbourPanelNewHeight = neighbourPanelHeight - amountToReduce;
+
+        const neighbourPanelNewHeightInPx =
+          (neighbourPanelNewHeight / 100) * totalWidthInPx;
+
+        // the desired height cannot be less than 200px or the nextPanelCurrentHeight cannot be less than 200px
+        // first convert the percentage to px
+        const desiredHeightInPx = (size / 100) * totalWidthInPx;
+
+        if (desiredHeightInPx < 200 || neighbourPanelNewHeightInPx < 200) {
+          return prevState;
+        }
+
+        nextState.positions[x].positions[y + 1].size = neighbourPanelNewHeight;
+        nextState.positions[x].positions[y].size = size;
+
+        return nextState;
+      });
+    }, []);
 
     const openPanel = useCallback(
       (options: OpenPanelOptions<RegisteredPanelTemplateId>) => {
@@ -275,36 +367,42 @@ export function createPanelManager<
           );
 
           if (!nextState[0]) {
-            nextState[0] = [];
+            nextState[0] = {
+              size: 100,
+              positions: [],
+            };
           }
 
-          if (!nextState[0][0]) {
-            nextState[0][0] = [];
+          if (!nextState[0].positions[0]) {
+            nextState[0].positions[0] = {
+              size: 100,
+              positions: [],
+            };
           }
 
-          if (!nextState[0][0][0]) {
-            nextState[0][0][0] = panelPayload;
+          if (!nextState[0].positions[0].positions[0]) {
+            nextState[0].positions[0].positions[0] = panelPayload;
           } else {
-            const firstActivePanel = nextState[0][0].find(
+            const firstActivePanel = nextState[0].positions[0].positions.find(
               (panel) => panel.isActive
             );
 
             if (firstActivePanel) {
               const firstActivePanelIndex =
-                nextState[0][0].indexOf(firstActivePanel);
+                nextState[0].positions[0].positions.indexOf(firstActivePanel);
 
-              nextState[0][0][firstActivePanelIndex] = {
-                ...nextState[0][0][firstActivePanelIndex],
+              nextState[0].positions[0].positions[firstActivePanelIndex] = {
+                ...nextState[0].positions[0].positions[firstActivePanelIndex],
                 isActive: false,
               };
 
-              nextState[0][0].splice(
+              nextState[0].positions[0].positions.splice(
                 firstActivePanelIndex + 1,
                 0,
                 panelPayload
               );
             } else {
-              nextState[0][0].push(panelPayload);
+              nextState[0].positions[0].positions.push(panelPayload);
             }
           }
 
@@ -330,7 +428,7 @@ export function createPanelManager<
 
           const [x, y, tab] = position;
 
-          nextState[x][y].splice(tab, 1);
+          nextState[x].positions[y].positions.splice(tab, 1);
 
           return reconcilePositions(nextState);
         });
@@ -355,7 +453,7 @@ export function createPanelManager<
 
           const [x, y, tab] = position;
 
-          nextState[x][y].forEach((panel, tabIdx) => {
+          nextState[x].positions[y].positions.forEach((panel, tabIdx) => {
             panel.isActive = tabIdx === tab;
           });
 
@@ -395,19 +493,29 @@ export function createPanelManager<
 
           const [currentX, currentY, currentTab] = foundPanelPosition;
 
-          if (!nextState[currentX]?.[currentY]?.[currentTab]) {
+          if (
+            !nextState[currentX]?.positions[currentY]?.positions[currentTab]
+          ) {
             return prevState;
           }
 
-          const panelToMove = { ...nextState[currentX][currentY][currentTab] };
+          const panelToMove = {
+            ...nextState[currentX].positions[currentY].positions[currentTab],
+          };
 
           // add panel to new position
           if (!nextState[nextX]) {
-            nextState[nextX] = [];
+            nextState[nextX] = {
+              size: 100,
+              positions: [],
+            };
           }
 
-          if (!nextState[nextX][nextY]) {
-            nextState[nextX][nextY] = [];
+          if (!nextState[nextX].positions[nextY]) {
+            nextState[nextX].positions[nextY] = {
+              size: 100,
+              positions: [],
+            };
           }
 
           // if a tab already exists at the given position, move the panel next to it
@@ -415,23 +523,40 @@ export function createPanelManager<
           let prepended = 0;
 
           if (tab === -1) {
-            nextState[nextX][nextY].splice(0, 0, panelToMove);
+            nextState[nextX].positions[nextY].positions.splice(
+              0,
+              0,
+              panelToMove
+            );
 
             prepended = 1;
-          } else if (nextState[nextX][nextY][tab]) {
-            nextState[nextX][nextY].splice(tab + 1, 0, panelToMove);
+          } else if (nextState[nextX].positions[nextY].positions[tab]) {
+            nextState[nextX].positions[nextY].positions.splice(
+              tab + 1,
+              0,
+              panelToMove
+            );
           } else {
-            nextState[nextX][nextY].splice(tab, 0, panelToMove);
+            nextState[nextX].positions[nextY].positions.splice(
+              tab,
+              0,
+              panelToMove
+            );
           }
 
-          nextState[nextX][nextY] = nextState[nextX][nextY].map((panel) => {
+          nextState[nextX].positions[nextY].positions = nextState[
+            nextX
+          ].positions[nextY].positions.map((panel) => {
             return {
               ...panel,
               isActive: panel.id === panelId,
             };
           });
 
-          nextState[currentX][currentY].splice(currentTab + prepended, 1);
+          nextState[currentX].positions[currentY].positions.splice(
+            currentTab + prepended,
+            1
+          );
 
           return reconcilePositions(nextState);
         });
@@ -455,14 +580,19 @@ export function createPanelManager<
         closePanel,
         activatePanel,
         movePanelToPosition,
+        resizeX,
+        resizeY,
       };
     }, [
       getIsPanelTemplateActive,
-      state,
+      state.panelIdToPositionMap,
+      state.positions,
       openPanel,
       closePanel,
       activatePanel,
       movePanelToPosition,
+      resizeX,
+      resizeY,
     ]);
 
     return (
@@ -491,6 +621,14 @@ export function createPanelManager<
     const { children, panelId } = props;
     const { movePanelToPosition } = usePanelManager();
 
+    const dragStartTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+      setMounted(true);
+    }, []);
+
     const draggableElement = useRef<HTMLDivElement>(null);
 
     const draggedElement = useRef<HTMLDivElement>(null);
@@ -499,7 +637,16 @@ export function createPanelManager<
     const allDropzoneWindowPositions = useRef<DropzoneWindowPosition[]>([]);
 
     const handleDragStart = useCallback(() => {
-      setIsDragging(true);
+      // activatePanel(panelId);
+
+      if (dragStartTimeout.current) {
+        clearTimeout(dragStartTimeout.current);
+      }
+
+      dragStartTimeout.current = setTimeout(() => {
+        setIsDragging(true);
+      }, 250);
+
       document.body.dataset.isDraggingTabs = 'true';
 
       allDropzoneWindowPositions.current = Array.from(
@@ -544,8 +691,18 @@ export function createPanelManager<
       [isDragging]
     );
 
+    const clearDragStartTimeout = useCallback(() => {
+      if (dragStartTimeout.current) {
+        clearTimeout(dragStartTimeout.current);
+      }
+    }, []);
+
     const handleDragEnd = useCallback(
       (event: MouseEvent) => {
+        if (dragStartTimeout.current) {
+          clearDragStartTimeout();
+        }
+
         if (!isDragging) {
           return;
         }
@@ -578,7 +735,7 @@ export function createPanelManager<
         document.body.dataset.isDraggingTabs = 'false';
         setIsDragging(false);
       },
-      [isDragging, movePanelToPosition, panelId]
+      [clearDragStartTimeout, isDragging, movePanelToPosition, panelId]
     );
 
     useEffect(() => {
@@ -600,10 +757,16 @@ export function createPanelManager<
 
     return (
       <>
-        <Slot onMouseDown={handleDragStart} ref={draggableElement}>
+        <Slot
+          onMouseUp={() => {
+            clearDragStartTimeout();
+          }}
+          onMouseDown={handleDragStart}
+          ref={draggableElement}
+        >
           {children}
         </Slot>
-        {typeof document !== 'undefined' &&
+        {mounted &&
           ReactDOM.createPortal(
             <Slot
               data-is-dragging={isDragging}
@@ -642,7 +805,7 @@ export function createPanelManager<
             DROPZONE_CLASS
           )}
         />
-        <div className="drop-expander transition-all w-[0] h-full bg-blue-50" />
+        <div className="drop-expander transition-all w-[0] h-full bg-black opacity-50" />
       </div>
     );
   }
@@ -651,8 +814,161 @@ export function createPanelManager<
     return useContext(PanelManagerContext);
   }
 
+  function getDimensionId(x: number, y?: number) {
+    return `dimension-${x}${y ? `-${y}` : ''}`;
+  }
+
+  interface XResizeHandleProps {
+    x: number;
+  }
+
+  function XResizeHandle(props: XResizeHandleProps) {
+    const { x } = props;
+
+    const { resizeX } = usePanelManager();
+    const isDragging = useRef(false);
+
+    const handleStartDrag = useCallback(() => {
+      isDragging.current = true;
+      document.body.style.userSelect = 'none';
+    }, []);
+
+    useEffect(() => {
+      function handleEndDrag() {
+        isDragging.current = false;
+        document.body.style.userSelect = 'auto';
+        document.body.style.cursor = 'auto';
+      }
+
+      window.addEventListener('mouseup', handleEndDrag);
+
+      return () => {
+        window.removeEventListener('mouseup', handleEndDrag);
+      };
+    }, []);
+
+    const handleSetWidth = useCallback(
+      (event: MouseEvent) => {
+        if (!isDragging.current) {
+          return;
+        }
+
+        const { width } = getPanelRenderElement().getBoundingClientRect();
+
+        const panelLeft = document
+          .getElementById(getDimensionId(x))
+          ?.getBoundingClientRect().left;
+
+        if (!panelLeft) {
+          throw new Error('Panel not found');
+        }
+
+        const nextWidth = ((event.clientX - panelLeft) / width) * 100;
+
+        resizeX(x, nextWidth);
+      },
+      [resizeX, x]
+    );
+
+    useEffect(() => {
+      function handleMouseMove(event: MouseEvent) {
+        handleSetWidth(event);
+      }
+
+      window.addEventListener('mousemove', handleMouseMove);
+
+      return () => {
+        window.removeEventListener('mousemove', handleMouseMove);
+      };
+    }, [handleSetWidth]);
+
+    return (
+      <Frame
+        onMouseDown={handleStartDrag}
+        color="background-grey"
+        fullHeight
+        className="absolute bg-background right-0 h-full top-0 w-[5px] border-l border-r cursor-ew-resize"
+      />
+    );
+  }
+
+  interface YResizeHandleProps {
+    x: number;
+    y: number;
+  }
+
+  function YResizeHandle(props: YResizeHandleProps) {
+    const { x, y } = props;
+
+    const { resizeY } = usePanelManager();
+    const isDragging = useRef(false);
+
+    const handleStartDrag = useCallback(() => {
+      isDragging.current = true;
+      document.body.style.userSelect = 'none';
+    }, []);
+
+    useEffect(() => {
+      function handleEndDrag() {
+        isDragging.current = false;
+        document.body.style.userSelect = 'auto';
+        document.body.style.cursor = 'auto';
+      }
+
+      window.addEventListener('mouseup', handleEndDrag);
+
+      return () => {
+        window.removeEventListener('mouseup', handleEndDrag);
+      };
+    }, []);
+
+    const handleSetHeight = useCallback(
+      (event: MouseEvent) => {
+        if (!isDragging.current) {
+          return;
+        }
+
+        const { height } = getPanelRenderElement().getBoundingClientRect();
+
+        const panelTop = document
+          .getElementById(getDimensionId(x, y))
+          ?.getBoundingClientRect().top;
+
+        if (!panelTop) {
+          throw new Error('Panel not found');
+        }
+
+        const nextHeight = ((event.clientY - panelTop) / height) * 100;
+
+        resizeY(x, y, nextHeight);
+      },
+      [resizeY, x, y]
+    );
+
+    useEffect(() => {
+      function handleMouseMove(event: MouseEvent) {
+        handleSetHeight(event);
+      }
+
+      window.addEventListener('mousemove', handleMouseMove);
+
+      return () => {
+        window.removeEventListener('mousemove', handleMouseMove);
+      };
+    }, [handleSetHeight]);
+
+    return (
+      <Frame
+        onMouseDown={handleStartDrag}
+        color="background-grey"
+        fullWidth
+        className="absolute bottom-0 bg-background left-0 h-[5px] border-t border-b cursor-ns-resize"
+      />
+    );
+  }
+
   interface TabBarProps {
-    tabs: PanelItemTabsPositions<RegisteredPanelTemplateId>;
+    tabs: PanelItemTabsPositions<RegisteredPanelTemplateId>['positions'];
     activeTabId?: PanelId;
     x: number;
     y: number;
@@ -692,7 +1008,7 @@ export function createPanelManager<
     );
 
     return (
-      <HStack fullWidth gap={false}>
+      <HStack className="min-h-[35px]" overflowX="auto" fullWidth gap={false}>
         {tabs.map((tab, index) => {
           return (
             <HStack gap={false} position="relative" key={tab.id}>
@@ -710,11 +1026,12 @@ export function createPanelManager<
                   key={index}
                 >
                   <button
+                    className="h-full"
                     onClick={() => {
                       handleClickedTab(tab.id);
                     }}
                   >
-                    <Typography>
+                    <Typography noWrap>
                       {panelRegistry[tab.templateId].title}
                     </Typography>
                   </button>
@@ -757,7 +1074,7 @@ export function createPanelManager<
   }
 
   interface PanelTabRendererProps {
-    tabs: PanelItemTabsPositions<RegisteredPanelTemplateId>;
+    tabs: PanelItemTabsPositions<RegisteredPanelTemplateId>['positions'];
     x: number;
     y: number;
   }
@@ -771,30 +1088,67 @@ export function createPanelManager<
       <VStack fullHeight gap={false}>
         <TabBar x={x} y={y} activeTabId={activeTab?.id} tabs={tabs} />
         <VStack color="background" fullHeight fullWidth>
-          {activeTab &&
-            React.createElement(
-              panelRegistry[activeTab.templateId].content,
-              activeTab.data
-            )}
+          {tabs.map((tab) => {
+            const PanelComponent = panelRegistry[tab.templateId].content;
+
+            return (
+              <VStack
+                key={tab.id}
+                className={cn(tab.isActive ? 'flex' : 'hidden')}
+                fullHeight
+                fullWidth
+              >
+                <PanelComponent {...tab.data} />
+              </VStack>
+            );
+          })}
         </VStack>
       </VStack>
     );
+  }
+
+  function getPanelRenderElement() {
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    return document.getElementById('letta-web-panel-render-area')!;
   }
 
   function PanelRenderer() {
     const { positions: xPositions } = usePanelManager();
 
     return (
-      <HStack gap={false} fullWidth fullHeight>
-        {xPositions.map((yPositions, x) => {
+      <HStack id="letta-web-panel-render-area" gap={false} fullWidth fullHeight>
+        {xPositions.map((xElement, x) => {
           return (
-            <VStack borderRight gap={false} fullWidth fullHeight key={x}>
-              {yPositions.map((tabPositions, y) => {
-                return (
-                  <PanelTabRenderer x={x} y={y} key={y} tabs={tabPositions} />
-                );
-              })}
-            </VStack>
+            <HStack
+              id={getDimensionId(x)}
+              position="relative"
+              style={{ width: `${xElement.size}%` }}
+              key={x}
+            >
+              <VStack gap={false} fullWidth fullHeight key={x}>
+                {xElement.positions.map((yElement, y) => {
+                  return (
+                    <VStack
+                      id={getDimensionId(x, y)}
+                      position="relative"
+                      style={{ height: `${yElement.size}%` }}
+                      key={y}
+                    >
+                      <PanelTabRenderer
+                        x={x}
+                        y={y}
+                        key={y}
+                        tabs={yElement.positions}
+                      />
+                      {y < xElement.positions.length - 1 && (
+                        <YResizeHandle x={x} y={y} />
+                      )}
+                    </VStack>
+                  );
+                })}
+              </VStack>
+              {x < xPositions.length - 1 && <XResizeHandle x={x} />}
+            </HStack>
           );
         })}
       </HStack>

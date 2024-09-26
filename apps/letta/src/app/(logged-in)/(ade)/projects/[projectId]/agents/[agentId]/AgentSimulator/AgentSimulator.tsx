@@ -1,5 +1,5 @@
 'use client';
-import type { PanelRegistryItem } from '@letta-web/component-library';
+import type { PanelTemplate } from '@letta-web/component-library';
 import {
   Button,
   ChatBubbleIcon,
@@ -353,4 +353,4 @@ export const agentSimulatorTemplate = {
   title: 'Agent Simulator',
   content: Chatroom,
   data: z.undefined(),
-} satisfies PanelRegistryItem<'agent-simulator'>;
+} satisfies PanelTemplate<'agent-simulator'>;

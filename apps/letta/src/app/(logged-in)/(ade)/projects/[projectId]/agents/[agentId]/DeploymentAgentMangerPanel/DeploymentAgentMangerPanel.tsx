@@ -1,4 +1,5 @@
 import React, { useCallback, useMemo, useState } from 'react';
+import type { PanelTemplate } from '@letta-web/component-library';
 import {
   ActionCard,
   Badge,
@@ -6,7 +7,6 @@ import {
   Dialog,
   HStack,
   LoadingEmptyStatusComponent,
-  Panel,
   PanelBar,
   PanelMainContent,
   VStack,
@@ -16,6 +16,7 @@ import { useCurrentProjectId } from '../../../../../../(dashboard-like)/projects
 import { useQueryClient } from '@tanstack/react-query';
 import { webApi, webApiQueryKeys } from '$letta/client';
 import { DeployAgentUsageInstructions } from '$letta/client/code-reference/DeployAgentUsageInstructions';
+import { z } from 'zod';
 
 function StageAndDeployDialog() {
   const testingAgentId = useCurrentTestingAgentId();
@@ -158,18 +159,7 @@ export function DeploymentAgentMangerPanel() {
   }, [data]);
 
   return (
-    <Panel
-      title="Deployment Manager"
-      id="staged-agents"
-      trigger={
-        <Button
-          data-testid="open-deployment-manager"
-          color="tertiary"
-          size="small"
-          label="Deployment Manager"
-        />
-      }
-    >
+    <VStack gap={false}>
       <PanelBar
         searchValue={searchValue}
         onSearch={setSearchValue}
@@ -203,6 +193,13 @@ export function DeploymentAgentMangerPanel() {
           </VStack>
         )}
       </PanelMainContent>
-    </Panel>
+    </VStack>
   );
 }
+
+export const deploymentPanelTemplate = {
+  title: 'Deployment',
+  data: z.undefined(),
+  content: DeploymentAgentMangerPanel,
+  templateId: 'deployment',
+} satisfies PanelTemplate<'deployment'>;

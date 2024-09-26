@@ -3,6 +3,11 @@ import { agentSimulatorTemplate } from './AgentSimulator/AgentSimulator';
 import { archivalMemoriesPanelTemplate } from './ArchivalMemoriesPanel/ArchivalMemoriesPanel';
 import { configPanelTemplate } from './ConfigPanel/ConfigPanelWrapped';
 import { welcomePanelTemplate } from './WelcomePanel/WelcomePanel';
+import { modelTemplate } from './ModelPanel/ModelPanel';
+import { toolsPanelTemplate } from './ToolsPanel/ToolsPanel';
+import { dataSourcesPanelTemplate } from './DataSourcesPanel/DataSourcesPanel';
+import { memoryBlocksTemplate } from './MemoryBlocksPanel/MemoryBlocksPanel';
+import { deploymentPanelTemplate } from './DeploymentAgentMangerPanel/DeploymentAgentMangerPanel';
 
 const {
   panelRegistry,
@@ -12,10 +17,15 @@ const {
   PanelCloser,
   PanelRenderer,
 } = createPanelManager({
+  'model-details': modelTemplate,
   'agent-simulator': agentSimulatorTemplate,
   'archival-memories': archivalMemoriesPanelTemplate,
   'agent-config': configPanelTemplate,
   'welcome-panel': welcomePanelTemplate,
+  'tools-panel': toolsPanelTemplate,
+  'data-sources-panel': dataSourcesPanelTemplate,
+  'memory-blocks': memoryBlocksTemplate,
+  deployment: deploymentPanelTemplate,
 });
 
 export {

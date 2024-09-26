@@ -1,4 +1,5 @@
 import React, { useCallback, useMemo, useState } from 'react';
+import type { PanelTemplate } from '@letta-web/component-library';
 import {
   ActionCard,
   Button,
@@ -8,7 +9,6 @@ import {
   FormField,
   FormProvider,
   LettaLoaderPanel,
-  Panel,
   PanelBar,
   PanelMainContent,
   RawInput,
@@ -25,10 +25,8 @@ import {
 } from '@letta-web/letta-agents-api';
 import { useBlocksServiceGetMemoryBlock } from '@letta-web/letta-agents-api';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ADENavigationItem } from '../common/ADENavigationItem/ADENavigationItem';
 import { useCurrentAgent } from '../hooks';
 import { useQueryClient } from '@tanstack/react-query';
-import { BrickWallIcon } from 'lucide-react';
 
 const { PanelRouter, usePanelRouteData, usePanelPageContext } =
   createPageRouter(
@@ -272,19 +270,19 @@ function MemoryHome() {
 
 export function MemoryBlocksPanel() {
   return (
-    <Panel
-      id="memory-blocks-panel"
-      trigger={
-        <ADENavigationItem icon={<BrickWallIcon />} title="Memory Blocks" />
-      }
-    >
-      <PanelRouter
-        rootPageKey="memoryHome"
-        pages={{
-          memoryHome: <MemoryHome />,
-          editMemory: <EditMemory />,
-        }}
-      />
-    </Panel>
+    <PanelRouter
+      rootPageKey="memoryHome"
+      pages={{
+        memoryHome: <MemoryHome />,
+        editMemory: <EditMemory />,
+      }}
+    />
   );
 }
+
+export const memoryBlocksTemplate = {
+  templateId: 'memory-blocks',
+  content: MemoryBlocksPanel,
+  title: 'Memory Blocks',
+  data: z.undefined(),
+} satisfies PanelTemplate<'memory-blocks'>;

@@ -28,7 +28,7 @@ const frameVariants = cva('', {
     },
     width: {
       contained: 'max-w-[500px]',
-      sidebar: 'max-w-[300px] min-w-[300px]',
+      sidebar: 'w-sidebar',
     },
     borderColor: {
       true: 'border-border',

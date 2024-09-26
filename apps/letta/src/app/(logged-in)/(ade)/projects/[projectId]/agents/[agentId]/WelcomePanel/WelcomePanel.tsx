@@ -1,4 +1,4 @@
-import type { PanelRegistryItem } from '@letta-web/component-library';
+import type { PanelTemplate } from '@letta-web/component-library';
 import { PanelMainContent, Typography } from '@letta-web/component-library';
 import { z } from 'zod';
 
@@ -26,4 +26,4 @@ export const welcomePanelTemplate = {
   content: WelcomePanel,
   title: 'Welcome',
   data: z.undefined(),
-} satisfies PanelRegistryItem<'welcome-panel'>;
+} satisfies PanelTemplate<'welcome-panel'>;

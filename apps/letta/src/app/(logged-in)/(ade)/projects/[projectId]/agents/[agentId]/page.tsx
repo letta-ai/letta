@@ -13,7 +13,7 @@ import { eq } from 'drizzle-orm';
 import { redirect } from 'next/navigation';
 import { webApiQueryKeys } from '$letta/client';
 import { getProjectById } from '$letta/web-api/router';
-import { NextAgentPage } from './NextAgentPage';
+import { AgentPage } from './AgentPage';
 
 interface AgentsAgentPageProps {
   params: {
@@ -81,7 +81,7 @@ async function AgentsAgentPage(context: AgentsAgentPageProps) {
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
-      <NextAgentPage />
+      <AgentPage />
     </HydrationBoundary>
   );
 }
