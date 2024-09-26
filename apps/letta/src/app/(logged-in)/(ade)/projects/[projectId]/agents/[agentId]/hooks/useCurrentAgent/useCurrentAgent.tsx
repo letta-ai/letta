@@ -1,3 +1,4 @@
+'use client';
 import type { AgentState } from '@letta-web/letta-agents-api';
 import { useAgentsServiceGetAgent } from '@letta-web/letta-agents-api';
 import { useCurrentTestingAgent } from '../useCurrentTestingAgent/useCurrentTestingAgent';

@@ -18,6 +18,12 @@
       "options": {
         "tsConfig": ["tsconfig.json"]
       }
+    },
+    "test": {
+      "executor": "@nx/jest:jest",
+      "options": {
+        "jestConfig": "libs/component-library/jest.config.ts"
+      }
     }
   }
 }

@@ -1,0 +1,5 @@
+.is-dragging-over ~ .drop-expander {
+  width: 100px;
+}
+
+

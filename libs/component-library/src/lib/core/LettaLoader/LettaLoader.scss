@@ -61,8 +61,18 @@
   }
 }
 
+@keyframes rotateY {
+  0% {
+    transform: rotateY(0deg);
+  }
+
+  100% {
+    transform: rotateY(360deg);
+  }
+}
+
 .letta-loader {
-  animation: lettaLoadSpin 5s linear infinite;
+  animation: rotateY 2.5s linear infinite;
   transform-origin: center;
   width: fit-content;
 }

@@ -37,7 +37,7 @@ import { useFeatureFlag, webApi, webApiQueryKeys } from '$letta/client';
 import { ArchivalMemoriesPanel } from './ArchivalMemoriesPanel/ArchivalMemoriesPanel';
 import { DatabaseIcon, GitForkIcon, SettingsIcon } from 'lucide-react';
 import { DeploymentAgentMangerPanel } from './DeploymentAgentMangerPanel/DeploymentAgentMangerPanel';
-import { ConfigPanel } from './ConfigPanel/ConfigPanel';
+import { ConfigPanelWrapped } from './ConfigPanel/ConfigPanelWrapped';
 import { useCurrentTestingAgent } from './hooks/useCurrentTestingAgent/useCurrentTestingAgent';
 import { useDebouncedValue, useLocalStorage } from '@mantine/hooks';
 import {
@@ -158,7 +158,7 @@ function ADESidebar() {
         <VStack>
           <SidebarGroup title="Base">
             <ModelPanel />
-            <ConfigPanel />
+            <ConfigPanelWrapped />
             {showParametersEditor && (
               <ADENavigationItem icon={<SettingsIcon />} title="Parameters" />
             )}

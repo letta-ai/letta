@@ -1,5 +1,7 @@
+'use client';
 import React, { useCallback, useMemo, useState } from 'react';
 import { ADENavigationItem } from '../common/ADENavigationItem/ADENavigationItem';
+import type { PanelRegistryItem } from '@letta-web/component-library';
 import {
   ActionCard,
   Alert,
@@ -268,3 +270,10 @@ export function ArchivalMemoriesPanel() {
     </Panel>
   );
 }
+
+export const archivalMemoriesPanelTemplate = {
+  templateId: 'archival-memories',
+  title: 'Archival Memories',
+  content: MemoryRootPage,
+  data: z.object({}),
+} satisfies PanelRegistryItem<'archival-memories'>;
