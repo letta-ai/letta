@@ -1,5 +1,6 @@
+'use client';
 import React, { useCallback, useMemo, useState } from 'react';
-import { ADENavigationItem } from '../common/ADENavigationItem/ADENavigationItem';
+import type { PanelTemplate } from '@letta-web/component-library';
 import {
   ActionCard,
   Alert,
@@ -11,7 +12,6 @@ import {
   FormProvider,
   HStack,
   LettaLoaderPanel,
-  Panel,
   PanelBar,
   PanelMainContent,
   TextArea,
@@ -29,7 +29,6 @@ import {
 import { useCurrentAgent } from '../hooks';
 import { useQueryClient } from '@tanstack/react-query';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { BrainCogIcon } from 'lucide-react';
 
 const { PanelRouter, usePanelPageContext } = createPageRouter(
   {
@@ -252,19 +251,19 @@ function CreateMemoryPage() {
 
 export function ArchivalMemoriesPanel() {
   return (
-    <Panel
-      id="archival-memories"
-      trigger={
-        <ADENavigationItem icon={<BrainCogIcon />} title="Archival Memories" />
-      }
-    >
-      <PanelRouter
-        rootPageKey="memory"
-        pages={{
-          memory: <MemoryRootPage />,
-          createMemory: <CreateMemoryPage />,
-        }}
-      />
-    </Panel>
+    <PanelRouter
+      rootPageKey="memory"
+      pages={{
+        memory: <MemoryRootPage />,
+        createMemory: <CreateMemoryPage />,
+      }}
+    />
   );
 }
+
+export const archivalMemoriesPanelTemplate = {
+  templateId: 'archival-memories',
+  title: 'Archival Memories',
+  content: ArchivalMemoriesPanel,
+  data: z.object({}),
+} satisfies PanelTemplate<'archival-memories'>;

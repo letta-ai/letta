@@ -8,9 +8,6 @@ import React, {
 } from 'react';
 import type { ZodType } from 'zod';
 import type { PanelPageChildrenType } from '../Panel';
-import { PanelPage } from '../Panel';
-import { PanelHeader } from '../../PanelHeader/PanelHeader';
-
 type PageTitle = string | ((values: ZodType['_output']) => string);
 
 export type GenericPanelRouter<PageKey extends string> = Record<
@@ -59,7 +56,7 @@ export function createPageRouter<
   }
 
   function RouterProvider(props: RouterProviderProps) {
-    const { pages, rootPageKey } = props;
+    const { pages } = props;
     const [currentPage, setCurrentPage] = useState<PageKeys>(
       options.initialPage
     );
@@ -84,50 +81,13 @@ export function createPageRouter<
       [currentPage, handleSetCurrentPage, state]
     );
 
-    const getTitleGivenState = useCallback(
-      (title: PageTitle, state?: ThisRouter[PageKeys]['state']['_output']) => {
-        if (typeof title === 'function') {
-          return title(state);
-        }
-
-        return title;
-      },
-      []
-    );
-
-    const title = useMemo(() => {
-      if (currentPage === rootPageKey) {
-        return getTitleGivenState(router[rootPageKey].title, {});
-      }
-
-      return [
-        {
-          title: getTitleGivenState(router[rootPageKey].title, {}),
-          onClick: () => {
-            handleSetCurrentPage(rootPageKey);
-          },
-        },
-        {
-          title: getTitleGivenState(router[currentPage].title, state),
-        },
-      ];
-    }, [
-      currentPage,
-      getTitleGivenState,
-      handleSetCurrentPage,
-      rootPageKey,
-      state,
-    ]);
-
     const CurrentPageComponent = useMemo(() => {
       return pages[currentPage];
     }, [currentPage, pages]);
 
     return (
       <RouterContext.Provider value={contextValue}>
-        <PanelPage header={<PanelHeader title={title} />}>
-          {CurrentPageComponent}
-        </PanelPage>
+        {CurrentPageComponent}
       </RouterContext.Provider>
     );
   }

@@ -1,9 +1,6 @@
 /* eslint-disable */
 import type { Config } from 'jest';
-import nextJest from 'next/jest.js';
-const createJestConfig = nextJest({
-  dir: __dirname,
-});
+import { pathsToModuleNameMapper } from 'ts-jest';
 
 const config: Config = {
   displayName: 'letta',
@@ -13,10 +10,14 @@ const config: Config = {
     '^(?!.*\\.(js|jsx|ts|tsx|css|json)$)': '@nx/react/plugins/jest',
     '^.+\\.[tj]sx?$': ['babel-jest', { presets: ['@nx/next/babel'] }],
   },
+  moduleNameMapper: pathsToModuleNameMapper({
+    '@letta-web/core-style-config': [
+      '../../libs/core-style-config/src/index.ts',
+    ],
+  }),
   testEnvironment: 'jsdom',
-  coverageProvider: 'v8',
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx'],
   coverageDirectory: '../../coverage/apps/letta',
 };
 
-export default createJestConfig(config);
+export default config;

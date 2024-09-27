@@ -1,3 +1,4 @@
+import type { PanelTemplate } from '@letta-web/component-library';
 import {
   Button,
   Card,
@@ -146,35 +147,48 @@ function DeleteAgentDialog() {
   );
 }
 
-export function ConfigPanel() {
+function ConfigPanel() {
   const { id } = useCurrentAgent();
 
+  return (
+    <PanelMainContent>
+      <RawInput fullWidth label="SDK Agent ID" allowCopy defaultValue={id} />
+      <EditAgentName />
+      <Card>
+        <VStack fullWidth>
+          <Typography bold>Delete agent</Typography>
+          <Typography>
+            Deleting an agent will permanently remove this agent from your
+            project. It is not-recoverable.
+          </Typography>
+          <Typography>
+            Any staged or deployed agents generated from this agent will not be
+            deleted.
+          </Typography>
+          <HStack fullWidth justify="end">
+            <DeleteAgentDialog />
+          </HStack>
+        </VStack>
+      </Card>
+    </PanelMainContent>
+  );
+}
+
+export function ConfigPanelWrapped() {
   return (
     <Panel
       title="Settings"
       id="settings"
       trigger={<ADENavigationItem icon={<Settings2Icon />} title="Settings" />}
     >
-      <PanelMainContent>
-        <RawInput fullWidth label="SDK Agent ID" allowCopy defaultValue={id} />
-        <EditAgentName />
-        <Card>
-          <VStack fullWidth>
-            <Typography bold>Delete agent</Typography>
-            <Typography>
-              Deleting an agent will permanently remove this agent from your
-              project. It is not-recoverable.
-            </Typography>
-            <Typography>
-              Any staged or deployed agents generated from this agent will not
-              be deleted.
-            </Typography>
-            <HStack fullWidth justify="end">
-              <DeleteAgentDialog />
-            </HStack>
-          </VStack>
-        </Card>
-      </PanelMainContent>
+      <ConfigPanel />
     </Panel>
   );
 }
+
+export const configPanelTemplate = {
+  templateId: 'agent-config',
+  content: ConfigPanel,
+  title: 'Settings',
+  data: z.undefined(),
+} satisfies PanelTemplate<'agent-config'>;

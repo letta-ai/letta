@@ -1,3 +1,5 @@
+'use client';
+import type { PanelTemplate } from '@letta-web/component-library';
 import {
   Button,
   ChatBubbleIcon,
@@ -6,7 +8,6 @@ import {
   LettaLoader,
   Panel,
   Typography,
-  usePanelContext,
   VStack,
 } from '@letta-web/component-library';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
@@ -25,6 +26,7 @@ import type { InfiniteData } from '@tanstack/query-core';
 import { get } from 'lodash-es';
 import { cn } from '@letta-web/core-style-config';
 import { Messages } from '$letta/client/components';
+import { z } from 'zod';
 
 function useSendMessage() {
   const { id } = useCurrentAgent();
@@ -317,13 +319,12 @@ function ChatInput(props: ChatInputProps) {
 function Chatroom() {
   const { sendMessage, isPending } = useSendMessage();
   const { id: agentId } = useCurrentAgent();
-  const { isPanelActive } = usePanelContext();
 
   return (
     <VStack fullHeight gap={false} fullWidth>
       <VStack gap="large" collapseHeight>
         <Messages
-          isPanelActive={isPanelActive}
+          isPanelActive
           isSendingMessage={isPending}
           agentId={agentId}
         />
@@ -346,3 +347,10 @@ export function AgentSimulator() {
     </Panel>
   );
 }
+
+export const agentSimulatorTemplate = {
+  templateId: 'agent-simulator',
+  title: 'Agent Simulator',
+  content: Chatroom,
+  data: z.undefined(),
+} satisfies PanelTemplate<'agent-simulator'>;

@@ -1,5 +1,6 @@
 'use client';
 import React, { useCallback, useMemo, useState } from 'react';
+import type { PanelTemplate } from '@letta-web/component-library';
 import {
   ActionCard,
   Button,
@@ -7,12 +8,10 @@ import {
   createPageRouter,
   HStack,
   LoadingEmptyStatusComponent,
-  Panel,
   PanelBar,
   PanelMainContent,
   VStack,
 } from '@letta-web/component-library';
-import { ADENavigationItem } from '../common/ADENavigationItem/ADENavigationItem';
 import {
   useAgentsServiceGetAgentSources,
   UseAgentsServiceGetAgentSourcesKeyFn,
@@ -22,7 +21,6 @@ import {
 import { useCurrentAgent } from '../hooks';
 import { z } from 'zod';
 import { useQueryClient } from '@tanstack/react-query';
-import { DatabaseIcon } from 'lucide-react';
 
 const { PanelRouter, usePanelPageContext } = createPageRouter(
   {
@@ -257,19 +255,19 @@ function AttachDataSourcePage() {
 
 export function DataSourcesPanel() {
   return (
-    <Panel
-      id="data-sources-panel"
-      trigger={
-        <ADENavigationItem icon={<DatabaseIcon />} title="Data Sources" />
-      }
-    >
-      <PanelRouter
-        rootPageKey="viewAttachedDataSourcePage"
-        pages={{
-          attachDataSourcePage: <AttachDataSourcePage />,
-          viewAttachedDataSourcePage: <ViewAttachedDataSourcePage />,
-        }}
-      />
-    </Panel>
+    <PanelRouter
+      rootPageKey="viewAttachedDataSourcePage"
+      pages={{
+        attachDataSourcePage: <AttachDataSourcePage />,
+        viewAttachedDataSourcePage: <ViewAttachedDataSourcePage />,
+      }}
+    />
   );
 }
+
+export const dataSourcesPanelTemplate = {
+  templateId: 'data-sources',
+  content: DataSourcesPanel,
+  title: 'Data Sources',
+  data: z.undefined(),
+} satisfies PanelTemplate<'data-sources'>;

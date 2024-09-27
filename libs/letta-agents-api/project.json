@@ -4,7 +4,6 @@
   "sourceRoot": "libs/letta-agents-api/src",
   "projectType": "library",
   "tags": [],
-  "// targets": "to see all targets run: nx show project letta-agents-api --web",
   "targets": {
     "generate": {
       "executor": "nx:run-commands",

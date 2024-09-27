@@ -1,15 +1,14 @@
 import React, { useCallback, useMemo } from 'react';
-import { ADENavigationItem } from '../common/ADENavigationItem/ADENavigationItem';
 import {
   FormProvider,
   FormField,
-  Panel,
   Select,
   useForm,
   Form,
   Button,
   HStack,
   PanelMainContent,
+  type PanelTemplate,
 } from '@letta-web/component-library';
 import { useCurrentAgent } from '../hooks';
 import { z } from 'zod';
@@ -18,7 +17,6 @@ import {
   useAgentsServiceUpdateAgent,
   useModelsServiceListModels,
 } from '@letta-web/letta-agents-api';
-import { BotIcon } from 'lucide-react';
 
 const modelSelectorSchema = z.object({
   model: z.object({
@@ -76,48 +74,43 @@ export function ModelPanel() {
   );
 
   return (
-    <Panel
-      id="model-panel"
-      title="Current Model"
-      trigger={
-        <ADENavigationItem
-          icon={<BotIcon />}
-          title="Model"
-          preview={currentAgent.llm_config.model}
-        />
-      }
-    >
-      <PanelMainContent>
-        <FormProvider {...form}>
-          <Form onSubmit={form.handleSubmit(onSubmit)}>
-            <FormField
-              control={form.control}
-              name="model"
-              render={({ field }) => (
-                <Select
-                  fullWidth
-                  onSelect={(value) => {
-                    field.onChange(value);
-                  }}
-                  value={field.value}
-                  label="Model"
-                  options={formattedModelsList}
-                />
-              )}
-            />
-            <HStack justify="spaceBetween">
-              <div />
-              <Button
-                type="submit"
-                size="small"
-                color="secondary"
-                label="Update"
-                busy={isUpdateAgentModelPending}
+    <PanelMainContent>
+      <FormProvider {...form}>
+        <Form onSubmit={form.handleSubmit(onSubmit)}>
+          <FormField
+            control={form.control}
+            name="model"
+            render={({ field }) => (
+              <Select
+                fullWidth
+                onSelect={(value) => {
+                  field.onChange(value);
+                }}
+                value={field.value}
+                label="Model"
+                options={formattedModelsList}
               />
-            </HStack>
-          </Form>
-        </FormProvider>
-      </PanelMainContent>
-    </Panel>
+            )}
+          />
+          <HStack justify="spaceBetween">
+            <div />
+            <Button
+              type="submit"
+              size="small"
+              color="secondary"
+              label="Update"
+              busy={isUpdateAgentModelPending}
+            />
+          </HStack>
+        </Form>
+      </FormProvider>
+    </PanelMainContent>
   );
 }
+
+export const modelTemplate = {
+  templateId: 'model-details',
+  content: ModelPanel,
+  title: 'Model',
+  data: z.undefined(),
+} satisfies PanelTemplate<'model-details'>;

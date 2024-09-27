@@ -4,6 +4,7 @@ import {
   Button,
   Code,
   HStack,
+  LettaLoaderPanel,
   Typography,
   VStack,
 } from '@letta-web/component-library';
@@ -313,6 +314,7 @@ export function Messages(props: MessagesProps) {
       {messageGroups.map((group) => (
         <MessageGroup key={group.id} group={group} />
       ))}
+      {messageGroups.length === 0 && <LettaLoaderPanel />}
     </VStack>
   );
 }

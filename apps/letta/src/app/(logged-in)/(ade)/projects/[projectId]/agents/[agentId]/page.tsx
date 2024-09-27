@@ -1,4 +1,3 @@
-import { AgentPage } from './AgentPage';
 import {
   AgentsService,
   UseAgentsServiceGetAgentKeyFn,
@@ -14,6 +13,7 @@ import { eq } from 'drizzle-orm';
 import { redirect } from 'next/navigation';
 import { webApiQueryKeys } from '$letta/client';
 import { getProjectById } from '$letta/web-api/router';
+import { AgentPage } from './AgentPage';
 
 interface AgentsAgentPageProps {
   params: {

@@ -1,5 +1,6 @@
 'use client';
 import React, { useCallback, useMemo, useState } from 'react';
+import type { PanelTemplate } from '@letta-web/component-library';
 import {
   Button,
   CodeEditor,
@@ -8,7 +9,6 @@ import {
   FormField,
   FormProvider,
   Input,
-  Panel,
   PanelBar,
   PanelMainContent,
   RawInput,
@@ -19,7 +19,6 @@ import {
   LettaLoaderPanel,
   HStack,
 } from '@letta-web/component-library';
-import { ADENavigationItem } from '../common/ADENavigationItem/ADENavigationItem';
 import { useCurrentAgent } from '../hooks';
 import type { AgentState, Tool_Output } from '@letta-web/letta-agents-api';
 import {
@@ -38,7 +37,6 @@ import {
 import { useQueryClient } from '@tanstack/react-query';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { HammerIcon } from 'lucide-react';
 
 const { PanelRouter, usePanelRouteData, usePanelPageContext } =
   createPageRouter(
@@ -415,17 +413,19 @@ function ToolsListPage() {
 
 export function ToolsPanel() {
   return (
-    <Panel
-      id="tools-panel"
-      trigger={<ADENavigationItem icon={<HammerIcon />} title="Tools" />}
-    >
-      <PanelRouter
-        rootPageKey="root"
-        pages={{
-          editTool: <EditToolPage />,
-          root: <ToolsListPage />,
-        }}
-      />
-    </Panel>
+    <PanelRouter
+      rootPageKey="root"
+      pages={{
+        editTool: <EditToolPage />,
+        root: <ToolsListPage />,
+      }}
+    />
   );
 }
+
+export const toolsPanelTemplate = {
+  templateId: 'tools-panel',
+  content: ToolsPanel,
+  title: 'Tools',
+  data: z.undefined(),
+} satisfies PanelTemplate<'tools-panel'>;

@@ -90,3 +90,6 @@ export * from './lib/core/Tooltip/Tooltip';
 export * from './lib/core/HR/HR';
 
 export * from './lib/core/Checkbox/Checkbox';
+export * from './lib/ade/utils/createPanelManager/createPanelManager';
+
+export * from './lib/ade/ADEDropdownMenu/ADEDropdownMenu';

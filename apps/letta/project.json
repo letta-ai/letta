@@ -4,7 +4,6 @@
   "sourceRoot": "apps/letta",
   "projectType": "application",
   "tags": [],
-  "// targets": "to see all targets run: nx show project letta --web",
   "targets": {
     "type-check": {
       "executor": "@webpro/nx-tsc:tsc",

@@ -1,7 +1,7 @@
 'use client';
 import * as React from 'react';
 import type { LogoBaseProps } from '../../marketing/Logo/Logo';
-import { Logo } from '../../marketing/Logo/Logo';
+import { LogoBaseInner, LogoBaseOuter } from '../../marketing/Logo/Logo';
 import './LettaLoader.scss';
 import { cn } from '@letta-web/core-style-config';
 import { useEffect, useRef } from 'react';
@@ -35,11 +35,18 @@ export function LettaLoader(props: LettaLoaderProps) {
   }, [stopAnimation]);
 
   return (
-    <div
-      ref={ref}
-      className={cn('letta-loader', stopAnimation ? 'stop-loader' : '')}
-    >
-      <Logo size={size} color={color} />
+    <div className="relative">
+      <div
+        ref={ref}
+        className={cn('letta-loader ', stopAnimation ? 'stop-loader' : '')}
+      >
+        <LogoBaseOuter
+          className="absolute top-0 left-0"
+          size={size}
+          color={color}
+        />
+      </div>
+      <LogoBaseInner className="absolute top-0" size={size} color={color} />
     </div>
   );
 }

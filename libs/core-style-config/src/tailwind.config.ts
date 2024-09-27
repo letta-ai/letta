@@ -25,6 +25,7 @@ export function buildConfig(appDir: string): Config {
           header: '8',
           dialog: '9',
           tooltip: '10',
+          draggedItem: '11',
         },
         gap: {
           2: 'var(--default-gap)',
