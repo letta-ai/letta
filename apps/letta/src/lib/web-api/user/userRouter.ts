@@ -2,7 +2,7 @@ import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
 import type { userContract } from '$letta/web-api/contracts';
 import { getUser } from '$letta/server/auth';
 import type { contracts } from '$letta/web-api/contracts';
-import { users } from '@letta-web/database';
+import { db, users } from '@letta-web/database';
 import { eq } from 'drizzle-orm';
 
 type ResponseShapes = ServerInferResponses<typeof userContract>;

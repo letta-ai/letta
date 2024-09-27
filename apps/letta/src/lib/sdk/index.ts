@@ -2,7 +2,7 @@ import type { NextRequest } from 'next/server';
 import axios, { isAxiosError } from 'axios';
 import { environment } from '@letta-web/environmental-variables';
 import { EventSource } from 'extended-eventsource';
-import { testingAgents } from '@letta-web/database';
+import { db, testingAgents } from '@letta-web/database';
 import { eq } from 'drizzle-orm';
 import { RESTRICTED_ROUTE_BASE_PATHS } from '@letta-web/letta-agents-api';
 

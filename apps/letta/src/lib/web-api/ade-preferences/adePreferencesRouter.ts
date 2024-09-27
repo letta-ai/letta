@@ -1,7 +1,7 @@
 import type { AdePreferencesData } from '$letta/web-api/ade-preferences/adePreferencesContracts';
 import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
 import type { contracts } from '../contracts';
-import { adePreferences } from '@letta-web/database';
+import { adePreferences, db } from '@letta-web/database';
 import { getUserIdOrThrow } from '$letta/server/auth';
 import { eq } from 'drizzle-orm';
 

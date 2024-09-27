@@ -8,13 +8,6 @@ import postgres from 'postgres';
 
 config({ path: resolve(__dirname, '.env') });
 
-// Fix for "sorry, too many clients already"
-// dev issue only
-declare global {
-  // eslint-disable-next-line no-var -- only var works here
-  var db: PostgresJsDatabase<typeof schema>;
-}
-
 let db: PostgresJsDatabase<typeof schema>;
 
 if (process.env.NODE_ENV === 'production') {
@@ -23,11 +16,14 @@ if (process.env.NODE_ENV === 'production') {
   });
 } else {
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+  // @ts-expect-error - this is a global variable on local only DO NOT MAKE ANY FIXES
   if (!global.db)
+    // @ts-expect-error - this is a global variable on local only DO NOT MAKE ANY FIXES
     global.db = drizzle(postgres(process.env.DATABASE_URL!), {
       schema,
     });
 
+  // @ts-expect-error - this is a global variable on local only DO NOT MAKE ANY FIXES
   db = global.db;
 }
 
