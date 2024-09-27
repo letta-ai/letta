@@ -1,5 +1,6 @@
 'use client';
 import type { ZodSchema } from 'zod';
+import { z } from 'zod';
 import React, {
   createContext,
   useCallback,
@@ -15,10 +16,24 @@ import { VStack } from '../../../framing/VStack/VStack';
 import { CaretDownIcon, Cross2Icon } from '../../../icons';
 import { Typography } from '../../../core/Typography/Typography';
 import { ADEDropdownMenu } from '../../ADEDropdownMenu/ADEDropdownMenu';
-import ReactDOM from 'react-dom';
+import { createPortal } from 'react-dom';
 import { cn } from '@letta-web/core-style-config';
 import './CreatePanelManager.css';
 import { Frame } from '../../../framing/Frame/Frame';
+import type { DragEndEvent } from '@dnd-kit/core';
+import {
+  DndContext,
+  DragOverlay,
+  KeyboardSensor,
+  MouseSensor,
+  PointerSensor,
+  TouchSensor,
+  useDndContext,
+  useDraggable,
+  useDroppable,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
 
 export type GenericPanelTemplateId = number | string | symbol;
 
@@ -68,6 +83,79 @@ export function createPanelManager<
   TPanelTemplateId extends GenericPanelTemplateId,
   TPanelRegistry extends PanelTemplateRegistry<TPanelTemplateId>
 >(panelRegistry: TPanelRegistry) {
+  interface PanelManagerContextProps {
+    children: React.ReactNode;
+  }
+
+  function isDataTabData(
+    data: unknown
+  ): data is PanelPositionItem<RegisteredPanelTemplateId> {
+    return Object.prototype.hasOwnProperty.call(data, 'templateId');
+  }
+
+  function DragAndDropOverlay() {
+    const { active } = useDndContext();
+
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+      setMounted(true);
+    }, []);
+
+    return (
+      mounted &&
+      createPortal(
+        <DragOverlay>
+          {active && isDataTabData(active.data.current) && (
+            <Tab tab={active.data.current} isActive={false} x={0} y={0} />
+          )}
+        </DragOverlay>,
+        document.body
+      )
+    );
+  }
+
+  function DragAndDropContext(props: PanelManagerContextProps) {
+    const { movePanelToPosition } = usePanelManager();
+
+    const pointerSensor = useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 1,
+      },
+    });
+    const mouseSensor = useSensor(MouseSensor);
+    const touchSensor = useSensor(TouchSensor);
+    const keyboardSensor = useSensor(KeyboardSensor);
+
+    const sensors = useSensors(
+      mouseSensor,
+      touchSensor,
+      keyboardSensor,
+      pointerSensor
+    );
+
+    function handleDragEnd(event: DragEndEvent) {
+      if (event.active && isDataTabData(event.active.data.current)) {
+        const dropData = MoveToConfigSchema.safeParse(event.over?.data.current);
+
+        if (!dropData.success) {
+          return;
+        }
+
+        const { x, y, tab } = dropData.data;
+
+        movePanelToPosition(event.active.data.current.id, [x, y, tab]);
+      }
+    }
+
+    return (
+      <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+        {props.children}
+        <DragAndDropOverlay />
+      </DndContext>
+    );
+  }
+
   type RegisteredPanelTemplateId = keyof typeof panelRegistry;
   type ExtractPanelData<TPanelTemplateId extends RegisteredPanelTemplateId> =
     (typeof panelRegistry)[TPanelTemplateId]['data']['_output'];
@@ -597,215 +685,108 @@ export function createPanelManager<
 
     return (
       <PanelManagerContext.Provider value={value}>
-        {children}
+        <DragAndDropContext>{children}</DragAndDropContext>
       </PanelManagerContext.Provider>
     );
   }
 
-  const DROPZONE_CLASS = 'dropzone';
-
   interface PanelTabDraggerProps {
     children: React.ReactNode;
-    panelId: PanelId;
-  }
-
-  interface DropzoneWindowPosition {
-    top: number;
-    left: number;
-    bottom: number;
-    right: number;
-    element: HTMLElement;
+    tab: PanelPositionItem<RegisteredPanelTemplateId>;
   }
 
   function PanelTabDragger(props: PanelTabDraggerProps) {
-    const { children, panelId } = props;
-    const { movePanelToPosition } = usePanelManager();
+    const { children, tab } = props;
 
-    const dragStartTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-    const [mounted, setMounted] = useState(false);
-
-    useEffect(() => {
-      setMounted(true);
-    }, []);
-
-    const draggableElement = useRef<HTMLDivElement>(null);
-
-    const draggedElement = useRef<HTMLDivElement>(null);
-    const [isDragging, setIsDragging] = useState(false);
-
-    const allDropzoneWindowPositions = useRef<DropzoneWindowPosition[]>([]);
-
-    const handleDragStart = useCallback(() => {
-      // activatePanel(panelId);
-
-      if (dragStartTimeout.current) {
-        clearTimeout(dragStartTimeout.current);
-      }
-
-      dragStartTimeout.current = setTimeout(() => {
-        setIsDragging(true);
-      }, 250);
-
-      document.body.dataset.isDraggingTabs = 'true';
-
-      allDropzoneWindowPositions.current = Array.from(
-        document.querySelectorAll(`.${DROPZONE_CLASS}`)
-      ).map((dropzone) => {
-        const { top, left, bottom, right } = dropzone.getBoundingClientRect();
-
-        return { top, left, bottom, right, element: dropzone as HTMLElement };
-      }, []);
-    }, []);
-
-    const handleMouseMove = useCallback(
-      (event: MouseEvent) => {
-        if (!isDragging) {
-          return;
-        }
-
-        allDropzoneWindowPositions.current.forEach((dropzone) => {
-          // if the mouse is within the dropzone, add the class "is-dragging-over" to the dropzone
-
-          if (
-            event.clientX > dropzone.left &&
-            event.clientX < dropzone.right &&
-            event.clientY > dropzone.top &&
-            event.clientY < dropzone.bottom
-          ) {
-            dropzone.element.classList.add('is-dragging-over');
-          } else {
-            dropzone.element.classList.remove('is-dragging-over');
-          }
-        });
-
-        if (draggedElement.current) {
-          // make sure x and y are in the middle of the dragged element
-          const { width, height } =
-            draggedElement.current.getBoundingClientRect();
-
-          draggedElement.current.style.left = `${event.clientX - width / 2}px`;
-          draggedElement.current.style.top = `${event.clientY - height / 2}px`;
-        }
-      },
-      [isDragging]
-    );
-
-    const clearDragStartTimeout = useCallback(() => {
-      if (dragStartTimeout.current) {
-        clearTimeout(dragStartTimeout.current);
-      }
-    }, []);
-
-    const handleDragEnd = useCallback(
-      (event: MouseEvent) => {
-        if (dragStartTimeout.current) {
-          clearDragStartTimeout();
-        }
-
-        if (!isDragging) {
-          return;
-        }
-
-        // see if the dragged element is over a dropzone
-        const dropzone = allDropzoneWindowPositions.current.find((dropzone) => {
-          const { top, left, bottom, right } = dropzone;
-
-          return (
-            event.clientX > left &&
-            event.clientX < right &&
-            event.clientY > top &&
-            event.clientY < bottom
-          );
-        });
-
-        if (dropzone) {
-          const { x, y, tab } = dropzone.element.dataset;
-
-          if (x && y && tab) {
-            movePanelToPosition(panelId, [Number(x), Number(y), Number(tab)]);
-          }
-
-          // reset all dropzone classes
-          allDropzoneWindowPositions.current.forEach((dropzone) => {
-            dropzone.element.classList.remove('is-dragging-over');
-          });
-        }
-
-        document.body.dataset.isDraggingTabs = 'false';
-        setIsDragging(false);
-      },
-      [clearDragStartTimeout, isDragging, movePanelToPosition, panelId]
-    );
-
-    useEffect(() => {
-      if (draggedElement.current && draggableElement.current) {
-        const { left, top } = draggableElement.current.getBoundingClientRect();
-
-        draggedElement.current.style.left = `${left}px`;
-        draggedElement.current.style.top = `${top}px`;
-      }
-
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleDragEnd);
-
-      return () => {
-        document.removeEventListener('mousemove', handleMouseMove);
-        document.removeEventListener('mouseup', handleDragEnd);
-      };
-    }, [handleMouseMove, handleDragEnd, isDragging]);
+    const { attributes, listeners, setNodeRef } = useDraggable({
+      id: tab.id,
+      data: tab,
+    });
 
     return (
-      <>
-        <Slot
-          onMouseUp={() => {
-            clearDragStartTimeout();
-          }}
-          onMouseDown={handleDragStart}
-          ref={draggableElement}
-        >
-          {children}
-        </Slot>
-        {mounted &&
-          ReactDOM.createPortal(
-            <Slot
-              data-is-dragging={isDragging}
-              ref={draggedElement}
-              className={cn(
-                'opacity-90 bg-white fixed z-draggedItem',
-                isDragging ? 'block' : 'hidden'
-              )}
-            >
-              {children}
-            </Slot>,
-            document.body
-          )}
-      </>
+      <div ref={setNodeRef} {...listeners} {...attributes}>
+        {children}
+      </div>
     );
   }
 
-  interface DropZoneProps {
-    x: number;
-    y: number;
-    tab: number;
-    position: 'end' | 'start';
+  interface GenericDropZoneProps {
+    moveToOnDrop: MoveToConfig;
+    className?: string;
+    id: string;
   }
 
-  function DropZone(props: DropZoneProps) {
-    const { x, y, tab, position } = props;
+  function GenericDropZone(props: GenericDropZoneProps) {
+    const { moveToOnDrop, className, id } = props;
+    const { active } = useDndContext();
+
+    const { setNodeRef, isOver } = useDroppable({
+      data: moveToOnDrop,
+      id,
+    });
+
+    return (
+      <div
+        ref={setNodeRef}
+        className={cn(
+          'opacity-0 w-full h-full inset-0 bg-blue-50',
+          !active ? 'pointer-events-none' : '',
+          isOver ? 'opacity-100' : '',
+          className
+        )}
+      />
+    );
+  }
+
+  const MoveToConfigSchema = z.object({
+    x: z.number(),
+    y: z.number(),
+    tab: z.number(),
+  });
+
+  type MoveToConfig = z.infer<typeof MoveToConfigSchema>;
+
+  interface DropZoneTabProps {
+    moveToOnDrop: MoveToConfig;
+    id: string;
+    className?: string;
+    position: 'left' | 'right';
+  }
+
+  function DropZoneTab(props: DropZoneTabProps) {
+    const { moveToOnDrop, className, id, position } = props;
+
+    const { active } = useDndContext();
+
+    const { setNodeRef, isOver } = useDroppable({
+      data: moveToOnDrop,
+      id: `dropzone-tab-${moveToOnDrop.x}-${moveToOnDrop.y}-${moveToOnDrop.tab}`,
+    });
+
+    const allowOpenUI = useMemo(() => {
+      return active?.id !== id && isOver;
+    }, [active?.id, id, isOver]);
+
     return (
       <div>
         <div
-          data-x={x}
-          data-y={y}
-          data-tab={tab}
+          ref={setNodeRef}
           className={cn(
-            position === 'start' ? 'left-0' : 'right-0',
-            'opacity-0 pointer-events-none select-none h-full transition-all duration-75 w-[40%] absolute',
-            DROPZONE_CLASS
+            'opacity-0 absolute w-[30%] h-full inset-0',
+            position === 'left' ? 'left-0' : 'right-0 left-auto',
+            !active ? 'pointer-events-none' : '',
+            className
           )}
         />
-        <div className="drop-expander transition-all w-[0] h-full bg-black opacity-50" />
+        <div
+          style={{
+            width: allowOpenUI ? active?.rect.current.initial?.width : 0,
+          }}
+          className={cn(
+            allowOpenUI ? 'w-[100px] bg-blue-200' : 'w-[0]',
+            'transition-all h-full'
+          )}
+        />
       </div>
     );
   }
@@ -967,6 +948,70 @@ export function createPanelManager<
     );
   }
 
+  interface TabProps {
+    tab: PanelPositionItem<RegisteredPanelTemplateId>;
+    isActive: boolean;
+    x: number;
+    y: number;
+  }
+
+  function Tab(props: TabProps) {
+    const { tab, x, y, isActive } = props;
+    const { activatePanel, closePanel, movePanelToPosition } =
+      usePanelManager();
+
+    const tabId = tab.id;
+
+    const handleClickedTab = useCallback(() => {
+      activatePanel(tabId);
+    }, [activatePanel, tabId]);
+
+    const handleCloseTab = useCallback(() => {
+      closePanel(tabId);
+    }, [closePanel, tabId]);
+
+    const handleMoveRight = useCallback(() => {
+      movePanelToPosition(tabId, [x + 1, y, 0]);
+    }, [tabId, movePanelToPosition, x, y]);
+
+    const handleMoveDown = useCallback(() => {
+      movePanelToPosition(tabId, [x, y + 1, 0]);
+    }, [tabId, movePanelToPosition, x, y]);
+
+    return (
+      <HStack
+        paddingX="small"
+        paddingY="xsmall"
+        align="center"
+        color={isActive ? 'background' : 'background-grey'}
+      >
+        <button className="h-full" onClick={handleClickedTab}>
+          <Typography noWrap>{panelRegistry[tab.templateId].title}</Typography>
+        </button>
+        <ADEDropdownMenu
+          trigger={
+            <div className="w-2">
+              <CaretDownIcon />
+            </div>
+          }
+          items={[
+            {
+              label: 'Split and move right',
+              onClick: handleMoveRight,
+            },
+            {
+              label: 'Split and move down',
+              onClick: handleMoveDown,
+            },
+          ]}
+        />
+        <button onClick={handleCloseTab}>
+          <Cross2Icon />
+        </button>
+      </HStack>
+    );
+  }
+
   interface TabBarProps {
     tabs: PanelItemTabsPositions<RegisteredPanelTemplateId>['positions'];
     activeTabId?: PanelId;
@@ -976,99 +1021,42 @@ export function createPanelManager<
 
   function TabBar(props: TabBarProps) {
     const { tabs, activeTabId, x, y } = props;
-    const { activatePanel, closePanel, movePanelToPosition } =
-      usePanelManager();
-
-    const handleClickedTab = useCallback(
-      (panelId: PanelId) => {
-        activatePanel(panelId);
-      },
-      [activatePanel]
-    );
-
-    const handleCloseTab = useCallback(
-      (panelId: PanelId) => {
-        closePanel(panelId);
-      },
-      [closePanel]
-    );
-
-    const handleMoveRight = useCallback(
-      (panelId: PanelId) => {
-        movePanelToPosition(panelId, [x + 1, y, 0]);
-      },
-      [movePanelToPosition, x, y]
-    );
-
-    const handleMoveDown = useCallback(
-      (panelId: PanelId) => {
-        movePanelToPosition(panelId, [x, y + 1, 0]);
-      },
-      [movePanelToPosition, x, y]
-    );
 
     return (
-      <HStack className="min-h-[35px]" overflowX="auto" fullWidth gap={false}>
+      <HStack
+        overflowY="hidden"
+        className="min-h-[35px]"
+        overflowX="auto"
+        fullWidth
+        gap={false}
+      >
         {tabs.map((tab, index) => {
           return (
             <HStack gap={false} position="relative" key={tab.id}>
               {index === 0 && (
-                <DropZone x={x} y={y} tab={-1} position="start" />
+                <DropZoneTab
+                  id={tab.id}
+                  position="left"
+                  moveToOnDrop={{ x, y, tab: -1 }}
+                />
               )}
-              <PanelTabDragger panelId={tab.id}>
-                <HStack
-                  paddingX="small"
-                  paddingY="xsmall"
-                  align="center"
-                  color={
-                    activeTabId === tab.id ? 'background' : 'background-grey'
-                  }
-                  key={index}
-                >
-                  <button
-                    className="h-full"
-                    onClick={() => {
-                      handleClickedTab(tab.id);
-                    }}
-                  >
-                    <Typography noWrap>
-                      {panelRegistry[tab.templateId].title}
-                    </Typography>
-                  </button>
-                  <ADEDropdownMenu
-                    trigger={
-                      <div className="w-2">
-                        <CaretDownIcon />
-                      </div>
-                    }
-                    items={[
-                      {
-                        label: 'Split and move right',
-                        onClick: () => {
-                          handleMoveRight(tab.id);
-                        },
-                      },
-                      {
-                        label: 'Split and move down',
-                        onClick: () => {
-                          handleMoveDown(tab.id);
-                        },
-                      },
-                    ]}
-                  />
-                  <button
-                    onClick={() => {
-                      handleCloseTab(tab.id);
-                    }}
-                  >
-                    <Cross2Icon />
-                  </button>
-                </HStack>
+              <PanelTabDragger tab={tab}>
+                <Tab tab={tab} isActive={activeTabId === tab.id} x={x} y={y} />
               </PanelTabDragger>
-              <DropZone x={x} y={y} tab={index + 1} position="end" />
+
+              <DropZoneTab
+                id={tab.id}
+                position="right"
+                moveToOnDrop={{ x, y, tab: index }}
+              />
             </HStack>
           );
         })}
+        <GenericDropZone
+          id={`dropzone-tab-end-${x}-${y}`}
+          className="w-full"
+          moveToOnDrop={{ x, y, tab: tabs.length + 1 }}
+        />
       </HStack>
     );
   }
