@@ -1,0 +1,21 @@
+{
+  "name": "slack-bot-says",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "scripts/slack-bot-says/src",
+  "projectType": "library",
+  "tags": [],
+  "// targets": "to see all targets run: nx show project slack-bot-says --web",
+  "targets": {
+    "talk": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "scripts/slack-bot-says",
+        "commands": [
+          {
+            "command": "ts-node ./src/index.ts"
+          }
+        ]
+      }
+    }
+  }
+}

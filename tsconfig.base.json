@@ -22,7 +22,6 @@
       "@letta-web/analytics/server": ["libs/analytics/src/server/index.ts"],
       "@letta-web/component-library": ["libs/component-library/src/index.tsx"],
       "@letta-web/component-library/*": ["component-library/src/*"],
-      "@letta-web/configure": ["scripts/configure/src/index.ts"],
       "@letta-web/core-style-config": ["libs/core-style-config/src/index.ts"],
       "@letta-web/core-style-config/*": ["utils/src/*"],
       "@letta-web/database": ["libs/database/src/index.ts"],

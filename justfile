@@ -31,6 +31,7 @@ configure-kubectl:
 
 # Build the web Docker image
 build-web:
+    npm run slack-bot-says "Building web Docker image with tag: {{TAG}}..."
     @echo "🚧 Building web Docker image with tag: {{TAG}}..."
     docker buildx build --platform linux/amd64 --target web -t {{DOCKER_REGISTRY}}/web:{{TAG}} . --load
 
@@ -42,6 +43,7 @@ build-migrations:
 # Build all Docker images synchronously
 build: build-web build-migrations
     @echo "✅ All Docker images built successfully."
+    npm run slack-bot-says "Docker image with tag: {{TAG}} built successfully."
 
 # Push the Docker images to the registry
 push:
@@ -53,6 +55,7 @@ push:
 deploy: push
     @echo "🚧 Deploying Helm chart..."
     kubectl delete job {{HELM_CHART_NAME}}-migration --ignore-not-found
+    npm run slack-bot-says "Deploying web service Helm chart with tag: {{TAG}}..."
     helm upgrade --install {{HELM_CHART_NAME}} {{HELM_CHARTS_DIR}}/{{HELM_CHART_NAME}} \
         --force \
         --set image.repository={{DOCKER_REGISTRY}}/web \
