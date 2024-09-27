@@ -1,5 +1,6 @@
 'use server';
 import type { ProviderUserPayload } from '$letta/types';
+import { AgentTemplateVariant } from '$letta/types';
 import {
   db,
   emailWhitelist,
@@ -22,6 +23,7 @@ import {
 import { AnalyticsEvent } from '@letta-web/analytics';
 import { jwtDecode } from 'jwt-decode';
 import { AdminService } from '@letta-web/letta-agents-api';
+import { createProjectTestingAgent } from '$letta/web-api/projects/projectsRouter';
 
 function isLettaEmail(email: string) {
   return email.endsWith('@letta.com') || email.endsWith('@memgpt.ai');
@@ -78,7 +80,6 @@ async function createUserAndOrganization(
 ): Promise<UserSession> {
   let organizationId = '';
   let lettaOrganizationId = '';
-  let isNewOrganization = false;
 
   if (isLettaEmail(userData.email)) {
     const createdLettaUser = await handleLettaUserCreation();
@@ -108,7 +109,6 @@ async function createUserAndOrganization(
       })
       .returning({ organizationId: organizations.id });
 
-    isNewOrganization = true;
     organizationId = createdOrg.organizationId;
   }
 
@@ -148,20 +148,34 @@ async function createUserAndOrganization(
       .returning({ userId: users.id }),
   ]);
 
-  if (isNewOrganization) {
-    await Promise.all([
-      db.insert(lettaAPIKeys).values({
-        name: 'Default API key',
+  const userFullName = userData.name;
+
+  const [project] = await Promise.all([
+    db
+      .insert(projects)
+      .values({
         organizationId,
-        userId: createdUser.userId,
-        apiKey,
+        name: `${userFullName}'s Project`,
+      })
+      .returning({
+        projectId: projects.id,
       }),
-      db.insert(projects).values({
-        organizationId,
-        name: 'My first project',
-      }),
-    ]);
-  }
+    db.insert(lettaAPIKeys).values({
+      name: `${userFullName}'s API Key`,
+      organizationId,
+      userId: createdUser.userId,
+      apiKey,
+    }),
+  ]);
+
+  await createProjectTestingAgent({
+    params: {
+      projectId: project[0].projectId,
+    },
+    body: {
+      recipeId: AgentTemplateVariant.CUSTOMER_SUPPORT,
+    },
+  });
 
   return {
     email: userData.email,
@@ -330,6 +344,16 @@ export async function getUserOrganizationIdOrThrow() {
   }
 
   return user.organizationId;
+}
+
+export async function getUserIdOrThrow() {
+  const user = await getUser();
+
+  if (!user) {
+    throw new Error('User not found');
+  }
+
+  return user.id;
 }
 
 export async function generateAPIKey(organizationId: string) {

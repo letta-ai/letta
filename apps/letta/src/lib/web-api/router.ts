@@ -4,6 +4,7 @@ import * as apiKeysRouter from './api-keys/apiKeysRouter';
 import * as organizationsRouter from './organizations/organizationsRouter';
 import * as adminWhitelistedEmailsRouter from './admin/whitelisted-emails/whitelistedEmailsRouter';
 import * as featureFlagsRouter from './feature-flags/featureFlagsRouter';
+import * as adePreferencesRouter from './ade-preferences/adePreferencesRouter';
 
 export const router = {
   user: userRouter,
@@ -11,6 +12,7 @@ export const router = {
   apiKeys: apiKeysRouter,
   featureFlags: featureFlagsRouter,
   organizations: organizationsRouter,
+  adePreferences: adePreferencesRouter,
   admin: {
     whitelistedEmails: adminWhitelistedEmailsRouter,
   },
@@ -22,3 +24,4 @@ export * from './api-keys/apiKeysRouter';
 export * from './organizations/organizationsRouter';
 export * from './admin/whitelisted-emails/whitelistedEmailsRouter';
 export * from './feature-flags/featureFlagsRouter';
+export * from './ade-preferences/adePreferencesRouter';

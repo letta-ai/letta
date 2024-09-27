@@ -7,8 +7,13 @@ import {
   boolean,
   bigint,
   uniqueIndex,
+  json,
 } from 'drizzle-orm/pg-core';
 import { sql, relations } from 'drizzle-orm';
+import type {
+  GenericPanelTemplateId,
+  PanelItemPositionsMatrix,
+} from '@letta-web/component-library';
 
 export const emailWhitelist = pgTable('email_whitelist', {
   id: uuid('id')
@@ -331,3 +336,23 @@ export const deployedAgentsStatisticsRelation = relations(
     }),
   })
 );
+
+export const adePreferences = pgTable('ade_preferences', {
+  id: uuid('id')
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  userId: uuid('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' })
+    .notNull(),
+  displayConfig: json('display_config')
+    .$type<PanelItemPositionsMatrix<GenericPanelTemplateId>>()
+    .notNull(),
+});
+
+export const adePreferencesRelations = relations(adePreferences, ({ one }) => ({
+  user: one(users, {
+    fields: [adePreferences.userId],
+    references: [users.id],
+  }),
+}));

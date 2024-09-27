@@ -16,12 +16,17 @@ import {
   featureFlagsContracts,
   featureFlagsQueryClientKeys,
 } from './feature-flags/featureFlagsContracts';
+import {
+  adePreferencesContracts,
+  adePreferencesQueryClientKeys,
+} from './ade-preferences/adePreferencesContracts';
 
 export const contracts = {
   user: userContract,
   projects: projectsContract,
   organizations: organizationsContract,
   apiKeys: apiKeysContracts,
+  adePreferences: adePreferencesContracts,
   featureFlags: featureFlagsContracts,
   admin: {
     whitelistedEmails: adminWhitelistedEmailsContract,
@@ -34,6 +39,7 @@ export const queryClientKeys = {
   organizations: organizationsQueryClientKeys,
   apiKeys: apiKeysQueryKeys,
   featureFlags: featureFlagsQueryClientKeys,
+  adePreferences: adePreferencesQueryClientKeys,
   admin: {
     whitelistedEmails: adminWhitelistedEmailsQueryKeys,
   },
