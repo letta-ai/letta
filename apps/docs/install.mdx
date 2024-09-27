@@ -5,7 +5,7 @@ icon: "docker"
 iconType: "solid"
 ---
 
-## Run with `pip install`
+## Run Letta with `pip`
 <iframe
   width="560"
   height="315"
@@ -17,7 +17,7 @@ iconType: "solid"
 ></iframe>
 
 <Steps>
-  <Step title="Run `pip install`">
+  <Step title="Install using PIP">
     To install Letta, run:
     ```
     pip install letta
@@ -27,7 +27,7 @@ iconType: "solid"
     Run `letta configure` or `letta quickstart` to configure Letta.
 
     To customize the configuration (e.g. the LLM or embedding model to use), edit the `~/.letta/config` file.
-    ```yaml ~/.letta/config
+    ```ini ~/.letta/config
     [model]
     model = gpt-4
     model_endpoint = https://api.openai.com/v1
@@ -44,7 +44,7 @@ iconType: "solid"
   </Step>
   <Step title="Run the Letta server">
     To run the Letta server, run:
-    ```
+    ```sh
     letta run [--debug]
     ```
     You can now access the ADE (in your browser) and REST API server at `http://localhost:8283`.
@@ -53,7 +53,7 @@ iconType: "solid"
 
 
 
-## Run with Docker
+## Run Letta with Docker
 <iframe
   width="560"
   height="315"
@@ -67,14 +67,14 @@ iconType: "solid"
 <Steps>
   <Step title="Download the docker container">
     To run the docker container, first clone the reposity for pull the contianer. 
-    ```
+    ```sh
     git clone https://github.com/cpacker/MemGPT
     ```
   </Step>
-  <Step title="Set enviornment variables">
-    Either set the enviornment variables in your shell on in a `.env` file. 
-    ```bash .env
-
+  <Step title="Set environment variables">
+    Either set the environment variables in your shell on in a `.env` file. 
+  <CodeGroup>
+    ```bash .env file
     # To use OpenAI 
     OPENAI_API_KEY=...  
 
@@ -87,12 +87,29 @@ iconType: "solid"
     LETTA_EMBEDDING_ENDPOINT_TYPE=ollama
     LETTA_EMBEDDING_MODEL=mxbai-embed-large
     LETTA_EMBEDDING_DIM=512
+    ```
+    ```bash shell
+    # To use OpenAI 
+    export OPENAI_API_KEY=...  
 
+    # To use with Ollama 
+    export LETTA_LLM_ENDPOINT=http://host.docker.internal:11434
+    export LETTA_LLM_ENDPOINT_TYPE=ollama
+    export LETTA_LLM_MODEL=dolphin2.2-mistral:7b-q6_K
+    export LETTA_LLM_CONTEXT_WINDOW=8192
+    export LETTA_EMBEDDING_ENDPOINT=http://host.docker.internal:11434
+    export LETTA_EMBEDDING_ENDPOINT_TYPE=ollama
+    export LETTA_EMBEDDING_MODEL=mxbai-embed-large
+    export LETTA_EMBEDDING_DIM=512
     ```
+  </CodeGroup>
   </Step>
-  <Step title="View and modify the `compose.yaml` file">
-    You can view and modify the `compose.yaml` file. 
-    ```
+  <Step title="(Optional) View and modify the compose YAML file">
+    You can view and modify the `compose.yaml` file, for example, if you would like to change the default ports or `pgvector` version.
+  </Step>
+  <Step title="Run Docker Compose">
+    To start the Letta server, we use [Docker Compose](https://docs.docker.com/compose/), which runs both the Letta container and the database container:
+    ```sh
     docker compose up 
     ```
     You can now access the ADE (in your browser) and REST API server at `http://localhost:8083`.
