@@ -1,6 +1,11 @@
 const message = process.argv[2];
 
-fetch('https://hooks.slack.com/services/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', {
+if (!process.env.SLACK_WEBHOOK_URL) {
+  console.error('SLACK_WEBHOOK_URL is not set');
+  process.exit(0);
+}
+
+fetch(process.env.SLACK_WEBHOOK_URL, {
   method: 'POST',
   body: JSON.stringify({ text: message }),
 })
