@@ -7,7 +7,7 @@
     "docs": "nx dev docs",
     "docs:generate:openapi": "nx generate-openapi docs",
     "start": "nx start letta -p 8080",
-    "slack-bot-says": "nx run slack-bot-says:talk",
+    "slack-bot-says": "node ./scripts/slack-bot-says",
     "build": "nx build letta --prod",
     "letta:generate:openapi": "nx generate-openapi letta",
     "format": "nx format:write",
