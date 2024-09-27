@@ -26,7 +26,6 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 ENV NEXT_PUBLIC_CURRENT_HOST="https://app.letta.com"
-ENV NEXT_PUBLIC_MIXPANEL_TOKEN="0790fe817b0407efb691ea896533d3ae"
 
 # Build the application
 RUN npm run build

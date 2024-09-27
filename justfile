@@ -18,6 +18,9 @@ TAG := env_var_or_default("TAG", "latest")
 authenticate:
     @echo "🔐 Authenticating with Google Cloud..."
     gcloud auth application-default login --project {{PROJECT_NAME}}
+
+# Configure Docker authentication
+configure-docker:
     @echo "🔐 Configuring Docker authentication..."
     gcloud auth configure-docker {{REGION}}-docker.pkg.dev --quiet
 
@@ -26,13 +29,19 @@ configure-kubectl:
     @echo "🔧 Configuring kubectl for the Letta cluster..."
     gcloud container clusters get-credentials letta --region {{REGION}} --project {{PROJECT_NAME}}
 
-# Build the Docker images
-build:
-    @echo "🚧 Building multi-architecture Docker images with tag: {{TAG}}..."
-    docker buildx create --use
-    npx concurrently \
-        "docker buildx build --progress=plain --platform linux/amd64 --target web -t {{DOCKER_REGISTRY}}/web:{{TAG}} . --load" \
-        "docker buildx build --progress=plain --platform linux/amd64 --target migrations -t {{DOCKER_REGISTRY}}/web-migrations:{{TAG}} . --load"
+# Build the web Docker image
+build-web:
+    @echo "🚧 Building web Docker image with tag: {{TAG}}..."
+    docker buildx build --platform linux/amd64 --target web -t {{DOCKER_REGISTRY}}/web:{{TAG}} . --load
+
+# Build the migrations Docker image
+build-migrations:
+    @echo "🚧 Building migrations Docker image with tag: {{TAG}}..."
+    docker buildx build --platform linux/amd64 --target migrations -t {{DOCKER_REGISTRY}}/web-migrations:{{TAG}} . --load
+
+# Build all Docker images synchronously
+build: build-web build-migrations
+    @echo "✅ All Docker images built successfully."
 
 # Push the Docker images to the registry
 push:
@@ -45,6 +54,7 @@ deploy: push
     @echo "🚧 Deploying Helm chart..."
     kubectl delete job {{HELM_CHART_NAME}}-migration --ignore-not-found
     helm upgrade --install {{HELM_CHART_NAME}} {{HELM_CHARTS_DIR}}/{{HELM_CHART_NAME}} \
+        --force \
         --set image.repository={{DOCKER_REGISTRY}}/web \
         --set image.tag={{TAG}} \
         --set-string "podAnnotations.kubectl\.kubernetes\.io/restartedAt"="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
