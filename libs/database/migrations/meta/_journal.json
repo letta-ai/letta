@@ -127,6 +127,13 @@
       "when": 1726876152296,
       "tag": "0017_fresh_squadron_sinister",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1727474365056,
+      "tag": "0018_elite_silver_sable",
+      "breakpoints": true
     }
   ]
 }

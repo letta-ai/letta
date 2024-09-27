@@ -1,12 +1,15 @@
 'use client';
+import type { panelRegistry } from './panelRegistry';
 import {
   PanelManagerProvider,
   PanelOpener,
   PanelRenderer,
 } from './panelRegistry';
+import type { PanelItemPositionsMatrix } from '@letta-web/component-library';
 import {
   ADEHeader,
   ADEPage,
+  Alert,
   ArrowUpIcon,
   Avatar,
   Button,
@@ -14,6 +17,7 @@ import {
   Frame,
   HStack,
   KeyIcon,
+  LettaLoader,
   LifebuoyIcon,
   Logo,
   Popover,
@@ -35,6 +39,7 @@ import { webApi, webApiQueryKeys } from '$letta/client';
 import { useRouter } from 'next/navigation';
 import { useCurrentUser } from '$letta/client/hooks';
 import { CurrentUserDetailsBlock } from '$letta/client/common';
+import './AgentPage.scss';
 
 const MIN_INPUT_WIDTH = 50;
 const MAX_INPUT_WIDTH = 500;
@@ -219,93 +224,99 @@ function OpenDeploymentManagerPanel() {
   );
 }
 
-export function AgentPage() {
-  const { name: projectName, id: projectId } = useCurrentProject();
+interface LoaderContentProps {
+  isError?: boolean;
+}
+
+function LoaderContent(props: LoaderContentProps) {
+  const { isError } = props;
 
   return (
-    <PanelManagerProvider
-      initialPositions={[
-        {
-          size: 20,
-          positions: [
-            {
-              size: 100,
-              positions: [
-                {
-                  id: 'sidebar',
-                  isActive: true,
-                  templateId: 'sidebar',
-                  data: undefined,
-                },
-              ],
-            },
-          ],
-        },
-        {
-          size: 40,
-          positions: [
-            {
-              size: 100,
-              positions: [
-                {
-                  id: 'simulator',
-                  isActive: true,
-                  templateId: 'agent-simulator',
-                  data: undefined,
-                },
-              ],
-            },
-          ],
-        },
-        {
-          size: 40,
-          positions: [
-            {
-              size: 100,
-              positions: [
-                {
-                  id: 'archival-memories',
-                  isActive: false,
-                  templateId: 'archival-memories',
-                  data: undefined,
-                },
-                {
-                  id: 'welcome',
-                  isActive: true,
-                  templateId: 'welcome-panel',
-                  data: undefined,
-                },
-              ],
-            },
-          ],
-        },
-      ]}
+    <VStack
+      className="fixed z-draggedItem top-0 left-0 w-[100vw] h-[100vh]"
+      fullHeight
+      fullWidth
+      align="center"
+      justify="center"
     >
-      <ADEPage
-        header={
-          <ADEHeader>
-            <HStack align="center">
-              <Link target="_blank" href="/">
-                <Logo size="small" color="white" />
-              </Link>
-              /
-              <Link target="_blank" href={`/projects/${projectId}`}>
-                <Typography color="white">{projectName}</Typography>
-              </Link>
-              /<InlineTestingAgentNameChanger />
-            </HStack>
-            <HStack>
-              <ForkAgentDialog />
-              <OpenDeploymentManagerPanel />
-              <NavOverlay />
-            </HStack>
-          </ADEHeader>
-        }
+      <VStack className="loader-content" align="center" gap="large">
+        <LettaLoader size="large" />
+        <Typography>Setting up your workspace...</Typography>
+        {isError && (
+          <Alert
+            title="There was an error setting up your workspace - please contact support"
+            variant="destructive"
+          />
+        )}
+      </VStack>
+    </VStack>
+  );
+}
+
+export function AgentPage() {
+  const { name: projectName, id: projectId } = useCurrentProject();
+  const { data, isError } = webApi.adePreferences.getADEPreferences.useQuery({
+    queryKey: webApiQueryKeys.adePreferences.getADEPreferences,
+    queryData: {},
+  });
+
+  const { mutate } = webApi.adePreferences.updateADEPreferences.useMutation();
+
+  const [updatedPositions, setUpdatedPositions] = useState<
+    PanelItemPositionsMatrix<keyof typeof panelRegistry>
+  >([]);
+
+  const [debouncedPositions] = useDebouncedValue(updatedPositions, 500);
+
+  useEffect(() => {
+    if (debouncedPositions.length) {
+      mutate({
+        body: {
+          displayConfig: debouncedPositions,
+        },
+      });
+    }
+  }, [debouncedPositions, mutate]);
+
+  if (!data?.body?.displayConfig) {
+    return <LoaderContent isError={isError} />;
+  }
+
+  return (
+    <>
+      <div className="agent-page-fade-out pointer-events-none z-[-1]">
+        <LoaderContent />
+      </div>
+      <PanelManagerProvider
+        initialPositions={data.body.displayConfig}
+        onPositionChange={setUpdatedPositions}
       >
-        <Frame overflow="hidden" className="relative" fullWidth fullHeight>
-          <PanelRenderer />
-        </Frame>
-      </ADEPage>
-    </PanelManagerProvider>
+        <ADEPage
+          header={
+            <ADEHeader>
+              <HStack align="center">
+                <Link target="_blank" href="/">
+                  <Logo size="small" color="white" />
+                </Link>
+                /
+                <Link target="_blank" href={`/projects/${projectId}`}>
+                  <Typography color="white">{projectName}</Typography>
+                </Link>
+                /<InlineTestingAgentNameChanger />
+              </HStack>
+              <HStack>
+                <ForkAgentDialog />
+                <OpenDeploymentManagerPanel />
+                <NavOverlay />
+              </HStack>
+            </ADEHeader>
+          }
+        >
+          <Frame overflow="hidden" className="relative" fullWidth fullHeight>
+            <PanelRenderer />
+          </Frame>
+        </ADEPage>
+      </PanelManagerProvider>
+    </>
   );
 }

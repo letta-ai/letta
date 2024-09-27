@@ -3,6 +3,7 @@ import { verifyAndReturnAPIKeyDetails } from '$letta/server/auth';
 import type { HandlerContext } from '$letta/sdk';
 import { makeRequestToSDK } from '$letta/sdk';
 import { eq } from 'drizzle-orm';
+import { db } from '@letta-web/database';
 import { users } from '@letta-web/database';
 
 async function handler(req: NextRequest, context: HandlerContext) {

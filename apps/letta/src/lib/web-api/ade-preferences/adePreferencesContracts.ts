@@ -37,5 +37,5 @@ export const adePreferencesContracts = {
 };
 
 export const adePreferencesQueryClientKeys = {
-  getADEPreferences: 'getADEPreferences',
+  getADEPreferences: ['getADEPreferences'],
 };

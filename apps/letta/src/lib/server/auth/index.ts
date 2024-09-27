@@ -23,7 +23,11 @@ import {
 import { AnalyticsEvent } from '@letta-web/analytics';
 import { jwtDecode } from 'jwt-decode';
 import { AdminService } from '@letta-web/letta-agents-api';
-import { createProjectTestingAgent } from '$letta/web-api/projects/projectsRouter';
+import {
+  createProjectSourceAgentFromTestingAgent,
+  createProjectTestingAgent,
+} from '$letta/web-api/projects/projectsRouter';
+import { createAgent } from '$letta/sdk/deployment/deploymentRouter';
 
 function isLettaEmail(email: string) {
   return email.endsWith('@letta.com') || email.endsWith('@memgpt.ai');
@@ -75,9 +79,15 @@ async function handleLettaUserCreation() {
   };
 }
 
+interface CreateUserAndOrganizationResponse {
+  user: UserSession;
+  firstProjectId: string;
+  firstCreatedAgentId: string;
+}
+
 async function createUserAndOrganization(
   userData: ProviderUserPayload
-): Promise<UserSession> {
+): Promise<CreateUserAndOrganizationResponse> {
   let organizationId = '';
   let lettaOrganizationId = '';
 
@@ -168,21 +178,72 @@ async function createUserAndOrganization(
     }),
   ]);
 
-  await createProjectTestingAgent({
-    params: {
-      projectId: project[0].projectId,
+  const firstProjectId = project[0].projectId;
+
+  const createdTestingAgent = await createProjectTestingAgent(
+    {
+      params: {
+        projectId: firstProjectId,
+      },
+      body: {
+        recipeId: AgentTemplateVariant.CUSTOMER_SUPPORT,
+      },
     },
-    body: {
-      recipeId: AgentTemplateVariant.CUSTOMER_SUPPORT,
+    {
+      request: {
+        $organizationIdOverride: organizationId,
+      },
+    }
+  );
+
+  if (createdTestingAgent.status !== 201) {
+    throw new Error('Failed to create testing agent');
+  }
+
+  const createdSourceAgent = await createProjectSourceAgentFromTestingAgent(
+    {
+      body: {
+        testingAgentId: createdTestingAgent.body.id,
+      },
+      params: {
+        projectId: project[0].projectId,
+      },
     },
-  });
+    {
+      request: {
+        $organizationIdOverride: organizationId,
+      },
+    }
+  );
+
+  if (createdSourceAgent.status !== 201) {
+    throw new Error('Failed to create source agent');
+  }
+
+  await createAgent(
+    {
+      body: {
+        sourceAgentKey: createdSourceAgent.body.key,
+        uniqueIdentifier: 'my-first-agent-in-production',
+      },
+    },
+    {
+      request: {
+        organizationId,
+      },
+    }
+  );
 
   return {
-    email: userData.email,
-    name: userData.name,
-    imageUrl: userData.imageUrl,
-    id: createdUser.userId,
-    organizationId: organizationId,
+    user: {
+      email: userData.email,
+      name: userData.name,
+      imageUrl: userData.imageUrl,
+      id: createdUser.userId,
+      organizationId: organizationId,
+    },
+    firstCreatedAgentId: createdTestingAgent.body.id,
+    firstProjectId,
   };
 }
 
@@ -219,19 +280,34 @@ async function isUserInWhitelist(email: string) {
   return !!exists;
 }
 
+interface NewUserDetails {
+  firstProjectId: string;
+  firstCreatedAgentId: string;
+}
+
+interface FindOrCreateUserAndOrganizationFromProviderLoginResponse {
+  user: UserSession;
+  newUserDetails: NewUserDetails | undefined;
+}
+
 async function findOrCreateUserAndOrganizationFromProviderLogin(
   userData: ProviderUserPayload
-): Promise<UserSession> {
+): Promise<FindOrCreateUserAndOrganizationFromProviderLoginResponse> {
   if (!(await isUserInWhitelist(userData.email))) {
     throw new Error(LoginErrorsEnum.USER_NOT_IN_WHITELIST);
   }
 
-  let isNewUser = false;
+  let newUserDetails: NewUserDetails | undefined;
   let user = await findExistingUser(userData);
 
   if (!user) {
-    isNewUser = true;
-    user = await createUserAndOrganization(userData);
+    const res = await createUserAndOrganization(userData);
+
+    newUserDetails = {
+      firstProjectId: res.firstProjectId,
+      firstCreatedAgentId: res.firstCreatedAgentId,
+    };
+    user = res.user;
   }
 
   trackUserOnServer({
@@ -240,7 +316,7 @@ async function findOrCreateUserAndOrganizationFromProviderLogin(
     email: user.email,
   });
 
-  if (isNewUser) {
+  if (newUserDetails) {
     trackServerSideEvent(AnalyticsEvent.USER_CREATED, {
       userId: user.id,
     });
@@ -251,20 +327,29 @@ async function findOrCreateUserAndOrganizationFromProviderLogin(
   }
 
   return {
-    email: user.email,
-    id: user.id,
-    organizationId: user.organizationId,
-    imageUrl: user.imageUrl,
-    name: user.name,
+    user: {
+      email: user.email,
+      id: user.id,
+      organizationId: user.organizationId,
+      imageUrl: user.imageUrl,
+      name: user.name,
+    },
+    newUserDetails,
   };
 }
 
 const SESSION_EXPIRY_MS = 31536000000; // one year
 
+interface SignInUserFromProviderLoginResponse {
+  newUserDetails: NewUserDetails | undefined;
+  user: UserSession;
+}
+
 export async function signInUserFromProviderLogin(
   userData: ProviderUserPayload
-) {
-  const user = await findOrCreateUserAndOrganizationFromProviderLogin(userData);
+): Promise<SignInUserFromProviderLoginResponse> {
+  const { user, newUserDetails } =
+    await findOrCreateUserAndOrganizationFromProviderLogin(userData);
 
   const sessionId = crypto.randomUUID();
   const expires = Date.now() + SESSION_EXPIRY_MS;
@@ -278,6 +363,11 @@ export async function signInUserFromProviderLogin(
     expiresAt: expires,
     data: user,
   });
+
+  return {
+    newUserDetails,
+    user,
+  };
 }
 
 export async function signOutUser() {
@@ -425,4 +515,30 @@ export async function extractGoogleIdTokenData(
     imageUrl: decodedData.picture,
     name: decodedData.name,
   };
+}
+
+interface GenerateRedirectSignatureForLoggedInUserOptions {
+  newUserDetails?: NewUserDetails | undefined;
+}
+
+export async function generateRedirectSignatureForLoggedInUser(
+  options: GenerateRedirectSignatureForLoggedInUserOptions
+) {
+  const { newUserDetails } = options;
+
+  if (newUserDetails) {
+    return new Response('Successfully signed in', {
+      status: 302,
+      headers: {
+        location: `/projects/${newUserDetails.firstProjectId}/agents/${newUserDetails.firstCreatedAgentId}`,
+      },
+    });
+  }
+
+  return new Response('Successfully signed in', {
+    status: 302,
+    headers: {
+      location: '/',
+    },
+  });
 }

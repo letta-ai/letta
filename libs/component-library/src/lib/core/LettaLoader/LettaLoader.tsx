@@ -10,10 +10,11 @@ interface LettaLoaderProps {
   size: LogoBaseProps['size'];
   color?: LogoBaseProps['color'];
   stopAnimation?: boolean;
+  id?: string;
 }
 
 export function LettaLoader(props: LettaLoaderProps) {
-  const { size, color, stopAnimation } = props;
+  const { size, id, color, stopAnimation } = props;
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -35,7 +36,7 @@ export function LettaLoader(props: LettaLoaderProps) {
   }, [stopAnimation]);
 
   return (
-    <div className="relative">
+    <div className="relative" id={id}>
       <div
         ref={ref}
         className={cn('letta-loader ', stopAnimation ? 'stop-loader' : '')}

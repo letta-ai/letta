@@ -12,11 +12,7 @@ import {
 import { getUserOrganizationIdOrThrow } from '$letta/server/auth';
 import { eq, and, like, desc, count } from 'drizzle-orm';
 import type { contracts } from '$letta/web-api/contracts';
-import {
-  copyAgentById,
-  migrateToNewAgent,
-  createAgentFromTemplate,
-} from '$letta/server';
+import { copyAgentById, createAgentFromTemplate } from '$letta/server';
 import crypto from 'node:crypto';
 import {
   adjectives,
@@ -392,13 +388,22 @@ const RECIPIE_NAME_TO_FRIENDLY_NAME: Record<string, string> = {
   data_collector: 'Data Collector',
 };
 
+interface Context {
+  request: {
+    $organizationIdOverride?: string;
+  };
+}
+
 export async function createProjectTestingAgent(
-  req: CreateProjectTestingAgentRequest
+  req: CreateProjectTestingAgentRequest,
+  context: Context
 ): Promise<CreateProjectTestingAgentResponse> {
   const { projectId } = req.params;
   const { recipeId } = req.body;
 
-  const organizationId = await getUserOrganizationIdOrThrow();
+  const organizationId =
+    context.request?.$organizationIdOverride ||
+    (await getUserOrganizationIdOrThrow());
 
   const newAgent = await createAgentFromTemplate(
     agentTemplates[recipeId || AgentTemplateVariant.DEFAULT],
@@ -560,12 +565,21 @@ type CreateProjectSourceAgentFromTestingAgentResponse = ServerInferResponses<
   typeof contracts.projects.createProjectSourceAgentFromTestingAgent
 >;
 
+interface Context {
+  request: {
+    $organizationIdOverride?: string;
+  };
+}
+
 export async function createProjectSourceAgentFromTestingAgent(
-  req: CreateProjectSourceAgentFromTestingAgentRequest
+  req: CreateProjectSourceAgentFromTestingAgentRequest,
+  context: Context
 ): Promise<CreateProjectSourceAgentFromTestingAgentResponse> {
   const { projectId } = req.params;
-  const { testingAgentId, migrateExistingAgents } = req.body;
-  const organizationId = await getUserOrganizationIdOrThrow();
+  const { testingAgentId } = req.body;
+  const organizationId =
+    context.request?.$organizationIdOverride ||
+    (await getUserOrganizationIdOrThrow());
 
   const testingAgent = await db.query.testingAgents.findFirst({
     where: eq(testingAgents.id, testingAgentId),
@@ -632,51 +646,6 @@ export async function createProjectSourceAgentFromTestingAgent(
       id: sourceAgent.id,
     }),
   ]);
-
-  // do this as a job at a later time
-  if (migrateExistingAgents) {
-    const lastSourceAgent = await db.query.sourceAgents.findFirst({
-      where: and(
-        eq(sourceAgents.testingAgentId, testingAgent.id),
-        eq(sourceAgents.version, `${existingSourceAgentCount.length}`)
-      ),
-      orderBy: [desc(sourceAgents.createdAt)],
-    });
-
-    if (lastSourceAgent) {
-      const ids = await db.query.deployedAgents.findMany({
-        where: eq(deployedAgents.sourceAgentId, lastSourceAgent.id),
-        columns: {
-          id: true,
-          agentId: true,
-        },
-      });
-
-      const newDatasources = await AgentsService.getAgentSources({
-        agentId: copiedAgent.id || '',
-      });
-
-      await Promise.all(
-        ids.map(async ({ agentId }) => {
-          return migrateToNewAgent({
-            agentTemplate: copiedAgent,
-            agentIdToMigrate: agentId,
-            agentDatasourcesIds: newDatasources
-              .map(({ id }) => id)
-              .filter(Boolean) as string[],
-          });
-        })
-      );
-
-      await db
-        .update(deployedAgents)
-        .set({
-          sourceAgentId: sourceAgent.id,
-          sourceAgentKey: randomName,
-        })
-        .where(eq(deployedAgents.sourceAgentId, lastSourceAgent.id));
-    }
-  }
 
   return {
     status: 201,

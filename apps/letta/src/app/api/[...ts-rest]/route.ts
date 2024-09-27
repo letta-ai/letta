@@ -16,7 +16,7 @@ const handler = createNextHandler(contracts, router, {
   responseValidation: true,
   handlerType: 'app-router',
   requestMiddleware: [
-    tsr.middleware(async (req) => {
+    tsr.middleware<{ $organizationIdOverride: string }>(async (req) => {
       if (new URL(req.url).pathname.includes('admin')) {
         const organizationId = await getUserOrganizationIdOrThrow();
 

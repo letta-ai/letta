@@ -217,6 +217,7 @@ export function createPanelManager<
   interface PanelManagerProps {
     children: React.ReactNode;
     initialPositions?: RegisteredPanelItemPositionsMatrix;
+    onPositionChange?: (positions: RegisteredPanelItemPositionsMatrix) => void;
   }
 
   interface PanelState {
@@ -226,7 +227,7 @@ export function createPanelManager<
   }
 
   function PanelManagerProvider(props: PanelManagerProps) {
-    const { children, initialPositions = [] } = props;
+    const { children, initialPositions = [], onPositionChange } = props;
 
     const reconcilePositions = useCallback(
       (positions: RegisteredPanelItemPositionsMatrix) => {
@@ -366,6 +367,12 @@ export function createPanelManager<
     const [state, setState] = useState<PanelState>(() => {
       return reconcilePositions(initialPositions);
     });
+
+    useEffect(() => {
+      if (onPositionChange) {
+        onPositionChange(state.positions);
+      }
+    }, [onPositionChange, state.positions]);
 
     const MIN_WIDTH = 250;
 

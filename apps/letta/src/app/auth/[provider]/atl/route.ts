@@ -1,6 +1,7 @@
 import type { NextRequest } from 'next/server';
 import {
   extractGoogleIdTokenData,
+  generateRedirectSignatureForLoggedInUser,
   signInUserFromProviderLogin,
 } from '$letta/server/auth';
 
@@ -13,12 +14,9 @@ export async function GET(req: NextRequest) {
 
   const userPayload = await extractGoogleIdTokenData(idToken);
 
-  await signInUserFromProviderLogin(userPayload);
+  const { newUserDetails } = await signInUserFromProviderLogin(userPayload);
 
-  return new Response('Successfully signed in', {
-    status: 302,
-    headers: {
-      location: '/',
-    },
+  return generateRedirectSignatureForLoggedInUser({
+    newUserDetails,
   });
 }
