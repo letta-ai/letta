@@ -1,7 +1,11 @@
 import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
 import type { sdkContracts } from '../contracts';
 import type { AuthedRequestType } from '../shared';
-import { db, agents, deployedAgentTemplates } from '@letta-web/database';
+import {
+  db,
+  deployedAgents,
+  deployedAgentTemplates,
+} from '@letta-web/database';
 import { and, desc, eq } from 'drizzle-orm';
 import { copyAgentById, migrateToNewAgent } from '$letta/server';
 import * as crypto from 'node:crypto';
@@ -27,10 +31,10 @@ export async function createAgent(
   const { organizationId } = context.request;
 
   if (uniqueIdentifier) {
-    const alreadyExists = await db.query.agents.findFirst({
+    const alreadyExists = await db.query.deployedAgents.findFirst({
       where: and(
-        eq(agents.organizationId, organizationId),
-        eq(agents.key, uniqueIdentifier)
+        eq(deployedAgents.organizationId, organizationId),
+        eq(deployedAgents.key, uniqueIdentifier)
       ),
       columns: {
         id: true,
@@ -70,9 +74,9 @@ export async function createAgent(
     crypto.randomUUID()
   );
 
-  const lastDeployedAgent = await db.query.agents.findFirst({
-    where: eq(agents.deployedAgentTemplateId, deployedAgentTemplate.id),
-    orderBy: [desc(agents.createdAt)],
+  const lastDeployedAgent = await db.query.deployedAgents.findFirst({
+    where: eq(deployedAgents.deployedAgentTemplateId, deployedAgentTemplate.id),
+    orderBy: [desc(deployedAgents.createdAt)],
   });
 
   if (!copiedAgent.id) {
@@ -92,18 +96,17 @@ export async function createAgent(
     `${deployedAgentTemplateKey}-${nextInternalAgentCountId}`;
 
   const [agent] = await db
-    .insert(agents)
+    .insert(deployedAgents)
     .values({
       id: copiedAgent.id,
       projectId: deployedAgentTemplate.projectId,
       key,
-      agentId: copiedAgent.id,
       internalAgentCountId: nextInternalAgentCountId,
       deployedAgentTemplateKey: deployedAgentTemplate.key,
       deployedAgentTemplateId: deployedAgentTemplate.id,
       organizationId,
     })
-    .returning({ id: agents.id });
+    .returning({ id: deployedAgents.id });
 
   return {
     status: 201,
@@ -143,8 +146,8 @@ export async function migrateDeployedAgentToNewDeployedAgentTemplate(
   const { agentDeploymentId } = req.params;
   const { deployedAgentTemplateKey, preserveCoreMemories } = req.body;
 
-  const agent = await db.query.agents.findFirst({
-    where: eq(agents.id, agentDeploymentId),
+  const agent = await db.query.deployedAgents.findFirst({
+    where: eq(deployedAgents.id, agentDeploymentId),
   });
 
   if (!agent) {
@@ -220,8 +223,8 @@ export async function getExistingMessagesFromAgent(
     format_user_message_arguments,
   } = req.query;
 
-  const agent = await db.query.agents.findFirst({
-    where: eq(agents.id, agentDeploymentId),
+  const agent = await db.query.deployedAgents.findFirst({
+    where: eq(deployedAgents.id, agentDeploymentId),
   });
 
   if (!agent) {
@@ -323,23 +326,23 @@ export async function queryDeployedAgents(
   } = req.query;
   const { organizationId } = context.request;
 
-  const queryBuilder = [eq(agents.organizationId, organizationId)];
+  const queryBuilder = [eq(deployedAgents.organizationId, organizationId)];
 
   if (projectId) {
-    queryBuilder.push(eq(agents.projectId, projectId));
+    queryBuilder.push(eq(deployedAgents.projectId, projectId));
   }
 
   if (uniqueIdentifier) {
-    queryBuilder.push(eq(agents.key, uniqueIdentifier));
+    queryBuilder.push(eq(deployedAgents.key, uniqueIdentifier));
   }
 
   if (deployedAgentTemplateKey) {
     queryBuilder.push(
-      eq(agents.deployedAgentTemplateKey, deployedAgentTemplateKey)
+      eq(deployedAgents.deployedAgentTemplateKey, deployedAgentTemplateKey)
     );
   }
 
-  const agentsResponse = await db.query.agents.findMany({
+  const agentsResponse = await db.query.deployedAgents.findMany({
     where: and(...queryBuilder),
     limit,
     offset,

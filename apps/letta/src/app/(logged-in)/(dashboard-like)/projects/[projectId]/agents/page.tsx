@@ -28,7 +28,7 @@ import { webApi, webApiQueryKeys } from '$letta/client';
 import { useCurrentProjectId } from '../hooks';
 import { usePathname, useSearchParams } from 'next/navigation';
 import type { ColumnDef } from '@tanstack/react-table';
-import type { DeployedAgentType } from '$letta/web-api/contracts';
+import type { AgentType } from '$letta/web-api/contracts';
 import { useDebouncedValue } from '@mantine/hooks';
 import { useAgentsServiceGetAgent } from '@letta-web/letta-agents-api';
 import { useRouter } from 'next/navigation';
@@ -54,7 +54,7 @@ function AgentMessagesList(props: AgentMessagesListProps) {
 }
 
 interface DeployedAgentViewProps {
-  agent: DeployedAgentType;
+  agent: AgentType;
   onClose: () => void;
 }
 
@@ -145,7 +145,7 @@ function DeployedAgentList(props: DeployedAgentListProps) {
   const currentProjectId = useCurrentProjectId();
   const [limit, setLimit] = useState(20);
 
-  const [selectedAgent, setSelectedAgent] = useState<DeployedAgentType>();
+  const [selectedAgent, setSelectedAgent] = useState<AgentType>();
   const { search, filterBy } = props;
   const [offset, setOffset] = useState(0);
 
@@ -174,7 +174,7 @@ function DeployedAgentList(props: DeployedAgentListProps) {
     },
   });
 
-  const DeployedAgentColumns: Array<ColumnDef<DeployedAgentType>> = useMemo(
+  const DeployedAgentColumns: Array<ColumnDef<AgentType>> = useMemo(
     () => [
       {
         header: 'Id',

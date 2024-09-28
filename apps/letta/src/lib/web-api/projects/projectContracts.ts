@@ -227,10 +227,10 @@ const AgentSchema = z.object({
   createdAt: z.string(),
 });
 
-const DeployedAgentsSchema = z.array(AgentSchema);
+const AgentsSchema = z.array(AgentSchema);
 
-export type DeployedAgentType = z.infer<typeof AgentSchema>;
-export type DeployedAgentsType = z.infer<typeof DeployedAgentsSchema>;
+export type AgentType = z.infer<typeof AgentSchema>;
+export type DeployedAgentsType = z.infer<typeof AgentsSchema>;
 const GetDeployedAgentsQuerySchema = z.object({
   search: z.preprocess(String, z.string()).optional(),
   offset: z.number().optional(),
@@ -240,7 +240,7 @@ const GetDeployedAgentsQuerySchema = z.object({
 });
 
 export const GetDeployedAgentsContractResponseSchema = z.object({
-  agents: DeployedAgentsSchema,
+  agents: AgentsSchema,
   hasNextPage: z.boolean(),
 });
 

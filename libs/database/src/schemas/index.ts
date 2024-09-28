@@ -44,7 +44,7 @@ export const orgRelationsTable = relations(organizations, ({ many }) => ({
   projects: many(projects),
   testingAgents: many(agentTemplates),
   sourceAgents: many(deployedAgentTemplates),
-  deployedAgents: many(agents),
+  deployedAgents: many(deployedAgents),
 }));
 
 export const organizationPreferences = pgTable('organization_preferences', {
@@ -169,7 +169,7 @@ export const projectRelations = relations(projects, ({ one, many }) => ({
   }),
   deployedAgentTemplates: many(deployedAgentTemplates),
   agentTemplates: many(agentTemplates),
-  deployedAgents: many(agents),
+  deployedAgents: many(deployedAgents),
 }));
 
 export const agentTemplates = pgTable('agent_templates', {
@@ -241,7 +241,7 @@ export const deployedAgentTemplatesRelations = relations(
       fields: [deployedAgentTemplates.agentTemplateId],
       references: [agentTemplates.id],
     }),
-    deployedAgents: many(agents),
+    deployedAgents: many(deployedAgents),
     project: one(projects, {
       fields: [deployedAgentTemplates.projectId],
       references: [projects.id],
@@ -249,15 +249,14 @@ export const deployedAgentTemplatesRelations = relations(
   })
 );
 
-export const agents = pgTable(
-  'agents',
+export const deployedAgents = pgTable(
+  'deployed_agents',
   {
     id: text('id').primaryKey(),
     key: text('key').notNull(),
     deployedAgentTemplateId: text('deployed_agent_template_id'),
     deployedAgentTemplateKey: text('deployed_agent_template_key').notNull(),
     projectId: text('project_id').notNull(),
-    agentId: text('agent_id').notNull().unique(),
     internalAgentCountId: bigint('internal_agent_count_id', { mode: 'number' })
       .notNull()
       .default(0),
@@ -277,17 +276,17 @@ export const agents = pgTable(
   })
 );
 
-export const deployedAgentRelations = relations(agents, ({ one }) => ({
+export const deployedAgentRelations = relations(deployedAgents, ({ one }) => ({
   organization: one(organizations, {
-    fields: [agents.organizationId],
+    fields: [deployedAgents.organizationId],
     references: [organizations.id],
   }),
   deployedAgentTemplates: one(deployedAgentTemplates, {
-    fields: [agents.deployedAgentTemplateId],
+    fields: [deployedAgents.deployedAgentTemplateId],
     references: [deployedAgentTemplates.id],
   }),
   project: one(projects, {
-    fields: [agents.projectId],
+    fields: [deployedAgents.projectId],
     references: [projects.id],
   }),
 }));

@@ -2,7 +2,7 @@ import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
 import type { projectsContract } from '$letta/web-api/contracts';
 import {
   db,
-  agents,
+  deployedAgents,
   projects,
   deployedAgentTemplates,
   agentTemplates,
@@ -808,36 +808,40 @@ export async function getDeployedAgents(
   } = req.query;
 
   const where = [
-    eq(agents.organizationId, organizationId),
-    eq(agents.projectId, projectId),
+    eq(deployedAgents.organizationId, organizationId),
+    eq(deployedAgents.projectId, projectId),
   ];
 
   if (deployedAgentTemplateId) {
-    where.push(eq(agents.deployedAgentTemplateId, deployedAgentTemplateId));
+    where.push(
+      eq(deployedAgents.deployedAgentTemplateId, deployedAgentTemplateId)
+    );
   }
 
   if (deployedAgentTemplateKey) {
-    where.push(eq(agents.deployedAgentTemplateKey, deployedAgentTemplateKey));
+    where.push(
+      eq(deployedAgents.deployedAgentTemplateKey, deployedAgentTemplateKey)
+    );
   }
 
   if (search) {
-    where.push(like(agents.key, `%${search}%` || '%'));
+    where.push(like(deployedAgents.key, `%${search}%` || '%'));
   }
 
-  const existingDeployedAgentTemplateCount = await db.query.agents.findMany({
-    where: and(...where),
-    limit: limit + 1,
-    offset,
-    columns: {
-      id: true,
-      key: true,
-      deployedAgentTemplateId: true,
-      createdAt: true,
-      agentId: true,
-      updatedAt: true,
-    },
-    orderBy: [desc(agents.createdAt)],
-  });
+  const existingDeployedAgentTemplateCount =
+    await db.query.deployedAgents.findMany({
+      where: and(...where),
+      limit: limit + 1,
+      offset,
+      columns: {
+        id: true,
+        key: true,
+        deployedAgentTemplateId: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+      orderBy: [desc(deployedAgents.createdAt)],
+    });
 
   return {
     status: 200,
@@ -918,12 +922,12 @@ export async function getDeployedAgentsCountByDeployedAgentTemplate(
 
   const [result] = await db
     .select({ count: count() })
-    .from(agents)
+    .from(deployedAgents)
     .where(
       and(
-        eq(agents.organizationId, organizationId),
-        eq(agents.projectId, projectId),
-        eq(agents.deployedAgentTemplateId, deployedAgentTemplateId)
+        eq(deployedAgents.organizationId, organizationId),
+        eq(deployedAgents.projectId, projectId),
+        eq(deployedAgents.deployedAgentTemplateId, deployedAgentTemplateId)
       )
     );
 

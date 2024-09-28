@@ -7,7 +7,7 @@ import type {
 import { ChatWithAgentBodySchema } from '$letta/sdk/deployment/deploymentContracts';
 import type { z } from 'zod';
 import { verifyAndReturnAPIKeyDetails } from '$letta/server/auth';
-import { db, agents } from '@letta-web/database';
+import { db, deployedAgents } from '@letta-web/database';
 import { and, eq } from 'drizzle-orm';
 import { EventSource } from 'extended-eventsource';
 import { environment } from '@letta-web/environmental-variables';
@@ -84,10 +84,10 @@ export async function POST(request: NextRequest, context: Context) {
     return new Response('Invalid agentDeploymentId', { status: 400 });
   }
 
-  const agent = await db.query.agents.findFirst({
+  const agent = await db.query.deployedAgents.findFirst({
     where: and(
-      eq(agents.organizationId, organizationId),
-      eq(agents.id, agentDeploymentId)
+      eq(deployedAgents.organizationId, organizationId),
+      eq(deployedAgents.id, agentDeploymentId)
     ),
   });
 
