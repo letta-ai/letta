@@ -7,6 +7,7 @@ import {
 import { sdkContracts } from '$letta/sdk/contracts';
 import { sdkRouter } from '$letta/sdk/router';
 import { verifyAndReturnAPIKeyDetails } from '$letta/server/auth';
+import type { RequestMiddlewareType } from '$letta/sdk/shared';
 import { DEPLOYMENT_BASE_URL } from '$letta/sdk/shared';
 import * as Sentry from '@sentry/node';
 
@@ -58,7 +59,7 @@ const handler = createNextHandler(sdkContracts, sdkRouter, {
   responseValidation: true,
   handlerType: 'app-router',
   requestMiddleware: [
-    tsr.middleware<{ organizationId: string }>(async (request) => {
+    tsr.middleware<RequestMiddlewareType>(async (request) => {
       const apiKey = request.headers
         .get('Authorization')
         ?.replace('Bearer ', '');
@@ -75,6 +76,7 @@ const handler = createNextHandler(sdkContracts, sdkRouter, {
       }
 
       request.organizationId = keyDetails.organizationId;
+      request.userId = keyDetails.userId;
     }),
   ],
 });

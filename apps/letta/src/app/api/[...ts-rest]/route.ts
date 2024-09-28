@@ -5,6 +5,7 @@ import {
 } from '@ts-rest/serverless/next';
 import { contracts } from '$letta/web-api/contracts';
 import { router } from '$letta/web-api/router';
+import type { GetUserDataResponse } from '$letta/server/auth';
 import {
   getOrganizationFromOrganizationId,
   getUserOrganizationIdOrThrow,
@@ -16,7 +17,7 @@ const handler = createNextHandler(contracts, router, {
   responseValidation: true,
   handlerType: 'app-router',
   requestMiddleware: [
-    tsr.middleware<{ $organizationIdOverride: string }>(async (req) => {
+    tsr.middleware<{ $userOverride?: GetUserDataResponse }>(async (req) => {
       if (new URL(req.url).pathname.includes('admin')) {
         const organizationId = await getUserOrganizationIdOrThrow();
 

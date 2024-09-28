@@ -1,12 +1,8 @@
-import { getUser } from '$letta/server/auth';
+import { getUserOrRedirect } from '$letta/server/auth';
 import { redirect } from 'next/navigation';
 
 async function HomePage() {
-  const user = await getUser();
-
-  if (!user) {
-    return redirect('/signout');
-  }
+  await getUserOrRedirect();
 
   redirect(`/projects`);
 }

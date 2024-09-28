@@ -1,6 +1,6 @@
 'use server';
 import type { ReactNode } from 'react';
-import { getUser } from '$letta/server/auth';
+import { getUserOrRedirect } from '$letta/server/auth';
 import { redirect } from 'next/navigation';
 import {
   dehydrate,
@@ -20,7 +20,7 @@ interface InAppProps {
 
 export default async function LoggedInLayout(props: InAppProps) {
   const { children } = props;
-  const user = await getUser();
+  const user = await getUserOrRedirect();
 
   const queryClient = new QueryClient();
 

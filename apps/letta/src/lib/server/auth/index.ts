@@ -204,7 +204,14 @@ async function createUserAndOrganization(
     },
     {
       request: {
-        $organizationIdOverride: organizationId,
+        $userOverride: {
+          id: createdUser.userId,
+          organizationId,
+          lettaAgentsId: lettaAgentsUser.id,
+          email: userData.email,
+          name: userData.name,
+          imageUrl: userData.imageUrl,
+        },
       },
     }
   );
@@ -225,7 +232,14 @@ async function createUserAndOrganization(
       },
       {
         request: {
-          $organizationIdOverride: organizationId,
+          $userOverride: {
+            id: createdUser.userId,
+            organizationId,
+            lettaAgentsId: lettaAgentsUser.id,
+            email: userData.email,
+            name: userData.name,
+            imageUrl: userData.imageUrl,
+          },
         },
       }
     );
@@ -243,6 +257,7 @@ async function createUserAndOrganization(
     },
     {
       request: {
+        userId: createdUser.userId,
         organizationId,
       },
     }
@@ -406,7 +421,16 @@ export async function getOrganizationFromOrganizationId(
   return organization;
 }
 
-export async function getUser() {
+export interface GetUserDataResponse {
+  organizationId: string;
+  id: string;
+  lettaAgentsId: string;
+  email: string;
+  imageUrl: string;
+  name: string;
+}
+
+export async function getUser(): Promise<GetUserDataResponse | null> {
   const session = await getCookie(CookieNames.LETTA_SESSION);
 
   if (!session) {
@@ -416,7 +440,6 @@ export async function getUser() {
   const user = await getRedisData('userSession', session.sessionId);
 
   if (!user) {
-    redirect('/signout');
     return null;
   }
 
@@ -433,11 +456,31 @@ export async function getUser() {
   });
 
   if (!userFromDb) {
-    redirect('/signout');
-    return;
+    return null;
   }
 
   return userFromDb;
+}
+
+export async function getUserOrRedirect() {
+  const user = await getUser();
+
+  if (!user) {
+    redirect('/signout');
+    return null;
+  }
+
+  return user;
+}
+
+export async function getUserOrThrow(): Promise<GetUserDataResponse> {
+  const user = await getUser();
+
+  if (!user) {
+    throw new Error('User not found');
+  }
+
+  return user;
 }
 
 export async function getUserOrganizationIdOrThrow() {

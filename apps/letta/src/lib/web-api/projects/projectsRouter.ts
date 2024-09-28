@@ -7,12 +7,16 @@ import {
   deployedAgentTemplates,
   agentTemplates,
 } from '@letta-web/database';
-import { getUserOrganizationIdOrThrow } from '$letta/server/auth';
+import type { GetUserDataResponse } from '$letta/server/auth';
+import {
+  getUserOrganizationIdOrThrow,
+  getUserOrThrow,
+} from '$letta/server/auth';
 import { eq, and, like, desc, count } from 'drizzle-orm';
 import type { contracts } from '$letta/web-api/contracts';
 import {
   copyAgentById,
-  createAgentFromTemplate,
+  createAgentFromRecipe,
   generateSlug,
 } from '$letta/server';
 import crypto from 'node:crypto';
@@ -410,7 +414,7 @@ const RECIPIE_NAME_TO_FRIENDLY_NAME: Record<string, string> = {
 
 interface Context {
   request: {
-    $organizationIdOverride?: string;
+    $userOverride?: GetUserDataResponse;
   };
 }
 
@@ -421,14 +425,13 @@ export async function createProjectAgentTemplate(
   const { projectId } = req.params;
   const { recipeId } = req.body;
 
-  const organizationId =
-    context.request?.$organizationIdOverride ||
-    (await getUserOrganizationIdOrThrow());
+  const { lettaAgentsId, organizationId } =
+    context.request?.$userOverride || (await getUserOrThrow());
 
-  const newAgent = await createAgentFromTemplate(
+  const newAgent = await createAgentFromRecipe(
     agentRecipies[recipeId || AgentRecipieVariant.DEFAULT],
     crypto.randomUUID(),
-    organizationId
+    lettaAgentsId
   );
 
   if (!newAgent.id) {
@@ -587,7 +590,7 @@ type CreateProjectDeployedAgentTemplateFromAgentTemplateResponse =
 
 interface Context {
   request: {
-    $organizationIdOverride?: string;
+    $userOverride?: GetUserDataResponse;
   };
 }
 
@@ -597,9 +600,8 @@ export async function createProjectDeployedAgentTemplateFromAgentTemplate(
 ): Promise<CreateProjectDeployedAgentTemplateFromAgentTemplateResponse> {
   const { projectId } = req.params;
   const { agentTemplateId } = req.body;
-  const organizationId =
-    context.request?.$organizationIdOverride ||
-    (await getUserOrganizationIdOrThrow());
+  const { organizationId, lettaAgentsId } =
+    context.request?.$userOverride || (await getUserOrThrow());
 
   const testingAgent = await db.query.agentTemplates.findFirst({
     where: eq(agentTemplates.id, agentTemplateId),
@@ -628,7 +630,11 @@ export async function createProjectDeployedAgentTemplateFromAgentTemplate(
     separator: '-',
   });
 
-  const copiedAgent = await copyAgentById(testingAgent.id, crypto.randomUUID());
+  const copiedAgent = await copyAgentById(
+    testingAgent.id,
+    crypto.randomUUID(),
+    lettaAgentsId
+  );
 
   if (!copiedAgent.id) {
     return {
@@ -951,7 +957,7 @@ export async function forkAgentTemplate(
   req: ForkAgentTemplateRequest
 ): Promise<ForkAgentTemplateResponse> {
   const { agentTemplateId, projectId } = req.params;
-  const organizationId = await getUserOrganizationIdOrThrow();
+  const { organizationId, lettaAgentsId } = await getUserOrThrow();
 
   const testingAgent = await db.query.agentTemplates.findFirst({
     where: and(
@@ -968,7 +974,11 @@ export async function forkAgentTemplate(
     };
   }
 
-  const copiedAgent = await copyAgentById(testingAgent.id, crypto.randomUUID());
+  const copiedAgent = await copyAgentById(
+    testingAgent.id,
+    crypto.randomUUID(),
+    lettaAgentsId
+  );
 
   if (!copiedAgent.id) {
     return {

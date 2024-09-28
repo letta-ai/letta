@@ -1,7 +1,10 @@
 'use server';
 import type { ReactNode } from 'react';
 import React from 'react';
-import { getOrganizationFromOrganizationId, getUser } from '$letta/server/auth';
+import {
+  getOrganizationFromOrganizationId,
+  getUserOrRedirect,
+} from '$letta/server/auth';
 import { redirect } from 'next/navigation';
 import { QueryClient } from '@tanstack/react-query';
 import { queryClientKeys } from '$letta/web-api/contracts';
@@ -48,7 +51,7 @@ function Sidebar() {
 export default async function LoggedInLayout(props: InAppProps) {
   const { children } = props;
   const queryClient = new QueryClient();
-  const user = await getUser();
+  const user = await getUserOrRedirect();
 
   if (!user) {
     redirect('/');

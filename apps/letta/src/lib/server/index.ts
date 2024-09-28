@@ -2,25 +2,34 @@ import type { AgentState, UpdateAgentState } from '@letta-web/letta-agents-api';
 import { AgentsService, SourcesService } from '@letta-web/letta-agents-api';
 import type { AgentTemplate } from '$letta/types';
 
-export async function createAgentFromTemplate(
+export async function createAgentFromRecipe(
   agentTemplate: AgentTemplate,
   name: string,
-  userId: string
+  lettaAgentsUserId: string
 ) {
-  return AgentsService.createAgent({
-    requestBody: {
-      tools: agentTemplate.tools,
-      name: name,
-      embedding_config: agentTemplate.embedding_config,
-      description: '',
-      memory: agentTemplate.memory,
-      user_id: userId,
-      llm_config: agentTemplate.llm_config,
+  return AgentsService.createAgent(
+    {
+      requestBody: {
+        tools: agentTemplate.tools,
+        name: name,
+        embedding_config: agentTemplate.embedding_config,
+        description: '',
+        memory: agentTemplate.memory,
+        user_id: lettaAgentsUserId,
+        llm_config: agentTemplate.llm_config,
+      },
     },
-  });
+    {
+      user_id: lettaAgentsUserId,
+    }
+  );
 }
 
-export async function copyAgentById(agentId: string, name: string) {
+export async function copyAgentById(
+  agentId: string,
+  name: string,
+  lettaAgentsUserId: string
+) {
   const [currentAgent, agentSources] = await Promise.all([
     AgentsService.getAgent({
       agentId: agentId,
@@ -30,17 +39,22 @@ export async function copyAgentById(agentId: string, name: string) {
     }),
   ]);
 
-  const nextAgent = await AgentsService.createAgent({
-    requestBody: {
-      tools: currentAgent.tools,
-      name: name,
-      embedding_config: currentAgent.embedding_config,
-      description: currentAgent.description,
-      memory: currentAgent.memory,
-      user_id: currentAgent.user_id,
-      llm_config: currentAgent.llm_config,
+  const nextAgent = await AgentsService.createAgent(
+    {
+      requestBody: {
+        tools: currentAgent.tools,
+        name: name,
+        embedding_config: currentAgent.embedding_config,
+        description: currentAgent.description,
+        memory: currentAgent.memory,
+        user_id: currentAgent.user_id,
+        llm_config: currentAgent.llm_config,
+      },
     },
-  });
+    {
+      user_id: lettaAgentsUserId,
+    }
+  );
 
   if (!nextAgent?.id) {
     throw new Error('Failed to clone agent');
@@ -52,10 +66,15 @@ export async function copyAgentById(agentId: string, name: string) {
         return;
       }
 
-      await SourcesService.attachAgentToSource({
-        agentId: nextAgent.id || '',
-        sourceId: source.id,
-      });
+      await SourcesService.attachAgentToSource(
+        {
+          agentId: nextAgent.id || '',
+          sourceId: source.id,
+        },
+        {
+          user_id: lettaAgentsUserId,
+        }
+      );
     })
   );
 
