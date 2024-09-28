@@ -1,21 +1,21 @@
-import { useCurrentTestingAgentId } from '../useCurrentAgentId/useCurrentTestingAgentId';
+import { useCurrentAgentId } from '../useCurrentAgentId/useCurrentAgentId';
 import { useCurrentProjectId } from '../../../../../../../(dashboard-like)/projects/[projectId]/hooks';
 import { webApi, webApiQueryKeys } from '$letta/client';
 
-export function useCurrentTestingAgent() {
-  const testingAgentId = useCurrentTestingAgentId();
+export function useCurrentAgentTemplate() {
+  const agentTemplateId = useCurrentAgentId();
   const projectId = useCurrentProjectId();
 
   const { data: agentTesting } =
-    webApi.projects.getProjectTestingAgent.useQuery({
-      queryKey: webApiQueryKeys.projects.getProjectTestingAgent(
+    webApi.projects.getProjectAgentTemplate.useQuery({
+      queryKey: webApiQueryKeys.projects.getProjectAgentTemplate(
         projectId,
-        testingAgentId
+        agentTemplateId
       ),
       queryData: {
         params: {
           projectId,
-          testingAgentId,
+          agentTemplateId,
         },
       },
     });

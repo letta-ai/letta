@@ -1,10 +1,11 @@
 'use server';
 import type { ProviderUserPayload } from '$letta/types';
-import { AgentTemplateVariant } from '$letta/types';
+import { AgentRecipieVariant } from '$letta/types';
 import {
   db,
   emailWhitelist,
   lettaAPIKeys,
+  organizationPreferences,
   organizations,
   projects,
   users,
@@ -24,10 +25,11 @@ import { AnalyticsEvent } from '@letta-web/analytics';
 import { jwtDecode } from 'jwt-decode';
 import { AdminService } from '@letta-web/letta-agents-api';
 import {
-  createProjectSourceAgentFromTestingAgent,
-  createProjectTestingAgent,
+  createProjectDeployedAgentTemplateFromAgentTemplate,
+  createProjectAgentTemplate,
 } from '$letta/web-api/projects/projectsRouter';
 import { createAgent } from '$letta/sdk/deployment/deploymentRouter';
+import { generateSlug } from '$letta/server';
 
 function isLettaEmail(email: string) {
   return email.endsWith('@letta.com') || email.endsWith('@memgpt.ai');
@@ -68,6 +70,10 @@ async function handleLettaUserCreation() {
           organizationId: organizations.id,
           lettaAgentsId: organizations.lettaAgentsId,
         });
+
+    await db.insert(organizationPreferences).values({
+      organizationId: madeOrgId,
+    });
 
     organizationId = madeOrgId;
     lettaOrganizationId = madeAgentOrgId;
@@ -119,6 +125,10 @@ async function createUserAndOrganization(
       })
       .returning({ organizationId: organizations.id });
 
+    await db.insert(organizationPreferences).values({
+      organizationId: createdOrg.organizationId,
+    });
+
     organizationId = createdOrg.organizationId;
   }
 
@@ -160,12 +170,15 @@ async function createUserAndOrganization(
 
   const userFullName = userData.name;
 
+  const projectName = `${userFullName}'s Project`;
+
   const [project] = await Promise.all([
     db
       .insert(projects)
       .values({
+        slug: generateSlug(projectName),
         organizationId,
-        name: `${userFullName}'s Project`,
+        name: projectName,
       })
       .returning({
         projectId: projects.id,
@@ -180,13 +193,13 @@ async function createUserAndOrganization(
 
   const firstProjectId = project[0].projectId;
 
-  const createdTestingAgent = await createProjectTestingAgent(
+  const createdAgentTemplate = await createProjectAgentTemplate(
     {
       params: {
         projectId: firstProjectId,
       },
       body: {
-        recipeId: AgentTemplateVariant.CUSTOMER_SUPPORT,
+        recipeId: AgentRecipieVariant.CUSTOMER_SUPPORT,
       },
     },
     {
@@ -196,34 +209,35 @@ async function createUserAndOrganization(
     }
   );
 
-  if (createdTestingAgent.status !== 201) {
+  if (createdAgentTemplate.status !== 201) {
     throw new Error('Failed to create testing agent');
   }
 
-  const createdSourceAgent = await createProjectSourceAgentFromTestingAgent(
-    {
-      body: {
-        testingAgentId: createdTestingAgent.body.id,
+  const createdDeployedAgentTemplate =
+    await createProjectDeployedAgentTemplateFromAgentTemplate(
+      {
+        body: {
+          agentTemplateId: createdAgentTemplate.body.id,
+        },
+        params: {
+          projectId: project[0].projectId,
+        },
       },
-      params: {
-        projectId: project[0].projectId,
-      },
-    },
-    {
-      request: {
-        $organizationIdOverride: organizationId,
-      },
-    }
-  );
+      {
+        request: {
+          $organizationIdOverride: organizationId,
+        },
+      }
+    );
 
-  if (createdSourceAgent.status !== 201) {
+  if (createdDeployedAgentTemplate.status !== 201) {
     throw new Error('Failed to create source agent');
   }
 
   await createAgent(
     {
       body: {
-        sourceAgentKey: createdSourceAgent.body.key,
+        deployedAgentTemplateKey: createdDeployedAgentTemplate.body.key,
         uniqueIdentifier: 'my-first-agent-in-production',
       },
     },
@@ -242,7 +256,7 @@ async function createUserAndOrganization(
       id: createdUser.userId,
       organizationId: organizationId,
     },
-    firstCreatedAgentId: createdTestingAgent.body.id,
+    firstCreatedAgentId: createdAgentTemplate.body.id,
     firstProjectId,
   };
 }

@@ -23,7 +23,7 @@ export interface AgentTemplate {
   embedding_config: AgentState['embedding_config'];
 }
 
-export enum AgentTemplateVariant {
+export enum AgentRecipieVariant {
   CUSTOMER_SUPPORT = 'customer_support',
   FANTASY_ROLEPLAY = 'fantasy_roleplay',
   DATA_COLLECTOR = 'data_collector',

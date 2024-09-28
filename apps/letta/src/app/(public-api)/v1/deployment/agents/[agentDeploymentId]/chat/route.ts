@@ -7,7 +7,7 @@ import type {
 import { ChatWithAgentBodySchema } from '$letta/sdk/deployment/deploymentContracts';
 import type { z } from 'zod';
 import { verifyAndReturnAPIKeyDetails } from '$letta/server/auth';
-import { db, deployedAgents } from '@letta-web/database';
+import { db, agents } from '@letta-web/database';
 import { and, eq } from 'drizzle-orm';
 import { EventSource } from 'extended-eventsource';
 import { environment } from '@letta-web/environmental-variables';
@@ -84,20 +84,20 @@ export async function POST(request: NextRequest, context: Context) {
     return new Response('Invalid agentDeploymentId', { status: 400 });
   }
 
-  const deployedAgent = await db.query.deployedAgents.findFirst({
+  const agent = await db.query.agents.findFirst({
     where: and(
-      eq(deployedAgents.organizationId, organizationId),
-      eq(deployedAgents.id, agentDeploymentId)
+      eq(agents.organizationId, organizationId),
+      eq(agents.id, agentDeploymentId)
     ),
   });
 
-  if (!deployedAgent) {
+  if (!agent) {
     return new Response('Agent not found', { status: 404 });
   }
 
   if (!stream_tokens) {
     const messageResponse = await AgentsService.createAgentMessage({
-      agentId: deployedAgent.agentId,
+      agentId: agent.id,
       requestBody: {
         stream_tokens: false,
         return_message_object: true,
@@ -141,7 +141,7 @@ export async function POST(request: NextRequest, context: Context) {
 
   setImmediate(async () => {
     const eventSource = new EventSource(
-      `${environment.LETTA_AGENTS_ENDPOINT}/v1/agents/${deployedAgent.agentId}/messages`,
+      `${environment.LETTA_AGENTS_ENDPOINT}/v1/agents/${agent.id}/messages`,
       {
         method: 'POST',
         disableRetry: true,

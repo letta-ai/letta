@@ -1,1 +1,0 @@
-ALTER TABLE "deployed_agents" ADD COLUMN "internal_agent_count_id" bigint NOT NULL;

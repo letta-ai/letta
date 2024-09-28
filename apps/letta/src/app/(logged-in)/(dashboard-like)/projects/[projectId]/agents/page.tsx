@@ -63,7 +63,7 @@ function DeployedAgentView(props: DeployedAgentViewProps) {
   const { key } = agent;
 
   const { data } = useAgentsServiceGetAgent({
-    agentId: agent.agentId,
+    agentId: agent.id,
   });
 
   return (
@@ -127,7 +127,7 @@ function DeployedAgentView(props: DeployedAgentViewProps) {
                   {/*</HStack>*/}
                 </VStack>
               </Card>
-              <AgentMessagesList agentId={agent.agentId} />
+              <AgentMessagesList agentId={agent.id} />
             </VStack>
           )}
         </VStack>
@@ -158,7 +158,7 @@ function DeployedAgentList(props: DeployedAgentListProps) {
       currentProjectId,
       {
         search: search,
-        sourceAgentKey: filterBy?.value,
+        deployedAgentTemplateKey: filterBy?.value,
         limit,
         offset,
       }
@@ -166,7 +166,7 @@ function DeployedAgentList(props: DeployedAgentListProps) {
     queryData: {
       query: {
         search: search,
-        sourceAgentKey: filterBy?.value,
+        deployedAgentTemplateKey: filterBy?.value,
         offset,
         limit,
       },
@@ -192,8 +192,8 @@ function DeployedAgentList(props: DeployedAgentListProps) {
     []
   );
 
-  const deployedAgents = useMemo(() => {
-    return data?.body?.deployedAgents || [];
+  const agents = useMemo(() => {
+    return data?.body?.agents || [];
   }, [data]);
 
   return (
@@ -224,7 +224,7 @@ function DeployedAgentList(props: DeployedAgentListProps) {
           )
         }
         columns={DeployedAgentColumns}
-        data={deployedAgents}
+        data={agents}
         isLoading={!data}
       />
       {selectedAgent && (
@@ -239,13 +239,13 @@ function DeployedAgentList(props: DeployedAgentListProps) {
   );
 }
 
-interface FilterBySourceAgentComponentProps {
+interface FilterByDeployedAgentTemplateComponentProps {
   filterBy?: OptionType;
   onFilterChange: (filter: OptionType) => void;
 }
 
-function FilterBySourceAgentComponent(
-  props: FilterBySourceAgentComponentProps
+function FilterByDeployedAgentTemplateComponent(
+  props: FilterByDeployedAgentTemplateComponentProps
 ) {
   const currentProjectId = useCurrentProjectId();
   const { filterBy, onFilterChange } = props;
@@ -269,24 +269,28 @@ function FilterBySourceAgentComponent(
     }
   }, [initialFilter, onFilterChange]);
 
-  const { data } = webApi.projects.getProjectSourceAgents.useQuery({
-    queryKey: webApiQueryKeys.projects.getProjectSourceAgents(currentProjectId),
+  const { data } = webApi.projects.getProjectDeployedAgentTemplates.useQuery({
+    queryKey:
+      webApiQueryKeys.projects.getProjectDeployedAgentTemplates(
+        currentProjectId
+      ),
     queryData: { params: { projectId: currentProjectId }, query: {} },
   });
 
   const handleLoadOptions = useCallback(
     async (query: string) => {
-      const response = await webApi.projects.getProjectSourceAgents.query({
-        query: { search: query },
-        params: { projectId: currentProjectId },
-      });
+      const response =
+        await webApi.projects.getProjectDeployedAgentTemplates.query({
+          query: { search: query },
+          params: { projectId: currentProjectId },
+        });
 
       if (response.status !== 200) {
         return [];
       }
 
       return [
-        ...response.body.sourceAgents.map((agent) => ({
+        ...response.body.deployedAgentTemplates.map((agent) => ({
           label: agent.key,
           value: agent.key,
         })),
@@ -313,7 +317,7 @@ function FilterBySourceAgentComponent(
 
     let hasInitialFilter = false;
 
-    const arr = data.body.sourceAgents.map((agent) => {
+    const arr = data.body.deployedAgentTemplates.map((agent) => {
       if (initialFilter && agent.key === initialFilter.value) {
         hasInitialFilter = true;
       }
@@ -394,7 +398,7 @@ function DeployedAgentsPage() {
               fullWidth
             />
             <InputFilter>
-              <FilterBySourceAgentComponent
+              <FilterByDeployedAgentTemplateComponent
                 filterBy={filterBy}
                 onFilterChange={setFilterBy}
               />

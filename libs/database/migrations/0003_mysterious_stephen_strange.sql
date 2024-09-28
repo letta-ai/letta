@@ -1,1 +1,0 @@
-ALTER TABLE "letta_api_keys" ADD COLUMN "name" text NOT NULL;

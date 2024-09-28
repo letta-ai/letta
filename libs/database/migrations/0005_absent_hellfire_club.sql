@@ -1,1 +1,0 @@
-ALTER TABLE "organizations" RENAME COLUMN "is_admin_org" TO "is_admin";

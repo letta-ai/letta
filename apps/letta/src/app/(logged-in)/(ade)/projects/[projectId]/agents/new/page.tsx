@@ -15,7 +15,7 @@ import { useCurrentProjectId } from '../../../../../(dashboard-like)/projects/[p
 import { webApi, webApiQueryKeys } from '$letta/client';
 import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { AgentTemplateVariant } from '$letta/types';
+import { AgentRecipieVariant } from '$letta/types';
 
 interface AgentRecipeCardProps {
   name: string;
@@ -50,13 +50,13 @@ function CreateAgentsView() {
   const { push } = useRouter();
 
   const {
-    mutate: createTestingAgent,
+    mutate: createAgentTemplate,
     isPending,
     isSuccess,
-  } = webApi.projects.createProjectTestingAgent.useMutation({
+  } = webApi.projects.createProjectAgentTemplate.useMutation({
     onSuccess: (response) => {
       void queryClient.invalidateQueries({
-        queryKey: webApiQueryKeys.projects.getProjectTestingAgents(projectId),
+        queryKey: webApiQueryKeys.projects.getProjectAgentTemplates(projectId),
       });
 
       push(`/projects/${projectId}/agents/${response.body.id}`);
@@ -64,15 +64,15 @@ function CreateAgentsView() {
   });
 
   const handleCreateAgent = useCallback(
-    (recipeId: AgentTemplateVariant) => {
-      createTestingAgent({
+    (recipeId: AgentRecipieVariant) => {
+      createAgentTemplate({
         body: {
           recipeId,
         },
         params: { projectId },
       });
     },
-    [projectId, createTestingAgent]
+    [projectId, createAgentTemplate]
   );
 
   if (isPending || isSuccess) {
@@ -96,23 +96,23 @@ function CreateAgentsView() {
         <HStack>
           <AgentRecipeCard
             name="Customer Support"
-            id={AgentTemplateVariant.CUSTOMER_SUPPORT}
+            id={AgentRecipieVariant.CUSTOMER_SUPPORT}
             onClick={() => {
-              handleCreateAgent(AgentTemplateVariant.CUSTOMER_SUPPORT);
+              handleCreateAgent(AgentRecipieVariant.CUSTOMER_SUPPORT);
             }}
           />
           <AgentRecipeCard
             name="Data Collector"
-            id={AgentTemplateVariant.DATA_COLLECTOR}
+            id={AgentRecipieVariant.DATA_COLLECTOR}
             onClick={() => {
-              handleCreateAgent(AgentTemplateVariant.DATA_COLLECTOR);
+              handleCreateAgent(AgentRecipieVariant.DATA_COLLECTOR);
             }}
           />
           <AgentRecipeCard
             name="Fantasy Roleplay"
-            id={AgentTemplateVariant.FANTASY_ROLEPLAY}
+            id={AgentRecipieVariant.FANTASY_ROLEPLAY}
             onClick={() => {
-              handleCreateAgent(AgentTemplateVariant.FANTASY_ROLEPLAY);
+              handleCreateAgent(AgentRecipieVariant.FANTASY_ROLEPLAY);
             }}
           />
         </HStack>
@@ -121,7 +121,7 @@ function CreateAgentsView() {
           color="tertiary-transparent"
           label="or start from scratch"
           onClick={() => {
-            handleCreateAgent(AgentTemplateVariant.DEFAULT);
+            handleCreateAgent(AgentRecipieVariant.DEFAULT);
           }}
         />
       </VStack>

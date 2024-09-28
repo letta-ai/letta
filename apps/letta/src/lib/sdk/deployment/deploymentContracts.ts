@@ -9,9 +9,8 @@ const c = initContract();
 
 const DeployedAgentResponseSchema = z.object({
   id: z.string(),
-  sdkId: z.string(),
   uniqueIdentifier: z.string(),
-  sourceAgentKey: z.string(),
+  deployedAgentTemplateKey: z.string(),
   createdAt: z.string(),
 });
 
@@ -28,7 +27,7 @@ const ResponseMessageSchema = AgentMessageSchema;
 
 /* Create Agent */
 const CreateAgentBodySchema = z.object({
-  sourceAgentKey: z.string(),
+  deployedAgentTemplateKey: z.string(),
   uniqueIdentifier: z.string().optional(),
   // variables: z.record(z.string(), z.any()).optional(),
 });
@@ -99,60 +98,40 @@ const chatWithAgentContract = c.mutation({
   },
 });
 
-/* Get Deployed agent SDK ID */
-const GetDeployedAgentSdkIdParamsSchema = z.object({
-  agentDeploymentId: z.string(),
-});
-
-const GetDeployedAgentSdkIdResponseSchema = z.object({
-  sdkId: z.string(),
-});
-
-const getDeployedAgentSdkIdContract = c.query({
-  path: '/agents/:agentDeploymentId/sdk-id',
-  summary: 'Get deployed agent SDK ID',
-  operationId: 'getDeployedAgentSdkId',
-  method: 'GET',
-  pathParams: GetDeployedAgentSdkIdParamsSchema,
-  responses: {
-    200: GetDeployedAgentSdkIdResponseSchema,
-    404: ChatWithAgentNotFoundResponseSchema,
-  },
-});
-
 /* Migrate Deployed Agent to New Source Agent */
-const MigrateDeployedAgentToNewSourceAgentBodySchema = z.object({
-  sourceAgentKey: z.string(),
+const MigrateDeployedAgentToNewDeployedAgentTemplateBodySchema = z.object({
+  deployedAgentTemplateKey: z.string(),
   preserveCoreMemories: z.boolean().optional(),
 });
 
-const MigrateDeployedAgentToNewSourceAgentParamsSchema = z.object({
+const MigrateDeployedAgentToNewDeployedAgentTemplateParamsSchema = z.object({
   agentDeploymentId: z.string(),
 });
 
-const MigrateDeployedAgentToNewSourceAgentResponseSchema = z.object({
+const MigrateDeployedAgentToNewDeployedAgentTemplateResponseSchema = z.object({
   agentDeploymentId: z.string(),
 });
 
-const MigrateDeployedAgentToNewSourceAgentNotFoundResponseSchema = z.object({
-  message: z
-    .literal('Source agent not found')
-    .or(z.literal('Deployed Agent not found')),
-});
+const MigrateDeployedAgentToNewDeployedAgentTemplateNotFoundResponseSchema =
+  z.object({
+    message: z
+      .literal('Source agent not found')
+      .or(z.literal('Deployed Agent not found')),
+  });
 
-const migrateDeployedAgentToNewSourceAgentContract = c.mutation({
+const migrateDeployedAgentToNewDeployedAgentTemplateContract = c.mutation({
   path: '/agents/:agentDeploymentId',
   summary: 'Migrate deployed agent to new source agent',
   description:
     "Migrate your deployed agent to a new source agent. This will overwrite the current agent's datasources, tools, and core memories. Archival and messages will be preserved.",
-  operationId: 'migrateDeployedAgentToNewSourceAgent',
+  operationId: 'migrateDeployedAgentToNewDeployedAgentTemplate',
   method: 'POST',
   contentType: 'application/json',
-  pathParams: MigrateDeployedAgentToNewSourceAgentParamsSchema,
-  body: MigrateDeployedAgentToNewSourceAgentBodySchema,
+  pathParams: MigrateDeployedAgentToNewDeployedAgentTemplateParamsSchema,
+  body: MigrateDeployedAgentToNewDeployedAgentTemplateBodySchema,
   responses: {
-    200: MigrateDeployedAgentToNewSourceAgentResponseSchema,
-    404: MigrateDeployedAgentToNewSourceAgentNotFoundResponseSchema,
+    200: MigrateDeployedAgentToNewDeployedAgentTemplateResponseSchema,
+    404: MigrateDeployedAgentToNewDeployedAgentTemplateNotFoundResponseSchema,
   },
 });
 
@@ -195,13 +174,13 @@ const getExistingMessagesFromAgentContract = c.query({
 const QueryDeployedAgentsQuerySchema = z.object({
   uniqueIdentifier: z.string().optional(),
   projectId: z.string().optional(),
-  sourceAgentKey: z.string().optional(),
+  deployedAgentTemplateKey: z.string().optional(),
   limit: z.number().optional(),
   offset: z.number().optional(),
 });
 
 const QueryDeployedAgentsResponseSchema = z.object({
-  deployedAgents: z.array(DeployedAgentResponseSchema),
+  agents: z.array(DeployedAgentResponseSchema),
 });
 
 const queryDeployedAgentsContract = c.query({
@@ -218,9 +197,8 @@ const queryDeployedAgentsContract = c.query({
 export const deploymentContracts = c.router({
   createAgent: createAgentContract,
   chatWithAgent: chatWithAgentContract,
-  getDeployedAgentSdkId: getDeployedAgentSdkIdContract,
-  migrateDeployedAgentToNewSourceAgent:
-    migrateDeployedAgentToNewSourceAgentContract,
+  migrateDeployedAgentToNewDeployedAgentTemplate:
+    migrateDeployedAgentToNewDeployedAgentTemplateContract,
   getExistingMessagesFromAgent: getExistingMessagesFromAgentContract,
   queryDeployedAgents: queryDeployedAgentsContract,
 });

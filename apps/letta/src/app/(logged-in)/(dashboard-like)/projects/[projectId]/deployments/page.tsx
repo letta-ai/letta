@@ -21,31 +21,31 @@ import {
 import { webApi, webApiQueryKeys } from '$letta/client';
 import { useCurrentProjectId } from '../hooks';
 import { useDebouncedValue } from '@mantine/hooks';
-import type { SourceAgentType } from '$letta/web-api/contracts';
+import type { DeployedAgentTemplateType } from '$letta/web-api/contracts';
 import { DeployAgentUsageInstructions } from '$letta/client/code-reference/DeployAgentUsageInstructions';
 import { FilterIcon, SearchIcon } from 'lucide-react';
 
 const PAGE_SIZE = 20;
 
 interface StagedAgentCardProps {
-  agent: SourceAgentType;
+  agent: DeployedAgentTemplateType;
 }
 
 function StagedAgentCard(props: StagedAgentCardProps) {
   const { agent } = props;
   const currentProjectId = useCurrentProjectId();
-  const { data } = webApi.projects.getDeployedAgentsCountBySourceAgent.useQuery(
-    {
-      queryKey: webApiQueryKeys.projects.getDeployedAgentsCountBySourceAgent(
-        currentProjectId,
-        agent.id
-      ),
+  const { data } =
+    webApi.projects.getDeployedAgentsCountByDeployedAgentTemplate.useQuery({
+      queryKey:
+        webApiQueryKeys.projects.getDeployedAgentsCountByDeployedAgentTemplate(
+          currentProjectId,
+          agent.id
+        ),
       queryData: {
         params: { projectId: currentProjectId },
-        query: { sourceAgentId: agent.id },
+        query: { deployedAgentTemplateId: agent.id },
       },
-    }
-  );
+    });
 
   return (
     <VStack rounded gap={false} border>
@@ -97,7 +97,7 @@ function StagedAgentCard(props: StagedAgentCardProps) {
             title="Deploy Agent Instructions"
           >
             <DeployAgentUsageInstructions
-              sourceAgentKey={agent.key}
+              deployedAgentTemplateKey={agent.key}
               projectId={currentProjectId}
             />
           </Dialog>
@@ -124,20 +124,21 @@ function ProjectStagingList(props: ProjectStagingListProps) {
   const { search, filterBy } = props;
 
   const { data, isLoading, fetchNextPage, hasNextPage } =
-    webApi.projects.getProjectSourceAgents.useInfiniteQuery({
-      queryKey: webApiQueryKeys.projects.getProjectSourceAgentsWithSearch(
-        currentProjectId,
-        {
-          search,
-          includeTestingAgentInfo: true,
-          testingAgentId: filterBy?.value,
-        }
-      ),
+    webApi.projects.getProjectDeployedAgentTemplates.useInfiniteQuery({
+      queryKey:
+        webApiQueryKeys.projects.getProjectDeployedAgentTemplatesWithSearch(
+          currentProjectId,
+          {
+            search,
+            includeAgentTemplateInfo: true,
+            agentTemplateId: filterBy?.value,
+          }
+        ),
       queryData: ({ pageParam }) => ({
         params: { projectId: currentProjectId },
         query: {
-          testingAgentId: filterBy?.value,
-          includeTestingAgentInfo: true,
+          agentTemplateId: filterBy?.value,
+          includeAgentTemplateInfo: true,
           offset: pageParam.offset,
           limit: pageParam.limit,
         },
@@ -150,11 +151,11 @@ function ProjectStagingList(props: ProjectStagingListProps) {
       },
     });
 
-  const sourceAgents = useMemo(() => {
-    return (data?.pages || []).flatMap((v) => v.body.sourceAgents);
+  const deployedAgentTemplates = useMemo(() => {
+    return (data?.pages || []).flatMap((v) => v.body.deployedAgentTemplates);
   }, [data]);
 
-  if (sourceAgents.length === 0) {
+  if (deployedAgentTemplates.length === 0) {
     return (
       <LoadingEmptyStatusComponent
         emptyMessage="There are no agents to stage. Return to the project home and stage a Agent"
@@ -171,7 +172,7 @@ function ProjectStagingList(props: ProjectStagingListProps) {
 
   return (
     <>
-      {sourceAgents.map((agent) => (
+      {deployedAgentTemplates.map((agent) => (
         <StagedAgentCard agent={agent} key={agent.key} />
       ))}
       {hasNextPage && (
@@ -186,20 +187,20 @@ function ProjectStagingList(props: ProjectStagingListProps) {
   );
 }
 
-interface FilterByTestingAgentComponentProps {
+interface FilterByAgentTemplateComponentProps {
   filterBy?: OptionType;
   onFilterChange: (filter: OptionType) => void;
 }
 
-function FilterByTestingAgentComponent(
-  props: FilterByTestingAgentComponentProps
+function FilterByAgentTemplateComponent(
+  props: FilterByAgentTemplateComponentProps
 ) {
   const currentProjectId = useCurrentProjectId();
   const { filterBy, onFilterChange } = props;
 
-  const { data } = webApi.projects.getProjectTestingAgents.useQuery({
+  const { data } = webApi.projects.getProjectAgentTemplates.useQuery({
     queryKey:
-      webApiQueryKeys.projects.getProjectTestingAgents(currentProjectId),
+      webApiQueryKeys.projects.getProjectAgentTemplates(currentProjectId),
     queryData: {
       params: { projectId: currentProjectId },
     },
@@ -207,7 +208,7 @@ function FilterByTestingAgentComponent(
 
   const handleLoadOptions = useCallback(
     async (query: string) => {
-      const response = await webApi.projects.getProjectTestingAgents.query({
+      const response = await webApi.projects.getProjectAgentTemplates.query({
         query: { search: query },
         params: { projectId: currentProjectId },
       });
@@ -304,7 +305,7 @@ function ProjectStagingPage() {
               fullWidth
             />
             <InputFilter>
-              <FilterByTestingAgentComponent
+              <FilterByAgentTemplateComponent
                 filterBy={filterBy}
                 onFilterChange={setFilterBy}
               />

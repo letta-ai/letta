@@ -2,17 +2,19 @@ import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
 import type { projectsContract } from '$letta/web-api/contracts';
 import {
   db,
-  deployedAgents,
+  agents,
   projects,
-  sourceAgents,
-  sourceAgentsStatistics,
-  sourceAgentsStatus,
-  testingAgents,
+  deployedAgentTemplates,
+  agentTemplates,
 } from '@letta-web/database';
 import { getUserOrganizationIdOrThrow } from '$letta/server/auth';
 import { eq, and, like, desc, count } from 'drizzle-orm';
 import type { contracts } from '$letta/web-api/contracts';
-import { copyAgentById, createAgentFromTemplate } from '$letta/server';
+import {
+  copyAgentById,
+  createAgentFromTemplate,
+  generateSlug,
+} from '$letta/server';
 import crypto from 'node:crypto';
 import {
   adjectives,
@@ -22,7 +24,7 @@ import {
 } from 'unique-names-generator';
 import { AgentsService } from '@letta-web/letta-agents-api';
 import type { AgentTemplate } from '$letta/types';
-import { AgentTemplateVariant } from '$letta/types';
+import { AgentRecipieVariant } from '$letta/types';
 import { capitalize } from 'lodash-es';
 
 type ResponseShapes = ServerInferResponses<typeof projectsContract>;
@@ -102,40 +104,39 @@ export async function getProjectById(
   };
 }
 
-type GetProjectTestingAgentsResponse = ServerInferResponses<
-  typeof contracts.projects.getProjectTestingAgents
+type GetProjectAgentTemplatesResponse = ServerInferResponses<
+  typeof contracts.projects.getProjectAgentTemplates
 >;
-type GetProjectTestingAgentsRequest = ServerInferRequest<
-  typeof contracts.projects.getProjectTestingAgents
+type GetProjectAgentTemplatesRequest = ServerInferRequest<
+  typeof contracts.projects.getProjectAgentTemplates
 >;
 
-export async function getProjectTestingAgents(
-  req: GetProjectTestingAgentsRequest
-): Promise<GetProjectTestingAgentsResponse> {
+export async function getProjectAgentTemplates(
+  req: GetProjectAgentTemplatesRequest
+): Promise<GetProjectAgentTemplatesResponse> {
   const { projectId } = req.params;
   const { search, offset, limit } = req.query;
   const organizationId = await getUserOrganizationIdOrThrow();
 
   const where = [
-    eq(testingAgents.organizationId, organizationId),
-    eq(testingAgents.projectId, projectId),
+    eq(agentTemplates.organizationId, organizationId),
+    eq(agentTemplates.projectId, projectId),
   ];
 
   if (search) {
-    where.push(like(testingAgents.name, search || '%'));
+    where.push(like(agentTemplates.name, search || '%'));
   }
 
-  const agents = await db.query.testingAgents.findMany({
+  const agents = await db.query.agentTemplates.findMany({
     where: and(...where),
     limit,
     offset,
     columns: {
       name: true,
-      agentId: true,
       id: true,
       updatedAt: true,
     },
-    orderBy: [desc(testingAgents.createdAt)],
+    orderBy: [desc(agentTemplates.createdAt)],
   });
 
   return {
@@ -143,7 +144,6 @@ export async function getProjectTestingAgents(
     body: agents.map((agent) => ({
       name: agent.name,
       id: agent.id,
-      agentId: agent.agentId,
       updatedAt: agent.updatedAt.toISOString(),
     })),
   };
@@ -163,9 +163,29 @@ export async function createProject(
 
   const organizationId = await getUserOrganizationIdOrThrow();
 
+  let projectSlug = generateSlug(name);
+
+  const existingProject = await db.query.projects.findFirst({
+    where: and(
+      eq(projects.organizationId, organizationId),
+      eq(projects.slug, projectSlug)
+    ),
+  });
+
+  if (existingProject) {
+    // get total project count
+    const projectCount = await db
+      .select({ count: count() })
+      .from(projects)
+      .where(eq(projects.organizationId, organizationId));
+
+    projectSlug = `${projectSlug}-${projectCount}`;
+  }
+
   const [project] = await db
     .insert(projects)
     .values({
+      slug: projectSlug,
       name,
       organizationId,
     })
@@ -182,15 +202,15 @@ export async function createProject(
   };
 }
 
-type CreateProjectTestingAgentRequest = ServerInferRequest<
-  typeof contracts.projects.createProjectTestingAgent
+type CreateProjectAgentTemplateRequest = ServerInferRequest<
+  typeof contracts.projects.createProjectAgentTemplate
 >;
-type CreateProjectTestingAgentResponse = ServerInferResponses<
-  typeof contracts.projects.createProjectTestingAgent
+type CreateProjectAgentTemplateResponse = ServerInferResponses<
+  typeof contracts.projects.createProjectAgentTemplate
 >;
 
-const agentTemplates: Record<AgentTemplateVariant, AgentTemplate> = {
-  [AgentTemplateVariant.CUSTOMER_SUPPORT]: {
+const agentRecipies: Record<AgentRecipieVariant, AgentTemplate> = {
+  [AgentRecipieVariant.CUSTOMER_SUPPORT]: {
     memory: {
       memory: {
         human: {
@@ -245,7 +265,7 @@ const agentTemplates: Record<AgentTemplateVariant, AgentTemplate> = {
       azure_deployment: null,
     },
   },
-  [AgentTemplateVariant.FANTASY_ROLEPLAY]: {
+  [AgentRecipieVariant.FANTASY_ROLEPLAY]: {
     memory: {
       memory: {
         human: {
@@ -300,7 +320,7 @@ const agentTemplates: Record<AgentTemplateVariant, AgentTemplate> = {
       azure_deployment: null,
     },
   },
-  [AgentTemplateVariant.DATA_COLLECTOR]: {
+  [AgentRecipieVariant.DATA_COLLECTOR]: {
     memory: {
       memory: {
         human: {
@@ -355,7 +375,7 @@ const agentTemplates: Record<AgentTemplateVariant, AgentTemplate> = {
       azure_deployment: null,
     },
   },
-  [AgentTemplateVariant.DEFAULT]: {
+  [AgentRecipieVariant.DEFAULT]: {
     memory: {
       memory: {},
       prompt_template:
@@ -394,10 +414,10 @@ interface Context {
   };
 }
 
-export async function createProjectTestingAgent(
-  req: CreateProjectTestingAgentRequest,
+export async function createProjectAgentTemplate(
+  req: CreateProjectAgentTemplateRequest,
   context: Context
-): Promise<CreateProjectTestingAgentResponse> {
+): Promise<CreateProjectAgentTemplateResponse> {
   const { projectId } = req.params;
   const { recipeId } = req.body;
 
@@ -406,7 +426,7 @@ export async function createProjectTestingAgent(
     (await getUserOrganizationIdOrThrow());
 
   const newAgent = await createAgentFromTemplate(
-    agentTemplates[recipeId || AgentTemplateVariant.DEFAULT],
+    agentRecipies[recipeId || AgentRecipieVariant.DEFAULT],
     crypto.randomUUID(),
     organizationId
   );
@@ -435,21 +455,20 @@ export async function createProjectTestingAgent(
   const name = capitalize(`${nameParts.join(' ')} agent`);
 
   const [agent] = await db
-    .insert(testingAgents)
+    .insert(agentTemplates)
     .values({
+      id: newAgent.id,
       projectId,
       organizationId,
       name,
-      agentId: newAgent.id,
     })
     .returning({
-      id: testingAgents.id,
+      id: agentTemplates.id,
     });
 
   return {
     status: 201,
     body: {
-      agentId: newAgent.id,
       id: agent.id,
       name,
       updatedAt: new Date().toISOString(),
@@ -457,26 +476,26 @@ export async function createProjectTestingAgent(
   };
 }
 
-type UpdateProjectTestingAgentRequest = ServerInferRequest<
-  typeof contracts.projects.updateProjectTestingAgent
+type UpdateProjectAgentTemplateRequest = ServerInferRequest<
+  typeof contracts.projects.updateProjectAgentTemplate
 >;
 
-type UpdateProjectTestingAgentResponse = ServerInferResponses<
-  typeof contracts.projects.updateProjectTestingAgent
+type UpdateProjectAgentTemplateResponse = ServerInferResponses<
+  typeof contracts.projects.updateProjectAgentTemplate
 >;
 
-export async function updateProjectTestingAgent(
-  req: UpdateProjectTestingAgentRequest
-): Promise<UpdateProjectTestingAgentResponse> {
-  const { projectId, testingAgentId } = req.params;
+export async function updateProjectAgentTemplate(
+  req: UpdateProjectAgentTemplateRequest
+): Promise<UpdateProjectAgentTemplateResponse> {
+  const { projectId, agentTemplateId } = req.params;
 
   const organizationId = await getUserOrganizationIdOrThrow();
 
-  const testingAgent = await db.query.testingAgents.findFirst({
+  const testingAgent = await db.query.agentTemplates.findFirst({
     where: and(
-      eq(testingAgents.organizationId, organizationId),
-      eq(testingAgents.projectId, projectId),
-      eq(testingAgents.id, testingAgentId)
+      eq(agentTemplates.organizationId, organizationId),
+      eq(agentTemplates.projectId, projectId),
+      eq(agentTemplates.id, agentTemplateId)
     ),
   });
 
@@ -499,42 +518,41 @@ export async function updateProjectTestingAgent(
   }
 
   await db
-    .update(testingAgents)
+    .update(agentTemplates)
     .set({
       name,
     })
-    .where(eq(testingAgents.id, testingAgentId));
+    .where(eq(agentTemplates.id, agentTemplateId));
 
   return {
     status: 200,
     body: {
       name: name || testingAgent.name,
       id: testingAgent.id,
-      agentId: testingAgent.agentId,
       updatedAt: new Date().toISOString(),
     },
   };
 }
 
-type DeleteProjectTestingAgentRequest = ServerInferRequest<
-  typeof contracts.projects.deleteProjectTestingAgent
+type DeleteProjectAgentTemplateRequest = ServerInferRequest<
+  typeof contracts.projects.deleteProjectAgentTemplate
 >;
 
-type DeleteProjectTestingAgentResponse = ServerInferResponses<
-  typeof contracts.projects.deleteProjectTestingAgent
+type DeleteProjectAgentTemplateResponse = ServerInferResponses<
+  typeof contracts.projects.deleteProjectAgentTemplate
 >;
 
-export async function deleteProjectTestingAgent(
-  req: DeleteProjectTestingAgentRequest
-): Promise<DeleteProjectTestingAgentResponse> {
-  const { projectId, testingAgentId } = req.params;
+export async function deleteProjectAgentTemplate(
+  req: DeleteProjectAgentTemplateRequest
+): Promise<DeleteProjectAgentTemplateResponse> {
+  const { projectId, agentTemplateId } = req.params;
   const organizationId = await getUserOrganizationIdOrThrow();
 
-  const testingAgent = await db.query.testingAgents.findFirst({
+  const testingAgent = await db.query.agentTemplates.findFirst({
     where: and(
-      eq(testingAgents.organizationId, organizationId),
-      eq(testingAgents.projectId, projectId),
-      eq(testingAgents.id, testingAgentId)
+      eq(agentTemplates.organizationId, organizationId),
+      eq(agentTemplates.projectId, projectId),
+      eq(agentTemplates.id, agentTemplateId)
     ),
   });
 
@@ -546,9 +564,9 @@ export async function deleteProjectTestingAgent(
   }
 
   await AgentsService.deleteAgent({
-    agentId: testingAgent.agentId,
+    agentId: testingAgent.id,
   });
-  await db.delete(testingAgents).where(eq(testingAgents.id, testingAgentId));
+  await db.delete(agentTemplates).where(eq(agentTemplates.id, agentTemplateId));
 
   return {
     status: 200,
@@ -558,12 +576,14 @@ export async function deleteProjectTestingAgent(
   };
 }
 
-type CreateProjectSourceAgentFromTestingAgentRequest = ServerInferRequest<
-  typeof contracts.projects.createProjectSourceAgentFromTestingAgent
->;
-type CreateProjectSourceAgentFromTestingAgentResponse = ServerInferResponses<
-  typeof contracts.projects.createProjectSourceAgentFromTestingAgent
->;
+type CreateProjectDeployedAgentTemplateFromAgentTemplateRequest =
+  ServerInferRequest<
+    typeof contracts.projects.createProjectDeployedAgentTemplateFromAgentTemplate
+  >;
+type CreateProjectDeployedAgentTemplateFromAgentTemplateResponse =
+  ServerInferResponses<
+    typeof contracts.projects.createProjectDeployedAgentTemplateFromAgentTemplate
+  >;
 
 interface Context {
   request: {
@@ -571,18 +591,18 @@ interface Context {
   };
 }
 
-export async function createProjectSourceAgentFromTestingAgent(
-  req: CreateProjectSourceAgentFromTestingAgentRequest,
+export async function createProjectDeployedAgentTemplateFromAgentTemplate(
+  req: CreateProjectDeployedAgentTemplateFromAgentTemplateRequest,
   context: Context
-): Promise<CreateProjectSourceAgentFromTestingAgentResponse> {
+): Promise<CreateProjectDeployedAgentTemplateFromAgentTemplateResponse> {
   const { projectId } = req.params;
-  const { testingAgentId } = req.body;
+  const { agentTemplateId } = req.body;
   const organizationId =
     context.request?.$organizationIdOverride ||
     (await getUserOrganizationIdOrThrow());
 
-  const testingAgent = await db.query.testingAgents.findFirst({
-    where: eq(testingAgents.id, testingAgentId),
+  const testingAgent = await db.query.agentTemplates.findFirst({
+    where: eq(agentTemplates.id, agentTemplateId),
   });
 
   if (!testingAgent) {
@@ -592,14 +612,15 @@ export async function createProjectSourceAgentFromTestingAgent(
     };
   }
 
-  const existingSourceAgentCount = await db.query.sourceAgents.findMany({
-    where: eq(sourceAgents.testingAgentId, testingAgentId),
-    columns: {
-      id: true,
-    },
-  });
+  const existingDeployedAgentTemplateCount =
+    await db.query.deployedAgentTemplates.findMany({
+      where: eq(deployedAgentTemplates.agentTemplateId, agentTemplateId),
+      columns: {
+        id: true,
+      },
+    });
 
-  const version = `${existingSourceAgentCount.length + 1}`;
+  const version = `${existingDeployedAgentTemplateCount.length + 1}`;
 
   const randomName = uniqueNamesGenerator({
     dictionaries: [adjectives, adjectives, animals, colors],
@@ -607,10 +628,7 @@ export async function createProjectSourceAgentFromTestingAgent(
     separator: '-',
   });
 
-  const copiedAgent = await copyAgentById(
-    testingAgent.agentId,
-    crypto.randomUUID()
-  );
+  const copiedAgent = await copyAgentById(testingAgent.id, crypto.randomUUID());
 
   if (!copiedAgent.id) {
     return {
@@ -621,39 +639,26 @@ export async function createProjectSourceAgentFromTestingAgent(
     };
   }
 
-  const [sourceAgent] = await db
-    .insert(sourceAgents)
+  const [deployedAgentTemplate] = await db
+    .insert(deployedAgentTemplates)
     .values({
+      id: copiedAgent.id,
       version,
-      testingAgentId: testingAgent.id,
-      agentId: copiedAgent.id,
+      agentTemplateId: testingAgent.id,
       projectId,
       organizationId,
       key: randomName,
     })
     .returning({
-      id: sourceAgents.id,
+      id: deployedAgentTemplates.id,
     });
-
-  const defaultStatus = 'live';
-
-  await Promise.all([
-    db.insert(sourceAgentsStatus).values({
-      status: defaultStatus,
-      id: sourceAgent.id,
-    }),
-    db.insert(sourceAgentsStatistics).values({
-      id: sourceAgent.id,
-    }),
-  ]);
 
   return {
     status: 201,
     body: {
       key: randomName,
-      testingAgentId: testingAgent.id,
-      id: sourceAgent.id,
-      status: defaultStatus,
+      agentTemplateId: testingAgent.id,
+      id: deployedAgentTemplate.id,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       version,
@@ -661,111 +666,107 @@ export async function createProjectSourceAgentFromTestingAgent(
   };
 }
 
-type GetProjectSourceAgentsRequest = ServerInferRequest<
-  typeof contracts.projects.getProjectSourceAgents
+type GetProjectDeployedAgentTemplatesRequest = ServerInferRequest<
+  typeof contracts.projects.getProjectDeployedAgentTemplates
 >;
-type GetProjectSourceAgentsResponse = ServerInferResponses<
-  typeof contracts.projects.getProjectSourceAgents
+type GetProjectDeployedAgentTemplatesResponse = ServerInferResponses<
+  typeof contracts.projects.getProjectDeployedAgentTemplates
 >;
 
-export async function getProjectSourceAgents(
-  req: GetProjectSourceAgentsRequest
-): Promise<GetProjectSourceAgentsResponse> {
+export async function getProjectDeployedAgentTemplates(
+  req: GetProjectDeployedAgentTemplatesRequest
+): Promise<GetProjectDeployedAgentTemplatesResponse> {
   const organizationId = await getUserOrganizationIdOrThrow();
   const { projectId } = req.params;
-  const { search, offset, testingAgentId, limit, includeTestingAgentInfo } =
+  const { search, offset, agentTemplateId, limit, includeAgentTemplateInfo } =
     req.query;
 
   const where = [
-    eq(sourceAgents.organizationId, organizationId),
-    eq(sourceAgents.projectId, projectId),
+    eq(deployedAgentTemplates.organizationId, organizationId),
+    eq(deployedAgentTemplates.projectId, projectId),
   ];
 
   if (search) {
-    where.push(like(sourceAgents.key, search || '%'));
+    where.push(like(deployedAgentTemplates.key, search || '%'));
   }
 
-  if (testingAgentId) {
-    where.push(eq(sourceAgents.testingAgentId, testingAgentId));
+  if (agentTemplateId) {
+    where.push(eq(deployedAgentTemplates.agentTemplateId, agentTemplateId));
   }
 
-  const sourceAgentsList = await db.query.sourceAgents.findMany({
-    where: and(...where),
-    limit: (limit || 10) + 1,
-    offset,
-    orderBy: [desc(sourceAgents.createdAt)],
-    columns: {
-      id: true,
-      key: true,
-      testingAgentId: true,
-      createdAt: true,
-      updatedAt: true,
-      version: true,
-    },
-    with: {
-      status: true,
-      sourceAgentsStatistics: true,
-      ...(includeTestingAgentInfo
-        ? { testingAgent: { columns: { name: true } } }
-        : {}),
-    },
-  });
+  const deployedAgentTemplatesList =
+    await db.query.deployedAgentTemplates.findMany({
+      where: and(...where),
+      limit: (limit || 10) + 1,
+      offset,
+      orderBy: [desc(deployedAgentTemplates.createdAt)],
+      columns: {
+        id: true,
+        key: true,
+        agentTemplateId: true,
+        createdAt: true,
+        updatedAt: true,
+        version: true,
+      },
+      with: {
+        ...(includeAgentTemplateInfo
+          ? { agentTemplate: { columns: { name: true } } }
+          : {}),
+      },
+    });
 
   return {
     status: 200,
     body: {
-      sourceAgents: sourceAgentsList
+      deployedAgentTemplates: deployedAgentTemplatesList
         .slice(0, limit)
-        .map(({ status, testingAgent, ...rest }) => ({
+        .map(({ agentTemplate, ...rest }) => ({
           id: rest.id,
           key: rest.key,
-          testingAgentId: rest.testingAgentId,
-          testingAgentName: testingAgent?.name,
+          agentTemplateId: rest.agentTemplateId,
+          testingAgentName: agentTemplate?.name,
           version: rest.version,
           createdAt: rest.createdAt.toISOString(),
           updatedAt: rest.updatedAt.toISOString(),
-          status: status.status,
         })),
-      hasNextPage: sourceAgentsList.length === limit,
+      hasNextPage: deployedAgentTemplatesList.length === limit,
     },
   };
 }
 
-type GetProjectSourceAgentRequest = ServerInferRequest<
-  typeof contracts.projects.getProjectSourceAgent
+type GetProjectDeployedAgentTemplateRequest = ServerInferRequest<
+  typeof contracts.projects.getProjectDeployedAgentTemplate
 >;
 
-type GetProjectSourceAgentResponse = ServerInferResponses<
-  typeof contracts.projects.getProjectSourceAgent
+type GetProjectDeployedAgentTemplateResponse = ServerInferResponses<
+  typeof contracts.projects.getProjectDeployedAgentTemplate
 >;
 
-export async function getProjectSourceAgent(
-  req: GetProjectSourceAgentRequest
-): Promise<GetProjectSourceAgentResponse> {
+export async function getProjectDeployedAgentTemplate(
+  req: GetProjectDeployedAgentTemplateRequest
+): Promise<GetProjectDeployedAgentTemplateResponse> {
   const organizationId = await getUserOrganizationIdOrThrow();
-  const { projectId, sourceAgentId } = req.params;
+  const { projectId, deployedAgentTemplateId } = req.params;
 
-  const sourceAgent = await db.query.sourceAgents.findFirst({
-    where: and(
-      eq(sourceAgents.organizationId, organizationId),
-      eq(sourceAgents.projectId, projectId),
-      eq(sourceAgents.id, sourceAgentId)
-    ),
-    columns: {
-      id: true,
-      key: true,
-      testingAgentId: true,
-      createdAt: true,
-      updatedAt: true,
-      version: true,
-    },
-    with: {
-      sourceAgentsStatistics: true,
-      status: true,
-    },
-  });
+  const deployedAgentTemplate = await db.query.deployedAgentTemplates.findFirst(
+    {
+      where: and(
+        eq(deployedAgentTemplates.organizationId, organizationId),
+        eq(deployedAgentTemplates.projectId, projectId),
+        eq(deployedAgentTemplates.id, deployedAgentTemplateId)
+      ),
+      columns: {
+        id: true,
+        key: true,
+        agentTemplateId: true,
+        createdAt: true,
+        updatedAt: true,
+        version: true,
+      },
+    }
+  );
 
-  if (!sourceAgent) {
+  if (!deployedAgentTemplate) {
     return {
       status: 404,
       body: {},
@@ -775,13 +776,12 @@ export async function getProjectSourceAgent(
   return {
     status: 200,
     body: {
-      id: sourceAgent.id,
-      key: sourceAgent.key,
-      testingAgentId: sourceAgent.testingAgentId,
-      version: sourceAgent.version,
-      createdAt: sourceAgent.createdAt.toISOString(),
-      updatedAt: sourceAgent.updatedAt.toISOString(),
-      status: sourceAgent.status.status,
+      id: deployedAgentTemplate.id,
+      key: deployedAgentTemplate.key,
+      agentTemplateId: deployedAgentTemplate.agentTemplateId,
+      version: deployedAgentTemplate.version,
+      createdAt: deployedAgentTemplate.createdAt.toISOString(),
+      updatedAt: deployedAgentTemplate.updatedAt.toISOString(),
     },
   };
 }
@@ -803,88 +803,83 @@ export async function getDeployedAgents(
     search,
     offset,
     limit = 10,
-    sourceAgentId,
-    sourceAgentKey,
+    deployedAgentTemplateId,
+    deployedAgentTemplateKey,
   } = req.query;
 
   const where = [
-    eq(deployedAgents.organizationId, organizationId),
-    eq(deployedAgents.projectId, projectId),
+    eq(agents.organizationId, organizationId),
+    eq(agents.projectId, projectId),
   ];
 
-  if (sourceAgentId) {
-    where.push(eq(deployedAgents.sourceAgentId, sourceAgentId));
+  if (deployedAgentTemplateId) {
+    where.push(eq(agents.deployedAgentTemplateId, deployedAgentTemplateId));
   }
 
-  if (sourceAgentKey) {
-    where.push(eq(deployedAgents.sourceAgentKey, sourceAgentKey));
+  if (deployedAgentTemplateKey) {
+    where.push(eq(agents.deployedAgentTemplateKey, deployedAgentTemplateKey));
   }
 
   if (search) {
-    where.push(like(deployedAgents.key, `%${search}%` || '%'));
+    where.push(like(agents.key, `%${search}%` || '%'));
   }
 
-  const existingSourceAgentCount = await db.query.deployedAgents.findMany({
+  const existingDeployedAgentTemplateCount = await db.query.agents.findMany({
     where: and(...where),
     limit: limit + 1,
     offset,
     columns: {
       id: true,
       key: true,
-      sourceAgentId: true,
+      deployedAgentTemplateId: true,
       createdAt: true,
       agentId: true,
       updatedAt: true,
     },
-    orderBy: [desc(deployedAgents.createdAt)],
-    with: {
-      deployedAgentsStatistics: true,
-    },
+    orderBy: [desc(agents.createdAt)],
   });
 
   return {
     status: 200,
     body: {
-      deployedAgents: existingSourceAgentCount.slice(0, limit).map((agent) => ({
-        id: agent.id,
-        key: agent.key,
-        sourceAgentId: agent.sourceAgentId,
-        agentId: agent.agentId,
-        messageCount: agent.deployedAgentsStatistics.messageCount,
-        lastActiveAt: agent.deployedAgentsStatistics.lastActiveAt.toISOString(),
-        createdAt: agent.createdAt.toISOString(),
-        updatedAt: agent.updatedAt.toISOString(),
-      })),
-      hasNextPage: existingSourceAgentCount.length === limit + 1,
+      agents: existingDeployedAgentTemplateCount
+        .slice(0, limit)
+        .map((agent) => ({
+          id: agent.id,
+          key: agent.key,
+          deployedAgentTemplateId: agent.deployedAgentTemplateId,
+          createdAt: agent.createdAt.toISOString(),
+          updatedAt: agent.updatedAt.toISOString(),
+        })),
+      hasNextPage: existingDeployedAgentTemplateCount.length === limit + 1,
     },
   };
 }
 
-type GetProjectTestingAgentRequest = ServerInferRequest<
-  typeof contracts.projects.getProjectTestingAgent
+type GetProjectAgentTemplateRequest = ServerInferRequest<
+  typeof contracts.projects.getProjectAgentTemplate
 >;
 
-type GetProjectTestingAgentResponse = ServerInferResponses<
-  typeof contracts.projects.getProjectTestingAgent
+type GetProjectAgentTemplateResponse = ServerInferResponses<
+  typeof contracts.projects.getProjectAgentTemplate
 >;
 
-export async function getProjectTestingAgent(
-  req: GetProjectTestingAgentRequest
-): Promise<GetProjectTestingAgentResponse> {
+export async function getProjectAgentTemplate(
+  req: GetProjectAgentTemplateRequest
+): Promise<GetProjectAgentTemplateResponse> {
   const organizationId = await getUserOrganizationIdOrThrow();
-  const { projectId, testingAgentId } = req.params;
+  const { projectId, agentTemplateId } = req.params;
 
-  const testingAgent = await db.query.testingAgents.findFirst({
+  const testingAgent = await db.query.agentTemplates.findFirst({
     where: and(
-      eq(testingAgents.organizationId, organizationId),
-      eq(testingAgents.projectId, projectId),
-      eq(testingAgents.id, testingAgentId)
+      eq(agentTemplates.organizationId, organizationId),
+      eq(agentTemplates.projectId, projectId),
+      eq(agentTemplates.id, agentTemplateId)
     ),
     columns: {
       id: true,
       name: true,
       updatedAt: true,
-      agentId: true,
     },
   });
 
@@ -898,7 +893,6 @@ export async function getProjectTestingAgent(
   return {
     status: 200,
     body: {
-      agentId: testingAgent.agentId,
       id: testingAgent.id,
       name: testingAgent.name,
       updatedAt: testingAgent.updatedAt.toISOString(),
@@ -906,29 +900,30 @@ export async function getProjectTestingAgent(
   };
 }
 
-type GetDeployedAgentsCountBySourceAgentRequest = ServerInferRequest<
-  typeof contracts.projects.getDeployedAgentsCountBySourceAgent
+type GetDeployedAgentsCountByDeployedAgentTemplateRequest = ServerInferRequest<
+  typeof contracts.projects.getDeployedAgentsCountByDeployedAgentTemplate
 >;
 
-type GetDeployedAgentsCountBySourceAgentResponse = ServerInferResponses<
-  typeof contracts.projects.getDeployedAgentsCountBySourceAgent
->;
+type GetDeployedAgentsCountByDeployedAgentTemplateResponse =
+  ServerInferResponses<
+    typeof contracts.projects.getDeployedAgentsCountByDeployedAgentTemplate
+  >;
 
-export async function getDeployedAgentsCountBySourceAgent(
-  req: GetDeployedAgentsCountBySourceAgentRequest
-): Promise<GetDeployedAgentsCountBySourceAgentResponse> {
+export async function getDeployedAgentsCountByDeployedAgentTemplate(
+  req: GetDeployedAgentsCountByDeployedAgentTemplateRequest
+): Promise<GetDeployedAgentsCountByDeployedAgentTemplateResponse> {
   const organizationId = await getUserOrganizationIdOrThrow();
   const { projectId } = req.params;
-  const { sourceAgentId } = req.query;
+  const { deployedAgentTemplateId } = req.query;
 
   const [result] = await db
     .select({ count: count() })
-    .from(deployedAgents)
+    .from(agents)
     .where(
       and(
-        eq(deployedAgents.organizationId, organizationId),
-        eq(deployedAgents.projectId, projectId),
-        eq(deployedAgents.sourceAgentId, sourceAgentId)
+        eq(agents.organizationId, organizationId),
+        eq(agents.projectId, projectId),
+        eq(agents.deployedAgentTemplateId, deployedAgentTemplateId)
       )
     );
 
@@ -940,25 +935,25 @@ export async function getDeployedAgentsCountBySourceAgent(
   };
 }
 
-type ForkTestingAgentRequest = ServerInferRequest<
-  typeof contracts.projects.forkTestingAgent
+type ForkAgentTemplateRequest = ServerInferRequest<
+  typeof contracts.projects.forkAgentTemplate
 >;
 
-type ForkTestingAgentResponse = ServerInferResponses<
-  typeof contracts.projects.forkTestingAgent
+type ForkAgentTemplateResponse = ServerInferResponses<
+  typeof contracts.projects.forkAgentTemplate
 >;
 
-export async function forkTestingAgent(
-  req: ForkTestingAgentRequest
-): Promise<ForkTestingAgentResponse> {
-  const { testingAgentId, projectId } = req.params;
+export async function forkAgentTemplate(
+  req: ForkAgentTemplateRequest
+): Promise<ForkAgentTemplateResponse> {
+  const { agentTemplateId, projectId } = req.params;
   const organizationId = await getUserOrganizationIdOrThrow();
 
-  const testingAgent = await db.query.testingAgents.findFirst({
+  const testingAgent = await db.query.agentTemplates.findFirst({
     where: and(
-      eq(testingAgents.organizationId, organizationId),
-      eq(testingAgents.projectId, projectId),
-      eq(testingAgents.id, testingAgentId)
+      eq(agentTemplates.organizationId, organizationId),
+      eq(agentTemplates.projectId, projectId),
+      eq(agentTemplates.id, agentTemplateId)
     ),
   });
 
@@ -969,10 +964,7 @@ export async function forkTestingAgent(
     };
   }
 
-  const copiedAgent = await copyAgentById(
-    testingAgent.agentId,
-    crypto.randomUUID()
-  );
+  const copiedAgent = await copyAgentById(testingAgent.id, crypto.randomUUID());
 
   if (!copiedAgent.id) {
     return {
@@ -986,21 +978,20 @@ export async function forkTestingAgent(
   const name = capitalize(`Forked ${testingAgent.name}`);
 
   const [agent] = await db
-    .insert(testingAgents)
+    .insert(agentTemplates)
     .values({
+      id: copiedAgent.id,
       projectId: testingAgent.projectId,
       organizationId,
       name,
-      agentId: copiedAgent.id,
     })
     .returning({
-      id: testingAgents.id,
+      id: agentTemplates.id,
     });
 
   return {
     status: 201,
     body: {
-      agentId: copiedAgent.id,
       id: agent.id,
       name,
       updatedAt: new Date().toISOString(),

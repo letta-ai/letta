@@ -1,6 +1,5 @@
 import {
   pgTable,
-  uuid,
   text,
   pgEnum,
   timestamp,
@@ -16,7 +15,7 @@ import type {
 } from '@letta-web/component-library';
 
 export const emailWhitelist = pgTable('email_whitelist', {
-  id: uuid('id')
+  id: text('id')
     .primaryKey()
     .default(sql`gen_random_uuid()`),
   email: text('email').notNull().unique(),
@@ -27,7 +26,7 @@ export const emailWhitelist = pgTable('email_whitelist', {
 });
 
 export const organizations = pgTable('organizations', {
-  id: uuid('id')
+  id: text('id')
     .primaryKey()
     .default(sql`gen_random_uuid()`),
   name: text('name').notNull(),
@@ -43,15 +42,40 @@ export const orgRelationsTable = relations(organizations, ({ many }) => ({
   users: many(users),
   apiKeys: many(lettaAPIKeys),
   projects: many(projects),
-  testingAgents: many(testingAgents),
-  sourceAgents: many(sourceAgents),
-  deployedAgents: many(deployedAgents),
+  testingAgents: many(agentTemplates),
+  sourceAgents: many(deployedAgentTemplates),
+  deployedAgents: many(agents),
 }));
+
+export const organizationPreferences = pgTable('organization_preferences', {
+  id: text('id')
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  organizationId: text('organization_id')
+    .notNull()
+    .references(() => organizations.id, { onDelete: 'cascade' })
+    .notNull(),
+  catchAllAgentsProjectId: text('catch_all_agents_project_id'),
+});
+
+export const organizationPreferencesRelations = relations(
+  organizationPreferences,
+  ({ one }) => ({
+    organization: one(organizations, {
+      fields: [organizationPreferences.organizationId],
+      references: [organizations.id],
+    }),
+    catchAllAgentsProject: one(projects, {
+      fields: [organizationPreferences.catchAllAgentsProjectId],
+      references: [projects.id],
+    }),
+  })
+);
 
 export const signupMethodsEnum = pgEnum('signup_methods', ['google', 'email']);
 
 export const users = pgTable('users', {
-  id: uuid('id')
+  id: text('id')
     .primaryKey()
     .default(sql`gen_random_uuid()`),
   providerId: text('provider_id').unique(),
@@ -59,7 +83,7 @@ export const users = pgTable('users', {
   email: text('email').notNull().unique(),
   name: text('name').notNull(),
   imageUrl: text('image_url').notNull(),
-  organizationId: uuid('organization_id')
+  organizationId: text('organization_id')
     .notNull()
     .references(() => organizations.id, { onDelete: 'cascade' })
     .notNull(),
@@ -78,16 +102,16 @@ export const userRelations = relations(users, ({ one }) => ({
 }));
 
 export const lettaAPIKeys = pgTable('letta_api_keys', {
-  id: uuid('id')
+  id: text('id')
     .primaryKey()
     .default(sql`gen_random_uuid()`),
   name: text('name').notNull(),
   apiKey: text('api_key').notNull().unique(),
-  userId: uuid('user_id')
+  userId: text('user_id')
     .notNull()
     .references(() => users.id, { onDelete: 'cascade' })
     .notNull(),
-  organizationId: uuid('organization_id')
+  organizationId: text('organization_id')
     .notNull()
     .references(() => organizations.id, { onDelete: 'cascade' })
     .notNull(),
@@ -111,82 +135,83 @@ export const lettaAgentsAPIKeyRelations = relations(
   })
 );
 
-export const projects = pgTable('projects', {
-  id: uuid('id')
-    .primaryKey()
-    .default(sql`gen_random_uuid()`),
-  name: text('name').notNull(),
-  organizationId: uuid('organization_id')
-    .notNull()
-    .references(() => organizations.id, { onDelete: 'cascade' })
-    .notNull(),
-  createdAt: timestamp('created_at').notNull().defaultNow(),
-  updatedAt: timestamp('updated_at')
-    .notNull()
-    .$onUpdate(() => new Date()),
-});
+export const projects = pgTable(
+  'projects',
+  {
+    id: text('id')
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    slug: text('slug').notNull(),
+    name: text('name').notNull(),
+    organizationId: text('organization_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' })
+      .notNull(),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at')
+      .notNull()
+      .$onUpdate(() => new Date()),
+  },
+  (table) => ({
+    unique: {
+      uniqueSlug: uniqueIndex('unique_slug').on(
+        table.slug,
+        table.organizationId
+      ),
+    },
+  })
+);
 
 export const projectRelations = relations(projects, ({ one, many }) => ({
   organization: one(organizations, {
     fields: [projects.organizationId],
     references: [organizations.id],
   }),
-  sourceAgents: many(sourceAgents),
-  testingAgents: many(testingAgents),
-  deployedAgents: many(deployedAgents),
+  deployedAgentTemplates: many(deployedAgentTemplates),
+  agentTemplates: many(agentTemplates),
+  deployedAgents: many(agents),
 }));
 
-export const testingAgents = pgTable('testing_agents', {
-  id: uuid('id')
-    .primaryKey()
-    .default(sql`gen_random_uuid()`),
-  agentId: text('agent_id').notNull().unique(),
+export const agentTemplates = pgTable('agent_templates', {
+  id: text('id').primaryKey(),
   name: text('name').notNull(),
-  organizationId: uuid('organization_id')
+  organizationId: text('organization_id')
     .notNull()
     .references(() => organizations.id, { onDelete: 'cascade' })
     .notNull(),
-  projectId: uuid('project_id').notNull(),
+  projectId: text('project_id').notNull(),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at')
     .notNull()
     .$onUpdate(() => new Date()),
 });
 
-export const testingAgentRelations = relations(
-  testingAgents,
+export const agentTemplateRelations = relations(
+  agentTemplates,
   ({ one, many }) => ({
     organization: one(organizations, {
-      fields: [testingAgents.organizationId],
+      fields: [agentTemplates.organizationId],
       references: [organizations.id],
     }),
     project: one(projects, {
-      fields: [testingAgents.projectId],
+      fields: [agentTemplates.projectId],
       references: [projects.id],
     }),
-    sourceAgents: many(sourceAgents),
+    deployedAgentTemplates: many(deployedAgentTemplates),
   })
 );
 
-export const sourceAgentsStatusEnum = pgEnum('source_agents_enum', [
-  'live',
-  'offline',
-]);
-
-export const sourceAgents = pgTable(
-  'source_agents',
+export const deployedAgentTemplates = pgTable(
+  'deployed_agent_templates',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: text('id').primaryKey(),
     key: text('key').notNull(),
-    organizationId: uuid('organization_id')
+    organizationId: text('organization_id')
       .notNull()
       .references(() => organizations.id, { onDelete: 'cascade' })
       .notNull(),
-    projectId: uuid('project_id').notNull(),
-    testingAgentId: uuid('testing_agent_id_uuid').notNull(),
-    agentId: text('agent_id').notNull().unique(),
+    projectId: text('project_id').notNull(),
+    agentTemplateId: text('agent_template_id').notNull(),
     version: text('version').notNull(),
     createdAt: timestamp('created_at').notNull().defaultNow(),
     updatedAt: timestamp('updated_at')
@@ -199,90 +224,44 @@ export const sourceAgents = pgTable(
       uniqueVersion: uniqueIndex('unique_version').on(
         table.version,
         table.organizationId,
-        table.testingAgentId
+        table.agentTemplateId
       ),
     },
   })
 );
 
-export const sourceAgentRelations = relations(
-  sourceAgents,
+export const deployedAgentTemplatesRelations = relations(
+  deployedAgentTemplates,
   ({ one, many }) => ({
     organization: one(organizations, {
-      fields: [sourceAgents.organizationId],
+      fields: [deployedAgentTemplates.organizationId],
       references: [organizations.id],
     }),
-    testingAgent: one(testingAgents, {
-      fields: [sourceAgents.testingAgentId],
-      references: [testingAgents.id],
+    agentTemplate: one(agentTemplates, {
+      fields: [deployedAgentTemplates.agentTemplateId],
+      references: [agentTemplates.id],
     }),
-    deployedAgents: many(deployedAgents),
+    deployedAgents: many(agents),
     project: one(projects, {
-      fields: [sourceAgents.projectId],
+      fields: [deployedAgentTemplates.projectId],
       references: [projects.id],
     }),
-    status: one(sourceAgentsStatus, {
-      fields: [sourceAgents.id],
-      references: [sourceAgentsStatus.id],
-    }),
-    sourceAgentsStatistics: one(sourceAgentsStatistics, {
-      fields: [sourceAgents.id],
-      references: [sourceAgentsStatistics.id],
-    }),
   })
 );
 
-export const sourceAgentsStatistics = pgTable('source_agents_statistics', {
-  id: uuid('id')
-    .primaryKey()
-    .references(() => sourceAgents.id, { onDelete: 'cascade' }),
-});
-
-export const sourceAgentsStatisticsRelation = relations(
-  sourceAgentsStatistics,
-  ({ one }) => ({
-    sourceAgent: one(sourceAgents, {
-      fields: [sourceAgentsStatistics.id],
-      references: [sourceAgents.id],
-    }),
-  })
-);
-
-export const sourceAgentsStatus = pgTable('source_agent_status_table', {
-  id: uuid('id')
-    .primaryKey()
-    .references(() => sourceAgents.id, { onDelete: 'cascade' }),
-  status: sourceAgentsStatusEnum('status').notNull(),
-  updatedAt: timestamp('updated_at')
-    .notNull()
-    .$onUpdate(() => new Date()),
-});
-
-export const sourceAgentsStatusRelation = relations(
-  sourceAgentsStatus,
-  ({ one }) => ({
-    sourceAgent: one(sourceAgents, {
-      fields: [sourceAgentsStatus.id],
-      references: [sourceAgents.id],
-    }),
-  })
-);
-
-export const deployedAgents = pgTable(
-  'deployed_agents',
+export const agents = pgTable(
+  'agents',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: text('id').primaryKey(),
     key: text('key').notNull(),
-    sourceAgentId: uuid('source_agent_id').notNull(),
-    sourceAgentKey: text('source_agent_key').notNull(),
-    projectId: uuid('project_id').notNull(),
+    deployedAgentTemplateId: text('deployed_agent_template_id'),
+    deployedAgentTemplateKey: text('deployed_agent_template_key').notNull(),
+    projectId: text('project_id').notNull(),
     agentId: text('agent_id').notNull().unique(),
     internalAgentCountId: bigint('internal_agent_count_id', { mode: 'number' })
       .notNull()
       .default(0),
-    organizationId: uuid('organization_id')
+    organizationId: text('organization_id')
       .notNull()
       .references(() => organizations.id, { onDelete: 'cascade' })
       .notNull(),
@@ -298,50 +277,26 @@ export const deployedAgents = pgTable(
   })
 );
 
-export const deployedAgentRelations = relations(deployedAgents, ({ one }) => ({
+export const deployedAgentRelations = relations(agents, ({ one }) => ({
   organization: one(organizations, {
-    fields: [deployedAgents.organizationId],
+    fields: [agents.organizationId],
     references: [organizations.id],
   }),
-  sourceAgent: one(sourceAgents, {
-    fields: [deployedAgents.sourceAgentId],
-    references: [sourceAgents.id],
+  deployedAgentTemplates: one(deployedAgentTemplates, {
+    fields: [agents.deployedAgentTemplateId],
+    references: [deployedAgentTemplates.id],
   }),
   project: one(projects, {
-    fields: [deployedAgents.projectId],
+    fields: [agents.projectId],
     references: [projects.id],
-  }),
-  deployedAgentsStatistics: one(deployedAgentsStatistics, {
-    fields: [deployedAgents.id],
-    references: [deployedAgentsStatistics.id],
   }),
 }));
 
-export const deployedAgentsStatistics = pgTable('deployed_agents_statistics', {
-  id: uuid('id')
-    .primaryKey()
-    .references(() => deployedAgents.id, { onDelete: 'cascade' }),
-  messageCount: bigint('message_count', { mode: 'number' })
-    .notNull()
-    .default(0),
-  lastActiveAt: timestamp('last_active_at').notNull().defaultNow(),
-});
-
-export const deployedAgentsStatisticsRelation = relations(
-  deployedAgentsStatistics,
-  ({ one }) => ({
-    deployedAgent: one(deployedAgents, {
-      fields: [deployedAgentsStatistics.id],
-      references: [deployedAgents.id],
-    }),
-  })
-);
-
 export const adePreferences = pgTable('ade_preferences', {
-  id: uuid('id')
+  id: text('id')
     .primaryKey()
     .default(sql`gen_random_uuid()`),
-  userId: uuid('user_id')
+  userId: text('user_id')
     .notNull()
     .references(() => users.id, { onDelete: 'cascade' })
     .notNull(),

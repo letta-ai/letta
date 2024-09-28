@@ -14,16 +14,16 @@ import {
 import React, { useMemo } from 'react';
 import { useCurrentProjectId } from './hooks';
 import { webApi, webApiQueryKeys } from '$letta/client';
-import type { ProjectTestingAgentType } from '$letta/web-api/contracts';
+import type { ProjectAgentTemplateType } from '$letta/web-api/contracts';
 import { nicelyFormattedDateAndTime } from '@letta-web/helpful-client-utils';
 
-interface TestingAgentCardProps {
+interface AgentTemplateCardProps {
   id: string;
   name: string;
   lastUpdatedAt: string;
 }
 
-function TestingAgentCard(props: TestingAgentCardProps) {
+function AgentTemplateCard(props: AgentTemplateCardProps) {
   const { id, name, lastUpdatedAt } = props;
   const projectId = useCurrentProjectId();
 
@@ -44,8 +44,8 @@ function TestingAgentCard(props: TestingAgentCardProps) {
   );
 }
 
-interface TestingAgentsListProps {
-  agents?: ProjectTestingAgentType[];
+interface AgentTemplatesListProps {
+  agents?: ProjectAgentTemplateType[];
 }
 
 const RECENT_AGENTS_TO_DISPLAY = 3;
@@ -53,7 +53,7 @@ const TESTING_CARD_HEIGHT = '62px';
 const TESTING_CARD_HEIGHT_CLASS = 'h-[62px]';
 const testingPageHeight = `calc((var(--default-gap) * 2) + (${TESTING_CARD_HEIGHT} * ${RECENT_AGENTS_TO_DISPLAY}))`;
 
-function TestingAgentsList(props: TestingAgentsListProps) {
+function AgentTemplatesList(props: AgentTemplatesListProps) {
   const currentProjectId = useCurrentProjectId();
   const { agents } = props;
 
@@ -89,7 +89,7 @@ function TestingAgentsList(props: TestingAgentsListProps) {
   return (
     <VStack fullWidth>
       {agents.map((agent) => (
-        <TestingAgentCard
+        <AgentTemplateCard
           key={agent.id}
           id={agent.id}
           name={agent.name}
@@ -100,10 +100,10 @@ function TestingAgentsList(props: TestingAgentsListProps) {
   );
 }
 
-function TestingAgentsSection() {
+function AgentTemplatesSection() {
   const currentProjectId = useCurrentProjectId();
-  const { data } = webApi.projects.getProjectTestingAgents.useQuery({
-    queryKey: webApiQueryKeys.projects.getProjectTestingAgentsWithSearch(
+  const { data } = webApi.projects.getProjectAgentTemplates.useQuery({
+    queryKey: webApiQueryKeys.projects.getProjectAgentTemplatesWithSearch(
       currentProjectId,
       { search: '', limit: RECENT_AGENTS_TO_DISPLAY + 1 }
     ),
@@ -158,7 +158,7 @@ function TestingAgentsSection() {
         }
       >
         <HStack fullWidth>
-          <TestingAgentsList agents={agentsList} />
+          <AgentTemplatesList agents={agentsList} />
         </HStack>
       </DashboardPageSection>
     </>
@@ -168,7 +168,7 @@ function TestingAgentsSection() {
 function ProjectPage() {
   return (
     <DashboardPageLayout title="Project Home">
-      <TestingAgentsSection />
+      <AgentTemplatesSection />
     </DashboardPageLayout>
   );
 }

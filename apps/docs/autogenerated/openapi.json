@@ -2051,14 +2051,14 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "sourceAgentKey": {
+                  "deployedAgentTemplateKey": {
                     "type": "string"
                   },
                   "uniqueIdentifier": {
                     "type": "string"
                   }
                 },
-                "required": ["sourceAgentKey"]
+                "required": ["deployedAgentTemplateKey"]
               }
             }
           }
@@ -2137,7 +2137,7 @@
             }
           },
           {
-            "name": "sourceAgentKey",
+            "name": "deployedAgentTemplateKey",
             "in": "query",
             "schema": {
               "type": "string"
@@ -2181,7 +2181,7 @@
                           "uniqueIdentifier": {
                             "type": "string"
                           },
-                          "sourceAgentKey": {
+                          "deployedAgentTemplateKey": {
                             "type": "string"
                           },
                           "createdAt": {
@@ -2192,7 +2192,7 @@
                           "id",
                           "sdkId",
                           "uniqueIdentifier",
-                          "sourceAgentKey",
+                          "deployedAgentTemplateKey",
                           "createdAt"
                         ]
                       }
@@ -2521,7 +2521,7 @@
             }
           }
         ],
-        "operationId": "deployment.migrateDeployedAgentToNewSourceAgent",
+        "operationId": "deployment.migrateDeployedAgentToNewDeployedAgentTemplate",
         "requestBody": {
           "description": "Body",
           "content": {
@@ -2529,14 +2529,14 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "sourceAgentKey": {
+                  "deployedAgentTemplateKey": {
                     "type": "string"
                   },
                   "preserveCoreMemories": {
                     "type": "boolean"
                   }
                 },
-                "required": ["sourceAgentKey"]
+                "required": ["deployedAgentTemplateKey"]
               }
             }
           }

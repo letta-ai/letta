@@ -1,12 +1,7 @@
 import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
 import type { sdkContracts } from '../contracts';
 import type { AuthedRequestType } from '../shared';
-import {
-  db,
-  deployedAgents,
-  deployedAgentsStatistics,
-  sourceAgents,
-} from '@letta-web/database';
+import { db, agents, deployedAgentTemplates } from '@letta-web/database';
 import { and, desc, eq } from 'drizzle-orm';
 import { copyAgentById, migrateToNewAgent } from '$letta/server';
 import * as crypto from 'node:crypto';
@@ -28,14 +23,14 @@ export async function createAgent(
   req: CreateAgentRequestType,
   context: AuthedRequestType
 ): Promise<CreateAgentResponseType> {
-  const { sourceAgentKey, uniqueIdentifier } = req.body;
+  const { deployedAgentTemplateKey, uniqueIdentifier } = req.body;
   const { organizationId } = context.request;
 
   if (uniqueIdentifier) {
-    const alreadyExists = await db.query.deployedAgents.findFirst({
+    const alreadyExists = await db.query.agents.findFirst({
       where: and(
-        eq(deployedAgents.organizationId, organizationId),
-        eq(deployedAgents.key, uniqueIdentifier)
+        eq(agents.organizationId, organizationId),
+        eq(agents.key, uniqueIdentifier)
       ),
       columns: {
         id: true,
@@ -52,14 +47,16 @@ export async function createAgent(
     }
   }
 
-  const sourceAgent = await db.query.sourceAgents.findFirst({
-    where: and(
-      eq(sourceAgents.organizationId, organizationId),
-      eq(sourceAgents.key, sourceAgentKey)
-    ),
-  });
+  const deployedAgentTemplate = await db.query.deployedAgentTemplates.findFirst(
+    {
+      where: and(
+        eq(deployedAgentTemplates.organizationId, organizationId),
+        eq(deployedAgentTemplates.key, deployedAgentTemplateKey)
+      ),
+    }
+  );
 
-  if (!sourceAgent) {
+  if (!deployedAgentTemplate) {
     return {
       status: 404,
       body: {
@@ -69,13 +66,13 @@ export async function createAgent(
   }
 
   const copiedAgent = await copyAgentById(
-    sourceAgent.agentId,
+    deployedAgentTemplate.id,
     crypto.randomUUID()
   );
 
-  const lastDeployedAgent = await db.query.deployedAgents.findFirst({
-    where: eq(deployedAgents.sourceAgentId, sourceAgent.id),
-    orderBy: [desc(deployedAgents.createdAt)],
+  const lastDeployedAgent = await db.query.agents.findFirst({
+    where: eq(agents.deployedAgentTemplateId, deployedAgentTemplate.id),
+    orderBy: [desc(agents.createdAt)],
   });
 
   if (!copiedAgent.id) {
@@ -91,33 +88,27 @@ export async function createAgent(
     (lastDeployedAgent?.internalAgentCountId || 0) + 1;
 
   const key =
-    uniqueIdentifier || `${sourceAgentKey}-${nextInternalAgentCountId}`;
+    uniqueIdentifier ||
+    `${deployedAgentTemplateKey}-${nextInternalAgentCountId}`;
 
-  const [deployedAgent] = await db
-    .insert(deployedAgents)
+  const [agent] = await db
+    .insert(agents)
     .values({
-      projectId: sourceAgent.projectId,
+      id: copiedAgent.id,
+      projectId: deployedAgentTemplate.projectId,
       key,
       agentId: copiedAgent.id,
       internalAgentCountId: nextInternalAgentCountId,
-      sourceAgentKey: sourceAgent.key,
-      sourceAgentId: sourceAgent.id,
+      deployedAgentTemplateKey: deployedAgentTemplate.key,
+      deployedAgentTemplateId: deployedAgentTemplate.id,
       organizationId,
     })
-    .returning({ id: deployedAgents.id });
-
-  await Promise.all([
-    db.insert(deployedAgentsStatistics).values({
-      id: deployedAgent.id,
-      messageCount: 0,
-      lastActiveAt: new Date(),
-    }),
-  ]);
+    .returning({ id: agents.id });
 
   return {
     status: 201,
     body: {
-      agentDeploymentId: deployedAgent.id,
+      agentDeploymentId: agent.id,
     },
   };
 }
@@ -137,59 +128,26 @@ export async function chatWithAgent(): Promise<ChatWithAgentResponseType> {
   };
 }
 
-type GetDeployedAgentSDKIdRequestType = ServerInferRequest<
-  typeof sdkContracts.deployment.getDeployedAgentSdkId
+type MigrateDeployedAgentToNewDeployedAgentTemplateType = ServerInferRequest<
+  typeof sdkContracts.deployment.migrateDeployedAgentToNewDeployedAgentTemplate
 >;
 
-type GetDeployedAgentSDKIdResponseType = ServerInferResponses<
-  typeof sdkContracts.deployment.getDeployedAgentSdkId
->;
+type MigrateDeployedAgentToNewDeployedAgentTemplateResponseType =
+  ServerInferResponses<
+    typeof sdkContracts.deployment.migrateDeployedAgentToNewDeployedAgentTemplate
+  >;
 
-export async function getDeployedAgentSdkId(
-  req: GetDeployedAgentSDKIdRequestType
-): Promise<GetDeployedAgentSDKIdResponseType> {
+export async function migrateDeployedAgentToNewDeployedAgentTemplate(
+  req: MigrateDeployedAgentToNewDeployedAgentTemplateType
+): Promise<MigrateDeployedAgentToNewDeployedAgentTemplateResponseType> {
   const { agentDeploymentId } = req.params;
+  const { deployedAgentTemplateKey, preserveCoreMemories } = req.body;
 
-  const deployedAgent = await db.query.deployedAgents.findFirst({
-    where: eq(deployedAgents.id, agentDeploymentId),
+  const agent = await db.query.agents.findFirst({
+    where: eq(agents.id, agentDeploymentId),
   });
 
-  if (!deployedAgent) {
-    return {
-      status: 404,
-      body: {
-        message: 'Agent not found',
-      },
-    };
-  }
-
-  return {
-    status: 200,
-    body: {
-      sdkId: deployedAgent.agentId,
-    },
-  };
-}
-
-type MigrateDeployedAgentToNewSourceAgentType = ServerInferRequest<
-  typeof sdkContracts.deployment.migrateDeployedAgentToNewSourceAgent
->;
-
-type MigrateDeployedAgentToNewSourceAgentResponseType = ServerInferResponses<
-  typeof sdkContracts.deployment.migrateDeployedAgentToNewSourceAgent
->;
-
-export async function migrateDeployedAgentToNewSourceAgent(
-  req: MigrateDeployedAgentToNewSourceAgentType
-): Promise<MigrateDeployedAgentToNewSourceAgentResponseType> {
-  const { agentDeploymentId } = req.params;
-  const { sourceAgentKey, preserveCoreMemories } = req.body;
-
-  const deployedAgent = await db.query.deployedAgents.findFirst({
-    where: eq(deployedAgents.id, agentDeploymentId),
-  });
-
-  if (!deployedAgent) {
+  if (!agent) {
     return {
       status: 404,
       body: {
@@ -198,14 +156,16 @@ export async function migrateDeployedAgentToNewSourceAgent(
     };
   }
 
-  const sourceAgent = await db.query.sourceAgents.findFirst({
-    where: and(
-      eq(sourceAgents.organizationId, deployedAgent.organizationId),
-      eq(sourceAgents.key, sourceAgentKey)
-    ),
-  });
+  const deployedAgentTemplate = await db.query.deployedAgentTemplates.findFirst(
+    {
+      where: and(
+        eq(deployedAgentTemplates.organizationId, agent.organizationId),
+        eq(deployedAgentTemplates.key, deployedAgentTemplateKey)
+      ),
+    }
+  );
 
-  if (!sourceAgent) {
+  if (!deployedAgentTemplate) {
     return {
       status: 404,
       body: {
@@ -215,16 +175,16 @@ export async function migrateDeployedAgentToNewSourceAgent(
   }
 
   const sourceSDKAgent = await AgentsService.getAgent({
-    agentId: sourceAgent.agentId,
+    agentId: deployedAgentTemplate.id,
   });
 
   const newDatasources = await AgentsService.getAgentSources({
-    agentId: deployedAgent.agentId || '',
+    agentId: agent.id || '',
   });
 
   await migrateToNewAgent({
     preserveCoreMemories,
-    agentIdToMigrate: deployedAgent.agentId,
+    agentIdToMigrate: agent.id,
     agentTemplate: sourceSDKAgent,
     agentDatasourcesIds: newDatasources
       .map((datasource) => datasource.id)
@@ -260,11 +220,11 @@ export async function getExistingMessagesFromAgent(
     format_user_message_arguments,
   } = req.query;
 
-  const deployedAgent = await db.query.deployedAgents.findFirst({
-    where: eq(deployedAgents.id, agentDeploymentId),
+  const agent = await db.query.agents.findFirst({
+    where: eq(agents.id, agentDeploymentId),
   });
 
-  if (!deployedAgent) {
+  if (!agent) {
     return {
       status: 404,
       body: {
@@ -274,7 +234,7 @@ export async function getExistingMessagesFromAgent(
   }
 
   let messages = (await AgentsService.listAgentMessages({
-    agentId: deployedAgent.agentId,
+    agentId: agent.id,
     before,
     limit,
   })) as AgentMessage[];
@@ -354,25 +314,32 @@ export async function queryDeployedAgents(
   req: QueryDeployedAgentsRequestType,
   context: AuthedRequestType
 ): Promise<QueryDeployedAgentsResponseType> {
-  const { uniqueIdentifier, sourceAgentKey, limit, offset, projectId } =
-    req.query;
+  const {
+    uniqueIdentifier,
+    deployedAgentTemplateKey,
+    limit,
+    offset,
+    projectId,
+  } = req.query;
   const { organizationId } = context.request;
 
-  const queryBuilder = [eq(deployedAgents.organizationId, organizationId)];
+  const queryBuilder = [eq(agents.organizationId, organizationId)];
 
   if (projectId) {
-    queryBuilder.push(eq(deployedAgents.projectId, projectId));
+    queryBuilder.push(eq(agents.projectId, projectId));
   }
 
   if (uniqueIdentifier) {
-    queryBuilder.push(eq(deployedAgents.key, uniqueIdentifier));
+    queryBuilder.push(eq(agents.key, uniqueIdentifier));
   }
 
-  if (sourceAgentKey) {
-    queryBuilder.push(eq(deployedAgents.sourceAgentKey, sourceAgentKey));
+  if (deployedAgentTemplateKey) {
+    queryBuilder.push(
+      eq(agents.deployedAgentTemplateKey, deployedAgentTemplateKey)
+    );
   }
 
-  const deployedAgentsResponse = await db.query.deployedAgents.findMany({
+  const agentsResponse = await db.query.agents.findMany({
     where: and(...queryBuilder),
     limit,
     offset,
@@ -381,12 +348,11 @@ export async function queryDeployedAgents(
   return {
     status: 200,
     body: {
-      deployedAgents: deployedAgentsResponse.map((deployedAgent) => ({
-        sdkId: deployedAgent.agentId,
-        id: deployedAgent.id,
-        sourceAgentKey: deployedAgent.sourceAgentKey,
-        uniqueIdentifier: deployedAgent.key,
-        createdAt: deployedAgent.createdAt.toISOString(),
+      agents: agentsResponse.map((agent) => ({
+        id: agent.id,
+        deployedAgentTemplateKey: agent.deployedAgentTemplateKey,
+        uniqueIdentifier: agent.key,
+        createdAt: agent.createdAt.toISOString(),
       })),
     },
   };

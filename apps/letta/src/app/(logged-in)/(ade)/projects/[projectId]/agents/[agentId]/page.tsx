@@ -8,7 +8,7 @@ import {
   QueryClient,
 } from '@tanstack/react-query';
 import React from 'react';
-import { db, testingAgents } from '@letta-web/database';
+import { db, agentTemplates } from '@letta-web/database';
 import { eq } from 'drizzle-orm';
 import { redirect } from 'next/navigation';
 import { webApiQueryKeys } from '$letta/client';
@@ -25,7 +25,7 @@ interface AgentsAgentPageProps {
 async function AgentsAgentPage(context: AgentsAgentPageProps) {
   const queryClient = new QueryClient();
 
-  const { agentId: testingAgentId, projectId } = context.params;
+  const { agentId, projectId } = context.params;
 
   const project = await getProjectById({
     params: { projectId },
@@ -36,20 +36,18 @@ async function AgentsAgentPage(context: AgentsAgentPageProps) {
     return;
   }
 
-  const testingAgent = await db.query.testingAgents.findFirst({
-    where: eq(testingAgents.id, testingAgentId),
+  const agentTemplate = await db.query.agentTemplates.findFirst({
+    where: eq(agentTemplates.id, agentId),
     columns: {
-      agentId: true,
       name: true,
+      id: true,
     },
   });
 
-  if (!testingAgent) {
+  if (!agentTemplate) {
     redirect(`/projects/${context.params.projectId}`);
     return;
   }
-
-  const { agentId } = testingAgent;
 
   const agent = await AgentsService.getAgent({
     agentId,
@@ -69,12 +67,12 @@ async function AgentsAgentPage(context: AgentsAgentPageProps) {
       }),
     }),
     queryClient.prefetchQuery({
-      queryKey: webApiQueryKeys.projects.getProjectTestingAgent(
+      queryKey: webApiQueryKeys.projects.getProjectAgentTemplate(
         context.params.projectId,
-        testingAgentId
+        agentId
       ),
       queryFn: () => ({
-        body: testingAgent,
+        body: agentTemplate,
       }),
     }),
   ]);

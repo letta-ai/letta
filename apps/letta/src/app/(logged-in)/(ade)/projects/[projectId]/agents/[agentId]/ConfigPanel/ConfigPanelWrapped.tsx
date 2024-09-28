@@ -15,33 +15,33 @@ import {
   VStack,
 } from '@letta-web/component-library';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { useCurrentAgent, useCurrentTestingAgentId } from '../hooks';
+import { useCurrentAgent, useCurrentAgentId } from '../hooks';
 import { ADENavigationItem } from '../common/ADENavigationItem/ADENavigationItem';
 import { useDebouncedValue } from '@mantine/hooks';
 import { webApi, webApiQueryKeys } from '$letta/client';
 import { useCurrentProjectId } from '../../../../../../(dashboard-like)/projects/[projectId]/hooks';
-import { useCurrentTestingAgent } from '../hooks/useCurrentTestingAgent/useCurrentTestingAgent';
+import { useCurrentAgentTemplate } from '../hooks/useCurrentAgentTemplate/useCurrentAgentTemplate';
 import { useQueryClient } from '@tanstack/react-query';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Settings2Icon } from 'lucide-react';
 
 function EditAgentName() {
-  const { name: defaultName } = useCurrentTestingAgent();
+  const { name: defaultName } = useCurrentAgentTemplate();
 
   const [name, setName] = useState(defaultName);
   const projectId = useCurrentProjectId();
   const queryClient = useQueryClient();
-  const testingAgentId = useCurrentTestingAgentId();
+  const agentTemplateId = useCurrentAgentId();
 
   const [debouncedName] = useDebouncedValue(name, 500);
   const { mutate, isPending } =
-    webApi.projects.updateProjectTestingAgent.useMutation({
+    webApi.projects.updateProjectAgentTemplate.useMutation({
       onSuccess: async () => {
         await queryClient.invalidateQueries({
-          queryKey: webApiQueryKeys.projects.getProjectTestingAgent(
+          queryKey: webApiQueryKeys.projects.getProjectAgentTemplate(
             projectId,
-            testingAgentId
+            agentTemplateId
           ),
         });
       },
@@ -56,10 +56,10 @@ function EditAgentName() {
       body: { name: debouncedName },
       params: {
         projectId,
-        testingAgentId,
+        agentTemplateId,
       },
     });
-  }, [debouncedName, mutate, projectId, testingAgentId]);
+  }, [debouncedName, mutate, projectId, agentTemplateId]);
 
   return (
     <RawInput
@@ -75,10 +75,10 @@ function EditAgentName() {
 }
 
 function DeleteAgentDialog() {
-  const { name } = useCurrentTestingAgent();
+  const { name } = useCurrentAgentTemplate();
 
   const projectId = useCurrentProjectId();
-  const testingAgentId = useCurrentTestingAgentId();
+  const agentTemplateId = useCurrentAgentId();
 
   const DeleteAgentDialogFormSchema = useMemo(
     () =>
@@ -98,7 +98,7 @@ function DeleteAgentDialog() {
   });
 
   const { mutate, isPending } =
-    webApi.projects.deleteProjectTestingAgent.useMutation({
+    webApi.projects.deleteProjectAgentTemplate.useMutation({
       onSuccess: () => {
         window.location.href = `/projects/${projectId}`;
       },
@@ -108,10 +108,10 @@ function DeleteAgentDialog() {
     mutate({
       params: {
         projectId,
-        testingAgentId,
+        agentTemplateId,
       },
     });
-  }, [mutate, projectId, testingAgentId]);
+  }, [mutate, projectId, agentTemplateId]);
 
   return (
     <FormProvider {...form}>

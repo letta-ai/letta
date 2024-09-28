@@ -11,7 +11,7 @@ import {
   PanelMainContent,
   VStack,
 } from '@letta-web/component-library';
-import { useCurrentTestingAgentId } from '../hooks';
+import { useCurrentAgentId } from '../hooks';
 import { useCurrentProjectId } from '../../../../../../(dashboard-like)/projects/[projectId]/hooks';
 import { useQueryClient } from '@tanstack/react-query';
 import { webApi, webApiQueryKeys } from '$letta/client';
@@ -19,29 +19,34 @@ import { DeployAgentUsageInstructions } from '$letta/client/code-reference/Deplo
 import { z } from 'zod';
 
 function StageAndDeployDialog() {
-  const testingAgentId = useCurrentTestingAgentId();
+  const agentTemplateId = useCurrentAgentId();
   const projectId = useCurrentProjectId();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
 
   const { mutate, isPending } =
-    webApi.projects.createProjectSourceAgentFromTestingAgent.useMutation({
-      onSuccess: () => {
-        void queryClient.invalidateQueries({
-          queryKey: webApiQueryKeys.projects.getProjectSourceAgents(projectId),
-          exact: false,
-        });
+    webApi.projects.createProjectDeployedAgentTemplateFromAgentTemplate.useMutation(
+      {
+        onSuccess: () => {
+          void queryClient.invalidateQueries({
+            queryKey:
+              webApiQueryKeys.projects.getProjectDeployedAgentTemplates(
+                projectId
+              ),
+            exact: false,
+          });
 
-        setOpen(false);
-      },
-    });
+          setOpen(false);
+        },
+      }
+    );
 
-  const handleCreateSourceAgent = useCallback(() => {
+  const handleCreateDeployedAgentTemplate = useCallback(() => {
     mutate({
-      body: { testingAgentId },
+      body: { agentTemplateId },
       params: { projectId },
     });
-  }, [mutate, testingAgentId, projectId]);
+  }, [mutate, agentTemplateId, projectId]);
 
   return (
     <Dialog
@@ -49,7 +54,7 @@ function StageAndDeployDialog() {
       isOpen={open}
       testId="stage-agent-dialog"
       title="Are you sure you want to stage your agent?"
-      onSubmit={handleCreateSourceAgent}
+      onSubmit={handleCreateDeployedAgentTemplate}
       isConfirmBusy={isPending}
       trigger={
         <Button
@@ -70,7 +75,7 @@ function StageAndDeployDialog() {
 
 const PAGE_SIZE = 10;
 
-interface SourceAgentCardProps {
+interface DeployedAgentTemplateCardProps {
   version: string;
   index: number;
   createdAt: string;
@@ -78,7 +83,7 @@ interface SourceAgentCardProps {
   currentProjectId: string;
 }
 
-function SourceAgentCard(props: SourceAgentCardProps) {
+function DeployedAgentTemplateCard(props: DeployedAgentTemplateCardProps) {
   const { version, createdAt, index, agentKey, currentProjectId } = props;
   const [showDeploymentInstructions, setShowDeploymentInstructions] =
     React.useState(false);
@@ -112,7 +117,7 @@ function SourceAgentCard(props: SourceAgentCardProps) {
     >
       {showDeploymentInstructions && (
         <DeployAgentUsageInstructions
-          sourceAgentKey={agentKey}
+          deployedAgentTemplateKey={agentKey}
           projectId={currentProjectId}
         />
       )}
@@ -121,23 +126,24 @@ function SourceAgentCard(props: SourceAgentCardProps) {
 }
 
 export function DeploymentAgentMangerPanel() {
-  const testingAgentId = useCurrentTestingAgentId();
+  const agentTemplateId = useCurrentAgentId();
 
   const currentProjectId = useCurrentProjectId();
   const [searchValue, setSearchValue] = useState('');
   const { data, hasNextPage, fetchNextPage } =
-    webApi.projects.getProjectSourceAgents.useInfiniteQuery({
-      queryKey: webApiQueryKeys.projects.getProjectSourceAgentsWithSearch(
-        currentProjectId,
-        {
-          search: searchValue,
-          testingAgentId: testingAgentId,
-        }
-      ),
+    webApi.projects.getProjectDeployedAgentTemplates.useInfiniteQuery({
+      queryKey:
+        webApiQueryKeys.projects.getProjectDeployedAgentTemplatesWithSearch(
+          currentProjectId,
+          {
+            search: searchValue,
+            agentTemplateId: agentTemplateId,
+          }
+        ),
       queryData: ({ pageParam }) => ({
         params: { projectId: currentProjectId },
         query: {
-          testingAgentId,
+          agentTemplateId,
           offset: pageParam.offset,
           limit: pageParam.limit,
         },
@@ -150,12 +156,12 @@ export function DeploymentAgentMangerPanel() {
       },
     });
 
-  const sourceAgents = useMemo(() => {
+  const deployedAgentTemplates = useMemo(() => {
     if (!data) {
       return null;
     }
 
-    return (data?.pages || []).flatMap((v) => v.body.sourceAgents);
+    return (data?.pages || []).flatMap((v) => v.body.deployedAgentTemplates);
   }, [data]);
 
   return (
@@ -166,15 +172,15 @@ export function DeploymentAgentMangerPanel() {
         actions={<StageAndDeployDialog />}
       />
       <PanelMainContent>
-        {!sourceAgents || sourceAgents.length === 0 ? (
+        {!deployedAgentTemplates || deployedAgentTemplates.length === 0 ? (
           <LoadingEmptyStatusComponent
-            isLoading={!sourceAgents}
+            isLoading={!deployedAgentTemplates}
             emptyMessage="You haven't staged this agent yet. Click the button above to deploy your agent template."
           />
         ) : (
           <VStack>
-            {sourceAgents.map((agent, index) => (
-              <SourceAgentCard
+            {deployedAgentTemplates.map((agent, index) => (
+              <DeployedAgentTemplateCard
                 {...agent}
                 index={index}
                 key={agent.key}

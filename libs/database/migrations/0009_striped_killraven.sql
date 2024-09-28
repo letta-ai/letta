@@ -1,1 +1,0 @@
-ALTER TABLE "deployed_agents" ADD COLUMN "project_id" uuid NOT NULL;

@@ -31,8 +31,8 @@ import {
   useCurrentProjectId,
 } from '../../../../../(dashboard-like)/projects/[projectId]/hooks';
 import { DatabaseIcon, GitForkIcon } from 'lucide-react';
-import { useCurrentTestingAgentId } from './hooks';
-import { useCurrentTestingAgent } from './hooks/useCurrentTestingAgent/useCurrentTestingAgent';
+import { useCurrentAgentId } from './hooks';
+import { useCurrentAgentTemplate } from './hooks/useCurrentAgentTemplate/useCurrentAgentTemplate';
 import { useQueryClient } from '@tanstack/react-query';
 import { useDebouncedValue } from '@mantine/hooks';
 import { webApi, webApiQueryKeys } from '$letta/client';
@@ -43,23 +43,23 @@ import './AgentPage.scss';
 
 const MIN_INPUT_WIDTH = 50;
 const MAX_INPUT_WIDTH = 500;
-function InlineTestingAgentNameChanger() {
-  const { name: defaultName } = useCurrentTestingAgent();
+function InlineAgentTemplateNameChanger() {
+  const { name: defaultName } = useCurrentAgentTemplate();
 
   const inputRef = useRef<HTMLInputElement>(null);
 
   const [name, setName] = useState(defaultName);
   const projectId = useCurrentProjectId();
   const queryClient = useQueryClient();
-  const testingAgentId = useCurrentTestingAgentId();
+  const agentTemplateId = useCurrentAgentId();
 
   const [debouncedName] = useDebouncedValue(name, 500);
-  const { mutate } = webApi.projects.updateProjectTestingAgent.useMutation({
+  const { mutate } = webApi.projects.updateProjectAgentTemplate.useMutation({
     onSuccess: async () => {
       await queryClient.invalidateQueries({
-        queryKey: webApiQueryKeys.projects.getProjectTestingAgent(
+        queryKey: webApiQueryKeys.projects.getProjectAgentTemplate(
           projectId,
-          testingAgentId
+          agentTemplateId
         ),
       });
     },
@@ -97,10 +97,10 @@ function InlineTestingAgentNameChanger() {
       body: { name: debouncedName },
       params: {
         projectId,
-        testingAgentId,
+        agentTemplateId,
       },
     });
-  }, [debouncedName, mutate, projectId, testingAgentId]);
+  }, [debouncedName, mutate, projectId, agentTemplateId]);
 
   return (
     <HStack>
@@ -167,17 +167,17 @@ function NavOverlay() {
 }
 
 function ForkAgentDialog() {
-  const currentTestingAgentId = useCurrentTestingAgentId();
+  const currentagentTemplateId = useCurrentAgentId();
   const { push } = useRouter();
   const projectId = useCurrentProjectId();
-  const { mutate, isPending } = webApi.projects.forkTestingAgent.useMutation();
+  const { mutate, isPending } = webApi.projects.forkAgentTemplate.useMutation();
 
   const handleForkAgent = useCallback(() => {
     mutate(
       {
         params: {
           projectId,
-          testingAgentId: currentTestingAgentId,
+          agentTemplateId: currentagentTemplateId,
         },
       },
       {
@@ -186,7 +186,7 @@ function ForkAgentDialog() {
         },
       }
     );
-  }, [mutate, projectId, currentTestingAgentId, push]);
+  }, [mutate, projectId, currentagentTemplateId, push]);
 
   return (
     <Dialog
@@ -302,7 +302,7 @@ export function AgentPage() {
                 <Link target="_blank" href={`/projects/${projectId}`}>
                   <Typography color="white">{projectName}</Typography>
                 </Link>
-                /<InlineTestingAgentNameChanger />
+                /<InlineAgentTemplateNameChanger />
               </HStack>
               <HStack>
                 <ForkAgentDialog />
