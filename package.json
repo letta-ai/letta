@@ -29,7 +29,7 @@
     "cl": "npm run component-libray",
     "cl:new": "npm run component-libray:new",
     "cl:generate-icons": "nx g @letta-web/configure:generate-icons",
-    "agents-api:generate": "nx run letta-agents-api:generate"
+    "agents-api:generate": "nx run letta-agents-api:generate && nx run letta-agents-api:monkeypatch"
   },
   "private": true,
   "dependencies": {

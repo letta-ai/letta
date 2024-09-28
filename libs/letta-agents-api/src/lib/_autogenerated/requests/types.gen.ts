@@ -257,7 +257,6 @@ export type ChatCompletionResponse = {
   object?: 'chat.completion';
   usage: UsageStatistics;
 };
-
 export type Choice = {
   finish_reason: string;
   index: number;

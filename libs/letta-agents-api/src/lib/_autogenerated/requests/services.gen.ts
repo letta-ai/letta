@@ -118,7 +118,8 @@ export class ToolsService {
    * @throws ApiError
    */
   public static deleteTool(
-    data: DeleteToolData
+    data: DeleteToolData,
+    headers?: { user_id: string }
   ): CancelablePromise<DeleteToolResponse> {
     return __request(OpenAPI, {
       method: 'DELETE',
@@ -129,6 +130,7 @@ export class ToolsService {
       errors: {
         422: 'Validation Error',
       },
+      headers,
     });
   }
 
@@ -140,7 +142,10 @@ export class ToolsService {
    * @returns Tool_Output Successful Response
    * @throws ApiError
    */
-  public static getTool(data: GetToolData): CancelablePromise<GetToolResponse> {
+  public static getTool(
+    data: GetToolData,
+    headers?: { user_id: string }
+  ): CancelablePromise<GetToolResponse> {
     return __request(OpenAPI, {
       method: 'GET',
       url: '/v1/tools/{tool_id}',
@@ -150,6 +155,7 @@ export class ToolsService {
       errors: {
         422: 'Validation Error',
       },
+      headers,
     });
   }
 
@@ -163,7 +169,8 @@ export class ToolsService {
    * @throws ApiError
    */
   public static updateTool(
-    data: UpdateToolData
+    data: UpdateToolData,
+    headers?: { user_id: string }
   ): CancelablePromise<UpdateToolResponse> {
     return __request(OpenAPI, {
       method: 'PATCH',
@@ -176,6 +183,7 @@ export class ToolsService {
       errors: {
         422: 'Validation Error',
       },
+      headers,
     });
   }
 
@@ -188,7 +196,8 @@ export class ToolsService {
    * @throws ApiError
    */
   public static getToolIdByName(
-    data: GetToolIdByNameData
+    data: GetToolIdByNameData,
+    headers?: { user_id: string }
   ): CancelablePromise<GetToolIdByNameResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -199,6 +208,7 @@ export class ToolsService {
       errors: {
         422: 'Validation Error',
       },
+      headers,
     });
   }
 
@@ -208,10 +218,13 @@ export class ToolsService {
    * @returns Tool_Output Successful Response
    * @throws ApiError
    */
-  public static listTools(): CancelablePromise<ListToolsResponse> {
+  public static listTools(headers?: {
+    user_id: string;
+  }): CancelablePromise<ListToolsResponse> {
     return __request(OpenAPI, {
       method: 'GET',
       url: '/v1/tools/',
+      headers,
     });
   }
 
@@ -225,7 +238,8 @@ export class ToolsService {
    * @throws ApiError
    */
   public static createTool(
-    data: CreateToolData
+    data: CreateToolData,
+    headers?: { user_id: string }
   ): CancelablePromise<CreateToolResponse> {
     return __request(OpenAPI, {
       method: 'POST',
@@ -238,6 +252,7 @@ export class ToolsService {
       errors: {
         422: 'Validation Error',
       },
+      headers,
     });
   }
 }
@@ -252,7 +267,8 @@ export class SourcesService {
    * @throws ApiError
    */
   public static getSource(
-    data: GetSourceData
+    data: GetSourceData,
+    headers?: { user_id: string }
   ): CancelablePromise<GetSourceResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -263,6 +279,7 @@ export class SourcesService {
       errors: {
         422: 'Validation Error',
       },
+      headers,
     });
   }
 
@@ -276,7 +293,8 @@ export class SourcesService {
    * @throws ApiError
    */
   public static updateSource(
-    data: UpdateSourceData
+    data: UpdateSourceData,
+    headers?: { user_id: string }
   ): CancelablePromise<UpdateSourceResponse> {
     return __request(OpenAPI, {
       method: 'PATCH',
@@ -289,6 +307,7 @@ export class SourcesService {
       errors: {
         422: 'Validation Error',
       },
+      headers,
     });
   }
 
@@ -301,7 +320,8 @@ export class SourcesService {
    * @throws ApiError
    */
   public static deleteSource(
-    data: DeleteSourceData
+    data: DeleteSourceData,
+    headers?: { user_id: string }
   ): CancelablePromise<DeleteSourceResponse> {
     return __request(OpenAPI, {
       method: 'DELETE',
@@ -312,6 +332,7 @@ export class SourcesService {
       errors: {
         422: 'Validation Error',
       },
+      headers,
     });
   }
 
@@ -324,7 +345,8 @@ export class SourcesService {
    * @throws ApiError
    */
   public static getSourceIdByName(
-    data: GetSourceIdByNameData
+    data: GetSourceIdByNameData,
+    headers?: { user_id: string }
   ): CancelablePromise<GetSourceIdByNameResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -335,6 +357,7 @@ export class SourcesService {
       errors: {
         422: 'Validation Error',
       },
+      headers,
     });
   }
 
@@ -344,10 +367,13 @@ export class SourcesService {
    * @returns Source Successful Response
    * @throws ApiError
    */
-  public static listSources(): CancelablePromise<ListSourcesResponse> {
+  public static listSources(headers?: {
+    user_id: string;
+  }): CancelablePromise<ListSourcesResponse> {
     return __request(OpenAPI, {
       method: 'GET',
       url: '/v1/sources/',
+      headers,
     });
   }
 
@@ -360,7 +386,8 @@ export class SourcesService {
    * @throws ApiError
    */
   public static createSource(
-    data: CreateSourceData
+    data: CreateSourceData,
+    headers?: { user_id: string }
   ): CancelablePromise<CreateSourceResponse> {
     return __request(OpenAPI, {
       method: 'POST',
@@ -370,6 +397,7 @@ export class SourcesService {
       errors: {
         422: 'Validation Error',
       },
+      headers,
     });
   }
 
@@ -383,7 +411,8 @@ export class SourcesService {
    * @throws ApiError
    */
   public static attachAgentToSource(
-    data: AttachAgentToSourceData
+    data: AttachAgentToSourceData,
+    headers?: { user_id: string }
   ): CancelablePromise<AttachAgentToSourceResponse> {
     return __request(OpenAPI, {
       method: 'POST',
@@ -397,6 +426,7 @@ export class SourcesService {
       errors: {
         422: 'Validation Error',
       },
+      headers,
     });
   }
 
@@ -410,7 +440,8 @@ export class SourcesService {
    * @throws ApiError
    */
   public static detachAgentFromSource(
-    data: DetachAgentFromSourceData
+    data: DetachAgentFromSourceData,
+    headers?: { user_id: string }
   ): CancelablePromise<DetachAgentFromSourceResponse> {
     return __request(OpenAPI, {
       method: 'POST',
@@ -424,6 +455,7 @@ export class SourcesService {
       errors: {
         422: 'Validation Error',
       },
+      headers,
     });
   }
 
@@ -437,7 +469,8 @@ export class SourcesService {
    * @throws ApiError
    */
   public static uploadFileToSource(
-    data: UploadFileToSourceData
+    data: UploadFileToSourceData,
+    headers?: { user_id: string }
   ): CancelablePromise<UploadFileToSourceResponse> {
     return __request(OpenAPI, {
       method: 'POST',
@@ -450,6 +483,7 @@ export class SourcesService {
       errors: {
         422: 'Validation Error',
       },
+      headers,
     });
   }
 
@@ -462,7 +496,8 @@ export class SourcesService {
    * @throws ApiError
    */
   public static listSourcePassages(
-    data: ListSourcePassagesData
+    data: ListSourcePassagesData,
+    headers?: { user_id: string }
   ): CancelablePromise<ListSourcePassagesResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -473,6 +508,7 @@ export class SourcesService {
       errors: {
         422: 'Validation Error',
       },
+      headers,
     });
   }
 
@@ -485,7 +521,8 @@ export class SourcesService {
    * @throws ApiError
    */
   public static listSourceDocuments(
-    data: ListSourceDocumentsData
+    data: ListSourceDocumentsData,
+    headers?: { user_id: string }
   ): CancelablePromise<ListSourceDocumentsResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -496,6 +533,7 @@ export class SourcesService {
       errors: {
         422: 'Validation Error',
       },
+      headers,
     });
   }
 }
@@ -508,10 +546,13 @@ export class AgentsService {
    * @returns AgentState Successful Response
    * @throws ApiError
    */
-  public static listAgents(): CancelablePromise<ListAgentsResponse> {
+  public static listAgents(headers?: {
+    user_id: string;
+  }): CancelablePromise<ListAgentsResponse> {
     return __request(OpenAPI, {
       method: 'GET',
       url: '/v1/agents/',
+      headers,
     });
   }
 
@@ -524,7 +565,8 @@ export class AgentsService {
    * @throws ApiError
    */
   public static createAgent(
-    data: CreateAgentData
+    data: CreateAgentData,
+    headers?: { user_id: string }
   ): CancelablePromise<CreateAgentResponse> {
     return __request(OpenAPI, {
       method: 'POST',
@@ -534,6 +576,7 @@ export class AgentsService {
       errors: {
         422: 'Validation Error',
       },
+      headers,
     });
   }
 
@@ -547,7 +590,8 @@ export class AgentsService {
    * @throws ApiError
    */
   public static updateAgent(
-    data: UpdateAgentData
+    data: UpdateAgentData,
+    headers?: { user_id: string }
   ): CancelablePromise<UpdateAgentResponse> {
     return __request(OpenAPI, {
       method: 'PATCH',
@@ -560,6 +604,7 @@ export class AgentsService {
       errors: {
         422: 'Validation Error',
       },
+      headers,
     });
   }
 
@@ -572,7 +617,8 @@ export class AgentsService {
    * @throws ApiError
    */
   public static getAgent(
-    data: GetAgentData
+    data: GetAgentData,
+    headers?: { user_id: string }
   ): CancelablePromise<GetAgentResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -583,6 +629,7 @@ export class AgentsService {
       errors: {
         422: 'Validation Error',
       },
+      headers,
     });
   }
 
@@ -595,7 +642,8 @@ export class AgentsService {
    * @throws ApiError
    */
   public static deleteAgent(
-    data: DeleteAgentData
+    data: DeleteAgentData,
+    headers?: { user_id: string }
   ): CancelablePromise<DeleteAgentResponse> {
     return __request(OpenAPI, {
       method: 'DELETE',
@@ -606,6 +654,7 @@ export class AgentsService {
       errors: {
         422: 'Validation Error',
       },
+      headers,
     });
   }
 
@@ -618,7 +667,8 @@ export class AgentsService {
    * @throws ApiError
    */
   public static getAgentSources(
-    data: GetAgentSourcesData
+    data: GetAgentSourcesData,
+    headers?: { user_id: string }
   ): CancelablePromise<GetAgentSourcesResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -629,6 +679,7 @@ export class AgentsService {
       errors: {
         422: 'Validation Error',
       },
+      headers,
     });
   }
 
@@ -641,7 +692,8 @@ export class AgentsService {
    * @throws ApiError
    */
   public static listAgentInContextMessages(
-    data: ListAgentInContextMessagesData
+    data: ListAgentInContextMessagesData,
+    headers?: { user_id: string }
   ): CancelablePromise<ListAgentInContextMessagesResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -652,6 +704,7 @@ export class AgentsService {
       errors: {
         422: 'Validation Error',
       },
+      headers,
     });
   }
 
@@ -665,7 +718,8 @@ export class AgentsService {
    * @throws ApiError
    */
   public static getAgentMemory(
-    data: GetAgentMemoryData
+    data: GetAgentMemoryData,
+    headers?: { user_id: string }
   ): CancelablePromise<GetAgentMemoryResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -676,6 +730,7 @@ export class AgentsService {
       errors: {
         422: 'Validation Error',
       },
+      headers,
     });
   }
 
@@ -690,7 +745,8 @@ export class AgentsService {
    * @throws ApiError
    */
   public static updateAgentMemory(
-    data: UpdateAgentMemoryData
+    data: UpdateAgentMemoryData,
+    headers?: { user_id: string }
   ): CancelablePromise<UpdateAgentMemoryResponse> {
     return __request(OpenAPI, {
       method: 'PATCH',
@@ -703,6 +759,7 @@ export class AgentsService {
       errors: {
         422: 'Validation Error',
       },
+      headers,
     });
   }
 
@@ -715,7 +772,8 @@ export class AgentsService {
    * @throws ApiError
    */
   public static getAgentRecallMemorySummary(
-    data: GetAgentRecallMemorySummaryData
+    data: GetAgentRecallMemorySummaryData,
+    headers?: { user_id: string }
   ): CancelablePromise<GetAgentRecallMemorySummaryResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -726,6 +784,7 @@ export class AgentsService {
       errors: {
         422: 'Validation Error',
       },
+      headers,
     });
   }
 
@@ -738,7 +797,8 @@ export class AgentsService {
    * @throws ApiError
    */
   public static getAgentArchivalMemorySummary(
-    data: GetAgentArchivalMemorySummaryData
+    data: GetAgentArchivalMemorySummaryData,
+    headers?: { user_id: string }
   ): CancelablePromise<GetAgentArchivalMemorySummaryResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -749,6 +809,7 @@ export class AgentsService {
       errors: {
         422: 'Validation Error',
       },
+      headers,
     });
   }
 
@@ -764,7 +825,8 @@ export class AgentsService {
    * @throws ApiError
    */
   public static listAgentArchivalMemory(
-    data: ListAgentArchivalMemoryData
+    data: ListAgentArchivalMemoryData,
+    headers?: { user_id: string }
   ): CancelablePromise<ListAgentArchivalMemoryResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -780,6 +842,7 @@ export class AgentsService {
       errors: {
         422: 'Validation Error',
       },
+      headers,
     });
   }
 
@@ -793,7 +856,8 @@ export class AgentsService {
    * @throws ApiError
    */
   public static createAgentArchivalMemory(
-    data: CreateAgentArchivalMemoryData
+    data: CreateAgentArchivalMemoryData,
+    headers?: { user_id: string }
   ): CancelablePromise<CreateAgentArchivalMemoryResponse> {
     return __request(OpenAPI, {
       method: 'POST',
@@ -806,6 +870,7 @@ export class AgentsService {
       errors: {
         422: 'Validation Error',
       },
+      headers,
     });
   }
 
@@ -819,7 +884,8 @@ export class AgentsService {
    * @throws ApiError
    */
   public static deleteAgentArchivalMemory(
-    data: DeleteAgentArchivalMemoryData
+    data: DeleteAgentArchivalMemoryData,
+    headers?: { user_id: string }
   ): CancelablePromise<DeleteAgentArchivalMemoryResponse> {
     return __request(OpenAPI, {
       method: 'DELETE',
@@ -831,6 +897,7 @@ export class AgentsService {
       errors: {
         422: 'Validation Error',
       },
+      headers,
     });
   }
 
@@ -846,7 +913,8 @@ export class AgentsService {
    * @throws ApiError
    */
   public static listAgentMessages(
-    data: ListAgentMessagesData
+    data: ListAgentMessagesData,
+    headers?: { user_id: string }
   ): CancelablePromise<ListAgentMessagesResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -862,6 +930,7 @@ export class AgentsService {
       errors: {
         422: 'Validation Error',
       },
+      headers,
     });
   }
 
@@ -877,7 +946,8 @@ export class AgentsService {
    * @throws ApiError
    */
   public static createAgentMessage(
-    data: CreateAgentMessageData
+    data: CreateAgentMessageData,
+    headers?: { user_id: string }
   ): CancelablePromise<CreateAgentMessageResponse> {
     return __request(OpenAPI, {
       method: 'POST',
@@ -890,6 +960,7 @@ export class AgentsService {
       errors: {
         422: 'Validation Error',
       },
+      headers,
     });
   }
 
@@ -904,7 +975,8 @@ export class AgentsService {
    * @throws ApiError
    */
   public static updateAgentMessage(
-    data: UpdateAgentMessageData
+    data: UpdateAgentMessageData,
+    headers?: { user_id: string }
   ): CancelablePromise<UpdateAgentMessageResponse> {
     return __request(OpenAPI, {
       method: 'PATCH',
@@ -918,6 +990,7 @@ export class AgentsService {
       errors: {
         422: 'Validation Error',
       },
+      headers,
     });
   }
 }
@@ -928,10 +1001,13 @@ export class ModelsService {
    * @returns LLMConfig Successful Response
    * @throws ApiError
    */
-  public static listModels(): CancelablePromise<ListModelsResponse> {
+  public static listModels(headers?: {
+    user_id: string;
+  }): CancelablePromise<ListModelsResponse> {
     return __request(OpenAPI, {
       method: 'GET',
       url: '/v1/models/',
+      headers,
     });
   }
 
@@ -940,10 +1016,13 @@ export class ModelsService {
    * @returns EmbeddingConfig Successful Response
    * @throws ApiError
    */
-  public static listEmbeddingModels(): CancelablePromise<ListEmbeddingModelsResponse> {
+  public static listEmbeddingModels(headers?: {
+    user_id: string;
+  }): CancelablePromise<ListEmbeddingModelsResponse> {
     return __request(OpenAPI, {
       method: 'GET',
       url: '/v1/models/embedding',
+      headers,
     });
   }
 }
@@ -954,10 +1033,13 @@ export class LlmsService {
    * @returns LLMConfig Successful Response
    * @throws ApiError
    */
-  public static listModels(): CancelablePromise<ListModelsResponse> {
+  public static listModels(headers?: {
+    user_id: string;
+  }): CancelablePromise<ListModelsResponse> {
     return __request(OpenAPI, {
       method: 'GET',
       url: '/v1/models/',
+      headers,
     });
   }
 
@@ -966,10 +1048,13 @@ export class LlmsService {
    * @returns EmbeddingConfig Successful Response
    * @throws ApiError
    */
-  public static listEmbeddingModels(): CancelablePromise<ListEmbeddingModelsResponse> {
+  public static listEmbeddingModels(headers?: {
+    user_id: string;
+  }): CancelablePromise<ListEmbeddingModelsResponse> {
     return __request(OpenAPI, {
       method: 'GET',
       url: '/v1/models/embedding',
+      headers,
     });
   }
 }
@@ -985,7 +1070,8 @@ export class BlocksService {
    * @throws ApiError
    */
   public static listMemoryBlocks(
-    data: ListMemoryBlocksData = {}
+    data: ListMemoryBlocksData = {},
+    headers?: { user_id: string }
   ): CancelablePromise<ListMemoryBlocksResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -998,6 +1084,7 @@ export class BlocksService {
       errors: {
         422: 'Validation Error',
       },
+      headers,
     });
   }
 
@@ -1009,7 +1096,8 @@ export class BlocksService {
    * @throws ApiError
    */
   public static createMemoryBlock(
-    data: CreateMemoryBlockData
+    data: CreateMemoryBlockData,
+    headers?: { user_id: string }
   ): CancelablePromise<CreateMemoryBlockResponse> {
     return __request(OpenAPI, {
       method: 'POST',
@@ -1019,6 +1107,7 @@ export class BlocksService {
       errors: {
         422: 'Validation Error',
       },
+      headers,
     });
   }
 
@@ -1031,7 +1120,8 @@ export class BlocksService {
    * @throws ApiError
    */
   public static updateMemoryBlock(
-    data: UpdateMemoryBlockData
+    data: UpdateMemoryBlockData,
+    headers?: { user_id: string }
   ): CancelablePromise<UpdateMemoryBlockResponse> {
     return __request(OpenAPI, {
       method: 'PATCH',
@@ -1044,6 +1134,7 @@ export class BlocksService {
       errors: {
         422: 'Validation Error',
       },
+      headers,
     });
   }
 
@@ -1055,7 +1146,8 @@ export class BlocksService {
    * @throws ApiError
    */
   public static deleteMemoryBlock(
-    data: DeleteMemoryBlockData
+    data: DeleteMemoryBlockData,
+    headers?: { user_id: string }
   ): CancelablePromise<DeleteMemoryBlockResponse> {
     return __request(OpenAPI, {
       method: 'DELETE',
@@ -1066,6 +1158,7 @@ export class BlocksService {
       errors: {
         422: 'Validation Error',
       },
+      headers,
     });
   }
 
@@ -1077,7 +1170,8 @@ export class BlocksService {
    * @throws ApiError
    */
   public static getMemoryBlock(
-    data: GetMemoryBlockData
+    data: GetMemoryBlockData,
+    headers?: { user_id: string }
   ): CancelablePromise<GetMemoryBlockResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -1088,6 +1182,7 @@ export class BlocksService {
       errors: {
         422: 'Validation Error',
       },
+      headers,
     });
   }
 }
@@ -1102,7 +1197,8 @@ export class JobsService {
    * @throws ApiError
    */
   public static listJobs(
-    data: ListJobsData = {}
+    data: ListJobsData = {},
+    headers?: { user_id: string }
   ): CancelablePromise<ListJobsResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -1113,6 +1209,7 @@ export class JobsService {
       errors: {
         422: 'Validation Error',
       },
+      headers,
     });
   }
 
@@ -1122,10 +1219,13 @@ export class JobsService {
    * @returns Job Successful Response
    * @throws ApiError
    */
-  public static listActiveJobs(): CancelablePromise<ListActiveJobsResponse> {
+  public static listActiveJobs(headers?: {
+    user_id: string;
+  }): CancelablePromise<ListActiveJobsResponse> {
     return __request(OpenAPI, {
       method: 'GET',
       url: '/v1/jobs/active',
+      headers,
     });
   }
 
@@ -1137,7 +1237,10 @@ export class JobsService {
    * @returns Job Successful Response
    * @throws ApiError
    */
-  public static getJob(data: GetJobData): CancelablePromise<GetJobResponse> {
+  public static getJob(
+    data: GetJobData,
+    headers?: { user_id: string }
+  ): CancelablePromise<GetJobResponse> {
     return __request(OpenAPI, {
       method: 'GET',
       url: '/v1/jobs/{job_id}',
@@ -1147,6 +1250,7 @@ export class JobsService {
       errors: {
         422: 'Validation Error',
       },
+      headers,
     });
   }
 }
@@ -1162,7 +1266,8 @@ export class UsersService {
    * @throws ApiError
    */
   public static listUsers(
-    data: ListUsersData = {}
+    data: ListUsersData = {},
+    headers?: { user_id: string }
   ): CancelablePromise<ListUsersResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -1174,6 +1279,7 @@ export class UsersService {
       errors: {
         422: 'Validation Error',
       },
+      headers,
     });
   }
 
@@ -1186,7 +1292,8 @@ export class UsersService {
    * @throws ApiError
    */
   public static createUser(
-    data: CreateUserData
+    data: CreateUserData,
+    headers?: { user_id: string }
   ): CancelablePromise<CreateUserResponse> {
     return __request(OpenAPI, {
       method: 'POST',
@@ -1196,6 +1303,7 @@ export class UsersService {
       errors: {
         422: 'Validation Error',
       },
+      headers,
     });
   }
 
@@ -1207,7 +1315,8 @@ export class UsersService {
    * @throws ApiError
    */
   public static deleteUser(
-    data: DeleteUserData
+    data: DeleteUserData,
+    headers?: { user_id: string }
   ): CancelablePromise<DeleteUserResponse> {
     return __request(OpenAPI, {
       method: 'DELETE',
@@ -1218,6 +1327,7 @@ export class UsersService {
       errors: {
         422: 'Validation Error',
       },
+      headers,
     });
   }
 
@@ -1230,7 +1340,8 @@ export class UsersService {
    * @throws ApiError
    */
   public static createApiKey(
-    data: CreateApiKeyData
+    data: CreateApiKeyData,
+    headers?: { user_id: string }
   ): CancelablePromise<CreateApiKeyResponse> {
     return __request(OpenAPI, {
       method: 'POST',
@@ -1240,6 +1351,7 @@ export class UsersService {
       errors: {
         422: 'Validation Error',
       },
+      headers,
     });
   }
 
@@ -1252,7 +1364,8 @@ export class UsersService {
    * @throws ApiError
    */
   public static listApiKeys(
-    data: ListApiKeysData
+    data: ListApiKeysData,
+    headers?: { user_id: string }
   ): CancelablePromise<ListApiKeysResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -1263,6 +1376,7 @@ export class UsersService {
       errors: {
         422: 'Validation Error',
       },
+      headers,
     });
   }
 
@@ -1274,7 +1388,8 @@ export class UsersService {
    * @throws ApiError
    */
   public static deleteApiKey(
-    data: DeleteApiKeyData
+    data: DeleteApiKeyData,
+    headers?: { user_id: string }
   ): CancelablePromise<DeleteApiKeyResponse> {
     return __request(OpenAPI, {
       method: 'DELETE',
@@ -1285,6 +1400,7 @@ export class UsersService {
       errors: {
         422: 'Validation Error',
       },
+      headers,
     });
   }
 }
@@ -1300,7 +1416,8 @@ export class AdminService {
    * @throws ApiError
    */
   public static listUsers(
-    data: ListUsersData = {}
+    data: ListUsersData = {},
+    headers?: { user_id: string }
   ): CancelablePromise<ListUsersResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -1312,6 +1429,7 @@ export class AdminService {
       errors: {
         422: 'Validation Error',
       },
+      headers,
     });
   }
 
@@ -1324,7 +1442,8 @@ export class AdminService {
    * @throws ApiError
    */
   public static createUser(
-    data: CreateUserData
+    data: CreateUserData,
+    headers?: { user_id: string }
   ): CancelablePromise<CreateUserResponse> {
     return __request(OpenAPI, {
       method: 'POST',
@@ -1334,6 +1453,7 @@ export class AdminService {
       errors: {
         422: 'Validation Error',
       },
+      headers,
     });
   }
 
@@ -1345,7 +1465,8 @@ export class AdminService {
    * @throws ApiError
    */
   public static deleteUser(
-    data: DeleteUserData
+    data: DeleteUserData,
+    headers?: { user_id: string }
   ): CancelablePromise<DeleteUserResponse> {
     return __request(OpenAPI, {
       method: 'DELETE',
@@ -1356,6 +1477,7 @@ export class AdminService {
       errors: {
         422: 'Validation Error',
       },
+      headers,
     });
   }
 
@@ -1368,7 +1490,8 @@ export class AdminService {
    * @throws ApiError
    */
   public static createApiKey(
-    data: CreateApiKeyData
+    data: CreateApiKeyData,
+    headers?: { user_id: string }
   ): CancelablePromise<CreateApiKeyResponse> {
     return __request(OpenAPI, {
       method: 'POST',
@@ -1378,6 +1501,7 @@ export class AdminService {
       errors: {
         422: 'Validation Error',
       },
+      headers,
     });
   }
 
@@ -1390,7 +1514,8 @@ export class AdminService {
    * @throws ApiError
    */
   public static listApiKeys(
-    data: ListApiKeysData
+    data: ListApiKeysData,
+    headers?: { user_id: string }
   ): CancelablePromise<ListApiKeysResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -1401,6 +1526,7 @@ export class AdminService {
       errors: {
         422: 'Validation Error',
       },
+      headers,
     });
   }
 
@@ -1412,7 +1538,8 @@ export class AdminService {
    * @throws ApiError
    */
   public static deleteApiKey(
-    data: DeleteApiKeyData
+    data: DeleteApiKeyData,
+    headers?: { user_id: string }
   ): CancelablePromise<DeleteApiKeyResponse> {
     return __request(OpenAPI, {
       method: 'DELETE',
@@ -1423,6 +1550,7 @@ export class AdminService {
       errors: {
         422: 'Validation Error',
       },
+      headers,
     });
   }
 
@@ -1436,7 +1564,8 @@ export class AdminService {
    * @throws ApiError
    */
   public static listOrgs(
-    data: ListOrgsData = {}
+    data: ListOrgsData = {},
+    headers?: { user_id: string }
   ): CancelablePromise<ListOrgsResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -1448,6 +1577,7 @@ export class AdminService {
       errors: {
         422: 'Validation Error',
       },
+      headers,
     });
   }
 
@@ -1460,7 +1590,8 @@ export class AdminService {
    * @throws ApiError
    */
   public static createOrganization(
-    data: CreateOrganizationData
+    data: CreateOrganizationData,
+    headers?: { user_id: string }
   ): CancelablePromise<CreateOrganizationResponse> {
     return __request(OpenAPI, {
       method: 'POST',
@@ -1470,6 +1601,7 @@ export class AdminService {
       errors: {
         422: 'Validation Error',
       },
+      headers,
     });
   }
 
@@ -1481,7 +1613,8 @@ export class AdminService {
    * @throws ApiError
    */
   public static deleteOrganization(
-    data: DeleteOrganizationData
+    data: DeleteOrganizationData,
+    headers?: { user_id: string }
   ): CancelablePromise<DeleteOrganizationResponse> {
     return __request(OpenAPI, {
       method: 'DELETE',
@@ -1492,6 +1625,7 @@ export class AdminService {
       errors: {
         422: 'Validation Error',
       },
+      headers,
     });
   }
 }
@@ -1507,7 +1641,8 @@ export class OrganizationService {
    * @throws ApiError
    */
   public static listOrgs(
-    data: ListOrgsData = {}
+    data: ListOrgsData = {},
+    headers?: { user_id: string }
   ): CancelablePromise<ListOrgsResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -1519,6 +1654,7 @@ export class OrganizationService {
       errors: {
         422: 'Validation Error',
       },
+      headers,
     });
   }
 
@@ -1531,7 +1667,8 @@ export class OrganizationService {
    * @throws ApiError
    */
   public static createOrganization(
-    data: CreateOrganizationData
+    data: CreateOrganizationData,
+    headers?: { user_id: string }
   ): CancelablePromise<CreateOrganizationResponse> {
     return __request(OpenAPI, {
       method: 'POST',
@@ -1541,6 +1678,7 @@ export class OrganizationService {
       errors: {
         422: 'Validation Error',
       },
+      headers,
     });
   }
 
@@ -1552,7 +1690,8 @@ export class OrganizationService {
    * @throws ApiError
    */
   public static deleteOrganization(
-    data: DeleteOrganizationData
+    data: DeleteOrganizationData,
+    headers?: { user_id: string }
   ): CancelablePromise<DeleteOrganizationResponse> {
     return __request(OpenAPI, {
       method: 'DELETE',
@@ -1563,6 +1702,7 @@ export class OrganizationService {
       errors: {
         422: 'Validation Error',
       },
+      headers,
     });
   }
 }
@@ -1579,7 +1719,8 @@ export class AuthService {
    * @throws ApiError
    */
   public static authenticateUserV1AuthPost(
-    data: AuthenticateUserV1AuthPostData
+    data: AuthenticateUserV1AuthPostData,
+    headers?: { user_id: string }
   ): CancelablePromise<AuthenticateUserV1AuthPostResponse> {
     return __request(OpenAPI, {
       method: 'POST',
@@ -1589,6 +1730,7 @@ export class AuthService {
       errors: {
         422: 'Validation Error',
       },
+      headers,
     });
   }
 }

@@ -142,9 +142,6 @@
                           "id": {
                             "type": "string"
                           },
-                          "sdkId": {
-                            "type": "string"
-                          },
                           "uniqueIdentifier": {
                             "type": "string"
                           },
@@ -157,7 +154,6 @@
                         },
                         "required": [
                           "id",
-                          "sdkId",
                           "uniqueIdentifier",
                           "deployedAgentTemplateKey",
                           "createdAt"
@@ -397,58 +393,6 @@
                     }
                   },
                   "required": ["messages"]
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "404",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "message": {
-                      "type": "string",
-                      "enum": ["Agent not found"]
-                    }
-                  },
-                  "required": ["message"]
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/deployment/agents/{agentDeploymentId}/sdk-id": {
-      "get": {
-        "summary": "Get deployed agent SDK ID",
-        "tags": ["deployment"],
-        "parameters": [
-          {
-            "name": "agentDeploymentId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "operationId": "deployment.getDeployedAgentSdkId",
-        "responses": {
-          "200": {
-            "description": "200",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "sdkId": {
-                      "type": "string"
-                    }
-                  },
-                  "required": ["sdkId"]
                 }
               }
             }

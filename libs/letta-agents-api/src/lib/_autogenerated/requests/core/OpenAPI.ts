@@ -41,12 +41,9 @@ export type OpenAPIConfig = {
 };
 
 export const OpenAPI: OpenAPIConfig = {
-  BASE: process.env.LETTA_AGENTS_ENDPOINT || '',
   CREDENTIALS: 'include',
   ENCODE_PATH: undefined,
-  HEADERS: {
-    Authorization: `Bearer password`,
-  },
+  HEADERS: undefined,
   PASSWORD: undefined,
   TOKEN: undefined,
   USERNAME: undefined,
@@ -56,4 +53,5 @@ export const OpenAPI: OpenAPIConfig = {
     request: new Interceptors(),
     response: new Interceptors(),
   },
+  BASE: process.env.LETTA_AGENTS_ENDPOINT || '',
 };
