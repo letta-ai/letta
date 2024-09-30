@@ -258,6 +258,7 @@ async function createUserAndOrganization(
     {
       request: {
         userId: createdUser.userId,
+        lettaAgentsUserId: lettaAgentsUser.id,
         organizationId,
       },
     }

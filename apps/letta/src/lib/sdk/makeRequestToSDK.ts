@@ -1,38 +1,28 @@
-import type { NextRequest } from 'next/server';
 import { EventSource } from 'extended-eventsource';
 import { environment } from '@letta-web/environmental-variables';
 import axios, { isAxiosError } from 'axios';
 import { RESTRICTED_ROUTE_BASE_PATHS } from '@letta-web/letta-agents-api';
-import { db, agentTemplates } from '@letta-web/database';
-import { eq } from 'drizzle-orm';
 
-export interface HandlerContext {
-  params: {
-    route: string[];
-  };
+interface RequestOptions {
+  pathname: string;
+  query: URLSearchParams;
+  headers: Headers;
+  method: string;
+  body: any;
+  formData?: FormData;
+  signal: AbortSignal;
+  lettaAgentsUserId: string;
 }
 
-async function handleEventStreamRequest(
-  req: NextRequest,
-  context: HandlerContext,
-  userId: string
-) {
+async function handleEventStreamRequest(options: RequestOptions) {
+  const { pathname, method, body, signal, lettaAgentsUserId } = options;
   const responseStream = new TransformStream();
   const writer = responseStream.writable.getWriter();
-  const path = context.params.route.join('/');
 
   let closed = false;
 
-  let payload = undefined;
-
-  try {
-    payload = await req.json();
-  } catch (_err) {
-    payload = undefined;
-  }
-
   // Close if client disconnects
-  req.signal.onabort = () => {
+  signal.onabort = () => {
     if (closed) {
       return;
     }
@@ -43,17 +33,17 @@ async function handleEventStreamRequest(
   setImmediate(async () => {
     try {
       const eventsource = new EventSource(
-        `${environment.LETTA_AGENTS_ENDPOINT}/${path}`,
+        `${environment.LETTA_AGENTS_ENDPOINT}${pathname}`,
         {
-          method: req.method,
+          method: method,
           disableRetry: true,
           keepalive: false,
           headers: {
-            user_id: userId,
+            user_id: lettaAgentsUserId,
             'Content-Type': 'application/json',
             Accept: 'text/event-stream',
           },
-          body: payload ? JSON.stringify(payload) : undefined,
+          body: body ? JSON.stringify(body) : undefined,
         }
       );
 
@@ -103,22 +93,15 @@ async function handleEventStreamRequest(
   });
 }
 
-async function handleMultipartFileUpload(
-  req: NextRequest,
-  context: HandlerContext,
-  userId: string
-) {
-  // get file from multipart/form-data
-  const formData = await req.formData();
-
-  const path = context.params.route.join('/');
+async function handleMultipartFileUpload(options: RequestOptions) {
+  const { pathname, method, lettaAgentsUserId, formData } = options;
 
   const response = await axios({
-    method: req.method,
-    url: `${environment.LETTA_AGENTS_ENDPOINT}/${path}`,
+    method: method,
+    url: `${environment.LETTA_AGENTS_ENDPOINT}${pathname}`,
     data: formData,
     headers: {
-      user_id: userId,
+      user_id: lettaAgentsUserId,
     },
     validateStatus: () => true,
   });
@@ -129,20 +112,13 @@ async function handleMultipartFileUpload(
     data = JSON.stringify(data);
   }
 
-  return new Response(data, {
-    status: response.status,
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  });
+  return data;
 }
 
 export async function makeRequestToSDK(
-  req: NextRequest,
-  context: HandlerContext,
-  userId: string
-) {
-  const pathname = req.nextUrl.pathname;
+  options: RequestOptions
+): Promise<Response> {
+  const { pathname, query, headers, method, body, lettaAgentsUserId } = options;
 
   if (
     RESTRICTED_ROUTE_BASE_PATHS.some((restrictedPath) =>
@@ -157,55 +133,29 @@ export async function makeRequestToSDK(
     });
   }
 
-  if (req.headers.get('Accept') === 'text/event-stream') {
-    return handleEventStreamRequest(req, context, userId);
+  if (headers.get('Accept') === 'text/event-stream') {
+    return handleEventStreamRequest(options);
   }
 
-  if (req.headers.get('Content-Type')?.startsWith('multipart/form-data')) {
-    return handleMultipartFileUpload(req, context, userId);
+  if (headers.get('Content-Type')?.startsWith('multipart/form-data')) {
+    return handleMultipartFileUpload(options);
   }
 
-  const path = context.params.route.join('/');
-
-  let payload = undefined;
-
-  const queryParameters = req.nextUrl.searchParams.toString();
-
-  try {
-    payload = await req.json();
-  } catch (_err) {
-    // do nothing
-  }
+  const queryParam = new URLSearchParams(query);
 
   try {
     const response = await axios({
-      method: req.method,
-      url: `${environment.LETTA_AGENTS_ENDPOINT}/${path}?${queryParameters}`,
-      data: payload,
+      method: method,
+      url: `${
+        environment.LETTA_AGENTS_ENDPOINT
+      }${pathname}?${queryParam.toString()}`,
+      data: body,
       headers: {
-        user_id: userId,
+        user_id: lettaAgentsUserId,
       },
     });
 
     let data = response.data;
-
-    if (
-      response.status === 200 &&
-      ['PATCH', 'POST', 'DELETE'].includes(req.method)
-    ) {
-      // hack to update the updatedAt field if user does anything with agents
-      if (
-        path.includes('agents') &&
-        Object.prototype.hasOwnProperty.call(payload, 'agentId')
-      ) {
-        void db
-          .update(agentTemplates)
-          .set({
-            updatedAt: new Date(),
-          })
-          .where(eq(agentTemplates.id, payload.agentId));
-      }
-    }
 
     if (typeof data === 'object') {
       data = JSON.stringify(data);

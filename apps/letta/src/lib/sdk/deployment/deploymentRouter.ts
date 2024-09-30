@@ -28,7 +28,7 @@ export async function createAgent(
   context: AuthedRequestType
 ): Promise<CreateAgentResponseType> {
   const { deployedAgentTemplateKey, uniqueIdentifier } = req.body;
-  const { organizationId, userId } = context.request;
+  const { organizationId, lettaAgentsUserId } = context.request;
 
   if (uniqueIdentifier) {
     const alreadyExists = await db.query.deployedAgents.findFirst({
@@ -72,7 +72,7 @@ export async function createAgent(
   const copiedAgent = await copyAgentById(
     deployedAgentTemplate.id,
     crypto.randomUUID(),
-    userId
+    lettaAgentsUserId
   );
 
   const lastDeployedAgent = await db.query.deployedAgents.findFirst({
