@@ -106,3 +106,39 @@ just list
 ```
 
 Note: Make sure you have Just installed and properly configured before running these commands.
+
+## CI/CD
+
+This project uses Google Cloud Platform (GCP) Cloud Build for continuous integration and continuous deployment (CI/CD). The process is triggered automatically whenever there's a push to the `main` branch.
+
+### CI/CD Process
+
+1. The `letta-web` Cloud Build trigger in GCP is activated on push to `main`. The trigger configuration can be found [here](https://console.cloud.google.com/cloud-build/triggers;region=global/edit/26a2eba3-b710-4b17-810c-02cfb0f9a115?project=memgpt-428419).
+2. Cloud Build executes the steps defined in the `cloudbuild.yaml` file:
+   - Installs necessary tools (gcloud, kubectl, npx, just, gke-gcloud-auth-plugin, helm)
+   - Configures Docker and kubectl
+   - Builds Docker images using the `just build` command
+   - Deploys the application using the `just deploy` command
+3. The deployment process includes:
+   - Pushing Docker images to the GCP Container Registry
+   - Updating the Kubernetes deployment using Helm
+
+### Environment Variables
+
+Environment variables are defined in the Cloud Build trigger configuration. These variables are then mapped to the build process via the `cloudbuild.yaml` file. Here's how it works:
+
+1. In the Cloud Build trigger configuration, environment variables are defined with names like `_DATABASE_URL`, `_GOOGLE_CLIENT_ID`, etc.
+2. In the `cloudbuild.yaml` file, these variables are mapped to the build environment using the `options` section:
+
+```yaml
+options:
+  env:
+    'PROJECT_ID=$PROJECT_ID'
+    'DOCKER_REGISTRY=${REGION}-docker.pkg.dev/${PROJECT_ID}/${_REGISTRY_NAME}'
+    'TAG=$COMMIT_SHA'
+    'DATABASE_URL=${DATABASE_URL}'
+    'GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}'
+```
+
+
+3. These environment variables are then available during the build process and can be used in the `just` commands or passed to the Helm chart during deployment.
