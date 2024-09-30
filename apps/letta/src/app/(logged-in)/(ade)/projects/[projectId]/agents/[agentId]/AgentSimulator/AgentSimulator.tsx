@@ -77,30 +77,27 @@ function useSendMessage() {
 
       abortController.current = new AbortController();
 
-      const eventsource = new EventSource(
-        `/letta-agents-api/v1/agents/${id}/messages`,
-        {
-          withCredentials: true,
-          method: 'POST',
-          disableRetry: true,
-          keepalive: false,
-          headers: {
-            'Content-Type': 'application/json',
-            Accept: 'text/event-stream',
-          },
-          body: JSON.stringify({
-            stream_steps: true,
-            stream_tokens: true,
-            messages: [
-              {
-                role: 'user',
-                text: message,
-                name: '',
-              },
-            ],
-          }),
-        }
-      );
+      const eventsource = new EventSource(`/v1/agents/${id}/messages`, {
+        withCredentials: true,
+        method: 'POST',
+        disableRetry: true,
+        keepalive: false,
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'text/event-stream',
+        },
+        body: JSON.stringify({
+          stream_steps: true,
+          stream_tokens: true,
+          messages: [
+            {
+              role: 'user',
+              text: message,
+              name: '',
+            },
+          ],
+        }),
+      });
 
       eventsource.onmessage = (e: MessageEvent) => {
         if (abortController.current?.signal.aborted) {
@@ -321,7 +318,7 @@ function Chatroom() {
   const { id: agentId } = useCurrentAgent();
 
   return (
-    <VStack fullHeight gap={false} fullWidth>
+    <VStack collapseHeight gap={false} fullWidth>
       <VStack gap="large" collapseHeight>
         <Messages
           isPanelActive

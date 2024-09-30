@@ -33,9 +33,13 @@ describe('letta', () => {
     cy.location('pathname').should('match', /\/projects\/(.+)\/agents\/(.+)/);
 
     // update core memory
-    cy.findByTestId('ade-navigate-to:Memory Blocks').click();
+    cy.findByTestId('ade-navigate-to:Memory Blocks').then(($btn) => {
+      if (!$btn.hasClass('active-ade-nav')) {
+        $btn.click();
+      }
+    });
 
-    cy.findByTestId('edit-memory-block-0').click();
+    cy.findByTestId('edit-memory-block-0', { timeout: 10000 }).click();
 
     cy.findByTestId('edit-memory-block-content').type(
       'They also want to be referred to as BananaMan, make sure to always call them that in every response.'
@@ -47,16 +51,26 @@ describe('letta', () => {
     cy.findByTestId('ade-navigate-to:Memory Blocks').click();
 
     // simulate a conversation
-    cy.findByTestId('ade-navigate-to:Chat Simulator').click();
+
+    cy.findByTestId('ade-navigate-to:Simulator').then(($btn) => {
+      if (!$btn.hasClass('active-ade-nav')) {
+        $btn.click();
+      }
+    });
 
     cy.findByTestId('chat-simulator-input').type('What is my name');
 
     cy.findByTestId('chat-simulator-send').click();
 
-    cy.findByTestId('messages-list').contains('BananaMan');
+    cy.findByTestId('messages-list').contains('BananaMan', { timeout: 10000 });
 
     // stage the agent
-    cy.findByTestId('open-deployment-manager').click();
+
+    cy.findByTestId('ade-navigate-to:Template Version Manager').then(($btn) => {
+      if (!$btn.hasClass('active-ade-nav')) {
+        $btn.click();
+      }
+    });
 
     cy.findByTestId('stage-new-version-button').click();
 
@@ -72,17 +86,15 @@ describe('letta', () => {
     cy.findByTestId('show-api-key-switch').click();
 
     // Get text
-    cy.findByTestId('deploy-agent-instructions-raw-code')
+    cy.get('[data-testid="deploy-agent-instructions-raw-code"]')
       .invoke('text')
       .then((text) => {
         cy.exec(text);
       });
 
-    cy.findByTestId('chat-with-agent-instructions-raw-code', {
+    cy.get('[data-testid="chat-with-agent-instructions-raw-code"]', {
       timeout: 10000,
-    }).should('exist');
-
-    cy.findByTestId('chat-with-agent-instructions-raw-code')
+    })
       .invoke('text')
       .then((text) => {
         const textToSubmit = text

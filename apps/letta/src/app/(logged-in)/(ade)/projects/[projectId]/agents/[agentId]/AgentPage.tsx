@@ -218,7 +218,7 @@ function OpenDeploymentManagerPanel() {
         tooltipPlacement="bottom"
         size="small"
         color="tertiary"
-        label="Deployment Manager"
+        label="Template Version Manager"
       ></Button>
     </PanelOpener>
   );

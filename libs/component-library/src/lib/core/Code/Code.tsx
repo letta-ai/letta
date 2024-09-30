@@ -112,12 +112,7 @@ export function Code(props: CodeProps) {
       fullHeight={fullHeight}
       fullWidth
     >
-      <div
-        className="opacity-0 w-[0px] h-[0px] fixed z-[-1] pointer-events-none overflow-hidden"
-        tabIndex={-1}
-        role="presentation"
-        data-testid={`${testId}-raw-code`}
-      >
+      <div className="hidden" data-testid={`${testId}-raw-code`}>
         {code}
       </div>
       {toolbarPosition === 'top' && toolbar}

@@ -51,7 +51,7 @@ function StageAndDeployDialog() {
       isOpen={open}
       testId="stage-agent-dialog"
       title="Are you sure you want to version your agent?"
-      onSubmit={handleVersionNewAgent}
+      onConfirm={handleVersionNewAgent}
       isConfirmBusy={isPending}
       trigger={
         <Button
@@ -162,7 +162,7 @@ export function DeploymentAgentMangerPanel() {
   }, [data]);
 
   return (
-    <VStack gap={false}>
+    <VStack fullHeight gap={false}>
       <PanelBar
         searchValue={searchValue}
         onSearch={setSearchValue}
@@ -201,7 +201,7 @@ export function DeploymentAgentMangerPanel() {
 }
 
 export const deploymentPanelTemplate = {
-  title: 'Deployment',
+  title: 'Version Manager',
   data: z.undefined(),
   content: DeploymentAgentMangerPanel,
   templateId: 'deployment',

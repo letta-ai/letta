@@ -647,3 +647,10 @@ export async function listAgents(
     body: allAgentsDetails,
   };
 }
+
+export const agentsRouter = {
+  createAgent,
+  versionAgentTemplate,
+  migrateAgent,
+  listAgents,
+};

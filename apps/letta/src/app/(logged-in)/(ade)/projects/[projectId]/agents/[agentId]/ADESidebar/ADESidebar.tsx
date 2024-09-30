@@ -14,6 +14,7 @@ import { cn } from '@letta-web/core-style-config';
 import { Slot } from '@radix-ui/react-slot';
 import {
   BotIcon,
+  BoxesIcon,
   BrainIcon,
   BrickWallIcon,
   DatabaseIcon,
@@ -184,6 +185,15 @@ function AgentPageSidebar() {
             templateId="archival-memories"
             data={{}}
             id="archival-memories"
+          />
+        </SidebarGroup>
+        <SidebarGroup title="Distribute">
+          <AgentPanelSidebarItem
+            label="Template Version Manager"
+            icon={<BoxesIcon />}
+            templateId="deployment"
+            data={undefined}
+            id="deployment"
           />
         </SidebarGroup>
       </VStack>

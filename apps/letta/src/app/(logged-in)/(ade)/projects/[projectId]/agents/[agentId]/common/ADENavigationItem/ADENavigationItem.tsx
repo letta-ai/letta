@@ -30,12 +30,13 @@ export function ADENavigationItem(props: NavigationItemProps) {
           data-testid={`ade-navigate-to:${title}`}
           paddingX="small"
           as="button"
+          aria-checked={active}
           rounded
           onClick={onClick}
           className={cn(
             'hover:bg-background-grey-hover cursor-pointer h-[37px]',
             active
-              ? 'bg-background-black text-background-black-content hover:bg-background-black-hover'
+              ? 'bg-background-black active-ade-nav text-background-black-content hover:bg-background-black-hover'
               : ''
           )}
           color="transparent"

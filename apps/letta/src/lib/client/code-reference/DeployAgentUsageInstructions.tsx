@@ -10,7 +10,6 @@ import {
 } from '@letta-web/component-library';
 import React, { useEffect, useMemo, useState } from 'react';
 import { environment } from '@letta-web/environmental-variables';
-import { sdkContracts } from '$letta/sdk/contracts';
 import {
   ACCESS_TOKEN_PLACEHOLDER,
   CodeWithAPIKeyInjection,
@@ -73,7 +72,7 @@ function DeployAgentInstructionsCurl(props: DeployAgentInstructionsCurlProps) {
           testId="deploy-agent-instructions"
           toolbarPosition="bottom"
           language="bash"
-          code={`curl -X POST ${environment.NEXT_PUBLIC_CURRENT_HOST}${sdkContracts.agents.createAgent.path} \\
+          code={`curl -X POST ${environment.NEXT_PUBLIC_CURRENT_HOST}/v1/agents \\
   -H 'Content-Type: application/json' \\
   -H 'Authorization: Bearer ${ACCESS_TOKEN_PLACEHOLDER}' \\
   -d '{
@@ -85,7 +84,7 @@ function DeployAgentInstructionsCurl(props: DeployAgentInstructionsCurlProps) {
       <Frame paddingY="medium">
         <Code
           language="javascript"
-          code={`{ "agentDeploymentId": "some-id-here" }`}
+          code={`{ \n\t"id": "some-id-here", \n \t...otherAgentData\n }`}
         />
       </Frame>
 
@@ -115,7 +114,8 @@ function DeployAgentInstructionsCurl(props: DeployAgentInstructionsCurlProps) {
   -H 'Content-Type: application/json' \\
   -H 'Authorization: Bearer ${ACCESS_TOKEN_PLACEHOLDER}' \\
   -d '{
-    "messages": [{ "role": "user", "text": "Hello", "name": "" }],",
+    "messages": [{ "role": "user", "text": "Hello", "name": "" }],
+    "stream_steps": true,
     "stream_tokens": true
   }'`}
             />

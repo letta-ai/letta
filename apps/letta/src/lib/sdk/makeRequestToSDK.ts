@@ -157,7 +157,7 @@ export async function makeRequestToSDK(
 
     let data = response.data;
 
-    if (typeof data === 'object') {
+    if (typeof data !== 'string') {
       data = JSON.stringify(data);
     }
 

@@ -3,7 +3,7 @@ import { contracts, queryClientKeys } from '$letta/web-api/contracts';
 import { sdkContracts } from '$letta/sdk/contracts';
 
 export const webOriginSDKApi = initTsrReactQuery(sdkContracts, {
-  baseUrl: '/v1',
+  baseUrl: '',
 });
 
 export const webApi = initTsrReactQuery(contracts, {

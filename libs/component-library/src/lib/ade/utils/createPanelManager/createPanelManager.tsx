@@ -456,9 +456,24 @@ export function createPanelManager<
         const { id, templateId, data } = options;
 
         setState((prevState) => {
-          // if the panelId is already in the panelIdToPositionMap, then the panel is already open
           if (prevState.panelIdToPositionMap[id]) {
-            return prevState;
+            const { positions: nextState, panelIdToPositionMap } =
+              reconcilePositions(prevState.positions);
+
+            // set the panel to active
+            const position = panelIdToPositionMap[id];
+
+            if (!position) {
+              return prevState;
+            }
+
+            const [x, y, tab] = position;
+
+            nextState[x].positions[y].positions.forEach((panel, tabIdx) => {
+              panel.isActive = tabIdx === tab;
+            });
+
+            return reconcilePositions(nextState);
           }
 
           const hasNoTabPanelOpenInFirstXPosition =
@@ -692,7 +707,15 @@ export function createPanelManager<
 
     const getIsPanelIdActive = useCallback(
       (panelId: PanelId) => {
-        return !!state.panelIdToPositionMap[panelId];
+        const positions = state.panelIdToPositionMap[panelId];
+
+        if (!positions) {
+          return false;
+        }
+
+        const [x, y, tab] = positions;
+
+        return state.positions[x].positions[y].positions[tab].isActive;
       },
       [state]
     );
@@ -1122,7 +1145,7 @@ export function createPanelManager<
     return (
       <VStack fullHeight gap={false}>
         <TabBar x={x} y={y} activeTabId={activeTab?.id} tabs={tabs} />
-        <VStack color="background" fullHeight fullWidth>
+        <VStack color="background" flexHeight collapseHeight fullWidth>
           {tabs.map((tab) => {
             const PanelComponent = panelRegistry[tab.templateId].content;
 

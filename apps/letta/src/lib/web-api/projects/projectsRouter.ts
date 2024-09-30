@@ -447,6 +447,7 @@ export async function createProjectAgentTemplate(
     {
       body: {
         name,
+        template: true,
         project_id: projectId,
         memory: recipe.memory,
         tools: recipe.tools,

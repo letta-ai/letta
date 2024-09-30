@@ -17,7 +17,7 @@ import { sdkContracts } from '$letta/sdk/contracts';
 const handler = createNextHandler(sdkContracts, sdkRouter, {
   basePath: '',
   jsonQuery: true,
-  responseValidation: true,
+  responseValidation: false,
   handlerType: 'app-router',
   requestMiddleware: [
     tsr.middleware<RequestMiddlewareType>(async (req) => {
@@ -47,8 +47,6 @@ const handler = createNextHandler(sdkContracts, sdkRouter, {
 
           middlewareData.lettaAgentsUserId = response?.lettaAgentsId || '';
         }
-
-        console.log('a', apiKeyResponse);
       } else {
         const user = await getUser();
 
@@ -66,50 +64,40 @@ const handler = createNextHandler(sdkContracts, sdkRouter, {
         });
       }
 
-      req.content = middlewareData;
+      // req.content = {
+      //   middlewareData,
+      //   ...req.content,
+      // };
       req.organizationId = middlewareData.organizationId;
       req.lettaAgentsUserId = middlewareData.lettaAgentsUserId;
       req.userId = middlewareData.userId;
     }),
   ],
+  // @ts-expect-error - this is a middleware
   errorHandler: async (error, req) => {
     if (error instanceof TsRestHttpError) {
-      let body: object | undefined = undefined;
-      let formData: FormData | undefined = undefined;
       const url = new URL(req.url);
-
-      try {
-        body = await req.json();
-      } catch (_e) {
-        //
-      }
-
-      try {
-        formData = await req.formData();
-      } catch (_e) {
-        //
-      }
 
       const response = await makeRequestToSDK({
         method: req.method,
-        body,
-        formData,
-        lettaAgentsUserId: req.content.lettaAgentsUserId,
+        body: req.content,
+        formData: req.content,
+        // @ts-expect-error - this is a middleware
+        lettaAgentsUserId: req.lettaAgentsUserId,
         headers: req.headers,
         pathname: url.pathname,
         query: url.searchParams,
         signal: req.signal,
       });
 
-      return TsRestResponse.fromText(await response.text(), {
-        status: response.status,
-        headers: response.headers,
-      });
+      return response;
     }
 
     if (isErrorResponse(error)) {
       return TsRestResponse.fromJson(error, { status: error.status || 500 });
     }
+
+    console.log(error);
 
     const errorId = Sentry.captureException(error);
 
