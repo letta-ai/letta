@@ -189,23 +189,6 @@ const getProjectDeployedAgentTemplatesContract = c.query({
   },
 });
 
-/* Deploy Testing Agent */
-const CreateDeployedAgentTemplateFromAgentBodySchema = z.object({
-  agentTemplateId: z.string(),
-});
-
-const createDeployedAgentTemplateFromAgentTemplateContract = c.mutation({
-  method: 'POST',
-  path: '/projects/:projectId/source-agents',
-  pathParams: z.object({
-    projectId: z.string(),
-  }),
-  body: CreateDeployedAgentTemplateFromAgentBodySchema,
-  responses: {
-    201: ProjectDeployedAgentTemplateSchema,
-  },
-});
-
 /* Get Single Source Agent */
 const getDeployedAgentTemplateContract = c.query({
   method: 'GET',
@@ -354,8 +337,6 @@ export const projectsContract = c.router({
   createProject: createProjectContract,
   createProjectAgentTemplate: createProjectAgentTemplateContract,
   getProjectDeployedAgentTemplates: getProjectDeployedAgentTemplatesContract,
-  createProjectDeployedAgentTemplateFromAgentTemplate:
-    createDeployedAgentTemplateFromAgentTemplateContract,
   getProjectDeployedAgentTemplate: getDeployedAgentTemplateContract,
   getDeployedAgents: getDeployedAgentsContract,
   getDeployedAgentsCountByDeployedAgentTemplate:

@@ -1,5 +1,5 @@
-import * as deploymentRouter from './deployment/deploymentRouter';
+import * as agentsRouter from './agents/agentsRouter';
 
 export const sdkRouter = {
-  deployment: deploymentRouter,
+  agents: agentsRouter,
 };

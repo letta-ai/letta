@@ -14,15 +14,10 @@ import {
 } from '$letta/server/auth';
 import { eq, and, like, desc, count } from 'drizzle-orm';
 import type { contracts } from '$letta/web-api/contracts';
-import {
-  copyAgentById,
-  createAgentFromRecipe,
-  generateSlug,
-} from '$letta/server';
+import { generateSlug } from '$letta/server';
 import crypto from 'node:crypto';
 import {
   adjectives,
-  animals,
   colors,
   uniqueNamesGenerator,
 } from 'unique-names-generator';
@@ -30,6 +25,7 @@ import { AgentsService } from '@letta-web/letta-agents-api';
 import type { AgentTemplate } from '$letta/types';
 import { AgentRecipieVariant } from '$letta/types';
 import { capitalize } from 'lodash-es';
+import { copyAgentById, createAgent } from '$letta/sdk';
 
 type ResponseShapes = ServerInferResponses<typeof projectsContract>;
 type GetProjectsRequest = ServerInferRequest<
@@ -425,29 +421,19 @@ export async function createProjectAgentTemplate(
   const { projectId } = req.params;
   const { recipeId } = req.body;
 
-  const { lettaAgentsId, organizationId } =
-    context.request?.$userOverride || (await getUserOrThrow());
-
-  const newAgent = await createAgentFromRecipe(
-    agentRecipies[recipeId || AgentRecipieVariant.DEFAULT],
-    crypto.randomUUID(),
-    lettaAgentsId
-  );
-
-  if (!newAgent.id) {
-    return {
-      status: 500,
-      body: {
-        message: 'Failed to create agent',
-      },
-    };
-  }
+  const {
+    lettaAgentsId,
+    id: userId,
+    organizationId,
+  } = context.request?.$userOverride || (await getUserOrThrow());
 
   const randomName = uniqueNamesGenerator({
     dictionaries: [adjectives, colors],
     length: 2,
     separator: ' ',
   });
+
+  const recipe = agentRecipies[recipeId || 'customer_support'];
 
   const nameParts = [randomName];
 
@@ -457,22 +443,39 @@ export async function createProjectAgentTemplate(
 
   const name = capitalize(`${nameParts.join(' ')} agent`);
 
-  const [agent] = await db
-    .insert(agentTemplates)
-    .values({
-      id: newAgent.id,
-      projectId,
-      organizationId,
-      name,
-    })
-    .returning({
-      id: agentTemplates.id,
-    });
+  const agent = await createAgent(
+    {
+      body: {
+        name,
+        project_id: projectId,
+        memory: recipe.memory,
+        tools: recipe.tools,
+        llm_config: recipe.llm_config,
+        embedding_config: recipe.embedding_config,
+      },
+    },
+    {
+      request: {
+        organizationId,
+        lettaAgentsUserId: lettaAgentsId,
+        userId,
+      },
+    }
+  );
+
+  if (agent.status !== 201 || !agent.body.id) {
+    return {
+      status: 500,
+      body: {
+        message: 'Failed to create agent',
+      },
+    };
+  }
 
   return {
     status: 201,
     body: {
-      id: agent.id,
+      id: agent.body.id,
       name,
       updatedAt: new Date().toISOString(),
     },
@@ -575,99 +578,6 @@ export async function deleteProjectAgentTemplate(
     status: 200,
     body: {
       success: true,
-    },
-  };
-}
-
-type CreateProjectDeployedAgentTemplateFromAgentTemplateRequest =
-  ServerInferRequest<
-    typeof contracts.projects.createProjectDeployedAgentTemplateFromAgentTemplate
-  >;
-type CreateProjectDeployedAgentTemplateFromAgentTemplateResponse =
-  ServerInferResponses<
-    typeof contracts.projects.createProjectDeployedAgentTemplateFromAgentTemplate
-  >;
-
-interface Context {
-  request: {
-    $userOverride?: GetUserDataResponse;
-  };
-}
-
-export async function createProjectDeployedAgentTemplateFromAgentTemplate(
-  req: CreateProjectDeployedAgentTemplateFromAgentTemplateRequest,
-  context: Context
-): Promise<CreateProjectDeployedAgentTemplateFromAgentTemplateResponse> {
-  const { projectId } = req.params;
-  const { agentTemplateId } = req.body;
-  const { organizationId, lettaAgentsId } =
-    context.request?.$userOverride || (await getUserOrThrow());
-
-  const testingAgent = await db.query.agentTemplates.findFirst({
-    where: eq(agentTemplates.id, agentTemplateId),
-  });
-
-  if (!testingAgent) {
-    return {
-      status: 404,
-      body: {},
-    };
-  }
-
-  const existingDeployedAgentTemplateCount =
-    await db.query.deployedAgentTemplates.findMany({
-      where: eq(deployedAgentTemplates.agentTemplateId, agentTemplateId),
-      columns: {
-        id: true,
-      },
-    });
-
-  const version = `${existingDeployedAgentTemplateCount.length + 1}`;
-
-  const randomName = uniqueNamesGenerator({
-    dictionaries: [adjectives, adjectives, animals, colors],
-    length: 4,
-    separator: '-',
-  });
-
-  const copiedAgent = await copyAgentById(
-    testingAgent.id,
-    crypto.randomUUID(),
-    lettaAgentsId
-  );
-
-  if (!copiedAgent.id) {
-    return {
-      status: 500,
-      body: {
-        message: 'Failed to copy agent',
-      },
-    };
-  }
-
-  const [deployedAgentTemplate] = await db
-    .insert(deployedAgentTemplates)
-    .values({
-      id: copiedAgent.id,
-      version,
-      agentTemplateId: testingAgent.id,
-      projectId,
-      organizationId,
-      key: randomName,
-    })
-    .returning({
-      id: deployedAgentTemplates.id,
-    });
-
-  return {
-    status: 201,
-    body: {
-      key: randomName,
-      agentTemplateId: testingAgent.id,
-      id: deployedAgentTemplate.id,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      version,
     },
   };
 }

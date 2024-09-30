@@ -271,7 +271,11 @@ export const deployedAgents = pgTable(
   },
   (table) => ({
     unique: {
-      uniqueKey: uniqueIndex('unique_key').on(table.key, table.organizationId),
+      uniqueKey: uniqueIndex('unique_key').on(
+        table.key,
+        table.organizationId,
+        table.projectId
+      ),
     },
   })
 );

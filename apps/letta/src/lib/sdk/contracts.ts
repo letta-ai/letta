@@ -1,5 +1,5 @@
-import { deploymentContracts } from './deployment/deploymentContracts';
+import { agentsContract } from './agents/agentsContract';
 
 export const sdkContracts = {
-  deployment: deploymentContracts,
+  agents: agentsContract,
 };

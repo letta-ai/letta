@@ -2,7 +2,6 @@ import { generateOpenApi } from '@ts-rest/open-api';
 import { sdkContracts } from '$letta/sdk/contracts';
 import fs from 'fs';
 import path from 'path';
-import { DEPLOYMENT_BASE_URL } from '$letta/sdk/shared';
 import { isErrorResult, merge } from 'openapi-merge';
 
 const openApiDoc = generateOpenApi(
@@ -21,9 +20,6 @@ const openApiDoc = generateOpenApi(
 const result = merge([
   {
     oas: openApiDoc as any,
-    pathModification: {
-      prepend: DEPLOYMENT_BASE_URL,
-    },
   },
 ]);
 

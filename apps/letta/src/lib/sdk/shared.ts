@@ -4,8 +4,6 @@ export interface RequestMiddlewareType {
   lettaAgentsUserId: string;
 }
 
-export interface AuthedRequestType {
+export interface SDKContext {
   request: RequestMiddlewareType;
 }
-
-export const DEPLOYMENT_BASE_URL = `/v1/deployment`;

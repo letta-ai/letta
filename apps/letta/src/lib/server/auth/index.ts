@@ -24,11 +24,8 @@ import {
 import { AnalyticsEvent } from '@letta-web/analytics';
 import { jwtDecode } from 'jwt-decode';
 import { AdminService } from '@letta-web/letta-agents-api';
-import {
-  createProjectDeployedAgentTemplateFromAgentTemplate,
-  createProjectAgentTemplate,
-} from '$letta/web-api/projects/projectsRouter';
-import { createAgent } from '$letta/sdk/deployment/deploymentRouter';
+import { createProjectAgentTemplate } from '$letta/web-api/projects/projectsRouter';
+import { createAgent, versionAgentTemplate } from '$letta/sdk';
 import { generateSlug } from '$letta/server';
 
 function isLettaEmail(email: string) {
@@ -220,46 +217,37 @@ async function createUserAndOrganization(
     throw new Error('Failed to create testing agent');
   }
 
-  const createdDeployedAgentTemplate =
-    await createProjectDeployedAgentTemplateFromAgentTemplate(
-      {
-        body: {
-          agentTemplateId: createdAgentTemplate.body.id,
-        },
-        params: {
-          projectId: project[0].projectId,
-        },
+  const versionedAgentTemplate = await versionAgentTemplate(
+    {
+      params: {
+        agentId: createdAgentTemplate.body.id,
       },
-      {
-        request: {
-          $userOverride: {
-            id: createdUser.userId,
-            organizationId,
-            lettaAgentsId: lettaAgentsUser.id,
-            email: userData.email,
-            name: userData.name,
-            imageUrl: userData.imageUrl,
-          },
-        },
-      }
-    );
+    },
+    {
+      request: {
+        userId: createdUser.userId,
+        organizationId,
+        lettaAgentsUserId: lettaAgentsUser.id,
+      },
+    }
+  );
 
-  if (createdDeployedAgentTemplate.status !== 201) {
+  if (versionedAgentTemplate.status !== 201) {
     throw new Error('Failed to create source agent');
   }
 
   await createAgent(
     {
       body: {
-        deployedAgentTemplateKey: createdDeployedAgentTemplate.body.key,
-        uniqueIdentifier: 'my-first-agent-in-production',
+        template_key: versionedAgentTemplate.body.template_key,
+        unique_identifier: `${firstProjectId}-my-first-agent-in-production`,
       },
     },
     {
       request: {
+        organizationId,
         userId: createdUser.userId,
         lettaAgentsUserId: lettaAgentsUser.id,
-        organizationId,
       },
     }
   );

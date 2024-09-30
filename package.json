@@ -175,6 +175,7 @@
     "redis-om": "^0.4.6",
     "storybook": "8.2.9",
     "tailwindcss": "^3.4.6",
+    "tozod": "^3.0.0",
     "ts-jest": "^29.1.0",
     "ts-morph": "^22.0.0",
     "ts-node": "10.9.1",

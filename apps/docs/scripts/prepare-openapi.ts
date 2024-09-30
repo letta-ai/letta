@@ -39,6 +39,13 @@ lettaAgentsAPI.paths = Object.fromEntries(
   )
 );
 
+// remove duplicate paths, delete from letta-web-openapi if it exists in letta-agents-api
+lettaWebOpenAPI.paths = Object.fromEntries(
+  Object.entries(lettaWebOpenAPI.paths).filter(
+    ([path]) => !lettaAgentsAPI.paths[path]
+  )
+);
+
 const result = merge([
   {
     oas: lettaAgentsAPI,

@@ -5,12 +5,13 @@
     "version": "1.0.0"
   },
   "paths": {
-    "/v1/deployment/agents": {
+    "/v1/agents/": {
       "post": {
-        "summary": "Create deployed agent",
-        "tags": ["deployment"],
+        "description": "Create a new agent with the specified configuration.",
+        "summary": "Create Agent",
+        "tags": ["agents"],
         "parameters": [],
-        "operationId": "deployment.createAgent",
+        "operationId": "agents.createAgent",
         "requestBody": {
           "description": "Body",
           "content": {
@@ -18,34 +19,181 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "deployedAgentTemplateKey": {
+                  "description": {
+                    "type": "string",
+                    "nullable": true,
+                    "description": "A description of the agent"
+                  },
+                  "metadata_": {
+                    "type": "object",
+                    "additionalProperties": {},
+                    "nullable": true
+                  },
+                  "user_id": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "name": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "message_ids": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "nullable": true,
+                    "description": "A list of message IDs associated with the agent"
+                  },
+                  "memory": {
+                    "type": "object",
+                    "properties": {
+                      "memory": {
+                        "type": "object",
+                        "additionalProperties": {
+                          "type": "object",
+                          "properties": {
+                            "value": {
+                              "type": "string"
+                            },
+                            "limit": {
+                              "type": "number"
+                            },
+                            "name": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "template": {
+                              "type": "boolean"
+                            },
+                            "label": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "description": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "metadata_": {
+                              "type": "object",
+                              "additionalProperties": {}
+                            },
+                            "user_id": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "id": {
+                              "type": "string"
+                            }
+                          },
+                          "required": ["value"]
+                        }
+                      },
+                      "prompt_template": {
+                        "type": "string"
+                      }
+                    },
+                    "nullable": true
+                  },
+                  "tools": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "nullable": true
+                  },
+                  "system": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "llm_config": {
+                    "type": "object",
+                    "properties": {
+                      "model": {
+                        "type": "string"
+                      },
+                      "model_endpoint_type": {
+                        "type": "string"
+                      },
+                      "model_endpoint": {
+                        "type": "string"
+                      },
+                      "model_wrapper": {
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "context_window": {
+                        "type": "number"
+                      }
+                    },
+                    "required": [
+                      "model",
+                      "model_endpoint_type",
+                      "model_endpoint",
+                      "context_window"
+                    ],
+                    "nullable": true
+                  },
+                  "embedding_config": {
+                    "type": "object",
+                    "properties": {
+                      "embedding_endpoint_type": {
+                        "type": "string"
+                      },
+                      "embedding_endpoint": {
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "embedding_model": {
+                        "type": "string"
+                      },
+                      "embedding_dim": {
+                        "type": "number"
+                      },
+                      "embedding_chunk_size": {
+                        "type": "number",
+                        "nullable": true
+                      },
+                      "azure_endpoint": {
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "azure_version": {
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "azure_deployment": {
+                        "type": "string",
+                        "nullable": true
+                      }
+                    },
+                    "required": [
+                      "embedding_endpoint_type",
+                      "embedding_model",
+                      "embedding_dim"
+                    ],
+                    "nullable": true
+                  },
+                  "template": {
+                    "type": "boolean"
+                  },
+                  "project_id": {
                     "type": "string"
                   },
-                  "uniqueIdentifier": {
+                  "template_key": {
+                    "type": "string"
+                  },
+                  "unique_identifier": {
                     "type": "string"
                   }
-                },
-                "required": ["deployedAgentTemplateKey"]
+                }
               }
             }
           }
         },
         "responses": {
           "201": {
-            "description": "201",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "agentDeploymentId": {
-                      "type": "string"
-                    }
-                  },
-                  "required": ["agentDeploymentId"]
-                }
-              }
-            }
+            "description": "201"
           },
           "404": {
             "description": "404",
@@ -56,7 +204,7 @@
                   "properties": {
                     "message": {
                       "type": "string",
-                      "enum": ["Source agent not found"]
+                      "enum": ["Template key not found", "Project not found"]
                     }
                   },
                   "required": ["message"]
@@ -74,8 +222,29 @@
                     "message": {
                       "type": "string",
                       "enum": [
-                        "An agent with the same unique identifier already exists"
+                        "An agent with the same unique identifier already exists",
+                        "project_id is required when providing a unique identifier"
                       ]
+                    }
+                  },
+                  "required": ["message"]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "422"
+          },
+          "500": {
+            "description": "500",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "enum": ["Failed to create agent"]
                     }
                   },
                   "required": ["message"]
@@ -86,25 +255,33 @@
         }
       },
       "get": {
-        "summary": "Query deployed agents",
-        "tags": ["deployment"],
+        "description": "List all agents associated with a given user. This endpoint retrieves a list of all agents and their configurations associated with the specified user ID",
+        "summary": "List Agents",
+        "tags": ["agents"],
         "parameters": [
           {
-            "name": "uniqueIdentifier",
+            "name": "template",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "project_id",
             "in": "query",
             "schema": {
               "type": "string"
             }
           },
           {
-            "name": "projectId",
+            "name": "template_key",
             "in": "query",
             "schema": {
               "type": "string"
             }
           },
           {
-            "name": "deployedAgentTemplateKey",
+            "name": "unique_identifier",
             "in": "query",
             "schema": {
               "type": "string"
@@ -125,103 +302,36 @@
             }
           }
         ],
-        "operationId": "deployment.queryDeployedAgents",
+        "operationId": "agents.listAgents",
         "responses": {
           "200": {
-            "description": "200",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "agents": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "id": {
-                            "type": "string"
-                          },
-                          "uniqueIdentifier": {
-                            "type": "string"
-                          },
-                          "deployedAgentTemplateKey": {
-                            "type": "string"
-                          },
-                          "createdAt": {
-                            "type": "string"
-                          }
-                        },
-                        "required": [
-                          "id",
-                          "uniqueIdentifier",
-                          "deployedAgentTemplateKey",
-                          "createdAt"
-                        ]
-                      }
-                    }
-                  },
-                  "required": ["agents"]
-                }
-              }
-            }
+            "description": "200"
           }
         }
       }
     },
-    "/v1/deployment/agents/{agentDeploymentId}/chat": {
+    "/v1/agents/{agentId}/version-template": {
       "post": {
-        "summary": "Chat with deployed agent",
-        "tags": ["deployment"],
+        "description": "Creates a versioned version of an agent",
+        "summary": "Version Agent Template",
+        "tags": ["agents"],
         "parameters": [
           {
-            "name": "agentDeploymentId",
+            "name": "agentId",
             "in": "path",
             "required": true,
             "schema": {
               "type": "string"
-            }
+            },
+            "description": "The agent ID of the agent to migrate, if this agent is not a template, it will create a agent template from the agent provided as well"
           }
         ],
-        "operationId": "deployment.chatWithAgent",
+        "operationId": "agents.versionAgentTemplate",
         "requestBody": {
           "description": "Body",
           "content": {
             "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "message": {
-                    "type": "string"
-                  },
-                  "stream_tokens": {
-                    "type": "boolean"
-                  },
-                  "return_message_types": {
-                    "type": "array",
-                    "items": {
-                      "type": "string",
-                      "enum": [
-                        "function_return",
-                        "function_call",
-                        "internal_monologue",
-                        "user_message",
-                        "system_message"
-                      ]
-                    }
-                  },
-                  "return_function_calls": {
-                    "type": "array",
-                    "items": {
-                      "type": "string"
-                    }
-                  },
-                  "format_function_call_arguments": {
-                    "type": "boolean"
-                  }
-                },
-                "required": ["message"]
-              }
+              "schema": {}
             }
           }
         },
@@ -233,166 +343,11 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "messages": {
-                      "type": "array",
-                      "items": {
-                        "discriminator": {
-                          "propertyName": "message_type"
-                        },
-                        "oneOf": [
-                          {
-                            "type": "object",
-                            "properties": {
-                              "message_type": {
-                                "type": "string",
-                                "enum": ["function_return"]
-                              },
-                              "function_return": {
-                                "type": "string"
-                              },
-                              "status": {
-                                "type": "string"
-                              },
-                              "date": {
-                                "type": "string"
-                              },
-                              "id": {
-                                "type": "string"
-                              }
-                            },
-                            "required": [
-                              "message_type",
-                              "function_return",
-                              "status",
-                              "date",
-                              "id"
-                            ]
-                          },
-                          {
-                            "type": "object",
-                            "properties": {
-                              "message_type": {
-                                "type": "string",
-                                "enum": ["function_call"]
-                              },
-                              "function_call": {
-                                "type": "object",
-                                "properties": {
-                                  "message_type": {
-                                    "type": "string",
-                                    "enum": ["function_call"]
-                                  },
-                                  "type": {
-                                    "type": "string",
-                                    "enum": ["function_call"]
-                                  },
-                                  "name": {
-                                    "type": "string"
-                                  },
-                                  "arguments": {
-                                    "type": "string"
-                                  },
-                                  "formattedArguments": {
-                                    "type": "object",
-                                    "additionalProperties": {}
-                                  }
-                                }
-                              },
-                              "date": {
-                                "type": "string"
-                              },
-                              "id": {
-                                "type": "string"
-                              }
-                            },
-                            "required": [
-                              "message_type",
-                              "function_call",
-                              "date",
-                              "id"
-                            ]
-                          },
-                          {
-                            "type": "object",
-                            "properties": {
-                              "message_type": {
-                                "type": "string",
-                                "enum": ["internal_monologue"]
-                              },
-                              "internal_monologue": {
-                                "type": "string"
-                              },
-                              "date": {
-                                "type": "string"
-                              },
-                              "id": {
-                                "type": "string"
-                              }
-                            },
-                            "required": [
-                              "message_type",
-                              "internal_monologue",
-                              "date",
-                              "id"
-                            ]
-                          },
-                          {
-                            "type": "object",
-                            "properties": {
-                              "message_type": {
-                                "type": "string",
-                                "enum": ["user_message"]
-                              },
-                              "formattedMessage": {
-                                "type": "object",
-                                "additionalProperties": {}
-                              },
-                              "message": {
-                                "type": "string"
-                              },
-                              "date": {
-                                "type": "string"
-                              },
-                              "id": {
-                                "type": "string"
-                              }
-                            },
-                            "required": [
-                              "message_type",
-                              "message",
-                              "date",
-                              "id"
-                            ]
-                          },
-                          {
-                            "type": "object",
-                            "properties": {
-                              "message_type": {
-                                "type": "string",
-                                "enum": ["system_message"]
-                              },
-                              "message": {
-                                "type": "string"
-                              },
-                              "date": {
-                                "type": "string"
-                              },
-                              "id": {
-                                "type": "string"
-                              }
-                            },
-                            "required": [
-                              "message_type",
-                              "message",
-                              "date",
-                              "id"
-                            ]
-                          }
-                        ]
-                      }
+                    "template_key": {
+                      "type": "string"
                     }
                   },
-                  "required": ["messages"]
+                  "required": ["template_key"]
                 }
               }
             }
@@ -413,18 +368,35 @@
                 }
               }
             }
+          },
+          "500": {
+            "description": "500",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "enum": ["Failed to version agent template"]
+                    }
+                  },
+                  "required": ["message"]
+                }
+              }
+            }
           }
         }
       }
     },
-    "/v1/deployment/agents/{agentDeploymentId}": {
+    "/v1/agents/{agentId}/migrate": {
       "post": {
-        "description": "Migrate your deployed agent to a new source agent. This will overwrite the current agent's datasources, tools, and core memories. Archival and messages will be preserved.",
-        "summary": "Migrate deployed agent to new source agent",
-        "tags": ["deployment"],
+        "description": "Migrate an agent to a new versioned agent template",
+        "summary": "Migrate Agent",
+        "tags": ["agents"],
         "parameters": [
           {
-            "name": "agentDeploymentId",
+            "name": "agentId",
             "in": "path",
             "required": true,
             "schema": {
@@ -432,7 +404,7 @@
             }
           }
         ],
-        "operationId": "deployment.migrateDeployedAgentToNewDeployedAgentTemplate",
+        "operationId": "agents.migrateAgent",
         "requestBody": {
           "description": "Body",
           "content": {
@@ -440,14 +412,14 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "deployedAgentTemplateKey": {
+                  "template_key": {
                     "type": "string"
                   },
-                  "preserveCoreMemories": {
+                  "preserve_core_memories": {
                     "type": "boolean"
                   }
                 },
-                "required": ["deployedAgentTemplateKey"]
+                "required": ["template_key", "preserve_core_memories"]
               }
             }
           }
@@ -460,11 +432,12 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "agentDeploymentId": {
-                      "type": "string"
+                    "success": {
+                      "type": "boolean",
+                      "enum": [true]
                     }
                   },
-                  "required": ["agentDeploymentId"]
+                  "required": ["success"]
                 }
               }
             }
@@ -479,8 +452,7 @@
                     "message": {
                       "type": "string",
                       "enum": [
-                        "Source agent not found",
-                        "Deployed Agent not found"
+                        "Agent provided is a template or not found, you can only migrate deployed agents"
                       ]
                     }
                   },
@@ -488,254 +460,9 @@
                 }
               }
             }
-          }
-        }
-      }
-    },
-    "/v1/deployment/agents/{agentDeploymentId}/messages": {
-      "get": {
-        "summary": "Get existing messages from deployed agent",
-        "tags": ["deployment"],
-        "parameters": [
-          {
-            "name": "agentDeploymentId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
           },
-          {
-            "name": "return_message_types",
-            "in": "query",
-            "schema": {
-              "type": "array",
-              "items": {
-                "type": "string",
-                "enum": [
-                  "function_return",
-                  "function_call",
-                  "internal_monologue",
-                  "user_message",
-                  "system_message"
-                ]
-              }
-            }
-          },
-          {
-            "name": "return_function_calls",
-            "in": "query",
-            "schema": {
-              "type": "array",
-              "items": {
-                "type": "string"
-              }
-            }
-          },
-          {
-            "name": "format_function_call_arguments",
-            "in": "query",
-            "schema": {
-              "type": "boolean"
-            }
-          },
-          {
-            "name": "format_user_message_arguments",
-            "in": "query",
-            "schema": {
-              "type": "boolean"
-            }
-          },
-          {
-            "name": "before",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "schema": {
-              "type": "number"
-            }
-          }
-        ],
-        "operationId": "deployment.getExistingMessagesFromAgent",
-        "responses": {
-          "200": {
-            "description": "200",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "messages": {
-                      "type": "array",
-                      "items": {
-                        "discriminator": {
-                          "propertyName": "message_type"
-                        },
-                        "oneOf": [
-                          {
-                            "type": "object",
-                            "properties": {
-                              "message_type": {
-                                "type": "string",
-                                "enum": ["function_return"]
-                              },
-                              "function_return": {
-                                "type": "string"
-                              },
-                              "status": {
-                                "type": "string"
-                              },
-                              "date": {
-                                "type": "string"
-                              },
-                              "id": {
-                                "type": "string"
-                              }
-                            },
-                            "required": [
-                              "message_type",
-                              "function_return",
-                              "status",
-                              "date",
-                              "id"
-                            ]
-                          },
-                          {
-                            "type": "object",
-                            "properties": {
-                              "message_type": {
-                                "type": "string",
-                                "enum": ["function_call"]
-                              },
-                              "function_call": {
-                                "type": "object",
-                                "properties": {
-                                  "message_type": {
-                                    "type": "string",
-                                    "enum": ["function_call"]
-                                  },
-                                  "type": {
-                                    "type": "string",
-                                    "enum": ["function_call"]
-                                  },
-                                  "name": {
-                                    "type": "string"
-                                  },
-                                  "arguments": {
-                                    "type": "string"
-                                  },
-                                  "formattedArguments": {
-                                    "type": "object",
-                                    "additionalProperties": {}
-                                  }
-                                }
-                              },
-                              "date": {
-                                "type": "string"
-                              },
-                              "id": {
-                                "type": "string"
-                              }
-                            },
-                            "required": [
-                              "message_type",
-                              "function_call",
-                              "date",
-                              "id"
-                            ]
-                          },
-                          {
-                            "type": "object",
-                            "properties": {
-                              "message_type": {
-                                "type": "string",
-                                "enum": ["internal_monologue"]
-                              },
-                              "internal_monologue": {
-                                "type": "string"
-                              },
-                              "date": {
-                                "type": "string"
-                              },
-                              "id": {
-                                "type": "string"
-                              }
-                            },
-                            "required": [
-                              "message_type",
-                              "internal_monologue",
-                              "date",
-                              "id"
-                            ]
-                          },
-                          {
-                            "type": "object",
-                            "properties": {
-                              "message_type": {
-                                "type": "string",
-                                "enum": ["user_message"]
-                              },
-                              "formattedMessage": {
-                                "type": "object",
-                                "additionalProperties": {}
-                              },
-                              "message": {
-                                "type": "string"
-                              },
-                              "date": {
-                                "type": "string"
-                              },
-                              "id": {
-                                "type": "string"
-                              }
-                            },
-                            "required": [
-                              "message_type",
-                              "message",
-                              "date",
-                              "id"
-                            ]
-                          },
-                          {
-                            "type": "object",
-                            "properties": {
-                              "message_type": {
-                                "type": "string",
-                                "enum": ["system_message"]
-                              },
-                              "message": {
-                                "type": "string"
-                              },
-                              "date": {
-                                "type": "string"
-                              },
-                              "id": {
-                                "type": "string"
-                              }
-                            },
-                            "required": [
-                              "message_type",
-                              "message",
-                              "date",
-                              "id"
-                            ]
-                          }
-                        ]
-                      }
-                    }
-                  },
-                  "required": ["messages"]
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "404",
+          "409": {
+            "description": "409",
             "content": {
               "application/json": {
                 "schema": {
@@ -743,7 +470,26 @@
                   "properties": {
                     "message": {
                       "type": "string",
-                      "enum": ["Agent not found"]
+                      "enum": [
+                        "You can only migrate agents to a new versioned agent template that belongs to the same project"
+                      ]
+                    }
+                  },
+                  "required": ["message"]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "500",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "enum": ["Migration failed"]
                     }
                   },
                   "required": ["message"]

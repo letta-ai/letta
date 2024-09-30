@@ -2,6 +2,7 @@
   "name": "@letta-web/helpful-utils",
   "version": "0.0.1",
   "dependencies": {
+    "zod": "^3.23.8",
     "tslib": "^2.3.0"
   },
   "type": "commonjs",

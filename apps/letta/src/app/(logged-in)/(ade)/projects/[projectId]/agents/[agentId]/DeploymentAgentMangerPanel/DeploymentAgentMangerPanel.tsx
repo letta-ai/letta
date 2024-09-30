@@ -14,7 +14,7 @@ import {
 import { useCurrentAgentId } from '../hooks';
 import { useCurrentProjectId } from '../../../../../../(dashboard-like)/projects/[projectId]/hooks';
 import { useQueryClient } from '@tanstack/react-query';
-import { webApi, webApiQueryKeys } from '$letta/client';
+import { webApi, webApiQueryKeys, webOriginSDKApi } from '$letta/client';
 import { DeployAgentUsageInstructions } from '$letta/client/code-reference/DeployAgentUsageInstructions';
 import { z } from 'zod';
 
@@ -25,36 +25,33 @@ function StageAndDeployDialog() {
   const [open, setOpen] = useState(false);
 
   const { mutate, isPending } =
-    webApi.projects.createProjectDeployedAgentTemplateFromAgentTemplate.useMutation(
-      {
-        onSuccess: () => {
-          void queryClient.invalidateQueries({
-            queryKey:
-              webApiQueryKeys.projects.getProjectDeployedAgentTemplates(
-                projectId
-              ),
-            exact: false,
-          });
+    webOriginSDKApi.agents.versionAgentTemplate.useMutation({
+      onSuccess: () => {
+        void queryClient.invalidateQueries({
+          queryKey:
+            webApiQueryKeys.projects.getProjectDeployedAgentTemplates(
+              projectId
+            ),
+          exact: false,
+        });
 
-          setOpen(false);
-        },
-      }
-    );
-
-  const handleCreateDeployedAgentTemplate = useCallback(() => {
-    mutate({
-      body: { agentTemplateId },
-      params: { projectId },
+        setOpen(false);
+      },
     });
-  }, [mutate, agentTemplateId, projectId]);
+
+  const handleVersionNewAgent = useCallback(() => {
+    mutate({
+      params: { agentId: agentTemplateId },
+    });
+  }, [mutate, agentTemplateId]);
 
   return (
     <Dialog
       onOpenChange={setOpen}
       isOpen={open}
       testId="stage-agent-dialog"
-      title="Are you sure you want to stage your agent?"
-      onSubmit={handleCreateDeployedAgentTemplate}
+      title="Are you sure you want to version your agent?"
+      onSubmit={handleVersionNewAgent}
       isConfirmBusy={isPending}
       trigger={
         <Button
@@ -66,8 +63,8 @@ function StageAndDeployDialog() {
       }
     >
       <VStack gap="form">
-        This will allow your agent to be deployed to the cloud and used in
-        production. Are you sure you want to stage your agent?
+        This creates a version of your agent template that is immutable and can
+        be used to deploy agents. Are you sure you want to proceed?
       </VStack>
     </Dialog>
   );
