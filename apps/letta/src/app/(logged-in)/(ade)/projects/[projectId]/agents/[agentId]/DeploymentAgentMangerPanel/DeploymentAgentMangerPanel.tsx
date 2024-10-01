@@ -58,7 +58,7 @@ function StageAndDeployDialog() {
           data-testid="stage-new-version-button"
           color="secondary"
           size="small"
-          label="Stage a new version"
+          label="Create a new version"
         />
       }
     >

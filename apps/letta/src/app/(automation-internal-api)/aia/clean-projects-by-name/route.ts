@@ -7,7 +7,7 @@ import { and, eq } from 'drizzle-orm';
 export async function POST(req: NextRequest) {
   const organizationId = await getUserOrganizationIdOrThrow();
 
-  if (process.env.NODE_ENV === 'production') {
+  if (process.env.SHOW_AIA === 'yes') {
     return new Response(
       JSON.stringify({
         message: 'Unauthorized',
