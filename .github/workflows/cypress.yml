@@ -48,9 +48,9 @@ jobs:
         with:
           # Starts web server for E2E tests - replace with your own server invocation
           # https://docs.cypress.io/guides/continuous-integration/introduction#Boot-your-server
-          build: npm run build
+          build: npm run build:e2e
           start: npm run start:e2e
-          config-file: './apps/letta/cypress.config.ts'
+          project: apps/letta
           wait-on: 'http://localhost:3000' # Waits for above
           # Records to Cypress Cloud
           # https://docs.cypress.io/guides/cloud/projects#Set-up-a-project-to-record

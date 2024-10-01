@@ -10,6 +10,7 @@
     "start:e2e": "nx start letta -p 3000",
     "slack-bot-says": "node ./scripts/slack-bot-says",
     "build": "nx build letta --prod",
+    "build:e2e": "npm run build && npm run database:migrate:ci",
     "letta:generate:openapi": "nx generate-openapi letta",
     "format": "nx format:write",
     "lint": "npx nx run-many --all --skip-nx-cache --parallel --targets=lint",
