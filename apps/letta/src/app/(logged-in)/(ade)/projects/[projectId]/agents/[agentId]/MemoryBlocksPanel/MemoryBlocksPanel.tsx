@@ -79,7 +79,8 @@ const editMemoryBlockFormSchema = z.object({
 });
 
 function EditMemoryForm({ block, onClose }: EditMemoryFormProps) {
-  const { mutate: mutateBlock, isPending: isPendingMutateBlock } =
+  //https://linear.app/letta/issue/LET-136/infinite-loop-bug-saving-block
+  const { isPending: isPendingMutateBlock } =
     useBlocksServiceUpdateMemoryBlock();
 
   const { mutate: updateAgent, isPending: isUpdatingAgent } =
@@ -104,23 +105,15 @@ function EditMemoryForm({ block, onClose }: EditMemoryFormProps) {
         } as Block,
       };
 
-      updateAgent({
-        agentId,
-        requestBody: {
-          id: agentId,
-          memory: {
-            ...memory,
-            memory: nextMemory,
-          },
-        },
-      });
-
-      mutateBlock(
+      updateAgent(
         {
-          blockId: block.id || '',
+          agentId,
           requestBody: {
-            id: block.id || '',
-            value: data.value,
+            id: agentId,
+            memory: {
+              ...memory,
+              memory: nextMemory,
+            },
           },
         },
         {
@@ -133,13 +126,31 @@ function EditMemoryForm({ block, onClose }: EditMemoryFormProps) {
           },
         }
       );
+
+      // mutateBlock(
+      //   {
+      //     blockId: block.id || '',
+      //     requestBody: {
+      //       id: block.id || '',
+      //       value: data.value,
+      //     },
+      //   },
+      //   {
+      //     onSuccess: () => {
+      //       void queryClient.invalidateQueries({
+      //         queryKey: UseAgentsServiceGetAgentKeyFn({
+      //           agentId,
+      //         }),
+      //       });
+      //     },
+      //   }
+      // );
     },
     [
       agentId,
-      block.id,
+      // block.id,
       block.label,
       memory,
-      mutateBlock,
       queryClient,
       updateAgent,
     ]
