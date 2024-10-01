@@ -8,6 +8,28 @@ on:
         - main
 jobs:
   cypress-run:
+    services:
+      letta:
+        image: memgpt/letta
+        ports:
+          - 8283:8283
+        options: --health-cmd "curl -f http://localhost:8283" --health-interval 10s --health-timeout 5s --health-retries 5
+      redis:
+        image: redis
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      postgres:
+        image: postgres
+        env:
+          POSTGRES_PASSWORD: postgres
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     runs-on: ubuntu-latest
     environment: Deployment
     # Runs tests in parallel with matrix strategy https://docs.cypress.io/guides/guides/parallelization
@@ -16,7 +38,7 @@ jobs:
     strategy:
       fail-fast: false # https://github.com/cypress-io/github-action/issues/48
       matrix:
-        containers: [1, 2] # Uses 2 parallel instances
+        containers: [1] # Uses 2 parallel instances
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -26,6 +48,7 @@ jobs:
         with:
           # Starts web server for E2E tests - replace with your own server invocation
           # https://docs.cypress.io/guides/continuous-integration/introduction#Boot-your-server
+          build: npm build
           start: npm start
           wait-on: 'http://localhost:3000' # Waits for above
           # Records to Cypress Cloud
@@ -38,3 +61,11 @@ jobs:
           CYPRESS_RECORD_KEY: ${{ secrets.CYPRESS_RECORD_KEY }}
           # Creating a token https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DATABASE_URL: postgres://postgres:postgres@postgres:5432/postgres
+          REDIS_HOST: redis
+          REDIS_PORT: 6379
+          CYPRESS_GOOGLE_CLIENT_ID: ${{ secrets.CYPRESS_GOOGLE_CLIENT_ID }}
+          CYPRESS_GOOGLE_CLIENT_SECRET: ${{ secrets.CYPRESS_GOOGLE_CLIENT_SECRET }}
+          CYPRESS_GOOGLE_REDIRECT_URI: ${{ secrets.CYPRESS_GOOGLE_REDIRECT_URI }}
+          LETTA_AGENTS_ENDPOINT: http://letta:8283
+          NEXT_PUBLIC_CURRENT_HOST: http://localhost:3000
