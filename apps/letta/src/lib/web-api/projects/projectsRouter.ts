@@ -15,7 +15,6 @@ import {
 import { eq, and, like, desc, count } from 'drizzle-orm';
 import type { contracts } from '$letta/web-api/contracts';
 import { generateSlug } from '$letta/server';
-import crypto from 'node:crypto';
 import {
   adjectives,
   colors,
@@ -885,11 +884,7 @@ export async function forkAgentTemplate(
     };
   }
 
-  const copiedAgent = await copyAgentById(
-    testingAgent.id,
-    crypto.randomUUID(),
-    lettaAgentsId
-  );
+  const copiedAgent = await copyAgentById(testingAgent.id, lettaAgentsId);
 
   if (!copiedAgent.id) {
     return {

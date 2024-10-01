@@ -240,7 +240,7 @@ async function createUserAndOrganization(
     {
       body: {
         template_key: versionedAgentTemplate.body.template_key,
-        unique_identifier: `${firstProjectId}-my-first-agent-in-production`,
+        name: `${firstProjectId}-my-first-agent-in-production`,
       },
     },
     {

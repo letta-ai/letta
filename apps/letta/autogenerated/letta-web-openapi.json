@@ -222,8 +222,8 @@
                     "message": {
                       "type": "string",
                       "enum": [
-                        "An agent with the same unique identifier already exists",
-                        "project_id is required when providing a unique identifier"
+                        "An agent with the same name already exists",
+                        "project_id is required when providing an explicit name"
                       ]
                     }
                   },

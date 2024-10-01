@@ -31,10 +31,6 @@ export interface CreateAgentBody extends CreateAgent {
    * Create an agent based on a template_key
    */
   template_key?: string;
-  /**
-   * Provides a unique identifier for the agent (not used when template is true). Unique identifiers are unique to projects.
-   */
-  unique_identifier?: string;
 }
 
 const CreateAgentBodySchema = z.object({
@@ -57,7 +53,6 @@ const CreateAgentBodySchema = z.object({
   template: z.boolean().optional(),
   project_id: z.string().optional(),
   template_key: z.string().optional(),
-  unique_identifier: z.string().optional(),
 });
 
 const CreateAgentResponseSchema = c.type<AgentState>();
@@ -76,8 +71,8 @@ const FailedToCreateAgentErrorSchema = z.object({
 
 const UniqueIdentifierConflictResponseSchema = z.object({
   message: z
-    .literal('An agent with the same unique identifier already exists')
-    .or(z.literal('project_id is required when providing a unique identifier')),
+    .literal('An agent with the same name already exists')
+    .or(z.literal('project_id is required when providing a name')),
 });
 
 const createAgentContract = c.mutation({
@@ -174,7 +169,7 @@ const ListAgentsQuerySchema = z.object({
   template: z.boolean().optional(),
   project_id: z.string().optional(),
   template_key: z.string().optional(),
-  unique_identifier: z.string().optional(),
+  name: z.string().optional(),
   limit: z.number().optional(),
   offset: z.number().optional(),
 });
@@ -191,9 +186,31 @@ const listAgentsContract = c.query({
   },
 });
 
+/* Get Agent By Id */
+const GetAgentByIdResponseSchema = c.type<AgentState>();
+
+const GetAgentByIdNotFoundResponseSchema = z.object({
+  message: z.literal('Agent not found'),
+});
+
+const getAgentByIdContract = c.query({
+  method: 'GET',
+  summary: 'Get Agent By Id',
+  path: '/v1/agents/:agentId',
+  description: 'Get an agent by its ID',
+  pathParams: z.object({
+    agentId: z.string(),
+  }),
+  responses: {
+    200: GetAgentByIdResponseSchema,
+    404: GetAgentByIdNotFoundResponseSchema,
+  },
+});
+
 export const agentsContract = c.router({
   createAgent: createAgentContract,
   versionAgentTemplate: versionAgentTemplateContract,
   migrateAgent: migrateAgentContract,
   listAgents: listAgentsContract,
+  getAgentById: getAgentByIdContract,
 });

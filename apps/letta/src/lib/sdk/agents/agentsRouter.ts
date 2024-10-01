@@ -26,7 +26,6 @@ import {
 
 export async function copyAgentById(
   agentId: string,
-  name: string,
   lettaAgentsUserId: string
 ) {
   const [currentAgent, agentSources] = await Promise.all([
@@ -52,7 +51,7 @@ export async function copyAgentById(
     {
       requestBody: {
         tools: currentAgent.tools,
-        name: name,
+        name: crypto.randomUUID(),
         embedding_config: currentAgent.embedding_config,
         description: currentAgent.description,
         memory: currentAgent.memory,
@@ -103,10 +102,9 @@ export async function createAgent(
   context: SDKContext
 ): Promise<CreateAgentResponse> {
   const { organizationId, lettaAgentsUserId } = context.request;
-  const { project_id, template_key, template, unique_identifier, ...agent } =
-    req.body;
+  const { project_id, template_key, template, name, ...agent } = req.body;
 
-  if (unique_identifier) {
+  if (name) {
     if (!project_id) {
       return {
         status: 400,
@@ -120,7 +118,7 @@ export async function createAgent(
       where: and(
         eq(deployedAgents.organizationId, organizationId),
         eq(deployedAgents.projectId, project_id),
-        eq(deployedAgents.key, unique_identifier)
+        eq(deployedAgents.key, name)
       ),
     });
 
@@ -128,7 +126,7 @@ export async function createAgent(
       return {
         status: 409,
         body: {
-          message: 'An agent with the same unique identifier already exists',
+          message: 'An agent with the same name already exists',
         },
       };
     }
@@ -151,11 +149,7 @@ export async function createAgent(
       };
     }
 
-    const copiedAgent = await copyAgentById(
-      template.id,
-      `Deployed - ${template.key}`,
-      lettaAgentsUserId
-    );
+    const copiedAgent = await copyAgentById(template.id, lettaAgentsUserId);
 
     if (!copiedAgent?.id) {
       return {
@@ -174,8 +168,7 @@ export async function createAgent(
     const nextInternalAgentCountId =
       (lastDeployedAgent?.internalAgentCountId || 0) + 1;
 
-    const key =
-      unique_identifier || `${template.id}-${nextInternalAgentCountId}`;
+    const key = name || `${template.id}-${nextInternalAgentCountId}`;
 
     await db.insert(deployedAgents).values({
       id: copiedAgent.id,
@@ -195,7 +188,10 @@ export async function createAgent(
 
   const response = await AgentsService.createAgent(
     {
-      requestBody: agent,
+      requestBody: {
+        ...agent,
+        name: crypto.randomUUID(),
+      },
     },
     {
       user_id: lettaAgentsUserId,
@@ -266,12 +262,12 @@ export async function createAgent(
   if (template) {
     await db.insert(agentTemplates).values({
       organizationId,
-      name: agent.name || 'Unnamed agent',
+      name: name || `Agent template ${response.id}`,
       id: response.id,
       projectId,
     });
   } else {
-    let uniqueId = unique_identifier;
+    let uniqueId = name;
     let nextInternalAgentCountId = 0;
 
     if (!uniqueId) {
@@ -398,7 +394,6 @@ export async function versionAgentTemplate(
   if (!agentTemplateId) {
     const copiedAgent = await copyAgentById(
       agentId,
-      `Template from ${agentId}`,
       context.request.lettaAgentsUserId
     );
 
@@ -429,7 +424,6 @@ export async function versionAgentTemplate(
 
   const createdAgent = await copyAgentById(
     agentId,
-    templateKey,
     context.request.lettaAgentsUserId
   );
 
@@ -579,7 +573,7 @@ export async function listAgents(
     project_id,
     template,
     template_key,
-    unique_identifier,
+    name,
     limit = 5,
     offset = 0,
   } = req.query;
@@ -609,7 +603,12 @@ export async function listAgents(
           {
             user_id: context.request.lettaAgentsUserId,
           }
-        );
+        ).then((response) => {
+          return {
+            ...response,
+            name: template.name,
+          };
+        });
       })
     );
 
@@ -633,8 +632,8 @@ export async function listAgents(
     );
   }
 
-  if (unique_identifier) {
-    queryBuilder.push(eq(deployedAgents.key, unique_identifier));
+  if (name) {
+    queryBuilder.push(eq(deployedAgents.key, name));
   }
 
   const query = await db.query.deployedAgents.findMany({
@@ -653,7 +652,12 @@ export async function listAgents(
         {
           user_id: context.request.lettaAgentsUserId,
         }
-      );
+      ).then((response) => {
+        return {
+          ...response,
+          name: agent.key,
+        };
+      });
     })
   );
 
@@ -663,9 +667,74 @@ export async function listAgents(
   };
 }
 
+type GetAgentByIdRequest = ServerInferRequest<
+  typeof sdkContracts.agents.getAgentById
+>;
+
+type GetAgentByIdResponse = ServerInferResponses<
+  typeof sdkContracts.agents.getAgentById
+>;
+
+async function getAgentById(
+  req: GetAgentByIdRequest,
+  context: SDKContext
+): Promise<GetAgentByIdResponse> {
+  const { agentId } = req.params;
+
+  const [agent, deployedAgent, agentTemplate] = await Promise.all([
+    AgentsService.getAgent(
+      {
+        agentId,
+      },
+      {
+        user_id: context.request.lettaAgentsUserId,
+      }
+    ),
+    db.query.deployedAgents.findFirst({
+      where: and(
+        eq(deployedAgents.organizationId, context.request.organizationId),
+        eq(deployedAgents.id, agentId)
+      ),
+    }),
+    db.query.agentTemplates.findFirst({
+      where: and(
+        eq(agentTemplates.organizationId, context.request.organizationId),
+        eq(agentTemplates.id, agentId)
+      ),
+    }),
+  ]);
+
+  if (!agent) {
+    return {
+      status: 404,
+      body: {
+        message: 'Agent not found',
+      },
+    };
+  }
+
+  if (!deployedAgent && !agentTemplate) {
+    return {
+      status: 404,
+      body: {
+        message: 'Agent not found',
+      },
+    };
+  }
+
+  return {
+    status: 200,
+    body: {
+      ...agent,
+      name: deployedAgent?.key || agentTemplate?.name || '',
+    },
+  };
+}
+
 export const agentsRouter = {
   createAgent,
   versionAgentTemplate,
   migrateAgent,
   listAgents,
+  getAgentById,
 };
