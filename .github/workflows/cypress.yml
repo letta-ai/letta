@@ -76,3 +76,4 @@ jobs:
           LETTA_AGENTS_ENDPOINT: http://localhost:8083
           NEXT_PUBLIC_CURRENT_HOST: http://localhost:3000
           IS_CYPRESS_RUN: yes
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
