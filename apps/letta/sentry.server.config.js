@@ -11,6 +11,7 @@ Sentry.init({
   tracesSampleRate: 1,
 
   enabled: process.env.NODE_ENV === 'production',
+  authToken: process.env.SENTRY_AUTH_TOKEN,
 
   // Setting this option to true will print useful information to the console while you're setting up Sentry.
   debug: false,

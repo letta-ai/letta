@@ -9,6 +9,7 @@ Sentry.init({
   dsn: 'https://6a1b07c63936105cf6c53b3a1351d03d@o4507986077810688.ingest.us.sentry.io/4507986161303552',
 
   enabled: process.env.NODE_ENV === 'production',
+  authToken: process.env.SENTRY_AUTH_TOKEN,
 
   // Define how likely traces are sampled. Adjust this value in production, or use tracesSampler for greater control.
   tracesSampleRate: 1,
