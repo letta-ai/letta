@@ -23,6 +23,8 @@ jobs:
         ports:
           - 8083:8083
         options: --health-cmd "curl -f http://localhost:8083" --health-interval 10s --health-timeout 5s --health-retries 5
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       redis:
         image: redis
         ports:
