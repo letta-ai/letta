@@ -441,7 +441,7 @@ export async function createProjectAgentTemplate(
     nameParts.push(RECIPIE_NAME_TO_FRIENDLY_NAME[recipeId]);
   }
 
-  const name = capitalize(`${nameParts.join(' ')} agent`);
+  const name = capitalize(`${nameParts.join(' ')} template`);
 
   const agent = await createAgent(
     {

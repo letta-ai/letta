@@ -541,8 +541,8 @@ interface GoogleJWTResponse {
   email: string;
   email_verified: boolean;
   at_hash: string;
-  name: string;
-  picture: string;
+  name?: string;
+  picture?: string;
   given_name: string;
   family_name: string;
   iat: number;
@@ -558,8 +558,8 @@ export async function extractGoogleIdTokenData(
     email: decodedData.email,
     uniqueId: `google-${decodedData.sub}`,
     provider: 'google',
-    imageUrl: decodedData.picture,
-    name: decodedData.name,
+    imageUrl: decodedData.picture || '',
+    name: decodedData.name || '',
   };
 }
 
