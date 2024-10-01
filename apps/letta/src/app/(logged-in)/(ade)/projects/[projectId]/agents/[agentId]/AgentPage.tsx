@@ -1,10 +1,6 @@
 'use client';
 import type { panelRegistry } from './panelRegistry';
-import {
-  PanelManagerProvider,
-  PanelOpener,
-  PanelRenderer,
-} from './panelRegistry';
+import { PanelManagerProvider, PanelRenderer } from './panelRegistry';
 import type { PanelItemPositionsMatrix } from '@letta-web/component-library';
 import {
   ADEHeader,
@@ -211,19 +207,6 @@ function ForkAgentDialog() {
   );
 }
 
-function OpenDeploymentManagerPanel() {
-  return (
-    <PanelOpener templateId="deployment" id="deployment" data={undefined}>
-      <Button
-        tooltipPlacement="bottom"
-        size="small"
-        color="tertiary"
-        label="Template Version Manager"
-      ></Button>
-    </PanelOpener>
-  );
-}
-
 interface LoaderContentProps {
   isError?: boolean;
 }
@@ -306,7 +289,6 @@ export function AgentPage() {
               </HStack>
               <HStack>
                 <ForkAgentDialog />
-                <OpenDeploymentManagerPanel />
                 <NavOverlay />
               </HStack>
             </ADEHeader>

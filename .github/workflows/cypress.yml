@@ -10,7 +10,7 @@ jobs:
   cypress-run:
     services:
       letta:
-        image: memgpt/letta
+        image: memgpt/memgpt-server
         ports:
           - 8283:8283
         options: --health-cmd "curl -f http://localhost:8283" --health-interval 10s --health-timeout 5s --health-retries 5
