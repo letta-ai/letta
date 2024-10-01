@@ -30,12 +30,22 @@ export async function copyAgentById(
   lettaAgentsUserId: string
 ) {
   const [currentAgent, agentSources] = await Promise.all([
-    AgentsService.getAgent({
-      agentId: agentId,
-    }),
-    AgentsService.getAgentSources({
-      agentId: agentId,
-    }),
+    AgentsService.getAgent(
+      {
+        agentId: agentId,
+      },
+      {
+        user_id: lettaAgentsUserId,
+      }
+    ),
+    AgentsService.getAgentSources(
+      {
+        agentId: agentId,
+      },
+      {
+        user_id: lettaAgentsUserId,
+      }
+    ),
   ]);
 
   const nextAgent = await AgentsService.createAgent(
@@ -516,10 +526,15 @@ export async function migrateAgent(
     requestBody.memory = agentTemplateData.memory;
   }
 
-  await AgentsService.updateAgent({
-    agentId,
-    requestBody: requestBody,
-  });
+  await AgentsService.updateAgent(
+    {
+      agentId,
+      requestBody: requestBody,
+    },
+    {
+      user_id: lettaAgentsUserId,
+    }
+  );
 
   await Promise.all([
     Promise.all(
