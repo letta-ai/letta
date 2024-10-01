@@ -53,7 +53,7 @@ jobs:
       - name: Check connection to redis
         run: docker run --network host redis redis-cli ping
       - name: Check connection to letta
-        run: docker run --network host lettaai/letta curl -f http://localhost:8083
+        run: docker run --network host lettaai/letta curl -f http://letta:8083
       - name: Cypress run
         # Uses the official Cypress GitHub action https://github.com/cypress-io/github-action
         uses: cypress-io/github-action@v6
