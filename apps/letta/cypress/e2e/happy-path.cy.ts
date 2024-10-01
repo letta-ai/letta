@@ -99,7 +99,7 @@ describe('letta', () => {
       .then((text) => {
         const textToSubmit = text
           .replace('Hello', 'Can you tell me my name?')
-          .replace('true', 'false')
+          .replace(/true/g, 'false')
           .replace('-N', '');
 
         cy.exec(textToSubmit, { timeout: 10000 }).then((result) => {
