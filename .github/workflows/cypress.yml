@@ -48,12 +48,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Check connection to postgres
-        run: docker run --network host -e PGPASSWORD=postgres postgres psql -h localhost -U postgres -d postgres -c 'SELECT 1;'
-      - name: Check connection to redis
-        run: docker run --network host redis redis-cli ping
-      - name: Check connection to letta
-        run: docker run --network host lettaai/letta curl -f http://letta:8083
+      - name: Check connection to postgres from current container
+        run: curl -sS http://postgres:5432
+      - name: Check connection to redis from current container
+        run: curl -sS http://redis:6379
+      - name: Check connection to letta from current container
+        run: curl -sS http://letta:8283
       - name: Cypress run
         # Uses the official Cypress GitHub action https://github.com/cypress-io/github-action
         uses: cypress-io/github-action@v6
