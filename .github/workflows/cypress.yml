@@ -8,6 +8,8 @@ on:
         - main
 jobs:
   cypress-run:
+    runs-on: ubuntu-latest
+    environment: Deployment
     services:
       letta:
         image: lettaai/letta
@@ -36,8 +38,6 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-    runs-on: ubuntu-latest
-    environment: Deployment
     # Runs tests in parallel with matrix strategy https://docs.cypress.io/guides/guides/parallelization
     # https://docs.github.com/en/actions/using-jobs/using-a-matrix-for-your-jobs
     # Also see warning here https://github.com/cypress-io/github-action#parallel
@@ -48,12 +48,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Check connection to postgres from current container
-        run: curl -sS http://localhost:5432
-      - name: Check connection to redis from current container
-        run: curl -sS http://localhost:6379
-      - name: Check connection to letta from current container
-        run: curl -sS http://localhost:8283
       - name: Cypress run
         # Uses the official Cypress GitHub action https://github.com/cypress-io/github-action
         uses: cypress-io/github-action@v6
