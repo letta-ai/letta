@@ -47,11 +47,7 @@ describe('letta', () => {
 
     cy.findByTestId('edit-memory-block-save').click();
 
-    // close the panel
-    cy.findByTestId('ade-navigate-to:Memory Blocks').click();
-
     // simulate a conversation
-
     cy.findByTestId('ade-navigate-to:Simulator').then(($btn) => {
       if (!$btn.hasClass('active-ade-nav')) {
         $btn.click();
