@@ -707,7 +707,8 @@ export function createPanelManager<
 
     const getIsPanelIdActive = useCallback(
       (panelId: PanelId) => {
-        const positions = state.panelIdToPositionMap[panelId];
+        const positions = reconcilePositions(state.positions)
+          .panelIdToPositionMap[panelId];
 
         if (!positions) {
           return false;
@@ -717,7 +718,7 @@ export function createPanelManager<
 
         return state.positions[x].positions[y].positions[tab].isActive;
       },
-      [state]
+      [reconcilePositions, state.positions]
     );
 
     const value = useMemo(() => {
