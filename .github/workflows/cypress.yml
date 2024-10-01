@@ -74,3 +74,4 @@ jobs:
           CYPRESS_GOOGLE_REFRESH_TOKEN: ${{ secrets.CYPRESS_GOOGLE_REFRESH_TOKEN }}
           LETTA_AGENTS_ENDPOINT: http://localhost:8083
           NEXT_PUBLIC_CURRENT_HOST: http://localhost:3000
+          NODE_ENV: development
