@@ -13,7 +13,7 @@ jobs:
         image: lettaai/letta
         ports:
           - 8283:8283
-        options: --health-cmd "curl -f http://localhost:8283" --health-interval 10s --health-timeout 5s --health-retries 5
+        options: --health-cmd "curl -f http://localhost:8083" --health-interval 10s --health-timeout 5s --health-retries 5
       redis:
         image: redis
         options: >-
@@ -67,5 +67,5 @@ jobs:
           CYPRESS_GOOGLE_CLIENT_ID: ${{ secrets.CYPRESS_GOOGLE_CLIENT_ID }}
           CYPRESS_GOOGLE_CLIENT_SECRET: ${{ secrets.CYPRESS_GOOGLE_CLIENT_SECRET }}
           CYPRESS_GOOGLE_REDIRECT_URI: ${{ secrets.CYPRESS_GOOGLE_REDIRECT_URI }}
-          LETTA_AGENTS_ENDPOINT: http://letta:8283
+          LETTA_AGENTS_ENDPOINT: http://letta:8083
           NEXT_PUBLIC_CURRENT_HOST: http://localhost:3000
