@@ -8,7 +8,7 @@ import {
 export async function GET(req: NextRequest) {
   const idToken = req.nextUrl.searchParams.get('id_token');
 
-  if (process.env.NODE_ENV === 'production' || !idToken) {
+  if (!idToken) {
     return new Response('Bad Request', { status: 404 });
   }
 
