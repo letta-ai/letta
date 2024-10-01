@@ -6,6 +6,7 @@ import { resolve } from 'path';
 config({ path: resolve(__dirname, '.env') });
 
 export default defineConfig({
+  projectId: '7kya1h',
   e2e: {
     ...nxE2EPreset(__filename, { cypressDir: 'cypress', bundler: 'vite' }),
     baseUrl: 'http://localhost:3000',
