@@ -16,6 +16,8 @@ jobs:
         options: --health-cmd "curl -f http://localhost:8083" --health-interval 10s --health-timeout 5s --health-retries 5
       redis:
         image: redis
+        ports:
+          - 6379:6379
         options: >-
           --health-cmd "redis-cli ping"
           --health-interval 10s
@@ -23,8 +25,12 @@ jobs:
           --health-retries 5
       postgres:
         image: postgres
+        ports:
+          - 5432:5432
         env:
+          POSTGRES_DB: postgres
           POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -42,12 +48,16 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Check connection to postgres
+        run: docker run --network host -e PGPASSWORD=postgres postgres psql -h localhost -U postgres -d postgres -c 'SELECT 1;'
+      - name: Check connection to redis
+        run: docker run --network host redis redis-cli ping
+      - name: Check connection to letta
+        run: docker run --network host lettaai/letta curl -f http://localhost:8083
       - name: Cypress run
         # Uses the official Cypress GitHub action https://github.com/cypress-io/github-action
         uses: cypress-io/github-action@v6
         with:
-          # Starts web server for E2E tests - replace with your own server invocation
-          # https://docs.cypress.io/guides/continuous-integration/introduction#Boot-your-server
           build: npm run build:e2e
           start: npm run start:e2e
           project: apps/letta
