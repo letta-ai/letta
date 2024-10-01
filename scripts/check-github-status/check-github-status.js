@@ -51,12 +51,22 @@ async function checkStatus() {
 
     if (isCypressSuccess) {
       console.log('Status is success');
+
+      fetch(process.env.SLACK_WEBHOOK_URL, {
+        method: 'POST',
+        body: JSON.stringify({ text: 'Cypress test suceeded' }),
+      })
+
       process.exit(0);
     }
 
-    console.log('Status is not success, will not continue to build');
-    process.exit(1);
+    throw new Error('Cypress tests failed');
   } catch (error) {
+    fetch(process.env.SLACK_WEBHOOK_URL, {
+      method: 'POST',
+      body: JSON.stringify({ text: 'Cypress tests failed - check them out here (https://cloud.cypress.io/projects/7kya1h/runs)' }),
+    })
+
     console.error(error);
     process.exit(1);
   }
