@@ -30,6 +30,7 @@
     "cl": "npm run component-libray",
     "cl:new": "npm run component-libray:new",
     "cl:generate-icons": "nx g @letta-web/configure:generate-icons",
+    "check-github-status": "node ./scripts/check-github-status/check-github-status.js",
     "agents-api:generate": "nx run letta-agents-api:generate && nx run letta-agents-api:monkeypatch"
   },
   "private": true,

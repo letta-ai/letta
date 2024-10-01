@@ -103,3 +103,8 @@ describe-web:
 # Get migration job logs
 migration-logs:
     kubectl logs job/{{HELM_CHART_NAME}}-migration
+
+
+check-github-status:
+    @echo "🚧 Checking GitHub status..."
+    npm run check-github-status

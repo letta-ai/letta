@@ -39,6 +39,7 @@ steps:
         # Run build and deploy
         ./just configure-docker
         ./just configure-kubectl
+        ./just check-github-status
         ./just build
         ./just deploy
 
@@ -62,6 +63,7 @@ options:
     - 'NEXT_PUBLIC_CURRENT_HOST=${_NEXT_PUBLIC_CURRENT_HOST}'
     - 'REDIS_HOST=${_REDIS_HOST}'
     - 'SLACK_WEBHOOK_URL=${_SLACK_WEBHOOK_URL}'
+    - 'GITHUB_READ_STATUS_TOKEN=${_GITHUB_READ_STATUS_TOKEN}'
   logging: CLOUD_LOGGING_ONLY
 
 timeout: '3600s'
