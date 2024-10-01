@@ -66,11 +66,11 @@ jobs:
           CYPRESS_RECORD_KEY: ${{ secrets.CYPRESS_RECORD_KEY }}
           # Creating a token https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          DATABASE_URL: postgres://postgres:postgres@postgres:5432/postgres
-          REDIS_HOST: redis
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
+          REDIS_HOST: localhost
           REDIS_PORT: 6379
           CYPRESS_GOOGLE_CLIENT_ID: ${{ secrets.CYPRESS_GOOGLE_CLIENT_ID }}
           CYPRESS_GOOGLE_CLIENT_SECRET: ${{ secrets.CYPRESS_GOOGLE_CLIENT_SECRET }}
           CYPRESS_GOOGLE_REDIRECT_URI: ${{ secrets.CYPRESS_GOOGLE_REDIRECT_URI }}
-          LETTA_AGENTS_ENDPOINT: http://letta:8083
+          LETTA_AGENTS_ENDPOINT: http://localhost:8083
           NEXT_PUBLIC_CURRENT_HOST: http://localhost:3000
