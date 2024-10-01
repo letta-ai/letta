@@ -14,6 +14,10 @@ function LoadMixpanelAnalyticsInner() {
       return;
     }
 
+    if (!environment.NEXT_PUBLIC_MIXPANEL_TOKEN) {
+      return;
+    }
+
     mounted.current = true;
     mixpanel.init(environment.NEXT_PUBLIC_MIXPANEL_TOKEN);
   }, []);
@@ -48,6 +52,10 @@ export function IdentifyUserForMixpanel(props: IdentifyUserProps) {
 
   useEffect(() => {
     try {
+      if (!environment.NEXT_PUBLIC_MIXPANEL_TOKEN) {
+        return;
+      }
+
       mixpanel.identify(userId);
     } catch (error) {
       console.error('Error identifying user', error);
@@ -62,6 +70,10 @@ export function trackClientSideEvent<Event extends AnalyticsEvent>(
   properties: AnalyticsEventProperties[Event]
 ) {
   try {
+    if (!environment.NEXT_PUBLIC_MIXPANEL_TOKEN) {
+      return;
+    }
+
     mixpanel.track(eventName, properties);
   } catch (error) {
     console.error('Error tracking event', error);

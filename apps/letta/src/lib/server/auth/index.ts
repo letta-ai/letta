@@ -155,7 +155,7 @@ async function createUserAndOrganization(
       .insert(users)
       .values({
         organizationId,
-        name: userData.name,
+        name: userData.name || 'New User',
         lettaAgentsId: lettaAgentsUser.id,
         imageUrl: userData.imageUrl,
         email: userData.email,

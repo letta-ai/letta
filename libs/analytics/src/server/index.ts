@@ -8,6 +8,10 @@ import type { AnalyticsEvent, AnalyticsEventProperties } from '../events';
 let mixpanelSingleton: mixpanel.Mixpanel | null = null;
 
 function getMixpanel() {
+  if (!environment.NEXT_PUBLIC_MIXPANEL_TOKEN) {
+    return null;
+  }
+
   if (!mixpanelSingleton) {
     mixpanelSingleton = mixpanel.init(environment.MIXPANEL_TOKEN);
   }
@@ -22,7 +26,13 @@ export interface TrackUserPayload {
 }
 
 export function trackUserOnServer(user: TrackUserPayload) {
-  getMixpanel().people.set(user.userId, {
+  const mixpanel = getMixpanel();
+
+  if (!mixpanel) {
+    return;
+  }
+
+  mixpanel.people.set(user.userId, {
     $name: user.name,
     $email: user.email,
   });
@@ -32,13 +42,19 @@ export function trackServerSideEvent<Event extends AnalyticsEvent>(
   eventName: Event,
   properties: AnalyticsEventProperties[Event]
 ) {
+  const mixpanel = getMixpanel();
+
+  if (!mixpanel) {
+    return;
+  }
+
   if (properties) {
-    getMixpanel().track(eventName, {
+    mixpanel.track(eventName, {
       distinct_id: properties.userId,
       ...properties,
     });
     return;
   }
 
-  getMixpanel().track(eventName);
+  mixpanel.track(eventName);
 }
