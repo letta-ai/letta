@@ -68,7 +68,8 @@ jobs:
           LETTA_DEBUG: True
         working-directory: letta-agents
         run:
-          docker run
+          docker build -t letta-agents .
+          docker run -d -p 8083:8083 --name letta-agents letta-agents
 
       - name: Cypress run
         # Uses the official Cypress GitHub action https://github.com/cypress-io/github-action
