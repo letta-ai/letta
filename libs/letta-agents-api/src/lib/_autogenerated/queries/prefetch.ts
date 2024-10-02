@@ -98,10 +98,42 @@ export const prefetchUseSourcesServiceListSourceDocuments = (
     queryKey: Common.UseSourcesServiceListSourceDocumentsKeyFn({ sourceId }),
     queryFn: () => SourcesService.listSourceDocuments({ sourceId }),
   });
-export const prefetchUseAgentsServiceListAgents = (queryClient: QueryClient) =>
+export const prefetchUseAgentsServiceListAgents = (
+  queryClient: QueryClient,
+  {
+    byVersion,
+    limit,
+    name,
+    offset,
+    projectId,
+    template,
+  }: {
+    byVersion?: string;
+    limit?: number;
+    name?: string;
+    offset?: number;
+    projectId?: string;
+    template?: boolean;
+  } = {}
+) =>
   queryClient.prefetchQuery({
-    queryKey: Common.UseAgentsServiceListAgentsKeyFn(),
-    queryFn: () => AgentsService.listAgents(),
+    queryKey: Common.UseAgentsServiceListAgentsKeyFn({
+      byVersion,
+      limit,
+      name,
+      offset,
+      projectId,
+      template,
+    }),
+    queryFn: () =>
+      AgentsService.listAgents({
+        byVersion,
+        limit,
+        name,
+        offset,
+        projectId,
+        template,
+      }),
   });
 export const prefetchUseAgentsServiceGetAgent = (
   queryClient: QueryClient,

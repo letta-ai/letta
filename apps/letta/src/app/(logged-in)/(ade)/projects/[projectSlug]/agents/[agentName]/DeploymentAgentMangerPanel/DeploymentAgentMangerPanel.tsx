@@ -42,7 +42,7 @@ function StageAndDeployDialog() {
 
   const handleVersionNewAgent = useCallback(() => {
     mutate({
-      params: { agentId: agentTemplateId },
+      params: { agent_id: agentTemplateId },
     });
   }, [mutate, agentTemplateId]);
 

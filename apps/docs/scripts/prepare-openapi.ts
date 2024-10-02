@@ -39,11 +39,26 @@ lettaAgentsAPI.paths = Object.fromEntries(
   )
 );
 
+const lettaAgentsAPIWithNoEndslash = Object.keys(lettaAgentsAPI.paths).reduce(
+  (acc, path) => {
+    const pathWithoutSlash = path.endsWith('/')
+      ? path.slice(0, path.length - 1)
+      : path;
+    acc[pathWithoutSlash] = lettaAgentsAPI.paths[path];
+    return acc;
+  },
+  {} as Swagger.SwaggerV3['paths']
+);
+
 // remove duplicate paths, delete from letta-web-openapi if it exists in letta-agents-api
+// some paths will have an extra / at the end, so we need to remove that as well
 lettaWebOpenAPI.paths = Object.fromEntries(
-  Object.entries(lettaWebOpenAPI.paths).filter(
-    ([path]) => !lettaAgentsAPI.paths[path]
-  )
+  Object.entries(lettaWebOpenAPI.paths).filter(([path]) => {
+    const pathWithoutSlash = path.endsWith('/')
+      ? path.slice(0, path.length - 1)
+      : path;
+    return !lettaAgentsAPIWithNoEndslash[pathWithoutSlash];
+  })
 );
 
 const result = merge([

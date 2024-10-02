@@ -79,7 +79,7 @@ const UniqueIdentifierConflictResponseSchema = z.object({
 
 const createAgentContract = c.mutation({
   method: 'POST',
-  path: '/v1/agents/',
+  path: '/v1/agents',
   summary: 'Create Agent',
   description: 'Create a new agent with the specified configuration.',
   body: CreateAgentBodySchema,
@@ -104,11 +104,11 @@ const FailedToDeployAgentTemplateErrorSchema = z.object({
 const versionAgentTemplateContract = c.mutation({
   method: 'POST',
   summary: 'Version Agent Template',
-  path: '/v1/agents/:agentId/version-template',
+  path: '/v1/agents/:agent_id/version-template',
   description: 'Creates a versioned version of an agent',
   body: z.undefined(),
   pathParams: z.object({
-    agentId: z.string().openapi({
+    agent_id: z.string().openapi({
       description:
         'The agent ID of the agent to migrate, if this agent is not a template, it will create a agent template from the agent provided as well',
     }),
@@ -153,11 +153,11 @@ const MigrationFailedDueToProjectMismatchResponseSchema = z.object({
 const migrateAgentContract = c.mutation({
   method: 'POST',
   summary: 'Migrate Agent',
-  path: '/v1/agents/:agentId/migrate',
+  path: '/v1/agents/:agent_id/migrate',
   description: 'Migrate an agent to a new versioned agent template',
   body: MigrateAgentToNewVersionedAgentTemplateBodySchema,
   pathParams: z.object({
-    agentId: z.string(),
+    agent_id: z.string(),
   }),
   responses: {
     200: MigrateAgentToNewVersionedAgentTemplateResponseSchema,
@@ -181,7 +181,7 @@ const ListAgentsQuerySchema = z.object({
 const listAgentsContract = c.query({
   method: 'GET',
   summary: 'List Agents',
-  path: '/v1/agents/',
+  path: '/v1/agents',
   description:
     'List all agents associated with a given user. This endpoint retrieves a list of all agents and their configurations associated with the specified user ID',
   query: ListAgentsQuerySchema,
@@ -200,10 +200,10 @@ const GetAgentByIdNotFoundResponseSchema = z.object({
 const getAgentByIdContract = c.query({
   method: 'GET',
   summary: 'Get Agent By Id',
-  path: '/v1/agents/:agentId',
+  path: '/v1/agents/:agent_id',
   description: 'Get an agent by its ID',
   pathParams: z.object({
-    agentId: z.string(),
+    agent_id: z.string(),
   }),
   responses: {
     200: GetAgentByIdResponseSchema,
@@ -227,10 +227,10 @@ const DeleteAgentFailedResponseSchema = z.object({
 const deleteAgentContract = c.mutation({
   method: 'DELETE',
   summary: 'Delete Agent',
-  path: '/v1/agents/:agentId',
+  path: '/v1/agents/:agent_id',
   description: 'Delete an agent by its ID',
   pathParams: z.object({
-    agentId: z.string(),
+    agent_id: z.string(),
   }),
   body: z.undefined(),
   responses: {
@@ -264,11 +264,11 @@ const UpdateAgentFailedResponseSchema = z.object({
 const updateAgentContract = c.mutation({
   method: 'PATCH',
   summary: 'Update Agent',
-  path: '/v1/agents/:agentId',
+  path: '/v1/agents/:agent_id',
   description: 'Update an agent by its ID',
   body: UpdateAgentBodySchema,
   pathParams: z.object({
-    agentId: z.string(),
+    agent_id: z.string(),
   }),
   responses: {
     200: UpdateAgentResponseSchema,

@@ -745,17 +745,140 @@
         "summary": "List Agents",
         "description": "List all agents associated with a given user.\nThis endpoint retrieves a list of all agents and their configurations associated with the specified user ID.",
         "operationId": "list_agents",
+        "parameters": [
+          {
+            "name": "template",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Show only template agents, only available on Letta Cloud.",
+              "default": false,
+              "title": "Template"
+            },
+            "description": "Show only template agents, only available on Letta Cloud."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Maximum number of agents to retrieve, only available on Letta Cloud.",
+              "default": 10,
+              "title": "Limit"
+            },
+            "description": "Maximum number of agents to retrieve, only available on Letta Cloud."
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Number of agents to skip, only available on Letta Cloud.",
+              "default": 0,
+              "title": "Offset"
+            },
+            "description": "Number of agents to skip, only available on Letta Cloud."
+          },
+          {
+            "name": "name",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter agents by name, only available on Letta Cloud.",
+              "title": "Name"
+            },
+            "description": "Filter agents by name, only available on Letta Cloud."
+          },
+          {
+            "name": "by_version",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter agents by template and version id, only available on Letta Cloud.",
+              "title": "By Version"
+            },
+            "description": "Filter agents by template and version id, only available on Letta Cloud."
+          },
+          {
+            "name": "project_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter agents by project id, only available on Letta Cloud.",
+              "title": "Project Id"
+            },
+            "description": "Filter agents by project id, only available on Letta Cloud."
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
+                  "type": "array",
                   "items": {
                     "$ref": "#/components/schemas/AgentState"
                   },
-                  "type": "array",
                   "title": "Response List Agents"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -768,14 +891,14 @@
         "description": "Create a new agent with the specified configuration.",
         "operationId": "create_agent",
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/CreateAgent"
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "200": {
@@ -2038,14 +2161,14 @@
         }
       }
     },
-    "/v1/agents/{agentId}/version-template": {
+    "/v1/agents/{agent_id}/version-template": {
       "post": {
         "description": "Creates a versioned version of an agent",
         "summary": "Version Agent Template",
         "tags": ["agents"],
         "parameters": [
           {
-            "name": "agentId",
+            "name": "agent_id",
             "in": "path",
             "required": true,
             "schema": {
@@ -2071,11 +2194,11 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "template_key": {
+                    "version": {
                       "type": "string"
                     }
                   },
-                  "required": ["template_key"]
+                  "required": ["version"]
                 }
               }
             }
@@ -2117,14 +2240,14 @@
         }
       }
     },
-    "/v1/agents/{agentId}/migrate": {
+    "/v1/agents/{agent_id}/migrate": {
       "post": {
         "description": "Migrate an agent to a new versioned agent template",
         "summary": "Migrate Agent",
         "tags": ["agents"],
         "parameters": [
           {
-            "name": "agentId",
+            "name": "agent_id",
             "in": "path",
             "required": true,
             "schema": {
@@ -2140,14 +2263,14 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "template_key": {
+                  "to_template": {
                     "type": "string"
                   },
                   "preserve_core_memories": {
                     "type": "boolean"
                   }
                 },
-                "required": ["template_key", "preserve_core_memories"]
+                "required": ["to_template", "preserve_core_memories"]
               }
             }
           }
@@ -2180,7 +2303,8 @@
                     "message": {
                       "type": "string",
                       "enum": [
-                        "Agent provided is a template or not found, you can only migrate deployed agents"
+                        "Agent provided is a template or not found, you can only migrate deployed agents",
+                        "Template version provided does not exist"
                       ]
                     }
                   },
@@ -3133,6 +3257,42 @@
               }
             ],
             "description": "The embedding configuration used by the agent."
+          },
+          "template": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Template",
+            "description": "Whether the agent is a template, only used on Letta Cloud."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "The project to associate the agent with, only used on Letta Cloud."
+          },
+          "from_template": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "From Template",
+            "description": "Create a agent from a template given it's name and version, only used on Letta Cloud."
           }
         },
         "additionalProperties": false,
@@ -5613,7 +5773,8 @@
             },
             "type": "array",
             "title": "Tags",
-            "description": "Metadata tags."
+            "description": "Metadata tags.",
+            "default": []
           },
           "source_code": {
             "type": "string",
@@ -5635,7 +5796,7 @@
         },
         "additionalProperties": false,
         "type": "object",
-        "required": ["tags", "source_code"],
+        "required": ["source_code"],
         "title": "ToolCreate"
       },
       "ToolFunctionChoice": {

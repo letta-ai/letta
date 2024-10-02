@@ -309,6 +309,18 @@ export type CreateAgent = {
    * The embedding configuration used by the agent.
    */
   embedding_config?: EmbeddingConfig | null;
+  /**
+   * Whether the agent is a template, only used on Letta Cloud.
+   */
+  template?: boolean | null;
+  /**
+   * The project to associate the agent with, only used on Letta Cloud.
+   */
+  project_id?: string | null;
+  /**
+   * Create a agent from a template given it's name and version, only used on Letta Cloud.
+   */
+  from_template?: string | null;
 };
 
 export type CreateArchivalMemory = {
@@ -1580,7 +1592,7 @@ export type ToolCreate = {
   /**
    * Metadata tags.
    */
-  tags: Array<string>;
+  tags?: Array<string>;
   /**
    * The source code of the function.
    */
@@ -2086,6 +2098,33 @@ export type ListSourceDocumentsData = {
 };
 
 export type ListSourceDocumentsResponse = Array<Document>;
+
+export type ListAgentsData = {
+  /**
+   * Filter agents by template and version id, only available on Letta Cloud.
+   */
+  byVersion?: string | null;
+  /**
+   * Maximum number of agents to retrieve, only available on Letta Cloud.
+   */
+  limit?: number | null;
+  /**
+   * Filter agents by name, only available on Letta Cloud.
+   */
+  name?: string | null;
+  /**
+   * Number of agents to skip, only available on Letta Cloud.
+   */
+  offset?: number | null;
+  /**
+   * Filter agents by project id, only available on Letta Cloud.
+   */
+  projectId?: string | null;
+  /**
+   * Show only template agents, only available on Letta Cloud.
+   */
+  template?: boolean | null;
+};
 
 export type ListAgentsResponse = Array<AgentState>;
 
@@ -2601,11 +2640,16 @@ export type $OpenApiTs = {
   };
   '/v1/agents/': {
     get: {
+      req: ListAgentsData;
       res: {
         /**
          * Successful Response
          */
         200: Array<AgentState>;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
       };
     };
     post: {

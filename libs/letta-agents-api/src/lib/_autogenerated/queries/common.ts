@@ -144,9 +144,26 @@ export type AgentsServiceListAgentsQueryResult<
   TError = unknown
 > = UseQueryResult<TData, TError>;
 export const useAgentsServiceListAgentsKey = 'AgentsServiceListAgents';
-export const UseAgentsServiceListAgentsKeyFn = (queryKey?: Array<unknown>) => [
+export const UseAgentsServiceListAgentsKeyFn = (
+  {
+    byVersion,
+    limit,
+    name,
+    offset,
+    projectId,
+    template,
+  }: {
+    byVersion?: string;
+    limit?: number;
+    name?: string;
+    offset?: number;
+    projectId?: string;
+    template?: boolean;
+  } = {},
+  queryKey?: Array<unknown>
+) => [
   useAgentsServiceListAgentsKey,
-  ...(queryKey ?? []),
+  ...(queryKey ?? [{ byVersion, limit, name, offset, projectId, template }]),
 ];
 export type AgentsServiceGetAgentDefaultResponse = Awaited<
   ReturnType<typeof AgentsService.getAgent>

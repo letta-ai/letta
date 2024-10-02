@@ -936,6 +936,44 @@ export const $CreateAgent = {
       ],
       description: 'The embedding configuration used by the agent.',
     },
+    template: {
+      anyOf: [
+        {
+          type: 'boolean',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Template',
+      description: 'Whether the agent is a template, only used on Letta Cloud.',
+    },
+    project_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Project Id',
+      description:
+        'The project to associate the agent with, only used on Letta Cloud.',
+    },
+    from_template: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'From Template',
+      description:
+        "Create a agent from a template given it's name and version, only used on Letta Cloud.",
+    },
   },
   additionalProperties: false,
   type: 'object',
@@ -3584,6 +3622,7 @@ export const $ToolCreate = {
       type: 'array',
       title: 'Tags',
       description: 'Metadata tags.',
+      default: [],
     },
     source_code: {
       type: 'string',
@@ -3606,7 +3645,7 @@ export const $ToolCreate = {
   },
   additionalProperties: false,
   type: 'object',
-  required: ['tags', 'source_code'],
+  required: ['source_code'],
   title: 'ToolCreate',
 } as const;
 

@@ -5,7 +5,7 @@
     "version": "1.0.0"
   },
   "paths": {
-    "/v1/agents/": {
+    "/v1/agents": {
       "post": {
         "description": "Create a new agent with the specified configuration.",
         "summary": "Create Agent",
@@ -180,10 +180,7 @@
                   "project_id": {
                     "type": "string"
                   },
-                  "template_key": {
-                    "type": "string"
-                  },
-                  "unique_identifier": {
+                  "from_template": {
                     "type": "string"
                   }
                 }
@@ -203,8 +200,23 @@
                   "type": "object",
                   "properties": {
                     "message": {
-                      "type": "string",
-                      "enum": ["Template key not found", "Project not found"]
+                      "oneOf": [
+                        {
+                          "oneOf": [
+                            {
+                              "type": "string",
+                              "enum": ["Template not found"]
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": ["Project not found"]
+                        }
+                      ]
                     }
                   },
                   "required": ["message"]
@@ -223,7 +235,7 @@
                       "type": "string",
                       "enum": [
                         "An agent with the same name already exists",
-                        "project_id is required when providing an explicit name"
+                        "project_id is required when providing a name"
                       ]
                     }
                   },
@@ -274,14 +286,14 @@
             }
           },
           {
-            "name": "template_key",
+            "name": "by_version",
             "in": "query",
             "schema": {
               "type": "string"
             }
           },
           {
-            "name": "unique_identifier",
+            "name": "name",
             "in": "query",
             "schema": {
               "type": "string"
@@ -310,14 +322,14 @@
         }
       }
     },
-    "/v1/agents/{agentId}/version-template": {
+    "/v1/agents/{agent_id}/version-template": {
       "post": {
         "description": "Creates a versioned version of an agent",
         "summary": "Version Agent Template",
         "tags": ["agents"],
         "parameters": [
           {
-            "name": "agentId",
+            "name": "agent_id",
             "in": "path",
             "required": true,
             "schema": {
@@ -343,11 +355,11 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "template_key": {
+                    "version": {
                       "type": "string"
                     }
                   },
-                  "required": ["template_key"]
+                  "required": ["version"]
                 }
               }
             }
@@ -389,14 +401,14 @@
         }
       }
     },
-    "/v1/agents/{agentId}/migrate": {
+    "/v1/agents/{agent_id}/migrate": {
       "post": {
         "description": "Migrate an agent to a new versioned agent template",
         "summary": "Migrate Agent",
         "tags": ["agents"],
         "parameters": [
           {
-            "name": "agentId",
+            "name": "agent_id",
             "in": "path",
             "required": true,
             "schema": {
@@ -412,14 +424,14 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "template_key": {
+                  "to_template": {
                     "type": "string"
                   },
                   "preserve_core_memories": {
                     "type": "boolean"
                   }
                 },
-                "required": ["template_key", "preserve_core_memories"]
+                "required": ["to_template", "preserve_core_memories"]
               }
             }
           }
@@ -452,7 +464,8 @@
                     "message": {
                       "type": "string",
                       "enum": [
-                        "Agent provided is a template or not found, you can only migrate deployed agents"
+                        "Agent provided is a template or not found, you can only migrate deployed agents",
+                        "Template version provided does not exist"
                       ]
                     }
                   },
@@ -490,6 +503,214 @@
                     "message": {
                       "type": "string",
                       "enum": ["Migration failed"]
+                    }
+                  },
+                  "required": ["message"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/agents/{agent_id}": {
+      "get": {
+        "description": "Get an agent by its ID",
+        "summary": "Get Agent By Id",
+        "tags": ["agents"],
+        "parameters": [
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "operationId": "agents.getAgentById",
+        "responses": {
+          "200": {
+            "description": "200"
+          },
+          "404": {
+            "description": "404",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "enum": ["Agent not found"]
+                    }
+                  },
+                  "required": ["message"]
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "description": "Delete an agent by its ID",
+        "summary": "Delete Agent",
+        "tags": ["agents"],
+        "parameters": [
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "operationId": "agents.deleteAgent",
+        "requestBody": {
+          "description": "Body",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [true]
+                    }
+                  },
+                  "required": ["success"]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "404",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "enum": ["Agent not found"]
+                    }
+                  },
+                  "required": ["message"]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "500",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "enum": ["Failed to delete agent"]
+                    }
+                  },
+                  "required": ["message"]
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "description": "Update an agent by its ID",
+        "summary": "Update Agent",
+        "tags": ["agents"],
+        "parameters": [
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "operationId": "agents.updateAgent",
+        "responses": {
+          "200": {
+            "description": "200"
+          },
+          "400": {
+            "description": "400",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "enum": [
+                        "Name must be alphanumeric, with underscores or dashes"
+                      ]
+                    }
+                  },
+                  "required": ["message"]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "404",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "enum": ["Agent not found"]
+                    }
+                  },
+                  "required": ["message"]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "409",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "enum": ["An agent with the same name already exists"]
+                    }
+                  },
+                  "required": ["message"]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "500",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "enum": ["Failed to update agent"]
                     }
                   },
                   "required": ["message"]

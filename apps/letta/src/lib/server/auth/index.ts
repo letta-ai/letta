@@ -220,7 +220,7 @@ async function createUserAndOrganization(
   const versionedAgentTemplate = await versionAgentTemplate(
     {
       params: {
-        agentId: createdAgentTemplate.body.id,
+        agent_id: createdAgentTemplate.body.id,
       },
     },
     {

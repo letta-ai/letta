@@ -36,6 +36,7 @@ import type {
   ListSourcePassagesResponse,
   ListSourceDocumentsData,
   ListSourceDocumentsResponse,
+  ListAgentsData,
   ListAgentsResponse,
   CreateAgentData,
   CreateAgentResponse,
@@ -543,15 +544,34 @@ export class AgentsService {
    * List Agents
    * List all agents associated with a given user.
    * This endpoint retrieves a list of all agents and their configurations associated with the specified user ID.
+   * @param data The data for the request.
+   * @param data.template Show only template agents, only available on Letta Cloud.
+   * @param data.limit Maximum number of agents to retrieve, only available on Letta Cloud.
+   * @param data.offset Number of agents to skip, only available on Letta Cloud.
+   * @param data.name Filter agents by name, only available on Letta Cloud.
+   * @param data.byVersion Filter agents by template and version id, only available on Letta Cloud.
+   * @param data.projectId Filter agents by project id, only available on Letta Cloud.
    * @returns AgentState Successful Response
    * @throws ApiError
    */
-  public static listAgents(headers?: {
-    user_id: string;
-  }): CancelablePromise<ListAgentsResponse> {
+  public static listAgents(
+    data: ListAgentsData = {},
+    headers?: { user_id: string }
+  ): CancelablePromise<ListAgentsResponse> {
     return __request(OpenAPI, {
       method: 'GET',
       url: '/v1/agents/',
+      query: {
+        template: data.template,
+        limit: data.limit,
+        offset: data.offset,
+        name: data.name,
+        by_version: data.byVersion,
+        project_id: data.projectId,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
       headers,
     });
   }

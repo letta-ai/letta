@@ -326,7 +326,7 @@ export async function versionAgentTemplate(
   req: DeployAgentTemplateRequest,
   context: SDKContext
 ): Promise<DeployAgentTemplateResponse> {
-  const { agentId } = req.params;
+  const { agent_id: agentId } = req.params;
 
   const existingDeployedAgentTemplateCount =
     await db.query.deployedAgentTemplates.findMany({
@@ -445,7 +445,7 @@ export async function migrateAgent(
   context: SDKContext
 ): Promise<MigrateAgentResponse> {
   const { to_template, preserve_core_memories } = req.body;
-  const { agentId } = req.params;
+  const { agent_id: agentId } = req.params;
   const { lettaAgentsUserId } = context.request;
 
   const [templateName, version] = to_template.split(':');
@@ -732,7 +732,7 @@ async function getAgentById(
   req: GetAgentByIdRequest,
   context: SDKContext
 ): Promise<GetAgentByIdResponse> {
-  const { agentId } = req.params;
+  const { agent_id: agentId } = req.params;
 
   const [agent, deployedAgent, agentTemplate] = await Promise.all([
     AgentsService.getAgent(
@@ -796,7 +796,7 @@ export async function deleteAgent(
   req: DeleteAgentRequest,
   context: SDKContext
 ): Promise<DeleteAgentResponse> {
-  const { agentId } = req.params;
+  const { agent_id: agentId } = req.params;
 
   const [deployedAgent, agentTemplate] = await Promise.all([
     db.query.deployedAgents.findFirst({
@@ -857,7 +857,7 @@ export async function updateAgent(
   req: UpdateAgentRequest,
   context: SDKContext
 ): Promise<UpdateAgentResponse> {
-  const { agentId } = req.params;
+  const { agent_id: agentId } = req.params;
 
   const [deployedAgent, agentTemplate] = await Promise.all([
     db.query.deployedAgents.findFirst({

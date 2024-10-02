@@ -165,12 +165,38 @@ export const useAgentsServiceListAgentsSuspense = <
   TError = unknown,
   TQueryKey extends Array<unknown> = unknown[]
 >(
+  {
+    byVersion,
+    limit,
+    name,
+    offset,
+    projectId,
+    template,
+  }: {
+    byVersion?: string;
+    limit?: number;
+    name?: string;
+    offset?: number;
+    projectId?: string;
+    template?: boolean;
+  } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
 ) =>
   useSuspenseQuery<TData, TError>({
-    queryKey: Common.UseAgentsServiceListAgentsKeyFn(queryKey),
-    queryFn: () => AgentsService.listAgents() as TData,
+    queryKey: Common.UseAgentsServiceListAgentsKeyFn(
+      { byVersion, limit, name, offset, projectId, template },
+      queryKey
+    ),
+    queryFn: () =>
+      AgentsService.listAgents({
+        byVersion,
+        limit,
+        name,
+        offset,
+        projectId,
+        template,
+      }) as TData,
     ...options,
   });
 export const useAgentsServiceGetAgentSuspense = <
