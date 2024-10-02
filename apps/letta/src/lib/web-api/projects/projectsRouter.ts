@@ -106,51 +106,6 @@ export async function getProjectByIdOrSlug(
   };
 }
 
-type GetProjectAgentTemplatesResponse = ServerInferResponses<
-  typeof contracts.projects.getProjectAgentTemplates
->;
-type GetProjectAgentTemplatesRequest = ServerInferRequest<
-  typeof contracts.projects.getProjectAgentTemplates
->;
-
-export async function getProjectAgentTemplates(
-  req: GetProjectAgentTemplatesRequest
-): Promise<GetProjectAgentTemplatesResponse> {
-  const { projectId } = req.params;
-  const { search, offset, limit } = req.query;
-  const organizationId = await getUserOrganizationIdOrThrow();
-
-  const where = [
-    eq(agentTemplates.organizationId, organizationId),
-    eq(agentTemplates.projectId, projectId),
-  ];
-
-  if (search) {
-    where.push(like(agentTemplates.name, search || '%'));
-  }
-
-  const agents = await db.query.agentTemplates.findMany({
-    where: and(...where),
-    limit,
-    offset,
-    columns: {
-      name: true,
-      id: true,
-      updatedAt: true,
-    },
-    orderBy: [desc(agentTemplates.createdAt)],
-  });
-
-  return {
-    status: 200,
-    body: agents.map((agent) => ({
-      name: agent.name,
-      id: agent.id,
-      updatedAt: agent.updatedAt.toISOString(),
-    })),
-  };
-}
-
 type CreateProjectRequest = ServerInferRequest<
   typeof contracts.projects.createProject
 >;
@@ -881,7 +836,6 @@ export async function deleteProject(
 export const projectsRouter = {
   getProjects,
   getProjectByIdOrSlug,
-  getProjectAgentTemplates,
   createProject,
   createProjectAgentTemplate,
   getProjectDeployedAgentTemplates,

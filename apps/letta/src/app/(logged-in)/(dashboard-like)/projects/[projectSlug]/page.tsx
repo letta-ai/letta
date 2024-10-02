@@ -1,7 +1,6 @@
 'use client';
 
 import {
-  ActionCard,
   Button,
   DashboardEmptyArea,
   DashboardPageLayout,
@@ -15,38 +14,8 @@ import React, { useMemo } from 'react';
 import { useCurrentProject } from './hooks';
 import { webApi, webApiQueryKeys } from '$letta/client';
 import type { ProjectAgentTemplateType } from '$letta/web-api/contracts';
-import { nicelyFormattedDateAndTime } from '@letta-web/helpful-client-utils';
 import { useTranslations } from 'next-intl';
-
-interface AgentTemplateCardProps {
-  id: string;
-  name: string;
-  lastUpdatedAt: string;
-}
-
-function AgentTemplateCard(props: AgentTemplateCardProps) {
-  const t = useTranslations('projects/(projectSlug)/page');
-  const { name, lastUpdatedAt } = props;
-  const { slug: projectSlug } = useCurrentProject();
-
-  return (
-    <ActionCard
-      title={name}
-      subtitle={t('agentTemplateCard.subtitle', {
-        date: nicelyFormattedDateAndTime(lastUpdatedAt),
-      })}
-      mainAction={
-        <HStack>
-          <Button
-            href={`/projects/${projectSlug}/agents/${name}`}
-            color="secondary"
-            label={t('agentTemplateCard.openInADE')}
-          />
-        </HStack>
-      }
-    ></ActionCard>
-  );
-}
+import { AgentTemplateCard } from '$letta/client/components';
 
 interface AgentTemplatesListProps {
   agents?: ProjectAgentTemplateType[];
@@ -94,12 +63,7 @@ function AgentTemplatesList(props: AgentTemplatesListProps) {
   return (
     <VStack fullWidth>
       {agents.map((agent) => (
-        <AgentTemplateCard
-          key={agent.id}
-          id={agent.id}
-          name={agent.name}
-          lastUpdatedAt={agent.updatedAt}
-        />
+        <AgentTemplateCard key={agent.id} agent={agent} />
       ))}
     </VStack>
   );
@@ -107,38 +71,33 @@ function AgentTemplatesList(props: AgentTemplatesListProps) {
 
 function AgentTemplatesSection() {
   const { id: currentProjectId, slug: projectSlug } = useCurrentProject();
-  const { data } = webApi.projects.getProjectAgentTemplates.useQuery({
-    queryKey: webApiQueryKeys.projects.getProjectAgentTemplatesWithSearch(
-      currentProjectId,
-      { search: '', limit: RECENT_AGENTS_TO_DISPLAY + 1 }
-    ),
+  const { data } = webApi.agentTemplates.listAgentTemplates.useQuery({
+    queryKey: webApiQueryKeys.agentTemplates.listAgentTemplatesWithSearch({
+      search: '',
+      projectId: currentProjectId,
+      limit: RECENT_AGENTS_TO_DISPLAY + 1,
+    }),
     queryData: {
       query: {
-        orderBy: 'createdAt',
-        orderDirection: 'desc',
-      },
-      params: {
         projectId: currentProjectId,
+        limit: RECENT_AGENTS_TO_DISPLAY + 1,
       },
     },
   });
 
   const t = useTranslations('projects/(projectSlug)/page');
 
-  const agentCount = useMemo(() => data?.body.length ?? 0, [data]);
+  const agentCount = useMemo(
+    () => data?.body.agentTemplates.length ?? 0,
+    [data]
+  );
   const agentsList = useMemo(
-    () => data?.body.slice(0, RECENT_AGENTS_TO_DISPLAY),
+    () => data?.body.agentTemplates.slice(0, RECENT_AGENTS_TO_DISPLAY),
     [data]
   );
 
   return (
     <>
-      {/*{agentCount === 0 && (*/}
-      {/*  <Alert*/}
-      {/*    title="You have no testing agents in this project"*/}
-      {/*    action={<Button size="small" postIcon={<ArrowRightIcon />} label="Create a testing agent" color="secondary" href={`/projects/${currentProjectId}/agents/new`} />}*/}
-      {/*  />*/}
-      {/*)}*/}
       <DashboardPageSection
         title={t('agentTemplatesSection.title')}
         actions={

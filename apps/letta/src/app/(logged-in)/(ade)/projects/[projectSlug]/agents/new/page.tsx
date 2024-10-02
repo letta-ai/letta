@@ -56,7 +56,7 @@ function CreateAgentsView() {
   } = webApi.projects.createProjectAgentTemplate.useMutation({
     onSuccess: (response) => {
       void queryClient.invalidateQueries({
-        queryKey: webApiQueryKeys.projects.getProjectAgentTemplates(projectId),
+        queryKey: webApiQueryKeys.agentTemplates.listAgentTemplates,
       });
 
       push(`/projects/${projectSlug}/agents/${response.body.name}`);

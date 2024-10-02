@@ -5,6 +5,7 @@ import * as organizationsRouter from './organizations/organizationsRouter';
 import * as adminWhitelistedEmailsRouter from './admin/whitelisted-emails/whitelistedEmailsRouter';
 import * as featureFlagsRouter from './feature-flags/featureFlagsRouter';
 import * as adePreferencesRouter from './ade-preferences/adePreferencesRouter';
+import { agentTemplateRoutes } from './agent-templates/agentTemplateRoutes';
 
 export const router = {
   user: userRouter,
@@ -12,6 +13,7 @@ export const router = {
   apiKeys: apiKeysRouter,
   featureFlags: featureFlagsRouter,
   organizations: organizationsRouter,
+  agentTemplates: agentTemplateRoutes,
   adePreferences: adePreferencesRouter,
   admin: {
     whitelistedEmails: adminWhitelistedEmailsRouter,

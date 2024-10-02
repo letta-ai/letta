@@ -292,17 +292,6 @@ export const projectsContract = c.router({
   }),
   getProjectByIdOrSlug: getProjectByIdOrSlugContract,
   getTestingAgentByIdOrName: getTestingAgentByIdOrNameContract,
-  getProjectAgentTemplates: c.query({
-    method: 'GET',
-    path: '/projects/:projectId/testing-agents',
-    pathParams: z.object({
-      projectId: z.string(),
-    }),
-    query: GenericSearchSchema,
-    responses: {
-      200: ProjectAgentTemplatesSchema,
-    },
-  }),
   createProject: createProjectContract,
   createProjectAgentTemplate: createProjectAgentTemplateContract,
   getProjectDeployedAgentTemplates: getProjectDeployedAgentTemplatesContract,
@@ -322,15 +311,6 @@ export const projectsQueryClientKeys = {
     search,
   ],
   getProjectByIdOrSlug: (idOrSlug: string) => ['project', idOrSlug],
-  getProjectAgentTemplates: (projectId: string) => [
-    'project',
-    projectId,
-    'testing-agents',
-  ],
-  getProjectAgentTemplatesWithSearch: (
-    projectId: string,
-    search: GenericSearch
-  ) => ['project', projectId, 'testing-agents', search],
   getProjectDeployedAgentTemplates: (projectId: string) => [
     'project',
     projectId,

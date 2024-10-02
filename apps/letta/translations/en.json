@@ -54,17 +54,37 @@
   },
   "projects/(projectSlug)/page": {
     "title": "Project Home",
-    "agentTemplateCard": {
-      "subtitle": "Last updated on {date}",
-      "openInADE": "Open in ADE"
-    },
     "agentTemplatesList": {
       "emptyMessage": "You have templates in this project",
       "createAgentTemplate": "New Agent Template"
     },
     "agentTemplatesSection": {
-      "title": "Recent Agent Templates",
+      "title": "Recent Templates",
       "createAgentTemplate": "New Agent Template"
+    }
+  },
+  "projects/(projectSlug)/layout": {
+    "nav": {
+      "home": "Project Home",
+      "templates": "Templates",
+      "agents": "Agents",
+      "settings": "Settings"
+    }
+  },
+  "common/AgentTemplateCard": {
+    "subtitle": "Last updated on {date}",
+    "openInADE": "Open in ADE",
+    "versions": "{count, plural, =0 {} other {View Versions (#)}}",
+    "versionList": {
+      "copyVersion": "Copy Version",
+      "createdAt": "Created at {date}"
+    }
+  },
+  "projects/(projectSlug)/templates/page": {
+    "title": "Agent Templates",
+    "searchInput": {
+      "placeholder": "my-template-name-here",
+      "label": "Search template by name"
     }
   }
 }

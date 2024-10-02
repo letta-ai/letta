@@ -20,6 +20,10 @@ import {
   adePreferencesContracts,
   adePreferencesQueryClientKeys,
 } from './ade-preferences/adePreferencesContracts';
+import {
+  agentTemplatesQueryClientKeys,
+  agentTemplatesContracts,
+} from '$letta/web-api/agent-templates/agentTemplatesContracts';
 
 export const contracts = {
   user: userContract,
@@ -28,6 +32,7 @@ export const contracts = {
   apiKeys: apiKeysContracts,
   adePreferences: adePreferencesContracts,
   featureFlags: featureFlagsContracts,
+  agentTemplates: agentTemplatesContracts,
   admin: {
     whitelistedEmails: adminWhitelistedEmailsContract,
   },
@@ -39,6 +44,7 @@ export const queryClientKeys = {
   organizations: organizationsQueryClientKeys,
   apiKeys: apiKeysQueryKeys,
   featureFlags: featureFlagsQueryClientKeys,
+  agentTemplates: agentTemplatesQueryClientKeys,
   adePreferences: adePreferencesQueryClientKeys,
   admin: {
     whitelistedEmails: adminWhitelistedEmailsQueryKeys,
@@ -51,3 +57,4 @@ export * from './organizations/organizationsContracts';
 export * from './api-keys/apiKeyContracts';
 export * from './feature-flags/featureFlagsContracts';
 export * from './admin/whitelisted-emails/whitelistedEmailsContracts';
+export * from './agent-templates/agentTemplatesContracts';

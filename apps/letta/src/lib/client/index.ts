@@ -1,6 +1,6 @@
 import { initTsrReactQuery } from '@ts-rest/react-query/v5';
 import { contracts, queryClientKeys } from '$letta/web-api/contracts';
-import { sdkContracts } from '$letta/sdk/contracts';
+import { sdkContracts, sdkQueryKeys } from '$letta/sdk/contracts';
 
 export const webOriginSDKApi = initTsrReactQuery(sdkContracts, {
   baseUrl: '',
@@ -11,5 +11,6 @@ export const webApi = initTsrReactQuery(contracts, {
 });
 
 export const webApiQueryKeys = queryClientKeys;
+export const webOriginSDKQueryKeys = sdkQueryKeys;
 
 export * from './hooks/useFeatureFlag/useFeatureFlag';

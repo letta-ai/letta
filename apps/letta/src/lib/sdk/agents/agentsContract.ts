@@ -178,6 +178,8 @@ const ListAgentsQuerySchema = z.object({
   offset: z.number().optional(),
 });
 
+type ListAgentsQuery = z.infer<typeof ListAgentsQuerySchema>;
+
 const listAgentsContract = c.query({
   method: 'GET',
   summary: 'List Agents',
@@ -288,3 +290,7 @@ export const agentsContract = c.router({
   deleteAgent: deleteAgentContract,
   updateAgent: updateAgentContract,
 });
+
+export const agentsQueryKeys = {
+  listAgents: (query: ListAgentsQuery) => ['agents', query],
+};
