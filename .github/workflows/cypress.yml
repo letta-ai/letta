@@ -52,7 +52,24 @@ jobs:
       - name: Turn on Letta agents
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-        run: docker-compose -f letta-agents/docker-compose.yml up -d
+          LETTA_PG_DB: postgres
+          LETTA_PG_USER: postgres
+          LETTA_PG_PASSWORD: postgres
+          LETTA_PG_HOST: localhost
+          LETTA_PG_PORT: 5432
+          LETTA_LLM_ENDPOINT: https://api.openai.com/v1
+          LETTA_LLM_ENDPOINT_TYPE: openai
+          LETTA_LLM_MODEL: gpt-4
+          LETTA_LLM_CONTEXT_WINDOW: 8192
+          LETTA_EMBEDDING_ENDPOINT: https://api.openai.com/v1
+          LETTA_EMBEDDING_ENDPOINT_TYPE: openai
+          LETTA_EMBEDDING_DIM: 1536
+          LETTA_EMBEDDING_MODEL: text-embedding-ada-002
+          LETTA_DEBUG: True
+        working-directory: letta-agents
+        run:
+          docker run
+
       - name: Cypress run
         # Uses the official Cypress GitHub action https://github.com/cypress-io/github-action
         uses: cypress-io/github-action@v6
