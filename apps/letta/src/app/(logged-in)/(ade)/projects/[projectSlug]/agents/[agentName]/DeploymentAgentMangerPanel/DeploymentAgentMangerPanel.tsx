@@ -1,7 +1,7 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import type { PanelTemplate } from '@letta-web/component-library';
+import { Card, RawInput, Typography } from '@letta-web/component-library';
 import {
-  ActionCard,
   Badge,
   Button,
   Dialog,
@@ -11,16 +11,17 @@ import {
   PanelMainContent,
   VStack,
 } from '@letta-web/component-library';
-import { useCurrentAgentId } from '../hooks';
-import { useCurrentProjectId } from '../../../../../../(dashboard-like)/projects/[projectId]/hooks';
+import { useCurrentProject } from '../../../../../../(dashboard-like)/projects/[projectSlug]/hooks';
 import { useQueryClient } from '@tanstack/react-query';
 import { webApi, webApiQueryKeys, webOriginSDKApi } from '$letta/client';
 import { DeployAgentUsageInstructions } from '$letta/client/code-reference/DeployAgentUsageInstructions';
 import { z } from 'zod';
+import { useCurrentAgentTemplate } from '../hooks/useCurrentAgentTemplate/useCurrentAgentTemplate';
+import { nicelyFormattedDateAndTime } from '@letta-web/helpful-client-utils';
 
 function StageAndDeployDialog() {
-  const agentTemplateId = useCurrentAgentId();
-  const projectId = useCurrentProjectId();
+  const { id: agentTemplateId } = useCurrentAgentTemplate();
+  const { id: projectId } = useCurrentProject();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
 
@@ -77,55 +78,76 @@ interface DeployedAgentTemplateCardProps {
   index: number;
   createdAt: string;
   agentKey: string;
-  currentProjectId: string;
 }
 
 function DeployedAgentTemplateCard(props: DeployedAgentTemplateCardProps) {
-  const { version, createdAt, index, agentKey, currentProjectId } = props;
+  const { version, index, agentKey, createdAt } = props;
+  const { slug: projectSlug, id: currentProjectId } = useCurrentProject();
+  const { name } = useCurrentAgentTemplate();
   const [showDeploymentInstructions, setShowDeploymentInstructions] =
     React.useState(false);
 
   return (
-    <ActionCard
-      mainAction={
+    <Card>
+      <VStack gap="large">
+        <HStack
+          paddingBottom="small"
+          borderBottom
+          align="center"
+          justify="spaceBetween"
+        >
+          <div>
+            <Badge color="primary" content={`Release #${version}`} />
+          </div>
+          <Typography color="muted">
+            Created at {nicelyFormattedDateAndTime(createdAt)}
+          </Typography>
+        </HStack>
         <HStack>
-          <Button
-            size="small"
-            color="tertiary"
-            onClick={() => {
-              setShowDeploymentInstructions((v) => !v);
-            }}
-            active={showDeploymentInstructions}
-            label="Instructions"
-            data-testid={`show-deployment-instructions-${index}`}
-          />
-          <Button
-            target="_blank"
-            color="tertiary"
-            size="small"
-            label="Agents"
-            href={`/projects/${currentProjectId}/deployments?stagingAgentKey=${agentKey}`}
+          <RawInput
+            fullWidth
+            label="Version Tag"
+            value={`${name}:${version}`}
+            readOnly
+            allowCopy
           />
         </HStack>
-      }
-      title={agentKey}
-      subtitle={`Staged at ${createdAt}`}
-      icon={<Badge content={`v${version}`} />}
-    >
-      {showDeploymentInstructions && (
-        <DeployAgentUsageInstructions
-          deployedAgentTemplateKey={agentKey}
-          projectId={currentProjectId}
-        />
-      )}
-    </ActionCard>
+        <HStack>
+          <HStack>
+            <Button
+              size="small"
+              color="tertiary"
+              onClick={() => {
+                setShowDeploymentInstructions((v) => !v);
+              }}
+              active={showDeploymentInstructions}
+              label="Usage Instructions"
+              data-testid={`show-deployment-instructions-${index}`}
+            />
+            <Button
+              target="_blank"
+              color="tertiary"
+              size="small"
+              label="Deployed Agents"
+              href={`/projects/${projectSlug}/deployments?stagingAgentKey=${agentKey}`}
+            />
+          </HStack>
+        </HStack>
+        {showDeploymentInstructions && (
+          <DeployAgentUsageInstructions
+            versionKey={`${name}:${version}`}
+            projectId={currentProjectId}
+          />
+        )}
+      </VStack>
+    </Card>
   );
 }
 
 export function DeploymentAgentMangerPanel() {
-  const agentTemplateId = useCurrentAgentId();
+  const { id: agentTemplateId } = useCurrentAgentTemplate();
 
-  const currentProjectId = useCurrentProjectId();
+  const { id: currentProjectId } = useCurrentProject();
   const [searchValue, setSearchValue] = useState('');
   const { data, hasNextPage, fetchNextPage } =
     webApi.projects.getProjectDeployedAgentTemplates.useInfiniteQuery({
@@ -180,9 +202,8 @@ export function DeploymentAgentMangerPanel() {
               <DeployedAgentTemplateCard
                 {...agent}
                 index={index}
-                key={agent.key}
-                agentKey={agent.key}
-                currentProjectId={currentProjectId}
+                key={agent.id}
+                agentKey={agent.id}
               />
             ))}
             {hasNextPage && (

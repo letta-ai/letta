@@ -30,7 +30,7 @@ export interface CreateAgentBody extends CreateAgent {
   /**
    * Create an agent based on a template_key
    */
-  template_key?: string;
+  from_template?: string;
 }
 
 const CreateAgentBodySchema = z.object({
@@ -52,7 +52,7 @@ const CreateAgentBodySchema = z.object({
   // letta specific fields
   template: z.boolean().optional(),
   project_id: z.string().optional(),
-  template_key: z.string().optional(),
+  from_template: z.string().optional(),
 });
 
 const CreateAgentResponseSchema = c.type<AgentState>();
@@ -61,7 +61,8 @@ const CreateAgentResponseErrorSchema = c.type<HTTPValidationError>();
 
 const CreateAgentResponse404ErrorSchema = z.object({
   message: z
-    .literal('Template key not found')
+    .literal('Template not found')
+    .or(z.string())
     .or(z.literal('Project not found')),
 });
 
@@ -113,7 +114,7 @@ const versionAgentTemplateContract = c.mutation({
   }),
   responses: {
     201: z.object({
-      template_key: z.string(),
+      version: z.string(),
     }),
     404: AgentNotFoundResponseSchema,
     500: FailedToDeployAgentTemplateErrorSchema,
@@ -122,7 +123,7 @@ const versionAgentTemplateContract = c.mutation({
 
 /* migrate an agent to a new versioned agent template */
 const MigrateAgentToNewVersionedAgentTemplateBodySchema = z.object({
-  template_key: z.string(),
+  to_template: z.string(),
   preserve_core_memories: z.boolean(),
 });
 
@@ -131,9 +132,11 @@ const MigrateAgentToNewVersionedAgentTemplateResponseSchema = z.object({
 });
 
 const MigrateAgentToNewVersionedAgentTemplateNotFoundResponseSchema = z.object({
-  message: z.literal(
-    'Agent provided is a template or not found, you can only migrate deployed agents'
-  ),
+  message: z
+    .literal(
+      'Agent provided is a template or not found, you can only migrate deployed agents'
+    )
+    .or(z.literal('Template version provided does not exist')),
 });
 
 const MigrationFailedResponseSchema = z.object({
@@ -168,7 +171,7 @@ const ListAgentsResponseSchema = c.type<ListAgentsResponse>();
 const ListAgentsQuerySchema = z.object({
   template: z.boolean().optional(),
   project_id: z.string().optional(),
-  template_key: z.string().optional(),
+  template_version: z.string().optional(),
   name: z.string().optional(),
   limit: z.number().optional(),
   offset: z.number().optional(),

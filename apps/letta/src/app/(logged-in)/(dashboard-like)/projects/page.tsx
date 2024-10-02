@@ -49,7 +49,7 @@ function CreateProjectDialog() {
         queryKey: webApiQueryKeys.projects.getProjects,
       });
 
-      push(`/projects/${res.body.id}`);
+      push(`/projects/${res.body.slug}`);
     },
   });
 
@@ -156,7 +156,7 @@ function ProjectsList(props: ProjectsListProps) {
               align="center"
               fullWidth
               label="View Project"
-              href={`/projects/${project.id}`}
+              href={`/projects/${project.slug}`}
             />
           </ActionCard>
         ))}

@@ -1,4 +1,5 @@
 import type { PanelTemplate } from '@letta-web/component-library';
+import { Form } from '@letta-web/component-library';
 import {
   Button,
   Card,
@@ -14,71 +15,103 @@ import {
   useForm,
   VStack,
 } from '@letta-web/component-library';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { useCurrentAgent, useCurrentAgentId } from '../hooks';
+import React, { useCallback, useMemo } from 'react';
+import { useCurrentAgent } from '../hooks';
 import { ADENavigationItem } from '../common/ADENavigationItem/ADENavigationItem';
-import { useDebouncedValue } from '@mantine/hooks';
 import { webApi, webApiQueryKeys } from '$letta/client';
-import { useCurrentProjectId } from '../../../../../../(dashboard-like)/projects/[projectId]/hooks';
+import { useCurrentProject } from '../../../../../../(dashboard-like)/projects/[projectSlug]/hooks';
 import { useCurrentAgentTemplate } from '../hooks/useCurrentAgentTemplate/useCurrentAgentTemplate';
 import { useQueryClient } from '@tanstack/react-query';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Settings2Icon } from 'lucide-react';
 
+const updateNameFormSchema = z.object({
+  name: z
+    .string()
+    .regex(/^[a-zA-Z0-9_-]+$/, {
+      message: 'Name must be alphanumeric, with underscores or dashes',
+    })
+    .min(3, { message: 'Name must be at least 3 characters long' })
+    .max(25, { message: 'Name must be at most 25 characters long' }),
+});
+
+type UpdateNameFormValues = z.infer<typeof updateNameFormSchema>;
+
 function EditAgentName() {
   const { name: defaultName } = useCurrentAgentTemplate();
 
-  const [name, setName] = useState(defaultName);
-  const projectId = useCurrentProjectId();
-  const queryClient = useQueryClient();
-  const agentTemplateId = useCurrentAgentId();
+  const form = useForm({
+    resolver: zodResolver(updateNameFormSchema),
+    defaultValues: {
+      name: defaultName,
+    },
+  });
 
-  const [debouncedName] = useDebouncedValue(name, 500);
+  const { id: projectId } = useCurrentProject();
+  const queryClient = useQueryClient();
+  const { name, id: agentTemplateId } = useCurrentAgentTemplate();
+
   const { mutate, isPending } =
     webApi.projects.updateProjectAgentTemplate.useMutation({
       onSuccess: async () => {
         await queryClient.invalidateQueries({
-          queryKey: webApiQueryKeys.projects.getProjectAgentTemplate(
-            projectId,
-            agentTemplateId
-          ),
+          queryKey: webApiQueryKeys.projects.getTestingAgentByIdOrName(name),
         });
       },
     });
 
-  useEffect(() => {
-    if (!debouncedName) {
-      return;
-    }
-
-    mutate({
-      body: { name: debouncedName },
-      params: {
-        projectId,
-        agentTemplateId,
-      },
-    });
-  }, [debouncedName, mutate, projectId, agentTemplateId]);
+  const handleSubmit = useCallback(
+    (values: UpdateNameFormValues) => {
+      mutate({
+        body: { name: values.name },
+        params: {
+          projectId,
+          agentTemplateId,
+        },
+      });
+    },
+    [mutate, projectId, agentTemplateId]
+  );
 
   return (
-    <RawInput
-      fullWidth
-      label="Agent Name"
-      value={name}
-      onChange={(event) => {
-        setName(event.currentTarget.value);
-      }}
-      isUpdating={isPending}
-    />
+    <Card>
+      <FormProvider {...form}>
+        <Form onSubmit={form.handleSubmit(handleSubmit)}>
+          <VStack fullWidth align="start">
+            <HStack fullWidth align="start">
+              <FormField
+                name="name"
+                render={({ field }) => (
+                  <Input
+                    fullWidth
+                    description="Updating the name of your agent will update all references to this agent in your project."
+                    label="Agent Name"
+                    {...field}
+                  />
+                )}
+              />
+            </HStack>
+            <HStack fullWidth justify="end">
+              <Button
+                type="submit"
+                color="secondary"
+                label="Update Agent Name"
+                busy={isPending}
+              />
+            </HStack>
+          </VStack>
+        </Form>
+      </FormProvider>
+    </Card>
   );
 }
 
 function DeleteAgentDialog() {
   const { name } = useCurrentAgentTemplate();
 
-  const projectId = useCurrentProjectId();
-  const agentTemplateId = useCurrentAgentId();
+  const { id: projectId, slug: projectSlug } = useCurrentProject();
+  const { id: agentTemplateId } = useCurrentAgentTemplate();
 
   const DeleteAgentDialogFormSchema = useMemo(
     () =>
@@ -100,7 +133,7 @@ function DeleteAgentDialog() {
   const { mutate, isPending } =
     webApi.projects.deleteProjectAgentTemplate.useMutation({
       onSuccess: () => {
-        window.location.href = `/projects/${projectId}`;
+        window.location.href = `/projects/${projectSlug}`;
       },
     });
 
@@ -152,7 +185,7 @@ function ConfigPanel() {
 
   return (
     <PanelMainContent>
-      <RawInput fullWidth label="SDK Agent ID" allowCopy defaultValue={id} />
+      <RawInput fullWidth label="Agent ID" allowCopy defaultValue={id} />
       <EditAgentName />
       <Card>
         <VStack fullWidth>

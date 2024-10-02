@@ -2,18 +2,14 @@ import { useParams } from 'next/navigation';
 import { webApi, webApiQueryKeys } from '$letta/client';
 import type { PartialProjectType } from '$letta/web-api/contracts';
 
-export function useCurrentProjectId() {
-  return useParams<{ projectId: string }>().projectId;
-}
-
 export function useCurrentProject(): PartialProjectType {
-  const projectId = useCurrentProjectId();
+  const projectSlug = useParams<{ projectSlug: string }>().projectSlug;
 
-  const { data } = webApi.projects.getProjectById.useQuery({
-    queryKey: webApiQueryKeys.projects.getProjectById(projectId),
+  const { data } = webApi.projects.getProjectByIdOrSlug.useQuery({
+    queryKey: webApiQueryKeys.projects.getProjectByIdOrSlug(projectSlug),
     queryData: {
       params: {
-        projectId,
+        projectId: projectSlug,
       },
     },
   });
@@ -22,6 +18,7 @@ export function useCurrentProject(): PartialProjectType {
     return {
       id: '',
       name: '',
+      slug: '',
     };
   }
 

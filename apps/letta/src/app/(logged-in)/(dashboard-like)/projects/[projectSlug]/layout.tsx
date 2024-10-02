@@ -5,24 +5,27 @@ import {
   HydrationBoundary,
   QueryClient,
 } from '@tanstack/react-query';
-import { getProjectById } from '$letta/web-api/router';
+import { getProjectByIdOrSlug } from '$letta/web-api/router';
 import { redirect } from 'next/navigation';
 import { DashboardWithSidebarWrapper } from '@letta-web/component-library';
 import { ProjectAvatar } from './_components/ProjectAvatar/ProjectAvatar';
 
 interface ProjectPageWrapperProps {
   params: {
-    projectId: string;
+    projectSlug: string;
   };
   children: React.ReactNode;
 }
 
 async function ProjectPageLayout(props: ProjectPageWrapperProps) {
-  const { projectId } = props.params;
+  const { projectSlug } = props.params;
   const queryClient = new QueryClient();
 
-  const project = await getProjectById({
-    params: { projectId },
+  const project = await getProjectByIdOrSlug({
+    params: { projectId: projectSlug },
+    query: {
+      lookupBy: 'slug',
+    },
   });
 
   if (!project.body || project.status !== 200) {
@@ -31,7 +34,7 @@ async function ProjectPageLayout(props: ProjectPageWrapperProps) {
   }
 
   await queryClient.prefetchQuery({
-    queryKey: webApiQueryKeys.projects.getProjectById(projectId),
+    queryKey: webApiQueryKeys.projects.getProjectByIdOrSlug(projectSlug),
     queryFn: () => ({
       body: project.body,
     }),
@@ -45,19 +48,19 @@ async function ProjectPageLayout(props: ProjectPageWrapperProps) {
         navigationItems={[
           {
             label: 'Project Home',
-            href: `/projects/${projectId}`,
+            href: `/projects/${projectSlug}`,
           },
           {
             label: 'Deployments',
-            href: `/projects/${projectId}/deployments`,
+            href: `/projects/${projectSlug}/deployments`,
           },
           {
             label: 'Agents',
-            href: `/projects/${projectId}/agents`,
+            href: `/projects/${projectSlug}/agents`,
           },
           {
             label: 'Settings',
-            href: `/projects/${projectId}/settings`,
+            href: `/projects/${projectSlug}/settings`,
           },
         ]}
       >

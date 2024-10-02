@@ -1,5 +1,6 @@
 'use client';
 import type { panelRegistry } from './panelRegistry';
+import { PanelOpener } from './panelRegistry';
 import { PanelManagerProvider, PanelRenderer } from './panelRegistry';
 import type { PanelItemPositionsMatrix } from '@letta-web/component-library';
 import {
@@ -21,100 +22,19 @@ import {
   VStack,
 } from '@letta-web/component-library';
 import Link from 'next/link';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
-import {
-  useCurrentProject,
-  useCurrentProjectId,
-} from '../../../../../(dashboard-like)/projects/[projectId]/hooks';
+import React, { useCallback, useEffect, useState } from 'react';
+import { useCurrentProject } from '../../../../../(dashboard-like)/projects/[projectSlug]/hooks';
 import { DatabaseIcon, GitForkIcon } from 'lucide-react';
-import { useCurrentAgentId } from './hooks';
-import { useCurrentAgentTemplate } from './hooks/useCurrentAgentTemplate/useCurrentAgentTemplate';
-import { useQueryClient } from '@tanstack/react-query';
 import { useDebouncedValue } from '@mantine/hooks';
 import { webApi, webApiQueryKeys } from '$letta/client';
 import { useRouter } from 'next/navigation';
 import { useCurrentUser } from '$letta/client/hooks';
 import { CurrentUserDetailsBlock } from '$letta/client/common';
 import './AgentPage.scss';
-
-const MIN_INPUT_WIDTH = 50;
-const MAX_INPUT_WIDTH = 500;
-function InlineAgentTemplateNameChanger() {
-  const { name: defaultName } = useCurrentAgentTemplate();
-
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  const [name, setName] = useState(defaultName);
-  const projectId = useCurrentProjectId();
-  const queryClient = useQueryClient();
-  const agentTemplateId = useCurrentAgentId();
-
-  const [debouncedName] = useDebouncedValue(name, 500);
-  const { mutate } = webApi.projects.updateProjectAgentTemplate.useMutation({
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({
-        queryKey: webApiQueryKeys.projects.getProjectAgentTemplate(
-          projectId,
-          agentTemplateId
-        ),
-      });
-    },
-  });
-
-  useEffect(() => {
-    if (!inputRef.current) {
-      return;
-    }
-
-    // measure width of the name using HTML Canvas
-    const canvas = document.createElement('canvas');
-    const context = canvas.getContext('2d');
-    if (!context) {
-      return;
-    }
-
-    context.font = '14px Overused Grotesk';
-    const textWidth = context.measureText(name).width;
-
-    const nextWidth = Math.min(
-      Math.max(textWidth + 10, MIN_INPUT_WIDTH),
-      MAX_INPUT_WIDTH
-    );
-
-    inputRef.current.style.width = `${nextWidth}px`;
-  }, [name]);
-
-  useEffect(() => {
-    if (!debouncedName) {
-      return;
-    }
-
-    mutate({
-      body: { name: debouncedName },
-      params: {
-        projectId,
-        agentTemplateId,
-      },
-    });
-  }, [debouncedName, mutate, projectId, agentTemplateId]);
-
-  return (
-    <HStack>
-      <input
-        ref={inputRef}
-        style={{ width: name.length * 10 }}
-        className="text-white bg-transparent border-none focus:outline-none focus:border-b focus:border-b-white focus:border-solid text-base"
-        value={name}
-        onChange={(event) => {
-          setName(event.currentTarget.value);
-        }}
-      />
-    </HStack>
-  );
-}
+import { useCurrentAgentTemplate } from './hooks/useCurrentAgentTemplate/useCurrentAgentTemplate';
 
 function NavOverlay() {
-  const currentProjectId = useCurrentProjectId();
+  const { slug: projectSlug } = useCurrentProject();
   const { name } = useCurrentUser();
 
   return (
@@ -130,7 +50,7 @@ function NavOverlay() {
       <Frame borderTop color="background-greyer" as="nav">
         <VStack as="ul" paddingY="small" paddingX="xsmall">
           <Button
-            href={`/projects/${currentProjectId}`}
+            href={`/projects/${projectSlug}`}
             color="tertiary-transparent"
             preIcon={<ArrowUpIcon />}
             label="Return to Project"
@@ -163,9 +83,9 @@ function NavOverlay() {
 }
 
 function ForkAgentDialog() {
-  const currentagentTemplateId = useCurrentAgentId();
+  const { id: agentTemplateId } = useCurrentAgentTemplate();
   const { push } = useRouter();
-  const projectId = useCurrentProjectId();
+  const { id: projectId, slug: projectSlug } = useCurrentProject();
   const { mutate, isPending } = webApi.projects.forkAgentTemplate.useMutation();
 
   const handleForkAgent = useCallback(() => {
@@ -173,16 +93,16 @@ function ForkAgentDialog() {
       {
         params: {
           projectId,
-          agentTemplateId: currentagentTemplateId,
+          agentTemplateId: agentTemplateId,
         },
       },
       {
         onSuccess: (response) => {
-          push(`/projects/${projectId}/agents/${response.body.id}`);
+          push(`/projects/${projectSlug}/agents/${response.body.name}`);
         },
       }
     );
-  }, [mutate, projectId, currentagentTemplateId, push]);
+  }, [agentTemplateId, mutate, projectId, projectSlug, push]);
 
   return (
     <Dialog
@@ -237,12 +157,13 @@ function LoaderContent(props: LoaderContentProps) {
 }
 
 export function AgentPage() {
-  const { name: projectName, id: projectId } = useCurrentProject();
+  const { name: projectName, slug: projectSlug } = useCurrentProject();
   const { data, isError } = webApi.adePreferences.getADEPreferences.useQuery({
     queryKey: webApiQueryKeys.adePreferences.getADEPreferences,
     queryData: {},
   });
 
+  const { name } = useCurrentAgentTemplate();
   const { mutate } = webApi.adePreferences.updateADEPreferences.useMutation();
 
   const [updatedPositions, setUpdatedPositions] = useState<
@@ -282,10 +203,17 @@ export function AgentPage() {
                   <Logo size="small" color="white" />
                 </Link>
                 /
-                <Link target="_blank" href={`/projects/${projectId}`}>
+                <Link target="_blank" href={`/projects/${projectSlug}`}>
                   <Typography color="white">{projectName}</Typography>
                 </Link>
-                /<InlineAgentTemplateNameChanger />
+                /
+                <PanelOpener
+                  templateId="agent-config"
+                  data={undefined}
+                  id="agent-config"
+                >
+                  <Typography color="white">{name}</Typography>
+                </PanelOpener>
               </HStack>
               <HStack>
                 <ForkAgentDialog />

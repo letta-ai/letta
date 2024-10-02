@@ -111,3 +111,5 @@ export function generateSlug(name: string) {
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '');
 }
+
+export * from './lib/findUniqueAgentTemplateName/findUniqueAgentTemplateName';

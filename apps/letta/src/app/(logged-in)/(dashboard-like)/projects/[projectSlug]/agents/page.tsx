@@ -25,7 +25,7 @@ import {
 } from '@letta-web/component-library';
 import { FilterIcon, SearchIcon } from 'lucide-react';
 import { webApi, webApiQueryKeys } from '$letta/client';
-import { useCurrentProjectId } from '../hooks';
+import { useCurrentProject } from '../hooks';
 import { usePathname, useSearchParams } from 'next/navigation';
 import type { ColumnDef } from '@tanstack/react-table';
 import type { AgentType } from '$letta/web-api/contracts';
@@ -142,7 +142,7 @@ interface DeployedAgentListProps {
 }
 
 function DeployedAgentList(props: DeployedAgentListProps) {
-  const currentProjectId = useCurrentProjectId();
+  const { id: currentProjectId, slug: projectSlug } = useCurrentProject();
   const [limit, setLimit] = useState(20);
 
   const [selectedAgent, setSelectedAgent] = useState<AgentType>();
@@ -158,7 +158,7 @@ function DeployedAgentList(props: DeployedAgentListProps) {
       currentProjectId,
       {
         search: search,
-        deployedAgentTemplateKey: filterBy?.value,
+        deployedAgentTemplateVersion: filterBy?.value,
         limit,
         offset,
       }
@@ -166,7 +166,7 @@ function DeployedAgentList(props: DeployedAgentListProps) {
     queryData: {
       query: {
         search: search,
-        deployedAgentTemplateKey: filterBy?.value,
+        deployedAgentTemplateVersion: filterBy?.value,
         offset,
         limit,
       },
@@ -218,7 +218,7 @@ function DeployedAgentList(props: DeployedAgentListProps) {
         noResultsAction={
           search || filterBy ? undefined : (
             <Button
-              href={`/projects/${currentProjectId}/staging`}
+              href={`/projects/${projectSlug}/staging`}
               label="Deploy an agent"
             />
           )
@@ -247,7 +247,7 @@ interface FilterByDeployedAgentTemplateComponentProps {
 function FilterByDeployedAgentTemplateComponent(
   props: FilterByDeployedAgentTemplateComponentProps
 ) {
-  const currentProjectId = useCurrentProjectId();
+  const { id: currentProjectId } = useCurrentProject();
   const { filterBy, onFilterChange } = props;
 
   const router = useRouter();
@@ -291,8 +291,8 @@ function FilterByDeployedAgentTemplateComponent(
 
       return [
         ...response.body.deployedAgentTemplates.map((agent) => ({
-          label: agent.key,
-          value: agent.key,
+          label: agent.id,
+          value: agent.id,
         })),
         { label: '(Any Agent)', value: '' },
       ];
@@ -318,11 +318,11 @@ function FilterByDeployedAgentTemplateComponent(
     let hasInitialFilter = false;
 
     const arr = data.body.deployedAgentTemplates.map((agent) => {
-      if (initialFilter && agent.key === initialFilter.value) {
+      if (initialFilter && agent.id === initialFilter.value) {
         hasInitialFilter = true;
       }
 
-      return { label: agent.key, value: agent.key };
+      return { label: agent.id, value: agent.id };
     });
 
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition

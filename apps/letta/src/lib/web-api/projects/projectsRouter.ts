@@ -1,5 +1,5 @@
 import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
-import type { projectsContract } from '$letta/web-api/contracts';
+import { UpdateProjectAgentTemplateErrors } from '$letta/web-api/contracts';
 import {
   db,
   deployedAgents,
@@ -13,13 +13,8 @@ import {
   getUserOrThrow,
 } from '$letta/server/auth';
 import { eq, and, like, desc, count } from 'drizzle-orm';
-import type { contracts } from '$letta/web-api/contracts';
-import { generateSlug } from '$letta/server';
-import {
-  adjectives,
-  colors,
-  uniqueNamesGenerator,
-} from 'unique-names-generator';
+import type { contracts, projectsContract } from '$letta/web-api/contracts';
+import { findUniqueAgentTemplateName, generateSlug } from '$letta/server';
 import { AgentsService } from '@letta-web/letta-agents-api';
 import type { AgentTemplate } from '$letta/types';
 import { AgentRecipieVariant } from '$letta/types';
@@ -46,6 +41,7 @@ export async function getProjects(
     columns: {
       name: true,
       id: true,
+      slug: true,
     },
     offset,
     limit,
@@ -57,33 +53,41 @@ export async function getProjects(
       projects: projectsList.map((project) => ({
         name: project.name,
         id: project.id,
+        slug: project.slug,
       })),
     },
   };
 }
 
 type GetProjectByIdResponse = ServerInferResponses<
-  typeof contracts.projects.getProjectById
+  typeof contracts.projects.getProjectByIdOrSlug
 >;
 type GetProjectByIdRequest = ServerInferRequest<
-  typeof contracts.projects.getProjectById
+  typeof contracts.projects.getProjectByIdOrSlug
 >;
 
-export async function getProjectById(
+export async function getProjectByIdOrSlug(
   req: GetProjectByIdRequest
 ): Promise<GetProjectByIdResponse> {
   const { projectId } = req.params;
+  const { lookupBy } = req.query;
 
   const organizationId = await getUserOrganizationIdOrThrow();
 
+  const query = [eq(projects.organizationId, organizationId)];
+
+  if (lookupBy === 'slug') {
+    query.push(eq(projects.slug, projectId));
+  } else {
+    query.push(eq(projects.id, projectId));
+  }
+
   const project = await db.query.projects.findFirst({
-    where: and(
-      eq(projects.id, projectId),
-      eq(projects.organizationId, organizationId)
-    ),
+    where: and(...query),
     columns: {
       name: true,
       id: true,
+      slug: true,
     },
   });
 
@@ -99,6 +103,7 @@ export async function getProjectById(
     body: {
       name: project.name,
       id: project.id,
+      slug: project.slug,
     },
   };
 }
@@ -197,6 +202,7 @@ export async function createProject(
     body: {
       name: name,
       id: project.id,
+      slug: projectSlug,
     },
   };
 }
@@ -401,12 +407,6 @@ const agentRecipies: Record<AgentRecipieVariant, AgentTemplate> = {
   },
 };
 
-const RECIPIE_NAME_TO_FRIENDLY_NAME: Record<string, string> = {
-  customer_support: 'Customer Support',
-  fantasy_roleplay: 'Fantasy Roleplay',
-  data_collector: 'Data Collector',
-};
-
 interface Context {
   request: {
     $userOverride?: GetUserDataResponse;
@@ -426,21 +426,9 @@ export async function createProjectAgentTemplate(
     organizationId,
   } = context.request?.$userOverride || (await getUserOrThrow());
 
-  const randomName = uniqueNamesGenerator({
-    dictionaries: [adjectives, colors],
-    length: 2,
-    separator: ' ',
-  });
+  const name = await findUniqueAgentTemplateName();
 
   const recipe = agentRecipies[recipeId || 'customer_support'];
-
-  const nameParts = [randomName];
-
-  if (recipeId && RECIPIE_NAME_TO_FRIENDLY_NAME[recipeId]) {
-    nameParts.push(RECIPIE_NAME_TO_FRIENDLY_NAME[recipeId]);
-  }
-
-  const name = capitalize(`${nameParts.join(' ')} template`);
 
   const agent = await createAgent(
     {
@@ -518,7 +506,35 @@ export async function updateProjectAgentTemplate(
     return {
       status: 400,
       body: {
-        message: 'Name is required',
+        message: UpdateProjectAgentTemplateErrors.NAME_REQUIRED,
+      },
+    };
+  }
+
+  // name must be alphanumeric-with-dashes-or-underscores
+  if (!/^[a-zA-Z0-9-_]+$/.test(name)) {
+    return {
+      status: 400,
+      body: {
+        message: UpdateProjectAgentTemplateErrors.ALPHANUMERIC_NAME_ONLY,
+      },
+    };
+  }
+
+  // check if agent with the same name exists
+  const existingAgent = await db.query.agentTemplates.findFirst({
+    where: and(
+      eq(agentTemplates.organizationId, organizationId),
+      eq(agentTemplates.projectId, projectId),
+      eq(agentTemplates.name, name)
+    ),
+  });
+
+  if (existingAgent && existingAgent.id !== testingAgent.id) {
+    return {
+      status: 409,
+      body: {
+        message: UpdateProjectAgentTemplateErrors.CONFLICTING_NAME,
       },
     };
   }
@@ -603,7 +619,7 @@ export async function getProjectDeployedAgentTemplates(
   ];
 
   if (search) {
-    where.push(like(deployedAgentTemplates.key, search || '%'));
+    where.push(like(deployedAgentTemplates.version, search || '%'));
   }
 
   if (agentTemplateId) {
@@ -618,7 +634,6 @@ export async function getProjectDeployedAgentTemplates(
       orderBy: [desc(deployedAgentTemplates.createdAt)],
       columns: {
         id: true,
-        key: true,
         agentTemplateId: true,
         createdAt: true,
         updatedAt: true,
@@ -638,7 +653,6 @@ export async function getProjectDeployedAgentTemplates(
         .slice(0, limit)
         .map(({ agentTemplate, ...rest }) => ({
           id: rest.id,
-          key: rest.key,
           agentTemplateId: rest.agentTemplateId,
           testingAgentName: agentTemplate?.name,
           version: rest.version,
@@ -673,7 +687,6 @@ export async function getProjectDeployedAgentTemplate(
       ),
       columns: {
         id: true,
-        key: true,
         agentTemplateId: true,
         createdAt: true,
         updatedAt: true,
@@ -693,7 +706,6 @@ export async function getProjectDeployedAgentTemplate(
     status: 200,
     body: {
       id: deployedAgentTemplate.id,
-      key: deployedAgentTemplate.key,
       agentTemplateId: deployedAgentTemplate.agentTemplateId,
       version: deployedAgentTemplate.version,
       createdAt: deployedAgentTemplate.createdAt.toISOString(),
@@ -715,13 +727,7 @@ export async function getDeployedAgents(
 ): Promise<GetProjectDeployedAgentsResponse> {
   const organizationId = await getUserOrganizationIdOrThrow();
   const { projectId } = req.params;
-  const {
-    search,
-    offset,
-    limit = 10,
-    deployedAgentTemplateId,
-    deployedAgentTemplateKey,
-  } = req.query;
+  const { search, offset, limit = 10, deployedAgentTemplateId } = req.query;
 
   const where = [
     eq(deployedAgents.organizationId, organizationId),
@@ -731,12 +737,6 @@ export async function getDeployedAgents(
   if (deployedAgentTemplateId) {
     where.push(
       eq(deployedAgents.deployedAgentTemplateId, deployedAgentTemplateId)
-    );
-  }
-
-  if (deployedAgentTemplateKey) {
-    where.push(
-      eq(deployedAgents.deployedAgentTemplateKey, deployedAgentTemplateKey)
     );
   }
 
@@ -777,25 +777,30 @@ export async function getDeployedAgents(
 }
 
 type GetProjectAgentTemplateRequest = ServerInferRequest<
-  typeof contracts.projects.getProjectAgentTemplate
+  typeof contracts.projects.getTestingAgentByIdOrName
 >;
 
 type GetProjectAgentTemplateResponse = ServerInferResponses<
-  typeof contracts.projects.getProjectAgentTemplate
+  typeof contracts.projects.getTestingAgentByIdOrName
 >;
 
-export async function getProjectAgentTemplate(
+export async function getTestingAgentByIdOrName(
   req: GetProjectAgentTemplateRequest
 ): Promise<GetProjectAgentTemplateResponse> {
   const organizationId = await getUserOrganizationIdOrThrow();
-  const { projectId, agentTemplateId } = req.params;
+  const { lookupValue } = req.params;
+  const { lookupBy } = req.query;
+
+  const query = [eq(agentTemplates.organizationId, organizationId)];
+
+  if (lookupBy === 'name') {
+    query.push(eq(agentTemplates.name, lookupValue));
+  } else {
+    query.push(eq(agentTemplates.id, lookupValue));
+  }
 
   const testingAgent = await db.query.agentTemplates.findFirst({
-    where: and(
-      eq(agentTemplates.organizationId, organizationId),
-      eq(agentTemplates.projectId, projectId),
-      eq(agentTemplates.id, agentTemplateId)
-    ),
+    where: and(...query),
     columns: {
       id: true,
       name: true,
@@ -960,6 +965,7 @@ export async function updateProject(
     body: {
       name: name || project.name,
       id: project.id,
+      slug: project.slug,
     },
   };
 }
@@ -1001,3 +1007,21 @@ export async function deleteProject(
     },
   };
 }
+
+export const projectsRouter = {
+  getProjects,
+  getProjectByIdOrSlug,
+  getProjectAgentTemplates,
+  createProject,
+  createProjectAgentTemplate,
+  updateProjectAgentTemplate,
+  deleteProjectAgentTemplate,
+  getProjectDeployedAgentTemplates,
+  getProjectDeployedAgentTemplate,
+  getTestingAgentByIdOrName,
+  getDeployedAgentsCountByDeployedAgentTemplate,
+  forkAgentTemplate,
+  updateProject,
+  deleteProject,
+  getDeployedAgents,
+};

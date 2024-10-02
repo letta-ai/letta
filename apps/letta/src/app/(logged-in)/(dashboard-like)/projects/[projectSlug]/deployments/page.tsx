@@ -19,7 +19,7 @@ import {
   isMultiValue,
 } from '@letta-web/component-library';
 import { webApi, webApiQueryKeys } from '$letta/client';
-import { useCurrentProjectId } from '../hooks';
+import { useCurrentProject } from '../hooks';
 import { useDebouncedValue } from '@mantine/hooks';
 import type { DeployedAgentTemplateType } from '$letta/web-api/contracts';
 import { DeployAgentUsageInstructions } from '$letta/client/code-reference/DeployAgentUsageInstructions';
@@ -33,7 +33,7 @@ interface StagedAgentCardProps {
 
 function StagedAgentCard(props: StagedAgentCardProps) {
   const { agent } = props;
-  const currentProjectId = useCurrentProjectId();
+  const { id: currentProjectId, slug: projectSlug } = useCurrentProject();
   const { data } =
     webApi.projects.getDeployedAgentsCountByDeployedAgentTemplate.useQuery({
       queryKey:
@@ -58,7 +58,7 @@ function StagedAgentCard(props: StagedAgentCardProps) {
           </HStack>
           /
           <Typography align="left" bold>
-            {agent.key}
+            {agent.id}
           </Typography>
           <Badge content={`v${agent.version}`} />
         </HStack>
@@ -97,7 +97,7 @@ function StagedAgentCard(props: StagedAgentCardProps) {
             title="Deploy Agent Instructions"
           >
             <DeployAgentUsageInstructions
-              deployedAgentTemplateKey={agent.key}
+              versionKey={`${agent.testingAgentName}:${agent.version}`}
               projectId={currentProjectId}
             />
           </Dialog>
@@ -105,7 +105,7 @@ function StagedAgentCard(props: StagedAgentCardProps) {
             color="tertiary"
             size="small"
             label="View Agents"
-            href={`/projects/${currentProjectId}/agents?stagingAgentKey=${agent.key}`}
+            href={`/projects/${projectSlug}/agents?stagingAgentKey=${agent.id}`}
           />
         </HStack>
       </HStack>
@@ -119,7 +119,7 @@ interface ProjectStagingListProps {
 }
 
 function ProjectStagingList(props: ProjectStagingListProps) {
-  const currentProjectId = useCurrentProjectId();
+  const { id: currentProjectId, slug: projectSlug } = useCurrentProject();
 
   const { search, filterBy } = props;
 
@@ -161,7 +161,7 @@ function ProjectStagingList(props: ProjectStagingListProps) {
         emptyMessage="There are no agents to stage. Return to the project home and stage a Agent"
         emptyAction={
           <Button
-            href={`/projects/${currentProjectId}`}
+            href={`/projects/${projectSlug}`}
             label="Return to project home"
           />
         }
@@ -173,7 +173,7 @@ function ProjectStagingList(props: ProjectStagingListProps) {
   return (
     <>
       {deployedAgentTemplates.map((agent) => (
-        <StagedAgentCard agent={agent} key={agent.key} />
+        <StagedAgentCard agent={agent} key={agent.id} />
       ))}
       {hasNextPage && (
         <Button
@@ -195,7 +195,7 @@ interface FilterByAgentTemplateComponentProps {
 function FilterByAgentTemplateComponent(
   props: FilterByAgentTemplateComponentProps
 ) {
-  const currentProjectId = useCurrentProjectId();
+  const { id: currentProjectId } = useCurrentProject();
   const { filterBy, onFilterChange } = props;
 
   const { data } = webApi.projects.getProjectAgentTemplates.useQuery({

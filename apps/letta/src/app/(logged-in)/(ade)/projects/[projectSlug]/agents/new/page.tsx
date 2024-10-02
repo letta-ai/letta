@@ -11,7 +11,7 @@ import {
   Typography,
   VStack,
 } from '@letta-web/component-library';
-import { useCurrentProjectId } from '../../../../../(dashboard-like)/projects/[projectId]/hooks';
+import { useCurrentProject } from '../../../../../(dashboard-like)/projects/[projectSlug]/hooks';
 import { webApi, webApiQueryKeys } from '$letta/client';
 import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
@@ -45,7 +45,7 @@ function AgentRecipeCard(props: AgentRecipeCardProps) {
 }
 
 function CreateAgentsView() {
-  const projectId = useCurrentProjectId();
+  const { slug: projectSlug, id: projectId } = useCurrentProject();
   const queryClient = useQueryClient();
   const { push } = useRouter();
 
@@ -59,7 +59,7 @@ function CreateAgentsView() {
         queryKey: webApiQueryKeys.projects.getProjectAgentTemplates(projectId),
       });
 
-      push(`/projects/${projectId}/agents/${response.body.id}`);
+      push(`/projects/${projectSlug}/agents/${response.body.name}`);
     },
   });
 
@@ -130,7 +130,7 @@ function CreateAgentsView() {
 }
 
 function NewAgentPage() {
-  const projectId = useCurrentProjectId();
+  const { slug: projectSlug } = useCurrentProject();
 
   return (
     <ADEPage
@@ -138,7 +138,7 @@ function NewAgentPage() {
         <ADEHeader>
           <Button
             color="black"
-            href={`/projects/${projectId}`}
+            href={`/projects/${projectSlug}`}
             label="Back to Project"
             preIcon={<ArrowLeftIcon />}
           />

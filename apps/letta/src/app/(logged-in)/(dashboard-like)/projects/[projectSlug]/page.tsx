@@ -12,7 +12,7 @@ import {
   VStack,
 } from '@letta-web/component-library';
 import React, { useMemo } from 'react';
-import { useCurrentProjectId } from './hooks';
+import { useCurrentProject } from './hooks';
 import { webApi, webApiQueryKeys } from '$letta/client';
 import type { ProjectAgentTemplateType } from '$letta/web-api/contracts';
 import { nicelyFormattedDateAndTime } from '@letta-web/helpful-client-utils';
@@ -24,8 +24,8 @@ interface AgentTemplateCardProps {
 }
 
 function AgentTemplateCard(props: AgentTemplateCardProps) {
-  const { id, name, lastUpdatedAt } = props;
-  const projectId = useCurrentProjectId();
+  const { name, lastUpdatedAt } = props;
+  const { slug: projectSlug } = useCurrentProject();
 
   return (
     <ActionCard
@@ -34,7 +34,7 @@ function AgentTemplateCard(props: AgentTemplateCardProps) {
       mainAction={
         <HStack>
           <Button
-            href={`/projects/${projectId}/agents/${id}`}
+            href={`/projects/${projectSlug}/agents/${name}`}
             color="secondary"
             label="Open in ADE"
           />
@@ -54,7 +54,7 @@ const TESTING_CARD_HEIGHT_CLASS = 'h-[62px]';
 const testingPageHeight = `calc((var(--default-gap) * 2) + (${TESTING_CARD_HEIGHT} * ${RECENT_AGENTS_TO_DISPLAY}))`;
 
 function AgentTemplatesList(props: AgentTemplatesListProps) {
-  const currentProjectId = useCurrentProjectId();
+  const { slug: projectSlug } = useCurrentProject();
   const { agents } = props;
 
   if (!agents) {
@@ -78,7 +78,7 @@ function AgentTemplatesList(props: AgentTemplatesListProps) {
               data-testid="create-agent-template-button"
               label="Create an agent"
               color="secondary"
-              href={`/projects/${currentProjectId}/agents/new`}
+              href={`/projects/${projectSlug}/agents/new`}
             />
           }
         />
@@ -101,7 +101,7 @@ function AgentTemplatesList(props: AgentTemplatesListProps) {
 }
 
 function AgentTemplatesSection() {
-  const currentProjectId = useCurrentProjectId();
+  const { id: currentProjectId, slug: projectSlug } = useCurrentProject();
   const { data } = webApi.projects.getProjectAgentTemplates.useQuery({
     queryKey: webApiQueryKeys.projects.getProjectAgentTemplatesWithSearch(
       currentProjectId,
@@ -141,7 +141,7 @@ function AgentTemplatesSection() {
                 size="small"
                 label="See all agents"
                 color="tertiary"
-                href={`/projects/${currentProjectId}/agents`}
+                href={`/projects/${projectSlug}/agents`}
               />
             )}
             {/* This button should only be displayed if we have agents, otherwise we show an alert that asks them to do so instead */}
@@ -151,7 +151,7 @@ function AgentTemplatesSection() {
                 data-testid="create-agent-template-button"
                 preIcon={<PlusIcon />}
                 color="tertiary"
-                href={`/projects/${currentProjectId}/agents/new`}
+                href={`/projects/${projectSlug}/agents/new`}
               />
             )}
           </>

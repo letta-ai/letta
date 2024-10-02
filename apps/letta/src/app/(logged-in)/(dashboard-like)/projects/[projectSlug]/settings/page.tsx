@@ -16,7 +16,7 @@ import {
 } from '@letta-web/component-library';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useCurrentProject, useCurrentProjectId } from '../hooks';
+import { useCurrentProject } from '../hooks';
 import { webApi, webApiQueryKeys } from '$letta/client';
 import { useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
@@ -32,7 +32,7 @@ type DeleteProjectFormType = z.infer<typeof DeleteProjectSchema>;
 function DeleteProjectSettings() {
   const { mutate, isError, isPending } =
     webApi.projects.deleteProject.useMutation();
-  const projectId = useCurrentProjectId();
+  const { id: projectId } = useCurrentProject();
   const form = useForm<DeleteProjectFormType>({
     resolver: zodResolver(DeleteProjectSchema),
   });
@@ -127,7 +127,7 @@ const EditProjectSettingsSchema = z.object({
 type EditProjectSettingsFormType = z.infer<typeof EditProjectSettingsSchema>;
 
 function EditSettingsSection() {
-  const projectId = useCurrentProjectId();
+  const { slug, id: projectId } = useCurrentProject();
   const queryClient = useQueryClient();
   const { mutate, isError, isPending } =
     webApi.projects.updateProject.useMutation({
@@ -136,7 +136,7 @@ function EditSettingsSection() {
           GetProjectByIdContractSuccessResponse | undefined
         >(
           {
-            queryKey: webApiQueryKeys.projects.getProjectById(projectId),
+            queryKey: webApiQueryKeys.projects.getProjectByIdOrSlug(slug),
           },
           (oldData) => {
             if (!oldData) {
@@ -148,6 +148,7 @@ function EditSettingsSection() {
               body: {
                 id: oldData.body.id,
                 name: response.body.name,
+                slug: oldData.body.slug,
               },
             };
           }

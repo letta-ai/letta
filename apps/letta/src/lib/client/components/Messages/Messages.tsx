@@ -18,7 +18,7 @@ import {
 import type {
   AgentSimulatorMessageGroupType,
   AgentSimulatorMessageType,
-} from '../../../../app/(logged-in)/(ade)/projects/[projectId]/agents/[agentId]/AgentSimulator/types';
+} from '../../../../app/(logged-in)/(ade)/projects/[projectSlug]/agents/[agentName]/AgentSimulator/types';
 import { FunctionSquareIcon } from 'lucide-react';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import type { InfiniteData } from '@tanstack/query-core';
