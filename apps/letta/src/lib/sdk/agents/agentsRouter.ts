@@ -591,7 +591,7 @@ export async function listAgents(
   const {
     project_id,
     template,
-    template_version,
+    by_version,
     name,
     limit = 5,
     offset = 0,
@@ -645,8 +645,8 @@ export async function listAgents(
     queryBuilder.push(eq(deployedAgents.projectId, project_id));
   }
 
-  if (template_version) {
-    const [templateKey, version] = template_version.split(':');
+  if (by_version) {
+    const [templateKey, version] = by_version.split(':');
 
     const agentTemplate = await db.query.agentTemplates.findFirst({
       where: and(
@@ -784,10 +784,203 @@ async function getAgentById(
   };
 }
 
+type DeleteAgentRequest = ServerInferRequest<
+  typeof sdkContracts.agents.deleteAgent
+>;
+
+type DeleteAgentResponse = ServerInferResponses<
+  typeof sdkContracts.agents.deleteAgent
+>;
+
+export async function deleteAgent(
+  req: DeleteAgentRequest,
+  context: SDKContext
+): Promise<DeleteAgentResponse> {
+  const { agentId } = req.params;
+
+  const [deployedAgent, agentTemplate] = await Promise.all([
+    db.query.deployedAgents.findFirst({
+      where: and(
+        eq(deployedAgents.organizationId, context.request.organizationId),
+        eq(deployedAgents.id, agentId)
+      ),
+    }),
+    db.query.agentTemplates.findFirst({
+      where: and(
+        eq(agentTemplates.organizationId, context.request.organizationId),
+        eq(agentTemplates.id, agentId)
+      ),
+    }),
+  ]);
+
+  if (!deployedAgent && !agentTemplate) {
+    return {
+      status: 404,
+      body: {
+        message: 'Agent not found',
+      },
+    };
+  }
+
+  await AgentsService.deleteAgent(
+    {
+      agentId,
+    },
+    {
+      user_id: context.request.lettaAgentsUserId,
+    }
+  );
+
+  if (deployedAgent) {
+    await db.delete(deployedAgents).where(eq(deployedAgents.id, agentId));
+  } else {
+    await db.delete(agentTemplates).where(eq(agentTemplates.id, agentId));
+  }
+
+  return {
+    status: 200,
+    body: {
+      success: true,
+    },
+  };
+}
+
+type UpdateAgentRequest = ServerInferRequest<
+  typeof sdkContracts.agents.updateAgent
+>;
+
+type UpdateAgentResponse = ServerInferResponses<
+  typeof sdkContracts.agents.updateAgent
+>;
+
+export async function updateAgent(
+  req: UpdateAgentRequest,
+  context: SDKContext
+): Promise<UpdateAgentResponse> {
+  const { agentId } = req.params;
+
+  const [deployedAgent, agentTemplate] = await Promise.all([
+    db.query.deployedAgents.findFirst({
+      where: and(
+        eq(deployedAgents.organizationId, context.request.organizationId),
+        eq(deployedAgents.id, agentId)
+      ),
+    }),
+    db.query.agentTemplates.findFirst({
+      where: and(
+        eq(agentTemplates.organizationId, context.request.organizationId),
+        eq(agentTemplates.id, agentId)
+      ),
+    }),
+  ]);
+
+  if (!(deployedAgent || agentTemplate)) {
+    return {
+      status: 404,
+      body: {
+        message: 'Agent not found',
+      },
+    };
+  }
+
+  const { name } = req.body;
+
+  if (name) {
+    // check if the name is unique and alphanumeric with underscores or dashes
+    if (!/^[a-zA-Z0-9_-]+$/.test(name)) {
+      return {
+        status: 400,
+        body: {
+          message: 'Name must be alphanumeric, with underscores or dashes',
+        },
+      };
+    }
+
+    if (deployedAgent) {
+      if (name !== deployedAgent.key) {
+        const exists = await db.query.deployedAgents.findFirst({
+          where: and(
+            eq(deployedAgents.organizationId, context.request.organizationId),
+            eq(deployedAgents.projectId, deployedAgent.projectId),
+            eq(deployedAgents.key, name)
+          ),
+        });
+
+        if (exists) {
+          return {
+            status: 409,
+            body: {
+              message: 'An agent with the same name already exists',
+            },
+          };
+        }
+
+        await db
+          .update(deployedAgents)
+          .set({ key: name })
+          .where(eq(deployedAgents.id, agentId));
+      }
+    } else if (agentTemplate) {
+      if (name !== agentTemplate.name) {
+        const exists = await db.query.agentTemplates.findFirst({
+          where: and(
+            eq(agentTemplates.organizationId, context.request.organizationId),
+            eq(agentTemplates.projectId, agentTemplate.projectId),
+            eq(agentTemplates.name, name)
+          ),
+        });
+
+        if (exists) {
+          return {
+            status: 409,
+            body: {
+              message: 'An agent with the same name already exists',
+            },
+          };
+        }
+
+        await db
+          .update(agentTemplates)
+          .set({ name })
+          .where(eq(agentTemplates.id, agentId));
+      }
+    }
+  }
+
+  const response = await AgentsService.updateAgent(
+    {
+      agentId,
+      requestBody: req.body,
+    },
+    {
+      user_id: context.request.lettaAgentsUserId,
+    }
+  );
+
+  if (!response?.id) {
+    return {
+      status: 500,
+      body: {
+        message: 'Failed to update agent',
+      },
+    };
+  }
+
+  return {
+    status: 200,
+    body: {
+      ...response,
+      name: deployedAgent?.key || agentTemplate?.name || '',
+    },
+  };
+}
+
 export const agentsRouter = {
   createAgent,
   versionAgentTemplate,
   migrateAgent,
   listAgents,
   getAgentById,
+  deleteAgent,
+  updateAgent,
 };

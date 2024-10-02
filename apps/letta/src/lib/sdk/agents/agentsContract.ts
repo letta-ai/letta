@@ -4,6 +4,7 @@ import type {
   CreateAgent,
   HTTPValidationError,
   ListAgentsResponse,
+  UpdateAgentState,
 } from '@letta-web/letta-agents-api';
 import { z } from 'zod';
 import {
@@ -171,7 +172,7 @@ const ListAgentsResponseSchema = c.type<ListAgentsResponse>();
 const ListAgentsQuerySchema = z.object({
   template: z.boolean().optional(),
   project_id: z.string().optional(),
-  template_version: z.string().optional(),
+  by_version: z.string().optional(),
   name: z.string().optional(),
   limit: z.number().optional(),
   offset: z.number().optional(),
@@ -210,10 +211,80 @@ const getAgentByIdContract = c.query({
   },
 });
 
+/* Delete Agent */
+const DeleteAgentResponseSchema = z.object({
+  success: z.literal(true),
+});
+
+const DeleteAgentNotFoundResponseSchema = z.object({
+  message: z.literal('Agent not found'),
+});
+
+const DeleteAgentFailedResponseSchema = z.object({
+  message: z.literal('Failed to delete agent'),
+});
+
+const deleteAgentContract = c.mutation({
+  method: 'DELETE',
+  summary: 'Delete Agent',
+  path: '/v1/agents/:agentId',
+  description: 'Delete an agent by its ID',
+  pathParams: z.object({
+    agentId: z.string(),
+  }),
+  body: z.undefined(),
+  responses: {
+    200: DeleteAgentResponseSchema,
+    404: DeleteAgentNotFoundResponseSchema,
+    500: DeleteAgentFailedResponseSchema,
+  },
+});
+
+/* Update Agent */
+const UpdateAgentBodySchema = c.type<UpdateAgentState>();
+
+const UpdateAgentResponseSchema = c.type<AgentState>();
+
+const UpdateAgentNotFoundResponseSchema = z.object({
+  message: z.literal('Agent not found'),
+});
+
+const UpdateAgentFailedNameNotAlphanumericResponseSchema = z.object({
+  message: z.literal('Name must be alphanumeric, with underscores or dashes'),
+});
+
+const UpdateAgentFailedNameAlreadyExistsResponseSchema = z.object({
+  message: z.literal('An agent with the same name already exists'),
+});
+
+const UpdateAgentFailedResponseSchema = z.object({
+  message: z.literal('Failed to update agent'),
+});
+
+const updateAgentContract = c.mutation({
+  method: 'PATCH',
+  summary: 'Update Agent',
+  path: '/v1/agents/:agentId',
+  description: 'Update an agent by its ID',
+  body: UpdateAgentBodySchema,
+  pathParams: z.object({
+    agentId: z.string(),
+  }),
+  responses: {
+    200: UpdateAgentResponseSchema,
+    400: UpdateAgentFailedNameNotAlphanumericResponseSchema,
+    409: UpdateAgentFailedNameAlreadyExistsResponseSchema,
+    404: UpdateAgentNotFoundResponseSchema,
+    500: UpdateAgentFailedResponseSchema,
+  },
+});
+
 export const agentsContract = c.router({
   createAgent: createAgentContract,
   versionAgentTemplate: versionAgentTemplateContract,
   migrateAgent: migrateAgentContract,
   listAgents: listAgentsContract,
   getAgentById: getAgentByIdContract,
+  deleteAgent: deleteAgentContract,
+  updateAgent: updateAgentContract,
 });
