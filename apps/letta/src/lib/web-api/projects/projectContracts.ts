@@ -86,6 +86,12 @@ export const UpdateProjectAgentTemplatePayloadSchema = z.object({
   name: z.string().optional(),
 });
 
+export const UpdateProjectAgentTemplateConflictingNameResponseSchema = z.object(
+  {
+    message: z.literal('Agent with the same name already exists'),
+  }
+);
+
 const updateProjectAgentTemplateContract = c.mutation({
   method: 'PATCH',
   path: '/projects/:projectId/testing-agents/:agentTemplateId',
@@ -96,6 +102,7 @@ const updateProjectAgentTemplateContract = c.mutation({
   body: UpdateProjectAgentTemplatePayloadSchema,
   responses: {
     200: ProjectAgentTemplateSchema,
+    409: UpdateProjectAgentTemplateConflictingNameResponseSchema,
   },
 });
 
@@ -141,7 +148,6 @@ const createProjectAgentTemplateContract = c.mutation({
 
 /* Get Source Agents */
 const ProjectDeployedAgentTemplateSchema = z.object({
-  key: z.string(),
   id: z.string(),
   agentTemplateId: z.string(),
   testingAgentName: z.string().optional(),
@@ -219,7 +225,7 @@ const GetDeployedAgentsQuerySchema = z.object({
   offset: z.number().optional(),
   limit: z.number().optional(),
   deployedAgentTemplateId: z.string().optional(),
-  deployedAgentTemplateKey: z.string().optional(),
+  deployedAgentTemplateVersion: z.string().optional(),
 });
 
 export const GetDeployedAgentsContractResponseSchema = z.object({

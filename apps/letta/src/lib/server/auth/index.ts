@@ -239,7 +239,7 @@ async function createUserAndOrganization(
   await createAgent(
     {
       body: {
-        template_key: versionedAgentTemplate.body.template_key,
+        from_template: versionedAgentTemplate.body.version,
         name: `${firstProjectId}-my-first-agent-in-production`,
       },
     },

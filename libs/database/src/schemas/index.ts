@@ -172,19 +172,30 @@ export const projectRelations = relations(projects, ({ one, many }) => ({
   deployedAgents: many(deployedAgents),
 }));
 
-export const agentTemplates = pgTable('agent_templates', {
-  id: text('id').primaryKey(),
-  name: text('name').notNull(),
-  organizationId: text('organization_id')
-    .notNull()
-    .references(() => organizations.id, { onDelete: 'cascade' })
-    .notNull(),
-  projectId: text('project_id').notNull(),
-  createdAt: timestamp('created_at').notNull().defaultNow(),
-  updatedAt: timestamp('updated_at')
-    .notNull()
-    .$onUpdate(() => new Date()),
-});
+export const agentTemplates = pgTable(
+  'agent_templates',
+  {
+    id: text('id').primaryKey(),
+    name: text('name').notNull(),
+    organizationId: text('organization_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' })
+      .notNull(),
+    projectId: text('project_id').notNull(),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at')
+      .notNull()
+      .$onUpdate(() => new Date()),
+  },
+  (table) => ({
+    unique: {
+      uniqueName: uniqueIndex('unique_name').on(
+        table.name,
+        table.organizationId
+      ),
+    },
+  })
+);
 
 export const agentTemplateRelations = relations(
   agentTemplates,
@@ -205,7 +216,6 @@ export const deployedAgentTemplates = pgTable(
   'deployed_agent_templates',
   {
     id: text('id').primaryKey(),
-    key: text('key').notNull(),
     organizationId: text('organization_id')
       .notNull()
       .references(() => organizations.id, { onDelete: 'cascade' })
@@ -220,7 +230,6 @@ export const deployedAgentTemplates = pgTable(
   },
   (table) => ({
     unique: {
-      uniqueKey: uniqueIndex('unique_key').on(table.key, table.organizationId),
       uniqueVersion: uniqueIndex('unique_version').on(
         table.version,
         table.organizationId,
@@ -255,7 +264,6 @@ export const deployedAgents = pgTable(
     id: text('id').primaryKey(),
     key: text('key').notNull(),
     deployedAgentTemplateId: text('deployed_agent_template_id'),
-    deployedAgentTemplateKey: text('deployed_agent_template_key').notNull(),
     projectId: text('project_id').notNull(),
     internalAgentCountId: bigint('internal_agent_count_id', { mode: 'number' })
       .notNull()

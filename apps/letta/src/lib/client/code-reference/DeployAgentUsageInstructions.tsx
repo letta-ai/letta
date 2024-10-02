@@ -17,12 +17,12 @@ import {
 import { webApi, webApiQueryKeys } from '$letta/client';
 
 interface DeployAgentInstructionsCurlProps {
-  deployedAgentTemplateKey: string;
   projectId: string;
+  deployedAgentTemplateKey: string;
 }
 
 function DeployAgentInstructionsCurl(props: DeployAgentInstructionsCurlProps) {
-  const { deployedAgentTemplateKey, projectId } = props;
+  const { projectId, deployedAgentTemplateKey } = props;
   const [deploymentAgentHasLoaded, setDeploymentAgentHasLoaded] =
     useState(false);
   const [showPartTwo, setShowPartTwo] = useState(false);
@@ -30,13 +30,13 @@ function DeployAgentInstructionsCurl(props: DeployAgentInstructionsCurlProps) {
     useState<boolean>(true);
   const { data } = webApi.projects.getDeployedAgents.useQuery({
     queryKey: webApiQueryKeys.projects.getDeployedAgentsWithSearch(projectId, {
-      deployedAgentTemplateKey,
+      deployedAgentTemplateVersion: deployedAgentTemplateKey,
       limit: 1,
     }),
     refetchInterval: !deploymentAgentHasLoaded ? 5000 : false,
     queryData: {
       query: {
-        deployedAgentTemplateKey,
+        deployedAgentTemplateVersion: deployedAgentTemplateKey,
         limit: 1,
       },
       params: {
@@ -76,7 +76,7 @@ function DeployAgentInstructionsCurl(props: DeployAgentInstructionsCurlProps) {
   -H 'Content-Type: application/json' \\
   -H 'Authorization: Bearer ${ACCESS_TOKEN_PLACEHOLDER}' \\
   -d '{
-    "template_key": "${deployedAgentTemplateKey}"
+    "version": FIX ME SHUB
   }'`}
         />
       </Frame>

@@ -17,12 +17,7 @@ import {
 } from '@letta-web/database';
 import { and, desc, eq } from 'drizzle-orm';
 import { createProject } from '$letta/web-api/projects/projectsRouter';
-import {
-  adjectives,
-  animals,
-  colors,
-  uniqueNamesGenerator,
-} from 'unique-names-generator';
+import { findUniqueAgentTemplateName } from '$letta/server';
 
 export async function copyAgentById(
   agentId: string,
@@ -102,7 +97,7 @@ export async function createAgent(
   context: SDKContext
 ): Promise<CreateAgentResponse> {
   const { organizationId, lettaAgentsUserId } = context.request;
-  const { project_id, template_key, template, name, ...agent } = req.body;
+  const { project_id, from_template, template, name, ...agent } = req.body;
 
   if (name) {
     if (!project_id) {
@@ -132,11 +127,13 @@ export async function createAgent(
     }
   }
 
-  if (template_key) {
-    const template = await db.query.deployedAgentTemplates.findFirst({
+  if (from_template) {
+    const [templateName, version] = from_template.split(':');
+
+    const template = await db.query.agentTemplates.findFirst({
       where: and(
-        eq(deployedAgentTemplates.organizationId, organizationId),
-        eq(deployedAgentTemplates.key, template_key)
+        eq(agentTemplates.organizationId, organizationId),
+        eq(agentTemplates.name, templateName)
       ),
     });
 
@@ -144,12 +141,32 @@ export async function createAgent(
       return {
         status: 404,
         body: {
-          message: 'Template key not found',
+          message: 'Template not found',
         },
       };
     }
 
-    const copiedAgent = await copyAgentById(template.id, lettaAgentsUserId);
+    const deployedTemplate = await db.query.deployedAgentTemplates.findFirst({
+      where: and(
+        eq(deployedAgentTemplates.organizationId, organizationId),
+        eq(deployedAgentTemplates.agentTemplateId, template.id),
+        eq(deployedAgentTemplates.version, version)
+      ),
+    });
+
+    if (!deployedTemplate) {
+      return {
+        status: 404,
+        body: {
+          message: `${version} of template ${templateName} not found`,
+        },
+      };
+    }
+
+    const copiedAgent = await copyAgentById(
+      deployedTemplate.id,
+      lettaAgentsUserId
+    );
 
     if (!copiedAgent?.id) {
       return {
@@ -175,7 +192,6 @@ export async function createAgent(
       projectId: template.projectId,
       key,
       internalAgentCountId: nextInternalAgentCountId,
-      deployedAgentTemplateKey: template.key,
       deployedAgentTemplateId: template.id,
       organizationId,
     });
@@ -287,7 +303,6 @@ export async function createAgent(
       projectId,
       key: uniqueId,
       internalAgentCountId: nextInternalAgentCountId,
-      deployedAgentTemplateKey: '',
       deployedAgentTemplateId: '',
       organizationId,
     });
@@ -306,42 +321,6 @@ type DeployAgentTemplateRequest = ServerInferRequest<
 type DeployAgentTemplateResponse = ServerInferResponses<
   typeof sdkContracts.agents.versionAgentTemplate
 >;
-
-function randomFourDigitNumber() {
-  return Math.floor(1000 + Math.random() * 9000);
-}
-
-async function findUniqueDeployedAgentTemplateName(
-  organizationId: string,
-  retries = 0
-) {
-  let name = uniqueNamesGenerator({
-    dictionaries: [adjectives, adjectives, animals, colors],
-    length: 4,
-    separator: '-',
-  });
-
-  if (retries > 3) {
-    name += `-${randomFourDigitNumber()}`;
-  }
-
-  if (retries > 5) {
-    throw new Error('Failed to find unique name');
-  }
-
-  const agentTemplate = await db.query.deployedAgentTemplates.findFirst({
-    where: and(
-      eq(deployedAgentTemplates.key, name),
-      eq(deployedAgentTemplates.organizationId, organizationId)
-    ),
-  });
-
-  if (!agentTemplate) {
-    return name;
-  }
-
-  return findUniqueDeployedAgentTemplateName(organizationId, retries + 1);
-}
 
 export async function versionAgentTemplate(
   req: DeployAgentTemplateRequest,
@@ -389,6 +368,7 @@ export async function versionAgentTemplate(
   }
 
   let agentTemplateId = agentTemplate?.id;
+  let agentTemplateName = agentTemplate?.name;
 
   // if agent is a deployed agent, create a new agent template
   if (!agentTemplateId) {
@@ -406,9 +386,13 @@ export async function versionAgentTemplate(
       };
     }
 
+    const name = await findUniqueAgentTemplateName();
+
+    agentTemplateName = name;
+
     await db.insert(agentTemplates).values({
       id: copiedAgent.id,
-      name: `Agent template created from ${agentId}`,
+      name,
       organizationId: context.request.organizationId,
       projectId,
     });
@@ -417,10 +401,6 @@ export async function versionAgentTemplate(
   }
 
   const version = `${existingDeployedAgentTemplateCount.length + 1}`;
-
-  const templateKey = await findUniqueDeployedAgentTemplateName(
-    context.request.organizationId
-  );
 
   const createdAgent = await copyAgentById(
     agentId,
@@ -439,7 +419,6 @@ export async function versionAgentTemplate(
   await db.insert(deployedAgentTemplates).values({
     id: createdAgent.id,
     projectId,
-    key: templateKey,
     organizationId: context.request.organizationId,
     agentTemplateId,
     version,
@@ -448,7 +427,7 @@ export async function versionAgentTemplate(
   return {
     status: 201,
     body: {
-      template_key: templateKey,
+      version: `${agentTemplateName}:${version}`,
     },
   };
 }
@@ -465,19 +444,59 @@ export async function migrateAgent(
   req: MigrateAgentRequest,
   context: SDKContext
 ): Promise<MigrateAgentResponse> {
-  const { template_key, preserve_core_memories } = req.body;
+  const { to_template, preserve_core_memories } = req.body;
   const { agentId } = req.params;
   const { lettaAgentsUserId } = context.request;
 
-  const agentTemplate = await db.query.deployedAgentTemplates.findFirst({
-    where: eq(deployedAgentTemplates.key, template_key),
+  const [templateName, version] = to_template.split(':');
+
+  if (!version) {
+    return {
+      status: 400,
+      body: {
+        message: `Please specify a version or add \`latest\` to the template name. Example: ${templateName}:latest`,
+      },
+    };
+  }
+
+  const rootAgentTemplate = await db.query.agentTemplates.findFirst({
+    where: and(
+      eq(agentTemplates.organizationId, context.request.organizationId),
+      eq(agentTemplates.name, templateName)
+    ),
   });
+
+  if (!rootAgentTemplate) {
+    return {
+      status: 404,
+      body: {
+        message: 'Template version provided does not exist',
+      },
+    };
+  }
+
+  const agentTemplate = await db.query.deployedAgentTemplates.findFirst({
+    where: and(
+      eq(deployedAgentTemplates.organizationId, context.request.organizationId),
+      eq(deployedAgentTemplates.agentTemplateId, rootAgentTemplate.id),
+      eq(deployedAgentTemplates.version, version)
+    ),
+  });
+
+  if (!agentTemplate?.id) {
+    return {
+      status: 404,
+      body: {
+        message: 'Template version provided does not exist',
+      },
+    };
+  }
 
   const [agentTemplateData, oldDatasources, newDatasources] = await Promise.all(
     [
       AgentsService.getAgent(
         {
-          agentId: agentTemplate?.id || '',
+          agentId: agentTemplate.id,
         },
         {
           user_id: lettaAgentsUserId,
@@ -493,7 +512,7 @@ export async function migrateAgent(
       ),
       AgentsService.getAgentSources(
         {
-          agentId: agentTemplate?.id || '',
+          agentId: agentTemplate.id,
         },
         {
           user_id: lettaAgentsUserId,
@@ -572,7 +591,7 @@ export async function listAgents(
   const {
     project_id,
     template,
-    template_key,
+    template_version,
     name,
     limit = 5,
     offset = 0,
@@ -626,9 +645,43 @@ export async function listAgents(
     queryBuilder.push(eq(deployedAgents.projectId, project_id));
   }
 
-  if (template_key) {
+  if (template_version) {
+    const [templateKey, version] = template_version.split(':');
+
+    const agentTemplate = await db.query.agentTemplates.findFirst({
+      where: and(
+        eq(agentTemplates.organizationId, context.request.organizationId),
+        eq(agentTemplates.name, templateKey)
+      ),
+    });
+
+    if (!agentTemplate) {
+      return {
+        status: 200,
+        body: [],
+      };
+    }
+
+    const deployedTemplate = await db.query.deployedAgentTemplates.findFirst({
+      where: and(
+        eq(
+          deployedAgentTemplates.organizationId,
+          context.request.organizationId
+        ),
+        eq(deployedAgentTemplates.agentTemplateId, agentTemplate.id),
+        eq(deployedAgentTemplates.version, version)
+      ),
+    });
+
+    if (!deployedTemplate) {
+      return {
+        status: 404,
+        body: [],
+      };
+    }
+
     queryBuilder.push(
-      eq(deployedAgents.deployedAgentTemplateKey, template_key)
+      eq(deployedAgents.deployedAgentTemplateId, deployedTemplate.id)
     );
   }
 

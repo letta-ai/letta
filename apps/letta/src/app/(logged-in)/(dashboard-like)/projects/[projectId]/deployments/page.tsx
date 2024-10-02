@@ -58,7 +58,7 @@ function StagedAgentCard(props: StagedAgentCardProps) {
           </HStack>
           /
           <Typography align="left" bold>
-            {agent.key}
+            {agent.id}
           </Typography>
           <Badge content={`v${agent.version}`} />
         </HStack>
@@ -97,7 +97,7 @@ function StagedAgentCard(props: StagedAgentCardProps) {
             title="Deploy Agent Instructions"
           >
             <DeployAgentUsageInstructions
-              deployedAgentTemplateKey={agent.key}
+              deployedAgentTemplateKey={agent.id}
               projectId={currentProjectId}
             />
           </Dialog>
@@ -105,7 +105,7 @@ function StagedAgentCard(props: StagedAgentCardProps) {
             color="tertiary"
             size="small"
             label="View Agents"
-            href={`/projects/${currentProjectId}/agents?stagingAgentKey=${agent.key}`}
+            href={`/projects/${currentProjectId}/agents?stagingAgentKey=${agent.id}`}
           />
         </HStack>
       </HStack>
@@ -173,7 +173,7 @@ function ProjectStagingList(props: ProjectStagingListProps) {
   return (
     <>
       {deployedAgentTemplates.map((agent) => (
-        <StagedAgentCard agent={agent} key={agent.key} />
+        <StagedAgentCard agent={agent} key={agent.id} />
       ))}
       {hasNextPage && (
         <Button

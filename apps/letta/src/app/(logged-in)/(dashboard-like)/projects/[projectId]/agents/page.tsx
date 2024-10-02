@@ -158,7 +158,7 @@ function DeployedAgentList(props: DeployedAgentListProps) {
       currentProjectId,
       {
         search: search,
-        deployedAgentTemplateKey: filterBy?.value,
+        deployedAgentTemplateVersion: filterBy?.value,
         limit,
         offset,
       }
@@ -166,7 +166,7 @@ function DeployedAgentList(props: DeployedAgentListProps) {
     queryData: {
       query: {
         search: search,
-        deployedAgentTemplateKey: filterBy?.value,
+        deployedAgentTemplateVersion: filterBy?.value,
         offset,
         limit,
       },
@@ -291,8 +291,8 @@ function FilterByDeployedAgentTemplateComponent(
 
       return [
         ...response.body.deployedAgentTemplates.map((agent) => ({
-          label: agent.key,
-          value: agent.key,
+          label: agent.id,
+          value: agent.id,
         })),
         { label: '(Any Agent)', value: '' },
       ];
@@ -318,11 +318,11 @@ function FilterByDeployedAgentTemplateComponent(
     let hasInitialFilter = false;
 
     const arr = data.body.deployedAgentTemplates.map((agent) => {
-      if (initialFilter && agent.key === initialFilter.value) {
+      if (initialFilter && agent.id === initialFilter.value) {
         hasInitialFilter = true;
       }
 
-      return { label: agent.key, value: agent.key };
+      return { label: agent.id, value: agent.id };
     });
 
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition

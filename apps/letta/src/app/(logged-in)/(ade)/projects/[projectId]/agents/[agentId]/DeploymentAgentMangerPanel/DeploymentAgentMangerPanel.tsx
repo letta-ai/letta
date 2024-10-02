@@ -180,8 +180,8 @@ export function DeploymentAgentMangerPanel() {
               <DeployedAgentTemplateCard
                 {...agent}
                 index={index}
-                key={agent.key}
-                agentKey={agent.key}
+                key={agent.id}
+                agentKey={agent.id}
                 currentProjectId={currentProjectId}
               />
             ))}
