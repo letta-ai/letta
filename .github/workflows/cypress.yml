@@ -23,7 +23,7 @@ jobs:
         ports:
           - 8083:8083
         options: >-
-          -e OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
+          -e OPENAI_API_KEY=$OPENAI_API_KEY
           --health-cmd "curl -f http://localhost:8083/health"
           --health-interval 10s
           --health-timeout 5s
