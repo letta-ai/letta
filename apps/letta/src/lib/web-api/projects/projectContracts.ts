@@ -82,55 +82,6 @@ const deleteProjectContract = c.mutation({
   },
 });
 
-/* Update Project Testing Agent */
-export const UpdateProjectAgentTemplatePayloadSchema = z.object({
-  name: z.string().optional(),
-});
-
-export enum UpdateProjectAgentTemplateErrors {
-  CONFLICTING_NAME = 'CONFLICTING_NAME',
-  ALPHANUMERIC_NAME_ONLY = 'ALPHANUMERIC_NAME_ONLY',
-  NAME_REQUIRED = 'NAME_REQUIRED',
-}
-
-export const UpdateProjectAgentTemplateConflictingNameErrorSchema = z.object({
-  message: z.enum([
-    UpdateProjectAgentTemplateErrors.CONFLICTING_NAME,
-    UpdateProjectAgentTemplateErrors.ALPHANUMERIC_NAME_ONLY,
-    UpdateProjectAgentTemplateErrors.NAME_REQUIRED,
-  ]),
-});
-
-const updateProjectAgentTemplateContract = c.mutation({
-  method: 'PATCH',
-  path: '/projects/:projectId/testing-agents/:agentTemplateId',
-  pathParams: z.object({
-    projectId: z.string(),
-    agentTemplateId: z.string(),
-  }),
-  body: UpdateProjectAgentTemplatePayloadSchema,
-  responses: {
-    200: ProjectAgentTemplateSchema,
-    400: UpdateProjectAgentTemplateConflictingNameErrorSchema,
-  },
-});
-
-/* Delete Project Testing Agent */
-const deleteProjectAgentTemplateContract = c.mutation({
-  method: 'DELETE',
-  path: '/projects/:projectId/testing-agents/:agentTemplateId',
-  pathParams: z.object({
-    projectId: z.string(),
-    agentTemplateId: z.string(),
-  }),
-  body: z.undefined(),
-  responses: {
-    200: z.object({
-      success: z.boolean(),
-    }),
-  },
-});
-
 /* Create Project Testing Agent */
 export const CreateProjectAgentTemplatePayloadSchema = z.object({
   recipeId: z
@@ -341,8 +292,6 @@ export const projectsContract = c.router({
   }),
   getProjectByIdOrSlug: getProjectByIdOrSlugContract,
   getTestingAgentByIdOrName: getTestingAgentByIdOrNameContract,
-  updateProjectAgentTemplate: updateProjectAgentTemplateContract,
-  deleteProjectAgentTemplate: deleteProjectAgentTemplateContract,
   getProjectAgentTemplates: c.query({
     method: 'GET',
     path: '/projects/:projectId/testing-agents',

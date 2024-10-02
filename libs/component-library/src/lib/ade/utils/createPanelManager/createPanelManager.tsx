@@ -1044,17 +1044,22 @@ export function createPanelManager<
 
     return (
       <HStack
-        paddingX="small"
-        paddingY="xsmall"
+        paddingRight="small"
         align="center"
         color={isActive ? 'background' : 'background-grey'}
       >
-        <button className="h-full" onClick={handleClickedTab}>
+        <HStack
+          as="button"
+          paddingLeft="small"
+          paddingY="xsmall"
+          className="h-full"
+          onClick={handleClickedTab}
+        >
           <Typography noWrap>{panelRegistry[tab.templateId].title}</Typography>
-        </button>
+        </HStack>
         <ADEDropdownMenu
           trigger={
-            <div className="w-2">
+            <div className="w-2 mt-[-3px]">
               <CaretDownIcon />
             </div>
           }
@@ -1069,9 +1074,9 @@ export function createPanelManager<
             },
           ]}
         />
-        <button onClick={handleCloseTab}>
-          <Cross2Icon />
-        </button>
+        <HStack as="button" onClick={handleCloseTab}>
+          <Cross2Icon className="w-4" />
+        </HStack>
       </HStack>
     );
   }

@@ -3,6 +3,7 @@ import type { sdkContracts } from '$letta/sdk/contracts';
 import * as Sentry from '@sentry/node';
 
 import type { SDKContext } from '$letta/sdk/shared';
+import type { AgentState } from '@letta-web/letta-agents-api';
 import {
   AgentsService,
   SourcesService,
@@ -883,7 +884,7 @@ export async function updateAgent(
     };
   }
 
-  const { name } = req.body;
+  const { name, ...rest } = req.body;
 
   if (name) {
     // check if the name is unique and alphanumeric with underscores or dashes
@@ -947,23 +948,36 @@ export async function updateAgent(
     }
   }
 
-  const response = await AgentsService.updateAgent(
-    {
-      agentId,
-      requestBody: req.body,
-    },
-    {
-      user_id: context.request.lettaAgentsUserId,
-    }
-  );
+  let response: AgentState | undefined;
 
-  if (!response?.id) {
-    return {
-      status: 500,
-      body: {
-        message: 'Failed to update agent',
+  if (Object.keys(rest).length > 0) {
+    response = await AgentsService.updateAgent(
+      {
+        agentId,
+        requestBody: rest,
       },
-    };
+      {
+        user_id: context.request.lettaAgentsUserId,
+      }
+    );
+
+    if (!response?.id) {
+      return {
+        status: 500,
+        body: {
+          message: 'Failed to update agent',
+        },
+      };
+    }
+  } else {
+    response = await AgentsService.getAgent(
+      {
+        agentId,
+      },
+      {
+        user_id: context.request.lettaAgentsUserId,
+      }
+    );
   }
 
   return {

@@ -1,5 +1,4 @@
 import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
-import { UpdateProjectAgentTemplateErrors } from '$letta/web-api/contracts';
 import {
   db,
   deployedAgents,
@@ -15,7 +14,6 @@ import {
 import { eq, and, like, desc, count } from 'drizzle-orm';
 import type { contracts, projectsContract } from '$letta/web-api/contracts';
 import { findUniqueAgentTemplateName, generateSlug } from '$letta/server';
-import { AgentsService } from '@letta-web/letta-agents-api';
 import type { AgentTemplate } from '$letta/types';
 import { AgentRecipieVariant } from '$letta/types';
 import { capitalize } from 'lodash-es';
@@ -470,134 +468,6 @@ export async function createProjectAgentTemplate(
   };
 }
 
-type UpdateProjectAgentTemplateRequest = ServerInferRequest<
-  typeof contracts.projects.updateProjectAgentTemplate
->;
-
-type UpdateProjectAgentTemplateResponse = ServerInferResponses<
-  typeof contracts.projects.updateProjectAgentTemplate
->;
-
-export async function updateProjectAgentTemplate(
-  req: UpdateProjectAgentTemplateRequest
-): Promise<UpdateProjectAgentTemplateResponse> {
-  const { projectId, agentTemplateId } = req.params;
-
-  const organizationId = await getUserOrganizationIdOrThrow();
-
-  const testingAgent = await db.query.agentTemplates.findFirst({
-    where: and(
-      eq(agentTemplates.organizationId, organizationId),
-      eq(agentTemplates.projectId, projectId),
-      eq(agentTemplates.id, agentTemplateId)
-    ),
-  });
-
-  if (!testingAgent) {
-    return {
-      status: 404,
-      body: {},
-    };
-  }
-
-  const { name } = req.body;
-
-  if (!name) {
-    return {
-      status: 400,
-      body: {
-        message: UpdateProjectAgentTemplateErrors.NAME_REQUIRED,
-      },
-    };
-  }
-
-  // name must be alphanumeric-with-dashes-or-underscores
-  if (!/^[a-zA-Z0-9-_]+$/.test(name)) {
-    return {
-      status: 400,
-      body: {
-        message: UpdateProjectAgentTemplateErrors.ALPHANUMERIC_NAME_ONLY,
-      },
-    };
-  }
-
-  // check if agent with the same name exists
-  const existingAgent = await db.query.agentTemplates.findFirst({
-    where: and(
-      eq(agentTemplates.organizationId, organizationId),
-      eq(agentTemplates.projectId, projectId),
-      eq(agentTemplates.name, name)
-    ),
-  });
-
-  if (existingAgent && existingAgent.id !== testingAgent.id) {
-    return {
-      status: 409,
-      body: {
-        message: UpdateProjectAgentTemplateErrors.CONFLICTING_NAME,
-      },
-    };
-  }
-
-  await db
-    .update(agentTemplates)
-    .set({
-      name,
-    })
-    .where(eq(agentTemplates.id, agentTemplateId));
-
-  return {
-    status: 200,
-    body: {
-      name: name || testingAgent.name,
-      id: testingAgent.id,
-      updatedAt: new Date().toISOString(),
-    },
-  };
-}
-
-type DeleteProjectAgentTemplateRequest = ServerInferRequest<
-  typeof contracts.projects.deleteProjectAgentTemplate
->;
-
-type DeleteProjectAgentTemplateResponse = ServerInferResponses<
-  typeof contracts.projects.deleteProjectAgentTemplate
->;
-
-export async function deleteProjectAgentTemplate(
-  req: DeleteProjectAgentTemplateRequest
-): Promise<DeleteProjectAgentTemplateResponse> {
-  const { projectId, agentTemplateId } = req.params;
-  const organizationId = await getUserOrganizationIdOrThrow();
-
-  const testingAgent = await db.query.agentTemplates.findFirst({
-    where: and(
-      eq(agentTemplates.organizationId, organizationId),
-      eq(agentTemplates.projectId, projectId),
-      eq(agentTemplates.id, agentTemplateId)
-    ),
-  });
-
-  if (!testingAgent) {
-    return {
-      status: 404,
-      body: {},
-    };
-  }
-
-  await AgentsService.deleteAgent({
-    agentId: testingAgent.id,
-  });
-  await db.delete(agentTemplates).where(eq(agentTemplates.id, agentTemplateId));
-
-  return {
-    status: 200,
-    body: {
-      success: true,
-    },
-  };
-}
-
 type GetProjectDeployedAgentTemplatesRequest = ServerInferRequest<
   typeof contracts.projects.getProjectDeployedAgentTemplates
 >;
@@ -1014,8 +884,6 @@ export const projectsRouter = {
   getProjectAgentTemplates,
   createProject,
   createProjectAgentTemplate,
-  updateProjectAgentTemplate,
-  deleteProjectAgentTemplate,
   getProjectDeployedAgentTemplates,
   getProjectDeployedAgentTemplate,
   getTestingAgentByIdOrName,

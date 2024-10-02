@@ -15,16 +15,16 @@ import {
   useForm,
   VStack,
 } from '@letta-web/component-library';
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo } from 'react';
 import { useCurrentAgent } from '../hooks';
 import { ADENavigationItem } from '../common/ADENavigationItem/ADENavigationItem';
-import { webApi, webApiQueryKeys } from '$letta/client';
+import { webOriginSDKApi } from '$letta/client';
 import { useCurrentProject } from '../../../../../../(dashboard-like)/projects/[projectSlug]/hooks';
 import { useCurrentAgentTemplate } from '../hooks/useCurrentAgentTemplate/useCurrentAgentTemplate';
-import { useQueryClient } from '@tanstack/react-query';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Settings2Icon } from 'lucide-react';
+import { isFetchError } from '@ts-rest/react-query/v5';
 
 const updateNameFormSchema = z.object({
   name: z
@@ -33,13 +33,14 @@ const updateNameFormSchema = z.object({
       message: 'Name must be alphanumeric, with underscores or dashes',
     })
     .min(3, { message: 'Name must be at least 3 characters long' })
-    .max(25, { message: 'Name must be at most 25 characters long' }),
+    .max(50, { message: 'Name must be at most 50 characters long' }),
 });
 
 type UpdateNameFormValues = z.infer<typeof updateNameFormSchema>;
 
 function EditAgentName() {
   const { name: defaultName } = useCurrentAgentTemplate();
+  const { slug: projectSlug } = useCurrentProject();
 
   const form = useForm({
     resolver: zodResolver(updateNameFormSchema),
@@ -48,31 +49,39 @@ function EditAgentName() {
     },
   });
 
-  const { id: projectId } = useCurrentProject();
-  const queryClient = useQueryClient();
-  const { name, id: agentTemplateId } = useCurrentAgentTemplate();
+  const { id: agentTemplateId } = useCurrentAgentTemplate();
 
-  const { mutate, isPending } =
-    webApi.projects.updateProjectAgentTemplate.useMutation({
-      onSuccess: async () => {
-        await queryClient.invalidateQueries({
-          queryKey: webApiQueryKeys.projects.getTestingAgentByIdOrName(name),
-        });
-      },
-    });
+  const { mutate, isPending, error } =
+    webOriginSDKApi.agents.updateAgent.useMutation();
 
   const handleSubmit = useCallback(
     (values: UpdateNameFormValues) => {
-      mutate({
-        body: { name: values.name },
-        params: {
-          projectId,
-          agentTemplateId,
+      mutate(
+        {
+          body: { name: values.name, id: agentTemplateId },
+          params: {
+            agent_id: agentTemplateId,
+          },
         },
-      });
+        {
+          onSuccess: async () => {
+            window.location.href = `/projects/${projectSlug}/agents/${values.name}`;
+          },
+        }
+      );
     },
-    [mutate, projectId, agentTemplateId]
+    [mutate, agentTemplateId, projectSlug]
   );
+
+  useEffect(() => {
+    if (error && !isFetchError(error)) {
+      if (error.status === 409) {
+        form.setError('name', {
+          message: 'An agent with the same name already exists',
+        });
+      }
+    }
+  }, [error, form]);
 
   return (
     <Card>
@@ -110,7 +119,7 @@ function EditAgentName() {
 function DeleteAgentDialog() {
   const { name } = useCurrentAgentTemplate();
 
-  const { id: projectId, slug: projectSlug } = useCurrentProject();
+  const { slug: projectSlug } = useCurrentProject();
   const { id: agentTemplateId } = useCurrentAgentTemplate();
 
   const DeleteAgentDialogFormSchema = useMemo(
@@ -130,21 +139,19 @@ function DeleteAgentDialog() {
     },
   });
 
-  const { mutate, isPending } =
-    webApi.projects.deleteProjectAgentTemplate.useMutation({
-      onSuccess: () => {
-        window.location.href = `/projects/${projectSlug}`;
-      },
-    });
+  const { mutate, isPending } = webOriginSDKApi.agents.deleteAgent.useMutation({
+    onSuccess: () => {
+      window.location.href = `/projects/${projectSlug}`;
+    },
+  });
 
   const handleSubmit = useCallback(() => {
     mutate({
       params: {
-        projectId,
-        agentTemplateId,
+        agent_id: agentTemplateId,
       },
     });
-  }, [mutate, projectId, agentTemplateId]);
+  }, [mutate, agentTemplateId]);
 
   return (
     <FormProvider {...form}>
