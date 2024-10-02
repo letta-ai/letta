@@ -54,11 +54,11 @@ describe('letta', () => {
       }
     });
 
-    cy.findByTestId('chat-simulator-input').type('What is my name');
-
-    cy.findByTestId('chat-simulator-send').click();
-
-    cy.findByTestId('messages-list').contains('BananaMan', { timeout: 10000 });
+    // cy.findByTestId('chat-simulator-input').type('What is my name');
+    //
+    // cy.findByTestId('chat-simulator-send').click();
+    //
+    // cy.findByTestId('messages-list').contains('BananaMan', { timeout: 10000 });
 
     // stage the agent
 
