@@ -1,6 +1,6 @@
 import { initContract } from '@ts-rest/core';
 import type { PanelItemPositionsMatrix } from '@letta-web/component-library';
-import type { panelRegistry } from '../../../app/(logged-in)/(ade)/projects/[projectId]/agents/[agentId]/panelRegistry';
+import type { panelRegistry } from '../../../app/(logged-in)/(ade)/projects/[projectSlug]/agents/[agentName]/panelRegistry';
 
 const c = initContract();
 

@@ -25,6 +25,7 @@ export type ProjectAgentTemplatesType = z.infer<
 export const PartialProjectSchema = z.object({
   name: z.string(),
   id: z.string(),
+  slug: z.string(),
 });
 
 export type PartialProjectType = z.infer<typeof PartialProjectSchema>;
@@ -86,11 +87,19 @@ export const UpdateProjectAgentTemplatePayloadSchema = z.object({
   name: z.string().optional(),
 });
 
-export const UpdateProjectAgentTemplateConflictingNameResponseSchema = z.object(
-  {
-    message: z.literal('Agent with the same name already exists'),
-  }
-);
+export enum UpdateProjectAgentTemplateErrors {
+  CONFLICTING_NAME = 'CONFLICTING_NAME',
+  ALPHANUMERIC_NAME_ONLY = 'ALPHANUMERIC_NAME_ONLY',
+  NAME_REQUIRED = 'NAME_REQUIRED',
+}
+
+export const UpdateProjectAgentTemplateConflictingNameErrorSchema = z.object({
+  message: z.enum([
+    UpdateProjectAgentTemplateErrors.CONFLICTING_NAME,
+    UpdateProjectAgentTemplateErrors.ALPHANUMERIC_NAME_ONLY,
+    UpdateProjectAgentTemplateErrors.NAME_REQUIRED,
+  ]),
+});
 
 const updateProjectAgentTemplateContract = c.mutation({
   method: 'PATCH',
@@ -102,7 +111,7 @@ const updateProjectAgentTemplateContract = c.mutation({
   body: UpdateProjectAgentTemplatePayloadSchema,
   responses: {
     200: ProjectAgentTemplateSchema,
-    409: UpdateProjectAgentTemplateConflictingNameResponseSchema,
+    400: UpdateProjectAgentTemplateConflictingNameErrorSchema,
   },
 });
 
@@ -250,12 +259,14 @@ const getDeployedAgentsContract = c.query({
 });
 
 /* Get Project Testing Agent */
-const getProjectAgentTemplateContract = c.query({
+const getTestingAgentByIdOrNameContract = c.query({
   method: 'GET',
-  path: '/projects/:projectId/testing-agents/:agentTemplateId',
+  path: '/testing-agents/:lookupValue',
   pathParams: z.object({
-    projectId: z.string(),
-    agentTemplateId: z.string(),
+    lookupValue: z.string(),
+  }),
+  query: z.object({
+    lookupBy: z.enum(['id', 'name']).optional(),
   }),
   responses: {
     200: ProjectAgentTemplateSchema,
@@ -300,9 +311,12 @@ const forkAgentTemplateContract = c.mutation({
 });
 
 /* Get Project By Id */
-const getProjectByIdContract = c.query({
+const getProjectByIdOrSlugContract = c.query({
   method: 'GET',
   path: '/projects/:projectId',
+  query: z.object({
+    lookupBy: z.enum(['id', 'slug']).optional(),
+  }),
   pathParams: z.object({
     projectId: z.string(),
   }),
@@ -312,7 +326,7 @@ const getProjectByIdContract = c.query({
 });
 
 export type GetProjectByIdContractSuccessResponse = ServerInferResponses<
-  typeof getProjectByIdContract,
+  typeof getProjectByIdOrSlugContract,
   200
 >;
 
@@ -325,8 +339,8 @@ export const projectsContract = c.router({
       200: PublicProjectsSchema,
     },
   }),
-  getProjectById: getProjectByIdContract,
-  getProjectAgentTemplate: getProjectAgentTemplateContract,
+  getProjectByIdOrSlug: getProjectByIdOrSlugContract,
+  getTestingAgentByIdOrName: getTestingAgentByIdOrNameContract,
   updateProjectAgentTemplate: updateProjectAgentTemplateContract,
   deleteProjectAgentTemplate: deleteProjectAgentTemplateContract,
   getProjectAgentTemplates: c.query({
@@ -358,7 +372,7 @@ export const projectsQueryClientKeys = {
     ...projectsQueryClientKeys.getProjects,
     search,
   ],
-  getProjectById: (projectId: string) => ['project', projectId],
+  getProjectByIdOrSlug: (idOrSlug: string) => ['project', idOrSlug],
   getProjectAgentTemplates: (projectId: string) => [
     'project',
     projectId,
@@ -393,9 +407,7 @@ export const projectsQueryClientKeys = {
     projectId: string,
     search: GetDeployedAgentsQueryType
   ) => ['project', projectId, 'deployed-agents', search],
-  getProjectAgentTemplate: (projectId: string, agentTemplateId: string) => [
-    'project',
-    projectId,
+  getTestingAgentByIdOrName: (agentTemplateId: string) => [
     'testing-agents',
     agentTemplateId,
   ],

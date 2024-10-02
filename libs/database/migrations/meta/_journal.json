@@ -8,6 +8,13 @@
       "when": 1727489264429,
       "tag": "0000_bumpy_kitty_pryde",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1727839840250,
+      "tag": "0001_pink_doomsday",
+      "breakpoints": true
     }
   ]
 }

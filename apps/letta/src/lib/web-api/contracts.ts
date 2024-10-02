@@ -45,9 +45,9 @@ export const queryClientKeys = {
   },
 };
 
-export type * from './projects/projectContracts';
-export type * from './user/userContracts';
-export type * from './organizations/organizationsContracts';
-export type * from './api-keys/apiKeyContracts';
-export type * from './feature-flags/featureFlagsContracts';
-export type * from './admin/whitelisted-emails/whitelistedEmailsContracts';
+export * from './projects/projectContracts';
+export * from './user/userContracts';
+export * from './organizations/organizationsContracts';
+export * from './api-keys/apiKeyContracts';
+export * from './feature-flags/featureFlagsContracts';
+export * from './admin/whitelisted-emails/whitelistedEmailsContracts';

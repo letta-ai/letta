@@ -1,5 +1,5 @@
 import * as userRouter from './user/userRouter';
-import * as projectsRouter from './projects/projectsRouter';
+import { projectsRouter } from './projects/projectsRouter';
 import * as apiKeysRouter from './api-keys/apiKeysRouter';
 import * as organizationsRouter from './organizations/organizationsRouter';
 import * as adminWhitelistedEmailsRouter from './admin/whitelisted-emails/whitelistedEmailsRouter';

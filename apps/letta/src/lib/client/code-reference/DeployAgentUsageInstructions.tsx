@@ -18,11 +18,11 @@ import { webApi, webApiQueryKeys } from '$letta/client';
 
 interface DeployAgentInstructionsCurlProps {
   projectId: string;
-  deployedAgentTemplateKey: string;
+  versionKey: string;
 }
 
 function DeployAgentInstructionsCurl(props: DeployAgentInstructionsCurlProps) {
-  const { projectId, deployedAgentTemplateKey } = props;
+  const { projectId, versionKey } = props;
   const [deploymentAgentHasLoaded, setDeploymentAgentHasLoaded] =
     useState(false);
   const [showPartTwo, setShowPartTwo] = useState(false);
@@ -30,13 +30,13 @@ function DeployAgentInstructionsCurl(props: DeployAgentInstructionsCurlProps) {
     useState<boolean>(true);
   const { data } = webApi.projects.getDeployedAgents.useQuery({
     queryKey: webApiQueryKeys.projects.getDeployedAgentsWithSearch(projectId, {
-      deployedAgentTemplateVersion: deployedAgentTemplateKey,
+      deployedAgentTemplateVersion: versionKey,
       limit: 1,
     }),
     refetchInterval: !deploymentAgentHasLoaded ? 5000 : false,
     queryData: {
       query: {
-        deployedAgentTemplateVersion: deployedAgentTemplateKey,
+        deployedAgentTemplateVersion: versionKey,
         limit: 1,
       },
       params: {
@@ -76,7 +76,7 @@ function DeployAgentInstructionsCurl(props: DeployAgentInstructionsCurlProps) {
   -H 'Content-Type: application/json' \\
   -H 'Authorization: Bearer ${ACCESS_TOKEN_PLACEHOLDER}' \\
   -d '{
-    "version": FIX ME SHUB
+    "from_template": "${versionKey}"
   }'`}
         />
       </Frame>
@@ -156,18 +156,18 @@ function isSupportedLanguage(language: string): language is SupportedLanguages {
 
 interface RenderInstructionsProps {
   language: SupportedLanguages;
-  deployedAgentTemplateKey: string;
+  versionKey: string;
   projectId: string;
 }
 
 function RenderInstructions(props: RenderInstructionsProps) {
-  const { language, deployedAgentTemplateKey, projectId } = props;
+  const { language, versionKey, projectId } = props;
 
   if (language === 'bash') {
     return (
       <DeployAgentInstructionsCurl
         projectId={projectId}
-        deployedAgentTemplateKey={deployedAgentTemplateKey}
+        versionKey={versionKey}
       />
     );
   }
@@ -176,14 +176,14 @@ function RenderInstructions(props: RenderInstructionsProps) {
 }
 
 interface DeployAgentUsageInstructionsProps {
-  deployedAgentTemplateKey: string;
+  versionKey: string;
   projectId: string;
 }
 
 export function DeployAgentUsageInstructions(
   props: DeployAgentUsageInstructionsProps
 ) {
-  const { deployedAgentTemplateKey, projectId } = props;
+  const { versionKey, projectId } = props;
   const [language, setLanguage] = useState<SupportedLanguages>('bash');
 
   return (
@@ -209,7 +209,7 @@ export function DeployAgentUsageInstructions(
       </HStack>
       <RenderInstructions
         projectId={projectId}
-        deployedAgentTemplateKey={deployedAgentTemplateKey}
+        versionKey={versionKey}
         language={language}
       />
     </VStack>

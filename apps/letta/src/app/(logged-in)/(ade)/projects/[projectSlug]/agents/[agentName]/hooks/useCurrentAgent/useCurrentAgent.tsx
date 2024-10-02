@@ -1,13 +1,13 @@
 'use client';
 import type { AgentState } from '@letta-web/letta-agents-api';
 import { useAgentsServiceGetAgent } from '@letta-web/letta-agents-api';
-import { useCurrentAgentId } from '../useCurrentAgentId/useCurrentAgentId';
+import { useCurrentAgentTemplate } from '../useCurrentAgentTemplate/useCurrentAgentTemplate';
 
 export function useCurrentAgent() {
-  const agentId = useCurrentAgentId();
+  const { id } = useCurrentAgentTemplate();
 
   const { data } = useAgentsServiceGetAgent({
-    agentId,
+    agentId: id,
   });
 
   if (!data?.id) {

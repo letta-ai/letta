@@ -1,6 +1,7 @@
 import {
   adjectives,
   colors,
+  animals,
   uniqueNamesGenerator,
 } from 'unique-names-generator';
 import { agentTemplates, db } from '@letta-web/database';
@@ -8,8 +9,8 @@ import { eq } from 'drizzle-orm';
 
 export async function findUniqueAgentTemplateName(deep = 0) {
   const name = uniqueNamesGenerator({
-    dictionaries: [adjectives, colors],
-    length: 4,
+    dictionaries: [adjectives, colors, animals],
+    length: 3,
     separator: '-',
   });
 
