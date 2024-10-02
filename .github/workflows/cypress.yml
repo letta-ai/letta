@@ -18,13 +18,6 @@ jobs:
       matrix:
         containers: [ 1 ] # Uses 2 parallel instances
     services:
-      letta:
-        image: lettaai/letta
-        ports:
-          - 8083:8083
-        options: --health-cmd "curl -f http://localhost:8083" --health-interval 10s --health-timeout 5s --health-retries 5
-        env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       redis:
         image: redis
         ports:
@@ -50,6 +43,34 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Checkout letta agents
+        uses: actions/checkout@v4
+        with:
+          repository: letta-ai/letta-agents
+          token: ${{ secrets.PULLER_TOKEN }}
+          path: letta-agents
+      - name: Turn on Letta agents
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          LETTA_PG_DB: postgres
+          LETTA_PG_USER: postgres
+          LETTA_PG_PASSWORD: postgres
+          LETTA_PG_HOST: localhost
+          LETTA_PG_PORT: 5432
+          LETTA_LLM_ENDPOINT: https://api.openai.com/v1
+          LETTA_LLM_ENDPOINT_TYPE: openai
+          LETTA_LLM_MODEL: gpt-4
+          LETTA_LLM_CONTEXT_WINDOW: 8192
+          LETTA_EMBEDDING_ENDPOINT: https://api.openai.com/v1
+          LETTA_EMBEDDING_ENDPOINT_TYPE: openai
+          LETTA_EMBEDDING_DIM: 1536
+          LETTA_EMBEDDING_MODEL: text-embedding-ada-002
+          LETTA_DEBUG: True
+        working-directory: letta-agents
+        run: |
+          docker build -t letta-agents .
+          docker run -d -p 8083:8083 --name letta-agents letta-agents
+
       - name: Cypress run
         # Uses the official Cypress GitHub action https://github.com/cypress-io/github-action
         uses: cypress-io/github-action@v6
@@ -63,10 +84,7 @@ jobs:
           record: true
           parallel: true # Runs test in parallel using settings above
         env:
-          # For recording and parallelization to work you must set your CYPRESS_RECORD_KEY
-          # in GitHub repo → Settings → Secrets → Actions
           CYPRESS_RECORD_KEY: ${{ secrets.CYPRESS_RECORD_KEY }}
-          # Creating a token https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
           REDIS_HOST: localhost
