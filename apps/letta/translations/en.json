@@ -1,0 +1,70 @@
+{
+  "NotFoundPage": {
+    "emptyMessage": "This is not the page you're looking for",
+    "emptyAction": "Go home"
+  },
+  "dashboard-like/layout": {
+    "nav": {
+      "projects": "Projects",
+      "apiKeys": "API Keys",
+      "dataSources": "Data Sources",
+      "admin": "Admin"
+    },
+    "header": {
+      "Documentation": "Documentation"
+    }
+  },
+  "settings/layout": {
+    "profile": "Profile"
+  },
+  "settings/profile/page": {
+    "title": "Profile Settings",
+    "form": {
+      "nameInput": {
+        "label": "Name"
+      },
+      "emailInput": {
+        "label": "Email"
+      },
+      "submitButton": "Update profile"
+    }
+  },
+  "projects/page": {
+    "createProjectDialog": {
+      "title": "Create a new project",
+      "nameInput": {
+        "label": "Project Name"
+      },
+      "createButton": "Create Project",
+      "triggerButton": "Create Project"
+    },
+    "projectsList": {
+      "loadingMessage": "Loading projects...",
+      "noProjects": "You have no projects, create one below",
+      "noSearchResults": "We couldn't find any projects matching your search",
+      "projectItem": {
+        "agents": "Agents",
+        "totalMessages": "Total Messages",
+        "viewButton": "View Project"
+      }
+    },
+    "searchInput": {
+      "placeholder": "Search projects"
+    }
+  },
+  "projects/(projectSlug)/page": {
+    "title": "Project Home",
+    "agentTemplateCard": {
+      "subtitle": "Last updated on {date}",
+      "openInADE": "Open in ADE"
+    },
+    "agentTemplatesList": {
+      "emptyMessage": "You have templates in this project",
+      "createAgentTemplate": "New Agent Template"
+    },
+    "agentTemplatesSection": {
+      "title": "Recent Agent Templates",
+      "createAgentTemplate": "New Agent Template"
+    }
+  }
+}

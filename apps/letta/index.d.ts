@@ -1,5 +1,6 @@
 import '@tanstack/react-table';
 import type { RowData } from '@tanstack/react-table';
+import type en from './translations/en.json';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 declare module '*.svg' {
@@ -16,4 +17,12 @@ declare module '@tanstack/react-table' {
       columnAlign: 'center' | 'left' | 'right';
     };
   }
+}
+
+type Messages = typeof en;
+
+declare global {
+  // Use type safe message keys with `next-intl`
+  // eslint-disable-next-line @typescript-eslint/no-empty-interface
+  interface IntlMessages extends Messages {}
 }

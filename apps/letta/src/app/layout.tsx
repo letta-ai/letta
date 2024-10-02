@@ -3,19 +3,25 @@ import NextTopLoader from 'nextjs-toploader';
 import { ClientSideProviders } from './_components/ClientSideProviders/ClientSideProviders';
 import React from 'react';
 import { LoadMixpanelAnalytics } from '@letta-web/analytics/client';
+import { getLocale, getMessages } from 'next-intl/server';
+import { NextIntlClientProvider } from 'next-intl';
 
 export const metadata = {
   title: 'Letta',
   description: 'Letta lets you build Agents',
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const locale = await getLocale();
+
+  const messages = await getMessages();
+
   return (
-    <html lang="en">
+    <html lang={locale}>
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <link
@@ -102,7 +108,9 @@ export default function RootLayout({
           color="hsl(var(--primary))"
           zIndex={9999}
         />
-        <ClientSideProviders>{children}</ClientSideProviders>
+        <NextIntlClientProvider messages={messages}>
+          <ClientSideProviders>{children}</ClientSideProviders>
+        </NextIntlClientProvider>
       </body>
     </html>
   );

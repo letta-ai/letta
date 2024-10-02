@@ -97,8 +97,6 @@ const handler = createNextHandler(sdkContracts, sdkRouter, {
       return TsRestResponse.fromJson(error, { status: error.status || 500 });
     }
 
-    console.log(error);
-
     const errorId = Sentry.captureException(error);
 
     return TsRestResponse.fromJson(

@@ -16,6 +16,7 @@ import { useCurrentProject } from './hooks';
 import { webApi, webApiQueryKeys } from '$letta/client';
 import type { ProjectAgentTemplateType } from '$letta/web-api/contracts';
 import { nicelyFormattedDateAndTime } from '@letta-web/helpful-client-utils';
+import { useTranslations } from 'next-intl';
 
 interface AgentTemplateCardProps {
   id: string;
@@ -24,19 +25,22 @@ interface AgentTemplateCardProps {
 }
 
 function AgentTemplateCard(props: AgentTemplateCardProps) {
+  const t = useTranslations('projects/(projectSlug)/page');
   const { name, lastUpdatedAt } = props;
   const { slug: projectSlug } = useCurrentProject();
 
   return (
     <ActionCard
       title={name}
-      subtitle={`Last updated ${nicelyFormattedDateAndTime(lastUpdatedAt)}`}
+      subtitle={t('agentTemplateCard.subtitle', {
+        date: nicelyFormattedDateAndTime(lastUpdatedAt),
+      })}
       mainAction={
         <HStack>
           <Button
             href={`/projects/${projectSlug}/agents/${name}`}
             color="secondary"
-            label="Open in ADE"
+            label={t('agentTemplateCard.openInADE')}
           />
         </HStack>
       }
@@ -56,6 +60,7 @@ const testingPageHeight = `calc((var(--default-gap) * 2) + (${TESTING_CARD_HEIGH
 function AgentTemplatesList(props: AgentTemplatesListProps) {
   const { slug: projectSlug } = useCurrentProject();
   const { agents } = props;
+  const t = useTranslations('projects/(projectSlug)/page');
 
   if (!agents) {
     return (
@@ -71,12 +76,12 @@ function AgentTemplatesList(props: AgentTemplatesListProps) {
     return (
       <VStack fullHeight fullWidth style={{ height: testingPageHeight }}>
         <DashboardEmptyArea
-          message="You have no agents in this project"
+          message={t('agentTemplatesList.emptyMessage')}
           action={
             <Button
               preIcon={<PlusIcon />}
               data-testid="create-agent-template-button"
-              label="Create an agent"
+              label={t('agentTemplatesList.createAgentTemplate')}
               color="secondary"
               href={`/projects/${projectSlug}/agents/new`}
             />
@@ -118,6 +123,8 @@ function AgentTemplatesSection() {
     },
   });
 
+  const t = useTranslations('projects/(projectSlug)/page');
+
   const agentCount = useMemo(() => data?.body.length ?? 0, [data]);
   const agentsList = useMemo(
     () => data?.body.slice(0, RECENT_AGENTS_TO_DISPLAY),
@@ -133,21 +140,13 @@ function AgentTemplatesSection() {
       {/*  />*/}
       {/*)}*/}
       <DashboardPageSection
-        title="Recent Agent Templates"
+        title={t('agentTemplatesSection.title')}
         actions={
           <>
-            {agentCount > RECENT_AGENTS_TO_DISPLAY + 1 && (
-              <Button
-                size="small"
-                label="See all agents"
-                color="tertiary"
-                href={`/projects/${projectSlug}/agents`}
-              />
-            )}
             {/* This button should only be displayed if we have agents, otherwise we show an alert that asks them to do so instead */}
             {agentCount >= 1 && (
               <Button
-                label="Create an agent template"
+                label={t('agentTemplatesSection.createAgentTemplate')}
                 data-testid="create-agent-template-button"
                 preIcon={<PlusIcon />}
                 color="tertiary"
@@ -166,8 +165,9 @@ function AgentTemplatesSection() {
 }
 
 function ProjectPage() {
+  const t = useTranslations('projects/(projectSlug)/page');
   return (
-    <DashboardPageLayout title="Project Home">
+    <DashboardPageLayout title={t('title')}>
       <AgentTemplatesSection />
     </DashboardPageLayout>
   );

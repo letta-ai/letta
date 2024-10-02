@@ -16,6 +16,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useCurrentUser } from '$letta/client/hooks';
 import { webApi, webApiQueryKeys } from '$letta/client';
 import { useQueryClient } from '@tanstack/react-query';
+import { useTranslations } from 'next-intl';
 
 const UpdateUserProfileSchema = z.object({
   name: z.string(),
@@ -24,6 +25,7 @@ const UpdateUserProfileSchema = z.object({
 function UpdateUserProfileForm() {
   const { name, email } = useCurrentUser();
   const queryClient = useQueryClient();
+  const t = useTranslations('settings/profile/page');
 
   const { mutate, isPending } = webApi.user.updateCurrentUser.useMutation({
     onSuccess: () => {
@@ -57,15 +59,20 @@ function UpdateUserProfileForm() {
         <FormField
           name="name"
           render={({ field }) => (
-            <Input fullWidth label="Your name" {...field} />
+            <Input fullWidth label={t('form.nameInput.label')} {...field} />
           )}
         />
-        <RawInput label="Email" fullWidth value={email} disabled />
+        <RawInput
+          label={t('form.emailInput.label')}
+          fullWidth
+          value={email}
+          disabled
+        />
         <div>
           <Button
             color="secondary"
             type="submit"
-            label="Update profile"
+            label={t('form.submitButton')}
             busy={isPending}
           ></Button>
         </div>
@@ -75,8 +82,9 @@ function UpdateUserProfileForm() {
 }
 
 function ProfileSettingsPage() {
+  const t = useTranslations('settings/profile/page');
   return (
-    <DashboardPageLayout title="Profile settings">
+    <DashboardPageLayout title={t('title')}>
       <DashboardPageSection>
         <UpdateUserProfileForm />
       </DashboardPageSection>

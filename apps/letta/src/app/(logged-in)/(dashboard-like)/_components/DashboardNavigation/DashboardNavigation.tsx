@@ -28,6 +28,7 @@ import { usePathname } from 'next/navigation';
 import { webApi, webApiQueryKeys } from '$letta/client';
 import { CurrentUserDetailsBlock } from '$letta/client/common';
 import { cn } from '@letta-web/core-style-config';
+import { useTranslations } from 'next-intl';
 
 interface NavButtonProps {
   href: string;
@@ -55,6 +56,8 @@ function NavButton(props: NavButtonProps) {
 }
 
 function AdminNav() {
+  const t = useTranslations('dashboard-like/layout');
+
   const { data } = webApi.organizations.getCurrentOrganization.useQuery({
     queryKey: webApiQueryKeys.organizations.getCurrentOrganization,
   });
@@ -63,10 +66,11 @@ function AdminNav() {
     return null;
   }
 
-  return <NavButton href="/admin" label="Admin" icon={<BirdIcon />} />;
+  return <NavButton href="/admin" label={t('nav.admin')} icon={<BirdIcon />} />;
 }
 
 function MainNavigationItems() {
+  const t = useTranslations('dashboard-like/layout');
   const pathname = usePathname();
 
   const { subnavigationData } = useDashboardNavigationItems();
@@ -85,17 +89,17 @@ function MainNavigationItems() {
     if (!specificSubNavigationData) {
       return [
         {
-          label: 'Projects',
+          label: t('nav.projects'),
           href: '/projects',
           icon: <FolderOutputIcon />,
         },
         {
-          label: 'API Keys',
+          label: t('nav.apiKeys'),
           href: '/api-keys',
           icon: <KeySquareIcon />,
         },
         {
-          label: 'Data Sources',
+          label: t('nav.dataSources'),
           href: '/data-sources',
           icon: <DatabaseIcon />,
         },
@@ -103,7 +107,7 @@ function MainNavigationItems() {
     }
 
     return specificSubNavigationData.items;
-  }, [specificSubNavigationData]);
+  }, [specificSubNavigationData, t]);
 
   const title = useMemo(() => {
     if (!specificSubNavigationData) {
@@ -312,6 +316,7 @@ function SubRoute() {
 }
 
 export function DashboardHeader() {
+  const t = useTranslations('dashboard-like/layout');
   return (
     <>
       <HStack className="h-header min-h-header" fullWidth></HStack>
@@ -352,7 +357,7 @@ export function DashboardHeader() {
               color="tertiary-transparent"
               target="_blank"
               href="https://docs.letta.com"
-              label="Documentation"
+              label={t('header.Documentation')}
             />
             <ProfilePopover />
           </HStack>
