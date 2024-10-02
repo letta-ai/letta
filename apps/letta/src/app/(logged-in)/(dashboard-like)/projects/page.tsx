@@ -49,7 +49,7 @@ function CreateProjectDialog() {
         queryKey: webApiQueryKeys.projects.getProjects,
       });
 
-      push(`/projects/${res.body.id}`);
+      push(`/projects/${res.body.slug}`);
     },
   });
 
