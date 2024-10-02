@@ -67,8 +67,8 @@ jobs:
           LETTA_EMBEDDING_MODEL: text-embedding-ada-002
           LETTA_DEBUG: True
         working-directory: letta-agents
-        run:
-          docker build -t letta-agents .
+        run: |
+          docker build -t letta-agents
           docker run -d -p 8083:8083 --name letta-agents letta-agents
 
       - name: Cypress run
