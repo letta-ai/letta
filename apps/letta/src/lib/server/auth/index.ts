@@ -83,8 +83,8 @@ async function handleLettaUserCreation() {
 
 interface CreateUserAndOrganizationResponse {
   user: UserSession;
-  firstProjectId: string;
-  firstCreatedAgentId: string;
+  firstProjectSlug: string;
+  firstCreatedAgentName: string;
 }
 
 async function createUserAndOrganization(
@@ -178,6 +178,7 @@ async function createUserAndOrganization(
       })
       .returning({
         projectId: projects.id,
+        slug: projects.slug,
       }),
     db.insert(lettaAPIKeys).values({
       name: `${userFullName}'s API Key`,
@@ -187,12 +188,13 @@ async function createUserAndOrganization(
     }),
   ]);
 
-  const firstProjectId = project[0].projectId;
+  const firstProjectSlug = project[0].slug;
 
   const createdAgentTemplate = await createAgent(
     {
       body: {
-        project_id: firstProjectId,
+        template: true,
+        project_id: project[0].projectId,
         from_template: AgentRecipieVariant.CUSTOMER_SUPPORT,
       },
     },
@@ -206,7 +208,7 @@ async function createUserAndOrganization(
   );
 
   if (createdAgentTemplate.status !== 201 || !createdAgentTemplate.body.id) {
-    throw new Error('Failed to create testing agent');
+    throw new Error(JSON.stringify(createdAgentTemplate.body, null, 2));
   }
 
   const versionedAgentTemplate = await versionAgentTemplate(
@@ -232,7 +234,7 @@ async function createUserAndOrganization(
     {
       body: {
         from_template: versionedAgentTemplate.body.version,
-        name: `${firstProjectId}-my-first-agent-in-production`,
+        name: `${createdAgentTemplate.body.name}-deployed-1`,
       },
     },
     {
@@ -252,8 +254,8 @@ async function createUserAndOrganization(
       id: createdUser.userId,
       organizationId: organizationId,
     },
-    firstCreatedAgentId: createdAgentTemplate.body.id,
-    firstProjectId,
+    firstCreatedAgentName: createdAgentTemplate.body.name,
+    firstProjectSlug: firstProjectSlug,
   };
 }
 
@@ -291,8 +293,8 @@ async function isUserInWhitelist(email: string) {
 }
 
 interface NewUserDetails {
-  firstProjectId: string;
-  firstCreatedAgentId: string;
+  firstProjectSlug: string;
+  firstCreatedAgentName: string;
 }
 
 interface FindOrCreateUserAndOrganizationFromProviderLoginResponse {
@@ -314,8 +316,8 @@ async function findOrCreateUserAndOrganizationFromProviderLogin(
     const res = await createUserAndOrganization(userData);
 
     newUserDetails = {
-      firstProjectId: res.firstProjectId,
-      firstCreatedAgentId: res.firstCreatedAgentId,
+      firstProjectSlug: res.firstProjectSlug,
+      firstCreatedAgentName: res.firstCreatedAgentName,
     };
     user = res.user;
   }
@@ -568,7 +570,7 @@ export async function generateRedirectSignatureForLoggedInUser(
     return new Response('Successfully signed in', {
       status: 302,
       headers: {
-        location: `/projects/${newUserDetails.firstProjectId}/agents/${newUserDetails.firstCreatedAgentId}`,
+        location: `/projects/${newUserDetails.firstProjectSlug}/agents/${newUserDetails.firstCreatedAgentName}`,
       },
     });
   }
