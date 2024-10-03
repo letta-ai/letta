@@ -8,9 +8,12 @@ import { cn } from '@letta-web/core-style-config';
 const badgeVariants = cva('rounded-full items-center flex', {
   variants: {
     size: {
-      default: ' text-xs px-4 py-1',
+      default: 'text-xs px-4 py-1',
       small: 'text-[10px]  px-2 font-semibold',
     },
+  },
+  defaultVariants: {
+    size: 'default',
   },
 });
 
