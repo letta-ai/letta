@@ -24,7 +24,6 @@ import {
 import { AnalyticsEvent } from '@letta-web/analytics';
 import { jwtDecode } from 'jwt-decode';
 import { AdminService } from '@letta-web/letta-agents-api';
-import { createProjectAgentTemplate } from '$letta/web-api/projects/projectsRouter';
 import { createAgent, versionAgentTemplate } from '$letta/sdk';
 import { generateSlug } from '$letta/server';
 
@@ -190,30 +189,23 @@ async function createUserAndOrganization(
 
   const firstProjectId = project[0].projectId;
 
-  const createdAgentTemplate = await createProjectAgentTemplate(
+  const createdAgentTemplate = await createAgent(
     {
-      params: {
-        projectId: firstProjectId,
-      },
       body: {
-        recipeId: AgentRecipieVariant.CUSTOMER_SUPPORT,
+        project_id: firstProjectId,
+        from_template: AgentRecipieVariant.CUSTOMER_SUPPORT,
       },
     },
     {
       request: {
-        $userOverride: {
-          id: createdUser.userId,
-          organizationId,
-          lettaAgentsId: lettaAgentsUser.id,
-          email: userData.email,
-          name: userData.name,
-          imageUrl: userData.imageUrl,
-        },
+        lettaAgentsUserId: lettaAgentsUser.id,
+        userId: createdUser.userId,
+        organizationId,
       },
     }
   );
 
-  if (createdAgentTemplate.status !== 201) {
+  if (createdAgentTemplate.status !== 201 || !createdAgentTemplate.body.id) {
     throw new Error('Failed to create testing agent');
   }
 

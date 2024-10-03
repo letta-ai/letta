@@ -117,11 +117,12 @@ export function LoginComponent() {
   }, []);
 
   return (
-    <VStack align="center" className="relative" fullWidth>
+    <VStack align="center" position="relative" fullWidth>
       <Suspense>
         <LoginErrorBanner />
       </Suspense>
 
+      {/* eslint-disable-next-line react/forbid-component-props */}
       <VStack className="w-[300px] gap-[36px]" align="center">
         <VStack align="center" gap="large">
           <div className="relative" ref={logoRef}>

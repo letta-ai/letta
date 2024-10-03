@@ -1,6 +1,5 @@
 import React, { useMemo, useState } from 'react';
 import {
-  DocumentIcon,
   Frame,
   HStack,
   Panel,
@@ -8,7 +7,6 @@ import {
   RawCodeEditor,
   Typography,
 } from '@letta-web/component-library';
-import { ADENavigationItem } from '../common/ADENavigationItem/ADENavigationItem';
 
 const initalContextWindow = `{{SYSTEM_PROMPT}}
 {{VARIABLES.USER_NAME}}
@@ -59,6 +57,7 @@ function ContextWindowPreview(props: ContextWindowPreviewProps) {
   });
 
   return (
+    // eslint-disable-next-line react/forbid-component-props
     <Frame padding borderLeft className="text-sm whitespace-pre-wrap">
       {contextWindowPreview}
     </Frame>
@@ -89,13 +88,7 @@ export function ContextEditorPanel() {
   }, [contextWindow]);
 
   return (
-    <Panel
-      id="context-editor"
-      title="Context Editor"
-      trigger={
-        <ADENavigationItem icon={<DocumentIcon />} title="Context Editor" />
-      }
-    >
+    <Panel id="context-editor" title="Context Editor" trigger={<div></div>}>
       <PanelBar
         actions={
           <Typography noWrap variant="body2">

@@ -3,7 +3,6 @@ import { initContract } from '@ts-rest/core';
 import { z } from 'zod';
 import type { GenericSearch } from '$letta/web-api/shared/sharedContracts';
 import { GenericSearchSchema } from '$letta/web-api/shared/sharedContracts';
-import { AgentRecipieVariant } from '$letta/types';
 
 const c = initContract();
 
@@ -79,30 +78,6 @@ const deleteProjectContract = c.mutation({
     200: z.object({
       success: z.boolean(),
     }),
-  },
-});
-
-/* Create Project Testing Agent */
-export const CreateProjectAgentTemplatePayloadSchema = z.object({
-  recipeId: z
-    .enum([
-      AgentRecipieVariant.CUSTOMER_SUPPORT,
-      AgentRecipieVariant.DATA_COLLECTOR,
-      AgentRecipieVariant.FANTASY_ROLEPLAY,
-      AgentRecipieVariant.DEFAULT,
-    ])
-    .optional(),
-});
-
-const createProjectAgentTemplateContract = c.mutation({
-  method: 'POST',
-  path: '/projects/:projectId/testing-agents',
-  pathParams: z.object({
-    projectId: z.string(),
-  }),
-  body: CreateProjectAgentTemplatePayloadSchema,
-  responses: {
-    201: ProjectAgentTemplateSchema,
   },
 });
 
@@ -293,7 +268,6 @@ export const projectsContract = c.router({
   getProjectByIdOrSlug: getProjectByIdOrSlugContract,
   getTestingAgentByIdOrName: getTestingAgentByIdOrNameContract,
   createProject: createProjectContract,
-  createProjectAgentTemplate: createProjectAgentTemplateContract,
   getProjectDeployedAgentTemplates: getProjectDeployedAgentTemplatesContract,
   getProjectDeployedAgentTemplate: getDeployedAgentTemplateContract,
   getDeployedAgents: getDeployedAgentsContract,

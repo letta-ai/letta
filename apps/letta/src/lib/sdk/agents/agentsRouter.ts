@@ -19,6 +19,10 @@ import {
 import { and, desc, eq } from 'drizzle-orm';
 import { createProject } from '$letta/web-api/projects/projectsRouter';
 import { findUniqueAgentTemplateName } from '$letta/server';
+import {
+  isTemplateNameAPremadeAgentTemplate,
+  premadeAgentTemplates,
+} from '$letta/sdk/agents/premadeAgentTemplates';
 
 export async function copyAgentById(
   agentId: string,
@@ -93,52 +97,149 @@ type CreateAgentResponse = ServerInferResponses<
   typeof sdkContracts.agents.createAgent
 >;
 
+function prepareAgentForUser(agentName: string, agent: AgentState) {
+  return {
+    ...agent,
+    name: agentName,
+  };
+}
+
 export async function createAgent(
   req: CreateAgentRequest,
   context: SDKContext
 ): Promise<CreateAgentResponse> {
   const { organizationId, lettaAgentsUserId } = context.request;
-  const { project_id, from_template, template, name, ...agent } = req.body;
+  const {
+    project_id,
+    from_template,
+    template,
+    name: preName,
+    ...agent
+  } = req.body;
+
+  let name = preName;
 
   if (name) {
     if (!project_id) {
       return {
         status: 400,
         body: {
-          message: 'project_id is required when providing a unique identifier',
+          message: 'project_id is required when providing a name',
         },
       };
     }
 
-    const exists = await db.query.deployedAgents.findFirst({
-      where: and(
-        eq(deployedAgents.organizationId, organizationId),
-        eq(deployedAgents.projectId, project_id),
-        eq(deployedAgents.key, name)
-      ),
-    });
+    if (template) {
+      const exists = await db.query.agentTemplates.findFirst({
+        where: and(
+          eq(agentTemplates.organizationId, organizationId),
+          eq(agentTemplates.projectId, project_id),
+          eq(agentTemplates.name, name)
+        ),
+      });
 
-    if (exists) {
-      return {
-        status: 409,
-        body: {
-          message: 'An agent with the same name already exists',
-        },
-      };
+      if (exists) {
+        return {
+          status: 409,
+          body: {
+            message: 'An agent with the same name already exists',
+          },
+        };
+      }
+    } else {
+      const exists = await db.query.deployedAgents.findFirst({
+        where: and(
+          eq(deployedAgents.organizationId, organizationId),
+          eq(deployedAgents.projectId, project_id),
+          eq(deployedAgents.key, name)
+        ),
+      });
+
+      if (exists) {
+        return {
+          status: 409,
+          body: {
+            message: 'An agent with the same name already exists',
+          },
+        };
+      }
     }
+  } else {
+    name = await findUniqueAgentTemplateName();
   }
 
   if (from_template) {
     const [templateName, version] = from_template.split(':');
 
-    const template = await db.query.agentTemplates.findFirst({
+    if (isTemplateNameAPremadeAgentTemplate(templateName)) {
+      const premadeAgentTemplate = premadeAgentTemplates[templateName];
+
+      if (!premadeAgentTemplate) {
+        throw new Error('Premade agent template not found');
+      }
+
+      if (!project_id) {
+        return {
+          status: 400,
+          body: {
+            message:
+              'project_id is required when creating an agent from a premade agent template',
+          },
+        };
+      }
+
+      if (!template) {
+        return {
+          status: 400,
+          body: {
+            message:
+              'Cannot create a deployed agent from a premade agent template',
+          },
+        };
+      }
+
+      const response = await AgentsService.createAgent(
+        {
+          requestBody: {
+            ...premadeAgentTemplate,
+            name: crypto.randomUUID(),
+          },
+        },
+        {
+          user_id: lettaAgentsUserId,
+        }
+      );
+
+      if (!response?.id) {
+        return {
+          status: 500,
+          body: {
+            message: 'Failed to create agent',
+          },
+        };
+      }
+
+      await db.insert(agentTemplates).values({
+        organizationId,
+        name: name,
+        id: response.id,
+        projectId: project_id,
+      });
+
+      return {
+        status: 201,
+        body: prepareAgentForUser(name, response),
+      };
+    }
+
+    const agentTemplate = await db.query.agentTemplates.findFirst({
       where: and(
         eq(agentTemplates.organizationId, organizationId),
         eq(agentTemplates.name, templateName)
       ),
     });
 
-    if (!template) {
+    if (!agentTemplate) {
       return {
         status: 404,
         body: {
@@ -147,25 +248,49 @@ export async function createAgent(
       };
     }
 
-    const deployedTemplate = await db.query.deployedAgentTemplates.findFirst({
-      where: and(
-        eq(deployedAgentTemplates.organizationId, organizationId),
-        eq(deployedAgentTemplates.agentTemplateId, template.id),
-        eq(deployedAgentTemplates.version, version)
-      ),
-    });
+    const isLatest = version === 'latest';
+    const noVersion = !version;
+    let agentTemplateIdToCopy = agentTemplate.id;
 
-    if (!deployedTemplate) {
-      return {
-        status: 404,
-        body: {
-          message: `${version} of template ${templateName} not found`,
-        },
-      };
+    const deployedTemplateQuery = [
+      eq(deployedAgentTemplates.organizationId, organizationId),
+      eq(deployedAgentTemplates.agentTemplateId, agentTemplate.id),
+    ];
+
+    if (!isLatest) {
+      deployedTemplateQuery.push(eq(deployedAgentTemplates.version, version));
+    }
+
+    if (!noVersion) {
+      if (!template) {
+        return {
+          status: 400,
+          body: {
+            message:
+              'You can only create a new agent from a specific version of a template or latest. Format <template-name>:<version>',
+          },
+        };
+      }
+
+      const deployedTemplate = await db.query.deployedAgentTemplates.findFirst({
+        where: and(...deployedTemplateQuery),
+        orderBy: [desc(deployedAgentTemplates.createdAt)],
+      });
+
+      if (!deployedTemplate) {
+        return {
+          status: 404,
+          body: {
+            message: `${version} of template ${templateName} not found`,
+          },
+        };
+      }
+
+      agentTemplateIdToCopy = deployedTemplate.id;
     }
 
     const copiedAgent = await copyAgentById(
-      deployedTemplate.id,
+      agentTemplateIdToCopy,
       lettaAgentsUserId
     );
 
@@ -186,20 +311,20 @@ export async function createAgent(
     const nextInternalAgentCountId =
       (lastDeployedAgent?.internalAgentCountId || 0) + 1;
 
-    const key = name || `${template.id}-${nextInternalAgentCountId}`;
+    const key = name || `${agentTemplate.id}-${nextInternalAgentCountId}`;
 
     await db.insert(deployedAgents).values({
       id: copiedAgent.id,
-      projectId: template.projectId,
+      projectId: agentTemplate.projectId,
       key,
       internalAgentCountId: nextInternalAgentCountId,
-      deployedAgentTemplateId: template.id,
+      deployedAgentTemplateId: agentTemplate.id,
       organizationId,
     });
 
     return {
       status: 201,
-      body: copiedAgent,
+      body: prepareAgentForUser(name, copiedAgent),
     };
   }
 
@@ -279,7 +404,7 @@ export async function createAgent(
   if (template) {
     await db.insert(agentTemplates).values({
       organizationId,
-      name: name || `Agent template ${response.id}`,
+      name: name,
       id: response.id,
       projectId,
     });
@@ -311,7 +436,7 @@ export async function createAgent(
 
   return {
     status: 201,
-    body: response,
+    body: prepareAgentForUser(name, response),
   };
 }
 
@@ -624,10 +749,7 @@ export async function listAgents(
             user_id: context.request.lettaAgentsUserId,
           }
         ).then((response) => {
-          return {
-            ...response,
-            name: template.name,
-          };
+          return prepareAgentForUser(template.name, response);
         });
       })
     );
@@ -707,10 +829,7 @@ export async function listAgents(
           user_id: context.request.lettaAgentsUserId,
         }
       ).then((response) => {
-        return {
-          ...response,
-          name: agent.key,
-        };
+        return prepareAgentForUser(agent.key, response);
       });
     })
   );
@@ -778,10 +897,10 @@ async function getAgentById(
 
   return {
     status: 200,
-    body: {
-      ...agent,
-      name: deployedAgent?.key || agentTemplate?.name || '',
-    },
+    body: prepareAgentForUser(
+      deployedAgent?.key || agentTemplate?.name || '',
+      agent
+    ),
   };
 }
 
@@ -982,10 +1101,10 @@ export async function updateAgent(
 
   return {
     status: 200,
-    body: {
-      ...response,
-      name: deployedAgent?.key || agentTemplate?.name || '',
-    },
+    body: prepareAgentForUser(
+      deployedAgent?.key || agentTemplate?.name || '',
+      response
+    ),
   };
 }
 

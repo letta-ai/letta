@@ -23,7 +23,7 @@ import {
   RawAsyncSelect,
   RawInput,
 } from '@letta-web/component-library';
-import { FilterIcon, SearchIcon } from 'lucide-react';
+import { SearchIcon } from 'lucide-react';
 import { webApi, webApiQueryKeys } from '$letta/client';
 import { useCurrentProject } from '../hooks';
 import { usePathname, useSearchParams } from 'next/navigation';
@@ -73,10 +73,12 @@ function DeployedAgentView(props: DeployedAgentViewProps) {
         color="background-black"
         fullHeight
         fullWidth
+        /* eslint-disable-next-line react/forbid-component-props */
         className="absolute z-[1] fade-in-5 opacity-10"
         rounded
       />
       <VStack
+        /* eslint-disable-next-line react/forbid-component-props */
         className="absolute z-10 sm:animate-in slide-in-from-right-10 sm:w-[70%] right-0"
         color="background"
         rounded
@@ -197,7 +199,7 @@ function DeployedAgentList(props: DeployedAgentListProps) {
   }, [data]);
 
   return (
-    <HStack className="relative" fullWidth>
+    <HStack position="relative" fullWidth>
       <DataTable
         onRowClick={(row) => {
           setSelectedAgent(row);
@@ -342,7 +344,6 @@ function FilterByDeployedAgentTemplateComponent(
         isLoading
         inline
         fullWidth
-        preLabelIcon={<FilterIcon className="w-4" />}
         label="from the deployed agent template:"
         placeholder="Filter"
       />
@@ -367,7 +368,6 @@ function FilterByDeployedAgentTemplateComponent(
       fullWidth
       inline
       loadOptions={handleLoadOptions}
-      preLabelIcon={<FilterIcon className="w-4" />}
       label="from the deployed agent template:"
       placeholder="Deployed Agent Template"
       defaultOptions={defaultOptions}

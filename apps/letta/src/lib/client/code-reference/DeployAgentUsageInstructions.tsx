@@ -63,6 +63,7 @@ function DeployAgentInstructionsCurl(props: DeployAgentInstructionsCurlProps) {
   }, [useDeploymentAgentId, deploymentAgent]);
 
   return (
+    // eslint-disable-next-line react/forbid-component-props
     <VStack className="max-w-[750px]" fullWidth gap="text">
       <Typography align="left" variant="body">
         First you need to create an agent.

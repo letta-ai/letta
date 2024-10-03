@@ -23,7 +23,7 @@ const alertVariants = cva(
   }
 );
 
-type AlertVariants = 'info' | 'warning';
+type AlertVariants = 'destructive' | 'info' | 'warning';
 
 interface AlertProps extends VariantProps<typeof alertVariants> {
   children?: React.ReactNode;
@@ -35,6 +35,7 @@ interface AlertProps extends VariantProps<typeof alertVariants> {
 
 const iconMap: Partial<Record<AlertVariants, React.ReactNode>> = {
   warning: <WarningIcon color="warning" />,
+  destructive: <WarningIcon color="destructive" />,
   info: <InformationCircleIcon color="muted" />,
 };
 
@@ -61,7 +62,7 @@ export function Alert(props: AlertProps) {
     <div role="alert" className={cn(alertVariants({ variant }), className)}>
       <div className="[&>svg]:h-[14px]">{icon || defaultIcon}</div>
       <div className="flex flex-col w-full text-base gap">
-        <HStack fullWidth gap="small" justify="spaceBetween" align="center">
+        <HStack fullWidth gap="small" justify="spaceBetween" align="start">
           <h5 className="font-medium">{title}</h5>
           {action}
         </HStack>

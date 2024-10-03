@@ -34,6 +34,7 @@ function NavigationItem(props: NavigationItemProps) {
           as="button"
           color="tertiary"
           aria-current={isActive}
+          /* eslint-disable-next-line react/forbid-component-props */
           className={cn(
             'hover:bg-tertiary-hover',
             isActive && 'bg-tertiary-active'
@@ -43,6 +44,7 @@ function NavigationItem(props: NavigationItemProps) {
           fullWidth
           align="center"
         >
+          {/* eslint-disable-next-line react/forbid-component-props */}
           <Slot className="w-4">{icon}</Slot>
           <Typography>{label}</Typography>
         </HStack>

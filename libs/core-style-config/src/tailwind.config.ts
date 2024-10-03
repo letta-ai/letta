@@ -20,6 +20,7 @@ export function buildConfig(appDir: string): Config {
       },
       extend: {
         zIndex: {
+          rightAboveZero: '1',
           sidebarNavOverlay: '6',
           sidebarNav: '7',
           header: '8',
@@ -39,6 +40,7 @@ export function buildConfig(appDir: string): Config {
           'biHeight-lg': 'var(--button-input-height-lg)',
           panel: 'var(--panel-row-height)',
           header: 'var(--header-height)',
+          'header-sm': 'var(--header-height-sm)',
         },
         minHeight: {
           header: 'var(--header-height)',
@@ -52,6 +54,8 @@ export function buildConfig(appDir: string): Config {
           sidebar: 'var(--sidebar-width)',
         },
         fontSize: {
+          xxs: 'var(--font-size-xxs)',
+          xs: 'var(--font-size-xs)',
           sm: 'var(--font-size-sm)',
           base: 'var(--font-size-base)',
           lg: 'var(--font-size-lg)',

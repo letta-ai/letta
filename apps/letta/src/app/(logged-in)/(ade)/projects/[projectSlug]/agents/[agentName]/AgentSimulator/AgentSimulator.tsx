@@ -1,15 +1,7 @@
 'use client';
 import type { PanelTemplate } from '@letta-web/component-library';
-import {
-  Button,
-  ChatBubbleIcon,
-  Frame,
-  HStack,
-  LettaLoader,
-  Panel,
-  Typography,
-  VStack,
-} from '@letta-web/component-library';
+import { ChatInput } from '@letta-web/component-library';
+import { VStack } from '@letta-web/component-library';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import type { AgentMessage } from '@letta-web/letta-agents-api';
 import {
@@ -17,20 +9,17 @@ import {
   UseAgentsServiceListAgentMessagesKeyFn,
 } from '@letta-web/letta-agents-api';
 import { useCurrentAgent } from '../hooks';
-import { ADENavigationItem } from '../common/ADENavigationItem/ADENavigationItem';
-import TextareaAutosize from 'react-textarea-autosize';
-import { SendHorizonalIcon } from 'lucide-react';
 import { EventSource } from 'extended-eventsource';
 import { useQueryClient } from '@tanstack/react-query';
 import type { InfiniteData } from '@tanstack/query-core';
 import { get } from 'lodash-es';
-import { cn } from '@letta-web/core-style-config';
 import { Messages } from '$letta/client/components';
 import { z } from 'zod';
+import { useTranslations } from 'next-intl';
 
 function useSendMessage() {
   const { id } = useCurrentAgent();
-  const [isPending, setIsPending] = React.useState(false);
+  const [isPending, setIsPending] = useState(false);
   const abortController = useRef<AbortController>();
   const queryClient = useQueryClient();
 
@@ -218,102 +207,10 @@ function useSendMessage() {
   return { isPending, sendMessage };
 }
 
-interface ChatInputProps {
-  sendMessage: (message: string) => void;
-  isSendingMessage: boolean;
-}
-
-function ChatInput(props: ChatInputProps) {
-  const { sendMessage, isSendingMessage } = props;
-  const [text, setText] = useState('');
-
-  const handleSendMessage = useCallback(() => {
-    if (isSendingMessage) {
-      return;
-    }
-    if (text) {
-      setText('');
-      sendMessage(text);
-    }
-  }, [isSendingMessage, sendMessage, text]);
-
-  const handleKeyPress = useCallback(
-    (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        handleSendMessage();
-      }
-    },
-    [handleSendMessage]
-  );
-
-  const handleSubmit = useCallback(
-    (e: React.FormEvent<HTMLElement>) => {
-      e.preventDefault();
-      handleSendMessage();
-    },
-    [handleSendMessage]
-  );
-
-  return (
-    <Frame position="relative" paddingX="medium" paddingBottom>
-      <HStack
-        gap="small"
-        align="center"
-        position="absolute"
-        className={cn(
-          'mt-[-25px] fade-out-0 fade-in-10 z-[0] transition-all duration-200 slide-in-from-bottom-10',
-          isSendingMessage ? '' : 'mt-0'
-        )}
-      >
-        <div>
-          <LettaLoader size="small" color="muted" />
-        </div>
-        <Typography color="muted" bold>
-          Agent is Typing...
-        </Typography>
-      </HStack>
-      <VStack
-        color="background"
-        onSubmit={handleSubmit}
-        as="form"
-        className="z-[1] relative focus-within:ring-ring focus-within:ring-1"
-        rounded
-        border
-        fullWidth
-        padding="large"
-        borderTop
-      >
-        <TextareaAutosize
-          data-testid="chat-simulator-input"
-          onChange={(e) => {
-            setText(e.target.value);
-          }}
-          value={text}
-          onKeyDown={handleKeyPress}
-          className="w-full text-base font-inherit resize-none	focus:outline-none"
-          maxRows={10}
-          minRows={2}
-          placeholder="Type a message here"
-        />
-        <HStack justify="spaceBetween">
-          <div />
-          <Button
-            data-testid="chat-simulator-send"
-            size="small"
-            type="submit"
-            color="secondary"
-            preIcon={<SendHorizonalIcon />}
-            disabled={isSendingMessage}
-            label="Send"
-          />
-        </HStack>
-      </VStack>
-    </Frame>
-  );
-}
-
 function Chatroom() {
+  const t = useTranslations(
+    'projects/(projectSlug)/agents/(agentName)/AgentSimulator'
+  );
   const { sendMessage, isPending } = useSendMessage();
   const { id: agentId } = useCurrentAgent();
 
@@ -325,23 +222,13 @@ function Chatroom() {
           isSendingMessage={isPending}
           agentId={agentId}
         />
-        <ChatInput sendMessage={sendMessage} isSendingMessage={isPending} />
+        <ChatInput
+          sendingMessageText={t('sendingMessage')}
+          onSendMessage={sendMessage}
+          isSendingMessage={isPending}
+        />
       </VStack>
     </VStack>
-  );
-}
-
-export function AgentSimulator() {
-  return (
-    <Panel
-      id="chat-simulator"
-      trigger={
-        <ADENavigationItem icon={<ChatBubbleIcon />} title="Chat Simulator" />
-      }
-      title="Simulator"
-    >
-      <Chatroom />
-    </Panel>
   );
 }
 
