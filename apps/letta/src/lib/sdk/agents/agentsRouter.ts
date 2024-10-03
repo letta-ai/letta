@@ -249,7 +249,7 @@ export async function createAgent(
     }
 
     const isLatest = version === 'latest';
-    const noVersion = !version;
+    const hasVersion = !!version;
     let agentTemplateIdToCopy = agentTemplate.id;
 
     const deployedTemplateQuery = [
@@ -261,17 +261,7 @@ export async function createAgent(
       deployedTemplateQuery.push(eq(deployedAgentTemplates.version, version));
     }
 
-    if (!noVersion) {
-      if (!template) {
-        return {
-          status: 400,
-          body: {
-            message:
-              'You can only create a new agent from a specific version of a template or latest. Format <template-name>:<version>',
-          },
-        };
-      }
-
+    if (hasVersion) {
       const deployedTemplate = await db.query.deployedAgentTemplates.findFirst({
         where: and(...deployedTemplateQuery),
         orderBy: [desc(deployedAgentTemplates.createdAt)],
@@ -287,6 +277,16 @@ export async function createAgent(
       }
 
       agentTemplateIdToCopy = deployedTemplate.id;
+    } else {
+      if (!template) {
+        return {
+          status: 400,
+          body: {
+            message:
+              'You can only create a new agent from a specific version of a template or latest. Format <template-name>:<version>',
+          },
+        };
+      }
     }
 
     const copiedAgent = await copyAgentById(

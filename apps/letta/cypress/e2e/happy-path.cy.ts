@@ -28,9 +28,11 @@ describe('letta', () => {
 
     cy.location('pathname').should('match', /\/projects\/(.+)\/agents\/new/);
 
-    cy.findByTestId('pre-existing-template-dropdown').click();
+    cy.findByTestId('pre-existing-template-dropdown-trigger', {
+      timeout: 10000,
+    }).click({ force: true });
 
-    cy.findByTestId('select-box-option-letta_customer_support').click();
+    cy.findByText('Customer Support').click();
 
     cy.findByTestId('agent-name-input').type('CYDOGGTestAgent');
 

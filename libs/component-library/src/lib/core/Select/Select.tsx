@@ -38,6 +38,7 @@ interface BaseSelectProps {
   isMulti?: boolean;
   isClearable?: boolean;
   isSearchable?: boolean;
+  'data-testid'?: string;
   placeholder?: string;
   isLoading?: boolean;
   defaultOptions?: OptionType[];
@@ -121,19 +122,41 @@ interface AsyncSelectProps extends BaseSelectProps {
 
 function AsyncSelectPrimitive(props: AsyncSelectProps) {
   const styles = useStyles(props.styleConfig || {});
+  const [open, setOpen] = React.useState(false);
+
   return (
-    <AsyncReactSelect
-      unstyled
-      menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
-      onChange={(value) => {
-        props.onSelect?.(value);
-      }}
-      value={props.value}
-      components={overridenComponents}
-      styles={styles}
-      classNames={classNames}
-      {...props}
-    />
+    <>
+      {props['data-testid'] && (
+        <div
+          className="absolute"
+          onClick={() => {
+            setOpen(true);
+          }}
+          data-testid={`${props['data-testid']}-trigger`}
+        />
+      )}
+      <AsyncReactSelect
+        unstyled
+        onMenuOpen={() => {
+          setOpen(true);
+        }}
+        onMenuClose={() => {
+          setOpen(false);
+        }}
+        menuIsOpen={open}
+        menuPortalTarget={
+          typeof document !== 'undefined' ? document.body : null
+        }
+        onChange={(value) => {
+          props.onSelect?.(value);
+        }}
+        value={props.value}
+        components={overridenComponents}
+        styles={styles}
+        classNames={classNames}
+        {...props}
+      />
+    </>
   );
 }
 

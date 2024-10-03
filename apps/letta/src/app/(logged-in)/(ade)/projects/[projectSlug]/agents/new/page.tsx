@@ -149,29 +149,31 @@ function PreExistingTemplateDropdown() {
   }
 
   return (
-    <FormField
-      name="fromTemplate"
-      render={({ field }) => (
-        <AsyncSelect
-          data-testid="pre-existing-template-dropdown"
-          styleConfig={{
-            menuWidth: 400,
-          }}
-          label={t('PreExistingTemplateDropdown.label')}
-          loadOptions={handleLoadAgentTemplates}
-          placeholder={t('PreExistingTemplateDropdown.placeholder')}
-          value={field.value}
-          onSelect={(value) => {
-            if (isMultiValue(value)) {
-              return;
-            }
+    <>
+      <FormField
+        name="fromTemplate"
+        render={({ field }) => (
+          <AsyncSelect
+            styleConfig={{
+              menuWidth: 400,
+            }}
+            data-testid="pre-existing-template-dropdown"
+            label={t('PreExistingTemplateDropdown.label')}
+            loadOptions={handleLoadAgentTemplates}
+            placeholder={t('PreExistingTemplateDropdown.placeholder')}
+            value={field.value}
+            onSelect={(value) => {
+              if (isMultiValue(value)) {
+                return;
+              }
 
-            field.onChange(value);
-          }}
-          defaultOptions={agentTemplates}
-        />
-      )}
-    />
+              field.onChange(value);
+            }}
+            defaultOptions={agentTemplates}
+          />
+        )}
+      />
+    </>
   );
 }
 
@@ -272,7 +274,7 @@ function CreateAgentsView() {
               render={({ field }) => (
                 <Input
                   fullWidth
-                  data-cy="agent-name-input"
+                  data-testid="agent-name-input"
                   label={t('nameInput.label')}
                   placeholder={t('nameInput.placeholder')}
                   {...field}
@@ -284,7 +286,7 @@ function CreateAgentsView() {
             <FormActions>
               <Button
                 fullWidth
-                data-cy="create-agent-button"
+                data-testid="create-agent-button"
                 type="submit"
                 label={t('createButton')}
                 color="primary"
