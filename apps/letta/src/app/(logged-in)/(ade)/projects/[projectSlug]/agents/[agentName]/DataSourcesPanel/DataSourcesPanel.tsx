@@ -268,6 +268,6 @@ export function DataSourcesPanel() {
 export const dataSourcesPanelTemplate = {
   templateId: 'data-sources',
   content: DataSourcesPanel,
-  title: 'Data Sources',
+  useGetTitle: () => 'Data Sources',
   data: z.undefined(),
 } satisfies PanelTemplate<'data-sources'>;

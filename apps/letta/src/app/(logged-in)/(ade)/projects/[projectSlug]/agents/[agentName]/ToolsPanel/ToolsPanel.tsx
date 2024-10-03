@@ -426,6 +426,6 @@ export function ToolsPanel() {
 export const toolsPanelTemplate = {
   templateId: 'tools-panel',
   content: ToolsPanel,
-  title: 'Tools',
+  useGetTitle: () => 'Tools',
   data: z.undefined(),
 } satisfies PanelTemplate<'tools-panel'>;

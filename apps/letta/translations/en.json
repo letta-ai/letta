@@ -86,5 +86,24 @@
       "placeholder": "my-template-name-here",
       "label": "Search template by name"
     }
+  },
+  "ADE/ADESidebar": {
+    "nav": {
+      "model": "Model",
+      "config": "Config",
+      "memoryBlocks": "Memory Blocks",
+      "dataSources": "Data Sources",
+      "tools": "Tools",
+      "agentSimulator": "Simulator",
+      "archivalMemories": "Memory Explorer",
+      "templateVersionManager": "Template Version Manager",
+      "distribute": "Distribute",
+      "test": "Test",
+      "configure": "Configure",
+      "base": "Base"
+    }
+  },
+  "ADE/EditMemoryBlockPanel": {
+    "title": "Edit {blockName}"
   }
 }

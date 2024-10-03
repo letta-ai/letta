@@ -347,7 +347,7 @@ export function AgentSimulator() {
 
 export const agentSimulatorTemplate = {
   templateId: 'agent-simulator',
-  title: 'Agent Simulator',
+  useGetTitle: () => 'Agent Simulator',
   content: Chatroom,
   data: z.undefined(),
 } satisfies PanelTemplate<'agent-simulator'>;

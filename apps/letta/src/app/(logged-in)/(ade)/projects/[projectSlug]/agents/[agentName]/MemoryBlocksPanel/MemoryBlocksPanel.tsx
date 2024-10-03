@@ -294,6 +294,6 @@ export function MemoryBlocksPanel() {
 export const memoryBlocksTemplate = {
   templateId: 'memory-blocks',
   content: MemoryBlocksPanel,
-  title: 'Memory Blocks',
+  useGetTitle: () => 'Memory Blocks',
   data: z.undefined(),
 } satisfies PanelTemplate<'memory-blocks'>;

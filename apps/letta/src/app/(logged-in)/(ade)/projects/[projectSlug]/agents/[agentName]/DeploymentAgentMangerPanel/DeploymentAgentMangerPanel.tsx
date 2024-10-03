@@ -222,7 +222,7 @@ export function DeploymentAgentMangerPanel() {
 }
 
 export const deploymentPanelTemplate = {
-  title: 'Version Manager',
+  useGetTitle: () => 'Deployment',
   data: z.undefined(),
   content: DeploymentAgentMangerPanel,
   templateId: 'deployment',

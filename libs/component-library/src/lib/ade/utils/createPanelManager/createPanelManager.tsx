@@ -42,7 +42,7 @@ export interface PanelTemplate<
 > {
   noTab?: boolean;
   templateId: TPanelTemplateId;
-  title: string;
+  useGetTitle: (data?: ZodSchema['_output']) => string;
   data: ZodSchema;
   content: React.ComponentType<ZodSchema['_output']>;
 }
@@ -1042,6 +1042,8 @@ export function createPanelManager<
       movePanelToPosition(tabId, [x, y + 1, 0]);
     }, [tabId, movePanelToPosition, x, y]);
 
+    const title = panelRegistry[tab.templateId].useGetTitle(tab.data);
+
     return (
       <HStack
         paddingRight="small"
@@ -1057,7 +1059,7 @@ export function createPanelManager<
           className="h-full"
           onClick={handleClickedTab}
         >
-          <Typography noWrap>{panelRegistry[tab.templateId].title}</Typography>
+          <Typography noWrap>{title}</Typography>
         </HStack>
         <ADEDropdownMenu
           trigger={

@@ -24,6 +24,6 @@ function WelcomePanel() {
 export const welcomePanelTemplate = {
   templateId: 'welcome-panel',
   content: WelcomePanel,
-  title: 'Welcome',
+  useGetTitle: () => 'Welcome',
   data: z.undefined(),
 } satisfies PanelTemplate<'welcome-panel'>;

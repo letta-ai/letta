@@ -263,7 +263,7 @@ export function ArchivalMemoriesPanel() {
 
 export const archivalMemoriesPanelTemplate = {
   templateId: 'archival-memories',
-  title: 'Archival Memories',
+  useGetTitle: () => 'Archival Memories',
   content: ArchivalMemoriesPanel,
   data: z.object({}),
 } satisfies PanelTemplate<'archival-memories'>;

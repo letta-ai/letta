@@ -111,6 +111,6 @@ export function ModelPanel() {
 export const modelTemplate = {
   templateId: 'model-details',
   content: ModelPanel,
-  title: 'Model',
+  useGetTitle: () => 'Model',
   data: z.undefined(),
 } satisfies PanelTemplate<'model-details'>;
