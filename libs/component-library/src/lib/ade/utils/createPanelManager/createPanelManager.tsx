@@ -1046,11 +1046,13 @@ export function createPanelManager<
       <HStack
         paddingRight="small"
         align="center"
+        position="relative"
+        className="rounded-t-lg"
         color={isActive ? 'background' : 'background-grey'}
       >
         <HStack
           as="button"
-          paddingLeft="small"
+          paddingLeft="large"
           paddingY="xsmall"
           className="h-full"
           onClick={handleClickedTab}
@@ -1077,6 +1079,16 @@ export function createPanelManager<
         <HStack as="button" onClick={handleCloseTab}>
           <Cross2Icon className="w-4" />
         </HStack>
+        {isActive ? (
+          <>
+            <div className="w-4 h-4 absolute bottom-0 z-[2] right-[-16px] rounded-bl-[16px] bg-background-grey pointer-events-none" />
+            <div className="w-4 h-4 absolute bottom-0 z-[1] right-[-16px] bg-background pointer-events-none" />
+            <div className="w-4 h-4 absolute bottom-0 z-[2] left-[-16px] rounded-br-[16px] bg-background-grey pointer-events-none" />
+            <div className="w-4 h-4 absolute bottom-0 z-[1] left-[-16px] bg-background pointer-events-none" />
+          </>
+        ) : (
+          <div />
+        )}
       </HStack>
     );
   }
