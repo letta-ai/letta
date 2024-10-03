@@ -35,6 +35,7 @@ function AgentTemplatesList(props: AgentTemplatesListProps) {
     return (
       <VStack fullHeight fullWidth>
         {new Array(RECENT_AGENTS_TO_DISPLAY).fill(null).map((_u, index) => (
+          // eslint-disable-next-line react/forbid-component-props
           <Skeleton key={index} className={TESTING_CARD_HEIGHT_CLASS} />
         ))}
       </VStack>
@@ -43,6 +44,7 @@ function AgentTemplatesList(props: AgentTemplatesListProps) {
 
   if (agents.length === 0) {
     return (
+      // eslint-disable-next-line react/forbid-component-props
       <VStack fullHeight fullWidth style={{ height: testingPageHeight }}>
         <DashboardEmptyArea
           message={t('agentTemplatesList.emptyMessage')}

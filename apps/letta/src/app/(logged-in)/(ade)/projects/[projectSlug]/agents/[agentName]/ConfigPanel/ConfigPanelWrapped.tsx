@@ -8,7 +8,6 @@ import {
   FormProvider,
   HStack,
   Input,
-  Panel,
   PanelMainContent,
   RawInput,
   Typography,
@@ -17,13 +16,11 @@ import {
 } from '@letta-web/component-library';
 import React, { useCallback, useEffect, useMemo } from 'react';
 import { useCurrentAgent } from '../hooks';
-import { ADENavigationItem } from '../common/ADENavigationItem/ADENavigationItem';
 import { webOriginSDKApi } from '$letta/client';
 import { useCurrentProject } from '../../../../../../(dashboard-like)/projects/[projectSlug]/hooks';
 import { useCurrentAgentTemplate } from '../hooks/useCurrentAgentTemplate/useCurrentAgentTemplate';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Settings2Icon } from 'lucide-react';
 import { isFetchError } from '@ts-rest/react-query/v5';
 
 const updateNameFormSchema = z.object({
@@ -211,18 +208,6 @@ function ConfigPanel() {
         </VStack>
       </Card>
     </PanelMainContent>
-  );
-}
-
-export function ConfigPanelWrapped() {
-  return (
-    <Panel
-      title="Settings"
-      id="settings"
-      trigger={<ADENavigationItem icon={<Settings2Icon />} title="Settings" />}
-    >
-      <ConfigPanel />
-    </Panel>
   );
 }
 

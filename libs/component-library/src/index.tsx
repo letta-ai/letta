@@ -93,3 +93,7 @@ export * from './lib/core/Checkbox/Checkbox';
 export * from './lib/ade/utils/createPanelManager/createPanelManager';
 
 export * from './lib/ade/ADEDropdownMenu/ADEDropdownMenu';
+
+export * from './lib/ade/ADESidebarButton/ADESidebarButton';
+
+export * from './lib/reusable/ChatInput/ChatInput';

@@ -11,6 +11,9 @@ export function useCurrentProject(): PartialProjectType {
       params: {
         projectId: projectSlug,
       },
+      query: {
+        lookupBy: 'slug',
+      },
     },
   });
 

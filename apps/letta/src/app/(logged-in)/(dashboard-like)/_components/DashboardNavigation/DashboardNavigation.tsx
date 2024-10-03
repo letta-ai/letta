@@ -8,6 +8,7 @@ import {
   CogIcon,
   Cross2Icon,
   ExitIcon,
+  Frame,
   HamburgerMenuIcon,
   HStack,
   Logo,
@@ -176,6 +177,7 @@ function SecondaryMenuItems() {
 export function NavigationSidebar() {
   return (
     <>
+      {/* eslint-disable-next-line react/forbid-component-props */}
       <VStack className="min-w-sidebar hidden visibleSidebar:block" />
       <VStack
         overflowY="auto"
@@ -184,15 +186,17 @@ export function NavigationSidebar() {
         justify="spaceBetween"
         color="background"
         fullHeight
-        className="z-[1] top-0 min-w-sidebar invisible visibleSidebar:visible"
+        zIndex="rightAboveZero"
+        /* eslint-disable-next-line react/forbid-component-props */
+        className="top-0 min-w-sidebar invisible visibleSidebar:visible"
       >
         <VStack gap={false}>
-          <HStack className="h-header" />
+          <HStack height="header" />
           <MainNavigationItems />
         </VStack>
         <HStack align="center" borderTop padding>
           <Logo color="muted" size="small" />
-          <Typography color="muted" className="text-sm">
+          <Typography color="muted" variant="body2">
             Letta 2024
           </Typography>
         </HStack>
@@ -257,6 +261,7 @@ function NavigationOverlay() {
         {open ? <Cross2Icon /> : <HamburgerMenuIcon />}
         <HStack>
           <Logo />
+          {/* eslint-disable-next-line react/forbid-component-props */}
           <Typography className="text-lg">Letta</Typography>
         </HStack>
       </HStack>
@@ -268,6 +273,7 @@ function NavigationOverlay() {
               position="fixed"
               fullHeight
               borderLeft
+              /* eslint-disable-next-line react/forbid-component-props */
               className={cn(
                 'top-0 min-w-sidebar z-sidebarNav transition-all duration-200 slide-in-from-left left-0',
                 !open ? 'ml-[-250px]' : 'ml-0'
@@ -283,6 +289,7 @@ function NavigationOverlay() {
             </VStack>
             <div
               onClick={handleCloseOnClickInside}
+              /* eslint-disable-next-line react/forbid-component-props */
               className={cn(
                 'fixed fade-in-10 transition-all inset-0 bg-black bg-opacity-50 z-sidebarNavOverlay',
                 open ? 'opacity-100' : 'opacity-0 pointer-events-none'
@@ -306,8 +313,9 @@ function SubRoute() {
   }
 
   return (
+    // eslint-disable-next-line react/forbid-component-props
     <HStack gap="medium" align="center" className="visibleSidebar:hidden flex">
-      /
+      /{/* eslint-disable-next-line react/forbid-component-props */}
       <Link className="hover:underline capitalize" href={`/${subRouteHref}`}>
         {subRouteName}
       </Link>
@@ -319,12 +327,13 @@ export function DashboardHeader() {
   const t = useTranslations('dashboard-like/layout');
   return (
     <>
+      {/* eslint-disable-next-line react/forbid-component-props */}
       <HStack className="h-header min-h-header" fullWidth></HStack>
       <HStack
         as="header"
         position="fixed"
         borderBottom
-        className="z-header"
+        zIndex="header"
         fullWidth
         color="background"
       >
@@ -333,20 +342,23 @@ export function DashboardHeader() {
           justify="spaceBetween"
           align="center"
           paddingX="large"
+          /* eslint-disable-next-line react/forbid-component-props */
           className="h-header min-h-header"
         >
           <HStack gap="large" align="center">
             <HStack fullWidth align="center">
               <HStack align="center">
                 <>
-                  <div className="contents visibleSidebar:hidden">
+                  {/* eslint-disable-next-line react/forbid-component-props */}
+                  <Frame className="contents visibleSidebar:hidden">
                     <NavigationOverlay />
-                  </div>
-                  <div className="hidden visibleSidebar:contents">
+                  </Frame>
+                  {/* eslint-disable-next-line react/forbid-component-props */}
+                  <Frame className="hidden visibleSidebar:contents">
                     <Link href="/">
                       <Logo withText size="medium" />
                     </Link>
-                  </div>
+                  </Frame>
                 </>
                 <SubRoute />
               </HStack>

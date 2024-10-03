@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { useADESidebarContext, useCurrentAgent } from '../hooks';
 import type { PanelTemplate } from '@letta-web/component-library';
+import { ADESidebarButton } from '@letta-web/component-library';
 import {
   ChatBubbleIcon,
   HStack,
@@ -10,8 +11,6 @@ import {
 } from '@letta-web/component-library';
 import type { panelRegistry } from '../panelRegistry';
 import { PanelToggle, usePanelManager } from '../panelRegistry';
-import { cn } from '@letta-web/core-style-config';
-import { Slot } from '@radix-ui/react-slot';
 import {
   BotIcon,
   BoxesIcon,
@@ -42,7 +41,7 @@ function SidebarGroup(props: SidebarGroupProps) {
       color="transparent"
       as="section"
     >
-      <HStack className="h-[43px]" paddingX="small" align="center">
+      <HStack paddingTop="small" paddingX="small" align="center">
         {!collapsed && (
           <Typography bold variant="body2">
             {title}
@@ -81,35 +80,12 @@ function AgentPanelSidebarItem<TPanelTemplateId extends PanelRegistryKeys>(
     <MaybeTooltip renderTooltip={false} placement="right" content={label}>
       <HStack fullWidth align="center" paddingX="small">
         <PanelToggle id={id} templateId={templateId} data={data}>
-          <HStack
-            fullWidth
-            data-testid={`ade-navigate-to:${label}`}
-            paddingX="small"
-            paddingY="small"
-            rounded
-            className={cn('hover:bg-background-grey-hover cursor-pointer')}
-            color="transparent"
-            align="center"
-          >
-            {isActive && (
-              <div className="min-w-2 min-h-2 bg-background-black rounded-full" />
-            )}
-            <HStack wrap justify="spaceBetween" fullWidth gap={false}>
-              <HStack align="center">
-                <Slot className="w-3 h-3">{icon}</Slot>
-                <Typography noWrap variant="body2">
-                  {label}
-                </Typography>
-              </HStack>
-              {preview && (
-                <HStack align="center">
-                  <Typography color="primary" variant="body2">
-                    {preview}
-                  </Typography>
-                </HStack>
-              )}
-            </HStack>
-          </HStack>
+          <ADESidebarButton
+            label={label}
+            icon={icon}
+            preview={preview}
+            isActive={isActive}
+          />
         </PanelToggle>
       </HStack>
     </MaybeTooltip>

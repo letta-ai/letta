@@ -51,9 +51,7 @@ export function DashboardWithSidebarWrapper(
         {/*    </VStack>,*/}
         {/*    document.getElementById('subnavigation')!*/}
         {/*  )}*/}
-        <VStack fullWidth paddingBottom>
-          {children}
-        </VStack>
+        <VStack fullWidth>{children}</VStack>
       </HStack>
     </Frame>
   );

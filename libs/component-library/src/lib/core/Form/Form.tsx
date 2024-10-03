@@ -395,7 +395,7 @@ export function FormActions({
   startAction,
 }: FormActionsProps) {
   return (
-    <div className="flex gap-4 justify-between">
+    <div className="flex gap-4 w-full justify-between">
       {startAction ? startAction : <div />}
       <HStack align="center">
         {errorMessage && (

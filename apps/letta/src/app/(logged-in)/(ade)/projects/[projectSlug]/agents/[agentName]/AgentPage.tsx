@@ -136,12 +136,14 @@ function LoaderContent(props: LoaderContentProps) {
 
   return (
     <VStack
+      /* eslint-disable-next-line react/forbid-component-props */
       className="fixed z-draggedItem top-0 left-0 w-[100vw] h-[100vh]"
       fullHeight
       fullWidth
       align="center"
       justify="center"
     >
+      {/* eslint-disable-next-line react/forbid-component-props */}
       <VStack className="loader-content" align="center" gap="large">
         <LettaLoader size="large" />
         <Typography>Setting up your workspace...</Typography>
@@ -188,7 +190,7 @@ export function AgentPage() {
 
   return (
     <>
-      <div className="agent-page-fade-out pointer-events-none z-[-1]">
+      <div className="agent-page-fade-out fixed pointer-events-none z-[-1]">
         <LoaderContent />
       </div>
       <PanelManagerProvider
@@ -222,7 +224,7 @@ export function AgentPage() {
             </ADEHeader>
           }
         >
-          <Frame overflow="hidden" className="relative" fullWidth fullHeight>
+          <Frame overflow="hidden" position="relative" fullWidth fullHeight>
             <PanelRenderer />
           </Frame>
         </ADEPage>

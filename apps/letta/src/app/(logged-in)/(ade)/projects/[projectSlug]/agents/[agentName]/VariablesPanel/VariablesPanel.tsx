@@ -14,10 +14,8 @@ import {
   RawInput,
   ToggleGroup,
   useForm,
-  VariableIcon,
   VStack,
 } from '@letta-web/component-library';
-import { ADENavigationItem } from '../common/ADENavigationItem/ADENavigationItem';
 import { z } from 'zod';
 import type { ColumnDef } from '@tanstack/react-table';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -347,10 +345,7 @@ function EditVariable() {
 
 export function VariablesPanel() {
   return (
-    <Panel
-      id="variables-panel"
-      trigger={<ADENavigationItem icon={<VariableIcon />} title="Variables" />}
-    >
+    <Panel id="variables-panel" trigger={<div></div>}>
       <PanelRouter
         rootPageKey="variableHome"
         pages={{

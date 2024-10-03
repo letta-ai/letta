@@ -3,9 +3,10 @@ import { LoginComponent } from './LoginComponent';
 
 function LoginPage() {
   return (
+    // eslint-disable-next-line react/forbid-component-props
     <HStack gap={false} className="login-container h-[100vh]" fullHeight>
       <VStack
-        className="z-10 "
+        zIndex="rightAboveZero"
         color="background-black"
         align="center"
         justify="center"
