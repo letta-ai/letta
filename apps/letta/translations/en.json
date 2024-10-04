@@ -87,8 +87,15 @@
       "label": "Search template by name"
     }
   },
-  "projects/(projectSlug)/agents/(agentName)/AgentSimulator": {
-    "sendingMessage": "Agent is thinking..."
+  "ADE/AgentSimulator": {
+    "sendingMessage": "Agent is thinking...",
+    "setChatroomRenderMode": {
+      "label": "Chatroom Render Mode",
+      "options": {
+        "debug": "Debug mode",
+        "simple": "Simple mode"
+      }
+    }
   },
   "projects/(projectSlug)/agents/new/page": {
     "error": "An error occurred while creating the agent. Please try again or contact support.",

@@ -97,3 +97,5 @@ export * from './lib/ade/ADEDropdownMenu/ADEDropdownMenu';
 export * from './lib/ade/ADESidebarButton/ADESidebarButton';
 
 export * from './lib/reusable/ChatInput/ChatInput';
+
+export * from './lib/core/Markdown/Markdown';

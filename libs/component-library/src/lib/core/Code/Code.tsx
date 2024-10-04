@@ -27,6 +27,14 @@ export type SupportedLangauges =
   | 'python'
   | 'typescript';
 
+export function isSupportedLanguage(
+  language: string
+): language is SupportedLangauges {
+  return ['bash', 'django', 'javascript', 'python', 'typescript'].includes(
+    language
+  );
+}
+
 const codeVariants = cva('', {
   variants: {
     variant: {

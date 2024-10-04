@@ -1,7 +1,14 @@
 'use client';
+import {
+  ChatBubbleIcon,
+  ChatInput,
+  CodeIcon,
+  RawToggleGroup,
+} from '@letta-web/component-library';
 import type { PanelTemplate } from '@letta-web/component-library';
-import { ChatInput } from '@letta-web/component-library';
+import { PanelBar } from '@letta-web/component-library';
 import { VStack } from '@letta-web/component-library';
+import type { Dispatch, SetStateAction } from 'react';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import type { AgentMessage } from '@letta-web/letta-agents-api';
 import {
@@ -13,9 +20,11 @@ import { EventSource } from 'extended-eventsource';
 import { useQueryClient } from '@tanstack/react-query';
 import type { InfiniteData } from '@tanstack/query-core';
 import { get } from 'lodash-es';
+import type { MessagesDisplayMode } from '$letta/client/components';
 import { Messages } from '$letta/client/components';
 import { z } from 'zod';
 import { useTranslations } from 'next-intl';
+import { useLocalStorage } from '@mantine/hooks';
 
 function useSendMessage() {
   const { id } = useCurrentAgent();
@@ -207,28 +216,82 @@ function useSendMessage() {
   return { isPending, sendMessage };
 }
 
-function Chatroom() {
-  const t = useTranslations(
-    'projects/(projectSlug)/agents/(agentName)/AgentSimulator'
-  );
-  const { sendMessage, isPending } = useSendMessage();
-  const { id: agentId } = useCurrentAgent();
+interface ChatroomContextType {
+  renderMode: MessagesDisplayMode;
+  setRenderMode: Dispatch<SetStateAction<ChatroomContextType['renderMode']>>;
+}
+
+const ChatroomContext = React.createContext<ChatroomContextType>({
+  renderMode: 'debug',
+  setRenderMode: () => {
+    return;
+  },
+});
+
+function ControlChatroomRenderMode() {
+  const t = useTranslations('ADE/AgentSimulator');
+  const { renderMode, setRenderMode } = React.useContext(ChatroomContext);
 
   return (
-    <VStack collapseHeight gap={false} fullWidth>
-      <VStack gap="large" collapseHeight>
-        <Messages
-          isPanelActive
-          isSendingMessage={isPending}
-          agentId={agentId}
-        />
-        <ChatInput
-          sendingMessageText={t('sendingMessage')}
-          onSendMessage={sendMessage}
-          isSendingMessage={isPending}
-        />
+    <RawToggleGroup
+      size="small"
+      border
+      onValueChange={(value) => setRenderMode(value as MessagesDisplayMode)}
+      value={renderMode}
+      label={t('setChatroomRenderMode.label')}
+      hideLabel
+      items={[
+        {
+          icon: <CodeIcon />,
+          label: t('setChatroomRenderMode.options.debug'),
+          value: 'debug',
+          hideLabel: true,
+        },
+        {
+          icon: <ChatBubbleIcon />,
+          label: t('setChatroomRenderMode.options.simple'),
+          value: 'simple',
+          hideLabel: true,
+        },
+      ]}
+    />
+  );
+}
+
+function ChatroomPanelBar() {
+  return <PanelBar actions={<ControlChatroomRenderMode />}></PanelBar>;
+}
+
+function Chatroom() {
+  const t = useTranslations('ADE/AgentSimulator');
+  const { sendMessage, isPending } = useSendMessage();
+  const { id: agentId } = useCurrentAgent();
+  const [renderMode, setRenderMode] = useLocalStorage<MessagesDisplayMode>({
+    defaultValue: 'debug',
+    key: 'chatroom-render-mode',
+  });
+
+  return (
+    <ChatroomContext.Provider value={{ renderMode, setRenderMode }}>
+      <VStack fullHeight fullWidth>
+        <ChatroomPanelBar />
+        <VStack collapseHeight gap={false} fullWidth>
+          <VStack gap="large" collapseHeight>
+            <Messages
+              mode={renderMode}
+              isPanelActive
+              isSendingMessage={isPending}
+              agentId={agentId}
+            />
+            <ChatInput
+              sendingMessageText={t('sendingMessage')}
+              onSendMessage={sendMessage}
+              isSendingMessage={isPending}
+            />
+          </VStack>
+        </VStack>
       </VStack>
-    </VStack>
+    </ChatroomContext.Provider>
   );
 }
 
