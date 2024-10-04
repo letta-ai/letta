@@ -203,7 +203,14 @@ export const premadeAgentTemplates: Record<AgentRecipieVariant, AgentTemplate> =
         prompt_template:
           '{% for section, block in memory.items() %}<{{ section }} characters="{{ block.value|length }}/{{ block.limit }}">\n{{ block.value }}\n</{{ section }}>{% if not loop.last %}\n{% endif %}{% endfor %}',
       },
-      tools: [],
+      tools: [
+        'archival_memory_insert',
+        'archival_memory_search',
+        'conversation_search',
+        'conversation_search_date',
+        'pause_heartbeats',
+        'send_message',
+      ],
       llm_config: {
         model: 'gpt-4',
         model_endpoint_type: 'openai',

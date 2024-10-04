@@ -26,7 +26,7 @@ describe('letta', () => {
     // creates an agent
     cy.findByTestId('create-agent-template-button', { timeout: 10000 }).click();
 
-    cy.location('pathname').should('match', /\/projects\/(.+)\/agents\/new/);
+    cy.location('pathname').should('match', /\/projects\/(.+)\/templates\/new/);
 
     cy.findByTestId('pre-existing-template-dropdown-trigger', {
       timeout: 10000,
@@ -38,7 +38,10 @@ describe('letta', () => {
 
     cy.findByTestId('create-agent-button').click();
 
-    cy.location('pathname').should('match', /\/projects\/(.+)\/agents\/(.+)/);
+    cy.location('pathname').should(
+      'match',
+      /\/projects\/(.+)\/templates\/(.+)/
+    );
 
     // update core memory
     cy.findByTestId('ade-navigate-to:Memory Blocks').then(($btn) => {

@@ -33,6 +33,7 @@ import { useDebouncedValue } from '@mantine/hooks';
 import { useAgentsServiceGetAgent } from '@letta-web/letta-agents-api';
 import { useRouter } from 'next/navigation';
 import { Messages } from '$letta/client/components';
+import { useTranslations } from 'next-intl';
 
 interface AgentMessagesListProps {
   agentId: string;
@@ -40,11 +41,12 @@ interface AgentMessagesListProps {
 
 function AgentMessagesList(props: AgentMessagesListProps) {
   const { agentId } = props;
+  const t = useTranslations('projects/(projectSlug)/agents/page');
 
   return (
     <VStack rounded border collapseHeight>
       <HStack borderBottom paddingX="small" paddingY="small">
-        <Typography>Latest messages</Typography>
+        <Typography>{t('latestMessages')}</Typography>
       </HStack>
       <VStack fullHeight overflow="hidden">
         <Messages mode="simple" isSendingMessage={false} agentId={agentId} />
@@ -61,6 +63,8 @@ interface DeployedAgentViewProps {
 function DeployedAgentView(props: DeployedAgentViewProps) {
   const { agent, onClose } = props;
   const { key } = agent;
+  const { slug: currentProjectSlug } = useCurrentProject();
+  const t = useTranslations('projects/(projectSlug)/agents/page');
 
   const { data } = useAgentsServiceGetAgent({
     agentId: agent.id,
@@ -99,9 +103,14 @@ function DeployedAgentView(props: DeployedAgentViewProps) {
           </Typography>
           <HStack>
             <Button
+              href={`/projects/${currentProjectSlug}/agents/${agent.id}`}
+              label={t('openInADE')}
+              color="tertiary"
+            />
+            <Button
               onClick={onClose}
               color="tertiary-transparent"
-              label="Close"
+              label={t('close')}
               hideLabel
               preIcon={<Cross2Icon />}
             />
@@ -118,7 +127,7 @@ function DeployedAgentView(props: DeployedAgentViewProps) {
                 <VStack>
                   <RawInput
                     inline
-                    label="Agent ID"
+                    label={t('agentId')}
                     defaultValue={agent.id}
                     readOnly
                     allowCopy
@@ -150,6 +159,7 @@ function DeployedAgentList(props: DeployedAgentListProps) {
   const [selectedAgent, setSelectedAgent] = useState<AgentType>();
   const { search, filterBy } = props;
   const [offset, setOffset] = useState(0);
+  const t = useTranslations('projects/(projectSlug)/agents/page');
 
   useEffect(() => {
     setOffset(0);
@@ -179,19 +189,19 @@ function DeployedAgentList(props: DeployedAgentListProps) {
   const DeployedAgentColumns: Array<ColumnDef<AgentType>> = useMemo(
     () => [
       {
-        header: 'Id',
+        header: t('table.columns.id'),
         accessorKey: 'id',
       },
       {
-        header: 'External Identifier',
+        header: t('table.columns.name'),
         accessorKey: 'key',
       },
       {
-        header: 'Last Active',
+        header: t('table.columns.lastActive'),
         accessorKey: 'lastActiveAt',
       },
     ],
-    []
+    [t]
   );
 
   const agents = useMemo(() => {
@@ -213,15 +223,17 @@ function DeployedAgentList(props: DeployedAgentListProps) {
         showPagination
         offset={offset}
         onSetOffset={setOffset}
-        loadingText={search || filterBy ? 'Searching...' : 'Loading agents...'}
+        loadingText={
+          search || filterBy ? t('table.searching') : t('table.loading')
+        }
         noResultsText={
-          search || filterBy ? 'No results found' : 'No agents deployed'
+          search || filterBy ? t('table.noResults') : t('table.emptyMessage')
         }
         noResultsAction={
           search || filterBy ? undefined : (
             <Button
               href={`/projects/${projectSlug}/staging`}
-              label="Deploy an agent"
+              label={t('table.deployAction')}
             />
           )
         }
@@ -249,6 +261,8 @@ interface FilterByDeployedAgentTemplateComponentProps {
 function FilterByDeployedAgentTemplateComponent(
   props: FilterByDeployedAgentTemplateComponentProps
 ) {
+  const t = useTranslations('projects/(projectSlug)/agents/page');
+
   const { id: currentProjectId } = useCurrentProject();
   const { filterBy, onFilterChange } = props;
 
@@ -296,10 +310,10 @@ function FilterByDeployedAgentTemplateComponent(
           label: agent.id,
           value: agent.id,
         })),
-        { label: '(Any Agent)', value: '' },
+        { label: t('anyAgent'), value: '' },
       ];
     },
-    [currentProjectId]
+    [currentProjectId, t]
   );
 
   useEffect(() => {
@@ -344,8 +358,8 @@ function FilterByDeployedAgentTemplateComponent(
         isLoading
         inline
         fullWidth
-        label="from the deployed agent template:"
-        placeholder="Filter"
+        label={t('searchDropdown.label')}
+        placeholder={t('searchDropdown.placeholder')}
       />
     );
   }
@@ -368,8 +382,8 @@ function FilterByDeployedAgentTemplateComponent(
       fullWidth
       inline
       loadOptions={handleLoadOptions}
-      label="from the deployed agent template:"
-      placeholder="Deployed Agent Template"
+      label={t('searchDropdown.label')}
+      placeholder={t('searchDropdown.placeholder')}
       defaultOptions={defaultOptions}
     />
   );
@@ -378,6 +392,7 @@ function FilterByDeployedAgentTemplateComponent(
 function DeployedAgentsPage() {
   const [filterBy, setFilterBy] = useState<OptionType>();
   const [search, setSearch] = useState('');
+  const t = useTranslations('projects/(projectSlug)/agents/page');
 
   const [debouncedSearch] = useDebouncedValue(search, 500);
 
@@ -393,8 +408,8 @@ function DeployedAgentsPage() {
               value={search}
               preIcon={<SearchIcon />}
               hideLabel
-              label="Search agents by name"
-              placeholder="Search by name"
+              label={t('search.label')}
+              placeholder={t('search.placeholder')}
               fullWidth
             />
             <InputFilter>

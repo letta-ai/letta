@@ -97,7 +97,7 @@
       }
     }
   },
-  "projects/(projectSlug)/agents/new/page": {
+  "projects/(projectSlug)/templates/new/page": {
     "error": "An error occurred while creating the agent. Please try again or contact support.",
     "title": "Create an agent template",
     "description": "An agent template is used to define the structure of agents you deploy in your project. You can create an agent from scratch or reference a pre-existing agent template.",
@@ -127,6 +127,33 @@
       }
     },
     "FromLettaBadge": "From Letta"
+  },
+  "projects/(projectSlug)/agents/page": {
+    "table": {
+      "columns": {
+        "id": "ID",
+        "name": "Name",
+        "lastActive": "Last Active"
+      },
+      "emptyMessage": "No agents deployed",
+      "noResults": "No agents found",
+      "deployAction": "Deploy Agent",
+      "searching": "Searching agents...",
+      "loading": "Loading agents..."
+    },
+    "anyAgent": "(Any Agent)",
+    "searchDropdown": {
+      "label": "from the deployed agent template:",
+      "placeholder": "Deployed Agent Template"
+    },
+    "search": {
+      "placeholder": "Search agents by name",
+      "label": "agent-name"
+    },
+    "latestMessages": "Latest Messages",
+    "openInADE": "Open in ADE",
+    "agentId": "Agent ID",
+    "close": "Close"
   },
   "ComponentLibrary/InlineCode": {
     "copyButton": "Copy Code"

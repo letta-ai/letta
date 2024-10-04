@@ -21,6 +21,7 @@ import {
   Settings2Icon,
 } from 'lucide-react';
 import { z } from 'zod';
+import { useCurrentAgentMetaData } from '../hooks/useCurrentAgentMetaData/useCurrentAgentMetaData';
 
 type PanelRegistryKeys = keyof typeof panelRegistry;
 
@@ -94,6 +95,7 @@ function AgentPanelSidebarItem<TPanelTemplateId extends PanelRegistryKeys>(
 
 function AgentPageSidebar() {
   const currentAgent = useCurrentAgent();
+  const { isTemplate } = useCurrentAgentMetaData();
 
   return (
     <VStack
@@ -163,15 +165,17 @@ function AgentPageSidebar() {
             id="archival-memories"
           />
         </SidebarGroup>
-        <SidebarGroup title="Distribute">
-          <AgentPanelSidebarItem
-            label="Template Version Manager"
-            icon={<BoxesIcon />}
-            templateId="deployment"
-            data={undefined}
-            id="deployment"
-          />
-        </SidebarGroup>
+        {isTemplate && (
+          <SidebarGroup title="Distribute">
+            <AgentPanelSidebarItem
+              label="Template Version Manager"
+              icon={<BoxesIcon />}
+              templateId="deployment"
+              data={undefined}
+              id="deployment"
+            />
+          </SidebarGroup>
+        )}
       </VStack>
     </VStack>
   );
