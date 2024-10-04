@@ -11,13 +11,13 @@ import React from 'react';
 import { db, agentTemplates } from '@letta-web/database';
 import { eq } from 'drizzle-orm';
 import { redirect } from 'next/navigation';
-import { webApiQueryKeys } from '$letta/client';
+import { webApiQueryKeys, webOriginSDKQueryKeys } from '$letta/client';
 import { getProjectByIdOrSlug } from '$letta/web-api/router';
-import { AgentPage } from './AgentPage';
+import { AgentPage } from '../../agents/[agentId]/AgentPage';
 
 interface AgentsAgentPageProps {
   params: {
-    agentName: string;
+    templateName: string;
     projectSlug: string;
   };
 }
@@ -25,7 +25,7 @@ interface AgentsAgentPageProps {
 async function AgentsAgentPage(context: AgentsAgentPageProps) {
   const queryClient = new QueryClient();
 
-  const { agentName, projectSlug } = context.params;
+  const { templateName, projectSlug } = context.params;
 
   const project = await getProjectByIdOrSlug({
     params: { projectId: projectSlug },
@@ -40,26 +40,28 @@ async function AgentsAgentPage(context: AgentsAgentPageProps) {
   }
 
   const agentTemplate = await db.query.agentTemplates.findFirst({
-    where: eq(agentTemplates.name, agentName),
+    where: eq(agentTemplates.name, templateName),
     columns: {
       name: true,
       id: true,
     },
   });
 
-  if (!agentTemplate) {
-    redirect(`/projects/${context.params.projectSlug}`);
+  const agentId = agentTemplate?.id;
+
+  if (!agentId) {
+    redirect(`/projects/${projectSlug}/agents`);
     return;
   }
 
   const agent = await AgentsService.getAgent({
-    agentId: agentTemplate.id,
+    agentId,
   });
 
-  await Promise.all([
+  const queries = [
     queryClient.prefetchQuery({
       queryKey: UseAgentsServiceGetAgentKeyFn({
-        agentId: agentTemplate.id,
+        agentId,
       }),
       queryFn: () => agent,
     }),
@@ -70,14 +72,17 @@ async function AgentsAgentPage(context: AgentsAgentPageProps) {
       }),
     }),
     queryClient.prefetchQuery({
-      queryKey: webApiQueryKeys.projects.getTestingAgentByIdOrName(
-        agentTemplate.name
-      ),
+      queryKey: webOriginSDKQueryKeys.agents.listAgentsWithSearch({
+        name: agentTemplate.name,
+        template: true,
+      }),
       queryFn: () => ({
-        body: agentTemplate,
+        body: [agentTemplate],
       }),
     }),
-  ]);
+  ];
+
+  await Promise.all(queries);
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>

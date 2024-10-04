@@ -31,7 +31,9 @@ import { useRouter } from 'next/navigation';
 import { useCurrentUser } from '$letta/client/hooks';
 import { CurrentUserDetailsBlock } from '$letta/client/common';
 import './AgentPage.scss';
-import { useCurrentAgentTemplate } from './hooks/useCurrentAgentTemplate/useCurrentAgentTemplate';
+import { useCurrentAgentMetaData } from './hooks/useCurrentAgentMetaData/useCurrentAgentMetaData';
+import { useCurrentAgent } from './hooks';
+import { useAgentsServiceGetAgent } from '@letta-web/letta-agents-api';
 
 function NavOverlay() {
   const { slug: projectSlug } = useCurrentProject();
@@ -83,7 +85,7 @@ function NavOverlay() {
 }
 
 function ForkAgentDialog() {
-  const { id: agentTemplateId } = useCurrentAgentTemplate();
+  const { id: agentTemplateId } = useCurrentAgent();
   const { push } = useRouter();
   const { id: projectId, slug: projectSlug } = useCurrentProject();
   const { mutate, isPending } = webApi.projects.forkAgentTemplate.useMutation();
@@ -165,7 +167,12 @@ export function AgentPage() {
     queryData: {},
   });
 
-  const { name } = useCurrentAgentTemplate();
+  const { agentName, agentId, isTemplate } = useCurrentAgentMetaData();
+
+  const { data: agent } = useAgentsServiceGetAgent({
+    agentId,
+  });
+
   const { mutate } = webApi.adePreferences.updateADEPreferences.useMutation();
 
   const [updatedPositions, setUpdatedPositions] = useState<
@@ -184,7 +191,7 @@ export function AgentPage() {
     }
   }, [debouncedPositions, mutate]);
 
-  if (!data?.body?.displayConfig) {
+  if (!data?.body?.displayConfig || !agent) {
     return <LoaderContent isError={isError} />;
   }
 
@@ -214,19 +221,27 @@ export function AgentPage() {
                   data={undefined}
                   id="agent-config"
                 >
-                  <Typography color="white">{name}</Typography>
+                  <Typography color="white">{agentName}</Typography>
                 </PanelOpener>
               </HStack>
               <HStack>
-                <ForkAgentDialog />
+                {isTemplate && <ForkAgentDialog />}
                 <NavOverlay />
               </HStack>
             </ADEHeader>
           }
         >
-          <Frame overflow="hidden" position="relative" fullWidth fullHeight>
-            <PanelRenderer />
-          </Frame>
+          <VStack overflow="hidden" position="relative" fullWidth fullHeight>
+            {!isTemplate && (
+              <Alert
+                variant="warning"
+                title="You are editing a live agent, be aware that editing this agent may impact live deployments"
+              />
+            )}
+            <Frame overflow="hidden" position="relative" fullWidth fullHeight>
+              <PanelRenderer />
+            </Frame>
+          </VStack>
         </ADEPage>
       </PanelManagerProvider>
     </>

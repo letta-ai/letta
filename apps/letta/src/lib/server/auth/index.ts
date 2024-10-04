@@ -570,7 +570,7 @@ export async function generateRedirectSignatureForLoggedInUser(
     return new Response('Successfully signed in', {
       status: 302,
       headers: {
-        location: `/projects/${newUserDetails.firstProjectSlug}/agents/${newUserDetails.firstCreatedAgentName}`,
+        location: `/projects/${newUserDetails.firstProjectSlug}/templates/${newUserDetails.firstCreatedAgentName}`,
       },
     });
   }

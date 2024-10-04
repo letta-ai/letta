@@ -34,7 +34,7 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 
 function useDefaultAgentTemplate() {
-  const t = useTranslations('projects/(projectSlug)/agents/new/page');
+  const t = useTranslations('projects/(projectSlug)/templates/new/page');
 
   return {
     value: AgentRecipieVariant.NO_TEMPLATE,
@@ -44,14 +44,14 @@ function useDefaultAgentTemplate() {
 }
 
 function FromLettaBadge() {
-  const t = useTranslations('projects/(projectSlug)/agents/new/page');
+  const t = useTranslations('projects/(projectSlug)/templates/new/page');
 
   return <Badge size="small" color="primary" content={t('FromLettaBadge')} />;
 }
 
 function usePreMadeAgentTemplates() {
   const defaultValue = useDefaultAgentTemplate();
-  const t = useTranslations('projects/(projectSlug)/agents/new/page');
+  const t = useTranslations('projects/(projectSlug)/templates/new/page');
 
   return [
     {
@@ -71,7 +71,7 @@ function usePreMadeAgentTemplates() {
 }
 
 function PreExistingTemplateDropdown() {
-  const t = useTranslations('projects/(projectSlug)/agents/new/page');
+  const t = useTranslations('projects/(projectSlug)/templates/new/page');
   const premadeAgentTemplates = usePreMadeAgentTemplates();
   const defaultValue = useDefaultAgentTemplate();
 
@@ -196,7 +196,7 @@ function CreateAgentsView() {
   const queryClient = useQueryClient();
   const { push } = useRouter();
 
-  const t = useTranslations('projects/(projectSlug)/agents/new/page');
+  const t = useTranslations('projects/(projectSlug)/templates/new/page');
 
   const form = useForm<CreateAgentForm>({
     resolver: zodResolver(createAgentFormSchema),
@@ -217,7 +217,7 @@ function CreateAgentsView() {
         queryKey: webApiQueryKeys.agentTemplates.listAgentTemplates,
       });
 
-      push(`/projects/${projectSlug}/agents/${response.body.name}`);
+      push(`/projects/${projectSlug}/templates/${response.body.name}`);
     },
   });
 
@@ -302,7 +302,7 @@ function CreateAgentsView() {
 
 function NewAgentPage() {
   const { slug: projectSlug } = useCurrentProject();
-  const t = useTranslations('projects/(projectSlug)/agents/new/page');
+  const t = useTranslations('projects/(projectSlug)/templates/new/page');
 
   return (
     <ADEPage

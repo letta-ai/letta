@@ -39,7 +39,7 @@ export function AgentTemplateCard(props: AgentTemplateCardProps) {
           {/*    })} />*/}
           {/*  )}*/}
           <Button
-            href={`/projects/${projectSlug}/agents/${name}`}
+            href={`/projects/${projectSlug}/templates/${name}`}
             color="secondary"
             label={t('openInADE')}
           />

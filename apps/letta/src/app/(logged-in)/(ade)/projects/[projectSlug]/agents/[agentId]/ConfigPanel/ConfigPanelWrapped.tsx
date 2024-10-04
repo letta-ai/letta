@@ -18,10 +18,10 @@ import React, { useCallback, useEffect, useMemo } from 'react';
 import { useCurrentAgent } from '../hooks';
 import { webOriginSDKApi } from '$letta/client';
 import { useCurrentProject } from '../../../../../../(dashboard-like)/projects/[projectSlug]/hooks';
-import { useCurrentAgentTemplate } from '../hooks/useCurrentAgentTemplate/useCurrentAgentTemplate';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { isFetchError } from '@ts-rest/react-query/v5';
+import { useCurrentAgentMetaData } from '../hooks/useCurrentAgentMetaData/useCurrentAgentMetaData';
 
 const updateNameFormSchema = z.object({
   name: z
@@ -36,17 +36,17 @@ const updateNameFormSchema = z.object({
 type UpdateNameFormValues = z.infer<typeof updateNameFormSchema>;
 
 function EditAgentName() {
-  const { name: defaultName } = useCurrentAgentTemplate();
+  const { agentName, isTemplate } = useCurrentAgentMetaData();
   const { slug: projectSlug } = useCurrentProject();
 
   const form = useForm({
     resolver: zodResolver(updateNameFormSchema),
     defaultValues: {
-      name: defaultName,
+      name: agentName,
     },
   });
 
-  const { id: agentTemplateId } = useCurrentAgentTemplate();
+  const { id: agentTemplateId } = useCurrentAgent();
 
   const { mutate, isPending, error } =
     webOriginSDKApi.agents.updateAgent.useMutation();
@@ -62,12 +62,16 @@ function EditAgentName() {
         },
         {
           onSuccess: async () => {
-            window.location.href = `/projects/${projectSlug}/agents/${values.name}`;
+            if (isTemplate) {
+              window.location.href = `/projects/${projectSlug}/templates/${values.name}`;
+            } else {
+              window.location.href = `/projects/${projectSlug}/agents/${agentTemplateId}`;
+            }
           },
         }
       );
     },
-    [mutate, agentTemplateId, projectSlug]
+    [mutate, agentTemplateId, isTemplate, projectSlug]
   );
 
   useEffect(() => {
@@ -114,10 +118,10 @@ function EditAgentName() {
 }
 
 function DeleteAgentDialog() {
-  const { name } = useCurrentAgentTemplate();
+  const { name } = useCurrentAgent();
 
   const { slug: projectSlug } = useCurrentProject();
-  const { id: agentTemplateId } = useCurrentAgentTemplate();
+  const { id: agentTemplateId } = useCurrentAgent();
 
   const DeleteAgentDialogFormSchema = useMemo(
     () =>

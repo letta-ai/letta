@@ -292,5 +292,6 @@ export const agentsContract = c.router({
 });
 
 export const agentsQueryKeys = {
-  listAgents: (query: ListAgentsQuery) => ['agents', query],
+  listAgentsWithSearch: (query: ListAgentsQuery) => ['agents', query],
+  getAgentById: (agentId: string) => ['agents', agentId],
 };

@@ -54,7 +54,7 @@ function AgentTemplatesList(props: AgentTemplatesListProps) {
               data-testid="create-agent-template-button"
               label={t('agentTemplatesList.createAgentTemplate')}
               color="secondary"
-              href={`/projects/${projectSlug}/agents/new`}
+              href={`/projects/${projectSlug}/templates/new`}
             />
           }
         />
@@ -111,7 +111,7 @@ function AgentTemplatesSection() {
                 data-testid="create-agent-template-button"
                 preIcon={<PlusIcon />}
                 color="tertiary"
-                href={`/projects/${projectSlug}/agents/new`}
+                href={`/projects/${projectSlug}/templates/new`}
               />
             )}
           </>

@@ -16,11 +16,11 @@ import { useQueryClient } from '@tanstack/react-query';
 import { webApi, webApiQueryKeys, webOriginSDKApi } from '$letta/client';
 import { DeployAgentUsageInstructions } from '$letta/client/code-reference/DeployAgentUsageInstructions';
 import { z } from 'zod';
-import { useCurrentAgentTemplate } from '../hooks/useCurrentAgentTemplate/useCurrentAgentTemplate';
 import { nicelyFormattedDateAndTime } from '@letta-web/helpful-client-utils';
+import { useCurrentAgent } from '../hooks';
 
 function StageAndDeployDialog() {
-  const { id: agentTemplateId } = useCurrentAgentTemplate();
+  const { id: agentTemplateId } = useCurrentAgent();
   const { id: projectId } = useCurrentProject();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
@@ -83,7 +83,7 @@ interface DeployedAgentTemplateCardProps {
 function DeployedAgentTemplateCard(props: DeployedAgentTemplateCardProps) {
   const { version, index, agentKey, createdAt } = props;
   const { slug: projectSlug, id: currentProjectId } = useCurrentProject();
-  const { name } = useCurrentAgentTemplate();
+  const { name } = useCurrentAgent();
   const [showDeploymentInstructions, setShowDeploymentInstructions] =
     React.useState(false);
 
@@ -145,7 +145,7 @@ function DeployedAgentTemplateCard(props: DeployedAgentTemplateCardProps) {
 }
 
 export function DeploymentAgentMangerPanel() {
-  const { id: agentTemplateId } = useCurrentAgentTemplate();
+  const { id: agentTemplateId } = useCurrentAgent();
 
   const { id: currentProjectId } = useCurrentProject();
   const [searchValue, setSearchValue] = useState('');

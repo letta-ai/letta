@@ -97,7 +97,7 @@ type CreateAgentResponse = ServerInferResponses<
   typeof sdkContracts.agents.createAgent
 >;
 
-function prepareAgentForUser(agentName: string, agent: AgentState) {
+export function prepareAgentForUser(agentName: string, agent: AgentState) {
   return {
     ...agent,
     name: agentName,
