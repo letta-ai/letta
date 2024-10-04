@@ -3,6 +3,7 @@ import type { panelRegistry } from './panelRegistry';
 import { PanelOpener } from './panelRegistry';
 import { PanelManagerProvider, PanelRenderer } from './panelRegistry';
 import type { PanelItemPositionsMatrix } from '@letta-web/component-library';
+import { Tooltip } from '@letta-web/component-library';
 import {
   ADEHeader,
   ADEPage,
@@ -225,19 +226,23 @@ export function AgentPage() {
           header={
             <ADEHeader>
               <HStack align="center">
-                <Link target="_blank" href="/">
-                  <Logo size="small" color="white" />
-                </Link>
+                <Tooltip content={t('returnToHome')}>
+                  <Link href="/">
+                    <Logo size="small" color="white" />
+                  </Link>
+                </Tooltip>
                 /
-                {isLocal ? (
-                  <Link target="_blank" href="/local-project/agents">
-                    <Typography color="white">Local Project</Typography>
-                  </Link>
-                ) : (
-                  <Link target="_blank" href={`/projects/${projectSlug}`}>
-                    <Typography color="white">{projectName}</Typography>
-                  </Link>
-                )}
+                <Tooltip content={t('returnToProjectHome')}>
+                  {isLocal ? (
+                    <Link href="/local-project/agents">
+                      <Typography color="white">{t('localProject')}</Typography>
+                    </Link>
+                  ) : (
+                    <Link href={`/projects/${projectSlug}`}>
+                      <Typography color="white">{projectName}</Typography>
+                    </Link>
+                  )}
+                </Tooltip>
                 /
                 <PanelOpener
                   templateId="agent-config"
