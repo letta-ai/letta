@@ -192,6 +192,23 @@ function extractMessage(
         JSON.parse(agentMessage.message)
       );
 
+      if (mode === 'simple') {
+        if (!out.success) {
+          return null;
+        }
+
+        return {
+          id: `${agentMessage.id}-${agentMessage.message_type}`,
+          content: (
+            <VStack>
+              <Markdown text={out.data.message} />
+            </VStack>
+          ),
+          timestamp: new Date(agentMessage.date).toISOString(),
+          name: 'User',
+        };
+      }
+
       if (!out.success) {
         return {
           id: `${agentMessage.id}-${agentMessage.message_type}`,
