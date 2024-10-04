@@ -24,6 +24,7 @@ import type { Dispatch, SetStateAction } from 'react';
 import { useRef } from 'react';
 import { useCallback, useEffect, useMemo } from 'react';
 import { LoadingEmptyStatusComponent } from '../../reusable/LoadingEmptyStatusComponent/LoadingEmptyStatusComponent';
+import { TABLE_ROW_HEIGHT } from '../../../constants';
 
 interface TableBodyContentProps<Data> {
   table: UseReactTableType<Data>;
@@ -93,8 +94,6 @@ function TableBodyContent<Data>(props: TableBodyContentProps<Data>) {
 
   return null;
 }
-
-const TABLE_ROW_HEIGHT = 53;
 
 const dataTableVariants = cva('', {
   variants: {
@@ -189,7 +188,7 @@ export function DataTable<TData, TValue>(props: DataTableProps<TData, TValue>) {
 
       mounted.current = true;
 
-      onLimitChange?.(rows - 1);
+      onLimitChange?.(rows);
     }
   }, [autofitHeight, minHeight, onLimitChange]);
 

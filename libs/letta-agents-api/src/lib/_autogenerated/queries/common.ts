@@ -6,6 +6,7 @@ import {
   AgentsService,
   AuthService,
   BlocksService,
+  HealthService,
   JobsService,
   LlmsService,
   ModelsService,
@@ -144,26 +145,9 @@ export type AgentsServiceListAgentsQueryResult<
   TError = unknown
 > = UseQueryResult<TData, TError>;
 export const useAgentsServiceListAgentsKey = 'AgentsServiceListAgents';
-export const UseAgentsServiceListAgentsKeyFn = (
-  {
-    byVersion,
-    limit,
-    name,
-    offset,
-    projectId,
-    template,
-  }: {
-    byVersion?: string;
-    limit?: number;
-    name?: string;
-    offset?: number;
-    projectId?: string;
-    template?: boolean;
-  } = {},
-  queryKey?: Array<unknown>
-) => [
+export const UseAgentsServiceListAgentsKeyFn = (queryKey?: Array<unknown>) => [
   useAgentsServiceListAgentsKey,
-  ...(queryKey ?? [{ byVersion, limit, name, offset, projectId, template }]),
+  ...(queryKey ?? []),
 ];
 export type AgentsServiceGetAgentDefaultResponse = Awaited<
   ReturnType<typeof AgentsService.getAgent>
@@ -457,6 +441,18 @@ export const UseJobsServiceGetJobKeyFn = (
   },
   queryKey?: Array<unknown>
 ) => [useJobsServiceGetJobKey, ...(queryKey ?? [{ jobId }])];
+export type HealthServiceHealthCheckDefaultResponse = Awaited<
+  ReturnType<typeof HealthService.healthCheck>
+>;
+export type HealthServiceHealthCheckQueryResult<
+  TData = HealthServiceHealthCheckDefaultResponse,
+  TError = unknown
+> = UseQueryResult<TData, TError>;
+export const useHealthServiceHealthCheckKey = 'HealthServiceHealthCheck';
+export const UseHealthServiceHealthCheckKeyFn = (queryKey?: Array<unknown>) => [
+  useHealthServiceHealthCheckKey,
+  ...(queryKey ?? []),
+];
 export type UsersServiceListUsersDefaultResponse = Awaited<
   ReturnType<typeof UsersService.listUsers>
 >;

@@ -936,44 +936,6 @@ export const $CreateAgent = {
       ],
       description: 'The embedding configuration used by the agent.',
     },
-    template: {
-      anyOf: [
-        {
-          type: 'boolean',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Template',
-      description: 'Whether the agent is a template, only used on Letta Cloud.',
-    },
-    project_id: {
-      anyOf: [
-        {
-          type: 'string',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Project Id',
-      description:
-        'The project to associate the agent with, only used on Letta Cloud.',
-    },
-    from_template: {
-      anyOf: [
-        {
-          type: 'string',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'From Template',
-      description:
-        "Create a agent from a template given it's name and version, only used on Letta Cloud.",
-    },
   },
   additionalProperties: false,
   type: 'object',
@@ -1761,6 +1723,23 @@ export const $HTTPValidationError = {
   },
   type: 'object',
   title: 'HTTPValidationError',
+} as const;
+
+export const $Health = {
+  properties: {
+    version: {
+      type: 'string',
+      title: 'Version',
+    },
+    status: {
+      type: 'string',
+      title: 'Status',
+    },
+  },
+  type: 'object',
+  required: ['version', 'status'],
+  title: 'Health',
+  description: 'Health check response body',
 } as const;
 
 export const $ImageFile = {
