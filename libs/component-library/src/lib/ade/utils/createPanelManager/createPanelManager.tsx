@@ -1158,13 +1158,15 @@ export function createPanelManager<
   function PanelTabRenderer(props: PanelTabRendererProps) {
     const { tabs, x, y } = props;
 
-    const activeTab = tabs.find((tab) => tab.isActive);
+    const validTabs = tabs.filter((tab) => !!panelRegistry[tab.templateId]);
+
+    const activeTab = validTabs.find((tab) => tab.isActive);
 
     return (
       <VStack fullHeight gap={false}>
-        <TabBar x={x} y={y} activeTabId={activeTab?.id} tabs={tabs} />
+        <TabBar x={x} y={y} activeTabId={activeTab?.id} tabs={validTabs} />
         <VStack color="background" flexHeight collapseHeight fullWidth>
-          {tabs.map((tab) => {
+          {validTabs.map((tab) => {
             const PanelComponent = panelRegistry[tab.templateId].content;
 
             return (
