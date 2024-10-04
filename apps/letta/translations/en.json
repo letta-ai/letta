@@ -154,5 +154,8 @@
     "openInADE": "Open in ADE",
     "agentId": "Agent ID",
     "close": "Close"
+  },
+  "ComponentLibrary/InlineCode": {
+    "copyButton": "Copy Code"
   }
 }

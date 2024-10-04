@@ -25,14 +25,20 @@ export type SupportedLangauges =
   | 'django'
   | 'javascript'
   | 'python'
+  | 'text'
   | 'typescript';
 
 export function isSupportedLanguage(
   language: string
 ): language is SupportedLangauges {
-  return ['bash', 'django', 'javascript', 'python', 'typescript'].includes(
-    language
-  );
+  return [
+    'bash',
+    'django',
+    'javascript',
+    'python',
+    'typescript',
+    'text',
+  ].includes(language);
 }
 
 const codeVariants = cva('', {
@@ -66,6 +72,7 @@ const languageToFileNameMap: Record<SupportedLangauges, string> = {
   typescript: 'file.ts',
   django: 'file.jinja',
   bash: 'file.sh',
+  text: 'file.txt',
 };
 
 export function Code(props: CodeProps) {
