@@ -41,7 +41,7 @@ function SidebarGroup(props: SidebarGroupProps) {
       color="transparent"
       as="section"
     >
-      <HStack paddingTop="small" paddingX="small" align="center">
+      <HStack paddingY="small" paddingX="small" align="center">
         {!collapsed && (
           <Typography bold variant="body2">
             {title}
