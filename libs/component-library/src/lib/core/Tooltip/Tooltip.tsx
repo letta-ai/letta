@@ -122,7 +122,7 @@ const TooltipTrigger = React.forwardRef<
         ref,
         ...props,
         ...children.props,
-        'data-tooltipState': context.open ? 'open' : 'closed',
+        'data-tooltipstate': context.open ? 'open' : 'closed',
       })
     );
   }
@@ -131,7 +131,7 @@ const TooltipTrigger = React.forwardRef<
     <button
       ref={ref}
       // The user can style the trigger based on the state
-      data-tooltipState={context.open ? 'open' : 'closed'}
+      data-tooltipstate={context.open ? 'open' : 'closed'}
       {...context.getReferenceProps(props)}
     >
       {children}

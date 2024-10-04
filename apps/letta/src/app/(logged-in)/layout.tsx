@@ -7,12 +7,12 @@ import {
   HydrationBoundary,
   QueryClient,
 } from '@tanstack/react-query';
-import { LettaAgentsAPIWrapper } from '@letta-web/letta-agents-api';
 import { GlobalSessionSettingsProvider } from '$letta/client/hooks/session';
 import { getUserFlags } from '@letta-web/feature-flags';
 import { queryClientKeys } from '$letta/web-api/contracts';
 import { IdentifyUserForMixpanel } from '@letta-web/analytics/client';
 import { webApiQueryKeys } from '$letta/client';
+import { LoggedInClientSideProviders } from './_components/LoggedInClientSideProviders/LoggedInClientSideProviders';
 
 interface InAppProps {
   children: ReactNode;
@@ -57,7 +57,7 @@ export default async function LoggedInLayout(props: InAppProps) {
     <GlobalSessionSettingsProvider>
       <IdentifyUserForMixpanel userId={user.id} />
       <HydrationBoundary state={dehydrate(queryClient)}>
-        <LettaAgentsAPIWrapper>{children}</LettaAgentsAPIWrapper>
+        <LoggedInClientSideProviders>{children}</LoggedInClientSideProviders>
       </HydrationBoundary>
     </GlobalSessionSettingsProvider>
   );

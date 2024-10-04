@@ -11,6 +11,7 @@ import {
   AgentsService,
   AuthService,
   BlocksService,
+  HealthService,
   JobsService,
   LlmsService,
   ModelsService,
@@ -189,38 +190,12 @@ export const useAgentsServiceListAgents = <
   TError = unknown,
   TQueryKey extends Array<unknown> = unknown[]
 >(
-  {
-    byVersion,
-    limit,
-    name,
-    offset,
-    projectId,
-    template,
-  }: {
-    byVersion?: string;
-    limit?: number;
-    name?: string;
-    offset?: number;
-    projectId?: string;
-    template?: boolean;
-  } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
 ) =>
   useQuery<TData, TError>({
-    queryKey: Common.UseAgentsServiceListAgentsKeyFn(
-      { byVersion, limit, name, offset, projectId, template },
-      queryKey
-    ),
-    queryFn: () =>
-      AgentsService.listAgents({
-        byVersion,
-        limit,
-        name,
-        offset,
-        projectId,
-        template,
-      }) as TData,
+    queryKey: Common.UseAgentsServiceListAgentsKeyFn(queryKey),
+    queryFn: () => AgentsService.listAgents() as TData,
     ...options,
   });
 export const useAgentsServiceGetAgent = <
@@ -555,6 +530,19 @@ export const useJobsServiceGetJob = <
   useQuery<TData, TError>({
     queryKey: Common.UseJobsServiceGetJobKeyFn({ jobId }, queryKey),
     queryFn: () => JobsService.getJob({ jobId }) as TData,
+    ...options,
+  });
+export const useHealthServiceHealthCheck = <
+  TData = Common.HealthServiceHealthCheckDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[]
+>(
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
+) =>
+  useQuery<TData, TError>({
+    queryKey: Common.UseHealthServiceHealthCheckKeyFn(queryKey),
+    queryFn: () => HealthService.healthCheck() as TData,
     ...options,
   });
 export const useUsersServiceListUsers = <

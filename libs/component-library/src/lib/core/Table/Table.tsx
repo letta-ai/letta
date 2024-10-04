@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { cn } from '@letta-web/core-style-config';
+import { TABLE_ROW_HEIGHT } from '../../../constants';
 
 const Table = React.forwardRef<
   HTMLTableElement,
@@ -86,8 +87,9 @@ const TableCell = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <td
     ref={ref}
+    style={{ height: TABLE_ROW_HEIGHT }}
     className={cn(
-      'p-4 whitespace-nowrap align-middle [&:has([role=checkbox])]:pr-0',
+      'px-4 whitespace-nowrap align-middle [&:has([role=checkbox])]:pr-0',
       className
     )}
     {...props}

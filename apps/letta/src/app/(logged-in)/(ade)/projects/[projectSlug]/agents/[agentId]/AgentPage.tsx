@@ -22,7 +22,7 @@ import {
   VStack,
 } from '@letta-web/component-library';
 import Link from 'next/link';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useCurrentProject } from '../../../../../(dashboard-like)/projects/[projectSlug]/hooks';
 import { DatabaseIcon, GitForkIcon } from 'lucide-react';
 import { useDebouncedValue } from '@mantine/hooks';
@@ -34,6 +34,7 @@ import './AgentPage.scss';
 import { useCurrentAgentMetaData } from './hooks/useCurrentAgentMetaData/useCurrentAgentMetaData';
 import { useCurrentAgent } from './hooks';
 import { useAgentsServiceGetAgent } from '@letta-web/letta-agents-api';
+import { useTranslations } from 'next-intl';
 
 function NavOverlay() {
   const { slug: projectSlug } = useCurrentProject();
@@ -167,7 +168,11 @@ export function AgentPage() {
     queryData: {},
   });
 
-  const { agentName, agentId, isTemplate } = useCurrentAgentMetaData();
+  const t = useTranslations(
+    'projects/(projectSlug)/agents/(agentId)/AgentPage'
+  );
+
+  const { agentName, agentId, isTemplate, isLocal } = useCurrentAgentMetaData();
 
   const { data: agent } = useAgentsServiceGetAgent({
     agentId,
@@ -191,6 +196,18 @@ export function AgentPage() {
     }
   }, [debouncedPositions, mutate]);
 
+  const fullPageWarning = useMemo(() => {
+    if (isLocal) {
+      return t('localAgentDevelopment');
+    }
+
+    if (!isTemplate) {
+      return t('liveAgentWarning');
+    }
+
+    return null;
+  }, [isLocal, isTemplate, t]);
+
   if (!data?.body?.displayConfig || !agent) {
     return <LoaderContent isError={isError} />;
   }
@@ -212,9 +229,15 @@ export function AgentPage() {
                   <Logo size="small" color="white" />
                 </Link>
                 /
-                <Link target="_blank" href={`/projects/${projectSlug}`}>
-                  <Typography color="white">{projectName}</Typography>
-                </Link>
+                {isLocal ? (
+                  <Link target="_blank" href="/local-project/agents">
+                    <Typography color="white">Local Project</Typography>
+                  </Link>
+                ) : (
+                  <Link target="_blank" href={`/projects/${projectSlug}`}>
+                    <Typography color="white">{projectName}</Typography>
+                  </Link>
+                )}
                 /
                 <PanelOpener
                   templateId="agent-config"
@@ -232,11 +255,8 @@ export function AgentPage() {
           }
         >
           <VStack overflow="hidden" position="relative" fullWidth fullHeight>
-            {!isTemplate && (
-              <Alert
-                variant="warning"
-                title="You are editing a live agent, be aware that editing this agent may impact live deployments"
-              />
+            {fullPageWarning && (
+              <Alert variant="warning" title={fullPageWarning} />
             )}
             <Frame overflow="hidden" position="relative" fullWidth fullHeight>
               <PanelRenderer />

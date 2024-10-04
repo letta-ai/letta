@@ -30,6 +30,7 @@
     }
   },
   "projects/page": {
+    "title": "Projects",
     "createProjectDialog": {
       "title": "Create a new project",
       "nameInput": {
@@ -37,6 +38,11 @@
       },
       "createButton": "Create Project",
       "triggerButton": "Create Project"
+    },
+    "connectToLocalProject": {
+      "triggerButton": "Connect to Local Project",
+      "title": "Connect to a local project",
+      "instructions": "To connect to a local project, you need to have the Letta CLI installed. Run the following command in your terminal to connect to a local project:"
     },
     "projectsList": {
       "loadingMessage": "Loading projects...",
@@ -157,5 +163,34 @@
   },
   "ComponentLibrary/InlineCode": {
     "copyButton": "Copy Code"
+  },
+  "local-project/layout": {
+    "title": "Local Project",
+    "nav": {
+      "agents": "Agents"
+    }
+  },
+  "local-project/page": {
+    "title": "Local Agents",
+    "searchInput": {
+      "placeholder": "Search agents"
+    },
+    "table": {
+      "columns": {
+        "id": "ID",
+        "name": "Name",
+        "actions": "Actions"
+      },
+      "openInADE": "Open in ADE",
+      "emptyMessage": "No agents deployed",
+      "noResults": "No agents found",
+      "deployAction": "Deploy Agent",
+      "searching": "Searching agents...",
+      "loading": "Loading agents..."
+    }
+  },
+  "projects/(projectSlug)/agents/(agentId)/AgentPage": {
+    "liveAgentWarning": "You are editing a live agent, be aware that editing this agent may impact live deployments",
+    "localAgentDevelopment": "You are editing a local agent, changes made here will not effect your agents on Letta Cloud"
   }
 }

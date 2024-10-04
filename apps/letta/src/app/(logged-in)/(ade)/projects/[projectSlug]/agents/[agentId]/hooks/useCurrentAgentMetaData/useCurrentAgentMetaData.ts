@@ -1,16 +1,45 @@
+'use client';
 import { webOriginSDKApi, webOriginSDKQueryKeys } from '$letta/client';
-import { useParams } from 'next/navigation';
+import { useParams, usePathname } from 'next/navigation';
+import { useAgentsServiceGetAgent } from '@letta-web/letta-agents-api';
 
-interface MetaDataParams {
+interface UseCurrentAgentMetaDataResponse {
   agentId: string;
-  templateName: string;
+  agentName: string;
+  isTemplate: boolean;
+  isLocal: boolean;
 }
 
-export function useCurrentAgentMetaData() {
-  // @ts-expect-error - this is valid
-  const { templateName } = useParams<MetaDataParams>();
-  // @ts-expect-error - this is valid
-  let { agentId } = useParams<MetaDataParams>();
+export function useCurrentAgentMetaData(): UseCurrentAgentMetaDataResponse {
+  const pathname = usePathname();
+  const { agentId: preAgentId, templateName } = useParams<{
+    agentId: string;
+    templateName: string;
+  }>();
+
+  let agentId = preAgentId;
+
+  const startsWithLocalProject = pathname.startsWith('/local-project');
+
+  const localAgent = useAgentsServiceGetAgent(
+    {
+      agentId,
+    },
+    undefined,
+    {
+      enabled: startsWithLocalProject,
+    }
+  );
+
+  if (pathname.startsWith('/local-project')) {
+    return {
+      agentId: agentId,
+      agentName: localAgent?.data?.name || '',
+      isTemplate: false,
+      isLocal: true,
+    };
+  }
+
   let agentName = '';
   let isTemplate = false;
 
@@ -57,5 +86,6 @@ export function useCurrentAgentMetaData() {
     agentId,
     agentName,
     isTemplate,
+    isLocal: false,
   };
 }
