@@ -13,8 +13,10 @@ export function Markdown(props: MarkdownProps) {
     <ReactMarkdown
       children={props.text}
       components={{
+        p({ children }) {
+          return <p className="block">{children}</p>;
+        },
         code(props) {
-          console.log(props);
           const { children, className } = props;
           const match = /language-(\w+)/.exec(className || '');
 

@@ -66,7 +66,7 @@ export function ChatInput(props: ChatInputProps) {
           {sendingMessageText}
         </Typography>
       </HStack>
-      <VStack
+      <HStack
         color="background"
         onSubmit={handleSubmit}
         as="form"
@@ -86,10 +86,10 @@ export function ChatInput(props: ChatInputProps) {
           onKeyDown={handleKeyPress}
           className="w-full text-base font-inherit resize-none	focus:outline-none"
           maxRows={10}
-          minRows={2}
+          minRows={4}
           placeholder="Type a message here"
         />
-        <HStack justify="spaceBetween">
+        <VStack justify="spaceBetween">
           <div />
           <Button
             data-testid="chat-simulator-send"
@@ -100,8 +100,8 @@ export function ChatInput(props: ChatInputProps) {
             disabled={isSendingMessage}
             label="Send"
           />
-        </HStack>
-      </VStack>
+        </VStack>
+      </HStack>
     </Frame>
   );
 }
