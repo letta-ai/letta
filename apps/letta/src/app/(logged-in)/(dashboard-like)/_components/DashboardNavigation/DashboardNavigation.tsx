@@ -191,7 +191,8 @@ export function NavigationSidebar() {
         className="top-0 min-w-sidebar invisible visibleSidebar:visible"
       >
         <VStack gap={false}>
-          <HStack height="header" />
+          {/* eslint-disable-next-line react/forbid-component-props */}
+          <HStack className="h-header min-h-header" />
           <MainNavigationItems />
         </VStack>
         <HStack align="center" borderTop padding>
