@@ -91,7 +91,7 @@ function ConnectToLocalProjectDialog() {
           label="Command to connect"
           hideLabel
           language="bash"
-          code={`letta server --devportal --port=${LOCAL_PROJECT_SERVER_PORT}`}
+          code={`letta server --ade --port=${LOCAL_PROJECT_SERVER_PORT}`}
         />
       </Dialog>
     </>
