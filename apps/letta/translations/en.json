@@ -127,5 +127,8 @@
       }
     },
     "FromLettaBadge": "From Letta"
+  },
+  "ComponentLibrary/InlineCode": {
+    "copyButton": "Copy Code"
   }
 }

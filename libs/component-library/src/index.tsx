@@ -99,3 +99,5 @@ export * from './lib/ade/ADESidebarButton/ADESidebarButton';
 export * from './lib/reusable/ChatInput/ChatInput';
 
 export * from './lib/core/Markdown/Markdown';
+
+export * from './lib/core/InlineCode/InlineCode';
