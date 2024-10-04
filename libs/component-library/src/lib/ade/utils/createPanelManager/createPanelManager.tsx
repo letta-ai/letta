@@ -654,16 +654,12 @@ export function createPanelManager<
 
           // if a tab already exists at the given position, move the panel next to it
           // if tab is -1 move it to become the first tab
-          let prepended = 0;
-
           if (tab === -1) {
             nextState[nextX].positions[nextY].positions.splice(
               0,
               0,
               panelToMove
             );
-
-            prepended = 1;
           } else if (nextState[nextX].positions[nextY].positions[tab]) {
             nextState[nextX].positions[nextY].positions.splice(
               tab + 1,
@@ -687,10 +683,30 @@ export function createPanelManager<
             };
           });
 
-          nextState[currentX].positions[currentY].positions.splice(
-            currentTab + prepended,
-            1
-          );
+          if (currentX === nextX && currentY === nextY) {
+            // if panel is moved within the same tab group, remove the panel from the old position
+            // account that if the tab was moved to the right, we remove the first instance of the panel
+            // if the tab was moved to the left, we remove the second instance of the panel
+
+            const movedLeft = currentTab > tab;
+
+            if (movedLeft) {
+              nextState[currentX].positions[currentY].positions.splice(
+                currentTab + 1,
+                1
+              );
+            } else {
+              nextState[currentX].positions[currentY].positions.splice(
+                currentTab,
+                1
+              );
+            }
+          } else {
+            nextState[currentX].positions[currentY].positions.splice(
+              currentTab,
+              1
+            );
+          }
 
           return reconcilePositions(nextState);
         });
@@ -793,7 +809,7 @@ export function createPanelManager<
       <div
         ref={setNodeRef}
         className={cn(
-          'opacity-0 w-full h-full inset-0 bg-blue-50',
+          'opacity-0 w-full h-full inset-0 bg-blue-50 z-[10]',
           !active ? 'pointer-events-none' : '',
           isOver ? 'opacity-100' : '',
           className
@@ -847,7 +863,7 @@ export function createPanelManager<
             width: allowOpenUI ? active?.rect.current.initial?.width : 0,
           }}
           className={cn(
-            allowOpenUI ? 'w-[100px] bg-blue-200' : 'w-[0]',
+            allowOpenUI ? 'w-[100px] bg-blue-50 z-[10]' : 'w-[0]',
             'transition-all h-full'
           )}
         />
@@ -1132,11 +1148,13 @@ export function createPanelManager<
               <PanelTabDragger tab={tab}>
                 <Tab tab={tab} isActive={activeTabId === tab.id} x={x} y={y} />
               </PanelTabDragger>
-              <DropZoneTab
-                id={tab.id}
-                position="right"
-                moveToOnDrop={{ x, y, tab: index }}
-              />
+              {index < filteredTabs.length - 1 && (
+                <DropZoneTab
+                  id={tab.id}
+                  position="right"
+                  moveToOnDrop={{ x, y, tab: index }}
+                />
+              )}
             </HStack>
           );
         })}

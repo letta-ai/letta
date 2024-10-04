@@ -24,6 +24,7 @@ import type { MessagesDisplayMode } from '$letta/client/components';
 import { Messages } from '$letta/client/components';
 import { z } from 'zod';
 import { useTranslations } from 'next-intl';
+import { useLocalStorage } from '@mantine/hooks';
 
 function useSendMessage() {
   const { id } = useCurrentAgent();
@@ -265,7 +266,10 @@ function Chatroom() {
   const t = useTranslations('ADE/AgentSimulator');
   const { sendMessage, isPending } = useSendMessage();
   const { id: agentId } = useCurrentAgent();
-  const [renderMode, setRenderMode] = useState<MessagesDisplayMode>('debug');
+  const [renderMode, setRenderMode] = useLocalStorage<MessagesDisplayMode>({
+    defaultValue: 'debug',
+    key: 'chatroom-render-mode',
+  });
 
   return (
     <ChatroomContext.Provider value={{ renderMode, setRenderMode }}>
