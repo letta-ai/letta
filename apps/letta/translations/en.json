@@ -190,6 +190,9 @@
     }
   },
   "projects/(projectSlug)/agents/(agentId)/AgentPage": {
+    "returnToProjectHome": "Return to project home",
+    "returnToHome": "Return to home",
+    "localProject": "Local Project",
     "liveAgentWarning": "You are editing a live agent, be aware that editing this agent may impact live deployments",
     "localAgentDevelopment": "You are editing a local agent, changes made here will not effect your agents on Letta Cloud"
   }
