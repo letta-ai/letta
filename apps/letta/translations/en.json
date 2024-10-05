@@ -91,7 +91,10 @@
     "searchInput": {
       "placeholder": "my-template-name-here",
       "label": "Search template by name"
-    }
+    },
+    "noTemplatesFound": "No templates found that match your search",
+    "noTemplates": "You have no templates in this project, create one below",
+    "createTemplate": "New Template"
   },
   "ADE/AgentSimulator": {
     "sendingMessage": "Agent is thinking...",
@@ -141,7 +144,7 @@
         "name": "Name",
         "lastActive": "Last Active"
       },
-      "emptyMessage": "No agents deployed",
+      "emptyMessage": "No agents deployed.",
       "noResults": "No agents found",
       "deployAction": "Deploy Agent",
       "searching": "Searching agents...",
@@ -182,9 +185,8 @@
         "actions": "Actions"
       },
       "openInADE": "Open in ADE",
-      "emptyMessage": "No agents deployed",
+      "emptyMessage": "No agents found",
       "noResults": "No agents found",
-      "deployAction": "Deploy Agent",
       "searching": "Searching agents...",
       "loading": "Loading agents..."
     }
