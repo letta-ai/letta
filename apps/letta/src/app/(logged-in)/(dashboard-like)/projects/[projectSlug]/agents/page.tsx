@@ -153,7 +153,7 @@ interface DeployedAgentListProps {
 }
 
 function DeployedAgentList(props: DeployedAgentListProps) {
-  const { id: currentProjectId, slug: projectSlug } = useCurrentProject();
+  const { id: currentProjectId } = useCurrentProject();
   const [limit, setLimit] = useState(20);
 
   const [selectedAgent, setSelectedAgent] = useState<AgentType>();
@@ -228,14 +228,6 @@ function DeployedAgentList(props: DeployedAgentListProps) {
         }
         noResultsText={
           search || filterBy ? t('table.noResults') : t('table.emptyMessage')
-        }
-        noResultsAction={
-          search || filterBy ? undefined : (
-            <Button
-              href={`/projects/${projectSlug}/staging`}
-              label={t('table.deployAction')}
-            />
-          )
         }
         columns={DeployedAgentColumns}
         data={agents}

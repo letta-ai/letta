@@ -1,6 +1,7 @@
 'use client';
 import React, { useMemo, useState } from 'react';
 import type { OptionType } from '@letta-web/component-library';
+import { PlusIcon } from '@letta-web/component-library';
 import {
   Button,
   DashboardPageLayout,
@@ -25,7 +26,7 @@ interface ProjectStagingListProps {
 
 function AgentTemplateList(props: ProjectStagingListProps) {
   const { id: currentProjectId, slug: projectSlug } = useCurrentProject();
-
+  const t = useTranslations('projects/(projectSlug)/templates/page');
   const { search } = props;
 
   const { data, isLoading, fetchNextPage, hasNextPage } =
@@ -57,11 +58,12 @@ function AgentTemplateList(props: ProjectStagingListProps) {
   if (deployedAgentTemplates.length === 0) {
     return (
       <LoadingEmptyStatusComponent
-        emptyMessage="There are no agents to stage. Return to the project home and stage a Agent"
+        emptyMessage={!search ? t('noTemplates') : t('noTemplatesFound')}
         emptyAction={
           <Button
-            href={`/projects/${projectSlug}`}
-            label="Return to project home"
+            preIcon={<PlusIcon />}
+            href={`/projects/${projectSlug}/templates/new`}
+            label={t('createTemplate')}
           />
         }
         isLoading={isLoading}
@@ -91,11 +93,21 @@ function AgentTemplateList(props: ProjectStagingListProps) {
 function TemplatesPage() {
   const [search, setSearch] = useState<string>('');
   const t = useTranslations('projects/(projectSlug)/templates/page');
+  const { slug: projectSlug } = useCurrentProject();
 
   const [debouncedSearch] = useDebouncedValue(search, 500);
 
   return (
-    <DashboardPageLayout title={t('title')}>
+    <DashboardPageLayout
+      title={t('title')}
+      actions={
+        <Button
+          href={`/projects/${projectSlug}/templates/new`}
+          preIcon={<PlusIcon />}
+          label={t('createTemplate')}
+        />
+      }
+    >
       <DashboardPageSection>
         <VStack fullHeight fullWidth>
           <VStack gap={false} fullWidth>
