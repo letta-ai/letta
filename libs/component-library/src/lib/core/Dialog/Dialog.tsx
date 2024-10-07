@@ -221,7 +221,11 @@ export function Dialog(props: DialogProps) {
           <DialogFooter>
             {!hideCancel && (
               <DialogClose asChild>
-                <Button label={cancelText} color="tertiary" />
+                <Button
+                  data-testid={`${testId}-cancel-button`}
+                  label={cancelText}
+                  color="tertiary"
+                />
               </DialogClose>
             )}
             {!hideConfirm && (

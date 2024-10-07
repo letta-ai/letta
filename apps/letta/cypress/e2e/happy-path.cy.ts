@@ -1,10 +1,12 @@
 describe('letta', () => {
   beforeEach(() => {
+    cy.googleLogin();
     cy.deleteProjectsWithName('CYDOGGTestProject');
     cy.visit('/signout');
   });
 
   afterEach(() => {
+    cy.googleLogin();
     cy.deleteProjectsWithName('CYDOGGTestProject');
   });
 
