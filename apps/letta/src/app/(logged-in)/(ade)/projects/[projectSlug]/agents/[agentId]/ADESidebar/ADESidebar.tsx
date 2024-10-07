@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useADESidebarContext, useCurrentAgent } from '../hooks';
 import type { PanelTemplate } from '@letta-web/component-library';
 import { ADESidebarButton } from '@letta-web/component-library';
@@ -16,6 +16,8 @@ import {
   BoxesIcon,
   BrainIcon,
   BrickWallIcon,
+  ChevronDown,
+  ChevronRight,
   DatabaseIcon,
   PenToolIcon,
   Settings2Icon,
@@ -57,6 +59,47 @@ function SidebarGroup(props: SidebarGroupProps) {
   );
 }
 
+interface ADEFolderSidebarItemProps {
+  label: string;
+  templateId: PanelRegistryKeys;
+  children: React.ReactNode;
+}
+
+function ADEFolderSidebarItem(props: ADEFolderSidebarItemProps) {
+  const [open, setOpen] = useState(false);
+
+  const { label, templateId, children } = props;
+
+  const { getIsPanelTemplateActive } = usePanelManager();
+
+  const isActive = useMemo(() => {
+    return getIsPanelTemplateActive(templateId);
+  }, [getIsPanelTemplateActive, templateId]);
+
+  useEffect(() => {
+    if (isActive) {
+      setOpen(true);
+    }
+  }, [isActive]);
+
+  return (
+    <>
+      <MaybeTooltip renderTooltip={false} placement="right" content={label}>
+        <HStack fullWidth align="center" paddingX="small">
+          <ADESidebarButton
+            label={label}
+            onClick={() => {
+              setOpen(!open);
+            }}
+            icon={open ? <ChevronDown /> : <ChevronRight />}
+          />
+        </HStack>
+      </MaybeTooltip>
+      {open && <div className="ml-3">{children}</div>}
+    </>
+  );
+}
+
 interface AgentPanelSidebarItemProps<
   TPanelTemplateId extends PanelRegistryKeys
 > {
@@ -72,11 +115,11 @@ function AgentPanelSidebarItem<TPanelTemplateId extends PanelRegistryKeys>(
   props: AgentPanelSidebarItemProps<TPanelTemplateId>
 ) {
   const { label, icon, templateId, preview, id, data } = props;
-  const { getIsPanelTemplateActive } = usePanelManager();
+  const { getIsPanelIdExists } = usePanelManager();
 
   const isActive = useMemo(() => {
-    return getIsPanelTemplateActive(templateId);
-  }, [getIsPanelTemplateActive, templateId]);
+    return getIsPanelIdExists(id);
+  }, [getIsPanelIdExists, id]);
 
   return (
     <MaybeTooltip renderTooltip={false} placement="right" content={label}>
@@ -103,31 +146,25 @@ function MemoryBlocksSidebar() {
   }, [agent]);
 
   return (
-    <>
-      <AgentPanelSidebarItem
-        label={t('nav.memoryBlocks')}
-        icon={<BrickWallIcon />}
-        templateId="memory-blocks"
-        data={undefined}
-        id="memory-blocks"
-      />
-      <div className="ml-3">
-        {memoryBlocks.map((block) => (
-          <AgentPanelSidebarItem
-            key={block.id}
-            label={block.name || 'Unnamed Block'}
-            icon={<BrickWallIcon />}
-            templateId="edit-memory-block"
-            data={{
-              label: block.label || '',
-              name: block.name || '',
-              blockId: block.id || '',
-            }}
-            id={`memory-blocks-edit-${block.id}`}
-          />
-        ))}
-      </div>
-    </>
+    <ADEFolderSidebarItem
+      label={t('nav.memoryBlocks')}
+      templateId="edit-memory-block"
+    >
+      {memoryBlocks.map((block) => (
+        <AgentPanelSidebarItem
+          key={block.id}
+          label={block.name || 'Unnamed Block'}
+          icon={<BrickWallIcon />}
+          templateId="edit-memory-block"
+          data={{
+            label: block.label || '',
+            name: block.name || '',
+            blockId: block.id || '',
+          }}
+          id={`memory-blocks-edit-${block.id}`}
+        />
+      ))}
+    </ADEFolderSidebarItem>
   );
 }
 

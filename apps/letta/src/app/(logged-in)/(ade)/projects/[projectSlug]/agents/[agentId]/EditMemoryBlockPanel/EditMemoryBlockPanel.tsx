@@ -1,134 +1,60 @@
 import { z } from 'zod';
 import type { PanelTemplate } from '@letta-web/component-library';
+import { RawTextArea } from '@letta-web/component-library';
 import {
-  Form,
-  FormField,
-  FormProvider,
   LettaLoaderPanel,
   PanelMainContent,
   RawInput,
-  TextArea,
-  useForm,
 } from '@letta-web/component-library';
 import { useTranslations } from 'next-intl';
 import type { Block } from '@letta-web/letta-agents-api';
-import {
-  UseAgentsServiceGetAgentKeyFn,
-  useAgentsServiceUpdateAgent,
-} from '@letta-web/letta-agents-api';
-import { useQueryClient } from '@tanstack/react-query';
-import { useCurrentAgent } from '../hooks';
-import { zodResolver } from '@hookform/resolvers/zod';
+import { useCurrentAgent, useSyncUpdateCurrentAgent } from '../hooks';
+import type { ChangeEvent } from 'react';
 import React, { useCallback, useMemo } from 'react';
 
 interface EditMemoryFormProps {
   block: Block;
 }
 
-const editMemoryBlockFormSchema = z.object({
-  value: z.string(),
-});
-
 function EditMemoryForm({ block }: EditMemoryFormProps) {
   //https://linear.app/letta/issue/LET-136/infinite-loop-bug-saving-block
 
-  const { mutate: updateAgent } = useAgentsServiceUpdateAgent();
-  const queryClient = useQueryClient();
-  const { id: agentId, memory } = useCurrentAgent();
+  const { memory } = useCurrentAgent();
+  const { syncUpdateCurrentAgent } = useSyncUpdateCurrentAgent();
 
-  const form = useForm<z.infer<typeof editMemoryBlockFormSchema>>({
-    resolver: zodResolver(editMemoryBlockFormSchema),
-    defaultValues: {
-      value: block.value,
-    },
-  });
+  const value = useMemo(() => {
+    return memory?.memory?.[block.label || '']?.value;
+  }, [memory?.memory, block.label]);
 
-  const handleSubmit = useCallback(
-    (data: z.infer<typeof editMemoryBlockFormSchema>) => {
-      const nextMemory: Record<string, Block> = {
-        ...memory?.memory,
-        [block.label || '']: {
-          ...memory?.memory?.[block.label || ''],
-          ...data,
-        } as Block,
-      };
-
-      updateAgent(
-        {
-          agentId,
-          requestBody: {
-            id: agentId,
-            memory: {
-              ...memory,
-              memory: nextMemory,
+  const handleChange = useCallback(
+    (e: ChangeEvent<HTMLTextAreaElement>) => {
+      syncUpdateCurrentAgent((prev) => ({
+        memory: {
+          ...prev.memory,
+          memory: {
+            ...prev.memory?.memory,
+            [block.label || '']: {
+              ...prev.memory?.memory?.[block.label || ''],
+              value: e.target.value,
             },
           },
         },
-        {
-          onSuccess: () => {
-            void queryClient.invalidateQueries({
-              queryKey: UseAgentsServiceGetAgentKeyFn({
-                agentId,
-              }),
-            });
-          },
-        }
-      );
-
-      // mutateBlock(
-      //   {
-      //     blockId: block.id || '',
-      //     requestBody: {
-      //       id: block.id || '',
-      //       value: data.value,
-      //     },
-      //   },
-      //   {
-      //     onSuccess: () => {
-      //       void queryClient.invalidateQueries({
-      //         queryKey: UseAgentsServiceGetAgentKeyFn({
-      //           agentId,
-      //         }),
-      //       });
-      //     },
-      //   }
-      // );
+      }));
     },
-    [
-      agentId,
-      // block.id,
-      block.label,
-      memory,
-      queryClient,
-      updateAgent,
-    ]
+    [block.label, syncUpdateCurrentAgent]
   );
 
   return (
     <PanelMainContent>
-      <FormProvider {...form}>
-        <Form onSubmit={form.handleSubmit(handleSubmit)}>
-          <RawInput disabled fullWidth label="Name" value={block.name || ''} />
-          <RawInput
-            disabled
-            fullWidth
-            label="Label"
-            value={block.label || ''}
-          />
-          <FormField
-            control={form.control}
-            name="value"
-            render={({ field }) => (
-              <TextArea
-                data-testid="edit-memory-block-content"
-                fullWidth
-                label="Content"
-                {...field}
-              />
-            )}
-          />
-        </Form>
-      </FormProvider>
+      <RawInput disabled fullWidth label="Name" value={block.name || ''} />
+      <RawInput disabled fullWidth label="Label" value={block.label || ''} />
+      <RawTextArea
+        data-testid="edit-memory-block-content"
+        fullWidth
+        label="Content"
+        onChange={handleChange}
+        value={value || ''}
+      />
     </PanelMainContent>
   );
 }
@@ -145,6 +71,8 @@ function EditMemory(props: EditMemoryDataType) {
   const { label } = props;
 
   const agent = useCurrentAgent();
+
+  console.log(agent, label);
 
   const data = useMemo(() => {
     return agent?.memory?.memory?.[label];

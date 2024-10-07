@@ -187,6 +187,7 @@ export function createPanelManager<
     movePanelToPosition: (panelId: PanelId, position: PanelPosition) => void;
     panelIdToPositionMap: Record<PanelId, PanelPosition>;
     getIsPanelIdActive: (panelId: PanelId) => boolean;
+    getIsPanelIdExists: (panelId: PanelId) => boolean;
   }
 
   const PanelManagerContext = createContext<PanelManagerContextDataType>({
@@ -212,6 +213,7 @@ export function createPanelManager<
       return false;
     },
     getIsPanelIdActive: () => false,
+    getIsPanelIdExists: () => false,
   });
 
   interface PanelManagerProps {
@@ -721,6 +723,13 @@ export function createPanelManager<
       [state]
     );
 
+    const getIsPanelIdExists = useCallback(
+      (panelId: PanelId) => {
+        return Boolean(state.panelIdToPositionMap[panelId]);
+      },
+      [state.panelIdToPositionMap]
+    );
+
     const getIsPanelIdActive = useCallback(
       (panelId: PanelId) => {
         const positions = reconcilePositions(state.positions)
@@ -747,6 +756,7 @@ export function createPanelManager<
         closePanel,
         activatePanel,
         movePanelToPosition,
+        getIsPanelIdExists,
         resizeX,
         resizeY,
       };
@@ -758,6 +768,7 @@ export function createPanelManager<
       openPanel,
       closePanel,
       activatePanel,
+      getIsPanelIdExists,
       movePanelToPosition,
       resizeX,
       resizeY,
