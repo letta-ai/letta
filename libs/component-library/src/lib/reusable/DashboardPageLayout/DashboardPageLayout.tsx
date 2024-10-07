@@ -4,7 +4,8 @@ import { HStack } from '../../framing/HStack/HStack';
 import { Typography } from '../../core/Typography/Typography';
 import type { BreadcrumbProps } from '../../core/Breadcrumb/Breadcrumb';
 import { Breadcrumb } from '../../core/Breadcrumb/Breadcrumb';
-
+import './DashboardPageLayout.scss';
+import { cn } from '@letta-web/core-style-config';
 interface TitleProps {
   title?: BreadcrumbProps['items'] | string;
 }
@@ -23,16 +24,25 @@ function Title({ title }: TitleProps) {
 
 interface DashboardPageLayoutProps {
   icon?: React.ReactNode;
+  /** Makes the page full height in the sense that it will take up the full height of the screen, and the content will scroll within that space */
+  encapsulatedFullHeight?: boolean;
   title?: TitleProps['title'];
   actions?: React.ReactNode;
   children: React.ReactNode;
 }
 
 export function DashboardPageLayout(props: DashboardPageLayoutProps) {
-  const { icon, title, actions } = props;
+  const { icon, title, encapsulatedFullHeight, actions } = props;
 
   return (
-    <VStack className="max-w-[95%] mx-[auto]" gap={false} fullWidth>
+    <VStack
+      className={cn(
+        encapsulatedFullHeight && 'encapsulated-full-height',
+        'max-w-[95%] mx-[auto]'
+      )}
+      gap={false}
+      fullWidth
+    >
       <HStack
         align="center"
         as="header"

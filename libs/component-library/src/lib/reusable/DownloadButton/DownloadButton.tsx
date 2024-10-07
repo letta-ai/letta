@@ -7,6 +7,7 @@ import { CheckIcon, DownloadIcon } from '../../icons';
 interface CopyButtonProps {
   textToDownload: string;
   fileName?: string;
+  fullWidth?: boolean;
   downloadButtonText?: string;
   size?: 'default' | 'small';
 }
@@ -16,6 +17,7 @@ export function DownloadButton(props: CopyButtonProps) {
     textToDownload,
     size = 'default',
     fileName,
+    fullWidth,
     downloadButtonText = 'Download',
   } = props;
   const [isCopied, setIsCopied] = useState(false);
@@ -49,6 +51,7 @@ export function DownloadButton(props: CopyButtonProps) {
 
   return (
     <Button
+      fullWidth={fullWidth}
       size={size}
       type="button"
       color="tertiary"

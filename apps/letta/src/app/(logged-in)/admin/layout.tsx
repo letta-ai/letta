@@ -24,6 +24,7 @@ function Sidebar() {
       gap={false}
       fullHeight
       borderRight
+      /* eslint-disable-next-line react/forbid-component-props */
       className={SIDEBAR_WIDTH}
     >
       <HStack
@@ -33,6 +34,7 @@ function Sidebar() {
         borderBottom
         color="background-black"
         justify="spaceBetween"
+        /* eslint-disable-next-line react/forbid-component-props */
         className="min-h-header h-header"
       >
         <Link href="/">

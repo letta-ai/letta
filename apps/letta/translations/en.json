@@ -30,6 +30,7 @@
     }
   },
   "projects/page": {
+    "title": "Projects",
     "createProjectDialog": {
       "title": "Create a new project",
       "nameInput": {
@@ -37,6 +38,11 @@
       },
       "createButton": "Create Project",
       "triggerButton": "Create Project"
+    },
+    "connectToLocalProject": {
+      "triggerButton": "Connect to Local Project",
+      "title": "Connect to a local project",
+      "instructions": "To connect to a local project, you need to have the Letta CLI installed. Run the following command in your terminal to connect to a local project:"
     },
     "projectsList": {
       "loadingMessage": "Loading projects...",
@@ -85,6 +91,19 @@
     "searchInput": {
       "placeholder": "my-template-name-here",
       "label": "Search template by name"
+    },
+    "noTemplatesFound": "No templates found that match your search",
+    "noTemplates": "You have no templates in this project, create one below",
+    "createTemplate": "New Template"
+  },
+  "ADE/AgentSimulator": {
+    "sendingMessage": "Agent is thinking...",
+    "setChatroomRenderMode": {
+      "label": "Chatroom Render Mode",
+      "options": {
+        "debug": "Debug mode",
+        "simple": "Simple mode"
+      }
     }
   },
   "ADE/ADESidebar": {
@@ -105,5 +124,147 @@
   },
   "ADE/EditMemoryBlockPanel": {
     "title": "Edit {blockName}"
+  },
+  "projects/(projectSlug)/templates/new/page": {
+    "error": "An error occurred while creating the agent. Please try again or contact support.",
+    "title": "Create an agent template",
+    "description": "An agent template is used to define the structure of agents you deploy in your project. You can create an agent from scratch or reference a pre-existing agent template.",
+    "backToProject": "Back to project",
+    "createButton": "Create Template",
+    "PreExistingTemplateDropdown": {
+      "placeholder": "Select a pre-existing template",
+      "label": "Create from existing template",
+      "error": "An error occurred while fetching existing agent templates"
+    },
+    "nameInput": {
+      "label": "Template Name",
+      "placeholder": "my-agent-name"
+    },
+    "useDefaultAgentTemplate": {
+      "label": "No Template",
+      "description": "Start from scratch"
+    },
+    "usePreMadeAgentTemplates": {
+      "customerSupport": {
+        "label": "Customer Support",
+        "description": "A template containing all you need to create personalized customer support agents for your customersagent"
+      },
+      "fantasyRoleplay": {
+        "label": "Fantasy Roleplay",
+        "description": "A template containing all you need to create personalized bots that recreate a fantasy roleplay experience"
+      }
+    },
+    "FromLettaBadge": "From Letta"
+  },
+  "projects/(projectSlug)/agents/page": {
+    "table": {
+      "columns": {
+        "id": "ID",
+        "name": "Name",
+        "lastActive": "Last Active"
+      },
+      "emptyMessage": "No agents deployed.",
+      "noResults": "No agents found",
+      "deployAction": "Deploy Agent",
+      "searching": "Searching agents...",
+      "loading": "Loading agents..."
+    },
+    "anyVersion": "(Any Version)",
+    "searchDropdown": {
+      "label": "from version:",
+      "placeholder": "Template version"
+    },
+    "search": {
+      "placeholder": "Search agents by name",
+      "label": "agent-name"
+    },
+    "latestMessages": "Latest Messages",
+    "openInADE": "Open in ADE",
+    "agentId": "Agent ID",
+    "close": "Close"
+  },
+  "ComponentLibrary/InlineCode": {
+    "copyButton": "Copy Code"
+  },
+  "local-project/layout": {
+    "title": "Local Project",
+    "nav": {
+      "agents": "Agents"
+    }
+  },
+  "local-project/page": {
+    "title": "Local Agents",
+    "searchInput": {
+      "placeholder": "Search agents"
+    },
+    "table": {
+      "columns": {
+        "id": "ID",
+        "name": "Name",
+        "actions": "Actions"
+      },
+      "openInADE": "Open in ADE",
+      "emptyMessage": "No agents found",
+      "noResults": "No agents found",
+      "searching": "Searching agents...",
+      "loading": "Loading agents..."
+    }
+  },
+  "projects/(projectSlug)/agents/(agentId)/AgentPage": {
+    "returnToProjectHome": "Return to project home",
+    "returnToHome": "Return to home",
+    "localProject": "Local Project",
+    "liveAgentWarning": "You are editing a live agent, be aware that editing this agent may impact live deployments",
+    "localAgentDevelopment": "You are editing a local agent, changes made here will not effect your agents on Letta Cloud"
+  },
+  "api-keys/page": {
+    "title": "API Keys",
+    "emptyMessage": "No API keys found",
+    "errorMessage": "An error occurred while fetching your API keys. Please try again or contact support.",
+    "loadingMessage": "Loading API keys...",
+    "viewApiKeyDialog": {
+      "title": "Viewing {apiKeyName}",
+      "trigger": "View API Key",
+      "label": "API Key"
+    },
+    "deleteApiKeyDialog": {
+      "title": "Delete {apiKeyName}",
+      "confirmText": "Delete API Key",
+      "trigger": "Delete API Key",
+      "confirmation": "Are you sure you want to delete your API Key? This is permanent and cannot be undone."
+    },
+    "apiKeysColumns": {
+      "name": "Name",
+      "actions": "Actions"
+    },
+    "createAPIKeyDialog": {
+      "title": "Create a new API Key",
+      "createdTitle": "API Key Created",
+      "cancel": "Cancel",
+      "alertTitle": "API Key Created",
+      "close": "Close",
+      "trigger": "Create API Key",
+      "generatedCopy": "We have generated you an API Key, please make sure to store it safely.",
+      "downloadText": "Download API Key",
+      "copyToClipboard": "Copy API Key to Clipboard",
+      "description": "Provide a descriptive name for identifying for later use",
+      "label": "Name"
+    }
+  },
+  "ADE/DeploymentAgentMangerPanel": {
+    "StageAndDeployDialog": {
+      "title": "Are you sure you want to version your template?",
+      "trigger": "Create a new version",
+      "details": "This creates a version of your agent template that is immutable and can be used to deploy agents. Are you sure you want to proceed?"
+    },
+    "DeployedAgentTemplateCard": {
+      "release": "Release #{version}",
+      "createdAt": "Created at {date}",
+      "versionTag": "Version Tag",
+      "usageInstructions": "Usage Instructions",
+      "deployedAgents": "Deployed Agents"
+    },
+    "emptyMessage": "You haven't versioned this template yet. Click the button above to create a version of your agent template.",
+    "loadMoreVersions": "Load more versions"
   }
 }

@@ -270,6 +270,13 @@ export function makeInput<T>(
   return forwardRef<any, MakeInputProps<T>>(InputWrapper);
 }
 
+export function extractAndRemoveInputProps<T>(
+  props: T & { label?: string; hideLabel?: boolean }
+) {
+  const { label, hideLabel, ...rest } = props;
+  return rest;
+}
+
 export function makeRawInput<T>(
   Input: React.ComponentType<T>,
   componentName: string,
@@ -395,7 +402,7 @@ export function FormActions({
   startAction,
 }: FormActionsProps) {
   return (
-    <div className="flex gap-4 justify-between">
+    <div className="flex gap-4 w-full justify-between">
       {startAction ? startAction : <div />}
       <HStack align="center">
         {errorMessage && (

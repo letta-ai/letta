@@ -10,6 +10,8 @@
   :root {
     --default-gap: 0.5rem;
 
+    --font-size-xxs: 0.5rem;
+    --font-size-xs: 0.75rem;
     --font-size-sm: 0.8rem;
 
     --font-size-base: 0.875rem;
@@ -80,6 +82,7 @@
     --button-input-height-lg: 54px;
     --panel-row-height: 42px;
     --header-height: 64px;
+    --header-height-sm: 43px;
 
     --sidebar-width: 250px;
 

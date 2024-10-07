@@ -3,7 +3,6 @@ import { initContract } from '@ts-rest/core';
 import { z } from 'zod';
 import type { GenericSearch } from '$letta/web-api/shared/sharedContracts';
 import { GenericSearchSchema } from '$letta/web-api/shared/sharedContracts';
-import { AgentRecipieVariant } from '$letta/types';
 
 const c = initContract();
 
@@ -82,30 +81,6 @@ const deleteProjectContract = c.mutation({
   },
 });
 
-/* Create Project Testing Agent */
-export const CreateProjectAgentTemplatePayloadSchema = z.object({
-  recipeId: z
-    .enum([
-      AgentRecipieVariant.CUSTOMER_SUPPORT,
-      AgentRecipieVariant.DATA_COLLECTOR,
-      AgentRecipieVariant.FANTASY_ROLEPLAY,
-      AgentRecipieVariant.DEFAULT,
-    ])
-    .optional(),
-});
-
-const createProjectAgentTemplateContract = c.mutation({
-  method: 'POST',
-  path: '/projects/:projectId/testing-agents',
-  pathParams: z.object({
-    projectId: z.string(),
-  }),
-  body: CreateProjectAgentTemplatePayloadSchema,
-  responses: {
-    201: ProjectAgentTemplateSchema,
-  },
-});
-
 /* Get Source Agents */
 const ProjectDeployedAgentTemplateSchema = z.object({
   id: z.string(),
@@ -155,19 +130,6 @@ const getProjectDeployedAgentTemplatesContract = c.query({
   },
 });
 
-/* Get Single Source Agent */
-const getDeployedAgentTemplateContract = c.query({
-  method: 'GET',
-  path: '/projects/:projectId/source-agents/:deployedAgentTemplateId',
-  pathParams: z.object({
-    projectId: z.string(),
-    deployedAgentTemplateId: z.string(),
-  }),
-  responses: {
-    200: ProjectDeployedAgentTemplateSchema,
-  },
-});
-
 /* Get Agents */
 const AgentSchema = z.object({
   key: z.string(),
@@ -209,58 +171,6 @@ const getDeployedAgentsContract = c.query({
   },
 });
 
-/* Get Project Testing Agent */
-const getTestingAgentByIdOrNameContract = c.query({
-  method: 'GET',
-  path: '/testing-agents/:lookupValue',
-  pathParams: z.object({
-    lookupValue: z.string(),
-  }),
-  query: z.object({
-    lookupBy: z.enum(['id', 'name']).optional(),
-  }),
-  responses: {
-    200: ProjectAgentTemplateSchema,
-  },
-});
-
-/* Get Deployed Agents Count By Source Agent */
-const GetDeployedAgentsCountByDeployedAgentTemplateQuerySchema = z.object({
-  deployedAgentTemplateId: z.string(),
-});
-
-const GetDeployedAgentsCountByDeployedAgentTemplateResponseSchema = z.object({
-  count: z.number(),
-});
-
-const getDeployedAgentsCountByDeployedAgentTemplateContract = c.query({
-  method: 'GET',
-  path: '/projects/:projectId/deployed-agents/count',
-  pathParams: z.object({
-    projectId: z.string(),
-  }),
-  query: GetDeployedAgentsCountByDeployedAgentTemplateQuerySchema,
-  responses: {
-    200: GetDeployedAgentsCountByDeployedAgentTemplateResponseSchema,
-  },
-});
-
-/* Fork Testing Agent */
-const ForkAgentTemplateParamsSchema = z.object({
-  projectId: z.string(),
-  agentTemplateId: z.string(),
-});
-
-const forkAgentTemplateContract = c.mutation({
-  method: 'POST',
-  path: '/projects/:projectId/testing-agents/:agentTemplateId/fork',
-  pathParams: ForkAgentTemplateParamsSchema,
-  body: z.undefined(),
-  responses: {
-    201: ProjectAgentTemplateSchema,
-  },
-});
-
 /* Get Project By Id */
 const getProjectByIdOrSlugContract = c.query({
   method: 'GET',
@@ -291,15 +201,9 @@ export const projectsContract = c.router({
     },
   }),
   getProjectByIdOrSlug: getProjectByIdOrSlugContract,
-  getTestingAgentByIdOrName: getTestingAgentByIdOrNameContract,
   createProject: createProjectContract,
-  createProjectAgentTemplate: createProjectAgentTemplateContract,
   getProjectDeployedAgentTemplates: getProjectDeployedAgentTemplatesContract,
-  getProjectDeployedAgentTemplate: getDeployedAgentTemplateContract,
   getDeployedAgents: getDeployedAgentsContract,
-  getDeployedAgentsCountByDeployedAgentTemplate:
-    getDeployedAgentsCountByDeployedAgentTemplateContract,
-  forkAgentTemplate: forkAgentTemplateContract,
   updateProject: updateProjectContract,
   deleteProject: deleteProjectContract,
 });
@@ -323,10 +227,6 @@ export const projectsQueryClientKeys = {
     ...projectsQueryClientKeys.getProjectDeployedAgentTemplates(projectId),
     search,
   ],
-  getDeployedAgentTemplateContract: (
-    projectId: string,
-    deployedAgentTemplateId: string
-  ) => ['project', projectId, 'source-agents', deployedAgentTemplateId],
   getDeployedAgents: (projectId: string) => [
     'project',
     projectId,
@@ -336,18 +236,4 @@ export const projectsQueryClientKeys = {
     projectId: string,
     search: GetDeployedAgentsQueryType
   ) => ['project', projectId, 'deployed-agents', search],
-  getTestingAgentByIdOrName: (agentTemplateId: string) => [
-    'testing-agents',
-    agentTemplateId,
-  ],
-  getDeployedAgentsCountByDeployedAgentTemplate: (
-    projectId: string,
-    deployedAgentTemplateId: string
-  ) => [
-    'project',
-    projectId,
-    'deployed-agents',
-    'count',
-    { deployedAgentTemplateId },
-  ],
 };

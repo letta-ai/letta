@@ -8,6 +8,7 @@ import {
   CogIcon,
   Cross2Icon,
   ExitIcon,
+  Frame,
   HamburgerMenuIcon,
   HStack,
   Logo,
@@ -34,15 +35,17 @@ interface NavButtonProps {
   href: string;
   preload?: boolean;
   label: string;
+  id: string;
   icon?: React.ReactNode;
 }
 
 function NavButton(props: NavButtonProps) {
-  const { href, preload, label, icon } = props;
+  const { href, preload, label, id, icon } = props;
   const pathname = usePathname();
 
   return (
     <Button
+      data-testid={`nav-button-${id}`}
       preload={preload}
       active={pathname === href}
       href={href}
@@ -66,7 +69,14 @@ function AdminNav() {
     return null;
   }
 
-  return <NavButton href="/admin" label={t('nav.admin')} icon={<BirdIcon />} />;
+  return (
+    <NavButton
+      id="admi"
+      href="/admin"
+      label={t('nav.admin')}
+      icon={<BirdIcon />}
+    />
+  );
 }
 
 function MainNavigationItems() {
@@ -91,16 +101,19 @@ function MainNavigationItems() {
         {
           label: t('nav.projects'),
           href: '/projects',
+          id: 'projects',
           icon: <FolderOutputIcon />,
         },
         {
           label: t('nav.apiKeys'),
           href: '/api-keys',
+          id: 'api-keys',
           icon: <KeySquareIcon />,
         },
         {
           label: t('nav.dataSources'),
           href: '/data-sources',
+          id: 'data-sources',
           icon: <DatabaseIcon />,
         },
       ];
@@ -142,10 +155,15 @@ function MainNavigationItems() {
         paddingY="small"
         gap="large"
       >
-        {title && <HStack align="center">{title}</HStack>}
+        {title && (
+          <HStack justify="start" align="center">
+            {title}
+          </HStack>
+        )}
         <VStack gap="small">
           {navItems.map((item) => (
             <NavButton
+              id={item.id}
               key={item.href}
               href={item.href}
               label={item.label}
@@ -161,9 +179,15 @@ function MainNavigationItems() {
 function SecondaryMenuItems() {
   return (
     <VStack paddingX="small" gap="small">
-      <NavButton href="/settings" label="Settings" icon={<CogIcon />} />
+      <NavButton
+        id="settings"
+        href="/settings"
+        label="Settings"
+        icon={<CogIcon />}
+      />
       <AdminNav />
       <NavButton
+        id="sign-out"
         preload={false}
         href="/signout"
         label="Sign Out"
@@ -176,7 +200,8 @@ function SecondaryMenuItems() {
 export function NavigationSidebar() {
   return (
     <>
-      <VStack className="min-w-sidebar hidden visibleSidebar:block" />
+      {/* eslint-disable-next-line react/forbid-component-props */}
+      <VStack className="min-w-sidebar max-w-sidebar hidden visibleSidebar:block" />
       <VStack
         overflowY="auto"
         position="fixed"
@@ -184,15 +209,18 @@ export function NavigationSidebar() {
         justify="spaceBetween"
         color="background"
         fullHeight
-        className="z-[1] top-0 min-w-sidebar invisible visibleSidebar:visible"
+        zIndex="rightAboveZero"
+        /* eslint-disable-next-line react/forbid-component-props */
+        className="top-0 min-w-sidebar max-w-sidebar invisible visibleSidebar:visible"
       >
         <VStack gap={false}>
-          <HStack className="h-header" />
+          {/* eslint-disable-next-line react/forbid-component-props */}
+          <HStack className="h-header min-h-header" />
           <MainNavigationItems />
         </VStack>
         <HStack align="center" borderTop padding>
           <Logo color="muted" size="small" />
-          <Typography color="muted" className="text-sm">
+          <Typography color="muted" variant="body2">
             Letta 2024
           </Typography>
         </HStack>
@@ -257,6 +285,7 @@ function NavigationOverlay() {
         {open ? <Cross2Icon /> : <HamburgerMenuIcon />}
         <HStack>
           <Logo />
+          {/* eslint-disable-next-line react/forbid-component-props */}
           <Typography className="text-lg">Letta</Typography>
         </HStack>
       </HStack>
@@ -268,8 +297,9 @@ function NavigationOverlay() {
               position="fixed"
               fullHeight
               borderLeft
+              /* eslint-disable-next-line react/forbid-component-props */
               className={cn(
-                'top-0 min-w-sidebar z-sidebarNav transition-all duration-200 slide-in-from-left left-0',
+                'top-0 min-w-sidebar max-w-sidebar z-sidebarNav transition-all duration-200 slide-in-from-left left-0',
                 !open ? 'ml-[-250px]' : 'ml-0'
               )}
               as="nav"
@@ -283,6 +313,7 @@ function NavigationOverlay() {
             </VStack>
             <div
               onClick={handleCloseOnClickInside}
+              /* eslint-disable-next-line react/forbid-component-props */
               className={cn(
                 'fixed fade-in-10 transition-all inset-0 bg-black bg-opacity-50 z-sidebarNavOverlay',
                 open ? 'opacity-100' : 'opacity-0 pointer-events-none'
@@ -306,8 +337,9 @@ function SubRoute() {
   }
 
   return (
+    // eslint-disable-next-line react/forbid-component-props
     <HStack gap="medium" align="center" className="visibleSidebar:hidden flex">
-      /
+      /{/* eslint-disable-next-line react/forbid-component-props */}
       <Link className="hover:underline capitalize" href={`/${subRouteHref}`}>
         {subRouteName}
       </Link>
@@ -319,12 +351,13 @@ export function DashboardHeader() {
   const t = useTranslations('dashboard-like/layout');
   return (
     <>
+      {/* eslint-disable-next-line react/forbid-component-props */}
       <HStack className="h-header min-h-header" fullWidth></HStack>
       <HStack
         as="header"
         position="fixed"
         borderBottom
-        className="z-header"
+        zIndex="header"
         fullWidth
         color="background"
       >
@@ -333,20 +366,23 @@ export function DashboardHeader() {
           justify="spaceBetween"
           align="center"
           paddingX="large"
+          /* eslint-disable-next-line react/forbid-component-props */
           className="h-header min-h-header"
         >
           <HStack gap="large" align="center">
             <HStack fullWidth align="center">
               <HStack align="center">
                 <>
-                  <div className="contents visibleSidebar:hidden">
+                  {/* eslint-disable-next-line react/forbid-component-props */}
+                  <Frame className="contents visibleSidebar:hidden">
                     <NavigationOverlay />
-                  </div>
-                  <div className="hidden visibleSidebar:contents">
+                  </Frame>
+                  {/* eslint-disable-next-line react/forbid-component-props */}
+                  <Frame className="hidden visibleSidebar:contents">
                     <Link href="/">
                       <Logo withText size="medium" />
                     </Link>
-                  </div>
+                  </Frame>
                 </>
                 <SubRoute />
               </HStack>

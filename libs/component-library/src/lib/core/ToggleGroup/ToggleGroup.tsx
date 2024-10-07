@@ -7,9 +7,10 @@ import { cn } from '@letta-web/core-style-config';
 import type { ToggleGroupSingleProps } from '@radix-ui/react-toggle-group';
 import { makeInput, makeRawInput } from '../Form/Form';
 import { Frame } from '../../framing/Frame/Frame';
+import { MaybeTooltip } from '../Tooltip/Tooltip';
 
 const toggleVariants = cva(
-  'inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors hover:bg-tertiary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=on]:bg-tertiary-active',
+  'inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors hover:bg-tertiary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=on]:bg-tertiary-active ',
   {
     variants: {
       variant: {
@@ -108,24 +109,34 @@ interface ToggleGroupItemType {
 
 interface ToggleGroupProps extends Omit<ToggleGroupSingleProps, 'type'> {
   items: ToggleGroupItemType[];
+  border?: boolean;
   size?: VariantProps<typeof toggleVariants>['size'];
 }
 
 function ToggleGroupWrapper(props: ToggleGroupProps) {
-  const { items, size, value, onValueChange } = props;
+  const { items, border, size, value, onValueChange } = props;
 
   return (
-    <Frame>
+    <Frame border={border} rounded>
       <ToggleGroupRoot
         type="single"
         value={value}
         onValueChange={onValueChange}
       >
         {items.map((item) => (
-          <ToggleGroupItem size={size} key={item.value} value={item.value}>
-            {item.icon}
-            {!item.hideLabel && <span>{item.label}</span>}
-          </ToggleGroupItem>
+          <MaybeTooltip
+            asChild
+            key={item.value}
+            content={item.label}
+            renderTooltip={!!item.hideLabel}
+          >
+            <ToggleGroupItem size={size} key={item.value} value={item.value}>
+              {item.icon}
+              <span className={item.hideLabel ? 'sr-only' : ''}>
+                {item.label}
+              </span>
+            </ToggleGroupItem>
+          </MaybeTooltip>
         ))}
       </ToggleGroupRoot>
     </Frame>

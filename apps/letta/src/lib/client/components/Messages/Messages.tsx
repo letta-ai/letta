@@ -5,10 +5,12 @@ import {
   Code,
   HStack,
   LettaLoaderPanel,
+  Markdown,
   Typography,
   VStack,
 } from '@letta-web/component-library';
 import type { AgentMessage } from '@letta-web/letta-agents-api';
+import { SendMessageFunctionCallSchema } from '@letta-web/letta-agents-api';
 import {
   AgentsService,
   type ListAgentMessagesResponse,
@@ -18,10 +20,11 @@ import {
 import type {
   AgentSimulatorMessageGroupType,
   AgentSimulatorMessageType,
-} from '../../../../app/(logged-in)/(ade)/projects/[projectSlug]/agents/[agentName]/AgentSimulator/types';
+} from '../../../../app/(logged-in)/(ade)/projects/[projectSlug]/agents/[agentId]/AgentSimulator/types';
 import { FunctionSquareIcon } from 'lucide-react';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import type { InfiniteData } from '@tanstack/query-core';
+import { jsonrepair } from 'jsonrepair';
 
 interface MessageWrapperProps {
   header: React.ReactNode;
@@ -41,11 +44,32 @@ function MessageWrapper({ header, children }: MessageWrapperProps) {
   );
 }
 
+// tryFallbackParseJson will attempt to parse a string as JSON, if it fails, it will trim the last character and try again
+// until it succeeds or the string is empty
+function tryFallbackParseJson(str: string): unknown {
+  let trimmed = str;
+
+  while (trimmed.length > 0) {
+    try {
+      return JSON.parse(jsonrepair(trimmed));
+    } catch (_e) {
+      trimmed = trimmed.slice(0, -1);
+    }
+  }
+
+  return null;
+}
+
 function extractMessage(
-  agentMessage: AgentMessage
+  agentMessage: AgentMessage,
+  mode: MessagesDisplayMode
 ): AgentSimulatorMessageType | null {
   switch (agentMessage.message_type) {
     case 'function_return':
+      if (mode === 'simple') {
+        return null;
+      }
+
       return {
         id: `${agentMessage.id}-${agentMessage.message_type}`,
         content: (
@@ -78,6 +102,43 @@ function extractMessage(
         name: 'Agent',
       };
     case 'function_call':
+      if (mode === 'simple') {
+        if (
+          agentMessage.function_call.name === 'send_message' &&
+          agentMessage.function_call.arguments
+        ) {
+          try {
+            const out = SendMessageFunctionCallSchema.safeParse(
+              tryFallbackParseJson(agentMessage.function_call.arguments)
+            );
+
+            if (!out.success) {
+              throw new Error('Unable to parse message');
+            }
+
+            return {
+              id: `${agentMessage.id}-${agentMessage.message_type}`,
+              content: (
+                <VStack>
+                  <Markdown text={out.data.message} />
+                </VStack>
+              ),
+              name: 'Agent',
+              timestamp: new Date(agentMessage.date).toISOString(),
+            };
+          } catch (_e) {
+            return {
+              id: `${agentMessage.id}-${agentMessage.message_type}`,
+              content: 'Unable to parse message',
+              timestamp: new Date(agentMessage.date).toISOString(),
+              name: 'Agent',
+            };
+          }
+        }
+
+        return null;
+      }
+
       return {
         id: `${agentMessage.id}-${agentMessage.message_type}`,
         content: (
@@ -103,6 +164,10 @@ function extractMessage(
         name: 'Agent',
       };
     case 'internal_monologue':
+      if (mode === 'simple') {
+        return null;
+      }
+
       return {
         id: `${agentMessage.id}-${agentMessage.message_type}`,
         content: (
@@ -126,6 +191,23 @@ function extractMessage(
       const out = UserMessageMessageSchema.safeParse(
         JSON.parse(agentMessage.message)
       );
+
+      if (mode === 'simple') {
+        if (!out.success) {
+          return null;
+        }
+
+        return {
+          id: `${agentMessage.id}-${agentMessage.message_type}`,
+          content: (
+            <VStack>
+              <Markdown text={out.data.message} />
+            </VStack>
+          ),
+          timestamp: new Date(agentMessage.date).toISOString(),
+          name: 'User',
+        };
+      }
 
       if (!out.success) {
         return {
@@ -185,14 +267,17 @@ function MessageGroup({ group }: MessageGroupType) {
 
 const MESSAGE_LIMIT = 20;
 
+export type MessagesDisplayMode = 'debug' | 'simple';
+
 interface MessagesProps {
   isSendingMessage: boolean;
   agentId: string;
+  mode: MessagesDisplayMode;
   isPanelActive?: boolean;
 }
 
 export function Messages(props: MessagesProps) {
-  const { isSendingMessage, isPanelActive, agentId } = props;
+  const { isSendingMessage, mode, isPanelActive, agentId } = props;
   const ref = useRef<HTMLDivElement>(null);
   const hasScrolledInitially = useRef(false);
 
@@ -235,7 +320,7 @@ export function Messages(props: MessagesProps) {
     const preMessages = data.pages
       .flat()
       // @ts-expect-error - the typing is wrong
-      .map((message) => extractMessage(message))
+      .map((message) => extractMessage(message, mode))
       .filter((message) => !!message)
       .sort(
         (a, b) =>
@@ -267,7 +352,7 @@ export function Messages(props: MessagesProps) {
     });
 
     return groupedMessages;
-  }, [data]);
+  }, [mode, data]);
 
   useEffect(() => {
     if (ref.current) {

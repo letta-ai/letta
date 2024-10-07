@@ -7,7 +7,12 @@ import { and, eq } from 'drizzle-orm';
 export async function POST(req: NextRequest) {
   const organizationId = await getUserOrganizationIdOrThrow();
 
-  if (process.env.IS_CYPRESS_RUN !== 'yes') {
+  if (
+    !(
+      process.env.IS_CYPRESS_RUN === 'yes' ||
+      process.env.NODE_ENV !== 'production'
+    )
+  ) {
     return new Response(
       JSON.stringify({
         message: 'Unauthorized',

@@ -7,8 +7,11 @@ import { useCopyToClipboard } from '../../hooks';
 interface CopyButtonProps {
   textToCopy: string;
   testId?: string;
+  fullWidth?: boolean;
   copyButtonText?: string;
+  color?: 'tertiary-transparent' | 'tertiary';
   size?: 'default' | 'small';
+  hideLabel?: boolean;
 }
 
 export function CopyButton(props: CopyButtonProps) {
@@ -16,7 +19,10 @@ export function CopyButton(props: CopyButtonProps) {
     textToCopy,
     testId,
     size = 'default',
+    fullWidth,
+    color = 'tertiary',
     copyButtonText = 'Copy',
+    hideLabel,
   } = props;
 
   const { isCopied, copyToClipboard } = useCopyToClipboard({ textToCopy });
@@ -24,7 +30,9 @@ export function CopyButton(props: CopyButtonProps) {
   return (
     <Button
       size={size}
-      color="tertiary"
+      fullWidth={fullWidth}
+      color={color}
+      hideLabel={hideLabel}
       type="button"
       data-testid={testId}
       preIcon={isCopied ? <CheckIcon /> : <ClipboardIcon />}

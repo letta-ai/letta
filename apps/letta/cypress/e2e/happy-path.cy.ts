@@ -1,10 +1,12 @@
 describe('letta', () => {
   beforeEach(() => {
+    cy.googleLogin();
     cy.deleteProjectsWithName('CYDOGGTestProject');
     cy.visit('/signout');
   });
 
   afterEach(() => {
+    cy.googleLogin();
     cy.deleteProjectsWithName('CYDOGGTestProject');
   });
 
@@ -26,11 +28,22 @@ describe('letta', () => {
     // creates an agent
     cy.findByTestId('create-agent-template-button', { timeout: 10000 }).click();
 
-    cy.location('pathname').should('match', /\/projects\/(.+)\/agents\/new/);
+    cy.location('pathname').should('match', /\/projects\/(.+)\/templates\/new/);
 
-    cy.findByTestId('agent-recipe-card-customer_support').click();
+    cy.findByTestId('pre-existing-template-dropdown-trigger', {
+      timeout: 10000,
+    }).click({ force: true });
 
-    cy.location('pathname').should('match', /\/projects\/(.+)\/agents\/(.+)/);
+    cy.findByText('Customer Support').click();
+
+    cy.findByTestId('agent-name-input').type('CYDOGGTestAgent');
+
+    cy.findByTestId('create-agent-button').click();
+
+    cy.location('pathname').should(
+      'match',
+      /\/projects\/(.+)\/templates\/(.+)/
+    );
 
     // update core memory
     cy.findByTestId('ade-navigate-to:Memory Blocks').then(($btn) => {

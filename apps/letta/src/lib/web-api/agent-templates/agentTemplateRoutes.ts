@@ -1,8 +1,13 @@
 import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
 import type { contracts } from '../contracts';
-import { getUserOrganizationIdOrThrow } from '$letta/server/auth';
+import {
+  getUserOrganizationIdOrThrow,
+  getUserOrThrow,
+} from '$letta/server/auth';
 import { and, desc, eq, like } from 'drizzle-orm';
 import { agentTemplates, db } from '@letta-web/database';
+import { copyAgentById } from '$letta/sdk';
+import { capitalize } from 'lodash';
 
 type ListAgentTemplatesQueryRequest = ServerInferRequest<
   typeof contracts.agentTemplates.listAgentTemplates
@@ -60,6 +65,71 @@ export async function listAgentTemplates(
   };
 }
 
+type ForkAgentTemplateRequest = ServerInferRequest<
+  typeof contracts.agentTemplates.forkAgentTemplate
+>;
+
+type ForkAgentTemplateResponse = ServerInferResponses<
+  typeof contracts.agentTemplates.forkAgentTemplate
+>;
+
+export async function forkAgentTemplate(
+  req: ForkAgentTemplateRequest
+): Promise<ForkAgentTemplateResponse> {
+  const { agentTemplateId, projectId } = req.params;
+  const { organizationId, lettaAgentsId } = await getUserOrThrow();
+
+  const testingAgent = await db.query.agentTemplates.findFirst({
+    where: and(
+      eq(agentTemplates.organizationId, organizationId),
+      eq(agentTemplates.projectId, projectId),
+      eq(agentTemplates.id, agentTemplateId)
+    ),
+  });
+
+  if (!testingAgent) {
+    return {
+      status: 404,
+      body: {},
+    };
+  }
+
+  const copiedAgent = await copyAgentById(testingAgent.id, lettaAgentsId);
+
+  if (!copiedAgent.id) {
+    return {
+      status: 500,
+      body: {
+        message: 'Failed to copy agent',
+      },
+    };
+  }
+
+  const name = capitalize(`Forked ${testingAgent.name}`);
+
+  const [agent] = await db
+    .insert(agentTemplates)
+    .values({
+      id: copiedAgent.id,
+      projectId: testingAgent.projectId,
+      organizationId,
+      name,
+    })
+    .returning({
+      id: agentTemplates.id,
+    });
+
+  return {
+    status: 201,
+    body: {
+      id: agent.id,
+      name,
+      updatedAt: new Date().toISOString(),
+    },
+  };
+}
+
 export const agentTemplateRoutes = {
   listAgentTemplates,
+  forkAgentTemplate,
 };

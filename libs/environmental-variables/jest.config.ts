@@ -1,4 +1,6 @@
 /* eslint-disable */
+import { pathsToModuleNameMapper } from 'ts-jest';
+
 export default {
   displayName: 'environmental-variables',
   preset: '../../jest.preset.js',

@@ -23,9 +23,9 @@ export interface AgentTemplate {
   embedding_config: AgentState['embedding_config'];
 }
 
-export enum AgentRecipieVariant {
-  CUSTOMER_SUPPORT = 'customer_support',
-  FANTASY_ROLEPLAY = 'fantasy_roleplay',
-  DATA_COLLECTOR = 'data_collector',
-  DEFAULT = 'default',
+export enum AgentRecipeVariant {
+  CUSTOMER_SUPPORT = 'letta_customer_support',
+  FANTASY_ROLEPLAY = 'letta_fantasy_roleplay',
+  DATA_COLLECTOR = 'letta_data_collector',
+  NO_TEMPLATE = 'none',
 }

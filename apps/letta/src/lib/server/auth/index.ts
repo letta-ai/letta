@@ -1,6 +1,6 @@
 'use server';
 import type { ProviderUserPayload } from '$letta/types';
-import { AgentRecipieVariant } from '$letta/types';
+import { AgentRecipeVariant } from '$letta/types';
 import {
   db,
   emailWhitelist,
@@ -24,7 +24,6 @@ import {
 import { AnalyticsEvent } from '@letta-web/analytics';
 import { jwtDecode } from 'jwt-decode';
 import { AdminService } from '@letta-web/letta-agents-api';
-import { createProjectAgentTemplate } from '$letta/web-api/projects/projectsRouter';
 import { createAgent, versionAgentTemplate } from '$letta/sdk';
 import { generateSlug } from '$letta/server';
 
@@ -84,8 +83,8 @@ async function handleLettaUserCreation() {
 
 interface CreateUserAndOrganizationResponse {
   user: UserSession;
-  firstProjectId: string;
-  firstCreatedAgentId: string;
+  firstProjectSlug: string;
+  firstCreatedAgentName: string;
 }
 
 async function createUserAndOrganization(
@@ -179,6 +178,7 @@ async function createUserAndOrganization(
       })
       .returning({
         projectId: projects.id,
+        slug: projects.slug,
       }),
     db.insert(lettaAPIKeys).values({
       name: `${userFullName}'s API Key`,
@@ -188,33 +188,27 @@ async function createUserAndOrganization(
     }),
   ]);
 
-  const firstProjectId = project[0].projectId;
+  const firstProjectSlug = project[0].slug;
 
-  const createdAgentTemplate = await createProjectAgentTemplate(
+  const createdAgentTemplate = await createAgent(
     {
-      params: {
-        projectId: firstProjectId,
-      },
       body: {
-        recipeId: AgentRecipieVariant.CUSTOMER_SUPPORT,
+        template: true,
+        project_id: project[0].projectId,
+        from_template: AgentRecipeVariant.CUSTOMER_SUPPORT,
       },
     },
     {
       request: {
-        $userOverride: {
-          id: createdUser.userId,
-          organizationId,
-          lettaAgentsId: lettaAgentsUser.id,
-          email: userData.email,
-          name: userData.name,
-          imageUrl: userData.imageUrl,
-        },
+        lettaAgentsUserId: lettaAgentsUser.id,
+        userId: createdUser.userId,
+        organizationId,
       },
     }
   );
 
-  if (createdAgentTemplate.status !== 201) {
-    throw new Error('Failed to create testing agent');
+  if (createdAgentTemplate.status !== 201 || !createdAgentTemplate.body.id) {
+    throw new Error(JSON.stringify(createdAgentTemplate.body, null, 2));
   }
 
   const versionedAgentTemplate = await versionAgentTemplate(
@@ -240,7 +234,7 @@ async function createUserAndOrganization(
     {
       body: {
         from_template: versionedAgentTemplate.body.version,
-        name: `${firstProjectId}-my-first-agent-in-production`,
+        name: `${createdAgentTemplate.body.name}-deployed-1`,
       },
     },
     {
@@ -260,8 +254,8 @@ async function createUserAndOrganization(
       id: createdUser.userId,
       organizationId: organizationId,
     },
-    firstCreatedAgentId: createdAgentTemplate.body.id,
-    firstProjectId,
+    firstCreatedAgentName: createdAgentTemplate.body.name,
+    firstProjectSlug: firstProjectSlug,
   };
 }
 
@@ -299,8 +293,8 @@ async function isUserInWhitelist(email: string) {
 }
 
 interface NewUserDetails {
-  firstProjectId: string;
-  firstCreatedAgentId: string;
+  firstProjectSlug: string;
+  firstCreatedAgentName: string;
 }
 
 interface FindOrCreateUserAndOrganizationFromProviderLoginResponse {
@@ -322,8 +316,8 @@ async function findOrCreateUserAndOrganizationFromProviderLogin(
     const res = await createUserAndOrganization(userData);
 
     newUserDetails = {
-      firstProjectId: res.firstProjectId,
-      firstCreatedAgentId: res.firstCreatedAgentId,
+      firstProjectSlug: res.firstProjectSlug,
+      firstCreatedAgentName: res.firstCreatedAgentName,
     };
     user = res.user;
   }
@@ -576,7 +570,7 @@ export async function generateRedirectSignatureForLoggedInUser(
     return new Response('Successfully signed in', {
       status: 302,
       headers: {
-        location: `/projects/${newUserDetails.firstProjectId}/agents/${newUserDetails.firstCreatedAgentId}`,
+        location: `/projects/${newUserDetails.firstProjectSlug}/templates/${newUserDetails.firstCreatedAgentName}`,
       },
     });
   }

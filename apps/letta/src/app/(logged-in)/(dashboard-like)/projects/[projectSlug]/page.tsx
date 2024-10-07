@@ -35,6 +35,7 @@ function AgentTemplatesList(props: AgentTemplatesListProps) {
     return (
       <VStack fullHeight fullWidth>
         {new Array(RECENT_AGENTS_TO_DISPLAY).fill(null).map((_u, index) => (
+          // eslint-disable-next-line react/forbid-component-props
           <Skeleton key={index} className={TESTING_CARD_HEIGHT_CLASS} />
         ))}
       </VStack>
@@ -43,6 +44,7 @@ function AgentTemplatesList(props: AgentTemplatesListProps) {
 
   if (agents.length === 0) {
     return (
+      // eslint-disable-next-line react/forbid-component-props
       <VStack fullHeight fullWidth style={{ height: testingPageHeight }}>
         <DashboardEmptyArea
           message={t('agentTemplatesList.emptyMessage')}
@@ -52,7 +54,7 @@ function AgentTemplatesList(props: AgentTemplatesListProps) {
               data-testid="create-agent-template-button"
               label={t('agentTemplatesList.createAgentTemplate')}
               color="secondary"
-              href={`/projects/${projectSlug}/agents/new`}
+              href={`/projects/${projectSlug}/templates/new`}
             />
           }
         />
@@ -109,7 +111,7 @@ function AgentTemplatesSection() {
                 data-testid="create-agent-template-button"
                 preIcon={<PlusIcon />}
                 color="tertiary"
-                href={`/projects/${projectSlug}/agents/new`}
+                href={`/projects/${projectSlug}/templates/new`}
               />
             )}
           </>

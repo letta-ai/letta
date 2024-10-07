@@ -24,6 +24,7 @@ import type { Dispatch, SetStateAction } from 'react';
 import { useRef } from 'react';
 import { useCallback, useEffect, useMemo } from 'react';
 import { LoadingEmptyStatusComponent } from '../../reusable/LoadingEmptyStatusComponent/LoadingEmptyStatusComponent';
+import { TABLE_ROW_HEIGHT } from '../../../constants';
 
 interface TableBodyContentProps<Data> {
   table: UseReactTableType<Data>;
@@ -33,6 +34,7 @@ interface TableBodyContentProps<Data> {
   noResultsAction?: React.ReactNode;
   noResultsText?: string;
   loadingText?: string;
+  errorMessage?: string;
 }
 
 function TableBodyContent<Data>(props: TableBodyContentProps<Data>) {
@@ -41,6 +43,7 @@ function TableBodyContent<Data>(props: TableBodyContentProps<Data>) {
     columnLength,
     onRowClick,
     loadingText,
+    errorMessage,
     noResultsAction,
     isLoading,
     noResultsText,
@@ -54,6 +57,8 @@ function TableBodyContent<Data>(props: TableBodyContentProps<Data>) {
             <LoadingEmptyStatusComponent
               loadingMessage={loadingText}
               emptyAction={noResultsAction}
+              isError={!!errorMessage}
+              errorMessage={errorMessage}
               emptyMessage={noResultsText || 'No results found'}
               isLoading={isLoading}
             />
@@ -94,9 +99,7 @@ function TableBodyContent<Data>(props: TableBodyContentProps<Data>) {
   return null;
 }
 
-const TABLE_ROW_HEIGHT = 53;
-
-const dataTableVariants = cva('', {
+const dataTableVariants = cva('h-full', {
   variants: {
     variant: {
       default: 'rounded-md border',
@@ -126,6 +129,7 @@ interface DataTablePropsBase<TData, TValue> {
   hasNextPage?: boolean;
   showPagination?: boolean;
   noResultsAction?: React.ReactNode;
+  errorMessage?: string;
   autofitHeight?: boolean;
   limit?: number;
   minHeight?: number;
@@ -141,6 +145,7 @@ export function DataTable<TData, TValue>(props: DataTableProps<TData, TValue>) {
     columns,
     variant,
     data,
+    errorMessage,
     loadingText,
     noResultsAction,
     minHeight,
@@ -180,7 +185,7 @@ export function DataTable<TData, TValue>(props: DataTableProps<TData, TValue>) {
       }
 
       // calculate the number of rows that can fit in the table
-      const rows = Math.floor(height / TABLE_ROW_HEIGHT);
+      const rows = Math.floor(height / TABLE_ROW_HEIGHT) - 1;
 
       tableContainerRef.current.style.minHeight = `${
         rows * TABLE_ROW_HEIGHT
@@ -189,7 +194,7 @@ export function DataTable<TData, TValue>(props: DataTableProps<TData, TValue>) {
 
       mounted.current = true;
 
-      onLimitChange?.(rows - 1);
+      onLimitChange?.(rows);
     }
   }, [autofitHeight, minHeight, onLimitChange]);
 
@@ -235,9 +240,10 @@ export function DataTable<TData, TValue>(props: DataTableProps<TData, TValue>) {
 
   return (
     <div
-      ref={tableContainerRef}
-      style={{ minHeight: minHeight }}
-      className={cn('flex flex-col gap-2 w-full', fullHeight ? 'h-full' : '')}
+      className={cn(
+        'flex flex-col gap-2 w-full',
+        fullHeight || autofitHeight ? 'h-full' : ''
+      )}
     >
       {props.onSearch && (
         <RawInput
@@ -250,6 +256,8 @@ export function DataTable<TData, TValue>(props: DataTableProps<TData, TValue>) {
         />
       )}
       <div
+        style={{ minHeight: minHeight }}
+        ref={tableContainerRef}
         className={cn(dataTableVariants({ variant, fullHeight, className }))}
       >
         <Table>
@@ -278,6 +286,7 @@ export function DataTable<TData, TValue>(props: DataTableProps<TData, TValue>) {
             table={table}
             onRowClick={onRowClick}
             loadingText={loadingText}
+            errorMessage={errorMessage}
             noResultsAction={noResultsAction}
             columnLength={columns.length}
             isLoading={isLoading}

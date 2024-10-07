@@ -174,6 +174,7 @@ const ListAgentsQuerySchema = z.object({
   project_id: z.string().optional(),
   by_version: z.string().optional(),
   name: z.string().optional(),
+  search: z.string().optional(),
   limit: z.number().optional(),
   offset: z.number().optional(),
 });
@@ -292,5 +293,6 @@ export const agentsContract = c.router({
 });
 
 export const agentsQueryKeys = {
-  listAgents: (query: ListAgentsQuery) => ['agents', query],
+  listAgentsWithSearch: (query: ListAgentsQuery) => ['agents', query],
+  getAgentById: (agentId: string) => ['agents', agentId],
 };

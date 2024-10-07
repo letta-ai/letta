@@ -1,5 +1,5 @@
 'use client';
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import {
   Avatar,
   Button,
@@ -16,6 +16,7 @@ import {
   FormProvider,
   DashboardPageSection,
   ActionCard,
+  RawCodeEditor,
 } from '@letta-web/component-library';
 import { webApi, webApiQueryKeys } from '$letta/client';
 import { useDebouncedValue } from '@mantine/hooks';
@@ -24,6 +25,78 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
+import { ComputerIcon } from 'lucide-react';
+import { getIsLocalServiceOnline } from '$letta/client/local-project-manager/getIsLocalServerOnline/getIsLocalServerOnline';
+import { LOCAL_PROJECT_SERVER_PORT } from '$letta/constants';
+
+function ConnectToLocalProjectDialog() {
+  const t = useTranslations('projects/page');
+  const { push } = useRouter();
+  const [open, setOpen] = React.useState(false);
+  const [pending, setPending] = React.useState(false);
+
+  const interval = React.useRef<ReturnType<typeof setTimeout>>();
+
+  useEffect(() => {
+    if (open) {
+      interval.current = setInterval(async () => {
+        const isOnline = await getIsLocalServiceOnline();
+
+        if (isOnline) {
+          push('/local-project/agents');
+        }
+      }, 3000);
+    } else {
+      clearInterval(interval.current);
+    }
+
+    return () => {
+      clearInterval(interval.current);
+    };
+  }, [open, push]);
+
+  const handleFirstConnect = useCallback(async () => {
+    setPending(true);
+
+    const isOnline = await getIsLocalServiceOnline();
+
+    if (isOnline) {
+      push('/local-project/agents');
+    } else {
+      setOpen(true);
+    }
+
+    setPending(false);
+  }, [push]);
+
+  return (
+    <>
+      <Button
+        onClick={handleFirstConnect}
+        preIcon={<ComputerIcon />}
+        busy={pending}
+        color="tertiary"
+        label={t('connectToLocalProject.triggerButton')}
+      />
+      <Dialog
+        isOpen={open}
+        onOpenChange={setOpen}
+        title="Connect to a Local Project"
+        hideConfirm
+      >
+        <Typography>{t('connectToLocalProject.instructions')}</Typography>
+        <RawCodeEditor
+          fullWidth
+          toolbarPosition="bottom"
+          label="Command to connect"
+          hideLabel
+          language="bash"
+          code={`letta server --ade --port=${LOCAL_PROJECT_SERVER_PORT}`}
+        />
+      </Dialog>
+    </>
+  );
+}
 
 interface ProjectsListProps {
   search: string;
@@ -178,9 +251,10 @@ function ProjectsPage() {
 
   return (
     <DashboardPageLayout
-      title="Projects"
+      title={t('title')}
       actions={
         <>
+          <ConnectToLocalProjectDialog />
           <CreateProjectDialog />
         </>
       }
