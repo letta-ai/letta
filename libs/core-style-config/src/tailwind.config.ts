@@ -50,6 +50,9 @@ export function buildConfig(appDir: string): Config {
           'biWidth-sm': 'var(--button-input-height-sm)',
           sidebar: 'var(--sidebar-width)',
         },
+        maxWidth: {
+          sidebar: 'var(--sidebar-width)',
+        },
         minWidth: {
           sidebar: 'var(--sidebar-width)',
         },

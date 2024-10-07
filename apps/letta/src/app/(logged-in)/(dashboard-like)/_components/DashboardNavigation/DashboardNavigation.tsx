@@ -155,7 +155,11 @@ function MainNavigationItems() {
         paddingY="small"
         gap="large"
       >
-        {title && <HStack align="center">{title}</HStack>}
+        {title && (
+          <HStack justify="start" align="center">
+            {title}
+          </HStack>
+        )}
         <VStack gap="small">
           {navItems.map((item) => (
             <NavButton
@@ -197,7 +201,7 @@ export function NavigationSidebar() {
   return (
     <>
       {/* eslint-disable-next-line react/forbid-component-props */}
-      <VStack className="min-w-sidebar hidden visibleSidebar:block" />
+      <VStack className="min-w-sidebar max-w-sidebar hidden visibleSidebar:block" />
       <VStack
         overflowY="auto"
         position="fixed"
@@ -207,7 +211,7 @@ export function NavigationSidebar() {
         fullHeight
         zIndex="rightAboveZero"
         /* eslint-disable-next-line react/forbid-component-props */
-        className="top-0 min-w-sidebar invisible visibleSidebar:visible"
+        className="top-0 min-w-sidebar max-w-sidebar invisible visibleSidebar:visible"
       >
         <VStack gap={false}>
           {/* eslint-disable-next-line react/forbid-component-props */}
@@ -295,7 +299,7 @@ function NavigationOverlay() {
               borderLeft
               /* eslint-disable-next-line react/forbid-component-props */
               className={cn(
-                'top-0 min-w-sidebar z-sidebarNav transition-all duration-200 slide-in-from-left left-0',
+                'top-0 min-w-sidebar max-w-sidebar z-sidebarNav transition-all duration-200 slide-in-from-left left-0',
                 !open ? 'ml-[-250px]' : 'ml-0'
               )}
               as="nav"

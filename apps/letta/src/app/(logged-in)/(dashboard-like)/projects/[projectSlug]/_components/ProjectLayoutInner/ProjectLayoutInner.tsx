@@ -3,6 +3,9 @@ import { useTranslations } from 'next-intl';
 import {
   Avatar,
   DashboardWithSidebarWrapper,
+  HStack,
+  Tooltip,
+  Typography,
 } from '@letta-web/component-library';
 import type { PropsWithChildren } from 'react';
 import React from 'react';
@@ -14,10 +17,16 @@ function ProjectAvatar() {
   const { name } = useCurrentProject();
 
   return (
-    <>
+    <HStack fullWidth align="center" justify="start">
       <Avatar size="medium" name={name} />
-      {name}
-    </>
+      <Tooltip asChild content={name}>
+        <HStack collapseWidth overflow="hidden">
+          <Typography fullWidth overflow="ellipsis" noWrap align="left">
+            {name}
+          </Typography>
+        </HStack>
+      </Tooltip>
+    </HStack>
   );
 }
 

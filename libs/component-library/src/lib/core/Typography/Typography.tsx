@@ -27,8 +27,14 @@ const typographyVariants = cva('break-words', {
     bold: {
       true: 'font-medium',
     },
+    fullWidth: {
+      true: 'w-full',
+    },
     noWrap: {
       true: 'whitespace-nowrap',
+    },
+    overflow: {
+      ellipsis: 'overflow-ellipsis overflow-hidden',
     },
     align: {
       center: 'text-center',
@@ -67,6 +73,7 @@ export function Typography(props: TypographyProps) {
   const {
     className,
     overrideEl,
+    fullWidth,
     underline,
     italic,
     noWrap,
@@ -85,6 +92,7 @@ export function Typography(props: TypographyProps) {
         italic,
         noWrap,
         bold,
+        fullWidth,
         variant,
         className,
       })
