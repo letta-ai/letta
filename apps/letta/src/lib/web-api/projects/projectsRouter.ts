@@ -12,7 +12,7 @@ import {
 } from '$letta/server/auth';
 import { eq, and, like, desc, count } from 'drizzle-orm';
 import type { contracts, projectsContract } from '$letta/web-api/contracts';
-import { capitalize } from 'lodash-es';
+import { capitalize } from 'lodash';
 import { copyAgentById } from '$letta/sdk';
 import { generateSlug } from '$letta/server';
 

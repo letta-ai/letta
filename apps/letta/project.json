@@ -17,6 +17,12 @@
         "cwd": "apps/letta",
         "command": "ts-node ./scripts/generate-openapi.ts"
       }
+    },
+    "test": {
+      "executor": "@nx/jest:jest",
+      "options": {
+        "jestConfig": "apps/letta/jest.config.ts"
+      }
     }
   }
 }

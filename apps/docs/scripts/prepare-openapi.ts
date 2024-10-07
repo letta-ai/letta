@@ -3,7 +3,7 @@ import * as path from 'path';
 
 import { merge, isErrorResult } from 'openapi-merge';
 import { Swagger } from 'atlassian-openapi';
-import { RESTRICTED_ROUTE_BASE_PATHS } from '../../../libs/letta-agents-api/src/lib/constants';
+import { RESTRICTED_ROUTE_BASE_PATHS } from '../../../libs/letta-agents-api/server/lib/constants';
 
 const lettaWebOpenAPIPath = path.join(
   __dirname,

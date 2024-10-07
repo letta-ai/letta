@@ -19,11 +19,6 @@ declare global {
   }
 }
 
-OpenAPI.interceptors.request.use((config) => {
-  config.url = `${window.baseUrl || ''}${config.url}`;
-  return config;
-});
-
 export function LettaAgentsAPIWrapper({
   children,
   baseUrl,

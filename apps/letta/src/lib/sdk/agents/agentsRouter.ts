@@ -17,7 +17,7 @@ import {
   organizationPreferences,
 } from '@letta-web/database';
 import { and, desc, eq } from 'drizzle-orm';
-import { createProject } from '$letta/web-api/projects/projectsRouter';
+import { createProject } from '$letta/web-api/router';
 import { findUniqueAgentTemplateName } from '$letta/server';
 import {
   isTemplateNameAPremadeAgentTemplate,

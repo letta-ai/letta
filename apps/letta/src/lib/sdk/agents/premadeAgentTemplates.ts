@@ -1,17 +1,17 @@
-import { AgentRecipieVariant, type AgentTemplate } from '$letta/types';
+import { AgentRecipeVariant, type AgentTemplate } from '$letta/types';
 
 export function isTemplateNameAPremadeAgentTemplate(
   templateName: string
-): templateName is AgentRecipieVariant {
+): templateName is AgentRecipeVariant {
   return Object.prototype.hasOwnProperty.call(
     premadeAgentTemplates,
     templateName
   );
 }
 
-export const premadeAgentTemplates: Record<AgentRecipieVariant, AgentTemplate> =
+export const premadeAgentTemplates: Record<AgentRecipeVariant, AgentTemplate> =
   {
-    [AgentRecipieVariant.CUSTOMER_SUPPORT]: {
+    [AgentRecipeVariant.CUSTOMER_SUPPORT]: {
       memory: {
         memory: {
           human: {
@@ -66,7 +66,7 @@ export const premadeAgentTemplates: Record<AgentRecipieVariant, AgentTemplate> =
         azure_deployment: null,
       },
     },
-    [AgentRecipieVariant.FANTASY_ROLEPLAY]: {
+    [AgentRecipeVariant.FANTASY_ROLEPLAY]: {
       memory: {
         memory: {
           human: {
@@ -121,7 +121,7 @@ export const premadeAgentTemplates: Record<AgentRecipieVariant, AgentTemplate> =
         azure_deployment: null,
       },
     },
-    [AgentRecipieVariant.DATA_COLLECTOR]: {
+    [AgentRecipeVariant.DATA_COLLECTOR]: {
       memory: {
         memory: {
           human: {
@@ -176,7 +176,7 @@ export const premadeAgentTemplates: Record<AgentRecipieVariant, AgentTemplate> =
         azure_deployment: null,
       },
     },
-    [AgentRecipieVariant.NO_TEMPLATE]: {
+    [AgentRecipeVariant.NO_TEMPLATE]: {
       memory: {
         memory: {
           human: {
