@@ -64,10 +64,6 @@ const handler = createNextHandler(sdkContracts, sdkRouter, {
         });
       }
 
-      // req.content = {
-      //   middlewareData,
-      //   ...req.content,
-      // };
       req.organizationId = middlewareData.organizationId;
       req.lettaAgentsUserId = middlewareData.lettaAgentsUserId;
       req.userId = middlewareData.userId;
