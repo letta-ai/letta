@@ -161,7 +161,7 @@ function MemoryBlocksSidebar() {
             name: block.name || '',
             blockId: block.id || '',
           }}
-          id={`memory-blocks-edit-${block.id}`}
+          id={`memory-blocks-edit-${block.label}`}
         />
       ))}
     </ADEFolderSidebarItem>
