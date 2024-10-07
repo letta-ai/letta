@@ -28,7 +28,7 @@ import { useCurrentProject } from '../../../../../(dashboard-like)/projects/[pro
 import { webApi, webApiQueryKeys, webOriginSDKApi } from '$letta/client';
 import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { AgentRecipieVariant } from '$letta/types';
+import { AgentRecipeVariant } from '$letta/types';
 import { useTranslations } from 'next-intl';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -37,7 +37,7 @@ function useDefaultAgentTemplate() {
   const t = useTranslations('projects/(projectSlug)/templates/new/page');
 
   return {
-    value: AgentRecipieVariant.NO_TEMPLATE,
+    value: AgentRecipeVariant.NO_TEMPLATE,
     label: t('useDefaultAgentTemplate.label'),
     description: t('useDefaultAgentTemplate.description'),
   };
@@ -55,13 +55,13 @@ function usePreMadeAgentTemplates() {
 
   return [
     {
-      value: AgentRecipieVariant.CUSTOMER_SUPPORT,
+      value: AgentRecipeVariant.CUSTOMER_SUPPORT,
       label: t('usePreMadeAgentTemplates.customerSupport.label'),
       badge: <FromLettaBadge />,
       description: t('usePreMadeAgentTemplates.customerSupport.description'),
     },
     {
-      value: AgentRecipieVariant.FANTASY_ROLEPLAY,
+      value: AgentRecipeVariant.FANTASY_ROLEPLAY,
       badge: <FromLettaBadge />,
       label: t('usePreMadeAgentTemplates.fantasyRoleplay.label'),
       description: t('usePreMadeAgentTemplates.fantasyRoleplay.description'),

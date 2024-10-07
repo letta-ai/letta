@@ -26,6 +26,7 @@
       "@letta-web/core-style-config": ["libs/core-style-config/src/index.ts"],
       "@letta-web/core-style-config/*": ["utils/src/*"],
       "@letta-web/database": ["libs/database/src/index.ts"],
+      "@letta-web/database-testing": ["libs/database-testing/src/index.ts"],
       "@letta-web/environmental-variables": [
         "libs/environmental-variables/src/index.ts"
       ],
@@ -34,6 +35,9 @@
         "libs/helpful-client-utils/src/index.ts"
       ],
       "@letta-web/letta-agents-api": ["libs/letta-agents-api/src/index.ts"],
+      "@letta-web/letta-agents-api-testing": [
+        "libs/letta-agents-api-testing/src/index.ts"
+      ],
       "@letta-web/redis": ["libs/redis/src/index.ts"]
     },
     "jsx": "react"

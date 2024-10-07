@@ -1,6 +1,6 @@
 'use server';
 import type { ProviderUserPayload } from '$letta/types';
-import { AgentRecipieVariant } from '$letta/types';
+import { AgentRecipeVariant } from '$letta/types';
 import {
   db,
   emailWhitelist,
@@ -195,7 +195,7 @@ async function createUserAndOrganization(
       body: {
         template: true,
         project_id: project[0].projectId,
-        from_template: AgentRecipieVariant.CUSTOMER_SUPPORT,
+        from_template: AgentRecipeVariant.CUSTOMER_SUPPORT,
       },
     },
     {
