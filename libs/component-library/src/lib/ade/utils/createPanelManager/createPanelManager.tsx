@@ -1183,7 +1183,7 @@ export function createPanelManager<
     return (
       <VStack fullHeight gap={false}>
         <TabBar x={x} y={y} activeTabId={activeTab?.id} tabs={validTabs} />
-        <VStack color="background" flexHeight collapseHeight fullWidth>
+        <VStack color="background" collapseHeight fullWidth>
           {validTabs.map((tab) => {
             const PanelComponent = panelRegistry[tab.templateId].content;
 
