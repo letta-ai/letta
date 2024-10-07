@@ -8,6 +8,7 @@ type BaseRoute = string;
 export interface SubNavigationItem {
   label: string;
   href: string;
+  id: string;
   icon?: React.ReactNode;
 }
 

@@ -17,6 +17,7 @@ function SettingsLayout(props: SettingsLayoutProps) {
       returnOverride="/"
       navigationItems={[
         {
+          id: 'profile',
           label: t('profile'),
           href: '/settings/profile',
         },

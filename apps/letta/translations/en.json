@@ -197,5 +197,39 @@
     "localProject": "Local Project",
     "liveAgentWarning": "You are editing a live agent, be aware that editing this agent may impact live deployments",
     "localAgentDevelopment": "You are editing a local agent, changes made here will not effect your agents on Letta Cloud"
+  },
+  "api-keys/page": {
+    "title": "API Keys",
+    "emptyMessage": "No API keys found",
+    "errorMessage": "An error occurred while fetching your API keys. Please try again or contact support.",
+    "loadingMessage": "Loading API keys...",
+    "viewApiKeyDialog": {
+      "title": "Viewing {apiKeyName}",
+      "trigger": "View API Key",
+      "label": "API Key"
+    },
+    "deleteApiKeyDialog": {
+      "title": "Delete {apiKeyName}",
+      "confirmText": "Delete API Key",
+      "trigger": "Delete API Key",
+      "confirmation": "Are you sure you want to delete your API Key? This is permanent and cannot be undone."
+    },
+    "apiKeysColumns": {
+      "name": "Name",
+      "actions": "Actions"
+    },
+    "createAPIKeyDialog": {
+      "title": "Create a new API Key",
+      "createdTitle": "API Key Created",
+      "cancel": "Cancel",
+      "alertTitle": "API Key Created",
+      "close": "Close",
+      "trigger": "Create API Key",
+      "generatedCopy": "We have generated you an API Key, please make sure to store it safely.",
+      "downloadText": "Download API Key",
+      "copyToClipboard": "Copy API Key to Clipboard",
+      "description": "Provide a descriptive name for identifying for later use",
+      "label": "Name"
+    }
   }
 }

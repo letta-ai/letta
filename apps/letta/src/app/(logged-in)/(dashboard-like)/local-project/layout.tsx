@@ -29,6 +29,7 @@ function LocalProjectLayout(props: LocalProjectLayoutProps) {
       }
       navigationItems={[
         {
+          id: 'agents',
           label: t('nav.agents'),
           href: `/local-project/agents`,
         },

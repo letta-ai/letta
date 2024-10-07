@@ -7,6 +7,7 @@ import { useCopyToClipboard } from '../../hooks';
 interface CopyButtonProps {
   textToCopy: string;
   testId?: string;
+  fullWidth?: boolean;
   copyButtonText?: string;
   color?: 'tertiary-transparent' | 'tertiary';
   size?: 'default' | 'small';
@@ -18,6 +19,7 @@ export function CopyButton(props: CopyButtonProps) {
     textToCopy,
     testId,
     size = 'default',
+    fullWidth,
     color = 'tertiary',
     copyButtonText = 'Copy',
     hideLabel,
@@ -28,6 +30,7 @@ export function CopyButton(props: CopyButtonProps) {
   return (
     <Button
       size={size}
+      fullWidth={fullWidth}
       color={color}
       hideLabel={hideLabel}
       type="button"

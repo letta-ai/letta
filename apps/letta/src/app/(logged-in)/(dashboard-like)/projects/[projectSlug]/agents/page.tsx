@@ -209,7 +209,7 @@ function DeployedAgentList(props: DeployedAgentListProps) {
   }, [data]);
 
   return (
-    <HStack position="relative" fullWidth>
+    <HStack fullHeight position="relative" fullWidth>
       <DataTable
         onRowClick={(row) => {
           setSelectedAgent(row);
@@ -389,8 +389,8 @@ function DeployedAgentsPage() {
   const [debouncedSearch] = useDebouncedValue(search, 500);
 
   return (
-    <DashboardPageLayout title="Agents">
-      <DashboardPageSection>
+    <DashboardPageLayout encapsulatedFullHeight title="Agents">
+      <DashboardPageSection fullHeight>
         <VStack fullHeight fullWidth>
           <VStack gap={false} fullWidth>
             <RawInput

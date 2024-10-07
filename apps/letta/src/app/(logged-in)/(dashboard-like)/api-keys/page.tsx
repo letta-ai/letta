@@ -7,7 +7,6 @@ import {
   CopyButton,
   DashboardPageLayout,
   DashboardPageSection,
-  LoadingEmptyStatusComponent,
   DataTable,
   Dialog,
   DotsHorizontalIcon,
@@ -18,13 +17,13 @@ import {
   DropdownMenuTrigger,
   FormField,
   FormProvider,
-  HStack,
   Input,
   PlusIcon,
   RawInput,
   TrashIcon,
   Typography,
   useForm,
+  VStack,
 } from '@letta-web/component-library';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -32,6 +31,7 @@ import { webApi, webApiQueryKeys } from '$letta/client';
 import type { APIKeyType } from '$letta/web-api/contracts';
 import type { ColumnDef } from '@tanstack/react-table';
 import { useQueryClient } from '@tanstack/react-query';
+import { useTranslations } from 'next-intl';
 
 const CreateAPIKeySchema = z.object({
   name: z.string(),
@@ -40,6 +40,7 @@ const CreateAPIKeySchema = z.object({
 function CreateAPIKeyDialog() {
   const [generatedKey, setGeneratedKey] = React.useState<string | null>(null);
   const queryClient = useQueryClient();
+  const t = useTranslations('api-keys/page');
   const { mutate, isPending } = webApi.apiKeys.createAPIKey.useMutation({
     onSuccess: (response) => {
       setGeneratedKey(response.body.apiKey);
@@ -77,28 +78,46 @@ function CreateAPIKeyDialog() {
         onSubmit={form.handleSubmit(handleSubmit)}
         isConfirmBusy={isPending}
         hideConfirm={!!generatedKey}
-        cancelText={generatedKey ? 'Close' : 'Cancel'}
-        title={generatedKey ? 'API Key Created' : 'Create API Key'}
-        trigger={<Button preIcon={<PlusIcon />} label="Create API Key" />}
+        testId="create-api-key-dialog"
+        cancelText={
+          generatedKey
+            ? t('createAPIKeyDialog.close')
+            : t('createAPIKeyDialog.cancel')
+        }
+        title={
+          generatedKey
+            ? t('createAPIKeyDialog.createdTitle')
+            : t('createAPIKeyDialog.title')
+        }
+        trigger={
+          <Button
+            data-testid="create-api-key-button"
+            preIcon={<PlusIcon />}
+            label={t('createAPIKeyDialog.trigger')}
+          />
+        }
       >
         {generatedKey ? (
           <>
-            <Alert variant="warning" title="API Key Created">
+            <Alert variant="warning" title={t('createAPIKeyDialog.alertTitle')}>
               <Typography>
                 We have generated you an API Key, please make sure to store it
                 safely.
               </Typography>
-              <HStack paddingY="large">
+              <VStack align="center" paddingY="large">
                 <DownloadButton
+                  fullWidth
                   textToDownload={generatedKey}
                   fileName="api-key.txt"
-                  downloadButtonText="Download API Key"
+                  downloadButtonText={t('createAPIKeyDialog.downloadText')}
                 />
                 <CopyButton
+                  testId="copy-api-key-button"
+                  fullWidth
                   textToCopy={generatedKey}
-                  copyButtonText="Copy API Key to Clipboard"
+                  copyButtonText={t('createAPIKeyDialog.copyToClipboard')}
                 />
-              </HStack>
+              </VStack>
             </Alert>
           </>
         ) : (
@@ -106,10 +125,11 @@ function CreateAPIKeyDialog() {
             render={({ field }) => {
               return (
                 <Input
+                  data-testid="api-key-name-input"
                   fullWidth
                   {...field}
-                  label="Name"
-                  description="Provide a descriptive name for identifying for later use"
+                  label={t('createAPIKeyDialog.label')}
+                  description={t('createAPIKeyDialog.description')}
                 />
               );
             }}
@@ -128,6 +148,7 @@ interface DeleteAPIKeyDialogProps {
 
 function DeleteAPIKeyDialog(props: DeleteAPIKeyDialogProps) {
   const { apiKeyId, name } = props;
+  const t = useTranslations('api-keys/page');
   const queryClient = useQueryClient();
   const { mutate, isPending } = webApi.apiKeys.deleteAPIKey.useMutation({
     onSuccess: () => {
@@ -149,15 +170,19 @@ function DeleteAPIKeyDialog(props: DeleteAPIKeyDialogProps) {
     <Dialog
       isConfirmBusy={isPending}
       onConfirm={handleDelete}
-      confirmText="Delete"
+      confirmText={t('deleteApiKeyDialog.confirmText')}
       confirmColor="destructive"
+      testId={`delete-api-key-dialog:${name}`}
       trigger={
-        <DropdownMenuLabel preIcon={<TrashIcon />} text="Delete API Key" />
+        <DropdownMenuLabel
+          data-testid={`delete-api-key-button:${name}`}
+          preIcon={<TrashIcon />}
+          text={t('deleteApiKeyDialog.trigger')}
+        />
       }
-      title={`Delete ${name}`}
+      title={t('deleteApiKeyDialog.title', { apiKeyName: name })}
     >
-      Are you sure you want to delete your API Key? This is permanent and cannot
-      be undone.
+      {t('deleteApiKeyDialog.confirmation')}
     </Dialog>
   );
 }
@@ -178,15 +203,24 @@ function ViewAPIKeyDialog(props: ViewAPIKeyDialogProps) {
     },
   });
 
+  const t = useTranslations('api-keys/page');
+
   return (
     <Dialog
-      trigger={<DropdownMenuLabel text="View API Key" />}
-      title={`Viewing ${name}`}
+      testId={`view-api-key-dialog:${name}`}
+      trigger={
+        <DropdownMenuLabel
+          data-testId={`view-api-key-button:${name}`}
+          text={t('viewApiKeyDialog.trigger')}
+        />
+      }
+      title={t('viewApiKeyDialog.title', { apiKeyName: name })}
     >
       <RawInput
         allowCopy
         fullWidth
-        label="API Key"
+        data-testId={`view-api-key-input:${name}`}
+        label={t('viewApiKeyDialog.label')}
         value={data?.body.apiKey}
         readOnly
         disabled
@@ -195,48 +229,6 @@ function ViewAPIKeyDialog(props: ViewAPIKeyDialogProps) {
     </Dialog>
   );
 }
-
-const apiKeysColumns: Array<ColumnDef<APIKeyType>> = [
-  {
-    header: 'Name',
-    accessorKey: 'name',
-  },
-  {
-    header: '',
-    accessorKey: 'id',
-    meta: {
-      style: {
-        columnAlign: 'right',
-      },
-    },
-    id: 'actions',
-    cell: ({ cell }) => {
-      return (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              color="tertiary-transparent"
-              label="Actions"
-              preIcon={<DotsHorizontalIcon />}
-              size="small"
-              hideLabel
-            />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent>
-            <ViewAPIKeyDialog
-              apiKeyId={cell.row.original.id}
-              name={cell.row.original.name}
-            />
-            <DeleteAPIKeyDialog
-              name={cell.row.original.name}
-              apiKeyId={cell.row.original.id}
-            />
-          </DropdownMenuContent>
-        </DropdownMenu>
-      );
-    },
-  },
-];
 
 function APIKeysPage() {
   const [offset, setOffset] = useState(0);
@@ -255,6 +247,54 @@ function APIKeysPage() {
     },
   });
 
+  const t = useTranslations('api-keys/page');
+
+  const apiKeysColumns: Array<ColumnDef<APIKeyType>> = useMemo(
+    () => [
+      {
+        header: t('apiKeysColumns.name'),
+        accessorKey: 'name',
+      },
+      {
+        header: '',
+        accessorKey: 'id',
+        meta: {
+          style: {
+            columnAlign: 'right',
+          },
+        },
+        id: 'actions',
+        cell: ({ cell }) => {
+          return (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  data-testid={`api-key-actions-button:${cell.row.original.name}`}
+                  color="tertiary-transparent"
+                  label={t('apiKeysColumns.actions')}
+                  preIcon={<DotsHorizontalIcon />}
+                  size="small"
+                  hideLabel
+                />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <ViewAPIKeyDialog
+                  apiKeyId={cell.row.original.id}
+                  name={cell.row.original.name}
+                />
+                <DeleteAPIKeyDialog
+                  name={cell.row.original.name}
+                  apiKeyId={cell.row.original.id}
+                />
+              </DropdownMenuContent>
+            </DropdownMenu>
+          );
+        },
+      },
+    ],
+    [t]
+  );
+
   const apiKeys = useMemo(() => {
     if (data?.status === 200) {
       return data.body.apiKeys;
@@ -265,6 +305,7 @@ function APIKeysPage() {
 
   return (
     <DashboardPageLayout
+      encapsulatedFullHeight
       title="API Keys"
       actions={
         <>
@@ -272,30 +313,22 @@ function APIKeysPage() {
         </>
       }
     >
-      {(!apiKeys || apiKeys.length === 0) && offset === 0 ? (
-        <LoadingEmptyStatusComponent
-          emptyMessage="No API keys found"
-          emptyAction={<CreateAPIKeyDialog />}
-          isLoading={!apiKeys}
-          loadingMessage="Loading API keys"
-          isError={isError}
+      <DashboardPageSection fullHeight>
+        <DataTable
+          isLoading={isFetching}
+          limit={limit}
+          offset={offset}
+          hasNextPage={data?.body.hasNextPage}
+          onSetOffset={setOffset}
+          showPagination
+          autofitHeight
+          errorMessage={isError ? t('errorMessage') : undefined}
+          loadingText={t('loadingMessage')}
+          onLimitChange={setLimit}
+          columns={apiKeysColumns}
+          data={apiKeys || []}
         />
-      ) : (
-        <DashboardPageSection>
-          <DataTable
-            isLoading={isFetching}
-            limit={limit}
-            offset={offset}
-            hasNextPage={data?.body.hasNextPage}
-            onSetOffset={setOffset}
-            showPagination
-            autofitHeight
-            onLimitChange={setLimit}
-            columns={apiKeysColumns}
-            data={apiKeys || []}
-          />
-        </DashboardPageSection>
-      )}
+      </DashboardPageSection>
     </DashboardPageLayout>
   );
 }

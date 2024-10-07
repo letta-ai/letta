@@ -31,18 +31,22 @@ export function ProjectLayoutInner(props: ProjectLayoutInnerProps) {
       projectTitle={<ProjectAvatar />}
       navigationItems={[
         {
+          id: 'home',
           label: t('nav.home'),
           href: `/projects/${projectSlug}`,
         },
         {
+          id: 'templates',
           label: t('nav.templates'),
           href: `/projects/${projectSlug}/templates`,
         },
         {
+          id: 'agents',
           label: t('nav.agents'),
           href: `/projects/${projectSlug}/agents`,
         },
         {
+          id: 'settings',
           label: t('nav.settings'),
           href: `/projects/${projectSlug}/settings`,
         },

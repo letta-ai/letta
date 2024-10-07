@@ -35,15 +35,17 @@ interface NavButtonProps {
   href: string;
   preload?: boolean;
   label: string;
+  id: string;
   icon?: React.ReactNode;
 }
 
 function NavButton(props: NavButtonProps) {
-  const { href, preload, label, icon } = props;
+  const { href, preload, label, id, icon } = props;
   const pathname = usePathname();
 
   return (
     <Button
+      data-testid={`nav-button-${id}`}
       preload={preload}
       active={pathname === href}
       href={href}
@@ -67,7 +69,14 @@ function AdminNav() {
     return null;
   }
 
-  return <NavButton href="/admin" label={t('nav.admin')} icon={<BirdIcon />} />;
+  return (
+    <NavButton
+      id="admi"
+      href="/admin"
+      label={t('nav.admin')}
+      icon={<BirdIcon />}
+    />
+  );
 }
 
 function MainNavigationItems() {
@@ -92,16 +101,19 @@ function MainNavigationItems() {
         {
           label: t('nav.projects'),
           href: '/projects',
+          id: 'projects',
           icon: <FolderOutputIcon />,
         },
         {
           label: t('nav.apiKeys'),
           href: '/api-keys',
+          id: 'api-keys',
           icon: <KeySquareIcon />,
         },
         {
           label: t('nav.dataSources'),
           href: '/data-sources',
+          id: 'data-sources',
           icon: <DatabaseIcon />,
         },
       ];
@@ -147,6 +159,7 @@ function MainNavigationItems() {
         <VStack gap="small">
           {navItems.map((item) => (
             <NavButton
+              id={item.id}
               key={item.href}
               href={item.href}
               label={item.label}
@@ -162,9 +175,15 @@ function MainNavigationItems() {
 function SecondaryMenuItems() {
   return (
     <VStack paddingX="small" gap="small">
-      <NavButton href="/settings" label="Settings" icon={<CogIcon />} />
+      <NavButton
+        id="settings"
+        href="/settings"
+        label="Settings"
+        icon={<CogIcon />}
+      />
       <AdminNav />
       <NavButton
+        id="sign-out"
         preload={false}
         href="/signout"
         label="Sign Out"

@@ -54,6 +54,7 @@ async function DataSourcePageLayout(props: ProjectPageWrapperProps) {
         }
         navigationItems={[
           {
+            id: 'source-info',
             label: 'Source Info',
             href: `/data-sources/${dataSourceId}`,
           },
