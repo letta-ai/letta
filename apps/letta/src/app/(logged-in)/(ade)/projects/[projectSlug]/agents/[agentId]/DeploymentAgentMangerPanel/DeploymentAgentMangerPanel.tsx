@@ -18,12 +18,14 @@ import { DeployAgentUsageInstructions } from '$letta/client/code-reference/Deplo
 import { z } from 'zod';
 import { nicelyFormattedDateAndTime } from '@letta-web/helpful-client-utils';
 import { useCurrentAgent } from '../hooks';
+import { useTranslations } from 'next-intl';
 
 function StageAndDeployDialog() {
   const { id: agentTemplateId } = useCurrentAgent();
   const { id: projectId } = useCurrentProject();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
+  const t = useTranslations('ADE/DeploymentAgentMangerPanel');
 
   const { mutate, isPending } =
     webOriginSDKApi.agents.versionAgentTemplate.useMutation({
@@ -51,7 +53,7 @@ function StageAndDeployDialog() {
       onOpenChange={setOpen}
       isOpen={open}
       testId="stage-agent-dialog"
-      title="Are you sure you want to version your agent?"
+      title={t('StageAndDeployDialog.title')}
       onConfirm={handleVersionNewAgent}
       isConfirmBusy={isPending}
       trigger={
@@ -59,14 +61,11 @@ function StageAndDeployDialog() {
           data-testid="stage-new-version-button"
           color="secondary"
           size="small"
-          label="Create a new version"
+          label={t('StageAndDeployDialog.trigger')}
         />
       }
     >
-      <VStack gap="form">
-        This creates a version of your agent template that is immutable and can
-        be used to deploy agents. Are you sure you want to proceed?
-      </VStack>
+      <VStack gap="form">{t('StageAndDeployDialog.details')}</VStack>
     </Dialog>
   );
 }
@@ -81,11 +80,13 @@ interface DeployedAgentTemplateCardProps {
 }
 
 function DeployedAgentTemplateCard(props: DeployedAgentTemplateCardProps) {
-  const { version, index, agentKey, createdAt } = props;
+  const { version, index, createdAt } = props;
   const { slug: projectSlug, id: currentProjectId } = useCurrentProject();
   const { name } = useCurrentAgent();
   const [showDeploymentInstructions, setShowDeploymentInstructions] =
     React.useState(false);
+
+  const t = useTranslations('ADE/DeploymentAgentMangerPanel');
 
   return (
     <Card>
@@ -97,16 +98,21 @@ function DeployedAgentTemplateCard(props: DeployedAgentTemplateCardProps) {
           justify="spaceBetween"
         >
           <div>
-            <Badge color="primary" content={`Release #${version}`} />
+            <Badge
+              color="primary"
+              content={t('DeployedAgentTemplateCard.release', { version })}
+            />
           </div>
           <Typography color="muted">
-            Created at {nicelyFormattedDateAndTime(createdAt)}
+            {t('DeployedAgentTemplateCard.createdAt', {
+              date: nicelyFormattedDateAndTime(createdAt),
+            })}
           </Typography>
         </HStack>
         <HStack>
           <RawInput
             fullWidth
-            label="Version Tag"
+            label={t('DeployedAgentTemplateCard.versionTag')}
             value={`${name}:${version}`}
             readOnly
             allowCopy
@@ -121,15 +127,14 @@ function DeployedAgentTemplateCard(props: DeployedAgentTemplateCardProps) {
                 setShowDeploymentInstructions((v) => !v);
               }}
               active={showDeploymentInstructions}
-              label="Usage Instructions"
+              label={t('DeployedAgentTemplateCard.usageInstructions')}
               data-testid={`show-deployment-instructions-${index}`}
             />
             <Button
-              target="_blank"
               color="tertiary"
               size="small"
-              label="Deployed Agents"
-              href={`/projects/${projectSlug}/deployments?stagingAgentKey=${agentKey}`}
+              label={t('DeployedAgentTemplateCard.deployedAgents')}
+              href={`/projects/${projectSlug}/agents?template=${name}:${version}`}
             />
           </HStack>
         </HStack>
@@ -175,6 +180,7 @@ export function DeploymentAgentMangerPanel() {
       },
     });
 
+  const t = useTranslations('ADE/DeploymentAgentMangerPanel');
   const deployedAgentTemplates = useMemo(() => {
     if (!data) {
       return null;
@@ -194,7 +200,7 @@ export function DeploymentAgentMangerPanel() {
         {!deployedAgentTemplates || deployedAgentTemplates.length === 0 ? (
           <LoadingEmptyStatusComponent
             isLoading={!deployedAgentTemplates}
-            emptyMessage="You haven't staged this agent yet. Click the button above to deploy your agent template."
+            emptyMessage={t('emptyMessage')}
           />
         ) : (
           <VStack>
@@ -208,7 +214,7 @@ export function DeploymentAgentMangerPanel() {
             ))}
             {hasNextPage && (
               <Button
-                label="Load more agents"
+                label={t('loadMoreVersions')}
                 onClick={() => {
                   void fetchNextPage();
                 }}

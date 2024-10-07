@@ -174,6 +174,7 @@ const ListAgentsQuerySchema = z.object({
   project_id: z.string().optional(),
   by_version: z.string().optional(),
   name: z.string().optional(),
+  search: z.string().optional(),
   limit: z.number().optional(),
   offset: z.number().optional(),
 });

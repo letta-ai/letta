@@ -210,7 +210,7 @@ function ViewAPIKeyDialog(props: ViewAPIKeyDialogProps) {
       testId={`view-api-key-dialog:${name}`}
       trigger={
         <DropdownMenuLabel
-          data-testId={`view-api-key-button:${name}`}
+          data-testid={`view-api-key-button:${name}`}
           text={t('viewApiKeyDialog.trigger')}
         />
       }
@@ -219,7 +219,7 @@ function ViewAPIKeyDialog(props: ViewAPIKeyDialogProps) {
       <RawInput
         allowCopy
         fullWidth
-        data-testId={`view-api-key-input:${name}`}
+        data-testid={`view-api-key-input:${name}`}
         label={t('viewApiKeyDialog.label')}
         value={data?.body.apiKey}
         readOnly

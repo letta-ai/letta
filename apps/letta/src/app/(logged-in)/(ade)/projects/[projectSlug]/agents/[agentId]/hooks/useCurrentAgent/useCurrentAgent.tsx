@@ -17,7 +17,7 @@ export function useCurrentAgent() {
 
   return {
     ...agent,
-    agentName,
+    name: agentName,
     id: agentId,
   };
 }

@@ -341,7 +341,7 @@ describe('agentsRouter', () => {
         organizationId: 'test-org-id',
         projectId: 'test-project-id',
         agentTemplateId: 'test-template-id',
-        id: 'test-template-id',
+        id: 'deployed-test-template-id',
         version: '23',
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -407,7 +407,7 @@ describe('agentsRouter', () => {
         organizationId: 'test-org-id',
         id: 'test-agent-id',
         projectId: 'test-project-id',
-        deployedAgentTemplateId: 'test-template-id',
+        deployedAgentTemplateId: 'deployed-test-template-id',
         key: expect.any(String),
         internalAgentCountId: 1,
       });

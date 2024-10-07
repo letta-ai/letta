@@ -126,6 +126,7 @@ function ToggleGroupWrapper(props: ToggleGroupProps) {
         {items.map((item) => (
           <MaybeTooltip
             asChild
+            key={item.value}
             content={item.label}
             renderTooltip={!!item.hideLabel}
           >
