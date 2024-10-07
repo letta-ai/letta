@@ -270,6 +270,13 @@ export function makeInput<T>(
   return forwardRef<any, MakeInputProps<T>>(InputWrapper);
 }
 
+export function extractAndRemoveInputProps<T>(
+  props: T & { label?: string; hideLabel?: boolean }
+) {
+  const { label, hideLabel, ...rest } = props;
+  return rest;
+}
+
 export function makeRawInput<T>(
   Input: React.ComponentType<T>,
   componentName: string,

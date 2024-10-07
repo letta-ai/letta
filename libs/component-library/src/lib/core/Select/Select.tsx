@@ -70,7 +70,7 @@ const overridenComponents = {
   Option: ({ children, ...props }) => (
     // @ts-expect-error yest
     <components.Option {...props}>
-      <HStack data-testId={`select-box-option-${props.data.value}`}>
+      <HStack data-testid={`select-box-option-${props.data.value}`}>
         {children}
         {props.data.badge}
       </HStack>

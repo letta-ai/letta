@@ -24,12 +24,17 @@ import {
   RawInput,
 } from '@letta-web/component-library';
 import { SearchIcon } from 'lucide-react';
-import { webApi, webApiQueryKeys } from '$letta/client';
+import {
+  webApi,
+  webApiQueryKeys,
+  webOriginSDKApi,
+  webOriginSDKQueryKeys,
+} from '$letta/client';
 import { useCurrentProject } from '../hooks';
 import { usePathname, useSearchParams } from 'next/navigation';
 import type { ColumnDef } from '@tanstack/react-table';
-import type { AgentType } from '$letta/web-api/contracts';
 import { useDebouncedValue } from '@mantine/hooks';
+import type { AgentState } from '@letta-web/letta-agents-api';
 import { useAgentsServiceGetAgent } from '@letta-web/letta-agents-api';
 import { useRouter } from 'next/navigation';
 import { Messages } from '$letta/client/components';
@@ -56,18 +61,18 @@ function AgentMessagesList(props: AgentMessagesListProps) {
 }
 
 interface DeployedAgentViewProps {
-  agent: AgentType;
+  agent: AgentState;
   onClose: () => void;
 }
 
 function DeployedAgentView(props: DeployedAgentViewProps) {
   const { agent, onClose } = props;
-  const { key } = agent;
+  const { name } = agent;
   const { slug: currentProjectSlug } = useCurrentProject();
   const t = useTranslations('projects/(projectSlug)/agents/page');
 
   const { data } = useAgentsServiceGetAgent({
-    agentId: agent.id,
+    agentId: agent.id || '',
   });
 
   return (
@@ -99,7 +104,7 @@ function DeployedAgentView(props: DeployedAgentViewProps) {
           justify="spaceBetween"
         >
           <Typography align="left" bold variant="heading4">
-            {key}
+            {name}
           </Typography>
           <HStack>
             <Button
@@ -138,7 +143,7 @@ function DeployedAgentView(props: DeployedAgentViewProps) {
                   {/*</HStack>*/}
                 </VStack>
               </Card>
-              <AgentMessagesList agentId={agent.id} />
+              <AgentMessagesList agentId={agent.id || ''} />
             </VStack>
           )}
         </VStack>
@@ -153,10 +158,9 @@ interface DeployedAgentListProps {
 }
 
 function DeployedAgentList(props: DeployedAgentListProps) {
-  const { id: currentProjectId } = useCurrentProject();
   const [limit, setLimit] = useState(20);
 
-  const [selectedAgent, setSelectedAgent] = useState<AgentType>();
+  const [selectedAgent, setSelectedAgent] = useState<AgentState>();
   const { search, filterBy } = props;
   const [offset, setOffset] = useState(0);
   const t = useTranslations('projects/(projectSlug)/agents/page');
@@ -165,28 +169,24 @@ function DeployedAgentList(props: DeployedAgentListProps) {
     setOffset(0);
   }, [search]);
 
-  const { data } = webApi.projects.getDeployedAgents.useQuery({
-    queryKey: webApiQueryKeys.projects.getDeployedAgentsWithSearch(
-      currentProjectId,
-      {
-        search: search,
-        deployedAgentTemplateVersion: filterBy?.value,
-        limit,
-        offset,
-      }
-    ),
+  const { data } = webOriginSDKApi.agents.listAgents.useQuery({
+    queryKey: webOriginSDKQueryKeys.agents.listAgentsWithSearch({
+      name: search,
+      by_version: filterBy?.value,
+      limit,
+      offset,
+    }),
     queryData: {
       query: {
         search: search,
-        deployedAgentTemplateVersion: filterBy?.value,
+        by_version: filterBy?.value,
         offset,
         limit,
       },
-      params: { projectId: currentProjectId },
     },
   });
 
-  const DeployedAgentColumns: Array<ColumnDef<AgentType>> = useMemo(
+  const DeployedAgentColumns: Array<ColumnDef<AgentState>> = useMemo(
     () => [
       {
         header: t('table.columns.id'),
@@ -205,7 +205,7 @@ function DeployedAgentList(props: DeployedAgentListProps) {
   );
 
   const agents = useMemo(() => {
-    return data?.body?.agents || [];
+    return data?.body || [];
   }, [data]);
 
   return (
@@ -219,7 +219,7 @@ function DeployedAgentList(props: DeployedAgentListProps) {
         minHeight={400}
         limit={limit}
         onLimitChange={setLimit}
-        hasNextPage={data?.body?.hasNextPage}
+        hasNextPage={data?.body.length === limit}
         showPagination
         offset={offset}
         onSetOffset={setOffset}
@@ -263,8 +263,9 @@ function FilterByDeployedAgentTemplateComponent(
   const params = useSearchParams();
 
   const initialFilter = useMemo(() => {
-    const value = params.get('stagingAgentKey');
-    const label = params.get('stagingAgentKey');
+    const version = params.get('template');
+    const value = version;
+    const label = version;
 
     if (value && label) {
       return { value, label };
@@ -279,17 +280,25 @@ function FilterByDeployedAgentTemplateComponent(
 
   const { data } = webApi.projects.getProjectDeployedAgentTemplates.useQuery({
     queryKey:
-      webApiQueryKeys.projects.getProjectDeployedAgentTemplates(
-        currentProjectId
+      webApiQueryKeys.projects.getProjectDeployedAgentTemplatesWithSearch(
+        currentProjectId,
+        {
+          includeAgentTemplateInfo: true,
+        }
       ),
-    queryData: { params: { projectId: currentProjectId }, query: {} },
+    queryData: {
+      params: { projectId: currentProjectId },
+      query: {
+        includeAgentTemplateInfo: true,
+      },
+    },
   });
 
   const handleLoadOptions = useCallback(
     async (query: string) => {
       const response =
         await webApi.projects.getProjectDeployedAgentTemplates.query({
-          query: { search: query },
+          query: { search: query, includeAgentTemplateInfo: true },
           params: { projectId: currentProjectId },
         });
 
@@ -299,10 +308,10 @@ function FilterByDeployedAgentTemplateComponent(
 
       return [
         ...response.body.deployedAgentTemplates.map((agent) => ({
-          label: agent.id,
-          value: agent.id,
+          label: `${agent.testingAgentName}:${agent.version}`,
+          value: `${agent.testingAgentName}:${agent.version}`,
         })),
-        { label: t('anyAgent'), value: '' },
+        { label: t('anyVersion'), value: '' },
       ];
     },
     [currentProjectId, t]
@@ -312,7 +321,7 @@ function FilterByDeployedAgentTemplateComponent(
     const nextURLSearchParams = new URLSearchParams();
 
     if (filterBy) {
-      nextURLSearchParams.set('stagingAgentKey', filterBy.value);
+      nextURLSearchParams.set('template', filterBy.value);
     }
 
     router.replace(`${pathname}?${nextURLSearchParams.toString()}`);
@@ -330,7 +339,9 @@ function FilterByDeployedAgentTemplateComponent(
         hasInitialFilter = true;
       }
 
-      return { label: agent.id, value: agent.id };
+      const version = `${agent.testingAgentName}:${agent.version}`;
+
+      return { label: version, value: version };
     });
 
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
@@ -338,10 +349,10 @@ function FilterByDeployedAgentTemplateComponent(
       arr.unshift(initialFilter);
     }
 
-    arr.unshift({ label: '(Any Agent)', value: '' });
+    arr.unshift({ label: t('anyVersion'), value: '' });
 
     return arr;
-  }, [data?.body, initialFilter]);
+  }, [data?.body, initialFilter, t]);
 
   if (!defaultOptions) {
     return (

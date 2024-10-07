@@ -16,8 +16,8 @@ import {
   deployedAgentTemplates,
   organizationPreferences,
 } from '@letta-web/database';
-import { and, desc, eq } from 'drizzle-orm';
 import { createProject } from '$letta/web-api/router';
+import { and, desc, eq, like } from 'drizzle-orm';
 import { findUniqueAgentTemplateName } from '$letta/server';
 import {
   isTemplateNameAPremadeAgentTemplate,
@@ -318,7 +318,7 @@ export async function createAgent(
       projectId: agentTemplate.projectId,
       key,
       internalAgentCountId: nextInternalAgentCountId,
-      deployedAgentTemplateId: agentTemplate.id,
+      deployedAgentTemplateId: agentTemplateIdToCopy,
       organizationId,
     });
 
@@ -719,6 +719,7 @@ export async function listAgents(
     template,
     by_version,
     name,
+    search,
     limit = 5,
     offset = 0,
   } = req.query;
@@ -766,6 +767,10 @@ export async function listAgents(
 
   if (project_id) {
     queryBuilder.push(eq(deployedAgents.projectId, project_id));
+  }
+
+  if (search) {
+    queryBuilder.push(like(deployedAgents.key, `%${search}%`));
   }
 
   if (by_version) {

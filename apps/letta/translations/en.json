@@ -150,10 +150,10 @@
       "searching": "Searching agents...",
       "loading": "Loading agents..."
     },
-    "anyAgent": "(Any Agent)",
+    "anyVersion": "(Any Version)",
     "searchDropdown": {
-      "label": "from the deployed agent template:",
-      "placeholder": "Deployed Agent Template"
+      "label": "from version:",
+      "placeholder": "Template version"
     },
     "search": {
       "placeholder": "Search agents by name",
@@ -231,5 +231,21 @@
       "description": "Provide a descriptive name for identifying for later use",
       "label": "Name"
     }
+  },
+  "ADE/DeploymentAgentMangerPanel": {
+    "StageAndDeployDialog": {
+      "title": "Are you sure you want to version your template?",
+      "trigger": "Create a new version",
+      "details": "This creates a version of your agent template that is immutable and can be used to deploy agents. Are you sure you want to proceed?"
+    },
+    "DeployedAgentTemplateCard": {
+      "release": "Release #{version}",
+      "createdAt": "Created at {date}",
+      "versionTag": "Version Tag",
+      "usageInstructions": "Usage Instructions",
+      "deployedAgents": "Deployed Agents"
+    },
+    "emptyMessage": "You haven't versioned this template yet. Click the button above to create a version of your agent template.",
+    "loadMoreVersions": "Load more versions"
   }
 }
