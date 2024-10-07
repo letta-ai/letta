@@ -90,7 +90,8 @@ function ForkAgentDialog() {
   const { id: agentTemplateId } = useCurrentAgent();
   const { push } = useRouter();
   const { id: projectId, slug: projectSlug } = useCurrentProject();
-  const { mutate, isPending } = webApi.projects.forkAgentTemplate.useMutation();
+  const { mutate, isPending } =
+    webApi.agentTemplates.forkAgentTemplate.useMutation();
 
   const handleForkAgent = useCallback(() => {
     mutate(
