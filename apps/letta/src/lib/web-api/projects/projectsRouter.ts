@@ -4,16 +4,10 @@ import {
   deployedAgents,
   projects,
   deployedAgentTemplates,
-  agentTemplates,
 } from '@letta-web/database';
-import {
-  getUserOrganizationIdOrThrow,
-  getUserOrThrow,
-} from '$letta/server/auth';
+import { getUserOrganizationIdOrThrow } from '$letta/server/auth';
 import { eq, and, like, desc, count } from 'drizzle-orm';
 import type { contracts, projectsContract } from '$letta/web-api/contracts';
-import { capitalize } from 'lodash';
-import { copyAgentById } from '$letta/sdk';
 import { generateSlug } from '$letta/server';
 
 type ResponseShapes = ServerInferResponses<typeof projectsContract>;
@@ -223,56 +217,6 @@ export async function getProjectDeployedAgentTemplates(
   };
 }
 
-type GetProjectDeployedAgentTemplateRequest = ServerInferRequest<
-  typeof contracts.projects.getProjectDeployedAgentTemplate
->;
-
-type GetProjectDeployedAgentTemplateResponse = ServerInferResponses<
-  typeof contracts.projects.getProjectDeployedAgentTemplate
->;
-
-export async function getProjectDeployedAgentTemplate(
-  req: GetProjectDeployedAgentTemplateRequest
-): Promise<GetProjectDeployedAgentTemplateResponse> {
-  const organizationId = await getUserOrganizationIdOrThrow();
-  const { projectId, deployedAgentTemplateId } = req.params;
-
-  const deployedAgentTemplate = await db.query.deployedAgentTemplates.findFirst(
-    {
-      where: and(
-        eq(deployedAgentTemplates.organizationId, organizationId),
-        eq(deployedAgentTemplates.projectId, projectId),
-        eq(deployedAgentTemplates.id, deployedAgentTemplateId)
-      ),
-      columns: {
-        id: true,
-        agentTemplateId: true,
-        createdAt: true,
-        updatedAt: true,
-        version: true,
-      },
-    }
-  );
-
-  if (!deployedAgentTemplate) {
-    return {
-      status: 404,
-      body: {},
-    };
-  }
-
-  return {
-    status: 200,
-    body: {
-      id: deployedAgentTemplate.id,
-      agentTemplateId: deployedAgentTemplate.agentTemplateId,
-      version: deployedAgentTemplate.version,
-      createdAt: deployedAgentTemplate.createdAt.toISOString(),
-      updatedAt: deployedAgentTemplate.updatedAt.toISOString(),
-    },
-  };
-}
-
 type GetProjectDeployedAgentsRequest = ServerInferRequest<
   typeof contracts.projects.getDeployedAgents
 >;
@@ -331,154 +275,6 @@ export async function getDeployedAgents(
           updatedAt: agent.updatedAt.toISOString(),
         })),
       hasNextPage: existingDeployedAgentTemplateCount.length === limit + 1,
-    },
-  };
-}
-
-type GetProjectAgentTemplateRequest = ServerInferRequest<
-  typeof contracts.projects.getTestingAgentByIdOrName
->;
-
-type GetProjectAgentTemplateResponse = ServerInferResponses<
-  typeof contracts.projects.getTestingAgentByIdOrName
->;
-
-export async function getTestingAgentByIdOrName(
-  req: GetProjectAgentTemplateRequest
-): Promise<GetProjectAgentTemplateResponse> {
-  const organizationId = await getUserOrganizationIdOrThrow();
-  const { lookupValue } = req.params;
-  const { lookupBy } = req.query;
-
-  const query = [eq(agentTemplates.organizationId, organizationId)];
-
-  if (lookupBy === 'name') {
-    query.push(eq(agentTemplates.name, lookupValue));
-  } else {
-    query.push(eq(agentTemplates.id, lookupValue));
-  }
-
-  const testingAgent = await db.query.agentTemplates.findFirst({
-    where: and(...query),
-    columns: {
-      id: true,
-      name: true,
-      updatedAt: true,
-    },
-  });
-
-  if (!testingAgent) {
-    return {
-      status: 404,
-      body: {},
-    };
-  }
-
-  return {
-    status: 200,
-    body: {
-      id: testingAgent.id,
-      name: testingAgent.name,
-      updatedAt: testingAgent.updatedAt.toISOString(),
-    },
-  };
-}
-
-type GetDeployedAgentsCountByDeployedAgentTemplateRequest = ServerInferRequest<
-  typeof contracts.projects.getDeployedAgentsCountByDeployedAgentTemplate
->;
-
-type GetDeployedAgentsCountByDeployedAgentTemplateResponse =
-  ServerInferResponses<
-    typeof contracts.projects.getDeployedAgentsCountByDeployedAgentTemplate
-  >;
-
-export async function getDeployedAgentsCountByDeployedAgentTemplate(
-  req: GetDeployedAgentsCountByDeployedAgentTemplateRequest
-): Promise<GetDeployedAgentsCountByDeployedAgentTemplateResponse> {
-  const organizationId = await getUserOrganizationIdOrThrow();
-  const { projectId } = req.params;
-  const { deployedAgentTemplateId } = req.query;
-
-  const [result] = await db
-    .select({ count: count() })
-    .from(deployedAgents)
-    .where(
-      and(
-        eq(deployedAgents.organizationId, organizationId),
-        eq(deployedAgents.projectId, projectId),
-        eq(deployedAgents.deployedAgentTemplateId, deployedAgentTemplateId)
-      )
-    );
-
-  return {
-    status: 200,
-    body: {
-      count: result.count,
-    },
-  };
-}
-
-type ForkAgentTemplateRequest = ServerInferRequest<
-  typeof contracts.projects.forkAgentTemplate
->;
-
-type ForkAgentTemplateResponse = ServerInferResponses<
-  typeof contracts.projects.forkAgentTemplate
->;
-
-export async function forkAgentTemplate(
-  req: ForkAgentTemplateRequest
-): Promise<ForkAgentTemplateResponse> {
-  const { agentTemplateId, projectId } = req.params;
-  const { organizationId, lettaAgentsId } = await getUserOrThrow();
-
-  const testingAgent = await db.query.agentTemplates.findFirst({
-    where: and(
-      eq(agentTemplates.organizationId, organizationId),
-      eq(agentTemplates.projectId, projectId),
-      eq(agentTemplates.id, agentTemplateId)
-    ),
-  });
-
-  if (!testingAgent) {
-    return {
-      status: 404,
-      body: {},
-    };
-  }
-
-  const copiedAgent = await copyAgentById(testingAgent.id, lettaAgentsId);
-
-  if (!copiedAgent.id) {
-    return {
-      status: 500,
-      body: {
-        message: 'Failed to copy agent',
-      },
-    };
-  }
-
-  const name = capitalize(`Forked ${testingAgent.name}`);
-
-  const [agent] = await db
-    .insert(agentTemplates)
-    .values({
-      id: copiedAgent.id,
-      projectId: testingAgent.projectId,
-      organizationId,
-      name,
-    })
-    .returning({
-      id: agentTemplates.id,
-    });
-
-  return {
-    status: 201,
-    body: {
-      id: agent.id,
-      name,
-      updatedAt: new Date().toISOString(),
     },
   };
 }
@@ -572,10 +368,6 @@ export const projectsRouter = {
   getProjectByIdOrSlug,
   createProject,
   getProjectDeployedAgentTemplates,
-  getProjectDeployedAgentTemplate,
-  getTestingAgentByIdOrName,
-  getDeployedAgentsCountByDeployedAgentTemplate,
-  forkAgentTemplate,
   updateProject,
   deleteProject,
   getDeployedAgents,

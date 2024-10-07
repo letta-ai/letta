@@ -1,5 +1,6 @@
 import { initContract } from '@ts-rest/core';
 import { z } from 'zod';
+import { ProjectAgentTemplateSchema } from '$letta/web-api/projects/projectContracts';
 
 const c = initContract();
 
@@ -43,8 +44,25 @@ export const listAgentTemplatesContract = c.query({
   },
 });
 
+/* Fork Testing Agent */
+const ForkAgentTemplateParamsSchema = z.object({
+  projectId: z.string(),
+  agentTemplateId: z.string(),
+});
+
+const forkAgentTemplateContract = c.mutation({
+  method: 'POST',
+  path: '/projects/:projectId/testing-agents/:agentTemplateId/fork',
+  pathParams: ForkAgentTemplateParamsSchema,
+  body: z.undefined(),
+  responses: {
+    201: ProjectAgentTemplateSchema,
+  },
+});
+
 export const agentTemplatesContracts = c.router({
   listAgentTemplates: listAgentTemplatesContract,
+  forkAgentTemplate: forkAgentTemplateContract,
 });
 
 export const agentTemplatesQueryClientKeys = {
