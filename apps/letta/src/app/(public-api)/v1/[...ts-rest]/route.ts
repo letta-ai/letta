@@ -15,7 +15,7 @@ import { sdkRouter } from '$letta/sdk/router';
 import { sdkContracts } from '$letta/sdk/contracts';
 
 const handler = createNextHandler(sdkContracts, sdkRouter, {
-  basePath: '',
+  basePath: '/v1',
   jsonQuery: true,
   responseValidation: false,
   handlerType: 'app-router',
@@ -64,10 +64,6 @@ const handler = createNextHandler(sdkContracts, sdkRouter, {
         });
       }
 
-      // req.content = {
-      //   middlewareData,
-      //   ...req.content,
-      // };
       req.organizationId = middlewareData.organizationId;
       req.lettaAgentsUserId = middlewareData.lettaAgentsUserId;
       req.userId = middlewareData.userId;
