@@ -15,7 +15,7 @@ import { sdkRouter } from '$letta/sdk/router';
 import { sdkContracts } from '$letta/sdk/contracts';
 
 const handler = createNextHandler(sdkContracts, sdkRouter, {
-  basePath: '/v1',
+  basePath: '',
   jsonQuery: true,
   responseValidation: false,
   handlerType: 'app-router',
