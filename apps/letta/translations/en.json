@@ -106,6 +106,25 @@
       }
     }
   },
+  "ADE/ADESidebar": {
+    "nav": {
+      "model": "Model",
+      "config": "Config",
+      "memoryBlocks": "Memory Blocks",
+      "dataSources": "Data Sources",
+      "tools": "Tools",
+      "agentSimulator": "Simulator",
+      "archivalMemories": "Memory Explorer",
+      "templateVersionManager": "Template Version Manager",
+      "distribute": "Distribute",
+      "test": "Test",
+      "configure": "Configure",
+      "base": "Base"
+    }
+  },
+  "ADE/EditMemoryBlockPanel": {
+    "title": "Edit {blockName}"
+  },
   "projects/(projectSlug)/templates/new/page": {
     "error": "An error occurred while creating the agent. Please try again or contact support.",
     "title": "Create an agent template",

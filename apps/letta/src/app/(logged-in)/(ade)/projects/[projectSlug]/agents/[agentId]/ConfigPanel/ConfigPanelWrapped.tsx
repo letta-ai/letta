@@ -218,6 +218,6 @@ function ConfigPanel() {
 export const configPanelTemplate = {
   templateId: 'agent-config',
   content: ConfigPanel,
-  title: 'Settings',
+  useGetTitle: () => 'Agent Config',
   data: z.undefined(),
 } satisfies PanelTemplate<'agent-config'>;

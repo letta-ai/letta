@@ -52,13 +52,11 @@ describe('letta', () => {
       }
     });
 
-    cy.findByTestId('edit-memory-block-0', { timeout: 10000 }).click();
+    cy.findByTestId('ade-navigate-to:customer', { timeout: 10000 }).click();
 
     cy.findByTestId('edit-memory-block-content').type(
       'They also want to be referred to as BananaMan, make sure to always call them that in every response.'
     );
-
-    cy.findByTestId('edit-memory-block-save').click();
 
     // simulate a conversation
     cy.findByTestId('ade-navigate-to:Simulator').then(($btn) => {

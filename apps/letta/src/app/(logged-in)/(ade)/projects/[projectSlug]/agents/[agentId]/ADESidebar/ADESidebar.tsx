@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useADESidebarContext, useCurrentAgent } from '../hooks';
 import type { PanelTemplate } from '@letta-web/component-library';
 import { ADESidebarButton } from '@letta-web/component-library';
@@ -16,11 +16,14 @@ import {
   BoxesIcon,
   BrainIcon,
   BrickWallIcon,
+  ChevronDown,
+  ChevronRight,
   DatabaseIcon,
   PenToolIcon,
   Settings2Icon,
 } from 'lucide-react';
 import { z } from 'zod';
+import { useTranslations } from 'next-intl';
 import { useCurrentAgentMetaData } from '../hooks/useCurrentAgentMetaData/useCurrentAgentMetaData';
 
 type PanelRegistryKeys = keyof typeof panelRegistry;
@@ -56,6 +59,47 @@ function SidebarGroup(props: SidebarGroupProps) {
   );
 }
 
+interface ADEFolderSidebarItemProps {
+  label: string;
+  templateId: PanelRegistryKeys;
+  children: React.ReactNode;
+}
+
+function ADEFolderSidebarItem(props: ADEFolderSidebarItemProps) {
+  const [open, setOpen] = useState(false);
+
+  const { label, templateId, children } = props;
+
+  const { getIsPanelTemplateActive } = usePanelManager();
+
+  const isActive = useMemo(() => {
+    return getIsPanelTemplateActive(templateId);
+  }, [getIsPanelTemplateActive, templateId]);
+
+  useEffect(() => {
+    if (isActive) {
+      setOpen(true);
+    }
+  }, [isActive]);
+
+  return (
+    <>
+      <MaybeTooltip renderTooltip={false} placement="right" content={label}>
+        <HStack fullWidth align="center" paddingX="small">
+          <ADESidebarButton
+            label={label}
+            onClick={() => {
+              setOpen(!open);
+            }}
+            icon={open ? <ChevronDown /> : <ChevronRight />}
+          />
+        </HStack>
+      </MaybeTooltip>
+      {open && <div className="ml-3">{children}</div>}
+    </>
+  );
+}
+
 interface AgentPanelSidebarItemProps<
   TPanelTemplateId extends PanelRegistryKeys
 > {
@@ -71,11 +115,11 @@ function AgentPanelSidebarItem<TPanelTemplateId extends PanelRegistryKeys>(
   props: AgentPanelSidebarItemProps<TPanelTemplateId>
 ) {
   const { label, icon, templateId, preview, id, data } = props;
-  const { getIsPanelTemplateActive } = usePanelManager();
+  const { getIsPanelIdExists } = usePanelManager();
 
   const isActive = useMemo(() => {
-    return getIsPanelTemplateActive(templateId);
-  }, [getIsPanelTemplateActive, templateId]);
+    return getIsPanelIdExists(id);
+  }, [getIsPanelIdExists, id]);
 
   return (
     <MaybeTooltip renderTooltip={false} placement="right" content={label}>
@@ -93,8 +137,40 @@ function AgentPanelSidebarItem<TPanelTemplateId extends PanelRegistryKeys>(
   );
 }
 
+function MemoryBlocksSidebar() {
+  const t = useTranslations('ADE/ADESidebar');
+  const agent = useCurrentAgent();
+
+  const memoryBlocks = useMemo(() => {
+    return Object.values(agent?.memory?.memory || {});
+  }, [agent]);
+
+  return (
+    <ADEFolderSidebarItem
+      label={t('nav.memoryBlocks')}
+      templateId="edit-memory-block"
+    >
+      {memoryBlocks.map((block) => (
+        <AgentPanelSidebarItem
+          key={block.id}
+          label={block.name || 'Unnamed Block'}
+          icon={<BrickWallIcon />}
+          templateId="edit-memory-block"
+          data={{
+            label: block.label || '',
+            name: block.name || '',
+            blockId: block.id || '',
+          }}
+          id={`memory-blocks-edit-${block.label}`}
+        />
+      ))}
+    </ADEFolderSidebarItem>
+  );
+}
+
 function AgentPageSidebar() {
   const currentAgent = useCurrentAgent();
+  const t = useTranslations('ADE/ADESidebar');
   const { isTemplate } = useCurrentAgentMetaData();
 
   return (
@@ -109,9 +185,9 @@ function AgentPageSidebar() {
       overflowX="hidden"
     >
       <VStack>
-        <SidebarGroup title="Base">
+        <SidebarGroup title={t('nav.base')}>
           <AgentPanelSidebarItem
-            label="Model"
+            label={t('nav.model')}
             icon={<BotIcon />}
             preview={currentAgent.llm_config.model}
             templateId="model-details"
@@ -119,46 +195,40 @@ function AgentPageSidebar() {
             id="model-details"
           />
           <AgentPanelSidebarItem
-            label="Config"
+            label={t('nav.config')}
             icon={<Settings2Icon />}
             templateId="agent-config"
             data={undefined}
             id="agent-config"
           />
         </SidebarGroup>
-        <SidebarGroup title="Configure">
+        <SidebarGroup title={t('nav.configure')}>
+          <MemoryBlocksSidebar />
           <AgentPanelSidebarItem
-            label="Memory Blocks"
-            icon={<BrickWallIcon />}
-            templateId="memory-blocks"
-            data={undefined}
-            id="memory-blocks"
-          />
-          <AgentPanelSidebarItem
-            label="Data Sources"
+            label={t('nav.dataSources')}
             icon={<DatabaseIcon />}
             templateId="data-sources-panel"
             data={undefined}
             id="data-sources-panel"
           />
           <AgentPanelSidebarItem
-            label="Tools"
+            label={t('nav.tools')}
             icon={<PenToolIcon />}
             templateId="tools-panel"
             data={undefined}
             id="tools-panel"
           />
         </SidebarGroup>
-        <SidebarGroup title="Test">
+        <SidebarGroup title={t('nav.test')}>
           <AgentPanelSidebarItem
-            label="Simulator"
+            label={t('nav.agentSimulator')}
             icon={<ChatBubbleIcon />}
             templateId="agent-simulator"
             data={undefined}
             id="simulator"
           />
           <AgentPanelSidebarItem
-            label="Archival Memories"
+            label={t('nav.archivalMemories')}
             icon={<BrainIcon />}
             templateId="archival-memories"
             data={{}}
@@ -168,7 +238,7 @@ function AgentPageSidebar() {
         {isTemplate && (
           <SidebarGroup title="Distribute">
             <AgentPanelSidebarItem
-              label="Template Version Manager"
+              label={t('nav.templateVersionManager')}
               icon={<BoxesIcon />}
               templateId="deployment"
               data={undefined}
@@ -184,7 +254,7 @@ function AgentPageSidebar() {
 export const agentSidebarTemplate = {
   templateId: 'sidebar',
   content: AgentPageSidebar,
-  title: 'Agent Sidebar',
+  useGetTitle: () => 'Sd',
   noTab: true,
   data: z.undefined(),
 } satisfies PanelTemplate<'sidebar'>;
