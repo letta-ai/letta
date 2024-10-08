@@ -26,6 +26,7 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 ENV NEXT_PUBLIC_CURRENT_HOST="https://app.letta.com"
+ENV NODE_ENV=production
 
 # Build the application
 RUN npm run build

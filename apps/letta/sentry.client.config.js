@@ -12,6 +12,9 @@ Sentry.init({
   // Add optional integrations for additional features
   integrations: [Sentry.replayIntegration()],
 
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+  release: process.env.TAG,
+
   // Define how likely traces are sampled. Adjust this value in production, or use tracesSampler for greater control.
   tracesSampleRate: 1,
 
