@@ -14,6 +14,7 @@ import {
   Stories,
   Source,
 } from '@storybook/blocks';
+import { NextIntlClientProvider } from 'next-intl';
 
 export const parameters: Preview = {
   decorators: [
@@ -26,11 +27,12 @@ export const parameters: Preview = {
     }),
     (Story) => (
       <div className="sb-make-dark">
-        <Story />
+        <NextIntlClientProvider locale="en" messages={{}}>
+          <Story />
+        </NextIntlClientProvider>
       </div>
     ),
   ],
-
   tags: ['autodocs'],
   parameters: {
     options: {

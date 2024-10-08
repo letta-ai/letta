@@ -28,8 +28,16 @@ function ADETextAreaPrimitive(props: ADETextAreaPrimitiveProps) {
         this.selectionEnd
       );
 
+      const scrollTop = textareaRef.current.scrollTop;
+
       barRef.current.style.visibility = 'visible';
-      barRef.current.style.top = `${caret.top - 4}px`;
+      barRef.current.style.top = `${caret.top - scrollTop - 4}px`;
+    }
+  }, []);
+
+  const hideBar = useCallback(() => {
+    if (barRef.current) {
+      barRef.current.style.visibility = 'hidden';
     }
   }, []);
 
@@ -60,6 +68,7 @@ function ADETextAreaPrimitive(props: ADETextAreaPrimitiveProps) {
         {...props}
         /* Prevents autofill tools from annoying our users */
         autoComplete="off"
+        onScroll={hideBar}
         data-lpignore="true"
         style={{ lineHeight: `${lineHeight}rem` }}
         data-form-type="other"
