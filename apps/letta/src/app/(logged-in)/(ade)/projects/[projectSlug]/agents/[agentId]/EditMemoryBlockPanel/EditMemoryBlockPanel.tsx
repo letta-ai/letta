@@ -72,8 +72,6 @@ function EditMemory(props: EditMemoryDataType) {
 
   const agent = useCurrentAgent();
 
-  console.log(agent, label);
-
   const data = useMemo(() => {
     return agent?.memory?.memory?.[label];
   }, [agent.memory?.memory, label]);
