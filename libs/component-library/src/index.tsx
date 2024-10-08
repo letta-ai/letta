@@ -102,3 +102,5 @@ export * from './lib/reusable/NiceGridDisplay/NiceGridDisplay';
 export * from './lib/ade/ADEInput/ADEInput';
 
 export * from './lib/ade/ADETextArea/ADETextArea';
+
+export * from './lib/core/Chart/Chart';
