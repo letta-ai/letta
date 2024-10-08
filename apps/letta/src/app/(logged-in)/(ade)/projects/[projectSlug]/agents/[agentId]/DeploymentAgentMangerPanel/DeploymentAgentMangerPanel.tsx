@@ -19,6 +19,7 @@ import { z } from 'zod';
 import { nicelyFormattedDateAndTime } from '@letta-web/helpful-client-utils';
 import { useCurrentAgent } from '../hooks';
 import { useTranslations } from 'next-intl';
+import type { InfiniteGetProjectDeployedAgentTemplates200Response } from '$letta/web-api/projects/projectContracts';
 
 function StageAndDeployDialog() {
   const { id: agentTemplateId } = useCurrentAgent();
@@ -29,14 +30,53 @@ function StageAndDeployDialog() {
 
   const { mutate, isPending } =
     webOriginSDKApi.agents.versionAgentTemplate.useMutation({
-      onSuccess: () => {
-        void queryClient.invalidateQueries({
-          queryKey:
-            webApiQueryKeys.projects.getProjectDeployedAgentTemplates(
-              projectId
-            ),
-          exact: false,
-        });
+      onSuccess: (response) => {
+        void queryClient.setQueriesData<
+          InfiniteGetProjectDeployedAgentTemplates200Response | undefined
+        >(
+          {
+            queryKey:
+              webApiQueryKeys.projects.getProjectDeployedAgentTemplatesWithSearch(
+                projectId,
+                {
+                  agentTemplateId: agentTemplateId,
+                }
+              ),
+            exact: true,
+          },
+          (oldData) => {
+            if (!oldData) {
+              return oldData;
+            }
+
+            const [firstPage, ...restPages] = oldData.pages;
+
+            const [_, templateAgentVersion] = response.body.version.split(':');
+
+            return {
+              ...oldData,
+              pages: [
+                {
+                  ...firstPage,
+                  body: {
+                    ...firstPage.body,
+                    deployedAgentTemplates: [
+                      {
+                        id: response.body.version,
+                        version: templateAgentVersion,
+                        createdAt: new Date().toISOString(),
+                        updatedAt: new Date().toISOString(),
+                        agentTemplateId: agentTemplateId,
+                      },
+                      ...firstPage.body.deployedAgentTemplates,
+                    ],
+                  },
+                },
+                ...restPages,
+              ],
+            };
+          }
+        );
 
         setOpen(false);
       },
@@ -76,7 +116,6 @@ interface DeployedAgentTemplateCardProps {
   version: string;
   index: number;
   createdAt: string;
-  agentKey: string;
 }
 
 function DeployedAgentTemplateCard(props: DeployedAgentTemplateCardProps) {
@@ -153,14 +192,12 @@ export function DeploymentAgentMangerPanel() {
   const { id: agentTemplateId } = useCurrentAgent();
 
   const { id: currentProjectId } = useCurrentProject();
-  const [searchValue, setSearchValue] = useState('');
   const { data, hasNextPage, fetchNextPage } =
     webApi.projects.getProjectDeployedAgentTemplates.useInfiniteQuery({
       queryKey:
         webApiQueryKeys.projects.getProjectDeployedAgentTemplatesWithSearch(
           currentProjectId,
           {
-            search: searchValue,
             agentTemplateId: agentTemplateId,
           }
         ),
@@ -191,11 +228,7 @@ export function DeploymentAgentMangerPanel() {
 
   return (
     <VStack fullHeight gap={false}>
-      <PanelBar
-        searchValue={searchValue}
-        onSearch={setSearchValue}
-        actions={<StageAndDeployDialog />}
-      />
+      <PanelBar actions={<StageAndDeployDialog />} />
       <PanelMainContent>
         {!deployedAgentTemplates || deployedAgentTemplates.length === 0 ? (
           <LoadingEmptyStatusComponent
@@ -208,8 +241,7 @@ export function DeploymentAgentMangerPanel() {
               <DeployedAgentTemplateCard
                 {...agent}
                 index={index}
-                key={agent.id}
-                agentKey={agent.id}
+                key={agent.version}
               />
             ))}
             {hasNextPage && (
