@@ -304,7 +304,7 @@ export function createPanelManager<
             for (let tab = tabPositions.length - 1; tab >= 0; tab--) {
               const panelPosition = tabPositions[tab];
 
-              if (!panelPosition) {
+              if (!panelPosition || !panelRegistry[panelPosition.templateId]) {
                 tabPositions.splice(tab, 1);
               }
             }
