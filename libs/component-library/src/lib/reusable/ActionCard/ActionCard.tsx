@@ -7,6 +7,7 @@ import type { VariantProps } from 'class-variance-authority';
 import { cva } from 'class-variance-authority';
 import { cn } from '@letta-web/core-style-config';
 import './ActionCard.scss';
+import { Tooltip } from '../../core/Tooltip/Tooltip';
 
 const actionCardVariants = cva('', {
   variants: {
@@ -53,11 +54,17 @@ export function ActionCard(props: ToggleCardProps) {
           fullWidth
           align="center"
         >
-          <VStack gap="text">
-            <HStack className="action-card-titlearea" align="center">
+          <VStack gap="text" fullWidth>
+            <HStack fullWidth className="action-card-titlearea" align="center">
               {icon}
-              <VStack gap={false} align="start">
-                <Typography bold>{title}</Typography>
+              <VStack gap={false} fullWidth align="start">
+                <HStack paddingRight fullWidth overflow="hidden">
+                  <Tooltip asChild content={title} placement="top">
+                    <Typography noWrap fullWidth overflow="ellipsis" bold>
+                      {title}
+                    </Typography>
+                  </Tooltip>
+                </HStack>
                 {props.subtitle && (
                   <Typography variant="body2" color="muted">
                     {props.subtitle}
@@ -66,7 +73,7 @@ export function ActionCard(props: ToggleCardProps) {
               </VStack>
             </HStack>
           </VStack>
-          <HStack align="center">{mainAction}</HStack>
+          {mainAction && <HStack align="center">{mainAction}</HStack>}
         </HStack>
         {description && (
           <VStack fullHeight>

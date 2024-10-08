@@ -30,6 +30,7 @@ export async function getProjects(
     columns: {
       name: true,
       id: true,
+      updatedAt: true,
       slug: true,
     },
     offset,
@@ -41,6 +42,7 @@ export async function getProjects(
     body: {
       projects: projectsList.map((project) => ({
         name: project.name,
+        updatedAt: project.updatedAt.toISOString(),
         id: project.id,
         slug: project.slug,
       })),
@@ -75,6 +77,7 @@ export async function getProjectByIdOrSlug(
     where: and(...query),
     columns: {
       name: true,
+      updatedAt: true,
       id: true,
       slug: true,
     },
@@ -90,6 +93,7 @@ export async function getProjectByIdOrSlug(
   return {
     status: 200,
     body: {
+      updatedAt: project.updatedAt.toISOString(),
       name: project.name,
       id: project.id,
       slug: project.slug,
@@ -144,6 +148,7 @@ export async function createProject(
   return {
     status: 201,
     body: {
+      updatedAt: new Date().toISOString(),
       name: name,
       id: project.id,
       slug: projectSlug,
@@ -318,6 +323,7 @@ export async function updateProject(
   return {
     status: 200,
     body: {
+      updatedAt: project.updatedAt.toISOString(),
       name: name || project.name,
       id: project.id,
       slug: project.slug,

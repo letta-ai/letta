@@ -146,6 +146,7 @@ function EditSettingsSection() {
             return {
               status: 200,
               body: {
+                updatedAt: new Date().toISOString(),
                 id: oldData.body.id,
                 name: response.body.name,
                 slug: oldData.body.slug,

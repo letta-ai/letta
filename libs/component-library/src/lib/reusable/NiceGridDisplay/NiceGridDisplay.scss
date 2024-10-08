@@ -1,0 +1,7 @@
+.nice-grid-display {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(272px, 1fr));
+  grid-gap: 16px 16px;
+  margin: 2px;
+  box-sizing: border-box;
+}

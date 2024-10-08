@@ -98,6 +98,7 @@ export * from './lib/core/Markdown/Markdown';
 
 export * from './lib/core/InlineCode/InlineCode';
 
+export * from './lib/reusable/NiceGridDisplay/NiceGridDisplay';
 export * from './lib/ade/ADEInput/ADEInput';
 
 export * from './lib/ade/ADETextArea/ADETextArea';

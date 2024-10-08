@@ -49,6 +49,7 @@
       "noProjects": "You have no projects, create one below",
       "noSearchResults": "We couldn't find any projects matching your search",
       "projectItem": {
+        "lastUpdatedAt": "Updated at {date}",
         "agents": "Agents",
         "totalMessages": "Total Messages",
         "viewButton": "View Project"
