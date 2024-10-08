@@ -13,9 +13,6 @@ import React, {
 import { Slot } from '@radix-ui/react-slot';
 import { HStack } from '../../../framing/HStack/HStack';
 import { VStack } from '../../../framing/VStack/VStack';
-import { CaretDownIcon, Cross2Icon } from '../../../icons';
-import { Typography } from '../../../core/Typography/Typography';
-import { ADEDropdownMenu } from '../../ADEDropdownMenu/ADEDropdownMenu';
 import { createPortal } from 'react-dom';
 import { cn } from '@letta-web/core-style-config';
 import './CreatePanelManager.css';
@@ -34,6 +31,12 @@ import {
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
+import {
+  GenericPanelContent,
+  GenericPanelTabBar,
+  GenericTab,
+  GenericTabRenderer,
+} from '../../_internal/Panel/Panel';
 
 export type GenericPanelTemplateId = number | string | symbol;
 
@@ -1071,54 +1074,28 @@ export function createPanelManager<
 
     const title = panelRegistry[tab.templateId].useGetTitle(tab.data);
 
+    const dropdownItems = useMemo(
+      () => [
+        {
+          label: 'Split and move right',
+          onClick: handleMoveRight,
+        },
+        {
+          label: 'Split and move down',
+          onClick: handleMoveDown,
+        },
+      ],
+      [handleMoveDown, handleMoveRight]
+    );
+
     return (
-      <HStack
-        paddingRight="small"
-        align="center"
-        position="relative"
-        className="rounded-t-lg"
-        color={isActive ? 'background' : 'background-grey'}
-      >
-        <HStack
-          as="button"
-          paddingLeft="large"
-          paddingY="xsmall"
-          className="h-full"
-          onClick={handleClickedTab}
-        >
-          <Typography noWrap>{title}</Typography>
-        </HStack>
-        <ADEDropdownMenu
-          trigger={
-            <div className="w-2 mt-[-3px]">
-              <CaretDownIcon />
-            </div>
-          }
-          items={[
-            {
-              label: 'Split and move right',
-              onClick: handleMoveRight,
-            },
-            {
-              label: 'Split and move down',
-              onClick: handleMoveDown,
-            },
-          ]}
-        />
-        <HStack as="button" onClick={handleCloseTab}>
-          <Cross2Icon className="w-4" />
-        </HStack>
-        {isActive ? (
-          <>
-            <div className="w-4 h-4 absolute bottom-0 z-[2] right-[-16px] rounded-bl-[16px] bg-background-grey pointer-events-none" />
-            <div className="w-4 h-4 absolute bottom-0 z-[1] right-[-16px] bg-background pointer-events-none" />
-            <div className="w-4 h-4 absolute bottom-0 z-[2] left-[-16px] rounded-br-[16px] bg-background-grey pointer-events-none" />
-            <div className="w-4 h-4 absolute bottom-0 z-[1] left-[-16px] bg-background pointer-events-none" />
-          </>
-        ) : (
-          <div />
-        )}
-      </HStack>
+      <GenericTab
+        isActive={isActive}
+        onClickTab={handleClickedTab}
+        onCloseTab={handleCloseTab}
+        dropdownItems={dropdownItems}
+        title={title}
+      />
     );
   }
 
@@ -1141,13 +1118,7 @@ export function createPanelManager<
     }
 
     return (
-      <HStack
-        overflowY="hidden"
-        className="min-h-[35px]"
-        overflowX="auto"
-        fullWidth
-        gap={false}
-      >
+      <GenericPanelTabBar>
         {filteredTabs.map((tab, index) => {
           return (
             <HStack gap={false} position="relative" key={tab.id}>
@@ -1176,7 +1147,7 @@ export function createPanelManager<
           className="w-full"
           moveToOnDrop={{ x, y, tab: tabs.length + 1 }}
         />
-      </HStack>
+      </GenericPanelTabBar>
     );
   }
 
@@ -1194,25 +1165,20 @@ export function createPanelManager<
     const activeTab = validTabs.find((tab) => tab.isActive);
 
     return (
-      <VStack fullHeight gap={false}>
-        <TabBar x={x} y={y} activeTabId={activeTab?.id} tabs={validTabs} />
-        <VStack color="background" collapseHeight fullWidth>
-          {validTabs.map((tab) => {
-            const PanelComponent = panelRegistry[tab.templateId].content;
+      <GenericTabRenderer
+        tabBar={
+          <TabBar x={x} y={y} activeTabId={activeTab?.id} tabs={validTabs} />
+        }
+        content={validTabs.map((tab) => {
+          const PanelComponent = panelRegistry[tab.templateId].content;
 
-            return (
-              <VStack
-                key={tab.id}
-                className={cn(tab.isActive ? 'flex' : 'hidden')}
-                fullHeight
-                fullWidth
-              >
-                <PanelComponent {...tab.data} />
-              </VStack>
-            );
-          })}
-        </VStack>
-      </VStack>
+          return (
+            <GenericPanelContent key={tab.id} isActive={tab.isActive}>
+              <PanelComponent {...tab.data} />
+            </GenericPanelContent>
+          );
+        })}
+      />
     );
   }
 

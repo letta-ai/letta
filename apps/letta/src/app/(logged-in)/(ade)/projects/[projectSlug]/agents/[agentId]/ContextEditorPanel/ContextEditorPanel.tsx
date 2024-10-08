@@ -2,7 +2,6 @@ import React, { useMemo, useState } from 'react';
 import {
   Frame,
   HStack,
-  Panel,
   PanelBar,
   RawCodeEditor,
   Typography,
@@ -88,7 +87,7 @@ export function ContextEditorPanel() {
   }, [contextWindow]);
 
   return (
-    <Panel id="context-editor" title="Context Editor" trigger={<div></div>}>
+    <>
       <PanelBar
         actions={
           <Typography noWrap variant="body2">
@@ -114,6 +113,6 @@ export function ContextEditorPanel() {
           <ContextWindowPreview contextWindow={contextWindow} />
         </Frame>
       </HStack>
-    </Panel>
+    </>
   );
 }

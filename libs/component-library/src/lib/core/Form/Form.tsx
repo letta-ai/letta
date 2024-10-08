@@ -13,6 +13,7 @@ import { forwardRef } from 'react';
 import { useId, useMemo } from 'react';
 import { HStack } from '../../framing/HStack/HStack';
 import { Typography } from '../Typography/Typography';
+import type { ArgTypes } from '@storybook/csf';
 
 export { useForm } from 'react-hook-form';
 
@@ -248,8 +249,14 @@ export function RawInputContainer(props: RawInputContainerProps) {
 type MakeInputProps<T> = InputContainerProps & T;
 type MakeRawInputProps<T> = RawInputContainerProps & T;
 
+export type MakeInputOptionsContainerType = (
+  props: PropsWithChildren<InputContainerProps>
+) => React.ReactNode;
+
 interface MakeInputOptions {
   inline?: boolean | 'reverse';
+  fullWidth?: boolean;
+  container?: MakeInputOptionsContainerType;
 }
 
 export function makeInput<T>(
@@ -258,17 +265,33 @@ export function makeInput<T>(
   options?: MakeInputOptions
 ) {
   function InputWrapper(props: MakeInputProps<T>, ref: any) {
-    return (
-      <InputContainer {...props} inline={options?.inline}>
+    const el = (
+      <InputContainer
+        {...props}
+        inline={options?.inline}
+        fullWidth={props.fullWidth || options?.fullWidth}
+      >
         <Input ref={ref} {...props} />
       </InputContainer>
     );
+
+    return options?.container
+      ? options.container({ children: el, ...props })
+      : el;
   }
 
   InputWrapper.displayName = componentName;
 
   return forwardRef<any, MakeInputProps<T>>(InputWrapper);
 }
+
+export const inputStorybookArgTypes: ArgTypes = {
+  label: { control: 'text' },
+  hideLabel: { control: 'boolean' },
+  description: { control: 'text' },
+  fullWidth: { control: 'boolean' },
+  fullHeight: { control: 'boolean' },
+};
 
 export function extractAndRemoveInputProps<T>(
   props: T & { label?: string; hideLabel?: boolean }
@@ -285,15 +308,20 @@ export function makeRawInput<T>(
   function RawInputWrapper(props: MakeRawInputProps<T>) {
     const baseId = useId();
 
-    return (
+    const el = (
       <RawInputContainer
         {...props}
         id={baseId || props.id}
         inline={options?.inline || props.inline}
+        fullWidth={props.fullWidth || options?.fullWidth}
       >
         <Input {...props} />
       </RawInputContainer>
     );
+
+    return options?.container
+      ? options.container({ children: el, ...props })
+      : el;
   }
 
   RawInputWrapper.displayName = componentName;

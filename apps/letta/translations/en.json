@@ -186,6 +186,9 @@
   "ComponentLibrary/InlineCode": {
     "copyButton": "Copy Code"
   },
+  "ComponentLibrary/ADEInput": {
+    "disabledTooltip": "This field cannot be edited"
+  },
   "local-project/layout": {
     "title": "Local Project",
     "nav": {
