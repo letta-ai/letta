@@ -10,6 +10,7 @@ Sentry.init({
 
   enabled: process.env.NODE_ENV === 'production',
   authToken: process.env.SENTRY_AUTH_TOKEN,
+  release: process.env.TAG,
 
   // Define how likely traces are sampled. Adjust this value in production, or use tracesSampler for greater control.
   tracesSampleRate: 1,
