@@ -25,6 +25,7 @@ export const PartialProjectSchema = z.object({
   name: z.string(),
   id: z.string(),
   slug: z.string(),
+  updatedAt: z.string(),
 });
 
 export type PartialProjectType = z.infer<typeof PartialProjectSchema>;

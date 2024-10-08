@@ -101,3 +101,5 @@ export * from './lib/reusable/ChatInput/ChatInput';
 export * from './lib/core/Markdown/Markdown';
 
 export * from './lib/core/InlineCode/InlineCode';
+
+export * from './lib/reusable/NiceGridDisplay/NiceGridDisplay';

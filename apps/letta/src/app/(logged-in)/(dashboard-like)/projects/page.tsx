@@ -15,8 +15,10 @@ import {
   Input,
   FormProvider,
   DashboardPageSection,
-  ActionCard,
   RawCodeEditor,
+  NiceGridDisplay,
+  Card,
+  Tooltip,
 } from '@letta-web/component-library';
 import { webApi, webApiQueryKeys } from '$letta/client';
 import { useDebouncedValue } from '@mantine/hooks';
@@ -28,6 +30,7 @@ import { useTranslations } from 'next-intl';
 import { ComputerIcon } from 'lucide-react';
 import { getIsLocalServiceOnline } from '$letta/client/local-project-manager/getIsLocalServerOnline/getIsLocalServerOnline';
 import { LOCAL_PROJECT_SERVER_PORT } from '$letta/constants';
+import { nicelyFormattedDateAndTime } from '@letta-web/helpful-client-utils';
 
 function ConnectToLocalProjectDialog() {
   const t = useTranslations('projects/page');
@@ -208,39 +211,43 @@ function ProjectsList(props: ProjectsListProps) {
 
   return (
     <>
-      <HStack wrap>
+      <NiceGridDisplay>
         {data.body.projects.map((project) => (
-          <ActionCard
-            fullWidthOnMobile
-            size="medium"
-            key={project.id}
-            title={project.name}
-            icon={<Avatar name={project.name} />}
-          >
-            <VStack paddingY="small" rounded>
-              <HStack justify="spaceBetween">
-                <Typography bold>
-                  {t('projectsList.projectItem.agents')}
-                </Typography>{' '}
-                <Typography>N/A</Typography>
-              </HStack>
-              <HStack justify="spaceBetween">
-                <Typography bold>
-                  {t('projectsList.projectItem.totalMessages')}
-                </Typography>{' '}
-                <Typography>N/A</Typography>
-              </HStack>
+          <Card key={project.id}>
+            <VStack fullWidth>
+              <VStack fullWidth>
+                <Avatar name={project.name} />
+                <VStack gap="text">
+                  <Tooltip asChild content={project.name}>
+                    <Typography
+                      align="left"
+                      noWrap
+                      fullWidth
+                      overflow="ellipsis"
+                    >
+                      {project.name}
+                    </Typography>
+                  </Tooltip>
+                  <HStack>
+                    <Typography variant="body2" color="muted">
+                      {t('projectsList.projectItem.lastUpdatedAt', {
+                        date: nicelyFormattedDateAndTime(project.updatedAt),
+                      })}
+                    </Typography>
+                  </HStack>
+                </VStack>
+              </VStack>
+              <Button
+                color="tertiary"
+                align="center"
+                fullWidth
+                label={t('projectsList.projectItem.viewButton')}
+                href={`/projects/${project.slug}`}
+              />
             </VStack>
-            <Button
-              color="tertiary"
-              align="center"
-              fullWidth
-              label={t('projectsList.projectItem.viewButton')}
-              href={`/projects/${project.slug}`}
-            />
-          </ActionCard>
+          </Card>
         ))}
-      </HStack>
+      </NiceGridDisplay>
     </>
   );
 }

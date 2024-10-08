@@ -19,6 +19,7 @@ export function useCurrentProject(): PartialProjectType {
 
   if (!data) {
     return {
+      updatedAt: '',
       id: '',
       name: '',
       slug: '',
