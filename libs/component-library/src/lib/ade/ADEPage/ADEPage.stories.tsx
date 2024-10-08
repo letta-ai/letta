@@ -3,7 +3,7 @@ import { ADEPage } from './ADEPage';
 
 const meta: Meta<typeof ADEPage> = {
   component: ADEPage,
-  title: 'ade/ADEPage',
+  title: 'ade/Structural/ADEPage',
 };
 
 export default meta;

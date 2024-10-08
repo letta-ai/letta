@@ -13,7 +13,7 @@ interface ADEDropdownMenuItem {
   icon?: React.ReactNode;
 }
 
-interface ADEDropdownMenuProps {
+export interface ADEDropdownMenuProps {
   items: ADEDropdownMenuItem[];
   trigger: React.ReactNode;
 }

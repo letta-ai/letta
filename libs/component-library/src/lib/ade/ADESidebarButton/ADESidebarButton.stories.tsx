@@ -3,7 +3,7 @@ import { ADESidebarButton } from './ADESidebarButton';
 
 const meta: Meta<typeof ADESidebarButton> = {
   component: ADESidebarButton,
-  title: 'ade/ADESidebarButton',
+  title: 'ade/Structural/ADESidebarButton',
 };
 
 export default meta;

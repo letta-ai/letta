@@ -1,11 +1,11 @@
 import { z } from 'zod';
 import type { PanelTemplate } from '@letta-web/component-library';
-import { RawTextArea } from '@letta-web/component-library';
 import {
-  LettaLoaderPanel,
-  PanelMainContent,
-  RawInput,
+  RawADEInput,
+  RawADETextArea,
+  VStack,
 } from '@letta-web/component-library';
+import { LettaLoaderPanel } from '@letta-web/component-library';
 import { useTranslations } from 'next-intl';
 import type { Block } from '@letta-web/letta-agents-api';
 import { useCurrentAgent, useSyncUpdateCurrentAgent } from '../hooks';
@@ -45,17 +45,18 @@ function EditMemoryForm({ block }: EditMemoryFormProps) {
   );
 
   return (
-    <PanelMainContent>
-      <RawInput disabled fullWidth label="Name" value={block.name || ''} />
-      <RawInput disabled fullWidth label="Label" value={block.label || ''} />
-      <RawTextArea
+    <VStack fullHeight gap={false}>
+      <RawADEInput disabled fullWidth label="Name" value={block.name || ''} />
+      <RawADEInput disabled fullWidth label="Label" value={block.label || ''} />
+      <RawADETextArea
+        fullHeight
         data-testid="edit-memory-block-content"
         fullWidth
         label="Content"
         onChange={handleChange}
         value={value || ''}
       />
-    </PanelMainContent>
+    </VStack>
   );
 }
 
@@ -71,8 +72,6 @@ function EditMemory(props: EditMemoryDataType) {
   const { label } = props;
 
   const agent = useCurrentAgent();
-
-  console.log(agent, label);
 
   const data = useMemo(() => {
     return agent?.memory?.memory?.[label];

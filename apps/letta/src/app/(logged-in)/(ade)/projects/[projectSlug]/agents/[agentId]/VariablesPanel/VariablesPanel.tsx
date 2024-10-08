@@ -9,7 +9,6 @@ import {
   FormField,
   FormProvider,
   Input,
-  Panel,
   PanelBar,
   RawInput,
   ToggleGroup,
@@ -345,7 +344,7 @@ function EditVariable() {
 
 export function VariablesPanel() {
   return (
-    <Panel id="variables-panel" trigger={<div></div>}>
+    <>
       <PanelRouter
         rootPageKey="variableHome"
         pages={{
@@ -353,6 +352,6 @@ export function VariablesPanel() {
           editVariable: <EditVariable />,
         }}
       />
-    </Panel>
+    </>
   );
 }

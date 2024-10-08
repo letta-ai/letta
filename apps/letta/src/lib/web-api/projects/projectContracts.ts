@@ -3,6 +3,7 @@ import { initContract } from '@ts-rest/core';
 import { z } from 'zod';
 import type { GenericSearch } from '$letta/web-api/shared/sharedContracts';
 import { GenericSearchSchema } from '$letta/web-api/shared/sharedContracts';
+import type { InfiniteData } from '@tanstack/query-core';
 
 const c = initContract();
 
@@ -130,6 +131,14 @@ const getProjectDeployedAgentTemplatesContract = c.query({
     200: ProjectDeployedAgentTemplatesResponseSchema,
   },
 });
+
+export type GetProjectDeployedAgentTemplates200Response = ServerInferResponses<
+  typeof getProjectDeployedAgentTemplatesContract,
+  200
+>;
+
+export type InfiniteGetProjectDeployedAgentTemplates200Response =
+  InfiniteData<GetProjectDeployedAgentTemplates200Response>;
 
 /* Get Agents */
 const AgentSchema = z.object({
