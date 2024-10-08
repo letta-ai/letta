@@ -7,7 +7,6 @@ import React, {
   useState,
 } from 'react';
 import type { ZodType } from 'zod';
-import type { PanelPageChildrenType } from '../Panel';
 type PageTitle = string | ((values: ZodType['_output']) => string);
 
 export type GenericPanelRouter<PageKey extends string> = Record<
@@ -52,7 +51,7 @@ export function createPageRouter<
 
   interface RouterProviderProps {
     rootPageKey: PageKeys;
-    pages: Record<PageKeys, PanelPageChildrenType>;
+    pages: Record<PageKeys, React.ReactNode>;
   }
 
   function RouterProvider(props: RouterProviderProps) {

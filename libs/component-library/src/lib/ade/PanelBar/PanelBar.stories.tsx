@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { PanelBar } from './PanelBar';
-import { For_storybook_use_only__PanelContent } from '../Panel/Panel';
 import { Button } from '../../core/Button/Button';
+import { PanelForStorybook } from '../_internal/Panel/Panel';
 
 const meta: Meta<typeof PanelBar> = {
   component: PanelBar,
@@ -57,10 +57,9 @@ export const Primary: Story = {
   decorators: [
     (Story) => {
       return (
-        // eslint-disable-next-line react/jsx-pascal-case
-        <For_storybook_use_only__PanelContent title="Panel">
+        <PanelForStorybook title="Panel Bar Demo">
           <Story />
-        </For_storybook_use_only__PanelContent>
+        </PanelForStorybook>
       );
     },
   ],

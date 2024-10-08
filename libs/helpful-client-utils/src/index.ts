@@ -64,3 +64,5 @@ export declare type ToZod<T> = IsAny<T> extends true
       T
     >
   : never;
+
+export * from './getTextareaCaretPosition/getTextareaCaretPosition';

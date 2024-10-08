@@ -3,7 +3,7 @@ import { ADEHeader } from './ADEHeader';
 
 const meta: Meta<typeof ADEHeader> = {
   component: ADEHeader,
-  title: 'ade/ADEHeader',
+  title: 'ade/Structural/ADEHeader',
 };
 
 export default meta;
