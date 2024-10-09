@@ -4,13 +4,28 @@ import type { PropsWithChildren } from 'react';
 
 type CardProps = PropsWithChildren<{
   className?: string;
+  onClick?: () => void;
 }>;
 
 export function Card(props: CardProps) {
-  const { children, className } = props;
+  const { children, onClick, className } = props;
 
   return (
-    <Frame className={className} border fullWidth padding="medium" rounded>
+    <Frame
+      as={onClick ? 'button' : 'div'}
+      onClick={(e) => {
+        if (onClick) {
+          e.stopPropagation();
+          e.preventDefault();
+          onClick();
+        }
+      }}
+      className={className}
+      border
+      fullWidth
+      padding="medium"
+      rounded
+    >
       {children}
     </Frame>
   );

@@ -102,3 +102,7 @@ export * from './lib/reusable/NiceGridDisplay/NiceGridDisplay';
 export * from './lib/ade/ADEInput/ADEInput';
 
 export * from './lib/ade/ADETextArea/ADETextArea';
+
+export * from './lib/reusable/DialogTable/DialogTable';
+
+export * from './lib/core/Spinner/Spinner';

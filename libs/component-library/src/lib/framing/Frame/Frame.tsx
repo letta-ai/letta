@@ -25,6 +25,9 @@ const frameVariants = cva('', {
     collapseHeight: {
       true: 'h-0 flex-1',
     },
+    flex: {
+      true: 'flex-1',
+    },
     color: {
       transparent: 'bg-transparent',
       background: 'bg-background text-background-content',
@@ -164,6 +167,7 @@ export const Frame = forwardRef<HTMLElement, PropsWithChildren<FrameProps>>(
       borderX,
       rounded,
       borderRight,
+      flex,
       borderLeft,
       borderTop,
       zIndex,
@@ -209,6 +213,7 @@ export const Frame = forwardRef<HTMLElement, PropsWithChildren<FrameProps>>(
       paddingBottom,
       paddingLeft,
       paddingRight,
+      flex,
       overflow,
       collapseHeight,
       overflowY,

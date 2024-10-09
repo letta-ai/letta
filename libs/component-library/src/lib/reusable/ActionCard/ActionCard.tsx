@@ -8,12 +8,16 @@ import { cva } from 'class-variance-authority';
 import { cn } from '@letta-web/core-style-config';
 import './ActionCard.scss';
 import { Tooltip } from '../../core/Tooltip/Tooltip';
+import { CaretRightIcon } from '../../icons';
 
 const actionCardVariants = cva('', {
   variants: {
     size: {
       default: '',
       medium: 'max-w-[300px]',
+    },
+    clickable: {
+      true: 'cursor-pointer hover:bg-background-greyer',
     },
     fullWidthOnMobile: {
       true: '',
@@ -38,14 +42,29 @@ interface ToggleCardProps extends VariantProps<typeof actionCardVariants> {
   mainAction?: React.ReactNode;
   description?: string;
   children?: React.ReactNode;
+  onCardClick?: () => void;
   actions?: React.ReactNode;
 }
 
 export function ActionCard(props: ToggleCardProps) {
-  const { title, icon, mainAction, children, description, actions } = props;
+  const {
+    title,
+    icon,
+    onCardClick,
+    mainAction,
+    children,
+    description,
+    actions,
+  } = props;
 
   return (
-    <Card className={cn(actionCardVariants(props), 'action-card')}>
+    <Card
+      onClick={onCardClick}
+      className={cn(
+        actionCardVariants({ ...props, clickable: !!onCardClick }),
+        'action-card'
+      )}
+    >
       <VStack fullHeight fullWidth>
         <HStack
           wrap
@@ -54,9 +73,18 @@ export function ActionCard(props: ToggleCardProps) {
           fullWidth
           align="center"
         >
-          <VStack gap="text" fullWidth>
+          <VStack gap="text" flex>
             <HStack fullWidth className="action-card-titlearea" align="center">
-              {icon}
+              {icon && (
+                <HStack
+                  align="center"
+                  justify="center"
+                  className="w-8"
+                  overflow="hidden"
+                >
+                  {icon}
+                </HStack>
+              )}
               <VStack gap={false} fullWidth align="start">
                 <HStack paddingRight fullWidth overflow="hidden">
                   <Tooltip asChild content={title} placement="top">
@@ -74,6 +102,7 @@ export function ActionCard(props: ToggleCardProps) {
             </HStack>
           </VStack>
           {mainAction && <HStack align="center">{mainAction}</HStack>}
+          {onCardClick && <CaretRightIcon className="text-xl" color="muted" />}
         </HStack>
         {description && (
           <VStack fullHeight>
