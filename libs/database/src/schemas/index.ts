@@ -303,18 +303,30 @@ export const deployedAgentRelations = relations(deployedAgents, ({ one }) => ({
   }),
 }));
 
-export const adePreferences = pgTable('ade_preferences', {
-  id: text('id')
-    .primaryKey()
-    .default(sql`gen_random_uuid()`),
-  userId: text('user_id')
-    .notNull()
-    .references(() => users.id, { onDelete: 'cascade' })
-    .notNull(),
-  displayConfig: json('display_config')
-    .$type<PanelItemPositionsMatrix<GenericPanelTemplateId>>()
-    .notNull(),
-});
+export const adePreferences = pgTable(
+  'ade_preferences',
+  {
+    id: text('id')
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' })
+      .notNull(),
+    agentId: text('agent_id'),
+    displayConfig: json('display_config')
+      .$type<PanelItemPositionsMatrix<GenericPanelTemplateId>>()
+      .notNull(),
+  },
+  (table) => ({
+    unique: {
+      uniqueUserAgent: uniqueIndex('unique_user_agent').on(
+        table.userId,
+        table.agentId
+      ),
+    },
+  })
+);
 
 export const adePreferencesRelations = relations(adePreferences, ({ one }) => ({
   user: one(users, {

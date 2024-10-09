@@ -165,16 +165,19 @@ function LoaderContent(props: LoaderContentProps) {
 
 export function AgentPage() {
   const { name: projectName, slug: projectSlug } = useCurrentProject();
+  const { agentName, agentId, isTemplate, isLocal } = useCurrentAgentMetaData();
   const { data, isError } = webApi.adePreferences.getADEPreferences.useQuery({
-    queryKey: webApiQueryKeys.adePreferences.getADEPreferences,
-    queryData: {},
+    queryKey: webApiQueryKeys.adePreferences.getADEPreferences(agentId),
+    queryData: {
+      params: {
+        agentId,
+      },
+    },
   });
 
   const t = useTranslations(
     'projects/(projectSlug)/agents/(agentId)/AgentPage'
   );
-
-  const { agentName, agentId, isTemplate, isLocal } = useCurrentAgentMetaData();
 
   const { data: agent } = useAgentsServiceGetAgent({
     agentId,
@@ -191,12 +194,15 @@ export function AgentPage() {
   useEffect(() => {
     if (debouncedPositions.length) {
       mutate({
+        params: {
+          agentId,
+        },
         body: {
           displayConfig: debouncedPositions,
         },
       });
     }
-  }, [debouncedPositions, mutate]);
+  }, [agentId, debouncedPositions, mutate]);
 
   const fullPageWarning = useMemo(() => {
     if (isLocal) {
