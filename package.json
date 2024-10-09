@@ -66,6 +66,7 @@
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
     "drizzle-orm": "^0.33.0",
+    "echarts": "^5.5.1",
     "extended-eventsource": "^1.6.4",
     "ioredis": "^5.4.1",
     "jsonrepair": "^3.8.1",

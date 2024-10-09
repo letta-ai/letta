@@ -103,6 +103,8 @@ export * from './lib/ade/ADEInput/ADEInput';
 
 export * from './lib/ade/ADETextArea/ADETextArea';
 
+export * from './lib/core/Chart/Chart';
+
 export * from './lib/reusable/DialogTable/DialogTable';
 
 export * from './lib/core/Spinner/Spinner';
