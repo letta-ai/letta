@@ -67,13 +67,12 @@ export function ActionCard(props: ToggleCardProps) {
     >
       <VStack fullHeight fullWidth>
         <HStack
-          wrap
           className="action-card-header"
           justify="spaceBetween"
           fullWidth
           align="center"
         >
-          <VStack gap="text" flex>
+          <VStack gap="text" fullWidth>
             <HStack fullWidth className="action-card-titlearea" align="center">
               {icon && (
                 <HStack
@@ -85,7 +84,7 @@ export function ActionCard(props: ToggleCardProps) {
                   {icon}
                 </HStack>
               )}
-              <VStack gap={false} fullWidth align="start">
+              <VStack gap={false} collapseWidth align="start">
                 <HStack paddingRight fullWidth overflow="hidden">
                   <Tooltip asChild content={title} placement="top">
                     <Typography noWrap fullWidth overflow="ellipsis" bold>
@@ -94,7 +93,13 @@ export function ActionCard(props: ToggleCardProps) {
                   </Tooltip>
                 </HStack>
                 {props.subtitle && (
-                  <Typography variant="body2" color="muted">
+                  <Typography
+                    fullWidth
+                    overflow="ellipsis"
+                    noWrap
+                    variant="body2"
+                    color="muted"
+                  >
                     {props.subtitle}
                   </Typography>
                 )}

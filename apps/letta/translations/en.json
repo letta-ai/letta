@@ -41,7 +41,7 @@
     },
     "connectToLocalProject": {
       "triggerButton": "Connect to Local Project",
-      "title": "Connect to a local project",
+      "title": "Connect to a Local Project",
       "instructions": "To connect to a local project, you need to have the Letta CLI installed. Run the following command in your terminal to connect to a local project:"
     },
     "projectsList": {

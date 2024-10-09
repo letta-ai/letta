@@ -106,3 +106,5 @@ export * from './lib/ade/ADETextArea/ADETextArea';
 export * from './lib/reusable/DialogTable/DialogTable';
 
 export * from './lib/core/Spinner/Spinner';
+
+export * from './lib/framing/HiddenOnMobile/HiddenOnMobile';
