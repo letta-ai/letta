@@ -97,6 +97,16 @@
     "noTemplates": "You have no templates in this project, create one below",
     "createTemplate": "New Template"
   },
+  "ADE/EditDataSourcesPanel": {
+    "title": "Edit {name}",
+    "errorDetaching": "There was an error detaching this data source, please try again or contact support.",
+    "editName": {
+      "label": "Data Source Name",
+      "placeholder": "my-data-source-name"
+    },
+    "edit": "Edit",
+    "detach": "Detach Data Source"
+  },
   "ADE/AgentSimulator": {
     "sendingMessage": "Agent is thinking...",
     "setChatroomRenderMode": {
@@ -108,11 +118,41 @@
     }
   },
   "ADE/ADESidebar": {
+    "AttachDataSourceView": {
+      "emptyMessage": "You have not created any data sources yet",
+      "emptySearchMessage": "No data sources found",
+      "emptyAction": "Create a new data source",
+      "attach": "Attach",
+      "attached": "Attached",
+      "searchInput": {
+        "placeholder": "Search data sources",
+        "label": "Search data sources"
+      }
+    },
+    "CreateDataSourceDialog": {
+      "goBack": "Go back",
+      "creatingDataSource": "Creating data source...",
+      "title": "Create a new data source",
+      "options": {
+        "createANewDataSource": {
+          "title": "Create a new data source",
+          "description": "Create a new data source to use in your agent and other projects."
+        },
+        "attachAnExistingDataSource": {
+          "title": "Attach an existing data source",
+          "description": "Attach an existing data source that you have already created."
+        }
+      }
+    },
     "nav": {
       "model": "Model",
       "config": "Config",
       "memoryBlocks": "Memory Blocks",
-      "dataSources": "Data Sources",
+      "dataSources": {
+        "new": "New Data Source",
+        "main": "Data Sources"
+      },
+
       "tools": "Tools",
       "agentSimulator": "Simulator",
       "archivalMemories": "Memory Explorer",

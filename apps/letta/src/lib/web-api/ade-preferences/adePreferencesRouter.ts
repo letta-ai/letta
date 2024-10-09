@@ -3,7 +3,7 @@ import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
 import type { contracts } from '../contracts';
 import { adePreferences, db } from '@letta-web/database';
 import { getUserIdOrThrow } from '$letta/server/auth';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 
 function generateDefaultPreferences(): AdePreferencesData {
   return {
@@ -70,11 +70,21 @@ type GetAdePreferencesResponse = ServerInferResponses<
   typeof contracts.adePreferences.getADEPreferences
 >;
 
-export async function getADEPreferences(): Promise<GetAdePreferencesResponse> {
+type GetAdePreferencesRequest = ServerInferRequest<
+  typeof contracts.adePreferences.getADEPreferences
+>;
+
+async function getADEPreferences(
+  request: GetAdePreferencesRequest
+): Promise<GetAdePreferencesResponse> {
   const userId = await getUserIdOrThrow();
+  const { agentId } = request.params;
 
   let preferences = await db.query.adePreferences.findFirst({
-    where: eq(adePreferences.userId, userId),
+    where: and(
+      eq(adePreferences.userId, userId),
+      eq(adePreferences.agentId, agentId)
+    ),
     columns: {
       displayConfig: true,
     },
@@ -88,6 +98,7 @@ export async function getADEPreferences(): Promise<GetAdePreferencesResponse> {
     await db.insert(adePreferences).values({
       userId,
       displayConfig: preferences.displayConfig,
+      agentId,
     });
   }
 
@@ -107,20 +118,32 @@ type UpdateAdePreferencesResponse = ServerInferResponses<
   typeof contracts.adePreferences.updateADEPreferences
 >;
 
-export async function updateADEPreferences(
+async function updateADEPreferences(
   req: UpdateAdePreferencesRequest
 ): Promise<UpdateAdePreferencesResponse> {
+  const { body, params } = req;
+  const { agentId } = params;
   const userId = await getUserIdOrThrow();
 
   await db
     .update(adePreferences)
     .set({
-      displayConfig: req.body.displayConfig,
+      displayConfig: body.displayConfig,
     })
-    .where(eq(adePreferences.userId, userId));
+    .where(
+      and(
+        eq(adePreferences.userId, userId),
+        eq(adePreferences.agentId, agentId)
+      )
+    );
 
   return {
     status: 200,
     body: req.body,
   };
 }
+
+export const adePreferencesRouter = {
+  getADEPreferences,
+  updateADEPreferences,
+};

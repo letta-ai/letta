@@ -122,7 +122,7 @@ const dialogVariants = cva('', {
     size: {
       small: 'max-w-sm',
       medium: 'max-w-md',
-      large: 'max-w-[800px]',
+      large: 'max-w-[600px]',
     },
   },
   defaultVariants: {
@@ -147,6 +147,7 @@ interface DialogProps extends VariantProps<typeof dialogVariants> {
   onSubmit?: (e: React.FormEvent<HTMLFormElement>) => void;
   hideCancel?: boolean;
   hideConfirm?: boolean;
+  reverseButtons?: boolean;
 }
 
 export function Dialog(props: DialogProps) {
@@ -157,6 +158,7 @@ export function Dialog(props: DialogProps) {
     title,
     testId,
     children,
+    reverseButtons,
     isConfirmBusy,
     trigger,
     confirmColor = 'secondary',
@@ -218,7 +220,11 @@ export function Dialog(props: DialogProps) {
             />
           )}
           {children}
-          <DialogFooter>
+          <DialogFooter
+            className={
+              reverseButtons ? 'sm:flex-row-reverse sm:justify-start' : ''
+            }
+          >
             {!hideCancel && (
               <DialogClose asChild>
                 <Button
