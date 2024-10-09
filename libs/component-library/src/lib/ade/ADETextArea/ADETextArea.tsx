@@ -56,7 +56,12 @@ function ADETextAreaPrimitive(props: ADETextAreaPrimitiveProps) {
   }, [getSelectionPosition]);
 
   return (
-    <Frame position="relative" fullWidth fullHeight={fullHeight}>
+    <Frame
+      className="min-h-[200px]"
+      position="relative"
+      fullWidth
+      fullHeight={fullHeight}
+    >
       <Frame
         ref={barRef}
         position="absolute"

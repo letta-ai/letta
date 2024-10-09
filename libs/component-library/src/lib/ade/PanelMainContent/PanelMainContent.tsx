@@ -9,13 +9,7 @@ export function PanelMainContent(props: PanelElementsListProps) {
   const { children } = props;
 
   return (
-    <VStack
-      overflow="auto"
-      padding="small"
-      fullWidth
-      gap="medium"
-      collapseHeight
-    >
+    <VStack overflow="auto" fullWidth gap="medium" collapseHeight>
       {children}
     </VStack>
   );
