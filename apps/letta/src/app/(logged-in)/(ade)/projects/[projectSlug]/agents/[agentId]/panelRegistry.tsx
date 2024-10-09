@@ -5,10 +5,10 @@ import { configPanelTemplate } from './ConfigPanel/ConfigPanelWrapped';
 import { welcomePanelTemplate } from './WelcomePanel/WelcomePanel';
 import { modelTemplate } from './ModelPanel/ModelPanel';
 import { toolsPanelTemplate } from './ToolsPanel/ToolsPanel';
-import { dataSourcesPanelTemplate } from './DataSourcesPanel/DataSourcesPanel';
 import { deploymentPanelTemplate } from './DeploymentAgentMangerPanel/DeploymentAgentMangerPanel';
 import { agentSidebarTemplate } from './ADESidebar/ADESidebar';
 import { editMemoryBlocksTemplate } from './EditMemoryBlockPanel/EditMemoryBlockPanel';
+import { editDataSourcesPanel } from './EditDataSourcesPanel/EditDataSourcesPanel';
 
 const {
   panelRegistry,
@@ -25,10 +25,10 @@ const {
   'agent-config': configPanelTemplate,
   'welcome-panel': welcomePanelTemplate,
   'tools-panel': toolsPanelTemplate,
-  'data-sources-panel': dataSourcesPanelTemplate,
   deployment: deploymentPanelTemplate,
   'edit-memory-block': editMemoryBlocksTemplate,
   sidebar: agentSidebarTemplate,
+  'edit-data-source': editDataSourcesPanel,
 });
 
 export {
