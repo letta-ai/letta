@@ -1,10 +1,7 @@
 import { z } from 'zod';
 import type { PanelTemplate } from '@letta-web/component-library';
-import {
-  RawADEInput,
-  RawADETextArea,
-  VStack,
-} from '@letta-web/component-library';
+import { PanelMainContent } from '@letta-web/component-library';
+import { RawADEInput, RawADETextArea } from '@letta-web/component-library';
 import { LettaLoaderPanel } from '@letta-web/component-library';
 import { useTranslations } from 'next-intl';
 import type { Block } from '@letta-web/letta-agents-api';
@@ -45,7 +42,7 @@ function EditMemoryForm({ block }: EditMemoryFormProps) {
   );
 
   return (
-    <VStack fullHeight gap={false}>
+    <PanelMainContent>
       <RawADEInput disabled fullWidth label="Name" value={block.name || ''} />
       <RawADEInput disabled fullWidth label="Label" value={block.label || ''} />
       <RawADETextArea
@@ -56,7 +53,7 @@ function EditMemoryForm({ block }: EditMemoryFormProps) {
         onChange={handleChange}
         value={value || ''}
       />
-    </VStack>
+    </PanelMainContent>
   );
 }
 

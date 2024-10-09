@@ -787,14 +787,29 @@ export function createPanelManager<
   interface PanelTabDraggerProps {
     children: React.ReactNode;
     tab: PanelPositionItem<RegisteredPanelTemplateId>;
+    x: number;
+    y: number;
+  }
+
+  interface DraggableData extends PanelPositionItem<RegisteredPanelTemplateId> {
+    x: number;
+    y: number;
   }
 
   function PanelTabDragger(props: PanelTabDraggerProps) {
-    const { children, tab } = props;
+    const { children, x, y, tab } = props;
+
+    const data: DraggableData = useMemo(() => {
+      return {
+        ...tab,
+        x,
+        y,
+      };
+    }, [tab, x, y]);
 
     const { attributes, listeners, setNodeRef } = useDraggable({
       id: tab.id,
-      data: tab,
+      data,
     });
 
     return (
@@ -805,7 +820,7 @@ export function createPanelManager<
   }
 
   interface GenericDropZoneProps {
-    moveToOnDrop: MoveToConfig;
+    moveToOnDrop: MoveToConfig | ((data: DraggableData) => MoveToConfig);
     className?: string;
     id: string;
   }
@@ -814,8 +829,18 @@ export function createPanelManager<
     const { moveToOnDrop, className, id } = props;
     const { active } = useDndContext();
 
+    const data = useMemo(() => {
+      if (!active?.data.current) {
+        return undefined;
+      }
+
+      return typeof moveToOnDrop === 'function'
+        ? moveToOnDrop(active.data.current as DraggableData)
+        : moveToOnDrop;
+    }, [active?.data, moveToOnDrop]);
+
     const { setNodeRef, isOver } = useDroppable({
-      data: moveToOnDrop,
+      data,
       id,
     });
 
@@ -825,7 +850,7 @@ export function createPanelManager<
         className={cn(
           'opacity-0 w-full h-full inset-0 bg-blue-50 z-[10]',
           !active ? 'pointer-events-none' : '',
-          isOver ? 'opacity-100' : '',
+          isOver ? 'opacity-80' : '',
           className
         )}
       />
@@ -1129,7 +1154,7 @@ export function createPanelManager<
                   moveToOnDrop={{ x, y, tab: -1 }}
                 />
               )}
-              <PanelTabDragger tab={tab}>
+              <PanelTabDragger x={x} y={y} tab={tab}>
                 <Tab tab={tab} isActive={activeTabId === tab.id} x={x} y={y} />
               </PanelTabDragger>
               {index < filteredTabs.length - 1 && (
@@ -1164,6 +1189,8 @@ export function createPanelManager<
 
     const activeTab = validTabs.find((tab) => tab.isActive);
 
+    const isSidebar = panelRegistry[validTabs[0].templateId].noTab;
+
     return (
       <GenericTabRenderer
         tabBar={
@@ -1174,6 +1201,36 @@ export function createPanelManager<
 
           return (
             <GenericPanelContent key={tab.id} isActive={tab.isActive}>
+              {!isSidebar && (
+                <>
+                  <GenericDropZone
+                    id={`dropzone-tab-content-${tab.id}-top`}
+                    className="left-[50%] w-[50%] absolute"
+                    moveToOnDrop={({ x: dropX, y: dropY }) => {
+                      if (dropX - 1 === x) {
+                        return { x, y, tab: 0 };
+                      }
+
+                      if (dropY !== y && dropX === x) {
+                        return { x, y, tab: 0 };
+                      }
+
+                      return { x: x + 1, y, tab: 0 };
+                    }}
+                  />
+                  <GenericDropZone
+                    id={`dropzone-tab-content-${tab.id}-bottom`}
+                    className="h-[50%] top-[50%] w-full absolute"
+                    moveToOnDrop={({ x: dropX, y: dropY }) => {
+                      if (x === dropX && dropY - 1 === y) {
+                        return { x, y, tab: 0 };
+                      }
+
+                      return { x, y: y + 1, tab: 0 };
+                    }}
+                  />
+                </>
+              )}
               <PanelComponent {...tab.data} />
             </GenericPanelContent>
           );

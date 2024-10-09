@@ -88,6 +88,7 @@ export function GenericPanelContent(props: GenericPanelContentProps) {
 
   return (
     <VStack
+      position="relative"
       color="background"
       className={cn(isActive ? 'flex' : 'hidden')}
       fullHeight
