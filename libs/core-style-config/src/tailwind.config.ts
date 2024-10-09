@@ -16,6 +16,7 @@ export function buildConfig(appDir: string): Config {
     theme: {
       screens: {
         sm: '640px',
+        largerThanMobile: '640px',
         visibleSidebar: '840px',
       },
       extend: {

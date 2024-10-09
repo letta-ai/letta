@@ -19,6 +19,7 @@ import {
   NiceGridDisplay,
   Card,
   Tooltip,
+  HiddenOnMobile,
 } from '@letta-web/component-library';
 import { webApi, webApiQueryKeys } from '$letta/client';
 import { useDebouncedValue } from '@mantine/hooks';
@@ -84,7 +85,7 @@ function ConnectToLocalProjectDialog() {
       <Dialog
         isOpen={open}
         onOpenChange={setOpen}
-        title="Connect to a Local Project"
+        title={t('connectToLocalProject.title')}
         hideConfirm
       >
         <Typography>{t('connectToLocalProject.instructions')}</Typography>
@@ -261,7 +262,9 @@ function ProjectsPage() {
       title={t('title')}
       actions={
         <>
-          <ConnectToLocalProjectDialog />
+          <HiddenOnMobile>
+            <ConnectToLocalProjectDialog />
+          </HiddenOnMobile>
           <CreateProjectDialog />
         </>
       }
