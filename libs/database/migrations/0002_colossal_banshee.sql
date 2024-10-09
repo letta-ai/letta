@@ -1,0 +1,1 @@
+ALTER TABLE "ade_preferences" ADD COLUMN "agent_id" text;

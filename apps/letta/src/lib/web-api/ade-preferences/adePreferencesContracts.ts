@@ -1,6 +1,7 @@
 import { initContract } from '@ts-rest/core';
 import type { PanelItemPositionsMatrix } from '@letta-web/component-library';
 import type { panelRegistry } from '../../../app/(logged-in)/(ade)/projects/[projectSlug]/agents/[agentId]/panelRegistry';
+import { z } from 'zod';
 
 const c = initContract();
 
@@ -13,7 +14,10 @@ const ADEPreferencesSchema = c.type<AdePreferencesData>();
 /* Get ADE Preferences */
 const getADEPreferencesContract = c.query({
   method: 'GET',
-  path: '/ade-preferences',
+  path: '/ade-preferences/:agentId',
+  params: z.object({
+    agentId: z.string(),
+  }),
   responses: {
     200: ADEPreferencesSchema,
   },
@@ -24,7 +28,10 @@ const UpdateADEPreferencesPayloadSchema = c.type<AdePreferencesData>();
 
 const updateADEPreferencesContract = c.mutation({
   method: 'PUT',
-  path: '/ade-preferences',
+  path: '/ade-preferences/:agentId',
+  params: z.object({
+    agentId: z.string(),
+  }),
   body: UpdateADEPreferencesPayloadSchema,
   responses: {
     200: ADEPreferencesSchema,
@@ -37,5 +44,5 @@ export const adePreferencesContracts = {
 };
 
 export const adePreferencesQueryClientKeys = {
-  getADEPreferences: ['getADEPreferences'],
+  getADEPreferences: (agentId: string) => ['adePreferences', agentId],
 };

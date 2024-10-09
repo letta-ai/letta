@@ -4,7 +4,7 @@ import * as apiKeysRouter from './api-keys/apiKeysRouter';
 import * as organizationsRouter from './organizations/organizationsRouter';
 import * as adminWhitelistedEmailsRouter from './admin/whitelisted-emails/whitelistedEmailsRouter';
 import * as featureFlagsRouter from './feature-flags/featureFlagsRouter';
-import * as adePreferencesRouter from './ade-preferences/adePreferencesRouter';
+import { adePreferencesRouter } from './ade-preferences/adePreferencesRouter';
 import { agentTemplateRoutes } from './agent-templates/agentTemplateRoutes';
 
 export const router = {
