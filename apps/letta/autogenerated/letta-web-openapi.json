@@ -113,10 +113,28 @@
                         "type": "string"
                       },
                       "model_endpoint_type": {
-                        "type": "string"
+                        "type": "string",
+                        "enum": [
+                          "openai",
+                          "anthropic",
+                          "cohere",
+                          "google_ai",
+                          "azure",
+                          "groq",
+                          "ollama",
+                          "webui",
+                          "webui-legacy",
+                          "lmstudio",
+                          "lmstudio-legacy",
+                          "llamacpp",
+                          "koboldcpp",
+                          "vllm",
+                          "hugging-face"
+                        ]
                       },
                       "model_endpoint": {
-                        "type": "string"
+                        "type": "string",
+                        "nullable": true
                       },
                       "model_wrapper": {
                         "type": "string",
@@ -129,7 +147,6 @@
                     "required": [
                       "model",
                       "model_endpoint_type",
-                      "model_endpoint",
                       "context_window"
                     ],
                     "nullable": true
@@ -294,6 +311,13 @@
           },
           {
             "name": "name",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "search",
             "in": "query",
             "schema": {
               "type": "string"
@@ -714,6 +738,31 @@
                     }
                   },
                   "required": ["message"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/health": {
+      "get": {
+        "tags": ["health"],
+        "parameters": [],
+        "operationId": "health.getHealth",
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["status"]
                 }
               }
             }

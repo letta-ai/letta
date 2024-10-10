@@ -35,6 +35,22 @@
               "type": "string",
               "title": "Tool Id"
             }
+          },
+          {
+            "name": "user_id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "User Id"
+            }
           }
         ],
         "responses": {
@@ -111,6 +127,22 @@
               "type": "string",
               "title": "Tool Id"
             }
+          },
+          {
+            "name": "user_id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "User Id"
+            }
           }
         ],
         "requestBody": {
@@ -162,6 +194,22 @@
               "type": "string",
               "title": "Tool Name"
             }
+          },
+          {
+            "name": "user_id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "User Id"
+            }
           }
         ],
         "responses": {
@@ -195,6 +243,24 @@
         "summary": "List All Tools",
         "description": "Get a list of all tools available to agents created by a user",
         "operationId": "list_tools",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "User Id"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -206,6 +272,16 @@
                     "$ref": "#/components/schemas/Tool-Output"
                   },
                   "title": "Response List Tools"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -226,6 +302,22 @@
               "type": "boolean",
               "default": false,
               "title": "Update"
+            }
+          },
+          {
+            "name": "user_id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "User Id"
             }
           }
         ],
@@ -278,6 +370,22 @@
               "type": "string",
               "title": "Source Id"
             }
+          },
+          {
+            "name": "user_id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "User Id"
+            }
           }
         ],
         "responses": {
@@ -316,6 +424,22 @@
             "schema": {
               "type": "string",
               "title": "Source Id"
+            }
+          },
+          {
+            "name": "user_id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "User Id"
             }
           }
         ],
@@ -366,6 +490,22 @@
               "type": "string",
               "title": "Source Id"
             }
+          },
+          {
+            "name": "user_id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "User Id"
+            }
           }
         ],
         "responses": {
@@ -405,6 +545,22 @@
               "type": "string",
               "title": "Source Name"
             }
+          },
+          {
+            "name": "user_id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "User Id"
+            }
           }
         ],
         "responses": {
@@ -438,17 +594,45 @@
         "summary": "List Sources",
         "description": "List all data sources created by a user.",
         "operationId": "list_sources",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "User Id"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
+                  "type": "array",
                   "items": {
                     "$ref": "#/components/schemas/Source"
                   },
-                  "type": "array",
                   "title": "Response List Sources"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -460,15 +644,33 @@
         "summary": "Create Source",
         "description": "Create a new data source.",
         "operationId": "create_source",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "User Id"
+            }
+          }
+        ],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/SourceCreate"
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "200": {
@@ -520,6 +722,22 @@
               "title": "Agent Id"
             },
             "description": "The unique identifier of the agent to attach the source to."
+          },
+          {
+            "name": "user_id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "User Id"
+            }
           }
         ],
         "responses": {
@@ -572,6 +790,22 @@
               "title": "Agent Id"
             },
             "description": "The unique identifier of the agent to detach the source from."
+          },
+          {
+            "name": "user_id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "User Id"
+            }
           }
         ],
         "responses": {
@@ -612,6 +846,22 @@
             "schema": {
               "type": "string",
               "title": "Source Id"
+            }
+          },
+          {
+            "name": "user_id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "User Id"
             }
           }
         ],
@@ -664,6 +914,22 @@
               "type": "string",
               "title": "Source Id"
             }
+          },
+          {
+            "name": "user_id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "User Id"
+            }
           }
         ],
         "responses": {
@@ -709,6 +975,22 @@
               "type": "string",
               "title": "Source Id"
             }
+          },
+          {
+            "name": "user_id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "User Id"
+            }
           }
         ],
         "responses": {
@@ -747,65 +1029,8 @@
         "operationId": "list_agents",
         "parameters": [
           {
-            "name": "template",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "boolean"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "Show only template agents, only available on Letta Cloud.",
-              "default": false,
-              "title": "Template"
-            },
-            "description": "Show only template agents, only available on Letta Cloud."
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "integer"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "Maximum number of agents to retrieve, only available on Letta Cloud.",
-              "default": 10,
-              "title": "Limit"
-            },
-            "description": "Maximum number of agents to retrieve, only available on Letta Cloud."
-          },
-          {
-            "name": "offset",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "integer"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "Number of agents to skip, only available on Letta Cloud.",
-              "default": 0,
-              "title": "Offset"
-            },
-            "description": "Number of agents to skip, only available on Letta Cloud."
-          },
-          {
-            "name": "name",
-            "in": "query",
+            "name": "user_id",
+            "in": "header",
             "required": false,
             "schema": {
               "anyOf": [
@@ -816,46 +1041,8 @@
                   "type": "null"
                 }
               ],
-              "description": "Filter agents by name, only available on Letta Cloud.",
-              "title": "Name"
-            },
-            "description": "Filter agents by name, only available on Letta Cloud."
-          },
-          {
-            "name": "by_version",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "Filter agents by template and version id, only available on Letta Cloud.",
-              "title": "By Version"
-            },
-            "description": "Filter agents by template and version id, only available on Letta Cloud."
-          },
-          {
-            "name": "project_id",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "Filter agents by project id, only available on Letta Cloud.",
-              "title": "Project Id"
-            },
-            "description": "Filter agents by project id, only available on Letta Cloud."
+              "title": "User Id"
+            }
           }
         ],
         "responses": {
@@ -890,6 +1077,24 @@
         "summary": "Create Agent",
         "description": "Create a new agent with the specified configuration.",
         "operationId": "create_agent",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "User Id"
+            }
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -938,6 +1143,22 @@
             "schema": {
               "type": "string",
               "title": "Agent Id"
+            }
+          },
+          {
+            "name": "user_id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "User Id"
             }
           }
         ],
@@ -988,6 +1209,22 @@
               "type": "string",
               "title": "Agent Id"
             }
+          },
+          {
+            "name": "user_id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "User Id"
+            }
           }
         ],
         "responses": {
@@ -1026,6 +1263,22 @@
             "schema": {
               "type": "string",
               "title": "Agent Id"
+            }
+          },
+          {
+            "name": "user_id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "User Id"
             }
           }
         ],
@@ -1194,6 +1447,22 @@
             "schema": {
               "type": "string",
               "title": "Agent Id"
+            }
+          },
+          {
+            "name": "user_id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "User Id"
             }
           }
         ],
@@ -1383,6 +1652,22 @@
               "title": "Limit"
             },
             "description": "How many results to include in the response."
+          },
+          {
+            "name": "user_id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "User Id"
+            }
           }
         ],
         "responses": {
@@ -1425,6 +1710,22 @@
             "schema": {
               "type": "string",
               "title": "Agent Id"
+            }
+          },
+          {
+            "name": "user_id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "User Id"
             }
           }
         ],
@@ -1489,6 +1790,22 @@
             "schema": {
               "type": "string",
               "title": "Memory Id"
+            }
+          },
+          {
+            "name": "user_id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "User Id"
             }
           }
         ],
@@ -1571,6 +1888,58 @@
               "title": "Msg Object"
             },
             "description": "If true, returns Message objects. If false, return LettaMessage objects."
+          },
+          {
+            "name": "use_assistant_message",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "[Only applicable if msg_object is False] If true, returns AssistantMessage objects when the agent calls a designated message tool. If false, return FunctionCallMessage objects for all tool calls.",
+              "default": false,
+              "title": "Use Assistant Message"
+            },
+            "description": "[Only applicable if msg_object is False] If true, returns AssistantMessage objects when the agent calls a designated message tool. If false, return FunctionCallMessage objects for all tool calls."
+          },
+          {
+            "name": "assistant_message_function_name",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "[Only applicable if use_assistant_message is True] The name of the designated message tool.",
+              "default": "send_message",
+              "title": "Assistant Message Function Name"
+            },
+            "description": "[Only applicable if use_assistant_message is True] The name of the designated message tool."
+          },
+          {
+            "name": "assistant_message_function_kwarg",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "[Only applicable if use_assistant_message is True] The name of the message argument in the designated message tool.",
+              "default": "message",
+              "title": "Assistant Message Function Kwarg"
+            },
+            "description": "[Only applicable if use_assistant_message is True] The name of the message argument in the designated message tool."
+          },
+          {
+            "name": "user_id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "User Id"
+            }
           }
         ],
         "responses": {
@@ -1653,6 +2022,22 @@
             "schema": {
               "type": "string",
               "title": "Agent Id"
+            }
+          },
+          {
+            "name": "user_id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "User Id"
             }
           }
         ],
@@ -1849,6 +2234,22 @@
               "title": "Name"
             },
             "description": "Name of the block"
+          },
+          {
+            "name": "user_id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "User Id"
+            }
           }
         ],
         "responses": {
@@ -1882,6 +2283,24 @@
         "tags": ["blocks"],
         "summary": "Create Block",
         "operationId": "create_memory_block",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "User Id"
+            }
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -2066,6 +2485,22 @@
               "title": "Source Id"
             },
             "description": "Only list jobs associated with the source."
+          },
+          {
+            "name": "user_id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "User Id"
+            }
           }
         ],
         "responses": {
@@ -2102,17 +2537,45 @@
         "summary": "List Active Jobs",
         "description": "List all active jobs.",
         "operationId": "list_active_jobs",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "User Id"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
+                  "type": "array",
                   "items": {
                     "$ref": "#/components/schemas/Job"
                   },
-                  "type": "array",
                   "title": "Response List Active Jobs"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -2154,6 +2617,25 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/health/": {
+      "get": {
+        "tags": ["health"],
+        "summary": "Health Check",
+        "operationId": "health_check",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Health"
                 }
               }
             }
@@ -2498,6 +2980,10 @@
             "title": "System",
             "description": "The system prompt used by the agent."
           },
+          "agent_type": {
+            "$ref": "#/components/schemas/AgentType",
+            "description": "The type of agent."
+          },
           "llm_config": {
             "$ref": "#/components/schemas/LLMConfig",
             "description": "The LLM configuration used by the agent."
@@ -2513,11 +2999,18 @@
           "name",
           "tools",
           "system",
+          "agent_type",
           "llm_config",
           "embedding_config"
         ],
         "title": "AgentState",
         "description": "Representation of an agent's state. This is the state of the agent at a given time, and is persisted in the DB backend. The state has all the information needed to recreate a persisted agent.\n\nParameters:\n    id (str): The unique identifier of the agent.\n    name (str): The name of the agent (must be unique to the user).\n    created_at (datetime): The datetime the agent was created.\n    message_ids (List[str]): The ids of the messages in the agent's in-context memory.\n    memory (Memory): The in-context memory of the agent.\n    tools (List[str]): The tools used by the agent. This includes any memory editing functions specified in `memory`.\n    system (str): The system prompt used by the agent.\n    llm_config (LLMConfig): The LLM configuration used by the agent.\n    embedding_config (EmbeddingConfig): The embedding configuration used by the agent."
+      },
+      "AgentType": {
+        "type": "string",
+        "enum": ["memgpt_agent", "split_thread_agent"],
+        "title": "AgentType",
+        "description": "Enum to represent the type of agent."
       },
       "ArchivalMemorySummary": {
         "properties": {
@@ -3236,6 +3729,17 @@
             "title": "System",
             "description": "The system prompt used by the agent."
           },
+          "agent_type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AgentType"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The type of agent."
+          },
           "llm_config": {
             "anyOf": [
               {
@@ -3257,42 +3761,6 @@
               }
             ],
             "description": "The embedding configuration used by the agent."
-          },
-          "template": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Template",
-            "description": "Whether the agent is a template, only used on Letta Cloud."
-          },
-          "project_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Project Id",
-            "description": "The project to associate the agent with, only used on Letta Cloud."
-          },
-          "from_template": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "From Template",
-            "description": "Create a agent from a template given it's name and version, only used on Letta Cloud."
           }
         },
         "additionalProperties": false,
@@ -4041,6 +4509,22 @@
         "type": "object",
         "title": "HTTPValidationError"
       },
+      "Health": {
+        "properties": {
+          "version": {
+            "type": "string",
+            "title": "Version"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          }
+        },
+        "type": "object",
+        "required": ["version", "status"],
+        "title": "Health",
+        "description": "Health check response body"
+      },
       "ImageFile": {
         "properties": {
           "type": {
@@ -4157,11 +4641,35 @@
           },
           "model_endpoint_type": {
             "type": "string",
+            "enum": [
+              "openai",
+              "anthropic",
+              "cohere",
+              "google_ai",
+              "azure",
+              "groq",
+              "ollama",
+              "webui",
+              "webui-legacy",
+              "lmstudio",
+              "lmstudio-legacy",
+              "llamacpp",
+              "koboldcpp",
+              "vllm",
+              "hugging-face"
+            ],
             "title": "Model Endpoint Type",
             "description": "The endpoint type for the model."
           },
           "model_endpoint": {
-            "type": "string",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Model Endpoint",
             "description": "The endpoint for the model."
           },
@@ -4184,14 +4692,9 @@
           }
         },
         "type": "object",
-        "required": [
-          "model",
-          "model_endpoint_type",
-          "model_endpoint",
-          "context_window"
-        ],
+        "required": ["model", "model_endpoint_type", "context_window"],
         "title": "LLMConfig",
-        "description": "Configuration for a Language Model (LLM) model. This object specifies all the information necessary to access an LLM model to usage with Letta, except for secret keys.\n\nAttributes:\n    model (str): The name of the LLM model.\n    model_endpoint_type (str): The endpoint type for the model.\n    model_endpoint (str): The endpoint for the model.\n    model_wrapper (str): The wrapper for the model.\n    context_window (int): The context window size for the model."
+        "description": "Configuration for a Language Model (LLM) model. This object specifies all the information necessary to access an LLM model to usage with Letta, except for secret keys.\n\nAttributes:\n    model (str): The name of the LLM model.\n    model_endpoint_type (str): The endpoint type for the model.\n    model_endpoint (str): The endpoint for the model.\n    model_wrapper (str): The wrapper for the model. This is used to wrap additional text around the input/output of the model. This is useful for text-to-text completions, such as the Completions API in OpenAI.\n    context_window (int): The context window size for the model."
       },
       "LettaMessage": {
         "properties": {
@@ -4243,6 +4746,24 @@
             "title": "Return Message Object",
             "description": "Set True to return the raw Message object. Set False to return the Message in the format of the Letta API.",
             "default": false
+          },
+          "use_assistant_message": {
+            "type": "boolean",
+            "title": "Use Assistant Message",
+            "description": "[Only applicable if return_message_object is False] If true, returns AssistantMessage objects when the agent calls a designated message tool. If false, return FunctionCallMessage objects for all tool calls.",
+            "default": false
+          },
+          "assistant_message_function_name": {
+            "type": "string",
+            "title": "Assistant Message Function Name",
+            "description": "[Only applicable if use_assistant_message is True] The name of the designated message tool.",
+            "default": "send_message"
+          },
+          "assistant_message_function_kwarg": {
+            "type": "string",
+            "title": "Assistant Message Function Kwarg",
+            "description": "[Only applicable if use_assistant_message is True] The name of the message argument in the designated message tool.",
+            "default": "message"
           }
         },
         "type": "object",
