@@ -30,11 +30,14 @@ PopoverContent.displayName = PopoverPrimitive.Content.displayName;
 export interface PopoverProps {
   trigger: React.ReactNode;
   triggerAsChild?: boolean;
+  onMouseEnter?: () => void;
+  onMouseLeave?: () => void;
   children: React.ReactNode;
   defaultOpen?: boolean;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   align?: 'center' | 'end' | 'start';
+  className?: string;
   offset?: number;
 }
 
@@ -44,10 +47,13 @@ export function Popover(props: PopoverProps) {
     triggerAsChild,
     open,
     onOpenChange,
+    onMouseLeave,
+    onMouseEnter,
     defaultOpen,
     offset,
     align,
     children,
+    className,
   } = props;
 
   return (
@@ -57,7 +63,13 @@ export function Popover(props: PopoverProps) {
       defaultOpen={defaultOpen}
     >
       <PopoverTrigger asChild={triggerAsChild}>{trigger}</PopoverTrigger>
-      <PopoverContent sideOffset={offset} align={align}>
+      <PopoverContent
+        onMouseLeave={onMouseLeave}
+        onMouseEnter={onMouseEnter}
+        sideOffset={offset}
+        align={align}
+        className={className}
+      >
         {children}
       </PopoverContent>
     </PopoverRoot>

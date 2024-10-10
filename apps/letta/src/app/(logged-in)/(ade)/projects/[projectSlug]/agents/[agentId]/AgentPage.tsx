@@ -27,7 +27,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useCurrentProject } from '../../../../../(dashboard-like)/projects/[projectSlug]/hooks';
 import { DatabaseIcon, GitForkIcon } from 'lucide-react';
 import { useDebouncedValue } from '@mantine/hooks';
-import { webApi, webApiQueryKeys } from '$letta/client';
+import { useFeatureFlag, webApi, webApiQueryKeys } from '$letta/client';
 import { useRouter } from 'next/navigation';
 import { useCurrentUser } from '$letta/client/hooks';
 import { CurrentUserDetailsBlock } from '$letta/client/common';
@@ -36,6 +36,7 @@ import { useCurrentAgentMetaData } from './hooks/useCurrentAgentMetaData/useCurr
 import { useCurrentAgent } from './hooks';
 import { useAgentsServiceGetAgent } from '@letta-web/letta-agents-api';
 import { useTranslations } from 'next-intl';
+import { ContextWindowPreview } from './ContextEditorPanel/ContextEditorPanel';
 
 function NavOverlay() {
   const { slug: projectSlug } = useCurrentProject();
@@ -204,6 +205,10 @@ export function AgentPage() {
     }
   }, [agentId, debouncedPositions, mutate]);
 
+  const { data: isContextEditorVisible } = useFeatureFlag(
+    'SHOW_CONTEXT_EDITOR'
+  );
+
   const fullPageWarning = useMemo(() => {
     if (isLocal) {
       return t('localAgentDevelopment');
@@ -260,6 +265,7 @@ export function AgentPage() {
                 </PanelOpener>
               </HStack>
               <HStack>
+                {isContextEditorVisible && <ContextWindowPreview />}
                 {isTemplate && <ForkAgentDialog />}
                 <NavOverlay />
               </HStack>

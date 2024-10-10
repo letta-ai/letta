@@ -5,10 +5,13 @@ import type { VariantProps } from 'class-variance-authority';
 import { cva } from 'class-variance-authority';
 import { cn } from '@letta-web/core-style-config';
 
-const frameVariants = cva('', {
+const frameVariants = cva('transition-all', {
   variants: {
     fullWidth: {
       true: 'w-full',
+    },
+    transparent: {
+      true: 'opacity-0',
     },
     fullHeight: {
       true: 'h-full',
@@ -164,6 +167,7 @@ export const Frame = forwardRef<HTMLElement, PropsWithChildren<FrameProps>>(
       borderColor,
       border,
       borderY,
+      transparent,
       borderX,
       rounded,
       borderRight,
@@ -214,6 +218,7 @@ export const Frame = forwardRef<HTMLElement, PropsWithChildren<FrameProps>>(
       paddingLeft,
       paddingRight,
       flex,
+      transparent,
       overflow,
       collapseHeight,
       overflowY,

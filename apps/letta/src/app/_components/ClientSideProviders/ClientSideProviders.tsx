@@ -2,6 +2,7 @@
 
 import { QueryClientProviders } from './QueryClientProviders/QueryClientProviders';
 import type { ReactNode } from 'react';
+import { Provider } from 'jotai';
 
 interface ClientSideProvidersProps {
   children: ReactNode;
@@ -10,5 +11,9 @@ interface ClientSideProvidersProps {
 export function ClientSideProviders(props: ClientSideProvidersProps) {
   const { children } = props;
 
-  return <QueryClientProviders>{children}</QueryClientProviders>;
+  return (
+    <QueryClientProviders>
+      <Provider>{children}</Provider>
+    </QueryClientProviders>
+  );
 }

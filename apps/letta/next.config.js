@@ -15,6 +15,9 @@ let nextConfig = {
     // See: https://github.com/gregberge/svgr
     svgr: false,
   },
+  experimental: {
+    swcPlugins: [['@swc-jotai/react-refresh', {}]],
+  },
   output: 'standalone',
 };
 
