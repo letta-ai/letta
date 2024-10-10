@@ -12,6 +12,7 @@ import type {
   UpdateToolResponse,
   GetToolIdByNameData,
   GetToolIdByNameResponse,
+  ListToolsData,
   ListToolsResponse,
   CreateToolData,
   CreateToolResponse,
@@ -23,6 +24,7 @@ import type {
   DeleteSourceResponse,
   GetSourceIdByNameData,
   GetSourceIdByNameResponse,
+  ListSourcesData,
   ListSourcesResponse,
   CreateSourceData,
   CreateSourceResponse,
@@ -36,6 +38,7 @@ import type {
   ListSourcePassagesResponse,
   ListSourceDocumentsData,
   ListSourceDocumentsResponse,
+  ListAgentsData,
   ListAgentsResponse,
   CreateAgentData,
   CreateAgentResponse,
@@ -83,6 +86,7 @@ import type {
   GetMemoryBlockResponse,
   ListJobsData,
   ListJobsResponse,
+  ListActiveJobsData,
   ListActiveJobsResponse,
   GetJobData,
   GetJobResponse,
@@ -115,6 +119,7 @@ export class ToolsService {
    * Delete a tool by name
    * @param data The data for the request.
    * @param data.toolId
+   * @param data.userId
    * @returns unknown Successful Response
    * @throws ApiError
    */
@@ -166,6 +171,7 @@ export class ToolsService {
    * @param data The data for the request.
    * @param data.toolId
    * @param data.requestBody
+   * @param data.userId
    * @returns Tool_Output Successful Response
    * @throws ApiError
    */
@@ -193,6 +199,7 @@ export class ToolsService {
    * Get a tool ID by name
    * @param data The data for the request.
    * @param data.toolName
+   * @param data.userId
    * @returns string Successful Response
    * @throws ApiError
    */
@@ -216,15 +223,21 @@ export class ToolsService {
   /**
    * List All Tools
    * Get a list of all tools available to agents created by a user
+   * @param data The data for the request.
+   * @param data.userId
    * @returns Tool_Output Successful Response
    * @throws ApiError
    */
-  public static listTools(headers?: {
-    user_id: string;
-  }): CancelablePromise<ListToolsResponse> {
+  public static listTools(
+    data: ListToolsData = {},
+    headers?: { user_id: string }
+  ): CancelablePromise<ListToolsResponse> {
     return __request(OpenAPI, {
       method: 'GET',
       url: '/v1/tools/',
+      errors: {
+        422: 'Validation Error',
+      },
       headers,
     });
   }
@@ -235,6 +248,7 @@ export class ToolsService {
    * @param data The data for the request.
    * @param data.requestBody
    * @param data.update
+   * @param data.userId
    * @returns Tool_Output Successful Response
    * @throws ApiError
    */
@@ -264,6 +278,7 @@ export class SourcesService {
    * Get all sources
    * @param data The data for the request.
    * @param data.sourceId
+   * @param data.userId
    * @returns Source Successful Response
    * @throws ApiError
    */
@@ -290,6 +305,7 @@ export class SourcesService {
    * @param data The data for the request.
    * @param data.sourceId
    * @param data.requestBody
+   * @param data.userId
    * @returns Source Successful Response
    * @throws ApiError
    */
@@ -317,6 +333,7 @@ export class SourcesService {
    * Delete a data source.
    * @param data The data for the request.
    * @param data.sourceId
+   * @param data.userId
    * @returns unknown Successful Response
    * @throws ApiError
    */
@@ -342,6 +359,7 @@ export class SourcesService {
    * Get a source by name
    * @param data The data for the request.
    * @param data.sourceName
+   * @param data.userId
    * @returns string Successful Response
    * @throws ApiError
    */
@@ -365,15 +383,21 @@ export class SourcesService {
   /**
    * List Sources
    * List all data sources created by a user.
+   * @param data The data for the request.
+   * @param data.userId
    * @returns Source Successful Response
    * @throws ApiError
    */
-  public static listSources(headers?: {
-    user_id: string;
-  }): CancelablePromise<ListSourcesResponse> {
+  public static listSources(
+    data: ListSourcesData = {},
+    headers?: { user_id: string }
+  ): CancelablePromise<ListSourcesResponse> {
     return __request(OpenAPI, {
       method: 'GET',
       url: '/v1/sources/',
+      errors: {
+        422: 'Validation Error',
+      },
       headers,
     });
   }
@@ -383,6 +407,7 @@ export class SourcesService {
    * Create a new data source.
    * @param data The data for the request.
    * @param data.requestBody
+   * @param data.userId
    * @returns Source Successful Response
    * @throws ApiError
    */
@@ -408,6 +433,7 @@ export class SourcesService {
    * @param data The data for the request.
    * @param data.sourceId
    * @param data.agentId The unique identifier of the agent to attach the source to.
+   * @param data.userId
    * @returns Source Successful Response
    * @throws ApiError
    */
@@ -437,6 +463,7 @@ export class SourcesService {
    * @param data The data for the request.
    * @param data.sourceId
    * @param data.agentId The unique identifier of the agent to detach the source from.
+   * @param data.userId
    * @returns Source Successful Response
    * @throws ApiError
    */
@@ -466,6 +493,7 @@ export class SourcesService {
    * @param data The data for the request.
    * @param data.sourceId
    * @param data.formData
+   * @param data.userId
    * @returns Job Successful Response
    * @throws ApiError
    */
@@ -493,6 +521,7 @@ export class SourcesService {
    * List all passages associated with a data source.
    * @param data The data for the request.
    * @param data.sourceId
+   * @param data.userId
    * @returns Passage Successful Response
    * @throws ApiError
    */
@@ -518,6 +547,7 @@ export class SourcesService {
    * List all documents associated with a data source.
    * @param data The data for the request.
    * @param data.sourceId
+   * @param data.userId
    * @returns Document Successful Response
    * @throws ApiError
    */
@@ -544,15 +574,21 @@ export class AgentsService {
    * List Agents
    * List all agents associated with a given user.
    * This endpoint retrieves a list of all agents and their configurations associated with the specified user ID.
+   * @param data The data for the request.
+   * @param data.userId
    * @returns AgentState Successful Response
    * @throws ApiError
    */
-  public static listAgents(headers?: {
-    user_id: string;
-  }): CancelablePromise<ListAgentsResponse> {
+  public static listAgents(
+    data: ListAgentsData = {},
+    headers?: { user_id: string }
+  ): CancelablePromise<ListAgentsResponse> {
     return __request(OpenAPI, {
       method: 'GET',
       url: '/v1/agents/',
+      errors: {
+        422: 'Validation Error',
+      },
       headers,
     });
   }
@@ -562,6 +598,7 @@ export class AgentsService {
    * Create a new agent with the specified configuration.
    * @param data The data for the request.
    * @param data.requestBody
+   * @param data.userId
    * @returns AgentState Successful Response
    * @throws ApiError
    */
@@ -587,6 +624,7 @@ export class AgentsService {
    * @param data The data for the request.
    * @param data.agentId
    * @param data.requestBody
+   * @param data.userId
    * @returns AgentState Successful Response
    * @throws ApiError
    */
@@ -614,6 +652,7 @@ export class AgentsService {
    * Get the state of the agent.
    * @param data The data for the request.
    * @param data.agentId
+   * @param data.userId
    * @returns AgentState Successful Response
    * @throws ApiError
    */
@@ -639,6 +678,7 @@ export class AgentsService {
    * Delete an agent.
    * @param data The data for the request.
    * @param data.agentId
+   * @param data.userId
    * @returns unknown Successful Response
    * @throws ApiError
    */
@@ -742,6 +782,7 @@ export class AgentsService {
    * @param data The data for the request.
    * @param data.agentId
    * @param data.requestBody
+   * @param data.userId
    * @returns Memory Successful Response
    * @throws ApiError
    */
@@ -822,6 +863,7 @@ export class AgentsService {
    * @param data.after Unique ID of the memory to start the query range at.
    * @param data.before Unique ID of the memory to end the query range at.
    * @param data.limit How many results to include in the response.
+   * @param data.userId
    * @returns Passage Successful Response
    * @throws ApiError
    */
@@ -853,6 +895,7 @@ export class AgentsService {
    * @param data The data for the request.
    * @param data.agentId
    * @param data.requestBody
+   * @param data.userId
    * @returns Passage Successful Response
    * @throws ApiError
    */
@@ -881,6 +924,7 @@ export class AgentsService {
    * @param data The data for the request.
    * @param data.agentId
    * @param data.memoryId
+   * @param data.userId
    * @returns unknown Successful Response
    * @throws ApiError
    */
@@ -910,6 +954,10 @@ export class AgentsService {
    * @param data.before Message before which to retrieve the returned messages.
    * @param data.limit Maximum number of messages to retrieve.
    * @param data.msgObject If true, returns Message objects. If false, return LettaMessage objects.
+   * @param data.useAssistantMessage [Only applicable if msg_object is False] If true, returns AssistantMessage objects when the agent calls a designated message tool. If false, return FunctionCallMessage objects for all tool calls.
+   * @param data.assistantMessageFunctionName [Only applicable if use_assistant_message is True] The name of the designated message tool.
+   * @param data.assistantMessageFunctionKwarg [Only applicable if use_assistant_message is True] The name of the message argument in the designated message tool.
+   * @param data.userId
    * @returns unknown Successful Response
    * @throws ApiError
    */
@@ -927,6 +975,9 @@ export class AgentsService {
         before: data.before,
         limit: data.limit,
         msg_object: data.msgObject,
+        use_assistant_message: data.useAssistantMessage,
+        assistant_message_function_name: data.assistantMessageFunctionName,
+        assistant_message_function_kwarg: data.assistantMessageFunctionKwarg,
       },
       errors: {
         422: 'Validation Error',
@@ -943,6 +994,7 @@ export class AgentsService {
    * @param data The data for the request.
    * @param data.agentId
    * @param data.requestBody
+   * @param data.userId
    * @returns LettaResponse Successful Response
    * @throws ApiError
    */
@@ -1067,6 +1119,7 @@ export class BlocksService {
    * @param data.label Labels to include (e.g. human, persona)
    * @param data.templatesOnly Whether to include only templates
    * @param data.name Name of the block
+   * @param data.userId
    * @returns Block Successful Response
    * @throws ApiError
    */
@@ -1093,6 +1146,7 @@ export class BlocksService {
    * Create Block
    * @param data The data for the request.
    * @param data.requestBody
+   * @param data.userId
    * @returns Block Successful Response
    * @throws ApiError
    */
@@ -1194,6 +1248,7 @@ export class JobsService {
    * List all jobs.
    * @param data The data for the request.
    * @param data.sourceId Only list jobs associated with the source.
+   * @param data.userId
    * @returns Job Successful Response
    * @throws ApiError
    */
@@ -1217,15 +1272,21 @@ export class JobsService {
   /**
    * List Active Jobs
    * List all active jobs.
+   * @param data The data for the request.
+   * @param data.userId
    * @returns Job Successful Response
    * @throws ApiError
    */
-  public static listActiveJobs(headers?: {
-    user_id: string;
-  }): CancelablePromise<ListActiveJobsResponse> {
+  public static listActiveJobs(
+    data: ListActiveJobsData = {},
+    headers?: { user_id: string }
+  ): CancelablePromise<ListActiveJobsResponse> {
     return __request(OpenAPI, {
       method: 'GET',
       url: '/v1/jobs/active',
+      errors: {
+        422: 'Validation Error',
+      },
       headers,
     });
   }

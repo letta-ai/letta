@@ -88,6 +88,10 @@ export type AgentState = {
    */
   system: string;
   /**
+   * The type of agent.
+   */
+  agent_type: AgentType;
+  /**
    * The LLM configuration used by the agent.
    */
   llm_config: LLMConfig;
@@ -96,6 +100,11 @@ export type AgentState = {
    */
   embedding_config: EmbeddingConfig;
 };
+
+/**
+ * Enum to represent the type of agent.
+ */
+export type AgentType = 'memgpt_agent' | 'split_thread_agent';
 
 export type ArchivalMemorySummary = {
   /**
@@ -301,6 +310,10 @@ export type CreateAgent = {
    * The system prompt used by the agent.
    */
   system?: string | null;
+  /**
+   * The type of agent.
+   */
+  agent_type?: AgentType | null;
   /**
    * The LLM configuration used by the agent.
    */
@@ -765,7 +778,7 @@ export type JobStatus =
  * model (str): The name of the LLM model.
  * model_endpoint_type (str): The endpoint type for the model.
  * model_endpoint (str): The endpoint for the model.
- * model_wrapper (str): The wrapper for the model.
+ * model_wrapper (str): The wrapper for the model. This is used to wrap additional text around the input/output of the model. This is useful for text-to-text completions, such as the Completions API in OpenAI.
  * context_window (int): The context window size for the model.
  */
 export type LLMConfig = {
@@ -776,11 +789,26 @@ export type LLMConfig = {
   /**
    * The endpoint type for the model.
    */
-  model_endpoint_type: string;
+  model_endpoint_type:
+    | 'openai'
+    | 'anthropic'
+    | 'cohere'
+    | 'google_ai'
+    | 'azure'
+    | 'groq'
+    | 'ollama'
+    | 'webui'
+    | 'webui-legacy'
+    | 'lmstudio'
+    | 'lmstudio-legacy'
+    | 'llamacpp'
+    | 'koboldcpp'
+    | 'vllm'
+    | 'hugging-face';
   /**
    * The endpoint for the model.
    */
-  model_endpoint: string;
+  model_endpoint?: string | null;
   /**
    * The wrapper for the model.
    */
@@ -790,6 +818,26 @@ export type LLMConfig = {
    */
   context_window: number;
 };
+
+/**
+ * The endpoint type for the model.
+ */
+export type model_endpoint_type =
+  | 'openai'
+  | 'anthropic'
+  | 'cohere'
+  | 'google_ai'
+  | 'azure'
+  | 'groq'
+  | 'ollama'
+  | 'webui'
+  | 'webui-legacy'
+  | 'lmstudio'
+  | 'lmstudio-legacy'
+  | 'llamacpp'
+  | 'koboldcpp'
+  | 'vllm'
+  | 'hugging-face';
 
 /**
  * Base class for simplified Letta message response type. This is intended to be used for developers who want the internal monologue, function calls, and function returns in a simplified format that does not include additional information other than the content and timestamp.
@@ -824,6 +872,18 @@ export type LettaRequest = {
    * Set True to return the raw Message object. Set False to return the Message in the format of the Letta API.
    */
   return_message_object?: boolean;
+  /**
+   * [Only applicable if return_message_object is False] If true, returns AssistantMessage objects when the agent calls a designated message tool. If false, return FunctionCallMessage objects for all tool calls.
+   */
+  use_assistant_message?: boolean;
+  /**
+   * [Only applicable if use_assistant_message is True] The name of the designated message tool.
+   */
+  assistant_message_function_name?: string;
+  /**
+   * [Only applicable if use_assistant_message is True] The name of the message argument in the designated message tool.
+   */
+  assistant_message_function_kwarg?: string;
 };
 
 /**
@@ -1991,6 +2051,7 @@ export type letta__schemas__openai__openai__ToolCall = {
 
 export type DeleteToolData = {
   toolId: string;
+  userId?: string | null;
 };
 
 export type DeleteToolResponse = unknown;
@@ -2004,27 +2065,35 @@ export type GetToolResponse = Tool_Output;
 export type UpdateToolData = {
   requestBody: ToolUpdate;
   toolId: string;
+  userId?: string | null;
 };
 
 export type UpdateToolResponse = Tool_Output;
 
 export type GetToolIdByNameData = {
   toolName: string;
+  userId?: string | null;
 };
 
 export type GetToolIdByNameResponse = string;
+
+export type ListToolsData = {
+  userId?: string | null;
+};
 
 export type ListToolsResponse = Array<Tool_Output>;
 
 export type CreateToolData = {
   requestBody: ToolCreate;
   update?: boolean;
+  userId?: string | null;
 };
 
 export type CreateToolResponse = Tool_Output;
 
 export type GetSourceData = {
   sourceId: string;
+  userId?: string | null;
 };
 
 export type GetSourceResponse = Source;
@@ -2032,26 +2101,34 @@ export type GetSourceResponse = Source;
 export type UpdateSourceData = {
   requestBody: SourceUpdate;
   sourceId: string;
+  userId?: string | null;
 };
 
 export type UpdateSourceResponse = Source;
 
 export type DeleteSourceData = {
   sourceId: string;
+  userId?: string | null;
 };
 
 export type DeleteSourceResponse = unknown;
 
 export type GetSourceIdByNameData = {
   sourceName: string;
+  userId?: string | null;
 };
 
 export type GetSourceIdByNameResponse = string;
+
+export type ListSourcesData = {
+  userId?: string | null;
+};
 
 export type ListSourcesResponse = Array<Source>;
 
 export type CreateSourceData = {
   requestBody: SourceCreate;
+  userId?: string | null;
 };
 
 export type CreateSourceResponse = Source;
@@ -2062,6 +2139,7 @@ export type AttachAgentToSourceData = {
    */
   agentId: string;
   sourceId: string;
+  userId?: string | null;
 };
 
 export type AttachAgentToSourceResponse = Source;
@@ -2072,6 +2150,7 @@ export type DetachAgentFromSourceData = {
    */
   agentId: string;
   sourceId: string;
+  userId?: string | null;
 };
 
 export type DetachAgentFromSourceResponse = Source;
@@ -2079,26 +2158,34 @@ export type DetachAgentFromSourceResponse = Source;
 export type UploadFileToSourceData = {
   formData: Body_upload_file_to_source;
   sourceId: string;
+  userId?: string | null;
 };
 
 export type UploadFileToSourceResponse = Job;
 
 export type ListSourcePassagesData = {
   sourceId: string;
+  userId?: string | null;
 };
 
 export type ListSourcePassagesResponse = Array<Passage>;
 
 export type ListSourceDocumentsData = {
   sourceId: string;
+  userId?: string | null;
 };
 
 export type ListSourceDocumentsResponse = Array<Document>;
+
+export type ListAgentsData = {
+  userId?: string | null;
+};
 
 export type ListAgentsResponse = Array<AgentState>;
 
 export type CreateAgentData = {
   requestBody: CreateAgent;
+  userId?: string | null;
 };
 
 export type CreateAgentResponse = AgentState;
@@ -2106,18 +2193,21 @@ export type CreateAgentResponse = AgentState;
 export type UpdateAgentData = {
   agentId: string;
   requestBody: UpdateAgentState;
+  userId?: string | null;
 };
 
 export type UpdateAgentResponse = AgentState;
 
 export type GetAgentData = {
   agentId: string;
+  userId?: string | null;
 };
 
 export type GetAgentResponse = AgentState;
 
 export type DeleteAgentData = {
   agentId: string;
+  userId?: string | null;
 };
 
 export type DeleteAgentResponse = unknown;
@@ -2146,6 +2236,7 @@ export type UpdateAgentMemoryData = {
   requestBody: {
     [key: string]: unknown;
   };
+  userId?: string | null;
 };
 
 export type UpdateAgentMemoryResponse = Memory;
@@ -2176,6 +2267,7 @@ export type ListAgentArchivalMemoryData = {
    * How many results to include in the response.
    */
   limit?: number | null;
+  userId?: string | null;
 };
 
 export type ListAgentArchivalMemoryResponse = Array<Passage>;
@@ -2183,6 +2275,7 @@ export type ListAgentArchivalMemoryResponse = Array<Passage>;
 export type CreateAgentArchivalMemoryData = {
   agentId: string;
   requestBody: CreateArchivalMemory;
+  userId?: string | null;
 };
 
 export type CreateAgentArchivalMemoryResponse = Array<Passage>;
@@ -2190,12 +2283,21 @@ export type CreateAgentArchivalMemoryResponse = Array<Passage>;
 export type DeleteAgentArchivalMemoryData = {
   agentId: string;
   memoryId: string;
+  userId?: string | null;
 };
 
 export type DeleteAgentArchivalMemoryResponse = unknown;
 
 export type ListAgentMessagesData = {
   agentId: string;
+  /**
+   * [Only applicable if use_assistant_message is True] The name of the message argument in the designated message tool.
+   */
+  assistantMessageFunctionKwarg?: string;
+  /**
+   * [Only applicable if use_assistant_message is True] The name of the designated message tool.
+   */
+  assistantMessageFunctionName?: string;
   /**
    * Message before which to retrieve the returned messages.
    */
@@ -2208,6 +2310,11 @@ export type ListAgentMessagesData = {
    * If true, returns Message objects. If false, return LettaMessage objects.
    */
   msgObject?: boolean;
+  /**
+   * [Only applicable if msg_object is False] If true, returns AssistantMessage objects when the agent calls a designated message tool. If false, return FunctionCallMessage objects for all tool calls.
+   */
+  useAssistantMessage?: boolean;
+  userId?: string | null;
 };
 
 export type ListAgentMessagesResponse =
@@ -2224,6 +2331,7 @@ export type ListAgentMessagesResponse =
 export type CreateAgentMessageData = {
   agentId: string;
   requestBody: LettaRequest;
+  userId?: string | null;
 };
 
 export type CreateAgentMessageResponse = LettaResponse;
@@ -2253,12 +2361,14 @@ export type ListMemoryBlocksData = {
    * Whether to include only templates
    */
   templatesOnly?: boolean;
+  userId?: string | null;
 };
 
 export type ListMemoryBlocksResponse = Array<Block>;
 
 export type CreateMemoryBlockData = {
   requestBody: CreateBlock;
+  userId?: string | null;
 };
 
 export type CreateMemoryBlockResponse = Block;
@@ -2287,9 +2397,14 @@ export type ListJobsData = {
    * Only list jobs associated with the source.
    */
   sourceId?: string | null;
+  userId?: string | null;
 };
 
 export type ListJobsResponse = Array<Job>;
+
+export type ListActiveJobsData = {
+  userId?: string | null;
+};
 
 export type ListActiveJobsResponse = Array<Job>;
 
@@ -2434,11 +2549,16 @@ export type $OpenApiTs = {
   };
   '/v1/tools/': {
     get: {
+      req: ListToolsData;
       res: {
         /**
          * Successful Response
          */
         200: Array<Tool_Output>;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
       };
     };
     post: {
@@ -2513,11 +2633,16 @@ export type $OpenApiTs = {
   };
   '/v1/sources/': {
     get: {
+      req: ListSourcesData;
       res: {
         /**
          * Successful Response
          */
         200: Array<Source>;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
       };
     };
     post: {
@@ -2611,11 +2736,16 @@ export type $OpenApiTs = {
   };
   '/v1/agents/': {
     get: {
+      req: ListAgentsData;
       res: {
         /**
          * Successful Response
          */
         200: Array<AgentState>;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
       };
     };
     post: {
@@ -2962,11 +3092,16 @@ export type $OpenApiTs = {
   };
   '/v1/jobs/active': {
     get: {
+      req: ListActiveJobsData;
       res: {
         /**
          * Successful Response
          */
         200: Array<Job>;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
       };
     };
   };
