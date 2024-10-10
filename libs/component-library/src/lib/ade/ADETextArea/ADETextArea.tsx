@@ -15,7 +15,7 @@ interface ADETextAreaPrimitiveProps
 const lineHeight = 1.5; // in rem
 
 function ADETextAreaPrimitive(props: ADETextAreaPrimitiveProps) {
-  const { fullHeight } = props;
+  const { fullHeight, ...rest } = props;
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const barRef = useRef<HTMLDivElement>(null);
 
@@ -70,7 +70,7 @@ function ADETextAreaPrimitive(props: ADETextAreaPrimitiveProps) {
       />
       <textarea
         ref={textareaRef}
-        {...props}
+        {...rest}
         /* Prevents autofill tools from annoying our users */
         autoComplete="off"
         onScroll={hideBar}

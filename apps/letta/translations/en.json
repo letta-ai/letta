@@ -29,6 +29,18 @@
       "submitButton": "Update profile"
     }
   },
+  "ADE/ContextEditorPanel": {
+    "ContextWindowPreview": {
+      "popover": {
+        "title": "Context Window",
+        "usage": "{used} of {total} characters used"
+      },
+      "usage": "{used}/{total}",
+      "systemPrompt": "System Prompt",
+      "memoryBlocks": "Memory Blocks",
+      "remaining": "Remaining"
+    }
+  },
   "projects/page": {
     "title": "Projects",
     "createProjectDialog": {
