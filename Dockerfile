@@ -27,6 +27,12 @@ COPY . .
 
 ENV NEXT_PUBLIC_CURRENT_HOST="https://app.letta.com"
 ENV NODE_ENV=production
+ARG SENTRY_AUTH_TOKEN
+RUN echo "SENTRY_AUTH_TOKEN=${SENTRY_AUTH_TOKEN}" >> .env
+
+
+# Disable telemetry during build time
+ENV NEXT_TELEMETRY_DISABLED 1
 
 # Build the application
 RUN npm run build
@@ -45,6 +51,9 @@ ENV NODE_ENV=production
 ## Preset environment variables
 ENV REDIS_HOST=redis
 ENV REDIS_PORT=6379
+
+# Disable telemetry during runtime
+ENV NEXT_TELEMETRY_DISABLED 1
 
 # Uncomment the following line in case you want to disable telemetry during runtime.
 # ENV NEXT_TELEMETRY_DISABLED=1
