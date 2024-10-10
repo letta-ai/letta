@@ -1,9 +1,6 @@
 name: "Chromatic"
 
-on:
-  push:
-    paths:
-      - 'libs/component-library/**'
+on: push
 
 jobs:
   chromatic:
