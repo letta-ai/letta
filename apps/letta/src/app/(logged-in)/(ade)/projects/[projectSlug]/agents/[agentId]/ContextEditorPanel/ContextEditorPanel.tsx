@@ -290,9 +290,9 @@ export function ContextWindowPreview() {
           justify="end"
           transparent={!isReady}
         >
-          {/* eslint-disable-next-line react/forbid-component-props*/}
           <HStack
             justify="end"
+            /* eslint-disable-next-line react/forbid-component-props*/
             className="h-[24px] mt-[1px] transition-all w-[100px]"
             rounded
             paddingY="small"
