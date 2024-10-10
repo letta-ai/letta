@@ -147,6 +147,10 @@ export const $AgentState = {
       title: 'System',
       description: 'The system prompt used by the agent.',
     },
+    agent_type: {
+      $ref: '#/components/schemas/AgentType',
+      description: 'The type of agent.',
+    },
     llm_config: {
       $ref: '#/components/schemas/LLMConfig',
       description: 'The LLM configuration used by the agent.',
@@ -158,7 +162,14 @@ export const $AgentState = {
   },
   additionalProperties: false,
   type: 'object',
-  required: ['name', 'tools', 'system', 'llm_config', 'embedding_config'],
+  required: [
+    'name',
+    'tools',
+    'system',
+    'agent_type',
+    'llm_config',
+    'embedding_config',
+  ],
   title: 'AgentState',
   description: `Representation of an agent's state. This is the state of the agent at a given time, and is persisted in the DB backend. The state has all the information needed to recreate a persisted agent.
 
@@ -172,6 +183,13 @@ Parameters:
     system (str): The system prompt used by the agent.
     llm_config (LLMConfig): The LLM configuration used by the agent.
     embedding_config (EmbeddingConfig): The embedding configuration used by the agent.`,
+} as const;
+
+export const $AgentType = {
+  type: 'string',
+  enum: ['memgpt_agent', 'split_thread_agent'],
+  title: 'AgentType',
+  description: 'Enum to represent the type of agent.',
 } as const;
 
 export const $ArchivalMemorySummary = {
@@ -913,6 +931,17 @@ export const $CreateAgent = {
       ],
       title: 'System',
       description: 'The system prompt used by the agent.',
+    },
+    agent_type: {
+      anyOf: [
+        {
+          $ref: '#/components/schemas/AgentType',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      description: 'The type of agent.',
     },
     llm_config: {
       anyOf: [
@@ -1874,11 +1903,35 @@ export const $LLMConfig = {
     },
     model_endpoint_type: {
       type: 'string',
+      enum: [
+        'openai',
+        'anthropic',
+        'cohere',
+        'google_ai',
+        'azure',
+        'groq',
+        'ollama',
+        'webui',
+        'webui-legacy',
+        'lmstudio',
+        'lmstudio-legacy',
+        'llamacpp',
+        'koboldcpp',
+        'vllm',
+        'hugging-face',
+      ],
       title: 'Model Endpoint Type',
       description: 'The endpoint type for the model.',
     },
     model_endpoint: {
-      type: 'string',
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
       title: 'Model Endpoint',
       description: 'The endpoint for the model.',
     },
@@ -1901,12 +1954,7 @@ export const $LLMConfig = {
     },
   },
   type: 'object',
-  required: [
-    'model',
-    'model_endpoint_type',
-    'model_endpoint',
-    'context_window',
-  ],
+  required: ['model', 'model_endpoint_type', 'context_window'],
   title: 'LLMConfig',
   description: `Configuration for a Language Model (LLM) model. This object specifies all the information necessary to access an LLM model to usage with Letta, except for secret keys.
 
@@ -1914,7 +1962,7 @@ Attributes:
     model (str): The name of the LLM model.
     model_endpoint_type (str): The endpoint type for the model.
     model_endpoint (str): The endpoint for the model.
-    model_wrapper (str): The wrapper for the model.
+    model_wrapper (str): The wrapper for the model. This is used to wrap additional text around the input/output of the model. This is useful for text-to-text completions, such as the Completions API in OpenAI.
     context_window (int): The context window size for the model.`,
 } as const;
 
@@ -1976,6 +2024,27 @@ export const $LettaRequest = {
       description:
         'Set True to return the raw Message object. Set False to return the Message in the format of the Letta API.',
       default: false,
+    },
+    use_assistant_message: {
+      type: 'boolean',
+      title: 'Use Assistant Message',
+      description:
+        '[Only applicable if return_message_object is False] If true, returns AssistantMessage objects when the agent calls a designated message tool. If false, return FunctionCallMessage objects for all tool calls.',
+      default: false,
+    },
+    assistant_message_function_name: {
+      type: 'string',
+      title: 'Assistant Message Function Name',
+      description:
+        '[Only applicable if use_assistant_message is True] The name of the designated message tool.',
+      default: 'send_message',
+    },
+    assistant_message_function_kwarg: {
+      type: 'string',
+      title: 'Assistant Message Function Kwarg',
+      description:
+        '[Only applicable if use_assistant_message is True] The name of the message argument in the designated message tool.',
+      default: 'message',
     },
   },
   type: 'object',

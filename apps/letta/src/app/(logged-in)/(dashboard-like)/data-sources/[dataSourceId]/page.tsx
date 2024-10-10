@@ -29,6 +29,7 @@ import { FileUpIcon } from 'lucide-react';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQueryClient } from '@tanstack/react-query';
+import { useCurrentUser } from '$letta/client/hooks';
 
 const uploadToFormValuesSchema = z.object({
   file: z.custom<File>((v) => v instanceof File),
@@ -201,7 +202,8 @@ function JobItem(props: JobItemProps) {
 }
 
 function DashboardJobList() {
-  const { data } = useJobsServiceListActiveJobs(undefined, {
+  const { id: userId } = useCurrentUser();
+  const { data } = useJobsServiceListActiveJobs({ userId }, undefined, {
     refetchInterval: 5000,
   });
 

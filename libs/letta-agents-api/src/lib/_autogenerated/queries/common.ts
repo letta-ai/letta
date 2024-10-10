@@ -42,11 +42,16 @@ export const useToolsServiceGetToolIdByNameKey = 'ToolsServiceGetToolIdByName';
 export const UseToolsServiceGetToolIdByNameKeyFn = (
   {
     toolName,
+    userId,
   }: {
     toolName: string;
+    userId?: string;
   },
   queryKey?: Array<unknown>
-) => [useToolsServiceGetToolIdByNameKey, ...(queryKey ?? [{ toolName }])];
+) => [
+  useToolsServiceGetToolIdByNameKey,
+  ...(queryKey ?? [{ toolName, userId }]),
+];
 export type ToolsServiceListToolsDefaultResponse = Awaited<
   ReturnType<typeof ToolsService.listTools>
 >;
@@ -55,10 +60,14 @@ export type ToolsServiceListToolsQueryResult<
   TError = unknown
 > = UseQueryResult<TData, TError>;
 export const useToolsServiceListToolsKey = 'ToolsServiceListTools';
-export const UseToolsServiceListToolsKeyFn = (queryKey?: Array<unknown>) => [
-  useToolsServiceListToolsKey,
-  ...(queryKey ?? []),
-];
+export const UseToolsServiceListToolsKeyFn = (
+  {
+    userId,
+  }: {
+    userId?: string;
+  } = {},
+  queryKey?: Array<unknown>
+) => [useToolsServiceListToolsKey, ...(queryKey ?? [{ userId }])];
 export type SourcesServiceGetSourceDefaultResponse = Awaited<
   ReturnType<typeof SourcesService.getSource>
 >;
@@ -70,11 +79,13 @@ export const useSourcesServiceGetSourceKey = 'SourcesServiceGetSource';
 export const UseSourcesServiceGetSourceKeyFn = (
   {
     sourceId,
+    userId,
   }: {
     sourceId: string;
+    userId?: string;
   },
   queryKey?: Array<unknown>
-) => [useSourcesServiceGetSourceKey, ...(queryKey ?? [{ sourceId }])];
+) => [useSourcesServiceGetSourceKey, ...(queryKey ?? [{ sourceId, userId }])];
 export type SourcesServiceGetSourceIdByNameDefaultResponse = Awaited<
   ReturnType<typeof SourcesService.getSourceIdByName>
 >;
@@ -87,11 +98,16 @@ export const useSourcesServiceGetSourceIdByNameKey =
 export const UseSourcesServiceGetSourceIdByNameKeyFn = (
   {
     sourceName,
+    userId,
   }: {
     sourceName: string;
+    userId?: string;
   },
   queryKey?: Array<unknown>
-) => [useSourcesServiceGetSourceIdByNameKey, ...(queryKey ?? [{ sourceName }])];
+) => [
+  useSourcesServiceGetSourceIdByNameKey,
+  ...(queryKey ?? [{ sourceName, userId }]),
+];
 export type SourcesServiceListSourcesDefaultResponse = Awaited<
   ReturnType<typeof SourcesService.listSources>
 >;
@@ -101,8 +117,13 @@ export type SourcesServiceListSourcesQueryResult<
 > = UseQueryResult<TData, TError>;
 export const useSourcesServiceListSourcesKey = 'SourcesServiceListSources';
 export const UseSourcesServiceListSourcesKeyFn = (
+  {
+    userId,
+  }: {
+    userId?: string;
+  } = {},
   queryKey?: Array<unknown>
-) => [useSourcesServiceListSourcesKey, ...(queryKey ?? [])];
+) => [useSourcesServiceListSourcesKey, ...(queryKey ?? [{ userId }])];
 export type SourcesServiceListSourcePassagesDefaultResponse = Awaited<
   ReturnType<typeof SourcesService.listSourcePassages>
 >;
@@ -115,11 +136,16 @@ export const useSourcesServiceListSourcePassagesKey =
 export const UseSourcesServiceListSourcePassagesKeyFn = (
   {
     sourceId,
+    userId,
   }: {
     sourceId: string;
+    userId?: string;
   },
   queryKey?: Array<unknown>
-) => [useSourcesServiceListSourcePassagesKey, ...(queryKey ?? [{ sourceId }])];
+) => [
+  useSourcesServiceListSourcePassagesKey,
+  ...(queryKey ?? [{ sourceId, userId }]),
+];
 export type SourcesServiceListSourceDocumentsDefaultResponse = Awaited<
   ReturnType<typeof SourcesService.listSourceDocuments>
 >;
@@ -132,11 +158,16 @@ export const useSourcesServiceListSourceDocumentsKey =
 export const UseSourcesServiceListSourceDocumentsKeyFn = (
   {
     sourceId,
+    userId,
   }: {
     sourceId: string;
+    userId?: string;
   },
   queryKey?: Array<unknown>
-) => [useSourcesServiceListSourceDocumentsKey, ...(queryKey ?? [{ sourceId }])];
+) => [
+  useSourcesServiceListSourceDocumentsKey,
+  ...(queryKey ?? [{ sourceId, userId }]),
+];
 export type AgentsServiceListAgentsDefaultResponse = Awaited<
   ReturnType<typeof AgentsService.listAgents>
 >;
@@ -145,10 +176,14 @@ export type AgentsServiceListAgentsQueryResult<
   TError = unknown
 > = UseQueryResult<TData, TError>;
 export const useAgentsServiceListAgentsKey = 'AgentsServiceListAgents';
-export const UseAgentsServiceListAgentsKeyFn = (queryKey?: Array<unknown>) => [
-  useAgentsServiceListAgentsKey,
-  ...(queryKey ?? []),
-];
+export const UseAgentsServiceListAgentsKeyFn = (
+  {
+    userId,
+  }: {
+    userId?: string;
+  } = {},
+  queryKey?: Array<unknown>
+) => [useAgentsServiceListAgentsKey, ...(queryKey ?? [{ userId }])];
 export type AgentsServiceGetAgentDefaultResponse = Awaited<
   ReturnType<typeof AgentsService.getAgent>
 >;
@@ -160,11 +195,13 @@ export const useAgentsServiceGetAgentKey = 'AgentsServiceGetAgent';
 export const UseAgentsServiceGetAgentKeyFn = (
   {
     agentId,
+    userId,
   }: {
     agentId: string;
+    userId?: string;
   },
   queryKey?: Array<unknown>
-) => [useAgentsServiceGetAgentKey, ...(queryKey ?? [{ agentId }])];
+) => [useAgentsServiceGetAgentKey, ...(queryKey ?? [{ agentId, userId }])];
 export type AgentsServiceGetAgentSourcesDefaultResponse = Awaited<
   ReturnType<typeof AgentsService.getAgentSources>
 >;
@@ -273,16 +310,18 @@ export const UseAgentsServiceListAgentArchivalMemoryKeyFn = (
     agentId,
     before,
     limit,
+    userId,
   }: {
     after?: number;
     agentId: string;
     before?: number;
     limit?: number;
+    userId?: string;
   },
   queryKey?: Array<unknown>
 ) => [
   useAgentsServiceListAgentArchivalMemoryKey,
-  ...(queryKey ?? [{ after, agentId, before, limit }]),
+  ...(queryKey ?? [{ after, agentId, before, limit, userId }]),
 ];
 export type AgentsServiceListAgentMessagesDefaultResponse = Awaited<
   ReturnType<typeof AgentsService.listAgentMessages>
@@ -296,19 +335,38 @@ export const useAgentsServiceListAgentMessagesKey =
 export const UseAgentsServiceListAgentMessagesKeyFn = (
   {
     agentId,
+    assistantMessageFunctionKwarg,
+    assistantMessageFunctionName,
     before,
     limit,
     msgObject,
+    useAssistantMessage,
+    userId,
   }: {
     agentId: string;
+    assistantMessageFunctionKwarg?: string;
+    assistantMessageFunctionName?: string;
     before?: string;
     limit?: number;
     msgObject?: boolean;
+    useAssistantMessage?: boolean;
+    userId?: string;
   },
   queryKey?: Array<unknown>
 ) => [
   useAgentsServiceListAgentMessagesKey,
-  ...(queryKey ?? [{ agentId, before, limit, msgObject }]),
+  ...(queryKey ?? [
+    {
+      agentId,
+      assistantMessageFunctionKwarg,
+      assistantMessageFunctionName,
+      before,
+      limit,
+      msgObject,
+      useAssistantMessage,
+      userId,
+    },
+  ]),
 ];
 export type ModelsServiceListModelsDefaultResponse = Awaited<
   ReturnType<typeof ModelsService.listModels>
@@ -372,15 +430,17 @@ export const UseBlocksServiceListMemoryBlocksKeyFn = (
     label,
     name,
     templatesOnly,
+    userId,
   }: {
     label?: string;
     name?: string;
     templatesOnly?: boolean;
+    userId?: string;
   } = {},
   queryKey?: Array<unknown>
 ) => [
   useBlocksServiceListMemoryBlocksKey,
-  ...(queryKey ?? [{ label, name, templatesOnly }]),
+  ...(queryKey ?? [{ label, name, templatesOnly, userId }]),
 ];
 export type BlocksServiceGetMemoryBlockDefaultResponse = Awaited<
   ReturnType<typeof BlocksService.getMemoryBlock>
@@ -409,11 +469,13 @@ export const useJobsServiceListJobsKey = 'JobsServiceListJobs';
 export const UseJobsServiceListJobsKeyFn = (
   {
     sourceId,
+    userId,
   }: {
     sourceId?: string;
+    userId?: string;
   } = {},
   queryKey?: Array<unknown>
-) => [useJobsServiceListJobsKey, ...(queryKey ?? [{ sourceId }])];
+) => [useJobsServiceListJobsKey, ...(queryKey ?? [{ sourceId, userId }])];
 export type JobsServiceListActiveJobsDefaultResponse = Awaited<
   ReturnType<typeof JobsService.listActiveJobs>
 >;
@@ -423,8 +485,13 @@ export type JobsServiceListActiveJobsQueryResult<
 > = UseQueryResult<TData, TError>;
 export const useJobsServiceListActiveJobsKey = 'JobsServiceListActiveJobs';
 export const UseJobsServiceListActiveJobsKeyFn = (
+  {
+    userId,
+  }: {
+    userId?: string;
+  } = {},
   queryKey?: Array<unknown>
-) => [useJobsServiceListActiveJobsKey, ...(queryKey ?? [])];
+) => [useJobsServiceListActiveJobsKey, ...(queryKey ?? [{ userId }])];
 export type JobsServiceGetJobDefaultResponse = Awaited<
   ReturnType<typeof JobsService.getJob>
 >;

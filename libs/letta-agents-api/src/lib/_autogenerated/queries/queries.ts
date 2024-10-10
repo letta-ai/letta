@@ -64,18 +64,20 @@ export const useToolsServiceGetToolIdByName = <
 >(
   {
     toolName,
+    userId,
   }: {
     toolName: string;
+    userId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseToolsServiceGetToolIdByNameKeyFn(
-      { toolName },
+      { toolName, userId },
       queryKey
     ),
-    queryFn: () => ToolsService.getToolIdByName({ toolName }) as TData,
+    queryFn: () => ToolsService.getToolIdByName({ toolName, userId }) as TData,
     ...options,
   });
 export const useToolsServiceListTools = <
@@ -83,12 +85,17 @@ export const useToolsServiceListTools = <
   TError = unknown,
   TQueryKey extends Array<unknown> = unknown[]
 >(
+  {
+    userId,
+  }: {
+    userId?: string;
+  } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
 ) =>
   useQuery<TData, TError>({
-    queryKey: Common.UseToolsServiceListToolsKeyFn(queryKey),
-    queryFn: () => ToolsService.listTools() as TData,
+    queryKey: Common.UseToolsServiceListToolsKeyFn({ userId }, queryKey),
+    queryFn: () => ToolsService.listTools({ userId }) as TData,
     ...options,
   });
 export const useSourcesServiceGetSource = <
@@ -98,15 +105,20 @@ export const useSourcesServiceGetSource = <
 >(
   {
     sourceId,
+    userId,
   }: {
     sourceId: string;
+    userId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
 ) =>
   useQuery<TData, TError>({
-    queryKey: Common.UseSourcesServiceGetSourceKeyFn({ sourceId }, queryKey),
-    queryFn: () => SourcesService.getSource({ sourceId }) as TData,
+    queryKey: Common.UseSourcesServiceGetSourceKeyFn(
+      { sourceId, userId },
+      queryKey
+    ),
+    queryFn: () => SourcesService.getSource({ sourceId, userId }) as TData,
     ...options,
   });
 export const useSourcesServiceGetSourceIdByName = <
@@ -116,18 +128,21 @@ export const useSourcesServiceGetSourceIdByName = <
 >(
   {
     sourceName,
+    userId,
   }: {
     sourceName: string;
+    userId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseSourcesServiceGetSourceIdByNameKeyFn(
-      { sourceName },
+      { sourceName, userId },
       queryKey
     ),
-    queryFn: () => SourcesService.getSourceIdByName({ sourceName }) as TData,
+    queryFn: () =>
+      SourcesService.getSourceIdByName({ sourceName, userId }) as TData,
     ...options,
   });
 export const useSourcesServiceListSources = <
@@ -135,12 +150,17 @@ export const useSourcesServiceListSources = <
   TError = unknown,
   TQueryKey extends Array<unknown> = unknown[]
 >(
+  {
+    userId,
+  }: {
+    userId?: string;
+  } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
 ) =>
   useQuery<TData, TError>({
-    queryKey: Common.UseSourcesServiceListSourcesKeyFn(queryKey),
-    queryFn: () => SourcesService.listSources() as TData,
+    queryKey: Common.UseSourcesServiceListSourcesKeyFn({ userId }, queryKey),
+    queryFn: () => SourcesService.listSources({ userId }) as TData,
     ...options,
   });
 export const useSourcesServiceListSourcePassages = <
@@ -150,18 +170,21 @@ export const useSourcesServiceListSourcePassages = <
 >(
   {
     sourceId,
+    userId,
   }: {
     sourceId: string;
+    userId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseSourcesServiceListSourcePassagesKeyFn(
-      { sourceId },
+      { sourceId, userId },
       queryKey
     ),
-    queryFn: () => SourcesService.listSourcePassages({ sourceId }) as TData,
+    queryFn: () =>
+      SourcesService.listSourcePassages({ sourceId, userId }) as TData,
     ...options,
   });
 export const useSourcesServiceListSourceDocuments = <
@@ -171,18 +194,21 @@ export const useSourcesServiceListSourceDocuments = <
 >(
   {
     sourceId,
+    userId,
   }: {
     sourceId: string;
+    userId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseSourcesServiceListSourceDocumentsKeyFn(
-      { sourceId },
+      { sourceId, userId },
       queryKey
     ),
-    queryFn: () => SourcesService.listSourceDocuments({ sourceId }) as TData,
+    queryFn: () =>
+      SourcesService.listSourceDocuments({ sourceId, userId }) as TData,
     ...options,
   });
 export const useAgentsServiceListAgents = <
@@ -190,12 +216,17 @@ export const useAgentsServiceListAgents = <
   TError = unknown,
   TQueryKey extends Array<unknown> = unknown[]
 >(
+  {
+    userId,
+  }: {
+    userId?: string;
+  } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
 ) =>
   useQuery<TData, TError>({
-    queryKey: Common.UseAgentsServiceListAgentsKeyFn(queryKey),
-    queryFn: () => AgentsService.listAgents() as TData,
+    queryKey: Common.UseAgentsServiceListAgentsKeyFn({ userId }, queryKey),
+    queryFn: () => AgentsService.listAgents({ userId }) as TData,
     ...options,
   });
 export const useAgentsServiceGetAgent = <
@@ -205,15 +236,20 @@ export const useAgentsServiceGetAgent = <
 >(
   {
     agentId,
+    userId,
   }: {
     agentId: string;
+    userId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
 ) =>
   useQuery<TData, TError>({
-    queryKey: Common.UseAgentsServiceGetAgentKeyFn({ agentId }, queryKey),
-    queryFn: () => AgentsService.getAgent({ agentId }) as TData,
+    queryKey: Common.UseAgentsServiceGetAgentKeyFn(
+      { agentId, userId },
+      queryKey
+    ),
+    queryFn: () => AgentsService.getAgent({ agentId, userId }) as TData,
     ...options,
   });
 export const useAgentsServiceGetAgentSources = <
@@ -331,18 +367,20 @@ export const useAgentsServiceListAgentArchivalMemory = <
     agentId,
     before,
     limit,
+    userId,
   }: {
     after?: number;
     agentId: string;
     before?: number;
     limit?: number;
+    userId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseAgentsServiceListAgentArchivalMemoryKeyFn(
-      { after, agentId, before, limit },
+      { after, agentId, before, limit, userId },
       queryKey
     ),
     queryFn: () =>
@@ -351,6 +389,7 @@ export const useAgentsServiceListAgentArchivalMemory = <
         agentId,
         before,
         limit,
+        userId,
       }) as TData,
     ...options,
   });
@@ -361,29 +400,50 @@ export const useAgentsServiceListAgentMessages = <
 >(
   {
     agentId,
+    assistantMessageFunctionKwarg,
+    assistantMessageFunctionName,
     before,
     limit,
     msgObject,
+    useAssistantMessage,
+    userId,
   }: {
     agentId: string;
+    assistantMessageFunctionKwarg?: string;
+    assistantMessageFunctionName?: string;
     before?: string;
     limit?: number;
     msgObject?: boolean;
+    useAssistantMessage?: boolean;
+    userId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseAgentsServiceListAgentMessagesKeyFn(
-      { agentId, before, limit, msgObject },
+      {
+        agentId,
+        assistantMessageFunctionKwarg,
+        assistantMessageFunctionName,
+        before,
+        limit,
+        msgObject,
+        useAssistantMessage,
+        userId,
+      },
       queryKey
     ),
     queryFn: () =>
       AgentsService.listAgentMessages({
         agentId,
+        assistantMessageFunctionKwarg,
+        assistantMessageFunctionName,
         before,
         limit,
         msgObject,
+        useAssistantMessage,
+        userId,
       }) as TData,
     ...options,
   });
@@ -448,21 +508,28 @@ export const useBlocksServiceListMemoryBlocks = <
     label,
     name,
     templatesOnly,
+    userId,
   }: {
     label?: string;
     name?: string;
     templatesOnly?: boolean;
+    userId?: string;
   } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseBlocksServiceListMemoryBlocksKeyFn(
-      { label, name, templatesOnly },
+      { label, name, templatesOnly, userId },
       queryKey
     ),
     queryFn: () =>
-      BlocksService.listMemoryBlocks({ label, name, templatesOnly }) as TData,
+      BlocksService.listMemoryBlocks({
+        label,
+        name,
+        templatesOnly,
+        userId,
+      }) as TData,
     ...options,
   });
 export const useBlocksServiceGetMemoryBlock = <
@@ -490,15 +557,20 @@ export const useJobsServiceListJobs = <
 >(
   {
     sourceId,
+    userId,
   }: {
     sourceId?: string;
+    userId?: string;
   } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
 ) =>
   useQuery<TData, TError>({
-    queryKey: Common.UseJobsServiceListJobsKeyFn({ sourceId }, queryKey),
-    queryFn: () => JobsService.listJobs({ sourceId }) as TData,
+    queryKey: Common.UseJobsServiceListJobsKeyFn(
+      { sourceId, userId },
+      queryKey
+    ),
+    queryFn: () => JobsService.listJobs({ sourceId, userId }) as TData,
     ...options,
   });
 export const useJobsServiceListActiveJobs = <
@@ -506,12 +578,17 @@ export const useJobsServiceListActiveJobs = <
   TError = unknown,
   TQueryKey extends Array<unknown> = unknown[]
 >(
+  {
+    userId,
+  }: {
+    userId?: string;
+  } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
 ) =>
   useQuery<TData, TError>({
-    queryKey: Common.UseJobsServiceListActiveJobsKeyFn(queryKey),
-    queryFn: () => JobsService.listActiveJobs() as TData,
+    queryKey: Common.UseJobsServiceListActiveJobsKeyFn({ userId }, queryKey),
+    queryFn: () => JobsService.listActiveJobs({ userId }) as TData,
     ...options,
   });
 export const useJobsServiceGetJob = <
@@ -676,6 +753,7 @@ export const useToolsServiceCreateTool = <
       {
         requestBody: ToolCreate;
         update?: boolean;
+        userId?: string;
       },
       TContext
     >,
@@ -688,13 +766,15 @@ export const useToolsServiceCreateTool = <
     {
       requestBody: ToolCreate;
       update?: boolean;
+      userId?: string;
     },
     TContext
   >({
-    mutationFn: ({ requestBody, update }) =>
+    mutationFn: ({ requestBody, update, userId }) =>
       ToolsService.createTool({
         requestBody,
         update,
+        userId,
       }) as unknown as Promise<TData>,
     ...options,
   });
@@ -709,6 +789,7 @@ export const useSourcesServiceCreateSource = <
       TError,
       {
         requestBody: SourceCreate;
+        userId?: string;
       },
       TContext
     >,
@@ -720,11 +801,15 @@ export const useSourcesServiceCreateSource = <
     TError,
     {
       requestBody: SourceCreate;
+      userId?: string;
     },
     TContext
   >({
-    mutationFn: ({ requestBody }) =>
-      SourcesService.createSource({ requestBody }) as unknown as Promise<TData>,
+    mutationFn: ({ requestBody, userId }) =>
+      SourcesService.createSource({
+        requestBody,
+        userId,
+      }) as unknown as Promise<TData>,
     ...options,
   });
 export const useSourcesServiceAttachAgentToSource = <
@@ -739,6 +824,7 @@ export const useSourcesServiceAttachAgentToSource = <
       {
         agentId: string;
         sourceId: string;
+        userId?: string;
       },
       TContext
     >,
@@ -751,13 +837,15 @@ export const useSourcesServiceAttachAgentToSource = <
     {
       agentId: string;
       sourceId: string;
+      userId?: string;
     },
     TContext
   >({
-    mutationFn: ({ agentId, sourceId }) =>
+    mutationFn: ({ agentId, sourceId, userId }) =>
       SourcesService.attachAgentToSource({
         agentId,
         sourceId,
+        userId,
       }) as unknown as Promise<TData>,
     ...options,
   });
@@ -773,6 +861,7 @@ export const useSourcesServiceDetachAgentFromSource = <
       {
         agentId: string;
         sourceId: string;
+        userId?: string;
       },
       TContext
     >,
@@ -785,13 +874,15 @@ export const useSourcesServiceDetachAgentFromSource = <
     {
       agentId: string;
       sourceId: string;
+      userId?: string;
     },
     TContext
   >({
-    mutationFn: ({ agentId, sourceId }) =>
+    mutationFn: ({ agentId, sourceId, userId }) =>
       SourcesService.detachAgentFromSource({
         agentId,
         sourceId,
+        userId,
       }) as unknown as Promise<TData>,
     ...options,
   });
@@ -807,6 +898,7 @@ export const useSourcesServiceUploadFileToSource = <
       {
         formData: Body_upload_file_to_source;
         sourceId: string;
+        userId?: string;
       },
       TContext
     >,
@@ -819,13 +911,15 @@ export const useSourcesServiceUploadFileToSource = <
     {
       formData: Body_upload_file_to_source;
       sourceId: string;
+      userId?: string;
     },
     TContext
   >({
-    mutationFn: ({ formData, sourceId }) =>
+    mutationFn: ({ formData, sourceId, userId }) =>
       SourcesService.uploadFileToSource({
         formData,
         sourceId,
+        userId,
       }) as unknown as Promise<TData>,
     ...options,
   });
@@ -840,6 +934,7 @@ export const useAgentsServiceCreateAgent = <
       TError,
       {
         requestBody: CreateAgent;
+        userId?: string;
       },
       TContext
     >,
@@ -851,11 +946,15 @@ export const useAgentsServiceCreateAgent = <
     TError,
     {
       requestBody: CreateAgent;
+      userId?: string;
     },
     TContext
   >({
-    mutationFn: ({ requestBody }) =>
-      AgentsService.createAgent({ requestBody }) as unknown as Promise<TData>,
+    mutationFn: ({ requestBody, userId }) =>
+      AgentsService.createAgent({
+        requestBody,
+        userId,
+      }) as unknown as Promise<TData>,
     ...options,
   });
 export const useAgentsServiceCreateAgentArchivalMemory = <
@@ -870,6 +969,7 @@ export const useAgentsServiceCreateAgentArchivalMemory = <
       {
         agentId: string;
         requestBody: CreateArchivalMemory;
+        userId?: string;
       },
       TContext
     >,
@@ -882,13 +982,15 @@ export const useAgentsServiceCreateAgentArchivalMemory = <
     {
       agentId: string;
       requestBody: CreateArchivalMemory;
+      userId?: string;
     },
     TContext
   >({
-    mutationFn: ({ agentId, requestBody }) =>
+    mutationFn: ({ agentId, requestBody, userId }) =>
       AgentsService.createAgentArchivalMemory({
         agentId,
         requestBody,
+        userId,
       }) as unknown as Promise<TData>,
     ...options,
   });
@@ -904,6 +1006,7 @@ export const useAgentsServiceCreateAgentMessage = <
       {
         agentId: string;
         requestBody: LettaRequest;
+        userId?: string;
       },
       TContext
     >,
@@ -916,13 +1019,15 @@ export const useAgentsServiceCreateAgentMessage = <
     {
       agentId: string;
       requestBody: LettaRequest;
+      userId?: string;
     },
     TContext
   >({
-    mutationFn: ({ agentId, requestBody }) =>
+    mutationFn: ({ agentId, requestBody, userId }) =>
       AgentsService.createAgentMessage({
         agentId,
         requestBody,
+        userId,
       }) as unknown as Promise<TData>,
     ...options,
   });
@@ -937,6 +1042,7 @@ export const useBlocksServiceCreateMemoryBlock = <
       TError,
       {
         requestBody: CreateBlock;
+        userId?: string;
       },
       TContext
     >,
@@ -948,12 +1054,14 @@ export const useBlocksServiceCreateMemoryBlock = <
     TError,
     {
       requestBody: CreateBlock;
+      userId?: string;
     },
     TContext
   >({
-    mutationFn: ({ requestBody }) =>
+    mutationFn: ({ requestBody, userId }) =>
       BlocksService.createMemoryBlock({
         requestBody,
+        userId,
       }) as unknown as Promise<TData>,
     ...options,
   });
@@ -1178,6 +1286,7 @@ export const useToolsServiceUpdateTool = <
       {
         requestBody: ToolUpdate;
         toolId: string;
+        userId?: string;
       },
       TContext
     >,
@@ -1190,13 +1299,15 @@ export const useToolsServiceUpdateTool = <
     {
       requestBody: ToolUpdate;
       toolId: string;
+      userId?: string;
     },
     TContext
   >({
-    mutationFn: ({ requestBody, toolId }) =>
+    mutationFn: ({ requestBody, toolId, userId }) =>
       ToolsService.updateTool({
         requestBody,
         toolId,
+        userId,
       }) as unknown as Promise<TData>,
     ...options,
   });
@@ -1212,6 +1323,7 @@ export const useSourcesServiceUpdateSource = <
       {
         requestBody: SourceUpdate;
         sourceId: string;
+        userId?: string;
       },
       TContext
     >,
@@ -1224,13 +1336,15 @@ export const useSourcesServiceUpdateSource = <
     {
       requestBody: SourceUpdate;
       sourceId: string;
+      userId?: string;
     },
     TContext
   >({
-    mutationFn: ({ requestBody, sourceId }) =>
+    mutationFn: ({ requestBody, sourceId, userId }) =>
       SourcesService.updateSource({
         requestBody,
         sourceId,
+        userId,
       }) as unknown as Promise<TData>,
     ...options,
   });
@@ -1246,6 +1360,7 @@ export const useAgentsServiceUpdateAgent = <
       {
         agentId: string;
         requestBody: UpdateAgentState;
+        userId?: string;
       },
       TContext
     >,
@@ -1258,13 +1373,15 @@ export const useAgentsServiceUpdateAgent = <
     {
       agentId: string;
       requestBody: UpdateAgentState;
+      userId?: string;
     },
     TContext
   >({
-    mutationFn: ({ agentId, requestBody }) =>
+    mutationFn: ({ agentId, requestBody, userId }) =>
       AgentsService.updateAgent({
         agentId,
         requestBody,
+        userId,
       }) as unknown as Promise<TData>,
     ...options,
   });
@@ -1280,6 +1397,7 @@ export const useAgentsServiceUpdateAgentMemory = <
       {
         agentId: string;
         requestBody: { [key: string]: unknown };
+        userId?: string;
       },
       TContext
     >,
@@ -1292,13 +1410,15 @@ export const useAgentsServiceUpdateAgentMemory = <
     {
       agentId: string;
       requestBody: { [key: string]: unknown };
+      userId?: string;
     },
     TContext
   >({
-    mutationFn: ({ agentId, requestBody }) =>
+    mutationFn: ({ agentId, requestBody, userId }) =>
       AgentsService.updateAgentMemory({
         agentId,
         requestBody,
+        userId,
       }) as unknown as Promise<TData>,
     ...options,
   });
@@ -1384,6 +1504,7 @@ export const useToolsServiceDeleteTool = <
       TError,
       {
         toolId: string;
+        userId?: string;
       },
       TContext
     >,
@@ -1395,11 +1516,12 @@ export const useToolsServiceDeleteTool = <
     TError,
     {
       toolId: string;
+      userId?: string;
     },
     TContext
   >({
-    mutationFn: ({ toolId }) =>
-      ToolsService.deleteTool({ toolId }) as unknown as Promise<TData>,
+    mutationFn: ({ toolId, userId }) =>
+      ToolsService.deleteTool({ toolId, userId }) as unknown as Promise<TData>,
     ...options,
   });
 export const useSourcesServiceDeleteSource = <
@@ -1413,6 +1535,7 @@ export const useSourcesServiceDeleteSource = <
       TError,
       {
         sourceId: string;
+        userId?: string;
       },
       TContext
     >,
@@ -1424,11 +1547,15 @@ export const useSourcesServiceDeleteSource = <
     TError,
     {
       sourceId: string;
+      userId?: string;
     },
     TContext
   >({
-    mutationFn: ({ sourceId }) =>
-      SourcesService.deleteSource({ sourceId }) as unknown as Promise<TData>,
+    mutationFn: ({ sourceId, userId }) =>
+      SourcesService.deleteSource({
+        sourceId,
+        userId,
+      }) as unknown as Promise<TData>,
     ...options,
   });
 export const useAgentsServiceDeleteAgent = <
@@ -1442,6 +1569,7 @@ export const useAgentsServiceDeleteAgent = <
       TError,
       {
         agentId: string;
+        userId?: string;
       },
       TContext
     >,
@@ -1453,11 +1581,15 @@ export const useAgentsServiceDeleteAgent = <
     TError,
     {
       agentId: string;
+      userId?: string;
     },
     TContext
   >({
-    mutationFn: ({ agentId }) =>
-      AgentsService.deleteAgent({ agentId }) as unknown as Promise<TData>,
+    mutationFn: ({ agentId, userId }) =>
+      AgentsService.deleteAgent({
+        agentId,
+        userId,
+      }) as unknown as Promise<TData>,
     ...options,
   });
 export const useAgentsServiceDeleteAgentArchivalMemory = <
@@ -1472,6 +1604,7 @@ export const useAgentsServiceDeleteAgentArchivalMemory = <
       {
         agentId: string;
         memoryId: string;
+        userId?: string;
       },
       TContext
     >,
@@ -1484,13 +1617,15 @@ export const useAgentsServiceDeleteAgentArchivalMemory = <
     {
       agentId: string;
       memoryId: string;
+      userId?: string;
     },
     TContext
   >({
-    mutationFn: ({ agentId, memoryId }) =>
+    mutationFn: ({ agentId, memoryId, userId }) =>
       AgentsService.deleteAgentArchivalMemory({
         agentId,
         memoryId,
+        userId,
       }) as unknown as Promise<TData>,
     ...options,
   });
