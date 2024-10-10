@@ -33,7 +33,9 @@
     "cl:new": "npm run component-libray:new",
     "cl:generate-icons": "nx g @letta-web/configure:generate-icons",
     "check-github-status": "node ./scripts/check-github-status/check-github-status.js",
-    "agents-api:generate": "nx run letta-agents-api:generate && nx run letta-agents-api:monkeypatch"
+    "agents-api:generate": "nx run letta-agents-api:generate && nx run letta-agents-api:monkeypatch",
+    "build-storybook": "nx run component-library:build-storybook",
+    "chromatic": "npx chromatic --project-token=chpt_163d302713dd4f3"
   },
   "private": true,
   "dependencies": {
@@ -153,6 +155,7 @@
     "@webpro/nx-tsc": "^0.0.1",
     "autoprefixer": "10.4.13",
     "babel-jest": "^29.7.0",
+    "chromatic": "^11.12.5",
     "concurrently": "^9.0.1",
     "cypress": "^13.14.2",
     "cypress-dotenv": "^2.0.0",
