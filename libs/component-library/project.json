@@ -8,6 +8,14 @@
     "add-component": {
       "executor": "@nx-extend/shadcn-ui:add"
     },
+    "build-storybook": {
+      "executor": "@nrwl/storybook:build",
+      "options": {
+        "uiFramework": "@storybook/react",
+        "outputDir": "dist/storybook",
+        "configDir": "libs/component-library/.storybook"
+      }
+    },
     "storybook": {
       "options": {
         "port": 3005

@@ -9,4 +9,17 @@ const meta: Meta<typeof DialogTable> = {
 export default meta;
 type Story = StoryObj<typeof DialogTable>;
 
-export const Primary: Story = {};
+export const Primary: Story = {
+  args: {
+    items: [
+      {
+        label: 'Name',
+        action: 'Edit',
+      },
+      {
+        label: 'Age',
+        action: 'Delete',
+      },
+    ],
+  },
+};

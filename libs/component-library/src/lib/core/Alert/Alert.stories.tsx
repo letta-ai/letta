@@ -14,18 +14,20 @@ export const Primary: Story = {
   args: {
     children: 'I am an alert',
     title: 'Alert',
+    variant: 'warning',
+    icon: '',
   },
   argTypes: {
     icon: {
-      options: ['default', '<RocketIcon />'],
+      options: ['none', '(custom)'],
       control: { type: 'radio' },
       mapping: {
-        default: null,
-        '<RocketIcon />': <RocketIcon />,
+        default: '',
+        '(custom)': <RocketIcon />,
       },
     },
     variant: {
-      options: ['warning'],
+      options: ['warning', 'info', 'destructive'],
       control: { type: 'radio' },
     },
   },

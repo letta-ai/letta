@@ -292,6 +292,13 @@ export const inputStorybookArgTypes: ArgTypes = {
   fullWidth: { control: 'boolean' },
   fullHeight: { control: 'boolean' },
 };
+export const inputStorybookArgs = {
+  label: 'Label',
+  hideLabel: false,
+  description: '',
+  fullWidth: false,
+  fullHeight: false,
+};
 
 export function extractAndRemoveInputProps<T>(
   props: T & { label?: string; hideLabel?: boolean }

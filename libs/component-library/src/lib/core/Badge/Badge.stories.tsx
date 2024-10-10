@@ -9,4 +9,27 @@ const meta: Meta<typeof Badge> = {
 export default meta;
 type Story = StoryObj<typeof Badge>;
 
-export const Primary: Story = {};
+export const Primary: Story = {
+  argTypes: {
+    size: {
+      options: ['default', 'small'],
+      control: { type: 'radio' },
+    },
+    color: {
+      options: [
+        'background-grey',
+        'background-greyer',
+        'background-black',
+        'transparent',
+        'tertiary',
+        'primary',
+      ],
+      control: { type: 'radio' },
+    },
+  },
+  args: {
+    content: 'Badge',
+    color: 'background-grey',
+    size: 'default',
+  },
+};
