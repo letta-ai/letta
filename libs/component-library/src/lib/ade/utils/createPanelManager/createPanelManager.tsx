@@ -484,7 +484,7 @@ export function createPanelManager<
           const hasNoTabPanelOpenInFirstXPosition =
             panelRegistry?.[
               prevState.positions[0]?.positions[0]?.positions[0]?.templateId
-            ].noTab;
+            ]?.noTab;
 
           const firstXIndex = hasNoTabPanelOpenInFirstXPosition ? 1 : 0;
 
