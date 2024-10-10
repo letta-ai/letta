@@ -36,9 +36,7 @@ jobs:
     # https://docs.github.com/en/actions/using-jobs/using-a-matrix-for-your-jobs
     # Also see warning here https://github.com/cypress-io/github-action#parallel
     strategy:
-      fail-fast: false # https://github.com/cypress-io/github-action/issues/48
-      matrix:
-        containers: [ 1 ] # Uses 2 parallel instances
+      fail-fast: false
     services:
       redis:
         image: redis
