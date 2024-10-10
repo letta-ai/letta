@@ -120,3 +120,9 @@ jobs:
           IS_CYPRESS_RUN: yes
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           TAG: ${{ github.sha }}
+  cypress-result:
+    needs: [cypress-run]
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Echo Cypress Results"
+        run: echo "Done running Cypress tests"
