@@ -1,22 +1,40 @@
-name: "Chromatic"
+name: Chromatic
 
-on: push
+on: workflow_call
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-chromatic
+  cancel-in-progress: true
+
+permissions:
+  actions: write
+  contents: read
 
 jobs:
   chromatic:
-    name: Run Chromatic
+    name: Chromatic
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
+      - name: ⬇️ Checkout repo
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: actions/setup-node@v4
+
+      - name: ⎔ Setup node
+        uses: actions/setup-node@v4
         with:
+          cache: npm
+          cache-dependency-path: ./package.json
           node-version: 20
-      - name: Install dependencies
-        run: npm ci
-      - name: Run Chromatic
+      - name: 📥 Install deps
+        run: npm install
+      - name: Build Storybook
+        run: npm run build-storybook
+      - name: ⚡ Run chromatic
         uses: chromaui/action@latest
         with:
+          exitZeroOnChanges: true
+          exitOnceUploaded: true
+          onlyChanged: true
+          skip: "@(renovate/**|dependabot/**)"
           projectToken: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}

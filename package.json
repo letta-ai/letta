@@ -13,7 +13,7 @@
     "build:e2e": "npm run database:migrate && npm run build",
     "letta:generate:openapi": "nx generate-openapi letta",
     "format": "nx format:write",
-    "test": "nx test letta",
+    "test": "npx nx run-many -p letta component-library  --skip-nx-cache --parallel --targets=test",
     "lint": "npx nx run-many --all --skip-nx-cache --parallel --targets=lint",
     "type-check": "nx run-many --all --skip-nx-cache --parallel --targets=type-check",
     "prepare": "husky install",

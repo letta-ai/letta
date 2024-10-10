@@ -384,7 +384,7 @@ describe('agentsRouter', () => {
 
       expect(lettaAgentAPIMock.AgentsService.getAgent).toHaveBeenCalledWith(
         {
-          agentId: 'test-template-id',
+          agentId: 'deployed-test-template-id',
         },
         {
           user_id: 'test-id',
