@@ -87,7 +87,7 @@ result.output.servers = [
     description: 'Letta Hosted',
   },
   {
-    url: 'http://memgpt.localhost',
+    url: 'http://localhost:8083',
     description: 'Self Hosted',
   },
 ];
