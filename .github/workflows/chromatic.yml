@@ -37,4 +37,4 @@ jobs:
           exitOnceUploaded: true
           onlyChanged: true
           skip: "@(renovate/**|dependabot/**)"
-          token: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
+          projectToken: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
