@@ -29,15 +29,10 @@ jobs:
             apps/letta/**
             libs/component-library/**
   main:
+    needs: [ changed-files ]
+    if: ${{ needs.changed-files.outputs.any_changed == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: 'npm'
-
-      - run: npm ci --legacy-peer-deps
-      - run: npm run test

@@ -29,6 +29,7 @@ jobs:
             tsconfig.json
   cypress-run:
     needs: [changed-files]
+    if: ${{ needs.changed-files.outputs.any_changed == 'true' }}
     runs-on: ubuntu-latest
     environment: Deployment
     # Runs tests in parallel with matrix strategy https://docs.cypress.io/guides/guides/parallelization
