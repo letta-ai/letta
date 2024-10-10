@@ -36,9 +36,7 @@ jobs:
     # https://docs.github.com/en/actions/using-jobs/using-a-matrix-for-your-jobs
     # Also see warning here https://github.com/cypress-io/github-action#parallel
     strategy:
-      fail-fast: false # https://github.com/cypress-io/github-action/issues/48
-      matrix:
-        containers: [ 1 ] # Uses 2 parallel instances
+      fail-fast: false
     services:
       redis:
         image: redis
@@ -120,9 +118,3 @@ jobs:
           IS_CYPRESS_RUN: yes
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           TAG: ${{ github.sha }}
-  cypress-result:
-    needs: [cypress-run]
-    runs-on: ubuntu-latest
-    steps:
-      - name: "Echo Cypress Results"
-        run: echo "Done running Cypress tests"
