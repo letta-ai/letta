@@ -3,6 +3,7 @@ import ReactMarkdown from 'react-markdown';
 import type { SupportedLangauges } from '../Code/Code';
 import { isSupportedLanguage, RawCodeEditor } from '../Code/Code';
 import { InlineCode } from '../InlineCode/InlineCode';
+import { Typography } from '../Typography/Typography';
 
 interface MarkdownProps {
   text: string;
@@ -12,9 +13,10 @@ export function Markdown(props: MarkdownProps) {
   return (
     <ReactMarkdown
       children={props.text}
+      className="text-base"
       components={{
         p({ children }) {
-          return <p className="block">{children}</p>;
+          return <Typography className="block">{children}</Typography>;
         },
         code(props) {
           const { children, className } = props;

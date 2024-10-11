@@ -6,12 +6,16 @@ import { cn } from '@letta-web/core-style-config';
 
 const typographyVariants = cva('break-words', {
   variants: {
+    inline: {
+      true: 'inline',
+    },
     variant: {
       heading1: 'text-[1.8rem] font-semibold',
       heading2: 'text-[1.725rem] font-semibold',
       heading3: 'text-[1.5rem]',
       heading4: 'text-xl',
       heading5: 'text-lg',
+      panelInfo: 'text-lg',
       body: 'text-base',
       body2: 'text-sm',
     },
@@ -23,6 +27,9 @@ const typographyVariants = cva('break-words', {
       white: 'text-white',
       positive: 'text-positive',
       destructive: 'text-destructive',
+    },
+    font: {
+      mono: 'font-mono',
     },
     bold: {
       true: 'font-medium',
@@ -65,6 +72,7 @@ const variantToElement = {
   heading3: 'h3',
   heading4: 'h4',
   heading5: 'h5',
+  panelInfo: 'p',
   body: 'p',
   body2: 'p',
 };
@@ -75,6 +83,7 @@ export function Typography(props: TypographyProps) {
     overrideEl,
     fullWidth,
     underline,
+    inline,
     italic,
     noWrap,
     variant,
@@ -92,6 +101,7 @@ export function Typography(props: TypographyProps) {
         italic,
         noWrap,
         bold,
+        inline,
         fullWidth,
         variant,
         className,

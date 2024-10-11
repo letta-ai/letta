@@ -2,6 +2,7 @@
 import type { ProviderUserPayload } from '$letta/types';
 import { AgentRecipeVariant } from '$letta/types';
 import {
+  adePreferences,
   db,
   emailWhitelist,
   lettaAPIKeys,
@@ -26,6 +27,7 @@ import { jwtDecode } from 'jwt-decode';
 import { AdminService } from '@letta-web/letta-agents-api';
 import { createAgent, versionAgentTemplate } from '$letta/sdk';
 import { generateSlug } from '$letta/server';
+import { generateDefaultPreferences } from '$letta/web-api/ade-preferences/adePreferencesRouter';
 
 function isLettaEmail(email: string) {
   return email.endsWith('@letta.com') || email.endsWith('@memgpt.ai');
@@ -211,20 +213,28 @@ async function createUserAndOrganization(
     throw new Error(JSON.stringify(createdAgentTemplate.body, null, 2));
   }
 
-  const versionedAgentTemplate = await versionAgentTemplate(
-    {
-      params: {
-        agent_id: createdAgentTemplate.body.id,
+  const [versionedAgentTemplate] = await Promise.all([
+    await versionAgentTemplate(
+      {
+        params: {
+          agent_id: createdAgentTemplate.body.id,
+        },
       },
-    },
-    {
-      request: {
-        userId: createdUser.userId,
-        organizationId,
-        lettaAgentsUserId: lettaAgentsUser.id,
-      },
-    }
-  );
+      {
+        request: {
+          userId: createdUser.userId,
+          organizationId,
+          lettaAgentsUserId: lettaAgentsUser.id,
+        },
+      }
+    ),
+    db.insert(adePreferences).values({
+      userId: createdUser.userId,
+      displayConfig: generateDefaultPreferences({ firstTime: true })
+        .displayConfig,
+      agentId: createdAgentTemplate.body.id,
+    }),
+  ]);
 
   if (versionedAgentTemplate.status !== 201) {
     throw new Error('Failed to create source agent');

@@ -8,6 +8,9 @@ import type { ElementRef } from 'react';
 import { forwardRef } from 'react';
 const stackVariants = cva('flex', {
   variants: {
+    inline: {
+      true: 'inline-flex',
+    },
     gap: {
       false: 'gap-0',
       text: 'gap',
