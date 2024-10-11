@@ -5,7 +5,7 @@ import type { VariantProps } from 'class-variance-authority';
 import { cva } from 'class-variance-authority';
 import { cn } from '@letta-web/core-style-config';
 
-const frameVariants = cva('transition-all', {
+const frameVariants = cva('', {
   variants: {
     fullWidth: {
       true: 'w-full',
