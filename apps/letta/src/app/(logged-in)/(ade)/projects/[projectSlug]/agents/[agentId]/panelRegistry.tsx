@@ -5,7 +5,7 @@ import { configPanelTemplate } from './ConfigPanel/ConfigPanelWrapped';
 import { welcomePanelTemplate } from './WelcomePanel/WelcomePanel';
 import { modelTemplate } from './ModelPanel/ModelPanel';
 import { toolsPanelTemplate } from './ToolsPanel/ToolsPanel';
-import { deploymentPanelTemplate } from './DeploymentAgentMangerPanel/DeploymentAgentMangerPanel';
+import { deploymentPanelTemplate } from './TemplateVersionManager/TemplateVersionManager';
 import { agentSidebarTemplate } from './ADESidebar/ADESidebar';
 import { editMemoryBlocksTemplate } from './EditMemoryBlockPanel/EditMemoryBlockPanel';
 import { editDataSourcesPanel } from './EditDataSourcesPanel/EditDataSourcesPanel';
