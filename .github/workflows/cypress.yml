@@ -16,46 +16,46 @@ on:
     branches:
         - main
 jobs:
-#  changed-files:
-#    runs-on: ubuntu-latest
-#    name: changed-files
-#    outputs:
-#      all_changed_files: ${{ steps.changed-files.outputs.all_changed_files }}
-#      any_changed: ${{ steps.changed-files.outputs.any_changed }}
-#    steps:
-#      - uses: actions/checkout@v4
-#        with:
-#          fetch-depth: 0
-#      - name: Get changed files
-#        id: changed-files
-#        uses: tj-actions/changed-files@v44
-#        with:
-#          files: |
-#            apps/letta/**
-#            libs/component-library/**
-#            package.json
-#            package-lock.json
-#            tsconfig.json
-#  prepare:
-#    runs-on: ubuntu-latest
-#    steps:
-#      - name: Wait for lint to succeed
-#        uses: lewagon/wait-on-check-action@v0.2
-#        with:
-#          ref: ${{ github.event.pull_request.head.sha || github.sha }}
-#          check-name: 💨 Lint
-#          repo-token: ${{ secrets.PULLER_TOKEN }}
-#          wait-interval: 20
-#
-#      - name: Wait for unit-tests to succeed
-#        uses: lewagon/wait-on-check-action@v0.2
-#        with:
-#          ref: ${{ github.event.pull_request.head.sha || github.sha }}
-#          check-name: 🧪 Unit Tests
-#          repo-token: ${{ secrets.PULLER_TOKEN }}
-#          wait-interval: 20
+  changed-files:
+    runs-on: ubuntu-latest
+    name: changed-files
+    outputs:
+      all_changed_files: ${{ steps.changed-files.outputs.all_changed_files }}
+      any_changed: ${{ steps.changed-files.outputs.any_changed }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v44
+        with:
+          files: |
+            apps/letta/**
+            libs/component-library/**
+            package.json
+            package-lock.json
+            tsconfig.json
+  prepare:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait for lint to succeed
+        uses: lewagon/wait-on-check-action@v0.2
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          check-name: 💨 Lint
+          repo-token: ${{ secrets.PULLER_TOKEN }}
+          wait-interval: 20
+
+      - name: Wait for unit-tests to succeed
+        uses: lewagon/wait-on-check-action@v0.2
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          check-name: 🧪 Unit Tests
+          repo-token: ${{ secrets.PULLER_TOKEN }}
+          wait-interval: 20
   cypress-run:
-    needs: []
+    needs: [changed-files,prepare]
     permissions:
       actions: read
       contents: read
@@ -121,23 +121,26 @@ jobs:
         with:
           path: ~/.cache/Cypress
           key: ${{ runner.os }}-${{ env.cache-name }}
-      - uses: 'google-github-actions/auth@v2'
-        id: auth
+#      - uses: 'google-github-actions/auth@v2'
+#        id: auth
+#        with:
+#          project_id: 'memgpt-428419'
+#          service_account: 'github-actions-service-account@memgpt-428419.iam.gserviceaccount.com'
+#          workload_identity_provider: 'projects/231889654562/locations/global/workloadIdentityPools/letta-web-dev-pool/providers/github-actions-provider'
+#          token_format: 'access_token'
+#      - name: 'Set up Cloud SDK'
+#        uses: 'google-github-actions/setup-gcloud@v2'
+#        with:
+#          version: '>= 363.0.0'
+#      - name: 'Set gcloud docker credential'
+#        run: gcloud auth configure-docker us-central1-docker.pkg.dev
+      - name: Checkout letta agents
+        uses: actions/checkout@v4
         with:
-          project_id: 'memgpt-428419'
-          service_account: 'github-actions-service-account@memgpt-428419.iam.gserviceaccount.com'
-          workload_identity_provider: 'projects/231889654562/locations/global/workloadIdentityPools/letta-web-dev-pool/providers/github-actions-provider'
-          token_format: 'access_token'
-      - name: 'Set up Cloud SDK'
-        uses: 'google-github-actions/setup-gcloud@v2'
-        with:
-          version: '>= 363.0.0'
-      - name: 'Set gcloud docker credential'
-        run: gcloud auth configure-docker us-central1-docker.pkg.dev
-      - name: Pull Docker image
-        run: docker pull us-central1-docker.pkg.dev/memgpt-428419/letta/memgpt-server:latest
-      - name: Start Docker container
-        run: docker run -e OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }} -e LETTA_PG_DB=postgres -e LETTA_PG_USER=postgres -e LETTA_PG_PASSWORD=postgres -e LETTA_PG_HOST=localhost -e LETTA_PG_PORT=5432 -e LETTA_LLM_ENDPOINT=https://api.openai.com/v1 -e LETTA_LLM_ENDPOINT_TYPE=openai -e LETTA_LLM_MODEL=gpt-4 -e LETTA_LLM_CONTEXT_WINDOW=8192 -e LETTA_EMBEDDING_ENDPOINT=https://api.openai.com/v1 -e LETTA_EMBEDDING_ENDPOINT_TYPE=openai -e LETTA_EMBEDDING_DIM=1536 -e LETTA_EMBEDDING_MODEL=text-embedding-ada-002  -p 8083:8083 us-central1-docker.pkg.dev/memgpt-428419/letta/memgpt-server:latest
+          repository: letta-ai/letta-agents
+          token: ${{ secrets.PULLER_TOKEN }}
+          path: letta-agents
+      - name: Turn on Letta agents
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           LETTA_PG_DB: postgres
@@ -153,6 +156,11 @@ jobs:
           LETTA_EMBEDDING_ENDPOINT_TYPE: openai
           LETTA_EMBEDDING_DIM: 1536
           LETTA_EMBEDDING_MODEL: text-embedding-ada-002
+          LETTA_DEBUG: True
+        working-directory: letta-agents
+        run: |
+          docker build -t letta-agents .
+          docker run -d -p 8083:8083 --name letta-agents letta-agents
       - name: Install Dependencies
         if: steps.cache-nodemodules.outputs.cache-hit != 'true'
         run: npm ci
