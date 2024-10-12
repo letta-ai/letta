@@ -140,11 +140,6 @@ jobs:
         run: docker run -p 8083:8083 us-central1-docker.pkg.dev/memgpt-428419/letta/memgpt-server:latest
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          LETTA_PG_DB: postgres
-          LETTA_PG_USER: postgres
-          LETTA_PG_PASSWORD: postgres
-          LETTA_PG_HOST: localhost
-          LETTA_PG_PORT: 5432
           LETTA_LLM_ENDPOINT: https://api.openai.com/v1
           LETTA_LLM_ENDPOINT_TYPE: openai
           LETTA_LLM_MODEL: gpt-4
