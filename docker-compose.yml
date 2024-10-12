@@ -14,7 +14,7 @@ services:
       - ./data:/data
     command: redis-server --appendonly yes
   postgres:
-    image: postgres:alpine
+    image: ankane/pgvector
     container_name: postgres
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U postgres']
@@ -27,6 +27,8 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: letta
+    volumes:
+      - ./misc/postgres-db-init/init.sql:/docker-entrypoint-initdb.d/init.sql
   web:
     depends_on:
       postgres:

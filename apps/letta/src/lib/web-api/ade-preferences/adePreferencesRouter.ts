@@ -5,7 +5,14 @@ import { adePreferences, db } from '@letta-web/database';
 import { getUserIdOrThrow } from '$letta/server/auth';
 import { and, eq } from 'drizzle-orm';
 
-function generateDefaultPreferences(): AdePreferencesData {
+interface GenerateDefaultPreferencesOptions {
+  firstTime?: boolean;
+}
+
+export function generateDefaultPreferences(
+  options: GenerateDefaultPreferencesOptions = {}
+): AdePreferencesData {
+  const { firstTime } = options;
   return {
     displayConfig: [
       {
@@ -31,7 +38,7 @@ function generateDefaultPreferences(): AdePreferencesData {
             size: 100,
             positions: [
               {
-                id: 'simulator',
+                id: 'agent-simulator',
                 isActive: true,
                 templateId: 'agent-simulator',
                 data: undefined,
@@ -56,7 +63,9 @@ function generateDefaultPreferences(): AdePreferencesData {
                 id: 'welcome',
                 isActive: true,
                 templateId: 'welcome-panel',
-                data: undefined,
+                data: {
+                  firstTime,
+                },
               },
             ],
           },

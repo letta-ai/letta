@@ -212,7 +212,7 @@ function extractMessage(
       if (!out.success) {
         return {
           id: `${agentMessage.id}-${agentMessage.message_type}`,
-          content: agentMessage.message,
+          content: <Typography>{agentMessage.message}</Typography>,
           timestamp: new Date(agentMessage.date).toISOString(),
           name: 'User',
         };
@@ -220,7 +220,7 @@ function extractMessage(
 
       return {
         id: `${agentMessage.id}-${agentMessage.message_type}`,
-        content: out.data.message,
+        content: <Typography>{out.data.message}</Typography>,
         timestamp: new Date(agentMessage.date).toISOString(),
         name: 'User',
       };

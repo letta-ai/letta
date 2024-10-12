@@ -54,6 +54,7 @@ import {
   colors,
   uniqueNamesGenerator,
 } from 'unique-names-generator';
+import { atom, useAtom } from 'jotai';
 
 type PanelRegistryKeys = keyof typeof panelRegistry;
 
@@ -94,8 +95,24 @@ interface ADEFolderSidebarItemProps {
   children: React.ReactNode;
 }
 
+export const folderStatesAtom = atom<Record<string, boolean>>({});
+
 function ADEFolderSidebarItem(props: ADEFolderSidebarItemProps) {
-  const [open, setOpen] = useState(false);
+  const [folderStates, setFolderStates] = useAtom(folderStatesAtom);
+
+  const setOpen = useCallback(
+    (state: boolean) => {
+      setFolderStates((prev) => ({
+        ...prev,
+        [props.templateId]: state,
+      }));
+    },
+    [props.templateId, setFolderStates]
+  );
+
+  const open = useMemo(() => {
+    return folderStates[props.templateId] || false;
+  }, [folderStates, props.templateId]);
 
   const { label, templateId, children } = props;
 
@@ -109,7 +126,7 @@ function ADEFolderSidebarItem(props: ADEFolderSidebarItemProps) {
     if (isActive) {
       setOpen(true);
     }
-  }, [isActive]);
+  }, [isActive, setOpen]);
 
   return (
     <>
@@ -615,7 +632,7 @@ function AgentPageSidebar() {
             icon={<ChatBubbleIcon />}
             templateId="agent-simulator"
             data={undefined}
-            id="simulator"
+            id="agent-simulator"
           />
           <AgentPanelSidebarItem
             label={t('nav.archivalMemories')}

@@ -10,21 +10,25 @@ interface ADESidebarButtonProps {
   preview?: React.ReactNode | undefined;
   isActive?: boolean;
   onClick?: () => void;
+  inline?: boolean;
 }
 
 export function ADESidebarButton(props: ADESidebarButtonProps) {
-  const { label, icon, preview, isActive, onClick } = props;
+  const { label, inline, icon, preview, isActive, onClick } = props;
 
   return (
     <HStack
       onClick={onClick}
       as="button"
-      fullWidth
+      fullWidth={!inline}
+      inline={inline}
       data-testid={`ade-navigate-to:${label}`}
       paddingX="small"
       paddingY="small"
       rounded
-      className={cn('hover:bg-background-grey-hover cursor-pointer')}
+      className={cn(
+        'hover:bg-background-grey-hover bg-background-grey cursor-pointer'
+      )}
       color="transparent"
       align="center"
     >

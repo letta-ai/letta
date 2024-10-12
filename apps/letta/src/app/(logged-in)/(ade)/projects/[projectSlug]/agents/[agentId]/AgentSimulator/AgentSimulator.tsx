@@ -236,7 +236,11 @@ function ControlChatroomRenderMode() {
     <RawToggleGroup
       size="small"
       border
-      onValueChange={(value) => setRenderMode(value as MessagesDisplayMode)}
+      onValueChange={(value) => {
+        if (value) {
+          setRenderMode(value as MessagesDisplayMode);
+        }
+      }}
       value={renderMode}
       label={t('setChatroomRenderMode.label')}
       hideLabel
