@@ -4,6 +4,10 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  actions: read
+  contents: read
+
 on:
   push:
     branches:
@@ -13,6 +17,9 @@ on:
         - main
 jobs:
   setup-google-auth:
+    permissions:
+      contents: 'read'
+      id-token: 'write'
     runs-on: ubuntu-latest
     outputs:
       access_token: ${{ steps.auth.outputs.access_token }}
