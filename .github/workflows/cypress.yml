@@ -30,6 +30,7 @@ jobs:
       - uses: 'google-github-actions/auth@v2'
         with:
           project_id: 'memgpt-428419'
+          service_account: 'github-actions-service-account@memgpt-428419.iam.gserviceaccount.com'
           workload_identity_provider: 'projects/231889654562/locations/global/workloadIdentityPools/letta-web-dev-pool/providers/github-actions-provider'
           token_format: 'access_token'
 #  changed-files:
