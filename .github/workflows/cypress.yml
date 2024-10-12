@@ -37,26 +37,8 @@ jobs:
             package.json
             package-lock.json
             tsconfig.json
-  prepare:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Wait for lint to succeed
-        uses: lewagon/wait-on-check-action@v0.2
-        with:
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
-          check-name: '💨 Lint'
-          repo-token: ${{ secrets.PULLER_TOKEN }}
-          wait-interval: 20
-
-      - name: Wait for unit-tests to succeed
-        uses: lewagon/wait-on-check-action@v0.2
-        with:
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
-          check-name: '🧪 Unit Tests'
-          repo-token: ${{ secrets.PULLER_TOKEN }}
-          wait-interval: 20
   cypress-run:
-    needs: [changed-files,prepare]
+    needs: [changed-files]
     permissions:
       actions: read
       contents: read

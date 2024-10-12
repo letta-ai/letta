@@ -1,4 +1,4 @@
-name: 🧪 Unit Tests
+name: 🧪 Lint and Test
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
