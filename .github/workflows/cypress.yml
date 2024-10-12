@@ -137,7 +137,7 @@ jobs:
       - name: Pull Docker image
         run: docker pull us-central1-docker.pkg.dev/memgpt-428419/letta/memgpt-server:latest
       - name: Start Docker container
-        run: docker run -d -p 8083:8083 us-central1-docker.pkg.dev/memgpt-428419/letta/memgpt-server:latest -e OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }} -e LETTA_PG_DB=postgres -e LETTA_PG_USER=postgres -e LETTA_PG_PASSWORD=postgres -e LETTA_PG_HOST=localhost -e LETTA_PG_PORT=5432 -e LETTA_LLM_ENDPOINT=https://api.openai.com/v1 -e LETTA_LLM_ENDPOINT_TYPE=openai -e LETTA_LLM_MODEL=gpt-4 -e LETTA_LLM_CONTEXT_WINDOW=8192 -e LETTA_EMBEDDING_ENDPOINT=https://api.openai.com/v1 -e LETTA_EMBEDDING_ENDPOINT_TYPE=openai -e LETTA_EMBEDDING_DIM=1536 -e LETTA_EMBEDDING_MODEL=text-embedding-ada-002
+        run: docker run -e OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }} -e LETTA_PG_DB=postgres -e LETTA_PG_USER=postgres -e LETTA_PG_PASSWORD=postgres -e LETTA_PG_HOST=localhost -e LETTA_PG_PORT=5432 -e LETTA_LLM_ENDPOINT=https://api.openai.com/v1 -e LETTA_LLM_ENDPOINT_TYPE=openai -e LETTA_LLM_MODEL=gpt-4 -e LETTA_LLM_CONTEXT_WINDOW=8192 -e LETTA_EMBEDDING_ENDPOINT=https://api.openai.com/v1 -e LETTA_EMBEDDING_ENDPOINT_TYPE=openai -e LETTA_EMBEDDING_DIM=1536 -e LETTA_EMBEDDING_MODEL=text-embedding-ada-002 -d -p 8083:8083 us-central1-docker.pkg.dev/memgpt-428419/letta/memgpt-server:latest
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           LETTA_PG_DB: postgres
