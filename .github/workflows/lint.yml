@@ -30,6 +30,7 @@ jobs:
         uses: tj-actions/changed-files@v44
         with:
           files: |
+            .github/workflows/lint.yml
             libs/**
             apps/**
   main:

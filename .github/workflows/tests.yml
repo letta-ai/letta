@@ -32,6 +32,7 @@ jobs:
           files: |
             apps/letta/**
             libs/component-library/**
+            .github/workflows/tests.yml
   main:
     needs: [ changed-files ]
     if: ${{ needs.changed-files.outputs.any_changed == 'true' }}
