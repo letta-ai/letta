@@ -34,8 +34,6 @@ jobs:
           service_account: 'github-actions-service-account@memgpt-428419.iam.gserviceaccount.com'
           workload_identity_provider: 'projects/231889654562/locations/global/workloadIdentityPools/letta-web-dev-pool/providers/github-actions-provider'
           token_format: 'access_token'
-      - name: Echo access token
-        run: echo ${{ steps.auth.outputs.access_token }}
 #  changed-files:
 #    runs-on: ubuntu-latest
 #    name: changed-files
@@ -107,7 +105,7 @@ jobs:
           LETTA_DEBUG: True
         credentials:
           username: 'oauth2accesstoken'
-          password: ${{ needs.setup-google-auth.auth.outputs.access_token }}
+          password: ${{ needs.setup-google-auth.outputs.access_token }}
         ports:
           - 8083:8083
         options:
