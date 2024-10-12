@@ -24,6 +24,9 @@ jobs:
     outputs:
       access_token: ${{ steps.auth.outputs.access_token }}
     steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: 'google-github-actions/auth@v2'
         with:
           project_id: 'memgpt-428419'
