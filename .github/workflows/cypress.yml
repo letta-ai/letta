@@ -137,7 +137,7 @@ jobs:
       - name: Pull Docker image
         run: docker pull us-central1-docker.pkg.dev/memgpt-428419/letta/memgpt-server:latest
       - name: Start Docker container
-        run: docker run -d -p 8083:8083 us-central1-docker.pkg.dev/memgpt-428419/letta/memgpt-server:latest --health-cmd "curl http://localhost:8083/v1/health" --health-interval 10s --health-timeout 5s --health-retries 5
+        run: docker run -p 8083:8083 us-central1-docker.pkg.dev/memgpt-428419/letta/memgpt-server:latest
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           LETTA_PG_DB: postgres
