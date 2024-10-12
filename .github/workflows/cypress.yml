@@ -73,7 +73,7 @@ jobs:
 #          wait-interval: 20
   cypress-run:
     needs: [setup-google-auth]
-#    if: ${{ needs.changed-files.outputs.any_changed == 'true' }}
+    if: ${{ needs.changed-files.outputs.any_changed == 'true' }}
     runs-on: ubuntu-latest
     environment: Deployment
     # Runs tests in parallel with matrix strategy https://docs.cypress.io/guides/guides/parallelization
@@ -104,7 +104,7 @@ jobs:
           LETTA_DEBUG: True
         credentials:
           username: 'oauth2accesstoken'
-          password: '${{ needs.gcloud-auth.auth.outputs.access_token }}'
+          password: '${{ needs.setup-google-auth.auth.outputs.access_token }}'
         ports:
           - 8083:8083
         options:
