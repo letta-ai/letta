@@ -1,6 +1,6 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import type { PanelTemplate } from '@letta-web/component-library';
-import { Card, RawInput, Typography } from '@letta-web/component-library';
+import { RawInput, Typography } from '@letta-web/component-library';
 import {
   Badge,
   Button,
@@ -128,67 +128,72 @@ function DeployedAgentTemplateCard(props: DeployedAgentTemplateCardProps) {
   const t = useTranslations('ADE/DeploymentAgentMangerPanel');
 
   return (
-    <Card>
-      <VStack gap="large">
-        <HStack
-          paddingBottom="small"
-          borderBottom
-          align="center"
-          justify="spaceBetween"
-        >
-          <div>
-            <Badge
-              color="primary"
-              content={t('DeployedAgentTemplateCard.release', { version })}
-            />
-          </div>
-          <Typography color="muted">
-            {t('DeployedAgentTemplateCard.createdAt', {
-              date: nicelyFormattedDateAndTime(createdAt),
-            })}
-          </Typography>
-        </HStack>
+    <VStack
+      borderBottom
+      color="background"
+      paddingX="small"
+      paddingTop="small"
+      paddingBottom
+      gap="large"
+    >
+      <HStack
+        paddingBottom="small"
+        borderBottom
+        align="center"
+        justify="spaceBetween"
+      >
+        <div>
+          <Badge
+            color="primary"
+            content={t('DeployedAgentTemplateCard.release', { version })}
+          />
+        </div>
+        <Typography color="muted">
+          {t('DeployedAgentTemplateCard.createdAt', {
+            date: nicelyFormattedDateAndTime(createdAt),
+          })}
+        </Typography>
+      </HStack>
+      <HStack>
+        <RawInput
+          fullWidth
+          label={t('DeployedAgentTemplateCard.versionTag')}
+          value={`${name}:${version}`}
+          readOnly
+          allowCopy
+        />
+      </HStack>
+      <HStack>
         <HStack>
-          <RawInput
-            fullWidth
-            label={t('DeployedAgentTemplateCard.versionTag')}
-            value={`${name}:${version}`}
-            readOnly
-            allowCopy
+          <Button
+            size="small"
+            color="tertiary"
+            onClick={() => {
+              setShowDeploymentInstructions((v) => !v);
+            }}
+            active={showDeploymentInstructions}
+            label={t('DeployedAgentTemplateCard.usageInstructions')}
+            data-testid={`show-deployment-instructions-${index}`}
+          />
+          <Button
+            color="tertiary"
+            size="small"
+            label={t('DeployedAgentTemplateCard.deployedAgents')}
+            href={`/projects/${projectSlug}/agents?template=${name}:${version}`}
           />
         </HStack>
-        <HStack>
-          <HStack>
-            <Button
-              size="small"
-              color="tertiary"
-              onClick={() => {
-                setShowDeploymentInstructions((v) => !v);
-              }}
-              active={showDeploymentInstructions}
-              label={t('DeployedAgentTemplateCard.usageInstructions')}
-              data-testid={`show-deployment-instructions-${index}`}
-            />
-            <Button
-              color="tertiary"
-              size="small"
-              label={t('DeployedAgentTemplateCard.deployedAgents')}
-              href={`/projects/${projectSlug}/agents?template=${name}:${version}`}
-            />
-          </HStack>
-        </HStack>
-        {showDeploymentInstructions && (
-          <DeployAgentUsageInstructions
-            versionKey={`${name}:${version}`}
-            projectId={currentProjectId}
-          />
-        )}
-      </VStack>
-    </Card>
+      </HStack>
+      {showDeploymentInstructions && (
+        <DeployAgentUsageInstructions
+          versionKey={`${name}:${version}`}
+          projectId={currentProjectId}
+        />
+      )}
+    </VStack>
   );
 }
 
-export function DeploymentAgentMangerPanel() {
+export function TemplateVersionManager() {
   const { id: agentTemplateId } = useCurrentAgent();
 
   const { id: currentProjectId } = useCurrentProject();
@@ -262,6 +267,6 @@ export function DeploymentAgentMangerPanel() {
 export const deploymentPanelTemplate = {
   useGetTitle: () => 'Deployment',
   data: z.undefined(),
-  content: DeploymentAgentMangerPanel,
+  content: TemplateVersionManager,
   templateId: 'deployment',
 } satisfies PanelTemplate<'deployment'>;
