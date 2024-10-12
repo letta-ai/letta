@@ -22,7 +22,7 @@ jobs:
       id-token: 'write'
     runs-on: ubuntu-latest
     outputs:
-      access_token: ${{ steps.auth.outputs.access_token }}
+      access_token: ${{ steps.token.outputs.access_token }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -34,6 +34,9 @@ jobs:
           service_account: 'github-actions-service-account@memgpt-428419.iam.gserviceaccount.com'
           workload_identity_provider: 'projects/231889654562/locations/global/workloadIdentityPools/letta-web-dev-pool/providers/github-actions-provider'
           token_format: 'access_token'
+      - name: Set access token as output
+        id: token
+        run: echo "access_token=${{ steps.auth.outputs.access_token }}" >> $GITHUB_OUTPUT
 #  changed-files:
 #    runs-on: ubuntu-latest
 #    name: changed-files
