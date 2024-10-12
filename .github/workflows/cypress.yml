@@ -16,27 +16,6 @@ on:
     branches:
         - main
 jobs:
-  setup-google-auth:
-    permissions:
-      contents: 'read'
-      id-token: 'write'
-    runs-on: ubuntu-latest
-    outputs:
-      access_token: ${{ steps.token.outputs.access_token }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - uses: 'google-github-actions/auth@v2'
-        id: auth
-        with:
-          project_id: 'memgpt-428419'
-          service_account: 'github-actions-service-account@memgpt-428419.iam.gserviceaccount.com'
-          workload_identity_provider: 'projects/231889654562/locations/global/workloadIdentityPools/letta-web-dev-pool/providers/github-actions-provider'
-          token_format: 'access_token'
-      - name: Set access token as output
-        id: token
-        run: echo "access_token=${{ steps.auth.outputs.access_token }}" >> $GITHUB_OUTPUT
 #  changed-files:
 #    runs-on: ubuntu-latest
 #    name: changed-files
@@ -76,7 +55,7 @@ jobs:
 #          repo-token: ${{ secrets.PULLER_TOKEN }}
 #          wait-interval: 20
   cypress-run:
-    needs: [setup-google-auth]
+    needs: []
     #if: ${{ needs.changed-files.outputs.any_changed == 'true' }}
     runs-on: ubuntu-latest
     environment: Deployment
@@ -88,34 +67,6 @@ jobs:
       matrix:
         containers: [ 1, 2]
     services:
-      letta-agents:
-        image: us-central1-docker.pkg.dev/memgpt-428419/letta/memgpt-server:latest
-        env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          LETTA_PG_DB: postgres
-          LETTA_PG_USER: postgres
-          LETTA_PG_PASSWORD: postgres
-          LETTA_PG_HOST: localhost
-          LETTA_PG_PORT: 5432
-          LETTA_LLM_ENDPOINT: https://api.openai.com/v1
-          LETTA_LLM_ENDPOINT_TYPE: openai
-          LETTA_LLM_MODEL: gpt-4
-          LETTA_LLM_CONTEXT_WINDOW: 8192
-          LETTA_EMBEDDING_ENDPOINT: https://api.openai.com/v1
-          LETTA_EMBEDDING_ENDPOINT_TYPE: openai
-          LETTA_EMBEDDING_DIM: 1536
-          LETTA_EMBEDDING_MODEL: text-embedding-ada-002
-          LETTA_DEBUG: True
-        credentials:
-          username: 'oauth2accesstoken'
-          password: ${{ needs.setup-google-auth.outputs.access_token }}
-        ports:
-          - 8083:8083
-        options:
-          --health-cmd "curl -f http://localhost:8083/health"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
       redis:
         image: redis
         ports:
@@ -166,6 +117,38 @@ jobs:
         with:
           path: ~/.cache/Cypress
           key: ${{ runner.os }}-${{ env.cache-name }}
+      - uses: 'google-github-actions/auth@v2'
+        id: auth
+        with:
+          project_id: 'memgpt-428419'
+          service_account: 'github-actions-service-account@memgpt-428419.iam.gserviceaccount.com'
+          workload_identity_provider: 'projects/231889654562/locations/global/workloadIdentityPools/letta-web-dev-pool/providers/github-actions-provider'
+          token_format: 'access_token'
+      - name: 'Set up Cloud SDK'
+        uses: 'google-github-actions/setup-gcloud@v2'
+        with:
+          version: '>= 363.0.0'
+      - name: 'Set gcloud docker credential'
+        run: gcloud auth configure-docker us-central1-docker.pkg.dev
+      - name: Pull and run Docker image
+        run: |
+          docker pull us-central1-docker.pkg.dev/memgpt-428419/letta/memgpt-server:latest
+          docker run -d -p 8083:8083 us-central1-docker.pkg.dev/memgpt-428419/letta/memgpt-server:latest
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          LETTA_PG_DB: postgres
+          LETTA_PG_USER: postgres
+          LETTA_PG_PASSWORD: postgres
+          LETTA_PG_HOST: localhost
+          LETTA_PG_PORT: 5432
+          LETTA_LLM_ENDPOINT: https://api.openai.com/v1
+          LETTA_LLM_ENDPOINT_TYPE: openai
+          LETTA_LLM_MODEL: gpt-4
+          LETTA_LLM_CONTEXT_WINDOW: 8192
+          LETTA_EMBEDDING_ENDPOINT: https://api.openai.com/v1
+          LETTA_EMBEDDING_ENDPOINT_TYPE: openai
+          LETTA_EMBEDDING_DIM: 1536
+          LETTA_EMBEDDING_MODEL: text-embedding-ada-002
       - name: Install Dependencies
         if: steps.cache-nodemodules.outputs.cache-hit != 'true'
         run: npm ci
