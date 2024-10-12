@@ -134,10 +134,7 @@ jobs:
           version: '>= 363.0.0'
       - name: 'Set gcloud docker credential'
         run: gcloud auth configure-docker us-central1-docker.pkg.dev
-      - name: Pull Docker image
-        run: docker pull us-central1-docker.pkg.dev/memgpt-428419/letta/memgpt-server:latest
-      - name: Start Docker container
-        run: docker run -e OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }} -e LETTA_PG_DB=postgres -e LETTA_PG_USER=postgres -e LETTA_PG_PASSWORD=postgres -e LETTA_PG_HOST=localhost -e LETTA_PG_PORT=5432 -e LETTA_LLM_ENDPOINT=https://api.openai.com/v1 -e LETTA_LLM_ENDPOINT_TYPE=openai -e LETTA_LLM_MODEL=gpt-4 -e LETTA_LLM_CONTEXT_WINDOW=8192 -e LETTA_EMBEDDING_ENDPOINT=https://api.openai.com/v1 -e LETTA_EMBEDDING_ENDPOINT_TYPE=openai -e LETTA_EMBEDDING_DIM=1536 -e LETTA_EMBEDDING_MODEL=text-embedding-ada-002 -d -p 8083:8083 us-central1-docker.pkg.dev/memgpt-428419/letta/memgpt-server:latest
+      - uses: addnab/docker-run-action@v3
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           LETTA_PG_DB: postgres
@@ -153,6 +150,10 @@ jobs:
           LETTA_EMBEDDING_ENDPOINT_TYPE: openai
           LETTA_EMBEDDING_DIM: 1536
           LETTA_EMBEDDING_MODEL: text-embedding-ada-002
+        with:
+          image: us-central1-docker.pkg.dev/memgpt-428419/letta/memgpt-server:latest
+      - name: 'Test server is running'
+        run: curl -s http://localhost:8083/v1/health
       - name: Install Dependencies
         if: steps.cache-nodemodules.outputs.cache-hit != 'true'
         run: npm ci
