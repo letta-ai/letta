@@ -1,4 +1,9 @@
 name: 🕸️ Cypress Tests
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 on:
   push:
     branches:
@@ -7,6 +12,16 @@ on:
     branches:
         - main
 jobs:
+  setup-google-auth:
+    runs-on: ubuntu-latest
+    outputs:
+      access_token: ${{ steps.auth.outputs.access_token }}
+    steps:
+      - uses: 'google-github-actions/auth@v2'
+        with:
+          project_id: 'memgpt-428419'
+          workload_identity_provider: 'projects/231889654562/locations/global/workloadIdentityPools/letta-web-dev-pool/providers/github-actions-provider'
+          token_format: 'access_token'
   changed-files:
     runs-on: ubuntu-latest
     name: changed-files
@@ -27,8 +42,26 @@ jobs:
             package.json
             package-lock.json
             tsconfig.json
+  prepare:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait for lint to succeed
+        uses: lewagon/wait-on-check-action@v0.2
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          check-name: 💨 Lint
+          repo-token: ${{ secrets.PULLER_TOKEN }}
+          wait-interval: 20
+
+      - name: Wait for unit-tests to succeed
+        uses: lewagon/wait-on-check-action@v0.2
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          check-name: 🧪 Unit Tests
+          repo-token: ${{ secrets.PULLER_TOKEN }}
+          wait-interval: 20
   cypress-run:
-    needs: [changed-files]
+    needs: [changed-files, prepare]
     if: ${{ needs.changed-files.outputs.any_changed == 'true' }}
     runs-on: ubuntu-latest
     environment: Deployment
@@ -37,7 +70,37 @@ jobs:
     # Also see warning here https://github.com/cypress-io/github-action#parallel
     strategy:
       fail-fast: false
+      matrix:
+        containers: [ 1, 2]
     services:
+      letta-agents:
+        image: us-central1-docker.pkg.dev/memgpt-428419/letta/memgpt-server:latest
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          LETTA_PG_DB: postgres
+          LETTA_PG_USER: postgres
+          LETTA_PG_PASSWORD: postgres
+          LETTA_PG_HOST: localhost
+          LETTA_PG_PORT: 5432
+          LETTA_LLM_ENDPOINT: https://api.openai.com/v1
+          LETTA_LLM_ENDPOINT_TYPE: openai
+          LETTA_LLM_MODEL: gpt-4
+          LETTA_LLM_CONTEXT_WINDOW: 8192
+          LETTA_EMBEDDING_ENDPOINT: https://api.openai.com/v1
+          LETTA_EMBEDDING_ENDPOINT_TYPE: openai
+          LETTA_EMBEDDING_DIM: 1536
+          LETTA_EMBEDDING_MODEL: text-embedding-ada-002
+          LETTA_DEBUG: True
+        credentials:
+          username: 'oauth2accesstoken'
+          password: '${{ needs.gcloud-auth.auth.outputs.access_token }}'
+        ports:
+          - 8083:8083
+        options:
+          --health-cmd "curl -f http://localhost:8083/health"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
       redis:
         image: redis
         ports:
@@ -63,40 +126,41 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Checkout letta agents
-        uses: actions/checkout@v4
-        with:
-          repository: letta-ai/letta-agents
-          token: ${{ secrets.PULLER_TOKEN }}
-          path: letta-agents
-      - name: Turn on Letta agents
+      - name: Restore node_modules cache if exist
+        id: cache-nodemodules
+        uses: actions/cache@v2
         env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          LETTA_PG_DB: postgres
-          LETTA_PG_USER: postgres
-          LETTA_PG_PASSWORD: postgres
-          LETTA_PG_HOST: localhost
-          LETTA_PG_PORT: 5432
-          LETTA_LLM_ENDPOINT: https://api.openai.com/v1
-          LETTA_LLM_ENDPOINT_TYPE: openai
-          LETTA_LLM_MODEL: gpt-4
-          LETTA_LLM_CONTEXT_WINDOW: 8192
-          LETTA_EMBEDDING_ENDPOINT: https://api.openai.com/v1
-          LETTA_EMBEDDING_ENDPOINT_TYPE: openai
-          LETTA_EMBEDDING_DIM: 1536
-          LETTA_EMBEDDING_MODEL: text-embedding-ada-002
-          LETTA_DEBUG: True
-        working-directory: letta-agents
-        run: |
-          docker build -t letta-agents .
-          docker run -d -p 8083:8083 --name letta-agents letta-agents
+          cache-name: cache-node-modules-${{ env.node-version }}
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
 
+      - name: Restore NPM cache if exist
+        id: cache-npm
+        uses: actions/cache@v2
+        env:
+          cache-name: cache-npm-${{ env.node-version }}
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-${{ env.cache-name }}
+
+      - name: Restore Cypress cache if exist
+        uses: actions/cache@v2
+        env:
+          cache-name: cache-cypress-${{ env.node-version }}
+        with:
+          path: ~/.cache/Cypress
+          key: ${{ runner.os }}-${{ env.cache-name }}
+      - name: Install Dependencies
+        if: steps.cache-nodemodules.outputs.cache-hit != 'true'
+        run: npm ci
       - name: Cypress run
         # Uses the official Cypress GitHub action https://github.com/cypress-io/github-action
         uses: cypress-io/github-action@v6
         with:
           build: npm run build:e2e
           start: npm run start:e2e
+          install: false
           project: apps/letta
           wait-on: 'http://localhost:3000' # Waits for above
           # Records to Cypress Cloud
