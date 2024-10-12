@@ -57,8 +57,9 @@ jobs:
   cypress-run:
     needs: []
     permissions:
-      contents: 'read'
-      id-token: 'write'
+      actions: read
+      contents: read
+      id-token: write
     #if: ${{ needs.changed-files.outputs.any_changed == 'true' }}
     runs-on: ubuntu-latest
     environment: Deployment
