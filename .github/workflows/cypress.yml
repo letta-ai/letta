@@ -44,7 +44,7 @@ jobs:
         uses: lewagon/wait-on-check-action@v0.2
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
-          check-name: lint
+          check-name: '💨 Lint'
           repo-token: ${{ secrets.PULLER_TOKEN }}
           wait-interval: 20
 
@@ -52,7 +52,7 @@ jobs:
         uses: lewagon/wait-on-check-action@v0.2
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
-          check-name: tests
+          check-name: '🧪 Unit Tests'
           repo-token: ${{ secrets.PULLER_TOKEN }}
           wait-interval: 20
   cypress-run:
