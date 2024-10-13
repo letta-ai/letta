@@ -1,4 +1,13 @@
 name: 🕸️ Cypress Tests
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  actions: read
+  contents: read
+
 on:
   push:
     branches:
@@ -22,6 +31,7 @@ jobs:
         uses: tj-actions/changed-files@v44
         with:
           files: |
+            .github/workflows/cypress.yml
             apps/letta/**
             libs/component-library/**
             package.json
@@ -29,7 +39,11 @@ jobs:
             tsconfig.json
   cypress-run:
     needs: [changed-files]
-    if: ${{ needs.changed-files.outputs.any_changed == 'true' }}
+    permissions:
+      actions: read
+      contents: read
+      id-token: write
+    #if: ${{ needs.changed-files.outputs.any_changed == 'true' }}
     runs-on: ubuntu-latest
     environment: Deployment
     # Runs tests in parallel with matrix strategy https://docs.cypress.io/guides/guides/parallelization
@@ -37,6 +51,8 @@ jobs:
     # Also see warning here https://github.com/cypress-io/github-action#parallel
     strategy:
       fail-fast: false
+      matrix:
+        containers: [ 1, 2]
     services:
       redis:
         image: redis
@@ -63,6 +79,44 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Restore node_modules cache if exist
+        id: cache-nodemodules
+        uses: actions/cache@v2
+        env:
+          cache-name: cache-node-modules-${{ env.node-version }}
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
+
+      - name: Restore NPM cache if exist
+        id: cache-npm
+        uses: actions/cache@v2
+        env:
+          cache-name: cache-npm-${{ env.node-version }}
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-${{ env.cache-name }}
+
+      - name: Restore Cypress cache if exist
+        uses: actions/cache@v2
+        env:
+          cache-name: cache-cypress-${{ env.node-version }}
+        with:
+          path: ~/.cache/Cypress
+          key: ${{ runner.os }}-${{ env.cache-name }}
+#      - uses: 'google-github-actions/auth@v2'
+#        id: auth
+#        with:
+#          project_id: 'memgpt-428419'
+#          service_account: 'github-actions-service-account@memgpt-428419.iam.gserviceaccount.com'
+#          workload_identity_provider: 'projects/231889654562/locations/global/workloadIdentityPools/letta-web-dev-pool/providers/github-actions-provider'
+#          token_format: 'access_token'
+#      - name: 'Set up Cloud SDK'
+#        uses: 'google-github-actions/setup-gcloud@v2'
+#        with:
+#          version: '>= 363.0.0'
+#      - name: 'Set gcloud docker credential'
+#        run: gcloud auth configure-docker us-central1-docker.pkg.dev
       - name: Checkout letta agents
         uses: actions/checkout@v4
         with:
@@ -90,13 +144,16 @@ jobs:
         run: |
           docker build -t letta-agents .
           docker run -d -p 8083:8083 --name letta-agents letta-agents
-
+      - name: Install Dependencies
+        if: steps.cache-nodemodules.outputs.cache-hit != 'true'
+        run: npm ci
       - name: Cypress run
         # Uses the official Cypress GitHub action https://github.com/cypress-io/github-action
         uses: cypress-io/github-action@v6
         with:
           build: npm run build:e2e
           start: npm run start:e2e
+          install: false
           project: apps/letta
           wait-on: 'http://localhost:3000' # Waits for above
           # Records to Cypress Cloud

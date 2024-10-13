@@ -1,5 +1,6 @@
 name: 👀 UI-Tester
 
+
 on:
   push:
     branches:
@@ -31,6 +32,8 @@ jobs:
         with:
           files: |
             libs/component-library/**
+            .github/workflows/ui-tester.yml
+            .github/workflows/chromatic.yml
 
   chromatic:
     name: Run visual tests

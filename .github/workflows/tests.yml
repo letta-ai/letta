@@ -1,4 +1,8 @@
-name: 🧪 Unit Tests
+name: 🧪 Lint and Test
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 on:
   push:
@@ -28,6 +32,7 @@ jobs:
           files: |
             apps/letta/**
             libs/component-library/**
+            .github/workflows/tests.yml
   main:
     needs: [ changed-files ]
     if: ${{ needs.changed-files.outputs.any_changed == 'true' }}
@@ -36,3 +41,12 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      - name: ⎔ Setup node
+        uses: actions/setup-node@v4
+        with:
+          cache: npm
+          cache-dependency-path: ./package.json
+          node-version: 20
+      - run: npm ci --legacy-peer-deps
+      - run: npm run lint
+      - run: npm run test
