@@ -516,7 +516,14 @@ export async function verifyAndReturnAPIKeyDetails(apiKey?: string) {
     return null;
   }
 
-  const { organizationId } = await parseAccessToken(apiKey);
+  let organizationId = '';
+
+  try {
+    const { organizationId: orgId } = await parseAccessToken(apiKey);
+    organizationId = orgId;
+  } catch (_e) {
+    return null;
+  }
 
   const key = await db.query.lettaAPIKeys.findFirst({
     where: and(
