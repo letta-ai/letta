@@ -343,5 +343,10 @@
       "exploreArchivalMemories": "Explore the <archivalMemoriesButton></archivalMemoriesButton> of your agents (see what your agents have learned).",
       "evenMore": "When you're ready to create agents from your template, you can visit the <templateVersionButton></templateVersionButton> and create a new version of your template, then follow the instructions on that page to deploy your agents."
     }
+  },
+  "login/LoginComponent": {
+    "title": "Sign in to Letta Cloud",
+    "google": "Continue with Google",
+    "terms": "By clicking the button above, you agree to our <terms>Terms of Service</terms> and <privacy>Privacy Policy</privacy>."
   }
 }
