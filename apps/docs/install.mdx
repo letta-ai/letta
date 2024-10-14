@@ -23,29 +23,34 @@ iconType: "solid"
     pip install letta
     ```
   </Step>
-  <Step title="Configure Letta">
-    Run `letta configure` or `letta quickstart` to configure Letta.
+  <Step title="Configure model providers">
+    Set enviornment variables to enable model providers, e.g. OpenAI: 
+    ```bash 
 
-    To customize the configuration (e.g. the LLM or embedding model to use), edit the `~/.letta/config` file.
-    ```ini ~/.letta/config
-    [model]
-    model = gpt-4
-    model_endpoint = https://api.openai.com/v1
-    model_endpoint_type = openai
-    context_window = 8192
+    # To use OpenAI
+    export OPENAI_API_KEY=...
 
-    [embedding]
-    embedding_endpoint_type = openai
-    embedding_endpoint = https://api.openai.com/v1
-    embedding_model = text-embedding-ada-002
-    embedding_dim = 1536
-    embedding_chunk_size = 300
+    # To use Anthropic 
+    export ANTHROPIC_API_KEY=...
+
+    # To use with Ollama
+    export OLLAMA_BASE_URL=...
+
+    # To use with Google AI
+    export GEMINI_API_KEY=...
+
+    # To use with Azure
+    export AZURE_API_KEY=...
+    export AZURE_BASE_URL=...
+
+    # To use with vLLM 
+    export VLLM_API_BASE=...
     ```
   </Step>
   <Step title="Run the Letta server">
     To run the Letta server, run:
     ```sh
-    letta run [--debug]
+    letta server [--debug]
     ```
     You can now access the ADE (in your browser) and REST API server at `http://localhost:8283`.
   </Step>
@@ -75,32 +80,44 @@ iconType: "solid"
     Either set the environment variables in your shell on in a `.env` file. 
   <CodeGroup>
     ```bash .env file
-    # To use OpenAI 
-    OPENAI_API_KEY=...  
+    # To use OpenAI
+    OPENAI_API_KEY=...
 
-    # To use with Ollama 
-    LETTA_LLM_ENDPOINT=http://host.docker.internal:11434
-    LETTA_LLM_ENDPOINT_TYPE=ollama
-    LETTA_LLM_MODEL=dolphin2.2-mistral:7b-q6_K
-    LETTA_LLM_CONTEXT_WINDOW=8192
-    LETTA_EMBEDDING_ENDPOINT=http://host.docker.internal:11434
-    LETTA_EMBEDDING_ENDPOINT_TYPE=ollama
-    LETTA_EMBEDDING_MODEL=mxbai-embed-large
-    LETTA_EMBEDDING_DIM=512
+    # To use Anthropic 
+    ANTHROPIC_API_KEY=...
+
+    # To use with Ollama
+    OLLAMA_BASE_URL=...
+
+    # To use with Google AI
+    GEMINI_API_KEY=...
+
+    # To use with Azure
+    AZURE_API_KEY=...
+    AZURE_BASE_URL=...
+
+    # To use with vLLM 
+    VLLM_API_BASE=...
     ```
     ```bash shell
-    # To use OpenAI 
-    export OPENAI_API_KEY=...  
+    # To use OpenAI
+    export OPENAI_API_KEY=...
 
-    # To use with Ollama 
-    export LETTA_LLM_ENDPOINT=http://host.docker.internal:11434
-    export LETTA_LLM_ENDPOINT_TYPE=ollama
-    export LETTA_LLM_MODEL=dolphin2.2-mistral:7b-q6_K
-    export LETTA_LLM_CONTEXT_WINDOW=8192
-    export LETTA_EMBEDDING_ENDPOINT=http://host.docker.internal:11434
-    export LETTA_EMBEDDING_ENDPOINT_TYPE=ollama
-    export LETTA_EMBEDDING_MODEL=mxbai-embed-large
-    export LETTA_EMBEDDING_DIM=512
+    # To use Anthropic 
+    export ANTHROPIC_API_KEY=...
+
+    # To use with Ollama
+    export OLLAMA_BASE_URL=...
+
+    # To use with Google AI
+    export GEMINI_API_KEY=...
+
+    # To use with Azure
+    export AZURE_API_KEY=...
+    export AZURE_BASE_URL=...
+
+    # To use with vLLM 
+    export VLLM_API_BASE=...
     ```
   </CodeGroup>
   </Step>

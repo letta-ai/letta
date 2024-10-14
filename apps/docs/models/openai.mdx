@@ -60,7 +60,7 @@ To select the model used by the server, use the dropdown in the ADE or specify a
 </Accordion>
 <Accordion icon="docker" title="Docker Compose">
 ### Using the `docker compose` server with OpenAI
-The `compose.yaml` file uses enviornment variables to configure the LLM and embedding models. You can place these enviornment variables in either a `.env` file or set the variables. 
+The `compose.yaml` file will read your local enviornment variables and pass them to the Letta server running in the container. To use OpenAI with the Letta server, set the `OPENAI_API_KEY` enviornment variable and run the server with `docker compose up`:
 ```bash
 export OPENAI_API_KEY="sk-..." 
 docker compose up 
@@ -71,7 +71,7 @@ docker compose up
 
 When creating agents, you can specify the exactly model configurations to use, such as the model name and context window size (which can be less than the maximum size). 
 
-```
+```python
 from letta import LLMConfig, EmbeddingConfig
 
 # llm_config specification

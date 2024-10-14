@@ -73,12 +73,11 @@
           "iconType": "solid",
           "pages": [
             "models/openai",
-            "models/ollama",
             "models/anthropic",
             "models/groq",
             "models/google",
+            "models/ollama",
             "models/vllm",
-            "models/cohere",
             "models/azure"
           ]
         }
