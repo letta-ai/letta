@@ -19,6 +19,7 @@ import {
   LoginErrorsEnum,
   LoginErrorsMap,
 } from '$letta/errors';
+import { useTranslations } from 'next-intl';
 
 function LoginErrorBanner() {
   const searchParams = useSearchParams();
@@ -70,6 +71,7 @@ function LoginErrorBanner() {
 }
 
 export function LoginComponent() {
+  const t = useTranslations('login/LoginComponent');
   const marketingButtonRef = useRef<ElementRef<typeof MarketingButton>>(null);
   const logoRef = useRef<HTMLDivElement>(null);
 
@@ -129,7 +131,7 @@ export function LoginComponent() {
             <Logo size="large" />
           </div>
           <Typography bold variant="heading5">
-            Sign in to Letta
+            {t('title')}
           </Typography>
         </VStack>
         <MarketingButton
@@ -142,17 +144,24 @@ export function LoginComponent() {
               <Image width={16} height={16} src={GoogleLogo} alt="" />
             </div>
           }
-          label="Continue with Google"
+          label={t('google')}
         />
         <Typography>
-          By clicking the button above, you agree to our{' '}
-          <a className="underline" href="https://letta.com/terms-of-service">
-            terms of service
-          </a>{' '}
-          and{' '}
-          <a className="underline" href="https://letta.com/privacy-policy">
-            privacy policy
-          </a>
+          {t.rich('terms', {
+            terms: (chunks) => (
+              <a
+                className="underline"
+                href="https://letta.com/terms-of-service"
+              >
+                {chunks}
+              </a>
+            ),
+            privacy: (chunks) => (
+              <a className="underline" href="https://letta.com/privacy-policy">
+                {chunks}
+              </a>
+            ),
+          })}
         </Typography>
       </VStack>
     </VStack>
