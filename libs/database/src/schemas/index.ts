@@ -7,6 +7,8 @@ import {
   bigint,
   uniqueIndex,
   json,
+  serial,
+  numeric,
 } from 'drizzle-orm/pg-core';
 import { sql, relations } from 'drizzle-orm';
 import type {
@@ -334,3 +336,32 @@ export const adePreferencesRelations = relations(adePreferences, ({ one }) => ({
     references: [users.id],
   }),
 }));
+
+export const inferenceTransactions = pgTable('inference_transactions', {
+  id: text('id')
+    .notNull()
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  referenceId: text('reference_id').notNull(),
+  agentId: text('agent_id').notNull(),
+  organizationId: text('organization_id').notNull(),
+  inputTokens: numeric('input_tokens').notNull(),
+  outputTokens: numeric('output_tokens').notNull(),
+  totalTokens: numeric('total_tokens').notNull(),
+  stepCount: numeric('step_count').notNull(),
+  providerType: text('providerType').notNull(),
+  providerEndpoint: text('providerEndpoint').notNull(),
+  providerModel: text('providerModel').notNull(),
+  startedAt: timestamp('started_at').notNull(),
+  endedAt: timestamp('ended_at').notNull(),
+});
+
+export const inferenceTransactionRelations = relations(
+  inferenceTransactions,
+  ({ one }) => ({
+    organization: one(organizations, {
+      fields: [inferenceTransactions.organizationId],
+      references: [organizations.id],
+    }),
+  })
+);
