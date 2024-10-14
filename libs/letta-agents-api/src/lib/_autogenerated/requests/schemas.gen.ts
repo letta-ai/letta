@@ -1422,54 +1422,6 @@ export const $DeleteThreadResponse = {
   title: 'DeleteThreadResponse',
 } as const;
 
-export const $Document = {
-  properties: {
-    id: {
-      type: 'string',
-      pattern: '^doc-[a-fA-F0-9]{8}',
-      title: 'Id',
-      description: 'The human-friendly ID of the Doc',
-      examples: [['doc-123e4567-e89b-12d3-a456-426614174000']],
-    },
-    text: {
-      type: 'string',
-      title: 'Text',
-      description: 'The text of the document.',
-    },
-    source_id: {
-      type: 'string',
-      title: 'Source Id',
-      description:
-        'The unique identifier of the source associated with the document.',
-    },
-    user_id: {
-      type: 'string',
-      title: 'User Id',
-      description:
-        'The unique identifier of the user associated with the document.',
-    },
-    metadata_: {
-      anyOf: [
-        {
-          type: 'object',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Metadata ',
-      description: 'The metadata of the document.',
-      default: {},
-    },
-  },
-  additionalProperties: false,
-  type: 'object',
-  required: ['text', 'source_id', 'user_id'],
-  title: 'Document',
-  description:
-    'Representation of a single document (broken up into `Passage` objects)',
-} as const;
-
 export const $EmbeddingConfig = {
   properties: {
     embedding_endpoint_type: {
@@ -1563,6 +1515,113 @@ Attributes:
     azure_endpoint (:obj:\`str\`, optional): The Azure endpoint for the model (Azure only).
     azure_version (str): The Azure version for the model (Azure only).
     azure_deployment (str): The Azure deployment for the model (Azure only).`,
+} as const;
+
+export const $FileMetadata = {
+  properties: {
+    id: {
+      type: 'string',
+      pattern: '^file-[a-fA-F0-9]{8}',
+      title: 'Id',
+      description: 'The human-friendly ID of the File',
+      examples: [['file-123e4567-e89b-12d3-a456-426614174000']],
+    },
+    user_id: {
+      type: 'string',
+      title: 'User Id',
+      description:
+        'The unique identifier of the user associated with the document.',
+    },
+    source_id: {
+      type: 'string',
+      title: 'Source Id',
+      description:
+        'The unique identifier of the source associated with the document.',
+    },
+    file_name: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'File Name',
+      description: 'The name of the file.',
+    },
+    file_path: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'File Path',
+      description: 'The path to the file.',
+    },
+    file_type: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'File Type',
+      description: 'The type of the file (MIME type).',
+    },
+    file_size: {
+      anyOf: [
+        {
+          type: 'integer',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'File Size',
+      description: 'The size of the file in bytes.',
+    },
+    file_creation_date: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'File Creation Date',
+      description: 'The creation date of the file.',
+    },
+    file_last_modified_date: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'File Last Modified Date',
+      description: 'The last modified date of the file.',
+    },
+    created_at: {
+      type: 'string',
+      format: 'date-time',
+      title: 'Created At',
+      description: 'The creation date of this file metadata object.',
+    },
+  },
+  additionalProperties: true,
+  type: 'object',
+  required: ['user_id', 'source_id'],
+  title: 'FileMetadata',
+  description: 'Representation of a single FileMetadata',
 } as const;
 
 export const $Function = {
@@ -1877,7 +1936,7 @@ export const $Job = {
   type: 'object',
   required: ['user_id'],
   title: 'Job',
-  description: `Representation of offline jobs, used for tracking status of data loading tasks (involving parsing and embedding documents).
+  description: `Representation of offline jobs, used for tracking status of data loading tasks (involving parsing and embedding files).
 
 Parameters:
     id (str): The unique identifier of the job.
@@ -3039,7 +3098,7 @@ export const $Passage = {
       title: 'Source Id',
       description: 'The data source of the passage.',
     },
-    doc_id: {
+    file_id: {
       anyOf: [
         {
           type: 'string',
@@ -3048,9 +3107,9 @@ export const $Passage = {
           type: 'null',
         },
       ],
-      title: 'Doc Id',
+      title: 'File Id',
       description:
-        'The unique identifier of the document associated with the passage.',
+        'The unique identifier of the file associated with the passage.',
     },
     metadata_: {
       anyOf: [
@@ -3124,7 +3183,7 @@ Parameters:
     user_id (str): The unique identifier of the user associated with the passage.
     agent_id (str): The unique identifier of the agent associated with the passage.
     source_id (str): The data source of the passage.
-    doc_id (str): The unique identifier of the document associated with the passage.`,
+    file_id (str): The unique identifier of the file associated with the passage.`,
 } as const;
 
 export const $RecallMemorySummary = {
@@ -3231,7 +3290,7 @@ export const $Source = {
   type: 'object',
   required: ['embedding_config', 'name', 'user_id'],
   title: 'Source',
-  description: `Representation of a source, which is a collection of documents and passages.
+  description: `Representation of a source, which is a collection of files and passages.
 
 Parameters:
     id (str): The ID of the source
