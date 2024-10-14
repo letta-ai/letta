@@ -10,7 +10,7 @@
       "description": "Letta Hosted"
     },
     {
-      "url": "http://localhost:8083",
+      "url": "http://localhost:8283",
       "description": "Self Hosted"
     }
   ],
@@ -960,12 +960,12 @@
         }
       }
     },
-    "/v1/sources/{source_id}/documents": {
+    "/v1/sources/{source_id}/files": {
       "get": {
         "tags": ["sources"],
-        "summary": "List Documents",
-        "description": "List all documents associated with a data source.",
-        "operationId": "list_source_documents",
+        "summary": "List Files From Source",
+        "description": "List paginated files associated with a data source.",
+        "operationId": "list_files_from_source",
         "parameters": [
           {
             "name": "source_id",
@@ -975,6 +975,36 @@
               "type": "string",
               "title": "Source Id"
             }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "description": "Number of files to return",
+              "default": 1000,
+              "title": "Limit"
+            },
+            "description": "Number of files to return"
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Pagination cursor to fetch the next set of results",
+              "title": "Cursor"
+            },
+            "description": "Pagination cursor to fetch the next set of results"
           },
           {
             "name": "user_id",
@@ -1001,9 +1031,9 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/Document"
+                    "$ref": "#/components/schemas/FileMetadata"
                   },
-                  "title": "Response List Source Documents"
+                  "title": "Response List Files From Source"
                 }
               }
             }
@@ -2622,6 +2652,45 @@
             }
           }
         }
+      },
+      "delete": {
+        "tags": ["jobs"],
+        "summary": "Delete Job",
+        "description": "Delete a job by its job_id.",
+        "operationId": "delete_job",
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Job Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Job"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/v1/health/": {
@@ -4206,50 +4275,6 @@
         "required": ["id", "deleted"],
         "title": "DeleteThreadResponse"
       },
-      "Document": {
-        "properties": {
-          "id": {
-            "type": "string",
-            "pattern": "^doc-[a-fA-F0-9]{8}",
-            "title": "Id",
-            "description": "The human-friendly ID of the Doc",
-            "examples": [["doc-123e4567-e89b-12d3-a456-426614174000"]]
-          },
-          "text": {
-            "type": "string",
-            "title": "Text",
-            "description": "The text of the document."
-          },
-          "source_id": {
-            "type": "string",
-            "title": "Source Id",
-            "description": "The unique identifier of the source associated with the document."
-          },
-          "user_id": {
-            "type": "string",
-            "title": "User Id",
-            "description": "The unique identifier of the user associated with the document."
-          },
-          "metadata_": {
-            "anyOf": [
-              {
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Metadata ",
-            "description": "The metadata of the document.",
-            "default": {}
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": ["text", "source_id", "user_id"],
-        "title": "Document",
-        "description": "Representation of a single document (broken up into `Passage` objects)"
-      },
       "EmbeddingConfig": {
         "properties": {
           "embedding_endpoint_type": {
@@ -4337,6 +4362,110 @@
         ],
         "title": "EmbeddingConfig",
         "description": "Embedding model configuration. This object specifies all the information necessary to access an embedding model to usage with Letta, except for secret keys.\n\nAttributes:\n    embedding_endpoint_type (str): The endpoint type for the model.\n    embedding_endpoint (str): The endpoint for the model.\n    embedding_model (str): The model for the embedding.\n    embedding_dim (int): The dimension of the embedding.\n    embedding_chunk_size (int): The chunk size of the embedding.\n    azure_endpoint (:obj:`str`, optional): The Azure endpoint for the model (Azure only).\n    azure_version (str): The Azure version for the model (Azure only).\n    azure_deployment (str): The Azure deployment for the model (Azure only)."
+      },
+      "FileMetadata": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^file-[a-fA-F0-9]{8}",
+            "title": "Id",
+            "description": "The human-friendly ID of the File",
+            "examples": [["file-123e4567-e89b-12d3-a456-426614174000"]]
+          },
+          "user_id": {
+            "type": "string",
+            "title": "User Id",
+            "description": "The unique identifier of the user associated with the document."
+          },
+          "source_id": {
+            "type": "string",
+            "title": "Source Id",
+            "description": "The unique identifier of the source associated with the document."
+          },
+          "file_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File Name",
+            "description": "The name of the file."
+          },
+          "file_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File Path",
+            "description": "The path to the file."
+          },
+          "file_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File Type",
+            "description": "The type of the file (MIME type)."
+          },
+          "file_size": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File Size",
+            "description": "The size of the file in bytes."
+          },
+          "file_creation_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File Creation Date",
+            "description": "The creation date of the file."
+          },
+          "file_last_modified_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File Last Modified Date",
+            "description": "The last modified date of the file."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "The creation date of this file metadata object."
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": ["user_id", "source_id"],
+        "title": "FileMetadata",
+        "description": "Representation of a single FileMetadata"
       },
       "Function": {
         "properties": {
@@ -4624,7 +4753,7 @@
         "type": "object",
         "required": ["user_id"],
         "title": "Job",
-        "description": "Representation of offline jobs, used for tracking status of data loading tasks (involving parsing and embedding documents).\n\nParameters:\n    id (str): The unique identifier of the job.\n    status (JobStatus): The status of the job.\n    created_at (datetime): The unix timestamp of when the job was created.\n    completed_at (datetime): The unix timestamp of when the job was completed.\n    user_id (str): The unique identifier of the user associated with the."
+        "description": "Representation of offline jobs, used for tracking status of data loading tasks (involving parsing and embedding files).\n\nParameters:\n    id (str): The unique identifier of the job.\n    status (JobStatus): The status of the job.\n    created_at (datetime): The unix timestamp of when the job was created.\n    completed_at (datetime): The unix timestamp of when the job was completed.\n    user_id (str): The unique identifier of the user associated with the."
       },
       "JobStatus": {
         "type": "string",
@@ -5714,7 +5843,7 @@
             "title": "Source Id",
             "description": "The data source of the passage."
           },
-          "doc_id": {
+          "file_id": {
             "anyOf": [
               {
                 "type": "string"
@@ -5723,8 +5852,8 @@
                 "type": "null"
               }
             ],
-            "title": "Doc Id",
-            "description": "The unique identifier of the document associated with the passage."
+            "title": "File Id",
+            "description": "The unique identifier of the file associated with the passage."
           },
           "metadata_": {
             "anyOf": [
@@ -5788,7 +5917,7 @@
         "type": "object",
         "required": ["text", "embedding", "embedding_config"],
         "title": "Passage",
-        "description": "Representation of a passage, which is stored in archival memory.\n\nParameters:\n    text (str): The text of the passage.\n    embedding (List[float]): The embedding of the passage.\n    embedding_config (EmbeddingConfig): The embedding configuration used by the passage.\n    created_at (datetime): The creation date of the passage.\n    user_id (str): The unique identifier of the user associated with the passage.\n    agent_id (str): The unique identifier of the agent associated with the passage.\n    source_id (str): The data source of the passage.\n    doc_id (str): The unique identifier of the document associated with the passage."
+        "description": "Representation of a passage, which is stored in archival memory.\n\nParameters:\n    text (str): The text of the passage.\n    embedding (List[float]): The embedding of the passage.\n    embedding_config (EmbeddingConfig): The embedding configuration used by the passage.\n    created_at (datetime): The creation date of the passage.\n    user_id (str): The unique identifier of the user associated with the passage.\n    agent_id (str): The unique identifier of the agent associated with the passage.\n    source_id (str): The data source of the passage.\n    file_id (str): The unique identifier of the file associated with the passage."
       },
       "RecallMemorySummary": {
         "properties": {
@@ -5891,7 +6020,7 @@
         "type": "object",
         "required": ["embedding_config", "name", "user_id"],
         "title": "Source",
-        "description": "Representation of a source, which is a collection of documents and passages.\n\nParameters:\n    id (str): The ID of the source\n    name (str): The name of the source.\n    embedding_config (EmbeddingConfig): The embedding configuration used by the source.\n    created_at (datetime): The creation date of the source.\n    user_id (str): The ID of the user that created the source.\n    metadata_ (dict): Metadata associated with the source.\n    description (str): The description of the source."
+        "description": "Representation of a source, which is a collection of files and passages.\n\nParameters:\n    id (str): The ID of the source\n    name (str): The name of the source.\n    embedding_config (EmbeddingConfig): The embedding configuration used by the source.\n    created_at (datetime): The creation date of the source.\n    user_id (str): The ID of the user that created the source.\n    metadata_ (dict): Metadata associated with the source.\n    description (str): The description of the source."
       },
       "SourceCreate": {
         "properties": {

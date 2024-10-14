@@ -545,34 +545,6 @@ export type DeleteThreadResponse = {
 };
 
 /**
- * Representation of a single document (broken up into `Passage` objects)
- */
-export type Document = {
-  /**
-   * The human-friendly ID of the Doc
-   */
-  id?: string;
-  /**
-   * The text of the document.
-   */
-  text: string;
-  /**
-   * The unique identifier of the source associated with the document.
-   */
-  source_id: string;
-  /**
-   * The unique identifier of the user associated with the document.
-   */
-  user_id: string;
-  /**
-   * The metadata of the document.
-   */
-  metadata_?: {
-    [key: string]: unknown;
-  } | null;
-};
-
-/**
  * Embedding model configuration. This object specifies all the information necessary to access an embedding model to usage with Letta, except for secret keys.
  *
  * Attributes:
@@ -618,6 +590,53 @@ export type EmbeddingConfig = {
    * The Azure deployment for the model.
    */
   azure_deployment?: string | null;
+};
+
+/**
+ * Representation of a single FileMetadata
+ */
+export type FileMetadata = {
+  /**
+   * The human-friendly ID of the File
+   */
+  id?: string;
+  /**
+   * The unique identifier of the user associated with the document.
+   */
+  user_id: string;
+  /**
+   * The unique identifier of the source associated with the document.
+   */
+  source_id: string;
+  /**
+   * The name of the file.
+   */
+  file_name?: string | null;
+  /**
+   * The path to the file.
+   */
+  file_path?: string | null;
+  /**
+   * The type of the file (MIME type).
+   */
+  file_type?: string | null;
+  /**
+   * The size of the file in bytes.
+   */
+  file_size?: number | null;
+  /**
+   * The creation date of the file.
+   */
+  file_creation_date?: string | null;
+  /**
+   * The last modified date of the file.
+   */
+  file_last_modified_date?: string | null;
+  /**
+   * The creation date of this file metadata object.
+   */
+  created_at?: string;
+  [key: string]: unknown | string;
 };
 
 export type Function = {
@@ -723,7 +742,7 @@ export type InternalMonologue = {
 export type message_type4 = 'internal_monologue';
 
 /**
- * Representation of offline jobs, used for tracking status of data loading tasks (involving parsing and embedding documents).
+ * Representation of offline jobs, used for tracking status of data loading tasks (involving parsing and embedding files).
  *
  * Parameters:
  * id (str): The unique identifier of the job.
@@ -1352,7 +1371,7 @@ export type OrganizationCreate = {
  * user_id (str): The unique identifier of the user associated with the passage.
  * agent_id (str): The unique identifier of the agent associated with the passage.
  * source_id (str): The data source of the passage.
- * doc_id (str): The unique identifier of the document associated with the passage.
+ * file_id (str): The unique identifier of the file associated with the passage.
  */
 export type Passage = {
   /**
@@ -1368,9 +1387,9 @@ export type Passage = {
    */
   source_id?: string | null;
   /**
-   * The unique identifier of the document associated with the passage.
+   * The unique identifier of the file associated with the passage.
    */
-  doc_id?: string | null;
+  file_id?: string | null;
   /**
    * The metadata of the passage.
    */
@@ -1416,7 +1435,7 @@ export type ResponseFormat = {
 };
 
 /**
- * Representation of a source, which is a collection of documents and passages.
+ * Representation of a source, which is a collection of files and passages.
  *
  * Parameters:
  * id (str): The ID of the source
@@ -2170,12 +2189,20 @@ export type ListSourcePassagesData = {
 
 export type ListSourcePassagesResponse = Array<Passage>;
 
-export type ListSourceDocumentsData = {
+export type ListFilesFromSourceData = {
+  /**
+   * Pagination cursor to fetch the next set of results
+   */
+  cursor?: string | null;
+  /**
+   * Number of files to return
+   */
+  limit?: number;
   sourceId: string;
   userId?: string | null;
 };
 
-export type ListSourceDocumentsResponse = Array<Document>;
+export type ListFilesFromSourceResponse = Array<FileMetadata>;
 
 export type ListAgentsData = {
   userId?: string | null;
@@ -2413,6 +2440,12 @@ export type GetJobData = {
 };
 
 export type GetJobResponse = Job;
+
+export type DeleteJobData = {
+  jobId: string;
+};
+
+export type DeleteJobResponse = Job;
 
 export type HealthCheckResponse = Health;
 
@@ -2719,14 +2752,14 @@ export type $OpenApiTs = {
       };
     };
   };
-  '/v1/sources/{source_id}/documents': {
+  '/v1/sources/{source_id}/files': {
     get: {
-      req: ListSourceDocumentsData;
+      req: ListFilesFromSourceData;
       res: {
         /**
          * Successful Response
          */
-        200: Array<Document>;
+        200: Array<FileMetadata>;
         /**
          * Validation Error
          */
@@ -3108,6 +3141,19 @@ export type $OpenApiTs = {
   '/v1/jobs/{job_id}': {
     get: {
       req: GetJobData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: Job;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+    delete: {
+      req: DeleteJobData;
       res: {
         /**
          * Successful Response

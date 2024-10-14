@@ -163,15 +163,19 @@ export const useSourcesServiceListSourcePassagesSuspense = <
       SourcesService.listSourcePassages({ sourceId, userId }) as TData,
     ...options,
   });
-export const useSourcesServiceListSourceDocumentsSuspense = <
-  TData = Common.SourcesServiceListSourceDocumentsDefaultResponse,
+export const useSourcesServiceListFilesFromSourceSuspense = <
+  TData = Common.SourcesServiceListFilesFromSourceDefaultResponse,
   TError = unknown,
   TQueryKey extends Array<unknown> = unknown[]
 >(
   {
+    cursor,
+    limit,
     sourceId,
     userId,
   }: {
+    cursor?: string;
+    limit?: number;
     sourceId: string;
     userId?: string;
   },
@@ -179,12 +183,17 @@ export const useSourcesServiceListSourceDocumentsSuspense = <
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
 ) =>
   useSuspenseQuery<TData, TError>({
-    queryKey: Common.UseSourcesServiceListSourceDocumentsKeyFn(
-      { sourceId, userId },
+    queryKey: Common.UseSourcesServiceListFilesFromSourceKeyFn(
+      { cursor, limit, sourceId, userId },
       queryKey
     ),
     queryFn: () =>
-      SourcesService.listSourceDocuments({ sourceId, userId }) as TData,
+      SourcesService.listFilesFromSource({
+        cursor,
+        limit,
+        sourceId,
+        userId,
+      }) as TData,
     ...options,
   });
 export const useAgentsServiceListAgentsSuspense = <

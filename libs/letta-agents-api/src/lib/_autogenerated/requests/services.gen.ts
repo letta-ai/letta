@@ -36,8 +36,8 @@ import type {
   UploadFileToSourceResponse,
   ListSourcePassagesData,
   ListSourcePassagesResponse,
-  ListSourceDocumentsData,
-  ListSourceDocumentsResponse,
+  ListFilesFromSourceData,
+  ListFilesFromSourceResponse,
   ListAgentsData,
   ListAgentsResponse,
   CreateAgentData,
@@ -90,6 +90,8 @@ import type {
   ListActiveJobsResponse,
   GetJobData,
   GetJobResponse,
+  DeleteJobData,
+  DeleteJobResponse,
   HealthCheckResponse,
   ListUsersData,
   ListUsersResponse,
@@ -543,23 +545,29 @@ export class SourcesService {
   }
 
   /**
-   * List Documents
-   * List all documents associated with a data source.
+   * List Files From Source
+   * List paginated files associated with a data source.
    * @param data The data for the request.
    * @param data.sourceId
+   * @param data.limit Number of files to return
+   * @param data.cursor Pagination cursor to fetch the next set of results
    * @param data.userId
-   * @returns Document Successful Response
+   * @returns FileMetadata Successful Response
    * @throws ApiError
    */
-  public static listSourceDocuments(
-    data: ListSourceDocumentsData,
+  public static listFilesFromSource(
+    data: ListFilesFromSourceData,
     headers?: { user_id: string }
-  ): CancelablePromise<ListSourceDocumentsResponse> {
+  ): CancelablePromise<ListFilesFromSourceResponse> {
     return __request(OpenAPI, {
       method: 'GET',
-      url: '/v1/sources/{source_id}/documents',
+      url: '/v1/sources/{source_id}/files',
       path: {
         source_id: data.sourceId,
+      },
+      query: {
+        limit: data.limit,
+        cursor: data.cursor,
       },
       errors: {
         422: 'Validation Error',
@@ -1305,6 +1313,31 @@ export class JobsService {
   ): CancelablePromise<GetJobResponse> {
     return __request(OpenAPI, {
       method: 'GET',
+      url: '/v1/jobs/{job_id}',
+      path: {
+        job_id: data.jobId,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Delete Job
+   * Delete a job by its job_id.
+   * @param data The data for the request.
+   * @param data.jobId
+   * @returns Job Successful Response
+   * @throws ApiError
+   */
+  public static deleteJob(
+    data: DeleteJobData,
+    headers?: { user_id: string }
+  ): CancelablePromise<DeleteJobResponse> {
+    return __request(OpenAPI, {
+      method: 'DELETE',
       url: '/v1/jobs/{job_id}',
       path: {
         job_id: data.jobId,

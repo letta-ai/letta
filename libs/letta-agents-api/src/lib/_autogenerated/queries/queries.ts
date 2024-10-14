@@ -187,15 +187,19 @@ export const useSourcesServiceListSourcePassages = <
       SourcesService.listSourcePassages({ sourceId, userId }) as TData,
     ...options,
   });
-export const useSourcesServiceListSourceDocuments = <
-  TData = Common.SourcesServiceListSourceDocumentsDefaultResponse,
+export const useSourcesServiceListFilesFromSource = <
+  TData = Common.SourcesServiceListFilesFromSourceDefaultResponse,
   TError = unknown,
   TQueryKey extends Array<unknown> = unknown[]
 >(
   {
+    cursor,
+    limit,
     sourceId,
     userId,
   }: {
+    cursor?: string;
+    limit?: number;
     sourceId: string;
     userId?: string;
   },
@@ -203,12 +207,17 @@ export const useSourcesServiceListSourceDocuments = <
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
 ) =>
   useQuery<TData, TError>({
-    queryKey: Common.UseSourcesServiceListSourceDocumentsKeyFn(
-      { sourceId, userId },
+    queryKey: Common.UseSourcesServiceListFilesFromSourceKeyFn(
+      { cursor, limit, sourceId, userId },
       queryKey
     ),
     queryFn: () =>
-      SourcesService.listSourceDocuments({ sourceId, userId }) as TData,
+      SourcesService.listFilesFromSource({
+        cursor,
+        limit,
+        sourceId,
+        userId,
+      }) as TData,
     ...options,
   });
 export const useAgentsServiceListAgents = <
@@ -1656,6 +1665,35 @@ export const useBlocksServiceDeleteMemoryBlock = <
   >({
     mutationFn: ({ blockId }) =>
       BlocksService.deleteMemoryBlock({ blockId }) as unknown as Promise<TData>,
+    ...options,
+  });
+export const useJobsServiceDeleteJob = <
+  TData = Common.JobsServiceDeleteJobMutationResult,
+  TError = unknown,
+  TContext = unknown
+>(
+  options?: Omit<
+    UseMutationOptions<
+      TData,
+      TError,
+      {
+        jobId: string;
+      },
+      TContext
+    >,
+    'mutationFn'
+  >
+) =>
+  useMutation<
+    TData,
+    TError,
+    {
+      jobId: string;
+    },
+    TContext
+  >({
+    mutationFn: ({ jobId }) =>
+      JobsService.deleteJob({ jobId }) as unknown as Promise<TData>,
     ...options,
   });
 export const useUsersServiceDeleteUser = <

@@ -21,7 +21,7 @@ import {
   UseJobsServiceListActiveJobsKeyFn,
   useSourcesServiceGetSource,
 } from '@letta-web/letta-agents-api';
-import { UseSourcesServiceListSourceDocumentsKeyFn } from '@letta-web/letta-agents-api';
+import { UseSourcesServiceListFilesFromSourceKeyFn } from '@letta-web/letta-agents-api';
 import { useSourcesServiceUploadFileToSource } from '@letta-web/letta-agents-api';
 import { useCurrentDataSourceId } from './hooks';
 import type { ColumnDef } from '@tanstack/react-table';
@@ -43,7 +43,7 @@ function UploadFileDialog() {
   const { mutate, isPending } = useSourcesServiceUploadFileToSource({
     onSuccess: () => {
       void queryClient.invalidateQueries({
-        queryKey: UseSourcesServiceListSourceDocumentsKeyFn({
+        queryKey: UseSourcesServiceListFilesFromSourceKeyFn({
           sourceId: dataSourceId,
         }),
       });

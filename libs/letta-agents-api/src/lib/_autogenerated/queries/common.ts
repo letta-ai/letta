@@ -146,27 +146,31 @@ export const UseSourcesServiceListSourcePassagesKeyFn = (
   useSourcesServiceListSourcePassagesKey,
   ...(queryKey ?? [{ sourceId, userId }]),
 ];
-export type SourcesServiceListSourceDocumentsDefaultResponse = Awaited<
-  ReturnType<typeof SourcesService.listSourceDocuments>
+export type SourcesServiceListFilesFromSourceDefaultResponse = Awaited<
+  ReturnType<typeof SourcesService.listFilesFromSource>
 >;
-export type SourcesServiceListSourceDocumentsQueryResult<
-  TData = SourcesServiceListSourceDocumentsDefaultResponse,
+export type SourcesServiceListFilesFromSourceQueryResult<
+  TData = SourcesServiceListFilesFromSourceDefaultResponse,
   TError = unknown
 > = UseQueryResult<TData, TError>;
-export const useSourcesServiceListSourceDocumentsKey =
-  'SourcesServiceListSourceDocuments';
-export const UseSourcesServiceListSourceDocumentsKeyFn = (
+export const useSourcesServiceListFilesFromSourceKey =
+  'SourcesServiceListFilesFromSource';
+export const UseSourcesServiceListFilesFromSourceKeyFn = (
   {
+    cursor,
+    limit,
     sourceId,
     userId,
   }: {
+    cursor?: string;
+    limit?: number;
     sourceId: string;
     userId?: string;
   },
   queryKey?: Array<unknown>
 ) => [
-  useSourcesServiceListSourceDocumentsKey,
-  ...(queryKey ?? [{ sourceId, userId }]),
+  useSourcesServiceListFilesFromSourceKey,
+  ...(queryKey ?? [{ cursor, limit, sourceId, userId }]),
 ];
 export type AgentsServiceListAgentsDefaultResponse = Awaited<
   ReturnType<typeof AgentsService.listAgents>
@@ -704,6 +708,9 @@ export type AgentsServiceDeleteAgentArchivalMemoryMutationResult = Awaited<
 >;
 export type BlocksServiceDeleteMemoryBlockMutationResult = Awaited<
   ReturnType<typeof BlocksService.deleteMemoryBlock>
+>;
+export type JobsServiceDeleteJobMutationResult = Awaited<
+  ReturnType<typeof JobsService.deleteJob>
 >;
 export type UsersServiceDeleteUserMutationResult = Awaited<
   ReturnType<typeof UsersService.deleteUser>
