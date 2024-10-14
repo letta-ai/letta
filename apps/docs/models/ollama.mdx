@@ -1,6 +1,7 @@
 ---
 title: 'Ollama'
 ---
+<Tip>To use Letta with Ollama, set the enviornment variable `OLLAMA_BASE_URL=http://localhost:11434`. </Tip>
 
 > ⚠️ Make sure to use tags when downloading Ollama models!
 >
@@ -34,73 +35,29 @@ removing any unused layers
 success
 ```
 
-## Configuring with Ollama 
-<Accordion icon="square-terminal" title="CLI (pypi only)">
-First, make sure you install Ollama dependencies with: 
-```bash
-pip install 'letta[ollama]'
-```
+## Enabling Ollama as a provider 
+To enable the Ollama provider, you must set the `OLLAMA_BASE_URL` environment variable. When this is set, Letta will use available LLM and embedding models running on Ollama. 
 
-To configure your LLM model, modify the `[model]` section of your `~/.letta/config` file: 
-```yaml ~/.letta/config
-[model]
-model_endpoint_type = ollama
-model = dolphin2.2-mistral:7b-q6_K
-model_endpoint = http://localhost:11434
-context_window = 8192
+<Accordion icon="square-terminal" title="CLI (pypi only)">
+
+### Using `letta run` and `letta server` with Ollama 
+To chat with an agent, run:
+```bash
+export OLLAMA_BASE_URL="http://localhost:11434"
+letta run
 ```
-To configure your embedding model, modify the `[embedding]` section of your `~/.letta/config` file: 
-```yaml ~/.letta/config
-[embedding]
-embedding_endpoint_type = ollama
-embedding_endpoint = http://localhost:11434
-embedding_model = mxbai-embed-large 
-embedding_dim = 512
-embedding_chunk_size = 300
+To run the Letta server, run:
+```bash
+export OLLAMA_BASE_URL="http://localhost:11434"
+letta server
 ```
+To select the model used by the server, use the dropdown in the ADE or specify a `LLMConfig` object in the Python SDK.
 </Accordion>
 <Accordion icon="docker" title="Docker Compose">
-### Configuring with `docker compose`
-The `compose.yaml` file uses enviornment variables to configure the LLM and embedding models. You can place these enviornment variables in either a `.env` file or set the variables. 
-
-Configuring LLM endpoints:  
-```
-LETTA_LLM_ENDPOINT=http://host.docker.internal:11434
-LETTA_LLM_ENDPOINT_TYPE=ollama
-LETTA_LLM_MODEL=dolphin2.2-mistral:7b-q6_K
-LETTA_LLM_CONTEXT_WINDOW=8192
-```
-
-Configuring embeddings: 
-```
-LETTA_EMBEDDING_ENDPOINT=http://host.docker.internal:11434
-LETTA_EMBEDDING_ENDPOINT_TYPE=ollama
-LETTA_EMBEDDING_MODEL=mxbai-embed-large
-LETTA_EMBEDDING_DIM=512
-```
-</Accordion>
-<Accordion icon="python" title="Python SDK">
-```python
-from memgpt import LLMConfig, EmbeddingConfig
-
-# override the default LLM config
-client.set_default_llm_config(
-    LLMConfig(
-        model="dolphin2.2-mistral:7b-q6_K",
-        model_endpoint_type="ollama",
-        model_endpoint="http://localhost:11434",
-        context_window=8192
-    )
-)
-
-# override the default embedding config
-client.set_default_embedding_config( 
-    EmbeddingConfig(
-        embedding_endpoint_type="ollama",
-        embedding_endpoint="http://localhost:11434",
-        embedding_model="mxbai-embed-large",
-        embedding_dim=512,
-    )
-)
+### Using the `docker compose` server with Ollama
+Since Ollama is running on the host network, you will need to use `host.docker.internal` to connect to the Ollama server instead of `localhost`.
+```bash
+export OLLAMA_BASE_URL="http://host.docker.internal:11434"
+docker compose up 
 ```
 </Accordion>

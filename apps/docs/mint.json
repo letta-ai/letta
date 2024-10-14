@@ -75,8 +75,11 @@
             "models/openai",
             "models/ollama",
             "models/anthropic",
+            "models/groq",
+            "models/google",
             "models/vllm",
-            "models/cohere"
+            "models/cohere",
+            "models/azure"
           ]
         }
       ]
