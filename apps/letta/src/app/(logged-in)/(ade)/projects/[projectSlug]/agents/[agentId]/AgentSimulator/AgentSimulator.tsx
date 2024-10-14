@@ -91,7 +91,6 @@ function useSendMessage() {
             {
               role: 'user',
               text: message,
-              name: '',
             },
           ],
         }),

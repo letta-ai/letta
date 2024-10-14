@@ -84,6 +84,8 @@ const handler = createNextHandler(sdkContracts, sdkRouter, {
         pathname: url.pathname,
         query: url.searchParams,
         signal: req.signal,
+        // @ts-expect-error - this is a middleware
+        organizationId: req.organizationId,
       });
 
       return response;

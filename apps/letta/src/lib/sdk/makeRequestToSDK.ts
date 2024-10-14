@@ -1,7 +1,13 @@
 import { EventSource } from 'extended-eventsource';
 import { environment } from '@letta-web/environmental-variables';
 import axios, { isAxiosError } from 'axios';
+import type {
+  LettaMessage,
+  LettaRequest,
+  LettaResponse,
+} from '@letta-web/letta-agents-api';
 import { RESTRICTED_ROUTE_BASE_PATHS } from '@letta-web/letta-agents-api';
+import { createInferenceTransaction } from '$letta/server/inferenceTransactions/inferenceTransactions';
 
 interface RequestOptions {
   pathname: string;
@@ -12,21 +18,52 @@ interface RequestOptions {
   formData?: FormData;
   signal: AbortSignal;
   lettaAgentsUserId: string;
+  organizationId: string;
 }
 
 async function handleEventStreamRequest(options: RequestOptions) {
-  const { pathname, method, body, signal, lettaAgentsUserId } = options;
+  const { pathname, method, body, signal, lettaAgentsUserId, organizationId } =
+    options;
   const responseStream = new TransformStream();
   const writer = responseStream.writable.getWriter();
 
+  const startTime = new Date();
+  let stepCount = 0;
+  let outputTokens = 0;
+  let referenceId = '';
   let closed = false;
 
+  async function onCompletion() {
+    if (isCreateMessageRequest(options)) {
+      const agentId = pathname.split('/')[3];
+      const input = body as LettaRequest;
+
+      const inputTokens = input.messages.reduce(
+        (acc, message) => acc + message.text.split(' ').length,
+        0
+      );
+
+      await createInferenceTransaction({
+        agentId,
+        startedAt: startTime,
+        endedAt: new Date(),
+        organizationId,
+        referenceId,
+        outputTokens: outputTokens,
+        inputTokens: inputTokens,
+        stepCount: Math.min(1, stepCount),
+        totalTokens: inputTokens + outputTokens,
+      });
+    }
+  }
+
   // Close if client disconnects
-  signal.onabort = () => {
+  signal.onabort = async () => {
     if (closed) {
       return;
     }
 
+    await onCompletion();
     void writer.close();
   };
 
@@ -47,26 +84,51 @@ async function handleEventStreamRequest(options: RequestOptions) {
         }
       );
 
-      eventsource.onmessage = (e: MessageEvent) => {
+      eventsource.onmessage = async (e: MessageEvent) => {
         if (closed) {
           return;
         }
 
-        if (e.eventPhase === eventsource.CLOSED) {
-          closed = true;
-          void writer.close();
-          return;
-        }
-
-        void writer.write(`data: ${e.data}\n\n`);
-      };
-
-      eventsource.onerror = async () => {
-        try {
-          if (closed) {
+        if (typeof e.data === 'string') {
+          if (e.data === '[DONE]') {
+            await onCompletion();
+            await writer.close();
             return;
           }
 
+          if (e.data.includes('DONE_STEP')) {
+            stepCount += 1;
+          }
+
+          try {
+            const message = JSON.parse(e.data) as LettaMessage;
+            referenceId = message.id;
+          } catch (_e) {
+            // do nothing
+          }
+        }
+
+        if (e.eventPhase === eventsource.CLOSED) {
+          await onCompletion();
+
+          closed = true;
+          await writer.close();
+          return;
+        }
+
+        outputTokens += 1;
+        void writer.write(`data: ${e.data}\n\n`);
+      };
+
+      eventsource.onerror = async (e) => {
+        try {
+          console.error(e);
+
+          await onCompletion();
+
+          if (closed) {
+            return;
+          }
           await writer.close();
         } catch (_e) {
           // do nothing
@@ -75,12 +137,13 @@ async function handleEventStreamRequest(options: RequestOptions) {
     } catch (e) {
       console.error(e);
       if (isAxiosError(e)) {
-        void writer.write(`data: ${JSON.stringify(e.response?.data)}\n\n`);
-        void writer.close();
+        await writer.write(`data: ${JSON.stringify(e.response?.data)}\n\n`);
       } else {
-        void writer.write('data: Unhandled error\n\n');
-        void writer.close();
+        await writer.write('data: Unhandled error\n\n');
       }
+
+      await onCompletion();
+      await writer.close();
     }
   });
 
@@ -115,10 +178,25 @@ async function handleMultipartFileUpload(options: RequestOptions) {
   return data;
 }
 
+function isCreateMessageRequest(options: RequestOptions) {
+  // pathname must conform with /v1/agents/{agent-id}/messages
+  const regex = /\/v1\/agents\/[a-zA-Z0-9-]+\/messages\/?$/;
+
+  return regex.exec(options.pathname) && options.method === 'POST';
+}
+
 export async function makeRequestToSDK(
   options: RequestOptions
 ): Promise<Response> {
-  const { pathname, query, headers, method, body, lettaAgentsUserId } = options;
+  const {
+    pathname,
+    query,
+    headers,
+    method,
+    body,
+    lettaAgentsUserId,
+    organizationId,
+  } = options;
 
   if (
     RESTRICTED_ROUTE_BASE_PATHS.some((restrictedPath) =>
@@ -143,6 +221,8 @@ export async function makeRequestToSDK(
 
   const queryParam = new URLSearchParams(query);
 
+  const startTime = new Date();
+
   try {
     const response = await axios({
       method: method,
@@ -159,6 +239,25 @@ export async function makeRequestToSDK(
 
     if (typeof data !== 'string') {
       data = JSON.stringify(data);
+    }
+
+    if (isCreateMessageRequest(options)) {
+      const agentId = pathname.split('/')[3];
+      const createMessageRes = data as LettaResponse;
+
+      await createInferenceTransaction({
+        agentId,
+        startedAt: startTime,
+        endedAt: new Date(),
+        organizationId,
+        referenceId: createMessageRes.messages
+          .map((message) => message.id)
+          .join(','),
+        outputTokens: data.usage.completion_tokens,
+        inputTokens: data.usage.prompt_tokens,
+        stepCount: data.usage.step_count,
+        totalTokens: data.usage.total_tokens,
+      });
     }
 
     return new Response(data, {
