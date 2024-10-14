@@ -87,7 +87,7 @@ result.output.servers = [
     description: 'Letta Hosted',
   },
   {
-    url: 'http://localhost:8083',
+    url: 'http://localhost:8283',
     description: 'Self Hosted',
   },
 ];
