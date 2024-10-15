@@ -77,7 +77,9 @@ const handler = createNextHandler(sdkContracts, sdkRouter, {
       const response = await makeRequestToSDK({
         method: req.method,
         body: req.content,
-        formData: req.content,
+        formData: req.headers.get('Content-Type')?.includes('multipart')
+          ? await req.formData()
+          : undefined,
         // @ts-expect-error - this is a middleware
         lettaAgentsUserId: req.lettaAgentsUserId,
         headers: req.headers,

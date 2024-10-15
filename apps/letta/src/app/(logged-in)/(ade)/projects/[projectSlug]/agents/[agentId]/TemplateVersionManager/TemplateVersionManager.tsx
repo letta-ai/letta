@@ -99,7 +99,7 @@ function StageAndDeployDialog() {
       trigger={
         <Button
           data-testid="stage-new-version-button"
-          color="secondary"
+          color="primary"
           size="small"
           label={t('StageAndDeployDialog.trigger')}
         />

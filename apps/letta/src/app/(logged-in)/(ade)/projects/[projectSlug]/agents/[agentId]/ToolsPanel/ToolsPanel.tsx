@@ -242,7 +242,7 @@ function ToolCreator() {
             <Button
               type="submit"
               label="Create"
-              color="secondary"
+              color="primary"
               busy={isCreatingTool}
             />
           </HStack>
@@ -339,7 +339,7 @@ function ToolEditor(props: ToolEditorProps) {
                 <Button
                   type="submit"
                   label="Save"
-                  color="secondary"
+                  color="primary"
                   busy={isUpdatingTool}
                 />
               </HStack>
@@ -400,7 +400,7 @@ function ToolsListPage() {
                 setCurrentPage('editTool', { toolId: '', toolName: '' });
               }}
               size="small"
-              color="secondary"
+              color="primary"
               label="Create Tool"
             />
           </>

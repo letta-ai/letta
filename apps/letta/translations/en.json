@@ -128,14 +128,42 @@
     }
   },
   "ADE/EditDataSourcesPanel": {
-    "title": "Edit {name}",
+    "EditDataSourcesContent": {
+      "delete": "Delete file",
+      "addFile": "Add file",
+      "uploadFile": "Upload file",
+      "detachSource": "Detach Source"
+    },
+    "FileUploadDialog": {
+      "title": "Upload a file",
+      "confirm": "Upload"
+    },
+    "title": "Sources",
     "errorDetaching": "There was an error detaching this data source, please try again or contact support.",
     "editName": {
       "label": "Data Source Name",
       "placeholder": "my-data-source-name"
     },
     "edit": "Edit",
-    "detach": "Detach Data Source"
+    "detach": "Detach Data Source",
+    "loading": "Loading data sources...",
+    "noDataSources": "You have no data sources attached to this agent yet. Click the button in the top right to attach a data source.",
+    "CreateDataSourceDialog": {
+      "trigger": "New Source",
+      "goBack": "Go back",
+      "creatingDataSource": "Creating data source...",
+      "title": "Create a new data source",
+      "options": {
+        "createANewDataSource": {
+          "title": "Create a new data source",
+          "description": "Create a new data source to use in your agent and other projects."
+        },
+        "attachAnExistingDataSource": {
+          "title": "Attach an existing data source",
+          "description": "Attach an existing data source that you have already created."
+        }
+      }
+    }
   },
   "ADE/AgentSimulator": {
     "sendingMessage": "Agent is thinking...",
@@ -170,21 +198,6 @@
         "label": "Search data sources"
       }
     },
-    "CreateDataSourceDialog": {
-      "goBack": "Go back",
-      "creatingDataSource": "Creating data source...",
-      "title": "Create a new data source",
-      "options": {
-        "createANewDataSource": {
-          "title": "Create a new data source",
-          "description": "Create a new data source to use in your agent and other projects."
-        },
-        "attachAnExistingDataSource": {
-          "title": "Attach an existing data source",
-          "description": "Attach an existing data source that you have already created."
-        }
-      }
-    },
     "nav": {
       "model": "Model",
       "config": "Config",
@@ -211,7 +224,7 @@
     "localProject": "Local Project"
   },
   "ADE/EditCoreMemoriesPanel": {
-    "title": "Memory Blocks",
+    "title": "Memory",
     "content": "Content",
     "error": "There was an error while updating the memory block, please try again or contact support.",
     "lastUpdated": "Last updated on {date}",
@@ -278,6 +291,9 @@
   },
   "ComponentLibrary/InlineCode": {
     "copyButton": "Copy Code"
+  },
+  "ComponentLibrary/FileTree": {
+    "loading": "Loading..."
   },
   "ComponentLibrary/ADEInput": {
     "disabledTooltip": "This field cannot be edited"

@@ -85,8 +85,6 @@ function WelcomePanel() {
           })}
         </Typography>
         <VStack paddingY paddingLeft as="ul">
-          <li className="list-disc">{t.rich('editMemoryBlocks')}</li>
-          <li className="list-disc">{t.rich('editDataSources')}</li>
           <li className="list-disc">
             {t.rich('exploreArchivalMemories', {
               archivalMemoriesButton: () => <ArchiveMemoriesButton />,

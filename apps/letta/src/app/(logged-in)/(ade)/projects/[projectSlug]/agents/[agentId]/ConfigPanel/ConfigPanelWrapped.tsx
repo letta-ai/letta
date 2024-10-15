@@ -105,7 +105,7 @@ function EditAgentName() {
             <HStack fullWidth justify="end">
               <Button
                 type="submit"
-                color="secondary"
+                color="primary"
                 label="Update Agent Name"
                 busy={isPending}
               />

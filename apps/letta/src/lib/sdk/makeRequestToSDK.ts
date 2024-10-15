@@ -175,7 +175,12 @@ async function handleMultipartFileUpload(options: RequestOptions) {
     data = JSON.stringify(data);
   }
 
-  return data;
+  return new Response(data, {
+    status: response.status,
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
 }
 
 function isCreateMessageRequest(options: RequestOptions) {

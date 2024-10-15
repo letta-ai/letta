@@ -27,7 +27,7 @@ const {
   'tools-panel': toolsPanelTemplate,
   deployment: deploymentPanelTemplate,
   'edit-core-memories': editCoreMemories,
-  'edit-data-source': editDataSourcesPanel,
+  'edit-data-sources': editDataSourcesPanel,
   'deployed-agents': deployedAgentsPanel,
 });
 
