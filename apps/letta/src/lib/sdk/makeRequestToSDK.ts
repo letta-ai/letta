@@ -39,7 +39,7 @@ async function handleEventStreamRequest(options: RequestOptions) {
       const input = body as LettaRequest;
 
       const inputTokens = input.messages.reduce(
-        (acc, message) => acc + message.text.split(' ').length,
+        (acc, message) => acc + (message.text?.split(' ').length || 0),
         0
       );
 
