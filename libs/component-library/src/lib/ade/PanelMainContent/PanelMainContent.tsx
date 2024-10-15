@@ -3,13 +3,20 @@ import { VStack } from '../../framing/VStack/VStack';
 
 interface PanelElementsListProps {
   children: React.ReactNode;
+  variant?: 'default' | 'noPadding';
 }
 
 export function PanelMainContent(props: PanelElementsListProps) {
-  const { children } = props;
+  const { children, variant } = props;
 
   return (
-    <VStack overflow="auto" fullWidth gap="medium" collapseHeight>
+    <VStack
+      padding={variant === 'noPadding' ? false : 'small'}
+      overflow="auto"
+      fullWidth
+      gap="medium"
+      collapseHeight
+    >
       {children}
     </VStack>
   );

@@ -183,7 +183,11 @@ export const agentTemplates = pgTable(
       .notNull()
       .references(() => organizations.id, { onDelete: 'cascade' })
       .notNull(),
-    projectId: text('project_id').notNull(),
+    projectId: text('project_id')
+      .notNull()
+      .references(() => projects.id, {
+        onDelete: 'cascade',
+      }),
     createdAt: timestamp('created_at').notNull().defaultNow(),
     updatedAt: timestamp('updated_at')
       .notNull()
@@ -223,7 +227,11 @@ export const deployedAgentTemplates = pgTable(
       .notNull()
       .references(() => organizations.id, { onDelete: 'cascade' })
       .notNull(),
-    projectId: text('project_id').notNull(),
+    projectId: text('project_id')
+      .notNull()
+      .references(() => projects.id, {
+        onDelete: 'cascade',
+      }),
     agentTemplateId: text('agent_template_id').notNull(),
     version: text('version').notNull(),
     createdAt: timestamp('created_at').notNull().defaultNow(),
@@ -267,7 +275,11 @@ export const deployedAgents = pgTable(
     id: text('id').primaryKey(),
     key: text('key').notNull(),
     deployedAgentTemplateId: text('deployed_agent_template_id'),
-    projectId: text('project_id').notNull(),
+    projectId: text('project_id')
+      .notNull()
+      .references(() => projects.id, {
+        onDelete: 'cascade',
+      }),
     internalAgentCountId: bigint('internal_agent_count_id', { mode: 'number' })
       .notNull()
       .default(0),
@@ -311,7 +323,11 @@ export const agentSimulatorSessions = pgTable('agent_simulator_sessions', {
     .primaryKey()
     .default(sql`gen_random_uuid()`),
   agentId: text('agent_id').notNull(),
-  agentTemplateId: text('agent_template_id').notNull(),
+  agentTemplateId: text('agent_template_id')
+    .notNull()
+    .references(() => agentTemplates.id, {
+      onDelete: 'cascade',
+    }),
   variables: json('variables').notNull(),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at')
@@ -321,8 +337,11 @@ export const agentSimulatorSessions = pgTable('agent_simulator_sessions', {
 
 export const agentSimulatorSessionRelations = relations(
   agentSimulatorSessions,
-  ({ many }) => ({
-    agentTemplates: many(agentTemplates),
+  ({ one }) => ({
+    agentTemplates: one(agentTemplates, {
+      fields: [agentSimulatorSessions.agentTemplateId],
+      references: [agentTemplates.id],
+    }),
   })
 );
 

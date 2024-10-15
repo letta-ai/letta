@@ -846,7 +846,7 @@ export async function listAgents(
 
     if (!deployedTemplate) {
       return {
-        status: 404,
+        status: 200,
         body: [],
       };
     }

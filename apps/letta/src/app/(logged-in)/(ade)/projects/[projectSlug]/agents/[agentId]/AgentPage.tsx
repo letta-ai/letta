@@ -1,9 +1,9 @@
 'use client';
 import type { panelRegistry } from './panelRegistry';
-import { PanelOpener } from './panelRegistry';
+import { usePanelManager } from './panelRegistry';
 import { PanelManagerProvider, PanelRenderer } from './panelRegistry';
 import type { PanelItemPositionsMatrix } from '@letta-web/component-library';
-import { Tooltip } from '@letta-web/component-library';
+import { LayoutIcon } from '@letta-web/component-library';
 import {
   ADEHeader,
   ADEPage,
@@ -17,12 +17,10 @@ import {
   KeyIcon,
   LettaLoader,
   LifebuoyIcon,
-  Logo,
   Popover,
   Typography,
   VStack,
 } from '@letta-web/component-library';
-import Link from 'next/link';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useCurrentProject } from '../../../../../(dashboard-like)/projects/[projectSlug]/hooks';
 import { DatabaseIcon, GitForkIcon } from 'lucide-react';
@@ -37,6 +35,30 @@ import { useCurrentAgent } from './hooks';
 import { useAgentsServiceGetAgent } from '@letta-web/letta-agents-api';
 import { useTranslations } from 'next-intl';
 import { ContextWindowPreview } from './ContextEditorPanel/ContextEditorPanel';
+import { generateDefaultADELayout } from '$letta/utils';
+
+function RestoreLayoutButton() {
+  const t = useTranslations(
+    'projects/(projectSlug)/agents/(agentId)/AgentPage'
+  );
+
+  const { setPositions } = usePanelManager();
+
+  const handleRestoreLayout = useCallback(() => {
+    setPositions(generateDefaultADELayout().displayConfig);
+  }, [setPositions]);
+
+  return (
+    <Button
+      preIcon={<LayoutIcon />}
+      hideLabel
+      onClick={handleRestoreLayout}
+      color="tertiary-transparent"
+      label={t('restoreLayout')}
+      size="small"
+    />
+  );
+}
 
 function NavOverlay() {
   const { slug: projectSlug } = useCurrentProject();
@@ -121,7 +143,7 @@ function ForkAgentDialog() {
           hideLabel
           tooltipPlacement="bottom"
           size="small"
-          color="black"
+          color="tertiary-transparent"
           preIcon={<GitForkIcon />}
           label="Fork Agent"
         ></Button>
@@ -236,37 +258,21 @@ export function AgentPage() {
       >
         <ADEPage
           header={
-            <ADEHeader>
-              <HStack align="center">
-                <Tooltip content={t('returnToHome')}>
-                  <Link href="/">
-                    <Logo size="small" color="white" />
-                  </Link>
-                </Tooltip>
-                /
-                <Tooltip content={t('returnToProjectHome')}>
-                  {isLocal ? (
-                    <Link href="/local-project/agents">
-                      <Typography color="white">{t('localProject')}</Typography>
-                    </Link>
-                  ) : (
-                    <Link href={`/projects/${projectSlug}`}>
-                      <Typography color="white">{projectName}</Typography>
-                    </Link>
-                  )}
-                </Tooltip>
-                /
-                <PanelOpener
-                  templateId="agent-config"
-                  data={undefined}
-                  id="agent-config"
-                >
-                  <Typography color="white">{agentName}</Typography>
-                </PanelOpener>
-              </HStack>
-              <HStack>
+            <ADEHeader
+              project={{
+                url: isLocal
+                  ? '/local-project/agents'
+                  : `/projects/${projectSlug}`,
+                name: isLocal ? 'Local Project' : projectName,
+              }}
+              agent={{
+                name: agentName,
+              }}
+            >
+              <HStack paddingRight="small">
                 {isContextEditorVisible && <ContextWindowPreview />}
                 {isTemplate && <ForkAgentDialog />}
+                <RestoreLayoutButton />
                 <NavOverlay />
               </HStack>
             </ADEHeader>

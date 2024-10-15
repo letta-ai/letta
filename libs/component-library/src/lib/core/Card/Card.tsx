@@ -24,7 +24,6 @@ export function Card(props: CardProps) {
       border
       fullWidth
       padding="medium"
-      rounded
     >
       {children}
     </Frame>

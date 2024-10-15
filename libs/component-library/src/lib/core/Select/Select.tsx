@@ -86,20 +86,18 @@ const classNames = {
   container: () => 'min-w-[200px] w-full',
   control: () =>
     cn(
-      'border bg-background border-solid h-[auto] px-2 py-1 min-h-[36px]! w-full text-base rounded',
+      'border bg-background border-solid h-[auto] px-2 py-1 min-h-[36px]! w-full text-base',
       'h-biHeight'
     ),
   placeholder: () => cn('text-muted-content'),
-  menu: () => cn('mt-1 bg-background rounded'),
+  menu: () => cn('mt-1 bg-background border'),
   option: () => cn('px-3 py-2  hover:bg-background-hover'),
   noOptionsMessage: () => cn('py-3 px-3'),
   valueContainer: () => cn('flex items-center gap-2'),
   groupHeading: () =>
     cn('border-b px-3 mt-3 pb-2 text-sm font-medium text-tertiary-content'),
   multiValue: () =>
-    cn(
-      'bg-tertiary-dark h-[21px] gap-2 px-1 text-tertiary-content rounded-sm px-2'
-    ),
+    cn('bg-tertiary-dark h-[21px] gap-2 px-1 text-tertiary-content px-2'),
 };
 
 function useStyles(args: UseStylesArgs) {

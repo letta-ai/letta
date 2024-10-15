@@ -1,12 +1,12 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import type { PanelTemplate } from '@letta-web/component-library';
+import { Alert, LettaLoader } from '@letta-web/component-library';
 import { RawInput, Typography } from '@letta-web/component-library';
 import {
   Badge,
   Button,
   Dialog,
   HStack,
-  LoadingEmptyStatusComponent,
   PanelBar,
   PanelMainContent,
   VStack,
@@ -193,7 +193,7 @@ function DeployedAgentTemplateCard(props: DeployedAgentTemplateCardProps) {
   );
 }
 
-export function TemplateVersionManager() {
+function TemplateVersionManagerContent() {
   const { id: agentTemplateId } = useCurrentAgent();
 
   const { id: currentProjectId } = useCurrentProject();
@@ -231,41 +231,52 @@ export function TemplateVersionManager() {
     return (data?.pages || []).flatMap((v) => v.body.deployedAgentTemplates);
   }, [data]);
 
+  if (!deployedAgentTemplates) {
+    return <LettaLoader size={'large'} />;
+  }
+
+  if (deployedAgentTemplates.length === 0) {
+    return <Alert title={t('emptyMessage')} variant="info" />;
+  }
+
+  return (
+    <VStack>
+      {deployedAgentTemplates.map((agent, index) => (
+        <DeployedAgentTemplateCard
+          {...agent}
+          index={index}
+          key={agent.version}
+        />
+      ))}
+      {hasNextPage && (
+        <Button
+          label={t('loadMoreVersions')}
+          onClick={() => {
+            void fetchNextPage();
+          }}
+        />
+      )}
+    </VStack>
+  );
+}
+
+export function TemplateVersionManager() {
   return (
     <VStack fullHeight gap={false}>
       <PanelBar actions={<StageAndDeployDialog />} />
       <PanelMainContent>
-        {!deployedAgentTemplates || deployedAgentTemplates.length === 0 ? (
-          <LoadingEmptyStatusComponent
-            isLoading={!deployedAgentTemplates}
-            emptyMessage={t('emptyMessage')}
-          />
-        ) : (
-          <VStack>
-            {deployedAgentTemplates.map((agent, index) => (
-              <DeployedAgentTemplateCard
-                {...agent}
-                index={index}
-                key={agent.version}
-              />
-            ))}
-            {hasNextPage && (
-              <Button
-                label={t('loadMoreVersions')}
-                onClick={() => {
-                  void fetchNextPage();
-                }}
-              />
-            )}
-          </VStack>
-        )}
+        <TemplateVersionManagerContent />
       </PanelMainContent>
     </VStack>
   );
 }
 
 export const deploymentPanelTemplate = {
-  useGetTitle: () => 'Deployment',
+  useGetTitle: () => {
+    const t = useTranslations('ADE/TemplateVersionManager');
+
+    return t('title');
+  },
   data: z.undefined(),
   content: TemplateVersionManager,
   templateId: 'deployment',

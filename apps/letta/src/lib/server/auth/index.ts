@@ -27,7 +27,7 @@ import { jwtDecode } from 'jwt-decode';
 import { AdminService } from '@letta-web/letta-agents-api';
 import { createAgent, versionAgentTemplate } from '$letta/sdk';
 import { generateSlug } from '$letta/server';
-import { generateDefaultPreferences } from '$letta/web-api/ade-preferences/adePreferencesRouter';
+import { generateDefaultADELayout } from '$letta/utils';
 
 function isLettaEmail(email: string) {
   return email.endsWith('@letta.com') || email.endsWith('@memgpt.ai');
@@ -230,7 +230,7 @@ async function createUserAndOrganization(
     ),
     db.insert(adePreferences).values({
       userId: createdUser.userId,
-      displayConfig: generateDefaultPreferences({ firstTime: true })
+      displayConfig: generateDefaultADELayout({ firstTime: true })
         .displayConfig,
       agentId: createdAgentTemplate.body.id,
     }),

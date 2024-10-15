@@ -95,6 +95,7 @@ export function Code(props: CodeProps) {
     () => (
       <HStack
         align="center"
+        wrap
         className="py-1 px-2 border-b border-t flex justify-between"
       >
         <HStack wrap align="center">

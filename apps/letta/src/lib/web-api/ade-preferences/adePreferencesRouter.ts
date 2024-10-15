@@ -4,76 +4,7 @@ import type { contracts } from '../contracts';
 import { adePreferences, db } from '@letta-web/database';
 import { getUserIdOrThrow } from '$letta/server/auth';
 import { and, eq } from 'drizzle-orm';
-
-interface GenerateDefaultPreferencesOptions {
-  firstTime?: boolean;
-}
-
-export function generateDefaultPreferences(
-  options: GenerateDefaultPreferencesOptions = {}
-): AdePreferencesData {
-  const { firstTime } = options;
-  return {
-    displayConfig: [
-      {
-        size: 20,
-        positions: [
-          {
-            size: 100,
-            positions: [
-              {
-                id: 'sidebar',
-                isActive: true,
-                templateId: 'sidebar',
-                data: undefined,
-              },
-            ],
-          },
-        ],
-      },
-      {
-        size: 40,
-        positions: [
-          {
-            size: 100,
-            positions: [
-              {
-                id: 'archival-memories',
-                isActive: false,
-                templateId: 'archival-memories',
-                data: undefined,
-              },
-              {
-                id: 'welcome',
-                isActive: true,
-                templateId: 'welcome-panel',
-                data: {
-                  firstTime,
-                },
-              },
-            ],
-          },
-        ],
-      },
-      {
-        size: 40,
-        positions: [
-          {
-            size: 100,
-            positions: [
-              {
-                id: 'agent-simulator',
-                isActive: true,
-                templateId: 'agent-simulator',
-                data: undefined,
-              },
-            ],
-          },
-        ],
-      },
-    ],
-  };
-}
+import { generateDefaultADELayout } from '$letta/utils';
 
 type GetAdePreferencesResponse = ServerInferResponses<
   typeof contracts.adePreferences.getADEPreferences
@@ -101,7 +32,7 @@ async function getADEPreferences(
 
   if (!preferences) {
     preferences = {
-      displayConfig: generateDefaultPreferences().displayConfig,
+      displayConfig: generateDefaultADELayout().displayConfig,
     };
 
     await db.insert(adePreferences).values({

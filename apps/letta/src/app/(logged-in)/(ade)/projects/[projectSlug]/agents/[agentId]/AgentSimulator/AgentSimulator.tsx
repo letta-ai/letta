@@ -5,11 +5,9 @@ import {
   ChatBubbleIcon,
   ChatInput,
   CodeIcon,
-  Form,
-  FormActions,
-  FormField,
-  FormProvider,
+  HStack,
   LoadingEmptyStatusComponent,
+  ProgressBar,
   RawToggleGroup,
   Table,
   TableBody,
@@ -17,7 +15,6 @@ import {
   TableCellInput,
   TableRow,
   Typography,
-  useForm,
   VariableIcon,
   WarningIcon,
 } from '@letta-web/component-library';
@@ -42,12 +39,15 @@ import type { MessagesDisplayMode } from '$letta/client/components';
 import { Messages } from '$letta/client/components';
 import { z } from 'zod';
 import { useTranslations } from 'next-intl';
-import { useDebouncedCallback, useLocalStorage } from '@mantine/hooks';
+import {
+  useDebouncedCallback,
+  useDebouncedValue,
+  useLocalStorage,
+} from '@mantine/hooks';
 import { webApi, webApiQueryKeys } from '$letta/client';
 import { useCurrentProject } from '../../../../../../(dashboard-like)/projects/[projectSlug]/hooks';
 import { useCurrentAgentMetaData } from '../hooks/useCurrentAgentMetaData/useCurrentAgentMetaData';
 import { findMemoryBlockVariables } from '$letta/utils';
-import { zodResolver } from '@hookform/resolvers/zod';
 import { isFetchError } from '@ts-rest/react-query/v5';
 import type { GetAgentTemplateSimulatorSessionResponseBody } from '$letta/web-api/agent-templates/agentTemplatesContracts';
 import { isEqual } from 'lodash-es';
@@ -297,20 +297,9 @@ function DialogSessionSheet(props: DialogSessionDialogProps) {
   const { id: projectId } = useCurrentProject();
   const { id: agentTemplateId } = useCurrentAgent();
 
-  const schema = useMemo(() => {
-    return z.object(
-      Object.fromEntries(
-        variables.map((variable) => [variable, z.string().optional()])
-      )
-    );
-  }, [variables]);
-
-  const form = useForm({
-    resolver: zodResolver(schema),
-    defaultValues: Object.fromEntries(
-      variables.map((variable) => [variable, props.existingVariables[variable]])
-    ),
-  });
+  const [variableData, setVariableData] = useState<Record<string, string>>(
+    props.existingVariables
+  );
 
   const queryClient = useQueryClient();
 
@@ -334,20 +323,54 @@ function DialogSessionSheet(props: DialogSessionDialogProps) {
       },
     });
 
-  const handleSubmit = useCallback(
-    (values: Record<string, string>) => {
-      mutate({
-        params: {
-          projectId,
-          agentTemplateId,
-        },
-        body: {
-          variables: values,
-        },
-      });
-    },
-    [agentTemplateId, mutate, projectId]
-  );
+  const [debouncedVariableData] = useDebouncedValue(variableData, 500);
+
+  useEffect(() => {
+    if (isPending) {
+      return;
+    }
+
+    const validVariableNames = new Set(variables);
+
+    const cleanedVariableData = Object.fromEntries(
+      Object.entries(debouncedVariableData)
+        .filter(
+          ([variableName, value]) =>
+            value && validVariableNames.has(variableName)
+        )
+        .map(([variableName, value]) => [variableName, value])
+    );
+
+    // if variables are not different, don't update
+    if (isEqual(cleanedVariableData, props.existingVariables)) {
+      return;
+    }
+
+    mutate({
+      params: {
+        agentTemplateId,
+        projectId,
+      },
+      body: {
+        variables: cleanedVariableData,
+      },
+    });
+  }, [
+    agentTemplateId,
+    debouncedVariableData,
+    isPending,
+    mutate,
+    projectId,
+    props.existingVariables,
+    variables,
+  ]);
+
+  const handleChange = useCallback((name: string, value: string) => {
+    setVariableData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  }, []);
 
   if (!variables.length) {
     return (
@@ -363,42 +386,31 @@ function DialogSessionSheet(props: DialogSessionDialogProps) {
   }
 
   return (
-    <VStack borderBottom paddingBottom="small">
-      <FormProvider {...form}>
-        <Form onSubmit={form.handleSubmit(handleSubmit)}>
-          <VStack gap={false} borderBottom>
-            <Table>
-              <TableBody>
-                {variables.map((variable) => (
-                  <TableRow key={variable}>
-                    <TableCell>
-                      <Typography>{variable}</Typography>
-                    </TableCell>
-                    <FormField
-                      name={variable}
-                      render={({ field }) => (
-                        <TableCellInput
-                          label={t('DialogSessionSheet.label')}
-                          placeholder={t('DialogSessionSheet.placeholder')}
-                          {...field}
-                        />
-                      )}
-                    />
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </VStack>
-          <FormActions>
-            <Button
-              busy={isPending}
-              size="small"
-              color="tertiary"
-              label={t('DialogSessionSheet.update')}
-            />
-          </FormActions>
-        </Form>
-      </FormProvider>
+    <VStack position="relative" borderBottom paddingBottom="small">
+      <HStack fullWidth position="absolute">
+        {isPending && <ProgressBar indeterminate />}
+      </HStack>
+      <VStack gap={false} borderBottom>
+        <Table>
+          <TableBody>
+            {variables.map((variable) => (
+              <TableRow key={variable}>
+                <TableCell>
+                  <Typography>{variable}</Typography>
+                </TableCell>
+                <TableCellInput
+                  value={variableData[variable] || ''}
+                  label={t('DialogSessionSheet.label')}
+                  placeholder={t('DialogSessionSheet.placeholder')}
+                  onChange={(e) => {
+                    handleChange(variable, e.target.value);
+                  }}
+                />
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </VStack>
     </VStack>
   );
 }

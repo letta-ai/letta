@@ -182,6 +182,7 @@ export function createPanelManager<
     getIsPanelTemplateActive: (
       panelTemplateId: RegisteredPanelTemplateId
     ) => boolean;
+    setPositions: (positions: RegisteredPanelItemPositionsMatrix) => void;
     openPanel: <TPanelTemplateId extends RegisteredPanelTemplateId>(
       options: OpenPanelOptions<TPanelTemplateId>
     ) => void;
@@ -200,6 +201,9 @@ export function createPanelManager<
     },
     resizeY: () => {
       return false;
+    },
+    setPositions: () => {
+      return;
     },
     getIsPanelTemplateActive: () => false,
     panelIdToPositionMap: {},
@@ -749,6 +753,13 @@ export function createPanelManager<
       [reconcilePositions, state.positions]
     );
 
+    const setPositions = useCallback(
+      (positions: RegisteredPanelItemPositionsMatrix) => {
+        setState(reconcilePositions(positions));
+      },
+      [reconcilePositions]
+    );
+
     const value = useMemo(() => {
       return {
         getIsPanelTemplateActive,
@@ -759,6 +770,7 @@ export function createPanelManager<
         closePanel,
         activatePanel,
         movePanelToPosition,
+        setPositions,
         getIsPanelIdExists,
         resizeX,
         resizeY,
@@ -768,6 +780,7 @@ export function createPanelManager<
       state.panelIdToPositionMap,
       getIsPanelIdActive,
       state.positions,
+      setPositions,
       openPanel,
       closePanel,
       activatePanel,
@@ -813,7 +826,7 @@ export function createPanelManager<
     });
 
     return (
-      <div ref={setNodeRef} {...listeners} {...attributes}>
+      <div className="w-full" ref={setNodeRef} {...listeners} {...attributes}>
         {children}
       </div>
     );
@@ -985,9 +998,9 @@ export function createPanelManager<
     return (
       <Frame
         onMouseDown={handleStartDrag}
-        color="background-grey"
+        color="background"
         fullHeight
-        className="absolute bg-background right-0 h-full top-0 w-[5px] border-l border-r cursor-ew-resize"
+        className="absolute right-0 border-l h-full top-0 w-[5px] cursor-ew-resize"
       />
     );
   }
@@ -1060,9 +1073,9 @@ export function createPanelManager<
     return (
       <Frame
         onMouseDown={handleStartDrag}
-        color="background-grey"
+        color="background"
         fullWidth
-        className="absolute bottom-0 bg-background left-0 h-[5px] border-t border-b cursor-ns-resize"
+        className="absolute bottom-0 left-0 h-[5px] border-t cursor-ns-resize"
       />
     );
   }
@@ -1146,7 +1159,7 @@ export function createPanelManager<
       <GenericPanelTabBar>
         {filteredTabs.map((tab, index) => {
           return (
-            <HStack gap={false} position="relative" key={tab.id}>
+            <HStack flex gap={false} position="relative" key={tab.id}>
               {index === 0 && (
                 <DropZoneTab
                   id={tab.id}
@@ -1167,11 +1180,11 @@ export function createPanelManager<
             </HStack>
           );
         })}
-        <GenericDropZone
-          id={`dropzone-tab-end-${x}-${y}`}
-          className="w-full"
-          moveToOnDrop={{ x, y, tab: tabs.length + 1 }}
-        />
+        {/*<GenericDropZone*/}
+        {/*  id={`dropzone-tab-end-${x}-${y}`}*/}
+        {/*  className="w-full"*/}
+        {/*  moveToOnDrop={{ x, y, tab: tabs.length + 1 }}*/}
+        {/*/>*/}
       </GenericPanelTabBar>
     );
   }

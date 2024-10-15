@@ -45,25 +45,13 @@ describe('letta', () => {
       /\/projects\/(.+)\/templates\/(.+)/
     );
 
-    // update core memory
-    cy.findByTestId('ade-navigate-to:Memory Blocks').then(($btn) => {
-      if (!$btn.hasClass('active-ade-nav')) {
-        $btn.click();
-      }
-    });
+    cy.findByTestId('tab:Memory Blocks').click();
 
-    cy.findByTestId('ade-navigate-to:customer', { timeout: 10000 }).click();
+    cy.findByTestId('edit-memory-block:human').click();
 
     cy.findByTestId('edit-memory-block-content').type(
       'They also want to be referred to as BananaMan, make sure to always call them that in every response.'
     );
-
-    // simulate a conversation
-    cy.findByTestId('ade-navigate-to:Simulator').then(($btn) => {
-      if (!$btn.hasClass('active-ade-nav')) {
-        $btn.click();
-      }
-    });
 
     // cy.findByTestId('chat-simulator-input').type('What is my name');
     //
@@ -73,11 +61,7 @@ describe('letta', () => {
 
     // stage the agent
 
-    cy.findByTestId('ade-navigate-to:Template Version Manager').then(($btn) => {
-      if (!$btn.hasClass('active-ade-nav')) {
-        $btn.click();
-      }
-    });
+    cy.findByTestId('tab:Template Version Manager').click();
 
     cy.findByTestId('stage-new-version-button').click();
 

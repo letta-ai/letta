@@ -5,12 +5,15 @@ import {
   UseAgentsServiceGetAgentKeyFn,
   useAgentsServiceUpdateAgent,
 } from '@letta-web/letta-agents-api';
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 export function useSyncUpdateCurrentAgent() {
   const currentAgent = useCurrentAgent();
   const queryClient = useQueryClient();
   const debouncer = useRef<ReturnType<typeof setTimeout>>();
+  const [lastUpdatedAt, setLastUpdatedAt] = useState<string | null>();
+  const [error, setError] = useState<boolean>(false);
+  const [isUpdating, setIsUpdating] = useState<boolean>(false);
 
   const { mutate: updateAgent } = useAgentsServiceUpdateAgent();
 
@@ -34,13 +37,27 @@ export function useSyncUpdateCurrentAgent() {
           }
 
           debouncer.current = setTimeout(() => {
-            updateAgent({
-              agentId: currentAgent.id,
-              requestBody: {
-                id: currentAgent.id,
-                ...newAgentData,
+            setError(false);
+            setIsUpdating(true);
+
+            updateAgent(
+              {
+                agentId: currentAgent.id,
+                requestBody: {
+                  id: currentAgent.id,
+                  ...newAgentData,
+                },
               },
-            });
+              {
+                onSuccess: () => {
+                  setIsUpdating(false);
+                  setLastUpdatedAt(new Date().toISOString());
+                },
+                onError: () => {
+                  setError(true);
+                },
+              }
+            );
           }, 500);
 
           return {
@@ -61,5 +78,5 @@ export function useSyncUpdateCurrentAgent() {
     };
   }, []);
 
-  return { syncUpdateCurrentAgent };
+  return { syncUpdateCurrentAgent, isUpdating, lastUpdatedAt, error };
 }

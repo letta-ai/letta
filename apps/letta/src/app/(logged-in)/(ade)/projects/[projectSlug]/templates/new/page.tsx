@@ -9,7 +9,6 @@ import {
 import {
   ADEHeader,
   ADEPage,
-  ArrowLeftIcon,
   Button,
   HStack,
   LettaLoader,
@@ -301,20 +300,19 @@ function CreateAgentsView() {
 }
 
 function NewAgentPage() {
-  const { slug: projectSlug } = useCurrentProject();
+  const { slug: projectSlug, name } = useCurrentProject();
   const t = useTranslations('projects/(projectSlug)/templates/new/page');
 
   return (
     <ADEPage
       header={
-        <ADEHeader>
-          <Button
-            color="black"
-            href={`/projects/${projectSlug}`}
-            label={t('backToProject')}
-            preIcon={<ArrowLeftIcon />}
-          />
-        </ADEHeader>
+        <ADEHeader
+          agent={{ name: t('pageTitle') }}
+          project={{
+            url: `/projects/${projectSlug}`,
+            name: name,
+          }}
+        ></ADEHeader>
       }
     >
       <VStack paddingY fullHeight fullWidth align="center">
@@ -324,8 +322,6 @@ function NewAgentPage() {
           justify="center"
           fullWidth
           padding="xlarge"
-          border
-          rounded
           color="background"
         >
           <CreateAgentsView />

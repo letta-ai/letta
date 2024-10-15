@@ -42,11 +42,13 @@ export function GenericTab(props: GenericTabProps) {
       paddingRight="small"
       align="center"
       position="relative"
-      className="rounded-t-lg"
+      fullWidth
       color={isActive ? 'background' : 'background-grey'}
     >
       <HStack
         as="button"
+        fullWidth
+        data-testid={`tab:${title}`}
         paddingLeft="large"
         paddingY="xsmall"
         className="h-full"
@@ -65,16 +67,6 @@ export function GenericTab(props: GenericTabProps) {
       <HStack as="button" onClick={onCloseTab}>
         <Cross2Icon className="w-4" />
       </HStack>
-      {isActive ? (
-        <>
-          <div className="w-4 h-4 absolute bottom-0 z-[2] right-[-16px] rounded-bl-[16px] bg-background-grey pointer-events-none" />
-          <div className="w-4 h-4 absolute bottom-0 z-[1] right-[-16px] bg-background pointer-events-none" />
-          <div className="w-4 h-4 absolute bottom-0 z-[2] left-[-16px] rounded-br-[16px] bg-background-grey pointer-events-none" />
-          <div className="w-4 h-4 absolute bottom-0 z-[1] left-[-16px] bg-background pointer-events-none" />
-        </>
-      ) : (
-        <div />
-      )}
     </HStack>
   );
 }
@@ -109,7 +101,7 @@ export function GenericTabRenderer(props: GenericTabRendererProps) {
   const { tabBar, className, content } = props;
 
   return (
-    <VStack className={className} fullHeight gap={false}>
+    <VStack border className={className} fullHeight gap={false}>
       {tabBar}
       <VStack color="background" collapseHeight fullWidth>
         {content}

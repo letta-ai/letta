@@ -13,7 +13,6 @@ export function ADEInputContainer(
       padding="small"
       fullHeight={fullHeight}
       fullWidth
-      borderBottom
       className="bg-background"
     >
       {children}

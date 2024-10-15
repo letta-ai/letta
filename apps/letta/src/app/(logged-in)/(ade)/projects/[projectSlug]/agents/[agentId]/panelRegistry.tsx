@@ -6,8 +6,7 @@ import { welcomePanelTemplate } from './WelcomePanel/WelcomePanel';
 import { modelTemplate } from './ModelPanel/ModelPanel';
 import { toolsPanelTemplate } from './ToolsPanel/ToolsPanel';
 import { deploymentPanelTemplate } from './TemplateVersionManager/TemplateVersionManager';
-import { agentSidebarTemplate } from './ADESidebar/ADESidebar';
-import { editMemoryBlocksTemplate } from './EditMemoryBlockPanel/EditMemoryBlockPanel';
+import { editCoreMemories } from './EditCoreMemoriesPanel/EditCoreMemoriesPanel';
 import { editDataSourcesPanel } from './EditDataSourcesPanel/EditDataSourcesPanel';
 import { deployedAgentsPanel } from './DeployedAgentsPanel/DeployedAgentsPanel';
 
@@ -27,8 +26,7 @@ const {
   'welcome-panel': welcomePanelTemplate,
   'tools-panel': toolsPanelTemplate,
   deployment: deploymentPanelTemplate,
-  'edit-memory-block': editMemoryBlocksTemplate,
-  sidebar: agentSidebarTemplate,
+  'edit-core-memories': editCoreMemories,
   'edit-data-source': editDataSourcesPanel,
   'deployed-agents': deployedAgentsPanel,
 });
