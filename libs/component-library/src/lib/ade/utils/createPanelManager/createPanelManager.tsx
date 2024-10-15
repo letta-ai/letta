@@ -1231,11 +1231,11 @@ export function createPanelManager<
                   />
                 </>
               )}
-              <HStack fullWidth fullHeight>
+              <HStack gap={false} fullWidth fullHeight>
                 <VStack fullHeight fullWidth>
                   <PanelComponent {...tab.data} />
                 </VStack>
-                <div className="w-[0] h-full" />
+                <div className="w-[4px] h-full" />
               </HStack>
             </GenericPanelContent>
           );
