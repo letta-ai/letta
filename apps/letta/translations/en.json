@@ -128,22 +128,15 @@
         "simple": "Simple mode"
       }
     },
-    "DialogSessionDialog": {
-      "dismiss": "Dismiss",
-      "title": {
-        "createNewSession": "Create a new simulator session",
-        "updateVariables": "Update Variables"
-      },
-      "description": {
-        "createNewSession": "Please enter in the variables you would like to use in this session that were defined in the agent's memory blocks.",
-        "updateVariables": "You can update the variables in this session below."
-      },
-      "confirmText": {
-        "createNewSession": "Start Session",
-        "updateVariables": "Update Variables"
-      },
+
+    "DialogSessionSheet": {
+      "update": "Update",
+      "placeholder": "Variable Value",
+      "label": "Variable Name",
       "editLabel": "Edit {variableName}"
     },
+    "showVariables": "Show Variables",
+    "hideVariables": "Hide Variables",
     "updateVariables": "Update Variables"
   },
   "ADE/ADESidebar": {

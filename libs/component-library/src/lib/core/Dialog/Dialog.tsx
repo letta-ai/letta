@@ -19,26 +19,18 @@ const DialogPortal = DialogPrimitive.Portal;
 
 const DialogClose = DialogPrimitive.Close;
 
-type OverlayVariantType = 'blur' | 'default';
-
-interface DialogOverlayProps
-  extends React.ComponentPropsWithoutRef<typeof DialogPrimitive.Overlay> {
-  encapsulated?: boolean;
-  overlayVariant?: OverlayVariantType;
-}
+type DialogOverlayProps = React.ComponentPropsWithoutRef<
+  typeof DialogPrimitive.Overlay
+>;
 
 const DialogOverlay = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Overlay>,
   DialogOverlayProps
->(({ className, encapsulated, overlayVariant, ...props }, ref) => (
+>(({ className, ...props }, ref) => (
   <DialogPrimitive.Overlay
     ref={ref}
     className={cn(
-      'inset-0 z-50   data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
-      encapsulated ? 'absolute' : 'fixed',
-      overlayVariant === 'blur'
-        ? 'bg-background blur-sm opacity-90'
-        : 'bg-black/80',
+      'inset-0 z-50 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
       className
     )}
     {...props}
@@ -46,27 +38,21 @@ const DialogOverlay = React.forwardRef<
 ));
 DialogOverlay.displayName = DialogPrimitive.Overlay.displayName;
 
-interface DialogContentProps
-  extends React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> {
-  encapsulated?: boolean;
-  overlayVariant?: OverlayVariantType;
-}
+type DialogContentProps = React.ComponentPropsWithoutRef<
+  typeof DialogPrimitive.Content
+>;
 
 const DialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
   DialogContentProps
->(({ className, children, encapsulated, overlayVariant, ...props }, ref) => {
+>(({ className, children, ...props }, ref) => {
   const contents = (
     <>
-      <DialogOverlay
-        overlayVariant={overlayVariant}
-        encapsulated={encapsulated}
-      />
+      <DialogOverlay />
       <DialogPrimitive.Content
         ref={ref}
         className={cn(
           'max-h-[95vh] overflow-y-auto overflow-x-hidden text-base left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded',
-          encapsulated ? 'absolute' : 'fixed',
           className
         )}
         {...props}
@@ -79,10 +65,6 @@ const DialogContent = React.forwardRef<
       </DialogPrimitive.Content>
     </>
   );
-
-  if (encapsulated) {
-    return contents;
-  }
 
   return <DialogPortal>{contents}</DialogPortal>;
 });
@@ -173,7 +155,6 @@ interface DialogProps extends VariantProps<typeof dialogVariants> {
   preventCloseFromOutside?: boolean;
   isConfirmBusy?: boolean;
   // if you do not want the dialog to be on the window but encapsulated in the parent component
-  encapsulated?: boolean;
   defaultOpen?: boolean;
   cancelText?: string;
   onConfirm?: () => void;
@@ -181,7 +162,6 @@ interface DialogProps extends VariantProps<typeof dialogVariants> {
   hideCancel?: boolean;
   hideConfirm?: boolean;
   reverseButtons?: boolean;
-  overlayVariant?: 'blur' | 'default';
 }
 
 export function Dialog(props: DialogProps) {
@@ -195,7 +175,6 @@ export function Dialog(props: DialogProps) {
     children,
     reverseButtons,
     isConfirmBusy,
-    encapsulated,
     trigger,
     confirmColor = 'secondary',
     preventCloseFromOutside,
@@ -206,7 +185,6 @@ export function Dialog(props: DialogProps) {
     hideCancel,
     size,
     hideConfirm,
-    overlayVariant,
   } = props;
 
   const handleSubmit = useCallback(
@@ -237,9 +215,7 @@ export function Dialog(props: DialogProps) {
     >
       {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
       <DialogContent
-        encapsulated={encapsulated}
         className={dialogVariants({ size })}
-        overlayVariant={overlayVariant}
         onInteractOutside={(e) => {
           if (preventCloseFromOutside) {
             e.preventDefault();

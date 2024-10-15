@@ -4,16 +4,20 @@ import {
   ChatBubbleIcon,
   ChatInput,
   CodeIcon,
-  Dialog,
+  Form,
+  FormActions,
   FormField,
   FormProvider,
-  HStack,
-  Input,
   LoadingEmptyStatusComponent,
-  RawInput,
   RawToggleGroup,
+  Table,
+  TableBody,
+  TableCell,
+  TableCellInput,
+  TableRow,
   Typography,
   useForm,
+  WarningIcon,
 } from '@letta-web/component-library';
 import type { PanelTemplate } from '@letta-web/component-library';
 import { PanelBar } from '@letta-web/component-library';
@@ -281,16 +285,13 @@ function ControlChatroomRenderMode() {
 }
 
 interface DialogSessionDialogProps {
-  noSession: boolean;
-  open: boolean;
-  onDismiss: () => void;
   variables: string[];
   existingVariables: Record<string, string>;
 }
 
-function DialogSessionDialog(props: DialogSessionDialogProps) {
+function DialogSessionSheet(props: DialogSessionDialogProps) {
   const t = useTranslations('ADE/AgentSimulator');
-  const { noSession, variables, onDismiss, open } = props;
+  const { variables } = props;
   const { id: projectId } = useCurrentProject();
   const { id: agentTemplateId } = useCurrentAgent();
 
@@ -309,23 +310,12 @@ function DialogSessionDialog(props: DialogSessionDialogProps) {
     ),
   });
 
-  const handleClose = useCallback(
-    (next: boolean) => {
-      if (!next) {
-        onDismiss();
-      }
-    },
-    [onDismiss]
-  );
-
   const queryClient = useQueryClient();
 
   const { mutate, isPending } =
     webApi.agentTemplates.createAgentTemplateSimulatorSession.useMutation({
       onSuccess: (response) => {
-        queryClient.setQueriesData<
-          GetAgentTemplateSimulatorSessionResponseBody | undefined
-        >(
+        queryClient.setQueriesData<GetAgentTemplateSimulatorSessionResponseBody>(
           {
             queryKey: webApiQueryKeys.agentTemplates.getAgentTemplateSession({
               agentTemplateId,
@@ -339,8 +329,6 @@ function DialogSessionDialog(props: DialogSessionDialogProps) {
             };
           }
         );
-
-        onDismiss();
       },
     });
 
@@ -360,63 +348,43 @@ function DialogSessionDialog(props: DialogSessionDialogProps) {
   );
 
   return (
-    <FormProvider {...form}>
-      <Dialog
-        overlayVariant="blur"
-        isOpen={open}
-        onOpenChange={handleClose}
-        preventCloseFromOutside
-        cancelText={t('DialogSessionDialog.dismiss')}
-        encapsulated
-        hideCancel={noSession}
-        confirmText={
-          noSession
-            ? t('DialogSessionDialog.confirmText.createNewSession')
-            : t('DialogSessionDialog.confirmText.updateVariables')
-        }
-        onSubmit={form.handleSubmit(handleSubmit)}
-        isConfirmBusy={isPending}
-        title={
-          noSession
-            ? t('DialogSessionDialog.title.createNewSession')
-            : t('DialogSessionDialog.title.updateVariables')
-        }
-      >
-        <VStack gap="xlarge">
-          <Typography>
-            {noSession
-              ? t('DialogSessionDialog.description.createNewSession')
-              : t('DialogSessionDialog.description.updateVariables')}
-          </Typography>
-          <VStack gap="large">
-            {variables.map((variable) => (
-              <HStack key={variable}>
-                <RawInput
-                  label={variable}
-                  fullWidth
-                  hideLabel
-                  disabled
-                  value={variable}
-                />
-                <FormField
-                  name={variable}
-                  render={({ field }) => (
-                    <Input
-                      fullWidth
-                      hideLabel
-                      label={t('DialogSessionDialog.editLabel', {
-                        variableName: variable,
-                      })}
-                      {...field}
+    <VStack borderBottom paddingBottom="small">
+      <FormProvider {...form}>
+        <Form onSubmit={form.handleSubmit(handleSubmit)}>
+          <VStack gap={false} borderBottom>
+            <Table>
+              <TableBody>
+                {variables.map((variable) => (
+                  <TableRow key={variable}>
+                    <TableCell>
+                      <Typography>{variable}</Typography>
+                    </TableCell>
+                    <FormField
+                      name={variable}
+                      render={({ field }) => (
+                        <TableCellInput
+                          label={t('DialogSessionSheet.label')}
+                          placeholder={t('DialogSessionSheet.placeholder')}
+                          {...field}
+                        />
+                      )}
                     />
-                  )}
-                />
-              </HStack>
-            ))}
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </VStack>
-        </VStack>
-      </Dialog>
-    </FormProvider>
+          <FormActions>
+            <Button
+              busy={isPending}
+              size="small"
+              color="tertiary"
+              label={t('DialogSessionSheet.update')}
+            />
+          </FormActions>
+        </Form>
+      </FormProvider>
+    </VStack>
   );
 }
 
@@ -432,24 +400,21 @@ function Chatroom() {
     key: 'chatroom-render-mode',
   });
 
-  const {
-    data: agentSession,
-    isFetched,
-    error,
-  } = webApi.agentTemplates.getAgentTemplateSimulatorSession.useQuery({
-    queryKey: webApiQueryKeys.agentTemplates.getAgentTemplateSession({
-      agentTemplateId: agentId,
-      projectId,
-    }),
-    queryData: {
-      params: {
+  const { data: agentSession, error } =
+    webApi.agentTemplates.getAgentTemplateSimulatorSession.useQuery({
+      queryKey: webApiQueryKeys.agentTemplates.getAgentTemplateSession({
         agentTemplateId: agentId,
         projectId,
+      }),
+      queryData: {
+        params: {
+          agentTemplateId: agentId,
+          projectId,
+        },
       },
-    },
-    retry: false,
-    enabled: isTemplate,
-  });
+      retry: false,
+      enabled: isTemplate,
+    });
 
   const variableList = useMemo(() => {
     return findMemoryBlockVariables(agentState);
@@ -475,32 +440,6 @@ function Chatroom() {
     // it's ok if theres more variables defined in the session than in the agent, but not the other way around
     return variableList.some((variable) => !sessionVariables[variable]);
   }, [agentSession?.body.variables, variableList]);
-
-  useEffect(() => {
-    if (!isTemplate) {
-      return;
-    }
-
-    // if we haven't loaded the session yet, dont do anything
-    if (!isFetched) {
-      return;
-    }
-
-    if (showVariablesMenu) {
-      return;
-    }
-
-    if (hasVariableMismatch || hasNoSimulatorSession) {
-      setShowVariablesMenu(true);
-    }
-  }, [
-    isTemplate,
-    isFetched,
-    showVariablesMenu,
-    hasVariableMismatch,
-    hasNoSimulatorSession,
-    setShowVariablesMenu,
-  ]);
 
   const agentStateStore = useRef(agentState);
 
@@ -532,33 +471,41 @@ function Chatroom() {
 
   const { sendMessage, isPending } = useSendMessage(agentIdToUse || '');
 
+  const hasVariableIssue = useMemo(() => {
+    return hasVariableMismatch || hasNoSimulatorSession;
+  }, [hasVariableMismatch, hasNoSimulatorSession]);
+
   return (
     <ChatroomContext.Provider value={{ renderMode, setRenderMode }}>
       <VStack fullHeight fullWidth>
         <PanelBar actions={<ControlChatroomRenderMode />}>
-          <Button
-            onClick={() => {
-              setShowVariablesMenu(true);
-            }}
-            size="small"
-            color="tertiary"
-            label={t('updateVariables')}
-          />
+          <VStack paddingLeft="small">
+            <Button
+              onClick={() => {
+                setShowVariablesMenu((v) => !v);
+              }}
+              preIcon={hasVariableIssue && <WarningIcon color="warning" />}
+              size="small"
+              color="tertiary"
+              label={
+                !hasVariableIssue && showVariablesMenu
+                  ? t('hideVariables')
+                  : t('showVariables')
+              }
+            />
+          </VStack>
         </PanelBar>
+        {showVariablesMenu && (
+          <VStack>
+            <DialogSessionSheet
+              existingVariables={agentSession?.body.variables || {}}
+              variables={variableList}
+            />
+          </VStack>
+        )}
         <VStack collapseHeight gap={false} fullWidth>
           <VStack gap="large" collapseHeight>
             <VStack collapseHeight position="relative">
-              {showVariablesMenu && (
-                <DialogSessionDialog
-                  open={showVariablesMenu}
-                  existingVariables={agentSession?.body.variables || {}}
-                  onDismiss={() => {
-                    setShowVariablesMenu(false);
-                  }}
-                  noSession={hasNoSimulatorSession}
-                  variables={variableList}
-                />
-              )}
               {!agentIdToUse ? (
                 <LoadingEmptyStatusComponent emptyMessage="" isLoading />
               ) : (

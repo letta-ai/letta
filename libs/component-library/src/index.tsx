@@ -110,3 +110,4 @@ export * from './lib/reusable/DialogTable/DialogTable';
 export * from './lib/core/Spinner/Spinner';
 
 export * from './lib/framing/HiddenOnMobile/HiddenOnMobile';
+export * from './lib/core/Table/Table';
