@@ -151,9 +151,10 @@
       "update": "Update",
       "placeholder": "Variable Value",
       "label": "Variable Name",
-      "editLabel": "Edit {variableName}"
+      "editLabel": "Edit {variableName}",
+      "noVariablesDefined": "You have no variables set yet, to define a variable, write a alphanumeric name wrapped in handlebars in Memory Blocks, e.g. {variableName}"
     },
-    "showVariables": "Show Variables",
+    "showVariables": "Variables",
     "hideVariables": "Hide Variables",
     "updateVariables": "Update Variables"
   },

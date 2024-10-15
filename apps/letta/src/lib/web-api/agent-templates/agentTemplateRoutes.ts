@@ -146,7 +146,7 @@ async function getAgentTemplateSimulatorSession(
   req: GetAgentTemplateSimulatorSessionRequest
 ): Promise<GetAgentTemplateSimulatorSessionResponse> {
   const { agentTemplateId } = req.params;
-  const { organizationId } = await getUserOrThrow();
+  const { organizationId, lettaAgentsId } = await getUserOrThrow();
 
   const agentTemplate = await db.query.agentTemplates.findFirst({
     where: and(
@@ -167,9 +167,38 @@ async function getAgentTemplateSimulatorSession(
   });
 
   if (!simulatorSession) {
+    // create new simulator session
+    const newAgent = await copyAgentById(agentTemplate.id, lettaAgentsId);
+
+    if (!newAgent?.id) {
+      return {
+        status: 500,
+        body: {
+          message: 'Failed to copy agent',
+        },
+      };
+    }
+
+    const newAgentId = newAgent.id;
+
+    const [simulatorSession] = await db
+      .insert(agentSimulatorSessions)
+      .values({
+        agentId: newAgentId,
+        agentTemplateId: agentTemplate.id,
+        variables: {},
+      })
+      .returning({
+        id: agentSimulatorSessions.id,
+      });
+
     return {
-      status: 404,
-      body: {},
+      status: 200,
+      body: {
+        agentId: newAgentId,
+        id: simulatorSession.id,
+        variables: {},
+      },
     };
   }
 
