@@ -32,6 +32,8 @@ export interface CreateAgentBody extends CreateAgent {
    * Create an agent based on a template_key
    */
   from_template?: string;
+
+  variables?: Record<string, string>;
 }
 
 const CreateAgentBodySchema = z.object({
@@ -54,6 +56,8 @@ const CreateAgentBodySchema = z.object({
   template: z.boolean().optional(),
   project_id: z.string().optional(),
   from_template: z.string().optional(),
+
+  variables: z.record(z.string()).optional(),
 });
 
 const CreateAgentResponseSchema = c.type<AgentState>();

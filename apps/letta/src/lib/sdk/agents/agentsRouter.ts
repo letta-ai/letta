@@ -24,9 +24,40 @@ import {
   premadeAgentTemplates,
 } from '$letta/sdk/agents/premadeAgentTemplates';
 
+export function attachVariablesToTemplates(
+  agentTemplate: AgentState,
+  variables: CreateAgentRequest['body']['variables']
+) {
+  const nextAgent = {
+    ...agentTemplate,
+  };
+  Object.keys(nextAgent.memory?.memory || {}).forEach((key) => {
+    if (typeof nextAgent.memory?.memory?.[key]?.value === 'string') {
+      // needs to be done or memory will rely on the existing block id
+      nextAgent.memory.memory[key].id = undefined;
+      nextAgent.memory.memory[key].value = nextAgent.memory.memory[
+        key
+      ].value.replace(/{{(.*?)}}/g, (_m, p1) => {
+        return variables?.[p1] || '';
+      });
+    }
+  });
+
+  return {
+    tools: nextAgent.tools,
+    name: crypto.randomUUID(),
+    embedding_config: nextAgent.embedding_config,
+    description: nextAgent.description,
+    memory: nextAgent.memory,
+    user_id: nextAgent.user_id,
+    llm_config: nextAgent.llm_config,
+  };
+}
+
 export async function copyAgentById(
   agentId: string,
-  lettaAgentsUserId: string
+  lettaAgentsUserId: string,
+  variables?: Record<string, string>
 ) {
   const [currentAgent, agentSources] = await Promise.all([
     AgentsService.getAgent(
@@ -47,17 +78,11 @@ export async function copyAgentById(
     ),
   ]);
 
+  const agentBody = attachVariablesToTemplates(currentAgent, variables);
+
   const nextAgent = await AgentsService.createAgent(
     {
-      requestBody: {
-        tools: currentAgent.tools,
-        name: crypto.randomUUID(),
-        embedding_config: currentAgent.embedding_config,
-        description: currentAgent.description,
-        memory: currentAgent.memory,
-        user_id: currentAgent.user_id,
-        llm_config: currentAgent.llm_config,
-      },
+      requestBody: agentBody,
     },
     {
       user_id: lettaAgentsUserId,
@@ -113,6 +138,7 @@ export async function createAgent(
     project_id,
     from_template,
     template,
+    variables,
     name: preName,
     ...agent
   } = req.body;
@@ -291,7 +317,8 @@ export async function createAgent(
 
     const copiedAgent = await copyAgentById(
       agentTemplateIdToCopy,
-      lettaAgentsUserId
+      lettaAgentsUserId,
+      variables
     );
 
     if (!copiedAgent?.id) {

@@ -1231,7 +1231,12 @@ export function createPanelManager<
                   />
                 </>
               )}
-              <PanelComponent {...tab.data} />
+              <HStack fullWidth fullHeight>
+                <VStack fullHeight fullWidth>
+                  <PanelComponent {...tab.data} />
+                </VStack>
+                <div className="w-[0] h-full" />
+              </HStack>
             </GenericPanelContent>
           );
         })}

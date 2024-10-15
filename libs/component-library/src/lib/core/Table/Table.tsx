@@ -109,10 +109,37 @@ const TableCaption = React.forwardRef<
 ));
 TableCaption.displayName = 'TableCaption';
 
+interface TableCellInputProps {
+  label: string;
+  value: string;
+  placeholder: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+}
+
+const TableCellInput = React.forwardRef<
+  HTMLTableCellElement,
+  TableCellInputProps
+>((props, ref) => {
+  const { label, value, placeholder, onChange } = props;
+
+  return (
+    <TableCell className="focus-within:outline-1 " ref={ref}>
+      <div className="sr-only">{label}</div>
+      <input
+        className="px-2 w-full h-full bg-transparent border-0 focus:ring-0"
+        value={value}
+        placeholder={placeholder}
+        onChange={onChange}
+      />
+    </TableCell>
+  );
+});
+
 export {
   Table,
   TableHeader,
   TableBody,
+  TableCellInput,
   TableFooter,
   TableHead,
   TableRow,

@@ -15,6 +15,8 @@ import {
   CodeWithAPIKeyInjection,
 } from '$letta/client/common';
 import { webApi, webApiQueryKeys } from '$letta/client';
+import { findMemoryBlockVariables } from '$letta/utils';
+import { useCurrentAgent } from '../../../app/(logged-in)/(ade)/projects/[projectSlug]/agents/[agentId]/hooks';
 
 interface DeployAgentInstructionsCurlProps {
   projectId: string;
@@ -45,6 +47,8 @@ function DeployAgentInstructionsCurl(props: DeployAgentInstructionsCurlProps) {
     },
   });
 
+  const agent = useCurrentAgent();
+
   const deploymentAgent = useMemo(() => {
     return data?.body?.agents[0];
   }, [data]);
@@ -62,6 +66,12 @@ function DeployAgentInstructionsCurl(props: DeployAgentInstructionsCurlProps) {
       : 'YOUR_AGENT_ID_HERE';
   }, [useDeploymentAgentId, deploymentAgent]);
 
+  const variables = useMemo(() => {
+    return Object.fromEntries(
+      findMemoryBlockVariables(agent).map((v) => [v, 'YOUR_VALUE_HERE'])
+    );
+  }, [agent]);
+
   return (
     // eslint-disable-next-line react/forbid-component-props
     <VStack className="max-w-[750px]" fullWidth gap="text">
@@ -73,11 +83,15 @@ function DeployAgentInstructionsCurl(props: DeployAgentInstructionsCurlProps) {
           testId="deploy-agent-instructions"
           toolbarPosition="bottom"
           language="bash"
-          code={`curl -X POST ${environment.NEXT_PUBLIC_CURRENT_HOST}/v1/agents \\
+          code={`curl -X POST ${
+            environment.NEXT_PUBLIC_CURRENT_HOST
+          }/v1/agents \\
   -H 'Content-Type: application/json' \\
   -H 'Authorization: Bearer ${ACCESS_TOKEN_PLACEHOLDER}' \\
   -d '{
-    "from_template": "${versionKey}"
+    "from_template": "${versionKey}"${
+            variables ? `,\n    "variables": ${JSON.stringify(variables)}` : ''
+          }
   }'`}
         />
       </Frame>

@@ -1,15 +1,31 @@
 'use client';
 import {
+  Button,
   ChatBubbleIcon,
   ChatInput,
   CodeIcon,
+  Form,
+  FormActions,
+  FormField,
+  FormProvider,
+  LoadingEmptyStatusComponent,
   RawToggleGroup,
+  Table,
+  TableBody,
+  TableCell,
+  TableCellInput,
+  TableRow,
+  Typography,
+  useForm,
+  WarningIcon,
 } from '@letta-web/component-library';
 import type { PanelTemplate } from '@letta-web/component-library';
 import { PanelBar } from '@letta-web/component-library';
 import { VStack } from '@letta-web/component-library';
 import type { Dispatch, SetStateAction } from 'react';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect } from 'react';
+import { useMemo } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import type { AgentMessage } from '@letta-web/letta-agents-api';
 import {
   AgentMessageSchema,
@@ -24,10 +40,17 @@ import type { MessagesDisplayMode } from '$letta/client/components';
 import { Messages } from '$letta/client/components';
 import { z } from 'zod';
 import { useTranslations } from 'next-intl';
-import { useLocalStorage } from '@mantine/hooks';
+import { useDebouncedCallback, useLocalStorage } from '@mantine/hooks';
+import { webApi, webApiQueryKeys } from '$letta/client';
+import { useCurrentProject } from '../../../../../../(dashboard-like)/projects/[projectSlug]/hooks';
+import { useCurrentAgentMetaData } from '../hooks/useCurrentAgentMetaData/useCurrentAgentMetaData';
+import { findMemoryBlockVariables } from '$letta/utils';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { isFetchError } from '@ts-rest/react-query/v5';
+import type { GetAgentTemplateSimulatorSessionResponseBody } from '$letta/web-api/agent-templates/agentTemplatesContracts';
+import { isEqual } from 'lodash-es';
 
-function useSendMessage() {
-  const { id } = useCurrentAgent();
+function useSendMessage(agentId: string) {
   const [isPending, setIsPending] = useState(false);
   const abortController = useRef<AbortController>();
   const queryClient = useQueryClient();
@@ -46,7 +69,7 @@ function useSendMessage() {
 
       queryClient.setQueriesData<InfiniteData<AgentMessage[]> | undefined>(
         {
-          queryKey: UseAgentsServiceListAgentMessagesKeyFn({ agentId: id }),
+          queryKey: UseAgentsServiceListAgentMessagesKeyFn({ agentId }),
         },
         (oldData) => {
           if (!oldData) {
@@ -75,7 +98,7 @@ function useSendMessage() {
 
       abortController.current = new AbortController();
 
-      const eventsource = new EventSource(`/v1/agents/${id}/messages`, {
+      const eventsource = new EventSource(`/v1/agents/${agentId}/messages`, {
         withCredentials: true,
         method: 'POST',
         disableRetry: true,
@@ -110,7 +133,7 @@ function useSendMessage() {
 
           queryClient.setQueriesData<InfiniteData<AgentMessage[]>>(
             {
-              queryKey: UseAgentsServiceListAgentMessagesKeyFn({ agentId: id }),
+              queryKey: UseAgentsServiceListAgentMessagesKeyFn({ agentId }),
             },
             // @ts-expect-error - the typing is wrong
             (oldData) => {
@@ -197,7 +220,7 @@ function useSendMessage() {
 
         if (e.eventPhase === eventsource.CLOSED) {
           void queryClient.invalidateQueries({
-            queryKey: UseAgentsServiceListAgentMessagesKeyFn({ agentId: id }),
+            queryKey: UseAgentsServiceListAgentMessagesKeyFn({ agentId }),
           });
 
           setIsPending(false);
@@ -209,7 +232,7 @@ function useSendMessage() {
         setIsPending(false);
       };
     },
-    [id, queryClient]
+    [agentId, queryClient]
   );
 
   return { isPending, sendMessage };
@@ -261,32 +284,241 @@ function ControlChatroomRenderMode() {
   );
 }
 
-function ChatroomPanelBar() {
-  return <PanelBar actions={<ControlChatroomRenderMode />}></PanelBar>;
+interface DialogSessionDialogProps {
+  variables: string[];
+  existingVariables: Record<string, string>;
+}
+
+function DialogSessionSheet(props: DialogSessionDialogProps) {
+  const t = useTranslations('ADE/AgentSimulator');
+  const { variables } = props;
+  const { id: projectId } = useCurrentProject();
+  const { id: agentTemplateId } = useCurrentAgent();
+
+  const schema = useMemo(() => {
+    return z.object(
+      Object.fromEntries(
+        variables.map((variable) => [variable, z.string().optional()])
+      )
+    );
+  }, [variables]);
+
+  const form = useForm({
+    resolver: zodResolver(schema),
+    defaultValues: Object.fromEntries(
+      variables.map((variable) => [variable, props.existingVariables[variable]])
+    ),
+  });
+
+  const queryClient = useQueryClient();
+
+  const { mutate, isPending } =
+    webApi.agentTemplates.createAgentTemplateSimulatorSession.useMutation({
+      onSuccess: (response) => {
+        queryClient.setQueriesData<GetAgentTemplateSimulatorSessionResponseBody>(
+          {
+            queryKey: webApiQueryKeys.agentTemplates.getAgentTemplateSession({
+              agentTemplateId,
+              projectId,
+            }),
+          },
+          () => {
+            return {
+              status: 200,
+              body: response.body,
+            };
+          }
+        );
+      },
+    });
+
+  const handleSubmit = useCallback(
+    (values: Record<string, string>) => {
+      mutate({
+        params: {
+          projectId,
+          agentTemplateId,
+        },
+        body: {
+          variables: values,
+        },
+      });
+    },
+    [agentTemplateId, mutate, projectId]
+  );
+
+  return (
+    <VStack borderBottom paddingBottom="small">
+      <FormProvider {...form}>
+        <Form onSubmit={form.handleSubmit(handleSubmit)}>
+          <VStack gap={false} borderBottom>
+            <Table>
+              <TableBody>
+                {variables.map((variable) => (
+                  <TableRow key={variable}>
+                    <TableCell>
+                      <Typography>{variable}</Typography>
+                    </TableCell>
+                    <FormField
+                      name={variable}
+                      render={({ field }) => (
+                        <TableCellInput
+                          label={t('DialogSessionSheet.label')}
+                          placeholder={t('DialogSessionSheet.placeholder')}
+                          {...field}
+                        />
+                      )}
+                    />
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </VStack>
+          <FormActions>
+            <Button
+              busy={isPending}
+              size="small"
+              color="tertiary"
+              label={t('DialogSessionSheet.update')}
+            />
+          </FormActions>
+        </Form>
+      </FormProvider>
+    </VStack>
+  );
 }
 
 function Chatroom() {
   const t = useTranslations('ADE/AgentSimulator');
-  const { sendMessage, isPending } = useSendMessage();
-  const { id: agentId } = useCurrentAgent();
+  const agentState = useCurrentAgent();
+  const [showVariablesMenu, setShowVariablesMenu] = useState(false);
+  const { id: agentId } = agentState;
+  const { isTemplate } = useCurrentAgentMetaData();
+  const { id: projectId } = useCurrentProject();
   const [renderMode, setRenderMode] = useLocalStorage<MessagesDisplayMode>({
     defaultValue: 'debug',
     key: 'chatroom-render-mode',
   });
 
+  const { data: agentSession, error } =
+    webApi.agentTemplates.getAgentTemplateSimulatorSession.useQuery({
+      queryKey: webApiQueryKeys.agentTemplates.getAgentTemplateSession({
+        agentTemplateId: agentId,
+        projectId,
+      }),
+      queryData: {
+        params: {
+          agentTemplateId: agentId,
+          projectId,
+        },
+      },
+      retry: false,
+      enabled: isTemplate,
+    });
+
+  const variableList = useMemo(() => {
+    return findMemoryBlockVariables(agentState);
+  }, [agentState]);
+
+  const agentIdToUse = useMemo(() => {
+    if (isTemplate) {
+      return agentSession?.body.agentId;
+    }
+
+    return agentId;
+  }, [agentId, agentSession?.body.agentId, isTemplate]);
+
+  const hasNoSimulatorSession = useMemo(() => {
+    return isTemplate && !isFetchError(error) && error?.status === 404;
+  }, [error, isTemplate]);
+
+  const hasVariableMismatch = useMemo(() => {
+    // check if variable mismatch
+
+    const sessionVariables = agentSession?.body.variables || {};
+
+    // it's ok if theres more variables defined in the session than in the agent, but not the other way around
+    return variableList.some((variable) => !sessionVariables[variable]);
+  }, [agentSession?.body.variables, variableList]);
+
+  const agentStateStore = useRef(agentState);
+
+  const { mutate: updateSession } =
+    webApi.agentTemplates.refreshAgentTemplateSimulatorSession.useMutation();
+
+  const debounceUpdateSession = useDebouncedCallback(updateSession, 500);
+
+  useEffect(() => {
+    if (!agentSession?.body.id) {
+      return;
+    }
+
+    // check if the agent state has changed
+    if (isEqual(agentState, agentStateStore.current)) {
+      return;
+    }
+
+    agentStateStore.current = agentState;
+
+    // update the existing session
+    debounceUpdateSession({
+      params: {
+        agentSessionId: agentSession?.body.id,
+        agentTemplateId: agentId,
+      },
+    });
+  }, [agentId, agentSession?.body.id, agentState, debounceUpdateSession]);
+
+  const { sendMessage, isPending } = useSendMessage(agentIdToUse || '');
+
+  const hasVariableIssue = useMemo(() => {
+    return hasVariableMismatch || hasNoSimulatorSession;
+  }, [hasVariableMismatch, hasNoSimulatorSession]);
+
   return (
     <ChatroomContext.Provider value={{ renderMode, setRenderMode }}>
       <VStack fullHeight fullWidth>
-        <ChatroomPanelBar />
+        <PanelBar actions={<ControlChatroomRenderMode />}>
+          <VStack paddingLeft="small">
+            <Button
+              onClick={() => {
+                setShowVariablesMenu((v) => !v);
+              }}
+              preIcon={hasVariableIssue && <WarningIcon color="warning" />}
+              size="small"
+              color="tertiary"
+              label={
+                !hasVariableIssue && showVariablesMenu
+                  ? t('hideVariables')
+                  : t('showVariables')
+              }
+            />
+          </VStack>
+        </PanelBar>
+        {showVariablesMenu && (
+          <VStack>
+            <DialogSessionSheet
+              existingVariables={agentSession?.body.variables || {}}
+              variables={variableList}
+            />
+          </VStack>
+        )}
         <VStack collapseHeight gap={false} fullWidth>
           <VStack gap="large" collapseHeight>
-            <Messages
-              mode={renderMode}
-              isPanelActive
-              isSendingMessage={isPending}
-              agentId={agentId}
-            />
+            <VStack collapseHeight position="relative">
+              {!agentIdToUse ? (
+                <LoadingEmptyStatusComponent emptyMessage="" isLoading />
+              ) : (
+                <Messages
+                  mode={renderMode}
+                  isPanelActive
+                  isSendingMessage={isPending}
+                  agentId={agentIdToUse || ''}
+                />
+              )}
+            </VStack>
             <ChatInput
+              disabled={!agentIdToUse}
               sendingMessageText={t('sendingMessage')}
               onSendMessage={sendMessage}
               isSendingMessage={isPending}

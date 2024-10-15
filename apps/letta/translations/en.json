@@ -127,7 +127,17 @@
         "debug": "Debug mode",
         "simple": "Simple mode"
       }
-    }
+    },
+
+    "DialogSessionSheet": {
+      "update": "Update",
+      "placeholder": "Variable Value",
+      "label": "Variable Name",
+      "editLabel": "Edit {variableName}"
+    },
+    "showVariables": "Show Variables",
+    "hideVariables": "Hide Variables",
+    "updateVariables": "Update Variables"
   },
   "ADE/ADESidebar": {
     "AttachDataSourceView": {
@@ -167,7 +177,7 @@
 
       "tools": "Tools",
       "agentSimulator": "Simulator",
-      "archivalMemories": "Memory Explorer",
+      "archivalMemories": "Vector Database",
       "templateVersionManager": "Template Version Manager",
       "distribute": "Distribute",
       "test": "Test",
@@ -339,7 +349,7 @@
       "editDataSources": "Attach <dataSourcesButton></dataSourcesButton> to your template so your agent can look up information from external sources.",
       "simulate": "Use the <agentSimulatorButton></agentSimulatorButton> to test talking to a deployed agent",
       "simulateButton": "Simulator",
-      "archivalMemoriesButton": "Memory Explorer",
+      "archivalMemoriesButton": "Vector Database",
       "exploreArchivalMemories": "Explore the <archivalMemoriesButton></archivalMemoriesButton> of your agents (see what your agents have learned).",
       "evenMore": "When you're ready to create agents from your template, you can visit the <templateVersionButton></templateVersionButton> and create a new version of your template, then follow the instructions on that page to deploy your agents."
     }
