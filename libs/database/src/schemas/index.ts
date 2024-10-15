@@ -211,6 +211,7 @@ export const agentTemplateRelations = relations(
       references: [projects.id],
     }),
     deployedAgentTemplates: many(deployedAgentTemplates),
+    agentSimulatorSessions: many(agentSimulatorSessions),
   })
 );
 
@@ -304,6 +305,26 @@ export const deployedAgentRelations = relations(deployedAgents, ({ one }) => ({
     references: [projects.id],
   }),
 }));
+
+export const agentSimulatorSessions = pgTable('agent_simulator_sessions', {
+  id: text('id')
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  agentId: text('agent_id').notNull(),
+  agentTemplateId: text('agent_template_id').notNull(),
+  variables: json('variables').notNull(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at')
+    .notNull()
+    .$onUpdate(() => new Date()),
+});
+
+export const agentSimulatorSessionRelations = relations(
+  agentSimulatorSessions,
+  ({ many }) => ({
+    agentTemplates: many(agentTemplates),
+  })
+);
 
 export const adePreferences = pgTable(
   'ade_preferences',

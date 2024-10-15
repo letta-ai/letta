@@ -16,7 +16,7 @@ export const premadeAgentTemplates: Record<AgentRecipeVariant, AgentTemplate> =
         memory: {
           human: {
             value:
-              'The human has not provided any information about themselves. But they are looking for help with a customer support issue. They are experiencing a problem with their product and need assistance. They are looking for a quick resolution to their issue.',
+              "The human has not provided any additional information about themselves. But they are looking for help with a customer support issue. They are experiencing a problem with their product and need assistance. They are looking for a quick resolution to their issue. The human's name is {{name}}.",
             limit: 2000,
             name: 'customer',
             template: false,

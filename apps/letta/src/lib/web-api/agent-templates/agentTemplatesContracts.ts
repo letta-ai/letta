@@ -1,3 +1,4 @@
+import type { ServerInferResponses } from '@ts-rest/core';
 import { initContract } from '@ts-rest/core';
 import { z } from 'zod';
 import { ProjectAgentTemplateSchema } from '$letta/web-api/projects/projectContracts';
@@ -60,9 +61,90 @@ const forkAgentTemplateContract = c.mutation({
   },
 });
 
+/* Get Agent Template Simulation Session */
+const GetAgentTemplateSessionParamsSchema = z.object({
+  projectId: z.string(),
+  agentTemplateId: z.string(),
+});
+
+type GetAgentTemplateSessionParams = z.infer<
+  typeof GetAgentTemplateSessionParamsSchema
+>;
+
+export const GetAgentTemplateSessionResponseSchema = z.object({
+  id: z.string(),
+  agentId: z.string(),
+  variables: z.record(z.string()),
+});
+
+export type GetAgentTemplateSessionResponse = z.infer<
+  typeof GetAgentTemplateSessionResponseSchema
+>;
+
+const getAgentTemplateSimulatorSessionContract = c.query({
+  method: 'GET',
+  path: '/projects/:projectId/testing-agents/:agentTemplateId/simulation-session',
+  pathParams: GetAgentTemplateSessionParamsSchema,
+  responses: {
+    200: GetAgentTemplateSessionResponseSchema,
+  },
+});
+
+export type GetAgentTemplateSimulatorSessionResponseBody = ServerInferResponses<
+  typeof getAgentTemplateSimulatorSessionContract,
+  200
+>;
+
+/* Create new Agent Template Session */
+const CreateAgentTemplateSessionParamsSchema = z.object({
+  projectId: z.string(),
+  agentTemplateId: z.string(),
+});
+
+export const CreateAgentTemplateSessionResponseSchema = z.object({
+  id: z.string(),
+  agentId: z.string(),
+  variables: z.record(z.string()),
+});
+
+export const CreateAgentTemplateSessionBodySchema = z.object({
+  variables: z.record(z.string()),
+});
+
+const createAgentTemplateSimulatorSessionContract = c.mutation({
+  method: 'POST',
+  path: '/projects/:projectId/testing-agents/:agentTemplateId/simulation-session',
+  pathParams: CreateAgentTemplateSessionParamsSchema,
+  body: CreateAgentTemplateSessionBodySchema,
+  responses: {
+    201: CreateAgentTemplateSessionResponseSchema,
+  },
+});
+
+/* Refresh Agent Template Session */
+const RefreshAgentTemplateSessionParamsSchema = z.object({
+  agentSessionId: z.string(),
+  agentTemplateId: z.string(),
+});
+
+const refreshAgentTemplateSimulatorSessionContract = c.mutation({
+  method: 'POST',
+  path: '/templates/:agentTemplateId/simulation-session/:agentSessionId/refresh',
+  pathParams: RefreshAgentTemplateSessionParamsSchema,
+  body: z.undefined(),
+  responses: {
+    200: CreateAgentTemplateSessionResponseSchema,
+  },
+});
+
 export const agentTemplatesContracts = c.router({
   listAgentTemplates: listAgentTemplatesContract,
   forkAgentTemplate: forkAgentTemplateContract,
+  getAgentTemplateSimulatorSession: getAgentTemplateSimulatorSessionContract,
+  createAgentTemplateSimulatorSession:
+    createAgentTemplateSimulatorSessionContract,
+  refreshAgentTemplateSimulatorSession:
+    refreshAgentTemplateSimulatorSessionContract,
 });
 
 export const agentTemplatesQueryClientKeys = {
@@ -70,5 +152,9 @@ export const agentTemplatesQueryClientKeys = {
   listAgentTemplatesWithSearch: (query: ListAgentTemplatesQuery) => [
     ...agentTemplatesQueryClientKeys.listAgentTemplates,
     query,
+  ],
+  getAgentTemplateSession: (params: GetAgentTemplateSessionParams) => [
+    'getAgentTemplateSession',
+    params,
   ],
 };

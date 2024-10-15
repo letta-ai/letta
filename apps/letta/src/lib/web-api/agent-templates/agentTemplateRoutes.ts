@@ -5,9 +5,14 @@ import {
   getUserOrThrow,
 } from '$letta/server/auth';
 import { and, desc, eq, like } from 'drizzle-orm';
-import { agentTemplates, db } from '@letta-web/database';
-import { copyAgentById } from '$letta/sdk';
+import {
+  agentSimulatorSessions,
+  agentTemplates,
+  db,
+} from '@letta-web/database';
+import { attachVariablesToTemplates, copyAgentById } from '$letta/sdk';
 import { capitalize } from 'lodash';
+import { AgentsService } from '@letta-web/letta-agents-api';
 
 type ListAgentTemplatesQueryRequest = ServerInferRequest<
   typeof contracts.agentTemplates.listAgentTemplates
@@ -129,7 +134,263 @@ export async function forkAgentTemplate(
   };
 }
 
+type GetAgentTemplateSimulatorSessionRequest = ServerInferRequest<
+  typeof contracts.agentTemplates.getAgentTemplateSimulatorSession
+>;
+
+type GetAgentTemplateSimulatorSessionResponse = ServerInferResponses<
+  typeof contracts.agentTemplates.getAgentTemplateSimulatorSession
+>;
+
+async function getAgentTemplateSimulatorSession(
+  req: GetAgentTemplateSimulatorSessionRequest
+): Promise<GetAgentTemplateSimulatorSessionResponse> {
+  const { agentTemplateId } = req.params;
+  const { organizationId } = await getUserOrThrow();
+
+  const agentTemplate = await db.query.agentTemplates.findFirst({
+    where: and(
+      eq(agentTemplates.organizationId, organizationId),
+      eq(agentTemplates.id, agentTemplateId)
+    ),
+  });
+
+  if (!agentTemplate) {
+    return {
+      status: 404,
+      body: {},
+    };
+  }
+
+  const simulatorSession = await db.query.agentSimulatorSessions.findFirst({
+    where: eq(agentSimulatorSessions.agentTemplateId, agentTemplateId),
+  });
+
+  if (!simulatorSession) {
+    return {
+      status: 404,
+      body: {},
+    };
+  }
+
+  return {
+    status: 200,
+    body: {
+      agentId: simulatorSession.agentId,
+      id: simulatorSession.id,
+      variables: simulatorSession.variables as Record<string, string>,
+    },
+  };
+}
+
+type CreateAgentTemplateSimulatorSessionRequest = ServerInferRequest<
+  typeof contracts.agentTemplates.createAgentTemplateSimulatorSession
+>;
+
+type CreateAgentTemplateSimulatorSessionResponse = ServerInferResponses<
+  typeof contracts.agentTemplates.createAgentTemplateSimulatorSession
+>;
+
+async function createAgentTemplateSimulatorSession(
+  req: CreateAgentTemplateSimulatorSessionRequest
+): Promise<CreateAgentTemplateSimulatorSessionResponse> {
+  const { agentTemplateId } = req.params;
+  const { variables } = req.body;
+  const { organizationId, lettaAgentsId } = await getUserOrThrow();
+
+  const agentTemplate = await db.query.agentTemplates.findFirst({
+    where: and(
+      eq(agentTemplates.organizationId, organizationId),
+      eq(agentTemplates.id, agentTemplateId)
+    ),
+  });
+
+  if (!agentTemplate) {
+    return {
+      status: 404,
+      body: {},
+    };
+  }
+
+  // if there is already a simulator session, update instead
+  const existingSimulatorSession =
+    await db.query.agentSimulatorSessions.findFirst({
+      where: eq(agentSimulatorSessions.agentTemplateId, agentTemplateId),
+    });
+
+  if (existingSimulatorSession) {
+    const { variables } = req.body;
+
+    // update existing simulator session
+    const existingTemplate = await AgentsService.getAgent(
+      {
+        agentId: agentTemplate.id,
+      },
+      {
+        user_id: lettaAgentsId,
+      }
+    );
+
+    if (!existingTemplate) {
+      return {
+        status: 500,
+        body: {
+          message: 'Failed to get agent',
+        },
+      };
+    }
+
+    await AgentsService.updateAgent({
+      agentId: existingSimulatorSession.agentId,
+      requestBody: {
+        id: existingSimulatorSession.agentId,
+        ...attachVariablesToTemplates(existingTemplate, variables),
+      },
+    });
+
+    await db
+      .update(agentSimulatorSessions)
+      .set({
+        variables,
+        agentId: existingSimulatorSession.agentId,
+      })
+      .where(eq(agentSimulatorSessions.id, existingSimulatorSession.id));
+
+    return {
+      status: 200,
+      body: {
+        agentId: existingSimulatorSession.agentId,
+        id: existingSimulatorSession.id,
+        variables,
+      },
+    };
+  }
+
+  const newAgent = await copyAgentById(
+    agentTemplate.id,
+    lettaAgentsId,
+    variables
+  );
+
+  if (!newAgent?.id) {
+    return {
+      status: 500,
+      body: {
+        message: 'Failed to copy agent',
+      },
+    };
+  }
+
+  const newAgentId = newAgent.id;
+
+  const [simulatorSession] = await db
+    .insert(agentSimulatorSessions)
+    .values({
+      agentId: newAgentId,
+      agentTemplateId: agentTemplate.id,
+      variables,
+    })
+    .returning({
+      id: agentSimulatorSessions.id,
+    });
+
+  return {
+    status: 201,
+    body: {
+      id: simulatorSession.id,
+      agentId: newAgentId,
+      variables,
+    },
+  };
+}
+
+type RefreshAgentTemplateSimulatorSessionRequest = ServerInferRequest<
+  typeof contracts.agentTemplates.refreshAgentTemplateSimulatorSession
+>;
+
+type RefreshAgentTemplateSimulatorSessionResponse = ServerInferResponses<
+  typeof contracts.agentTemplates.refreshAgentTemplateSimulatorSession
+>;
+
+async function refreshAgentTemplateSimulatorSession(
+  req: RefreshAgentTemplateSimulatorSessionRequest
+): Promise<RefreshAgentTemplateSimulatorSessionResponse> {
+  const { agentTemplateId, agentSessionId } = req.params;
+  const { organizationId, lettaAgentsId } = await getUserOrThrow();
+
+  const agentTemplate = await db.query.agentTemplates.findFirst({
+    where: and(
+      eq(agentTemplates.organizationId, organizationId),
+      eq(agentTemplates.id, agentTemplateId)
+    ),
+  });
+
+  if (!agentTemplate) {
+    return {
+      status: 404,
+      body: {},
+    };
+  }
+
+  const simulatorSession = await db.query.agentSimulatorSessions.findFirst({
+    where: and(
+      eq(agentSimulatorSessions.agentTemplateId, agentTemplateId),
+      eq(agentSimulatorSessions.id, agentSessionId)
+    ),
+  });
+
+  if (!simulatorSession) {
+    return {
+      status: 404,
+      body: {},
+    };
+  }
+
+  const currentAgent = await AgentsService.getAgent(
+    {
+      agentId: agentTemplate.id,
+    },
+    {
+      user_id: lettaAgentsId,
+    }
+  );
+
+  if (!currentAgent) {
+    return {
+      status: 500,
+      body: {
+        message: 'Failed to get agent',
+      },
+    };
+  }
+
+  const res = await AgentsService.updateAgent({
+    agentId: simulatorSession.agentId,
+    requestBody: {
+      id: simulatorSession.agentId,
+      ...attachVariablesToTemplates(
+        currentAgent,
+        simulatorSession.variables as Record<string, string>
+      ),
+    },
+  });
+
+  console.log(JSON.stringify(res.memory, null, 2));
+
+  return {
+    status: 200,
+    body: {
+      agentId: simulatorSession.agentId,
+      id: simulatorSession.id,
+      variables: simulatorSession.variables as Record<string, string>,
+    },
+  };
+}
+
 export const agentTemplateRoutes = {
   listAgentTemplates,
   forkAgentTemplate,
+  createAgentTemplateSimulatorSession,
+  getAgentTemplateSimulatorSession,
+  refreshAgentTemplateSimulatorSession,
 };

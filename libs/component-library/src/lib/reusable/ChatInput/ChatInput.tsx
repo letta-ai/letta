@@ -13,22 +13,28 @@ import { SendHorizonalIcon } from 'lucide-react';
 interface ChatInputProps {
   onSendMessage: (message: string) => void;
   isSendingMessage: boolean;
+  disabled?: boolean;
   sendingMessageText?: string;
 }
 
 export function ChatInput(props: ChatInputProps) {
-  const { onSendMessage, sendingMessageText, isSendingMessage } = props;
+  const { onSendMessage, disabled, sendingMessageText, isSendingMessage } =
+    props;
   const [text, setText] = useState('');
 
   const handleSendMessage = useCallback(() => {
     if (isSendingMessage) {
       return;
     }
+
+    if (disabled) {
+      return;
+    }
     if (text) {
       setText('');
       onSendMessage(text);
     }
-  }, [isSendingMessage, onSendMessage, text]);
+  }, [isSendingMessage, disabled, onSendMessage, text]);
 
   const handleKeyPress = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -97,7 +103,7 @@ export function ChatInput(props: ChatInputProps) {
             type="submit"
             color="secondary"
             preIcon={<SendHorizonalIcon />}
-            disabled={isSendingMessage}
+            disabled={isSendingMessage || disabled}
             label="Send"
           />
         </VStack>

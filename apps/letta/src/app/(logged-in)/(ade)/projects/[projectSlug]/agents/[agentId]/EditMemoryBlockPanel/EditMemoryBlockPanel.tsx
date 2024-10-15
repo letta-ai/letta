@@ -7,6 +7,7 @@ import { useTranslations } from 'next-intl';
 import type { Block } from '@letta-web/letta-agents-api';
 import { useCurrentAgent, useSyncUpdateCurrentAgent } from '../hooks';
 import type { ChangeEvent } from 'react';
+import { useEffect, useState } from 'react';
 import React, { useCallback, useMemo } from 'react';
 
 interface EditMemoryFormProps {
@@ -23,8 +24,14 @@ function EditMemoryForm({ block }: EditMemoryFormProps) {
     return memory?.memory?.[block.label || '']?.value;
   }, [memory?.memory, block.label]);
 
+  const [localValue, setLocalValue] = useState(value);
+
   const handleChange = useCallback(
     (e: ChangeEvent<HTMLTextAreaElement>) => {
+      const value = e.target.value;
+
+      setLocalValue(value);
+
       syncUpdateCurrentAgent((prev) => ({
         memory: {
           ...prev.memory,
@@ -32,7 +39,7 @@ function EditMemoryForm({ block }: EditMemoryFormProps) {
             ...prev.memory?.memory,
             [block.label || '']: {
               ...prev.memory?.memory?.[block.label || ''],
-              value: e.target.value,
+              value: value,
             },
           },
         },
@@ -40,6 +47,12 @@ function EditMemoryForm({ block }: EditMemoryFormProps) {
     },
     [block.label, syncUpdateCurrentAgent]
   );
+
+  useEffect(() => {
+    if (value !== localValue) {
+      setLocalValue(value);
+    }
+  }, [localValue, value]);
 
   return (
     <PanelMainContent>
@@ -51,7 +64,7 @@ function EditMemoryForm({ block }: EditMemoryFormProps) {
         fullWidth
         label="Content"
         onChange={handleChange}
-        value={value || ''}
+        value={localValue || ''}
       />
     </PanelMainContent>
   );
