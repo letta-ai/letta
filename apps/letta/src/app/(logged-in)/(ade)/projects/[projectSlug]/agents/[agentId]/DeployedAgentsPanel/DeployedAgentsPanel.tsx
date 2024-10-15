@@ -108,7 +108,7 @@ function DeployedAgentsPanel() {
   }, [data]);
 
   return (
-    <VStack>
+    <VStack fullHeight>
       <PanelBar
         searchValue={search}
         onSearch={setSearch}
@@ -118,7 +118,6 @@ function DeployedAgentsPanel() {
         <DataTable
           fullHeight
           autofitHeight
-          minHeight={400}
           limit={limit}
           onLimitChange={setLimit}
           hasNextPage={data?.body.length === limit}

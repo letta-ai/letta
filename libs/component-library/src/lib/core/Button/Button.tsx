@@ -28,7 +28,7 @@ const buttonVariants = cva(
       variant: {
         'inline-panel':
           'h-full px-3 text-base first:border-l-0 border-l last:border-r-0 border-r',
-        default: 'rounded border',
+        default: ' border',
       },
       color: {
         'tertiary-transparent':

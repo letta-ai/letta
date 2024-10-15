@@ -11,11 +11,11 @@ export function ADEPage(props: ADEPageProps) {
   return (
     <VStack
       overflow="hidden"
-      color="background-grey"
-      className="w-[100vw] h-[100vh]"
+      color="background"
+      className="w-[100vw] p-[8px] h-[100vh]"
       fullHeight
       fullWidth
-      gap={false}
+      gap
     >
       {props.header}
       <HStack

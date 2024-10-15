@@ -204,10 +204,16 @@
       "base": "Base"
     }
   },
+  "ADE/ADEHeader": {
+    "returnToProjectHome": "Return to project home",
+    "returnToHome": "Return to home",
+    "localProject": "Local Project"
+  },
   "ADE/EditMemoryBlockPanel": {
     "title": "Edit {blockName}"
   },
   "projects/(projectSlug)/templates/new/page": {
+    "pageTitle": "new",
     "error": "An error occurred while creating the agent. Please try again or contact support.",
     "title": "Create an agent template",
     "description": "An agent template is used to define the structure of agents you deploy in your project. You can create an agent from scratch or reference a pre-existing agent template.",
@@ -296,11 +302,12 @@
     }
   },
   "projects/(projectSlug)/agents/(agentId)/AgentPage": {
-    "returnToProjectHome": "Return to project home",
-    "returnToHome": "Return to home",
-    "localProject": "Local Project",
     "liveAgentWarning": "You are editing a live agent, be aware that editing this agent may impact live deployments",
-    "localAgentDevelopment": "You are editing a local agent, changes made here will not effect your agents on Letta Cloud"
+    "localAgentDevelopment": "You are editing a local agent, changes made here will not effect your agents on Letta Cloud",
+    "restoreLayout": "Restore Layout"
+  },
+  "ADE/TemplateVersionManager": {
+    "title": "Template Version Manager"
   },
   "api-keys/page": {
     "title": "API Keys",
