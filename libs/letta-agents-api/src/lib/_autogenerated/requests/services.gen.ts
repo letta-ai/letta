@@ -38,10 +38,14 @@ import type {
   ListSourcePassagesResponse,
   ListFilesFromSourceData,
   ListFilesFromSourceResponse,
+  DeleteFileFromSourceData,
+  DeleteFileFromSourceResponse,
   ListAgentsData,
   ListAgentsResponse,
   CreateAgentData,
   CreateAgentResponse,
+  GetAgentContextWindowData,
+  GetAgentContextWindowResponse,
   UpdateAgentData,
   UpdateAgentResponse,
   GetAgentData,
@@ -575,6 +579,34 @@ export class SourcesService {
       headers,
     });
   }
+
+  /**
+   * Delete File From Source
+   * Delete a data source.
+   * @param data The data for the request.
+   * @param data.sourceId
+   * @param data.fileId
+   * @param data.userId
+   * @returns void Successful Response
+   * @throws ApiError
+   */
+  public static deleteFileFromSource(
+    data: DeleteFileFromSourceData,
+    headers?: { user_id: string }
+  ): CancelablePromise<DeleteFileFromSourceResponse> {
+    return __request(OpenAPI, {
+      method: 'DELETE',
+      url: '/v1/sources/{source_id}/{file_id}',
+      path: {
+        source_id: data.sourceId,
+        file_id: data.fileId,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
 }
 
 export class AgentsService {
@@ -619,6 +651,32 @@ export class AgentsService {
       url: '/v1/agents/',
       body: data.requestBody,
       mediaType: 'application/json',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Get Agent Context Window
+   * Retrieve the context window of a specific agent.
+   * @param data The data for the request.
+   * @param data.agentId
+   * @param data.userId
+   * @returns ContextWindowOverview Successful Response
+   * @throws ApiError
+   */
+  public static getAgentContextWindow(
+    data: GetAgentContextWindowData,
+    headers?: { user_id: string }
+  ): CancelablePromise<GetAgentContextWindowResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/agents/{agent_id}/context',
+      path: {
+        agent_id: data.agentId,
+      },
       errors: {
         422: 'Validation Error',
       },
@@ -737,7 +795,7 @@ export class AgentsService {
    * Retrieve the messages in the context of a specific agent.
    * @param data The data for the request.
    * @param data.agentId
-   * @returns letta__schemas__message__Message Successful Response
+   * @returns letta__schemas__message__Message_Output Successful Response
    * @throws ApiError
    */
   public static listAgentInContextMessages(
@@ -1032,7 +1090,7 @@ export class AgentsService {
    * @param data.agentId
    * @param data.messageId
    * @param data.requestBody
-   * @returns letta__schemas__message__Message Successful Response
+   * @returns letta__schemas__message__Message_Output Successful Response
    * @throws ApiError
    */
   public static updateAgentMessage(

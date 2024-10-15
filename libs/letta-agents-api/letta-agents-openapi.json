@@ -1037,6 +1037,65 @@
         }
       }
     },
+    "/v1/sources/{source_id}/{file_id}": {
+      "delete": {
+        "tags": ["sources"],
+        "summary": "Delete File From Source",
+        "description": "Delete a data source.",
+        "operationId": "delete_file_from_source",
+        "parameters": [
+          {
+            "name": "source_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Source Id"
+            }
+          },
+          {
+            "name": "file_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "File Id"
+            }
+          },
+          {
+            "name": "user_id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "User Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/agents/": {
       "get": {
         "tags": ["agents"],
@@ -1128,6 +1187,63 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/AgentState"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/agents/{agent_id}/context": {
+      "get": {
+        "tags": ["agents"],
+        "summary": "Get Agent Context Window",
+        "description": "Retrieve the context window of a specific agent.",
+        "operationId": "get_agent_context_window",
+        "parameters": [
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Agent Id"
+            }
+          },
+          {
+            "name": "user_id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "User Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContextWindowOverview"
                 }
               }
             }
@@ -1390,7 +1506,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/letta__schemas__message__Message"
+                    "$ref": "#/components/schemas/letta__schemas__message__Message-Output"
                   },
                   "title": "Response List Agent In Context Messages"
                 }
@@ -1968,7 +2084,7 @@
                     {
                       "type": "array",
                       "items": {
-                        "$ref": "#/components/schemas/letta__schemas__message__Message"
+                        "$ref": "#/components/schemas/letta__schemas__message__Message-Output"
                       }
                     },
                     {
@@ -2133,7 +2249,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/letta__schemas__message__Message"
+                  "$ref": "#/components/schemas/letta__schemas__message__Message-Output"
                 }
               }
             }
@@ -3948,6 +4064,108 @@
         "required": ["finish_reason", "index", "message"],
         "title": "Choice"
       },
+      "ContextWindowOverview": {
+        "properties": {
+          "context_window_size_max": {
+            "type": "integer",
+            "title": "Context Window Size Max",
+            "description": "The maximum amount of tokens the context window can hold."
+          },
+          "context_window_size_current": {
+            "type": "integer",
+            "title": "Context Window Size Current",
+            "description": "The current number of tokens in the context window."
+          },
+          "num_messages": {
+            "type": "integer",
+            "title": "Num Messages",
+            "description": "The number of messages in the context window."
+          },
+          "num_archival_memory": {
+            "type": "integer",
+            "title": "Num Archival Memory",
+            "description": "The number of messages in the archival memory."
+          },
+          "num_recall_memory": {
+            "type": "integer",
+            "title": "Num Recall Memory",
+            "description": "The number of messages in the recall memory."
+          },
+          "num_tokens_external_memory_summary": {
+            "type": "integer",
+            "title": "Num Tokens External Memory Summary",
+            "description": "The number of tokens in the external memory summary (archival + recall metadata)."
+          },
+          "num_tokens_system": {
+            "type": "integer",
+            "title": "Num Tokens System",
+            "description": "The number of tokens in the system prompt."
+          },
+          "system_prompt": {
+            "type": "string",
+            "title": "System Prompt",
+            "description": "The content of the system prompt."
+          },
+          "num_tokens_core_memory": {
+            "type": "integer",
+            "title": "Num Tokens Core Memory",
+            "description": "The number of tokens in the core memory."
+          },
+          "core_memory": {
+            "type": "string",
+            "title": "Core Memory",
+            "description": "The content of the core memory."
+          },
+          "num_tokens_summary_memory": {
+            "type": "integer",
+            "title": "Num Tokens Summary Memory",
+            "description": "The number of tokens in the summary memory."
+          },
+          "summary_memory": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Summary Memory",
+            "description": "The content of the summary memory."
+          },
+          "num_tokens_messages": {
+            "type": "integer",
+            "title": "Num Tokens Messages",
+            "description": "The number of tokens in the messages list."
+          },
+          "messages": {
+            "items": {
+              "$ref": "#/components/schemas/letta__schemas__message__Message-Output"
+            },
+            "type": "array",
+            "title": "Messages",
+            "description": "The messages in the context window."
+          }
+        },
+        "type": "object",
+        "required": [
+          "context_window_size_max",
+          "context_window_size_current",
+          "num_messages",
+          "num_archival_memory",
+          "num_recall_memory",
+          "num_tokens_external_memory_summary",
+          "num_tokens_system",
+          "system_prompt",
+          "num_tokens_core_memory",
+          "core_memory",
+          "num_tokens_summary_memory",
+          "num_tokens_messages",
+          "messages"
+        ],
+        "title": "ContextWindowOverview",
+        "description": "Overview of the context window, including the number of messages and tokens."
+      },
       "CreateAgent": {
         "properties": {
           "description": {
@@ -5039,7 +5257,8 @@
               "llamacpp",
               "koboldcpp",
               "vllm",
-              "hugging-face"
+              "hugging-face",
+              "mistral"
             ],
             "title": "Model Endpoint Type",
             "description": "The endpoint type for the model."
@@ -5099,10 +5318,20 @@
       "LettaRequest": {
         "properties": {
           "messages": {
-            "items": {
-              "$ref": "#/components/schemas/MessageCreate"
-            },
-            "type": "array",
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/MessageCreate"
+                },
+                "type": "array"
+              },
+              {
+                "items": {
+                  "$ref": "#/components/schemas/Message-Input"
+                },
+                "type": "array"
+              }
+            ],
             "title": "Messages",
             "description": "The messages to be sent to the agent."
           },
@@ -5159,7 +5388,7 @@
             "anyOf": [
               {
                 "items": {
-                  "$ref": "#/components/schemas/letta__schemas__message__Message"
+                  "$ref": "#/components/schemas/letta__schemas__message__Message-Output"
                 },
                 "type": "array"
               },
@@ -5279,6 +5508,119 @@
         "title": "Memory",
         "description": "Represents the in-context memory of the agent. This includes both the `Block` objects (labelled by sections), as well as tools to edit the blocks.\n\nAttributes:\n    memory (Dict[str, Block]): Mapping from memory block section to memory block."
       },
+      "Message-Input": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^message-[a-fA-F0-9]{8}",
+            "title": "Id",
+            "description": "The human-friendly ID of the Message",
+            "examples": [["message-123e4567-e89b-12d3-a456-426614174000"]]
+          },
+          "role": {
+            "$ref": "#/components/schemas/MessageRole",
+            "description": "The role of the participant."
+          },
+          "text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Text",
+            "description": "The text of the message."
+          },
+          "user_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Id",
+            "description": "The unique identifier of the user."
+          },
+          "agent_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent Id",
+            "description": "The unique identifier of the agent."
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model",
+            "description": "The model used to make the function call."
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name",
+            "description": "The name of the participant."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "The time the message was created."
+          },
+          "tool_calls": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/letta__schemas__openai__chat_completions__ToolCall-Input"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tool Calls",
+            "description": "The list of tool calls requested."
+          },
+          "tool_call_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tool Call Id",
+            "description": "The id of the tool call."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["role"],
+        "title": "Message",
+        "description": "Letta's internal representation of a message. Includes methods to convert to/from LLM provider formats.\n\nAttributes:\n    id (str): The unique identifier of the message.\n    role (MessageRole): The role of the participant.\n    text (str): The text of the message.\n    user_id (str): The unique identifier of the user.\n    agent_id (str): The unique identifier of the agent.\n    model (str): The model used to make the function call.\n    name (str): The name of the participant.\n    created_at (datetime): The time the message was created.\n    tool_calls (List[ToolCall]): The list of tool calls requested.\n    tool_call_id (str): The id of the tool call."
+      },
       "MessageContentLogProb": {
         "properties": {
           "token": {
@@ -5325,7 +5667,9 @@
       "MessageCreate": {
         "properties": {
           "role": {
-            "$ref": "#/components/schemas/MessageRole",
+            "type": "string",
+            "enum": ["user", "system"],
+            "title": "Role",
             "description": "The role of the participant."
           },
           "text": {
@@ -7370,7 +7714,7 @@
         "required": ["name", "arguments"],
         "title": "FunctionCall"
       },
-      "letta__schemas__message__Message": {
+      "letta__schemas__message__Message-Output": {
         "properties": {
           "id": {
             "type": "string",

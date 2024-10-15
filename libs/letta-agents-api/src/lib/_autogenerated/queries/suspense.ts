@@ -214,6 +214,30 @@ export const useAgentsServiceListAgentsSuspense = <
     queryFn: () => AgentsService.listAgents({ userId }) as TData,
     ...options,
   });
+export const useAgentsServiceGetAgentContextWindowSuspense = <
+  TData = Common.AgentsServiceGetAgentContextWindowDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[]
+>(
+  {
+    agentId,
+    userId,
+  }: {
+    agentId: string;
+    userId?: string;
+  },
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
+) =>
+  useSuspenseQuery<TData, TError>({
+    queryKey: Common.UseAgentsServiceGetAgentContextWindowKeyFn(
+      { agentId, userId },
+      queryKey
+    ),
+    queryFn: () =>
+      AgentsService.getAgentContextWindow({ agentId, userId }) as TData,
+    ...options,
+  });
 export const useAgentsServiceGetAgentSuspense = <
   TData = Common.AgentsServiceGetAgentDefaultResponse,
   TError = unknown,

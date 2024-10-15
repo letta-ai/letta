@@ -199,6 +199,12 @@
                   },
                   "from_template": {
                     "type": "string"
+                  },
+                  "variables": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "string"
+                    }
                   }
                 }
               }
@@ -290,6 +296,13 @@
         "parameters": [
           {
             "name": "template",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "include_version",
             "in": "query",
             "schema": {
               "type": "boolean"

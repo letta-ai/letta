@@ -238,6 +238,30 @@ export const useAgentsServiceListAgents = <
     queryFn: () => AgentsService.listAgents({ userId }) as TData,
     ...options,
   });
+export const useAgentsServiceGetAgentContextWindow = <
+  TData = Common.AgentsServiceGetAgentContextWindowDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[]
+>(
+  {
+    agentId,
+    userId,
+  }: {
+    agentId: string;
+    userId?: string;
+  },
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
+) =>
+  useQuery<TData, TError>({
+    queryKey: Common.UseAgentsServiceGetAgentContextWindowKeyFn(
+      { agentId, userId },
+      queryKey
+    ),
+    queryFn: () =>
+      AgentsService.getAgentContextWindow({ agentId, userId }) as TData,
+    ...options,
+  });
 export const useAgentsServiceGetAgent = <
   TData = Common.AgentsServiceGetAgentDefaultResponse,
   TError = unknown,
@@ -1562,6 +1586,43 @@ export const useSourcesServiceDeleteSource = <
   >({
     mutationFn: ({ sourceId, userId }) =>
       SourcesService.deleteSource({
+        sourceId,
+        userId,
+      }) as unknown as Promise<TData>,
+    ...options,
+  });
+export const useSourcesServiceDeleteFileFromSource = <
+  TData = Common.SourcesServiceDeleteFileFromSourceMutationResult,
+  TError = unknown,
+  TContext = unknown
+>(
+  options?: Omit<
+    UseMutationOptions<
+      TData,
+      TError,
+      {
+        fileId: string;
+        sourceId: string;
+        userId?: string;
+      },
+      TContext
+    >,
+    'mutationFn'
+  >
+) =>
+  useMutation<
+    TData,
+    TError,
+    {
+      fileId: string;
+      sourceId: string;
+      userId?: string;
+    },
+    TContext
+  >({
+    mutationFn: ({ fileId, sourceId, userId }) =>
+      SourcesService.deleteFileFromSource({
+        fileId,
         sourceId,
         userId,
       }) as unknown as Promise<TData>,

@@ -149,6 +149,23 @@ export const prefetchUseAgentsServiceListAgents = (
     queryKey: Common.UseAgentsServiceListAgentsKeyFn({ userId }),
     queryFn: () => AgentsService.listAgents({ userId }),
   });
+export const prefetchUseAgentsServiceGetAgentContextWindow = (
+  queryClient: QueryClient,
+  {
+    agentId,
+    userId,
+  }: {
+    agentId: string;
+    userId?: string;
+  }
+) =>
+  queryClient.prefetchQuery({
+    queryKey: Common.UseAgentsServiceGetAgentContextWindowKeyFn({
+      agentId,
+      userId,
+    }),
+    queryFn: () => AgentsService.getAgentContextWindow({ agentId, userId }),
+  });
 export const prefetchUseAgentsServiceGetAgent = (
   queryClient: QueryClient,
   {

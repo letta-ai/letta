@@ -275,6 +275,68 @@ export type Choice = {
   } | null;
 };
 
+/**
+ * Overview of the context window, including the number of messages and tokens.
+ */
+export type ContextWindowOverview = {
+  /**
+   * The maximum amount of tokens the context window can hold.
+   */
+  context_window_size_max: number;
+  /**
+   * The current number of tokens in the context window.
+   */
+  context_window_size_current: number;
+  /**
+   * The number of messages in the context window.
+   */
+  num_messages: number;
+  /**
+   * The number of messages in the archival memory.
+   */
+  num_archival_memory: number;
+  /**
+   * The number of messages in the recall memory.
+   */
+  num_recall_memory: number;
+  /**
+   * The number of tokens in the external memory summary (archival + recall metadata).
+   */
+  num_tokens_external_memory_summary: number;
+  /**
+   * The number of tokens in the system prompt.
+   */
+  num_tokens_system: number;
+  /**
+   * The content of the system prompt.
+   */
+  system_prompt: string;
+  /**
+   * The number of tokens in the core memory.
+   */
+  num_tokens_core_memory: number;
+  /**
+   * The content of the core memory.
+   */
+  core_memory: string;
+  /**
+   * The number of tokens in the summary memory.
+   */
+  num_tokens_summary_memory: number;
+  /**
+   * The content of the summary memory.
+   */
+  summary_memory?: string | null;
+  /**
+   * The number of tokens in the messages list.
+   */
+  num_tokens_messages: number;
+  /**
+   * The messages in the context window.
+   */
+  messages: Array<letta__schemas__message__Message_Output>;
+};
+
 export type CreateAgent = {
   /**
    * The description of the agent.
@@ -823,7 +885,8 @@ export type LLMConfig = {
     | 'llamacpp'
     | 'koboldcpp'
     | 'vllm'
-    | 'hugging-face';
+    | 'hugging-face'
+    | 'mistral';
   /**
    * The endpoint for the model.
    */
@@ -856,7 +919,8 @@ export type model_endpoint_type =
   | 'llamacpp'
   | 'koboldcpp'
   | 'vllm'
-  | 'hugging-face';
+  | 'hugging-face'
+  | 'mistral';
 
 /**
  * Base class for simplified Letta message response type. This is intended to be used for developers who want the internal monologue, function calls, and function returns in a simplified format that does not include additional information other than the content and timestamp.
@@ -874,7 +938,7 @@ export type LettaRequest = {
   /**
    * The messages to be sent to the agent.
    */
-  messages: Array<MessageCreate>;
+  messages: Array<MessageCreate> | Array<Message_Input>;
   /**
    * Whether to asynchronously send the messages to the agent.
    */
@@ -917,7 +981,9 @@ export type LettaResponse = {
   /**
    * The messages returned by the agent.
    */
-  messages: Array<letta__schemas__message__Message> | Array<LettaMessage>;
+  messages:
+    | Array<letta__schemas__message__Message_Output>
+    | Array<LettaMessage>;
   /**
    * The usage statistics of the agent.
    */
@@ -984,6 +1050,64 @@ export type Memory = {
   prompt_template?: string;
 };
 
+/**
+ * Letta's internal representation of a message. Includes methods to convert to/from LLM provider formats.
+ *
+ * Attributes:
+ * id (str): The unique identifier of the message.
+ * role (MessageRole): The role of the participant.
+ * text (str): The text of the message.
+ * user_id (str): The unique identifier of the user.
+ * agent_id (str): The unique identifier of the agent.
+ * model (str): The model used to make the function call.
+ * name (str): The name of the participant.
+ * created_at (datetime): The time the message was created.
+ * tool_calls (List[ToolCall]): The list of tool calls requested.
+ * tool_call_id (str): The id of the tool call.
+ */
+export type Message_Input = {
+  /**
+   * The human-friendly ID of the Message
+   */
+  id?: string;
+  /**
+   * The role of the participant.
+   */
+  role: MessageRole;
+  /**
+   * The text of the message.
+   */
+  text?: string | null;
+  /**
+   * The unique identifier of the user.
+   */
+  user_id?: string | null;
+  /**
+   * The unique identifier of the agent.
+   */
+  agent_id?: string | null;
+  /**
+   * The model used to make the function call.
+   */
+  model?: string | null;
+  /**
+   * The name of the participant.
+   */
+  name?: string | null;
+  /**
+   * The time the message was created.
+   */
+  created_at?: string;
+  /**
+   * The list of tool calls requested.
+   */
+  tool_calls?: Array<letta__schemas__openai__chat_completions__ToolCall_Input> | null;
+  /**
+   * The id of the tool call.
+   */
+  tool_call_id?: string | null;
+};
+
 export type MessageContentLogProb = {
   token: string;
   logprob: number;
@@ -998,7 +1122,7 @@ export type MessageCreate = {
   /**
    * The role of the participant.
    */
-  role: MessageRole;
+  role: 'user' | 'system';
   /**
    * The text of the message.
    */
@@ -1008,6 +1132,11 @@ export type MessageCreate = {
    */
   name?: string | null;
 };
+
+/**
+ * The role of the participant.
+ */
+export type role = 'user' | 'system';
 
 export type MessageFile = {
   /**
@@ -1948,7 +2077,7 @@ export type letta__schemas__letta_message__FunctionCall = {
  * tool_calls (List[ToolCall]): The list of tool calls requested.
  * tool_call_id (str): The id of the tool call.
  */
-export type letta__schemas__message__Message = {
+export type letta__schemas__message__Message_Output = {
   /**
    * The human-friendly ID of the Message
    */
@@ -2204,6 +2333,14 @@ export type ListFilesFromSourceData = {
 
 export type ListFilesFromSourceResponse = Array<FileMetadata>;
 
+export type DeleteFileFromSourceData = {
+  fileId: string;
+  sourceId: string;
+  userId?: string | null;
+};
+
+export type DeleteFileFromSourceResponse = void;
+
 export type ListAgentsData = {
   userId?: string | null;
 };
@@ -2216,6 +2353,13 @@ export type CreateAgentData = {
 };
 
 export type CreateAgentResponse = AgentState;
+
+export type GetAgentContextWindowData = {
+  agentId: string;
+  userId?: string | null;
+};
+
+export type GetAgentContextWindowResponse = ContextWindowOverview;
 
 export type UpdateAgentData = {
   agentId: string;
@@ -2250,7 +2394,7 @@ export type ListAgentInContextMessagesData = {
 };
 
 export type ListAgentInContextMessagesResponse =
-  Array<letta__schemas__message__Message>;
+  Array<letta__schemas__message__Message_Output>;
 
 export type GetAgentMemoryData = {
   agentId: string;
@@ -2345,7 +2489,7 @@ export type ListAgentMessagesData = {
 };
 
 export type ListAgentMessagesResponse =
-  | Array<letta__schemas__message__Message>
+  | Array<letta__schemas__message__Message_Output>
   | Array<
       | SystemMessage_Output
       | UserMessage_Output
@@ -2369,7 +2513,8 @@ export type UpdateAgentMessageData = {
   requestBody: UpdateMessage;
 };
 
-export type UpdateAgentMessageResponse = letta__schemas__message__Message;
+export type UpdateAgentMessageResponse =
+  letta__schemas__message__Message_Output;
 
 export type ListModelsResponse = Array<LLMConfig>;
 
@@ -2767,6 +2912,21 @@ export type $OpenApiTs = {
       };
     };
   };
+  '/v1/sources/{source_id}/{file_id}': {
+    delete: {
+      req: DeleteFileFromSourceData;
+      res: {
+        /**
+         * Successful Response
+         */
+        204: void;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
   '/v1/agents/': {
     get: {
       req: ListAgentsData;
@@ -2788,6 +2948,21 @@ export type $OpenApiTs = {
          * Successful Response
          */
         200: AgentState;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/agents/{agent_id}/context': {
+    get: {
+      req: GetAgentContextWindowData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: ContextWindowOverview;
         /**
          * Validation Error
          */
@@ -2858,7 +3033,7 @@ export type $OpenApiTs = {
         /**
          * Successful Response
          */
-        200: Array<letta__schemas__message__Message>;
+        200: Array<letta__schemas__message__Message_Output>;
         /**
          * Validation Error
          */
@@ -2975,7 +3150,7 @@ export type $OpenApiTs = {
          * Successful Response
          */
         200:
-          | Array<letta__schemas__message__Message>
+          | Array<letta__schemas__message__Message_Output>
           | Array<
               | SystemMessage_Output
               | UserMessage_Output
@@ -3011,7 +3186,7 @@ export type $OpenApiTs = {
         /**
          * Successful Response
          */
-        200: letta__schemas__message__Message;
+        200: letta__schemas__message__Message_Output;
         /**
          * Validation Error
          */
