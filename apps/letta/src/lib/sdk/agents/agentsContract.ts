@@ -3,7 +3,6 @@ import type {
   AgentState,
   CreateAgent,
   HTTPValidationError,
-  ListAgentsResponse,
   UpdateAgentState,
 } from '@letta-web/letta-agents-api';
 import { z } from 'zod';
@@ -171,10 +170,15 @@ const migrateAgentContract = c.mutation({
   },
 });
 
+interface ModifiedAgentState extends AgentState {
+  version?: string;
+}
+
 /* List Agents */
-const ListAgentsResponseSchema = c.type<ListAgentsResponse>();
+const ListAgentsResponseSchema = c.type<ModifiedAgentState[]>();
 const ListAgentsQuerySchema = z.object({
   template: z.boolean().optional(),
+  include_version: z.boolean().optional(),
   project_id: z.string().optional(),
   by_version: z.string().optional(),
   name: z.string().optional(),

@@ -9,6 +9,7 @@ import { deploymentPanelTemplate } from './TemplateVersionManager/TemplateVersio
 import { agentSidebarTemplate } from './ADESidebar/ADESidebar';
 import { editMemoryBlocksTemplate } from './EditMemoryBlockPanel/EditMemoryBlockPanel';
 import { editDataSourcesPanel } from './EditDataSourcesPanel/EditDataSourcesPanel';
+import { deployedAgentsPanel } from './DeployedAgentsPanel/DeployedAgentsPanel';
 
 const {
   panelRegistry,
@@ -29,6 +30,7 @@ const {
   'edit-memory-block': editMemoryBlocksTemplate,
   sidebar: agentSidebarTemplate,
   'edit-data-source': editDataSourcesPanel,
+  'deployed-agents': deployedAgentsPanel,
 });
 
 export {

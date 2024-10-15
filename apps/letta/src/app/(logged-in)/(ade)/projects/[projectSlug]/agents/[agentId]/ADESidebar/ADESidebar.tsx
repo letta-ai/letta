@@ -4,6 +4,7 @@ import type {
   DialogTableItem,
   PanelTemplate,
 } from '@letta-web/component-library';
+import { RocketIcon } from '@letta-web/component-library';
 import { LoadingEmptyStatusComponent } from '@letta-web/component-library';
 import { DialogTable } from '@letta-web/component-library';
 import {
@@ -650,6 +651,13 @@ function AgentPageSidebar() {
               templateId="deployment"
               data={undefined}
               id="deployment"
+            />
+            <AgentPanelSidebarItem
+              label={t('nav.deployedAgents')}
+              icon={<RocketIcon />}
+              templateId="deployed-agents"
+              data={undefined}
+              id="deployed-agents"
             />
           </SidebarGroup>
         )}

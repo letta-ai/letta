@@ -122,10 +122,19 @@ type CreateAgentResponse = ServerInferResponses<
   typeof sdkContracts.agents.createAgent
 >;
 
-export function prepareAgentForUser(agentName: string, agent: AgentState) {
+interface PrepareAgentForUserOptions {
+  agentName: string;
+  version?: string;
+}
+
+export function prepareAgentForUser(
+  agent: AgentState,
+  options: PrepareAgentForUserOptions
+) {
   return {
     ...agent,
-    name: agentName,
+    name: options.agentName,
+    ...(options.version ? { version: options.version } : {}),
   };
 }
 
@@ -254,7 +263,7 @@ export async function createAgent(
 
       return {
         status: 201,
-        body: prepareAgentForUser(name, response),
+        body: prepareAgentForUser(response, { agentName: name }),
       };
     }
 
@@ -351,7 +360,9 @@ export async function createAgent(
 
     return {
       status: 201,
-      body: prepareAgentForUser(name, copiedAgent),
+      body: prepareAgentForUser(copiedAgent, {
+        agentName: name,
+      }),
     };
   }
 
@@ -463,7 +474,9 @@ export async function createAgent(
 
   return {
     status: 201,
-    body: prepareAgentForUser(name, response),
+    body: prepareAgentForUser(response, {
+      agentName: name,
+    }),
   };
 }
 
@@ -746,6 +759,7 @@ export async function listAgents(
     template,
     by_version,
     name,
+    include_version,
     search,
     limit = 5,
     offset = 0,
@@ -777,7 +791,9 @@ export async function listAgents(
             user_id: context.request.lettaAgentsUserId,
           }
         ).then((response) => {
-          return prepareAgentForUser(template.name, response);
+          return prepareAgentForUser(response, {
+            agentName: template.name,
+          });
         });
       })
     );
@@ -824,7 +840,7 @@ export async function listAgents(
           context.request.organizationId
         ),
         eq(deployedAgentTemplates.agentTemplateId, agentTemplate.id),
-        eq(deployedAgentTemplates.version, version)
+        ...(version ? [eq(deployedAgentTemplates.version, version)] : [])
       ),
     });
 
@@ -849,6 +865,13 @@ export async function listAgents(
     limit,
     offset,
     orderBy: [desc(deployedAgents.createdAt)],
+    with: {
+      deployedAgentTemplate: {
+        columns: {
+          version: true,
+        },
+      },
+    },
   });
 
   const allAgentsDetails = await Promise.all(
@@ -861,7 +884,12 @@ export async function listAgents(
           user_id: context.request.lettaAgentsUserId,
         }
       ).then((response) => {
-        return prepareAgentForUser(agent.key, response);
+        return prepareAgentForUser(response, {
+          agentName: agent.key,
+          version: include_version
+            ? agent.deployedAgentTemplate?.version
+            : undefined,
+        });
       });
     })
   );
@@ -929,10 +957,9 @@ async function getAgentById(
 
   return {
     status: 200,
-    body: prepareAgentForUser(
-      deployedAgent?.key || agentTemplate?.name || '',
-      agent
-    ),
+    body: prepareAgentForUser(agent, {
+      agentName: deployedAgent?.key || agentTemplate?.name || '',
+    }),
   };
 }
 
@@ -1133,10 +1160,9 @@ export async function updateAgent(
 
   return {
     status: 200,
-    body: prepareAgentForUser(
-      deployedAgent?.key || agentTemplate?.name || '',
-      response
-    ),
+    body: prepareAgentForUser(response, {
+      agentName: deployedAgent?.key || agentTemplate?.name || '',
+    }),
   };
 }
 
