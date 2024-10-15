@@ -17,7 +17,7 @@ export function GenericPanelTabBar(props: GenericrPanelTabBarProps) {
     <HStack
       overflowY="hidden"
       className="min-h-[35px]"
-      overflowX="hidden"
+      overflowX="auto"
       fullWidth
       gap={false}
     >
@@ -48,6 +48,7 @@ export function GenericTab(props: GenericTabProps) {
       <HStack
         as="button"
         fullWidth
+        data-testid={`tab:${title}`}
         paddingLeft="large"
         paddingY="xsmall"
         className="h-full"

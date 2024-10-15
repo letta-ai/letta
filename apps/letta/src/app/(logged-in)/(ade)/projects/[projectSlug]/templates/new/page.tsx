@@ -322,8 +322,6 @@ function NewAgentPage() {
           justify="center"
           fullWidth
           padding="xlarge"
-          border
-          rounded
           color="background"
         >
           <CreateAgentsView />
