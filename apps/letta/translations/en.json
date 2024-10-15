@@ -109,6 +109,24 @@
     "noTemplates": "You have no templates in this project, create one below",
     "createTemplate": "New Template"
   },
+  "ADE/DeployedAgentsPanel": {
+    "title": "Deployed Agents",
+    "deployAgent": {
+      "title": "Deploy Agent Instruction",
+      "trigger": "Deploy Agent"
+    },
+    "table": {
+      "columns": {
+        "name": "Name",
+        "version": "Version"
+      },
+      "searching": "Searching agents...",
+      "loading": "Loading agents...",
+      "noResults": "No agents found",
+      "emptyMessage": "No agents deployed.",
+      "openInAde": "Open in ADE"
+    }
+  },
   "ADE/EditDataSourcesPanel": {
     "title": "Edit {name}",
     "errorDetaching": "There was an error detaching this data source, please try again or contact support.",
@@ -169,6 +187,7 @@
       "agentSimulator": "Simulator",
       "archivalMemories": "Memory Explorer",
       "templateVersionManager": "Template Version Manager",
+      "deployedAgents": "Deployed Agents",
       "distribute": "Distribute",
       "test": "Test",
       "configure": "Configure",

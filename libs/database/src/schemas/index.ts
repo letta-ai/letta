@@ -295,7 +295,7 @@ export const deployedAgentRelations = relations(deployedAgents, ({ one }) => ({
     fields: [deployedAgents.organizationId],
     references: [organizations.id],
   }),
-  deployedAgentTemplates: one(deployedAgentTemplates, {
+  deployedAgentTemplate: one(deployedAgentTemplates, {
     fields: [deployedAgents.deployedAgentTemplateId],
     references: [deployedAgentTemplates.id],
   }),
