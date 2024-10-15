@@ -84,7 +84,7 @@ export function ActionCard(props: ToggleCardProps) {
                   {icon}
                 </HStack>
               )}
-              <VStack gap={false} collapseWidth align="start">
+              <VStack gap={false} align="start">
                 <HStack paddingRight fullWidth overflow="hidden">
                   <Tooltip asChild content={title} placement="top">
                     <Typography noWrap fullWidth overflow="ellipsis" bold>

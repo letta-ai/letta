@@ -1,68 +1,39 @@
 import type { PanelTemplate } from '@letta-web/component-library';
-import {
-  ADESidebarButton,
-  ChatBubbleIcon,
-  InlineCode,
-} from '@letta-web/component-library';
+import { Button } from '@letta-web/component-library';
+import { InlineCode } from '@letta-web/component-library';
 import { Logo, VStack } from '@letta-web/component-library';
 import { PanelMainContent, Typography } from '@letta-web/component-library';
 import { z } from 'zod';
 import { useTranslations } from 'next-intl';
-import { BoxesIcon, BrainIcon } from 'lucide-react';
-import { PanelOpener } from '../panelRegistry';
+import type { panelRegistry } from '../panelRegistry';
+import { usePanelManager } from '../panelRegistry';
 import { useCurrentAgent } from '../hooks';
+import { useCallback } from 'react';
 
 const WelcomePanelDataSchema = z.object({
   firstTime: z.boolean(),
 });
 
-function TemplateVersionManagerButton() {
-  const t = useTranslations('ADE/Welcome');
-
-  return (
-    <PanelOpener templateId="deployment" data={undefined} id="deployment">
-      <ADESidebarButton
-        inline
-        label={t('templateVersionButton')}
-        icon={<BoxesIcon />}
-      />
-    </PanelOpener>
-  );
+interface GenericPanelOpenerProps {
+  panelId: keyof typeof panelRegistry;
+  title: string;
 }
 
-function ArchiveMemoriesButton() {
-  const t = useTranslations('ADE/Welcome');
+function GenericPanelOpener(props: GenericPanelOpenerProps) {
+  const { panelId, title } = props;
+
+  const { openPanel } = usePanelManager();
+
+  const handleClick = useCallback(() => {
+    openPanel({
+      templateId: panelId,
+      id: panelId,
+      data: undefined,
+    });
+  }, [openPanel, panelId]);
 
   return (
-    <PanelOpener
-      templateId="archival-memories"
-      data={{}}
-      id="archival-memories"
-    >
-      <ADESidebarButton
-        inline
-        label={t('archivalMemoriesButton')}
-        icon={<BrainIcon />}
-      />
-    </PanelOpener>
-  );
-}
-
-function AgentSimulatorButton() {
-  const t = useTranslations('ADE/Welcome');
-
-  return (
-    <PanelOpener
-      templateId="agent-simulator"
-      data={undefined}
-      id="agent-simulator"
-    >
-      <ADESidebarButton
-        inline
-        label={t('simulateButton')}
-        icon={<ChatBubbleIcon />}
-      />
-    </PanelOpener>
+    <Button size="small" color="tertiary" label={title} onClick={handleClick} />
   );
 }
 
@@ -85,22 +56,55 @@ function WelcomePanel() {
           })}
         </Typography>
         <VStack paddingY paddingLeft as="ul">
-          <li className="list-disc">{t.rich('editMemoryBlocks')}</li>
-          <li className="list-disc">{t.rich('editDataSources')}</li>
+          <li className="list-disc">
+            {t.rich('editMemoryBlocks', {
+              editCoreMemoriesButton: () => (
+                <GenericPanelOpener
+                  panelId="edit-core-memories"
+                  title={t('editCoreMemoriesButton')}
+                />
+              ),
+            })}
+          </li>
+          <li className="list-disc">
+            {t.rich('editDataSources', {
+              editDataSourcesButton: () => (
+                <GenericPanelOpener
+                  panelId="edit-data-source"
+                  title={t('editDataSourcesButton')}
+                />
+              ),
+            })}
+          </li>
           <li className="list-disc">
             {t.rich('exploreArchivalMemories', {
-              archivalMemoriesButton: () => <ArchiveMemoriesButton />,
+              archivalMemoriesButton: () => (
+                <GenericPanelOpener
+                  panelId="archival-memories"
+                  title={t('archivalMemoriesButton')}
+                />
+              ),
             })}
           </li>
           <li className="list-disc">
             {t.rich('simulate', {
-              agentSimulatorButton: () => <AgentSimulatorButton />,
+              agentSimulatorButton: () => (
+                <GenericPanelOpener
+                  panelId="agent-simulator"
+                  title={t('agentSimulatorButton')}
+                />
+              ),
             })}
           </li>
         </VStack>
         <Typography variant="panelInfo">
           {t.rich('evenMore', {
-            templateVersionButton: () => <TemplateVersionManagerButton />,
+            templateVersionButton: () => (
+              <GenericPanelOpener
+                panelId="deployment"
+                title={t('templateVersionButton')}
+              />
+            ),
           })}
         </Typography>
       </VStack>

@@ -37,6 +37,7 @@ import {
 import { useQueryClient } from '@tanstack/react-query';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useCurrentAgentMetaData } from '../hooks/useCurrentAgentMetaData/useCurrentAgentMetaData';
 
 const { PanelRouter, usePanelRouteData, usePanelPageContext } =
   createPageRouter(
@@ -385,6 +386,7 @@ function EditToolPage() {
 function ToolsListPage() {
   const { setCurrentPage } = usePanelPageContext();
   const [search, setSearch] = useState('');
+  const { isLocal } = useCurrentAgentMetaData();
 
   return (
     <>
@@ -394,16 +396,18 @@ function ToolsListPage() {
           setSearch(value);
         }}
         actions={
-          <>
-            <Button
-              onClick={() => {
-                setCurrentPage('editTool', { toolId: '', toolName: '' });
-              }}
-              size="small"
-              color="secondary"
-              label="Create Tool"
-            />
-          </>
+          isLocal && (
+            <>
+              <Button
+                onClick={() => {
+                  setCurrentPage('editTool', { toolId: '', toolName: '' });
+                }}
+                size="small"
+                color="secondary"
+                label="Create Tool"
+              />
+            </>
+          )
         }
       />
       <ToolsList />
