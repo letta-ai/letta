@@ -2,9 +2,9 @@
 title: 'Groq'
 ---
 
-<Tip>To use Letta with Groq, set the enviornment variable `GROQ_API_KEY=...`</Tip>
+<Tip>To use Letta with Groq, set the environment variable `GROQ_API_KEY=...`</Tip>
 
-You can use Letta with Groq if you have a Groq account and API key. Once you have set your `GROQ_API_KEY` in your enviornment variables, you can select what model and configure the context window size.
+You can use Letta with Groq if you have a Groq account and API key. Once you have set your `GROQ_API_KEY` in your environment variables, you can select what model and configure the context window size.
 
 ## Enabling Groq as a provider 
 To enable the Groq provider, you must set the `GROQ_API_KEY` environment variable. When this is set, Letta will use available LLM models running on Groq. 
@@ -50,7 +50,7 @@ To select the model used by the server, use the dropdown in the ADE or specify a
 </Accordion>
 <Accordion icon="docker" title="Docker Compose">
 ### Using the `docker compose` server with Groq
-The `compose.yaml` file will read your local enviornment variables and pass them to the Letta server running in the container. To use Groq with the Letta server, set the `GROQ_API_KEY` enviornment variable and run the server with `docker compose up`:
+The `compose.yaml` file will read your local environment variables and pass them to the Letta server running in the container. To use Groq with the Letta server, set the `GROQ_API_KEY` environment variable and run the server with `docker compose up`:
 ```bash
 export GROQ_API_KEY="gsk-..."
 docker compose up 

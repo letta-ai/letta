@@ -3,7 +3,7 @@ title: 'OpenAI'
 ---
 <Tip>To enable OpenAI models with Letta, set `OPENAI_API_KEY` in your environment variables. </Tip>
 
-You can use Letta with OpenAI if you have an OpenAI account and API key. Once you have set your `OPENAI_API_KEY` in your enviornment variables, you can select what model and configure the context window size.
+You can use Letta with OpenAI if you have an OpenAI account and API key. Once you have set your `OPENAI_API_KEY` in your environment variables, you can select what model and configure the context window size.
 
 Currently, Letta supports the following OpenAI models: 
 - `gpt-4` (recommended for advanced reasoning)
@@ -60,7 +60,7 @@ To select the model used by the server, use the dropdown in the ADE or specify a
 </Accordion>
 <Accordion icon="docker" title="Docker Compose">
 ### Using the `docker compose` server with OpenAI
-The `compose.yaml` file will read your local enviornment variables and pass them to the Letta server running in the container. To use OpenAI with the Letta server, set the `OPENAI_API_KEY` enviornment variable and run the server with `docker compose up`:
+The `compose.yaml` file will read your local environment variables and pass them to the Letta server running in the container. To use OpenAI with the Letta server, set the `OPENAI_API_KEY` environment variable and run the server with `docker compose up`:
 ```bash
 export OPENAI_API_KEY="sk-..." 
 docker compose up 

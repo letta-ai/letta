@@ -4,7 +4,7 @@ title: 'Google AI (Gemini)'
 
 <Tip>To enable Google AI models with Letta, set `GEMINI_API_KEY` in your environment variables. </Tip>
 
-You can use Letta with Google AI if you have a Google API account and API key. Once you have set your `GEMINI_API_KEY` in your enviornment variables, you can select what model and configure the context window size.
+You can use Letta with Google AI if you have a Google API account and API key. Once you have set your `GEMINI_API_KEY` in your environment variables, you can select what model and configure the context window size.
 
 ## Enabling Google AI as a provider 
 To enable the Google AI provider, you must set the `GEMINI_API_KEY` environment variable. When this is set, Letta will use available LLM models running on Google AI. 
@@ -50,7 +50,7 @@ To select the model used by the server, use the dropdown in the ADE or specify a
 </Accordion>
 <Accordion icon="docker" title="Docker Compose">
 ### Using the `docker compose` server with Google AI
-The `compose.yaml` file will read your local enviornment variables and pass them to the Letta server running in the container. To use Google AI with the Letta server, set the `GEMINI_API_KEY` enviornment variable and run the server with `docker compose up`:
+The `compose.yaml` file will read your local environment variables and pass them to the Letta server running in the container. To use Google AI with the Letta server, set the `GEMINI_API_KEY` environment variable and run the server with `docker compose up`:
 ```bash
 export GEMINI_API_KEY="..."
 docker compose up 

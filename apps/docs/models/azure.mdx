@@ -4,7 +4,7 @@ title: 'Azure OpenAI'
 
 <Tip> To use Letta with Azure OpenAI, set the environment variables `AZURE_API_KEY` and `AZURE_BASE_URL`. You can also optionally specify `AZURE_API_VERION` (default is `2024-09-01-preview`) </Tip>
 
-You can use Letta with OpenAI if you have an OpenAI account and API key. Once you have set your `AZURE_API_KEY` and `AZURE_BASE_URL` specified in your enviornment variables, you can select what model and configure the context window size
+You can use Letta with OpenAI if you have an OpenAI account and API key. Once you have set your `AZURE_API_KEY` and `AZURE_BASE_URL` specified in your environment variables, you can select what model and configure the context window size
 
 Currently, Letta supports the following OpenAI models: 
 - `gpt-4` (recommended for advanced reasoning)
@@ -45,7 +45,7 @@ To select the model used by the server, use the dropdown in the ADE or specify a
 </Accordion>
 <Accordion icon="docker" title="Docker Compose">
 ### Using the `docker compose` server with OpenAI
-The `compose.yaml` file will read your local enviornment variables and pass them to the Letta server running in the container. 
+The `compose.yaml` file will read your local environment variables and pass them to the Letta server running in the container. 
 ```bash
 export AZURE_API_KEY="..."
 export AZURE_BASE_URL="..."
