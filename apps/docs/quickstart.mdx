@@ -53,18 +53,9 @@ To learn how to deploy Letta with Docker, see our [deployment guide](/deployment
   </Accordion>
 </AccordionGroup>
 
-## Configure Letta
-
-The fastest way to get started is with the free Letta hosted endpoint:
-```sh
-letta quickstart
-```
-
-Letta supports a wide number of LLM and embedding backends, both closed and open source. To use another backend, run `letta configure`.
-
 ## Creating an agent in the CLI
 
-Now that we've configured Letta, we can immediately create an agent with the default settings:
+You can create an agent and start chatting with an agent using the Letta CLI: 
 ```sh
 letta run
 ```
@@ -83,6 +74,13 @@ conversations. It's time to send a welcome message.
 🤖 Hello Chad, welcome! I've been pondering upon the 
 strangest thing - our own existence. It's curious, don't 
 you think?
+```
+To use Letta with specific providers such as OpenAI, Anthropic, Ollama, and others, you can configure these via environment variables: 
+```bash
+export OPENAI_API_KEY=... 
+
+# run with OpenAI provider enabled
+letta run 
 ```
 
 ## Running the Letta server

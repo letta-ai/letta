@@ -2,28 +2,65 @@
 title: 'Anthropic'
 ---
 
-The fastest way to get started with the Anthropic backend is to use the `quickstart` command.
-```
-letta quickstart --backend anthropic
-```
-For more detailed configuration, see the instructions below.
+<Tip>To enable Anthropic models with Letta, set `ANTHROPIC_API_KEY` in your environment variables. </Tip>
 
-## Configuring with Anthropic
+You can use Letta with Anthropic if you have an Anthropic account and API key. Currently, we support the following models: 
+- `claude-3-opus-20240229`
+- `claude-3-sonnet-20240229`
+- `claude-3-haiku-20240307`
+
+Currently, only there are no supported embedding models for Anthropic. You will need to use a seperate provider (e.g. OpenAI) or the Letta embeddings endpoint (`letta-free`) for embeddings.
+
+## Enabling Anthropic models
+To enable the Anthropic provider, set your key as an environment variable:  
+```bash
+export ANTHROPIC_API_KEY="sk-ant-..." 
+```
+Now, Anthropic models will be enabled with you run `letta run` or the letta service.
+
+
 <Accordion icon="square-terminal" title="CLI (pypi only)">
-To configure your LLM model, modify the `[model]` section of your `~/.letta/config` file: 
-```yaml ~/.letta/config
-[model]
-model_endpoint_type = anthropic 
-model = claude-3-opus-20240229
-model_endpoint = https://api.anthropic.com/v1
-context_window = 200000
+
+### Using `letta run` and `letta server` with Anthropic
+To chat with an agent, run:
+```bash
+export ANTHROPIC_API_KEY="sk-ant-..." 
+letta run
+```
+This will prompt you to select an Anthropic model.
+```
+? Select LLM model: (Use arrow keys)
+ » letta-free [type=openai] [ip=https://inference.memgpt.ai]
+   claude-3-opus-20240229 [type=anthropic] [ip=https://api.anthropic.com/v1]
+   claude-3-sonnet-20240229 [type=anthropic] [ip=https://api.anthropic.com/v1]
+   claude-3-haiku-20240307 [type=anthropic] [ip=https://api.anthropic.com/v1]
+```
+To run the Letta server, run:
+```bash
+export ANTHROPIC_API_KEY="sk-ant-..." 
+letta server
+```
+To select the model used by the server, use the dropdown in the ADE or specify a `LLMConfig` object in the Python SDK.
+</Accordion>
+<Accordion icon="docker" title="Docker Compose">
+### Using the `docker compose` server with Anthropic
+The `compose.yaml` file will read your local environment variables and pass them to the Letta server running in the container. To use Anthropic with the Letta server, set the `ANTHROPIC_API_KEY` environment variable and run the server with `docker compose up`:
+```bash
+export ANTHROPIC_API_KEY="sk-ant-..." 
+docker compose up 
 ```
 </Accordion>
-<Accordion icon="python" title="Python SDK">
-You can override the default LLM config (specified in `~/.letta/config`) by providing a new `LLMConfig` object to the `set_default_llm_config` method. 
-```python
-from memgpt import LLMConfig
 
+## Configuring Anthropic models
+
+When creating agents, you can specify the exactly model configurations to use, such as the model name and context window size (which can be less than the maximum size). 
+
+To set a default `LLMConfig` to `claude-3-opus-20240229` with a context window of 200000, you can set the default config for your client: 
+
+```python
+from letta import create_client, LLMConfig
+
+client = create_client()
 
 # provide full config (llm config)
 client.set_default_llm_config(
@@ -31,9 +68,7 @@ client.set_default_llm_config(
         model="claude-3-opus-20240229",
         model_endpoint_type="anthropic",
         model_endpoint="https://api.anthropic.com/v1",
-        context_window=200000
+        context_window=200000 # NOTE: can be set to <= 200000
     )
 )
 ```
-</Accordion>
-
