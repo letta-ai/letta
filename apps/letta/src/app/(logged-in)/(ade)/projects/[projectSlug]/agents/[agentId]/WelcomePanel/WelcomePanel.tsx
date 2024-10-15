@@ -70,7 +70,7 @@ function WelcomePanel() {
             {t.rich('editDataSources', {
               editDataSourcesButton: () => (
                 <GenericPanelOpener
-                  panelId="edit-data-source"
+                  panelId="edit-data-sources"
                   title={t('editDataSourcesButton')}
                 />
               ),
