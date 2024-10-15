@@ -38,22 +38,6 @@ export function generateDefaultPreferences(
             size: 100,
             positions: [
               {
-                id: 'agent-simulator',
-                isActive: true,
-                templateId: 'agent-simulator',
-                data: undefined,
-              },
-            ],
-          },
-        ],
-      },
-      {
-        size: 40,
-        positions: [
-          {
-            size: 100,
-            positions: [
-              {
                 id: 'archival-memories',
                 isActive: false,
                 templateId: 'archival-memories',
@@ -66,6 +50,22 @@ export function generateDefaultPreferences(
                 data: {
                   firstTime,
                 },
+              },
+            ],
+          },
+        ],
+      },
+      {
+        size: 40,
+        positions: [
+          {
+            size: 100,
+            positions: [
+              {
+                id: 'agent-simulator',
+                isActive: true,
+                templateId: 'agent-simulator',
+                data: undefined,
               },
             ],
           },

@@ -1,5 +1,6 @@
 'use client';
 import {
+  Alert,
   Button,
   ChatBubbleIcon,
   ChatInput,
@@ -17,6 +18,7 @@ import {
   TableRow,
   Typography,
   useForm,
+  VariableIcon,
   WarningIcon,
 } from '@letta-web/component-library';
 import type { PanelTemplate } from '@letta-web/component-library';
@@ -347,6 +349,19 @@ function DialogSessionSheet(props: DialogSessionDialogProps) {
     [agentTemplateId, mutate, projectId]
   );
 
+  if (!variables.length) {
+    return (
+      <VStack borderBottom padding="small">
+        <Alert
+          title={t('DialogSessionSheet.noVariablesDefined', {
+            variableName: '{{variableName}}',
+          })}
+          variant="info"
+        />
+      </VStack>
+    );
+  }
+
   return (
     <VStack borderBottom paddingBottom="small">
       <FormProvider {...form}>
@@ -477,14 +492,21 @@ function Chatroom() {
 
   return (
     <ChatroomContext.Provider value={{ renderMode, setRenderMode }}>
-      <VStack fullHeight fullWidth>
+      <VStack gap={false} fullHeight fullWidth>
         <PanelBar actions={<ControlChatroomRenderMode />}>
           <VStack paddingLeft="small">
             <Button
               onClick={() => {
                 setShowVariablesMenu((v) => !v);
               }}
-              preIcon={hasVariableIssue && <WarningIcon color="warning" />}
+              active={showVariablesMenu}
+              preIcon={
+                hasVariableIssue ? (
+                  <WarningIcon color="warning" />
+                ) : (
+                  <VariableIcon />
+                )
+              }
               size="small"
               color="tertiary"
               label={

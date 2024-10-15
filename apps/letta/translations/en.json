@@ -151,9 +151,10 @@
       "update": "Update",
       "placeholder": "Variable Value",
       "label": "Variable Name",
-      "editLabel": "Edit {variableName}"
+      "editLabel": "Edit {variableName}",
+      "noVariablesDefined": "You have no variables set yet, to define a variable, write a alphanumeric name wrapped in handlebars in Memory Blocks, e.g. {variableName}"
     },
-    "showVariables": "Show Variables",
+    "showVariables": "Variables",
     "hideVariables": "Hide Variables",
     "updateVariables": "Update Variables"
   },
@@ -353,25 +354,19 @@
     "loadMoreVersions": "Load more versions"
   },
   "ADE/Welcome": {
-    "notFirstTime": {
-      "title": "Welcome back to the Letta ADE!",
-      "message": "Each agent has its own unique configuration based on your usage and is only visible to you."
-    },
-    "firstTime": {
-      "title": "Welcome to the Letta ADE!",
-      "templateVersionButton": "Template Version Manager",
-      "message": "The Letta ADE is where you can create, customize and deploy your agents. You can even arrange the windows to suit your workflow, just drag the tabs.",
-      "more": "We have took the liberty to create a template called <templateName></templateName> for you to get started. You can customize this template in many ways, here are a few things you can do:",
-      "editMemoryBlocks": "Edit your template's <memoryBlocksButton></memoryBlocksButton> and customize who your agent is and who it talks to.",
-      "editDataSourcesButton": "Data Sources",
-      "editMemoryBlocksButton": "Memory Blocks",
-      "editDataSources": "Attach <dataSourcesButton></dataSourcesButton> to your template so your agent can look up information from external sources.",
-      "simulate": "Use the <agentSimulatorButton></agentSimulatorButton> to test talking to a deployed agent",
-      "simulateButton": "Simulator",
-      "archivalMemoriesButton": "Vector Database",
-      "exploreArchivalMemories": "Explore the <archivalMemoriesButton></archivalMemoriesButton> of your agents (see what your agents have learned).",
-      "evenMore": "When you're ready to create agents from your template, you can visit the <templateVersionButton></templateVersionButton> and create a new version of your template, then follow the instructions on that page to deploy your agents."
-    }
+    "title": "Welcome to the Letta ADE!",
+    "templateVersionButton": "Template Version Manager",
+    "message": "The Letta ADE is where you can create, customize and deploy your agents. You can even arrange the windows to suit your workflow, just drag the tabs.",
+    "more": "We have took the liberty to create a template called <templateName></templateName> for you to get started. You can customize this template in many ways, here are a few things you can do:",
+    "editMemoryBlocks": "Edit your template's <memoryBlocksButton></memoryBlocksButton> and customize who your agent is and who it talks to.",
+    "editDataSourcesButton": "Data Sources",
+    "editMemoryBlocksButton": "Memory Blocks",
+    "editDataSources": "Attach <dataSourcesButton></dataSourcesButton> to your template so your agent can look up information from external sources.",
+    "simulate": "Use the <agentSimulatorButton></agentSimulatorButton> to test talking to a deployed agent",
+    "simulateButton": "Simulator",
+    "archivalMemoriesButton": "Vector Database",
+    "exploreArchivalMemories": "Explore the <archivalMemoriesButton></archivalMemoriesButton> of your agents (see what your agents have learned).",
+    "evenMore": "When you're ready to create agents from your template, you can visit the <templateVersionButton></templateVersionButton> and create a new version of your template, then follow the instructions on that page to deploy your agents."
   },
   "login/LoginComponent": {
     "title": "Sign in to Letta Cloud",
