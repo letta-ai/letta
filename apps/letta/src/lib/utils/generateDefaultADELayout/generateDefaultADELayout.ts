@@ -34,8 +34,14 @@ export function generateDefaultADELayout(
             size: 60,
             positions: [
               {
-                id: 'tools-panel',
+                id: 'edit-core-memories-block',
+                templateId: 'edit-core-memories',
                 isActive: true,
+                data: undefined,
+              },
+              {
+                id: 'tools-panel',
+                isActive: false,
                 templateId: 'tools-panel',
                 data: undefined,
               },

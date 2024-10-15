@@ -4,8 +4,8 @@ import './IndeterminateProgress.scss';
 import { HStack } from '../../framing/HStack/HStack';
 
 interface IndeterminateProgressProps {
-  content: string;
-  statusMessage: string;
+  content?: string;
+  statusMessage?: string;
 }
 
 export function IndeterminateProgress(props: IndeterminateProgressProps) {

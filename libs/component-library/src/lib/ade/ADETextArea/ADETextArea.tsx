@@ -78,9 +78,9 @@ function ADETextAreaPrimitive(props: ADETextAreaPrimitiveProps) {
         style={{ lineHeight: `${lineHeight}rem` }}
         data-form-type="other"
         className={cn(
-          'w-full z-[1] h-biHeight relative leading-3 resize-none bg-transparent text-base focus:outline-none',
+          'w-full z-[1]  relative leading-3 resize-none bg-transparent text-base focus:outline-none',
           props.disabled ? 'cursor-not-allowed' : '',
-          fullHeight ? 'h-full' : ''
+          fullHeight ? 'h-full' : 'h-biHeight'
         )}
       />
     </Frame>

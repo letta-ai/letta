@@ -111,3 +111,7 @@ export * from './lib/core/Spinner/Spinner';
 
 export * from './lib/framing/HiddenOnMobile/HiddenOnMobile';
 export * from './lib/core/Table/Table';
+
+export * from './lib/core/Accordion/Accordion';
+
+export * from './lib/core/ProgressBar/ProgressBar';
