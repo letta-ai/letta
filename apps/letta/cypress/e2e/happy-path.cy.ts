@@ -45,7 +45,7 @@ describe('letta', () => {
       /\/projects\/(.+)\/templates\/(.+)/
     );
 
-    cy.findByTestId('tab:Memoryg').click();
+    cy.findByTestId('tab:Memory').click();
 
     cy.findByTestId('edit-memory-block:human').click();
 
