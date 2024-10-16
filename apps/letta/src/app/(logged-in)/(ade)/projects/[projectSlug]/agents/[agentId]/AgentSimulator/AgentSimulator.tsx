@@ -55,6 +55,7 @@ import { findMemoryBlockVariables } from '$letta/utils';
 import type { GetAgentTemplateSimulatorSessionResponseBody } from '$letta/web-api/agent-templates/agentTemplatesContracts';
 import { isEqual } from 'lodash-es';
 import { useCurrentSimulatedAgent } from '../hooks/useCurrentSimulatedAgent/useCurrentSimulatedAgent';
+import toast from 'react-hot-toast';
 
 function useSendMessage(agentId: string) {
   const [isPending, setIsPending] = useState(false);
@@ -456,13 +457,17 @@ function Chatroom() {
   );
 
   const { mutate: updateSession } =
-    webApi.agentTemplates.refreshAgentTemplateSimulatorSession.useMutation();
+    webApi.agentTemplates.refreshAgentTemplateSimulatorSession.useMutation({
+      onError: () => {
+        toast.error(t('refreshError'));
+      },
+    });
 
   const { data: sourceList } = useAgentsServiceGetAgentSources({
     agentId: agentState.id || '',
   });
 
-  const debounceUpdateSession = useDebouncedCallback(updateSession, 500);
+  const debounceUpdateSession = useDebouncedCallback(updateSession, 2000);
 
   useEffect(() => {
     if (!agentSession?.body.id) {

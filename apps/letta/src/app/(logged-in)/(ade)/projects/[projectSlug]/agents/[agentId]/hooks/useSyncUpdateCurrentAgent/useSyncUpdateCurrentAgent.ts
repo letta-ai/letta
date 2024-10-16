@@ -54,6 +54,7 @@ export function useSyncUpdateCurrentAgent() {
                   setLastUpdatedAt(new Date().toISOString());
                 },
                 onError: () => {
+                  setIsUpdating(false);
                   setError(true);
                 },
               }

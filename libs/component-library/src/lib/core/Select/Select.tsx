@@ -9,15 +9,18 @@ import { CaretDownIcon, CloseIcon } from '../../icons';
 import { makeInput, makeRawInput } from '../Form/Form';
 import { z } from 'zod';
 import { HStack } from '../../framing/HStack/HStack';
+import { Slot } from '@radix-ui/react-slot';
+import { Typography } from '../Typography/Typography';
 
 export const OptionTypeSchemaSingle = z.object({
-  value: z.string(),
+  value: z.string().optional(),
   label: z.string(),
   description: z.string().optional(),
 });
 
 export interface OptionType {
-  value: string;
+  icon?: ReactNode;
+  value?: string;
   label: string;
   description?: string;
   badge?: ReactNode;
@@ -62,15 +65,56 @@ const overridenComponents = {
   MultiValueRemove: ({ ...props }) => (
     // @ts-expect-error yest
     <components.MultiValueRemove {...props}>
-      {props.children}
-      <CloseIcon color="inherit" className="w-3" />
+      <HStack align="center" gap="small">
+        {props.data.icon && (
+          <Slot className="max-h-3 w-3">{props.data.icon}</Slot>
+        )}
+        {props.children}
+        <CloseIcon />
+      </HStack>
     </components.MultiValueRemove>
+  ),
+  // @ts-expect-error yest
+  SingleValue: ({ children, ...props }) => (
+    // @ts-expect-error yest
+    <components.SingleValue {...props}>
+      <HStack align="center" gap="medium">
+        {props.data.icon && (
+          <Slot className="max-h-3 w-3">{props.data.icon}</Slot>
+        )}
+        <Typography>{children}</Typography>
+      </HStack>
+    </components.SingleValue>
+  ),
+  // @ts-expect-error yest
+  GroupHeading: ({ children, ...props }) => (
+    // @ts-expect-error yest
+    <components.GroupHeading {...props} style={{ padding: 0, margin: 0 }}>
+      <HStack
+        align="center"
+        color="background-grey"
+        paddingY="small"
+        paddingX="medium"
+      >
+        {props.data.icon && (
+          <Slot className="max-h-3 w-3">{props.data.icon}</Slot>
+        )}
+        // @ts-expect-error yest
+        <Typography className="mt-[-1px]">{children}</Typography>
+      </HStack>
+    </components.GroupHeading>
   ),
   // @ts-expect-error yest
   Option: ({ children, ...props }) => (
     // @ts-expect-error yest
     <components.Option {...props}>
-      <HStack data-testid={`select-box-option-${props.data.value}`}>
+      <HStack
+        align="center"
+        data-testid={`select-box-option-${props.data.value}`}
+      >
+        {props.data.icon && (
+          <Slot className="max-h-3  w-3">{props.data.icon}</Slot>
+        )}
         {children}
         {props.data.badge}
       </HStack>
@@ -149,6 +193,7 @@ function AsyncSelectPrimitive(props: AsyncSelectProps) {
           props.onSelect?.(value);
         }}
         value={props.value}
+        // @ts-expect-error yest
         components={overridenComponents}
         styles={styles}
         classNames={classNames}
@@ -173,6 +218,7 @@ function SelectPrimitive(props: SelectProps) {
         props.onSelect?.(value);
       }}
       value={props.value}
+      // @ts-expect-error yest
       components={overridenComponents}
       styles={styles}
       classNames={classNames}
