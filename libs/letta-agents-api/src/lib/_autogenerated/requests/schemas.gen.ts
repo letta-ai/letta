@@ -828,6 +828,111 @@ export const $Choice = {
   title: 'Choice',
 } as const;
 
+export const $ContextWindowOverview = {
+  properties: {
+    context_window_size_max: {
+      type: 'integer',
+      title: 'Context Window Size Max',
+      description: 'The maximum amount of tokens the context window can hold.',
+    },
+    context_window_size_current: {
+      type: 'integer',
+      title: 'Context Window Size Current',
+      description: 'The current number of tokens in the context window.',
+    },
+    num_messages: {
+      type: 'integer',
+      title: 'Num Messages',
+      description: 'The number of messages in the context window.',
+    },
+    num_archival_memory: {
+      type: 'integer',
+      title: 'Num Archival Memory',
+      description: 'The number of messages in the archival memory.',
+    },
+    num_recall_memory: {
+      type: 'integer',
+      title: 'Num Recall Memory',
+      description: 'The number of messages in the recall memory.',
+    },
+    num_tokens_external_memory_summary: {
+      type: 'integer',
+      title: 'Num Tokens External Memory Summary',
+      description:
+        'The number of tokens in the external memory summary (archival + recall metadata).',
+    },
+    num_tokens_system: {
+      type: 'integer',
+      title: 'Num Tokens System',
+      description: 'The number of tokens in the system prompt.',
+    },
+    system_prompt: {
+      type: 'string',
+      title: 'System Prompt',
+      description: 'The content of the system prompt.',
+    },
+    num_tokens_core_memory: {
+      type: 'integer',
+      title: 'Num Tokens Core Memory',
+      description: 'The number of tokens in the core memory.',
+    },
+    core_memory: {
+      type: 'string',
+      title: 'Core Memory',
+      description: 'The content of the core memory.',
+    },
+    num_tokens_summary_memory: {
+      type: 'integer',
+      title: 'Num Tokens Summary Memory',
+      description: 'The number of tokens in the summary memory.',
+    },
+    summary_memory: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Summary Memory',
+      description: 'The content of the summary memory.',
+    },
+    num_tokens_messages: {
+      type: 'integer',
+      title: 'Num Tokens Messages',
+      description: 'The number of tokens in the messages list.',
+    },
+    messages: {
+      items: {
+        $ref: '#/components/schemas/letta__schemas__message__Message-Output',
+      },
+      type: 'array',
+      title: 'Messages',
+      description: 'The messages in the context window.',
+    },
+  },
+  type: 'object',
+  required: [
+    'context_window_size_max',
+    'context_window_size_current',
+    'num_messages',
+    'num_archival_memory',
+    'num_recall_memory',
+    'num_tokens_external_memory_summary',
+    'num_tokens_system',
+    'system_prompt',
+    'num_tokens_core_memory',
+    'core_memory',
+    'num_tokens_summary_memory',
+    'num_tokens_messages',
+    'messages',
+  ],
+  title: 'ContextWindowOverview',
+  description:
+    'Overview of the context window, including the number of messages and tokens.',
+} as const;
+
 export const $CreateAgent = {
   properties: {
     description: {
@@ -1978,6 +2083,7 @@ export const $LLMConfig = {
         'koboldcpp',
         'vllm',
         'hugging-face',
+        'mistral',
       ],
       title: 'Model Endpoint Type',
       description: 'The endpoint type for the model.',
@@ -2050,10 +2156,20 @@ Attributes:
 export const $LettaRequest = {
   properties: {
     messages: {
-      items: {
-        $ref: '#/components/schemas/MessageCreate',
-      },
-      type: 'array',
+      anyOf: [
+        {
+          items: {
+            $ref: '#/components/schemas/MessageCreate',
+          },
+          type: 'array',
+        },
+        {
+          items: {
+            $ref: '#/components/schemas/Message-Input',
+          },
+          type: 'array',
+        },
+      ],
       title: 'Messages',
       description: 'The messages to be sent to the agent.',
     },
@@ -2117,7 +2233,7 @@ export const $LettaResponse = {
       anyOf: [
         {
           items: {
-            $ref: '#/components/schemas/letta__schemas__message__Message',
+            $ref: '#/components/schemas/letta__schemas__message__Message-Output',
           },
           type: 'array',
         },
@@ -2260,6 +2376,132 @@ Attributes:
     memory (Dict[str, Block]): Mapping from memory block section to memory block.`,
 } as const;
 
+export const $Message_Input = {
+  properties: {
+    id: {
+      type: 'string',
+      pattern: '^message-[a-fA-F0-9]{8}',
+      title: 'Id',
+      description: 'The human-friendly ID of the Message',
+      examples: [['message-123e4567-e89b-12d3-a456-426614174000']],
+    },
+    role: {
+      $ref: '#/components/schemas/MessageRole',
+      description: 'The role of the participant.',
+    },
+    text: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Text',
+      description: 'The text of the message.',
+    },
+    user_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'User Id',
+      description: 'The unique identifier of the user.',
+    },
+    agent_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Agent Id',
+      description: 'The unique identifier of the agent.',
+    },
+    model: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Model',
+      description: 'The model used to make the function call.',
+    },
+    name: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Name',
+      description: 'The name of the participant.',
+    },
+    created_at: {
+      type: 'string',
+      format: 'date-time',
+      title: 'Created At',
+      description: 'The time the message was created.',
+    },
+    tool_calls: {
+      anyOf: [
+        {
+          items: {
+            $ref: '#/components/schemas/letta__schemas__openai__chat_completions__ToolCall-Input',
+          },
+          type: 'array',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Tool Calls',
+      description: 'The list of tool calls requested.',
+    },
+    tool_call_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Tool Call Id',
+      description: 'The id of the tool call.',
+    },
+  },
+  additionalProperties: false,
+  type: 'object',
+  required: ['role'],
+  title: 'Message',
+  description: `Letta's internal representation of a message. Includes methods to convert to/from LLM provider formats.
+
+Attributes:
+    id (str): The unique identifier of the message.
+    role (MessageRole): The role of the participant.
+    text (str): The text of the message.
+    user_id (str): The unique identifier of the user.
+    agent_id (str): The unique identifier of the agent.
+    model (str): The model used to make the function call.
+    name (str): The name of the participant.
+    created_at (datetime): The time the message was created.
+    tool_calls (List[ToolCall]): The list of tool calls requested.
+    tool_call_id (str): The id of the tool call.`,
+} as const;
+
 export const $MessageContentLogProb = {
   properties: {
     token: {
@@ -2307,7 +2549,9 @@ export const $MessageContentLogProb = {
 export const $MessageCreate = {
   properties: {
     role: {
-      $ref: '#/components/schemas/MessageRole',
+      type: 'string',
+      enum: ['user', 'system'],
+      title: 'Role',
       description: 'The role of the participant.',
     },
     text: {
@@ -4449,7 +4693,7 @@ export const $letta__schemas__letta_message__FunctionCall = {
   title: 'FunctionCall',
 } as const;
 
-export const $letta__schemas__message__Message = {
+export const $letta__schemas__message__Message_Output = {
   properties: {
     id: {
       type: 'string',

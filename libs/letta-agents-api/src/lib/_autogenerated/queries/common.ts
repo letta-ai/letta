@@ -188,6 +188,28 @@ export const UseAgentsServiceListAgentsKeyFn = (
   } = {},
   queryKey?: Array<unknown>
 ) => [useAgentsServiceListAgentsKey, ...(queryKey ?? [{ userId }])];
+export type AgentsServiceGetAgentContextWindowDefaultResponse = Awaited<
+  ReturnType<typeof AgentsService.getAgentContextWindow>
+>;
+export type AgentsServiceGetAgentContextWindowQueryResult<
+  TData = AgentsServiceGetAgentContextWindowDefaultResponse,
+  TError = unknown
+> = UseQueryResult<TData, TError>;
+export const useAgentsServiceGetAgentContextWindowKey =
+  'AgentsServiceGetAgentContextWindow';
+export const UseAgentsServiceGetAgentContextWindowKeyFn = (
+  {
+    agentId,
+    userId,
+  }: {
+    agentId: string;
+    userId?: string;
+  },
+  queryKey?: Array<unknown>
+) => [
+  useAgentsServiceGetAgentContextWindowKey,
+  ...(queryKey ?? [{ agentId, userId }]),
+];
 export type AgentsServiceGetAgentDefaultResponse = Awaited<
   ReturnType<typeof AgentsService.getAgent>
 >;
@@ -699,6 +721,9 @@ export type ToolsServiceDeleteToolMutationResult = Awaited<
 >;
 export type SourcesServiceDeleteSourceMutationResult = Awaited<
   ReturnType<typeof SourcesService.deleteSource>
+>;
+export type SourcesServiceDeleteFileFromSourceMutationResult = Awaited<
+  ReturnType<typeof SourcesService.deleteFileFromSource>
 >;
 export type AgentsServiceDeleteAgentMutationResult = Awaited<
   ReturnType<typeof AgentsService.deleteAgent>
