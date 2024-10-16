@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { Alert } from './Alert';
-import { RocketIcon } from '../../icons';
+import { HamburgerMenuIcon } from '../../icons';
 
 const meta: Meta<typeof Alert> = {
   component: Alert,
@@ -23,7 +23,7 @@ export const Primary: Story = {
       control: { type: 'radio' },
       mapping: {
         default: '',
-        '(custom)': <RocketIcon />,
+        '(custom)': <HamburgerMenuIcon />,
       },
     },
     variant: {
