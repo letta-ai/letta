@@ -10,7 +10,11 @@ import {
   agentTemplates,
   db,
 } from '@letta-web/database';
-import { attachVariablesToTemplates, copyAgentById } from '$letta/sdk';
+import {
+  attachVariablesToTemplates,
+  copyAgentById,
+  updateAgentFromAgentId,
+} from '$letta/sdk';
 import { capitalize } from 'lodash';
 import { AgentsService } from '@letta-web/letta-agents-api';
 
@@ -375,36 +379,12 @@ async function refreshAgentTemplateSimulatorSession(
     };
   }
 
-  const currentAgent = await AgentsService.getAgent(
-    {
-      agentId: agentTemplate.id,
-    },
-    {
-      user_id: lettaAgentsId,
-    }
-  );
-
-  if (!currentAgent) {
-    return {
-      status: 500,
-      body: {
-        message: 'Failed to get agent',
-      },
-    };
-  }
-
-  const res = await AgentsService.updateAgent({
-    agentId: simulatorSession.agentId,
-    requestBody: {
-      id: simulatorSession.agentId,
-      ...attachVariablesToTemplates(
-        currentAgent,
-        simulatorSession.variables as Record<string, string>
-      ),
-    },
+  await updateAgentFromAgentId({
+    fromAgent: agentTemplate.id,
+    toAgent: simulatorSession.agentId,
+    lettaAgentsUserId: lettaAgentsId,
+    preserveCoreMemories: false,
   });
-
-  console.log(JSON.stringify(res.memory, null, 2));
 
   return {
     status: 200,

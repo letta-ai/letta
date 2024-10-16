@@ -10,9 +10,7 @@ import {
   Dialog,
   DotsHorizontalIcon,
   DropdownMenu,
-  DropdownMenuContent,
   DropdownMenuLabel,
-  DropdownMenuTrigger,
   FormField,
   FormProvider,
   Input,
@@ -150,8 +148,8 @@ const emailWhitelistColumns: Array<ColumnDef<WhitelistedEmailType>> = [
     id: 'actions',
     cell: ({ cell }) => {
       return (
-        <DropdownMenu>
-          <DropdownMenuTrigger>
+        <DropdownMenu
+          trigger={
             <Button
               color="tertiary-transparent"
               label="Actions"
@@ -159,13 +157,12 @@ const emailWhitelistColumns: Array<ColumnDef<WhitelistedEmailType>> = [
               size="small"
               hideLabel
             />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent>
-            <RemoveEmailFromWhitelistDialog
-              email={cell.row.original.email}
-              id={cell.row.original.id}
-            />
-          </DropdownMenuContent>
+          }
+        >
+          <RemoveEmailFromWhitelistDialog
+            email={cell.row.original.email}
+            id={cell.row.original.id}
+          />
         </DropdownMenu>
       );
     },

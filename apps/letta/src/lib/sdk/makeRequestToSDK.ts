@@ -240,6 +240,12 @@ export async function makeRequestToSDK(
       },
     });
 
+    if (response.status === 204) {
+      return new Response(null, {
+        status: 204,
+      });
+    }
+
     let data = response.data;
 
     if (typeof data !== 'string') {
@@ -265,7 +271,7 @@ export async function makeRequestToSDK(
       });
     }
 
-    return new Response(data, {
+    return new Response(data || JSON.stringify({ success: true }), {
       status: response.status,
       headers: {
         'Content-Type': 'application/json',

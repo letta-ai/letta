@@ -39,6 +39,8 @@ export function GenericTab(props: GenericTabProps) {
 
   return (
     <HStack
+      borderRight
+      borderBottom={!isActive}
       paddingRight="small"
       align="center"
       position="relative"

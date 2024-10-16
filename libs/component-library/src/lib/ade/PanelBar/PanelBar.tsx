@@ -4,6 +4,7 @@ import * as React from 'react';
 import { ChevronLeftIcon, MagnifyingGlassIcon } from '../../icons';
 import { Button } from '../../core/Button/Button';
 import { HStack } from '../../framing/HStack/HStack';
+import { RawInput } from '../../core/Input/Input';
 
 interface PanelSearchProps {
   placeholder: string;
@@ -23,11 +24,13 @@ function PanelSearch(props: PanelSearchProps) {
 
   return (
     <HStack align="center" paddingLeft="medium" fullWidth>
-      <MagnifyingGlassIcon />
-      <input
+      <RawInput
+        label="search"
+        hideLabel
+        fullWidth
+        preIcon={<MagnifyingGlassIcon />}
         type="text"
         placeholder={placeholder}
-        className="w-full bg-transparent border-none text-base outline-none"
         value={value}
         onChange={handleChange}
       />
@@ -46,7 +49,7 @@ type PanelBarProps = PropsWithChildren<{
 export function PanelBar(props: PanelBarProps) {
   const { onReturn } = props;
   return (
-    <div className="flex w-full items-center border-b justify-between flex-row h-panel">
+    <div className="pt-2 flex w-full items-center justify-between flex-row">
       {onReturn && (
         <Button
           label="Return"

@@ -3,6 +3,7 @@ import type {
   DialogTableItem,
   PanelTemplate,
 } from '@letta-web/component-library';
+import { StatusIndicatorOnIcon } from '@letta-web/component-library';
 import {
   ActionCard,
   Alert,
@@ -16,7 +17,6 @@ import {
   PanelMainContent,
   PlusIcon,
   SingleFileUpload,
-  Spinner,
   TrashIcon,
   Typography,
   useForm,
@@ -26,13 +26,17 @@ import { Button, HStack, PanelBar } from '@letta-web/component-library';
 import { VStack } from '@letta-web/component-library';
 import { useTranslations } from 'next-intl';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import type { Source } from '@letta-web/letta-agents-api';
 import {
   type AgentsServiceGetAgentSourcesDefaultResponse,
+  type ListFilesFromSourceResponse,
   useAgentsServiceGetAgentSources,
   UseAgentsServiceGetAgentSourcesKeyFn,
+  useJobsServiceListActiveJobs,
   UseJobsServiceListActiveJobsKeyFn,
   useSourcesServiceAttachAgentToSource,
   useSourcesServiceCreateSource,
+  useSourcesServiceDeleteFileFromSource,
   useSourcesServiceDetachAgentFromSource,
   useSourcesServiceListFilesFromSource,
   UseSourcesServiceListFilesFromSourceKeyFn,
@@ -41,13 +45,7 @@ import {
 } from '@letta-web/letta-agents-api';
 import { useCurrentAgent } from '../hooks';
 import { useQueryClient } from '@tanstack/react-query';
-import {
-  DatabaseBackupIcon,
-  DatabaseIcon,
-  DatabaseZapIcon,
-  FileOutputIcon,
-  SearchIcon,
-} from 'lucide-react';
+import { DatabaseIcon, DatabaseZapIcon, SearchIcon } from 'lucide-react';
 import {
   adjectives,
   animals,
@@ -55,6 +53,7 @@ import {
   uniqueNamesGenerator,
 } from 'unique-names-generator';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { get } from 'lodash-es';
 
 interface AttachDataSourceViewProps {
   onClose: () => void;
@@ -354,7 +353,6 @@ function CreateDataSourceDialog() {
       }}
       trigger={
         <Button
-          size="small"
           preIcon={<PlusIcon />}
           color="primary"
           label={t('CreateDataSourceDialog.trigger')}
@@ -457,6 +455,136 @@ function FileUploadDialog(props: FileUploadDialogProps) {
   );
 }
 
+interface DetachDataSourceConfirmDialogProps {
+  sourceName: string;
+  sourceId: string;
+  onClose: () => void;
+}
+
+function DetachDataSourceConfirmDialog(
+  props: DetachDataSourceConfirmDialogProps
+) {
+  const { sourceName, sourceId, onClose } = props;
+  const { id: agentId } = useCurrentAgent();
+  const t = useTranslations('ADE/EditDataSourcesPanel');
+  const queryClient = useQueryClient();
+
+  const {
+    mutate: detachSource,
+    isError,
+    isPending,
+  } = useSourcesServiceDetachAgentFromSource({
+    onSuccess: (_, variables) => {
+      onClose();
+      queryClient.setQueriesData<
+        AgentsServiceGetAgentSourcesDefaultResponse | undefined
+      >(
+        {
+          queryKey: UseAgentsServiceGetAgentSourcesKeyFn({
+            agentId,
+          }),
+        },
+        (oldData) => {
+          if (!oldData) {
+            return oldData;
+          }
+          return oldData.filter(
+            (currentSource) => currentSource.id !== variables.sourceId
+          );
+        }
+      );
+    },
+  });
+
+  const handleDetach = useCallback(() => {
+    detachSource({
+      agentId,
+      sourceId: sourceId,
+    });
+  }, [detachSource, agentId, sourceId]);
+
+  return (
+    <Dialog
+      onOpenChange={(state) => {
+        if (!state) {
+          onClose();
+        }
+      }}
+      isOpen
+      title={t('DetachDataSourceConfirmDialog.title', { sourceName })}
+      confirmText={t('DetachDataSourceConfirmDialog.confirm')}
+      isConfirmBusy={isPending}
+      onConfirm={handleDetach}
+      errorMessage={
+        isError ? t('DetachDataSourceConfirmDialog.error') : undefined
+      }
+    >
+      <Typography>
+        {t('DetachDataSourceConfirmDialog.areYouSure', { sourceName })}
+      </Typography>
+    </Dialog>
+  );
+}
+
+interface DeleteFilePayload {
+  sourceId: string;
+  fileId: string;
+  onClose: () => void;
+  fileName: string;
+}
+
+function DeleteFileDialog(props: DeleteFilePayload) {
+  const queryClient = useQueryClient();
+  const { sourceId, fileId, fileName, onClose } = props;
+  const t = useTranslations('ADE/EditDataSourcesPanel');
+
+  const { mutate, isPending, isError } = useSourcesServiceDeleteFileFromSource({
+    onSuccess: () => {
+      onClose();
+      queryClient.setQueriesData<ListFilesFromSourceResponse | undefined>(
+        {
+          queryKey: UseSourcesServiceListFilesFromSourceKeyFn({
+            sourceId,
+            limit: 1000,
+          }),
+        },
+        (oldData) => {
+          if (!oldData) {
+            return oldData;
+          }
+
+          return oldData.filter((file) => file.id !== fileId);
+        }
+      );
+    },
+  });
+
+  const handleDelete = useCallback(() => {
+    mutate({
+      sourceId,
+      fileId,
+    });
+  }, [fileId, mutate, sourceId]);
+
+  return (
+    <Dialog
+      isOpen
+      onOpenChange={(state) => {
+        if (!state) {
+          onClose();
+        }
+      }}
+      title={t('DeleteFileDialog.title', { fileName })}
+      confirmText={t('DeleteFileDialog.confirm')}
+      isConfirmBusy={isPending}
+      onConfirm={handleDelete}
+      errorMessage={isError ? t('DeleteFileDialog.error') : undefined}
+    >
+      <Typography>{t('DeleteFileDialog.areYouSure', { fileName })}</Typography>
+    </Dialog>
+  );
+}
+
 interface EditDataSourcesContentProps {
   search: string;
 }
@@ -464,13 +592,40 @@ interface EditDataSourcesContentProps {
 function EditDataSourcesContent(props: EditDataSourcesContentProps) {
   const { id: agentId } = useCurrentAgent();
   const t = useTranslations('ADE/EditDataSourcesPanel');
+  const [sourceToDetach, setSourceToDetach] = useState<Source | null>(null);
+  const [fileToDelete, setFileToDelete] = useState<Omit<
+    DeleteFilePayload,
+    'onClose'
+  > | null>(null);
 
   const { search } = props;
   const { data: sources } = useAgentsServiceGetAgentSources({
     agentId,
   });
 
-  const queryClient = useQueryClient();
+  const { data } = useJobsServiceListActiveJobs(undefined, undefined, {
+    refetchInterval: 3000,
+  });
+
+  const sourceIdsBeingProcessedSet = useMemo(() => {
+    if (!data) {
+      return new Set<string>();
+    }
+
+    return new Set(
+      data.map((job) => get(job.metadata_, 'source_id')).filter(Boolean)
+    );
+  }, [data]);
+
+  const fileIdsBeingProcessedSet = useMemo(() => {
+    if (!data) {
+      return new Set<string>();
+    }
+
+    return new Set(
+      data.map((job) => get(job.metadata_, 'file_id')).filter(Boolean)
+    );
+  }, [data]);
 
   const [sourceIdToUploadFileTo, setSourceIdToUploadFileTo] = useState<
     string | null
@@ -486,55 +641,68 @@ function EditDataSourcesContent(props: EditDataSourcesContentProps) {
         return source.name.toLowerCase().includes(search.toLowerCase());
       })
       .map((source) => {
+        const icon = (
+          <StatusIndicatorOnIcon
+            label={t('EditDataSourcesContent.processing')}
+            icon={<DatabaseIcon />}
+            status={
+              sourceIdsBeingProcessedSet.has(source.id)
+                ? 'processing'
+                : undefined
+            }
+          />
+        );
+
         return {
           name: source.name,
-          icon: <DatabaseIcon />,
-          openIcon: <DatabaseIcon />,
+          icon,
+          openIcon: icon,
+          actions: [
+            {
+              id: 'detach',
+              label: t('EditDataSourcesContent.detachSource'),
+              onClick: () => {
+                setSourceToDetach(source);
+              },
+            },
+          ],
           useContents: () => {
             const { data, isLoading } = useSourcesServiceListFilesFromSource({
               limit: 1000,
               sourceId: source.id || '',
             });
 
-            const { mutate: detachSource, isPending } =
-              useSourcesServiceDetachAgentFromSource({
-                onSuccess: () => {
-                  queryClient.setQueriesData<
-                    AgentsServiceGetAgentSourcesDefaultResponse | undefined
-                  >(
-                    {
-                      queryKey: UseAgentsServiceGetAgentSourcesKeyFn({
-                        agentId,
-                      }),
-                    },
-                    (oldData) => {
-                      if (!oldData) {
-                        return oldData;
-                      }
-                      return oldData.filter(
-                        (currentSource) => currentSource.id !== source.id
-                      );
-                    }
-                  );
-                },
-              });
-
             const files = useMemo(() => {
               return [
-                {
-                  name: t('EditDataSourcesContent.detachSource'),
-                  onClick: () => {
-                    detachSource({
-                      agentId,
-                      sourceId: source.id || '',
-                    });
-                  },
-                  icon: isPending ? (
-                    <Spinner size="small" />
-                  ) : (
-                    <DatabaseBackupIcon />
-                  ),
-                },
+                ...(data || []).map((file) => {
+                  return {
+                    name: file.file_name,
+                    icon: (
+                      <StatusIndicatorOnIcon
+                        label={t('EditDataSourcesContent.processing')}
+                        icon={<FileIcon />}
+                        status={
+                          fileIdsBeingProcessedSet.has(file.id)
+                            ? 'processing'
+                            : undefined
+                        }
+                      />
+                    ),
+                    actions: [
+                      {
+                        icon: <TrashIcon />,
+                        label: t('EditDataSourcesContent.delete'),
+                        onClick: () => {
+                          setFileToDelete({
+                            sourceId: source.id || '',
+                            fileId: file.id || '',
+                            fileName: file.file_name || '',
+                          });
+                        },
+                      },
+                    ],
+                  };
+                }),
                 {
                   name: t('EditDataSourcesContent.uploadFile'),
                   onClick: () => {
@@ -542,28 +710,8 @@ function EditDataSourcesContent(props: EditDataSourcesContentProps) {
                   },
                   icon: <FilePlusIcon />,
                 },
-                ...(data || []).map((file) => {
-                  return {
-                    name: file.file_name,
-                    icon: <FileIcon />,
-                    openIcon: <FileOutputIcon />,
-                    useContents: () => {
-                      return {
-                        data: [
-                          {
-                            icon: <TrashIcon />,
-                            name: t('EditDataSourcesContent.delete'),
-                            onClick: () => {
-                              alert('Not implemented');
-                            },
-                          },
-                        ],
-                      };
-                    },
-                  };
-                }),
               ];
-            }, [data, detachSource, isPending]);
+            }, [data]);
 
             return {
               isLoading,
@@ -572,7 +720,13 @@ function EditDataSourcesContent(props: EditDataSourcesContentProps) {
           },
         };
       });
-  }, [sources, search, queryClient, agentId, t]);
+  }, [
+    sources,
+    search,
+    t,
+    sourceIdsBeingProcessedSet,
+    fileIdsBeingProcessedSet,
+  ]);
 
   if (!sources) {
     return (
@@ -593,6 +747,25 @@ function EditDataSourcesContent(props: EditDataSourcesContentProps) {
 
   return (
     <>
+      {fileToDelete && (
+        <DeleteFileDialog
+          sourceId={fileToDelete.sourceId}
+          fileId={fileToDelete.fileId}
+          fileName={fileToDelete.fileName}
+          onClose={() => {
+            setFileToDelete(null);
+          }}
+        />
+      )}
+      {sourceToDetach && (
+        <DetachDataSourceConfirmDialog
+          sourceName={sourceToDetach.name}
+          sourceId={sourceToDetach.id || ''}
+          onClose={() => {
+            setSourceToDetach(null);
+          }}
+        />
+      )}
       {sourceIdToUploadFileTo && (
         <FileUploadDialog
           sourceId={sourceIdToUploadFileTo}

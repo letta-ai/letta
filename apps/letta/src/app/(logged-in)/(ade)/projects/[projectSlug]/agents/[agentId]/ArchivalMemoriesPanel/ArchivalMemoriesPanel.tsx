@@ -5,12 +5,9 @@ import {
   ActionCard,
   Alert,
   Button,
-  createPageRouter,
   Dialog,
-  Form,
   FormField,
   FormProvider,
-  HStack,
   LettaLoaderPanel,
   PanelBar,
   PanelMainContent,
@@ -19,54 +16,56 @@ import {
   useForm,
 } from '@letta-web/component-library';
 import { z } from 'zod';
-import type { Passage } from '@letta-web/letta-agents-api';
+import type {
+  ListAgentArchivalMemoryResponse,
+  Passage,
+} from '@letta-web/letta-agents-api';
 import {
   useAgentsServiceCreateAgentArchivalMemory,
   useAgentsServiceDeleteAgentArchivalMemory,
   useAgentsServiceListAgentArchivalMemory,
   UseAgentsServiceListAgentArchivalMemoryKeyFn,
 } from '@letta-web/letta-agents-api';
-import { useCurrentAgent } from '../hooks';
 import { useQueryClient } from '@tanstack/react-query';
 import { zodResolver } from '@hookform/resolvers/zod';
-
-const { PanelRouter, usePanelPageContext } = createPageRouter(
-  {
-    createMemory: {
-      title: 'Create Memory',
-      state: z.object({}),
-    },
-    memory: {
-      title: 'Memories',
-      state: z.object({}),
-    },
-  },
-  {
-    initialPage: 'memory',
-  }
-);
+import { useTranslations } from 'next-intl';
+import { useCurrentSimulatedAgent } from '../hooks/useCurrentSimulatedAgent/useCurrentSimulatedAgent';
 
 interface MemoryItemProps {
   memory: Passage;
 }
 
 function MemoryItem(props: MemoryItemProps) {
-  const { id: currentAgentId } = useCurrentAgent();
+  const { id: currentAgentId } = useCurrentSimulatedAgent();
 
   const { memory } = props;
   const [open, setOpen] = useState(false);
 
   const queryClient = useQueryClient();
 
+  const t = useTranslations('ADE/ArchivalMemories');
+
   const { mutate: deleteMemory, isPending: isDeletingMemory } =
     useAgentsServiceDeleteAgentArchivalMemory({
       onSuccess: async () => {
         setOpen(false);
-        await queryClient.invalidateQueries({
-          queryKey: UseAgentsServiceListAgentArchivalMemoryKeyFn({
-            agentId: currentAgentId,
-          }),
-        });
+        queryClient.setQueriesData<ListAgentArchivalMemoryResponse | undefined>(
+          {
+            queryKey: UseAgentsServiceListAgentArchivalMemoryKeyFn({
+              agentId: currentAgentId,
+            }),
+          },
+          (oldData) => {
+            if (!oldData) {
+              return oldData;
+            }
+
+            return {
+              ...oldData,
+              data: oldData.filter((memory) => memory.id !== memory.id),
+            };
+          }
+        );
       },
     });
 
@@ -84,14 +83,16 @@ function MemoryItem(props: MemoryItemProps) {
     <ActionCard
       key={memory.id}
       title={`Memory at ${memory.created_at}`}
-      description={memory.text.slice(0, 180)}
+      description={`${memory.text.slice(0, 180)}${
+        memory.text.length > 180 ? '...' : ''
+      }`}
       mainAction={
         <Dialog
           onOpenChange={setOpen}
           isOpen={open}
           trigger={
             <Button
-              label="Remove Memory"
+              label={t('MemoryItem.deleteMemory')}
               color="tertiary"
               preIcon={<TrashIcon />}
               hideLabel
@@ -103,12 +104,11 @@ function MemoryItem(props: MemoryItemProps) {
           onConfirm={() => {
             handleRemoveMemory(memory.id || '');
           }}
-          confirmText="Delete Memory"
+          confirmText={t('MemoryItem.deleteConfirm')}
           cancelText="Cancel"
           title="Delete Memory"
         >
-          Are you sure you want to delete this memory? It will be permanently
-          removed.
+          {t('MemoryItem.deleteConfirmation')}
         </Dialog>
       }
     />
@@ -116,7 +116,7 @@ function MemoryItem(props: MemoryItemProps) {
 }
 
 function MemoriesList() {
-  const { id: currentAgentId } = useCurrentAgent();
+  const { id: currentAgentId } = useCurrentSimulatedAgent();
 
   const { data, isLoading } = useAgentsServiceListAgentArchivalMemory(
     {
@@ -124,6 +124,7 @@ function MemoriesList() {
     },
     undefined,
     {
+      enabled: !!currentAgentId,
       refetchInterval: 5000,
     }
   );
@@ -146,7 +147,6 @@ function MemoriesList() {
 }
 
 function MemoryRootPage() {
-  const { setCurrentPage } = usePanelPageContext();
   const [search, setSearch] = useState('');
 
   return (
@@ -158,14 +158,7 @@ function MemoryRootPage() {
         }}
         actions={
           <>
-            <Button
-              onClick={() => {
-                setCurrentPage('createMemory');
-              }}
-              size="small"
-              color="primary"
-              label="Create Memory"
-            />
+            <CreateMemoryDialog />
           </>
         }
       />
@@ -178,19 +171,20 @@ const createMemorySchema = z.object({
   text: z.string(),
 });
 
-function CreateMemoryPage() {
-  const { id: currentAgentId } = useCurrentAgent();
-  const { setCurrentPage } = usePanelPageContext();
+function CreateMemoryDialog() {
+  const { id: currentAgentId } = useCurrentSimulatedAgent();
   const queryClient = useQueryClient();
+  const t = useTranslations('ADE/ArchivalMemories');
+  const [open, setOpen] = useState(false);
 
   const { mutate, isPending } = useAgentsServiceCreateAgentArchivalMemory({
     onSuccess: async () => {
+      setOpen(false);
       await queryClient.invalidateQueries({
         queryKey: UseAgentsServiceListAgentArchivalMemoryKeyFn({
           agentId: currentAgentId,
         }),
       });
-      setCurrentPage('memory');
     },
   });
 
@@ -215,55 +209,42 @@ function CreateMemoryPage() {
 
   return (
     <FormProvider {...form}>
-      <Form onSubmit={form.handleSubmit(handleSubmit)}>
-        <PanelMainContent>
-          <Alert variant="info" title="Info">
-            An agent memory is a passage of text that the agent can remember and
-            refer back to. This content will not be transferred when staging an
-            agent. If you want to create a memory that will be transferred, use
-            the Core Memory section.
-          </Alert>
-          <FormField
-            control={form.control}
-            name="text"
-            render={({ field }) => (
-              <TextArea
-                placeholder="Enter memory text here"
-                fullWidth
-                label="Memory"
-                {...field}
-              />
-            )}
-          />
-          <HStack fullWidth justify="end">
-            <Button
-              type="submit"
-              label="Create"
-              color="primary"
-              busy={isPending}
+      <Dialog
+        onOpenChange={setOpen}
+        isOpen={open}
+        size="large"
+        isConfirmBusy={isPending}
+        trigger={
+          <Button color="primary" label={t('CreateMemoryDialog.trigger')} />
+        }
+        title={t('CreateMemoryDialog.title')}
+        onSubmit={form.handleSubmit(handleSubmit)}
+      >
+        <Alert variant="info" title={t('CreateMemoryDialog.info')} />
+        <FormField
+          control={form.control}
+          name="text"
+          render={({ field }) => (
+            <TextArea
+              placeholder={t('CreateMemoryDialog.placeholder')}
+              fullWidth
+              label={t('CreateMemoryDialog.label')}
+              {...field}
             />
-          </HStack>
-        </PanelMainContent>
-      </Form>
+          )}
+        />
+      </Dialog>
     </FormProvider>
-  );
-}
-
-export function ArchivalMemoriesPanel() {
-  return (
-    <PanelRouter
-      rootPageKey="memory"
-      pages={{
-        memory: <MemoryRootPage />,
-        createMemory: <CreateMemoryPage />,
-      }}
-    />
   );
 }
 
 export const archivalMemoriesPanelTemplate = {
   templateId: 'archival-memories',
-  useGetTitle: () => 'Archival Memories',
-  content: ArchivalMemoriesPanel,
+  useGetTitle: () => {
+    const t = useTranslations('ADE/ArchivalMemories');
+
+    return t('title');
+  },
+  content: MemoryRootPage,
   data: z.object({}),
 } satisfies PanelTemplate<'archival-memories'>;

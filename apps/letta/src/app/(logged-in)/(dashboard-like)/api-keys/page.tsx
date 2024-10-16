@@ -12,9 +12,7 @@ import {
   DotsHorizontalIcon,
   DownloadButton,
   DropdownMenu,
-  DropdownMenuContent,
   DropdownMenuLabel,
-  DropdownMenuTrigger,
   FormField,
   FormProvider,
   Input,
@@ -266,8 +264,8 @@ function APIKeysPage() {
         id: 'actions',
         cell: ({ cell }) => {
           return (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
+            <DropdownMenu
+              trigger={
                 <Button
                   data-testid={`api-key-actions-button:${cell.row.original.name}`}
                   color="tertiary-transparent"
@@ -276,17 +274,17 @@ function APIKeysPage() {
                   size="small"
                   hideLabel
                 />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                <ViewAPIKeyDialog
-                  apiKeyId={cell.row.original.id}
-                  name={cell.row.original.name}
-                />
-                <DeleteAPIKeyDialog
-                  name={cell.row.original.name}
-                  apiKeyId={cell.row.original.id}
-                />
-              </DropdownMenuContent>
+              }
+              triggerAsChild
+            >
+              <ViewAPIKeyDialog
+                apiKeyId={cell.row.original.id}
+                name={cell.row.original.name}
+              />
+              <DeleteAPIKeyDialog
+                name={cell.row.original.name}
+                apiKeyId={cell.row.original.id}
+              />
             </DropdownMenu>
           );
         },

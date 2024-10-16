@@ -3,6 +3,7 @@ import type { panelRegistry } from './panelRegistry';
 import { usePanelManager } from './panelRegistry';
 import { PanelManagerProvider, PanelRenderer } from './panelRegistry';
 import type { PanelItemPositionsMatrix } from '@letta-web/component-library';
+import { toast } from '@letta-web/component-library';
 import { LayoutIcon } from '@letta-web/component-library';
 import {
   ADEHeader,
@@ -253,6 +254,10 @@ export function AgentPage() {
         <LoaderContent />
       </div>
       <PanelManagerProvider
+        onPositionError={() => {
+          toast.error(t('positionError'));
+        }}
+        fallbackPositions={generateDefaultADELayout().displayConfig}
         initialPositions={data.body.displayConfig}
         onPositionChange={setUpdatedPositions}
       >

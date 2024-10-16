@@ -117,3 +117,8 @@ export * from './lib/core/Accordion/Accordion';
 export * from './lib/core/ProgressBar/ProgressBar';
 
 export * from './lib/core/FileTree/FileTree';
+export * from './lib/core/Toaster/Toaster';
+
+export * from './lib/core/StatusIndicator/StatusIndicator';
+
+export * from './lib/reusable/StatusIndicatorOnIcon/StatusIndicatorOnIcon';

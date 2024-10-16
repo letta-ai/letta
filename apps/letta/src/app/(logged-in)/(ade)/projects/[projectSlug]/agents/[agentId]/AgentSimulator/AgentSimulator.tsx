@@ -25,7 +25,12 @@ import type { Dispatch, SetStateAction } from 'react';
 import { useEffect } from 'react';
 import { useMemo } from 'react';
 import React, { useCallback, useRef, useState } from 'react';
-import type { AgentMessage } from '@letta-web/letta-agents-api';
+import type {
+  AgentMessage,
+  AgentState,
+  Source,
+} from '@letta-web/letta-agents-api';
+import { useAgentsServiceGetAgentSources } from '@letta-web/letta-agents-api';
 import {
   AgentMessageSchema,
   UseAgentsServiceListAgentMessagesKeyFn,
@@ -46,11 +51,10 @@ import {
 } from '@mantine/hooks';
 import { webApi, webApiQueryKeys } from '$letta/client';
 import { useCurrentProject } from '../../../../../../(dashboard-like)/projects/[projectSlug]/hooks';
-import { useCurrentAgentMetaData } from '../hooks/useCurrentAgentMetaData/useCurrentAgentMetaData';
 import { findMemoryBlockVariables } from '$letta/utils';
-import { isFetchError } from '@ts-rest/react-query/v5';
 import type { GetAgentTemplateSimulatorSessionResponseBody } from '$letta/web-api/agent-templates/agentTemplatesContracts';
 import { isEqual } from 'lodash-es';
+import { useCurrentSimulatedAgent } from '../hooks/useCurrentSimulatedAgent/useCurrentSimulatedAgent';
 
 function useSendMessage(agentId: string) {
   const [isPending, setIsPending] = useState(false);
@@ -258,7 +262,6 @@ function ControlChatroomRenderMode() {
 
   return (
     <RawToggleGroup
-      size="small"
       border
       onValueChange={(value) => {
         if (value) {
@@ -415,63 +418,49 @@ function DialogSessionSheet(props: DialogSessionDialogProps) {
   );
 }
 
+function generateAgentStateHash(agentState: AgentState, datasources: Source[]) {
+  return JSON.stringify({
+    ...agentState,
+    datasources: datasources.map((source) => source.id),
+  });
+}
+
 function Chatroom() {
   const t = useTranslations('ADE/AgentSimulator');
   const agentState = useCurrentAgent();
   const [showVariablesMenu, setShowVariablesMenu] = useState(false);
   const { id: agentId } = agentState;
-  const { isTemplate } = useCurrentAgentMetaData();
-  const { id: projectId } = useCurrentProject();
   const [renderMode, setRenderMode] = useLocalStorage<MessagesDisplayMode>({
     defaultValue: 'debug',
     key: 'chatroom-render-mode',
   });
 
-  const { data: agentSession, error } =
-    webApi.agentTemplates.getAgentTemplateSimulatorSession.useQuery({
-      queryKey: webApiQueryKeys.agentTemplates.getAgentTemplateSession({
-        agentTemplateId: agentId,
-        projectId,
-      }),
-      queryData: {
-        params: {
-          agentTemplateId: agentId,
-          projectId,
-        },
-      },
-      retry: false,
-      enabled: isTemplate,
-    });
-
   const variableList = useMemo(() => {
     return findMemoryBlockVariables(agentState);
   }, [agentState]);
 
-  const agentIdToUse = useMemo(() => {
-    if (isTemplate) {
-      return agentSession?.body.agentId;
-    }
+  const { id: agentIdToUse, agentSession } = useCurrentSimulatedAgent();
 
-    return agentId;
-  }, [agentId, agentSession?.body.agentId, isTemplate]);
-
-  const hasNoSimulatorSession = useMemo(() => {
-    return isTemplate && !isFetchError(error) && error?.status === 404;
-  }, [error, isTemplate]);
+  const mounted = useRef(false);
 
   const hasVariableMismatch = useMemo(() => {
     // check if variable mismatch
-
     const sessionVariables = agentSession?.body.variables || {};
 
-    // it's ok if theres more variables defined in the session than in the agent, but not the other way around
+    // it's ok if there's more variables defined in the session than in the agent, but not the other way around
     return variableList.some((variable) => !sessionVariables[variable]);
   }, [agentSession?.body.variables, variableList]);
 
-  const agentStateStore = useRef(agentState);
+  const agentStateStore = useRef<string>(
+    generateAgentStateHash(agentState, [])
+  );
 
   const { mutate: updateSession } =
     webApi.agentTemplates.refreshAgentTemplateSimulatorSession.useMutation();
+
+  const { data: sourceList } = useAgentsServiceGetAgentSources({
+    agentId: agentState.id || '',
+  });
 
   const debounceUpdateSession = useDebouncedCallback(updateSession, 500);
 
@@ -480,12 +469,32 @@ function Chatroom() {
       return;
     }
 
-    // check if the agent state has changed
-    if (isEqual(agentState, agentStateStore.current)) {
+    // update session just in case
+    if (!mounted.current) {
+      debounceUpdateSession({
+        params: {
+          agentSessionId: agentSession.body.id,
+          agentTemplateId: agentId,
+        },
+      });
+    }
+
+    mounted.current = true;
+  }, [agentId, agentSession?.body.id, debounceUpdateSession, updateSession]);
+
+  useEffect(() => {
+    if (!agentSession?.body.id) {
       return;
     }
 
-    agentStateStore.current = agentState;
+    const currentState = generateAgentStateHash(agentState, sourceList || []);
+
+    // check if the agent state has changed
+    if (isEqual(currentState, agentStateStore.current)) {
+      return;
+    }
+
+    agentStateStore.current = currentState;
 
     // update the existing session
     debounceUpdateSession({
@@ -494,13 +503,19 @@ function Chatroom() {
         agentTemplateId: agentId,
       },
     });
-  }, [agentId, agentSession?.body.id, agentState, debounceUpdateSession]);
+  }, [
+    agentId,
+    agentSession?.body.id,
+    agentState,
+    debounceUpdateSession,
+    sourceList,
+  ]);
 
   const { sendMessage, isPending } = useSendMessage(agentIdToUse || '');
 
   const hasVariableIssue = useMemo(() => {
-    return hasVariableMismatch || hasNoSimulatorSession;
-  }, [hasVariableMismatch, hasNoSimulatorSession]);
+    return hasVariableMismatch;
+  }, [hasVariableMismatch]);
 
   return (
     <ChatroomContext.Provider value={{ renderMode, setRenderMode }}>
@@ -519,7 +534,6 @@ function Chatroom() {
                   <VariableIcon />
                 )
               }
-              size="small"
               color="tertiary"
               label={
                 !hasVariableIssue && showVariablesMenu

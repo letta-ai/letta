@@ -72,7 +72,7 @@ export function ActionCard(props: ToggleCardProps) {
           fullWidth
           align="center"
         >
-          <VStack gap="text" fullWidth>
+          <VStack overflowX="hidden" gap="text" fullWidth>
             <HStack fullWidth className="action-card-titlearea" align="center">
               {icon && (
                 <HStack
