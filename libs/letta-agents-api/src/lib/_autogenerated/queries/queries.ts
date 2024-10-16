@@ -1418,6 +1418,80 @@ export const useAgentsServiceUpdateAgent = <
       }) as unknown as Promise<TData>,
     ...options,
   });
+export const useAgentsServiceAddToolToAgent = <
+  TData = Common.AgentsServiceAddToolToAgentMutationResult,
+  TError = unknown,
+  TContext = unknown
+>(
+  options?: Omit<
+    UseMutationOptions<
+      TData,
+      TError,
+      {
+        agentId: string;
+        toolId: string;
+        userId?: string;
+      },
+      TContext
+    >,
+    'mutationFn'
+  >
+) =>
+  useMutation<
+    TData,
+    TError,
+    {
+      agentId: string;
+      toolId: string;
+      userId?: string;
+    },
+    TContext
+  >({
+    mutationFn: ({ agentId, toolId, userId }) =>
+      AgentsService.addToolToAgent({
+        agentId,
+        toolId,
+        userId,
+      }) as unknown as Promise<TData>,
+    ...options,
+  });
+export const useAgentsServiceRemoveToolFromAgent = <
+  TData = Common.AgentsServiceRemoveToolFromAgentMutationResult,
+  TError = unknown,
+  TContext = unknown
+>(
+  options?: Omit<
+    UseMutationOptions<
+      TData,
+      TError,
+      {
+        agentId: string;
+        toolId: string;
+        userId?: string;
+      },
+      TContext
+    >,
+    'mutationFn'
+  >
+) =>
+  useMutation<
+    TData,
+    TError,
+    {
+      agentId: string;
+      toolId: string;
+      userId?: string;
+    },
+    TContext
+  >({
+    mutationFn: ({ agentId, toolId, userId }) =>
+      AgentsService.removeToolFromAgent({
+        agentId,
+        toolId,
+        userId,
+      }) as unknown as Promise<TData>,
+    ...options,
+  });
 export const useAgentsServiceUpdateAgentMemory = <
   TData = Common.AgentsServiceUpdateAgentMemoryMutationResult,
   TError = unknown,
