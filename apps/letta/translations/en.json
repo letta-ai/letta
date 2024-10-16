@@ -128,11 +128,27 @@
     }
   },
   "ADE/EditDataSourcesPanel": {
+    "DeleteFileDialog": {
+      "title": "Delete {fileName}",
+      "areYouSure": "Are you sure you want to delete {fileName}?",
+      "trigger": "Delete File",
+      "confirm": "Delete",
+      "error": "There was an error deleting this file, please try again or contact support."
+    },
+    "DetachDataSourceConfirmDialog": {
+      "title": "Detach {sourceName}",
+      "areYouSure": "Are you sure you want to detach {sourceName}?",
+      "trigger": "Detach Data Source",
+      "confirm": "Detach",
+      "error": "There was an error detaching this data source, please try again or contact support."
+    },
     "EditDataSourcesContent": {
+      "processing": "This data source is being processed, please wait...",
       "delete": "Delete file",
       "addFile": "Add file",
       "uploadFile": "Upload file",
-      "detachSource": "Detach Source"
+      "detachSource": "Detach Source",
+      "fileProcessing": "File is being processed"
     },
     "FileUploadDialog": {
       "title": "Upload a file",
@@ -322,10 +338,31 @@
       "loading": "Loading agents..."
     }
   },
+  "ADE/useCurrentSimulatedAgent": {
+    "error": "There was an error fetching the simulated agent, please try again or contact support."
+  },
+  "ADE/ArchivalMemories": {
+    "title": "Vector Database",
+    "MemoryItem": {
+      "removeMemory": "Remove Memory",
+      "deleteMemory": "Delete Memory",
+      "deleteConfirm": "Delete Memory",
+      "deleteConfirmation": "Are you sure you want to delete this memory? This is permanent and cannot be undone.",
+      "memoryText": "Memory at {date}"
+    },
+    "CreateMemoryDialog": {
+      "trigger": "Create Memory",
+      "title": "Create a new memory",
+      "placeholder": "Enter memory text here",
+      "label": "Memory Text",
+      "info": "This memory you create here is unique to the simulated agent. It will not be carried to agents created from this template."
+    }
+  },
   "projects/(projectSlug)/agents/(agentId)/AgentPage": {
     "liveAgentWarning": "You are editing a live agent, be aware that editing this agent may impact live deployments",
     "localAgentDevelopment": "You are editing a local agent, changes made here will not effect your agents on Letta Cloud",
-    "restoreLayout": "Restore Layout"
+    "restoreLayout": "Restore Layout",
+    "positionError": "There was a unhandled error while positioning the window, will fallback to default position, we have notified our team about this issue."
   },
   "ADE/TemplateVersionManager": {
     "title": "Template Version Manager"

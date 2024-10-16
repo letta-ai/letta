@@ -6,7 +6,7 @@ import { cn } from '@letta-web/core-style-config';
 import { HStack } from '../../framing/HStack/HStack';
 
 const alertVariants = cva(
-  'relative w-full items-start flex rounded-lg border px-4 py-3  text-sm gap-3',
+  'relative w-full items-start flex border px-4 py-3  text-sm gap-3',
   {
     variants: {
       variant: {
@@ -23,7 +23,7 @@ const alertVariants = cva(
   }
 );
 
-type AlertVariants = 'destructive' | 'info' | 'warning';
+export type AlertVariants = 'destructive' | 'info' | 'warning';
 
 interface AlertProps extends VariantProps<typeof alertVariants> {
   children?: React.ReactNode;

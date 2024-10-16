@@ -37,6 +37,7 @@ import {
   GenericTab,
   GenericTabRenderer,
 } from '../../_internal/Panel/Panel';
+import * as Sentry from '@sentry/nextjs';
 
 export type GenericPanelTemplateId = number | string | symbol;
 
@@ -225,6 +226,8 @@ export function createPanelManager<
 
   interface PanelManagerProps {
     children: React.ReactNode;
+    onPositionError: () => void;
+    fallbackPositions: RegisteredPanelItemPositionsMatrix;
     initialPositions?: RegisteredPanelItemPositionsMatrix;
     onPositionChange?: (positions: RegisteredPanelItemPositionsMatrix) => void;
   }
@@ -236,7 +239,13 @@ export function createPanelManager<
   }
 
   function PanelManagerProvider(props: PanelManagerProps) {
-    const { children, initialPositions = [], onPositionChange } = props;
+    const {
+      children,
+      onPositionError,
+      fallbackPositions,
+      initialPositions = [],
+      onPositionChange,
+    } = props;
 
     const reconcilePositions = useCallback(
       (positions: RegisteredPanelItemPositionsMatrix) => {
@@ -584,143 +593,155 @@ export function createPanelManager<
         // should make the panel active, make all other panels within tab group inactive
 
         setState((prevState) => {
-          const { positions: nextState } = reconcilePositions(
-            prevState.positions
-          );
+          try {
+            const { positions: nextPositions } = reconcilePositions(
+              prevState.positions
+            );
 
-          const position = prevState.panelIdToPositionMap[panelId];
+            const position = prevState.panelIdToPositionMap[panelId];
 
-          if (!position) {
-            return prevState;
+            if (!position) {
+              return prevState;
+            }
+
+            const [x, y, tab] = position;
+
+            nextPositions[x].positions[y].positions.forEach((panel, tabIdx) => {
+              panel.isActive = tabIdx === tab;
+            });
+
+            return reconcilePositions(nextPositions);
+          } catch (e) {
+            Sentry.captureException(e);
+            onPositionError();
+            return reconcilePositions(fallbackPositions);
           }
-
-          const [x, y, tab] = position;
-
-          nextState[x].positions[y].positions.forEach((panel, tabIdx) => {
-            panel.isActive = tabIdx === tab;
-          });
-
-          return reconcilePositions(nextState);
         });
       },
-      [reconcilePositions]
+      [fallbackPositions, onPositionError, reconcilePositions]
     );
 
     const movePanelToPosition = useCallback(
       (panelId: PanelId, nextPosition: PanelPosition) => {
-        // given a panelId, move the panel to the given nextPosition,
-        // if the nextPosition is invalid, move the panel to the first available nextPosition
-        // if the panel is already in the given nextPosition, do nothing
+        try {
+          // given a panelId, move the panel to the given nextPosition,
+          // if the nextPosition is invalid, move the panel to the first available nextPosition
+          // if the panel is already in the given nextPosition, do nothing
 
-        setState((prevState) => {
-          const { positions: nextState, panelIdToPositionMap } =
-            reconcilePositions(prevState.positions);
+          setState((prevState) => {
+            const { positions: nextState, panelIdToPositionMap } =
+              reconcilePositions(prevState.positions);
 
-          const [nextX, nextY, tab] = nextPosition;
+            const [nextX, nextY, tab] = nextPosition;
 
-          const foundPanelPosition = panelIdToPositionMap[panelId];
+            const foundPanelPosition = panelIdToPositionMap[panelId];
 
-          // if we cant find the panel, this is an invalid operation
-          if (!foundPanelPosition) {
-            return prevState;
-          }
+            // if we cant find the panel, this is an invalid operation
+            if (!foundPanelPosition) {
+              return prevState;
+            }
 
-          // if the panel is already in the given position, do nothing
-          if (
-            foundPanelPosition[0] === nextX &&
-            foundPanelPosition[1] === nextY &&
-            foundPanelPosition[2] === tab
-          ) {
-            return prevState;
-          }
+            // if the panel is already in the given position, do nothing
+            if (
+              foundPanelPosition[0] === nextX &&
+              foundPanelPosition[1] === nextY &&
+              foundPanelPosition[2] === tab
+            ) {
+              return prevState;
+            }
 
-          const [currentX, currentY, currentTab] = foundPanelPosition;
+            const [currentX, currentY, currentTab] = foundPanelPosition;
 
-          if (
-            !nextState[currentX]?.positions[currentY]?.positions[currentTab]
-          ) {
-            return prevState;
-          }
+            if (
+              !nextState[currentX]?.positions[currentY]?.positions[currentTab]
+            ) {
+              return prevState;
+            }
 
-          const panelToMove = {
-            ...nextState[currentX].positions[currentY].positions[currentTab],
-          };
-
-          // add panel to new position
-          if (!nextState[nextX]) {
-            nextState[nextX] = {
-              size: 100,
-              positions: [],
+            const panelToMove = {
+              ...nextState[currentX].positions[currentY].positions[currentTab],
             };
-          }
 
-          if (!nextState[nextX].positions[nextY]) {
-            nextState[nextX].positions[nextY] = {
-              size: 100,
-              positions: [],
-            };
-          }
+            // add panel to new position
+            if (!nextState[nextX]) {
+              nextState[nextX] = {
+                size: 100,
+                positions: [],
+              };
+            }
 
-          // if a tab already exists at the given position, move the panel next to it
-          // if tab is -1 move it to become the first tab
-          if (tab === -1) {
-            nextState[nextX].positions[nextY].positions.splice(
-              0,
-              0,
-              panelToMove
-            );
-          } else if (nextState[nextX].positions[nextY].positions[tab]) {
-            nextState[nextX].positions[nextY].positions.splice(
-              tab + 1,
-              0,
-              panelToMove
-            );
-          } else {
-            nextState[nextX].positions[nextY].positions.splice(
-              tab,
-              0,
-              panelToMove
-            );
-          }
+            if (!nextState[nextX].positions[nextY]) {
+              nextState[nextX].positions[nextY] = {
+                size: 100,
+                positions: [],
+              };
+            }
 
-          nextState[nextX].positions[nextY].positions = nextState[
-            nextX
-          ].positions[nextY].positions.map((panel) => {
-            return {
-              ...panel,
-              isActive: panel.id === panelId,
-            };
-          });
-
-          if (currentX === nextX && currentY === nextY) {
-            // if panel is moved within the same tab group, remove the panel from the old position
-            // account that if the tab was moved to the right, we remove the first instance of the panel
-            // if the tab was moved to the left, we remove the second instance of the panel
-
-            const movedLeft = currentTab > tab;
-
-            if (movedLeft) {
-              nextState[currentX].positions[currentY].positions.splice(
-                currentTab + 1,
-                1
+            // if a tab already exists at the given position, move the panel next to it
+            // if tab is -1 move it to become the first tab
+            if (tab === -1) {
+              nextState[nextX].positions[nextY].positions.splice(
+                0,
+                0,
+                panelToMove
               );
+            } else if (nextState[nextX].positions[nextY].positions[tab]) {
+              nextState[nextX].positions[nextY].positions.splice(
+                tab + 1,
+                0,
+                panelToMove
+              );
+            } else {
+              nextState[nextX].positions[nextY].positions.splice(
+                tab,
+                0,
+                panelToMove
+              );
+            }
+
+            nextState[nextX].positions[nextY].positions = nextState[
+              nextX
+            ].positions[nextY].positions.map((panel) => {
+              return {
+                ...panel,
+                isActive: panel.id === panelId,
+              };
+            });
+
+            if (currentX === nextX && currentY === nextY) {
+              // if panel is moved within the same tab group, remove the panel from the old position
+              // account that if the tab was moved to the right, we remove the first instance of the panel
+              // if the tab was moved to the left, we remove the second instance of the panel
+
+              const movedLeft = currentTab > tab;
+
+              if (movedLeft) {
+                nextState[currentX].positions[currentY].positions.splice(
+                  currentTab + 1,
+                  1
+                );
+              } else {
+                nextState[currentX].positions[currentY].positions.splice(
+                  currentTab,
+                  1
+                );
+              }
             } else {
               nextState[currentX].positions[currentY].positions.splice(
                 currentTab,
                 1
               );
             }
-          } else {
-            nextState[currentX].positions[currentY].positions.splice(
-              currentTab,
-              1
-            );
-          }
 
-          return reconcilePositions(nextState);
-        });
+            return reconcilePositions(nextState);
+          });
+        } catch (e) {
+          Sentry.captureException(e);
+          onPositionError();
+          setState(reconcilePositions(fallbackPositions));
+        }
       },
-      [reconcilePositions]
+      [fallbackPositions, onPositionError, reconcilePositions]
     );
 
     const getIsPanelTemplateActive = useCallback(

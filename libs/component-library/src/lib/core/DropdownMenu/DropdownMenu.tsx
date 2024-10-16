@@ -6,7 +6,7 @@ import { Check, ChevronRight, Circle } from 'lucide-react';
 import { cn } from '@letta-web/core-style-config';
 import { Slot } from '@radix-ui/react-slot';
 
-const DropdownMenu = DropdownMenuPrimitive.Root;
+const DropdownMenuBase = DropdownMenuPrimitive.Root;
 
 const DropdownMenuTrigger = DropdownMenuPrimitive.Trigger;
 
@@ -74,22 +74,32 @@ const DropdownMenuContent = React.forwardRef<
 ));
 DropdownMenuContent.displayName = DropdownMenuPrimitive.Content.displayName;
 
+interface DropdownMenuItemProps
+  extends React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Item> {
+  inset?: boolean;
+  label: string;
+  preIcon?: React.ReactNode;
+}
+
 const DropdownMenuItem = React.forwardRef<
   React.ElementRef<typeof DropdownMenuPrimitive.Item>,
-  React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Item> & {
-    inset?: boolean;
-  }
->(({ className, inset, ...props }, ref) => (
-  <DropdownMenuPrimitive.Item
-    ref={ref}
-    className={cn(
-      'relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
-      inset && 'pl-8',
-      className
-    )}
-    {...props}
-  />
-));
+  DropdownMenuItemProps
+>(({ className, inset, label, preIcon, ...props }, ref) => {
+  return (
+    <DropdownMenuPrimitive.Item
+      ref={ref}
+      className={cn(
+        'relative flex gap-2 cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
+        inset && 'pl-8',
+        className
+      )}
+      {...props}
+    >
+      {preIcon && <Slot className="w-3">{preIcon}</Slot>}
+      {label}
+    </DropdownMenuPrimitive.Item>
+  );
+});
 DropdownMenuItem.displayName = DropdownMenuPrimitive.Item.displayName;
 
 const DropdownMenuCheckboxItem = React.forwardRef<
@@ -186,10 +196,41 @@ function DropdownMenuShortcut({
 }
 DropdownMenuShortcut.displayName = 'DropdownMenuShortcut';
 
+interface DropdownMenuProps {
+  trigger?: React.ReactNode;
+  triggerAsChild?: boolean;
+  className?: string;
+  children: React.ReactNode;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+}
+
+export function DropdownMenu(props: DropdownMenuProps) {
+  const {
+    open,
+    onOpenChange,
+
+    trigger,
+    children,
+    triggerAsChild,
+    className,
+  } = props;
+
+  return (
+    <DropdownMenuBase open={open} onOpenChange={onOpenChange}>
+      {trigger && (
+        <DropdownMenuTrigger asChild={triggerAsChild}>
+          {trigger}
+        </DropdownMenuTrigger>
+      )}
+      <DropdownMenuContent className={className}>
+        {children}
+      </DropdownMenuContent>
+    </DropdownMenuBase>
+  );
+}
+
 export {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuCheckboxItem,
   DropdownMenuRadioItem,

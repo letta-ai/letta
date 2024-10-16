@@ -1,47 +1,81 @@
 import * as React from 'react';
 import { HStack } from '../../framing/HStack/HStack';
 import './FileTree.scss';
-import { FolderIcon, FolderOpenIcon, FileIcon } from '../../icons';
+import {
+  FolderIcon,
+  FolderOpenIcon,
+  FileIcon,
+  DotsHorizontalIcon,
+} from '../../icons';
 import { LettaLoader } from '../LettaLoader/LettaLoader';
 import { useTranslations } from 'next-intl';
 import { Typography } from '../Typography/Typography';
 import { useMemo } from 'react';
 import { Slot } from '@radix-ui/react-slot';
+import { DropdownMenu, DropdownMenuItem } from '../DropdownMenu/DropdownMenu';
 
-interface FileType {
+interface Action {
+  label: string;
+  onClick: () => void;
+  icon?: React.ReactNode;
+  id: string;
+}
+
+interface RootType {
   name: string;
+  actions?: Action[];
+}
+
+interface FileType extends RootType {
   onClick?: () => void;
   icon?: React.ReactNode;
   wrapper?: React.ComponentType<{ children: React.ReactNode }>;
-  actions?: React.ReactNode;
 }
 
 interface RowItemProps {
   depth: number;
   children: React.ReactNode;
+  onClick?: () => void;
+  actions?: Action[];
 }
 
 function RowItem(props: RowItemProps) {
-  const { depth } = props;
+  const { depth, onClick, actions } = props;
 
   return (
-    <HStack
-      align="center"
-      as="li"
-      style={{
-        paddingLeft: `${depth * 20}px`,
-      }}
-      className="hover:bg-tertiary-hover cursor-pointer"
-      fullWidth
-      paddingY="small"
-    >
-      {props.children}
-    </HStack>
+    <li className="w-full block">
+      <HStack
+        justify="spaceBetween"
+        align="center"
+        as={onClick ? 'button' : 'div'}
+        onClick={onClick}
+        paddingRight
+        style={{
+          paddingLeft: `${depth * 20}px`,
+        }}
+        className="hover:bg-tertiary-hover cursor-pointer"
+        fullWidth
+        paddingY="small"
+      >
+        <HStack align="center">{props.children}</HStack>
+        {actions && (
+          <DropdownMenu trigger={<DotsHorizontalIcon className="w-4" />}>
+            {actions.map((action) => (
+              <DropdownMenuItem
+                key={action.id}
+                onClick={action.onClick}
+                preIcon={action.icon}
+                label={action.label}
+              />
+            ))}
+          </DropdownMenu>
+        )}
+      </HStack>
+    </li>
   );
 }
 
-interface RootFolderType {
-  name: string;
+interface RootFolderType extends RootType {
   icon?: React.ReactNode;
   openIcon?: React.ReactNode;
 }
@@ -78,19 +112,15 @@ function RenderFolderInnerContent(props: RenderFolderContentProps) {
 
         const { name, onClick, icon, actions } = content;
         let innerContent = (
-          <HStack
-            fullWidth
-            as={onClick ? 'button' : 'div'}
-            onClick={onClick}
-            align="center"
-          >
-            {icon ? (
-              <Slot className="w-4">{icon}</Slot>
-            ) : (
-              <FileIcon className="w-4" />
-            )}
-            <Typography>{name}</Typography>
-            {actions}
+          <HStack fullWidth align="center" fullHeight>
+            <HStack align="center">
+              {icon ? (
+                <Slot className="w-4">{icon}</Slot>
+              ) : (
+                <FileIcon className="w-4" />
+              )}
+              <Typography>{name}</Typography>
+            </HStack>
           </HStack>
         );
 
@@ -99,7 +129,12 @@ function RenderFolderInnerContent(props: RenderFolderContentProps) {
         }
 
         return (
-          <RowItem depth={depth + 1} key={index}>
+          <RowItem
+            onClick={onClick}
+            actions={actions}
+            depth={depth + 1}
+            key={index}
+          >
             {innerContent}
           </RowItem>
         );
@@ -117,7 +152,7 @@ function RenderAsyncFolderInnerContent(props: RenderAsyncFolderContentProps) {
   const { folder, depth = 0 } = props;
   const t = useTranslations('ComponentLibrary/FileTree');
 
-  const { name, useContents } = folder;
+  const { name, actions, useContents } = folder;
 
   const { data, isLoading } = useContents();
 
@@ -130,7 +165,10 @@ function RenderAsyncFolderInnerContent(props: RenderAsyncFolderContentProps) {
   }
 
   return (
-    <RenderFolderInnerContent folder={{ name, contents: data }} depth={depth} />
+    <RenderFolderInnerContent
+      folder={{ name, actions, contents: data }}
+      depth={depth}
+    />
   );
 }
 
@@ -142,7 +180,12 @@ interface FolderComponentProps {
 export function FolderComponent(props: FolderComponentProps) {
   const { folder, depth = 0 } = props;
   const [isOpen, setIsOpen] = React.useState(false);
-  const { name, openIcon: openIconOverride, icon: iconOverride } = folder;
+  const {
+    name,
+    actions,
+    openIcon: openIconOverride,
+    icon: iconOverride,
+  } = folder;
 
   const openIcon = useMemo(() => {
     if (openIconOverride) {
@@ -170,7 +213,7 @@ export function FolderComponent(props: FolderComponentProps) {
       }}
     >
       <HStack as="summary" className="w-full cursor-pointer" align="center">
-        <RowItem depth={depth}>
+        <RowItem actions={actions} depth={depth}>
           {isOpen ? openIcon : icon}
           <Typography>{name}</Typography>
         </RowItem>

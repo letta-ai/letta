@@ -33,7 +33,13 @@ function generateWrapper({
 }) {
   return function Wrapper({ children }: PropsWithChildren) {
     return (
-      <PanelManagerProvider initialPositions={initialPositions}>
+      <PanelManagerProvider
+        fallbackPositions={initialPositions}
+        onPositionError={(e) => {
+          console.log(e);
+        }}
+        initialPositions={initialPositions}
+      >
         {children}
       </PanelManagerProvider>
     );

@@ -598,6 +598,98 @@ export async function versionAgentTemplate(
   };
 }
 
+interface UpdateAgentFromAgentId {
+  preserveCoreMemories?: boolean;
+  fromAgent: string;
+  toAgent: string;
+  lettaAgentsUserId: string;
+}
+
+export async function updateAgentFromAgentId(options: UpdateAgentFromAgentId) {
+  const {
+    preserveCoreMemories = false,
+    fromAgent,
+    toAgent,
+    lettaAgentsUserId,
+  } = options;
+
+  const [agentTemplateData, oldDatasources, newDatasources] = await Promise.all(
+    [
+      AgentsService.getAgent(
+        {
+          agentId: fromAgent,
+        },
+        {
+          user_id: lettaAgentsUserId,
+        }
+      ),
+      AgentsService.getAgentSources(
+        {
+          agentId: fromAgent,
+        },
+        {
+          user_id: lettaAgentsUserId,
+        }
+      ),
+      AgentsService.getAgentSources(
+        {
+          agentId: fromAgent,
+        },
+        {
+          user_id: lettaAgentsUserId,
+        }
+      ),
+    ]
+  );
+
+  const datasourcesToDetach = oldDatasources.filter(
+    ({ id }) => !newDatasources.some((newDatasource) => newDatasource.id === id)
+  );
+
+  const datasourceToAttach = newDatasources.filter(
+    (source) =>
+      !oldDatasources.some((oldDatasource) => oldDatasource.id === source.id)
+  );
+
+  const requestBody: UpdateAgentState = {
+    id: toAgent,
+    tools: agentTemplateData.tools,
+  };
+
+  if (!preserveCoreMemories) {
+    requestBody.memory = agentTemplateData.memory;
+  }
+
+  await AgentsService.updateAgent(
+    {
+      agentId: toAgent,
+      requestBody: requestBody,
+    },
+    {
+      user_id: lettaAgentsUserId,
+    }
+  );
+
+  await Promise.all([
+    Promise.all(
+      datasourceToAttach.map(async (datasource) => {
+        return SourcesService.attachAgentToSource({
+          agentId: toAgent,
+          sourceId: datasource.id || '',
+        });
+      })
+    ),
+    Promise.all(
+      datasourcesToDetach.map(async (datasource) => {
+        return SourcesService.detachAgentFromSource({
+          agentId: toAgent,
+          sourceId: datasource.id || '',
+        });
+      })
+    ),
+  ]);
+}
+
 type MigrateAgentRequest = ServerInferRequest<
   typeof sdkContracts.agents.migrateAgent
 >;
@@ -658,81 +750,12 @@ export async function migrateAgent(
     };
   }
 
-  const [agentTemplateData, oldDatasources, newDatasources] = await Promise.all(
-    [
-      AgentsService.getAgent(
-        {
-          agentId: agentTemplate.id,
-        },
-        {
-          user_id: lettaAgentsUserId,
-        }
-      ),
-      AgentsService.getAgentSources(
-        {
-          agentId,
-        },
-        {
-          user_id: lettaAgentsUserId,
-        }
-      ),
-      AgentsService.getAgentSources(
-        {
-          agentId: agentTemplate.id,
-        },
-        {
-          user_id: lettaAgentsUserId,
-        }
-      ),
-    ]
-  );
-
-  const datasourcesToDetach = oldDatasources.filter(
-    ({ id }) => !newDatasources.some((newDatasource) => newDatasource.id === id)
-  );
-
-  const datasourceToAttach = newDatasources.filter(
-    (source) =>
-      !oldDatasources.some((oldDatasource) => oldDatasource.id === source.id)
-  );
-
-  const requestBody: UpdateAgentState = {
-    id: agentId,
-    tools: agentTemplateData.tools,
-  };
-
-  if (!preserve_core_memories) {
-    requestBody.memory = agentTemplateData.memory;
-  }
-
-  await AgentsService.updateAgent(
-    {
-      agentId,
-      requestBody: requestBody,
-    },
-    {
-      user_id: lettaAgentsUserId,
-    }
-  );
-
-  await Promise.all([
-    Promise.all(
-      datasourceToAttach.map(async (datasource) => {
-        return SourcesService.attachAgentToSource({
-          agentId,
-          sourceId: datasource.id || '',
-        });
-      })
-    ),
-    Promise.all(
-      datasourcesToDetach.map(async (datasource) => {
-        return SourcesService.detachAgentFromSource({
-          agentId,
-          sourceId: datasource.id || '',
-        });
-      })
-    ),
-  ]);
+  await updateAgentFromAgentId({
+    fromAgent: agentTemplate.id,
+    toAgent: agentId,
+    lettaAgentsUserId,
+    preserveCoreMemories: preserve_core_memories,
+  });
 
   return {
     status: 200,
