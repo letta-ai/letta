@@ -65,11 +65,7 @@ function EditMemoryForm({ block }: EditMemoryFormProps) {
     <Accordion
       id={block.id || ''}
       trigger={
-        <HStack
-          data-testid={`edit-memory-block:${block.label}`}
-          paddingX="small"
-          align="center"
-        >
+        <HStack data-testid={`edit-memory-block:${block.label}`} align="center">
           <Typography bold>{block.name}</Typography>
           <Badge content={block.label || ''} />
         </HStack>

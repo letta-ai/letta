@@ -243,7 +243,7 @@ function ToolCreator() {
             <Button
               type="submit"
               label="Create"
-              color="secondary"
+              color="primary"
               busy={isCreatingTool}
             />
           </HStack>
@@ -340,7 +340,7 @@ function ToolEditor(props: ToolEditorProps) {
                 <Button
                   type="submit"
                   label="Save"
-                  color="secondary"
+                  color="primary"
                   busy={isUpdatingTool}
                 />
               </HStack>

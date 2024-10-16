@@ -11,7 +11,7 @@ export function generateDefaultADELayout(
   return {
     displayConfig: [
       {
-        size: 30,
+        size: 35,
         positions: [
           {
             size: 20,
@@ -40,6 +40,12 @@ export function generateDefaultADELayout(
                 data: undefined,
               },
               {
+                id: 'edit-data-sources',
+                isActive: false,
+                templateId: 'edit-data-sources',
+                data: undefined,
+              },
+              {
                 id: 'tools-panel',
                 isActive: false,
                 templateId: 'tools-panel',
@@ -50,7 +56,7 @@ export function generateDefaultADELayout(
         ],
       },
       {
-        size: 50,
+        size: 40,
         positions: [
           {
             size: 100,
@@ -66,7 +72,7 @@ export function generateDefaultADELayout(
         ],
       },
       {
-        size: 20,
+        size: 35,
         positions: [
           {
             size: 50,

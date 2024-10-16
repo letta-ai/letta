@@ -97,7 +97,7 @@ export function ModelPanel() {
             <Button
               type="submit"
               size="small"
-              color="secondary"
+              color="primary"
               label="Update"
               busy={isUpdateAgentModelPending}
             />

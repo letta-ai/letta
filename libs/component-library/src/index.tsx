@@ -115,3 +115,5 @@ export * from './lib/core/Table/Table';
 export * from './lib/core/Accordion/Accordion';
 
 export * from './lib/core/ProgressBar/ProgressBar';
+
+export * from './lib/core/FileTree/FileTree';

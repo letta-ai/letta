@@ -113,7 +113,7 @@ function CreateVariableModal() {
         onSubmit={form.handleSubmit(handleSubmit)}
         cancelText="Cancel"
         trigger={
-          <Button size="small" color="secondary" label="Create Variable" />
+          <Button size="small" color="primary" label="Create Variable" />
         }
       >
         <VStack gap="form">

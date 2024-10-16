@@ -52,7 +52,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        containers: [ 1, 2]
+        containers: [1]
     services:
       redis:
         image: redis

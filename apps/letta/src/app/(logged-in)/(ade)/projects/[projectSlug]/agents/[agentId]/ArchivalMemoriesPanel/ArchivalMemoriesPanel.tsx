@@ -163,7 +163,7 @@ function MemoryRootPage() {
                 setCurrentPage('createMemory');
               }}
               size="small"
-              color="secondary"
+              color="primary"
               label="Create Memory"
             />
           </>
@@ -239,7 +239,7 @@ function CreateMemoryPage() {
             <Button
               type="submit"
               label="Create"
-              color="secondary"
+              color="primary"
               busy={isPending}
             />
           </HStack>
