@@ -1,14 +1,14 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { AccessibilityIcon } from './';
+import { CircleIcon } from './';
 
-const meta: Meta<typeof AccessibilityIcon> = {
-  component: AccessibilityIcon,
+const meta: Meta<typeof CircleIcon> = {
+  component: CircleIcon,
   title: 'Core/Icon',
   tags: ['!autodoc'],
 };
 
 export default meta;
-type Story = StoryObj<typeof AccessibilityIcon>;
+type Story = StoryObj<typeof CircleIcon>;
 
 export const Primary: Story = {
   tags: ['!autodoc'],
