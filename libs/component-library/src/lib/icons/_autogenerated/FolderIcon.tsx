@@ -7,12 +7,10 @@ export function FolderIcon(props: IconWrappedProps) {
     <IconWrapper {...props}>
       <svg
         xmlns="http://www.w3.org/2000/svg"
-        height="24px"
         viewBox="0 -960 960 960"
-        width="24px"
         fill="currentColor"
       >
-        <path d="M160-160q-33 0-56.5-23.5T80-240v-480q0-33 23.5-56.5T160-800h240l80 80h320q33 0 56.5 23.5T880-640v400q0 33-23.5 56.5T800-160H160Zm0-80h640v-400H447l-80-80H160v480Zm0 0v-480 480Z" />
+        <path d="M168-192q-29 0-50.5-21.5T96-264v-432q0-29.7 21.5-50.85Q139-768 168-768h216l96 96h312q29.7 0 50.85 21.15Q864-629.7 864-600v336q0 29-21.15 50.5T792-192H168Zm0-72h624v-336H450l-96-96H168v432Zm0 0v-432 432Z" />
       </svg>
     </IconWrapper>
   );

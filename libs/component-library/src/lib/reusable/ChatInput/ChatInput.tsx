@@ -8,7 +8,7 @@ import { Typography } from '../../core/Typography/Typography';
 import { VStack } from '../../framing/VStack/VStack';
 import TextareaAutosize from 'react-textarea-autosize';
 import { Button } from '../../core/Button/Button';
-import { SendHorizonalIcon } from 'lucide-react';
+import { SendIcon } from '../../icons';
 
 interface ChatInputProps {
   onSendMessage: (message: string) => void;
@@ -102,7 +102,7 @@ export function ChatInput(props: ChatInputProps) {
             size="small"
             type="submit"
             color="secondary"
-            preIcon={<SendHorizonalIcon />}
+            preIcon={<SendIcon />}
             disabled={isSendingMessage || disabled}
             label="Send"
           />

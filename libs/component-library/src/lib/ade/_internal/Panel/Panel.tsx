@@ -6,7 +6,8 @@ import { ADEDropdownMenu } from '../../ADEDropdownMenu/ADEDropdownMenu';
 import { Typography } from '../../../core/Typography/Typography';
 import { VStack } from '../../../framing/VStack/VStack';
 import { cn } from '@letta-web/core-style-config';
-import { CaretDownIcon, Cross2Icon } from '../../../icons';
+import { CloseIcon, HamburgerMenuIcon } from '../../../icons';
+import { Frame } from '../../../framing/Frame/Frame';
 
 type GenericrPanelTabBarProps = PropsWithChildren;
 
@@ -56,18 +57,22 @@ export function GenericTab(props: GenericTabProps) {
         className="h-full"
         onClick={onClickTab}
       >
-        <Typography noWrap>{title}</Typography>
+        <Typography bold variant="body3" className="uppercase" noWrap>
+          {title}
+        </Typography>
       </HStack>
-      <ADEDropdownMenu
-        trigger={
-          <div className="w-2 mt-[-3px]">
-            <CaretDownIcon />
-          </div>
-        }
-        items={dropdownItems}
-      />
-      <HStack as="button" onClick={onCloseTab}>
-        <Cross2Icon className="w-4" />
+      <HStack className="mt-[-4px]" align="center" gap="small">
+        <ADEDropdownMenu
+          trigger={
+            <div className="w-4">
+              <HamburgerMenuIcon />
+            </div>
+          }
+          items={dropdownItems}
+        />
+        <Frame className="w-4" as="button" onClick={onCloseTab}>
+          <CloseIcon />
+        </Frame>
       </HStack>
     </HStack>
   );

@@ -6,11 +6,11 @@ import {
   HomeIcon,
   HStack,
   Typography,
+  ListIcon,
 } from '@letta-web/component-library';
 import Link from 'next/link';
 import { cn } from '@letta-web/core-style-config';
 import { usePathname } from 'next/navigation';
-import { ListIcon } from 'lucide-react';
 import { Slot } from '@radix-ui/react-slot';
 
 interface NavigationItemProps {

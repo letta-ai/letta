@@ -25,7 +25,7 @@ import { UseSourcesServiceListFilesFromSourceKeyFn } from '@letta-web/letta-agen
 import { useSourcesServiceUploadFileToSource } from '@letta-web/letta-agents-api';
 import { useCurrentDataSourceId } from './hooks';
 import type { ColumnDef } from '@tanstack/react-table';
-import { FileUpIcon } from 'lucide-react';
+import { UploadIcon } from '@letta-web/component-library';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQueryClient } from '@tanstack/react-query';
@@ -87,7 +87,7 @@ function UploadFileDialog() {
         title="Upload File"
         confirmText="Upload"
         isConfirmBusy={isPending}
-        trigger={<Button label="Upload File" preIcon={<FileUpIcon />} />}
+        trigger={<Button label="Upload File" preIcon={<UploadIcon />} />}
       >
         <FormField
           render={({ field }) => (

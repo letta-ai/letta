@@ -1,3 +1,2 @@
-We use Overused Grotesk as our font
+We use Manrope as our font
 
-https://github.com/RandomMaerks/Overused-Grotesk?tab=readme-ov-file

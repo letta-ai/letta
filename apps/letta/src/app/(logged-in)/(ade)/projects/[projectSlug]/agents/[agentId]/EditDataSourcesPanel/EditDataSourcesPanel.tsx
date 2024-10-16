@@ -8,7 +8,7 @@ import {
   ActionCard,
   Alert,
   FileIcon,
-  FilePlusIcon,
+  UploadIcon,
   FileTree,
   FormField,
   FormProvider,
@@ -19,6 +19,7 @@ import {
   SingleFileUpload,
   TrashIcon,
   Typography,
+  SearchIcon,
   useForm,
 } from '@letta-web/component-library';
 import { Dialog, DialogTable, RawInput } from '@letta-web/component-library';
@@ -45,7 +46,7 @@ import {
 } from '@letta-web/letta-agents-api';
 import { useCurrentAgent } from '../hooks';
 import { useQueryClient } from '@tanstack/react-query';
-import { DatabaseIcon, DatabaseZapIcon, SearchIcon } from 'lucide-react';
+import { DatabaseIcon, DatabaseUploadIcon } from '@letta-web/component-library';
 import {
   adjectives,
   animals,
@@ -297,7 +298,7 @@ function CreateDataSourceDialogInner(props: CreateDataSourceDialogInnerProps) {
       return (
         <VStack>
           <ActionCard
-            icon={<DatabaseZapIcon />}
+            icon={<DatabaseUploadIcon />}
             onCardClick={() => {
               setMode('attach');
             }}
@@ -708,7 +709,7 @@ function EditDataSourcesContent(props: EditDataSourcesContentProps) {
                   onClick: () => {
                     setSourceIdToUploadFileTo(source.id || '');
                   },
-                  icon: <FilePlusIcon />,
+                  icon: <UploadIcon />,
                 },
               ];
             }, [data]);

@@ -7,9 +7,13 @@ import { cva } from 'class-variance-authority';
 import { Slot } from '@radix-ui/react-slot';
 import { useCopyToClipboard } from '../../hooks';
 import { Button } from '../Button/Button';
-import { CheckIcon, ClipboardIcon, EyeOpenIcon } from '../../icons';
+import {
+  CheckIcon,
+  ClipboardIcon,
+  EyeOpenIcon,
+  EyeClosedIcon,
+} from '../../icons';
 import { useMemo } from 'react';
-import { EyeOffIcon } from 'lucide-react';
 import { SpinnerPrimitive } from '../../../primitives';
 import { HStack } from '../../framing/HStack/HStack';
 import { VStack } from '../../framing/VStack/VStack';
@@ -150,7 +154,7 @@ const InputPrimitive = React.forwardRef<HTMLInputElement, InputPrimitiveProps>(
                 setVisibility((prev) => !prev);
               }}
               type="button"
-              preIcon={visibility ? <EyeOffIcon /> : <EyeOpenIcon />}
+              preIcon={visibility ? <EyeClosedIcon /> : <EyeOpenIcon />}
               color="tertiary-transparent"
               label={visibility ? 'Hide' : 'Show'}
               hideLabel

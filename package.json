@@ -77,7 +77,6 @@
     "jotai": "^2.10.0",
     "jsonrepair": "^3.8.1",
     "jwt-decode": "^4.0.0",
-    "lucide-react": "^0.395.0",
     "mixpanel": "^0.18.0",
     "mixpanel-browser": "^2.55.1",
     "next": "14.2.3",

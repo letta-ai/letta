@@ -6,18 +6,11 @@ export function ArrowUpIcon(props: IconWrappedProps) {
   return (
     <IconWrapper {...props}>
       <svg
-        width="16"
-        height="16"
-        viewBox="0 0 16 16"
-        fill="none"
         xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 -960 960 960"
+        fill="currentColor"
       >
-        <path
-          fillRule="evenodd"
-          clipRule="evenodd"
-          d="M8 14C7.58579 14 7.25 13.6642 7.25 13.25L7.25 4.56066L4.03033 7.78033C3.73744 8.07322 3.26256 8.07322 2.96967 7.78033C2.67678 7.48744 2.67678 7.01256 2.96967 6.71967L7.46967 2.21967C7.76256 1.92678 8.23744 1.92678 8.53033 2.21967L13.0303 6.71967C13.3232 7.01256 13.3232 7.48744 13.0303 7.78033C12.7374 8.07322 12.2626 8.07322 11.9697 7.78033L8.75 4.56066L8.75 13.25C8.75 13.6642 8.41421 14 8 14Z"
-          fill="currentColor"
-        />
+        <path d="M444-192v-438L243-429l-51-51 288-288 288 288-51 51-201-201v438h-72Z" />
       </svg>
     </IconWrapper>
   );

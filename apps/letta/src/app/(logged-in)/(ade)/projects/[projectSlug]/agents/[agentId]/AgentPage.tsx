@@ -17,14 +17,15 @@ import {
   HStack,
   KeyIcon,
   LettaLoader,
-  LifebuoyIcon,
+  SupportIcon,
   Popover,
   Typography,
+  DatabaseIcon,
+  ForkIcon,
   VStack,
 } from '@letta-web/component-library';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useCurrentProject } from '../../../../../(dashboard-like)/projects/[projectSlug]/hooks';
-import { DatabaseIcon, GitForkIcon } from 'lucide-react';
 import { useDebouncedValue } from '@mantine/hooks';
 import { useFeatureFlag, webApi, webApiQueryKeys } from '$letta/client';
 import { useRouter } from 'next/navigation';
@@ -102,7 +103,7 @@ function NavOverlay() {
             href="/support"
             color="tertiary-transparent"
             label="Support"
-            preIcon={<LifebuoyIcon />}
+            preIcon={<SupportIcon />}
           />
         </VStack>
       </Frame>
@@ -145,7 +146,7 @@ function ForkAgentDialog() {
           tooltipPlacement="bottom"
           size="small"
           color="tertiary-transparent"
-          preIcon={<GitForkIcon />}
+          preIcon={<ForkIcon />}
           label="Fork Agent"
         ></Button>
       }
