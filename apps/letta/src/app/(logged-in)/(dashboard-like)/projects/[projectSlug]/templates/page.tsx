@@ -13,7 +13,7 @@ import {
 import { webApi, webApiQueryKeys } from '$letta/client';
 import { useCurrentProject } from '../hooks';
 import { useDebouncedValue } from '@mantine/hooks';
-import { SearchIcon } from 'lucide-react';
+import { SearchIcon } from '@letta-web/component-library';
 import { useTranslations } from 'next-intl';
 import { AgentTemplateCard } from '$letta/client/components';
 

@@ -5,7 +5,7 @@ import ReactSelect, { components } from 'react-select';
 import AsyncReactSelect from 'react-select/async';
 import { cn } from '@letta-web/core-style-config';
 import type { ReactNode } from 'react';
-import { CaretDownIcon, Cross2Icon } from '../../icons';
+import { CaretDownIcon, CloseIcon } from '../../icons';
 import { makeInput, makeRawInput } from '../Form/Form';
 import { z } from 'zod';
 import { HStack } from '../../framing/HStack/HStack';
@@ -56,14 +56,14 @@ const overridenComponents = {
     // @ts-expect-error yest
     <components.ClearIndicator {...props}>
       {props.children}
-      <Cross2Icon />
+      <CloseIcon />
     </components.ClearIndicator>
   ),
   MultiValueRemove: ({ ...props }) => (
     // @ts-expect-error yest
     <components.MultiValueRemove {...props}>
       {props.children}
-      <Cross2Icon color="inherit" className="w-3" />
+      <CloseIcon color="inherit" className="w-3" />
     </components.MultiValueRemove>
   ),
   // @ts-expect-error yest

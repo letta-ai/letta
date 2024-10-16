@@ -1,0 +1,17 @@
+import * as React from 'react';
+import type { IconWrappedProps } from '../IconWrapper';
+import { IconWrapper } from '../IconWrapper';
+
+export function ProjectsIcon(props: IconWrappedProps) {
+  return (
+    <IconWrapper {...props}>
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 -960 960 960"
+        fill="currentColor"
+      >
+        <path d="M144-528v-288h288v288H144Zm0 384v-288h288v288H144Zm384-384v-288h288v288H528Zm0 384v-288h288v288H528ZM216-600h144v-144H216v144Zm384 0h144v-144H600v144Zm0 384h144v-144H600v144Zm-384 0h144v-144H216v144Zm384-384Zm0 240Zm-240 0Zm0-240Z" />
+      </svg>
+    </IconWrapper>
+  );
+}

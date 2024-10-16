@@ -21,7 +21,7 @@ import type {
   AgentSimulatorMessageGroupType,
   AgentSimulatorMessageType,
 } from '../../../../app/(logged-in)/(ade)/projects/[projectSlug]/agents/[agentId]/AgentSimulator/types';
-import { FunctionSquareIcon } from 'lucide-react';
+import { FunctionIcon } from '@letta-web/component-library';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import type { InfiniteData } from '@tanstack/query-core';
 import { jsonrepair } from 'jsonrepair';
@@ -145,7 +145,7 @@ function extractMessage(
           <MessageWrapper
             header={
               <>
-                <FunctionSquareIcon />
+                <FunctionIcon />
                 <Typography bold>{agentMessage.function_call.name}</Typography>
               </>
             }

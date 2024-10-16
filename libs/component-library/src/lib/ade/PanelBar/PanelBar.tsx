@@ -1,7 +1,7 @@
 import type { PropsWithChildren } from 'react';
 import { type ChangeEvent, useCallback } from 'react';
 import * as React from 'react';
-import { ChevronLeftIcon, MagnifyingGlassIcon } from '../../icons';
+import { ChevronLeftIcon, SearchIcon } from '../../icons';
 import { Button } from '../../core/Button/Button';
 import { HStack } from '../../framing/HStack/HStack';
 import { RawInput } from '../../core/Input/Input';
@@ -28,7 +28,7 @@ function PanelSearch(props: PanelSearchProps) {
         label="search"
         hideLabel
         fullWidth
-        preIcon={<MagnifyingGlassIcon />}
+        preIcon={<SearchIcon />}
         type="text"
         placeholder={placeholder}
         value={value}

@@ -6,8 +6,13 @@ import {
   Avatar,
   Button,
   CogIcon,
-  Cross2Icon,
-  ExitIcon,
+  CloseIcon,
+  LogoutIcon,
+  ArrowLeftIcon,
+  BirdIcon,
+  DatabaseIcon,
+  ProjectsIcon,
+  KeyIcon,
   Frame,
   HamburgerMenuIcon,
   HStack,
@@ -18,13 +23,6 @@ import {
   VStack,
 } from '@letta-web/component-library';
 import { useCurrentUser } from '$letta/client/hooks';
-import {
-  ArrowLeft,
-  BirdIcon,
-  DatabaseIcon,
-  FolderOutputIcon,
-  KeySquareIcon,
-} from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { webApi, webApiQueryKeys } from '$letta/client';
 import { CurrentUserDetailsBlock } from '$letta/client/common';
@@ -102,13 +100,13 @@ function MainNavigationItems() {
           label: t('nav.projects'),
           href: '/projects',
           id: 'projects',
-          icon: <FolderOutputIcon />,
+          icon: <ProjectsIcon />,
         },
         {
           label: t('nav.apiKeys'),
           href: '/api-keys',
           id: 'api-keys',
-          icon: <KeySquareIcon />,
+          icon: <KeyIcon />,
         },
         {
           label: t('nav.dataSources'),
@@ -142,7 +140,7 @@ function MainNavigationItems() {
         >
           <Button
             color="tertiary-transparent"
-            preIcon={<ArrowLeft />}
+            preIcon={<ArrowLeftIcon />}
             label="Back"
             align="left"
             fullWidth
@@ -191,7 +189,7 @@ function SecondaryMenuItems() {
         preload={false}
         href="/signout"
         label="Sign Out"
-        icon={<ExitIcon />}
+        icon={<LogoutIcon />}
       />
     </VStack>
   );
@@ -282,7 +280,7 @@ function NavigationOverlay() {
         gap="large"
         align="center"
       >
-        {open ? <Cross2Icon /> : <HamburgerMenuIcon />}
+        {open ? <CloseIcon /> : <HamburgerMenuIcon />}
         <HStack>
           <Logo />
           {/* eslint-disable-next-line react/forbid-component-props */}

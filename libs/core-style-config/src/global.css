@@ -136,7 +136,7 @@
 }
 
 :root {
-  --font-sans: 'Overused Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI',
+  --font-sans: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI',
     'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans',
     'Helvetica Neue', sans-serif;
   --font-serif: Georgia, Times, serif;
@@ -144,10 +144,10 @@
 }
 
 @font-face {
-  font-family: 'Overused Grotesk';
-  src: url('../fonts/variable/OverusedGrotesk-VF.woff2')
-      format('woff2 supports variations'),
-    url('../fonts/variable/OverusedGrotesk-VF.woff2') format('woff2-variations');
+  font-family: 'Manrope';
+  src: url('../fonts/variable/Manrope-VF.ttf')
+      format('truetype supports variations'),
+    url('../fonts/variable/Manrope-VF.ttf') format('truetype supports variations');
   font-weight: 300 900;
 }
 

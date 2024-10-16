@@ -4,7 +4,7 @@ import { VStack } from '../../framing/VStack/VStack';
 import { HStack } from '../../framing/HStack/HStack';
 import { Typography } from '../../core/Typography/Typography';
 import { RawInput } from '../../core/Input/Input';
-import { SearchIcon } from 'lucide-react';
+import { SearchIcon } from '../../icons';
 
 interface DashboardSearchBarProps {
   onSearch: (searchTerm: string) => void;

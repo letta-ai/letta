@@ -10,7 +10,7 @@ import type { OptionType } from '@letta-web/component-library';
 import { Frame } from '@letta-web/component-library';
 import {
   Button,
-  Cross2Icon,
+  CloseIcon,
   LettaLoader,
   Typography,
   VStack,
@@ -23,7 +23,7 @@ import {
   RawAsyncSelect,
   RawInput,
 } from '@letta-web/component-library';
-import { SearchIcon } from 'lucide-react';
+import { SearchIcon } from '@letta-web/component-library';
 import {
   webApi,
   webApiQueryKeys,
@@ -117,7 +117,7 @@ function DeployedAgentView(props: DeployedAgentViewProps) {
               color="tertiary-transparent"
               label={t('close')}
               hideLabel
-              preIcon={<Cross2Icon />}
+              preIcon={<CloseIcon />}
             />
           </HStack>
         </HStack>

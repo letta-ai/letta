@@ -3,7 +3,7 @@ import toast, { ToastBar, Toaster as ToasterPrimitive } from 'react-hot-toast';
 import React from 'react';
 import type { AlertVariants } from '../Alert/Alert';
 import { Alert } from '../Alert/Alert';
-import { Cross2Icon } from '../../icons';
+import { CloseIcon } from '../../icons';
 
 function Toaster() {
   return (
@@ -35,7 +35,7 @@ function Toaster() {
                         toast.dismiss(t.id);
                       }}
                     >
-                      <Cross2Icon />
+                      <CloseIcon />
                     </button>
                   )
                 }

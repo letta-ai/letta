@@ -18,6 +18,7 @@ const typographyVariants = cva('break-words', {
       panelInfo: 'text-lg',
       body: 'text-base',
       body2: 'text-sm',
+      body3: 'text-xs',
     },
     color: {
       default: '',
@@ -75,6 +76,7 @@ const variantToElement = {
   panelInfo: 'p',
   body: 'p',
   body2: 'p',
+  body3: 'p',
 };
 
 export function Typography(props: TypographyProps) {

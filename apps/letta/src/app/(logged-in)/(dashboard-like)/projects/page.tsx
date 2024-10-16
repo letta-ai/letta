@@ -28,7 +28,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
-import { ComputerIcon } from 'lucide-react';
+import { ComputerIcon } from '@letta-web/component-library';
 import { getIsLocalServiceOnline } from '$letta/client/local-project-manager/getIsLocalServerOnline/getIsLocalServerOnline';
 import { LOCAL_PROJECT_SERVER_PORT } from '$letta/constants';
 import { nicelyFormattedDateAndTime } from '@letta-web/helpful-client-utils';
