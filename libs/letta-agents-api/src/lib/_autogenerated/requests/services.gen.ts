@@ -52,6 +52,10 @@ import type {
   GetAgentResponse,
   DeleteAgentData,
   DeleteAgentResponse,
+  AddToolToAgentData,
+  AddToolToAgentResponse,
+  RemoveToolFromAgentData,
+  RemoveToolFromAgentResponse,
   GetAgentSourcesData,
   GetAgentSourcesResponse,
   ListAgentInContextMessagesData,
@@ -757,6 +761,62 @@ export class AgentsService {
       url: '/v1/agents/{agent_id}',
       path: {
         agent_id: data.agentId,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Add Tool To Agent
+   * Add tools to an exsiting agent
+   * @param data The data for the request.
+   * @param data.agentId
+   * @param data.toolId
+   * @param data.userId
+   * @returns AgentState Successful Response
+   * @throws ApiError
+   */
+  public static addToolToAgent(
+    data: AddToolToAgentData,
+    headers?: { user_id: string }
+  ): CancelablePromise<AddToolToAgentResponse> {
+    return __request(OpenAPI, {
+      method: 'PATCH',
+      url: '/v1/agents/{agent_id}/add-tool/{tool_id}',
+      path: {
+        agent_id: data.agentId,
+        tool_id: data.toolId,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Remove Tool From Agent
+   * Add tools to an exsiting agent
+   * @param data The data for the request.
+   * @param data.agentId
+   * @param data.toolId
+   * @param data.userId
+   * @returns AgentState Successful Response
+   * @throws ApiError
+   */
+  public static removeToolFromAgent(
+    data: RemoveToolFromAgentData,
+    headers?: { user_id: string }
+  ): CancelablePromise<RemoveToolFromAgentResponse> {
+    return __request(OpenAPI, {
+      method: 'PATCH',
+      url: '/v1/agents/{agent_id}/remove-tool/{tool_id}',
+      path: {
+        agent_id: data.agentId,
+        tool_id: data.toolId,
       },
       errors: {
         422: 'Validation Error',

@@ -707,6 +707,12 @@ export type SourcesServiceUpdateSourceMutationResult = Awaited<
 export type AgentsServiceUpdateAgentMutationResult = Awaited<
   ReturnType<typeof AgentsService.updateAgent>
 >;
+export type AgentsServiceAddToolToAgentMutationResult = Awaited<
+  ReturnType<typeof AgentsService.addToolToAgent>
+>;
+export type AgentsServiceRemoveToolFromAgentMutationResult = Awaited<
+  ReturnType<typeof AgentsService.removeToolFromAgent>
+>;
 export type AgentsServiceUpdateAgentMemoryMutationResult = Awaited<
   ReturnType<typeof AgentsService.updateAgentMemory>
 >;
