@@ -1182,6 +1182,7 @@ export function createPanelManager<
 
     return (
       <GenericTab
+        panelId={tabId}
         isActive={isActive}
         onClickTab={handleClickedTab}
         onCloseTab={handleCloseTab}

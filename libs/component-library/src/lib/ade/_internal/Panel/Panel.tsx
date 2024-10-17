@@ -27,13 +27,14 @@ export function GenericPanelTabBar(props: GenericrPanelTabBarProps) {
 interface GenericTabProps {
   dropdownItems: ADEDropdownMenuProps['items'];
   title: string;
+  panelId?: string;
   isActive?: boolean;
   onCloseTab?: () => void;
   onClickTab?: () => void;
 }
 
 export function GenericTab(props: GenericTabProps) {
-  const { title, isActive, onClickTab } = props;
+  const { title, panelId, isActive, onClickTab } = props;
 
   return (
     <HStack
@@ -48,7 +49,7 @@ export function GenericTab(props: GenericTabProps) {
       <HStack
         as="button"
         fullWidth
-        data-testid={`tab:${title}`}
+        data-testid={`tab:${panelId || title}`}
         paddingLeft="large"
         paddingY="xsmall"
         className="h-full"
