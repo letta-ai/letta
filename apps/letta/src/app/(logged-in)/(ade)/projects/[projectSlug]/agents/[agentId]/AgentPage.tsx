@@ -213,6 +213,7 @@ interface DeployAgentDialogProps {
 
 function DeployAgentDialog(props: DeployAgentDialogProps) {
   const { isAtLatestVersion } = props;
+  const { name } = useCurrentAgent();
   const { id: projectId } = useCurrentProject();
   const t = useTranslations(
     'projects/(projectSlug)/agents/(agentId)/AgentPage'
@@ -232,7 +233,10 @@ function DeployAgentDialog(props: DeployAgentDialogProps) {
       }
       hideConfirm
     >
-      <DeployAgentUsageInstructions versionKey="latest" projectId={projectId} />
+      <DeployAgentUsageInstructions
+        versionKey={`${name}:latest`}
+        projectId={projectId}
+      />
     </Dialog>
   );
 }
@@ -335,7 +339,7 @@ function TemplateVersionDisplay() {
   // get latest template version
   const { id: agentTemplateId } = useCurrentAgent();
   const agentState = useCurrentAgent();
-  const { id: currentProjectId } = useCurrentProject();
+  const { id: currentProjectId, slug: projectSlug } = useCurrentProject();
   const t = useTranslations(
     'projects/(projectSlug)/agents/(agentId)/AgentPage'
   );
@@ -424,6 +428,8 @@ function TemplateVersionDisplay() {
     );
   }, [agentState, latestTemplate]);
 
+  const { name } = useCurrentAgent();
+
   return (
     <Popover
       trigger={
@@ -465,6 +471,13 @@ function TemplateVersionDisplay() {
         <VStack gap="small">
           {!isAtLatestVersion && <VersionAgentDialog />}
           <DeployAgentDialog isAtLatestVersion={isAtLatestVersion} />
+          <Button
+            fullWidth
+            target="_blank"
+            color="tertiary-transparent"
+            label={t('VersionAgentDialog.deployedAgents')}
+            href={`/projects/${projectSlug}/agents?template=${name}:${versionNumber}`}
+          />
         </VStack>
       </VStack>
     </Popover>
