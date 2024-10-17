@@ -212,7 +212,7 @@ function DashboardJobList() {
   }
 
   return (
-    <VStack gap={false} fullWidth border rounded>
+    <VStack gap={false} fullWidth border>
       <HStack padding="small" borderBottom>
         <Typography bold>Active Jobs</Typography>
       </HStack>

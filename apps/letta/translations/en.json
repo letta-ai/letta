@@ -188,12 +188,18 @@
     }
   },
   "ADE/ModelPanel": {
+    "embeddingInput": {
+      "label": "Embedding Model"
+    },
     "modelInput": {
       "label": "Model"
     },
     "updateModel": "Update",
     "lastUpdatedAt": "Last updated on {date}",
     "error": "There was an error while updating the model, please try again or contact support."
+  },
+  "common/Messages": {
+    "noParsableMessages": "There are no messages available in this view, usually this is caused by a lack of triggered send_message actions in your agent, check the debug more to verify."
   },
   "ADE/AgentSimulator": {
     "localAgent": "This feature is only available on Letta Cloud",

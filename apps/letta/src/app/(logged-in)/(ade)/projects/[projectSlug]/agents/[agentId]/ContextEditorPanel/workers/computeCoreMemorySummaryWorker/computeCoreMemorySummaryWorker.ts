@@ -27,7 +27,7 @@ function createDict(object: Record<string, unknown>) {
       }
 
       if (typeof value === 'string') {
-        return `'${key}':'${value.replace(/'/g, "\\'")}'`;
+        return `'${key}': """${value.replace(/"/g, '\\"')}"""`;
       }
 
       if (typeof value === 'number') {
