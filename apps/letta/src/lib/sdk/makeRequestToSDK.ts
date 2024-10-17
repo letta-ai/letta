@@ -8,6 +8,7 @@ import type {
 } from '@letta-web/letta-agents-api';
 import { RESTRICTED_ROUTE_BASE_PATHS } from '@letta-web/letta-agents-api';
 import { createInferenceTransaction } from '$letta/server/inferenceTransactions/inferenceTransactions';
+import * as Sentry from '@sentry/nextjs';
 
 interface RequestOptions {
   pathname: string;
@@ -37,6 +38,10 @@ async function handleEventStreamRequest(options: RequestOptions) {
     if (isCreateMessageRequest(options)) {
       const agentId = pathname.split('/')[3];
       const input = body as LettaRequest;
+
+      if (!input.messages) {
+        return;
+      }
 
       const inputTokens = input.messages.reduce(
         (acc, message) => acc + (message.text?.split(' ').length || 0),
@@ -104,6 +109,7 @@ async function handleEventStreamRequest(options: RequestOptions) {
             const message = JSON.parse(e.data) as LettaMessage;
             referenceId = message.id;
           } catch (_e) {
+            console.error(_e);
             // do nothing
           }
         }
@@ -122,7 +128,7 @@ async function handleEventStreamRequest(options: RequestOptions) {
 
       eventsource.onerror = async (e) => {
         try {
-          console.error(e);
+          console.error('zadu', e);
 
           await onCompletion();
 
@@ -248,10 +254,6 @@ export async function makeRequestToSDK(
 
     let data = response.data;
 
-    if (typeof data !== 'string') {
-      data = JSON.stringify(data);
-    }
-
     if (isCreateMessageRequest(options)) {
       const agentId = pathname.split('/')[3];
       const createMessageRes = data as LettaResponse;
@@ -261,14 +263,16 @@ export async function makeRequestToSDK(
         startedAt: startTime,
         endedAt: new Date(),
         organizationId,
-        referenceId: createMessageRes.messages
-          .map((message) => message.id)
-          .join(','),
+        referenceId: createMessageRes.messages.map((m) => m.id).join(','),
         outputTokens: data.usage.completion_tokens,
         inputTokens: data.usage.prompt_tokens,
         stepCount: data.usage.step_count,
         totalTokens: data.usage.total_tokens,
       });
+    }
+
+    if (typeof data !== 'string') {
+      data = JSON.stringify(data);
     }
 
     return new Response(data || JSON.stringify({ success: true }), {
@@ -286,6 +290,9 @@ export async function makeRequestToSDK(
         },
       });
     }
+
+    console.error(e);
+    Sentry.captureException(e);
 
     return new Response('Unhandled error', {
       status: 500,

@@ -436,6 +436,7 @@
     "VersionAgentDialog": {
       "title": "Version Agent",
       "trigger": "Version Agent",
+      "deployedAgents": "Deployed Agents",
       "confirm": "Version Agent",
       "description": "Versioning an agent creates a new version of the agent that is immutable and can be used to deploy agents. Are you sure you want to proceed?"
     },
