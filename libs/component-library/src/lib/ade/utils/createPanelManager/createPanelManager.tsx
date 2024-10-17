@@ -256,28 +256,31 @@ export function createPanelManager<
     const reconcilePositions = useCallback(
       (positions: RegisteredPanelItemPositionsMatrix) => {
         // remove any positions where templateId is in the deny list
-        const filteredPositions = positions.map((xPosition) => {
-          if (!xPosition) {
-            return xPosition;
-          }
+        const filteredPositions =
+          templateIdDenyListSet.size > 0
+            ? positions.map((xPosition) => {
+                if (!xPosition) {
+                  return xPosition;
+                }
 
-          return {
-            ...xPosition,
-            positions: xPosition.positions.map((yPosition) => {
-              if (!yPosition) {
-                return yPosition;
-              }
+                return {
+                  ...xPosition,
+                  positions: xPosition.positions.map((yPosition) => {
+                    if (!yPosition) {
+                      return yPosition;
+                    }
 
-              return {
-                ...yPosition,
-                positions: yPosition.positions.filter(
-                  (tabPosition) =>
-                    !templateIdDenyListSet.has(tabPosition.templateId)
-                ),
-              };
-            }),
-          };
-        });
+                    return {
+                      ...yPosition,
+                      positions: yPosition.positions.filter(
+                        (tabPosition) =>
+                          !templateIdDenyListSet.has(tabPosition.templateId)
+                      ),
+                    };
+                  }),
+                };
+              })
+            : positions;
 
         // should remove any empty positions, as in positions with no panels
         const xPositions = [...filteredPositions];
@@ -364,7 +367,7 @@ export function createPanelManager<
 
         const panelIdToPositionMap: Record<PanelId, PanelPosition> = {};
 
-        positions.forEach((yPositions, x) => {
+        xPositions.forEach((yPositions, x) => {
           yPositions?.positions?.forEach((tabPositions, y) => {
             tabPositions?.positions?.forEach((panelPosition, tab) => {
               panelIdToPositionMap[panelPosition.id] = [x, y, tab];
@@ -374,7 +377,7 @@ export function createPanelManager<
 
         const activePanelTemplates = new Set<RegisteredPanelTemplateId>();
 
-        positions.forEach((yPositions) => {
+        xPositions.forEach((yPositions) => {
           yPositions?.positions?.forEach((tabPositions) => {
             const firstActivePanel = tabPositions.positions.find(
               (panel) => panel.isActive
