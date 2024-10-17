@@ -66,12 +66,7 @@
       "pages": [
         "introduction",
         "quickstart",
-        {
-          "group": "Installation",
-          "icon": "download",
-          "iconType": "solid",
-          "pages": ["install/pip", "install/docker"]
-        },
+        "install",
         {
           "group": "LLM configuration",
           "icon": "microchip",
@@ -90,7 +85,10 @@
     },
     {
       "group": "Key concepts",
-      "pages": ["concepts", "letta_memgpt"]
+      "pages": [
+        "concepts",
+        "letta_memgpt"
+      ]
     },
     {
       "group": "Agents",
@@ -100,6 +98,10 @@
         "agents/memory",
         "agents/messages"
       ]
+    },
+    {
+      "group": "Deployment",
+      "pages": ["deployment/server"]
     },
     {
       "group": "Advanced",
@@ -130,7 +132,10 @@
         "python-reference/LettaResponse",
         {
           "group": "Message Types",
-          "pages": ["python-reference/Message", "python-reference/LettaMessage"]
+          "pages": [
+            "python-reference/Message",
+            "python-reference/LettaMessage"
+          ]
         },
         "python-reference/LettaUsageStatistics"
       ]
