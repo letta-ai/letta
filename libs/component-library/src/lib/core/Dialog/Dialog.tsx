@@ -42,6 +42,8 @@ DialogOverlay.displayName = DialogPrimitive.Overlay.displayName;
 type DialogContentProps = React.ComponentPropsWithoutRef<
   typeof DialogPrimitive.Content
 > & {
+  color?: 'background-grey' | 'background';
+  size?: VariantProps<typeof dialogVariants>['size'];
   errorMessage?: string;
   errorAdditionalMessage?: string;
 };
@@ -51,21 +53,32 @@ const DialogContent = React.forwardRef<
   DialogContentProps
 >(
   (
-    { className, children, errorMessage, errorAdditionalMessage, ...props },
+    {
+      className,
+      color,
+      children,
+      size,
+      errorMessage,
+      errorAdditionalMessage,
+      ...props
+    },
     ref
   ) => {
+    const isFull = size === 'full';
+
     const contents = (
       <>
         <DialogOverlay />
         <DialogPrimitive.Content
           ref={ref}
           className={cn(
-            'fixed bg-background-grey flex flex-col max-h-[95vh] overflow-y-auto overflow-x-hidden text-base left-[50%] top-[50%] z-50 w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-2 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%]',
+            'fixed flex flex-col max-h-[95vh] overflow-y-auto overflow-x-hidden text-base left-[50%] top-[50%] z-50 w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-2 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%]',
+            color === 'background' ? 'bg-background' : 'bg-background-grey',
             className
           )}
           {...props}
         >
-          <VStack gap={false}>
+          <VStack gap={false} fullHeight={isFull}>
             {errorMessage && (
               <Alert
                 fullWidth
@@ -76,7 +89,7 @@ const DialogContent = React.forwardRef<
               />
             )}
 
-            <VStack padding gap="form" position="relative">
+            <VStack padding gap="form" position="relative" fullHeight={isFull}>
               {children}
               <DialogPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
                 <CloseIcon className="h-4 w-4" />
@@ -158,6 +171,7 @@ const dialogVariants = cva('', {
       small: 'max-w-sm',
       medium: 'max-w-md',
       large: 'max-w-[600px]',
+      full: 'max-w-[95vw] h-full max-h-[95vh]',
     },
   },
   defaultVariants: {
@@ -185,12 +199,14 @@ interface DialogProps extends VariantProps<typeof dialogVariants> {
   onSubmit?: (e: React.FormEvent<HTMLFormElement>) => void;
   hideCancel?: boolean;
   hideConfirm?: boolean;
+  color?: 'background-grey' | 'background';
   reverseButtons?: boolean;
 }
 
 export function Dialog(props: DialogProps) {
   const {
     isOpen,
+    color = 'background-grey',
     defaultOpen,
     errorMessage,
     errorAdditionalMessage,
@@ -240,6 +256,8 @@ export function Dialog(props: DialogProps) {
     >
       {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
       <DialogContent
+        color={color}
+        size={size}
         errorMessage={errorMessage}
         errorAdditionalMessage={errorAdditionalMessage}
         className={dialogVariants({ size })}

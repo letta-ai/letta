@@ -123,10 +123,13 @@ function EditMemory() {
 export const editCoreMemories = {
   templateId: 'edit-core-memories',
   content: EditMemory,
-  useGetTitle: (data) => {
+  useGetTitle: () => {
     const t = useTranslations('ADE/EditCoreMemoriesPanel');
+    const { memory } = useCurrentAgent();
 
-    return t('title', { blockName: data?.name });
+    const memoryCount = Object.keys(memory?.memory || {}).length;
+
+    return t('title', { count: memoryCount || '-' });
   },
   data: z.undefined(),
 } satisfies PanelTemplate<'edit-core-memories'>;

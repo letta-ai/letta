@@ -56,14 +56,6 @@ export function ContextWindowPreview() {
     return contextWindow?.num_tokens_system || 0;
   }, [contextWindow?.num_tokens_system]);
 
-  const archivalMemoryLength = useMemo(() => {
-    return contextWindow?.num_archival_memory || 0;
-  }, [contextWindow?.num_archival_memory]);
-
-  const recallMemoryLength = useMemo(() => {
-    return contextWindow?.num_recall_memory || 0;
-  }, [contextWindow?.num_recall_memory]);
-
   const summaryMemoryLength = useMemo(() => {
     return contextWindow?.num_tokens_summary_memory || 0;
   }, [contextWindow?.num_tokens_summary_memory]);
@@ -80,16 +72,12 @@ export function ContextWindowPreview() {
     return (
       systemPromptLength +
       coreMemoryLength +
-      archivalMemoryLength +
-      recallMemoryLength +
       summaryMemoryLength +
       messagesTokensLength
     );
   }, [
     systemPromptLength,
     coreMemoryLength,
-    archivalMemoryLength,
-    recallMemoryLength,
     summaryMemoryLength,
     messagesTokensLength,
   ]);
@@ -135,9 +123,6 @@ export function ContextWindowPreview() {
           stack: 'total',
           color: '#3758F9',
           name: t('ContextWindowPreview.systemPrompt'),
-          itemStyle: {
-            borderRadius: [50, 0, 0, 50],
-          },
         },
         {
           data: [coreMemoryLength / totalLength],
@@ -145,20 +130,6 @@ export function ContextWindowPreview() {
           color: '#6EE7B7',
           stack: 'total',
           name: t('ContextWindowPreview.memoryBlocks'),
-        },
-        {
-          data: [archivalMemoryLength / totalLength],
-          type: 'bar',
-          color: 'pink',
-          stack: 'total',
-          name: t('ContextWindowPreview.archivalMemory'),
-        },
-        {
-          data: [recallMemoryLength / totalLength],
-          type: 'bar',
-          color: 'blue',
-          stack: 'total',
-          name: t('ContextWindowPreview.recallMemory'),
         },
         {
           data: [summaryMemoryLength / totalLength],
@@ -180,17 +151,12 @@ export function ContextWindowPreview() {
           color: 'gray',
           stack: 'total',
           name: t('ContextWindowPreview.remaining'),
-          itemStyle: {
-            borderRadius: [0, 50, 50, 0],
-          },
         },
       ],
     };
   }, [
-    archivalMemoryLength,
     coreMemoryLength,
     messagesTokensLength,
-    recallMemoryLength,
     remainingLength,
     summaryMemoryLength,
     systemPromptLength,
@@ -272,30 +238,6 @@ export function ContextWindowPreview() {
             show: false,
           },
           tooltip: {
-            formatter: (e) => `${e.seriesName}: ${archivalMemoryLength}`,
-          },
-          data: [archivalMemoryLength / totalLength],
-          color: 'pink',
-          name: t('ContextWindowPreview.archivalMemory'),
-        },
-        {
-          ...commonSeriesStyles,
-          label: {
-            show: false,
-          },
-          tooltip: {
-            formatter: (e) => `${e.seriesName}: ${recallMemoryLength}`,
-          },
-          data: [recallMemoryLength / totalLength],
-          color: 'red',
-          name: t('ContextWindowPreview.recallMemory'),
-        },
-        {
-          ...commonSeriesStyles,
-          label: {
-            show: false,
-          },
-          tooltip: {
             formatter: (e) => `${e.seriesName}: ${summaryMemoryLength}`,
           },
           data: [summaryMemoryLength / totalLength],
@@ -361,10 +303,8 @@ export function ContextWindowPreview() {
 
     return opts;
   }, [
-    archivalMemoryLength,
     coreMemoryLength,
     messagesTokensLength,
-    recallMemoryLength,
     remainingLength,
     summaryMemoryLength,
     systemPromptLength,

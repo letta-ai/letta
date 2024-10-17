@@ -1,6 +1,20 @@
 'use client';
 import React, { useCallback, useMemo, useState } from 'react';
-import type { PanelTemplate } from '@letta-web/component-library';
+import type {
+  FileTreeContentsType,
+  PanelTemplate,
+} from '@letta-web/component-library';
+import { getIsGenericFolder } from '@letta-web/component-library';
+import { FormActions, toast } from '@letta-web/component-library';
+import {
+  Badge,
+  Dialog,
+  FileTree,
+  Logo,
+  PlusIcon,
+  ToolsIcon,
+  Typography,
+} from '@letta-web/component-library';
 import {
   Button,
   CodeEditor,
@@ -15,12 +29,13 @@ import {
   ActionCard,
   useForm,
   VStack,
-  RawSwitch,
   LettaLoaderPanel,
   HStack,
 } from '@letta-web/component-library';
 import { useCurrentAgent } from '../hooks';
 import type { AgentState, Tool_Output } from '@letta-web/letta-agents-api';
+import { useAgentsServiceAddToolToAgent } from '@letta-web/letta-agents-api';
+import { useAgentsServiceRemoveToolFromAgent } from '@letta-web/letta-agents-api';
 import {
   useToolsServiceCreateTool,
   useToolsServiceGetTool,
@@ -29,7 +44,6 @@ import {
 } from '@letta-web/letta-agents-api';
 import {
   UseAgentsServiceGetAgentKeyFn,
-  useAgentsServiceUpdateAgent,
   useToolsServiceListTools,
   UseToolsServiceListToolsKeyFn,
 } from '@letta-web/letta-agents-api';
@@ -38,52 +52,275 @@ import { useQueryClient } from '@tanstack/react-query';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useCurrentAgentMetaData } from '../hooks/useCurrentAgentMetaData/useCurrentAgentMetaData';
+import { useTranslations } from 'next-intl';
 
-const { PanelRouter, usePanelRouteData, usePanelPageContext } =
-  createPageRouter(
-    {
-      editTool: {
-        title: ({ toolId }) => (toolId ? 'Edit Tool' : 'Create Tool'),
-        state: z.object({
-          toolId: z.string(),
-          toolName: z.string(),
-        }),
-      },
-      root: {
-        title: 'Tools',
-        state: z.object({}),
-      },
+const { usePanelRouteData, usePanelPageContext } = createPageRouter(
+  {
+    editTool: {
+      title: ({ toolId }) => (toolId ? 'Edit Tool' : 'Create Tool'),
+      state: z.object({
+        toolId: z.string(),
+        toolName: z.string(),
+      }),
     },
-    {
-      initialPage: 'root',
-    }
+    root: {
+      title: 'Tools',
+      state: z.object({}),
+    },
+  },
+  {
+    initialPage: 'root',
+  }
+);
+
+interface AddToolDialogDetailActionsProps {
+  tool: Tool_Output;
+  isAlreadyAdded: boolean;
+}
+
+function AddToolDialogDetailActions(props: AddToolDialogDetailActionsProps) {
+  const { tool, isAlreadyAdded } = props;
+  const t = useTranslations('ADE/Tools');
+  const queryClient = useQueryClient();
+  const { id: agentId } = useCurrentAgent();
+
+  const { mutate: removeTool, isPending: isRemovingTool } =
+    useAgentsServiceRemoveToolFromAgent({
+      onSuccess: (nextAgentState) => {
+        queryClient.setQueriesData<AgentState | undefined>(
+          {
+            queryKey: UseAgentsServiceGetAgentKeyFn({
+              agentId: agentId,
+            }),
+          },
+          (oldData) => {
+            if (!oldData) {
+              return oldData;
+            }
+
+            console.log(nextAgentState);
+
+            return {
+              ...oldData,
+              tools: nextAgentState.tools,
+            };
+          }
+        );
+      },
+      onError: () => {
+        toast.error(t('AddToolDialogDetailActions.removeError'));
+      },
+    });
+
+  const handleRemove = useCallback(() => {
+    removeTool({
+      agentId,
+      toolId: tool.id || '',
+    });
+  }, [removeTool, agentId, tool.id]);
+
+  const { mutate: addTool, isPending: isAddingTool } =
+    useAgentsServiceAddToolToAgent({
+      onSuccess: (nextAgentState) => {
+        queryClient.setQueriesData<AgentState | undefined>(
+          {
+            queryKey: UseAgentsServiceGetAgentKeyFn({
+              agentId: agentId,
+            }),
+          },
+          (oldData) => {
+            if (!oldData) {
+              return oldData;
+            }
+
+            return {
+              ...oldData,
+              tools: nextAgentState.tools,
+            };
+          }
+        );
+      },
+      onError: () => {
+        toast.error(t('AddToolDialogDetailActions.addError'));
+      },
+    });
+
+  const handleAdd = useCallback(() => {
+    addTool({
+      agentId,
+      toolId: tool.id || '',
+    });
+  }, [addTool, agentId, tool.id]);
+
+  return (
+    <FormActions>
+      {isAlreadyAdded ? (
+        <Button
+          type="button"
+          label={t('AddToolDialogDetailActions.removeFromAgent')}
+          color="destructive"
+          busy={isRemovingTool}
+          onClick={handleRemove}
+        />
+      ) : (
+        <Button
+          type="button"
+          label={t('AddToolDialogDetailActions.addToAgent')}
+          color="primary"
+          busy={isAddingTool}
+          onClick={handleAdd}
+        />
+      )}
+    </FormActions>
   );
+}
 
-function ToolsList() {
-  const { id: currentAgentId, tools: currentToolNames } = useCurrentAgent();
-  const { data: allTools, isLoading } = useToolsServiceListTools();
-  const { setCurrentPage } = usePanelPageContext();
+interface AddToolDialogProps {
+  onClose: () => void;
+}
 
-  const { mutate } = useAgentsServiceUpdateAgent({
-    onMutate: async (variables) => {
-      await queryClient.cancelQueries({
-        queryKey: UseAgentsServiceGetAgentKeyFn({
-          agentId: currentAgentId,
-        }),
-      });
+interface AddToolsListItem {
+  name: string;
+  id: string;
+  alreadyAdded: boolean;
+  icon: React.ReactNode;
+}
 
-      const previousAgentState = queryClient.getQueryData<
-        AgentState | undefined
-      >(
-        UseAgentsServiceGetAgentKeyFn({
-          agentId: currentAgentId,
-        })
-      );
+function AddToolDialog(props: AddToolDialogProps) {
+  const { onClose } = props;
+  const t = useTranslations('ADE/Tools');
+  const { data: allTools } = useToolsServiceListTools();
+  const { tools } = useCurrentAgent();
 
-      queryClient.setQueryData<AgentState | undefined>(
-        UseAgentsServiceGetAgentKeyFn({
-          agentId: currentAgentId,
-        }),
+  const addedToolNameSet = useMemo(() => {
+    return new Set(tools);
+  }, [tools]);
+
+  const [search, setSearch] = useState('');
+
+  const toolsList: AddToolsListItem[] = useMemo(() => {
+    return (allTools || [])
+      .filter((tool) => !tool.tags.includes('letta-base'))
+      .map((tool) => {
+        return {
+          name: tool.name || '',
+          id: tool.id || '',
+          alreadyAdded: addedToolNameSet.has(tool.name),
+          icon: <ToolsIcon />,
+        };
+      })
+      .filter((tool) => tool.name.toLowerCase().includes(search.toLowerCase()));
+  }, [allTools, addedToolNameSet, search]);
+
+  const [toolToView, setToolToView] = useState<Tool_Output | null>(null);
+
+  return (
+    <Dialog
+      isOpen
+      color="background"
+      hideConfirm
+      title={t('AddToolDialog.title')}
+      onOpenChange={(state) => {
+        if (!state) {
+          onClose();
+        }
+      }}
+      size="full"
+    >
+      <HStack fullHeight>
+        <VStack fullHeight fullWidth>
+          <RawInput
+            hideLabel
+            placeholder={t('AddToolDialog.search.placeholder')}
+            label={t('AddToolDialog.search.label')}
+            fullWidth
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+            }}
+          />
+          <VStack fullHeight overflowY="auto" gap="small">
+            {toolsList.map((tool) => (
+              <ActionCard
+                badge={
+                  tool.alreadyAdded ? (
+                    <Badge
+                      content={t('AddToolDialog.added')}
+                      color="primary-light"
+                    />
+                  ) : undefined
+                }
+                icon={tool.icon}
+                key={tool.id}
+                title={tool.name}
+                onCardClick={() => {
+                  setToolToView(
+                    allTools?.find((t) => t.name === tool.name) || null
+                  );
+                }}
+              />
+            ))}
+          </VStack>
+        </VStack>
+        <VStack fullHeight border fullWidth>
+          <HStack padding="small" borderBottom>
+            <Typography variant="body3" bold>
+              {toolToView
+                ? toolToView.name
+                : t('AddToolDialog.noToolSelected.title')}
+            </Typography>
+          </HStack>
+          <VStack padding="small" fullHeight>
+            <VStack fullHeight>
+              <Typography
+                variant="body"
+                italic={toolToView && !toolToView.description}
+              >
+                {toolToView
+                  ? toolToView.description || t('AddToolDialog.noDescription')
+                  : t('AddToolDialog.noToolSelected.description')}
+              </Typography>
+            </VStack>
+            {toolToView && (
+              <AddToolDialogDetailActions
+                isAlreadyAdded={addedToolNameSet.has(toolToView.name)}
+                tool={toolToView}
+              />
+            )}
+          </VStack>
+        </VStack>
+      </HStack>
+    </Dialog>
+  );
+}
+
+interface RemoveToolPayload {
+  toolName: string;
+  toolId: string;
+}
+
+interface RemoveToolFromAgentDialogProps extends RemoveToolPayload {
+  onClose: () => void;
+}
+
+function RemoveToolDialog(props: RemoveToolFromAgentDialogProps) {
+  const { toolId, toolName, onClose } = props;
+  const { id: agentId } = useCurrentAgent();
+  const t = useTranslations('ADE/Tools');
+  const queryClient = useQueryClient();
+
+  const {
+    mutate,
+    isError,
+    isPending: isUpdatingTools,
+  } = useAgentsServiceRemoveToolFromAgent({
+    onSuccess: (nextAgentState) => {
+      queryClient.setQueriesData<AgentState | undefined>(
+        {
+          queryKey: UseAgentsServiceGetAgentKeyFn({
+            agentId: agentId,
+          }),
+        },
         (oldData) => {
           if (!oldData) {
             return oldData;
@@ -91,91 +328,157 @@ function ToolsList() {
 
           return {
             ...oldData,
-            tools: variables.requestBody.tools || [],
+            tools: nextAgentState.tools,
           };
         }
       );
 
-      return { previousAgentState };
-    },
-    onError: (_aw, _b, context) => {
-      if (context?.previousAgentState) {
-        queryClient.setQueryData(
-          UseAgentsServiceGetAgentKeyFn({
-            agentId: currentAgentId,
-          }),
-          context.previousAgentState
-        );
-      }
+      onClose();
     },
   });
-  const queryClient = useQueryClient();
 
-  const handleToggleCardChange = useCallback(
-    (toolName: string, checked: boolean) => {
-      const newTools = checked
-        ? [...currentToolNames, toolName]
-        : currentToolNames.filter((name) => name !== toolName);
+  const handleRemove = useCallback(() => {
+    mutate({
+      agentId,
+      toolId,
+    });
+  }, [agentId, toolId, mutate]);
 
-      mutate({
-        agentId: currentAgentId,
-        requestBody: {
-          id: currentAgentId,
-          tools: newTools,
-        },
-      });
-    },
-    [currentAgentId, currentToolNames, mutate]
+  return (
+    <Dialog
+      isOpen
+      onOpenChange={(state) => {
+        if (!state) {
+          onClose();
+        }
+      }}
+      errorMessage={isError ? t('RemoveToolDialog.error') : undefined}
+      title={t('RemoveToolDialog.title', { toolName })}
+      confirmText={t('RemoveToolDialog.confirm')}
+      onConfirm={handleRemove}
+      isConfirmBusy={isUpdatingTools}
+    >
+      {t('RemoveToolDialog.confirmation')}
+    </Dialog>
   );
+}
+
+function ToolsList() {
+  const { tools: currentToolNames } = useCurrentAgent();
+  const { data: allTools, isLoading } = useToolsServiceListTools();
+
+  const t = useTranslations('ADE/Tools');
+
+  const [removeToolPayload, setRemoveToolPayload] =
+    useState<RemoveToolPayload | null>(null);
 
   const currentToolsAsSet = useMemo(() => {
     return new Set(currentToolNames);
   }, [currentToolNames]);
 
+  const currentUserTools = useMemo(() => {
+    return allTools?.filter((tool) => currentToolsAsSet.has(tool.name));
+  }, [allTools, currentToolsAsSet]);
+
+  const [isAddToolDialogOpen, setIsAddToolDialogOpen] = useState(false);
+
+  const toolsList: FileTreeContentsType = useMemo(() => {
+    if (!currentUserTools) {
+      return [];
+    }
+
+    let lettaCoreToolCount = 0;
+    let otherToolCount = 0;
+
+    const fileTreeTools: FileTreeContentsType = [
+      {
+        name: '',
+        id: 'core-tools',
+        contents: [],
+      },
+      {
+        id: 'other-tools',
+        name: '',
+        contents: [],
+        defaultOpen: true,
+      },
+    ];
+
+    currentUserTools.forEach((tool) => {
+      if (tool.tags.includes('letta-base')) {
+        lettaCoreToolCount += 1;
+        if (getIsGenericFolder(fileTreeTools[0])) {
+          fileTreeTools[0].contents.push({
+            name: tool.name,
+            id: tool.id || '',
+            icon: <Logo size="small" />,
+          });
+        }
+      } else {
+        otherToolCount += 1;
+        if (getIsGenericFolder(fileTreeTools[1])) {
+          fileTreeTools[1].contents.push({
+            name: tool.name,
+            id: tool.id,
+            icon: <ToolsIcon />,
+            actions: [
+              {
+                id: 'remove-tool',
+                label: t('ToolsList.removeTool'),
+                onClick: () => {
+                  setRemoveToolPayload({
+                    toolName: tool.name || '',
+                    toolId: tool.id || '',
+                  });
+                },
+              },
+            ],
+          });
+        }
+      }
+    });
+
+    fileTreeTools[0].name = t('ToolsList.lettaCoreTools', {
+      toolCount: lettaCoreToolCount,
+    });
+    fileTreeTools[1].name = t('ToolsList.otherTools', {
+      toolCount: otherToolCount,
+    });
+
+    if (getIsGenericFolder(fileTreeTools[1])) {
+      fileTreeTools[1].contents.push({
+        name: t('ToolsList.addNewTool'),
+        id: 'new',
+        icon: <PlusIcon />,
+        onClick: () => {
+          setIsAddToolDialogOpen(true);
+        },
+      });
+    }
+
+    return fileTreeTools;
+  }, [currentUserTools, t]);
+
   return (
     <PanelMainContent>
-      <VStack fullWidth gap="small">
-        {isLoading && <LettaLoaderPanel />}
-        {(allTools || []).map((tool) => {
-          return (
-            <ActionCard
-              key={tool.id}
-              title={tool.name}
-              description={tool.description || ''}
-              mainAction={
-                <RawSwitch
-                  hideLabel
-                  label={
-                    currentToolsAsSet.has(tool.name)
-                      ? `Enable ${tool.name}`
-                      : `Disable ${tool.name}`
-                  }
-                  checked={currentToolsAsSet.has(tool.name)}
-                  onChange={() => {
-                    handleToggleCardChange(
-                      tool.name,
-                      !currentToolsAsSet.has(tool.name)
-                    );
-                  }}
-                />
-              }
-              actions={
-                <Button
-                  onClick={() => {
-                    setCurrentPage('editTool', {
-                      toolId: tool.id,
-                      toolName: tool.name,
-                    });
-                  }}
-                  label="Configure"
-                  size="small"
-                  color="tertiary"
-                />
-              }
-            />
-          );
-        })}
-      </VStack>
+      {isAddToolDialogOpen && (
+        <AddToolDialog
+          onClose={() => {
+            setIsAddToolDialogOpen(false);
+          }}
+        />
+      )}
+      {removeToolPayload && (
+        <RemoveToolDialog
+          toolId={removeToolPayload.toolId}
+          toolName={removeToolPayload.toolName}
+          onClose={() => {
+            setRemoveToolPayload(null);
+          }}
+        />
+      )}
+      {isLoading && <LettaLoaderPanel />}
+      <FileTree root={toolsList} />
     </PanelMainContent>
   );
 }
@@ -352,7 +655,7 @@ function ToolEditor(props: ToolEditorProps) {
   );
 }
 
-function EditToolPage() {
+export function EditToolPage() {
   const { toolId } = usePanelRouteData<'editTool'>();
   const { data, isLoading } = useToolsServiceGetTool(
     {
@@ -415,21 +718,16 @@ function ToolsListPage() {
   );
 }
 
-export function ToolsPanel() {
-  return (
-    <PanelRouter
-      rootPageKey="root"
-      pages={{
-        editTool: <EditToolPage />,
-        root: <ToolsListPage />,
-      }}
-    />
-  );
-}
-
 export const toolsPanelTemplate = {
   templateId: 'tools-panel',
-  content: ToolsPanel,
-  useGetTitle: () => 'Tools',
+  content: ToolsListPage,
+  useGetTitle: () => {
+    const t = useTranslations('ADE/Tools');
+    const { data: allTools } = useToolsServiceListTools();
+
+    return t('title', {
+      toolCount: allTools?.length || '-',
+    });
+  },
   data: z.undefined(),
 } satisfies PanelTemplate<'tools-panel'>;

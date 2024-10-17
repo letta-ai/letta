@@ -420,11 +420,18 @@ function DialogSessionSheet(props: DialogSessionDialogProps) {
   );
 }
 
-function generateAgentStateHash(agentState: AgentState, datasources: Source[]) {
-  return JSON.stringify({
+export interface GenerateAgentStateHashResponse extends Partial<AgentState> {
+  datasources: string[];
+}
+
+export function generateAgentStateHash(
+  agentState: Partial<AgentState>,
+  datasources: Source[]
+): GenerateAgentStateHashResponse {
+  return {
     ...agentState,
-    datasources: datasources.map((source) => source.id),
-  });
+    datasources: datasources.map((source) => source.id || '').filter(Boolean),
+  };
 }
 
 function Chatroom() {
@@ -454,7 +461,7 @@ function Chatroom() {
     return variableList.some((variable) => !sessionVariables[variable]);
   }, [agentSession?.body.variables, variableList]);
 
-  const agentStateStore = useRef<string>(
+  const agentStateStore = useRef<GenerateAgentStateHashResponse>(
     generateAgentStateHash(agentState, [])
   );
 

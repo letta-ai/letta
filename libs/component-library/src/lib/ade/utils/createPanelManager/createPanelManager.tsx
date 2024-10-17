@@ -1182,6 +1182,7 @@ export function createPanelManager<
 
     return (
       <GenericTab
+        panelId={tabId}
         isActive={isActive}
         onClickTab={handleClickedTab}
         onCloseTab={handleCloseTab}
@@ -1299,7 +1300,7 @@ export function createPanelManager<
                 </>
               )}
               <HStack gap={false} fullWidth fullHeight>
-                <VStack fullHeight fullWidth>
+                <VStack gap={false} fullHeight fullWidth>
                   <PanelComponent {...tab.data} />
                 </VStack>
                 <div className="w-[4px] h-full" />

@@ -160,7 +160,7 @@
       "title": "Upload a file",
       "confirm": "Upload"
     },
-    "title": "Sources",
+    "title": "Sources ({count})",
     "errorDetaching": "There was an error detaching this data source, please try again or contact support.",
     "editName": {
       "label": "Data Source Name",
@@ -255,7 +255,7 @@
     "localProject": "Local Project"
   },
   "ADE/EditCoreMemoriesPanel": {
-    "title": "Memory",
+    "title": "Memory ({count})",
     "content": "Content",
     "error": "There was an error while updating the memory block, please try again or contact support.",
     "lastUpdated": "Last updated on {date}",
@@ -366,6 +366,42 @@
   "ADE/useCurrentSimulatedAgent": {
     "error": "There was an error fetching the simulated agent, please try again or contact support."
   },
+  "ADE/Tools": {
+    "title": "Tools ({toolCount})",
+    "AddToolDialogDetailActions": {
+      "addToAgent": "Add to Agent",
+      "removeFromAgent": "Remove from Agent",
+      "removeError": "There was an error removing this tool, please try again or contact support.",
+      "addError": "There was an error adding this tool, please try again or contact support."
+    },
+    "AddToolDialog": {
+      "added": "Added",
+      "search": {
+        "placeholder": "Tool name",
+        "label": "Search tools"
+      },
+      "title": "All Tools",
+      "trigger": "Add Tool",
+      "noDescription": "This tool does not have a description",
+      "noToolSelected": {
+        "title": "No tool selected",
+        "description": "Select a tool from the list to view more details and add to your agent."
+      }
+    },
+    "ToolsList": {
+      "removeTool": "Remove Tool",
+      "lettaCoreTools": "Letta Core Tools ({toolCount})",
+      "otherTools": "Other Tools ({toolCount})",
+      "addNewTool": "Add New Tool"
+    },
+    "RemoveToolDialog": {
+      "title": "Remove {toolName}",
+      "trigger": "Remove Tool",
+      "confirm": "Remove",
+      "error": "There was an error removing this tool, please try again or contact support.",
+      "confirmation": "Are you sure you want to remove this tool?"
+    }
+  },
   "ADE/ArchivalMemories": {
     "title": "Vector Database",
     "MemoryItem": {
@@ -384,6 +420,38 @@
     }
   },
   "projects/(projectSlug)/agents/(agentId)/AgentPage": {
+    "AgentSettingsDropdown": {
+      "trigger": "Agent Settings"
+    },
+    "DeployAgentDialog": {
+      "trigger": "Deployment Instructions",
+      "title": "Deploy Agent Instructions"
+    },
+    "VersionAgentDialog": {
+      "title": "Version Agent",
+      "trigger": "Version Agent",
+      "confirm": "Version Agent",
+      "description": "Versioning an agent creates a new version of the agent that is immutable and can be used to deploy agents. Are you sure you want to proceed?"
+    },
+    "DeploymentButton": {
+      "version": "Version {version}",
+      "readyToDeploy": {
+        "trigger": "Ready to Deploy",
+        "heading": "Your template is good to go!",
+        "copy": "This template has not had any changes since the last version. You can deploy following the instructions below:"
+      },
+      "updateAvailable": {
+        "trigger": "Update Available",
+        "heading": "You may want to version your template",
+        "copy": "This template has had changes since the last version. You can create a new version below or follow deployment instructions below:"
+      }
+    },
+    "ForkAgentDialog": {
+      "title": "Fork Agent",
+      "trigger": "Fork Agent",
+      "confirm": "Fork Agent",
+      "description": "Forking an template creates a new template with the same configuration as the original template."
+    },
     "liveAgentWarning": "You are editing a live agent, be aware that editing this agent may impact live deployments",
     "localAgentDevelopment": "You are editing a local agent, changes made here will not effect your agents on Letta Cloud",
     "restoreLayout": "Restore Layout",

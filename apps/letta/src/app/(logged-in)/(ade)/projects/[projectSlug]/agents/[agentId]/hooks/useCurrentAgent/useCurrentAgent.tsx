@@ -5,9 +5,17 @@ import { useCurrentAgentMetaData } from '../useCurrentAgentMetaData/useCurrentAg
 export function useCurrentAgent() {
   const { agentId, agentName } = useCurrentAgentMetaData();
 
-  const { data: agent } = useAgentsServiceGetAgent({
-    agentId,
-  });
+  const { data: agent } = useAgentsServiceGetAgent(
+    {
+      agentId,
+    },
+    undefined,
+    {
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: false,
+      refetchOnMount: false,
+    }
+  );
 
   if (!agent?.id) {
     throw new Error(

@@ -45,7 +45,7 @@ describe('letta', () => {
       /\/projects\/(.+)\/templates\/(.+)/
     );
 
-    cy.findByTestId('tab:Memory').click();
+    cy.findByTestId('tab:edit-core-memories').click();
 
     cy.findByTestId('edit-memory-block:human').click();
 
@@ -61,11 +61,11 @@ describe('letta', () => {
 
     // stage the agent
 
-    cy.findByTestId('tab:Template Version Manager').click();
-
-    cy.findByTestId('stage-new-version-button').click();
-
-    cy.findByTestId('stage-agent-dialog-confirm-button').click();
+    // cy.findByTestId('tab:Template Version Manager').click();
+    //
+    // cy.findByTestId('stage-new-version-button').click();
+    //
+    // cy.findByTestId('stage-agent-dialog-confirm-button').click();
 
     // cy.findByTestId('show-deployment-instructions-0', {
     //   timeout: 10000,

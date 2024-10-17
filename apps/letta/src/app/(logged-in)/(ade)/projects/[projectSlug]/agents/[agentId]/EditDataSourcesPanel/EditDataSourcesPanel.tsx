@@ -800,8 +800,11 @@ function EditDataSourcesPanel() {
 export const editDataSourcesPanel = {
   useGetTitle: () => {
     const t = useTranslations('ADE/EditDataSourcesPanel');
+    const { data: sources } = useAgentsServiceGetAgentSources({
+      agentId: useCurrentAgent().id,
+    });
 
-    return t('title');
+    return t('title', { count: sources?.length || '-' });
   },
   data: z.undefined(),
   content: EditDataSourcesPanel,

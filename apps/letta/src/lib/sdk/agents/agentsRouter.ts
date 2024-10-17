@@ -1,4 +1,8 @@
-import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
+import type {
+  ServerInferRequest,
+  ServerInferResponseBody,
+  ServerInferResponses,
+} from '@ts-rest/core';
 import type { sdkContracts } from '$letta/sdk/contracts';
 import * as Sentry from '@sentry/node';
 
@@ -48,11 +52,9 @@ export function attachVariablesToTemplates(
 
   return {
     tools: nextAgent.tools,
-    name: crypto.randomUUID(),
+    name: `name-${crypto.randomUUID()}`,
     embedding_config: nextAgent.embedding_config,
-    description: nextAgent.description,
     memory: nextAgent.memory,
-    user_id: nextAgent.user_id,
     llm_config: nextAgent.llm_config,
   };
 }
@@ -85,7 +87,9 @@ export async function copyAgentById(
 
   const nextAgent = await AgentsService.createAgent(
     {
-      requestBody: agentBody,
+      requestBody: {
+        ...agentBody,
+      },
     },
     {
       user_id: lettaAgentsUserId,
@@ -496,6 +500,7 @@ export async function versionAgentTemplate(
   context: SDKContext
 ): Promise<DeployAgentTemplateResponse> {
   const { agent_id: agentId } = req.params;
+  const { returnAgentId } = req.query;
 
   const existingDeployedAgentTemplateCount =
     await db.query.deployedAgentTemplates.findMany({
@@ -593,11 +598,20 @@ export async function versionAgentTemplate(
     version,
   });
 
+  const response: ServerInferResponseBody<
+    typeof sdkContracts.agents.versionAgentTemplate,
+    201
+  > = {
+    version: `${agentTemplateName}:${version}`,
+  };
+
+  if (returnAgentId) {
+    response.agentId = createdAgent.id || '';
+  }
+
   return {
     status: 201,
-    body: {
-      version: `${agentTemplateName}:${version}`,
-    },
+    body: response,
   };
 }
 
@@ -939,6 +953,7 @@ async function getAgentById(
   context: SDKContext
 ): Promise<GetAgentByIdResponse> {
   const { agent_id: agentId } = req.params;
+  const { all } = req.query;
 
   const [agent, deployedAgent, agentTemplate] = await Promise.all([
     AgentsService.getAgent(
@@ -963,22 +978,24 @@ async function getAgentById(
     }),
   ]);
 
-  if (!agent) {
-    return {
-      status: 404,
-      body: {
-        message: 'Agent not found',
-      },
-    };
-  }
+  if (!all) {
+    if (!agent) {
+      return {
+        status: 404,
+        body: {
+          message: 'Agent not found',
+        },
+      };
+    }
 
-  if (!deployedAgent && !agentTemplate) {
-    return {
-      status: 404,
-      body: {
-        message: 'Agent not found',
-      },
-    };
+    if (!deployedAgent && !agentTemplate) {
+      return {
+        status: 404,
+        body: {
+          message: 'Agent not found',
+        },
+      };
+    }
   }
 
   return {
