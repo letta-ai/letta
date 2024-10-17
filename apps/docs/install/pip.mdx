@@ -1,0 +1,56 @@
+---
+title: 'Install with pip'
+description: 'Install and setup Letta to run the server & ADE'
+icon: "python"
+iconType: "solid"
+---
+
+<iframe
+  width="560"
+  height="315"
+  src="https://www.youtube.com/embed/EOkpFDBNyEw"
+  title="Install Letta with pip"
+  frameborder="0"
+  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+  allowfullscreen
+></iframe>
+
+<Steps>
+  <Step title="Install using PIP">
+    To install Letta, run:
+    ```
+    pip install letta
+    ```
+  </Step>
+  <Step title="Configure model providers">
+    Set environment variables to enable model providers, e.g. OpenAI: 
+    ```bash 
+
+    # To use OpenAI
+    export OPENAI_API_KEY=...
+
+    # To use Anthropic 
+    export ANTHROPIC_API_KEY=...
+
+    # To use with Ollama
+    export OLLAMA_BASE_URL=...
+
+    # To use with Google AI
+    export GEMINI_API_KEY=...
+
+    # To use with Azure
+    export AZURE_API_KEY=...
+    export AZURE_BASE_URL=...
+
+    # To use with vLLM 
+    export VLLM_API_BASE=...
+    ```
+  </Step>
+  <Step title="Run the Letta server">
+    To run the Letta server, run:
+    ```sh
+    letta server [--debug]
+    ```
+    You can now access the ADE (in your browser) and REST API server at `http://localhost:8283`.
+  </Step>
+</Steps>
