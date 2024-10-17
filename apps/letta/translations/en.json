@@ -61,6 +61,7 @@
       "instructions": "To connect to a local project, you need to have the Letta CLI installed. Run the following command in your terminal to connect to a local project:"
     },
     "projectsList": {
+      "localProjectName": "Local Project",
       "loadingMessage": "Loading projects...",
       "noProjects": "You have no projects, create one below",
       "noSearchResults": "We couldn't find any projects matching your search",
@@ -68,7 +69,8 @@
         "lastUpdatedAt": "Updated at {date}",
         "agents": "Agents",
         "totalMessages": "Total Messages",
-        "viewButton": "View Project"
+        "viewButton": "View Project",
+        "noLastUpdatedAt": "Local"
       }
     },
     "searchInput": {
