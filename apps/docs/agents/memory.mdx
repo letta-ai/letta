@@ -16,14 +16,17 @@ By default, agents have a `ChatMemory` memory class, which is designed for a 1:1
 
 ```python
 from letta import create_client 
-from letta.schemas.memory import ChatMemory
+from letta.schemas.memory import ChatMemory, LLMConfig, EmbeddingConfig
 
 client = create_client() 
 agent_state = client.create_agent(
     memory=ChatMemory(
         persona="I am docbot and must answer user questions.", 
         human="Name: Sarah"
-    )
+    ), 
+    # TODO: change for different models
+    llm_config=LLMConfig.from_default(model_name="gpt-4o-mini"),
+    embedding_config=EmbeddingConfig.from_default(model_name="text-embedding-ada-002")
 )
 ```
 The ChatMemory class consists of:
@@ -53,6 +56,9 @@ agent_state = client.create_agent(
     memory=BasicBlockMemory(
         blocks = [org_block, persona_block]
     )
+    # TODO: change for different models
+    llm_config=LLMConfig.from_default(model_name="gpt-4o-mini"),
+    embedding_config=EmbeddingConfig.from_default(model_name="text-embedding-ada-002")
 )
 ```
 The `BasicBlockMemory` class consists of
