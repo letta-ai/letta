@@ -181,7 +181,16 @@
       }
     }
   },
+  "ADE/ModelPanel": {
+    "modelInput": {
+      "label": "Model"
+    },
+    "updateModel": "Update",
+    "lastUpdatedAt": "Last updated on {date}",
+    "error": "There was an error while updating the model, please try again or contact support."
+  },
   "ADE/AgentSimulator": {
+    "refreshError": "There was an error refreshing the agent simulator, please refresh the page or contact support.",
     "sendingMessage": "Agent is thinking...",
     "setChatroomRenderMode": {
       "label": "Chatroom Render Mode",
@@ -190,7 +199,6 @@
         "simple": "Simple mode"
       }
     },
-
     "DialogSessionSheet": {
       "updating": "Updating variables...",
       "placeholder": "Variable Value",

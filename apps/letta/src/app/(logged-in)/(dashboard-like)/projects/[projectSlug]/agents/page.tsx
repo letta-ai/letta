@@ -321,7 +321,7 @@ function FilterByDeployedAgentTemplateComponent(
     const nextURLSearchParams = new URLSearchParams();
 
     if (filterBy) {
-      nextURLSearchParams.set('template', filterBy.value);
+      nextURLSearchParams.set('template', filterBy.value || '');
     }
 
     router.replace(`${pathname}?${nextURLSearchParams.toString()}`);

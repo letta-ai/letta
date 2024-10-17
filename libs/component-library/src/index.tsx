@@ -122,3 +122,4 @@ export * from './lib/core/Toaster/Toaster';
 export * from './lib/core/StatusIndicator/StatusIndicator';
 
 export * from './lib/reusable/StatusIndicatorOnIcon/StatusIndicatorOnIcon';
+export * from './lib/brands';
