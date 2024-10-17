@@ -100,10 +100,6 @@
       ]
     },
     {
-      "group": "Deployment",
-      "pages": ["deployment/server"]
-    },
-    {
       "group": "Advanced",
       "pages": ["advanced/memory_management", "advanced/custom_memory"]
     },
