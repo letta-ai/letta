@@ -226,6 +226,7 @@ export function createPanelManager<
 
   interface PanelManagerProps {
     children: React.ReactNode;
+    templateIdDenyList?: RegisteredPanelTemplateId[];
     onPositionError: () => void;
     fallbackPositions: RegisteredPanelItemPositionsMatrix;
     initialPositions?: RegisteredPanelItemPositionsMatrix;
@@ -242,15 +243,44 @@ export function createPanelManager<
     const {
       children,
       onPositionError,
+      templateIdDenyList,
       fallbackPositions,
       initialPositions = [],
       onPositionChange,
     } = props;
 
+    const templateIdDenyListSet = useMemo(() => {
+      return new Set(templateIdDenyList || []);
+    }, [templateIdDenyList]);
+
     const reconcilePositions = useCallback(
       (positions: RegisteredPanelItemPositionsMatrix) => {
+        // remove any positions where templateId is in the deny list
+        const filteredPositions = positions.map((xPosition) => {
+          if (!xPosition) {
+            return xPosition;
+          }
+
+          return {
+            ...xPosition,
+            positions: xPosition.positions.map((yPosition) => {
+              if (!yPosition) {
+                return yPosition;
+              }
+
+              return {
+                ...yPosition,
+                positions: yPosition.positions.filter(
+                  (tabPosition) =>
+                    !templateIdDenyListSet.has(tabPosition.templateId)
+                ),
+              };
+            }),
+          };
+        });
+
         // should remove any empty positions, as in positions with no panels
-        const xPositions = [...positions];
+        const xPositions = [...filteredPositions];
 
         // loop through and remove duplicate ids, start from reverse to avoid index issues
         const activeIds = new Set<PanelId>();
@@ -379,7 +409,7 @@ export function createPanelManager<
           panelIdToPositionMap,
         };
       },
-      []
+      [templateIdDenyListSet]
     );
 
     const [state, setState] = useState<PanelState>(() => {

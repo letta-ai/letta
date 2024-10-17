@@ -58,11 +58,21 @@ interface AccordionProps {
   id: string;
   trigger: React.ReactNode;
   children: React.ReactNode;
+  defaultOpen?: boolean;
 }
 
-export function Accordion({ id, trigger, children }: AccordionProps) {
+export function Accordion({
+  id,
+  trigger,
+  defaultOpen,
+  children,
+}: AccordionProps) {
   return (
-    <AccordionRoot type="single" collapsible>
+    <AccordionRoot
+      defaultValue={defaultOpen ? id : ''}
+      type="single"
+      collapsible
+    >
       <AccordionItem value={id}>
         <AccordionTrigger>{trigger}</AccordionTrigger>
         <AccordionContent>{children}</AccordionContent>

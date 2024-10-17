@@ -33,7 +33,7 @@
     "ContextWindowPreview": {
       "popover": {
         "title": "Context Window",
-        "usage": "{used} of {total} characters used"
+        "usage": "{used} of {total} tokens used"
       },
       "usage": "{used}/{total}",
       "systemPrompt": "System Prompt",
@@ -196,7 +196,7 @@
     "error": "There was an error while updating the model, please try again or contact support."
   },
   "ADE/AgentSimulator": {
-    "localAgent": "This feature is only available on letta cloud",
+    "localAgent": "This feature is only available on Letta Cloud",
     "refreshError": "There was an error refreshing the agent simulator, please refresh the page or contact support.",
     "sendingMessage": "Agent is thinking...",
     "setChatroomRenderMode": {
@@ -429,7 +429,7 @@
   "ADE/DeploymentAgentMangerPanel": {
     "StageAndDeployDialog": {
       "title": "Are you sure you want to version your template?",
-      "trigger": "Create a new version",
+      "trigger": "Create Version",
       "details": "This creates a version of your agent template that is immutable and can be used to deploy agents. Are you sure you want to proceed?"
     },
     "DeployedAgentTemplateCard": {

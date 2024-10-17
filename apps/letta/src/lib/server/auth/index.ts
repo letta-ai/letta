@@ -230,8 +230,7 @@ async function createUserAndOrganization(
     ),
     db.insert(adePreferences).values({
       userId: createdUser.userId,
-      displayConfig: generateDefaultADELayout({ firstTime: true })
-        .displayConfig,
+      displayConfig: generateDefaultADELayout().displayConfig,
       agentId: createdAgentTemplate.body.id,
     }),
   ]);

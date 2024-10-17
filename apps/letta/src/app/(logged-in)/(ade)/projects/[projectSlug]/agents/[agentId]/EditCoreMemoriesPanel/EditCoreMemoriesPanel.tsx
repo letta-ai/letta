@@ -63,6 +63,7 @@ function EditMemoryForm({ block }: EditMemoryFormProps) {
 
   return (
     <Accordion
+      defaultOpen
       id={block.id || ''}
       trigger={
         <HStack data-testid={`edit-memory-block:${block.label}`} align="center">

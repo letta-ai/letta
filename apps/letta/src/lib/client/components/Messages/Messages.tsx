@@ -1,11 +1,14 @@
 import React, { useEffect, useMemo, useRef } from 'react';
 import {
-  Avatar,
   Button,
   Code,
   HStack,
+  IconAvatar,
   LettaLoaderPanel,
   Markdown,
+  PersonIcon,
+  RobotIcon,
+  ThoughtsIcon,
   Typography,
   VStack,
 } from '@letta-web/component-library';
@@ -174,7 +177,7 @@ function extractMessage(
           <MessageWrapper
             header={
               <>
-                🤔
+                <ThoughtsIcon />
                 <Typography bold>Internal Monologue</Typography>
               </>
             }
@@ -252,7 +255,14 @@ function MessageGroup({ group }: MessageGroupType) {
 
   return (
     <HStack>
-      <Avatar name={name} />
+      <IconAvatar
+        color={
+          name === 'Agent'
+            ? 'hsl(var(--primary-light))'
+            : 'hsl(var(--background-grey))'
+        }
+        icon={name === 'Agent' ? <RobotIcon /> : <PersonIcon />}
+      />
       <VStack fullWidth gap="small">
         <Typography bold>{name}</Typography>
         <VStack gap="large">

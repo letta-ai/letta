@@ -254,6 +254,7 @@ export function AgentPage() {
         onPositionError={() => {
           toast.error(t('positionError'));
         }}
+        templateIdDenyList={!isTemplate ? ['deployment'] : []}
         fallbackPositions={generateDefaultADELayout().displayConfig}
         initialPositions={data.body.displayConfig}
         onPositionChange={setUpdatedPositions}

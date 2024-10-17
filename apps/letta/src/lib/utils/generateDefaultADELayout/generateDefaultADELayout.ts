@@ -1,20 +1,19 @@
 import type { AdePreferencesData } from '$letta/web-api/ade-preferences/adePreferencesContracts';
+//
+// interface GenerateDefaultPreferencesOptions {
+//   firstTime?: boolean;
+// }
 
-interface GenerateDefaultPreferencesOptions {
-  firstTime?: boolean;
-}
-
-export function generateDefaultADELayout(
-  options: GenerateDefaultPreferencesOptions = {}
-): AdePreferencesData {
-  const { firstTime } = options;
+export function generateDefaultADELayout(): AdePreferencesData {
+  // options: GenerateDefaultPreferencesOptions = {}
+  // const { firstTime } = options;
   return {
     displayConfig: [
       {
-        size: 35,
+        size: 30,
         positions: [
           {
-            size: 20,
+            size: 30,
             positions: [
               {
                 id: 'model-details',
@@ -22,16 +21,16 @@ export function generateDefaultADELayout(
                 templateId: 'model-details',
                 data: undefined,
               },
-              {
-                id: 'agent-config',
-                isActive: false,
-                templateId: 'agent-config',
-                data: undefined,
-              },
+              // {
+              //   id: 'agent-config',
+              //   isActive: false,
+              //   templateId: 'agent-config',
+              //   data: undefined,
+              // },
             ],
           },
           {
-            size: 60,
+            size: 70,
             positions: [
               {
                 id: 'edit-core-memories',
@@ -61,9 +60,17 @@ export function generateDefaultADELayout(
           {
             size: 100,
             positions: [
+              // {
+              //   id: 'welcome-panel',
+              //   isActive: true,
+              //   templateId: 'welcome-panel',
+              //   data: {
+              //     firstTime,
+              //   },
+              // },
               {
                 id: 'agent-simulator',
-                isActive: true,
+                isActive: false,
                 templateId: 'agent-simulator',
                 data: undefined,
               },
@@ -72,29 +79,15 @@ export function generateDefaultADELayout(
         ],
       },
       {
-        size: 35,
+        size: 30,
         positions: [
           {
             size: 50,
             positions: [
               {
-                id: 'welcome-panel',
+                id: 'archival-memories',
                 isActive: true,
-                templateId: 'welcome-panel',
-                data: {
-                  firstTime,
-                },
-              },
-              {
-                id: 'deployment',
-                isActive: false,
-                templateId: 'deployment',
-                data: undefined,
-              },
-              {
-                id: 'deployed-agents',
-                isActive: false,
-                templateId: 'deployed-agents',
+                templateId: 'archival-memories',
                 data: undefined,
               },
             ],
@@ -103,9 +96,9 @@ export function generateDefaultADELayout(
             size: 50,
             positions: [
               {
-                id: 'archival-memories',
-                isActive: true,
-                templateId: 'archival-memories',
+                id: 'deployment',
+                isActive: false,
+                templateId: 'deployment',
                 data: undefined,
               },
             ],
