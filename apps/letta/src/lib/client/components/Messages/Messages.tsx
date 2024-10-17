@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef } from 'react';
 import {
+  Alert,
   Button,
   Code,
   HStack,
@@ -28,6 +29,7 @@ import { FunctionIcon } from '@letta-web/component-library';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import type { InfiniteData } from '@tanstack/query-core';
 import { jsonrepair } from 'jsonrepair';
+import { useTranslations } from 'next-intl';
 
 interface MessageWrapperProps {
   header: React.ReactNode;
@@ -290,6 +292,7 @@ export function Messages(props: MessagesProps) {
   const { isSendingMessage, mode, isPanelActive, agentId } = props;
   const ref = useRef<HTMLDivElement>(null);
   const hasScrolledInitially = useRef(false);
+  const t = useTranslations('common/Messages');
 
   const { data, hasNextPage, fetchNextPage, isFetching } = useInfiniteQuery<
     AgentMessage[],
@@ -409,7 +412,10 @@ export function Messages(props: MessagesProps) {
       {messageGroups.map((group) => (
         <MessageGroup key={group.id} group={group} />
       ))}
-      {messageGroups.length === 0 && <LettaLoaderPanel />}
+      {hasNextPage && messageGroups.length === 0 && mode === 'simple' && (
+        <Alert variant="info" title={t('noParsableMessages')} />
+      )}
+      {!data && <LettaLoaderPanel />}
     </VStack>
   );
 }

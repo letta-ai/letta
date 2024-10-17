@@ -12,7 +12,7 @@ export function useCurrentSimulatedAgent() {
   const agentState = useCurrentAgent();
   const { id: agentId } = agentState;
   const { isTemplate } = useCurrentAgentMetaData();
-  const { slug: projectId } = useCurrentProject();
+  const { id: projectId } = useCurrentProject();
   const t = useTranslations('ADE/useCurrentSimulatedAgent');
 
   const { data: agentSession, isError } =
@@ -27,7 +27,6 @@ export function useCurrentSimulatedAgent() {
           projectId,
         },
       },
-      retry: false,
       enabled: isTemplate,
     });
 

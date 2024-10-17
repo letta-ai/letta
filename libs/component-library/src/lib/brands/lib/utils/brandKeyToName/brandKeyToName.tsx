@@ -1,6 +1,7 @@
 import type { LLMConfig } from '@letta-web/letta-agents-api';
 import React from 'react';
 import { OpenAILogo } from '../../open-ai/OpenAILogo/OpenAILogo';
+import { HuggingFaceLogo } from '../../hugging-face/HuggingFaceLogo/HuggingFaceLogo';
 
 const brandKeyToNameMap: Record<LLMConfig['model_endpoint_type'], string> = {
   openai: 'OpenAI',
@@ -49,7 +50,7 @@ const brandKeyToLogoMap: Record<
   llamacpp: '',
   koboldcpp: '',
   vllm: '',
-  'hugging-face': '',
+  'hugging-face': <HuggingFaceLogo />,
   mistral: '',
 };
 

@@ -44,11 +44,7 @@ import type { MessagesDisplayMode } from '$letta/client/components';
 import { Messages } from '$letta/client/components';
 import { z } from 'zod';
 import { useTranslations } from 'next-intl';
-import {
-  useDebouncedCallback,
-  useDebouncedValue,
-  useLocalStorage,
-} from '@mantine/hooks';
+import { useDebouncedCallback, useLocalStorage } from '@mantine/hooks';
 import { webApi, webApiQueryKeys } from '$letta/client';
 import { useCurrentProject } from '../../../../../../(dashboard-like)/projects/[projectSlug]/hooks';
 import { findMemoryBlockVariables } from '$letta/utils';
@@ -298,13 +294,12 @@ interface DialogSessionDialogProps {
 
 function DialogSessionSheet(props: DialogSessionDialogProps) {
   const t = useTranslations('ADE/AgentSimulator');
-  const { variables } = props;
+  const { variables, existingVariables } = props;
   const { id: projectId } = useCurrentProject();
-  const { id: agentTemplateId } = useCurrentAgent();
+  const { agentId: agentTemplateId } = useCurrentAgentMetaData();
 
-  const [variableData, setVariableData] = useState<Record<string, string>>(
-    props.existingVariables
-  );
+  const [variableData, setVariableData] =
+    useState<Record<string, string>>(existingVariables);
 
   const queryClient = useQueryClient();
 
@@ -328,17 +323,20 @@ function DialogSessionSheet(props: DialogSessionDialogProps) {
       },
     });
 
-  const [debouncedVariableData] = useDebouncedValue(variableData, 500);
-
-  useEffect(() => {
-    if (isPending) {
-      return;
-    }
-
+  const handleUpdateSession = useCallback(() => {
     const validVariableNames = new Set(variables);
 
     const cleanedVariableData = Object.fromEntries(
-      Object.entries(debouncedVariableData)
+      Object.entries(variableData)
+        .filter(
+          ([variableName, value]) =>
+            value && validVariableNames.has(variableName)
+        )
+        .map(([variableName, value]) => [variableName, value])
+    );
+
+    const cleanedExistingVariables = Object.fromEntries(
+      Object.entries(existingVariables)
         .filter(
           ([variableName, value]) =>
             value && validVariableNames.has(variableName)
@@ -347,7 +345,7 @@ function DialogSessionSheet(props: DialogSessionDialogProps) {
     );
 
     // if variables are not different, don't update
-    if (isEqual(cleanedVariableData, props.existingVariables)) {
+    if (isEqual(cleanedVariableData, cleanedExistingVariables)) {
       return;
     }
 
@@ -362,12 +360,30 @@ function DialogSessionSheet(props: DialogSessionDialogProps) {
     });
   }, [
     agentTemplateId,
-    debouncedVariableData,
-    isPending,
     mutate,
+    projectId,
+    existingVariables,
+    variableData,
+    variables,
+  ]);
+
+  const debouncedUpdateSession = useDebouncedCallback(handleUpdateSession, 500);
+
+  useEffect(() => {
+    if (isPending) {
+      return;
+    }
+
+    debouncedUpdateSession();
+  }, [
+    agentTemplateId,
+    isPending,
     projectId,
     props.existingVariables,
     variables,
+    variableData,
+    handleUpdateSession,
+    debouncedUpdateSession,
   ]);
 
   const handleChange = useCallback((name: string, value: string) => {
@@ -391,11 +407,11 @@ function DialogSessionSheet(props: DialogSessionDialogProps) {
   }
 
   return (
-    <VStack position="relative" borderBottom paddingBottom="small">
+    <VStack position="relative" borderBottom padding="small">
       <HStack fullWidth position="absolute">
         {isPending && <ProgressBar indeterminate />}
       </HStack>
-      <VStack gap={false} borderBottom>
+      <VStack border gap={false} borderBottom>
         <Table>
           <TableBody>
             {variables.map((variable) => (

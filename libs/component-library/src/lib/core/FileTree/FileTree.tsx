@@ -70,7 +70,7 @@ function RowItem(props: RowItemProps) {
           <DropdownMenu trigger={<DotsHorizontalIcon className="w-4" />}>
             {actions.map((action) => (
               <DropdownMenuItem
-                key={action.id}
+                key={action.id || action.label}
                 onClick={action.onClick}
                 preIcon={action.icon}
                 label={action.label}
