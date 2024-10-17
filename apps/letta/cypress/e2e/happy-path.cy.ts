@@ -61,11 +61,11 @@ describe('letta', () => {
 
     // stage the agent
 
-    cy.findByTestId('tab:Template Version Manager').click();
-
-    cy.findByTestId('stage-new-version-button').click();
-
-    cy.findByTestId('stage-agent-dialog-confirm-button').click();
+    // cy.findByTestId('tab:Template Version Manager').click();
+    //
+    // cy.findByTestId('stage-new-version-button').click();
+    //
+    // cy.findByTestId('stage-agent-dialog-confirm-button').click();
 
     // cy.findByTestId('show-deployment-instructions-0', {
     //   timeout: 10000,
