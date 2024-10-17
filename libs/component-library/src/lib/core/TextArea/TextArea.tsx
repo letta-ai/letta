@@ -8,10 +8,11 @@ import TextareaAutosize, {
 
 type TextAreaProps = TextareaAutosizeProps & {
   fullWidth?: boolean;
+  hideLabel?: boolean;
 };
 
 const PrimitiveTextArea = React.forwardRef<HTMLTextAreaElement, TextAreaProps>(
-  ({ className, fullWidth, ...props }, ref) => {
+  ({ className, hideLabel: _hideLabel, fullWidth, ...props }, ref) => {
     return (
       <TextareaAutosize
         className={cn(

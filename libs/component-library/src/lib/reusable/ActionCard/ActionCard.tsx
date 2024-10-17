@@ -7,7 +7,6 @@ import type { VariantProps } from 'class-variance-authority';
 import { cva } from 'class-variance-authority';
 import { cn } from '@letta-web/core-style-config';
 import './ActionCard.scss';
-import { Tooltip } from '../../core/Tooltip/Tooltip';
 import { CaretRightIcon } from '../../icons';
 
 const actionCardVariants = cva('', {
@@ -86,11 +85,9 @@ export function ActionCard(props: ToggleCardProps) {
               )}
               <VStack gap={false} align="start">
                 <HStack paddingRight fullWidth overflow="hidden">
-                  <Tooltip asChild content={title} placement="top">
-                    <Typography noWrap fullWidth overflow="ellipsis" bold>
-                      {title}
-                    </Typography>
-                  </Tooltip>
+                  <Typography noWrap fullWidth overflow="ellipsis" bold>
+                    {title}
+                  </Typography>
                 </HStack>
                 {props.subtitle && (
                   <Typography

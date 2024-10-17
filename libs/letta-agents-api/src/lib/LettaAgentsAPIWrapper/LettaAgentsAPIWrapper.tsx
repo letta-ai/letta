@@ -25,6 +25,12 @@ export function LettaAgentsAPIWrapper({
 }: LettaAgentsAPIWrapperProps) {
   useEffect(() => {
     window.baseUrl = baseUrl;
+
+    OpenAPI.interceptors.request.use((config) => {
+      config.baseURL = baseUrl;
+
+      return config;
+    });
   }, [baseUrl]);
 
   return children;

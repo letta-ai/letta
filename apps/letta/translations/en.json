@@ -38,7 +38,11 @@
       "usage": "{used}/{total}",
       "systemPrompt": "System Prompt",
       "memoryBlocks": "Memory Blocks",
-      "remaining": "Remaining"
+      "remaining": "Remaining",
+      "messagesTokens": "Messages Tokens",
+      "summaryMemory": "Summary Memory",
+      "recallMemory": "Recall Memory",
+      "archivalMemory": "Archival Memory"
     }
   },
   "projects/page": {
@@ -57,6 +61,7 @@
       "instructions": "To connect to a local project, you need to have the Letta CLI installed. Run the following command in your terminal to connect to a local project:"
     },
     "projectsList": {
+      "localProjectName": "Local Project",
       "loadingMessage": "Loading projects...",
       "noProjects": "You have no projects, create one below",
       "noSearchResults": "We couldn't find any projects matching your search",
@@ -64,7 +69,8 @@
         "lastUpdatedAt": "Updated at {date}",
         "agents": "Agents",
         "totalMessages": "Total Messages",
-        "viewButton": "View Project"
+        "viewButton": "View Project",
+        "noLastUpdatedAt": "Local"
       }
     },
     "searchInput": {
@@ -190,6 +196,7 @@
     "error": "There was an error while updating the model, please try again or contact support."
   },
   "ADE/AgentSimulator": {
+    "localAgent": "This feature is only available on letta cloud",
     "refreshError": "There was an error refreshing the agent simulator, please refresh the page or contact support.",
     "sendingMessage": "Agent is thinking...",
     "setChatroomRenderMode": {
@@ -330,6 +337,16 @@
   },
   "local-project/page": {
     "title": "Local Agents",
+    "createAgent": "Create Agent",
+    "CreateAgentDialog": {
+      "error": "Error creating agent",
+      "info": "This will create an agent locally on your machine. This does not deploy the agent to Letta Cloud.",
+      "title": "Create a new agent",
+      "nameInput": {
+        "label": "Agent Name",
+        "placeholder": "my-agent-name"
+      }
+    },
     "searchInput": {
       "placeholder": "Search agents"
     },

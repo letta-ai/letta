@@ -3,9 +3,15 @@ import * as React from 'react';
 import type { EChartsOption } from 'echarts';
 import { useEffect, useRef } from 'react';
 import * as echarts from 'echarts';
+import { HStack } from '../../framing/HStack/HStack';
+import { Typography } from '../Typography/Typography';
+import { VStack } from '../../framing/VStack/VStack';
 
 interface ChartOptions {
   options: EChartsOption;
+  showLegend?: boolean;
+  height?: number;
+  width?: number;
 }
 
 const defaultOptions: EChartsOption = {
@@ -15,7 +21,7 @@ const defaultOptions: EChartsOption = {
 };
 
 export function Chart(props: ChartOptions) {
-  const { options } = props;
+  const { options, width, height, showLegend } = props;
   const mounted = useRef(false);
   const chartRef = React.useRef<HTMLDivElement>(null);
   const chart = useRef<echarts.ECharts | null>(null);
@@ -46,6 +52,9 @@ export function Chart(props: ChartOptions) {
       currentChart.setOption({
         ...defaultOptions,
         ...options,
+        legend: {
+          show: false,
+        },
       });
 
       requestAnimationFrame(() => {
@@ -55,10 +64,30 @@ export function Chart(props: ChartOptions) {
   }, [options]);
 
   return (
-    <div
-      ref={chartRef}
-      className="w-full h-full"
-      style={{ minWidth: '100%', minHeight: '100%' }}
-    />
+    <VStack fullHeight fullWidth>
+      <div
+        ref={chartRef}
+        className="w-full h-full"
+        style={{ minWidth: width || '100%', minHeight: height || '100%' }}
+      />
+      {showLegend && Array.isArray(options?.series) && (
+        <HStack wrap fullWidth>
+          {options?.series?.map((series) => (
+            <HStack align="center" key={series.name}>
+              <div
+                className="min-w-2 min-h-2 rounded-full"
+                style={{
+                  backgroundColor:
+                    typeof series.color === 'string'
+                      ? series.color
+                      : series.color?.toString(),
+                }}
+              />
+              <Typography variant="body3">{series.name}</Typography>
+            </HStack>
+          ))}
+        </HStack>
+      )}
+    </VStack>
   );
 }

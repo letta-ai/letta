@@ -56,6 +56,7 @@ import type { GetAgentTemplateSimulatorSessionResponseBody } from '$letta/web-ap
 import { isEqual } from 'lodash-es';
 import { useCurrentSimulatedAgent } from '../hooks/useCurrentSimulatedAgent/useCurrentSimulatedAgent';
 import toast from 'react-hot-toast';
+import { useCurrentAgentMetaData } from '../hooks/useCurrentAgentMetaData/useCurrentAgentMetaData';
 
 function useSendMessage(agentId: string) {
   const [isPending, setIsPending] = useState(false);
@@ -440,6 +441,7 @@ function Chatroom() {
     return findMemoryBlockVariables(agentState);
   }, [agentState]);
 
+  const { isLocal } = useCurrentAgentMetaData();
   const { id: agentIdToUse, agentSession } = useCurrentSimulatedAgent();
 
   const mounted = useRef(false);
@@ -550,10 +552,16 @@ function Chatroom() {
         </PanelBar>
         {showVariablesMenu && (
           <VStack>
-            <DialogSessionSheet
-              existingVariables={agentSession?.body.variables || {}}
-              variables={variableList}
-            />
+            {isLocal ? (
+              <HStack padding="small">
+                <Alert title={t('localAgent')} variant="info" />
+              </HStack>
+            ) : (
+              <DialogSessionSheet
+                existingVariables={agentSession?.body.variables || {}}
+                variables={variableList}
+              />
+            )}
           </VStack>
         )}
         <VStack collapseHeight gap={false} fullWidth>

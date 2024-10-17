@@ -27,7 +27,7 @@ import {
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useCurrentProject } from '../../../../../(dashboard-like)/projects/[projectSlug]/hooks';
 import { useDebouncedValue } from '@mantine/hooks';
-import { useFeatureFlag, webApi, webApiQueryKeys } from '$letta/client';
+import { webApi, webApiQueryKeys } from '$letta/client';
 import { useRouter } from 'next/navigation';
 import { useCurrentUser } from '$letta/client/hooks';
 import { CurrentUserDetailsBlock } from '$letta/client/common';
@@ -229,10 +229,6 @@ export function AgentPage() {
     }
   }, [agentId, debouncedPositions, mutate]);
 
-  const { data: isContextEditorVisible } = useFeatureFlag(
-    'SHOW_CONTEXT_EDITOR'
-  );
-
   const fullPageWarning = useMemo(() => {
     if (isLocal) {
       return t('localAgentDevelopment');
@@ -276,7 +272,7 @@ export function AgentPage() {
               }}
             >
               <HStack paddingRight="small">
-                {isContextEditorVisible && <ContextWindowPreview />}
+                <ContextWindowPreview />
                 {isTemplate && <ForkAgentDialog />}
                 <RestoreLayoutButton />
                 <NavOverlay />

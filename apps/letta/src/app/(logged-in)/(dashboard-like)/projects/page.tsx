@@ -1,5 +1,5 @@
 'use client';
-import React, { useCallback, useEffect } from 'react';
+import React, { useCallback, useEffect, useRef } from 'react';
 import {
   Avatar,
   Button,
@@ -33,31 +33,40 @@ import { getIsLocalServiceOnline } from '$letta/client/local-project-manager/get
 import { LOCAL_PROJECT_SERVER_PORT } from '$letta/constants';
 import { nicelyFormattedDateAndTime } from '@letta-web/helpful-client-utils';
 
+function useIsLocalServiceOnline() {
+  const [isLocalServiceOnline, setIsOnline] = React.useState(false);
+  const interval = useRef<ReturnType<typeof setTimeout>>();
+
+  const mounted = useRef(false);
+
+  useEffect(() => {
+    if (mounted.current) {
+      return;
+    }
+
+    mounted.current = true;
+
+    void getIsLocalServiceOnline().then(setIsOnline);
+  }, []);
+
+  useEffect(() => {
+    interval.current = setInterval(async () => {
+      void getIsLocalServiceOnline().then(setIsOnline);
+    }, 3000);
+
+    return () => {
+      clearInterval(interval.current);
+    };
+  }, []);
+
+  return { isLocalServiceOnline };
+}
+
 function ConnectToLocalProjectDialog() {
   const t = useTranslations('projects/page');
   const { push } = useRouter();
   const [open, setOpen] = React.useState(false);
   const [pending, setPending] = React.useState(false);
-
-  const interval = React.useRef<ReturnType<typeof setTimeout>>();
-
-  useEffect(() => {
-    if (open) {
-      interval.current = setInterval(async () => {
-        const isOnline = await getIsLocalServiceOnline();
-
-        if (isOnline) {
-          push('/local-project/agents');
-        }
-      }, 3000);
-    } else {
-      clearInterval(interval.current);
-    }
-
-    return () => {
-      clearInterval(interval.current);
-    };
-  }, [open, push]);
 
   const handleFirstConnect = useCallback(async () => {
     setPending(true);
@@ -179,10 +188,56 @@ function CreateProjectDialog() {
   );
 }
 
+interface ProjectCardProps {
+  projectId: string;
+  projectName: string;
+  lastUpdatedAt?: string;
+  url: string;
+}
+
+function ProjectCard(props: ProjectCardProps) {
+  const { projectName, lastUpdatedAt, url } = props;
+  const t = useTranslations('projects/page');
+
+  return (
+    <Card>
+      <VStack fullWidth>
+        <VStack fullWidth>
+          <Avatar name={projectName} />
+          <VStack gap="text">
+            <Tooltip asChild content={projectName}>
+              <Typography align="left" noWrap fullWidth overflow="ellipsis">
+                {projectName}
+              </Typography>
+            </Tooltip>
+            <HStack>
+              {
+                <Typography variant="body2" color="muted">
+                  {lastUpdatedAt
+                    ? t('projectsList.projectItem.lastUpdatedAt', {
+                        date: nicelyFormattedDateAndTime(lastUpdatedAt),
+                      })
+                    : t('projectsList.projectItem.noLastUpdatedAt')}
+                </Typography>
+              }
+            </HStack>
+          </VStack>
+        </VStack>
+        <Button
+          color="tertiary"
+          align="center"
+          fullWidth
+          label={t('projectsList.projectItem.viewButton')}
+          href={url}
+        />
+      </VStack>
+    </Card>
+  );
+}
+
 function ProjectsList(props: ProjectsListProps) {
   const t = useTranslations('projects/page');
   const [debouncedSearch] = useDebouncedValue(props.search, 500);
-
   const { data, isError } = webApi.projects.getProjects.useQuery({
     queryKey: webApiQueryKeys.projects.getProjectsWithSearch({
       search: debouncedSearch,
@@ -193,6 +248,8 @@ function ProjectsList(props: ProjectsListProps) {
       },
     },
   });
+
+  const { isLocalServiceOnline } = useIsLocalServiceOnline();
 
   if (!data || isError || data.body.projects.length === 0) {
     return (
@@ -213,40 +270,22 @@ function ProjectsList(props: ProjectsListProps) {
   return (
     <>
       <NiceGridDisplay>
+        {isLocalServiceOnline && (
+          <ProjectCard
+            projectId="local"
+            projectName={t('projectsList.localProjectName')}
+            lastUpdatedAt=""
+            url="/local-project/agents"
+          />
+        )}
         {data.body.projects.map((project) => (
-          <Card key={project.id}>
-            <VStack fullWidth>
-              <VStack fullWidth>
-                <Avatar name={project.name} />
-                <VStack gap="text">
-                  <Tooltip asChild content={project.name}>
-                    <Typography
-                      align="left"
-                      noWrap
-                      fullWidth
-                      overflow="ellipsis"
-                    >
-                      {project.name}
-                    </Typography>
-                  </Tooltip>
-                  <HStack>
-                    <Typography variant="body2" color="muted">
-                      {t('projectsList.projectItem.lastUpdatedAt', {
-                        date: nicelyFormattedDateAndTime(project.updatedAt),
-                      })}
-                    </Typography>
-                  </HStack>
-                </VStack>
-              </VStack>
-              <Button
-                color="tertiary"
-                align="center"
-                fullWidth
-                label={t('projectsList.projectItem.viewButton')}
-                href={`/projects/${project.slug}`}
-              />
-            </VStack>
-          </Card>
+          <ProjectCard
+            key={project.id}
+            projectId={project.id}
+            projectName={project.name}
+            lastUpdatedAt={project.updatedAt}
+            url={`/projects/${project.slug}`}
+          />
         ))}
       </NiceGridDisplay>
     </>

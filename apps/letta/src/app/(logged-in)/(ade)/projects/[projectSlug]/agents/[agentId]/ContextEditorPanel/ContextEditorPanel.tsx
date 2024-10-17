@@ -1,15 +1,11 @@
 import { useCurrentAgent } from '../hooks';
 
-import {
-  useAgentsServiceGetAgentArchivalMemorySummary,
-  useAgentsServiceGetAgentRecallMemorySummary,
-} from '@letta-web/letta-agents-api';
+import { useAgentsServiceGetAgentContextWindow } from '@letta-web/letta-agents-api';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useCoreMemorySummaryWorker } from './hooks/useCoreMemorySummaryWorker/useCoreMemorySummaryWorker';
 import type { WorkerResponse } from './types';
 import {
   Chart,
-  Frame,
   HStack,
   Popover,
   Typography,
@@ -24,15 +20,12 @@ const computedMemoryStringAtom = atom<string | null>(null);
 export function ContextWindowPreview() {
   const [open, setOpen] = useState(false);
   const t = useTranslations('ADE/ContextEditorPanel');
-  const { system, memory, id, llm_config } = useCurrentAgent();
+  const { memory, id, llm_config } = useCurrentAgent();
   const [computedMemoryString, setComputedMemoryString] = useAtom(
     computedMemoryStringAtom
   );
 
-  useAgentsServiceGetAgentArchivalMemorySummary({
-    agentId: id,
-  });
-  useAgentsServiceGetAgentRecallMemorySummary({
+  const { data: contextWindow } = useAgentsServiceGetAgentContextWindow({
     agentId: id,
   });
 
@@ -60,16 +53,46 @@ export function ContextWindowPreview() {
   }, [llm_config.context_window]);
 
   const systemPromptLength = useMemo(() => {
-    return system.length;
-  }, [system.length]);
+    return contextWindow?.system_prompt.length || 0;
+  }, [contextWindow?.system_prompt.length]);
+
+  const archivalMemoryLength = useMemo(() => {
+    return contextWindow?.num_archival_memory || 0;
+  }, [contextWindow?.num_archival_memory]);
+
+  const recallMemoryLength = useMemo(() => {
+    return contextWindow?.num_recall_memory || 0;
+  }, [contextWindow?.num_recall_memory]);
+
+  const summaryMemoryLength = useMemo(() => {
+    return contextWindow?.num_tokens_summary_memory || 0;
+  }, [contextWindow?.num_tokens_summary_memory]);
+
+  const messagesTokensLength = useMemo(() => {
+    return contextWindow?.num_tokens_messages || 0;
+  }, [contextWindow?.num_tokens_messages]);
 
   const coreMemoryLength = useMemo(() => {
     return computedMemoryString?.length || 0;
   }, [computedMemoryString?.length]);
 
   const totalUsedLength = useMemo(() => {
-    return systemPromptLength + coreMemoryLength;
-  }, [systemPromptLength, coreMemoryLength]);
+    return (
+      systemPromptLength +
+      coreMemoryLength +
+      archivalMemoryLength +
+      recallMemoryLength +
+      summaryMemoryLength +
+      messagesTokensLength
+    );
+  }, [
+    systemPromptLength,
+    coreMemoryLength,
+    archivalMemoryLength,
+    recallMemoryLength,
+    summaryMemoryLength,
+    messagesTokensLength,
+  ]);
 
   const remainingLength = useMemo(() => {
     return totalLength - totalUsedLength;
@@ -124,6 +147,34 @@ export function ContextWindowPreview() {
           name: t('ContextWindowPreview.memoryBlocks'),
         },
         {
+          data: [archivalMemoryLength / totalLength],
+          type: 'bar',
+          color: 'pink',
+          stack: 'total',
+          name: t('ContextWindowPreview.archivalMemory'),
+        },
+        {
+          data: [recallMemoryLength / totalLength],
+          type: 'bar',
+          color: 'blue',
+          stack: 'total',
+          name: t('ContextWindowPreview.recallMemory'),
+        },
+        {
+          data: [summaryMemoryLength / totalLength],
+          type: 'bar',
+          color: 'green',
+          stack: 'total',
+          name: t('ContextWindowPreview.summaryMemory'),
+        },
+        {
+          data: [messagesTokensLength / totalLength],
+          type: 'bar',
+          color: 'orange',
+          stack: 'total',
+          name: t('ContextWindowPreview.messagesTokens'),
+        },
+        {
           data: [remainingLength / totalLength],
           type: 'bar',
           color: 'gray',
@@ -135,7 +186,17 @@ export function ContextWindowPreview() {
         },
       ],
     };
-  }, [coreMemoryLength, remainingLength, systemPromptLength, t, totalLength]);
+  }, [
+    archivalMemoryLength,
+    coreMemoryLength,
+    messagesTokensLength,
+    recallMemoryLength,
+    remainingLength,
+    summaryMemoryLength,
+    systemPromptLength,
+    t,
+    totalLength,
+  ]);
 
   const standardChartOptions = useMemo(() => {
     const commonSeriesStyles = {
@@ -148,19 +209,13 @@ export function ContextWindowPreview() {
 
     const opts: EChartsOption = {
       tooltip: {
-        show: false,
-      },
-      legend: {
-        icon: 'circle',
-        orient: 'horizontal',
-        bottom: 0,
-        left: 0,
+        show: true,
       },
       grid: {
         top: 0,
         left: 0,
         right: 0,
-        bottom: 25,
+        bottom: 0,
       },
       xAxis: {
         show: false,
@@ -187,8 +242,10 @@ export function ContextWindowPreview() {
         {
           ...commonSeriesStyles,
           label: {
-            ...commonSeriesStyles.label,
-            formatter: () => `${systemPromptLength}`,
+            show: false,
+          },
+          tooltip: {
+            formatter: (e) => `${e.seriesName}: ${systemPromptLength}`,
           },
           data: [systemPromptLength / totalLength],
           color: '#3758F9',
@@ -200,8 +257,10 @@ export function ContextWindowPreview() {
         {
           ...commonSeriesStyles,
           label: {
-            ...commonSeriesStyles.label,
-            formatter: () => `${coreMemoryLength}`,
+            show: false,
+          },
+          tooltip: {
+            formatter: (e) => `${e.seriesName}: ${coreMemoryLength}`,
           },
           data: [coreMemoryLength / totalLength],
           color: '#6EE7B7',
@@ -210,8 +269,60 @@ export function ContextWindowPreview() {
         {
           ...commonSeriesStyles,
           label: {
-            ...commonSeriesStyles.label,
-            formatter: () => `${remainingLength}`,
+            show: false,
+          },
+          tooltip: {
+            formatter: (e) => `${e.seriesName}: ${archivalMemoryLength}`,
+          },
+          data: [archivalMemoryLength / totalLength],
+          color: 'pink',
+          name: t('ContextWindowPreview.archivalMemory'),
+        },
+        {
+          ...commonSeriesStyles,
+          label: {
+            show: false,
+          },
+          tooltip: {
+            formatter: (e) => `${e.seriesName}: ${recallMemoryLength}`,
+          },
+          data: [recallMemoryLength / totalLength],
+          color: 'red',
+          name: t('ContextWindowPreview.recallMemory'),
+        },
+        {
+          ...commonSeriesStyles,
+          label: {
+            show: false,
+          },
+          tooltip: {
+            formatter: (e) => `${e.seriesName}: ${summaryMemoryLength}`,
+          },
+          data: [summaryMemoryLength / totalLength],
+          color: 'green',
+          name: t('ContextWindowPreview.summaryMemory'),
+        },
+        {
+          ...commonSeriesStyles,
+          label: {
+            show: false,
+          },
+          tooltip: {
+            formatter: (e) => `${e.seriesName}: ${messagesTokensLength}`,
+          },
+          data: [messagesTokensLength / totalLength],
+          color: 'orange',
+          name: t('ContextWindowPreview.messagesTokens'),
+        },
+        {
+          ...commonSeriesStyles,
+          label: {
+            show: false,
+          },
+          tooltip: {
+            formatter: (e) => {
+              return `${e.seriesName}: ${remainingLength}`;
+            },
           },
           data: [remainingLength / totalLength],
           color: 'gray',
@@ -249,11 +360,21 @@ export function ContextWindowPreview() {
     }
 
     return opts;
-  }, [coreMemoryLength, remainingLength, systemPromptLength, t, totalLength]);
+  }, [
+    archivalMemoryLength,
+    coreMemoryLength,
+    messagesTokensLength,
+    recallMemoryLength,
+    remainingLength,
+    summaryMemoryLength,
+    systemPromptLength,
+    t,
+    totalLength,
+  ]);
 
   const isReady = useMemo(() => {
-    return computedMemoryString;
-  }, [computedMemoryString]);
+    return computedMemoryString && !!contextWindow;
+  }, [computedMemoryString, contextWindow]);
   const handleSetOpen = useCallback(
     (status: boolean) => {
       if (!isReady && status) {
@@ -287,6 +408,7 @@ export function ContextWindowPreview() {
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
           align="center"
+          animate
           justify="end"
           transparent={!isReady}
         >
@@ -324,9 +446,7 @@ export function ContextWindowPreview() {
           </Typography>
         </HStack>
         {/* eslint-disable-next-line react/forbid-component-props */}
-        <Frame className="h-[50px]" fullWidth>
-          <Chart options={standardChartOptions} />
-        </Frame>
+        <Chart showLegend height={30} options={standardChartOptions} />
       </VStack>
     </Popover>
   );
