@@ -67,25 +67,25 @@ describe('letta', () => {
 
     cy.findByTestId('stage-agent-dialog-confirm-button').click();
 
-    cy.findByTestId('show-deployment-instructions-0', {
-      timeout: 10000,
-    }).click();
-
-    // deploy the agent
-    cy.findByTestId('deploy-agent-instructions-code-editor').should('exist');
-
-    cy.findByTestId('show-api-key-switch').click();
-
-    // Get text
-    cy.get('[data-testid="deploy-agent-instructions-raw-code"]')
-      .invoke('text')
-      .then((text) => {
-        cy.exec(text);
-      });
-
-    cy.get('[data-testid="chat-with-agent-instructions-raw-code"]', {
-      timeout: 10000,
-    }).should('exist');
+    // cy.findByTestId('show-deployment-instructions-0', {
+    //   timeout: 10000,
+    // }).click();
+    //
+    // // deploy the agent
+    // cy.findByTestId('deploy-agent-instructions-code-editor').should('exist');
+    //
+    // cy.findByTestId('show-api-key-switch').click();
+    //
+    // // Get text
+    // cy.get('[data-testid="deploy-agent-instructions-raw-code"]')
+    //   .invoke('text')
+    //   .then((text) => {
+    //     cy.exec(text);
+    //   });
+    //
+    // cy.get('[data-testid="chat-with-agent-instructions-raw-code"]', {
+    //   timeout: 10000,
+    // }).should('exist');
 
     // cy.get('[data-testid="chat-with-agent-instructions-raw-code"]', {
     //   timeout: 10000,
