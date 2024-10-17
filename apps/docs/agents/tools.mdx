@@ -26,16 +26,16 @@ client = create_client()
 
 # set default llm config for agents
 client.set_default_llm_config(
-    LLMConfig.from_default(model_name="gpt-4o-mini")
+    LLMConfig.default_config(model_name="gpt-4o-mini")
 )
 
 # set default embedding config for agents
 client.set_default_embedding_config(
-    EmbeddingConfig.from_default(model_name="text-embedding-ada-002")
+    EmbeddingConfig.default_config(model_name="text-embedding-ada-002")
 )
 
 # create an agent with no tools
-agent_state = client.create_agent(include_default_tools=False) 
+agent_state = client.create_agent(include_base_tools=False) 
 ```
 
 ## Custom Tools 

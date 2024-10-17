@@ -15,8 +15,8 @@ The in-context memory of agents is represented by a `Memory` object. This object
 By default, agents have a `ChatMemory` memory class, which is designed for a 1:1 chat between a human and agent. You can use the `persona` section of `ChatMemory` to customize the prompt for your agent, and the `human` section to add personalization data.
 
 ```python
-from letta import create_client 
-from letta.schemas.memory import ChatMemory, LLMConfig, EmbeddingConfig
+from letta import create_client, LLMConfig, EmbeddingConfig
+from letta.schemas.memory import ChatMemory
 
 client = create_client() 
 agent_state = client.create_agent(
@@ -25,8 +25,8 @@ agent_state = client.create_agent(
         human="Name: Sarah"
     ), 
     # TODO: change for different models
-    llm_config=LLMConfig.from_default(model_name="gpt-4o-mini"),
-    embedding_config=EmbeddingConfig.from_default(model_name="text-embedding-ada-002")
+    llm_config=LLMConfig.default_config(model_name="gpt-4o-mini"),
+    embedding_config=EmbeddingConfig.default_config(model_name="text-embedding-ada-002")
 )
 ```
 The ChatMemory class consists of:
@@ -36,7 +36,7 @@ The ChatMemory class consists of:
 ### Built-in: `BasicBlockMemory` 
 Another built-in memory class is the `BasicBlockMemory` class, which represents a set of blocks. 
 ```python
-from letta import create_client 
+from letta import create_client, LLMConfig, EmbeddingConfig
 from letta.schemas.memory import ChatMemory
 
 client = create_client() 
@@ -57,8 +57,8 @@ agent_state = client.create_agent(
         blocks = [org_block, persona_block]
     )
     # TODO: change for different models
-    llm_config=LLMConfig.from_default(model_name="gpt-4o-mini"),
-    embedding_config=EmbeddingConfig.from_default(model_name="text-embedding-ada-002")
+    llm_config=LLMConfig.default_config(model_name="gpt-4o-mini"),
+    embedding_config=EmbeddingConfig.default_config(model_name="text-embedding-ada-002")
 )
 ```
 The `BasicBlockMemory` class consists of
