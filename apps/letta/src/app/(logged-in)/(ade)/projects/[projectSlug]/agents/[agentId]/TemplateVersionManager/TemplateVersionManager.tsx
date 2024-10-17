@@ -100,12 +100,42 @@ function StageAndDeployDialog() {
         <Button
           data-testid="stage-new-version-button"
           color="primary"
-          size="small"
           label={t('StageAndDeployDialog.trigger')}
         />
       }
     >
       <VStack gap="form">{t('StageAndDeployDialog.details')}</VStack>
+    </Dialog>
+  );
+}
+
+interface DeployAgentDialogProps {
+  version: string;
+}
+
+function DeployAgentDialog(props: DeployAgentDialogProps) {
+  const { version } = props;
+  const { id: projectId } = useCurrentProject();
+  const t = useTranslations('ADE/DeploymentAgentMangerPanel');
+
+  return (
+    <Dialog
+      title={t('DeployedAgentTemplateCard.usageInstructions')}
+      size="large"
+      trigger={
+        <Button
+          color="tertiary"
+          size="small"
+          label={t('DeployedAgentTemplateCard.usageInstructions')}
+          target="_blank"
+        />
+      }
+      hideConfirm
+    >
+      <DeployAgentUsageInstructions
+        versionKey={version}
+        projectId={projectId}
+      />
     </Dialog>
   );
 }
@@ -119,11 +149,9 @@ interface DeployedAgentTemplateCardProps {
 }
 
 function DeployedAgentTemplateCard(props: DeployedAgentTemplateCardProps) {
-  const { version, index, createdAt } = props;
-  const { slug: projectSlug, id: currentProjectId } = useCurrentProject();
+  const { version, createdAt } = props;
+  const { slug: projectSlug } = useCurrentProject();
   const { name } = useCurrentAgent();
-  const [showDeploymentInstructions, setShowDeploymentInstructions] =
-    React.useState(false);
 
   const t = useTranslations('ADE/DeploymentAgentMangerPanel');
 
@@ -165,16 +193,7 @@ function DeployedAgentTemplateCard(props: DeployedAgentTemplateCardProps) {
       </HStack>
       <HStack>
         <HStack>
-          <Button
-            size="small"
-            color="tertiary"
-            onClick={() => {
-              setShowDeploymentInstructions((v) => !v);
-            }}
-            active={showDeploymentInstructions}
-            label={t('DeployedAgentTemplateCard.usageInstructions')}
-            data-testid={`show-deployment-instructions-${index}`}
-          />
+          <DeployAgentDialog version={version} />
           <Button
             color="tertiary"
             size="small"
@@ -183,17 +202,18 @@ function DeployedAgentTemplateCard(props: DeployedAgentTemplateCardProps) {
           />
         </HStack>
       </HStack>
-      {showDeploymentInstructions && (
-        <DeployAgentUsageInstructions
-          versionKey={`${name}:${version}`}
-          projectId={currentProjectId}
-        />
-      )}
     </VStack>
   );
 }
 
-function TemplateVersionManagerContent() {
+interface TemplateVersionManagerContentProps {
+  search: string;
+}
+
+function TemplateVersionManagerContent(
+  props: TemplateVersionManagerContentProps
+) {
+  const { search } = props;
   const { id: agentTemplateId } = useCurrentAgent();
 
   const { id: currentProjectId } = useCurrentProject();
@@ -228,8 +248,10 @@ function TemplateVersionManagerContent() {
       return null;
     }
 
-    return (data?.pages || []).flatMap((v) => v.body.deployedAgentTemplates);
-  }, [data]);
+    return (data?.pages || [])
+      .flatMap((v) => v.body.deployedAgentTemplates)
+      .filter((v) => v.agentTemplateId.includes(search));
+  }, [data, search]);
 
   if (!deployedAgentTemplates) {
     return <LettaLoader size={'large'} />;
@@ -261,11 +283,17 @@ function TemplateVersionManagerContent() {
 }
 
 export function TemplateVersionManager() {
+  const [search, setSearch] = useState('');
+
   return (
     <VStack fullHeight gap={false}>
-      <PanelBar actions={<StageAndDeployDialog />} />
+      <PanelBar
+        searchValue={search}
+        onSearch={setSearch}
+        actions={<StageAndDeployDialog />}
+      />
       <PanelMainContent>
-        <TemplateVersionManagerContent />
+        <TemplateVersionManagerContent search={search} />
       </PanelMainContent>
     </VStack>
   );

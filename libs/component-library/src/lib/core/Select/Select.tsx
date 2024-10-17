@@ -12,6 +12,18 @@ import { HStack } from '../../framing/HStack/HStack';
 import { Slot } from '@radix-ui/react-slot';
 import { Typography } from '../Typography/Typography';
 
+interface SelectOptionsContextProps {
+  hideIconsOnOptions?: boolean;
+}
+
+const SelectOptionsContext = React.createContext<SelectOptionsContextProps>({});
+
+const SelectOptionsProvider = SelectOptionsContext.Provider;
+
+function useSelectOptionsContext() {
+  return React.useContext(SelectOptionsContext);
+}
+
 export const OptionTypeSchemaSingle = z.object({
   value: z.string().optional(),
   label: z.string(),
@@ -106,24 +118,28 @@ const overridenComponents = {
     </components.GroupHeading>
   ),
   // @ts-expect-error yest
-  Option: ({ children, ...props }) => (
-    // @ts-expect-error yest
-    <components.Option {...props}>
-      <HStack
-        align="center"
-        data-testid={`select-box-option-${props.data.value}`}
-      >
-        {props.data.icon && (
-          <Slot className="max-h-3  w-3">{props.data.icon}</Slot>
+  Option: ({ children, ...props }) => {
+    const { hideIconsOnOptions } = useSelectOptionsContext();
+
+    return (
+      // @ts-expect-error yest
+      <components.Option {...props}>
+        <HStack
+          align="center"
+          data-testid={`select-box-option-${props.data.value}`}
+        >
+          {props.data.icon && !hideIconsOnOptions && (
+            <Slot className="max-h-3  w-3">{props.data.icon}</Slot>
+          )}
+          {children}
+          {props.data.badge}
+        </HStack>
+        {props.data.description && (
+          <div className="text-xs text-muted">{props.data.description}</div>
         )}
-        {children}
-        {props.data.badge}
-      </HStack>
-      {props.data.description && (
-        <div className="text-xs text-muted">{props.data.description}</div>
-      )}
-    </components.Option>
-  ),
+      </components.Option>
+    );
+  },
 };
 /* eslint-enable @typescript-eslint/naming-convention */
 
@@ -161,14 +177,16 @@ function useStyles(args: UseStylesArgs) {
 interface AsyncSelectProps extends BaseSelectProps {
   loadOptions: (inputValue: string) => Promise<OptionType[]>;
   cacheOptions?: boolean;
+  hideIconsOnOptions?: boolean;
 }
 
-function AsyncSelectPrimitive(props: AsyncSelectProps) {
+function AsyncSelectPrimitive(_props: AsyncSelectProps) {
+  const { hideIconsOnOptions, ...props } = _props;
   const styles = useStyles(props.styleConfig || {});
   const [open, setOpen] = React.useState(false);
 
   return (
-    <>
+    <SelectOptionsProvider value={{ hideIconsOnOptions }}>
       {props['data-testid'] && (
         <div
           className="absolute"
@@ -200,31 +218,37 @@ function AsyncSelectPrimitive(props: AsyncSelectProps) {
         classNames={classNames}
         {...props}
       />
-    </>
+    </SelectOptionsProvider>
   );
 }
 
 interface SelectProps extends BaseSelectProps {
   options: OptionType[];
+  hideIconsOnOptions?: boolean;
 }
 
-function SelectPrimitive(props: SelectProps) {
+function SelectPrimitive(_props: SelectProps) {
+  const { hideIconsOnOptions, ...props } = _props;
   const styles = useStyles(props.styleConfig || {});
 
   return (
-    <ReactSelect
-      unstyled
-      menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
-      onChange={(value) => {
-        props.onSelect?.(value);
-      }}
-      value={props.value}
-      // @ts-expect-error yest
-      components={overridenComponents}
-      styles={styles}
-      classNames={classNames}
-      {...props}
-    />
+    <SelectOptionsProvider value={{ hideIconsOnOptions }}>
+      <ReactSelect
+        unstyled
+        menuPortalTarget={
+          typeof document !== 'undefined' ? document.body : null
+        }
+        onChange={(value) => {
+          props.onSelect?.(value);
+        }}
+        value={props.value}
+        // @ts-expect-error yest
+        components={overridenComponents}
+        styles={styles}
+        classNames={classNames}
+        {...props}
+      />
+    </SelectOptionsProvider>
   );
 }
 

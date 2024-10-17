@@ -35,8 +35,8 @@ function generateWrapper({
     return (
       <PanelManagerProvider
         fallbackPositions={initialPositions}
-        onPositionError={(e) => {
-          console.log(e);
+        onPositionError={() => {
+          return;
         }}
         initialPositions={initialPositions}
       >

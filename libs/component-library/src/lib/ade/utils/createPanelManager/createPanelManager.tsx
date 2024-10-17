@@ -226,6 +226,7 @@ export function createPanelManager<
 
   interface PanelManagerProps {
     children: React.ReactNode;
+    templateIdDenyList?: RegisteredPanelTemplateId[];
     onPositionError: () => void;
     fallbackPositions: RegisteredPanelItemPositionsMatrix;
     initialPositions?: RegisteredPanelItemPositionsMatrix;
@@ -242,15 +243,47 @@ export function createPanelManager<
     const {
       children,
       onPositionError,
+      templateIdDenyList,
       fallbackPositions,
       initialPositions = [],
       onPositionChange,
     } = props;
 
+    const templateIdDenyListSet = useMemo(() => {
+      return new Set(templateIdDenyList || []);
+    }, [templateIdDenyList]);
+
     const reconcilePositions = useCallback(
       (positions: RegisteredPanelItemPositionsMatrix) => {
+        // remove any positions where templateId is in the deny list
+        const filteredPositions =
+          templateIdDenyListSet.size > 0
+            ? positions.map((xPosition) => {
+                if (!xPosition) {
+                  return xPosition;
+                }
+
+                return {
+                  ...xPosition,
+                  positions: xPosition.positions.map((yPosition) => {
+                    if (!yPosition) {
+                      return yPosition;
+                    }
+
+                    return {
+                      ...yPosition,
+                      positions: yPosition.positions.filter(
+                        (tabPosition) =>
+                          !templateIdDenyListSet.has(tabPosition.templateId)
+                      ),
+                    };
+                  }),
+                };
+              })
+            : positions;
+
         // should remove any empty positions, as in positions with no panels
-        const xPositions = [...positions];
+        const xPositions = [...filteredPositions];
 
         // loop through and remove duplicate ids, start from reverse to avoid index issues
         const activeIds = new Set<PanelId>();
@@ -334,7 +367,7 @@ export function createPanelManager<
 
         const panelIdToPositionMap: Record<PanelId, PanelPosition> = {};
 
-        positions.forEach((yPositions, x) => {
+        xPositions.forEach((yPositions, x) => {
           yPositions?.positions?.forEach((tabPositions, y) => {
             tabPositions?.positions?.forEach((panelPosition, tab) => {
               panelIdToPositionMap[panelPosition.id] = [x, y, tab];
@@ -344,7 +377,7 @@ export function createPanelManager<
 
         const activePanelTemplates = new Set<RegisteredPanelTemplateId>();
 
-        positions.forEach((yPositions) => {
+        xPositions.forEach((yPositions) => {
           yPositions?.positions?.forEach((tabPositions) => {
             const firstActivePanel = tabPositions.positions.find(
               (panel) => panel.isActive
@@ -379,7 +412,7 @@ export function createPanelManager<
           panelIdToPositionMap,
         };
       },
-      []
+      [templateIdDenyListSet]
     );
 
     const [state, setState] = useState<PanelState>(() => {

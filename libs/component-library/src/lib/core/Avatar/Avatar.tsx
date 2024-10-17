@@ -7,21 +7,18 @@ import { useMemo } from 'react';
 import type { VariantProps } from 'class-variance-authority';
 import { cva } from 'class-variance-authority';
 
-const avatarVariants = cva(
-  'relative flex shrink-0 overflow-hidden text-sm rounded-md',
-  {
-    variants: {
-      size: {
-        small: 'h-biHeight-sm w-biWidth-sm',
-        medium: 'h-[36px] w-[36px]',
-        large: 'h-[48px] w-[48px]',
-      },
+const avatarVariants = cva('relative flex shrink-0 overflow-hidden text-sm', {
+  variants: {
+    size: {
+      small: 'h-biHeight-sm w-biWidth-sm',
+      medium: 'h-[36px] w-[36px]',
+      large: 'h-[48px] w-[48px]',
     },
-    defaultVariants: {
-      size: 'medium',
-    },
-  }
-);
+  },
+  defaultVariants: {
+    size: 'medium',
+  },
+});
 
 type AvatarVariantProps = VariantProps<typeof avatarVariants>;
 
@@ -97,6 +94,23 @@ export function Avatar(props: AvatarProps) {
         style={{ background: getBackgroundFromName(name) }}
       >
         {initials}
+      </AvatarFallback>
+    </AvatarRoot>
+  );
+}
+
+interface IconAvatarProps extends AvatarVariantProps {
+  icon: React.ReactNode;
+  color?: string;
+}
+
+export function IconAvatar(props: IconAvatarProps) {
+  const { icon, size, color } = props;
+
+  return (
+    <AvatarRoot size={size}>
+      <AvatarFallback style={{ background: color || 'var(--color-primary)' }}>
+        {icon}
       </AvatarFallback>
     </AvatarRoot>
   );

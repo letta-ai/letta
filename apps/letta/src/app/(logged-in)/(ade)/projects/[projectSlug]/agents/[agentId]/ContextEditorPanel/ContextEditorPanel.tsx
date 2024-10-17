@@ -53,8 +53,8 @@ export function ContextWindowPreview() {
   }, [llm_config.context_window]);
 
   const systemPromptLength = useMemo(() => {
-    return contextWindow?.system_prompt.length || 0;
-  }, [contextWindow?.system_prompt.length]);
+    return contextWindow?.num_tokens_system || 0;
+  }, [contextWindow?.num_tokens_system]);
 
   const archivalMemoryLength = useMemo(() => {
     return contextWindow?.num_archival_memory || 0;
@@ -73,8 +73,8 @@ export function ContextWindowPreview() {
   }, [contextWindow?.num_tokens_messages]);
 
   const coreMemoryLength = useMemo(() => {
-    return computedMemoryString?.length || 0;
-  }, [computedMemoryString?.length]);
+    return computedMemoryString?.split(' ').length || 0;
+  }, [computedMemoryString]);
 
   const totalUsedLength = useMemo(() => {
     return (
