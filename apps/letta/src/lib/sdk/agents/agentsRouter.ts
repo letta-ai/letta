@@ -26,22 +26,25 @@ import {
 
 export function attachVariablesToTemplates(
   agentTemplate: AgentState,
-  variables: CreateAgentRequest['body']['variables']
+  variables?: CreateAgentRequest['body']['variables']
 ) {
   const nextAgent = {
     ...agentTemplate,
   };
-  Object.keys(nextAgent.memory?.memory || {}).forEach((key) => {
-    if (typeof nextAgent.memory?.memory?.[key]?.value === 'string') {
-      // needs to be done or memory will rely on the existing block id
-      nextAgent.memory.memory[key].id = undefined;
-      nextAgent.memory.memory[key].value = nextAgent.memory.memory[
-        key
-      ].value.replace(/{{(.*?)}}/g, (_m, p1) => {
-        return variables?.[p1] || '';
-      });
-    }
-  });
+
+  if (variables) {
+    Object.keys(nextAgent.memory?.memory || {}).forEach((key) => {
+      if (typeof nextAgent.memory?.memory?.[key]?.value === 'string') {
+        // needs to be done or memory will rely on the existing block id
+        nextAgent.memory.memory[key].id = undefined;
+        nextAgent.memory.memory[key].value = nextAgent.memory.memory[
+          key
+        ].value.replace(/{{(.*?)}}/g, (_m, p1) => {
+          return variables?.[p1] || '';
+        });
+      }
+    });
+  }
 
   return {
     tools: nextAgent.tools,
