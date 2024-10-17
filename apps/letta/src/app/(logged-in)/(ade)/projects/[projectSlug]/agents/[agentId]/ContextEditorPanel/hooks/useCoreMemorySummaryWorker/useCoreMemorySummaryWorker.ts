@@ -1,36 +1,40 @@
 'use client';
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect } from 'react';
 import type { WorkerPayload, WorkerResponse } from '../../types';
 
 interface WorkerOptions {
   onMessage: (message: MessageEvent<WorkerResponse>) => void;
 }
 
+let worker: Worker;
+
+if (typeof Worker !== 'undefined') {
+  worker = new Worker(
+    new URL(
+      '../../workers/computeCoreMemorySummaryWorker/computeCoreMemorySummaryWorker.ts',
+      import.meta.url
+    )
+  );
+}
+
 export function useCoreMemorySummaryWorker(options: WorkerOptions) {
-  const workerRef = useRef<Worker | null>(null);
   const { onMessage } = options;
 
   useEffect(() => {
-    workerRef.current = new Worker(
-      new URL(
-        '../../workers/computeCoreMemorySummaryWorker/computeCoreMemorySummaryWorker.ts',
-        import.meta.url
-      )
-    );
+    worker.onmessage = onMessage;
 
-    workerRef.current.onmessage = onMessage;
-
-    workerRef.current.onerror = (error) => {
+    worker.onerror = (error) => {
       console.error(error);
     };
 
     return () => {
-      workerRef.current?.terminate();
+      worker.onmessage = null;
+      worker.onerror = null;
     };
   }, [onMessage]);
 
   const postMessage = useCallback((message: WorkerPayload) => {
-    workerRef.current?.postMessage(message);
+    worker.postMessage(message);
   }, []);
 
   return {

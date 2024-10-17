@@ -179,10 +179,52 @@ function CreateProjectDialog() {
   );
 }
 
+interface ProjectCardProps {
+  projectId: string;
+  projectName: string;
+  lastUpdatedAt: string;
+  url: string;
+}
+
+function ProjectCard(props: ProjectCardProps) {
+  const { projectName, lastUpdatedAt, url } = props;
+  const t = useTranslations('projects/page');
+
+  return (
+    <Card>
+      <VStack fullWidth>
+        <VStack fullWidth>
+          <Avatar name={projectName} />
+          <VStack gap="text">
+            <Tooltip asChild content={projectName}>
+              <Typography align="left" noWrap fullWidth overflow="ellipsis">
+                {projectName}
+              </Typography>
+            </Tooltip>
+            <HStack>
+              <Typography variant="body2" color="muted">
+                {t('projectsList.projectItem.lastUpdatedAt', {
+                  date: nicelyFormattedDateAndTime(lastUpdatedAt),
+                })}
+              </Typography>
+            </HStack>
+          </VStack>
+        </VStack>
+        <Button
+          color="tertiary"
+          align="center"
+          fullWidth
+          label={t('projectsList.projectItem.viewButton')}
+          href={url}
+        />
+      </VStack>
+    </Card>
+  );
+}
+
 function ProjectsList(props: ProjectsListProps) {
   const t = useTranslations('projects/page');
   const [debouncedSearch] = useDebouncedValue(props.search, 500);
-
   const { data, isError } = webApi.projects.getProjects.useQuery({
     queryKey: webApiQueryKeys.projects.getProjectsWithSearch({
       search: debouncedSearch,
@@ -214,39 +256,13 @@ function ProjectsList(props: ProjectsListProps) {
     <>
       <NiceGridDisplay>
         {data.body.projects.map((project) => (
-          <Card key={project.id}>
-            <VStack fullWidth>
-              <VStack fullWidth>
-                <Avatar name={project.name} />
-                <VStack gap="text">
-                  <Tooltip asChild content={project.name}>
-                    <Typography
-                      align="left"
-                      noWrap
-                      fullWidth
-                      overflow="ellipsis"
-                    >
-                      {project.name}
-                    </Typography>
-                  </Tooltip>
-                  <HStack>
-                    <Typography variant="body2" color="muted">
-                      {t('projectsList.projectItem.lastUpdatedAt', {
-                        date: nicelyFormattedDateAndTime(project.updatedAt),
-                      })}
-                    </Typography>
-                  </HStack>
-                </VStack>
-              </VStack>
-              <Button
-                color="tertiary"
-                align="center"
-                fullWidth
-                label={t('projectsList.projectItem.viewButton')}
-                href={`/projects/${project.slug}`}
-              />
-            </VStack>
-          </Card>
+          <ProjectCard
+            key={project.id}
+            projectId={project.id}
+            projectName={project.name}
+            lastUpdatedAt={project.updatedAt}
+            url={`/projects/${project.slug}`}
+          />
         ))}
       </NiceGridDisplay>
     </>

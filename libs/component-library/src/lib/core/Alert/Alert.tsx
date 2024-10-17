@@ -9,6 +9,9 @@ const alertVariants = cva(
   'relative w-full items-start flex border px-4 py-3  text-sm gap-3',
   {
     variants: {
+      fullWidth: {
+        true: 'w-full',
+      },
       variant: {
         destructive:
           'bg-background-destructive border-destructive-content text-background-destructive-content',
@@ -48,7 +51,8 @@ function isInIconMap(icon: unknown): icon is keyof typeof iconMap {
 }
 
 export function Alert(props: AlertProps) {
-  const { children, action, className, title, icon, variant } = props;
+  const { children, fullWidth, action, className, title, icon, variant } =
+    props;
 
   const defaultIcon = useMemo(() => {
     if (isInIconMap(variant)) {
@@ -59,7 +63,10 @@ export function Alert(props: AlertProps) {
   }, [variant]);
 
   return (
-    <div role="alert" className={cn(alertVariants({ variant }), className)}>
+    <div
+      role="alert"
+      className={cn(alertVariants({ fullWidth, variant }), className)}
+    >
       <div className="[&>svg]:h-[14px]">{icon || defaultIcon}</div>
       <div className="flex flex-col w-full text-base gap">
         <HStack fullWidth gap="small" justify="spaceBetween" align="start">

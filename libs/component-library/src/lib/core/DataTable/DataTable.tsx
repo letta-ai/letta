@@ -102,7 +102,7 @@ function TableBodyContent<Data>(props: TableBodyContentProps<Data>) {
 const dataTableVariants = cva('h-full', {
   variants: {
     variant: {
-      default: 'rounded-md border',
+      default: 'border',
       minimal: 'border-none',
     },
     fullHeight: {

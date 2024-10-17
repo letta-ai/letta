@@ -99,8 +99,9 @@ const overridenComponents = {
         {props.data.icon && (
           <Slot className="max-h-3 w-3">{props.data.icon}</Slot>
         )}
-        // @ts-expect-error yest
-        <Typography className="mt-[-1px]">{children}</Typography>
+        <Typography bold className="mt-[-1px]">
+          {children}
+        </Typography>
       </HStack>
     </components.GroupHeading>
   ),

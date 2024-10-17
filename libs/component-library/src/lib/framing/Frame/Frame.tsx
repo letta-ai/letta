@@ -10,6 +10,9 @@ const frameVariants = cva('', {
     fullWidth: {
       true: 'w-full',
     },
+    animate: {
+      true: 'transition-all duration-300',
+    },
     transparent: {
       true: 'opacity-0',
     },

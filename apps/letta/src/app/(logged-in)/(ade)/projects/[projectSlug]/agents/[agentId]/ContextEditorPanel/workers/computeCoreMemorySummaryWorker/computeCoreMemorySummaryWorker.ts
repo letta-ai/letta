@@ -22,8 +22,12 @@ const pyodideReadyPromise = loadPyodideAndPackages();
 function createDict(object: Record<string, unknown>) {
   const obj = Object.entries(object)
     .map(([key, value]): string => {
+      if (!value) {
+        return '';
+      }
+
       if (typeof value === 'string') {
-        return `'${key}':'${value}'`;
+        return `'${key}':'${value.replace(/'/g, "\\'")}'`;
       }
 
       if (typeof value === 'number') {
