@@ -7,7 +7,7 @@ import type { VariantProps } from 'class-variance-authority';
 import { cva } from 'class-variance-authority';
 import { cn } from '@letta-web/core-style-config';
 import './ActionCard.scss';
-import { CaretRightIcon } from '../../icons';
+import { ChevronRightIcon } from '../../icons';
 
 const actionCardVariants = cva('', {
   variants: {
@@ -37,6 +37,7 @@ const actionCardVariants = cva('', {
 interface ToggleCardProps extends VariantProps<typeof actionCardVariants> {
   title: string;
   subtitle?: string;
+  isActive?: boolean;
   icon?: React.ReactNode;
   badge?: React.ReactNode;
   mainAction?: React.ReactNode;
@@ -51,6 +52,7 @@ export function ActionCard(props: ToggleCardProps) {
     title,
     icon,
     badge,
+    isActive,
     onCardClick,
     mainAction,
     children,
@@ -63,6 +65,7 @@ export function ActionCard(props: ToggleCardProps) {
       onClick={onCardClick}
       className={cn(
         actionCardVariants({ ...props, clickable: !!onCardClick }),
+        isActive ? 'bg-background-grey' : 'bg-background',
         'action-card'
       )}
     >
@@ -73,7 +76,7 @@ export function ActionCard(props: ToggleCardProps) {
           fullWidth
           align="center"
         >
-          <VStack gap="text" fullWidth>
+          <VStack overflow="hidden" gap="text" fullWidth>
             <HStack fullWidth className="action-card-titlearea" align="center">
               {icon && (
                 <HStack
@@ -107,7 +110,7 @@ export function ActionCard(props: ToggleCardProps) {
             </HStack>
           </VStack>
           {mainAction && <HStack align="center">{mainAction}</HStack>}
-          {onCardClick && <CaretRightIcon className="text-xl" color="muted" />}
+          {onCardClick && <ChevronRightIcon size="large" color="muted" />}
         </HStack>
         {description && (
           <VStack fullHeight>

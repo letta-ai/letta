@@ -20,7 +20,7 @@ const computedMemoryStringAtom = atom<string | null>(null);
 export function ContextWindowPreview() {
   const [open, setOpen] = useState(false);
   const t = useTranslations('ADE/ContextEditorPanel');
-  const { memory, id, llm_config } = useCurrentAgent();
+  const { memory, system, id, llm_config } = useCurrentAgent();
   const [computedMemoryString, setComputedMemoryString] = useAtom(
     computedMemoryStringAtom
   );
@@ -53,8 +53,8 @@ export function ContextWindowPreview() {
   }, [llm_config.context_window]);
 
   const systemPromptLength = useMemo(() => {
-    return contextWindow?.num_tokens_system || 0;
-  }, [contextWindow?.num_tokens_system]);
+    return system?.split(' ').length || 0;
+  }, [system]);
 
   const summaryMemoryLength = useMemo(() => {
     return contextWindow?.num_tokens_summary_memory || 0;

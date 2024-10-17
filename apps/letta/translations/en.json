@@ -261,6 +261,17 @@
     "localProject": "Local Project"
   },
   "ADE/EditCoreMemoriesPanel": {
+    "AdvancedCoreMemoryEditor": {
+      "title": "Edit {name}",
+      "label": "Edit Memory",
+      "switchView": "Switch"
+    },
+    "systemPrompt": "System Prompt",
+    "EditSystemPrompt": {
+      "title": "System Prompt",
+      "label": "Edit System Prompt"
+    },
+    "expandContent": "Full Screen",
     "title": "Memory ({count})",
     "content": "Content",
     "error": "There was an error while updating the memory block, please try again or contact support.",
@@ -381,6 +392,7 @@
       "addError": "There was an error adding this tool, please try again or contact support."
     },
     "AddToolDialog": {
+      "description": "Description",
       "added": "Added",
       "search": {
         "placeholder": "Tool name",

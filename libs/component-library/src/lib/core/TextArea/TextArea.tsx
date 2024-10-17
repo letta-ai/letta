@@ -8,17 +8,49 @@ import TextareaAutosize, {
 
 type TextAreaProps = TextareaAutosizeProps & {
   fullWidth?: boolean;
+  fullHeight?: boolean;
   hideLabel?: boolean;
+  autosize?: boolean;
+  hideFocus?: boolean;
 };
 
+const defaultClass =
+  'flex min-h-[80px] w-full border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground  disabled:cursor-not-allowed disabled:opacity-50';
+
 const PrimitiveTextArea = React.forwardRef<HTMLTextAreaElement, TextAreaProps>(
-  ({ className, hideLabel: _hideLabel, fullWidth, ...props }, ref) => {
+  (
+    {
+      className,
+      hideFocus,
+      autosize = true,
+      fullHeight,
+      hideLabel: _hideLabel,
+      fullWidth,
+      ...props
+    },
+    ref
+  ) => {
+    if (!autosize) {
+      return (
+        <textarea
+          className={cn(
+            defaultClass,
+            hideFocus
+              ? 'focus-visible:outline-none'
+              : 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+            className,
+            fullHeight && 'h-full',
+            fullWidth && 'w-full'
+          )}
+          ref={ref}
+          {...props}
+        />
+      );
+    }
+
     return (
       <TextareaAutosize
-        className={cn(
-          'flex min-h-[80px] w-full border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
-          className
-        )}
+        className={cn(defaultClass, className)}
         ref={ref}
         {...props}
       />
