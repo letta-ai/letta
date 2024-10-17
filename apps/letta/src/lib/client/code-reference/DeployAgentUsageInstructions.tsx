@@ -127,9 +127,10 @@ function DeployAgentInstructionsCurl(props: DeployAgentInstructionsCurlProps) {
               language="bash"
               code={`curl -N -X POST ${environment.NEXT_PUBLIC_CURRENT_HOST}/v1/agents/${deploymentAgentToUse}/messages \\
   -H 'Content-Type: application/json' \\
+  -H 'Accept: text/event-stream' \\
   -H 'Authorization: Bearer ${ACCESS_TOKEN_PLACEHOLDER}' \\
   -d '{
-    "messages": [{ "role": "user", "text": "Hello", "name": "" }],
+    "messages": [{ "role": "user", "text": "Hello" }],
     "stream_steps": true,
     "stream_tokens": true
   }'`}
