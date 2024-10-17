@@ -123,9 +123,6 @@ export function ContextWindowPreview() {
           stack: 'total',
           color: '#3758F9',
           name: t('ContextWindowPreview.systemPrompt'),
-          itemStyle: {
-            borderRadius: [50, 0, 0, 50],
-          },
         },
         {
           data: [coreMemoryLength / totalLength],
@@ -154,9 +151,6 @@ export function ContextWindowPreview() {
           color: 'gray',
           stack: 'total',
           name: t('ContextWindowPreview.remaining'),
-          itemStyle: {
-            borderRadius: [0, 50, 50, 0],
-          },
         },
       ],
     };
