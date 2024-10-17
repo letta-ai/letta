@@ -39,12 +39,6 @@ export function generateDefaultADELayout(): AdePreferencesData {
                 data: undefined,
               },
               {
-                id: 'edit-data-sources',
-                isActive: false,
-                templateId: 'edit-data-sources',
-                data: undefined,
-              },
-              {
                 id: 'tools-panel',
                 isActive: false,
                 templateId: 'tools-panel',
@@ -96,9 +90,9 @@ export function generateDefaultADELayout(): AdePreferencesData {
             size: 50,
             positions: [
               {
-                id: 'deployment',
-                isActive: false,
-                templateId: 'deployment',
+                id: 'edit-data-sources',
+                isActive: true,
+                templateId: 'edit-data-sources',
                 data: undefined,
               },
             ],

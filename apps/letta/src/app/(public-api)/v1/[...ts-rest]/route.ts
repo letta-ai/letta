@@ -67,11 +67,29 @@ const handler = createNextHandler(sdkContracts, sdkRouter, {
       req.organizationId = middlewareData.organizationId;
       req.lettaAgentsUserId = middlewareData.lettaAgentsUserId;
       req.userId = middlewareData.userId;
+
+      if (!req.lettaAgentsUserId) {
+        return new Response(JSON.stringify({ message: 'Unauthorized' }), {
+          status: 401,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+      }
     }),
   ],
   // @ts-expect-error - this is a middleware
   errorHandler: async (error, req) => {
     if (error instanceof TsRestHttpError) {
+      if (error.statusCode !== 404) {
+        return TsRestResponse.fromJson(
+          {
+            message: error.message,
+          },
+          { status: error.statusCode }
+        );
+      }
+
       const url = new URL(req.url);
 
       const response = await makeRequestToSDK({

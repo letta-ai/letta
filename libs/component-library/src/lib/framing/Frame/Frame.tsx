@@ -43,6 +43,8 @@ const frameVariants = cva('', {
       'background-black': 'bg-background-black text-background-black-content',
       tertiary: 'bg-tertiary text-tertiary-content',
       primary: 'bg-primary text-primary-content',
+      warning: 'bg-warning text-warning-content',
+      'primary-light': 'bg-primary-light text-primary-light-content',
     },
     width: {
       centered: 'max-w-[800px]',

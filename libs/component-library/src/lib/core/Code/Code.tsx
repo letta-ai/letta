@@ -133,7 +133,10 @@ export function Code(props: CodeProps) {
       </div>
       {toolbarPosition === 'top' && toolbar}
       <Editor
-        className={cn('editor w-full', showLineNumbers && 'line-numbers')}
+        className={cn(
+          'editor bg-background w-full',
+          showLineNumbers && 'line-numbers'
+        )}
         value={code}
         disabled={!onSetCode}
         data-testid={`${testId}-code-editor`}

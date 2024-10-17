@@ -23,6 +23,7 @@ interface Action {
 
 interface RootType {
   name: string;
+  id?: string;
   actions?: Action[];
 }
 
@@ -30,6 +31,12 @@ interface FileType extends RootType {
   onClick?: () => void;
   icon?: React.ReactNode;
   wrapper?: React.ComponentType<{ children: React.ReactNode }>;
+}
+
+export function getIsGenericFolder(
+  folder: unknown
+): folder is GenericFolderType {
+  return Object.prototype.hasOwnProperty.call(folder, 'contents');
 }
 
 interface RowItemProps {
@@ -78,19 +85,20 @@ function RowItem(props: RowItemProps) {
 interface RootFolderType extends RootType {
   icon?: React.ReactNode;
   openIcon?: React.ReactNode;
+  defaultOpen?: boolean;
 }
 
 interface GenericFolderType extends RootFolderType {
-  contents: ContentsType;
+  contents: FileTreeContentsType;
 }
 
 interface AsyncFolderType extends RootFolderType {
-  useContents: () => { data: ContentsType; isLoading: boolean };
+  useContents: () => { data: FileTreeContentsType; isLoading: boolean };
 }
 
 type FolderType = AsyncFolderType | GenericFolderType;
 
-type ContentsType = Array<FileType | FolderType>;
+export type FileTreeContentsType = Array<FileType | FolderType>;
 
 interface RenderFolderContentProps {
   folder: GenericFolderType;
@@ -179,13 +187,15 @@ interface FolderComponentProps {
 
 export function FolderComponent(props: FolderComponentProps) {
   const { folder, depth = 0 } = props;
-  const [isOpen, setIsOpen] = React.useState(false);
   const {
     name,
     actions,
+    defaultOpen,
     openIcon: openIconOverride,
     icon: iconOverride,
   } = folder;
+
+  const [isOpen, setIsOpen] = React.useState(defaultOpen || false);
 
   const openIcon = useMemo(() => {
     if (openIconOverride) {
@@ -228,7 +238,7 @@ export function FolderComponent(props: FolderComponentProps) {
 }
 
 interface FileTreeProps {
-  root: ContentsType;
+  root: FileTreeContentsType;
 }
 
 export function FileTree(props: FileTreeProps) {

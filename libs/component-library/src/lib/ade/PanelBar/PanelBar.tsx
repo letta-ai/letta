@@ -49,7 +49,7 @@ type PanelBarProps = PropsWithChildren<{
 export function PanelBar(props: PanelBarProps) {
   const { onReturn } = props;
   return (
-    <div className="pt-2 flex w-full items-center justify-between flex-row">
+    <div className="py-2 pr-2 flex w-full items-center justify-between flex-row">
       {onReturn && (
         <Button
           label="Return"
@@ -72,7 +72,7 @@ export function PanelBar(props: PanelBarProps) {
         {props.children}
       </div>
       {props.actions && (
-        <div className="px-2 flex flex-row gap-2">{props.actions}</div>
+        <div className="flex flex-row gap-2">{props.actions}</div>
       )}
     </div>
   );

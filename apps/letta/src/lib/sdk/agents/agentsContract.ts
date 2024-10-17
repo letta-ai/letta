@@ -110,6 +110,9 @@ const versionAgentTemplateContract = c.mutation({
   path: '/v1/agents/:agent_id/version-template',
   description: 'Creates a versioned version of an agent',
   body: z.undefined(),
+  query: z.object({
+    returnAgentId: z.boolean().optional(),
+  }),
   pathParams: z.object({
     agent_id: z.string().openapi({
       description:
@@ -119,6 +122,7 @@ const versionAgentTemplateContract = c.mutation({
   responses: {
     201: z.object({
       version: z.string(),
+      agentId: z.string().optional(),
     }),
     404: AgentNotFoundResponseSchema,
     500: FailedToDeployAgentTemplateErrorSchema,
@@ -212,6 +216,9 @@ const getAgentByIdContract = c.query({
   method: 'GET',
   summary: 'Get Agent By Id',
   path: '/v1/agents/:agent_id',
+  query: z.object({
+    all: z.boolean().optional(),
+  }),
   description: 'Get an agent by its ID',
   pathParams: z.object({
     agent_id: z.string(),

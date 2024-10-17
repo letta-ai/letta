@@ -73,6 +73,10 @@ export function buildConfig(appDir: string): Config {
             hover: 'hsl(var(--background-hover))',
             DEFAULT: 'hsl(var(--background))',
           },
+          'primary-light': {
+            DEFAULT: 'hsl(var(--primary-light))',
+            content: 'hsl(var(--primary-light-content))',
+          },
           'background-grey': {
             DEFAULT: 'hsl(var(--background-grey))',
             content: 'hsl(var(--background-grey-content))',

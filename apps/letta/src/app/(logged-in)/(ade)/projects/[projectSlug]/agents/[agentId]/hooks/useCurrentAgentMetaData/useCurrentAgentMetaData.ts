@@ -57,6 +57,9 @@ export function useCurrentAgentMetaData(): UseCurrentAgentMetaDataResponse {
           template: true,
         },
       },
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: false,
+      refetchOnMount: false,
     });
 
     agentId = agentTemplate?.body[0]?.id || '';
@@ -70,6 +73,9 @@ export function useCurrentAgentMetaData(): UseCurrentAgentMetaDataResponse {
             agent_id: agentId,
           },
         },
+        refetchOnWindowFocus: false,
+        refetchOnReconnect: false,
+        refetchOnMount: false,
       });
 
     agentId = deployedAgent?.body.id || '';

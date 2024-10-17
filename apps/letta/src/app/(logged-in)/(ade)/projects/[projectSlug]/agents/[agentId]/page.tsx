@@ -9,11 +9,12 @@ import {
 } from '@tanstack/react-query';
 import React from 'react';
 import { db, deployedAgents } from '@letta-web/database';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { redirect } from 'next/navigation';
 import { webApiQueryKeys, webOriginSDKQueryKeys } from '$letta/client';
 import { getProjectByIdOrSlug } from '$letta/web-api/router';
 import { AgentPage } from './AgentPage';
+import { getUserOrRedirect } from '$letta/server/auth';
 
 interface AgentsAgentPageProps {
   params: {
@@ -24,6 +25,11 @@ interface AgentsAgentPageProps {
 
 async function AgentsAgentPage(context: AgentsAgentPageProps) {
   const queryClient = new QueryClient();
+  const user = await getUserOrRedirect();
+
+  if (!user) {
+    return null;
+  }
 
   const { agentId, projectSlug } = context.params;
 
@@ -45,7 +51,10 @@ async function AgentsAgentPage(context: AgentsAgentPageProps) {
   }
 
   const deployedAgent = await db.query.deployedAgents.findFirst({
-    where: eq(deployedAgents.id, agentId),
+    where: and(
+      eq(deployedAgents.id, agentId),
+      eq(deployedAgents.organizationId, user.organizationId)
+    ),
     columns: {
       key: true,
       id: true,

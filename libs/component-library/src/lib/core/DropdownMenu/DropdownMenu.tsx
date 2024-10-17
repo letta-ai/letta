@@ -203,17 +203,22 @@ interface DropdownMenuProps {
   children: React.ReactNode;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  sideOffset?: number;
+  side?: 'bottom' | 'left' | 'right' | 'top';
+  align?: 'center' | 'end' | 'start';
 }
 
 export function DropdownMenu(props: DropdownMenuProps) {
   const {
     open,
+    side,
     onOpenChange,
-
+    sideOffset,
     trigger,
     children,
     triggerAsChild,
     className,
+    align,
   } = props;
 
   return (
@@ -223,7 +228,12 @@ export function DropdownMenu(props: DropdownMenuProps) {
           {trigger}
         </DropdownMenuTrigger>
       )}
-      <DropdownMenuContent className={className}>
+      <DropdownMenuContent
+        side={side}
+        align={align}
+        sideOffset={sideOffset}
+        className={className}
+      >
         {children}
       </DropdownMenuContent>
     </DropdownMenuBase>

@@ -38,6 +38,7 @@ interface ToggleCardProps extends VariantProps<typeof actionCardVariants> {
   title: string;
   subtitle?: string;
   icon?: React.ReactNode;
+  badge?: React.ReactNode;
   mainAction?: React.ReactNode;
   description?: string;
   children?: React.ReactNode;
@@ -49,6 +50,7 @@ export function ActionCard(props: ToggleCardProps) {
   const {
     title,
     icon,
+    badge,
     onCardClick,
     mainAction,
     children,
@@ -101,6 +103,7 @@ export function ActionCard(props: ToggleCardProps) {
                   </Typography>
                 )}
               </VStack>
+              {badge}
             </HStack>
           </VStack>
           {mainAction && <HStack align="center">{mainAction}</HStack>}

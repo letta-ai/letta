@@ -3,6 +3,13 @@ import type { panelRegistry } from './panelRegistry';
 import { usePanelManager } from './panelRegistry';
 import { PanelManagerProvider, PanelRenderer } from './panelRegistry';
 import type { PanelItemPositionsMatrix } from '@letta-web/component-library';
+import { Badge } from '@letta-web/component-library';
+import { UpdateAvailableIcon } from '@letta-web/component-library';
+import {
+  CogIcon,
+  DropdownMenu,
+  DropdownMenuItem,
+} from '@letta-web/component-library';
 import { toast } from '@letta-web/component-library';
 import { LayoutIcon } from '@letta-web/component-library';
 import {
@@ -27,17 +34,26 @@ import {
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useCurrentProject } from '../../../../../(dashboard-like)/projects/[projectSlug]/hooks';
 import { useDebouncedValue } from '@mantine/hooks';
-import { webApi, webApiQueryKeys } from '$letta/client';
+import { webApi, webApiQueryKeys, webOriginSDKApi } from '$letta/client';
 import { useRouter } from 'next/navigation';
 import { useCurrentUser } from '$letta/client/hooks';
 import { CurrentUserDetailsBlock } from '$letta/client/common';
 import './AgentPage.scss';
 import { useCurrentAgentMetaData } from './hooks/useCurrentAgentMetaData/useCurrentAgentMetaData';
 import { useCurrentAgent } from './hooks';
-import { useAgentsServiceGetAgent } from '@letta-web/letta-agents-api';
+import {
+  useAgentsServiceGetAgent,
+  UseAgentsServiceGetAgentKeyFn,
+} from '@letta-web/letta-agents-api';
 import { useTranslations } from 'next-intl';
 import { ContextWindowPreview } from './ContextEditorPanel/ContextEditorPanel';
 import { generateDefaultADELayout } from '$letta/utils';
+import { RocketIcon } from '@radix-ui/react-icons';
+import { isEqual } from 'lodash-es';
+import { generateAgentStateHash } from './AgentSimulator/AgentSimulator';
+import { DeployAgentUsageInstructions } from '$letta/client/code-reference/DeployAgentUsageInstructions';
+import { useQueryClient } from '@tanstack/react-query';
+import type { InfiniteGetProjectDeployedAgentTemplates200Response } from '$letta/web-api/projects/projectContracts';
 
 function RestoreLayoutButton() {
   const t = useTranslations(
@@ -51,18 +67,16 @@ function RestoreLayoutButton() {
   }, [setPositions]);
 
   return (
-    <Button
+    <DropdownMenuItem
       preIcon={<LayoutIcon />}
-      hideLabel
       onClick={handleRestoreLayout}
       color="tertiary-transparent"
       label={t('restoreLayout')}
-      size="small"
     />
   );
 }
 
-function NavOverlay() {
+export function NavOverlay() {
   const { slug: projectSlug } = useCurrentProject();
   const { name } = useCurrentUser();
 
@@ -111,7 +125,15 @@ function NavOverlay() {
   );
 }
 
-function ForkAgentDialog() {
+interface ForkAgentDialogProps {
+  onClose: () => void;
+}
+function ForkAgentDialog(props: ForkAgentDialogProps) {
+  const { onClose } = props;
+  const t = useTranslations(
+    'projects/(projectSlug)/agents/(agentId)/AgentPage'
+  );
+
   const { id: agentTemplateId } = useCurrentAgent();
   const { push } = useRouter();
   const { id: projectId, slug: projectSlug } = useCurrentProject();
@@ -136,23 +158,18 @@ function ForkAgentDialog() {
 
   return (
     <Dialog
-      title="Are you sure you want to Fork this agent?"
-      confirmText="Fork Agent"
+      isOpen
+      onOpenChange={(state) => {
+        if (!state) {
+          onClose();
+        }
+      }}
+      title={t('ForkAgentDialog.title')}
+      confirmText={t('ForkAgentDialog.confirm')}
       onConfirm={handleForkAgent}
       isConfirmBusy={isPending}
-      trigger={
-        <Button
-          hideLabel
-          tooltipPlacement="bottom"
-          size="small"
-          color="tertiary-transparent"
-          preIcon={<ForkIcon />}
-          label="Fork Agent"
-        ></Button>
-      }
     >
-      This will create a new agent with the same configuration as the current
-      agent.
+      {t('ForkAgentDialog.description')}
     </Dialog>
   );
 }
@@ -185,6 +202,314 @@ function LoaderContent(props: LoaderContentProps) {
         )}
       </VStack>
     </VStack>
+  );
+}
+
+const PAGE_SIZE = 10;
+
+interface DeployAgentDialogProps {
+  isAtLatestVersion: boolean;
+}
+
+function DeployAgentDialog(props: DeployAgentDialogProps) {
+  const { isAtLatestVersion } = props;
+  const { id: projectId } = useCurrentProject();
+  const t = useTranslations(
+    'projects/(projectSlug)/agents/(agentId)/AgentPage'
+  );
+
+  return (
+    <Dialog
+      title={t('DeployAgentDialog.title')}
+      size="large"
+      trigger={
+        <Button
+          fullWidth
+          color={!isAtLatestVersion ? 'tertiary-transparent' : 'primary'}
+          label={t('DeployAgentDialog.trigger')}
+          target="_blank"
+        />
+      }
+      hideConfirm
+    >
+      <DeployAgentUsageInstructions versionKey="latest" projectId={projectId} />
+    </Dialog>
+  );
+}
+
+function VersionAgentDialog() {
+  const { id: agentTemplateId } = useCurrentAgent();
+  const { id: projectId } = useCurrentProject();
+  const queryClient = useQueryClient();
+  const [open, setOpen] = useState(false);
+  const t = useTranslations(
+    'projects/(projectSlug)/agents/(agentId)/AgentPage'
+  );
+
+  const { mutate, isPending } =
+    webOriginSDKApi.agents.versionAgentTemplate.useMutation({
+      onSuccess: (response) => {
+        void queryClient.setQueriesData<
+          InfiniteGetProjectDeployedAgentTemplates200Response | undefined
+        >(
+          {
+            queryKey:
+              webApiQueryKeys.projects.getProjectDeployedAgentTemplatesWithSearch(
+                projectId,
+                {
+                  agentTemplateId: agentTemplateId,
+                }
+              ),
+            exact: true,
+          },
+          (oldData) => {
+            if (!oldData) {
+              return oldData;
+            }
+
+            const [firstPage, ...restPages] = oldData.pages;
+
+            const [_, templateAgentVersion] = response.body.version.split(':');
+
+            return {
+              ...oldData,
+              pages: [
+                {
+                  ...firstPage,
+                  body: {
+                    ...firstPage.body,
+                    deployedAgentTemplates: [
+                      {
+                        id: response.body.agentId || '',
+                        version: templateAgentVersion,
+                        createdAt: new Date().toISOString(),
+                        updatedAt: new Date().toISOString(),
+                        agentTemplateId: agentTemplateId,
+                      },
+                      ...firstPage.body.deployedAgentTemplates,
+                    ],
+                  },
+                },
+                ...restPages,
+              ],
+            };
+          }
+        );
+
+        setOpen(false);
+      },
+    });
+
+  const handleVersionNewAgent = useCallback(() => {
+    mutate({
+      query: {
+        returnAgentId: true,
+      },
+      params: { agent_id: agentTemplateId },
+    });
+  }, [mutate, agentTemplateId]);
+
+  return (
+    <Dialog
+      onOpenChange={setOpen}
+      isOpen={open}
+      testId="stage-agent-dialog"
+      title={t('VersionAgentDialog.title')}
+      onConfirm={handleVersionNewAgent}
+      isConfirmBusy={isPending}
+      trigger={
+        <Button
+          data-testid="stage-new-version-button"
+          color="primary"
+          fullWidth
+          label={t('VersionAgentDialog.trigger')}
+        />
+      }
+    >
+      <VStack gap="form">{t('VersionAgentDialog.description')}</VStack>
+    </Dialog>
+  );
+}
+
+function TemplateVersionDisplay() {
+  // get latest template version
+  const { id: agentTemplateId } = useCurrentAgent();
+  const agentState = useCurrentAgent();
+  const { id: currentProjectId } = useCurrentProject();
+  const t = useTranslations(
+    'projects/(projectSlug)/agents/(agentId)/AgentPage'
+  );
+
+  const { data: deployedAgentTemplates } =
+    webApi.projects.getProjectDeployedAgentTemplates.useInfiniteQuery({
+      queryKey:
+        webApiQueryKeys.projects.getProjectDeployedAgentTemplatesWithSearch(
+          currentProjectId,
+          {
+            agentTemplateId: agentTemplateId,
+          }
+        ),
+      queryData: ({ pageParam }) => ({
+        params: { projectId: currentProjectId },
+        query: {
+          agentTemplateId,
+          offset: pageParam.offset,
+          limit: pageParam.limit,
+        },
+      }),
+      initialPageParam: { offset: 0, limit: PAGE_SIZE },
+      getNextPageParam: (lastPage, allPages) => {
+        return lastPage.body.hasNextPage
+          ? { limit: PAGE_SIZE, offset: allPages.length * PAGE_SIZE }
+          : undefined;
+      },
+    });
+
+  const latestTemplateMetadata = useMemo(() => {
+    if (!deployedAgentTemplates) {
+      return null;
+    }
+
+    return deployedAgentTemplates.pages[0]?.body?.deployedAgentTemplates[0];
+  }, [deployedAgentTemplates]);
+
+  const versionNumber = useMemo(() => {
+    if (!latestTemplateMetadata) {
+      return '';
+    }
+
+    return latestTemplateMetadata.version;
+  }, [latestTemplateMetadata]);
+
+  const { data: latestTemplate } = webOriginSDKApi.agents.getAgentById.useQuery(
+    {
+      enabled: !!latestTemplateMetadata?.id,
+      queryData: {
+        params: {
+          agent_id: latestTemplateMetadata?.id || '',
+        },
+        query: {
+          all: true,
+        },
+      },
+      queryKey: UseAgentsServiceGetAgentKeyFn({
+        agentId: latestTemplateMetadata?.id || '',
+      }),
+    }
+  );
+
+  const isAtLatestVersion = useMemo(() => {
+    if (!latestTemplate?.body) {
+      return false;
+    }
+
+    const {
+      message_ids: _m,
+      created_at: _c,
+      name: _name,
+      id: _id,
+      ...rest
+    } = agentState;
+    const {
+      message_ids: _m2,
+      created_at: _m3,
+      name: _name2,
+      id: _id2,
+      ...rest2
+    } = latestTemplate.body;
+
+    return isEqual(
+      generateAgentStateHash(rest, []),
+      generateAgentStateHash(rest2, [])
+    );
+  }, [agentState, latestTemplate]);
+
+  return (
+    <Popover
+      trigger={
+        <Button
+          hideLabel
+          label={
+            isAtLatestVersion
+              ? t('DeploymentButton.readyToDeploy.trigger')
+              : t('DeploymentButton.updateAvailable.trigger')
+          }
+          preIcon={isAtLatestVersion ? <RocketIcon /> : <UpdateAvailableIcon />}
+        />
+      }
+      align="end"
+    >
+      <VStack padding="small">
+        <VStack padding="small">
+          {versionNumber && (
+            <HStack>
+              <Badge
+                color="primary"
+                content={t('DeploymentButton.version', {
+                  version: versionNumber,
+                })}
+              />
+            </HStack>
+          )}
+          <Typography variant="heading4" bold>
+            {isAtLatestVersion
+              ? t('DeploymentButton.readyToDeploy.heading')
+              : t('DeploymentButton.updateAvailable.heading')}
+          </Typography>
+          <Typography>
+            {isAtLatestVersion
+              ? t('DeploymentButton.readyToDeploy.copy')
+              : t('DeploymentButton.updateAvailable.copy')}
+          </Typography>
+        </VStack>
+        <VStack gap="small">
+          {!isAtLatestVersion && <VersionAgentDialog />}
+          <DeployAgentDialog isAtLatestVersion={isAtLatestVersion} />
+        </VStack>
+      </VStack>
+    </Popover>
+  );
+}
+
+type Dialogs = 'forkAgent';
+
+function AgentSettingsDropdown() {
+  const t = useTranslations(
+    'projects/(projectSlug)/agents/(agentId)/AgentPage'
+  );
+  const [openDialog, setOpenDialog] = useState<Dialogs | null>(null);
+
+  const handleCloseDialog = useCallback(() => {
+    setOpenDialog(null);
+  }, []);
+
+  return (
+    <>
+      {openDialog == 'forkAgent' && (
+        <ForkAgentDialog onClose={handleCloseDialog} />
+      )}
+      <DropdownMenu
+        align="end"
+        trigger={
+          <Button
+            preIcon={<CogIcon />}
+            label={t('AgentSettingsDropdown.trigger')}
+            hideLabel
+            size="small"
+            color="tertiary-transparent"
+          />
+        }
+      >
+        <DropdownMenuItem
+          onClick={() => {
+            setOpenDialog('forkAgent');
+          }}
+          preIcon={<ForkIcon />}
+          label={t('ForkAgentDialog.trigger')}
+        />
+        <RestoreLayoutButton />
+      </DropdownMenu>
+    </>
   );
 }
 
@@ -272,11 +597,11 @@ export function AgentPage() {
                 name: agentName,
               }}
             >
-              <HStack paddingRight="small">
+              <HStack>
                 <ContextWindowPreview />
-                {isTemplate && <ForkAgentDialog />}
-                <RestoreLayoutButton />
-                <NavOverlay />
+                <AgentSettingsDropdown />
+                {/*<NavOverlay />*/}
+                {isTemplate && <TemplateVersionDisplay />}
               </HStack>
             </ADEHeader>
           }
