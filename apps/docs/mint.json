@@ -66,7 +66,15 @@
       "pages": [
         "introduction",
         "quickstart",
-        "install",
+        {
+          "group": "Letta server",
+          "icon": "server",
+          "iconType": "solid",
+          "pages": [
+            "server/pip",
+            "server/docker"
+          ]
+        },
         {
           "group": "LLM configuration",
           "icon": "microchip",
