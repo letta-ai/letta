@@ -98,8 +98,6 @@ function AddToolDialogDetailActions(props: AddToolDialogDetailActionsProps) {
               return oldData;
             }
 
-            console.log(nextAgentState);
-
             return {
               ...oldData,
               tools: nextAgentState.tools,
@@ -161,12 +159,14 @@ function AddToolDialogDetailActions(props: AddToolDialogDetailActionsProps) {
           color="destructive"
           busy={isRemovingTool}
           onClick={handleRemove}
+          fullWidth
         />
       ) : (
         <Button
           type="button"
           label={t('AddToolDialogDetailActions.addToAgent')}
           color="primary"
+          fullWidth
           busy={isAddingTool}
           onClick={handleAdd}
         />
@@ -242,6 +242,7 @@ function AddToolDialog(props: AddToolDialogProps) {
           <VStack fullHeight overflowY="auto" gap="small">
             {toolsList.map((tool) => (
               <ActionCard
+                isActive={toolToView?.name === tool.name}
                 badge={
                   tool.alreadyAdded ? (
                     <Badge
@@ -262,33 +263,43 @@ function AddToolDialog(props: AddToolDialogProps) {
             ))}
           </VStack>
         </VStack>
-        <VStack fullHeight border fullWidth>
-          <HStack padding="small" borderBottom>
-            <Typography variant="body3" bold>
-              {toolToView
-                ? toolToView.name
-                : t('AddToolDialog.noToolSelected.title')}
-            </Typography>
-          </HStack>
-          <VStack padding="small" fullHeight>
-            <VStack fullHeight>
-              <Typography
-                variant="body"
-                italic={toolToView && !toolToView.description}
-              >
-                {toolToView
-                  ? toolToView.description || t('AddToolDialog.noDescription')
-                  : t('AddToolDialog.noToolSelected.description')}
-              </Typography>
-            </VStack>
-            {toolToView && (
+        {toolToView ? (
+          <VStack fullHeight border fullWidth>
+            <VStack paddingX paddingY="small" fullHeight>
+              <VStack>
+                <VStack>
+                  <Typography variant="heading3" bold>
+                    {toolToView.name}
+                  </Typography>
+                </VStack>
+
+                <Typography variant="heading4" bold>
+                  {t('AddToolDialog.description')}
+                </Typography>
+                <Typography
+                  variant="body"
+                  italic={toolToView && !toolToView.description}
+                >
+                  {toolToView.description || t('AddToolDialog.noDescription')}
+                </Typography>
+              </VStack>
+
               <AddToolDialogDetailActions
                 isAlreadyAdded={addedToolNameSet.has(toolToView.name)}
                 tool={toolToView}
               />
-            )}
+            </VStack>
           </VStack>
-        </VStack>
+        ) : (
+          <VStack fullHeight padding border fullWidth>
+            <Typography variant="heading4">
+              {t('AddToolDialog.noToolSelected.title')}
+            </Typography>
+            <Typography variant="body">
+              {t('AddToolDialog.noToolSelected.description')}
+            </Typography>
+          </VStack>
+        )}
       </HStack>
     </Dialog>
   );

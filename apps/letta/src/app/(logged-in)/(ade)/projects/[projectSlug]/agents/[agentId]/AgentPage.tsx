@@ -503,6 +503,7 @@ function AgentSettingsDropdown() {
       )}
       <DropdownMenu
         align="end"
+        triggerAsChild
         trigger={
           <Button
             preIcon={<CogIcon />}
@@ -610,7 +611,7 @@ export function AgentPage() {
                 name: agentName,
               }}
             >
-              <HStack>
+              <HStack align="center">
                 <ContextWindowPreview />
                 <AgentSettingsDropdown />
                 {/*<NavOverlay />*/}
