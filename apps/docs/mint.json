@@ -81,6 +81,7 @@
           "iconType": "solid",
           "pages": [
             "models/openai",
+            "models/openai_proxy",
             "models/anthropic",
             "models/groq",
             "models/google",
