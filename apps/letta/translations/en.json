@@ -96,7 +96,7 @@
       "settings": "Settings"
     }
   },
-  "common/AgentTemplateCard": {
+  "components/AgentTemplateCard": {
     "subtitle": "Last updated on {date}",
     "openInADE": "Open in ADE",
     "versions": "{count, plural, =0 {} other {View Versions (#)}}",
@@ -198,8 +198,15 @@
     "lastUpdatedAt": "Last updated on {date}",
     "error": "There was an error while updating the model, please try again or contact support."
   },
-  "common/Messages": {
+  "components/Messages": {
     "noParsableMessages": "There are no messages available in this view, usually this is caused by a lack of triggered send_message actions in your agent, check the debug more to verify."
+  },
+  "components/ThemeSelector": {
+    "label": "Choose Theme",
+    "options": {
+      "light": "Light",
+      "dark": "Dark"
+    }
   },
   "ADE/AgentSimulator": {
     "FlushSimulationSessionDialog": {
@@ -458,7 +465,8 @@
   },
   "projects/(projectSlug)/agents/(agentId)/AgentPage": {
     "AgentSettingsDropdown": {
-      "trigger": "Agent Settings"
+      "trigger": "Agent Settings",
+      "returnToProject": "Return to Project"
     },
     "DeployAgentDialog": {
       "trigger": "Deployment Instructions",

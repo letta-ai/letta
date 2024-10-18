@@ -258,7 +258,12 @@ function MessageGroup({ group }: MessageGroupType) {
   return (
     <HStack>
       <IconAvatar
-        color={
+        textColor={
+          name === 'Agent'
+            ? 'hsl(var(--primary-light-content))'
+            : 'hsl(var(--background-grey-content))'
+        }
+        backgroundColor={
           name === 'Agent'
             ? 'hsl(var(--primary-light))'
             : 'hsl(var(--background-grey))'
@@ -292,7 +297,7 @@ export function Messages(props: MessagesProps) {
   const { isSendingMessage, mode, isPanelActive, agentId } = props;
   const ref = useRef<HTMLDivElement>(null);
   const hasScrolledInitially = useRef(false);
-  const t = useTranslations('common/Messages');
+  const t = useTranslations('components/Messages');
 
   const { data, hasNextPage, fetchNextPage, isFetching } = useInfiniteQuery<
     AgentMessage[],

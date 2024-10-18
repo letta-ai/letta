@@ -37,7 +37,7 @@ import { useDebouncedValue } from '@mantine/hooks';
 import { webApi, webApiQueryKeys, webOriginSDKApi } from '$letta/client';
 import { useRouter } from 'next/navigation';
 import { useCurrentUser } from '$letta/client/hooks';
-import { CurrentUserDetailsBlock } from '$letta/client/common';
+import { CurrentUserDetailsBlock } from '$letta/client/components';
 import './AgentPage.scss';
 import { useCurrentAgentMetaData } from './hooks/useCurrentAgentMetaData/useCurrentAgentMetaData';
 import { useCurrentAgent } from './hooks';
@@ -54,6 +54,7 @@ import { generateAgentStateHash } from './AgentSimulator/AgentSimulator';
 import { DeployAgentUsageInstructions } from '$letta/client/code-reference/DeployAgentUsageInstructions';
 import { useQueryClient } from '@tanstack/react-query';
 import type { InfiniteGetProjectDeployedAgentTemplates200Response } from '$letta/web-api/projects/projectContracts';
+import { ThemeSelector } from '$letta/client/components/ThemeSelector/ThemeSelector';
 
 function RestoreLayoutButton() {
   const t = useTranslations(
@@ -435,7 +436,7 @@ function TemplateVersionDisplay() {
       triggerAsChild
       trigger={
         <Button
-          hideLabel
+          color="secondary"
           label={
             isAtLatestVersion
               ? t('DeploymentButton.readyToDeploy.trigger')
@@ -523,6 +524,9 @@ function AgentSettingsDropdown() {
           label={t('ForkAgentDialog.trigger')}
         />
         <RestoreLayoutButton />
+        <HStack padding="small" justify="end" borderTop fullWidth>
+          <ThemeSelector />
+        </HStack>
       </DropdownMenu>
     </>
   );

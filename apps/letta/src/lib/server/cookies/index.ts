@@ -24,6 +24,10 @@ const cookieConfiguration: Record<
     path: '/',
     secure: true,
   },
+  [CookieNames.THEME]: {
+    httpOnly: true,
+    path: '/',
+  },
 };
 
 export async function setCookie<CookieName extends CookieNames>(

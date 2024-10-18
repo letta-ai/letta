@@ -4,6 +4,7 @@ export const userSessionSchema = z.object({
   email: z.string(),
   name: z.string(),
   imageUrl: z.string(),
+  theme: z.string(),
   organizationId: z.string(),
   id: z.string(),
 });

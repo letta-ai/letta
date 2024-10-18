@@ -332,7 +332,12 @@ function RemoveToolDialog(props: RemoveToolFromAgentDialogProps) {
   );
 }
 
-function ToolsList() {
+interface ToolsProps {
+  search: string;
+}
+
+function ToolsList(props: ToolsProps) {
+  const { search } = props;
   const { tools: currentToolNames } = useCurrentAgent();
   const { data: allTools, isLoading } = useToolsServiceListTools();
 
@@ -374,6 +379,10 @@ function ToolsList() {
     ];
 
     currentUserTools.forEach((tool) => {
+      if (!tool.name.toLowerCase().includes(search.toLowerCase())) {
+        return;
+      }
+
       if (
         tool.tags.includes('letta-base') ||
         tool.tags.includes('memgpt-base')
@@ -431,7 +440,7 @@ function ToolsList() {
     }
 
     return fileTreeTools;
-  }, [currentUserTools, t]);
+  }, [currentUserTools, search, t]);
 
   return (
     <PanelMainContent>
@@ -687,7 +696,7 @@ function ToolsListPage() {
           )
         }
       />
-      <ToolsList />
+      <ToolsList search={search} />
     </>
   );
 }
@@ -697,10 +706,10 @@ export const toolsPanelTemplate = {
   content: ToolsListPage,
   useGetTitle: () => {
     const t = useTranslations('ADE/Tools');
-    const { data: allTools } = useToolsServiceListTools();
+    const { tools } = useCurrentAgent();
 
     return t('title', {
-      toolCount: allTools?.length || '-',
+      toolCount: tools?.length || '-',
     });
   },
   data: z.undefined(),

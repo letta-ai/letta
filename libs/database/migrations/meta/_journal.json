@@ -57,6 +57,13 @@
       "when": 1729229550788,
       "tag": "0007_wet_galactus",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1729279432928,
+      "tag": "0008_typical_moon_knight",
+      "breakpoints": true
     }
   ]
 }

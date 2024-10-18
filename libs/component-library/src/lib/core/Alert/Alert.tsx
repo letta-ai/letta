@@ -7,7 +7,7 @@ import { HStack } from '../../framing/HStack/HStack';
 import { Slot } from '@radix-ui/react-slot';
 
 const alertVariants = cva(
-  'relative w-full items-start flex border px-4 py-3  text-sm gap-0',
+  'relative w-full items-start flex border px-4 py-3 gap-2  text-sm',
   {
     variants: {
       fullWidth: {
@@ -42,7 +42,7 @@ const iconMap: Partial<Record<AlertVariants, React.ReactNode>> = {
   warning: <WarningIcon color="warning" />,
   destructive: <WarningIcon color="destructive" />,
   info: <InfoIcon color="muted" />,
-  success: <CheckIcon color="default" />,
+  success: <CheckIcon color="black" />,
 };
 
 function isInIconMap(icon: unknown): icon is keyof typeof iconMap {
@@ -70,7 +70,7 @@ export function Alert(props: AlertProps) {
       role="alert"
       className={cn(alertVariants({ fullWidth, variant }), className)}
     >
-      <Slot className="w-6 h-6">{icon || defaultIcon}</Slot>
+      <Slot className="w-5 h-5">{icon || defaultIcon}</Slot>
       <div className="flex flex-col w-full text-base gap">
         <HStack fullWidth gap="small" justify="spaceBetween" align="start">
           <h5 className="font-medium">{title}</h5>

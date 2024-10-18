@@ -28,6 +28,7 @@ import { AdminService } from '@letta-web/letta-agents-api';
 import { createAgent, versionAgentTemplate } from '$letta/sdk';
 import { generateSlug } from '$letta/server';
 import { generateDefaultADELayout } from '$letta/utils';
+import { cookies } from 'next/headers';
 
 function isLettaEmail(email: string) {
   return email.endsWith('@letta.com') || email.endsWith('@memgpt.ai');
@@ -259,6 +260,7 @@ async function createUserAndOrganization(
   return {
     user: {
       email: userData.email,
+      theme: 'light',
       name: userData.name,
       imageUrl: userData.imageUrl,
       id: createdUser.userId,
@@ -281,6 +283,7 @@ async function findExistingUser(
   }
 
   return {
+    theme: user.theme || 'light',
     email: user.email,
     id: user.id,
     organizationId: user.organizationId,
@@ -350,6 +353,7 @@ async function findOrCreateUserAndOrganizationFromProviderLogin(
 
   return {
     user: {
+      theme: user.theme,
       email: user.email,
       id: user.id,
       organizationId: user.organizationId,
@@ -380,6 +384,8 @@ export async function signInUserFromProviderLogin(
     sessionId,
     expires,
   });
+
+  cookies().set(CookieNames.THEME, user.theme);
 
   await setRedisData('userSession', sessionId, {
     expiresAt: expires,
@@ -420,6 +426,7 @@ export interface GetUserDataResponse {
   lettaAgentsId: string;
   email: string;
   imageUrl: string;
+  theme: string;
   name: string;
 }
 
@@ -443,6 +450,7 @@ export async function getUser(): Promise<GetUserDataResponse | null> {
       id: true,
       lettaAgentsId: true,
       email: true,
+      theme: true,
       imageUrl: true,
       name: true,
     },
@@ -452,7 +460,10 @@ export async function getUser(): Promise<GetUserDataResponse | null> {
     return null;
   }
 
-  return userFromDb;
+  return {
+    ...userFromDb,
+    theme: userFromDb.theme || 'light',
+  };
 }
 
 export async function getUserOrRedirect() {

@@ -1,5 +1,6 @@
 'use client';
 import type { HTMLProps } from 'react';
+import { forwardRef } from 'react';
 import React from 'react';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@letta-web/core-style-config';
@@ -79,39 +80,42 @@ const variantToElement = {
   body3: 'p',
 };
 
-export function Typography(props: TypographyProps) {
-  const {
-    className,
-    overrideEl,
-    fullWidth,
-    underline,
-    inline,
-    italic,
-    noWrap,
-    variant,
-    bold,
-    ...rest
-  } = props;
+export const Typography = forwardRef<HTMLElement, TypographyProps>(
+  function Typography(props, ref) {
+    const {
+      className,
+      overrideEl,
+      fullWidth,
+      underline,
+      inline,
+      italic,
+      noWrap,
+      variant,
+      bold,
+      ...rest
+    } = props;
 
-  const Element = overrideEl || variantToElement[variant || 'body'] || 'p';
+    const Element = overrideEl || variantToElement[variant || 'body'] || 'p';
 
-  return React.createElement(Element, {
-    className: cn(
-      typographyVariants({
-        ...rest,
-        underline,
-        italic,
-        noWrap,
-        bold,
-        inline,
-        fullWidth,
-        variant,
-        className,
-      })
-    ),
-    ...rest,
-  });
-}
+    return React.createElement(Element, {
+      ref,
+      className: cn(
+        typographyVariants({
+          ...rest,
+          underline,
+          italic,
+          noWrap,
+          bold,
+          inline,
+          fullWidth,
+          variant,
+          className,
+        })
+      ),
+      ...rest,
+    });
+  }
+);
 
 interface LoadedTypographyProps extends TypographyProps {
   fillerText: string;

@@ -90,7 +90,7 @@ export function ChatInput(props: ChatInputProps) {
           }}
           value={text}
           onKeyDown={handleKeyPress}
-          className="w-full text-base font-inherit resize-none	focus:outline-none"
+          className="w-full bg-transparent text-base font-inherit resize-none	focus:outline-none"
           maxRows={10}
           minRows={4}
           placeholder="Type a message here"
