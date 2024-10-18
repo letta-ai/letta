@@ -134,7 +134,7 @@ export const Button = forwardRef<
   } = props;
 
   const iconSize = useMemo(() => {
-    return size === 'small' ? 'w-4 h-4' : 'w-[16px] h-[16px] mt-[2px]';
+    return size === 'small' ? 'w-4 h-4' : 'w-5 h-5 mt-[2px]';
   }, [size]);
 
   const iconToRender = useMemo(() => {

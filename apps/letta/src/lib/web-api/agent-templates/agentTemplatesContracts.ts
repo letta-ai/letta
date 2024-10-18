@@ -137,6 +137,24 @@ const refreshAgentTemplateSimulatorSessionContract = c.mutation({
   },
 });
 
+/*  Delete Agent Template Session */
+const DeleteAgentTemplateSessionParamsSchema = z.object({
+  agentSessionId: z.string(),
+  agentTemplateId: z.string(),
+});
+
+const deleteAgentTemplateSimulatorSessionContract = c.mutation({
+  method: 'DELETE',
+  path: '/templates/:agentTemplateId/simulation-session/:agentSessionId',
+  pathParams: DeleteAgentTemplateSessionParamsSchema,
+  body: z.undefined(),
+  responses: {
+    200: z.object({
+      success: z.boolean(),
+    }),
+  },
+});
+
 export const agentTemplatesContracts = c.router({
   listAgentTemplates: listAgentTemplatesContract,
   forkAgentTemplate: forkAgentTemplateContract,
@@ -145,6 +163,8 @@ export const agentTemplatesContracts = c.router({
     createAgentTemplateSimulatorSessionContract,
   refreshAgentTemplateSimulatorSession:
     refreshAgentTemplateSimulatorSessionContract,
+  deleteAgentTemplateSimulatorSession:
+    deleteAgentTemplateSimulatorSessionContract,
 });
 
 export const agentTemplatesQueryClientKeys = {

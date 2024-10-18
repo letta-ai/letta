@@ -48,6 +48,19 @@ const inputVariants = cva(
   }
 );
 
+const inputIconVariants = cva('', {
+  variants: {
+    size: {
+      small: 'h-4 w-4',
+      default: 'h-5 w-5',
+      large: 'h-6 w-6',
+    },
+  },
+  defaultVariants: {
+    size: 'default',
+  },
+});
+
 const innerInputVariants = cva('px-3 gap-2', {
   variants: {
     size: {
@@ -68,6 +81,7 @@ type InputPrimitiveProps = Omit<
   VariantProps<typeof innerInputVariants> &
   VariantProps<typeof inputVariants> & {
     preIcon?: React.ReactNode;
+    postIcon?: React.ReactNode;
     bottomContent?: React.ReactNode;
     hideLabel?: boolean;
     allowCopy?: boolean;
@@ -105,6 +119,7 @@ const InputPrimitive = React.forwardRef<HTMLInputElement, InputPrimitiveProps>(
       fullWidth,
       disabled,
       allowCopy,
+      postIcon,
       isUpdating,
       preIcon,
       type,
@@ -136,7 +151,7 @@ const InputPrimitive = React.forwardRef<HTMLInputElement, InputPrimitiveProps>(
           className={cn(innerInputVariants({ size }))}
           fullWidth={fullWidth}
         >
-          <Slot className="w-4 h-auto">{preIcon}</Slot>
+          <Slot className={cn(inputIconVariants({ size }))}>{preIcon}</Slot>
           <input
             /* Prevents autofill tools from annoying our users */
             autoComplete="off"
@@ -163,6 +178,7 @@ const InputPrimitive = React.forwardRef<HTMLInputElement, InputPrimitiveProps>(
           )}
           {isUpdating && <SpinnerPrimitive className="w-3 h-3" />}
           {allowCopy && <CopyButton text={(props.value || '').toString()} />}
+          <Slot className={cn(inputIconVariants({ size }))}>{postIcon}</Slot>
         </HStack>
       </VStack>
     );

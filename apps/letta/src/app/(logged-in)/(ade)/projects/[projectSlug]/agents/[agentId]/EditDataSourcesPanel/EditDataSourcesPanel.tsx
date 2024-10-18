@@ -176,7 +176,7 @@ function AttachDataSourceView(props: AttachDataSourceViewProps) {
           onChange={(e) => {
             setSearch(e.target.value);
           }}
-          preIcon={<SearchIcon />}
+          postIcon={<SearchIcon />}
           fullWidth
           hideLabel
           label={t('AttachDataSourceView.searchInput.label')}
@@ -355,7 +355,8 @@ function CreateDataSourceDialog() {
       trigger={
         <Button
           preIcon={<PlusIcon />}
-          color="primary"
+          color="tertiary"
+          hideLabel
           label={t('CreateDataSourceDialog.trigger')}
         />
       }
