@@ -4,21 +4,24 @@ import { CopyButton } from '../../reusable/CopyButton/CopyButton';
 
 interface InlineCodeProps {
   code: string;
+  hideCopyButton?: boolean;
 }
 
-export function InlineCode({ code }: InlineCodeProps) {
+export function InlineCode({ code, hideCopyButton }: InlineCodeProps) {
   const t = useTranslations('ComponentLibrary/InlineCode');
 
   return (
     <span className="inline-flex bg-background-greyer py-0 pl-2  text-sm items-center rounded font-mono">
       {code}
-      <CopyButton
-        color="tertiary-transparent"
-        hideLabel
-        size="small"
-        copyButtonText={t('copyButton')}
-        textToCopy={code}
-      />
+      {!hideCopyButton && (
+        <CopyButton
+          color="tertiary-transparent"
+          hideLabel
+          size="small"
+          copyButtonText={t('copyButton')}
+          textToCopy={code}
+        />
+      )}
     </span>
   );
 }

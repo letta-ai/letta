@@ -8,6 +8,7 @@ import { cva } from 'class-variance-authority';
 import { cn } from '@letta-web/core-style-config';
 import './ActionCard.scss';
 import { ChevronRightIcon } from '../../icons';
+import { Slot } from '@radix-ui/react-slot';
 
 const actionCardVariants = cva('', {
   variants: {
@@ -78,16 +79,7 @@ export function ActionCard(props: ToggleCardProps) {
         >
           <VStack overflow="hidden" gap="text" fullWidth>
             <HStack fullWidth className="action-card-titlearea" align="center">
-              {icon && (
-                <HStack
-                  align="center"
-                  justify="center"
-                  className="w-8"
-                  overflow="hidden"
-                >
-                  {icon}
-                </HStack>
-              )}
+              {icon && <Slot className="w-5 h-5">{icon}</Slot>}
               <VStack gap={false} align="start">
                 <HStack paddingRight fullWidth overflow="hidden">
                   <Typography noWrap fullWidth overflow="ellipsis" bold>

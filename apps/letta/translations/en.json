@@ -405,13 +405,14 @@
     "title": "Tools ({toolCount})",
     "AddToolDialogDetailActions": {
       "addToAgent": "Add to Agent",
-      "removeFromAgent": "Remove from Agent",
+      "alreadyAdded": "This tool is already added",
       "removeError": "There was an error removing this tool, please try again or contact support.",
       "addError": "There was an error adding this tool, please try again or contact support."
     },
     "AddToolDialog": {
       "description": "Description",
       "added": "Added",
+      "creator": "from {creator}",
       "search": {
         "placeholder": "Tool name",
         "label": "Search tools"
