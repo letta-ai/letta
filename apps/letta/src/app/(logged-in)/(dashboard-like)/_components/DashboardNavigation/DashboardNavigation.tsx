@@ -25,9 +25,10 @@ import {
 import { useCurrentUser } from '$letta/client/hooks';
 import { usePathname } from 'next/navigation';
 import { webApi, webApiQueryKeys } from '$letta/client';
-import { CurrentUserDetailsBlock } from '$letta/client/common';
+import { CurrentUserDetailsBlock } from '$letta/client/components';
 import { cn } from '@letta-web/core-style-config';
 import { useTranslations } from 'next-intl';
+import { ThemeSelector } from '$letta/client/components/ThemeSelector/ThemeSelector';
 
 interface NavButtonProps {
   href: string;
@@ -176,21 +177,26 @@ function MainNavigationItems() {
 
 function SecondaryMenuItems() {
   return (
-    <VStack paddingX="small" gap="small">
-      <NavButton
-        id="settings"
-        href="/settings"
-        label="Settings"
-        icon={<CogIcon />}
-      />
-      <AdminNav />
-      <NavButton
-        id="sign-out"
-        preload={false}
-        href="/signout"
-        label="Sign Out"
-        icon={<LogoutIcon />}
-      />
+    <VStack gap="medium">
+      <VStack borderBottom paddingX="small" gap="small">
+        <NavButton
+          id="settings"
+          href="/settings"
+          label="Settings"
+          icon={<CogIcon />}
+        />
+        <AdminNav />
+        <NavButton
+          id="sign-out"
+          preload={false}
+          href="/signout"
+          label="Sign Out"
+          icon={<LogoutIcon />}
+        />
+      </VStack>
+      <HStack justify="end" paddingX="small">
+        <ThemeSelector />
+      </HStack>
     </VStack>
   );
 }

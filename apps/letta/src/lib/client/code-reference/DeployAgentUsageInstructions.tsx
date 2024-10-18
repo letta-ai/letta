@@ -13,7 +13,7 @@ import { environment } from '@letta-web/environmental-variables';
 import {
   ACCESS_TOKEN_PLACEHOLDER,
   CodeWithAPIKeyInjection,
-} from '$letta/client/common';
+} from '$letta/client/components';
 import { webApi, webApiQueryKeys } from '$letta/client';
 import { findMemoryBlockVariables } from '$letta/utils';
 import { useCurrentAgent } from '../../../app/(logged-in)/(ade)/projects/[projectSlug]/agents/[agentId]/hooks';

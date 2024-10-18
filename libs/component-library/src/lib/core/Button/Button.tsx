@@ -36,7 +36,8 @@ const buttonVariants = cva(
         primary:
           'bg-primary hover:bg-primary-hover text-primary-content border-transparent',
         secondary: 'bg-secondary text-secondary-content border-transparent',
-        tertiary: 'bg-tertiary hover:bg-tertiary-hover text-tertiary-content ',
+        tertiary:
+          'bg-transparent hover:bg-tertiary-hover text-tertiary-content ',
         destructive:
           'bg-destructive hover:bg-destructive-hover text-white border-transparent',
         black:

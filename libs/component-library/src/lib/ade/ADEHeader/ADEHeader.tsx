@@ -38,13 +38,13 @@ export function ADEHeader(props: ADEHeaderProps) {
         <HStack
           align="center"
           justify="center"
-          color="background-black"
+          color="primary"
           className="w-[40px]"
           fullHeight
         >
           <Tooltip content={t('returnToHome')}>
             <Link href="/">
-              <Logo size="small" color="white" />
+              <Logo size="small" />
             </Link>
           </Tooltip>
         </HStack>

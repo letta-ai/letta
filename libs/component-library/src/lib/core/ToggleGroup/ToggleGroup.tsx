@@ -94,7 +94,7 @@ const ToggleGroupItem = React.forwardRef<
   // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
   React.ComponentPropsWithoutRef<typeof ToggleGroupPrimitive.Item> &
     VariantProps<typeof toggleVariants>
->(({ className, children, variant, size, ...props }, ref) => {
+>(({ className, hideLabel: _, children, variant, size, ...props }, ref) => {
   const context = React.useContext(ToggleGroupContext);
 
   return (

@@ -41,8 +41,8 @@
     --secondary-content: 0 0% 100%;
     --secondary-hover: 0, 0%, 10%;
 
-    --tertiary: 0 0% 100%;
-    --tertiary-content: 240 10% 3.9%;
+    --tertiary: var(--background);
+    --tertiary-content: var(--content);
     --tertiary-hover: 210, 40%, 98%;
     --tertiary-active: 210, 40%, 96%;
 
@@ -93,17 +93,22 @@
     --positive-content: 0 0% 100%;
 
     --media-breakpoint-sidebar-visible: 840px;
+
+
   }
 
+
+
   .dark {
-    /*--primary: 10, 100%, 60%;*/
-    /*--primary-content: 240 5.9% 10%;*/
-    /*--primary-hover: 10, 100%, 67%;*/
+    --primary: 10, 100%, 60%;
+    --primary-content:  0 0% 98%;
+    --primary-hover: 10, 100%, 67%;
 
     --on-transparent: 100, 100%, 100%;
 
-    --background: 240 10% 3.9%;
+    --background: 0 0% 9%;
     --background-hover: 240 10% 3.9%;
+    --content: 0 0% 98%;
 
     --background-grey: 0, 0%, 13%;
     --background-grey-content: 0 0% 100%;
@@ -111,20 +116,20 @@
     --background-greyer: 200, 3%, 17%;
     --background-greyer-content: 0 0% 100%;
 
-    --content: 0 0% 98%;
     --card: 240 10% 3.9%;
     --card-content: 0 0% 98%;
-    --popover: 240 10% 3.9%;
-    --popover-content: 0 0% 98%;
+    --popover: var(--background);
+    --popover-content: var(--content);
 
     --secondary: 0 0% 100%;
-    --secondary-content: 0 0% 20%;
+    --secondary-content: 225 6% 13%;
 
-    --tertiary: 0 0% 0%;
-    --tertiary-content: 0 0% 100%;
+    --tertiary: var(--background);
+    --tertiary-content: var(--content);
     --tertiary-active: 200, 3%, 17%;
+    --tertiary-hover: 200, 3%, 17%;
 
-    --muted: 240 3.7% 15.9%;
+    --muted: 210 2% 48%;
     --muted-content: 240 5% 64.9%;
 
     --accent: 240 3.7% 15.9%;
@@ -132,11 +137,33 @@
     --destructive: 0 62.8% 30.6%;
     --destructive-content: 0 0% 98%;
 
+
+    --warning: 0 0% 100%;
+    --warning-content: 43, 65%, 38%;
+    --background-warning: 43, 65%, 38%;
+    --background-warning-content: 0 0% 100%;
+
     --border: 200, 3%, 17%;
     --input: 240 3.7% 15.9%;
     --ring: 240 4.9% 83.9%;
+
   }
+
+
+
+
+
 }
+
+body {
+  scrollbar-color: hsl(var(--secondary)) hsl(var(--background-grey));
+  scrollbar-width: thin;
+}
+
+::-webkit-scrollbar-thumb {
+  border-radius: 0px;
+}
+
 
 :root {
   --font-sans: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI',
@@ -175,6 +202,7 @@
     @apply border-border;
   }
   body {
+
     @apply bg-background text-content;
     font-feature-settings: 'rlig' 1, 'calt' 1;
   }

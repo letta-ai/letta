@@ -5,6 +5,7 @@ import React from 'react';
 import { LoadMixpanelAnalytics } from '@letta-web/analytics/client';
 import { getLocale, getMessages } from 'next-intl/server';
 import { NextIntlClientProvider } from 'next-intl';
+import { Body } from './_components/ThemeProvider/Body';
 
 export const metadata = {
   title: 'Letta',
@@ -101,7 +102,7 @@ export default async function RootLayout({
         <meta name="theme-color" content="#ffffff" />
         <title>Letta</title>
       </head>
-      <body>
+      <Body>
         <LoadMixpanelAnalytics />
         <NextTopLoader
           showSpinner={false}
@@ -111,7 +112,7 @@ export default async function RootLayout({
         <NextIntlClientProvider messages={messages}>
           <ClientSideProviders>{children}</ClientSideProviders>
         </NextIntlClientProvider>
-      </body>
+      </Body>
     </html>
   );
 }

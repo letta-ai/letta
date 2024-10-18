@@ -5,6 +5,9 @@ import * as DropdownMenuPrimitive from '@radix-ui/react-dropdown-menu';
 import { CheckIcon, ChevronRightIcon, CircleIcon } from '../../icons';
 import { cn } from '@letta-web/core-style-config';
 import { Slot } from '@radix-ui/react-slot';
+import Link from 'next/link';
+import { Typography } from '../Typography/Typography';
+import { HStack } from '../../framing/HStack/HStack';
 
 const DropdownMenuBase = DropdownMenuPrimitive.Root;
 
@@ -78,25 +81,51 @@ interface DropdownMenuItemProps
   extends React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Item> {
   inset?: boolean;
   label: string;
+  href?: string;
+  target?: string;
   preIcon?: React.ReactNode;
+}
+
+interface MaybeLinkProps {
+  href?: string;
+  target?: string;
+  children: React.ReactNode;
+}
+
+function MaybeLink(props: MaybeLinkProps) {
+  const { href, target, children } = props;
+
+  if (href) {
+    return (
+      <Link href={href} target={target}>
+        {children}
+      </Link>
+    );
+  }
+
+  return children;
 }
 
 const DropdownMenuItem = React.forwardRef<
   React.ElementRef<typeof DropdownMenuPrimitive.Item>,
   DropdownMenuItemProps
->(({ className, inset, label, preIcon, ...props }, ref) => {
+>(({ className, inset, href, label, preIcon, ...props }, ref) => {
   return (
     <DropdownMenuPrimitive.Item
       ref={ref}
       className={cn(
-        'relative flex gap-2 cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
+        'relative flex gap-2  cursor-pointer select-none items-center px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
         inset && 'pl-8',
         className
       )}
       {...props}
     >
-      {preIcon && <Slot className="w-3">{preIcon}</Slot>}
-      {label}
+      <MaybeLink>
+        <HStack align="center">
+          {preIcon && <Slot className="w-3">{preIcon}</Slot>}
+          <Typography variant="body2">{label}</Typography>
+        </HStack>
+      </MaybeLink>
     </DropdownMenuPrimitive.Item>
   );
 });

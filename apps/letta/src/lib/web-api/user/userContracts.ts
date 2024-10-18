@@ -1,3 +1,4 @@
+import type { ServerInferResponses } from '@ts-rest/core';
 import { initContract } from '@ts-rest/core';
 import { z } from 'zod';
 
@@ -7,9 +8,15 @@ export const PublicUserSchema = z.object({
   name: z.string(),
   email: z.string(),
   imageUrl: z.string(),
+  theme: z.string(),
   organizationId: z.string(),
   id: z.string(),
 });
+
+export type GetUser200ResponseType = ServerInferResponses<
+  typeof getUserContract,
+  200
+>;
 
 const getUserContract = c.query({
   method: 'GET',
@@ -21,7 +28,8 @@ const getUserContract = c.query({
 
 /* Update User */
 export const UpdateUserPayloadSchema = z.object({
-  name: z.string(),
+  name: z.string().optional(),
+  theme: z.string().optional(),
 });
 
 const updateCurrentUserContract = c.mutation({

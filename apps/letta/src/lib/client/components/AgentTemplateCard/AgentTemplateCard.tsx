@@ -15,7 +15,7 @@ interface AgentTemplateCardProps {
 }
 
 export function AgentTemplateCard(props: AgentTemplateCardProps) {
-  const t = useTranslations('common/AgentTemplateCard');
+  const t = useTranslations('components/AgentTemplateCard');
   // const [openVersions, setOpenVersions] = React.useState(false);
   const { agent } = props;
   const { name, updatedAt } = agent;

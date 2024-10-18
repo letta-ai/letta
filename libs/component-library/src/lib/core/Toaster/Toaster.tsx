@@ -11,6 +11,7 @@ function Toaster() {
       {(t) => (
         <ToastBar
           style={{
+            margin: 0,
             borderRadius: 0,
             padding: 0,
             background: 'transparent',

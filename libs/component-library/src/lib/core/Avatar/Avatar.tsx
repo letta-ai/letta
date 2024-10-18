@@ -101,15 +101,21 @@ export function Avatar(props: AvatarProps) {
 
 interface IconAvatarProps extends AvatarVariantProps {
   icon: React.ReactNode;
-  color?: string;
+  backgroundColor?: string;
+  textColor?: string;
 }
 
 export function IconAvatar(props: IconAvatarProps) {
-  const { icon, size, color } = props;
+  const { icon, textColor, size, backgroundColor } = props;
 
   return (
     <AvatarRoot size={size}>
-      <AvatarFallback style={{ background: color || 'var(--color-primary)' }}>
+      <AvatarFallback
+        style={{
+          color: textColor || 'var(--color-primary-content)',
+          background: backgroundColor || 'var(--color-primary)',
+        }}
+      >
         {icon}
       </AvatarFallback>
     </AvatarRoot>

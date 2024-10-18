@@ -124,13 +124,15 @@ function RenderFolderInnerContent(props: RenderFolderContentProps) {
         const { name, onClick, icon, actions } = content;
         let innerContent = (
           <HStack justify="start" fullWidth align="center" fullHeight>
-            <HStack align="center">
+            <HStack justify="start" align="center">
               {icon ? (
                 <Slot className="w-4">{icon}</Slot>
               ) : (
                 <FileIcon className="w-4" />
               )}
-              <Typography>{name}</Typography>
+              <Typography noWrap align="left">
+                {name}
+              </Typography>
             </HStack>
           </HStack>
         );
@@ -228,7 +230,9 @@ export function FolderComponent(props: FolderComponentProps) {
       <HStack as="summary" className="w-full cursor-pointer" align="center">
         <RowItem actions={actions} depth={depth}>
           {isOpen ? openIcon : icon}
-          <Typography>{name}</Typography>
+          <Typography noWrap align="left">
+            {name}
+          </Typography>
         </RowItem>
       </HStack>
       {'contents' in folder ? (

@@ -4,6 +4,8 @@ import { getUser } from '$letta/server/auth';
 import type { contracts } from '$letta/web-api/contracts';
 import { db, users } from '@letta-web/database';
 import { eq } from 'drizzle-orm';
+import { cookies } from 'next/headers';
+import { CookieNames } from '$letta/server/cookies/types';
 
 type ResponseShapes = ServerInferResponses<typeof userContract>;
 
@@ -24,6 +26,7 @@ export async function getCurrentUser(): Promise<
   return {
     status: 200,
     body: {
+      theme: user.theme,
       name: user.name,
       email: user.email,
       imageUrl: user.imageUrl,
@@ -54,6 +57,10 @@ export async function updateCurrentUser(
     };
   }
 
+  if (payload.body.theme) {
+    cookies().set(CookieNames.THEME, payload.body.theme);
+  }
+
   const updatedUser = {
     ...user,
     ...payload.body,
@@ -63,12 +70,14 @@ export async function updateCurrentUser(
     .update(users)
     .set({
       name: updatedUser.name,
+      theme: updatedUser.theme,
     })
     .where(eq(users.id, user.id));
 
   return {
     status: 200,
     body: {
+      theme: updatedUser.theme,
       name: updatedUser.name,
       email: updatedUser.email,
       imageUrl: updatedUser.imageUrl,
