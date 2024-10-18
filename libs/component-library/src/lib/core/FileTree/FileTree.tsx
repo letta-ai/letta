@@ -65,7 +65,9 @@ function RowItem(props: RowItemProps) {
         fullWidth
         paddingY="small"
       >
-        <HStack align="center">{props.children}</HStack>
+        <HStack justify="start" align="center">
+          {props.children}
+        </HStack>
         {actions && (
           <DropdownMenu trigger={<DotsHorizontalIcon className="w-4" />}>
             {actions.map((action) => (
@@ -121,7 +123,7 @@ function RenderFolderInnerContent(props: RenderFolderContentProps) {
 
         const { name, onClick, icon, actions } = content;
         let innerContent = (
-          <HStack fullWidth align="center" fullHeight>
+          <HStack justify="start" fullWidth align="center" fullHeight>
             <HStack align="center">
               {icon ? (
                 <Slot className="w-4">{icon}</Slot>

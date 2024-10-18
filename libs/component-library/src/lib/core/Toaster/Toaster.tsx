@@ -26,16 +26,21 @@ function Toaster() {
               variant = 'destructive';
             }
 
+            if (t.type === 'success') {
+              variant = 'success';
+            }
+
             return (
               <Alert
                 action={
                   t.type !== 'loading' && (
                     <button
+                      className="mt-[3px]"
                       onClick={() => {
                         toast.dismiss(t.id);
                       }}
                     >
-                      <CloseIcon />
+                      <CloseIcon size="medium" />
                     </button>
                   )
                 }

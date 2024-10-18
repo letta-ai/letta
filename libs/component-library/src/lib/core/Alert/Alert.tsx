@@ -1,18 +1,20 @@
 import * as React from 'react';
-import { InfoIcon, WarningIcon } from '../../icons';
+import { CheckIcon, InfoIcon, WarningIcon } from '../../icons';
 import { useMemo } from 'react';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@letta-web/core-style-config';
 import { HStack } from '../../framing/HStack/HStack';
+import { Slot } from '@radix-ui/react-slot';
 
 const alertVariants = cva(
-  'relative w-full items-start flex border px-4 py-3  text-sm gap-3',
+  'relative w-full items-start flex border px-4 py-3  text-sm gap-0',
   {
     variants: {
       fullWidth: {
         true: 'w-full',
       },
       variant: {
+        success: 'bg-primary-light text-primary-light-content',
         destructive:
           'bg-background-destructive border-destructive-content text-background-destructive-content',
         info: 'bg-background-grey border-grey-content text-background-grey-content',
@@ -26,7 +28,7 @@ const alertVariants = cva(
   }
 );
 
-export type AlertVariants = 'destructive' | 'info' | 'warning';
+export type AlertVariants = 'destructive' | 'info' | 'success' | 'warning';
 
 interface AlertProps extends VariantProps<typeof alertVariants> {
   children?: React.ReactNode;
@@ -40,6 +42,7 @@ const iconMap: Partial<Record<AlertVariants, React.ReactNode>> = {
   warning: <WarningIcon color="warning" />,
   destructive: <WarningIcon color="destructive" />,
   info: <InfoIcon color="muted" />,
+  success: <CheckIcon color="default" />,
 };
 
 function isInIconMap(icon: unknown): icon is keyof typeof iconMap {
@@ -67,7 +70,7 @@ export function Alert(props: AlertProps) {
       role="alert"
       className={cn(alertVariants({ fullWidth, variant }), className)}
     >
-      <div className="[&>svg]:h-[14px]">{icon || defaultIcon}</div>
+      <Slot className="w-6 h-6">{icon || defaultIcon}</Slot>
       <div className="flex flex-col w-full text-base gap">
         <HStack fullWidth gap="small" justify="spaceBetween" align="start">
           <h5 className="font-medium">{title}</h5>
