@@ -4,10 +4,19 @@ import type {
   FileTreeContentsType,
   PanelTemplate,
 } from '@letta-web/component-library';
-import { getIsGenericFolder } from '@letta-web/component-library';
-import { FormActions, toast } from '@letta-web/component-library';
 import {
-  Badge,
+  brandKeyToLogo,
+  brandKeyToName,
+  Card,
+  CheckIcon,
+  InlineCode,
+  isBrandKey,
+  NiceGridDisplay,
+  SearchIcon,
+} from '@letta-web/component-library';
+import { getIsGenericFolder } from '@letta-web/component-library';
+import { toast } from '@letta-web/component-library';
+import {
   Dialog,
   FileTree,
   Logo,
@@ -26,7 +35,6 @@ import {
   PanelBar,
   PanelMainContent,
   RawInput,
-  ActionCard,
   useForm,
   VStack,
   LettaLoaderPanel,
@@ -53,6 +61,7 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useCurrentAgentMetaData } from '../hooks/useCurrentAgentMetaData/useCurrentAgentMetaData';
 import { useTranslations } from 'next-intl';
+import { Slot } from '@radix-ui/react-slot';
 
 const { usePanelRouteData, usePanelPageContext } = createPageRouter(
   {
@@ -74,48 +83,14 @@ const { usePanelRouteData, usePanelPageContext } = createPageRouter(
 );
 
 interface AddToolDialogDetailActionsProps {
-  tool: Tool_Output;
-  isAlreadyAdded: boolean;
+  tool: AddToolsListItem;
 }
 
 function AddToolDialogDetailActions(props: AddToolDialogDetailActionsProps) {
-  const { tool, isAlreadyAdded } = props;
+  const { tool } = props;
   const t = useTranslations('ADE/Tools');
   const queryClient = useQueryClient();
   const { id: agentId } = useCurrentAgent();
-
-  const { mutate: removeTool, isPending: isRemovingTool } =
-    useAgentsServiceRemoveToolFromAgent({
-      onSuccess: (nextAgentState) => {
-        queryClient.setQueriesData<AgentState | undefined>(
-          {
-            queryKey: UseAgentsServiceGetAgentKeyFn({
-              agentId: agentId,
-            }),
-          },
-          (oldData) => {
-            if (!oldData) {
-              return oldData;
-            }
-
-            return {
-              ...oldData,
-              tools: nextAgentState.tools,
-            };
-          }
-        );
-      },
-      onError: () => {
-        toast.error(t('AddToolDialogDetailActions.removeError'));
-      },
-    });
-
-  const handleRemove = useCallback(() => {
-    removeTool({
-      agentId,
-      toolId: tool.id || '',
-    });
-  }, [removeTool, agentId, tool.id]);
 
   const { mutate: addTool, isPending: isAddingTool } =
     useAgentsServiceAddToolToAgent({
@@ -151,27 +126,28 @@ function AddToolDialogDetailActions(props: AddToolDialogDetailActionsProps) {
   }, [addTool, agentId, tool.id]);
 
   return (
-    <FormActions>
-      {isAlreadyAdded ? (
+    <>
+      {tool.alreadyAdded ? (
         <Button
           type="button"
-          label={t('AddToolDialogDetailActions.removeFromAgent')}
-          color="destructive"
-          busy={isRemovingTool}
-          onClick={handleRemove}
+          label={t('AddToolDialogDetailActions.alreadyAdded')}
+          disabled
+          color="tertiary"
           fullWidth
+          preIcon={<CheckIcon />}
         />
       ) : (
         <Button
           type="button"
+          preIcon={<PlusIcon />}
           label={t('AddToolDialogDetailActions.addToAgent')}
-          color="primary"
+          color="tertiary"
           fullWidth
           busy={isAddingTool}
           onClick={handleAdd}
         />
       )}
-    </FormActions>
+    </>
   );
 }
 
@@ -181,8 +157,10 @@ interface AddToolDialogProps {
 
 interface AddToolsListItem {
   name: string;
+  description: string;
   id: string;
   alreadyAdded: boolean;
+  creator: string;
   icon: React.ReactNode;
 }
 
@@ -200,19 +178,25 @@ function AddToolDialog(props: AddToolDialogProps) {
 
   const toolsList: AddToolsListItem[] = useMemo(() => {
     return (allTools || [])
-      .filter((tool) => !tool.tags.includes('letta-base'))
+      .filter(
+        (tool) =>
+          !tool.tags.includes('letta-base') &&
+          !tool.tags.includes('memgpt-base')
+      )
       .map((tool) => {
+        const creator = tool.tags.find((tag) => isBrandKey(tag)) || '';
+
         return {
           name: tool.name || '',
           id: tool.id || '',
+          creator: brandKeyToName(creator || 'letta'),
+          description: tool.description || '',
           alreadyAdded: addedToolNameSet.has(tool.name),
-          icon: <ToolsIcon />,
+          icon: isBrandKey(creator) ? brandKeyToLogo(creator) : <ToolsIcon />,
         };
       })
       .filter((tool) => tool.name.toLowerCase().includes(search.toLowerCase()));
   }, [allTools, addedToolNameSet, search]);
-
-  const [toolToView, setToolToView] = useState<Tool_Output | null>(null);
 
   return (
     <Dialog
@@ -230,6 +214,7 @@ function AddToolDialog(props: AddToolDialogProps) {
       <HStack fullHeight>
         <VStack fullHeight fullWidth>
           <RawInput
+            preIcon={<SearchIcon />}
             hideLabel
             placeholder={t('AddToolDialog.search.placeholder')}
             label={t('AddToolDialog.search.label')}
@@ -239,67 +224,40 @@ function AddToolDialog(props: AddToolDialogProps) {
               setSearch(e.target.value);
             }}
           />
-          <VStack fullHeight overflowY="auto" gap="small">
-            {toolsList.map((tool) => (
-              <ActionCard
-                isActive={toolToView?.name === tool.name}
-                badge={
-                  tool.alreadyAdded ? (
-                    <Badge
-                      content={t('AddToolDialog.added')}
-                      color="primary-light"
-                    />
-                  ) : undefined
-                }
-                icon={tool.icon}
-                key={tool.id}
-                title={tool.name}
-                onCardClick={() => {
-                  setToolToView(
-                    allTools?.find((t) => t.name === tool.name) || null
-                  );
-                }}
-              />
-            ))}
+          <VStack fullHeight fullWidth overflowY="auto">
+            <NiceGridDisplay>
+              {toolsList.map((tool) => (
+                <Card
+                  key={tool.id}
+                  /* eslint-disable-next-line react/forbid-component-props */
+                  className="h-[300px] max-h-[300px]"
+                >
+                  <VStack fullHeight overflow="hidden">
+                    <HStack align="center" justify="spaceBetween">
+                      <VStack justify="start" gap="small">
+                        <HStack>
+                          {/* eslint-disable-next-line react/forbid-component-props */}
+                          <Slot className="w-5 h-5">{tool.icon}</Slot>
+
+                          <InlineCode hideCopyButton code={`${tool.name}()`} />
+                        </HStack>
+                        <Typography align="left" variant="body2">
+                          {t('AddToolDialog.creator', {
+                            creator: tool.creator,
+                          })}
+                        </Typography>
+                      </VStack>
+                    </HStack>
+                    <VStack overflowY="auto" collapseHeight>
+                      <Typography variant="body">{tool.description}</Typography>
+                    </VStack>
+                    <AddToolDialogDetailActions tool={tool} />
+                  </VStack>
+                </Card>
+              ))}
+            </NiceGridDisplay>
           </VStack>
         </VStack>
-        {toolToView ? (
-          <VStack fullHeight border fullWidth>
-            <VStack paddingX paddingY="small" fullHeight>
-              <VStack>
-                <VStack>
-                  <Typography variant="heading3" bold>
-                    {toolToView.name}
-                  </Typography>
-                </VStack>
-
-                <Typography variant="heading4" bold>
-                  {t('AddToolDialog.description')}
-                </Typography>
-                <Typography
-                  variant="body"
-                  italic={toolToView && !toolToView.description}
-                >
-                  {toolToView.description || t('AddToolDialog.noDescription')}
-                </Typography>
-              </VStack>
-
-              <AddToolDialogDetailActions
-                isAlreadyAdded={addedToolNameSet.has(toolToView.name)}
-                tool={toolToView}
-              />
-            </VStack>
-          </VStack>
-        ) : (
-          <VStack fullHeight padding border fullWidth>
-            <Typography variant="heading4">
-              {t('AddToolDialog.noToolSelected.title')}
-            </Typography>
-            <Typography variant="body">
-              {t('AddToolDialog.noToolSelected.description')}
-            </Typography>
-          </VStack>
-        )}
       </HStack>
     </Dialog>
   );
@@ -416,7 +374,10 @@ function ToolsList() {
     ];
 
     currentUserTools.forEach((tool) => {
-      if (tool.tags.includes('letta-base')) {
+      if (
+        tool.tags.includes('letta-base') ||
+        tool.tags.includes('memgpt-base')
+      ) {
         lettaCoreToolCount += 1;
         if (getIsGenericFolder(fileTreeTools[0])) {
           fileTreeTools[0].contents.push({
@@ -428,10 +389,12 @@ function ToolsList() {
       } else {
         otherToolCount += 1;
         if (getIsGenericFolder(fileTreeTools[1])) {
+          const creator = tool.tags.find((tag) => isBrandKey(tag)) || '';
+
           fileTreeTools[1].contents.push({
             name: tool.name,
             id: tool.id,
-            icon: <ToolsIcon />,
+            icon: isBrandKey(creator) ? brandKeyToLogo(creator) : <ToolsIcon />,
             actions: [
               {
                 id: 'remove-tool',
