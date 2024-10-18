@@ -642,7 +642,7 @@ export async function updateAgentFromAgentId(options: UpdateAgentFromAgentId) {
       ),
       AgentsService.getAgentSources(
         {
-          agentId: fromAgent,
+          agentId: toAgent,
         },
         {
           user_id: lettaAgentsUserId,

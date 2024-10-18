@@ -8,11 +8,15 @@ import type { ToggleGroupSingleProps } from '@radix-ui/react-toggle-group';
 import { makeInput, makeRawInput } from '../Form/Form';
 import { Frame } from '../../framing/Frame/Frame';
 import { MaybeTooltip } from '../Tooltip/Tooltip';
+import './ToggleGroup.scss';
 
 const toggleVariants = cva(
   'inline-flex items-center justify-center text-sm font-medium ring-offset-background transition-colors hover:bg-tertiary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=on]:bg-tertiary-active ',
   {
     variants: {
+      hideLabel: {
+        true: '',
+      },
       variant: {
         default: 'bg-transparent',
         outline:
@@ -27,6 +31,18 @@ const toggleVariants = cva(
       variant: 'default',
       size: 'default',
     },
+    compoundVariants: [
+      {
+        size: 'small',
+        hideLabel: true,
+        className: 'w-biHeight-sm',
+      },
+      {
+        size: 'default',
+        hideLabel: true,
+        className: 'w-biHeight',
+      },
+    ],
   }
 );
 
@@ -62,7 +78,7 @@ const ToggleGroupRoot = React.forwardRef<
 >(({ className, variant, size, children, ...props }, ref) => (
   <ToggleGroupPrimitive.Root
     ref={ref}
-    className={cn('flex items-center justify-start gap-1', className)}
+    className={cn('flex items-center justify-start gap-0', className)}
     {...props}
   >
     <ToggleGroupContext.Provider value={{ variant, size }}>
@@ -117,7 +133,7 @@ function ToggleGroupWrapper(props: ToggleGroupProps) {
   const { items, border, size, value, onValueChange } = props;
 
   return (
-    <Frame border={border}>
+    <Frame className={cn(border ? 'frame-border-hack' : '')}>
       <ToggleGroupRoot
         type="single"
         value={value}
@@ -130,7 +146,12 @@ function ToggleGroupWrapper(props: ToggleGroupProps) {
             content={item.label}
             renderTooltip={!!item.hideLabel}
           >
-            <ToggleGroupItem size={size} key={item.value} value={item.value}>
+            <ToggleGroupItem
+              hideLabel={item.hideLabel}
+              size={size}
+              key={item.value}
+              value={item.value}
+            >
               {item.icon}
               <span className={item.hideLabel ? 'sr-only' : ''}>
                 {item.label}

@@ -190,6 +190,7 @@ async function getAgentTemplateSimulatorSession(
       .values({
         agentId: newAgentId,
         agentTemplateId: agentTemplate.id,
+        organizationId,
         variables: {},
       })
       .returning({
@@ -321,6 +322,7 @@ async function createAgentTemplateSimulatorSession(
     .values({
       agentId: newAgentId,
       agentTemplateId: agentTemplate.id,
+      organizationId,
       variables,
     })
     .returning({
@@ -368,7 +370,8 @@ async function refreshAgentTemplateSimulatorSession(
   const simulatorSession = await db.query.agentSimulatorSessions.findFirst({
     where: and(
       eq(agentSimulatorSessions.agentTemplateId, agentTemplateId),
-      eq(agentSimulatorSessions.id, agentSessionId)
+      eq(agentSimulatorSessions.id, agentSessionId),
+      eq(agentSimulatorSessions.organizationId, organizationId)
     ),
   });
 
@@ -396,9 +399,52 @@ async function refreshAgentTemplateSimulatorSession(
   };
 }
 
+type DeleteAgentTemplateSimulatorSessionRequest = ServerInferRequest<
+  typeof contracts.agentTemplates.deleteAgentTemplateSimulatorSession
+>;
+
+type DeleteAgentTemplateSimulatorSessionResponse = ServerInferResponses<
+  typeof contracts.agentTemplates.deleteAgentTemplateSimulatorSession
+>;
+
+async function deleteAgentTemplateSimulatorSession(
+  req: DeleteAgentTemplateSimulatorSessionRequest
+): Promise<DeleteAgentTemplateSimulatorSessionResponse> {
+  const { agentSessionId } = req.params;
+  const { organizationId } = await getUserOrThrow();
+
+  const simulatorSession = await db.query.agentSimulatorSessions.findFirst({
+    where: and(
+      eq(agentSimulatorSessions.id, agentSessionId),
+      eq(agentSimulatorSessions.organizationId, organizationId)
+    ),
+  });
+
+  if (!simulatorSession) {
+    return {
+      status: 404,
+      body: {
+        success: false,
+      },
+    };
+  }
+
+  await db
+    .delete(agentSimulatorSessions)
+    .where(eq(agentSimulatorSessions.id, agentSessionId));
+
+  return {
+    status: 200,
+    body: {
+      success: true,
+    },
+  };
+}
+
 export const agentTemplateRoutes = {
   listAgentTemplates,
   forkAgentTemplate,
+  deleteAgentTemplateSimulatorSession,
   createAgentTemplateSimulatorSession,
   getAgentTemplateSimulatorSession,
   refreshAgentTemplateSimulatorSession,

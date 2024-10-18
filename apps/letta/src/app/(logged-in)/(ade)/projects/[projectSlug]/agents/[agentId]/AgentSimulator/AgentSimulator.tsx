@@ -5,6 +5,10 @@ import {
   ChatBubbleIcon,
   ChatInput,
   CodeIcon,
+  Dialog,
+  DotsHorizontalIcon,
+  DropdownMenu,
+  DropdownMenuItem,
   HStack,
   LoadingEmptyStatusComponent,
   ProgressBar,
@@ -14,6 +18,7 @@ import {
   TableCell,
   TableCellInput,
   TableRow,
+  toast,
   Typography,
   VariableIcon,
   WarningIcon,
@@ -30,6 +35,7 @@ import type {
   AgentState,
   Source,
 } from '@letta-web/letta-agents-api';
+import { AgentsService } from '@letta-web/letta-agents-api';
 import { useAgentsServiceGetAgentSources } from '@letta-web/letta-agents-api';
 import {
   AgentMessageSchema,
@@ -45,13 +51,12 @@ import { Messages } from '$letta/client/components';
 import { z } from 'zod';
 import { useTranslations } from 'next-intl';
 import { useDebouncedCallback, useLocalStorage } from '@mantine/hooks';
-import { webApi, webApiQueryKeys } from '$letta/client';
+import { webApi, webApiQueryKeys, webOriginSDKApi } from '$letta/client';
 import { useCurrentProject } from '../../../../../../(dashboard-like)/projects/[projectSlug]/hooks';
 import { findMemoryBlockVariables } from '$letta/utils';
 import type { GetAgentTemplateSimulatorSessionResponseBody } from '$letta/web-api/agent-templates/agentTemplatesContracts';
 import { isEqual } from 'lodash-es';
 import { useCurrentSimulatedAgent } from '../hooks/useCurrentSimulatedAgent/useCurrentSimulatedAgent';
-import toast from 'react-hot-toast';
 import { useCurrentAgentMetaData } from '../hooks/useCurrentAgentMetaData/useCurrentAgentMetaData';
 
 function useSendMessage(agentId: string) {
@@ -323,75 +328,74 @@ function DialogSessionSheet(props: DialogSessionDialogProps) {
       },
     });
 
-  const handleUpdateSession = useCallback(() => {
-    const validVariableNames = new Set(variables);
-
-    const cleanedVariableData = Object.fromEntries(
-      Object.entries(variableData)
-        .filter(
-          ([variableName, value]) =>
-            value && validVariableNames.has(variableName)
-        )
-        .map(([variableName, value]) => [variableName, value])
-    );
-
-    const cleanedExistingVariables = Object.fromEntries(
-      Object.entries(existingVariables)
-        .filter(
-          ([variableName, value]) =>
-            value && validVariableNames.has(variableName)
-        )
-        .map(([variableName, value]) => [variableName, value])
-    );
-
-    // if variables are not different, don't update
-    if (isEqual(cleanedVariableData, cleanedExistingVariables)) {
-      return;
-    }
-
-    mutate({
-      params: {
-        agentTemplateId,
-        projectId,
-      },
-      body: {
-        variables: cleanedVariableData,
-      },
-    });
-  }, [
-    agentTemplateId,
-    mutate,
-    projectId,
-    existingVariables,
-    variableData,
-    variables,
-  ]);
-
-  const debouncedUpdateSession = useDebouncedCallback(handleUpdateSession, 500);
-
   useEffect(() => {
-    if (isPending) {
-      return;
+    if (!isEqual(existingVariables, variableData)) {
+      setVariableData(existingVariables);
     }
+  }, [existingVariables, variableData]);
 
-    debouncedUpdateSession();
-  }, [
-    agentTemplateId,
-    isPending,
-    projectId,
-    props.existingVariables,
-    variables,
-    variableData,
+  const handleUpdateSession = useCallback(
+    (nextVariables: Record<string, string>) => {
+      mutate({
+        params: {
+          agentTemplateId,
+          projectId,
+        },
+        body: {
+          variables: nextVariables,
+        },
+      });
+    },
+    [agentTemplateId, mutate, projectId]
+  );
+
+  const debouncedUpdateSession = useDebouncedCallback(
     handleUpdateSession,
-    debouncedUpdateSession,
-  ]);
+    1000
+  );
 
-  const handleChange = useCallback((name: string, value: string) => {
-    setVariableData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  }, []);
+  const handleChange = useCallback(
+    (name: string, value: string) => {
+      setVariableData((prev) => {
+        const next = {
+          ...prev,
+          [name]: value,
+        };
+
+        queryClient.setQueriesData<
+          GetAgentTemplateSimulatorSessionResponseBody | undefined
+        >(
+          {
+            queryKey: webApiQueryKeys.agentTemplates.getAgentTemplateSession({
+              agentTemplateId,
+              projectId,
+            }),
+          },
+          (oldData) => {
+            if (!oldData) {
+              return oldData;
+            }
+
+            return {
+              status: 200,
+              body: {
+                ...oldData?.body,
+                variables: {
+                  ...oldData?.body.variables,
+                  ...next,
+                },
+              },
+            };
+          }
+        );
+
+        debouncedUpdateSession(next);
+
+        return next;
+      });
+    },
+    [agentTemplateId, debouncedUpdateSession, projectId, queryClient]
+  );
 
   if (!variables.length) {
     return (
@@ -433,6 +437,168 @@ function DialogSessionSheet(props: DialogSessionDialogProps) {
         </Table>
       </VStack>
     </VStack>
+  );
+}
+
+interface FlushSimulationSessionDialogProps {
+  onClose: () => void;
+}
+
+function FlushSimulationSessionDialog(
+  props: FlushSimulationSessionDialogProps
+) {
+  const { onClose } = props;
+  const t = useTranslations('ADE/AgentSimulator');
+  const queryClient = useQueryClient();
+  const { id: projectId } = useCurrentProject();
+  const { agentId: agentTemplateId } = useCurrentAgentMetaData();
+  const { agentSession } = useCurrentSimulatedAgent();
+
+  const { mutate: createSession, isPending: isCreatingNewSession } =
+    webApi.agentTemplates.createAgentTemplateSimulatorSession.useMutation({
+      onSuccess: (response) => {
+        toast.success(t('FlushSimulationSessionDialog.success'));
+
+        queryClient.setQueriesData<GetAgentTemplateSimulatorSessionResponseBody>(
+          {
+            queryKey: webApiQueryKeys.agentTemplates.getAgentTemplateSession({
+              agentTemplateId,
+              projectId,
+            }),
+          },
+          () => {
+            return {
+              status: 200,
+              body: response.body,
+            };
+          }
+        );
+
+        onClose();
+      },
+    });
+
+  const { mutate, isPending: isDeletingSession } =
+    webApi.agentTemplates.deleteAgentTemplateSimulatorSession.useMutation({
+      onSuccess: async () => {
+        createSession({
+          params: {
+            agentTemplateId,
+            projectId,
+          },
+          body: {
+            variables: agentSession?.body.variables || {},
+          },
+        });
+      },
+      onError: () => {
+        toast.error(t('FlushSimulationSessionDialog.error'));
+      },
+    });
+
+  const isPending = useMemo(() => {
+    return isCreatingNewSession || isDeletingSession;
+  }, [isCreatingNewSession, isDeletingSession]);
+
+  const handleFlushSession = useCallback(() => {
+    mutate({
+      params: {
+        agentTemplateId,
+        agentSessionId: agentSession?.body.id || '',
+      },
+    });
+  }, [agentSession?.body.id, agentTemplateId, mutate]);
+
+  return (
+    <Dialog
+      isConfirmBusy={isPending}
+      isOpen
+      title={t('FlushSimulationSessionDialog.title')}
+      confirmText={t('FlushSimulationSessionDialog.confirm')}
+      onConfirm={handleFlushSession}
+      onOpenChange={(isOpen) => {
+        if (!isOpen && onClose) {
+          onClose();
+        }
+      }}
+    >
+      <Typography>{t('FlushSimulationSessionDialog.description')}</Typography>
+    </Dialog>
+  );
+}
+
+function AgentSimulatorOptionsMenu() {
+  const { isTemplate } = useCurrentAgentMetaData();
+  const t = useTranslations('ADE/AgentSimulator');
+
+  const { agentSession, id: agentId } = useCurrentSimulatedAgent();
+
+  const handlePrintDebug = useCallback(async () => {
+    if (!agentId) {
+      toast.error(t('AgentSimulatorOptionsMenu.options.printDebug.notReady'));
+
+      return;
+    }
+
+    const [agentState, sources] = await Promise.all([
+      webOriginSDKApi.agents.getAgentById.query({
+        params: {
+          agent_id: agentId,
+        },
+        query: {
+          all: true,
+        },
+      }),
+      AgentsService.getAgentSources({
+        agentId: agentId,
+      }),
+    ]);
+
+    console.table({
+      agentState,
+      sources,
+    });
+
+    toast.success(t('AgentSimulatorOptionsMenu.options.printDebug.success'));
+  }, [agentId, t]);
+
+  const [isFlushDialogOpen, setIsFlushDialogOpen] = useState(false);
+
+  return (
+    <>
+      {isFlushDialogOpen && (
+        <FlushSimulationSessionDialog
+          onClose={() => {
+            setIsFlushDialogOpen(false);
+          }}
+        />
+      )}
+      <DropdownMenu
+        triggerAsChild
+        align="end"
+        trigger={
+          <Button
+            color="tertiary"
+            preIcon={<DotsHorizontalIcon />}
+            hideLabel
+            title={t('AgentSimulatorOptionsMenu.trigger')}
+          />
+        }
+      >
+        <DropdownMenuItem
+          onClick={handlePrintDebug}
+          label={t('AgentSimulatorOptionsMenu.options.printDebug.title')}
+        />
+        {isTemplate && agentSession?.body.agentId && (
+          <DropdownMenuItem
+            onClick={() => {
+              setIsFlushDialogOpen(true);
+            }}
+            label={t('AgentSimulatorOptionsMenu.options.flushSimulation')}
+          />
+        )}
+      </DropdownMenu>
+    </>
   );
 }
 
@@ -550,7 +716,14 @@ function Chatroom() {
   return (
     <ChatroomContext.Provider value={{ renderMode, setRenderMode }}>
       <VStack gap={false} fullHeight fullWidth>
-        <PanelBar actions={<ControlChatroomRenderMode />}>
+        <PanelBar
+          actions={
+            <HStack>
+              <ControlChatroomRenderMode />
+              <AgentSimulatorOptionsMenu />
+            </HStack>
+          }
+        >
           <VStack paddingLeft="small">
             <Button
               onClick={() => {

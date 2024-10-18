@@ -28,7 +28,7 @@ function PanelSearch(props: PanelSearchProps) {
         label="search"
         hideLabel
         fullWidth
-        preIcon={<SearchIcon />}
+        postIcon={<SearchIcon />}
         type="text"
         placeholder={placeholder}
         value={value}
@@ -49,7 +49,7 @@ type PanelBarProps = PropsWithChildren<{
 export function PanelBar(props: PanelBarProps) {
   const { onReturn } = props;
   return (
-    <div className="py-2 pr-2 flex w-full items-center justify-between flex-row">
+    <div className="py-2 pr-2 gap-2 flex w-full items-center justify-between flex-row">
       {onReturn && (
         <Button
           label="Return"

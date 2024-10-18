@@ -32,7 +32,10 @@ export function Chart(props: ChartOptions) {
     }
 
     if (chartRef.current) {
-      chart.current = echarts.init(chartRef.current);
+      if (!chart.current) {
+        chart.current = echarts.init(chartRef.current);
+      }
+
       chart.current.setOption({
         ...defaultOptions,
         ...options,

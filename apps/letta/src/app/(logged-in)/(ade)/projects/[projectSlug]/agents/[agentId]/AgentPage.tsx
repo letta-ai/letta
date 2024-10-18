@@ -432,6 +432,7 @@ function TemplateVersionDisplay() {
 
   return (
     <Popover
+      triggerAsChild
       trigger={
         <Button
           hideLabel

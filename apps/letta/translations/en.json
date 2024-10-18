@@ -171,7 +171,7 @@
     "loading": "Loading data sources...",
     "noDataSources": "You have no data sources attached to this agent yet. Click the button in the top right to attach a data source.",
     "CreateDataSourceDialog": {
-      "trigger": "New Source",
+      "trigger": "Create Source",
       "goBack": "Go back",
       "creatingDataSource": "Creating data source...",
       "title": "Create a new data source",
@@ -202,6 +202,24 @@
     "noParsableMessages": "There are no messages available in this view, usually this is caused by a lack of triggered send_message actions in your agent, check the debug more to verify."
   },
   "ADE/AgentSimulator": {
+    "FlushSimulationSessionDialog": {
+      "title": "Flush Simulation",
+      "description": "Are you sure you want to flush the simulation? This will reset the simulated agent's memory and state.",
+      "confirm": "Flush",
+      "success": "Simulation has been flushed",
+      "error": "There was an error flushing the simulation, please try again or contact support."
+    },
+    "AgentSimulatorOptionsMenu": {
+      "trigger": "Options",
+      "options": {
+        "flushSimulation": "Flush Simulation",
+        "printDebug": {
+          "title": "Print Simulated Agent Details",
+          "notReady": "Simulated agent has not loaded yet, please try again soon",
+          "success": "Simulated agent details have been printed to the console"
+        }
+      }
+    },
     "localAgent": "This feature is only available on Letta Cloud",
     "refreshError": "There was an error refreshing the agent simulator, please refresh the page or contact support.",
     "sendingMessage": "Agent is thinking...",

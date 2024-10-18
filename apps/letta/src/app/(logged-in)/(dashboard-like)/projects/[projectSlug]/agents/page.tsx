@@ -163,6 +163,7 @@ function DeployedAgentList(props: DeployedAgentListProps) {
   const [selectedAgent, setSelectedAgent] = useState<AgentState>();
   const { search, filterBy } = props;
   const [offset, setOffset] = useState(0);
+  const { id: currentProjectId } = useCurrentProject();
   const t = useTranslations('projects/(projectSlug)/agents/page');
 
   useEffect(() => {
@@ -172,6 +173,7 @@ function DeployedAgentList(props: DeployedAgentListProps) {
   const { data } = webOriginSDKApi.agents.listAgents.useQuery({
     queryKey: webOriginSDKQueryKeys.agents.listAgentsWithSearch({
       name: search,
+      project_id: currentProjectId,
       by_version: filterBy?.value,
       limit,
       offset,
@@ -179,6 +181,7 @@ function DeployedAgentList(props: DeployedAgentListProps) {
     queryData: {
       query: {
         search: search,
+        project_id: currentProjectId,
         by_version: filterBy?.value,
         offset,
         limit,

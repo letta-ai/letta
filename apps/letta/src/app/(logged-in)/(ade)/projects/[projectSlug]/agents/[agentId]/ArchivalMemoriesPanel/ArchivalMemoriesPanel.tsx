@@ -1,6 +1,7 @@
 'use client';
 import React, { useCallback, useMemo, useState } from 'react';
 import type { PanelTemplate } from '@letta-web/component-library';
+import { PlusIcon } from '@letta-web/component-library';
 import {
   ActionCard,
   Alert,
@@ -215,7 +216,12 @@ function CreateMemoryDialog() {
         size="large"
         isConfirmBusy={isPending}
         trigger={
-          <Button color="primary" label={t('CreateMemoryDialog.trigger')} />
+          <Button
+            hideLabel
+            preIcon={<PlusIcon />}
+            color="tertiary"
+            label={t('CreateMemoryDialog.trigger')}
+          />
         }
         title={t('CreateMemoryDialog.title')}
         onSubmit={form.handleSubmit(handleSubmit)}
