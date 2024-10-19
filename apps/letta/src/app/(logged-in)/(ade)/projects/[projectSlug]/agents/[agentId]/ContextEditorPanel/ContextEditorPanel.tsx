@@ -49,8 +49,8 @@ export function ContextWindowPreview() {
   }, [memory, postMessage]);
 
   const totalLength = useMemo(() => {
-    return llm_config.context_window;
-  }, [llm_config.context_window]);
+    return llm_config?.context_window || 0;
+  }, [llm_config?.context_window]);
 
   const systemPromptLength = useMemo(() => {
     return system?.split(' ').length || 0;

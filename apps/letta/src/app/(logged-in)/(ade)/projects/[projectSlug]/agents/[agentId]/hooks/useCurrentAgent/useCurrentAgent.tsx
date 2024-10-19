@@ -17,12 +17,6 @@ export function useCurrentAgent() {
     }
   );
 
-  if (!agent?.id) {
-    throw new Error(
-      'This hook should be used within a page that server-side renders the agent data (1)'
-    );
-  }
-
   return {
     ...agent,
     name: agentName,

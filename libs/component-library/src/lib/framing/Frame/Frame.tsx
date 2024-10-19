@@ -44,7 +44,7 @@ const frameVariants = cva('', {
       tertiary: 'bg-tertiary text-tertiary-content',
       primary: 'bg-primary text-primary-content',
       secondary: 'bg-secondary text-secondary-content',
-      warning: 'bg-warning text-warning-content',
+      warning: 'bg-background-warning text-background-warning-content',
       'primary-light': 'bg-primary-light text-primary-light-content',
     },
     width: {

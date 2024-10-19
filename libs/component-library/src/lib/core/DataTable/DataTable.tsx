@@ -126,6 +126,7 @@ interface DataTablePropsBase<TData, TValue> {
   noResultsText?: string;
   className?: string;
   onSetOffset?: Dispatch<SetStateAction<number>>;
+  onSetCursor?: Dispatch<SetStateAction<TData | undefined>>;
   hasNextPage?: boolean;
   showPagination?: boolean;
   noResultsAction?: React.ReactNode;
@@ -146,6 +147,7 @@ export function DataTable<TData, TValue>(props: DataTableProps<TData, TValue>) {
     variant,
     data,
     errorMessage,
+    onSetCursor,
     loadingText,
     noResultsAction,
     minHeight,
@@ -162,6 +164,7 @@ export function DataTable<TData, TValue>(props: DataTableProps<TData, TValue>) {
     onLimitChange,
   } = props;
 
+  const lastCursor = useRef<TData | undefined>(undefined);
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const mounted = useRef(false);
 
@@ -203,20 +206,32 @@ export function DataTable<TData, TValue>(props: DataTableProps<TData, TValue>) {
       return;
     }
 
+    if (onSetCursor) {
+      lastCursor.current = data[data.length - 1];
+
+      onSetCursor(lastCursor.current);
+
+      return;
+    }
+
     if (onSetOffset) {
       onSetOffset((prev) => prev + limit);
     }
-  }, [isLoading, limit, onSetOffset]);
+  }, [data, isLoading, limit, onSetCursor, onSetOffset]);
 
   const handlePreviousPage = useCallback(() => {
     if (isLoading) {
       return;
     }
 
+    if (onSetCursor) {
+      onSetCursor(lastCursor.current);
+    }
+
     if (onSetOffset) {
       onSetOffset((prev) => prev - limit);
     }
-  }, [isLoading, limit, onSetOffset]);
+  }, [isLoading, limit, onSetCursor, onSetOffset]);
 
   const hasPreviousPage = useMemo(() => {
     if (isLoading) {

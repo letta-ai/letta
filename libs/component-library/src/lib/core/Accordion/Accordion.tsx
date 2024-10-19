@@ -57,6 +57,7 @@ AccordionContent.displayName = AccordionPrimitive.Content.displayName;
 interface AccordionProps {
   id: string;
   trigger: React.ReactNode;
+  fullWidth?: boolean;
   children: React.ReactNode;
   defaultOpen?: boolean;
 }

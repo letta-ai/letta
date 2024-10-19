@@ -1,6 +1,7 @@
 'use client';
 import {
   Alert,
+  BirdIcon,
   Button,
   ChatBubbleIcon,
   ChatInput,
@@ -35,6 +36,7 @@ import type {
   AgentState,
   Source,
 } from '@letta-web/letta-agents-api';
+import { getIsAgentState } from '@letta-web/letta-agents-api';
 import { AgentsService } from '@letta-web/letta-agents-api';
 import { useAgentsServiceGetAgentSources } from '@letta-web/letta-agents-api';
 import {
@@ -279,6 +281,12 @@ function ControlChatroomRenderMode() {
           icon: <CodeIcon />,
           label: t('setChatroomRenderMode.options.debug'),
           value: 'debug',
+          hideLabel: true,
+        },
+        {
+          icon: <BirdIcon />,
+          label: t('setChatroomRenderMode.options.interactive'),
+          value: 'interactive',
           hideLabel: true,
         },
         {
@@ -627,6 +635,10 @@ function Chatroom() {
   });
 
   const variableList = useMemo(() => {
+    if (!getIsAgentState(agentState)) {
+      return [];
+    }
+
     return findMemoryBlockVariables(agentState);
   }, [agentState]);
 

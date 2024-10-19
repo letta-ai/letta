@@ -41,7 +41,7 @@ export function isSupportedLanguage(
   ].includes(language);
 }
 
-const codeVariants = cva('', {
+const codeVariants = cva('font-mono', {
   variants: {
     variant: {
       default: 'rounded border',
@@ -166,7 +166,7 @@ export function Code(props: CodeProps) {
         textareaId={id}
         style={{
           fontFamily: 'inherit',
-          fontSize: '14px',
+          fontSize: 'inherit',
           outline: 0,
         }}
       />

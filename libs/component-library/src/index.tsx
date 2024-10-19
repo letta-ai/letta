@@ -123,3 +123,5 @@ export * from './lib/core/StatusIndicator/StatusIndicator';
 
 export * from './lib/reusable/StatusIndicatorOnIcon/StatusIndicatorOnIcon';
 export * from './lib/brands';
+
+export * from './lib/reusable/SidebarTitle/SidebarTitle';

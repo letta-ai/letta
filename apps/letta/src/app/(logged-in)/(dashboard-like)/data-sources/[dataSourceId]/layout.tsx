@@ -7,13 +7,10 @@ import {
 } from '@tanstack/react-query';
 import { redirect } from 'next/navigation';
 import {
-  Avatar,
-  DashboardWithSidebarWrapper,
-} from '@letta-web/component-library';
-import {
   SourcesService,
   UseSourcesServiceGetSourceKeyFn,
 } from '@letta-web/letta-agents-api';
+import { DataSourceClientLayout } from './_components/DataSourceClientLayout/DataSourceClientLayout';
 
 interface ProjectPageWrapperProps {
   params: {
@@ -44,28 +41,7 @@ async function DataSourcePageLayout(props: ProjectPageWrapperProps) {
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
-      <DashboardWithSidebarWrapper
-        baseUrl="/data-sources"
-        projectTitle={
-          <>
-            <Avatar name={dataSource.name} />
-            {dataSource.name}
-          </>
-        }
-        navigationItems={[
-          {
-            id: 'source-info',
-            label: 'Source Info',
-            href: `/data-sources/${dataSourceId}`,
-          },
-          // {
-          //   label: 'Settings',
-          //   href: `/data-sources/${dataSourceId}/settings`,
-          // },
-        ]}
-      >
-        {props.children}
-      </DashboardWithSidebarWrapper>
+      <DataSourceClientLayout>{props.children}</DataSourceClientLayout>
     </HydrationBoundary>
   );
 }

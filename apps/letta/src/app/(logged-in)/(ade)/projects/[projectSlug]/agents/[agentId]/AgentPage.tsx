@@ -378,6 +378,27 @@ function TemplateVersionDisplay() {
     return deployedAgentTemplates.pages[0]?.body?.deployedAgentTemplates[0];
   }, [deployedAgentTemplates]);
 
+  const { data: deployedAgents } = webApi.projects.getDeployedAgents.useQuery({
+    queryKey: webApiQueryKeys.projects.getDeployedAgentsWithSearch(
+      currentProjectId,
+      {
+        deployedAgentTemplateId: latestTemplateMetadata?.id,
+        limit: 1,
+      }
+    ),
+    queryData: {
+      params: {
+        projectId: currentProjectId,
+      },
+      query: {
+        deployedAgentTemplateId: latestTemplateMetadata?.id,
+        limit: 1,
+      },
+    },
+    refetchInterval: 5000,
+    enabled: !!latestTemplateMetadata?.id,
+  });
+
   const versionNumber = useMemo(() => {
     if (!latestTemplateMetadata) {
       return '';
@@ -473,13 +494,16 @@ function TemplateVersionDisplay() {
         <VStack gap="small">
           {!isAtLatestVersion && <VersionAgentDialog />}
           <DeployAgentDialog isAtLatestVersion={isAtLatestVersion} />
-          <Button
-            fullWidth
-            target="_blank"
-            color="tertiary-transparent"
-            label={t('VersionAgentDialog.deployedAgents')}
-            href={`/projects/${projectSlug}/agents?template=${name}:${versionNumber}`}
-          />
+          {deployedAgents?.body.agents &&
+            deployedAgents.body.agents.length > 0 && (
+              <Button
+                fullWidth
+                target="_blank"
+                color="tertiary-transparent"
+                label={t('VersionAgentDialog.deployedAgents')}
+                href={`/projects/${projectSlug}/agents?template=${name}:${versionNumber}`}
+              />
+            )}
         </VStack>
       </VStack>
     </Popover>

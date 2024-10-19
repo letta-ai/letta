@@ -1,10 +1,12 @@
 import React, { useEffect, useMemo, useRef } from 'react';
 import {
+  Accordion,
   Alert,
   Button,
   Code,
   HStack,
   IconAvatar,
+  InlineCode,
   LettaLoaderPanel,
   Markdown,
   PersonIcon,
@@ -39,7 +41,7 @@ interface MessageWrapperProps {
 function MessageWrapper({ header, children }: MessageWrapperProps) {
   return (
     <VStack fullWidth border rounded>
-      <HStack borderBottom padding="small">
+      <HStack align="center" borderBottom padding="small">
         {header}
       </HStack>
       <VStack paddingBottom="small" paddingX="small">
@@ -75,6 +77,37 @@ function extractMessage(
         return null;
       }
 
+      if (mode === 'interactive') {
+        if (agentMessage.function_return.includes('"message": "None",')) {
+          return null;
+        }
+
+        return {
+          id: agentMessage.id,
+          content: (
+            <HStack border fullWidth>
+              <Accordion
+                id={agentMessage.id}
+                trigger={
+                  <HStack>
+                    <Typography>Function Result</Typography>
+                  </HStack>
+                }
+              >
+                <Code
+                  variant="minimal"
+                  showLineNumbers={false}
+                  code={agentMessage.function_return}
+                  language="javascript"
+                ></Code>
+              </Accordion>
+            </HStack>
+          ),
+          timestamp: new Date(agentMessage.date).toISOString(),
+          name: 'Agent',
+        };
+      }
+
       return {
         id: `${agentMessage.id}-${agentMessage.message_type}`,
         content: (
@@ -107,7 +140,7 @@ function extractMessage(
         name: 'Agent',
       };
     case 'function_call':
-      if (mode === 'simple') {
+      if (mode === 'simple' || mode === 'interactive') {
         if (
           agentMessage.function_call.name === 'send_message' &&
           agentMessage.function_call.arguments
@@ -139,6 +172,22 @@ function extractMessage(
               name: 'Agent',
             };
           }
+        }
+
+        if (mode === 'interactive') {
+          return {
+            id: `${agentMessage.id}-${agentMessage.message_type}`,
+            content: (
+              <InlineCode
+                code={`${
+                  agentMessage.function_call.name || 'Unknown Function'
+                }()`}
+                hideCopyButton
+              />
+            ),
+            timestamp: new Date(agentMessage.date).toISOString(),
+            name: 'Agent',
+          };
         }
 
         return null;
@@ -173,6 +222,17 @@ function extractMessage(
         return null;
       }
 
+      if (mode === 'interactive') {
+        return {
+          id: `${agentMessage.id}-${agentMessage.message_type}`,
+          content: (
+            <Typography italic>{agentMessage.internal_monologue}</Typography>
+          ),
+          timestamp: new Date(agentMessage.date).toISOString(),
+          name: 'Agent',
+        };
+      }
+
       return {
         id: `${agentMessage.id}-${agentMessage.message_type}`,
         content: (
@@ -197,7 +257,7 @@ function extractMessage(
         JSON.parse(agentMessage.message)
       );
 
-      if (mode === 'simple') {
+      if (mode === 'simple' || mode === 'interactive') {
         if (!out.success) {
           return null;
         }
@@ -284,7 +344,7 @@ function MessageGroup({ group }: MessageGroupType) {
 
 const MESSAGE_LIMIT = 20;
 
-export type MessagesDisplayMode = 'debug' | 'simple';
+export type MessagesDisplayMode = 'debug' | 'interactive' | 'simple';
 
 interface MessagesProps {
   isSendingMessage: boolean;
