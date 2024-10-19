@@ -8,9 +8,11 @@ import {
   brandKeyToLogo,
   RawSelect,
   isMultiValue,
+  LoadingEmptyStatusComponent,
 } from '@letta-web/component-library';
 import { useCurrentAgent, useSyncUpdateCurrentAgent } from '../hooks';
 import { z } from 'zod';
+import type { AgentState } from '@letta-web/letta-agents-api';
 import {
   useModelsServiceListEmbeddingModels,
   useModelsServiceListModels,
@@ -24,8 +26,12 @@ interface SelectedModelType {
   value: string;
 }
 
-function ModelSelector() {
-  const currentAgent = useCurrentAgent();
+interface ModelSelectorProps {
+  llmConfig: AgentState['llm_config'];
+}
+
+function ModelSelector(props: ModelSelectorProps) {
+  const { llmConfig } = props;
   const t = useTranslations('ADE/ModelPanel');
   const { syncUpdateCurrentAgent, error } = useSyncUpdateCurrentAgent();
 
@@ -56,11 +62,11 @@ function ModelSelector() {
   }, [modelsList]);
 
   const [modelState, setModelState] = useState<SelectedModelType>({
-    icon: isBrandKey(currentAgent.llm_config.model_endpoint_type)
-      ? brandKeyToLogo(currentAgent.llm_config.model_endpoint_type)
+    icon: isBrandKey(llmConfig.model_endpoint_type)
+      ? brandKeyToLogo(llmConfig.model_endpoint_type)
       : '',
-    label: currentAgent.llm_config.model,
-    value: currentAgent.llm_config.model,
+    label: llmConfig.model,
+    value: llmConfig.model,
   });
 
   const [debouncedModelState] = useDebouncedValue(modelState, 500);
@@ -70,7 +76,7 @@ function ModelSelector() {
       return;
     }
 
-    if (debouncedModelState.value !== currentAgent.llm_config.model) {
+    if (debouncedModelState.value !== llmConfig.model) {
       syncUpdateCurrentAgent(() => ({
         llm_config: modelsList.find(
           (model) => model.model === debouncedModelState.value
@@ -78,7 +84,7 @@ function ModelSelector() {
       }));
     }
   }, [
-    currentAgent.llm_config.model,
+    llmConfig.model,
     debouncedModelState,
     modelsList,
     syncUpdateCurrentAgent,
@@ -109,16 +115,16 @@ function ModelSelector() {
   );
 }
 
-function EmbeddingSelector() {
-  const currentAgent = useCurrentAgent();
+interface EmbeddingConfig {
+  embeddingConfig?: AgentState['embedding_config'];
+}
+
+function EmbeddingSelector(props: EmbeddingConfig) {
+  const { embeddingConfig } = props;
   const t = useTranslations('ADE/ModelPanel');
   const { syncUpdateCurrentAgent, error } = useSyncUpdateCurrentAgent();
 
   const { data: embeddingModels } = useModelsServiceListEmbeddingModels();
-
-  const currentEmbeddingConfig = useMemo(() => {
-    return currentAgent.embedding_config;
-  }, [currentAgent.embedding_config]);
 
   const formattedModelsList = useMemo(() => {
     if (!embeddingModels) {
@@ -145,25 +151,26 @@ function EmbeddingSelector() {
     }));
   }, [embeddingModels]);
 
-  const [modelState, setModelState] = useState<SelectedModelType>({
-    icon: isBrandKey(currentEmbeddingConfig.embedding_endpoint_type)
-      ? brandKeyToLogo(currentEmbeddingConfig.embedding_endpoint_type)
-      : '',
-    label: currentEmbeddingConfig.embedding_model,
-    value: currentEmbeddingConfig.embedding_model,
-  });
+  const [modelState, setModelState] = useState<SelectedModelType | undefined>(
+    embeddingConfig
+      ? {
+          icon: isBrandKey(embeddingConfig.embedding_endpoint_type)
+            ? brandKeyToLogo(embeddingConfig.embedding_endpoint_type)
+            : '',
+          label: embeddingConfig.embedding_model,
+          value: embeddingConfig.embedding_model,
+        }
+      : undefined
+  );
 
   const [debouncedModelState] = useDebouncedValue(modelState, 500);
 
   useEffect(() => {
-    if (!embeddingModels) {
+    if (!embeddingModels || !debouncedModelState) {
       return;
     }
 
-    if (
-      debouncedModelState.value !==
-      currentAgent.embedding_config.embedding_model
-    ) {
+    if (debouncedModelState.value !== embeddingConfig?.embedding_model) {
       syncUpdateCurrentAgent(() => ({
         embedding_config: embeddingModels.find(
           (model) => model.embedding_model === debouncedModelState.value
@@ -171,7 +178,7 @@ function EmbeddingSelector() {
       }));
     }
   }, [
-    currentAgent.embedding_config.embedding_model,
+    embeddingConfig?.embedding_model,
     debouncedModelState,
     embeddingModels,
     syncUpdateCurrentAgent,
@@ -203,10 +210,16 @@ function EmbeddingSelector() {
 }
 
 export function ModelPanel() {
+  const currentAgent = useCurrentAgent();
+
+  if (!currentAgent.llm_config) {
+    return <LoadingEmptyStatusComponent emptyMessage="" isLoading />;
+  }
+
   return (
     <PanelMainContent>
-      <ModelSelector />
-      <EmbeddingSelector />
+      <ModelSelector llmConfig={currentAgent.llm_config} />
+      <EmbeddingSelector embeddingConfig={currentAgent.embedding_config} />
     </PanelMainContent>
   );
 }

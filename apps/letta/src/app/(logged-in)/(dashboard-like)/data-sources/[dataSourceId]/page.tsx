@@ -1,104 +1,22 @@
 'use client';
-import React, { Fragment, useCallback, useEffect, useMemo } from 'react';
+import React, { Fragment, useMemo } from 'react';
 import {
-  Button,
   DashboardPageLayout,
   DashboardPageSection,
   DataTable,
-  Dialog,
-  FormField,
-  FormProvider,
   HStack,
   IndeterminateProgress,
-  SingleFileUpload,
   Typography,
-  useForm,
   VStack,
 } from '@letta-web/component-library';
 import type { Job } from '@letta-web/letta-agents-api';
 import {
   useJobsServiceListActiveJobs,
-  UseJobsServiceListActiveJobsKeyFn,
   useSourcesServiceGetSource,
 } from '@letta-web/letta-agents-api';
-import { UseSourcesServiceListFilesFromSourceKeyFn } from '@letta-web/letta-agents-api';
-import { useSourcesServiceUploadFileToSource } from '@letta-web/letta-agents-api';
 import { useCurrentDataSourceId } from './hooks';
 import type { ColumnDef } from '@tanstack/react-table';
-import { UploadIcon } from '@letta-web/component-library';
-import { z } from 'zod';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useQueryClient } from '@tanstack/react-query';
 import { useCurrentUser } from '$letta/client/hooks';
-
-const uploadToFormValuesSchema = z.object({
-  file: z.custom<File>((v) => v instanceof File),
-});
-
-type UploadToFormValues = z.infer<typeof uploadToFormValuesSchema>;
-
-function UploadFileDialog() {
-  const [isDialogOpen, setIsDialogOpen] = React.useState(false);
-  const queryClient = useQueryClient();
-  const { mutate, isPending } = useSourcesServiceUploadFileToSource({
-    onSuccess: () => {
-      void queryClient.invalidateQueries({
-        queryKey: UseSourcesServiceListFilesFromSourceKeyFn({
-          sourceId: dataSourceId,
-        }),
-      });
-
-      void queryClient.invalidateQueries({
-        queryKey: UseJobsServiceListActiveJobsKeyFn(),
-      });
-
-      setIsDialogOpen(false);
-    },
-  });
-  const dataSourceId = useCurrentDataSourceId();
-
-  const form = useForm<UploadToFormValues>({
-    resolver: zodResolver(uploadToFormValuesSchema),
-    mode: 'onChange',
-  });
-
-  useEffect(() => {
-    return () => {
-      form.reset();
-    };
-  }, [form]);
-
-  const onSubmit = useCallback(
-    (values: UploadToFormValues) => {
-      mutate({
-        formData: { file: values.file },
-        sourceId: dataSourceId,
-      });
-    },
-    [dataSourceId, mutate]
-  );
-
-  return (
-    <FormProvider {...form}>
-      <Dialog
-        onOpenChange={setIsDialogOpen}
-        isOpen={isDialogOpen}
-        onSubmit={form.handleSubmit(onSubmit)}
-        title="Upload File"
-        confirmText="Upload"
-        isConfirmBusy={isPending}
-        trigger={<Button label="Upload File" preIcon={<UploadIcon />} />}
-      >
-        <FormField
-          render={({ field }) => (
-            <SingleFileUpload fullWidth {...field} hideLabel label="file" />
-          )}
-          name="file"
-        />
-      </Dialog>
-    </FormProvider>
-  );
-}
 
 // const dataSourceColumns: Array<ColumnDef<Document>> = [
 //   {
@@ -230,7 +148,7 @@ function DashboardJobList() {
 
 function DataSourceHomePage() {
   return (
-    <DashboardPageLayout title="Source Info" actions={<UploadFileDialog />}>
+    <DashboardPageLayout title="Source Info">
       <DashboardPageSection>
         <DashboardJobList />
 

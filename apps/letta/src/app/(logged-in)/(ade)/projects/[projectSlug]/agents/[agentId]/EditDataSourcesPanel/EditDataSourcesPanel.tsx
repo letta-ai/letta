@@ -3,6 +3,7 @@ import type {
   DialogTableItem,
   PanelTemplate,
 } from '@letta-web/component-library';
+import { Badge, Tooltip, WarningIcon } from '@letta-web/component-library';
 import { StatusIndicatorOnIcon } from '@letta-web/component-library';
 import {
   ActionCard,
@@ -54,32 +55,24 @@ import {
   uniqueNamesGenerator,
 } from 'unique-names-generator';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { get } from 'lodash-es';
+import { get, isEqual } from 'lodash-es';
 
-interface AttachDataSourceViewProps {
-  onClose: () => void;
-  setMode: (mode: CreateDataSourceDialogMode) => void;
+interface AttachDataSourceActionProps {
+  source: Source;
+  isAttached: boolean;
+  onAttach: VoidFunction;
 }
 
-function AttachDataSourceView(props: AttachDataSourceViewProps) {
-  const { id } = useCurrentAgent();
-  const { onClose, setMode } = props;
-  const { data: allSources } = useSourcesServiceListSources();
+function AttachDataSourceAction(props: AttachDataSourceActionProps) {
+  const { source, onAttach, isAttached } = props;
 
+  const { id, embedding_config } = useCurrentAgent();
   const queryClient = useQueryClient();
 
-  const t = useTranslations('ADE/ADESidebar');
+  const t = useTranslations('ADE/EditDataSourcesPanel');
 
   const { mutate, isPending } = useSourcesServiceAttachAgentToSource({
-    onSuccess: (_, variables) => {
-      const newSource = allSources?.find(
-        (source) => source.id === variables.sourceId
-      );
-
-      if (!newSource) {
-        return;
-      }
-
+    onSuccess: (response) => {
       queryClient.setQueriesData<
         AgentsServiceGetAgentSourcesDefaultResponse | undefined
       >(
@@ -93,13 +86,71 @@ function AttachDataSourceView(props: AttachDataSourceViewProps) {
             return oldData;
           }
 
-          return [newSource, ...oldData];
+          return [response, ...oldData];
         }
       );
 
-      onClose();
+      onAttach();
     },
   });
+
+  const handleAttachSource = useCallback(
+    (sourceId: string) => {
+      mutate({
+        agentId: id,
+        sourceId,
+      });
+    },
+    [id, mutate]
+  );
+
+  if (!isEqual(embedding_config, source.embedding_config)) {
+    return (
+      <Tooltip
+        asChild
+        content={t('AttachDataSourceView.notCompatible.details')}
+      >
+        <Button
+          color="primary"
+          size="small"
+          disabled
+          preIcon={<WarningIcon />}
+          label={t('AttachDataSourceView.notCompatible.title')}
+        />
+      </Tooltip>
+    );
+  }
+
+  return (
+    <Button
+      color="primary"
+      type="button"
+      disabled={isAttached}
+      size="small"
+      busy={isPending}
+      onClick={() => {
+        handleAttachSource(source.id || '');
+      }}
+      label={
+        isAttached
+          ? t('AttachDataSourceView.attached')
+          : t('AttachDataSourceView.attach')
+      }
+    />
+  );
+}
+
+interface AttachDataSourceViewProps {
+  onClose: () => void;
+  setMode: (mode: CreateDataSourceDialogMode) => void;
+}
+
+function AttachDataSourceView(props: AttachDataSourceViewProps) {
+  const { id } = useCurrentAgent();
+  const { onClose, setMode } = props;
+  const { data: allSources } = useSourcesServiceListSources();
+
+  const t = useTranslations('ADE/EditDataSourcesPanel');
 
   const { data: existingSources } = useAgentsServiceGetAgentSources({
     agentId: id,
@@ -112,16 +163,6 @@ function AttachDataSourceView(props: AttachDataSourceViewProps) {
 
     return new Set(existingSources.map((source) => source.id));
   }, [existingSources]);
-
-  const handleAttachSource = useCallback(
-    (sourceId: string) => {
-      mutate({
-        agentId: id,
-        sourceId,
-      });
-    },
-    [id, mutate]
-  );
 
   const [search, setSearch] = useState('');
 
@@ -141,32 +182,15 @@ function AttachDataSourceView(props: AttachDataSourceViewProps) {
           icon: <DatabaseIcon />,
           label: source.name,
           action: (
-            <Button
-              color="primary"
-              type="button"
-              disabled={isAttached}
-              size="small"
-              busy={isPending}
-              onClick={() => {
-                handleAttachSource(source.id || '');
-              }}
-              label={
-                isAttached
-                  ? t('AttachDataSourceView.attached')
-                  : t('AttachDataSourceView.attach')
-              }
+            <AttachDataSourceAction
+              isAttached={isAttached}
+              onAttach={onClose}
+              source={source}
             />
           ),
         };
       });
-  }, [
-    allSources,
-    existingSourcesIdSet,
-    handleAttachSource,
-    isPending,
-    search,
-    t,
-  ]);
+  }, [allSources, existingSourcesIdSet, onClose, search]);
 
   return (
     <VStack>
@@ -219,7 +243,7 @@ interface CreateDataSourceDialogInnerProps {
 function CreateDataSourceDialogInner(props: CreateDataSourceDialogInnerProps) {
   const { mode, onClose, setMode } = props;
   const t = useTranslations('ADE/EditDataSourcesPanel');
-  const { id } = useCurrentAgent();
+  const { id, embedding_config } = useCurrentAgent();
 
   const { mutate: createDataSource, isPending: isCreatingDataSource } =
     useSourcesServiceCreateSource();
@@ -246,6 +270,7 @@ function CreateDataSourceDialogInner(props: CreateDataSourceDialogInnerProps) {
         requestBody: {
           name: randomName,
           description: '',
+          embedding_config,
         },
       },
       {
@@ -281,7 +306,15 @@ function CreateDataSourceDialogInner(props: CreateDataSourceDialogInnerProps) {
         },
       }
     );
-  }, [attachDataSource, createDataSource, id, isPending, onClose, queryClient]);
+  }, [
+    attachDataSource,
+    createDataSource,
+    embedding_config,
+    id,
+    isPending,
+    onClose,
+    queryClient,
+  ]);
 
   switch (mode) {
     case 'attach':
@@ -360,7 +393,7 @@ function CreateDataSourceDialog() {
           label={t('CreateDataSourceDialog.trigger')}
         />
       }
-      title="Add new data source"
+      title={t('CreateDataSourceDialog.title')}
     >
       <CreateDataSourceDialogInner
         mode={mode}
@@ -400,13 +433,29 @@ function FileUploadDialog(props: FileUploadDialogProps) {
 
   const queryClient = useQueryClient();
   const { mutate, isPending } = useSourcesServiceUploadFileToSource({
-    onSuccess: () => {
-      void queryClient.invalidateQueries({
-        queryKey: UseSourcesServiceListFilesFromSourceKeyFn({
-          sourceId: sourceId,
-          limit: 1000,
-        }),
-      });
+    onSuccess: (_, variables) => {
+      void queryClient.setQueriesData<ListFilesFromSourceResponse | undefined>(
+        {
+          queryKey: UseSourcesServiceListFilesFromSourceKeyFn({
+            sourceId,
+            limit: 1000,
+          }),
+        },
+        (oldData) => {
+          if (!oldData) {
+            return oldData;
+          }
+
+          return [
+            {
+              source_id: sourceId,
+              user_id: '',
+              file_name: (variables.formData.file as File).name || '',
+            },
+            ...oldData,
+          ];
+        }
+      );
 
       void queryClient.invalidateQueries({
         queryKey: UseJobsServiceListActiveJobsKeyFn(),
@@ -528,16 +577,21 @@ function DetachDataSourceConfirmDialog(
   );
 }
 
-interface DeleteFilePayload {
+export interface DeleteFilePayload {
   sourceId: string;
   fileId: string;
-  onClose: () => void;
+
   fileName: string;
 }
 
-function DeleteFileDialog(props: DeleteFilePayload) {
+interface DeleteFileDialogProps extends DeleteFilePayload {
+  onClose: () => void;
+  limit?: number;
+}
+
+export function DeleteFileDialog(props: DeleteFileDialogProps) {
   const queryClient = useQueryClient();
-  const { sourceId, fileId, fileName, onClose } = props;
+  const { sourceId, fileId, fileName, limit, onClose } = props;
   const t = useTranslations('ADE/EditDataSourcesPanel');
 
   const { mutate, isPending, isError } = useSourcesServiceDeleteFileFromSource({
@@ -547,7 +601,7 @@ function DeleteFileDialog(props: DeleteFilePayload) {
         {
           queryKey: UseSourcesServiceListFilesFromSourceKeyFn({
             sourceId,
-            limit: 1000,
+            limit,
           }),
         },
         (oldData) => {
@@ -592,7 +646,8 @@ interface EditDataSourcesContentProps {
 }
 
 function EditDataSourcesContent(props: EditDataSourcesContentProps) {
-  const { id: agentId } = useCurrentAgent();
+  const { id: agentId, embedding_config: agentEmbeddingConfig } =
+    useCurrentAgent();
   const t = useTranslations('ADE/EditDataSourcesPanel');
   const [sourceToDetach, setSourceToDetach] = useState<Source | null>(null);
   const [fileToDelete, setFileToDelete] = useState<Omit<
@@ -655,7 +710,23 @@ function EditDataSourcesContent(props: EditDataSourcesContentProps) {
           />
         );
 
+        const isCompatible = isEqual(
+          source.embedding_config,
+          agentEmbeddingConfig
+        );
+
         return {
+          badge: !isCompatible && (
+            <Tooltip
+              content={t('EditDataSourcesContent.notCompatible.details')}
+            >
+              <Badge
+                preIcon={<WarningIcon />}
+                content={t('EditDataSourcesContent.notCompatible.title')}
+                color="warning"
+              />
+            </Tooltip>
+          ),
           name: source.name,
           icon,
           openIcon: icon,
@@ -727,6 +798,7 @@ function EditDataSourcesContent(props: EditDataSourcesContentProps) {
     search,
     t,
     sourceIdsBeingProcessedSet,
+    agentEmbeddingConfig,
     fileIdsBeingProcessedSet,
   ]);
 
@@ -751,6 +823,7 @@ function EditDataSourcesContent(props: EditDataSourcesContentProps) {
     <>
       {fileToDelete && (
         <DeleteFileDialog
+          limit={1000}
           sourceId={fileToDelete.sourceId}
           fileId={fileToDelete.fileId}
           fileName={fileToDelete.fileName}

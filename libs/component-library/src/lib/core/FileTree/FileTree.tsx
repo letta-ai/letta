@@ -25,6 +25,7 @@ interface Action {
 interface RootType {
   name: string;
   id?: string;
+  badge?: React.ReactNode;
   actions?: Action[];
 }
 
@@ -42,13 +43,14 @@ export function getIsGenericFolder(
 
 interface RowItemProps {
   depth: number;
+  badge?: React.ReactNode;
   children: React.ReactNode;
   onClick?: () => void;
   actions?: Action[];
 }
 
 function RowItem(props: RowItemProps) {
-  const { depth, onClick, actions } = props;
+  const { depth, badge, onClick, actions } = props;
 
   return (
     <li className="w-full block">
@@ -63,23 +65,27 @@ function RowItem(props: RowItemProps) {
         }}
         className="hover:bg-tertiary-hover cursor-pointer"
         fullWidth
+        overflow="hidden"
         paddingY="small"
       >
-        <HStack justify="start" align="center">
+        <HStack overflow="hidden" collapseWidth justify="start" align="center">
           {props.children}
         </HStack>
-        {actions && (
-          <DropdownMenu trigger={<DotsHorizontalIcon className="w-4" />}>
-            {actions.map((action) => (
-              <DropdownMenuItem
-                key={action.id || action.label}
-                onClick={action.onClick}
-                preIcon={action.icon}
-                label={action.label}
-              />
-            ))}
-          </DropdownMenu>
-        )}
+        <HStack align="center">
+          {badge}
+          {actions && (
+            <DropdownMenu trigger={<DotsHorizontalIcon className="w-4" />}>
+              {actions.map((action) => (
+                <DropdownMenuItem
+                  key={action.id || action.label}
+                  onClick={action.onClick}
+                  preIcon={action.icon}
+                  label={action.label}
+                />
+              ))}
+            </DropdownMenu>
+          )}
+        </HStack>
       </HStack>
     </li>
   );
@@ -130,7 +136,7 @@ function RenderFolderInnerContent(props: RenderFolderContentProps) {
               ) : (
                 <FileIcon className="w-4" />
               )}
-              <Typography noWrap align="left">
+              <Typography overflow="ellipsis" fullWidth noWrap align="left">
                 {name}
               </Typography>
             </HStack>
@@ -194,6 +200,7 @@ export function FolderComponent(props: FolderComponentProps) {
   const { folder, depth = 0 } = props;
   const {
     name,
+    badge,
     actions,
     defaultOpen,
     openIcon: openIconOverride,
@@ -228,9 +235,9 @@ export function FolderComponent(props: FolderComponentProps) {
       }}
     >
       <HStack as="summary" className="w-full cursor-pointer" align="center">
-        <RowItem actions={actions} depth={depth}>
+        <RowItem badge={badge} actions={actions} depth={depth}>
           {isOpen ? openIcon : icon}
-          <Typography noWrap align="left">
+          <Typography overflow="ellipsis" fullWidth noWrap align="left">
             {name}
           </Typography>
         </RowItem>

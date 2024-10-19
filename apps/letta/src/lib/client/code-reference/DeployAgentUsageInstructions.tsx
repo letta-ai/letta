@@ -17,6 +17,7 @@ import {
 import { webApi, webApiQueryKeys } from '$letta/client';
 import { findMemoryBlockVariables } from '$letta/utils';
 import { useCurrentAgent } from '../../../app/(logged-in)/(ade)/projects/[projectSlug]/agents/[agentId]/hooks';
+import { getIsAgentState } from '@letta-web/letta-agents-api';
 
 interface DeployAgentInstructionsCurlProps {
   projectId: string;
@@ -67,6 +68,10 @@ function DeployAgentInstructionsCurl(props: DeployAgentInstructionsCurlProps) {
   }, [useDeploymentAgentId, deploymentAgent]);
 
   const variables = useMemo(() => {
+    if (!getIsAgentState(agent)) {
+      return [];
+    }
+
     return Object.fromEntries(
       findMemoryBlockVariables(agent).map((v) => [v, 'YOUR_VALUE_HERE'])
     );

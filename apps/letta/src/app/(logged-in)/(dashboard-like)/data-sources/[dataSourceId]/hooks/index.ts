@@ -12,9 +12,5 @@ export function useCurrentDataSource() {
     sourceId: dataSourceId,
   });
 
-  if (!data) {
-    throw new Error('Redirecting to data-sources');
-  }
-
   return data;
 }

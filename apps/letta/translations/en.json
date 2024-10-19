@@ -134,6 +134,21 @@
     }
   },
   "ADE/EditDataSourcesPanel": {
+    "AttachDataSourceView": {
+      "notCompatible": {
+        "title": "Not Compatible",
+        "details": "This data source's embedding model is not compatible with your current model."
+      },
+      "emptyMessage": "You have not created any data sources yet",
+      "emptySearchMessage": "No data sources found",
+      "emptyAction": "Create a new data source",
+      "attach": "Attach",
+      "attached": "Attached",
+      "searchInput": {
+        "placeholder": "Search data sources",
+        "label": "Search data sources"
+      }
+    },
     "DeleteFileDialog": {
       "title": "Delete {fileName}",
       "areYouSure": "Are you sure you want to delete {fileName}?",
@@ -149,6 +164,10 @@
       "error": "There was an error detaching this data source, please try again or contact support."
     },
     "EditDataSourcesContent": {
+      "notCompatible": {
+        "details": "This data source's embedding config does not match the agent config, this may lead to the agent not remembering data properly",
+        "title": "Not Compatible"
+      },
       "processing": "This data source is being processed, please wait...",
       "delete": "Delete file",
       "addFile": "Add file",
@@ -171,6 +190,7 @@
     "loading": "Loading data sources...",
     "noDataSources": "You have no data sources attached to this agent yet. Click the button in the top right to attach a data source.",
     "CreateDataSourceDialog": {
+      "titles": "Add New Data Source",
       "trigger": "Create Source",
       "goBack": "Go back",
       "creatingDataSource": "Creating data source...",
@@ -234,6 +254,7 @@
       "label": "Chatroom Render Mode",
       "options": {
         "debug": "Debug mode",
+        "interactive": "Interactive mode",
         "simple": "Simple mode"
       }
     },
@@ -249,17 +270,6 @@
     "updateVariables": "Update Variables"
   },
   "ADE/ADESidebar": {
-    "AttachDataSourceView": {
-      "emptyMessage": "You have not created any data sources yet",
-      "emptySearchMessage": "No data sources found",
-      "emptyAction": "Create a new data source",
-      "attach": "Attach",
-      "attached": "Attached",
-      "searchInput": {
-        "placeholder": "Search data sources",
-        "label": "Search data sources"
-      }
-    },
     "nav": {
       "model": "Model",
       "config": "Config",
@@ -487,7 +497,7 @@
         "copy": "This template has not had any changes since the last version. You can deploy following the instructions below:"
       },
       "updateAvailable": {
-        "trigger": "Update Available",
+        "trigger": "Version Agent",
         "heading": "You may want to version your template",
         "copy": "This template has had changes since the last version. You can create a new version below or follow deployment instructions below:"
       }
@@ -576,5 +586,26 @@
     "title": "Sign in to Letta Cloud",
     "google": "Continue with Google",
     "terms": "By clicking the button above, you agree to our <terms>Terms of Service</terms> and <privacy>Privacy Policy</privacy>."
+  },
+  "data-sources/layout": {
+    "navigation": {
+      "sourceInfo": "Source Info",
+      "files": "Files"
+    }
+  },
+  "data-sources/files/page": {
+    "title": "Source Files",
+    "emptyMessage": "This source has no files",
+    "loading": "Loading files",
+    "error": "There was an error loading files, please try again or contact support.",
+    "actions": "Actions",
+    "deleteFile": "Delete file",
+    "table": {
+      "columns": {
+        "name": "Name",
+        "fileSize": "Size",
+        "lastModified": "Last modified"
+      }
+    }
   }
 }
