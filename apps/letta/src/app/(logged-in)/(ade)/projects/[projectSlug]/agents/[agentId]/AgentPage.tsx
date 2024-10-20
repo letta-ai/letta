@@ -79,13 +79,13 @@ function RestoreLayoutButton() {
 
 export function NavOverlay() {
   const { slug: projectSlug } = useCurrentProject();
-  const { name } = useCurrentUser();
+  const user = useCurrentUser();
 
   return (
     <Popover
       trigger={
         <HStack align="center">
-          <Avatar size="small" name={name} />
+          <Avatar size="small" name={user?.name || ''} />
         </HStack>
       }
       align="start"

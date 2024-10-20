@@ -8,6 +8,7 @@ import {
   FormField,
   FormProvider,
   Input,
+  LoadingEmptyStatusComponent,
   RawInput,
   useForm,
 } from '@letta-web/component-library';
@@ -17,13 +18,19 @@ import { useCurrentUser } from '$letta/client/hooks';
 import { webApi, webApiQueryKeys } from '$letta/client';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
+import type { PublicUserSchemaType } from '$letta/web-api/user/userContracts';
 
 const UpdateUserProfileSchema = z.object({
   name: z.string(),
 });
 
-function UpdateUserProfileForm() {
-  const { name, email } = useCurrentUser();
+interface UpdateUserProfileFormProps {
+  user: PublicUserSchemaType;
+}
+
+function UpdateUserProfileForm(props: UpdateUserProfileFormProps) {
+  const { name, email } = props.user;
+
   const queryClient = useQueryClient();
   const t = useTranslations('settings/profile/page');
 
@@ -83,10 +90,16 @@ function UpdateUserProfileForm() {
 
 function ProfileSettingsPage() {
   const t = useTranslations('settings/profile/page');
+  const user = useCurrentUser();
+
   return (
     <DashboardPageLayout title={t('title')}>
       <DashboardPageSection>
-        <UpdateUserProfileForm />
+        {!user ? (
+          <LoadingEmptyStatusComponent emptyMessage="" isLoading />
+        ) : (
+          <UpdateUserProfileForm user={user} />
+        )}
       </DashboardPageSection>
     </DashboardPageLayout>
   );

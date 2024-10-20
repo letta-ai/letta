@@ -13,6 +13,8 @@ export const PublicUserSchema = z.object({
   id: z.string(),
 });
 
+export type PublicUserSchemaType = z.infer<typeof PublicUserSchema>;
+
 export type GetUser200ResponseType = ServerInferResponses<
   typeof getUserContract,
   200

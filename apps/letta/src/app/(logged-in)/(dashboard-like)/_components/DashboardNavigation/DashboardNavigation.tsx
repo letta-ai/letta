@@ -234,7 +234,7 @@ export function NavigationSidebar() {
 }
 
 function ProfilePopover() {
-  const { name } = useCurrentUser();
+  const user = useCurrentUser();
 
   return (
     <Popover
@@ -245,7 +245,7 @@ function ProfilePopover() {
           color="tertiary-transparent"
           label="Settings"
           hideLabel
-          preIcon={<Avatar name={name} />}
+          preIcon={<Avatar name={user?.name || ''} />}
         />
       }
     >

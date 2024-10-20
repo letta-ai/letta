@@ -120,10 +120,15 @@ function JobItem(props: JobItemProps) {
 }
 
 function DashboardJobList() {
-  const { id: userId } = useCurrentUser();
-  const { data } = useJobsServiceListActiveJobs({ userId }, undefined, {
-    refetchInterval: 5000,
-  });
+  const user = useCurrentUser();
+  const { data } = useJobsServiceListActiveJobs(
+    { userId: user?.id },
+    undefined,
+    {
+      refetchInterval: 5000,
+      enabled: !!user?.id,
+    }
+  );
 
   if (!data || data?.length === 0) {
     return null;

@@ -12,14 +12,16 @@ import type { GetUser200ResponseType } from '$letta/web-api/user/userContracts';
 
 export function ThemeSelector() {
   const t = useTranslations('components/ThemeSelector');
-  const { theme } = useCurrentUser();
+  const user = useCurrentUser();
   const { mutate: updateCurrentUser } =
     webApi.user.updateCurrentUser.useMutation();
   const queryClient = useQueryClient();
 
+  const theme = user?.theme || 'light';
+
   useEffect(() => {
-    document.body.className = theme;
-    document.body.dataset['mode'] = theme;
+    document.body.className = theme || '';
+    document.body.dataset['mode'] = theme || '';
   }, [theme]);
 
   const handleThemeChange = useCallback(
