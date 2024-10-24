@@ -70,10 +70,7 @@
           "group": "Letta server",
           "icon": "server",
           "iconType": "solid",
-          "pages": [
-            "server/pip",
-            "server/docker"
-          ]
+          "pages": ["server/pip", "server/docker"]
         },
         {
           "group": "LLM configuration",
@@ -94,10 +91,7 @@
     },
     {
       "group": "Key concepts",
-      "pages": [
-        "concepts",
-        "letta_memgpt"
-      ]
+      "pages": ["concepts", "letta_memgpt"]
     },
     {
       "group": "Agents",
@@ -105,7 +99,8 @@
         "agents/overview",
         "agents/tools",
         "agents/memory",
-        "agents/messages"
+        "agents/messages",
+        "agents/streaming"
       ]
     },
     {
@@ -137,10 +132,7 @@
         "python-reference/LettaResponse",
         {
           "group": "Message Types",
-          "pages": [
-            "python-reference/Message",
-            "python-reference/LettaMessage"
-          ]
+          "pages": ["python-reference/Message", "python-reference/LettaMessage"]
         },
         "python-reference/LettaUsageStatistics"
       ]
