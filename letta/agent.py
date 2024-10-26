@@ -5,6 +5,7 @@ import warnings
 from abc import ABC, abstractmethod
 from typing import List, Literal, Optional, Tuple, Union
 
+from e2b_code_interpreter import Sandbox
 from tqdm import tqdm
 
 from letta.agent_store.storage import StorageConnector
@@ -56,8 +57,10 @@ from letta.system import (
 from letta.utils import (
     count_tokens,
     get_local_time,
+    get_source_code_for_execution,
     get_tool_call_id,
     get_utc_time,
+    is_foreign_tool,
     is_utc_datetime,
     json_dumps,
     json_loads,
@@ -649,6 +652,29 @@ class Agent(BaseAgent):
                         function_args[name] = spec[name](**function_args[name])
 
                 function_args["self"] = self  # need to attach self to arg since it's dynamically linked
+
+                matching_tools = [tool for tool in self.tools if tool.name == function_name]
+                tool = matching_tools[0] if matching_tools else None
+                # Execute tool in sandbox
+                if tool and is_foreign_tool(tool):
+                    sbx = Sandbox()
+
+                    # TODO: install dependencies
+                    # sbx.commands.run(f"pip3 install {package}")
+
+                    code = get_source_code_for_execution(function_name, function_args, tool)
+
+                    execution = sbx.run_code(code)
+                    if execution.error is not None:
+                        raise execution.error
+                    elif len(execution.results) == 0:
+                        function_response = ""
+                    else:
+                        function_response = execution.results[0].text
+
+                    sbx.kill()
+                else:
+                    function_response = function_to_call(**function_args)
 
                 function_response = function_to_call(**function_args)
                 if function_name in ["conversation_search", "conversation_search_date", "archival_memory_search"]:
