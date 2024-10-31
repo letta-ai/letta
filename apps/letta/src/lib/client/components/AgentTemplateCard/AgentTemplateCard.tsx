@@ -40,7 +40,7 @@ export function AgentTemplateCard(props: AgentTemplateCardProps) {
           {/*  )}*/}
           <Button
             href={`/projects/${projectSlug}/templates/${name}`}
-            color="secondary"
+            color="tertiary"
             label={t('openInADE')}
           />
         </HStack>

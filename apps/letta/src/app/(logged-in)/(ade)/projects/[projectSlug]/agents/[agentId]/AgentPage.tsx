@@ -3,6 +3,12 @@ import type { panelRegistry } from './panelRegistry';
 import { usePanelManager } from './panelRegistry';
 import { PanelManagerProvider, PanelRenderer } from './panelRegistry';
 import type { PanelItemPositionsMatrix } from '@letta-web/component-library';
+import {
+  FormField,
+  FormProvider,
+  Input,
+  useForm,
+} from '@letta-web/component-library';
 import { Badge } from '@letta-web/component-library';
 import { UpdateAvailableIcon } from '@letta-web/component-library';
 import {
@@ -55,6 +61,8 @@ import { DeployAgentUsageInstructions } from '$letta/client/code-reference/Deplo
 import { useQueryClient } from '@tanstack/react-query';
 import type { InfiniteGetProjectDeployedAgentTemplates200Response } from '$letta/web-api/projects/projectContracts';
 import { ThemeSelector } from '$letta/client/components/ThemeSelector/ThemeSelector';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
 
 function RestoreLayoutButton() {
   const t = useTranslations(
@@ -123,6 +131,87 @@ export function NavOverlay() {
         </VStack>
       </Frame>
     </Popover>
+  );
+}
+
+interface DeleteAgentDialogProps {
+  onClose: () => void;
+}
+
+function DeleteAgentDialog(props: DeleteAgentDialogProps) {
+  const { onClose } = props;
+  const { name } = useCurrentAgent();
+
+  const { slug: projectSlug } = useCurrentProject();
+  const { id: agentTemplateId } = useCurrentAgent();
+
+  const DeleteAgentDialogFormSchema = useMemo(
+    () =>
+      z.object({
+        agentName: z.literal(name, {
+          message: 'Agent name does not match',
+        }),
+      }),
+    [name]
+  );
+
+  const form = useForm<z.infer<typeof DeleteAgentDialogFormSchema>>({
+    resolver: zodResolver(DeleteAgentDialogFormSchema),
+    defaultValues: {
+      agentName: '',
+    },
+  });
+
+  const { mutate, isPending } = webOriginSDKApi.agents.deleteAgent.useMutation({
+    onSuccess: () => {
+      window.location.href = `/projects/${projectSlug}`;
+    },
+  });
+
+  const handleSubmit = useCallback(() => {
+    mutate({
+      params: {
+        agent_id: agentTemplateId,
+      },
+    });
+  }, [mutate, agentTemplateId]);
+
+  return (
+    <FormProvider {...form}>
+      <Dialog
+        onOpenChange={(next) => {
+          if (!next) {
+            onClose();
+          }
+        }}
+        confirmColor="destructive"
+        confirmText="Delete Agent"
+        title="Are you sure you want to delete this agent?"
+        trigger={<Button label="Delete Agent" color="destructive" />}
+        onSubmit={form.handleSubmit(handleSubmit)}
+        isConfirmBusy={isPending}
+      >
+        <Typography>
+          This action cannot be undone. All data associated with this agent will
+          be permanently deleted.
+        </Typography>
+        <Typography>
+          Your agent{"'"}s name is:
+          <br />
+          <strong>{name}</strong>
+        </Typography>
+        <FormField
+          name="agentName"
+          render={({ field }) => (
+            <Input
+              fullWidth
+              label={`Type the name of the agent name confirm`}
+              {...field}
+            />
+          )}
+        />
+      </Dialog>
+    </FormProvider>
   );
 }
 
@@ -227,7 +316,7 @@ function DeployAgentDialog(props: DeployAgentDialogProps) {
       trigger={
         <Button
           fullWidth
-          color={!isAtLatestVersion ? 'tertiary-transparent' : 'primary'}
+          color={!isAtLatestVersion ? 'tertiary-transparent' : 'secondary'}
           label={t('DeployAgentDialog.trigger')}
           target="_blank"
         />
@@ -325,7 +414,7 @@ function VersionAgentDialog() {
       trigger={
         <Button
           data-testid="stage-new-version-button"
-          color="primary"
+          color="secondary"
           fullWidth
           label={t('VersionAgentDialog.trigger')}
         />
@@ -468,19 +557,19 @@ function TemplateVersionDisplay() {
       }
       align="end"
     >
-      <VStack padding="small">
-        <VStack padding="small">
+      <VStack padding="medium" gap="large">
+        <VStack>
           {versionNumber && (
             <HStack>
               <Badge
-                color="primary"
+                color="background-grey"
                 content={t('DeploymentButton.version', {
                   version: versionNumber,
                 })}
               />
             </HStack>
           )}
-          <Typography variant="heading4" bold>
+          <Typography variant="heading5" bold>
             {isAtLatestVersion
               ? t('DeploymentButton.readyToDeploy.heading')
               : t('DeploymentButton.updateAvailable.heading')}
@@ -510,7 +599,7 @@ function TemplateVersionDisplay() {
   );
 }
 
-type Dialogs = 'forkAgent';
+type Dialogs = 'deleteAgent' | 'forkAgent';
 
 function AgentSettingsDropdown() {
   const t = useTranslations(
@@ -526,6 +615,9 @@ function AgentSettingsDropdown() {
     <>
       {openDialog == 'forkAgent' && (
         <ForkAgentDialog onClose={handleCloseDialog} />
+      )}
+      {openDialog == 'deleteAgent' && (
+        <DeleteAgentDialog onClose={handleCloseDialog} />
       )}
       <DropdownMenu
         align="end"

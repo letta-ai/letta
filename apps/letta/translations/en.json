@@ -98,7 +98,7 @@
   },
   "components/AgentTemplateCard": {
     "subtitle": "Last updated on {date}",
-    "openInADE": "Open in ADE",
+    "openInADE": "Open",
     "versions": "{count, plural, =0 {} other {View Versions (#)}}",
     "versionList": {
       "copyVersion": "Copy Version",
@@ -219,6 +219,7 @@
     "error": "There was an error while updating the model, please try again or contact support."
   },
   "components/Messages": {
+    "hiddenUserMessage": "Internal User Message",
     "noParsableMessages": "There are no messages available in this view, usually this is caused by a lack of triggered send_message actions in your agent, check the debug more to verify."
   },
   "components/ThemeSelector": {
@@ -490,14 +491,14 @@
       "description": "Versioning an agent creates a new version of the agent that is immutable and can be used to deploy agents. Are you sure you want to proceed?"
     },
     "DeploymentButton": {
-      "version": "Version {version}",
+      "version": "VERSION {version}",
       "readyToDeploy": {
-        "trigger": "Ready to Deploy",
+        "trigger": "Deploy Agent",
         "heading": "Your template is good to go!",
         "copy": "This template has not had any changes since the last version. You can deploy following the instructions below:"
       },
       "updateAvailable": {
-        "trigger": "Version Agent",
+        "trigger": "Deploy Agent",
         "heading": "You may want to version your template",
         "copy": "This template has had changes since the last version. You can create a new version below or follow deployment instructions below:"
       }

@@ -5,6 +5,7 @@ import { HStack } from '../../framing/HStack/HStack';
 import { Typography } from '../../core/Typography/Typography';
 import { RawInput } from '../../core/Input/Input';
 import { SearchIcon } from '../../icons';
+import { Frame } from '../../framing/Frame/Frame';
 
 interface DashboardSearchBarProps {
   onSearch: (searchTerm: string) => void;
@@ -72,11 +73,13 @@ export function DashboardPageSection(props: DashboardPageSectionProps) {
         </HStack>
       )}
       {onSearch && (
-        <DashboardSearchBar
-          searchPlaceholder={searchPlaceholder || ''}
-          searchValue={searchValue || ''}
-          onSearch={onSearch}
-        />
+        <Frame paddingTop>
+          <DashboardSearchBar
+            searchPlaceholder={searchPlaceholder || ''}
+            searchValue={searchValue || ''}
+            onSearch={onSearch}
+          />
+        </Frame>
       )}
 
       {children}

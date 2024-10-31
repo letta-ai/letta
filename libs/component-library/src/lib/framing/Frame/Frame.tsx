@@ -42,6 +42,8 @@ const frameVariants = cva('', {
         'bg-background-greyer text-background-greyer-content',
       'background-black': 'bg-background-black text-background-black-content',
       tertiary: 'bg-tertiary text-tertiary-content',
+      success: 'bg-background-success text-background-success-content',
+      destructive: 'bg-destructive bg-destructive-content',
       primary: 'bg-primary text-primary-content',
       secondary: 'bg-secondary text-secondary-content',
       warning: 'bg-background-warning text-background-warning-content',
@@ -49,7 +51,7 @@ const frameVariants = cva('', {
     },
     width: {
       centered: 'max-w-[800px]',
-      contained: 'max-w-[500px]',
+      contained: 'max-w-[610px]',
       sidebar: 'w-sidebar',
     },
     height: {
@@ -127,6 +129,7 @@ const frameVariants = cva('', {
       true: 'pl-5',
     },
     paddingRight: {
+      xxsmall: 'pr-1',
       small: 'pr-2.5',
       medium: 'pr-3',
       large: 'pr-4',

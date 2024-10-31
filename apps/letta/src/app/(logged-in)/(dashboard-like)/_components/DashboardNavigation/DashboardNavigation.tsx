@@ -209,25 +209,20 @@ export function NavigationSidebar() {
       <VStack
         overflowY="auto"
         position="fixed"
-        borderRight
         justify="spaceBetween"
         color="background"
         fullHeight
         zIndex="rightAboveZero"
         /* eslint-disable-next-line react/forbid-component-props */
-        className="top-0 min-w-sidebar max-w-sidebar invisible visibleSidebar:visible"
+        className="top-0 min-w-sidebar h-full max-w-sidebar invisible visibleSidebar:visible"
       >
-        <VStack gap={false}>
+        <VStack fullHeight gap="small" padding="xxsmall">
           {/* eslint-disable-next-line react/forbid-component-props */}
           <HStack className="h-header min-h-header" />
-          <MainNavigationItems />
+          <VStack fullHeight border>
+            <MainNavigationItems />
+          </VStack>
         </VStack>
-        <HStack align="center" borderTop padding>
-          <Logo color="muted" size="small" />
-          <Typography color="muted" variant="body2">
-            Letta 2024
-          </Typography>
-        </HStack>
       </VStack>
     </>
   );
@@ -300,7 +295,6 @@ function NavigationOverlay() {
               color="background"
               position="fixed"
               fullHeight
-              borderLeft
               /* eslint-disable-next-line react/forbid-component-props */
               className={cn(
                 'top-0 min-w-sidebar max-w-sidebar z-sidebarNav transition-all duration-200 slide-in-from-left left-0',
@@ -359,13 +353,14 @@ export function DashboardHeader() {
       <HStack className="h-header min-h-header" fullWidth></HStack>
       <HStack
         as="header"
+        padding="xxsmall"
         position="fixed"
-        borderBottom
         zIndex="header"
         fullWidth
-        color="background"
       >
         <HStack
+          border
+          color="background"
           fullWidth
           justify="spaceBetween"
           align="center"

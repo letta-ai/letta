@@ -27,8 +27,7 @@
     --card: 0 0% 100%;
     --card-content: 240 10% 3.9%;
 
-    --popover: 0 0% 100%;
-    --popover-content: 240 10% 3.9%;
+
 
     --primary: 240, 92%, 35%;
     --primary-content: 0 0% 98%;
@@ -52,8 +51,11 @@
     --accent: 240 4.8% 95.9%;
     --accent-content: 240 5.9% 10%;
 
-    --destructive: 0 84.2% 60.2%;
+    --destructive: 336, 98%, 37%;
     --destructive-content: 0 0% 98%;
+
+    --background-success: 120, 50%, 92%;
+    --background-success-content: 120, 61%, 20%;
 
     --warning: 40, 100%, 50%;
     --warning-content: 40, 100%, 85%;
@@ -74,6 +76,12 @@
     --background-black: 0, 0%, 0%;
     --background-black-content: 0 0% 100%;
     --background-black-hover: 0, 0%, 20%;
+
+    --background-violet: 276, 74%, 93%;
+    --background-violet-content: var(--content);
+
+    --popover: var(--background);
+    --popover-content: 240 10% 3.9%;
 
     --border: 214, 32%, 91%;
     --input: 240 5.9% 90%;
@@ -147,6 +155,8 @@
     --input: 240 3.7% 15.9%;
     --ring: 240 4.9% 83.9%;
 
+    --background-violet: 278, 44%, 25%;
+    --background-violet-content: var(--content);
   }
 
 

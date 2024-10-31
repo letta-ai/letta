@@ -35,33 +35,45 @@ export function DashboardPageLayout(props: DashboardPageLayoutProps) {
   const { icon, title, encapsulatedFullHeight, actions } = props;
 
   return (
-    <VStack
-      className={cn(
-        encapsulatedFullHeight && 'encapsulated-full-height',
-        'max-w-[95%] mx-[auto]'
-      )}
-      gap={false}
-      fullWidth
-    >
-      <HStack
-        align="center"
-        as="header"
-        wrap
-        justify="spaceBetween"
+    <>
+      <VStack
+        className="encapsulated-full-height z-[-1]"
+        paddingY="xxsmall"
+        paddingRight="xxsmall"
         fullWidth
-        paddingX="large"
-        paddingTop="xxlarge"
-        paddingBottom="small"
+        fullHeight
+        position="absolute"
       >
-        <HStack align="center">
-          {icon}
-          <Title title={title} />
-        </HStack>
-        <HStack align="center">{actions}</HStack>
-      </HStack>
-      <VStack fullWidth collapseHeight>
-        {props.children}
+        <VStack fullWidth fullHeight border></VStack>
       </VStack>
-    </VStack>
+      <VStack
+        className={cn(
+          encapsulatedFullHeight && 'encapsulated-full-height',
+          'max-w-[95%] mx-[auto]'
+        )}
+        gap={false}
+        fullWidth
+      >
+        <HStack
+          align="center"
+          as="header"
+          wrap
+          justify="spaceBetween"
+          fullWidth
+          paddingX="large"
+          paddingTop="xxlarge"
+          paddingBottom="small"
+        >
+          <HStack align="center">
+            {icon}
+            <Title title={title} />
+          </HStack>
+          <HStack align="center">{actions}</HStack>
+        </HStack>
+        <VStack fullWidth collapseHeight>
+          {props.children}
+        </VStack>
+      </VStack>
+    </>
   );
 }

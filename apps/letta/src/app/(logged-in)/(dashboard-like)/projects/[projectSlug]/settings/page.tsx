@@ -57,14 +57,17 @@ function DeleteProjectSettings() {
   }, [mutate, projectId]);
 
   return (
-    <DashboardPageSection title="Delete Project">
-      <VStack width="contained">
+    <DashboardPageSection>
+      <VStack width="contained" gap="large">
+        <Typography variant="heading5" bold>
+          Delete Project
+        </Typography>
         <Typography variant="body">
           Deleting a project will permanently remove all data associated with
           it. This action cannot be undone. It will delete all deployments,
           agents, and configurations associated with this project.
         </Typography>
-        <FormActions>
+        <FormActions align="start">
           <FormProvider {...form}>
             <Dialog
               isConfirmBusy={isPending}
@@ -202,6 +205,7 @@ function EditSettingsSection() {
               name="name"
             />
             <FormActions
+              align="start"
               errorMessage={
                 isError
                   ? 'Failed to save changes, contact support if this persists'
@@ -210,8 +214,8 @@ function EditSettingsSection() {
             >
               <Button
                 busy={isPending}
-                color="secondary"
-                label="Save Changes"
+                color="tertiary"
+                label="Save"
                 type="submit"
               />
             </FormActions>

@@ -25,11 +25,13 @@ export default async function DashboardLikeLayout(
   return (
     <UseDashboardNavigationItemsProvider>
       <div className="pageFadeIn">
-        <VStack gap={false} fullHeight fullWidth>
+        <VStack gap="small" fullHeight fullWidth>
           <DashboardHeader />
-          <HStack fullWidth>
+          <HStack gap={false} fullWidth>
             <NavigationSidebar />
-            <Frame fullWidth>{children}</Frame>
+            <Frame position="relative" fullWidth>
+              {children}
+            </Frame>
           </HStack>
           <div id={SIDEBAR_OVERLAY_MOUNT_POINT_ID} />
         </VStack>
