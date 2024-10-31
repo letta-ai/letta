@@ -112,117 +112,151 @@ describe('agentsRouter', () => {
       });
     });
 
-    it('should return an error if user is creating a agent from a premade template and project_id is not specified', async () => {
-      const response = await createAgent(
-        {
-          body: {
-            template: true,
-            from_template: AgentRecipeVariant.CUSTOMER_SUPPORT,
-          },
-        },
-        {
-          request: {
-            userId: 'test-id',
-            organizationId: 'test-org-id',
-            lettaAgentsUserId: 'test-id',
-          },
-        }
-      );
+    describe('premade templates', () => {
+      const llmConfig = {
+        model: 'gpt-4',
+        model_endpoint_type: 'openai',
+        model_endpoint: 'https://api.openai.com/v1',
+        model_wrapper: null,
+        context_window: 8192,
+      } as const;
 
-      expect(response).toEqual({
-        status: 400,
-        body: {
-          message:
-            'project_id is required when creating an agent from a premade agent template',
-        },
-      });
-    });
-
-    it('should return an error if user is creating a deployed agent from a premade template', async () => {
-      const response = await createAgent(
-        {
-          body: {
-            template: false,
-            from_template: AgentRecipeVariant.CUSTOMER_SUPPORT,
-            project_id: 'test-project-id',
-          },
-        },
-        {
-          request: {
-            userId: 'test-id',
-            organizationId: 'test-org-id',
-            lettaAgentsUserId: 'test-id',
-          },
-        }
-      );
-
-      expect(response).toEqual({
-        status: 400,
-        body: {
-          message:
-            'Cannot create a deployed agent from a premade agent template',
-        },
-      });
-    });
-
-    it('should create an agent from a premade template', async () => {
-      const createdAgent = {
-        id: 'test-agent-id',
-        name: 'test-agent',
-        created_at: new Date().toISOString(),
-        system: '',
-        ...premadeAgentTemplates[AgentRecipeVariant.CUSTOMER_SUPPORT],
+      const embeddingConfig = {
+        embedding_endpoint_type: 'openai',
+        embedding_endpoint: 'https://api.openai.com/v1',
+        embedding_model: 'text-embedding-ada-002',
+        embedding_dim: 1536,
+        embedding_chunk_size: 300,
+        azure_endpoint: null,
+        azure_version: null,
+        azure_deployment: null,
       };
 
-      lettaAgentAPIMock.AgentsService.createAgent.mockResolvedValue(
-        createdAgent
-      );
+      beforeEach(() => {
+        lettaAgentAPIMock.LlmsService.listModels.mockResolvedValue([llmConfig]);
 
-      const { valuesFn } = mockDatabaseInsert();
-
-      const response = await createAgent(
-        {
-          body: {
-            template: true,
-            from_template: AgentRecipeVariant.CUSTOMER_SUPPORT,
-            project_id: 'test-project-id',
-            name: 'test',
-          },
-        },
-        {
-          request: {
-            userId: 'test-id',
-            organizationId: 'test-org-id',
-            lettaAgentsUserId: 'letta-test-id',
-          },
-        }
-      );
-
-      expect(lettaAgentAPIMock.AgentsService.createAgent).toHaveBeenCalledWith(
-        {
-          requestBody: {
-            ...premadeAgentTemplates[AgentRecipeVariant.CUSTOMER_SUPPORT],
-            name: expect.any(String),
-          },
-        },
-        {
-          user_id: 'letta-test-id',
-        }
-      );
-
-      expect(valuesFn).toHaveBeenCalledWith({
-        organizationId: 'test-org-id',
-        name: 'test',
-        id: 'test-agent-id',
-        projectId: 'test-project-id',
+        lettaAgentAPIMock.LlmsService.listEmbeddingModels.mockResolvedValue([
+          embeddingConfig,
+        ]);
       });
 
-      expect(response).toEqual({
-        status: 201,
-        body: {
-          ...createdAgent,
+      it('should return an error if user is creating a agent from a premade template and project_id is not specified', async () => {
+        const response = await createAgent(
+          {
+            body: {
+              template: true,
+              from_template: AgentRecipeVariant.CUSTOMER_SUPPORT,
+            },
+          },
+          {
+            request: {
+              userId: 'test-id',
+              organizationId: 'test-org-id',
+              lettaAgentsUserId: 'test-id',
+            },
+          }
+        );
+
+        expect(response).toEqual({
+          status: 400,
+          body: {
+            message:
+              'project_id is required when creating an agent from a premade agent template',
+          },
+        });
+      });
+
+      it('should return an error if user is creating a deployed agent from a premade template', async () => {
+        const response = await createAgent(
+          {
+            body: {
+              template: false,
+              from_template: AgentRecipeVariant.CUSTOMER_SUPPORT,
+              project_id: 'test-project-id',
+            },
+          },
+          {
+            request: {
+              userId: 'test-id',
+              organizationId: 'test-org-id',
+              lettaAgentsUserId: 'test-id',
+            },
+          }
+        );
+
+        expect(response).toEqual({
+          status: 400,
+          body: {
+            message:
+              'Cannot create a deployed agent from a premade agent template',
+          },
+        });
+      });
+
+      it('should create an agent from a premade template', async () => {
+        const createdAgent = {
+          id: 'test-agent-id',
+          name: 'test-agent',
+          agent_type: 'memgpt_agent',
+          created_at: new Date().toISOString(),
+          system: '',
+          ...premadeAgentTemplates[AgentRecipeVariant.CUSTOMER_SUPPORT],
+        };
+
+        lettaAgentAPIMock.AgentsService.createAgent.mockResolvedValue(
+          createdAgent
+        );
+
+        const { valuesFn } = mockDatabaseInsert();
+
+        const response = await createAgent(
+          {
+            body: {
+              template: true,
+              from_template: AgentRecipeVariant.CUSTOMER_SUPPORT,
+              project_id: 'test-project-id',
+              name: 'test',
+            },
+          },
+          {
+            request: {
+              userId: 'test-id',
+              organizationId: 'test-org-id',
+              lettaAgentsUserId: 'letta-test-id',
+            },
+          }
+        );
+
+        expect(
+          lettaAgentAPIMock.AgentsService.createAgent
+        ).toHaveBeenCalledWith(
+          {
+            requestBody: {
+              ...premadeAgentTemplates[AgentRecipeVariant.CUSTOMER_SUPPORT],
+              llm_config: llmConfig,
+              embedding_config: embeddingConfig,
+              name: expect.any(String),
+            },
+          },
+          {
+            user_id: 'letta-test-id',
+          }
+        );
+
+        expect(valuesFn).toHaveBeenCalledWith({
+          organizationId: 'test-org-id',
           name: 'test',
-        },
+          id: 'test-agent-id',
+          projectId: 'test-project-id',
+        });
+
+        expect(response).toEqual({
+          status: 201,
+          body: {
+            ...createdAgent,
+            name: 'test',
+          },
+        });
       });
     });
 

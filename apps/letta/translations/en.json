@@ -513,6 +513,17 @@
     "restoreLayout": "Restore Layout",
     "positionError": "There was a unhandled error while positioning the window, will fallback to default position, we have notified our team about this issue."
   },
+  "ADE/ModelParameters": {
+    "title": "Model Parameters",
+    "model": "Model",
+    "modelParameters": "Model Parameters",
+    "modelEndpoint": "Model Endpoint",
+    "endpointType": "Endpoint Type",
+    "errorLoadingModelParameters": "There has been an error loading model parameters, please refresh the page or contact support.",
+    "contextWindowController": {
+      "label": "Context Window Size"
+    }
+  },
   "ADE/TemplateVersionManager": {
     "title": "Template Version Manager"
   },

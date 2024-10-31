@@ -24,6 +24,7 @@ import {
   agentTemplatesQueryClientKeys,
   agentTemplatesContracts,
 } from '$letta/web-api/agent-templates/agentTemplatesContracts';
+import { flushLayoutsContract } from '$letta/web-api/admin/flush-layouts/flushLayoutsContracts';
 
 export const contracts = {
   user: userContract,
@@ -34,6 +35,7 @@ export const contracts = {
   featureFlags: featureFlagsContracts,
   agentTemplates: agentTemplatesContracts,
   admin: {
+    flushLayouts: flushLayoutsContract,
     whitelistedEmails: adminWhitelistedEmailsContract,
   },
 };

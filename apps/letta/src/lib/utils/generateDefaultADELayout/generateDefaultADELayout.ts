@@ -21,12 +21,12 @@ export function generateDefaultADELayout(): AdePreferencesData {
                 templateId: 'model-details',
                 data: undefined,
               },
-              // {
-              //   id: 'agent-config',
-              //   isActive: false,
-              //   templateId: 'agent-config',
-              //   data: undefined,
-              // },
+              {
+                id: 'model-parameters',
+                isActive: false,
+                templateId: 'model-parameters',
+                data: undefined,
+              },
             ],
           },
           {
