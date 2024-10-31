@@ -60,18 +60,18 @@ function MessageWrapper({ header, type, children }: MessageWrapperProps) {
   return (
     <VStack fullWidth rounded gap={false}>
       <HStack>
-        {/* eslint-disable-next-line react/forbid-component-props */}
         <HStack
           paddingX="small"
           paddingY="xxsmall"
+          /* eslint-disable-next-line react/forbid-component-props */
           className={cn(messageWrapperVariants({ type }))}
           align="center"
         >
           {header}
         </HStack>
       </HStack>
-      {/* eslint-disable-next-line react/forbid-component-props */}
       <VStack
+        /* eslint-disable-next-line react/forbid-component-props */
         className={cn(
           messageWrapperVariants({ type }),
           type === 'code' ? 'bg-background border' : ''
