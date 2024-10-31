@@ -12,6 +12,7 @@ import {
   ClipboardIcon,
   EyeOpenIcon,
   EyeClosedIcon,
+  LockClosedIcon,
 } from '../../icons';
 import { useMemo } from 'react';
 import { SpinnerPrimitive } from '../../../primitives';
@@ -140,6 +141,14 @@ const InputPrimitive = React.forwardRef<HTMLInputElement, InputPrimitiveProps>(
       return type;
     }, [showVisibilityControls, visibility, type]);
 
+    const postIconRender = useMemo(() => {
+      if (disabled) {
+        return <LockClosedIcon />;
+      }
+
+      return postIcon;
+    }, [disabled, postIcon]);
+
     return (
       <VStack
         gap={false}
@@ -178,7 +187,9 @@ const InputPrimitive = React.forwardRef<HTMLInputElement, InputPrimitiveProps>(
           )}
           {isUpdating && <SpinnerPrimitive className="w-3 h-3" />}
           {allowCopy && <CopyButton text={(props.value || '').toString()} />}
-          <Slot className={cn(inputIconVariants({ size }))}>{postIcon}</Slot>
+          <Slot className={cn(inputIconVariants({ size }))}>
+            {postIconRender}
+          </Slot>
         </HStack>
       </VStack>
     );

@@ -9,6 +9,7 @@ import { deploymentPanelTemplate } from './TemplateVersionManager/TemplateVersio
 import { editCoreMemories } from './EditCoreMemoriesPanel/EditCoreMemoriesPanel';
 import { editDataSourcesPanel } from './EditDataSourcesPanel/EditDataSourcesPanel';
 import { deployedAgentsPanel } from './DeployedAgentsPanel/DeployedAgentsPanel';
+import { modelParametersPanel } from './ModelParameters/ModelParameters';
 
 const {
   panelRegistry,
@@ -20,6 +21,7 @@ const {
   PanelRenderer,
 } = createPanelManager({
   'model-details': modelTemplate,
+  'model-parameters': modelParametersPanel,
   'agent-simulator': agentSimulatorTemplate,
   'archival-memories': archivalMemoriesPanelTemplate,
   'agent-config': configPanelTemplate,

@@ -125,3 +125,5 @@ export * from './lib/reusable/StatusIndicatorOnIcon/StatusIndicatorOnIcon';
 export * from './lib/brands';
 
 export * from './lib/reusable/SidebarTitle/SidebarTitle';
+
+export * from './lib/core/Slider/Slider';

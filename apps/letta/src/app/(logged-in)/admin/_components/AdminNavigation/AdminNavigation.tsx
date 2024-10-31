@@ -7,6 +7,7 @@ import {
   HStack,
   Typography,
   ListIcon,
+  LayoutIcon,
 } from '@letta-web/component-library';
 import Link from 'next/link';
 import { cn } from '@letta-web/core-style-config';
@@ -61,6 +62,11 @@ export function AdminNavigation() {
         href="/admin/whitelist"
         label="Manage Whitelist"
         icon={<ListIcon />}
+      />
+      <NavigationItem
+        href="/admin/flush-layouts"
+        label="Flush Layouts"
+        icon={<LayoutIcon />}
       />
     </Frame>
   );
