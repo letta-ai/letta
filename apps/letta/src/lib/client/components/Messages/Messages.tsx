@@ -1,7 +1,8 @@
-import React, { useEffect, useMemo, useRef } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import {
   Accordion,
   Alert,
+  Badge,
   Button,
   Code,
   HStack,
@@ -32,19 +33,52 @@ import { useInfiniteQuery } from '@tanstack/react-query';
 import type { InfiniteData } from '@tanstack/query-core';
 import { jsonrepair } from 'jsonrepair';
 import { useTranslations } from 'next-intl';
+import type { VariantProps } from 'class-variance-authority';
+import { cva } from 'class-variance-authority';
+import { cn } from '@letta-web/core-style-config';
 
-interface MessageWrapperProps {
+const messageWrapperVariants = cva('', {
+  variants: {
+    type: {
+      code: 'bg-background-grey',
+      internalMonologue: 'bg-background-violet text-background-violet-content',
+      default: 'bg-background',
+    },
+  },
+  defaultVariants: {
+    type: 'default',
+  },
+});
+
+interface MessageWrapperProps
+  extends VariantProps<typeof messageWrapperVariants> {
   header: React.ReactNode;
   children: React.ReactNode;
 }
 
-function MessageWrapper({ header, children }: MessageWrapperProps) {
+function MessageWrapper({ header, type, children }: MessageWrapperProps) {
   return (
-    <VStack fullWidth border rounded>
-      <HStack align="center" borderBottom padding="small">
-        {header}
+    <VStack fullWidth rounded gap={false}>
+      <HStack>
+        {/* eslint-disable-next-line react/forbid-component-props */}
+        <HStack
+          paddingX="small"
+          paddingY="xxsmall"
+          className={cn(messageWrapperVariants({ type }))}
+          align="center"
+        >
+          {header}
+        </HStack>
       </HStack>
-      <VStack paddingBottom="small" paddingX="small">
+      {/* eslint-disable-next-line react/forbid-component-props */}
+      <VStack
+        className={cn(
+          messageWrapperVariants({ type }),
+          type === 'code' ? 'bg-background border' : ''
+        )}
+        paddingY="small"
+        paddingX="small"
+      >
         {children}
       </VStack>
     </VStack>
@@ -65,235 +99,6 @@ function tryFallbackParseJson(str: string): unknown {
   }
 
   return null;
-}
-
-function extractMessage(
-  agentMessage: AgentMessage,
-  mode: MessagesDisplayMode
-): AgentSimulatorMessageType | null {
-  switch (agentMessage.message_type) {
-    case 'function_return':
-      if (mode === 'simple') {
-        return null;
-      }
-
-      if (mode === 'interactive') {
-        if (agentMessage.function_return.includes('"message": "None",')) {
-          return null;
-        }
-
-        return {
-          id: agentMessage.id,
-          content: (
-            <HStack border fullWidth>
-              <Accordion
-                id={agentMessage.id}
-                trigger={
-                  <HStack>
-                    <Typography>Function Result</Typography>
-                  </HStack>
-                }
-              >
-                <Code
-                  variant="minimal"
-                  showLineNumbers={false}
-                  code={agentMessage.function_return}
-                  language="javascript"
-                ></Code>
-              </Accordion>
-            </HStack>
-          ),
-          timestamp: new Date(agentMessage.date).toISOString(),
-          name: 'Agent',
-        };
-      }
-
-      return {
-        id: `${agentMessage.id}-${agentMessage.message_type}`,
-        content: (
-          <MessageWrapper
-            header={
-              <>
-                <Typography bold>Function Response</Typography>
-                <Typography
-                  bold
-                  color={
-                    agentMessage.status === 'success'
-                      ? 'positive'
-                      : 'destructive'
-                  }
-                >
-                  [{agentMessage.status}]
-                </Typography>
-              </>
-            }
-          >
-            <Code
-              variant="minimal"
-              showLineNumbers={false}
-              code={agentMessage.function_return}
-              language="javascript"
-            ></Code>
-          </MessageWrapper>
-        ),
-        timestamp: new Date(agentMessage.date).toISOString(),
-        name: 'Agent',
-      };
-    case 'function_call':
-      if (mode === 'simple' || mode === 'interactive') {
-        if (
-          agentMessage.function_call.name === 'send_message' &&
-          agentMessage.function_call.arguments
-        ) {
-          try {
-            const out = SendMessageFunctionCallSchema.safeParse(
-              tryFallbackParseJson(agentMessage.function_call.arguments)
-            );
-
-            if (!out.success) {
-              throw new Error('Unable to parse message');
-            }
-
-            return {
-              id: `${agentMessage.id}-${agentMessage.message_type}`,
-              content: (
-                <VStack>
-                  <Markdown text={out.data.message} />
-                </VStack>
-              ),
-              name: 'Agent',
-              timestamp: new Date(agentMessage.date).toISOString(),
-            };
-          } catch (_e) {
-            return {
-              id: `${agentMessage.id}-${agentMessage.message_type}`,
-              content: 'Unable to parse message',
-              timestamp: new Date(agentMessage.date).toISOString(),
-              name: 'Agent',
-            };
-          }
-        }
-
-        if (mode === 'interactive') {
-          return {
-            id: `${agentMessage.id}-${agentMessage.message_type}`,
-            content: (
-              <InlineCode
-                code={`${
-                  agentMessage.function_call.name || 'Unknown Function'
-                }()`}
-                hideCopyButton
-              />
-            ),
-            timestamp: new Date(agentMessage.date).toISOString(),
-            name: 'Agent',
-          };
-        }
-
-        return null;
-      }
-
-      return {
-        id: `${agentMessage.id}-${agentMessage.message_type}`,
-        content: (
-          <MessageWrapper
-            header={
-              <>
-                <FunctionIcon />
-                <Typography bold>{agentMessage.function_call.name}</Typography>
-              </>
-            }
-          >
-            <HStack>
-              <Code
-                variant="minimal"
-                showLineNumbers={false}
-                code={JSON.stringify(agentMessage.function_call, null, 2)}
-                language="javascript"
-              ></Code>
-            </HStack>
-          </MessageWrapper>
-        ),
-        timestamp: new Date(agentMessage.date).toISOString(),
-        name: 'Agent',
-      };
-    case 'internal_monologue':
-      if (mode === 'simple') {
-        return null;
-      }
-
-      if (mode === 'interactive') {
-        return {
-          id: `${agentMessage.id}-${agentMessage.message_type}`,
-          content: (
-            <Typography italic>{agentMessage.internal_monologue}</Typography>
-          ),
-          timestamp: new Date(agentMessage.date).toISOString(),
-          name: 'Agent',
-        };
-      }
-
-      return {
-        id: `${agentMessage.id}-${agentMessage.message_type}`,
-        content: (
-          <MessageWrapper
-            header={
-              <>
-                <ThoughtsIcon />
-                <Typography bold>Internal Monologue</Typography>
-              </>
-            }
-          >
-            <pre className="text-xs whitespace-pre-wrap">
-              {agentMessage.internal_monologue}
-            </pre>
-          </MessageWrapper>
-        ),
-        timestamp: new Date(agentMessage.date).toISOString(),
-        name: 'Agent',
-      };
-    case 'user_message': {
-      const out = UserMessageMessageSchema.safeParse(
-        JSON.parse(agentMessage.message)
-      );
-
-      if (mode === 'simple' || mode === 'interactive') {
-        if (!out.success) {
-          return null;
-        }
-
-        return {
-          id: `${agentMessage.id}-${agentMessage.message_type}`,
-          content: (
-            <VStack>
-              <Markdown text={out.data.message} />
-            </VStack>
-          ),
-          timestamp: new Date(agentMessage.date).toISOString(),
-          name: 'User',
-        };
-      }
-
-      if (!out.success) {
-        return {
-          id: `${agentMessage.id}-${agentMessage.message_type}`,
-          content: <Typography>{agentMessage.message}</Typography>,
-          timestamp: new Date(agentMessage.date).toISOString(),
-          name: 'User',
-        };
-      }
-
-      return {
-        id: `${agentMessage.id}-${agentMessage.message_type}`,
-        content: <Typography>{out.data.message}</Typography>,
-        timestamp: new Date(agentMessage.date).toISOString(),
-        name: 'User',
-      };
-    }
-
-    case 'system_message':
-      return null;
-  }
 }
 
 interface MessageProps {
@@ -390,6 +195,286 @@ export function Messages(props: MessagesProps) {
     initialPageParam: { before: '' },
   });
 
+  const extractMessage = useCallback(
+    function extractMessage(
+      agentMessage: AgentMessage,
+      mode: MessagesDisplayMode
+    ): AgentSimulatorMessageType | null {
+      switch (agentMessage.message_type) {
+        case 'function_return':
+          if (mode === 'simple') {
+            return null;
+          }
+
+          if (mode === 'interactive') {
+            if (agentMessage.function_return.includes('"message": "None",')) {
+              return null;
+            }
+
+            return {
+              id: agentMessage.id,
+              content: (
+                <HStack border fullWidth>
+                  <Accordion
+                    id={agentMessage.id}
+                    trigger={
+                      <HStack>
+                        <Typography>Function Result</Typography>
+                      </HStack>
+                    }
+                  >
+                    <Code
+                      fontSize="small"
+                      variant="minimal"
+                      showLineNumbers={false}
+                      code={agentMessage.function_return}
+                      language="javascript"
+                    ></Code>
+                  </Accordion>
+                </HStack>
+              ),
+              timestamp: new Date(agentMessage.date).toISOString(),
+              name: 'Agent',
+            };
+          }
+
+          return {
+            id: `${agentMessage.id}-${agentMessage.message_type}`,
+            content: (
+              <MessageWrapper
+                type="code"
+                header={
+                  <>
+                    <Typography bold>Function Response</Typography>
+                    <Badge
+                      content={agentMessage.status}
+                      color={
+                        agentMessage.status === 'success'
+                          ? 'success'
+                          : 'destructive'
+                      }
+                    ></Badge>
+                  </>
+                }
+              >
+                <Code
+                  fontSize="small"
+                  variant="minimal"
+                  showLineNumbers={false}
+                  code={agentMessage.function_return}
+                  language="javascript"
+                ></Code>
+              </MessageWrapper>
+            ),
+            timestamp: new Date(agentMessage.date).toISOString(),
+            name: 'Agent',
+          };
+        case 'function_call': {
+          const parsedFunctionCallArguments = tryFallbackParseJson(
+            agentMessage.function_call.arguments || ''
+          );
+
+          if (mode === 'simple' || mode === 'interactive') {
+            if (
+              agentMessage.function_call.name === 'send_message' &&
+              agentMessage.function_call.arguments
+            ) {
+              try {
+                const out = SendMessageFunctionCallSchema.safeParse(
+                  tryFallbackParseJson(
+                    agentMessage.function_call.arguments || ''
+                  )
+                );
+
+                if (!out.success) {
+                  throw new Error('Unable to parse message');
+                }
+
+                return {
+                  id: `${agentMessage.id}-${agentMessage.message_type}`,
+                  content: (
+                    <VStack>
+                      <Markdown text={out.data.message} />
+                    </VStack>
+                  ),
+                  name: 'Agent',
+                  timestamp: new Date(agentMessage.date).toISOString(),
+                };
+              } catch (_e) {
+                return {
+                  id: `${agentMessage.id}-${agentMessage.message_type}`,
+                  content: '',
+                  timestamp: new Date(agentMessage.date).toISOString(),
+                  name: 'Agent',
+                };
+              }
+            }
+
+            if (mode === 'interactive') {
+              return {
+                id: `${agentMessage.id}-${agentMessage.message_type}`,
+                content: (
+                  <InlineCode
+                    code={`${
+                      agentMessage.function_call.name || 'Unknown Function'
+                    }()`}
+                    hideCopyButton
+                  />
+                ),
+                timestamp: new Date(agentMessage.date).toISOString(),
+                name: 'Agent',
+              };
+            }
+
+            return null;
+          }
+
+          return {
+            id: `${agentMessage.id}-${agentMessage.message_type}`,
+            content: (
+              <MessageWrapper
+                type="code"
+                header={
+                  <>
+                    <FunctionIcon />
+                    <Typography bold>
+                      {agentMessage.function_call.name}
+                    </Typography>
+                  </>
+                }
+              >
+                <Code
+                  fontSize="small"
+                  variant="minimal"
+                  showLineNumbers={false}
+                  code={JSON.stringify(
+                    {
+                      ...agentMessage.function_call,
+                      arguments:
+                        parsedFunctionCallArguments ||
+                        agentMessage.function_call.arguments,
+                    },
+                    null,
+                    2
+                  )}
+                  language="javascript"
+                ></Code>
+              </MessageWrapper>
+            ),
+            timestamp: new Date(agentMessage.date).toISOString(),
+            name: 'Agent',
+          };
+        }
+        case 'internal_monologue':
+          if (mode === 'simple') {
+            return null;
+          }
+
+          if (mode === 'interactive') {
+            return {
+              id: `${agentMessage.id}-${agentMessage.message_type}`,
+              content: (
+                <Typography italic>
+                  {agentMessage.internal_monologue}
+                </Typography>
+              ),
+              timestamp: new Date(agentMessage.date).toISOString(),
+              name: 'Agent',
+            };
+          }
+
+          return {
+            id: `${agentMessage.id}-${agentMessage.message_type}`,
+            content: (
+              <MessageWrapper
+                type="internalMonologue"
+                header={
+                  <>
+                    <ThoughtsIcon />
+                    <Typography bold>Internal Monologue</Typography>
+                  </>
+                }
+              >
+                <Typography>{agentMessage.internal_monologue}</Typography>
+              </MessageWrapper>
+            ),
+            timestamp: new Date(agentMessage.date).toISOString(),
+            name: 'Agent',
+          };
+        case 'user_message': {
+          const out = UserMessageMessageSchema.safeParse(
+            JSON.parse(agentMessage.message)
+          );
+
+          if (mode === 'simple' || mode === 'interactive') {
+            if (!out.success) {
+              return null;
+            }
+
+            return {
+              id: `${agentMessage.id}-${agentMessage.message_type}`,
+              content: (
+                <VStack>
+                  <Markdown text={out.data.message} />
+                </VStack>
+              ),
+              timestamp: new Date(agentMessage.date).toISOString(),
+              name: 'User',
+            };
+          }
+
+          if (!out.success) {
+            const tryParseResp = tryFallbackParseJson(agentMessage.message);
+
+            if (tryParseResp) {
+              return {
+                id: `${agentMessage.id}-${agentMessage.message_type}`,
+                content: (
+                  <MessageWrapper
+                    type="code"
+                    header={
+                      <>
+                        <Typography bold>{t('hiddenUserMessage')}</Typography>
+                      </>
+                    }
+                  >
+                    <Code
+                      fontSize="small"
+                      variant="minimal"
+                      showLineNumbers={false}
+                      code={JSON.stringify(tryParseResp, null, 2)}
+                      language="javascript"
+                    ></Code>
+                  </MessageWrapper>
+                ),
+                timestamp: new Date(agentMessage.date).toISOString(),
+                name: 'User',
+              };
+            }
+
+            return {
+              id: `${agentMessage.id}-${agentMessage.message_type}`,
+              content: <Typography>{agentMessage.message}</Typography>,
+              timestamp: new Date(agentMessage.date).toISOString(),
+              name: 'User',
+            };
+          }
+
+          return {
+            id: `${agentMessage.id}-${agentMessage.message_type}`,
+            content: <Typography>{out.data.message}</Typography>,
+            timestamp: new Date(agentMessage.date).toISOString(),
+            name: 'User',
+          };
+        }
+
+        case 'system_message':
+          return null;
+      }
+    },
+    [t]
+  );
+
   const messageGroups = useMemo(() => {
     if (!data) {
       return [];
@@ -430,7 +515,7 @@ export function Messages(props: MessagesProps) {
     });
 
     return groupedMessages;
-  }, [mode, data]);
+  }, [extractMessage, mode, data]);
 
   useEffect(() => {
     if (ref.current) {

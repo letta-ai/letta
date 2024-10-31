@@ -429,15 +429,22 @@ FormMessage.displayName = 'FormMessage';
 type FormActionsProps = PropsWithChildren<{
   startAction?: React.ReactNode;
   errorMessage?: string;
+  align?: 'end' | 'start';
 }>;
 
 export function FormActions({
   children,
   errorMessage,
+  align = 'end',
   startAction,
 }: FormActionsProps) {
   return (
-    <div className="flex gap-4 w-full justify-between">
+    <div
+      className={cn(
+        'flex gap-4 w-full justify-between',
+        align === 'start' ? 'flex-row-reverse' : 'flex-row'
+      )}
+    >
       {startAction ? startAction : <div />}
       <HStack align="center">
         {errorMessage && (
@@ -454,7 +461,7 @@ export function FormActions({
 const formVariants = cva('contents', {
   variants: {
     variant: {
-      contained: 'flex flex-col gap-6 w-full max-w-[500px]',
+      contained: 'flex flex-col gap-6 w-full max-w-[610px]',
     },
   },
   defaultVariants: {},

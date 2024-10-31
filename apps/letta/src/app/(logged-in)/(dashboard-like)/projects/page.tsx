@@ -32,6 +32,7 @@ import { ComputerIcon } from '@letta-web/component-library';
 import { getIsLocalServiceOnline } from '$letta/client/local-project-manager/getIsLocalServerOnline/getIsLocalServerOnline';
 import { LOCAL_PROJECT_SERVER_PORT } from '$letta/constants';
 import { nicelyFormattedDateAndTime } from '@letta-web/helpful-client-utils';
+import Link from 'next/link';
 
 function useIsLocalServiceOnline() {
   const [isLocalServiceOnline, setIsOnline] = React.useState(false);
@@ -165,7 +166,7 @@ function CreateProjectDialog() {
           <Button
             data-testid="create-project-button"
             preIcon={<PlusIcon />}
-            color="primary"
+            color="secondary"
             label={t('createProjectDialog.triggerButton')}
           />
         }
@@ -200,38 +201,41 @@ function ProjectCard(props: ProjectCardProps) {
   const t = useTranslations('projects/page');
 
   return (
-    <Card>
-      <VStack fullWidth>
+    <Link href={url}>
+      {/* eslint-disable-next-line react/forbid-component-props */}
+      <Card className="hover:bg-background-grey">
         <VStack fullWidth>
-          <Avatar name={projectName} />
-          <VStack gap="text">
-            <Tooltip asChild content={projectName}>
-              <Typography align="left" noWrap fullWidth overflow="ellipsis">
-                {projectName}
-              </Typography>
-            </Tooltip>
-            <HStack>
-              {
-                <Typography variant="body2" color="muted">
-                  {lastUpdatedAt
-                    ? t('projectsList.projectItem.lastUpdatedAt', {
-                        date: nicelyFormattedDateAndTime(lastUpdatedAt),
-                      })
-                    : t('projectsList.projectItem.noLastUpdatedAt')}
+          <VStack gap="medium" fullWidth>
+            <Avatar size="medium" name={projectName} />
+            <VStack gap="text">
+              <Tooltip asChild content={projectName}>
+                <Typography
+                  bold
+                  align="left"
+                  variant="body"
+                  noWrap
+                  fullWidth
+                  overflow="ellipsis"
+                >
+                  {projectName}
                 </Typography>
-              }
-            </HStack>
+              </Tooltip>
+              <HStack>
+                {
+                  <Typography variant="body" color="muted">
+                    {lastUpdatedAt
+                      ? t('projectsList.projectItem.lastUpdatedAt', {
+                          date: nicelyFormattedDateAndTime(lastUpdatedAt),
+                        })
+                      : t('projectsList.projectItem.noLastUpdatedAt')}
+                  </Typography>
+                }
+              </HStack>
+            </VStack>
           </VStack>
         </VStack>
-        <Button
-          color="tertiary"
-          align="center"
-          fullWidth
-          label={t('projectsList.projectItem.viewButton')}
-          href={url}
-        />
-      </VStack>
-    </Card>
+      </Card>
+    </Link>
   );
 }
 

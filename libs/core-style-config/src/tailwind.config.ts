@@ -69,6 +69,14 @@ export function buildConfig(appDir: string): Config {
           border: 'hsl(var(--border))',
           input: 'hsl(var(--input))',
           ring: 'hsl(var(--ring))',
+          'background-violet': {
+            DEFAULT: 'hsl(var(--background-violet))',
+            content: 'hsl(var(--background-violet-content))',
+          },
+          'background-success': {
+            DEFAULT: 'hsl(var(--background-success))',
+            content: 'hsl(var(--background-success-content))',
+          },
           background: {
             hover: 'hsl(var(--background-hover))',
             DEFAULT: 'hsl(var(--background))',

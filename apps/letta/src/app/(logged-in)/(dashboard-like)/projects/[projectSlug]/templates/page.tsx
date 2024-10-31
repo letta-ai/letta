@@ -79,7 +79,7 @@ function AgentTemplateList(props: ProjectStagingListProps) {
       {hasNextPage && (
         <Button
           fullWidth
-          color="tertiary"
+          color="secondary"
           label="Load more agents"
           onClick={() => {
             void fetchNextPage();
@@ -102,6 +102,7 @@ function TemplatesPage() {
       title={t('title')}
       actions={
         <Button
+          color="secondary"
           href={`/projects/${projectSlug}/templates/new`}
           preIcon={<PlusIcon />}
           label={t('createTemplate')}

@@ -43,6 +43,10 @@ export function isSupportedLanguage(
 
 const codeVariants = cva('font-mono', {
   variants: {
+    fontSize: {
+      default: 'text-sm',
+      small: 'text-xs',
+    },
     variant: {
       default: 'rounded border',
       minimal: '',
@@ -79,6 +83,7 @@ export function Code(props: CodeProps) {
   const {
     language,
     code,
+    fontSize,
     variant,
     testId,
     onSetCode,
@@ -124,7 +129,7 @@ export function Code(props: CodeProps) {
 
   return (
     <Frame
-      className={cn(codeVariants({ variant }))}
+      className={cn(codeVariants({ variant, fontSize }))}
       fullHeight={fullHeight}
       fullWidth
     >
