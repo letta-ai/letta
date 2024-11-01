@@ -21,6 +21,7 @@ import {
   Typography,
   useDashboardNavigationItems,
   VStack,
+  CompanyIcon,
 } from '@letta-web/component-library';
 import { useCurrentUser } from '$letta/client/hooks';
 import { usePathname } from 'next/navigation';
@@ -70,7 +71,7 @@ function AdminNav() {
 
   return (
     <NavButton
-      id="admi"
+      id="admin"
       href="/admin"
       label={t('nav.admin')}
       icon={<BirdIcon />}
@@ -184,6 +185,12 @@ function SecondaryMenuItems() {
           href="/settings"
           label="Settings"
           icon={<CogIcon />}
+        />
+        <NavButton
+          id="organization"
+          href="/organization"
+          label="Organization"
+          icon={<CompanyIcon />}
         />
         <AdminNav />
         <NavButton

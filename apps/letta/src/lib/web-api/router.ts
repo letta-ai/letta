@@ -1,7 +1,7 @@
 import * as userRouter from './user/userRouter';
 import { projectsRouter } from './projects/projectsRouter';
 import * as apiKeysRouter from './api-keys/apiKeysRouter';
-import * as organizationsRouter from './organizations/organizationsRouter';
+import { organizationsRouter } from './organizations/organizationsRouter';
 import * as adminWhitelistedEmailsRouter from './admin/whitelisted-emails/whitelistedEmailsRouter';
 import * as featureFlagsRouter from './feature-flags/featureFlagsRouter';
 import { adePreferencesRouter } from './ade-preferences/adePreferencesRouter';
