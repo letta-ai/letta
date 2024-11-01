@@ -91,7 +91,9 @@ async function job() {
   });
 
   await project.save();
+}
 
+async function updateTypes() {
   // get types file replace LettaResponse_properties_FunctionCall with LettaResponse_properties_FunctionCall[]
 
   const typesFiles = fs.readFileSync(
@@ -125,5 +127,7 @@ async function job() {
     newTypesFile
   );
 }
+
+updateTypes().catch(console.error);
 
 job().catch(console.error);

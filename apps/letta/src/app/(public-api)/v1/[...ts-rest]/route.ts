@@ -117,6 +117,8 @@ const handler = createNextHandler(sdkContracts, sdkRouter, {
 
     const errorId = Sentry.captureException(error);
 
+    console.error('Unhandled error', error);
+
     return TsRestResponse.fromJson(
       {
         message: 'An unhandled error has happened, feel free to report.',
