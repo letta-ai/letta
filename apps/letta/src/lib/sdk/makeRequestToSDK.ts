@@ -1,11 +1,7 @@
 import { EventSource } from 'extended-eventsource';
 import { environment } from '@letta-web/environmental-variables';
 import axios, { isAxiosError } from 'axios';
-import type {
-  LettaMessage,
-  LettaRequest,
-  LettaResponse,
-} from '@letta-web/letta-agents-api';
+import type { LettaRequest, LettaResponse } from '@letta-web/letta-agents-api';
 import { RESTRICTED_ROUTE_BASE_PATHS } from '@letta-web/letta-agents-api';
 import { createInferenceTransaction } from '$letta/server/inferenceTransactions/inferenceTransactions';
 import * as Sentry from '@sentry/nextjs';
@@ -106,8 +102,8 @@ async function handleEventStreamRequest(options: RequestOptions) {
           }
 
           try {
-            const message = JSON.parse(e.data) as LettaMessage;
-            referenceId = message.id;
+            const message = JSON.parse(e.data) as LettaResponse['Message'];
+            referenceId = message?.id || '';
           } catch (_e) {
             console.error(_e);
             // do nothing
@@ -256,14 +252,12 @@ export async function makeRequestToSDK(
 
     if (isCreateMessageRequest(options)) {
       const agentId = pathname.split('/')[3];
-      const createMessageRes = data as LettaResponse;
-
       await createInferenceTransaction({
         agentId,
         startedAt: startTime,
         endedAt: new Date(),
         organizationId,
-        referenceId: createMessageRes.messages.map((m) => m.id).join(','),
+        referenceId: '',
         outputTokens: data.usage.completion_tokens,
         inputTokens: data.usage.prompt_tokens,
         stepCount: data.usage.step_count,

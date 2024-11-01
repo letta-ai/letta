@@ -134,14 +134,14 @@ async function createUserAndOrganization(
   const lettaAgentsUser = await AdminService.createUser({
     requestBody: {
       name: userData.name,
-      org_id: lettaOrganizationId,
+      organization_id: lettaOrganizationId,
     },
   });
 
   if (!lettaAgentsUser?.id) {
     // delete organization if user creation fails
     await Promise.all([
-      AdminService.deleteOrganization({
+      AdminService.deleteOrganizationById({
         orgId: lettaOrganizationId,
       }),
       db.delete(organizations).where(eq(organizations.id, organizationId)),

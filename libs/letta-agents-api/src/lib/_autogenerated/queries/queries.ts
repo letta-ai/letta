@@ -46,15 +46,17 @@ export const useToolsServiceGetTool = <
 >(
   {
     toolId,
+    userId,
   }: {
     toolId: string;
+    userId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
 ) =>
   useQuery<TData, TError>({
-    queryKey: Common.UseToolsServiceGetToolKeyFn({ toolId }, queryKey),
-    queryFn: () => ToolsService.getTool({ toolId }) as TData,
+    queryKey: Common.UseToolsServiceGetToolKeyFn({ toolId, userId }, queryKey),
+    queryFn: () => ToolsService.getTool({ toolId, userId }) as TData,
     ...options,
   });
 export const useToolsServiceGetToolIdByName = <
@@ -86,16 +88,23 @@ export const useToolsServiceListTools = <
   TQueryKey extends Array<unknown> = unknown[]
 >(
   {
+    cursor,
+    limit,
     userId,
   }: {
+    cursor?: string;
+    limit?: number;
     userId?: string;
   } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
 ) =>
   useQuery<TData, TError>({
-    queryKey: Common.UseToolsServiceListToolsKeyFn({ userId }, queryKey),
-    queryFn: () => ToolsService.listTools({ userId }) as TData,
+    queryKey: Common.UseToolsServiceListToolsKeyFn(
+      { cursor, limit, userId },
+      queryKey
+    ),
+    queryFn: () => ToolsService.listTools({ cursor, limit, userId }) as TData,
     ...options,
   });
 export const useSourcesServiceGetSource = <
@@ -283,6 +292,30 @@ export const useAgentsServiceGetAgent = <
       queryKey
     ),
     queryFn: () => AgentsService.getAgent({ agentId, userId }) as TData,
+    ...options,
+  });
+export const useAgentsServiceGetToolsFromAgent = <
+  TData = Common.AgentsServiceGetToolsFromAgentDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[]
+>(
+  {
+    agentId,
+    userId,
+  }: {
+    agentId: string;
+    userId?: string;
+  },
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
+) =>
+  useQuery<TData, TError>({
+    queryKey: Common.UseAgentsServiceGetToolsFromAgentKeyFn(
+      { agentId, userId },
+      queryKey
+    ),
+    queryFn: () =>
+      AgentsService.getToolsFromAgent({ agentId, userId }) as TData,
     ...options,
   });
 export const useAgentsServiceGetAgentSources = <
@@ -785,7 +818,6 @@ export const useToolsServiceCreateTool = <
       TError,
       {
         requestBody: ToolCreate;
-        update?: boolean;
         userId?: string;
       },
       TContext
@@ -798,15 +830,13 @@ export const useToolsServiceCreateTool = <
     TError,
     {
       requestBody: ToolCreate;
-      update?: boolean;
       userId?: string;
     },
     TContext
   >({
-    mutationFn: ({ requestBody, update, userId }) =>
+    mutationFn: ({ requestBody, userId }) =>
       ToolsService.createTool({
         requestBody,
-        update,
         userId,
       }) as unknown as Promise<TData>,
     ...options,
@@ -1611,7 +1641,6 @@ export const useToolsServiceDeleteTool = <
       TError,
       {
         toolId: string;
-        userId?: string;
       },
       TContext
     >,
@@ -1623,12 +1652,11 @@ export const useToolsServiceDeleteTool = <
     TError,
     {
       toolId: string;
-      userId?: string;
     },
     TContext
   >({
-    mutationFn: ({ toolId, userId }) =>
-      ToolsService.deleteTool({ toolId, userId }) as unknown as Promise<TData>,
+    mutationFn: ({ toolId }) =>
+      ToolsService.deleteTool({ toolId }) as unknown as Promise<TData>,
     ...options,
   });
 export const useSourcesServiceDeleteSource = <
@@ -1947,8 +1975,8 @@ export const useAdminServiceDeleteApiKey = <
       AdminService.deleteApiKey({ apiKey }) as unknown as Promise<TData>,
     ...options,
   });
-export const useAdminServiceDeleteOrganization = <
-  TData = Common.AdminServiceDeleteOrganizationMutationResult,
+export const useAdminServiceDeleteOrganizationById = <
+  TData = Common.AdminServiceDeleteOrganizationByIdMutationResult,
   TError = unknown,
   TContext = unknown
 >(
@@ -1973,11 +2001,13 @@ export const useAdminServiceDeleteOrganization = <
     TContext
   >({
     mutationFn: ({ orgId }) =>
-      AdminService.deleteOrganization({ orgId }) as unknown as Promise<TData>,
+      AdminService.deleteOrganizationById({
+        orgId,
+      }) as unknown as Promise<TData>,
     ...options,
   });
-export const useOrganizationServiceDeleteOrganization = <
-  TData = Common.OrganizationServiceDeleteOrganizationMutationResult,
+export const useOrganizationServiceDeleteOrganizationById = <
+  TData = Common.OrganizationServiceDeleteOrganizationByIdMutationResult,
   TError = unknown,
   TContext = unknown
 >(
@@ -2002,7 +2032,7 @@ export const useOrganizationServiceDeleteOrganization = <
     TContext
   >({
     mutationFn: ({ orgId }) =>
-      OrganizationService.deleteOrganization({
+      OrganizationService.deleteOrganizationById({
         orgId,
       }) as unknown as Promise<TData>,
     ...options,

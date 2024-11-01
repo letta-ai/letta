@@ -41,7 +41,10 @@ import {
   HStack,
 } from '@letta-web/component-library';
 import { useCurrentAgent } from '../hooks';
-import type { AgentState, Tool_Output } from '@letta-web/letta-agents-api';
+import type {
+  AgentState,
+  letta__schemas__tool__Tool,
+} from '@letta-web/letta-agents-api';
 import { useAgentsServiceAddToolToAgent } from '@letta-web/letta-agents-api';
 import { useAgentsServiceRemoveToolFromAgent } from '@letta-web/letta-agents-api';
 import {
@@ -494,6 +497,7 @@ function ToolCreator() {
       mutate({
         requestBody: {
           tags: [],
+          source_type: 'python',
           name: values.name,
           source_code: values.sourceCode,
         },
@@ -545,7 +549,7 @@ const editToolSchema = z.object({
 });
 
 interface ToolEditorProps {
-  initialTool?: Tool_Output;
+  initialTool?: letta__schemas__tool__Tool;
   isLoading: boolean;
 }
 
@@ -577,7 +581,6 @@ function ToolEditor(props: ToolEditorProps) {
       mutate({
         toolId: initialTool?.id || '',
         requestBody: {
-          id: initialTool?.id || '',
           description: values.description,
           source_code: values.sourceCode,
         },

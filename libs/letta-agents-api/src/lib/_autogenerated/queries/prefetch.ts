@@ -19,13 +19,15 @@ export const prefetchUseToolsServiceGetTool = (
   queryClient: QueryClient,
   {
     toolId,
+    userId,
   }: {
     toolId: string;
+    userId?: string;
   }
 ) =>
   queryClient.prefetchQuery({
-    queryKey: Common.UseToolsServiceGetToolKeyFn({ toolId }),
-    queryFn: () => ToolsService.getTool({ toolId }),
+    queryKey: Common.UseToolsServiceGetToolKeyFn({ toolId, userId }),
+    queryFn: () => ToolsService.getTool({ toolId, userId }),
   });
 export const prefetchUseToolsServiceGetToolIdByName = (
   queryClient: QueryClient,
@@ -44,14 +46,18 @@ export const prefetchUseToolsServiceGetToolIdByName = (
 export const prefetchUseToolsServiceListTools = (
   queryClient: QueryClient,
   {
+    cursor,
+    limit,
     userId,
   }: {
+    cursor?: string;
+    limit?: number;
     userId?: string;
   } = {}
 ) =>
   queryClient.prefetchQuery({
-    queryKey: Common.UseToolsServiceListToolsKeyFn({ userId }),
-    queryFn: () => ToolsService.listTools({ userId }),
+    queryKey: Common.UseToolsServiceListToolsKeyFn({ cursor, limit, userId }),
+    queryFn: () => ToolsService.listTools({ cursor, limit, userId }),
   });
 export const prefetchUseSourcesServiceGetSource = (
   queryClient: QueryClient,
@@ -179,6 +185,23 @@ export const prefetchUseAgentsServiceGetAgent = (
   queryClient.prefetchQuery({
     queryKey: Common.UseAgentsServiceGetAgentKeyFn({ agentId, userId }),
     queryFn: () => AgentsService.getAgent({ agentId, userId }),
+  });
+export const prefetchUseAgentsServiceGetToolsFromAgent = (
+  queryClient: QueryClient,
+  {
+    agentId,
+    userId,
+  }: {
+    agentId: string;
+    userId?: string;
+  }
+) =>
+  queryClient.prefetchQuery({
+    queryKey: Common.UseAgentsServiceGetToolsFromAgentKeyFn({
+      agentId,
+      userId,
+    }),
+    queryFn: () => AgentsService.getToolsFromAgent({ agentId, userId }),
   });
 export const prefetchUseAgentsServiceGetAgentSources = (
   queryClient: QueryClient,

@@ -52,6 +52,8 @@ import type {
   GetAgentResponse,
   DeleteAgentData,
   DeleteAgentResponse,
+  GetToolsFromAgentData,
+  GetToolsFromAgentResponse,
   AddToolToAgentData,
   AddToolToAgentResponse,
   RemoveToolFromAgentData,
@@ -117,8 +119,8 @@ import type {
   ListOrgsResponse,
   CreateOrganizationData,
   CreateOrganizationResponse,
-  DeleteOrganizationData,
-  DeleteOrganizationResponse,
+  DeleteOrganizationByIdData,
+  DeleteOrganizationByIdResponse,
   AuthenticateUserV1AuthPostData,
   AuthenticateUserV1AuthPostResponse,
 } from './types.gen';
@@ -129,7 +131,6 @@ export class ToolsService {
    * Delete a tool by name
    * @param data The data for the request.
    * @param data.toolId
-   * @param data.userId
    * @returns unknown Successful Response
    * @throws ApiError
    */
@@ -155,7 +156,8 @@ export class ToolsService {
    * Get a tool by ID
    * @param data The data for the request.
    * @param data.toolId
-   * @returns Tool_Output Successful Response
+   * @param data.userId
+   * @returns letta__schemas__tool__Tool Successful Response
    * @throws ApiError
    */
   public static getTool(
@@ -182,7 +184,7 @@ export class ToolsService {
    * @param data.toolId
    * @param data.requestBody
    * @param data.userId
-   * @returns Tool_Output Successful Response
+   * @returns letta__schemas__tool__Tool Successful Response
    * @throws ApiError
    */
   public static updateTool(
@@ -231,11 +233,13 @@ export class ToolsService {
   }
 
   /**
-   * List All Tools
-   * Get a list of all tools available to agents created by a user
+   * List Tools
+   * Get a list of all tools available to agents belonging to the org of the user
    * @param data The data for the request.
+   * @param data.cursor
+   * @param data.limit
    * @param data.userId
-   * @returns Tool_Output Successful Response
+   * @returns letta__schemas__tool__Tool Successful Response
    * @throws ApiError
    */
   public static listTools(
@@ -245,6 +249,10 @@ export class ToolsService {
     return __request(OpenAPI, {
       method: 'GET',
       url: '/v1/tools/',
+      query: {
+        cursor: data.cursor,
+        limit: data.limit,
+      },
       errors: {
         422: 'Validation Error',
       },
@@ -257,9 +265,8 @@ export class ToolsService {
    * Create a new tool
    * @param data The data for the request.
    * @param data.requestBody
-   * @param data.update
    * @param data.userId
-   * @returns Tool_Output Successful Response
+   * @returns letta__schemas__tool__Tool Successful Response
    * @throws ApiError
    */
   public static createTool(
@@ -269,9 +276,6 @@ export class ToolsService {
     return __request(OpenAPI, {
       method: 'POST',
       url: '/v1/tools/',
-      query: {
-        update: data.update,
-      },
       body: data.requestBody,
       mediaType: 'application/json',
       errors: {
@@ -770,8 +774,34 @@ export class AgentsService {
   }
 
   /**
+   * Get Tools From Agent
+   * Get tools from an existing agent
+   * @param data The data for the request.
+   * @param data.agentId
+   * @param data.userId
+   * @returns letta__schemas__tool__Tool Successful Response
+   * @throws ApiError
+   */
+  public static getToolsFromAgent(
+    data: GetToolsFromAgentData,
+    headers?: { user_id: string }
+  ): CancelablePromise<GetToolsFromAgentResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/agents/{agent_id}/tools',
+      path: {
+        agent_id: data.agentId,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
    * Add Tool To Agent
-   * Add tools to an exsiting agent
+   * Add tools to an existing agent
    * @param data The data for the request.
    * @param data.agentId
    * @param data.toolId
@@ -799,7 +829,7 @@ export class AgentsService {
 
   /**
    * Remove Tool From Agent
-   * Add tools to an exsiting agent
+   * Add tools to an existing agent
    * @param data The data for the request.
    * @param data.agentId
    * @param data.toolId
@@ -1121,7 +1151,7 @@ export class AgentsService {
    * @param data.agentId
    * @param data.requestBody
    * @param data.userId
-   * @returns LettaResponse Successful Response
+   * @returns unknown Successful response
    * @throws ApiError
    */
   public static createAgentMessage(
@@ -1487,7 +1517,7 @@ export class HealthService {
 
 export class UsersService {
   /**
-   * Get All Users
+   * List Users
    * Get a list of all users in the database
    * @param data The data for the request.
    * @param data.cursor
@@ -1637,7 +1667,7 @@ export class UsersService {
 
 export class AdminService {
   /**
-   * Get All Users
+   * List Users
    * Get a list of all users in the database
    * @param data The data for the request.
    * @param data.cursor
@@ -1842,10 +1872,10 @@ export class AdminService {
    * @returns Organization Successful Response
    * @throws ApiError
    */
-  public static deleteOrganization(
-    data: DeleteOrganizationData,
+  public static deleteOrganizationById(
+    data: DeleteOrganizationByIdData,
     headers?: { user_id: string }
-  ): CancelablePromise<DeleteOrganizationResponse> {
+  ): CancelablePromise<DeleteOrganizationByIdResponse> {
     return __request(OpenAPI, {
       method: 'DELETE',
       url: '/v1/admin/orgs/',
@@ -1919,10 +1949,10 @@ export class OrganizationService {
    * @returns Organization Successful Response
    * @throws ApiError
    */
-  public static deleteOrganization(
-    data: DeleteOrganizationData,
+  public static deleteOrganizationById(
+    data: DeleteOrganizationByIdData,
     headers?: { user_id: string }
-  ): CancelablePromise<DeleteOrganizationResponse> {
+  ): CancelablePromise<DeleteOrganizationByIdResponse> {
     return __request(OpenAPI, {
       method: 'DELETE',
       url: '/v1/admin/orgs/',
