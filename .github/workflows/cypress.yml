@@ -66,7 +66,7 @@ jobs:
       postgres:
         image: postgres
         ports:
-          - 5432:5432
+          - 5433:5432
         env:
           POSTGRES_DB: postgres
           POSTGRES_PASSWORD: postgres
@@ -151,7 +151,7 @@ jobs:
         env:
           CYPRESS_RECORD_KEY: ${{ secrets.CYPRESS_RECORD_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
+          DATABASE_URL: postgres://postgres:postgres@localhost:5433/postgres
           REDIS_HOST: localhost
           REDIS_PORT: 6379
           CYPRESS_GOOGLE_CLIENT_ID: ${{ secrets.CYPRESS_GOOGLE_CLIENT_ID }}
