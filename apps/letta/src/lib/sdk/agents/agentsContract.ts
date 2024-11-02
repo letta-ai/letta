@@ -132,6 +132,10 @@ const versionAgentTemplateContract = c.mutation({
 /* migrate an agent to a new versioned agent template */
 const MigrateAgentToNewVersionedAgentTemplateBodySchema = z.object({
   to_template: z.string(),
+  variables: z.record(z.string()).optional().openapi({
+    description:
+      'If you chose to not preserve core memories, you should provide the new variables for the core memories',
+  }),
   preserve_core_memories: z.boolean(),
 });
 

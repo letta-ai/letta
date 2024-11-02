@@ -1,6 +1,13 @@
 import { z } from 'zod';
 import type { PanelTemplate } from '@letta-web/component-library';
 import {
+  CogIcon,
+  FormField,
+  FormProvider,
+  Input,
+  useForm,
+} from '@letta-web/component-library';
+import {
   DropdownMenu,
   DropdownMenuItem,
   SwapIcon,
@@ -24,6 +31,7 @@ import { useCurrentAgent, useSyncUpdateCurrentAgent } from '../hooks';
 import { useEffect, useState } from 'react';
 import React, { useCallback, useMemo } from 'react';
 import { nicelyFormattedDateAndTime } from '@letta-web/helpful-client-utils';
+import { zodResolver } from '@hookform/resolvers/zod';
 
 function useUpdateMemory(payload: AdvancedEditorPayload) {
   const { type, label } = payload;
@@ -204,6 +212,84 @@ function AdvancedCoreMemoryEditor(props: AdvancedCoreMemoryEditorProps) {
   );
 }
 
+interface MemorySettingsDialogProps {
+  label: string;
+  name: string;
+}
+
+const memorySettingsFormSchema = z.object({
+  name: z.string(),
+});
+
+function MemorySettingsDialog(props: MemorySettingsDialogProps) {
+  const { label, name } = props;
+
+  const form = useForm<z.infer<typeof memorySettingsFormSchema>>({
+    resolver: zodResolver(memorySettingsFormSchema),
+    defaultValues: {
+      name,
+    },
+  });
+
+  const t = useTranslations('ADE/EditCoreMemoriesPanel');
+
+  const { syncUpdateCurrentAgent, isDebouncing, isUpdating } =
+    useSyncUpdateCurrentAgent();
+
+  const handleSubmit = useCallback(
+    (values: z.infer<typeof memorySettingsFormSchema>) => {
+      syncUpdateCurrentAgent((prev) => ({
+        memory: {
+          ...prev.memory,
+          memory: {
+            ...prev.memory?.memory,
+            [label || '']: {
+              ...prev.memory?.memory?.[label || ''],
+              value: prev.memory?.memory?.[label || '']?.value || '',
+              name: values.name,
+            },
+          },
+        },
+      }));
+    },
+    [label, syncUpdateCurrentAgent]
+  );
+
+  return (
+    <FormProvider {...form}>
+      <Dialog
+        title={t('MemorySettingsDialog.title', {
+          label,
+        })}
+        onSubmit={form.handleSubmit(handleSubmit)}
+        isConfirmBusy={isUpdating || isDebouncing}
+        trigger={
+          <Button
+            preIcon={<CogIcon />}
+            label={t('MemorySettingsDialog.trigger')}
+            color="tertiary"
+            type="button"
+            size="small"
+          />
+        }
+      >
+        <FormField
+          render={({ field }) => (
+            <Input
+              fullWidth
+              {...field}
+              label={t('MemorySettingsDialog.name.label')}
+              placeholder={t('MemorySettingsDialog.name.placeholder')}
+              type="text"
+            />
+          )}
+          name="name"
+        />
+      </Dialog>
+    </FormProvider>
+  );
+}
+
 interface AdvancedEditorPayload {
   label: string;
   name: string;
@@ -263,6 +349,9 @@ function EditMemoryForm(props: EditMemoryFormProps) {
               </Typography>
             )}
           </HStack>
+        </HStack>
+        <HStack justify="spaceBetween">
+          <MemorySettingsDialog name={name} label={label} />
           <Button
             preIcon={<ExpandContentIcon />}
             label={t('expandContent')}

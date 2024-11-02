@@ -14,6 +14,7 @@ export function useSyncUpdateCurrentAgent() {
   const [lastUpdatedAt, setLastUpdatedAt] = useState<string | null>();
   const [error, setError] = useState<boolean>(false);
   const [isUpdating, setIsUpdating] = useState<boolean>(false);
+  const [isDebouncing, setIsDebouncing] = useState<boolean>(false);
 
   const { mutate: updateAgent } = useAgentsServiceUpdateAgent();
 
@@ -32,6 +33,8 @@ export function useSyncUpdateCurrentAgent() {
 
           const newAgentData = updater(oldData);
 
+          setIsDebouncing(true);
+
           if (debouncer.current) {
             clearTimeout(debouncer.current);
           }
@@ -39,6 +42,7 @@ export function useSyncUpdateCurrentAgent() {
           debouncer.current = setTimeout(() => {
             setError(false);
             setIsUpdating(true);
+            setIsDebouncing(false);
 
             updateAgent(
               {
@@ -79,5 +83,11 @@ export function useSyncUpdateCurrentAgent() {
     };
   }, []);
 
-  return { syncUpdateCurrentAgent, isUpdating, lastUpdatedAt, error };
+  return {
+    syncUpdateCurrentAgent,
+    isUpdating,
+    isDebouncing,
+    lastUpdatedAt,
+    error,
+  };
 }

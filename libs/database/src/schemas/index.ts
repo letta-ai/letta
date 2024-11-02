@@ -409,3 +409,26 @@ export const inferenceTransactionRelations = relations(
     }),
   })
 );
+
+export const invitedUsers = pgTable('invited_users', {
+  id: text('id')
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  email: text('email').notNull().unique(),
+  organizationId: text('organization_id')
+    .notNull()
+    .references(() => organizations.id, { onDelete: 'cascade' })
+    .notNull(),
+  invitedBy: text('invited_by').notNull(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at')
+    .notNull()
+    .$onUpdate(() => new Date()),
+});
+
+export const invitedUsersRelations = relations(invitedUsers, ({ one }) => ({
+  organization: one(organizations, {
+    fields: [invitedUsers.organizationId],
+    references: [organizations.id],
+  }),
+}));

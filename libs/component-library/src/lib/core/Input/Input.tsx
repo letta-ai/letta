@@ -186,7 +186,11 @@ const InputPrimitive = React.forwardRef<HTMLInputElement, InputPrimitiveProps>(
             />
           )}
           {isUpdating && <SpinnerPrimitive className="w-3 h-3" />}
-          {allowCopy && <CopyButton text={(props.value || '').toString()} />}
+          {allowCopy && (
+            <CopyButton
+              text={(props.value || props.defaultValue || '').toString()}
+            />
+          )}
           <Slot className={cn(inputIconVariants({ size }))}>
             {postIconRender}
           </Slot>

@@ -3,6 +3,7 @@ import type { panelRegistry } from './panelRegistry';
 import { usePanelManager } from './panelRegistry';
 import { PanelManagerProvider, PanelRenderer } from './panelRegistry';
 import type { PanelItemPositionsMatrix } from '@letta-web/component-library';
+import { TrashIcon } from '@letta-web/component-library';
 import {
   FormField,
   FormProvider,
@@ -155,6 +156,10 @@ function DeleteAgentDialog(props: DeleteAgentDialogProps) {
     [name]
   );
 
+  const t = useTranslations(
+    'projects/(projectSlug)/agents/(agentId)/AgentPage'
+  );
+
   const form = useForm<z.infer<typeof DeleteAgentDialogFormSchema>>({
     resolver: zodResolver(DeleteAgentDialogFormSchema),
     defaultValues: {
@@ -179,33 +184,31 @@ function DeleteAgentDialog(props: DeleteAgentDialogProps) {
   return (
     <FormProvider {...form}>
       <Dialog
+        isOpen
         onOpenChange={(next) => {
           if (!next) {
             onClose();
           }
         }}
         confirmColor="destructive"
-        confirmText="Delete Agent"
-        title="Are you sure you want to delete this agent?"
-        trigger={<Button label="Delete Agent" color="destructive" />}
+        confirmText={t('DeleteAgentDialog.confirm')}
+        title={t('DeleteAgentDialog.title')}
         onSubmit={form.handleSubmit(handleSubmit)}
         isConfirmBusy={isPending}
       >
+        <Typography>{t('DeleteAgentDialog.description')}</Typography>
         <Typography>
-          This action cannot be undone. All data associated with this agent will
-          be permanently deleted.
-        </Typography>
-        <Typography>
-          Your agent{"'"}s name is:
-          <br />
-          <strong>{name}</strong>
+          {t.rich('DeleteAgentDialog.confirmText', {
+            templateName: name,
+            strong: (chunks) => <Typography bold>{chunks}</Typography>,
+          })}
         </Typography>
         <FormField
           name="agentName"
           render={({ field }) => (
             <Input
               fullWidth
-              label={`Type the name of the agent name confirm`}
+              label={t('DeleteAgentDialog.confirmTextLabel')}
               {...field}
             />
           )}
@@ -639,7 +642,15 @@ function AgentSettingsDropdown() {
           preIcon={<ForkIcon />}
           label={t('ForkAgentDialog.trigger')}
         />
+
         <RestoreLayoutButton />
+        <DropdownMenuItem
+          onClick={() => {
+            setOpenDialog('deleteAgent');
+          }}
+          preIcon={<TrashIcon />}
+          label={t('DeleteAgentDialog.trigger')}
+        />
         <HStack padding="small" justify="end" borderTop fullWidth>
           <ThemeSelector />
         </HStack>
