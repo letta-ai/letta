@@ -641,6 +641,7 @@ export async function versionAgentTemplate(
 
 interface UpdateAgentFromAgentId {
   preserveCoreMemories?: boolean;
+  variables: Record<string, string>;
   fromAgent: string;
   toAgent: string;
   lettaAgentsUserId: string;
@@ -649,6 +650,7 @@ interface UpdateAgentFromAgentId {
 export async function updateAgentFromAgentId(options: UpdateAgentFromAgentId) {
   const {
     preserveCoreMemories = false,
+    variables,
     fromAgent,
     toAgent,
     lettaAgentsUserId,
@@ -698,7 +700,7 @@ export async function updateAgentFromAgentId(options: UpdateAgentFromAgentId) {
   };
 
   if (!preserveCoreMemories) {
-    requestBody.memory = agentTemplateData.memory;
+    attachVariablesToTemplates(agentTemplateData, variables);
   }
 
   await AgentsService.updateAgent(
@@ -743,7 +745,7 @@ export async function migrateAgent(
   req: MigrateAgentRequest,
   context: SDKContext
 ): Promise<MigrateAgentResponse> {
-  const { to_template, preserve_core_memories } = req.body;
+  const { to_template, preserve_core_memories, variables } = req.body;
   const { agent_id: agentId } = req.params;
   const { lettaAgentsUserId } = context.request;
 
@@ -792,6 +794,7 @@ export async function migrateAgent(
   }
 
   await updateAgentFromAgentId({
+    variables: variables || {},
     fromAgent: agentTemplate.id,
     toAgent: agentId,
     lettaAgentsUserId,

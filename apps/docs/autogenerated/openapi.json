@@ -2974,6 +2974,13 @@
               "type": "string"
             },
             "description": "The agent ID of the agent to migrate, if this agent is not a template, it will create a agent template from the agent provided as well"
+          },
+          {
+            "name": "returnAgentId",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
           }
         ],
         "operationId": "agents.versionAgentTemplate",
@@ -2994,6 +3001,9 @@
                   "type": "object",
                   "properties": {
                     "version": {
+                      "type": "string"
+                    },
+                    "agentId": {
                       "type": "string"
                     }
                   },
@@ -3064,6 +3074,13 @@
                 "properties": {
                   "to_template": {
                     "type": "string"
+                  },
+                  "variables": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "string"
+                    },
+                    "description": "If you chose to not preserve core memories, you should provide the new variables for the core memories"
                   },
                   "preserve_core_memories": {
                     "type": "boolean"

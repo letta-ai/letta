@@ -329,6 +329,14 @@
       "label": "Edit System Prompt"
     },
     "expandContent": "Full Screen",
+    "MemorySettingsDialog": {
+      "trigger": "Settings",
+      "name": {
+        "label": "Memory Name",
+        "placeholder": "my-memory-name"
+      },
+      "title": "{label} Settings"
+    },
     "title": "Memory ({count})",
     "content": "Content",
     "error": "There was an error while updating the memory block, please try again or contact support.",
