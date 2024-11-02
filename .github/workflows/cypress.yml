@@ -125,25 +125,12 @@ jobs:
           path: letta-agents
       - name: Turn on Letta agents
         env:
+          LETTA_PG_DB: letta
+          LETTA_PG_USER: letta
+          LETTA_PG_PASSWORD: letta
+          LETTA_PG_PORT: 8888
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          LETTA_PG_DB: postgres
-          LETTA_PG_USER: postgres
-          LETTA_PG_PASSWORD: postgres
-          LETTA_PG_HOST: localhost
-          LETTA_PG_PORT: 5432
-          LETTA_LLM_ENDPOINT: https://api.openai.com/v1
-          LETTA_LLM_ENDPOINT_TYPE: openai
-          LETTA_LLM_MODEL: gpt-4
-          LETTA_LLM_CONTEXT_WINDOW: 8192
-          LETTA_EMBEDDING_ENDPOINT: https://api.openai.com/v1
-          LETTA_EMBEDDING_ENDPOINT_TYPE: openai
-          LETTA_EMBEDDING_DIM: 1536
-          LETTA_EMBEDDING_MODEL: text-embedding-ada-002
-          LETTA_DEBUG: True
-        working-directory: letta-agents
-        run: |
-          docker build -t letta-agents .
-          docker run -d -p 8083:8083 --name letta-agents letta-agents
+        run: docker compose -f dev-compose.yaml up --build -d
       - name: Install Dependencies
         if: steps.cache-nodemodules.outputs.cache-hit != 'true'
         run: npm ci
@@ -170,7 +157,7 @@ jobs:
           CYPRESS_GOOGLE_CLIENT_SECRET: ${{ secrets.CYPRESS_GOOGLE_CLIENT_SECRET }}
           CYPRESS_GOOGLE_REFRESH_TOKEN: ${{ secrets.CYPRESS_GOOGLE_REFRESH_TOKEN }}
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-          LETTA_AGENTS_ENDPOINT: http://localhost:8083
+          LETTA_AGENTS_ENDPOINT: http://localhost:8283
           NEXT_PUBLIC_CURRENT_HOST: http://localhost:3000
           IS_CYPRESS_RUN: yes
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
