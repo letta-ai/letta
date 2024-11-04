@@ -5,7 +5,7 @@ import {
 } from '$letta/server/auth';
 import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
 import type { contracts } from '$letta/web-api/contracts';
-import { and, eq, gt } from 'drizzle-orm';
+import { and, eq, gt, isNull } from 'drizzle-orm';
 
 type GetCurrentOrganizationResponse = ServerInferResponses<
   typeof contracts.organizations.getCurrentOrganization
@@ -56,7 +56,10 @@ async function getCurrentOrganizationTeamMembers(
     throw new Error('Organization not found');
   }
 
-  const where = [eq(users.organizationId, organizationId)];
+  const where = [
+    eq(users.organizationId, organizationId),
+    isNull(users.deletedAt),
+  ];
 
   if (cursor) {
     where.push(gt(users.id, cursor));

@@ -4,7 +4,7 @@ import {
   getUserOrganizationIdOrThrow,
   getUserOrThrow,
 } from '$letta/server/auth';
-import { and, desc, eq, like } from 'drizzle-orm';
+import { and, desc, eq, isNull, like } from 'drizzle-orm';
 import {
   agentSimulatorSessions,
   agentTemplates,
@@ -33,7 +33,10 @@ export async function listAgentTemplates(
 
   const organizationId = await getUserOrganizationIdOrThrow();
 
-  const where = [eq(agentTemplates.organizationId, organizationId)];
+  const where = [
+    eq(agentTemplates.organizationId, organizationId),
+    isNull(agentTemplates.deletedAt),
+  ];
 
   if (projectId) {
     where.push(eq(agentTemplates.projectId, projectId));
@@ -90,6 +93,7 @@ export async function forkAgentTemplate(
 
   const testingAgent = await db.query.agentTemplates.findFirst({
     where: and(
+      isNull(agentTemplates.deletedAt),
       eq(agentTemplates.organizationId, organizationId),
       eq(agentTemplates.projectId, projectId),
       eq(agentTemplates.id, agentTemplateId)
@@ -154,6 +158,7 @@ async function getAgentTemplateSimulatorSession(
 
   const agentTemplate = await db.query.agentTemplates.findFirst({
     where: and(
+      isNull(agentTemplates.deletedAt),
       eq(agentTemplates.organizationId, organizationId),
       eq(agentTemplates.id, agentTemplateId)
     ),
@@ -234,6 +239,7 @@ async function createAgentTemplateSimulatorSession(
 
   const agentTemplate = await db.query.agentTemplates.findFirst({
     where: and(
+      isNull(agentTemplates.deletedAt),
       eq(agentTemplates.organizationId, organizationId),
       eq(agentTemplates.id, agentTemplateId)
     ),
@@ -355,6 +361,7 @@ async function refreshAgentTemplateSimulatorSession(
 
   const agentTemplate = await db.query.agentTemplates.findFirst({
     where: and(
+      isNull(agentTemplates.deletedAt),
       eq(agentTemplates.organizationId, organizationId),
       eq(agentTemplates.id, agentTemplateId)
     ),

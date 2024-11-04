@@ -6,7 +6,7 @@ import {
   deployedAgentTemplates,
 } from '@letta-web/database';
 import { getUserOrganizationIdOrThrow } from '$letta/server/auth';
-import { eq, and, like, desc, count } from 'drizzle-orm';
+import { eq, and, like, desc, count, isNull } from 'drizzle-orm';
 import type { contracts, projectsContract } from '$letta/web-api/contracts';
 import { generateSlug } from '$letta/server';
 
@@ -24,6 +24,7 @@ export async function getProjects(
 
   const projectsList = await db.query.projects.findMany({
     where: and(
+      isNull(projects.deletedAt),
       eq(projects.organizationId, organizationId),
       like(projects.name, search || '%')
     ),
@@ -65,7 +66,10 @@ export async function getProjectByIdOrSlug(
 
   const organizationId = await getUserOrganizationIdOrThrow();
 
-  const query = [eq(projects.organizationId, organizationId)];
+  const query = [
+    isNull(projects.deletedAt),
+    eq(projects.organizationId, organizationId),
+  ];
 
   if (lookupBy === 'slug') {
     query.push(eq(projects.slug, projectId));
@@ -119,6 +123,7 @@ export async function createProject(
 
   const existingProject = await db.query.projects.findFirst({
     where: and(
+      isNull(projects.deletedAt),
       eq(projects.organizationId, organizationId),
       eq(projects.slug, projectSlug)
     ),
@@ -172,6 +177,7 @@ export async function getProjectDeployedAgentTemplates(
     req.query;
 
   const where = [
+    isNull(deployedAgentTemplates.deletedAt),
     eq(deployedAgentTemplates.organizationId, organizationId),
     eq(deployedAgentTemplates.projectId, projectId),
   ];
@@ -238,6 +244,7 @@ export async function getDeployedAgents(
   const { search, offset, limit = 10, deployedAgentTemplateId } = req.query;
 
   const where = [
+    isNull(deployedAgentTemplates.deletedAt),
     eq(deployedAgents.organizationId, organizationId),
     eq(deployedAgents.projectId, projectId),
   ];
@@ -301,6 +308,7 @@ export async function updateProject(
 
   const project = await db.query.projects.findFirst({
     where: and(
+      isNull(projects.deletedAt),
       eq(projects.id, projectId),
       eq(projects.organizationId, organizationId)
     ),
@@ -347,6 +355,7 @@ export async function deleteProject(
 
   const project = await db.query.projects.findFirst({
     where: and(
+      isNull(projects.deletedAt),
       eq(projects.id, projectId),
       eq(projects.organizationId, organizationId)
     ),
@@ -359,7 +368,10 @@ export async function deleteProject(
     };
   }
 
-  await db.delete(projects).where(eq(projects.id, projectId));
+  await db
+    .update(projects)
+    .set({ deletedAt: new Date() })
+    .where(eq(projects.id, projectId));
 
   return {
     status: 200,

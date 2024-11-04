@@ -11,7 +11,7 @@ import {
   projects,
   users,
 } from '@letta-web/database';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, isNull } from 'drizzle-orm';
 import type { UserSession } from '$letta/types/user';
 import { deleteCookie, getCookie, setCookie } from '$letta/server/cookies';
 import { deleteRedisData, getRedisData, setRedisData } from '@letta-web/redis';
@@ -414,7 +414,10 @@ export async function getOrganizationFromOrganizationId(
   organizationId: string
 ) {
   const organization = await db.query.organizations.findFirst({
-    where: eq(organizations.id, organizationId),
+    where: and(
+      eq(organizations.id, organizationId),
+      isNull(organizations.deletedAt)
+    ),
   });
 
   return organization;
@@ -444,7 +447,7 @@ export async function getUser(): Promise<GetUserDataResponse | null> {
   }
 
   const userFromDb = await db.query.users.findFirst({
-    where: eq(users.id, user.id),
+    where: and(eq(users.id, user.id), isNull(users.deletedAt)),
     columns: {
       organizationId: true,
       id: true,
@@ -539,7 +542,8 @@ export async function verifyAndReturnAPIKeyDetails(apiKey?: string) {
   const key = await db.query.lettaAPIKeys.findFirst({
     where: and(
       eq(lettaAPIKeys.apiKey, apiKey),
-      eq(lettaAPIKeys.organizationId, organizationId)
+      eq(lettaAPIKeys.organizationId, organizationId),
+      isNull(lettaAPIKeys.deletedAt)
     ),
     columns: {
       organizationId: true,

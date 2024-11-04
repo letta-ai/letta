@@ -22,7 +22,7 @@ import {
   organizationPreferences,
 } from '@letta-web/database';
 import { createProject } from '$letta/web-api/router';
-import { and, desc, eq, like } from 'drizzle-orm';
+import { and, desc, eq, isNull, like } from 'drizzle-orm';
 import { findUniqueAgentTemplateName } from '$letta/server';
 import {
   isTemplateNameAPremadeAgentTemplate,
@@ -177,7 +177,8 @@ export async function createAgent(
         where: and(
           eq(agentTemplates.organizationId, organizationId),
           eq(agentTemplates.projectId, project_id),
-          eq(agentTemplates.name, name)
+          eq(agentTemplates.name, name),
+          isNull(agentTemplates.deletedAt)
         ),
       });
 
@@ -194,7 +195,8 @@ export async function createAgent(
         where: and(
           eq(deployedAgents.organizationId, organizationId),
           eq(deployedAgents.projectId, project_id),
-          eq(deployedAgents.key, name)
+          eq(deployedAgents.key, name),
+          isNull(agentTemplates.deletedAt)
         ),
       });
 
@@ -301,7 +303,8 @@ export async function createAgent(
     const agentTemplate = await db.query.agentTemplates.findFirst({
       where: and(
         eq(agentTemplates.organizationId, organizationId),
-        eq(agentTemplates.name, templateName)
+        eq(agentTemplates.name, templateName),
+        isNull(agentTemplates.deletedAt)
       ),
     });
 
@@ -321,6 +324,7 @@ export async function createAgent(
     const deployedTemplateQuery = [
       eq(deployedAgentTemplates.organizationId, organizationId),
       eq(deployedAgentTemplates.agentTemplateId, agentTemplate.id),
+      isNull(deployedAgentTemplates.deletedAt),
     ];
 
     if (!isLatest) {
@@ -763,7 +767,8 @@ export async function migrateAgent(
   const rootAgentTemplate = await db.query.agentTemplates.findFirst({
     where: and(
       eq(agentTemplates.organizationId, context.request.organizationId),
-      eq(agentTemplates.name, templateName)
+      eq(agentTemplates.name, templateName),
+      isNull(agentTemplates.deletedAt)
     ),
   });
 
@@ -780,7 +785,8 @@ export async function migrateAgent(
     where: and(
       eq(deployedAgentTemplates.organizationId, context.request.organizationId),
       eq(deployedAgentTemplates.agentTemplateId, rootAgentTemplate.id),
-      eq(deployedAgentTemplates.version, version)
+      eq(deployedAgentTemplates.version, version),
+      isNull(deployedAgentTemplates.deletedAt)
     ),
   });
 
@@ -835,6 +841,7 @@ export async function listAgents(
   if (template) {
     const queryBuilder = [
       eq(agentTemplates.organizationId, context.request.organizationId),
+      isNull(agentTemplates.deletedAt),
     ];
 
     if (project_id) {
@@ -873,6 +880,7 @@ export async function listAgents(
 
   const queryBuilder = [
     eq(deployedAgents.organizationId, context.request.organizationId),
+    isNull(deployedAgents.deletedAt),
   ];
 
   if (project_id) {
@@ -889,7 +897,8 @@ export async function listAgents(
     const agentTemplate = await db.query.agentTemplates.findFirst({
       where: and(
         eq(agentTemplates.organizationId, context.request.organizationId),
-        eq(agentTemplates.name, templateKey)
+        eq(agentTemplates.name, templateKey),
+        isNull(agentTemplates.deletedAt)
       ),
     });
 
@@ -906,6 +915,7 @@ export async function listAgents(
           deployedAgentTemplates.organizationId,
           context.request.organizationId
         ),
+        isNull(deployedAgentTemplates.deletedAt),
         eq(deployedAgentTemplates.agentTemplateId, agentTemplate.id),
         ...(version ? [eq(deployedAgentTemplates.version, version)] : [])
       ),
@@ -993,6 +1003,7 @@ async function getAgentById(
     ),
     db.query.deployedAgents.findFirst({
       where: and(
+        isNull(deployedAgents.deletedAt),
         eq(deployedAgents.organizationId, context.request.organizationId),
         eq(deployedAgents.id, agentId)
       ),
@@ -1000,7 +1011,8 @@ async function getAgentById(
     db.query.agentTemplates.findFirst({
       where: and(
         eq(agentTemplates.organizationId, context.request.organizationId),
-        eq(agentTemplates.id, agentId)
+        eq(agentTemplates.id, agentId),
+        isNull(agentTemplates.deletedAt)
       ),
     }),
   ]);
@@ -1051,13 +1063,15 @@ export async function deleteAgent(
     db.query.deployedAgents.findFirst({
       where: and(
         eq(deployedAgents.organizationId, context.request.organizationId),
-        eq(deployedAgents.id, agentId)
+        eq(deployedAgents.id, agentId),
+        isNull(deployedAgents.deletedAt)
       ),
     }),
     db.query.agentTemplates.findFirst({
       where: and(
         eq(agentTemplates.organizationId, context.request.organizationId),
-        eq(agentTemplates.id, agentId)
+        eq(agentTemplates.id, agentId),
+        isNull(agentTemplates.deletedAt)
       ),
     }),
   ]);
@@ -1081,9 +1095,15 @@ export async function deleteAgent(
   );
 
   if (deployedAgent) {
-    await db.delete(deployedAgents).where(eq(deployedAgents.id, agentId));
+    await db
+      .update(deployedAgents)
+      .set({ deletedAt: new Date() })
+      .where(eq(deployedAgents.id, agentId));
   } else {
-    await db.delete(agentTemplates).where(eq(agentTemplates.id, agentId));
+    await db
+      .update(agentTemplates)
+      .set({ deletedAt: new Date() })
+      .where(eq(agentTemplates.id, agentId));
   }
 
   return {
@@ -1112,13 +1132,15 @@ export async function updateAgent(
     db.query.deployedAgents.findFirst({
       where: and(
         eq(deployedAgents.organizationId, context.request.organizationId),
-        eq(deployedAgents.id, agentId)
+        eq(deployedAgents.id, agentId),
+        isNull(deployedAgents.deletedAt)
       ),
     }),
     db.query.agentTemplates.findFirst({
       where: and(
         eq(agentTemplates.organizationId, context.request.organizationId),
-        eq(agentTemplates.id, agentId)
+        eq(agentTemplates.id, agentId),
+        isNull(agentTemplates.deletedAt)
       ),
     }),
   ]);
@@ -1151,7 +1173,8 @@ export async function updateAgent(
           where: and(
             eq(deployedAgents.organizationId, context.request.organizationId),
             eq(deployedAgents.projectId, deployedAgent.projectId),
-            eq(deployedAgents.key, name)
+            eq(deployedAgents.key, name),
+            isNull(deployedAgents.deletedAt)
           ),
         });
 
@@ -1175,7 +1198,8 @@ export async function updateAgent(
           where: and(
             eq(agentTemplates.organizationId, context.request.organizationId),
             eq(agentTemplates.projectId, agentTemplate.projectId),
-            eq(agentTemplates.name, name)
+            eq(agentTemplates.name, name),
+            isNull(agentTemplates.deletedAt)
           ),
         });
 
