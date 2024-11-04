@@ -8,7 +8,7 @@ import {
   RawSlider,
   VStack,
 } from '@letta-web/component-library';
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo } from 'react';
 import { useModelsServiceListModels } from '@letta-web/letta-agents-api';
 
 function ModelParametersPanel() {
@@ -39,6 +39,18 @@ function ModelParametersPanel() {
     },
     [syncUpdateCurrentAgent]
   );
+
+  useEffect(() => {
+    if (!currentBaseModel || !currentAgent.llm_config) {
+      return;
+    }
+
+    if (
+      currentBaseModel.context_window < currentAgent.llm_config.context_window
+    ) {
+      handleContextWindowChange(currentBaseModel.context_window);
+    }
+  }, [currentAgent.llm_config, currentBaseModel, handleContextWindowChange]);
 
   if (!currentAgent.llm_config || !modelsList) {
     return <LoadingEmptyStatusComponent emptyMessage="" isLoading />;

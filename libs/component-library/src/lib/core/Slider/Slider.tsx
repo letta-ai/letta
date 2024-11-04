@@ -4,7 +4,7 @@ import * as React from 'react';
 import * as SliderPrimitive from '@radix-ui/react-slider';
 import { cn } from '@letta-web/core-style-config';
 import { HStack } from '../../framing/HStack/HStack';
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useCallback, useState } from 'react';
 import { makeInput, makeRawInput } from '../Form/Form';
 
@@ -61,6 +61,12 @@ function SliderInput(props: SliderProps) {
 
     return [sliderNumericValue];
   }, [value, sliderNumericValue]);
+
+  useEffect(() => {
+    if (controlledValue[0].toString() !== sliderValue) {
+      setSliderValue(controlledValue[0].toString());
+    }
+  }, [controlledValue, sliderValue]);
 
   return (
     <HStack className="min-w-[250px]" fullWidth>
