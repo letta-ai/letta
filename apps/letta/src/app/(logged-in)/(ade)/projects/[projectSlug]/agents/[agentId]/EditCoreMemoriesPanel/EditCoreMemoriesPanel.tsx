@@ -221,6 +221,7 @@ const memorySettingsFormSchema = z.object({
   name: z.string(),
 });
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function MemorySettingsDialog(props: MemorySettingsDialogProps) {
   const { label, name } = props;
 
@@ -351,7 +352,7 @@ function EditMemoryForm(props: EditMemoryFormProps) {
           </HStack>
         </HStack>
         <HStack justify="spaceBetween">
-          <MemorySettingsDialog name={name} label={label} />
+          {/*<MemorySettingsDialog name={name} label={label} />*/}
           <Button
             preIcon={<ExpandContentIcon />}
             label={t('expandContent')}
