@@ -6,7 +6,7 @@ import {
 } from '$letta/server/auth';
 import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
 import type { contracts } from '$letta/web-api/contracts';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, isNull } from 'drizzle-orm';
 
 type CreateAPIKeyPayload = ServerInferRequest<
   typeof contracts.apiKeys.createAPIKey
@@ -56,7 +56,10 @@ export async function getAPIKeys(
   const organizationId = await getUserOrganizationIdOrThrow();
   const { offset, limit = 10, search } = req.query;
 
-  const where = [eq(lettaAPIKeys.organizationId, organizationId)];
+  const where = [
+    eq(lettaAPIKeys.organizationId, organizationId),
+    isNull(lettaAPIKeys.deletedAt),
+  ];
 
   if (search) {
     where.push(eq(lettaAPIKeys.apiKey, search));
@@ -130,7 +133,10 @@ export async function getAPIKey(
 
   const organizationId = await getUserOrganizationIdOrThrow();
 
-  const where = [eq(lettaAPIKeys.organizationId, organizationId)];
+  const where = [
+    eq(lettaAPIKeys.organizationId, organizationId),
+    isNull(lettaAPIKeys.deletedAt),
+  ];
 
   if (apiKeyId !== 'first') {
     where.push(eq(lettaAPIKeys.id, apiKeyId));

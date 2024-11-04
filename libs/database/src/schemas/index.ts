@@ -7,7 +7,6 @@ import {
   bigint,
   uniqueIndex,
   json,
-  serial,
   numeric,
 } from 'drizzle-orm/pg-core';
 import { sql, relations } from 'drizzle-orm';
@@ -35,6 +34,7 @@ export const organizations = pgTable('organizations', {
   lettaAgentsId: text('letta_agents_id').notNull().unique(),
   isAdmin: boolean('is_admin').notNull().default(false),
   createdAt: timestamp('created_at').notNull().defaultNow(),
+  deletedAt: timestamp('deleted_at'),
   updatedAt: timestamp('updated_at')
     .notNull()
     .$onUpdate(() => new Date()),
@@ -91,6 +91,7 @@ export const users = pgTable('users', {
     .notNull(),
   lettaAgentsId: text('letta_agents_id').notNull().unique(),
   theme: text('theme').default('light'),
+  deletedAt: timestamp('deleted_at'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at')
     .notNull()
@@ -119,6 +120,7 @@ export const lettaAPIKeys = pgTable('letta_api_keys', {
     .references(() => organizations.id, { onDelete: 'cascade' })
     .notNull(),
   createdAt: timestamp('created_at').notNull().defaultNow(),
+  deletedAt: timestamp('deleted_at'),
   updatedAt: timestamp('updated_at')
     .notNull()
     .$onUpdate(() => new Date()),
@@ -151,6 +153,7 @@ export const projects = pgTable(
       .references(() => organizations.id, { onDelete: 'cascade' })
       .notNull(),
     createdAt: timestamp('created_at').notNull().defaultNow(),
+    deletedAt: timestamp('deleted_at'),
     updatedAt: timestamp('updated_at')
       .notNull()
       .$onUpdate(() => new Date()),
@@ -190,6 +193,7 @@ export const agentTemplates = pgTable(
         onDelete: 'cascade',
       }),
     createdAt: timestamp('created_at').notNull().defaultNow(),
+    deletedAt: timestamp('deleted_at'),
     updatedAt: timestamp('updated_at')
       .notNull()
       .$onUpdate(() => new Date()),
@@ -236,6 +240,7 @@ export const deployedAgentTemplates = pgTable(
     agentTemplateId: text('agent_template_id').notNull(),
     version: text('version').notNull(),
     createdAt: timestamp('created_at').notNull().defaultNow(),
+    deletedAt: timestamp('deleted_at'),
     updatedAt: timestamp('updated_at')
       .notNull()
       .$onUpdate(() => new Date()),
@@ -289,6 +294,7 @@ export const deployedAgents = pgTable(
       .references(() => organizations.id, { onDelete: 'cascade' })
       .notNull(),
     createdAt: timestamp('created_at').notNull().defaultNow(),
+    deletedAt: timestamp('deleted_at'),
     updatedAt: timestamp('updated_at')
       .notNull()
       .$onUpdate(() => new Date()),
@@ -334,6 +340,7 @@ export const agentSimulatorSessions = pgTable('agent_simulator_sessions', {
     .notNull(),
   variables: json('variables').notNull(),
   createdAt: timestamp('created_at').notNull().defaultNow(),
+  deletedAt: timestamp('deleted_at'),
   updatedAt: timestamp('updated_at')
     .notNull()
     .$onUpdate(() => new Date()),

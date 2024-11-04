@@ -9,7 +9,7 @@ import {
 } from '@tanstack/react-query';
 import React from 'react';
 import { db, deployedAgents } from '@letta-web/database';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, isNull } from 'drizzle-orm';
 import { redirect } from 'next/navigation';
 import { webApiQueryKeys, webOriginSDKQueryKeys } from '$letta/client';
 import { getProjectByIdOrSlug } from '$letta/web-api/router';
@@ -53,7 +53,8 @@ async function AgentsAgentPage(context: AgentsAgentPageProps) {
   const deployedAgent = await db.query.deployedAgents.findFirst({
     where: and(
       eq(deployedAgents.id, agentId),
-      eq(deployedAgents.organizationId, user.organizationId)
+      eq(deployedAgents.organizationId, user.organizationId),
+      isNull(deployedAgents.deletedAt)
     ),
     columns: {
       key: true,
