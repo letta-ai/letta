@@ -21,6 +21,11 @@ export const getCurrentOrganizationContract = c.query({
   },
 });
 
+export type GetCurrentOrganizationSuccessResponse = ServerInferResponses<
+  typeof getCurrentOrganizationContract,
+  200
+>;
+
 /* Get current organization team members */
 export const CurrentOrganizationTeamMembersSchema = z.object({
   id: z.string(),
@@ -143,6 +148,34 @@ export const removeTeamMemberContract = c.mutation({
   },
 });
 
+/* Delete organization */
+export const deleteOrganizationContract = c.mutation({
+  method: 'DELETE',
+  path: '/organizations/self',
+  body: z.undefined(),
+  responses: {
+    200: z.object({
+      success: z.boolean(),
+    }),
+  },
+});
+
+/* update organization */
+export const UpdateOrganizationSchema = z.object({
+  name: z.string(),
+});
+
+export const updateOrganizationContract = c.mutation({
+  method: 'PATCH',
+  path: '/organizations/self',
+  body: UpdateOrganizationSchema,
+  responses: {
+    200: z.object({
+      name: z.string(),
+    }),
+  },
+});
+
 export const organizationsContract = c.router({
   getCurrentOrganization: getCurrentOrganizationContract,
   getCurrentOrganizationTeamMembers: getCurrentOrganizationTeamMembersContract,
@@ -150,6 +183,8 @@ export const organizationsContract = c.router({
   unInviteTeamMember: unInviteTeamMemberContract,
   removeTeamMember: removeTeamMemberContract,
   listInvitedMembers: listInvitedMembersContract,
+  deleteOrganization: deleteOrganizationContract,
+  updateOrganization: updateOrganizationContract,
 });
 
 export const organizationsQueryClientKeys = {

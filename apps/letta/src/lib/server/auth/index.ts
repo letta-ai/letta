@@ -156,7 +156,7 @@ async function createUserAndOrganization(
     db
       .insert(users)
       .values({
-        organizationId,
+        activeOrganizationId: organizationId,
         name: userData.name || 'New User',
         lettaAgentsId: lettaAgentsUser.id,
         imageUrl: userData.imageUrl,
@@ -264,7 +264,7 @@ async function createUserAndOrganization(
       name: userData.name,
       imageUrl: userData.imageUrl,
       id: createdUser.userId,
-      organizationId: organizationId,
+      activeOrganizationId: organizationId,
     },
     firstCreatedAgentName: createdAgentTemplate.body.name,
     firstProjectSlug: firstProjectSlug,
@@ -286,7 +286,7 @@ async function findExistingUser(
     theme: user.theme || 'light',
     email: user.email,
     id: user.id,
-    organizationId: user.organizationId,
+    activeOrganizationId: user.activeOrganizationId,
     imageUrl: user.imageUrl,
     name: user.name,
   };
@@ -356,7 +356,7 @@ async function findOrCreateUserAndOrganizationFromProviderLogin(
       theme: user.theme,
       email: user.email,
       id: user.id,
-      organizationId: user.organizationId,
+      activeOrganizationId: user.activeOrganizationId,
       imageUrl: user.imageUrl,
       name: user.name,
     },
@@ -424,7 +424,7 @@ export async function getOrganizationFromOrganizationId(
 }
 
 export interface GetUserDataResponse {
-  organizationId: string;
+  activeOrganizationId: string;
   id: string;
   lettaAgentsId: string;
   email: string;
@@ -449,7 +449,7 @@ export async function getUser(): Promise<GetUserDataResponse | null> {
   const userFromDb = await db.query.users.findFirst({
     where: and(eq(users.id, user.id), isNull(users.deletedAt)),
     columns: {
-      organizationId: true,
+      activeOrganizationId: true,
       id: true,
       lettaAgentsId: true,
       email: true,
@@ -497,7 +497,7 @@ export async function getUserOrganizationIdOrThrow() {
     throw new Error('User not found');
   }
 
-  return user.organizationId;
+  return user.activeOrganizationId;
 }
 
 export async function getUserIdOrThrow() {

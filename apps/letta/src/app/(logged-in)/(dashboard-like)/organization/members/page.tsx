@@ -11,7 +11,12 @@ import {
   DotsHorizontalIcon,
   DropdownMenu,
   DropdownMenuLabel,
+  FormField,
+  FormProvider,
+  Input,
   LoadingEmptyStatusComponent,
+  Typography,
+  useForm,
 } from '@letta-web/component-library';
 import React, { useCallback, useMemo, useState } from 'react';
 import type { ColumnDef } from '@tanstack/react-table';
@@ -21,6 +26,68 @@ import type {
 } from '$letta/web-api/organizations/organizationsContracts';
 import { webApi, webApiQueryKeys } from '$letta/client';
 import { useQueryClient } from '@tanstack/react-query';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+
+const inviteMemberDialogFormSchema = z.object({
+  email: z.string().email(),
+});
+
+type InviteMemberDialogFormValues = z.infer<
+  typeof inviteMemberDialogFormSchema
+>;
+
+function InviteMemberDialog() {
+  const { mutate, isPending } =
+    webApi.organizations.inviteNewTeamMember.useMutation();
+
+  const t = useTranslations('organization/members');
+
+  const form = useForm<InviteMemberDialogFormValues>({
+    resolver: zodResolver(inviteMemberDialogFormSchema),
+    defaultValues: {
+      email: '',
+    },
+  });
+
+  const handleInviteMember = useCallback(() => {
+    mutate({
+      body: {
+        email: form.getValues().email,
+      },
+    });
+  }, [mutate, form]);
+
+  return (
+    <FormProvider {...form}>
+      <Dialog
+        title={t('InviteMemberDialog.title')}
+        onSubmit={handleInviteMember}
+        confirmText={t('InviteMemberDialog.confirm')}
+        isConfirmBusy={isPending}
+        trigger={
+          <Button color="secondary" label={t('InviteMemberDialog.trigger')} />
+        }
+      >
+        <Typography>{t('InviteMemberDialog.description')}</Typography>
+        <FormField
+          name="email"
+          render={({ field }) => {
+            return (
+              <Input
+                fullWidth
+                type="email"
+                placeholder={t('InviteMemberDialog.email.placeholder')}
+                label={t('InviteMemberDialog.email.label')}
+                {...field}
+              />
+            );
+          }}
+        />
+      </Dialog>
+    </FormProvider>
+  );
+}
 
 interface DeleteMemberDialogProps {
   userId: string;
@@ -170,7 +237,7 @@ function Members() {
     }, [t, user?.id]);
 
   return (
-    <DashboardPageLayout title={t('title')}>
+    <DashboardPageLayout title={t('title')} actions={<InviteMemberDialog />}>
       {(!members || members.length === 0) && !cursor ? (
         <LoadingEmptyStatusComponent
           emptyMessage={t('table.emptyError')}

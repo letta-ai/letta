@@ -89,12 +89,12 @@ export async function forkAgentTemplate(
   req: ForkAgentTemplateRequest
 ): Promise<ForkAgentTemplateResponse> {
   const { agentTemplateId, projectId } = req.params;
-  const { organizationId, lettaAgentsId } = await getUserOrThrow();
+  const { activeOrganizationId, lettaAgentsId } = await getUserOrThrow();
 
   const testingAgent = await db.query.agentTemplates.findFirst({
     where: and(
       isNull(agentTemplates.deletedAt),
-      eq(agentTemplates.organizationId, organizationId),
+      eq(agentTemplates.organizationId, activeOrganizationId),
       eq(agentTemplates.projectId, projectId),
       eq(agentTemplates.id, agentTemplateId)
     ),
@@ -125,7 +125,7 @@ export async function forkAgentTemplate(
     .values({
       id: copiedAgent.id,
       projectId: testingAgent.projectId,
-      organizationId,
+      organizationId: activeOrganizationId,
       name,
     })
     .returning({
@@ -154,12 +154,12 @@ async function getAgentTemplateSimulatorSession(
   req: GetAgentTemplateSimulatorSessionRequest
 ): Promise<GetAgentTemplateSimulatorSessionResponse> {
   const { agentTemplateId } = req.params;
-  const { organizationId, lettaAgentsId } = await getUserOrThrow();
+  const { activeOrganizationId, lettaAgentsId } = await getUserOrThrow();
 
   const agentTemplate = await db.query.agentTemplates.findFirst({
     where: and(
       isNull(agentTemplates.deletedAt),
-      eq(agentTemplates.organizationId, organizationId),
+      eq(agentTemplates.organizationId, activeOrganizationId),
       eq(agentTemplates.id, agentTemplateId)
     ),
   });
@@ -195,7 +195,7 @@ async function getAgentTemplateSimulatorSession(
       .values({
         agentId: newAgentId,
         agentTemplateId: agentTemplate.id,
-        organizationId,
+        organizationId: activeOrganizationId,
         variables: {},
       })
       .returning({
@@ -235,12 +235,12 @@ async function createAgentTemplateSimulatorSession(
 ): Promise<CreateAgentTemplateSimulatorSessionResponse> {
   const { agentTemplateId } = req.params;
   const { variables } = req.body;
-  const { organizationId, lettaAgentsId } = await getUserOrThrow();
+  const { activeOrganizationId, lettaAgentsId } = await getUserOrThrow();
 
   const agentTemplate = await db.query.agentTemplates.findFirst({
     where: and(
       isNull(agentTemplates.deletedAt),
-      eq(agentTemplates.organizationId, organizationId),
+      eq(agentTemplates.organizationId, activeOrganizationId),
       eq(agentTemplates.id, agentTemplateId)
     ),
   });
@@ -328,7 +328,7 @@ async function createAgentTemplateSimulatorSession(
     .values({
       agentId: newAgentId,
       agentTemplateId: agentTemplate.id,
-      organizationId,
+      organizationId: activeOrganizationId,
       variables,
     })
     .returning({
@@ -357,12 +357,12 @@ async function refreshAgentTemplateSimulatorSession(
   req: RefreshAgentTemplateSimulatorSessionRequest
 ): Promise<RefreshAgentTemplateSimulatorSessionResponse> {
   const { agentTemplateId, agentSessionId } = req.params;
-  const { organizationId, lettaAgentsId } = await getUserOrThrow();
+  const { activeOrganizationId, lettaAgentsId } = await getUserOrThrow();
 
   const agentTemplate = await db.query.agentTemplates.findFirst({
     where: and(
       isNull(agentTemplates.deletedAt),
-      eq(agentTemplates.organizationId, organizationId),
+      eq(agentTemplates.organizationId, activeOrganizationId),
       eq(agentTemplates.id, agentTemplateId)
     ),
   });
@@ -378,7 +378,7 @@ async function refreshAgentTemplateSimulatorSession(
     where: and(
       eq(agentSimulatorSessions.agentTemplateId, agentTemplateId),
       eq(agentSimulatorSessions.id, agentSessionId),
-      eq(agentSimulatorSessions.organizationId, organizationId)
+      eq(agentSimulatorSessions.organizationId, activeOrganizationId)
     ),
   });
 
@@ -419,12 +419,12 @@ async function deleteAgentTemplateSimulatorSession(
   req: DeleteAgentTemplateSimulatorSessionRequest
 ): Promise<DeleteAgentTemplateSimulatorSessionResponse> {
   const { agentSessionId } = req.params;
-  const { organizationId } = await getUserOrThrow();
+  const { activeOrganizationId } = await getUserOrThrow();
 
   const simulatorSession = await db.query.agentSimulatorSessions.findFirst({
     where: and(
       eq(agentSimulatorSessions.id, agentSessionId),
-      eq(agentSimulatorSessions.organizationId, organizationId)
+      eq(agentSimulatorSessions.organizationId, activeOrganizationId)
     ),
   });
 

@@ -30,7 +30,7 @@ export async function getCurrentUser(): Promise<
       name: user.name,
       email: user.email,
       imageUrl: user.imageUrl,
-      organizationId: user.organizationId,
+      organizationId: user.activeOrganizationId,
       id: user.id,
     },
   };
@@ -81,7 +81,7 @@ export async function updateCurrentUser(
       name: updatedUser.name,
       email: updatedUser.email,
       imageUrl: updatedUser.imageUrl,
-      organizationId: updatedUser.organizationId,
+      organizationId: updatedUser.activeOrganizationId,
       id: updatedUser.id,
     },
   };

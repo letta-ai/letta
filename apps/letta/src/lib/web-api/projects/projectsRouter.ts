@@ -4,6 +4,8 @@ import {
   deployedAgents,
   projects,
   deployedAgentTemplates,
+  agentTemplates,
+  organizationPreferences,
 } from '@letta-web/database';
 import { getUserOrganizationIdOrThrow } from '$letta/server/auth';
 import { eq, and, like, desc, count, isNull } from 'drizzle-orm';
@@ -368,10 +370,59 @@ export async function deleteProject(
     };
   }
 
-  await db
-    .update(projects)
-    .set({ deletedAt: new Date() })
-    .where(eq(projects.id, projectId));
+  const operations = [];
+  operations.push(
+    db
+      .update(projects)
+      .set({ deletedAt: new Date() })
+      .where(eq(projects.id, projectId))
+  );
+
+  // delete all deployed agents
+  operations.push(
+    db
+      .update(deployedAgents)
+      .set({ deletedAt: new Date() })
+      .where(eq(deployedAgents.projectId, projectId))
+  );
+
+  // delete all deployed agent templates
+  operations.push(
+    db
+      .update(deployedAgentTemplates)
+      .set({ deletedAt: new Date() })
+      .where(eq(deployedAgentTemplates.projectId, projectId))
+  );
+
+  // delete all templates
+  operations.push(
+    db
+      .update(agentTemplates)
+      .set({ deletedAt: new Date() })
+      .where(eq(agentTemplates.projectId, projectId))
+  );
+
+  await Promise.all([
+    ...operations,
+    (async () => {
+      // check if deleted project is the organizationPreferences.catchAllAgentsProjectId
+      // if it is, set it to null
+
+      const isMatching = await db.query.organizationPreferences.findFirst({
+        where: and(
+          eq(organizationPreferences.organizationId, organizationId),
+          eq(organizationPreferences.catchAllAgentsProjectId, projectId)
+        ),
+      });
+
+      if (isMatching) {
+        await db
+          .update(organizationPreferences)
+          .set({ catchAllAgentsProjectId: null })
+          .where(eq(organizationPreferences.organizationId, organizationId));
+      }
+    })(),
+  ]);
 
   return {
     status: 200,

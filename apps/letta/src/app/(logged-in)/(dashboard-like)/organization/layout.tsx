@@ -26,7 +26,7 @@ async function OrganizationLayout(props: SettingsLayoutProps) {
   }
 
   const organization = await getOrganizationFromOrganizationId(
-    user.organizationId
+    user.activeOrganizationId
   );
 
   if (!organization) {

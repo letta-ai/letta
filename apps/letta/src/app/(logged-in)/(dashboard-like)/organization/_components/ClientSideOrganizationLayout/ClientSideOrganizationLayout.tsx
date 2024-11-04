@@ -32,6 +32,11 @@ export function ClientSideOrganizationLayout(props: OrganizationLayoutProps) {
           label: t('members'),
           href: '/organization/members',
         },
+        {
+          id: 'settings',
+          label: t('settings'),
+          href: '/organization/settings',
+        },
       ]}
     >
       {children}

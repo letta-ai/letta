@@ -17,10 +17,46 @@
   "settings/layout": {
     "profile": "Profile"
   },
+  "organization/settings": {
+    "title": "Organization Settings",
+    "EditOrganizationSettings": {
+      "name": {
+        "label": "Organization Name"
+      },
+      "error": "There was an error updating organization settings, please try again or contact support."
+    },
+    "DeleteOrganizationSettings": {
+      "title": "Delete Organization",
+      "description": "Deleting an organization is permanent and cannot be undone. This will delete all projects, agents, and members in the organization.",
+      "dialog": {
+        "error": "There was an error deleting the organization, please try again or contact support.",
+        "title": "Are you sure you want to delete this organization?",
+        "confirm": "Delete Organization",
+        "trigger": "Delete Organization",
+        "description": "This is permanent and cannot be undone. This will not remove any projects or agents they have created.",
+        "confirmName": {
+          "label": "Type the name of the organization to confirm",
+          "placeholder": "my-organization-name"
+        },
+        "confirmCheckbox": "I understand the consequences of deleting this organization"
+      }
+    }
+  },
   "organization/layout": {
-    "members": "Members"
+    "members": "Members",
+    "settings": "Settings"
   },
   "organization/members": {
+    "InviteMemberDialog": {
+      "email": {
+        "label": "Email",
+        "placeholder": "my@email.com"
+      },
+      "trigger": "Invite Member",
+      "confirm": "Invite",
+      "title": "Invite Member",
+      "description": "Invite a new member to your organization. Once invited, they can sign in via Google and will have access to all projects and agents in the organization."
+    },
     "title": "Organization Members",
     "table": {
       "columns": {
