@@ -197,8 +197,6 @@ export function DataTable<TData, TValue>(props: DataTableProps<TData, TValue>) {
 
       const rowsForHeight = Math.max(2, rows + 1);
 
-      console.log(rowsForHeight);
-
       tableContainerRef.current.style.minHeight = `${
         rowsForHeight * TABLE_ROW_HEIGHT
       }px`;
