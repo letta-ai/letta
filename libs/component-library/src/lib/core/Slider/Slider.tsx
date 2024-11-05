@@ -79,7 +79,7 @@ function SliderInput(props: SliderProps) {
         {...sliderProps}
       />
       <input
-        className="w-[75px] bg-background border text-center text-left px-1 py-1 rounded-sm"
+        className="w-[75px] bg-background border px-1 py-1 rounded-sm"
         value={sliderValue}
         onChange={(e) => {
           handleSliderValueChange(e.target.value);

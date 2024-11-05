@@ -11,6 +11,9 @@ const buttonVariants = cva(
   'items-center cursor-pointer inline-flex  whitespace-nowrap transition-width duration-200 ease-in-out',
   {
     variants: {
+      animate: {
+        true: 'transition-colors duration-200 ease-in-out',
+      },
       disabled: {
         true: 'cursor-not-allowed opacity-50',
       },
@@ -127,6 +130,7 @@ export const Button = forwardRef<
     variant,
     active,
     fullWidth,
+    animate,
     align,
     fullHeight,
     size,
@@ -159,6 +163,7 @@ export const Button = forwardRef<
           buttonVariants({
             color,
             hideLabel,
+            animate,
             align,
             size,
             variant,

@@ -8,7 +8,6 @@ import {
   CogIcon,
   CloseIcon,
   LogoutIcon,
-  ArrowLeftIcon,
   BirdIcon,
   DatabaseIcon,
   ProjectsIcon,
@@ -23,6 +22,7 @@ import {
   VStack,
   CompanyIcon,
   SwitchOrganizationIcon,
+  ChevronLeftIcon,
 } from '@letta-web/component-library';
 import { useCurrentUser } from '$letta/client/hooks';
 import { usePathname } from 'next/navigation';
@@ -37,19 +37,23 @@ interface NavButtonProps {
   preload?: boolean;
   label: string;
   id: string;
+  active?: boolean;
+  hideLabel?: boolean;
   icon?: React.ReactNode;
 }
 
 function NavButton(props: NavButtonProps) {
-  const { href, preload, label, id, icon } = props;
+  const { href, preload, active, hideLabel, label, id, icon } = props;
   const pathname = usePathname();
 
   return (
     <Button
+      animate
       data-testid={`nav-button-${id}`}
       preload={preload}
-      active={pathname === href}
+      active={active || pathname === href}
       href={href}
+      hideLabel={hideLabel}
       fullWidth
       color="tertiary-transparent"
       align="left"
@@ -84,13 +88,47 @@ function AdminNav() {
   );
 }
 
-function MainNavigationItems() {
+interface MainNavigationItemsProps {
+  isMobile?: boolean;
+}
+
+function MainNavigationItems(props: MainNavigationItemsProps) {
+  const { isMobile } = props;
   const t = useTranslations(
     'components/DashboardLikeLayout/DashboardNavigation'
   );
   const pathname = usePathname();
 
   const { subnavigationData } = useDashboardNavigationItems();
+
+  const pathroot = pathname.split('/')[1];
+
+  const baseNavItems = useMemo(() => {
+    return [
+      {
+        label: t('nav.projects'),
+        href: '/projects',
+        id: 'projects',
+        icon: <ProjectsIcon />,
+      },
+      {
+        label: t('nav.apiKeys'),
+        href: '/api-keys',
+        id: 'api-keys',
+        icon: <KeyIcon />,
+      },
+      {
+        label: t('nav.dataSources'),
+        href: '/data-sources',
+        id: 'data-sources',
+        icon: <DatabaseIcon />,
+      },
+    ];
+  }, [t]);
+
+  const isBaseNav = useMemo(() => {
+    return baseNavItems.some((item) => item.href === pathname);
+  }, [baseNavItems, pathname]);
 
   const specificSubNavigationData = useMemo(() => {
     const baseRoute = pathname.split('/');
@@ -102,32 +140,13 @@ function MainNavigationItems() {
     return subnavigationData[`/${baseRoute[1]}`];
   }, [pathname, subnavigationData]);
 
-  const navItems = useMemo(() => {
+  const subNavItems = useMemo(() => {
     if (!specificSubNavigationData) {
-      return [
-        {
-          label: t('nav.projects'),
-          href: '/projects',
-          id: 'projects',
-          icon: <ProjectsIcon />,
-        },
-        {
-          label: t('nav.apiKeys'),
-          href: '/api-keys',
-          id: 'api-keys',
-          icon: <KeyIcon />,
-        },
-        {
-          label: t('nav.dataSources'),
-          href: '/data-sources',
-          id: 'data-sources',
-          icon: <DatabaseIcon />,
-        },
-      ];
+      return [];
     }
 
     return specificSubNavigationData.items;
-  }, [specificSubNavigationData, t]);
+  }, [specificSubNavigationData]);
 
   const title = useMemo(() => {
     if (!specificSubNavigationData) {
@@ -138,48 +157,87 @@ function MainNavigationItems() {
   }, [specificSubNavigationData]);
 
   return (
-    <VStack>
-      {specificSubNavigationData && (
-        <HStack
-          align="start"
-          borderBottom
-          paddingX="xsmall"
-          paddingY="small"
-          fullWidth
-        >
-          <Button
-            color="tertiary-transparent"
-            preIcon={<ArrowLeftIcon />}
-            label="Back"
-            align="left"
-            fullWidth
-            href={specificSubNavigationData.returnPath}
-          />
-        </HStack>
-      )}
-      <VStack
-        paddingX={specificSubNavigationData ? 'medium' : 'small'}
-        paddingY="small"
-        gap="large"
-      >
-        {title && (
-          <HStack justify="start" align="center">
-            {title}
-          </HStack>
-        )}
-        <VStack gap="small">
-          {navItems.map((item) => (
-            <NavButton
-              id={item.id}
-              key={item.href}
-              href={item.href}
-              label={item.label}
-              icon={item.icon}
-            />
-          ))}
+    <HStack
+      fullHeight={!isMobile}
+      paddingTop={isMobile ? 'large' : false}
+      gap={false}
+    >
+      {!isMobile && (
+        <VStack fullWidth={isBaseNav} padding="small" borderRight={!isBaseNav}>
+          <VStack
+            fullWidth={isBaseNav}
+            gap="small"
+            /*eslint-disable-next-line react/forbid-component-props*/
+            className="min-w-[36px]"
+          >
+            {baseNavItems.map((item) => (
+              <NavButton
+                id={item.id}
+                key={item.href}
+                href={item.href}
+                active={pathroot === item.id}
+                label={item.label}
+                icon={item.icon}
+                hideLabel={!isBaseNav}
+              />
+            ))}
+          </VStack>
         </VStack>
-      </VStack>
-    </VStack>
+      )}
+      {!isBaseNav && (
+        <VStack fullWidth>
+          <VStack padding="small" gap="large" fullWidth>
+            {!isMobile && (
+              <HStack
+                align="start"
+                borderBottom
+                paddingBottom="small"
+                fullWidth
+              >
+                <Button
+                  size="small"
+                  color="tertiary-transparent"
+                  preIcon={<ChevronLeftIcon />}
+                  label="Back"
+                  align="left"
+                  fullWidth
+                  href={specificSubNavigationData?.returnPath || '/'}
+                />
+              </HStack>
+            )}
+            {title && (
+              <HStack justify="start" align="center">
+                {title}
+              </HStack>
+            )}
+            <VStack gap="small">
+              {subNavItems.map((item) => (
+                <NavButton
+                  id={item.id}
+                  key={item.href}
+                  href={item.href}
+                  label={item.label}
+                  icon={item.icon}
+                />
+              ))}
+            </VStack>
+          </VStack>
+          {isMobile && (
+            <VStack borderTop paddingTop="small" gap="small">
+              {baseNavItems.map((item) => (
+                <NavButton
+                  id={item.id}
+                  key={item.href}
+                  href={item.href}
+                  label={item.label}
+                  icon={item.icon}
+                />
+              ))}
+            </VStack>
+          )}
+        </VStack>
+      )}
+    </HStack>
   );
 }
 
@@ -334,13 +392,15 @@ function NavigationOverlay(props: NavigationOverlayProps) {
               /* eslint-disable-next-line react/forbid-component-props */
               className={cn(
                 'top-0 min-w-sidebar max-w-sidebar z-sidebarNav transition-all duration-200 slide-in-from-left left-0',
-                !open ? 'ml-[-250px]' : 'ml-0'
+                !open ? 'ml-[-300px]' : 'ml-0'
               )}
+              overflowY="auto"
               as="nav"
+              paddingBottom
             >
               <VStack gap="small">
                 <div className="h-header" />
-                {variant !== 'minimal' && <MainNavigationItems />}
+                {variant !== 'minimal' && <MainNavigationItems isMobile />}
                 <HStack fullWidth borderBottom />
                 <SecondaryMenuItems />
               </VStack>
