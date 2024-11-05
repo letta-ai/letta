@@ -89,18 +89,21 @@
       }
     },
     "InviteMemberDialog": {
+      "200success": "User has been added to the organization, you may need to refresh the page to see the changes",
+      "201success": "User has been invited to the organization",
       "email": {
         "label": "Email",
         "placeholder": "my@email.com"
       },
       "error": {
         "userAlreadyInvited": "This user has already been invited to the organization",
+        "userAlreadyInOrganization": "This user is already in your organization",
         "default": "There was an error inviting this user, please try again or contact support"
       },
       "trigger": "Invite Member",
       "confirm": "Invite",
       "title": "Invite Member",
-      "description": "Invite a new member to your organization. Once invited, they can sign in via Google and will have access to all projects and agents in the organization."
+      "description": "Invite a new member to your organization. Once invited, they can sign in via Google and will have access to all projects and agents in the organization. If they already have an account with us, they will automatically get added to your organization"
     },
     "title": "Organization Members",
     "table": {
@@ -114,9 +117,10 @@
       "loading": "Loading members..."
     },
     "DeleteMemberDialog": {
-      "title": "Delete Member",
-      "trigger": "Delete Member",
-      "description": "Are you sure you want to delete {name} ({email}) from this organization? This is permanent and cannot be undone. This will not remove any projects or agents they have created."
+      "error": "There was an error removing this member, please try again or contact support.",
+      "title": "Remove Member",
+      "trigger": "Remove Member",
+      "description": "Are you sure you want to remove {name} ({email}) from this organization? This will not remove any projects or agents they have created."
     }
   },
   "settings/profile/page": {

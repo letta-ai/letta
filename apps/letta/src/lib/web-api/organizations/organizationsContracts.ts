@@ -114,16 +114,30 @@ export const InviteNewTeamMemberSchemaResponse = z.object({
   id: z.string(),
 });
 
+export const InviteNewMember200Response = z.object({
+  email: z.string(),
+  id: z.string(),
+  name: z.string(),
+});
+
 export const inviteNewTeamMemberContract = c.mutation({
   method: 'POST',
   path: '/organizations/self/invited-members',
   body: InviteNewTeamMemberSchemaBody,
   responses: {
     201: InviteNewTeamMemberSchemaResponse,
-    400: z.object({
-      message: z.literal('User already invited'),
-      errorCode: z.literal('userAlreadyInvited'),
-    }),
+    200: InviteNewMember200Response,
+    400: z
+      .object({
+        message: z.literal('User already invited'),
+        errorCode: z.literal('userAlreadyInvited'),
+      })
+      .or(
+        z.object({
+          message: z.literal('User already in the organization'),
+          errorCode: z.literal('userAlreadyInOrganization'),
+        })
+      ),
   },
 });
 

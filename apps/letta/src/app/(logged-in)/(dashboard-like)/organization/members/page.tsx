@@ -19,6 +19,7 @@ import {
   LoadingEmptyStatusComponent,
   RawInput,
   SearchIcon,
+  toast,
   Typography,
   useForm,
 } from '@letta-web/component-library';
@@ -29,7 +30,6 @@ import type {
   GetCurrentOrganizationTeamMembersResponseBodyType,
   ListInvitedMembersResponseBodyType,
 } from '$letta/web-api/organizations/organizationsContracts';
-import { inviteNewTeamMemberContract } from '$letta/web-api/organizations/organizationsContracts';
 import { webApi, webApiQueryKeys } from '$letta/client';
 import { useQueryClient } from '@tanstack/react-query';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -44,9 +44,7 @@ type InviteMemberDialogFormValues = z.infer<
   typeof inviteMemberDialogFormSchema
 >;
 
-const errorMessageFinder = createErrorTranslationFinder(
-  inviteNewTeamMemberContract
-);
+const errorMessageFinder = createErrorTranslationFinder();
 
 function useErrorMessages(error: unknown) {
   const t = useTranslations('organization/members');
@@ -57,6 +55,9 @@ function useErrorMessages(error: unknown) {
 
   return {
     userAlreadyInvited: t('InviteMemberDialog.error.userAlreadyInvited'),
+    userAlreadyInOrganization: t(
+      'InviteMemberDialog.error.userAlreadyInOrganization'
+    ),
     default: t('InviteMemberDialog.error.default'),
   }[errorMessageFinder(error)];
 }
@@ -64,9 +65,25 @@ function useErrorMessages(error: unknown) {
 function InviteMemberDialog() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const queryClient = useQueryClient();
+
   const { mutate, isPending, error } =
     webApi.organizations.inviteNewTeamMember.useMutation({
       onSuccess: (res) => {
+        if (res.status === 200) {
+          toast.success(t('InviteMemberDialog.200success'));
+
+          void queryClient.invalidateQueries({
+            queryKey:
+              webApiQueryKeys.organizations.getCurrentOrganizationTeamMembers,
+            exact: false,
+          });
+
+          setIsDialogOpen(false);
+          return;
+        }
+
+        toast.success(t('InviteMemberDialog.201success'));
+
         queryClient.setQueriesData<
           ListInvitedMembersResponseBodyType | undefined
         >(
@@ -169,32 +186,33 @@ function DeleteMemberDialog(props: DeleteMemberDialogProps) {
 
   const queryClient = useQueryClient();
 
-  const { mutate } = webApi.organizations.removeTeamMember.useMutation({
-    onSuccess: () => {
-      queryClient.setQueriesData<
-        GetCurrentOrganizationTeamMembersResponseBodyType | undefined
-      >(
-        {
-          queryKey:
-            webApiQueryKeys.organizations.getCurrentOrganizationTeamMembers,
-          exact: false,
-        },
-        (input) => {
-          if (!input) {
-            return input;
-          }
+  const { mutate, isPending, isError } =
+    webApi.organizations.removeTeamMember.useMutation({
+      onSuccess: () => {
+        queryClient.setQueriesData<
+          GetCurrentOrganizationTeamMembersResponseBodyType | undefined
+        >(
+          {
+            queryKey:
+              webApiQueryKeys.organizations.getCurrentOrganizationTeamMembers,
+            exact: false,
+          },
+          (input) => {
+            if (!input) {
+              return input;
+            }
 
-          return {
-            ...input,
-            body: {
-              ...input.body,
-              members: input.body.members.filter(({ id }) => id !== userId),
-            },
-          };
-        }
-      );
-    },
-  });
+            return {
+              ...input,
+              body: {
+                ...input.body,
+                members: input.body.members.filter(({ id }) => id !== userId),
+              },
+            };
+          }
+        );
+      },
+    });
 
   const handleRemoveMember = useCallback(() => {
     mutate({
@@ -206,6 +224,8 @@ function DeleteMemberDialog(props: DeleteMemberDialogProps) {
 
   return (
     <Dialog
+      isConfirmBusy={isPending}
+      errorMessage={isError ? t('DeleteMemberDialog.error') : undefined}
       title={t('DeleteMemberDialog.title')}
       onConfirm={handleRemoveMember}
       trigger={<DropdownMenuLabel text={t('DeleteMemberDialog.trigger')} />}
@@ -419,6 +439,7 @@ function InvitedMembersDialog() {
     <Dialog
       size="large"
       title={t('InvitedMembersDialog.title')}
+      hideConfirm
       trigger={
         <Button
           color="tertiary-transparent"

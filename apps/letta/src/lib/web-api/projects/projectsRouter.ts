@@ -28,7 +28,7 @@ export async function getProjects(
     where: and(
       isNull(projects.deletedAt),
       eq(projects.organizationId, organizationId),
-      like(projects.name, search || '%')
+      like(projects.name, `%${search}%`)
     ),
     columns: {
       name: true,
@@ -133,7 +133,7 @@ export async function createProject(
 
   if (existingProject) {
     // get total project count
-    const projectCount = await db
+    const [{ count: projectCount }] = await db
       .select({ count: count() })
       .from(projects)
       .where(eq(projects.organizationId, organizationId));
@@ -185,7 +185,7 @@ export async function getProjectDeployedAgentTemplates(
   ];
 
   if (search) {
-    where.push(like(deployedAgentTemplates.version, search || '%'));
+    where.push(like(deployedAgentTemplates.version, `%${search}%`));
   }
 
   if (agentTemplateId) {

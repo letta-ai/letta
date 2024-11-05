@@ -15,7 +15,7 @@ import {
 } from '$letta/server/auth';
 import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
 import type { contracts } from '$letta/web-api/contracts';
-import { and, eq, gt, isNull, like } from 'drizzle-orm';
+import { and, eq, gt, inArray, like } from 'drizzle-orm';
 import { deleteProject } from '$letta/web-api/projects/projectsRouter';
 import { AdminService } from '@letta-web/letta-agents-api';
 
@@ -68,26 +68,33 @@ async function getCurrentOrganizationTeamMembers(
     throw new Error('Organization not found');
   }
 
-  const where = [
-    eq(users.activeOrganizationId, organizationId),
-    isNull(users.deletedAt),
-  ];
+  const where = [eq(organizationUsers.organizationId, organizationId)];
 
   if (search) {
     where.push(like(users.name, `%${search}%`));
   }
 
-  const members = await db.query.users.findMany({
+  const members = await db.query.organizationUsers.findMany({
     where: and(...where),
     offset,
     limit: limit + 1,
   });
 
+  const userList = await db.query.users.findMany({
+    where: and(
+      inArray(
+        users.id,
+        members.map((member) => member.userId)
+      )
+    ),
+  });
+
   return {
     status: 200,
     body: {
-      nextCursor: members.length > limit ? members[limit - 1].id : undefined,
-      members: members.slice(0, limit).map((member) => ({
+      nextCursor:
+        userList.length > limit ? members[limit - 1].userId : undefined,
+      members: userList.slice(0, limit).map((member) => ({
         id: member.id,
         name: member.name,
         email: member.email,
@@ -118,16 +125,59 @@ async function inviteNewTeamMember(
   });
 
   if (user) {
+    // check if user is already in the organization
+    const userInOrganization = await db.query.organizationUsers.findFirst({
+      where: and(
+        eq(organizationUsers.userId, user.id),
+        eq(organizationUsers.organizationId, activeOrganizationId)
+      ),
+    });
+
+    if (userInOrganization) {
+      return {
+        status: 400,
+        body: {
+          message: 'User already in the organization',
+          errorCode: 'userAlreadyInOrganization',
+        },
+      };
+    }
+
     // add user to the organization
     await db.insert(organizationUsers).values({
       userId: user.id,
       organizationId: activeOrganizationId,
       permissions: {},
     });
+
+    const nextUser = await db.query.users.findFirst({
+      where: eq(users.id, user.id),
+    });
+
+    if (!nextUser) {
+      return {
+        status: 500,
+        body: {
+          message: 'User not found',
+        },
+      };
+    }
+
+    return {
+      status: 200,
+      body: {
+        email,
+        name: nextUser.name,
+        id: user.id,
+      },
+    };
   }
 
   const invitedUser = await db.query.organizationInvitedUsers.findFirst({
-    where: eq(organizationInvitedUsers.email, email),
+    where: and(
+      eq(organizationInvitedUsers.email, email),
+      eq(organizationInvitedUsers.organizationId, activeOrganizationId)
+    ),
   });
 
   if (invitedUser) {

@@ -6,6 +6,7 @@ type PossibleRootType = HTMLAnchorElement | HTMLButtonElement;
 // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
 type ButtonPrimitiveProps = React.HTMLAttributes<PossibleRootType> & {
   preload?: boolean;
+  disabled?: boolean;
 };
 
 function isAnchorElement(
