@@ -24,7 +24,7 @@ function DeployAgentDialog() {
   return (
     <Dialog
       title={t('deployAgent.title')}
-      size="large"
+      size="xlarge"
       trigger={
         <Button
           color="tertiary"

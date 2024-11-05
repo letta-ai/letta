@@ -602,7 +602,9 @@
       "trigger": "Version Agent",
       "deployedAgents": "Deployed Agents",
       "confirm": "Version Agent",
-      "description": "Versioning an agent creates a new version of the agent that is immutable and can be used to deploy agents. Are you sure you want to proceed?"
+      "description": "Versioning an agent creates a new version of the agent that is immutable and can be used to deploy agents. Are you sure you want to proceed?",
+      "migrate": "Migrate all deployed agents to this version",
+      "migrateDescription": "Selecting this option will migrate all deployed agents to this version, to programmatically migrate agents, visit the <link>API documentation</link>."
     },
     "DeploymentButton": {
       "version": "VERSION {version}",
@@ -620,6 +622,7 @@
     "DeleteAgentDialog": {
       "trigger": "Delete Template",
       "title": "Delete Template",
+      "error": "There was an error deleting this template, try again or contact support.",
       "confirm": "Delete Template",
       "confirmText": "Your template's name is <strong>{templateName}</strong>",
       "confirmTextLabel": "Type the name of the agent name to confirm",

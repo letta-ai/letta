@@ -153,7 +153,7 @@ export interface InputContainerProps {
   label: string;
   preLabelIcon?: React.ReactNode;
   hideLabel?: boolean;
-  description?: string;
+  description?: React.ReactNode | string;
   inline?: boolean | 'reverse';
   fullWidth?: boolean;
   fullHeight?: boolean;

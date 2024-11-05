@@ -361,7 +361,7 @@ describe('agentsRouter', () => {
       });
     });
 
-    it('should create an agent from a template', async () => {
+    it('should deploy an agent from a template', async () => {
       mockDatabase.query.agentTemplates.findFirst.mockResolvedValue({
         projectId: 'test-project-id',
         name: 'test-template',
@@ -411,7 +411,13 @@ describe('agentsRouter', () => {
         name: 'next-test',
       });
 
-      const { valuesFn } = mockDatabaseInsert();
+      const { valuesFn, returningFn } = mockDatabaseInsert();
+
+      returningFn.mockReturnValue([
+        {
+          deployedAgentId: 'deployed-test-template-id',
+        },
+      ]);
 
       const response = await createAgent(
         {
@@ -472,6 +478,7 @@ describe('agentsRouter', () => {
         organizationId: 'test-org-id',
         id: 'test-agent-id',
         projectId: 'test-project-id',
+        rootAgentTemplateId: 'test-template-id',
         deployedAgentTemplateId: 'deployed-test-template-id',
         key: expect.any(String),
         internalAgentCountId: 1,
@@ -524,7 +531,13 @@ describe('agentsRouter', () => {
         name: 'next-test',
       });
 
-      const { valuesFn } = mockDatabaseInsert();
+      const { valuesFn, returningFn } = mockDatabaseInsert();
+
+      returningFn.mockReturnValue([
+        {
+          deployedAgentId: 'deployed-test-template-id',
+        },
+      ]);
 
       const response = await createAgent(
         {
@@ -571,6 +584,12 @@ describe('agentsRouter', () => {
         deployedAgentTemplateId: 'test-template-id',
         key: expect.any(String),
         internalAgentCountId: 1,
+        rootAgentTemplateId: 'test-template-id',
+      });
+
+      expect(valuesFn).toHaveBeenCalledWith({
+        deployedAgentId: 'deployed-test-template-id',
+        value: {},
       });
 
       expect(response).toEqual({
@@ -620,7 +639,13 @@ describe('agentsRouter', () => {
         name: 'next-test',
       });
 
-      const { valuesFn } = mockDatabaseInsert();
+      const { valuesFn, returningFn } = mockDatabaseInsert();
+
+      returningFn.mockReturnValue([
+        {
+          deployedAgentId: 'deployed-test-template-id',
+        },
+      ]);
 
       const response = await createAgent(
         {
@@ -665,8 +690,14 @@ describe('agentsRouter', () => {
         id: 'test-agent-id',
         projectId: 'test-project-id',
         deployedAgentTemplateId: 'test-template-id',
+        rootAgentTemplateId: 'test-template-id',
         key: expect.any(String),
         internalAgentCountId: 1,
+      });
+
+      expect(valuesFn).toHaveBeenCalledWith({
+        deployedAgentId: 'deployed-test-template-id',
+        value: {},
       });
 
       expect(response).toEqual({
@@ -754,7 +785,13 @@ describe('agentsRouter', () => {
         createdAgent
       );
 
-      const { valuesFn } = mockDatabaseInsert();
+      const { valuesFn, returningFn } = mockDatabaseInsert();
+
+      returningFn.mockReturnValue([
+        {
+          deployedAgentId: 'deployed-test-template-id',
+        },
+      ]);
 
       const response = await createAgent(
         {
@@ -831,7 +868,13 @@ describe('agentsRouter', () => {
         createdAgent
       );
 
-      const { valuesFn } = mockDatabaseInsert();
+      const { valuesFn, returningFn } = mockDatabaseInsert();
+
+      returningFn.mockReturnValue([
+        {
+          deployedAgentId: 'deployed-test-template-id',
+        },
+      ]);
 
       const response = await createAgent(
         {
