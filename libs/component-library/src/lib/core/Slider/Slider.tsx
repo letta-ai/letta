@@ -20,10 +20,10 @@ const SliderRoot = React.forwardRef<
     )}
     {...props}
   >
-    <SliderPrimitive.Track className="relative h-2 w-full grow overflow-hidden bg-background-grey">
+    <SliderPrimitive.Track className="relative h-1 w-full grow overflow-hidden bg-background-grey">
       <SliderPrimitive.Range className="absolute h-full bg-secondary" />
     </SliderPrimitive.Track>
-    <SliderPrimitive.Thumb className="block h-6 cursor-pointer w-2  border-2 bg-secondary border-secondary ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50" />
+    <SliderPrimitive.Thumb className="block h-4 cursor-pointer w-4 rounded-full border-secondary  border-2 bg-background ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50" />
   </SliderPrimitive.Root>
 ));
 SliderRoot.displayName = SliderPrimitive.Root.displayName;
@@ -79,7 +79,7 @@ function SliderInput(props: SliderProps) {
         {...sliderProps}
       />
       <input
-        className="w-[75px] bg-background border text-center px-1 py-1 rounded-sm"
+        className="w-[75px] bg-background border text-center text-left px-1 py-1 rounded-sm"
         value={sliderValue}
         onChange={(e) => {
           handleSliderValueChange(e.target.value);
