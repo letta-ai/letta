@@ -88,7 +88,7 @@ export const users = pgTable('users', {
   email: text('email').notNull().unique(),
   name: text('name').notNull(),
   imageUrl: text('image_url').notNull(),
-  activeOrganizationId: text('active_organization_id').notNull(),
+  activeOrganizationId: text('active_organization_id'),
   lettaAgentsId: text('letta_agents_id').notNull().unique(),
   theme: text('theme').default('light'),
   deletedAt: timestamp('deleted_at'),
@@ -109,7 +109,7 @@ export interface OrganizationPermissionType {
 export const organizationUsers = pgTable(
   'organization_users',
   {
-    user_id: text('user_id')
+    userId: text('user_id')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' })
       .notNull(),
@@ -126,7 +126,7 @@ export const organizationUsers = pgTable(
       .$onUpdate(() => new Date()),
   },
   (table) => ({
-    pk: primaryKey({ columns: [table.user_id, table.organizationId] }),
+    pk: primaryKey({ columns: [table.userId, table.organizationId] }),
   })
 );
 
@@ -134,7 +134,7 @@ export const organizationUsersRelations = relations(
   organizationUsers,
   ({ one }) => ({
     user: one(users, {
-      fields: [organizationUsers.user_id],
+      fields: [organizationUsers.userId],
       references: [users.id],
     }),
     organization: one(organizations, {

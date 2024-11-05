@@ -1,15 +1,13 @@
-import type { ReactNode } from 'react';
-import React from 'react';
 import { DashboardLikeLayout } from '$letta/client/components';
+import React, { type ReactNode } from 'react';
 
 interface DashboardLikeLayoutProps {
   children: ReactNode;
 }
-
 export default async function DashboardLikeLayoutLayout(
   props: DashboardLikeLayoutProps
 ) {
   const { children } = props;
 
-  return <DashboardLikeLayout>{children}</DashboardLikeLayout>;
+  return <DashboardLikeLayout hideSidebar>{children}</DashboardLikeLayout>;
 }

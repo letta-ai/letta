@@ -92,6 +92,13 @@
       "when": 1730754364539,
       "tag": "0012_same_kylun",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1730757152896,
+      "tag": "0013_friendly_thundra",
+      "breakpoints": true
     }
   ]
 }

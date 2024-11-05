@@ -55,7 +55,7 @@ const handler = createNextHandler(sdkContracts, sdkRouter, {
         middlewareData.lettaAgentsUserId = user?.lettaAgentsId || '';
       }
 
-      if (!middlewareData.userId) {
+      if (!middlewareData.userId || !middlewareData.organizationId) {
         return new Response(JSON.stringify({ message: 'Unauthorized' }), {
           status: 401,
           headers: {

@@ -8,13 +8,17 @@ import {
   DashboardPageSection,
   DataTable,
   Dialog,
+  DialogTable,
   DotsHorizontalIcon,
   DropdownMenu,
   DropdownMenuLabel,
   FormField,
   FormProvider,
+  HStack,
   Input,
   LoadingEmptyStatusComponent,
+  RawInput,
+  SearchIcon,
   Typography,
   useForm,
 } from '@letta-web/component-library';
@@ -23,11 +27,14 @@ import type { ColumnDef } from '@tanstack/react-table';
 import type {
   CurrentOrganizationTeamMembersType,
   GetCurrentOrganizationTeamMembersResponseBodyType,
+  ListInvitedMembersResponseBodyType,
 } from '$letta/web-api/organizations/organizationsContracts';
+import { inviteNewTeamMemberContract } from '$letta/web-api/organizations/organizationsContracts';
 import { webApi, webApiQueryKeys } from '$letta/client';
 import { useQueryClient } from '@tanstack/react-query';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { createErrorTranslationFinder } from '@letta-web/helpful-client-utils';
 
 const inviteMemberDialogFormSchema = z.object({
   email: z.string().email(),
@@ -37,8 +44,25 @@ type InviteMemberDialogFormValues = z.infer<
   typeof inviteMemberDialogFormSchema
 >;
 
+const errorMessageFinder = createErrorTranslationFinder(
+  inviteNewTeamMemberContract
+);
+
+function useErrorMessages(error: unknown) {
+  const t = useTranslations('organization/members');
+
+  if (!error) {
+    return undefined;
+  }
+
+  return {
+    userAlreadyInvited: t('InviteMemberDialog.error.userAlreadyInvited'),
+    default: t('InviteMemberDialog.error.default'),
+  }[errorMessageFinder(error)];
+}
+
 function InviteMemberDialog() {
-  const { mutate, isPending } =
+  const { mutate, isPending, error } =
     webApi.organizations.inviteNewTeamMember.useMutation();
 
   const t = useTranslations('organization/members');
@@ -49,6 +73,8 @@ function InviteMemberDialog() {
       email: '',
     },
   });
+
+  const errorMessage = useErrorMessages(error);
 
   const handleInviteMember = useCallback(() => {
     mutate({
@@ -61,8 +87,9 @@ function InviteMemberDialog() {
   return (
     <FormProvider {...form}>
       <Dialog
+        errorMessage={errorMessage}
         title={t('InviteMemberDialog.title')}
-        onSubmit={handleInviteMember}
+        onSubmit={form.handleSubmit(handleInviteMember)}
         confirmText={t('InviteMemberDialog.confirm')}
         isConfirmBusy={isPending}
         trigger={
@@ -150,7 +177,7 @@ function DeleteMemberDialog(props: DeleteMemberDialogProps) {
   );
 }
 
-function Members() {
+function ExistingMembers() {
   const user = useCurrentUser();
   const t = useTranslations('organization/members');
   const [cursor, setCursor] = useState<
@@ -237,30 +264,164 @@ function Members() {
     }, [t, user?.id]);
 
   return (
-    <DashboardPageLayout title={t('title')} actions={<InviteMemberDialog />}>
+    <DashboardPageSection>
       {(!members || members.length === 0) && !cursor ? (
         <LoadingEmptyStatusComponent
           emptyMessage={t('table.emptyError')}
-          isLoading={!members}
+          isLoading={!data?.body}
           errorMessage={t('table.error')}
           loadingMessage={t('table.loading')}
           isError={isError}
         />
       ) : (
-        <DashboardPageSection>
-          <DataTable
-            isLoading={isFetching}
-            limit={limit}
-            hasNextPage={hasNextPage}
-            onSetCursor={setCursor}
-            autofitHeight
-            onLimitChange={setLimit}
-            showPagination
-            columns={membersColumns}
-            data={members || []}
-          />
-        </DashboardPageSection>
+        <DataTable
+          isLoading={isFetching}
+          limit={limit}
+          hasNextPage={hasNextPage}
+          onSetCursor={setCursor}
+          autofitHeight
+          onLimitChange={setLimit}
+          showPagination
+          columns={membersColumns}
+          data={members || []}
+        />
       )}
+    </DashboardPageSection>
+  );
+}
+
+interface DisInviteMemberButtonProps {
+  id: string;
+}
+
+function DisInviteMemberButton(props: DisInviteMemberButtonProps) {
+  const { id } = props;
+  const t = useTranslations('organization/members');
+
+  const query = useQueryClient();
+
+  const { mutate } = webApi.organizations.unInviteTeamMember.useMutation({
+    onSuccess: () => {
+      query.setQueriesData<ListInvitedMembersResponseBodyType | undefined>(
+        {
+          queryKey: webApiQueryKeys.organizations.listInvitedMembers,
+          exact: false,
+        },
+        (data) => {
+          if (!data) {
+            return data;
+          }
+          return {
+            ...data,
+            body: {
+              ...data.body,
+              members: data.body.members.filter((member) => member.id !== id),
+            },
+          };
+        }
+      );
+    },
+  });
+
+  return (
+    <Button
+      type="button"
+      onClick={() => {
+        mutate({
+          params: {
+            memberId: id,
+          },
+        });
+      }}
+      size="small"
+      color="tertiary"
+      label={t('DisInviteMemberButton.dismiss')}
+    />
+  );
+}
+
+function InvitedMembersDialog() {
+  const t = useTranslations('organization/members');
+
+  const [search, setSearch] = useState('');
+  const limit = 30;
+
+  const { data, isFetching, isError } =
+    webApi.organizations.listInvitedMembers.useQuery({
+      queryKey: webApiQueryKeys.organizations.listInvitedMembersWithSearch({
+        limit,
+        search,
+      }),
+      queryData: {
+        query: {
+          limit,
+          search,
+        },
+      },
+    });
+
+  const members = useMemo(() => {
+    if (!data?.body) {
+      return [];
+    }
+
+    return data.body.members.map((member) => ({
+      label: member.email,
+      id: member.id,
+      action: <DisInviteMemberButton id={member.id} />,
+    }));
+  }, [data?.body]);
+
+  return (
+    <Dialog
+      size="large"
+      title={t('InvitedMembersDialog.title')}
+      trigger={
+        <Button
+          color="tertiary-transparent"
+          label={t('InvitedMembersDialog.trigger')}
+        />
+      }
+    >
+      <HStack>
+        <RawInput
+          value={search}
+          onChange={(e) => {
+            setSearch(e.target.value);
+          }}
+          postIcon={<SearchIcon />}
+          fullWidth
+          hideLabel
+          label={t('InvitedMembersDialog.searchInput.label')}
+          placeholder={t('InvitedMembersDialog.searchInput.placeholder')}
+        />
+      </HStack>
+      <DialogTable
+        errorMessage={
+          isError ? t('InvitedMembersDialog.table.error') : undefined
+        }
+        items={members}
+        emptyMessage={t('InvitedMembersDialog.table.empty')}
+        isLoading={isFetching}
+      />
+    </Dialog>
+  );
+}
+
+function Members() {
+  const t = useTranslations('organization/members');
+
+  return (
+    <DashboardPageLayout
+      title={t('title')}
+      actions={
+        <HStack>
+          <InvitedMembersDialog />
+          <InviteMemberDialog />
+        </HStack>
+      }
+    >
+      <ExistingMembers />
     </DashboardPageLayout>
   );
 }

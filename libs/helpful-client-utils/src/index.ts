@@ -1,6 +1,8 @@
 'use client';
 import type * as z from 'zod';
 
+export * from './createErrorTranslationFinder/createErrorTranslationFinder';
+
 export function nicelyFormattedDateAndTime(date: string) {
   return new Intl.DateTimeFormat('en-US', {
     dateStyle: 'medium',

@@ -7,7 +7,7 @@ import {
   agentTemplates,
   organizationPreferences,
 } from '@letta-web/database';
-import { getUserOrganizationIdOrThrow } from '$letta/server/auth';
+import { getUserActiveOrganizationIdOrThrow } from '$letta/server/auth';
 import { eq, and, like, desc, count, isNull } from 'drizzle-orm';
 import type { contracts, projectsContract } from '$letta/web-api/contracts';
 import { generateSlug } from '$letta/server';
@@ -22,7 +22,7 @@ export async function getProjects(
 ): Promise<ResponseShapes['getProjects']> {
   const { search, offset, limit } = req.query;
 
-  const organizationId = await getUserOrganizationIdOrThrow();
+  const organizationId = await getUserActiveOrganizationIdOrThrow();
 
   const projectsList = await db.query.projects.findMany({
     where: and(
@@ -66,7 +66,7 @@ export async function getProjectByIdOrSlug(
   const { projectId } = req.params;
   const { lookupBy } = req.query;
 
-  const organizationId = await getUserOrganizationIdOrThrow();
+  const organizationId = await getUserActiveOrganizationIdOrThrow();
 
   const query = [
     isNull(projects.deletedAt),
@@ -119,7 +119,7 @@ export async function createProject(
 ): Promise<CreateProjectResponse> {
   const { name } = req.body;
 
-  const organizationId = await getUserOrganizationIdOrThrow();
+  const organizationId = await getUserActiveOrganizationIdOrThrow();
 
   let projectSlug = generateSlug(name);
 
@@ -173,7 +173,7 @@ type GetProjectDeployedAgentTemplatesResponse = ServerInferResponses<
 export async function getProjectDeployedAgentTemplates(
   req: GetProjectDeployedAgentTemplatesRequest
 ): Promise<GetProjectDeployedAgentTemplatesResponse> {
-  const organizationId = await getUserOrganizationIdOrThrow();
+  const organizationId = await getUserActiveOrganizationIdOrThrow();
   const { projectId } = req.params;
   const { search, offset, agentTemplateId, limit, includeAgentTemplateInfo } =
     req.query;
@@ -241,7 +241,7 @@ type GetProjectDeployedAgentsResponse = ServerInferResponses<
 export async function getDeployedAgents(
   req: GetProjectDeployedAgentsRequest
 ): Promise<GetProjectDeployedAgentsResponse> {
-  const organizationId = await getUserOrganizationIdOrThrow();
+  const organizationId = await getUserActiveOrganizationIdOrThrow();
   const { projectId } = req.params;
   const { search, offset, limit = 10, deployedAgentTemplateId } = req.query;
 
@@ -305,7 +305,7 @@ export async function updateProject(
   req: UpdateProjectRequest
 ): Promise<UpdateProjectResponse> {
   const { projectId } = req.params;
-  const organizationId = await getUserOrganizationIdOrThrow();
+  const organizationId = await getUserActiveOrganizationIdOrThrow();
   const { name } = req.body;
 
   const project = await db.query.projects.findFirst({
@@ -353,7 +353,7 @@ export async function deleteProject(
   req: DeleteProjectRequest
 ): Promise<DeleteProjectResponse> {
   const { projectId } = req.params;
-  const organizationId = await getUserOrganizationIdOrThrow();
+  const organizationId = await getUserActiveOrganizationIdOrThrow();
 
   const project = await db.query.projects.findFirst({
     where: and(

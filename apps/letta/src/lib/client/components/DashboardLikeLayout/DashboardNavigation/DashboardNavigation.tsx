@@ -22,6 +22,7 @@ import {
   useDashboardNavigationItems,
   VStack,
   CompanyIcon,
+  SwitchOrganizationIcon,
 } from '@letta-web/component-library';
 import { useCurrentUser } from '$letta/client/hooks';
 import { usePathname } from 'next/navigation';
@@ -59,10 +60,14 @@ function NavButton(props: NavButtonProps) {
 }
 
 function AdminNav() {
-  const t = useTranslations('dashboard-like/layout');
+  const t = useTranslations(
+    'components/DashboardLikeLayout/DashboardNavigation'
+  );
+  const user = useCurrentUser();
 
   const { data } = webApi.organizations.getCurrentOrganization.useQuery({
     queryKey: webApiQueryKeys.organizations.getCurrentOrganization,
+    enabled: !!user?.activeOrganizationId,
   });
 
   if (!data?.body.isAdmin) {
@@ -80,7 +85,9 @@ function AdminNav() {
 }
 
 function MainNavigationItems() {
-  const t = useTranslations('dashboard-like/layout');
+  const t = useTranslations(
+    'components/DashboardLikeLayout/DashboardNavigation'
+  );
   const pathname = usePathname();
 
   const { subnavigationData } = useDashboardNavigationItems();
@@ -177,29 +184,45 @@ function MainNavigationItems() {
 }
 
 function SecondaryMenuItems() {
+  const t = useTranslations(
+    'components/DashboardLikeLayout/DashboardNavigation'
+  );
+
   return (
     <VStack gap="medium">
-      <VStack borderBottom paddingX="small" gap="small">
-        <NavButton
-          id="settings"
-          href="/settings"
-          label="Settings"
-          icon={<CogIcon />}
-        />
-        <NavButton
-          id="organization"
-          href="/organization"
-          label="Organization"
-          icon={<CompanyIcon />}
-        />
-        <AdminNav />
-        <NavButton
-          id="sign-out"
-          preload={false}
-          href="/signout"
-          label="Sign Out"
-          icon={<LogoutIcon />}
-        />
+      <VStack gap={false}>
+        <VStack borderBottom gap="small" padding="small">
+          <NavButton
+            id="settings"
+            href="/settings"
+            label={t('secondaryNav.settings')}
+            icon={<CogIcon />}
+          />
+          <NavButton
+            id="organization"
+            href="/organization"
+            label={t('secondaryNav.organization')}
+            icon={<CompanyIcon />}
+          />
+          <AdminNav />
+        </VStack>
+        <VStack borderBottom gap="small" padding="small">
+          <NavButton
+            id="select-organization"
+            href="/select-organization"
+            label={t('secondaryNav.switchOrganizations')}
+            icon={<SwitchOrganizationIcon />}
+          />
+        </VStack>
+        <VStack borderBottom gap="small" padding="small">
+          <NavButton
+            id="sign-out"
+            preload={false}
+            href="/signout"
+            label={t('secondaryNav.signOut')}
+            icon={<LogoutIcon />}
+          />
+        </VStack>
       </VStack>
       <HStack justify="end" paddingX="small">
         <ThemeSelector />
@@ -254,7 +277,7 @@ function ProfilePopover() {
       <HStack borderBottom>
         <CurrentUserDetailsBlock hideSettingsButton />
       </HStack>
-      <VStack paddingY="small">
+      <VStack paddingBottom="small">
         <SecondaryMenuItems />
       </VStack>
     </Popover>
@@ -263,7 +286,13 @@ function ProfilePopover() {
 
 export const SIDEBAR_OVERLAY_MOUNT_POINT_ID = 'sidebar-overlay-mount-point';
 
-function NavigationOverlay() {
+interface NavigationOverlayProps {
+  variant?: 'default' | 'minimal';
+}
+
+function NavigationOverlay(props: NavigationOverlayProps) {
+  const { variant = 'default' } = props;
+
   const [open, setOpen] = useState(false);
 
   const handleCloseOnClickInside = useCallback((event: React.MouseEvent) => {
@@ -311,7 +340,7 @@ function NavigationOverlay() {
             >
               <VStack gap="small">
                 <div className="h-header" />
-                <MainNavigationItems />
+                {variant !== 'minimal' && <MainNavigationItems />}
                 <HStack fullWidth borderBottom />
                 <SecondaryMenuItems />
               </VStack>
@@ -352,8 +381,16 @@ function SubRoute() {
   );
 }
 
-export function DashboardHeader() {
-  const t = useTranslations('dashboard-like/layout');
+interface DashboardHeaderProps {
+  variant?: 'default' | 'minimal';
+}
+
+export function DashboardHeader(props: DashboardHeaderProps) {
+  const { variant = 'default' } = props;
+
+  const t = useTranslations(
+    'components/DashboardLikeLayout/DashboardNavigation'
+  );
   return (
     <>
       {/* eslint-disable-next-line react/forbid-component-props */}
@@ -381,7 +418,7 @@ export function DashboardHeader() {
                 <>
                   {/* eslint-disable-next-line react/forbid-component-props */}
                   <Frame className="contents visibleSidebar:hidden">
-                    <NavigationOverlay />
+                    <NavigationOverlay variant={variant} />
                   </Frame>
                   {/* eslint-disable-next-line react/forbid-component-props */}
                   <Frame className="hidden visibleSidebar:contents">

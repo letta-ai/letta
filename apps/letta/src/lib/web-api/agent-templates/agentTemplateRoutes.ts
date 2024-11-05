@@ -1,8 +1,8 @@
 import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
 import type { contracts } from '../contracts';
 import {
-  getUserOrganizationIdOrThrow,
-  getUserOrThrow,
+  getUserActiveOrganizationIdOrThrow,
+  getUserWithActiveOrganizationIdOrThrow,
 } from '$letta/server/auth';
 import { and, desc, eq, isNull, like } from 'drizzle-orm';
 import {
@@ -31,7 +31,7 @@ export async function listAgentTemplates(
 ): Promise<ListAgentTemplatesQueryResponse> {
   const { search, offset, limit = 10, projectId } = req.query;
 
-  const organizationId = await getUserOrganizationIdOrThrow();
+  const organizationId = await getUserActiveOrganizationIdOrThrow();
 
   const where = [
     eq(agentTemplates.organizationId, organizationId),
@@ -89,7 +89,8 @@ export async function forkAgentTemplate(
   req: ForkAgentTemplateRequest
 ): Promise<ForkAgentTemplateResponse> {
   const { agentTemplateId, projectId } = req.params;
-  const { activeOrganizationId, lettaAgentsId } = await getUserOrThrow();
+  const { activeOrganizationId, lettaAgentsId } =
+    await getUserWithActiveOrganizationIdOrThrow();
 
   const testingAgent = await db.query.agentTemplates.findFirst({
     where: and(
@@ -154,7 +155,8 @@ async function getAgentTemplateSimulatorSession(
   req: GetAgentTemplateSimulatorSessionRequest
 ): Promise<GetAgentTemplateSimulatorSessionResponse> {
   const { agentTemplateId } = req.params;
-  const { activeOrganizationId, lettaAgentsId } = await getUserOrThrow();
+  const { activeOrganizationId, lettaAgentsId } =
+    await getUserWithActiveOrganizationIdOrThrow();
 
   const agentTemplate = await db.query.agentTemplates.findFirst({
     where: and(
@@ -235,7 +237,8 @@ async function createAgentTemplateSimulatorSession(
 ): Promise<CreateAgentTemplateSimulatorSessionResponse> {
   const { agentTemplateId } = req.params;
   const { variables } = req.body;
-  const { activeOrganizationId, lettaAgentsId } = await getUserOrThrow();
+  const { activeOrganizationId, lettaAgentsId } =
+    await getUserWithActiveOrganizationIdOrThrow();
 
   const agentTemplate = await db.query.agentTemplates.findFirst({
     where: and(
@@ -357,7 +360,8 @@ async function refreshAgentTemplateSimulatorSession(
   req: RefreshAgentTemplateSimulatorSessionRequest
 ): Promise<RefreshAgentTemplateSimulatorSessionResponse> {
   const { agentTemplateId, agentSessionId } = req.params;
-  const { activeOrganizationId, lettaAgentsId } = await getUserOrThrow();
+  const { activeOrganizationId, lettaAgentsId } =
+    await getUserWithActiveOrganizationIdOrThrow();
 
   const agentTemplate = await db.query.agentTemplates.findFirst({
     where: and(
@@ -419,7 +423,8 @@ async function deleteAgentTemplateSimulatorSession(
   req: DeleteAgentTemplateSimulatorSessionRequest
 ): Promise<DeleteAgentTemplateSimulatorSessionResponse> {
   const { agentSessionId } = req.params;
-  const { activeOrganizationId } = await getUserOrThrow();
+  const { activeOrganizationId } =
+    await getUserWithActiveOrganizationIdOrThrow();
 
   const simulatorSession = await db.query.agentSimulatorSessions.findFirst({
     where: and(

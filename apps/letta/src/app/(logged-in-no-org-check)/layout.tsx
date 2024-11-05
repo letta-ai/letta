@@ -14,10 +14,6 @@ export default async function Layout({ children }: InAppProps) {
           return '/login';
         }
 
-        if (!user?.activeOrganizationId) {
-          return '/select-organization';
-        }
-
         return '';
       }}
     >

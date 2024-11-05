@@ -73,11 +73,13 @@ export type GetCurrentOrganizationTeamMembersResponseBodyType =
 export const InvitedMembersSchema = z.object({
   email: z.string(),
   createdAt: z.string(),
+  id: z.string(),
 });
 
 export const InvitedMembersQueryParams = z.object({
   cursor: z.string().optional(),
   limit: z.number().optional(),
+  search: z.string().optional(),
 });
 
 type InvitedMembersQueryParamsType = z.infer<typeof InvitedMembersQueryParams>;
@@ -96,6 +98,11 @@ export const listInvitedMembersContract = c.query({
   },
 });
 
+export type ListInvitedMembersResponseBodyType = ServerInferResponses<
+  typeof listInvitedMembersContract,
+  200
+>;
+
 /* Invite new team member */
 export const InviteNewTeamMemberSchemaBody = z.object({
   email: z.string(),
@@ -111,6 +118,10 @@ export const inviteNewTeamMemberContract = c.mutation({
   body: InviteNewTeamMemberSchemaBody,
   responses: {
     201: InviteNewTeamMemberSchemaResponse,
+    400: z.object({
+      message: z.literal('User already invited'),
+      errorCode: z.literal('userAlreadyInvited'),
+    }),
   },
 });
 
@@ -176,6 +187,25 @@ export const updateOrganizationContract = c.mutation({
   },
 });
 
+/* create organization */
+export const CreateOrganizationSchema = z.object({
+  name: z.string(),
+});
+
+export const CreateOrganizationResponse = z.object({
+  id: z.string(),
+  name: z.string(),
+});
+
+export const createOrganizationContract = c.mutation({
+  method: 'POST',
+  path: '/organizations',
+  body: CreateOrganizationSchema,
+  responses: {
+    201: CreateOrganizationResponse,
+  },
+});
+
 export const organizationsContract = c.router({
   getCurrentOrganization: getCurrentOrganizationContract,
   getCurrentOrganizationTeamMembers: getCurrentOrganizationTeamMembersContract,
@@ -185,6 +215,7 @@ export const organizationsContract = c.router({
   listInvitedMembers: listInvitedMembersContract,
   deleteOrganization: deleteOrganizationContract,
   updateOrganization: updateOrganizationContract,
+  createOrganization: createOrganizationContract,
 });
 
 export const organizationsQueryClientKeys = {

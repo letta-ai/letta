@@ -3,12 +3,18 @@
     "emptyMessage": "This is not the page you're looking for",
     "emptyAction": "Go home"
   },
-  "dashboard-like/layout": {
+  "components/DashboardLikeLayout/DashboardNavigation": {
     "nav": {
       "projects": "Projects",
       "apiKeys": "API Keys",
       "dataSources": "Data Sources",
       "admin": "Admin"
+    },
+    "secondaryNav": {
+      "settings": "Settings",
+      "signOut": "Sign out",
+      "organization": "Organization",
+      "switchOrganizations": "Switch Organizations"
     },
     "header": {
       "Documentation": "Documentation"
@@ -16,6 +22,26 @@
   },
   "settings/layout": {
     "profile": "Profile"
+  },
+  "create-organization": {
+    "error": "There was an error creating the organization, please try again or contact support.",
+    "title": "Create a new Organization",
+    "name": {
+      "label": "Organization Name",
+      "placeholder": "my-organization-name"
+    },
+    "submit": "Create Organization"
+  },
+  "select-organization": {
+    "title": "Select an Organization",
+    "loading": "Loading organizations...",
+    "error": "There was an error loading organizations, please try again or contact support.",
+    "empty": "You are not in any organizations, create one below.",
+    "OrganizationRow": {
+      "select": "Select"
+    },
+    "createNewOrganization": "Create a new organization",
+    "missingOrg": "If you do not see your organization, you may have not been invited yet. Please contact your organization's administrator."
   },
   "organization/settings": {
     "title": "Organization Settings",
@@ -47,10 +73,29 @@
     "settings": "Settings"
   },
   "organization/members": {
+    "DisInviteMemberButton": {
+      "dismiss": "Dismiss invitation"
+    },
+    "InvitedMembersDialog": {
+      "title": "Invited Members",
+      "trigger": "View Invited Members",
+      "table": {
+        "error": "There was an error loading invited members, please try again or contact support.",
+        "empty": "No invited members"
+      },
+      "searchInput": {
+        "label": "Search invited members",
+        "placeholder": "Search invited members"
+      }
+    },
     "InviteMemberDialog": {
       "email": {
         "label": "Email",
         "placeholder": "my@email.com"
+      },
+      "error": {
+        "userAlreadyInvited": "This user has already been invited to the organization",
+        "default": "There was an error inviting this user, please try again or contact support"
       },
       "trigger": "Invite Member",
       "confirm": "Invite",
