@@ -200,6 +200,7 @@ function EmailWhitelistPage() {
 
   return (
     <DashboardPageLayout
+      encapsulatedFullHeight
       title="Email Whitelist"
       actions={
         <>
@@ -217,7 +218,7 @@ function EmailWhitelistPage() {
           isError={isError}
         />
       ) : (
-        <DashboardPageSection>
+        <DashboardPageSection fullHeight>
           <DataTable
             onLimitChange={setLimit}
             searchValue={search}
@@ -226,6 +227,7 @@ function EmailWhitelistPage() {
             isLoading={isFetching}
             limit={limit}
             offset={offset}
+            minHeight={450}
             onSetOffset={setOffset}
             showPagination
             columns={emailWhitelistColumns}
