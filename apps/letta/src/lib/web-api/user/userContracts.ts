@@ -9,7 +9,7 @@ export const PublicUserSchema = z.object({
   email: z.string(),
   imageUrl: z.string(),
   theme: z.string(),
-  organizationId: z.string(),
+  activeOrganizationId: z.string(),
   id: z.string(),
 });
 
@@ -43,11 +43,56 @@ const updateCurrentUserContract = c.mutation({
   },
 });
 
+/* List user organizations */
+export const ListUserOrganizationsItemSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+});
+
+export const ListUserOrganizationsResponseSchema = z.object({
+  organizations: z.array(ListUserOrganizationsItemSchema),
+});
+
+export type ListUserOrganizationsItemSchemaType = z.infer<
+  typeof ListUserOrganizationsItemSchema
+>;
+
+export type ListUserOrganizationsResponseSchemaType = z.infer<
+  typeof ListUserOrganizationsResponseSchema
+>;
+
+export const listUserOrganizationsContract = c.query({
+  method: 'GET',
+  path: '/user/self/organizations',
+  responses: {
+    200: ListUserOrganizationsResponseSchema,
+  },
+});
+
+/* Update active organization id */
+export const UpdateActiveOrganizationPayloadSchema = z.object({
+  activeOrganizationId: z.string(),
+});
+
+export const updateActiveOrganizationContract = c.mutation({
+  method: 'PUT',
+  path: '/user/self/active-organization',
+  body: UpdateActiveOrganizationPayloadSchema,
+  responses: {
+    200: z.object({
+      success: z.boolean(),
+    }),
+  },
+});
+
 export const userContract = c.router({
   getCurrentUser: getUserContract,
   updateCurrentUser: updateCurrentUserContract,
+  listUserOrganizations: listUserOrganizationsContract,
+  updateActiveOrganization: updateActiveOrganizationContract,
 });
 
 export const userQueryClientKeys = {
   getCurrentUser: ['user', 'self'],
+  listUserOrganizations: ['user', 'self', 'organizations'],
 };

@@ -62,7 +62,7 @@ export default async function LoggedInLayout(props: InAppProps) {
   }
 
   const organization = await getOrganizationFromOrganizationId(
-    user.organizationId
+    user.activeOrganizationId
   );
 
   if (!organization?.isAdmin) {

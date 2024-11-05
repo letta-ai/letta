@@ -40,7 +40,7 @@ const handler = createNextHandler(sdkContracts, sdkRouter, {
             where: eq(users.id, middlewareData.userId),
             columns: {
               lettaAgentsId: true,
-              organizationId: true,
+              activeOrganizationId: true,
               id: true,
             },
           });
@@ -50,12 +50,12 @@ const handler = createNextHandler(sdkContracts, sdkRouter, {
       } else {
         const user = await getUser();
 
-        middlewareData.organizationId = user?.organizationId || '';
+        middlewareData.organizationId = user?.activeOrganizationId || '';
         middlewareData.userId = user?.id || '';
         middlewareData.lettaAgentsUserId = user?.lettaAgentsId || '';
       }
 
-      if (!middlewareData.userId) {
+      if (!middlewareData.userId || !middlewareData.organizationId) {
         return new Response(JSON.stringify({ message: 'Unauthorized' }), {
           status: 401,
           headers: {

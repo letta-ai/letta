@@ -53,7 +53,7 @@ async function AgentsAgentPage(context: AgentsAgentPageProps) {
   const deployedAgent = await db.query.deployedAgents.findFirst({
     where: and(
       eq(deployedAgents.id, agentId),
-      eq(deployedAgents.organizationId, user.organizationId),
+      eq(deployedAgents.organizationId, user.activeOrganizationId),
       isNull(deployedAgents.deletedAt)
     ),
     columns: {

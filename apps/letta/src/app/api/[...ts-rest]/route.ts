@@ -8,7 +8,7 @@ import { router } from '$letta/web-api/router';
 import type { GetUserDataResponse } from '$letta/server/auth';
 import {
   getOrganizationFromOrganizationId,
-  getUserOrganizationIdOrThrow,
+  getUserActiveOrganizationIdOrThrow,
 } from '$letta/server/auth';
 
 const handler = createNextHandler(contracts, router, {
@@ -19,7 +19,7 @@ const handler = createNextHandler(contracts, router, {
   requestMiddleware: [
     tsr.middleware<{ $userOverride?: GetUserDataResponse }>(async (req) => {
       if (new URL(req.url).pathname.includes('admin')) {
-        const organizationId = await getUserOrganizationIdOrThrow();
+        const organizationId = await getUserActiveOrganizationIdOrThrow();
 
         const organization = await getOrganizationFromOrganizationId(
           organizationId

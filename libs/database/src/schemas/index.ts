@@ -8,6 +8,7 @@ import {
   uniqueIndex,
   json,
   numeric,
+  primaryKey,
 } from 'drizzle-orm/pg-core';
 import { sql, relations } from 'drizzle-orm';
 import type {
@@ -41,12 +42,14 @@ export const organizations = pgTable('organizations', {
 });
 
 export const orgRelationsTable = relations(organizations, ({ many }) => ({
-  users: many(users),
   apiKeys: many(lettaAPIKeys),
   projects: many(projects),
   testingAgents: many(agentTemplates),
   sourceAgents: many(deployedAgentTemplates),
   deployedAgents: many(deployedAgents),
+  organizationUsers: many(organizationUsers),
+  organizationPreferences: many(organizationPreferences),
+  organizationInvitedUsers: many(organizationInvitedUsers),
 }));
 
 export const organizationPreferences = pgTable('organization_preferences', {
@@ -85,10 +88,7 @@ export const users = pgTable('users', {
   email: text('email').notNull().unique(),
   name: text('name').notNull(),
   imageUrl: text('image_url').notNull(),
-  organizationId: text('organization_id')
-    .notNull()
-    .references(() => organizations.id, { onDelete: 'cascade' })
-    .notNull(),
+  activeOrganizationId: text('active_organization_id'),
   lettaAgentsId: text('letta_agents_id').notNull().unique(),
   theme: text('theme').default('light'),
   deletedAt: timestamp('deleted_at'),
@@ -98,12 +98,51 @@ export const users = pgTable('users', {
     .$onUpdate(() => new Date()),
 });
 
-export const userRelations = relations(users, ({ one }) => ({
-  organization: one(organizations, {
-    fields: [users.organizationId],
-    references: [organizations.id],
-  }),
+export const userRelations = relations(users, ({ many }) => ({
+  organizationUsers: many(organizationUsers),
 }));
+
+export interface OrganizationPermissionType {
+  isOrganizationAdmin?: boolean;
+}
+
+export const organizationUsers = pgTable(
+  'organization_users',
+  {
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' })
+      .notNull(),
+    organizationId: text('organization_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' })
+      .notNull(),
+    permissions: json('permissions')
+      .$type<OrganizationPermissionType>()
+      .notNull(),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at')
+      .notNull()
+      .$onUpdate(() => new Date()),
+  },
+  (table) => ({
+    pk: primaryKey({ columns: [table.userId, table.organizationId] }),
+  })
+);
+
+export const organizationUsersRelations = relations(
+  organizationUsers,
+  ({ one }) => ({
+    user: one(users, {
+      fields: [organizationUsers.userId],
+      references: [users.id],
+    }),
+    organization: one(organizations, {
+      fields: [organizationUsers.organizationId],
+      references: [organizations.id],
+    }),
+  })
+);
 
 export const lettaAPIKeys = pgTable('letta_api_keys', {
   id: text('id')
@@ -417,7 +456,7 @@ export const inferenceTransactionRelations = relations(
   })
 );
 
-export const invitedUsers = pgTable('invited_users', {
+export const organizationInvitedUsers = pgTable('organization_invites', {
   id: text('id')
     .primaryKey()
     .default(sql`gen_random_uuid()`),
@@ -433,9 +472,12 @@ export const invitedUsers = pgTable('invited_users', {
     .$onUpdate(() => new Date()),
 });
 
-export const invitedUsersRelations = relations(invitedUsers, ({ one }) => ({
-  organization: one(organizations, {
-    fields: [invitedUsers.organizationId],
-    references: [organizations.id],
-  }),
-}));
+export const organizationInvitedUsersRelations = relations(
+  organizationInvitedUsers,
+  ({ one }) => ({
+    organization: one(organizations, {
+      fields: [organizationInvitedUsers.organizationId],
+      references: [organizations.id],
+    }),
+  })
+);

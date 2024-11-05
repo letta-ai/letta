@@ -9,3 +9,10 @@ export const GenericSearchSchema = z.object({
 });
 
 export type GenericSearch = z.infer<typeof GenericSearchSchema>;
+
+export const GenericPaginationSchema = z.object({
+  nextCursor: z.string().optional(),
+  prevCursor: z.string().optional(),
+});
+
+export type GenericPagination = z.infer<typeof GenericPaginationSchema>;

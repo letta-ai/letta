@@ -82,7 +82,13 @@ export function ActionCard(props: ToggleCardProps) {
               {icon && <Slot className="w-5 h-5">{icon}</Slot>}
               <VStack gap={false} align="start">
                 <HStack paddingRight fullWidth overflow="hidden">
-                  <Typography noWrap fullWidth overflow="ellipsis" bold>
+                  <Typography
+                    align="left"
+                    noWrap
+                    fullWidth
+                    overflow="ellipsis"
+                    bold
+                  >
                     {title}
                   </Typography>
                 </HStack>

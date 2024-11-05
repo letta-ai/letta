@@ -48,7 +48,7 @@ async function AgentsAgentPage(context: AgentsAgentPageProps) {
   const agentTemplate = await db.query.agentTemplates.findFirst({
     where: and(
       eq(agentTemplates.name, templateName),
-      eq(agentTemplates.organizationId, user.organizationId),
+      eq(agentTemplates.organizationId, user.activeOrganizationId),
       isNull(agentTemplates.deletedAt)
     ),
     columns: {

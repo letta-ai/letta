@@ -1,21 +1,33 @@
-import { db, invitedUsers, lettaAPIKeys, users } from '@letta-web/database';
 import {
-  getUserOrganizationIdOrThrow,
+  db,
+  organizationInvitedUsers,
+  users,
+  organizations,
+  projects,
+  lettaAPIKeys,
+  organizationUsers,
+} from '@letta-web/database';
+import {
+  createOrganization as authCreateOrganization,
+  getUserActiveOrganizationIdOrThrow,
   getUserOrThrow,
+  getUserWithActiveOrganizationIdOrThrow,
 } from '$letta/server/auth';
 import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
 import type { contracts } from '$letta/web-api/contracts';
-import { and, eq, gt, isNull } from 'drizzle-orm';
+import { and, eq, gt, inArray, like } from 'drizzle-orm';
+import { deleteProject } from '$letta/web-api/projects/projectsRouter';
+import { AdminService } from '@letta-web/letta-agents-api';
 
 type GetCurrentOrganizationResponse = ServerInferResponses<
   typeof contracts.organizations.getCurrentOrganization
 >;
 
 async function getCurrentOrganization(): Promise<GetCurrentOrganizationResponse> {
-  const organizationId = await getUserOrganizationIdOrThrow();
+  const organizationId = await getUserActiveOrganizationIdOrThrow();
 
   const organization = await db.query.organizations.findFirst({
-    where: eq(lettaAPIKeys.id, organizationId),
+    where: eq(organizations.id, organizationId),
   });
 
   if (!organization) {
@@ -45,36 +57,44 @@ type GetCurrentOrganizationTeamMembersRequest = ServerInferRequest<
 async function getCurrentOrganizationTeamMembers(
   req: GetCurrentOrganizationTeamMembersRequest
 ): Promise<GetCurrentOrganizationTeamMembersResponse> {
-  const { cursor, limit = 20 } = req.query;
-  const organizationId = await getUserOrganizationIdOrThrow();
+  const { offset, limit = 20, search } = req.query;
+  const organizationId = await getUserActiveOrganizationIdOrThrow();
 
   const organization = await db.query.organizations.findFirst({
-    where: eq(lettaAPIKeys.id, organizationId),
+    where: eq(organizations.id, organizationId),
   });
 
   if (!organization) {
     throw new Error('Organization not found');
   }
 
-  const where = [
-    eq(users.organizationId, organizationId),
-    isNull(users.deletedAt),
-  ];
+  const where = [eq(organizationUsers.organizationId, organizationId)];
 
-  if (cursor) {
-    where.push(gt(users.id, cursor));
+  if (search) {
+    where.push(like(users.name, `%${search}%`));
   }
 
-  const members = await db.query.users.findMany({
+  const members = await db.query.organizationUsers.findMany({
     where: and(...where),
+    offset,
     limit: limit + 1,
+  });
+
+  const userList = await db.query.users.findMany({
+    where: and(
+      inArray(
+        users.id,
+        members.map((member) => member.userId)
+      )
+    ),
   });
 
   return {
     status: 200,
     body: {
-      nextCursor: members.length > limit ? members[limit - 1].id : undefined,
-      members: members.slice(0, limit).map((member) => ({
+      nextCursor:
+        userList.length > limit ? members[limit - 1].userId : undefined,
+      members: userList.slice(0, limit).map((member) => ({
         id: member.id,
         name: member.name,
         email: member.email,
@@ -96,7 +116,8 @@ type InviteNewTeamMemberResponse = ServerInferResponses<
 async function inviteNewTeamMember(
   req: InviteNewTeamMemberRequest
 ): Promise<InviteNewTeamMemberResponse> {
-  const { organizationId, id: userId } = await getUserOrThrow();
+  const { activeOrganizationId, id: userId } =
+    await getUserWithActiveOrganizationIdOrThrow();
   const { email } = req.body;
 
   const user = await db.query.users.findFirst({
@@ -104,16 +125,59 @@ async function inviteNewTeamMember(
   });
 
   if (user) {
+    // check if user is already in the organization
+    const userInOrganization = await db.query.organizationUsers.findFirst({
+      where: and(
+        eq(organizationUsers.userId, user.id),
+        eq(organizationUsers.organizationId, activeOrganizationId)
+      ),
+    });
+
+    if (userInOrganization) {
+      return {
+        status: 400,
+        body: {
+          message: 'User already in the organization',
+          errorCode: 'userAlreadyInOrganization',
+        },
+      };
+    }
+
+    // add user to the organization
+    await db.insert(organizationUsers).values({
+      userId: user.id,
+      organizationId: activeOrganizationId,
+      permissions: {},
+    });
+
+    const nextUser = await db.query.users.findFirst({
+      where: eq(users.id, user.id),
+    });
+
+    if (!nextUser) {
+      return {
+        status: 500,
+        body: {
+          message: 'User not found',
+        },
+      };
+    }
+
     return {
-      status: 400,
+      status: 200,
       body: {
-        message: 'User already exists',
+        email,
+        name: nextUser.name,
+        id: user.id,
       },
     };
   }
 
-  const invitedUser = await db.query.invitedUsers.findFirst({
-    where: eq(invitedUsers.email, email),
+  const invitedUser = await db.query.organizationInvitedUsers.findFirst({
+    where: and(
+      eq(organizationInvitedUsers.email, email),
+      eq(organizationInvitedUsers.organizationId, activeOrganizationId)
+    ),
   });
 
   if (invitedUser) {
@@ -121,20 +185,25 @@ async function inviteNewTeamMember(
       status: 400,
       body: {
         message: 'User already invited',
+        errorCode: 'userAlreadyInvited',
       },
     };
   }
 
-  await db.insert(invitedUsers).values({
-    email,
-    organizationId,
-    invitedBy: userId,
-  });
+  const [res] = await db
+    .insert(organizationInvitedUsers)
+    .values({
+      email,
+      organizationId: activeOrganizationId,
+      invitedBy: userId,
+    })
+    .returning({ id: organizationInvitedUsers.id });
 
   return {
     status: 201,
     body: {
       email,
+      id: res.id,
     },
   };
 }
@@ -150,15 +219,16 @@ type UnInviteTeamMemberResponse = ServerInferResponses<
 async function unInviteTeamMember(
   req: UnInviteTeamMemberRequest
 ): Promise<UnInviteTeamMemberResponse> {
-  const { organizationId } = await getUserOrThrow();
+  const { activeOrganizationId } =
+    await getUserWithActiveOrganizationIdOrThrow();
   const { memberId } = req.params;
 
   await db
-    .delete(invitedUsers)
+    .delete(organizationInvitedUsers)
     .where(
       and(
-        eq(invitedUsers.id, memberId),
-        eq(invitedUsers.organizationId, organizationId)
+        eq(organizationInvitedUsers.id, memberId),
+        eq(organizationInvitedUsers.organizationId, activeOrganizationId)
       )
     );
 
@@ -181,7 +251,8 @@ type RemoveTeamMemberResponse = ServerInferResponses<
 async function removeTeamMember(
   req: RemoveTeamMember
 ): Promise<RemoveTeamMemberResponse> {
-  const { organizationId, id: userId } = await getUserOrThrow();
+  const { activeOrganizationId, id: userId } =
+    await getUserWithActiveOrganizationIdOrThrow();
   const { memberId } = req.params;
 
   // you cannot remove yourself
@@ -194,11 +265,22 @@ async function removeTeamMember(
     };
   }
 
-  await db
-    .delete(users)
-    .where(
-      and(eq(users.id, memberId), eq(users.organizationId, organizationId))
-    );
+  await Promise.all([
+    db
+      .delete(organizationUsers)
+      .where(and(eq(organizationUsers.userId, memberId))),
+    db
+      .update(users)
+      .set({
+        activeOrganizationId: null,
+      })
+      .where(
+        and(
+          eq(users.id, memberId),
+          eq(users.activeOrganizationId, activeOrganizationId)
+        )
+      ),
+  ]);
 
   return {
     status: 200,
@@ -219,16 +301,23 @@ type ListInvitedMembersResponse = ServerInferResponses<
 async function listInvitedMembers(
   req: ListInvitedMembersRequest
 ): Promise<ListInvitedMembersResponse> {
-  const { organizationId } = await getUserOrThrow();
-  const { cursor, limit = 20 } = req.query;
+  const { activeOrganizationId } =
+    await getUserWithActiveOrganizationIdOrThrow();
+  const { cursor, limit = 20, search } = req.query;
 
-  const where = [eq(invitedUsers.organizationId, organizationId)];
+  const where = [
+    eq(organizationInvitedUsers.organizationId, activeOrganizationId),
+  ];
 
   if (cursor) {
-    where.push(gt(invitedUsers.id, cursor));
+    where.push(gt(organizationInvitedUsers.id, cursor));
   }
 
-  const invitedMembers = await db.query.invitedUsers.findMany({
+  if (search) {
+    where.push(like(organizationInvitedUsers.email, `%${search}%`));
+  }
+
+  const invitedMembers = await db.query.organizationInvitedUsers.findMany({
     where: and(...where),
     limit: limit + 1,
   });
@@ -251,6 +340,166 @@ async function listInvitedMembers(
   };
 }
 
+/* Update organization */
+type UpdateOrganizationRequest = ServerInferRequest<
+  typeof contracts.organizations.updateOrganization
+>;
+
+type UpdateOrganizationResponse = ServerInferResponses<
+  typeof contracts.organizations.updateOrganization
+>;
+
+async function updateOrganization(
+  req: UpdateOrganizationRequest
+): Promise<UpdateOrganizationResponse> {
+  const { activeOrganizationId } =
+    await getUserWithActiveOrganizationIdOrThrow();
+  const { name } = req.body;
+
+  await db
+    .update(organizations)
+    .set({
+      name,
+    })
+    .where(eq(organizations.id, activeOrganizationId));
+
+  return {
+    status: 200,
+    body: {
+      name,
+    },
+  };
+}
+
+/* Delete organization */
+type DeleteOrganizationResponse = ServerInferResponses<
+  typeof contracts.organizations.deleteOrganization
+>;
+
+async function deleteOrganization(): Promise<DeleteOrganizationResponse> {
+  const { activeOrganizationId } =
+    await getUserWithActiveOrganizationIdOrThrow();
+
+  if (!activeOrganizationId) {
+    return {
+      status: 400,
+      body: {
+        message: 'No active organization',
+      },
+    };
+  }
+
+  const organization = await db.query.organizations.findFirst({
+    where: eq(organizations.id, activeOrganizationId),
+  });
+
+  if (!organization) {
+    return {
+      status: 404,
+      body: {
+        message: 'Organization not found',
+      },
+    };
+  }
+
+  await db
+    .update(organizations)
+    .set({ deletedAt: new Date() })
+    .where(eq(organizations.id, activeOrganizationId));
+
+  // return all projects in this organization
+  const projectsList = await db.query.projects.findMany({
+    where: eq(projects.organizationId, activeOrganizationId),
+  });
+
+  const operations = [];
+
+  // remove users from the organization
+  operations.push(
+    db
+      .delete(organizationUsers)
+      .where(eq(organizationUsers.organizationId, activeOrganizationId))
+  );
+
+  operations.push(
+    await Promise.all(
+      projectsList.map(async (project) => {
+        return deleteProject({
+          params: {
+            projectId: project.id,
+          },
+        });
+      })
+    )
+  );
+
+  // delete api keys
+  operations.push(
+    db
+      .update(lettaAPIKeys)
+      .set({ deletedAt: new Date() })
+      .where(eq(lettaAPIKeys.organizationId, activeOrganizationId))
+  );
+
+  // delete data on letta-agents
+  // this should propagate to all agents, tools, etc
+  operations.push(
+    AdminService.deleteOrganization({
+      orgId: organization.lettaAgentsId,
+    })
+  );
+
+  await Promise.all(operations);
+
+  return {
+    status: 200,
+    body: {
+      success: true,
+    },
+  };
+}
+
+/* Create organization */
+type CreateOrganizationRequest = ServerInferRequest<
+  typeof contracts.organizations.createOrganization
+>;
+
+type CreateOrganizationResponse = ServerInferResponses<
+  typeof contracts.organizations.createOrganization
+>;
+
+async function createOrganization(
+  req: CreateOrganizationRequest
+): Promise<CreateOrganizationResponse> {
+  const { id } = await getUserOrThrow();
+
+  const res = await authCreateOrganization({
+    name: req.body.name,
+  });
+
+  await Promise.all([
+    db
+      .update(users)
+      .set({
+        activeOrganizationId: res.organizationId,
+      })
+      .where(eq(users.id, id)),
+    db.insert(organizationUsers).values({
+      userId: id,
+      permissions: { isOrganizationAdmin: true },
+      organizationId: res.organizationId,
+    }),
+  ]);
+
+  return {
+    status: 201,
+    body: {
+      id: res.organizationId,
+      name: req.body.name,
+    },
+  };
+}
+
 export const organizationsRouter = {
   getCurrentOrganization,
   getCurrentOrganizationTeamMembers,
@@ -258,4 +507,7 @@ export const organizationsRouter = {
   inviteNewTeamMember,
   unInviteTeamMember,
   listInvitedMembers,
+  deleteOrganization,
+  updateOrganization,
+  createOrganization,
 };

@@ -169,6 +169,7 @@ export const Button = forwardRef<
           })
         )}
         {...rest}
+        disabled={rest.disabled || busy}
       >
         {iconToRender}
         {hideLabel ? (

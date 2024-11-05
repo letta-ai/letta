@@ -132,15 +132,16 @@ function CreateProjectDialog() {
   });
   const queryClient = useQueryClient();
 
-  const { mutate } = webApi.projects.createProject.useMutation({
-    onSuccess: async (res) => {
-      void queryClient.invalidateQueries({
-        queryKey: webApiQueryKeys.projects.getProjects,
-      });
+  const { mutate, isPending, isSuccess } =
+    webApi.projects.createProject.useMutation({
+      onSuccess: async (res) => {
+        void queryClient.invalidateQueries({
+          queryKey: webApiQueryKeys.projects.getProjects,
+        });
 
-      push(`/projects/${res.body.slug}`);
-    },
-  });
+        push(`/projects/${res.body.slug}`);
+      },
+    });
 
   const handleSubmit = useCallback(
     (values: z.infer<typeof createProjectFormSchema>) => {
@@ -161,6 +162,7 @@ function CreateProjectDialog() {
         isOpen={isOpen}
         testId="create-project-dialog"
         onOpenChange={setIsOpen}
+        isConfirmBusy={isPending || isSuccess}
         onSubmit={form.handleSubmit(handleSubmit)}
         trigger={
           <Button

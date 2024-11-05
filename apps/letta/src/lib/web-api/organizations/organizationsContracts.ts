@@ -21,6 +21,11 @@ export const getCurrentOrganizationContract = c.query({
   },
 });
 
+export type GetCurrentOrganizationSuccessResponse = ServerInferResponses<
+  typeof getCurrentOrganizationContract,
+  200
+>;
+
 /* Get current organization team members */
 export const CurrentOrganizationTeamMembersSchema = z.object({
   id: z.string(),
@@ -44,8 +49,9 @@ export type GetCurrentOrganizationTeamMembersResponseType = z.infer<
 >;
 
 export const GetCurrentOrganizationTeamMembersQueryParams = z.object({
-  cursor: z.string().optional(),
+  offset: z.number().optional(),
   limit: z.number().optional(),
+  search: z.string().optional(),
 });
 
 type GetCurrentOrganizationTeamMembersQueryParamsType = z.infer<
@@ -68,11 +74,13 @@ export type GetCurrentOrganizationTeamMembersResponseBodyType =
 export const InvitedMembersSchema = z.object({
   email: z.string(),
   createdAt: z.string(),
+  id: z.string(),
 });
 
 export const InvitedMembersQueryParams = z.object({
   cursor: z.string().optional(),
   limit: z.number().optional(),
+  search: z.string().optional(),
 });
 
 type InvitedMembersQueryParamsType = z.infer<typeof InvitedMembersQueryParams>;
@@ -91,6 +99,11 @@ export const listInvitedMembersContract = c.query({
   },
 });
 
+export type ListInvitedMembersResponseBodyType = ServerInferResponses<
+  typeof listInvitedMembersContract,
+  200
+>;
+
 /* Invite new team member */
 export const InviteNewTeamMemberSchemaBody = z.object({
   email: z.string(),
@@ -98,6 +111,13 @@ export const InviteNewTeamMemberSchemaBody = z.object({
 
 export const InviteNewTeamMemberSchemaResponse = z.object({
   email: z.string(),
+  id: z.string(),
+});
+
+export const InviteNewMember200Response = z.object({
+  email: z.string(),
+  id: z.string(),
+  name: z.string(),
 });
 
 export const inviteNewTeamMemberContract = c.mutation({
@@ -106,6 +126,18 @@ export const inviteNewTeamMemberContract = c.mutation({
   body: InviteNewTeamMemberSchemaBody,
   responses: {
     201: InviteNewTeamMemberSchemaResponse,
+    200: InviteNewMember200Response,
+    400: z
+      .object({
+        message: z.literal('User already invited'),
+        errorCode: z.literal('userAlreadyInvited'),
+      })
+      .or(
+        z.object({
+          message: z.literal('User already in the organization'),
+          errorCode: z.literal('userAlreadyInOrganization'),
+        })
+      ),
   },
 });
 
@@ -143,6 +175,53 @@ export const removeTeamMemberContract = c.mutation({
   },
 });
 
+/* Delete organization */
+export const deleteOrganizationContract = c.mutation({
+  method: 'DELETE',
+  path: '/organizations/self',
+  body: z.undefined(),
+  responses: {
+    200: z.object({
+      success: z.boolean(),
+    }),
+  },
+});
+
+/* update organization */
+export const UpdateOrganizationSchema = z.object({
+  name: z.string(),
+});
+
+export const updateOrganizationContract = c.mutation({
+  method: 'PATCH',
+  path: '/organizations/self',
+  body: UpdateOrganizationSchema,
+  responses: {
+    200: z.object({
+      name: z.string(),
+    }),
+  },
+});
+
+/* create organization */
+export const CreateOrganizationSchema = z.object({
+  name: z.string(),
+});
+
+export const CreateOrganizationResponse = z.object({
+  id: z.string(),
+  name: z.string(),
+});
+
+export const createOrganizationContract = c.mutation({
+  method: 'POST',
+  path: '/organizations',
+  body: CreateOrganizationSchema,
+  responses: {
+    201: CreateOrganizationResponse,
+  },
+});
+
 export const organizationsContract = c.router({
   getCurrentOrganization: getCurrentOrganizationContract,
   getCurrentOrganizationTeamMembers: getCurrentOrganizationTeamMembersContract,
@@ -150,6 +229,9 @@ export const organizationsContract = c.router({
   unInviteTeamMember: unInviteTeamMemberContract,
   removeTeamMember: removeTeamMemberContract,
   listInvitedMembers: listInvitedMembersContract,
+  deleteOrganization: deleteOrganizationContract,
+  updateOrganization: updateOrganizationContract,
+  createOrganization: createOrganizationContract,
 });
 
 export const organizationsQueryClientKeys = {

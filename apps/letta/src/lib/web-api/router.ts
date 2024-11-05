@@ -1,4 +1,4 @@
-import * as userRouter from './user/userRouter';
+import { userRouter } from './user/userRouter';
 import { projectsRouter } from './projects/projectsRouter';
 import * as apiKeysRouter from './api-keys/apiKeysRouter';
 import { organizationsRouter } from './organizations/organizationsRouter';

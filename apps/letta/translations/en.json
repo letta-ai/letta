@@ -3,12 +3,18 @@
     "emptyMessage": "This is not the page you're looking for",
     "emptyAction": "Go home"
   },
-  "dashboard-like/layout": {
+  "components/DashboardLikeLayout/DashboardNavigation": {
     "nav": {
       "projects": "Projects",
       "apiKeys": "API Keys",
       "dataSources": "Data Sources",
       "admin": "Admin"
+    },
+    "secondaryNav": {
+      "settings": "Settings",
+      "signOut": "Sign out",
+      "organization": "Organization",
+      "switchOrganizations": "Switch Organizations"
     },
     "header": {
       "Documentation": "Documentation"
@@ -17,10 +23,88 @@
   "settings/layout": {
     "profile": "Profile"
   },
+  "create-organization": {
+    "error": "There was an error creating the organization, please try again or contact support.",
+    "title": "Create a new Organization",
+    "name": {
+      "label": "Organization Name",
+      "placeholder": "my-organization-name"
+    },
+    "submit": "Create Organization"
+  },
+  "select-organization": {
+    "title": "Select an Organization",
+    "loading": "Loading organizations...",
+    "error": "There was an error loading organizations, please try again or contact support.",
+    "empty": "You are not in any organizations, create one below.",
+    "OrganizationRow": {
+      "select": "Select"
+    },
+    "createNewOrganization": "Create a new organization",
+    "missingOrg": "If you do not see your organization, you may have not been invited yet. Please contact your organization's administrator."
+  },
+  "organization/settings": {
+    "title": "Organization Settings",
+    "EditOrganizationSettings": {
+      "name": {
+        "label": "Organization Name"
+      },
+      "error": "There was an error updating organization settings, please try again or contact support."
+    },
+    "DeleteOrganizationSettings": {
+      "title": "Delete Organization",
+      "description": "Deleting an organization is permanent and cannot be undone. This will delete all projects, agents, and members in the organization.",
+      "dialog": {
+        "error": "There was an error deleting the organization, please try again or contact support.",
+        "title": "Are you sure you want to delete this organization?",
+        "confirm": "Delete Organization",
+        "trigger": "Delete Organization",
+        "description": "This is permanent and cannot be undone. This will not remove any projects or agents they have created.",
+        "confirmName": {
+          "label": "Type the name of the organization to confirm",
+          "placeholder": "my-organization-name"
+        },
+        "confirmCheckbox": "I understand the consequences of deleting this organization"
+      }
+    }
+  },
   "organization/layout": {
-    "members": "Members"
+    "members": "Members",
+    "settings": "Settings"
   },
   "organization/members": {
+    "DisInviteMemberButton": {
+      "dismiss": "Dismiss invitation"
+    },
+    "InvitedMembersDialog": {
+      "title": "Invited Members",
+      "trigger": "View Invited Members",
+      "table": {
+        "error": "There was an error loading invited members, please try again or contact support.",
+        "empty": "No invited members"
+      },
+      "searchInput": {
+        "label": "Search invited members",
+        "placeholder": "Search invited members"
+      }
+    },
+    "InviteMemberDialog": {
+      "200success": "User has been added to the organization, you may need to refresh the page to see the changes",
+      "201success": "User has been invited to the organization",
+      "email": {
+        "label": "Email",
+        "placeholder": "my@email.com"
+      },
+      "error": {
+        "userAlreadyInvited": "This user has already been invited to the organization",
+        "userAlreadyInOrganization": "This user is already in your organization",
+        "default": "There was an error inviting this user, please try again or contact support"
+      },
+      "trigger": "Invite Member",
+      "confirm": "Invite",
+      "title": "Invite Member",
+      "description": "Invite a new member to your organization. Once invited, they can sign in via Google and will have access to all projects and agents in the organization. If they already have an account with us, they will automatically get added to your organization"
+    },
     "title": "Organization Members",
     "table": {
       "columns": {
@@ -33,9 +117,10 @@
       "loading": "Loading members..."
     },
     "DeleteMemberDialog": {
-      "title": "Delete Member",
-      "trigger": "Delete Member",
-      "description": "Are you sure you want to delete {name} ({email}) from this organization? This is permanent and cannot be undone. This will not remove any projects or agents they have created."
+      "error": "There was an error removing this member, please try again or contact support.",
+      "title": "Remove Member",
+      "trigger": "Remove Member",
+      "description": "Are you sure you want to remove {name} ({email}) from this organization? This will not remove any projects or agents they have created."
     }
   },
   "settings/profile/page": {

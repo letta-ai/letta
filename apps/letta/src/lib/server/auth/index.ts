@@ -6,8 +6,10 @@ import {
   db,
   emailWhitelist,
   lettaAPIKeys,
+  organizationInvitedUsers,
   organizationPreferences,
   organizations,
+  organizationUsers,
   projects,
   users,
 } from '@letta-web/database';
@@ -34,53 +36,39 @@ function isLettaEmail(email: string) {
   return email.endsWith('@letta.com') || email.endsWith('@memgpt.ai');
 }
 
-async function handleLettaUserCreation() {
-  // lookup letta admin organization
-  const lettaOrg = await db.query.organizations.findFirst({
-    where: eq(organizations.isAdmin, true),
+interface CreateOrganizationArgs {
+  name: string;
+  isAdmin?: boolean;
+}
+
+export async function createOrganization(args: CreateOrganizationArgs) {
+  const { name } = args;
+
+  const lettaAgentsOrganization = await AdminService.createOrganization({
+    requestBody: {
+      name,
+    },
   });
 
-  let organizationId = lettaOrg?.id;
-  let lettaOrganizationId = lettaOrg?.lettaAgentsId;
-
-  if (!organizationId || !lettaOrganizationId) {
-    const lettaAgentsOrganization = await AdminService.createOrganization({
-      requestBody: {
-        name: 'Letta',
-      },
-    });
-
-    if (!lettaAgentsOrganization?.id) {
-      throw new Error(
-        'Failed to create organization from Letta Agents Service'
-      );
-    }
-
-    // create letta admin organization
-    const [{ organizationId: madeOrgId, lettaAgentsId: madeAgentOrgId }] =
-      await db
-        .insert(organizations)
-        .values({
-          name: 'Letta',
-          isAdmin: true,
-          lettaAgentsId: lettaAgentsOrganization.id,
-        })
-        .returning({
-          organizationId: organizations.id,
-          lettaAgentsId: organizations.lettaAgentsId,
-        });
-
-    await db.insert(organizationPreferences).values({
-      organizationId: madeOrgId,
-    });
-
-    organizationId = madeOrgId;
-    lettaOrganizationId = madeAgentOrgId;
+  if (!lettaAgentsOrganization?.id) {
+    throw new Error('Failed to create organization from Letta Agents Service');
   }
 
+  const [createdOrg] = await db
+    .insert(organizations)
+    .values({
+      name,
+      lettaAgentsId: lettaAgentsOrganization.id,
+    })
+    .returning({ organizationId: organizations.id });
+
+  await db.insert(organizationPreferences).values({
+    organizationId: createdOrg.organizationId,
+  });
+
   return {
-    organizationId,
-    lettaOrganizationId,
+    ...createdOrg,
+    lettaOrganizationId: lettaAgentsOrganization.id,
   };
 }
 
@@ -96,38 +84,44 @@ async function createUserAndOrganization(
   let organizationId = '';
   let lettaOrganizationId = '';
 
-  if (isLettaEmail(userData.email)) {
-    const createdLettaUser = await handleLettaUserCreation();
+  const invitedUserList = await db.query.organizationInvitedUsers.findMany({
+    where: eq(organizationInvitedUsers.email, userData.email),
+  });
 
-    organizationId = createdLettaUser.organizationId;
-    lettaOrganizationId = createdLettaUser.lettaOrganizationId;
-  } else {
+  let isNewOrganization = false;
+
+  if (invitedUserList.length > 0) {
+    await Promise.all(
+      invitedUserList.map(async (invitedUser) => {
+        organizationId = invitedUser.organizationId;
+
+        const organization = await db.query.organizations.findFirst({
+          where: eq(organizations.id, organizationId),
+        });
+
+        if (!organization) {
+          return;
+        } else {
+          lettaOrganizationId = organization.lettaAgentsId;
+        }
+
+        // delete the invited user
+        await db
+          .delete(organizationInvitedUsers)
+          .where(eq(organizationInvitedUsers.email, userData.email));
+      })
+    );
+  }
+
+  if (!organizationId) {
+    isNewOrganization = true;
     const organizationName = `${userData.name}'s organization`;
 
-    const lettaAgentsOrganization = await AdminService.createOrganization({
-      requestBody: {
-        name: organizationName,
-      },
+    const createdOrg = await createOrganization({
+      name: organizationName,
     });
 
-    if (!lettaAgentsOrganization?.id) {
-      throw new Error(
-        'Failed to create organization from Letta Agents Service'
-      );
-    }
-
-    const [createdOrg] = await db
-      .insert(organizations)
-      .values({
-        name: organizationName,
-        lettaAgentsId: lettaAgentsOrganization.id,
-      })
-      .returning({ organizationId: organizations.id });
-
-    await db.insert(organizationPreferences).values({
-      organizationId: createdOrg.organizationId,
-    });
-
+    lettaOrganizationId = createdOrg.lettaOrganizationId;
     organizationId = createdOrg.organizationId;
   }
 
@@ -156,7 +150,7 @@ async function createUserAndOrganization(
     db
       .insert(users)
       .values({
-        organizationId,
+        activeOrganizationId: organizationId,
         name: userData.name || 'New User',
         lettaAgentsId: lettaAgentsUser.id,
         imageUrl: userData.imageUrl,
@@ -188,6 +182,17 @@ async function createUserAndOrganization(
       organizationId,
       userId: createdUser.userId,
       apiKey,
+    }),
+    db
+      .update(users)
+      .set({
+        activeOrganizationId: organizationId,
+      })
+      .where(eq(users.id, createdUser.userId)),
+    db.insert(organizationUsers).values({
+      userId: createdUser.userId,
+      permissions: { isOrganizationAdmin: isNewOrganization },
+      organizationId,
     }),
   ]);
 
@@ -264,7 +269,7 @@ async function createUserAndOrganization(
       name: userData.name,
       imageUrl: userData.imageUrl,
       id: createdUser.userId,
-      organizationId: organizationId,
+      activeOrganizationId: organizationId,
     },
     firstCreatedAgentName: createdAgentTemplate.body.name,
     firstProjectSlug: firstProjectSlug,
@@ -286,7 +291,7 @@ async function findExistingUser(
     theme: user.theme || 'light',
     email: user.email,
     id: user.id,
-    organizationId: user.organizationId,
+    activeOrganizationId: user.activeOrganizationId || '',
     imageUrl: user.imageUrl,
     name: user.name,
   };
@@ -298,11 +303,16 @@ async function isUserInWhitelist(email: string) {
     return true;
   }
 
-  const exists = await db.query.emailWhitelist.findFirst({
-    where: eq(emailWhitelist.email, email),
-  });
+  const [a, b] = await Promise.all([
+    db.query.emailWhitelist.findFirst({
+      where: eq(emailWhitelist.email, email),
+    }),
+    db.query.organizationInvitedUsers.findFirst({
+      where: eq(organizationInvitedUsers.email, email),
+    }),
+  ]);
 
-  return !!exists;
+  return a || b;
 }
 
 interface NewUserDetails {
@@ -356,7 +366,7 @@ async function findOrCreateUserAndOrganizationFromProviderLogin(
       theme: user.theme,
       email: user.email,
       id: user.id,
-      organizationId: user.organizationId,
+      activeOrganizationId: user.activeOrganizationId,
       imageUrl: user.imageUrl,
       name: user.name,
     },
@@ -424,7 +434,7 @@ export async function getOrganizationFromOrganizationId(
 }
 
 export interface GetUserDataResponse {
-  organizationId: string;
+  activeOrganizationId: string | null;
   id: string;
   lettaAgentsId: string;
   email: string;
@@ -449,7 +459,7 @@ export async function getUser(): Promise<GetUserDataResponse | null> {
   const userFromDb = await db.query.users.findFirst({
     where: and(eq(users.id, user.id), isNull(users.deletedAt)),
     columns: {
-      organizationId: true,
+      activeOrganizationId: true,
       id: true,
       lettaAgentsId: true,
       email: true,
@@ -461,6 +471,23 @@ export async function getUser(): Promise<GetUserDataResponse | null> {
 
   if (!userFromDb) {
     return null;
+  }
+
+  if (userFromDb.activeOrganizationId) {
+    const userOrganization = await db.query.organizationUsers.findFirst({
+      where: and(
+        eq(organizationUsers.userId, userFromDb.id),
+        eq(organizationUsers.organizationId, userFromDb.activeOrganizationId)
+      ),
+    });
+
+    if (!userOrganization) {
+      userFromDb.activeOrganizationId = null;
+
+      void db.update(users).set({
+        activeOrganizationId: null,
+      });
+    }
   }
 
   return {
@@ -477,7 +504,15 @@ export async function getUserOrRedirect() {
     return null;
   }
 
-  return user;
+  if (!user?.activeOrganizationId) {
+    redirect('/select-organization');
+    return;
+  }
+
+  return {
+    ...user,
+    activeOrganizationId: user.activeOrganizationId || '',
+  };
 }
 
 export async function getUserOrThrow(): Promise<GetUserDataResponse> {
@@ -490,14 +525,32 @@ export async function getUserOrThrow(): Promise<GetUserDataResponse> {
   return user;
 }
 
-export async function getUserOrganizationIdOrThrow() {
+interface GetUserOrganizationResponseWithActiveOrganizationId
+  extends Omit<GetUserDataResponse, 'activeOrganizationId'> {
+  activeOrganizationId: string;
+}
+
+export async function getUserWithActiveOrganizationIdOrThrow(): Promise<GetUserOrganizationResponseWithActiveOrganizationId> {
   const user = await getUser();
 
-  if (!user) {
+  if (!user?.activeOrganizationId) {
     throw new Error('User not found');
   }
 
-  return user.organizationId;
+  return {
+    ...user,
+    activeOrganizationId: user.activeOrganizationId || '',
+  };
+}
+
+export async function getUserActiveOrganizationIdOrThrow() {
+  const user = await getUser();
+
+  if (!user?.activeOrganizationId) {
+    throw new Error('User not found');
+  }
+
+  return user.activeOrganizationId;
 }
 
 export async function getUserIdOrThrow() {

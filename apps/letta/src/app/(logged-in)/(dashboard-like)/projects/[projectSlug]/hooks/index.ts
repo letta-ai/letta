@@ -1,3 +1,4 @@
+'use client';
 import { useParams } from 'next/navigation';
 import { webApi, webApiQueryKeys } from '$letta/client';
 import type { PartialProjectType } from '$letta/web-api/contracts';

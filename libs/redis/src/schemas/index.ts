@@ -12,7 +12,7 @@ export const redisUserSessionSchema = z.object({
   email: z.string(),
   name: z.string(),
   imageUrl: z.string(),
-  organizationId: z.string(),
+  activeOrganizationId: z.string(),
   id: z.string(),
 });
 
