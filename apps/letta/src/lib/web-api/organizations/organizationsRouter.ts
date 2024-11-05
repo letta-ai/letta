@@ -57,7 +57,7 @@ type GetCurrentOrganizationTeamMembersRequest = ServerInferRequest<
 async function getCurrentOrganizationTeamMembers(
   req: GetCurrentOrganizationTeamMembersRequest
 ): Promise<GetCurrentOrganizationTeamMembersResponse> {
-  const { cursor, limit = 20 } = req.query;
+  const { offset, limit = 20, search } = req.query;
   const organizationId = await getUserActiveOrganizationIdOrThrow();
 
   const organization = await db.query.organizations.findFirst({
@@ -73,12 +73,13 @@ async function getCurrentOrganizationTeamMembers(
     isNull(users.deletedAt),
   ];
 
-  if (cursor) {
-    where.push(gt(users.id, cursor));
+  if (search) {
+    where.push(like(users.name, `%${search}%`));
   }
 
   const members = await db.query.users.findMany({
     where: and(...where),
+    offset,
     limit: limit + 1,
   });
 
@@ -139,16 +140,20 @@ async function inviteNewTeamMember(
     };
   }
 
-  await db.insert(organizationInvitedUsers).values({
-    email,
-    organizationId: activeOrganizationId,
-    invitedBy: userId,
-  });
+  const [res] = await db
+    .insert(organizationInvitedUsers)
+    .values({
+      email,
+      organizationId: activeOrganizationId,
+      invitedBy: userId,
+    })
+    .returning({ id: organizationInvitedUsers.id });
 
   return {
     status: 201,
     body: {
       email,
+      id: res.id,
     },
   };
 }

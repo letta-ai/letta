@@ -84,30 +84,36 @@ async function createUserAndOrganization(
   let organizationId = '';
   let lettaOrganizationId = '';
 
-  const invitedUser = await db.query.organizationInvitedUsers.findFirst({
+  const invitedUserList = await db.query.organizationInvitedUsers.findMany({
     where: eq(organizationInvitedUsers.email, userData.email),
   });
 
   let isNewOrganization = false;
 
-  if (invitedUser) {
-    organizationId = invitedUser.organizationId;
+  if (invitedUserList.length > 0) {
+    await Promise.all(
+      invitedUserList.map(async (invitedUser) => {
+        organizationId = invitedUser.organizationId;
 
-    const organization = await db.query.organizations.findFirst({
-      where: eq(organizations.id, organizationId),
-    });
+        const organization = await db.query.organizations.findFirst({
+          where: eq(organizations.id, organizationId),
+        });
 
-    if (!organization) {
-      throw new Error('Organization not found');
-    }
+        if (!organization) {
+          return;
+        } else {
+          lettaOrganizationId = organization.lettaAgentsId;
+        }
 
-    lettaOrganizationId = organization.lettaAgentsId;
+        // delete the invited user
+        await db
+          .delete(organizationInvitedUsers)
+          .where(eq(organizationInvitedUsers.email, userData.email));
+      })
+    );
+  }
 
-    // delete the invited user
-    await db
-      .delete(organizationInvitedUsers)
-      .where(eq(organizationInvitedUsers.email, userData.email));
-  } else {
+  if (!organizationId) {
     isNewOrganization = true;
     const organizationName = `${userData.name}'s organization`;
 
@@ -297,11 +303,16 @@ async function isUserInWhitelist(email: string) {
     return true;
   }
 
-  const exists = await db.query.emailWhitelist.findFirst({
-    where: eq(emailWhitelist.email, email),
-  });
+  const [a, b] = await Promise.all([
+    db.query.emailWhitelist.findFirst({
+      where: eq(emailWhitelist.email, email),
+    }),
+    db.query.organizationInvitedUsers.findFirst({
+      where: eq(organizationInvitedUsers.email, email),
+    }),
+  ]);
 
-  return !!exists;
+  return a || b;
 }
 
 interface NewUserDetails {

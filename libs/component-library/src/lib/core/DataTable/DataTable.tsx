@@ -25,6 +25,7 @@ import { useRef } from 'react';
 import { useCallback, useEffect, useMemo } from 'react';
 import { LoadingEmptyStatusComponent } from '../../reusable/LoadingEmptyStatusComponent/LoadingEmptyStatusComponent';
 import { TABLE_ROW_HEIGHT } from '../../../constants';
+import { SearchIcon } from '../../icons';
 
 interface TableBodyContentProps<Data> {
   table: UseReactTableType<Data>;
@@ -166,22 +167,26 @@ export function DataTable<TData, TValue>(props: DataTableProps<TData, TValue>) {
 
   const lastCursor = useRef<TData | undefined>(undefined);
   const tableContainerRef = useRef<HTMLDivElement>(null);
+  const tableParentRef = useRef<HTMLDivElement>(null);
   const mounted = useRef(false);
 
   useEffect(() => {
-    if (autofitHeight && tableContainerRef.current) {
+    if (autofitHeight && tableContainerRef.current && tableParentRef.current) {
       if (mounted.current) {
         return;
       }
 
       // get the top position of the table
-      const top = tableContainerRef.current.getBoundingClientRect().top;
+      const { top, bottom } = tableContainerRef.current.getBoundingClientRect();
 
       // get the height of the window
       const windowHeight = window.innerHeight;
 
-      // calculate the height of the table
-      let height = windowHeight - top - TABLE_ROW_HEIGHT;
+      // calculate the distance from the bottom of the window
+      const distanceFromBottom = windowHeight - bottom;
+
+      // calculate the maximum height of the table
+      let height = windowHeight - top - distanceFromBottom;
 
       if (typeof minHeight === 'number') {
         height = Math.max(height, minHeight);
@@ -190,14 +195,20 @@ export function DataTable<TData, TValue>(props: DataTableProps<TData, TValue>) {
       // calculate the number of rows that can fit in the table
       const rows = Math.floor(height / TABLE_ROW_HEIGHT) - 1;
 
+      const rowsForHeight = Math.max(2, rows + 1);
+
+      console.log(rowsForHeight);
+
       tableContainerRef.current.style.minHeight = `${
-        rows * TABLE_ROW_HEIGHT
+        rowsForHeight * TABLE_ROW_HEIGHT
       }px`;
-      tableContainerRef.current.style.height = `${rows * TABLE_ROW_HEIGHT}px`;
+      tableContainerRef.current.style.height = `${
+        rowsForHeight * TABLE_ROW_HEIGHT
+      }px`;
 
       mounted.current = true;
 
-      onLimitChange?.(rows);
+      onLimitChange?.(Math.max(rows, 1));
     }
   }, [autofitHeight, minHeight, onLimitChange]);
 
@@ -255,6 +266,7 @@ export function DataTable<TData, TValue>(props: DataTableProps<TData, TValue>) {
 
   return (
     <div
+      ref={tableParentRef}
       className={cn(
         'flex flex-col gap-2 w-full',
         fullHeight || autofitHeight ? 'h-full' : ''
@@ -262,6 +274,7 @@ export function DataTable<TData, TValue>(props: DataTableProps<TData, TValue>) {
     >
       {props.onSearch && (
         <RawInput
+          preIcon={<SearchIcon />}
           fullWidth
           placeholder="Search"
           label="Search"

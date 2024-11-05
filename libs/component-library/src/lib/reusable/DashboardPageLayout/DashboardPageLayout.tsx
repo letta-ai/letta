@@ -1,3 +1,4 @@
+'use client';
 import * as React from 'react';
 import { VStack } from '../../framing/VStack/VStack';
 import { HStack } from '../../framing/HStack/HStack';

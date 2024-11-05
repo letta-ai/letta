@@ -62,8 +62,47 @@ function useErrorMessages(error: unknown) {
 }
 
 function InviteMemberDialog() {
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const queryClient = useQueryClient();
   const { mutate, isPending, error } =
-    webApi.organizations.inviteNewTeamMember.useMutation();
+    webApi.organizations.inviteNewTeamMember.useMutation({
+      onSuccess: (res) => {
+        queryClient.setQueriesData<
+          ListInvitedMembersResponseBodyType | undefined
+        >(
+          {
+            queryKey:
+              webApiQueryKeys.organizations.listInvitedMembersWithSearch({
+                limit: LIST_INVITED_MEMBERS_LIMIT,
+                search: '',
+              }),
+            exact: false,
+          },
+          (data) => {
+            if (!data) {
+              return data;
+            }
+
+            return {
+              ...data,
+              body: {
+                ...data.body,
+                members: [
+                  ...data.body.members,
+                  {
+                    email: res.body.email,
+                    id: res.body.id,
+                    createdAt: new Date().toISOString(),
+                  },
+                ],
+              },
+            };
+          }
+        );
+
+        setIsDialogOpen(false);
+      },
+    });
 
   const t = useTranslations('organization/members');
 
@@ -87,6 +126,8 @@ function InviteMemberDialog() {
   return (
     <FormProvider {...form}>
       <Dialog
+        isOpen={isDialogOpen}
+        onOpenChange={setIsDialogOpen}
         errorMessage={errorMessage}
         title={t('InviteMemberDialog.title')}
         onSubmit={form.handleSubmit(handleInviteMember)}
@@ -179,31 +220,29 @@ function DeleteMemberDialog(props: DeleteMemberDialogProps) {
 
 function ExistingMembers() {
   const user = useCurrentUser();
+  const [search, setSearch] = useState('');
   const t = useTranslations('organization/members');
-  const [cursor, setCursor] = useState<
-    CurrentOrganizationTeamMembersType | undefined
-  >();
+  const [offset, setOffset] = useState<number>(0);
+
   const [limit, setLimit] = useState<number>(30);
   const { data, isFetching, isError } =
     webApi.organizations.getCurrentOrganizationTeamMembers.useQuery({
       queryKey:
         webApiQueryKeys.organizations.getCurrentOrganizationTeamMembersWithSearch(
           {
-            cursor: cursor?.id,
+            offset,
             limit,
+            search,
           }
         ),
       queryData: {
         query: {
-          cursor: cursor?.id,
+          offset,
           limit,
+          search,
         },
       },
     });
-
-  const hasNextPage = useMemo(() => {
-    return !!data?.body.nextCursor;
-  }, [data?.body.nextCursor]);
 
   const members: CurrentOrganizationTeamMembersType[] = useMemo(() => {
     if (!data?.body) {
@@ -264,8 +303,8 @@ function ExistingMembers() {
     }, [t, user?.id]);
 
   return (
-    <DashboardPageSection>
-      {(!members || members.length === 0) && !cursor ? (
+    <DashboardPageSection fullHeight>
+      {(!members || members.length === 0) && !offset ? (
         <LoadingEmptyStatusComponent
           emptyMessage={t('table.emptyError')}
           isLoading={!data?.body}
@@ -275,10 +314,13 @@ function ExistingMembers() {
         />
       ) : (
         <DataTable
+          searchValue={search}
+          onSearch={setSearch}
           isLoading={isFetching}
           limit={limit}
-          hasNextPage={hasNextPage}
-          onSetCursor={setCursor}
+          offset={offset}
+          onSetOffset={setOffset}
+          hasNextPage={!!data?.body.nextCursor}
           autofitHeight
           onLimitChange={setLimit}
           showPagination
@@ -340,21 +382,22 @@ function DisInviteMemberButton(props: DisInviteMemberButtonProps) {
   );
 }
 
+const LIST_INVITED_MEMBERS_LIMIT = 30;
+
 function InvitedMembersDialog() {
   const t = useTranslations('organization/members');
 
   const [search, setSearch] = useState('');
-  const limit = 30;
 
   const { data, isFetching, isError } =
     webApi.organizations.listInvitedMembers.useQuery({
       queryKey: webApiQueryKeys.organizations.listInvitedMembersWithSearch({
-        limit,
+        limit: LIST_INVITED_MEMBERS_LIMIT,
         search,
       }),
       queryData: {
         query: {
-          limit,
+          limit: LIST_INVITED_MEMBERS_LIMIT,
           search,
         },
       },
@@ -413,6 +456,7 @@ function Members() {
 
   return (
     <DashboardPageLayout
+      encapsulatedFullHeight
       title={t('title')}
       actions={
         <HStack>

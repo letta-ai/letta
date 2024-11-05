@@ -49,8 +49,9 @@ export type GetCurrentOrganizationTeamMembersResponseType = z.infer<
 >;
 
 export const GetCurrentOrganizationTeamMembersQueryParams = z.object({
-  cursor: z.string().optional(),
+  offset: z.number().optional(),
   limit: z.number().optional(),
+  search: z.string().optional(),
 });
 
 type GetCurrentOrganizationTeamMembersQueryParamsType = z.infer<
@@ -110,6 +111,7 @@ export const InviteNewTeamMemberSchemaBody = z.object({
 
 export const InviteNewTeamMemberSchemaResponse = z.object({
   email: z.string(),
+  id: z.string(),
 });
 
 export const inviteNewTeamMemberContract = c.mutation({
