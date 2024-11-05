@@ -19,6 +19,7 @@ import {
   db,
   deployedAgents,
   deployedAgentTemplates,
+  deployedAgentVariables,
   organizationPreferences,
 } from '@letta-web/database';
 import { createProject } from '$letta/web-api/router';
@@ -37,19 +38,21 @@ export function attachVariablesToTemplates(
     ...agentTemplate,
   };
 
-  if (variables) {
-    Object.keys(nextAgent.memory?.memory || {}).forEach((key) => {
-      if (typeof nextAgent.memory?.memory?.[key]?.value === 'string') {
-        // needs to be done or memory will rely on the existing block id
-        nextAgent.memory.memory[key].id = undefined;
+  Object.keys(nextAgent.memory?.memory || {}).forEach((key) => {
+    if (typeof nextAgent.memory?.memory?.[key]?.value === 'string') {
+      // needs to be done or memory will rely on the existing block id
+      nextAgent.memory.memory[key].id = undefined;
+      if (variables) {
         nextAgent.memory.memory[key].value = nextAgent.memory.memory[
           key
         ].value.replace(/{{(.*?)}}/g, (_m, p1) => {
           return variables?.[p1] || '';
         });
       }
-    });
-  }
+    }
+  });
+
+  console.log('x', JSON.stringify(nextAgent.memory, null, 2));
 
   return {
     tools: nextAgent.tools,
@@ -384,13 +387,22 @@ export async function createAgent(
 
     const key = name || `${agentTemplate.id}-${nextInternalAgentCountId}`;
 
-    await db.insert(deployedAgents).values({
-      id: copiedAgent.id,
-      projectId: agentTemplate.projectId,
-      key,
-      internalAgentCountId: nextInternalAgentCountId,
-      deployedAgentTemplateId: agentTemplateIdToCopy,
-      organizationId,
+    const [deployedAgent] = await db
+      .insert(deployedAgents)
+      .values({
+        id: copiedAgent.id,
+        projectId: agentTemplate.projectId,
+        key,
+        rootAgentTemplateId: agentTemplate.id,
+        internalAgentCountId: nextInternalAgentCountId,
+        deployedAgentTemplateId: agentTemplateIdToCopy,
+        organizationId,
+      })
+      .returning({ deployedAgentId: deployedAgents.id });
+
+    await db.insert(deployedAgentVariables).values({
+      deployedAgentId: deployedAgent.deployedAgentId,
+      value: variables || {},
     });
 
     return {
@@ -497,13 +509,21 @@ export async function createAgent(
       uniqueId = `deployed-agent-${nextInternalAgentCountId}`;
     }
 
-    await db.insert(deployedAgents).values({
-      id: response.id,
-      projectId,
-      key: uniqueId,
-      internalAgentCountId: nextInternalAgentCountId,
-      deployedAgentTemplateId: '',
-      organizationId,
+    const [createdAgent] = await db
+      .insert(deployedAgents)
+      .values({
+        id: response.id,
+        projectId,
+        key: uniqueId,
+        internalAgentCountId: nextInternalAgentCountId,
+        deployedAgentTemplateId: '',
+        organizationId,
+      })
+      .returning({ deployedAgentId: deployedAgents.id });
+
+    await db.insert(deployedAgentVariables).values({
+      deployedAgentId: createdAgent.deployedAgentId,
+      value: variables || {},
     });
   }
 
@@ -529,6 +549,7 @@ export async function versionAgentTemplate(
 ): Promise<DeployAgentTemplateResponse> {
   const { agent_id: agentId } = req.params;
   const { returnAgentId } = req.query;
+  const { migrate_deployed_agents } = req.body;
 
   const existingDeployedAgentTemplateCount =
     await db.query.deployedAgentTemplates.findMany({
@@ -609,7 +630,9 @@ export async function versionAgentTemplate(
     context.request.lettaAgentsUserId
   );
 
-  if (!createdAgent?.id) {
+  const createdAgentId = createdAgent?.id;
+
+  if (!createdAgentId) {
     return {
       status: 500,
       body: {
@@ -619,7 +642,7 @@ export async function versionAgentTemplate(
   }
 
   await db.insert(deployedAgentTemplates).values({
-    id: createdAgent.id,
+    id: createdAgentId,
     projectId,
     organizationId: context.request.organizationId,
     agentTemplateId,
@@ -632,6 +655,38 @@ export async function versionAgentTemplate(
   > = {
     version: `${agentTemplateName}:${version}`,
   };
+
+  if (migrate_deployed_agents) {
+    if (!agentTemplate?.id) {
+      return {
+        status: 400,
+        body: {
+          message: 'Cannot migrate deployed agents from a deployed agent',
+        },
+      };
+    }
+
+    const deployedAgentsList = await db.query.deployedAgents.findMany({
+      where: eq(deployedAgents.rootAgentTemplateId, agentTemplate.id),
+    });
+
+    void Promise.all(
+      deployedAgentsList.map(async (deployedAgent) => {
+        const deployedAgentVariablesItem =
+          await db.query.deployedAgentVariables.findFirst({
+            where: eq(deployedAgentVariables.deployedAgentId, deployedAgent.id),
+          });
+
+        await updateAgentFromAgentId({
+          variables: deployedAgentVariablesItem?.value || {},
+          fromAgent: deployedAgent.id,
+          toAgent: createdAgentId,
+          lettaAgentsUserId: context.request.lettaAgentsUserId,
+          preserveCoreMemories: false,
+        });
+      })
+    );
+  }
 
   if (returnAgentId) {
     response.agentId = createdAgent.id || '';
@@ -749,11 +804,14 @@ export async function migrateAgent(
   req: MigrateAgentRequest,
   context: SDKContext
 ): Promise<MigrateAgentResponse> {
-  const { to_template, preserve_core_memories, variables } = req.body;
+  const { to_template, preserve_core_memories } = req.body;
+  let { variables } = req.body;
   const { agent_id: agentId } = req.params;
   const { lettaAgentsUserId } = context.request;
 
-  const [templateName, version] = to_template.split(':');
+  const split = to_template.split(':');
+  const templateName = split[0];
+  let version = split[1];
 
   if (!version) {
     return {
@@ -781,6 +839,32 @@ export async function migrateAgent(
     };
   }
 
+  if (version === 'latest') {
+    const latestDeployedTemplate =
+      await db.query.deployedAgentTemplates.findFirst({
+        where: and(
+          eq(
+            deployedAgentTemplates.organizationId,
+            context.request.organizationId
+          ),
+          eq(deployedAgentTemplates.agentTemplateId, rootAgentTemplate.id),
+          isNull(deployedAgentTemplates.deletedAt)
+        ),
+        orderBy: [desc(deployedAgentTemplates.createdAt)],
+      });
+
+    if (!latestDeployedTemplate) {
+      return {
+        status: 404,
+        body: {
+          message: 'Template version provided does not exist',
+        },
+      };
+    }
+
+    version = latestDeployedTemplate.version;
+  }
+
   const agentTemplate = await db.query.deployedAgentTemplates.findFirst({
     where: and(
       eq(deployedAgentTemplates.organizationId, context.request.organizationId),
@@ -789,6 +873,15 @@ export async function migrateAgent(
       isNull(deployedAgentTemplates.deletedAt)
     ),
   });
+
+  if (!variables) {
+    const deployedAgentVariablesItem =
+      await db.query.deployedAgentVariables.findFirst({
+        where: eq(deployedAgentVariables.deployedAgentId, agentId),
+      });
+
+    variables = deployedAgentVariablesItem?.value || {};
+  }
 
   if (!agentTemplate?.id) {
     return {
@@ -801,8 +894,8 @@ export async function migrateAgent(
 
   await updateAgentFromAgentId({
     variables: variables || {},
-    fromAgent: agentTemplate.id,
-    toAgent: agentId,
+    fromAgent: agentId,
+    toAgent: agentTemplate.id,
     lettaAgentsUserId,
     preserveCoreMemories: preserve_core_memories,
   });

@@ -127,3 +127,5 @@ export * from './lib/brands';
 export * from './lib/reusable/SidebarTitle/SidebarTitle';
 
 export * from './lib/core/Slider/Slider';
+
+export * from './lib/reusable/ExternalLink/ExternalLink';

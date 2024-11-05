@@ -225,6 +225,7 @@ async function createUserAndOrganization(
         params: {
           agent_id: createdAgentTemplate.body.id,
         },
+        body: {},
         query: {},
       },
       {

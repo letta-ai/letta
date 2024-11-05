@@ -314,11 +314,34 @@ export const deployedAgentTemplatesRelations = relations(
   })
 );
 
+export const deployedAgentVariables = pgTable('deployed_agent_variables', {
+  deployedAgentId: text('deployed_agent_id')
+    .notNull()
+    .references(() => deployedAgents.id, { onDelete: 'cascade' })
+    .primaryKey(),
+  value: json('value').notNull().$type<Record<string, string>>(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at')
+    .notNull()
+    .$onUpdate(() => new Date()),
+});
+
+export const deployedAgentVariablesRelations = relations(
+  deployedAgentVariables,
+  ({ one }) => ({
+    deployedAgent: one(deployedAgents, {
+      fields: [deployedAgentVariables.deployedAgentId],
+      references: [deployedAgents.id],
+    }),
+  })
+);
+
 export const deployedAgents = pgTable(
   'deployed_agents',
   {
     id: text('id').primaryKey(),
     key: text('key').notNull(),
+    rootAgentTemplateId: text('root_agent_template_id'),
     deployedAgentTemplateId: text('deployed_agent_template_id'),
     projectId: text('project_id')
       .notNull()
@@ -361,6 +384,14 @@ export const deployedAgentRelations = relations(deployedAgents, ({ one }) => ({
   project: one(projects, {
     fields: [deployedAgents.projectId],
     references: [projects.id],
+  }),
+  rootAgentTemplate: one(agentTemplates, {
+    fields: [deployedAgents.rootAgentTemplateId],
+    references: [agentTemplates.id],
+  }),
+  deployedAgentVariables: one(deployedAgentVariables, {
+    fields: [deployedAgents.id],
+    references: [deployedAgentVariables.deployedAgentId],
   }),
 }));
 
