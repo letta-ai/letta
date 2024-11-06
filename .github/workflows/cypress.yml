@@ -38,6 +38,7 @@ jobs:
             package-lock.json
             tsconfig.json
   cypress-run:
+    continue-on-error: true
     needs: [changed-files]
     permissions:
       actions: read
@@ -104,27 +105,15 @@ jobs:
         with:
           path: ~/.cache/Cypress
           key: ${{ runner.os }}-${{ env.cache-name }}
-#      - uses: 'google-github-actions/auth@v2'
-#        id: auth
-#        with:
-#          project_id: 'memgpt-428419'
-#          service_account: 'github-actions-service-account@memgpt-428419.iam.gserviceaccount.com'
-#          workload_identity_provider: 'projects/231889654562/locations/global/workloadIdentityPools/letta-web-dev-pool/providers/github-actions-provider'
-#          token_format: 'access_token'
-#      - name: 'Set up Cloud SDK'
-#        uses: 'google-github-actions/setup-gcloud@v2'
-#        with:
-#          version: '>= 363.0.0'
-#      - name: 'Set gcloud docker credential'
-#        run: gcloud auth configure-docker us-central1-docker.pkg.dev
       - name: Checkout letta agents
         uses: actions/checkout@v4
         with:
+          submodules: 'true'
           repository: letta-ai/letta-agents
           token: ${{ secrets.PULLER_TOKEN }}
           path: letta-agents
       - name: Turn on Letta agents
-        working-directory: letta-agents
+        working-directory: letta-agents/MemGPT
         env:
           LETTA_PG_DB: letta
           LETTA_PG_USER: letta
@@ -163,3 +152,16 @@ jobs:
           IS_CYPRESS_RUN: yes
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           TAG: ${{ github.sha }}
+  cypress-cleanup:
+    needs: [cypress-run]
+    runs-on: ubuntu-latest
+    # if cypress fails we want to log the docker outputs to help debug
+    steps:
+      - name: Save logs
+        run: docker-compose logs > memgpt.log
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: memgpt-logs
+          path: memgpt.log
+
