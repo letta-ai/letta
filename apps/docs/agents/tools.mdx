@@ -92,7 +92,7 @@ search_tool = Tool.from_langchain(TavilySearchResults())
 # persist the tool 
 client.add_tool(search_tool)
 ```
-Now, you can include to tool when you create agents with Letta. See a working example [here](https://github.com/cpacker/MemGPT/blob/main/examples/langchain_tool_usage.py).
+Now, you can include to tool when you create agents with Letta. See a working example [here](https://github.com/letta-ai/letta/blob/main/examples/langchain_tool_usage.py).
 
 ### Composio Tools 
 To use Letta with [Composio](https://docs.composio.dev/introduction/intro/overview) tools, make sure you install dependencies with `pip install 'letta[external-tools]`. Then, make sure you log in to Composio and add any necessary authentication.
@@ -112,7 +112,7 @@ tool = Tool.get_composio_tool(
 # persist the tool
 client.add_tool(tool)
 ```
-Now, you can include the tool to be used with your agent. See a working example [here](https://github.com/cpacker/MemGPT/blob/main/examples/composio_tool_usage.py).
+Now, you can include the tool to be used with your agent. See a working example [here](https://github.com/letta-ai/letta/blob/main/examples/composio_tool_usage.py).
 
 ### CrewAI Tools
 Letta also supports adding tools from CrewAI. Make sure you first run `pip install 'letta[external-tools]'` to install the necessary dependencies.
@@ -126,4 +126,4 @@ webscrape_tool = client.create_tool(Tool.from_crewai(ScrapeWebsiteTool()))
 # persist the tool
 client.add_tool(webscrape_tool)
 ```
-Now, you can include the tool when you create agents with Letta. See a working example [here](https://github.com/cpacker/MemGPT/blob/main/examples/crewai_tool_usage.py).
+Now, you can include the tool when you create agents with Letta. See a working example [here](https://github.com/letta-ai/letta/blob/main/examples/crewai_tool_usage.py).
