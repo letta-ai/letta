@@ -38,7 +38,6 @@ jobs:
             package-lock.json
             tsconfig.json
   cypress-run:
-    continue-on-error: true
     needs: [changed-files]
     permissions:
       actions: read
@@ -87,7 +86,7 @@ jobs:
           cache-name: cache-node-modules-${{ env.node-version }}
         with:
           path: node_modules
-          key: ${{ runner.os }}-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
+          key: ${{ runner.os }}-${{ env.cache-name }}-${{ hashFiles('package-lock.json') }}
 
       - name: Restore NPM cache if exist
         id: cache-npm
@@ -125,7 +124,6 @@ jobs:
         if: steps.cache-nodemodules.outputs.cache-hit != 'true'
         run: npm ci
       - name: Cypress run
-        continue-on-error: true
         # Uses the official Cypress GitHub action https://github.com/cypress-io/github-action
         uses: cypress-io/github-action@v6
         with:
