@@ -26,7 +26,7 @@ import {
 } from '@letta-web/analytics/server';
 import { AnalyticsEvent } from '@letta-web/analytics';
 import { jwtDecode } from 'jwt-decode';
-import { AdminService } from '@letta-web/letta-agents-api';
+import { AdminService, ToolsService } from '@letta-web/letta-agents-api';
 import { createAgent, versionAgentTemplate } from '$letta/sdk';
 import { generateSlug } from '$letta/server';
 import { generateDefaultADELayout } from '$letta/utils';
@@ -53,6 +53,23 @@ export async function createOrganization(args: CreateOrganizationArgs) {
   if (!lettaAgentsOrganization?.id) {
     throw new Error('Failed to create organization from Letta Agents Service');
   }
+
+  const account = await AdminService.createUser({
+    requestBody: {
+      organization_id: lettaAgentsOrganization.id,
+      name: 'Service Account',
+    },
+  });
+
+  if (!account?.id) {
+    throw new Error(
+      'Failed to create service account from Letta Agents Service'
+    );
+  }
+
+  await ToolsService.addBaseTools({
+    userId: account.id,
+  });
 
   const [createdOrg] = await db
     .insert(organizations)

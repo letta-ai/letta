@@ -45,7 +45,6 @@ export const premadeAgentTemplates: Record<AgentRecipeVariant, AgentTemplate> =
         'archival_memory_search',
         'conversation_search',
         'conversation_search_date',
-        'pause_heartbeats',
         'send_message',
       ],
       llm_config: {
@@ -100,7 +99,6 @@ export const premadeAgentTemplates: Record<AgentRecipeVariant, AgentTemplate> =
         'archival_memory_search',
         'conversation_search',
         'conversation_search_date',
-        'pause_heartbeats',
         'send_message',
       ],
       llm_config: {
@@ -155,7 +153,6 @@ export const premadeAgentTemplates: Record<AgentRecipeVariant, AgentTemplate> =
         'archival_memory_search',
         'conversation_search',
         'conversation_search_date',
-        'pause_heartbeats',
         'send_message',
       ],
       llm_config: {
@@ -208,7 +205,6 @@ export const premadeAgentTemplates: Record<AgentRecipeVariant, AgentTemplate> =
         'archival_memory_search',
         'conversation_search',
         'conversation_search_date',
-        'pause_heartbeats',
         'send_message',
       ],
       llm_config: {
