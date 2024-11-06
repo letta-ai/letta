@@ -17,15 +17,13 @@
     }
   },
   "theme": "quill",
-  "topbarLinks": [
-    {
-      "name": "Support",
-      "url": "mailto:hi@letta.com"
-    }
-  ],
+  "topbarCTA": {
+    "name": "Letta Cloud",
+    "url": "https://forms.letta.com/early-access"
+  },
   "topbarCtaButton": {
-    "name": "View on GitHub",
-    "url": "https://github.com/letta-ai"
+    "type": "github",
+    "url": "https://github.com/letta-ai/letta"
   },
   "tabs": [
     {
