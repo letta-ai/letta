@@ -389,7 +389,7 @@ export const $Block = {
       description: 'Character limit of the block.',
       default: 2000,
     },
-    name: {
+    template_name: {
       anyOf: [
         {
           type: 'string',
@@ -398,7 +398,7 @@ export const $Block = {
           type: 'null',
         },
       ],
-      title: 'Name',
+      title: 'Template Name',
       description: 'Name of the block if it is a template.',
     },
     template: {
@@ -1032,7 +1032,6 @@ export const $CreateAgent = {
         {
           items: {
             type: 'string',
-            format: 'uuid',
           },
           type: 'array',
         },
@@ -1128,6 +1127,22 @@ export const $CreateAgent = {
         },
       ],
       description: 'The embedding configuration used by the agent.',
+    },
+    initial_message_sequence: {
+      anyOf: [
+        {
+          items: {
+            $ref: '#/components/schemas/Message-Input',
+          },
+          type: 'array',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Initial Message Sequence',
+      description:
+        "The initial set of messages to put in the agent's in-context memory.",
     },
   },
   additionalProperties: false,
@@ -1235,7 +1250,7 @@ export const $CreateBlock = {
       description: 'Character limit of the block.',
       default: 2000,
     },
-    name: {
+    template_name: {
       anyOf: [
         {
           type: 'string',
@@ -1244,7 +1259,7 @@ export const $CreateBlock = {
           type: 'null',
         },
       ],
-      title: 'Name',
+      title: 'Template Name',
       description: 'Name of the block if it is a template.',
     },
     template: {
@@ -3253,24 +3268,33 @@ export const $Organization = {
   properties: {
     id: {
       type: 'string',
+      pattern: '^org-[a-fA-F0-9]{8}',
       title: 'Id',
-      description: 'The id of the organization.',
+      description: 'The human-friendly ID of the Org',
+      examples: [['org-123e4567-e89b-12d3-a456-426614174000']],
     },
     name: {
       type: 'string',
       title: 'Name',
       description: 'The name of the organization.',
+      default: 'GracefulCastle',
     },
     created_at: {
-      type: 'string',
-      format: 'date-time',
+      anyOf: [
+        {
+          type: 'string',
+          format: 'date-time',
+        },
+        {
+          type: 'null',
+        },
+      ],
       title: 'Created At',
       description: 'The creation date of the organization.',
     },
   },
   additionalProperties: false,
   type: 'object',
-  required: ['id', 'name'],
   title: 'Organization',
 } as const;
 
@@ -4175,7 +4199,7 @@ export const $UpdateBlock = {
       description: 'Character limit of the block.',
       default: 2000,
     },
-    name: {
+    template_name: {
       anyOf: [
         {
           type: 'string',
@@ -4184,7 +4208,7 @@ export const $UpdateBlock = {
           type: 'null',
         },
       ],
-      title: 'Name',
+      title: 'Template Name',
       description: 'Name of the block if it is a template.',
     },
     template: {
@@ -4354,8 +4378,10 @@ export const $User = {
   properties: {
     id: {
       type: 'string',
+      pattern: '^user-[a-fA-F0-9]{8}',
       title: 'Id',
-      description: 'The id of the user.',
+      description: 'The human-friendly ID of the User',
+      examples: [['user-123e4567-e89b-12d3-a456-426614174000']],
     },
     organization_id: {
       anyOf: [
@@ -4368,7 +4394,7 @@ export const $User = {
       ],
       title: 'Organization Id',
       description: 'The organization id of the user',
-      default: 'organization-00000000-0000-4000-8000-000000000000',
+      default: 'org-00000000-0000-4000-8000-000000000000',
     },
     name: {
       type: 'string',
@@ -4376,14 +4402,28 @@ export const $User = {
       description: 'The name of the user.',
     },
     created_at: {
-      type: 'string',
-      format: 'date-time',
+      anyOf: [
+        {
+          type: 'string',
+          format: 'date-time',
+        },
+        {
+          type: 'null',
+        },
+      ],
       title: 'Created At',
       description: 'The creation date of the user.',
     },
     updated_at: {
-      type: 'string',
-      format: 'date-time',
+      anyOf: [
+        {
+          type: 'string',
+          format: 'date-time',
+        },
+        {
+          type: 'null',
+        },
+      ],
       title: 'Updated At',
       description: 'The update date of the user.',
     },
@@ -4396,7 +4436,7 @@ export const $User = {
   },
   additionalProperties: false,
   type: 'object',
-  required: ['id', 'name'],
+  required: ['name'],
   title: 'User',
   description: `Representation of a user.
 
@@ -4903,8 +4943,10 @@ export const $letta__schemas__tool__Tool = {
   properties: {
     id: {
       type: 'string',
+      pattern: '^tool-[a-fA-F0-9]{8}',
       title: 'Id',
-      description: 'The id of the tool.',
+      description: 'The human-friendly ID of the Tool',
+      examples: [['tool-123e4567-e89b-12d3-a456-426614174000']],
     },
     description: {
       anyOf: [
@@ -4943,13 +4985,27 @@ export const $letta__schemas__tool__Tool = {
       description: 'The module of the function.',
     },
     organization_id: {
-      type: 'string',
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
       title: 'Organization Id',
       description:
         'The unique identifier of the organization associated with the tool.',
     },
     name: {
-      type: 'string',
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
       title: 'Name',
       description: 'The name of the function.',
     },
@@ -4960,6 +5016,7 @@ export const $letta__schemas__tool__Tool = {
       type: 'array',
       title: 'Tags',
       description: 'Metadata tags.',
+      default: [],
     },
     source_code: {
       type: 'string',
@@ -4967,32 +5024,45 @@ export const $letta__schemas__tool__Tool = {
       description: 'The source code of the function.',
     },
     json_schema: {
-      type: 'object',
+      anyOf: [
+        {
+          type: 'object',
+        },
+        {
+          type: 'null',
+        },
+      ],
       title: 'Json Schema',
       description: 'The JSON schema of the function.',
     },
     created_by_id: {
-      type: 'string',
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
       title: 'Created By Id',
       description: 'The id of the user that made this Tool.',
     },
     last_updated_by_id: {
-      type: 'string',
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
       title: 'Last Updated By Id',
       description: 'The id of the user that made this Tool.',
     },
   },
   additionalProperties: false,
   type: 'object',
-  required: [
-    'id',
-    'organization_id',
-    'name',
-    'tags',
-    'source_code',
-    'created_by_id',
-    'last_updated_by_id',
-  ],
+  required: ['source_code'],
   title: 'Tool',
   description: `Representation of a tool, which is a function that can be called by the agent.
 

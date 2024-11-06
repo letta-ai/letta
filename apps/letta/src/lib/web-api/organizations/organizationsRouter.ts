@@ -444,7 +444,7 @@ async function deleteOrganization(): Promise<DeleteOrganizationResponse> {
   // delete data on letta-agents
   // this should propagate to all agents, tools, etc
   operations.push(
-    AdminService.deleteOrganization({
+    AdminService.deleteOrganizationById({
       orgId: organization.lettaAgentsId,
     })
   );

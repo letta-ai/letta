@@ -684,6 +684,9 @@ export const UseOrganizationServiceListOrgsKeyFn = (
 export type ToolsServiceCreateToolMutationResult = Awaited<
   ReturnType<typeof ToolsService.createTool>
 >;
+export type ToolsServiceAddBaseToolsMutationResult = Awaited<
+  ReturnType<typeof ToolsService.addBaseTools>
+>;
 export type SourcesServiceCreateSourceMutationResult = Awaited<
   ReturnType<typeof SourcesService.createSource>
 >;

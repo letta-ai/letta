@@ -16,6 +16,8 @@ import type {
   ListToolsResponse,
   CreateToolData,
   CreateToolResponse,
+  AddBaseToolsData,
+  AddBaseToolsResponse,
   GetSourceData,
   GetSourceResponse,
   UpdateSourceData,
@@ -131,6 +133,7 @@ export class ToolsService {
    * Delete a tool by name
    * @param data The data for the request.
    * @param data.toolId
+   * @param data.userId
    * @returns unknown Successful Response
    * @throws ApiError
    */
@@ -278,6 +281,28 @@ export class ToolsService {
       url: '/v1/tools/',
       body: data.requestBody,
       mediaType: 'application/json',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Add Base Tools
+   * Add base tools
+   * @param data The data for the request.
+   * @param data.userId
+   * @returns letta__schemas__tool__Tool Successful Response
+   * @throws ApiError
+   */
+  public static addBaseTools(
+    data: AddBaseToolsData = {},
+    headers?: { user_id: string }
+  ): CancelablePromise<AddBaseToolsResponse> {
+    return __request(OpenAPI, {
+      method: 'POST',
+      url: '/v1/tools/add-base-tools',
       errors: {
         422: 'Validation Error',
       },
@@ -801,7 +826,7 @@ export class AgentsService {
 
   /**
    * Add Tool To Agent
-   * Add tools to an existing agent
+   * Add tools to an exsiting agent
    * @param data The data for the request.
    * @param data.agentId
    * @param data.toolId
@@ -829,7 +854,7 @@ export class AgentsService {
 
   /**
    * Remove Tool From Agent
-   * Add tools to an existing agent
+   * Add tools to an exsiting agent
    * @param data The data for the request.
    * @param data.agentId
    * @param data.toolId

@@ -196,7 +196,7 @@ export type Block = {
   /**
    * Name of the block if it is a template.
    */
-  name?: string | null;
+  template_name?: string | null;
   /**
    * Whether the block is a template (e.g. saved human/persona options).
    */
@@ -404,6 +404,10 @@ export type CreateAgent = {
    * The embedding configuration used by the agent.
    */
   embedding_config?: EmbeddingConfig | null;
+  /**
+   * The initial set of messages to put in the agent's in-context memory.
+   */
+  initial_message_sequence?: Array<Message_Input> | null;
 };
 
 export type CreateArchivalMemory = {
@@ -472,7 +476,7 @@ export type CreateBlock = {
   /**
    * Name of the block if it is a template.
    */
-  name?: string | null;
+  template_name?: string | null;
   template?: boolean;
   /**
    * Label of the block.
@@ -1436,17 +1440,17 @@ export type OpenAIUsage = {
 
 export type Organization = {
   /**
-   * The id of the organization.
+   * The human-friendly ID of the Org
    */
-  id: string;
+  id?: string;
   /**
    * The name of the organization.
    */
-  name: string;
+  name?: string;
   /**
    * The creation date of the organization.
    */
-  created_at?: string;
+  created_at?: string | null;
 };
 
 export type OrganizationCreate = {
@@ -1829,7 +1833,7 @@ export type UpdateBlock = {
   /**
    * Name of the block if it is a template.
    */
-  name?: string | null;
+  template_name?: string | null;
   /**
    * Whether the block is a template (e.g. saved human/persona options).
    */
@@ -1904,9 +1908,9 @@ export type UsageStatistics = {
  */
 export type User = {
   /**
-   * The id of the user.
+   * The human-friendly ID of the User
    */
-  id: string;
+  id?: string;
   /**
    * The organization id of the user
    */
@@ -1918,11 +1922,11 @@ export type User = {
   /**
    * The creation date of the user.
    */
-  created_at?: string;
+  created_at?: string | null;
   /**
    * The update date of the user.
    */
-  updated_at?: string;
+  updated_at?: string | null;
   /**
    * Whether this user is deleted or not.
    */
@@ -2127,9 +2131,9 @@ export type letta__schemas__openai__openai__ToolCall = {
  */
 export type letta__schemas__tool__Tool = {
   /**
-   * The id of the tool.
+   * The human-friendly ID of the Tool
    */
-  id: string;
+  id?: string;
   /**
    * The description of the tool.
    */
@@ -2145,15 +2149,15 @@ export type letta__schemas__tool__Tool = {
   /**
    * The unique identifier of the organization associated with the tool.
    */
-  organization_id: string;
+  organization_id?: string | null;
   /**
    * The name of the function.
    */
-  name: string;
+  name?: string | null;
   /**
    * Metadata tags.
    */
-  tags: Array<string>;
+  tags?: Array<string>;
   /**
    * The source code of the function.
    */
@@ -2163,15 +2167,15 @@ export type letta__schemas__tool__Tool = {
    */
   json_schema?: {
     [key: string]: unknown;
-  };
+  } | null;
   /**
    * The id of the user that made this Tool.
    */
-  created_by_id: string;
+  created_by_id?: string | null;
   /**
    * The id of the user that made this Tool.
    */
-  last_updated_by_id: string;
+  last_updated_by_id?: string | null;
 };
 
 export type LettaResponse = {
@@ -2384,6 +2388,7 @@ export type MessageRole2 =
 
 export type DeleteToolData = {
   toolId: string;
+  userId?: string | null;
 };
 
 export type DeleteToolResponse = unknown;
@@ -2424,6 +2429,12 @@ export type CreateToolData = {
 };
 
 export type CreateToolResponse = letta__schemas__tool__Tool;
+
+export type AddBaseToolsData = {
+  userId?: string | null;
+};
+
+export type AddBaseToolsResponse = Array<letta__schemas__tool__Tool>;
 
 export type GetSourceData = {
   sourceId: string;
@@ -2955,6 +2966,21 @@ export type $OpenApiTs = {
          * Successful Response
          */
         200: letta__schemas__tool__Tool;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/tools/add-base-tools': {
+    post: {
+      req: AddBaseToolsData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: Array<letta__schemas__tool__Tool>;
         /**
          * Validation Error
          */

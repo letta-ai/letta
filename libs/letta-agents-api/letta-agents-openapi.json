@@ -21,6 +21,22 @@
               "type": "string",
               "title": "Tool Id"
             }
+          },
+          {
+            "name": "user_id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "User Id"
+            }
           }
         ],
         "responses": {
@@ -347,6 +363,58 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/letta__schemas__tool__Tool"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/tools/add-base-tools": {
+      "post": {
+        "tags": ["tools"],
+        "summary": "Add Base Tools",
+        "description": "Add base tools",
+        "operationId": "add_base_tools",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "User Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/letta__schemas__tool__Tool"
+                  },
+                  "title": "Response Add Base Tools"
                 }
               }
             }
@@ -1524,7 +1592,7 @@
       "patch": {
         "tags": ["agents"],
         "summary": "Add Tool To Agent",
-        "description": "Add tools to an existing agent",
+        "description": "Add tools to an exsiting agent",
         "operationId": "add_tool_to_agent",
         "parameters": [
           {
@@ -1590,7 +1658,7 @@
       "patch": {
         "tags": ["agents"],
         "summary": "Remove Tool From Agent",
-        "description": "Add tools to an existing agent",
+        "description": "Add tools to an exsiting agent",
         "operationId": "remove_tool_from_agent",
         "parameters": [
           {
@@ -3858,7 +3926,7 @@
             "description": "Character limit of the block.",
             "default": 2000
           },
-          "name": {
+          "template_name": {
             "anyOf": [
               {
                 "type": "string"
@@ -3867,7 +3935,7 @@
                 "type": "null"
               }
             ],
-            "title": "Name",
+            "title": "Template Name",
             "description": "Name of the block if it is a template."
           },
           "template": {
@@ -4479,8 +4547,7 @@
             "anyOf": [
               {
                 "items": {
-                  "type": "string",
-                  "format": "uuid"
+                  "type": "string"
                 },
                 "type": "array"
               },
@@ -4576,6 +4643,21 @@
               }
             ],
             "description": "The embedding configuration used by the agent."
+          },
+          "initial_message_sequence": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/Message-Input"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Initial Message Sequence",
+            "description": "The initial set of messages to put in the agent's in-context memory."
           }
         },
         "additionalProperties": false,
@@ -4679,7 +4761,7 @@
             "description": "Character limit of the block.",
             "default": 2000
           },
-          "name": {
+          "template_name": {
             "anyOf": [
               {
                 "type": "string"
@@ -4688,7 +4770,7 @@
                 "type": "null"
               }
             ],
-            "title": "Name",
+            "title": "Template Name",
             "description": "Name of the block if it is a template."
           },
           "template": {
@@ -6592,24 +6674,33 @@
         "properties": {
           "id": {
             "type": "string",
+            "pattern": "^org-[a-fA-F0-9]{8}",
             "title": "Id",
-            "description": "The id of the organization."
+            "description": "The human-friendly ID of the Org",
+            "examples": [["org-123e4567-e89b-12d3-a456-426614174000"]]
           },
           "name": {
             "type": "string",
             "title": "Name",
-            "description": "The name of the organization."
+            "description": "The name of the organization.",
+            "default": "GracefulCastle"
           },
           "created_at": {
-            "type": "string",
-            "format": "date-time",
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Created At",
             "description": "The creation date of the organization."
           }
         },
         "additionalProperties": false,
         "type": "object",
-        "required": ["id", "name"],
         "title": "Organization"
       },
       "OrganizationCreate": {
@@ -7463,7 +7554,7 @@
             "description": "Character limit of the block.",
             "default": 2000
           },
-          "name": {
+          "template_name": {
             "anyOf": [
               {
                 "type": "string"
@@ -7472,7 +7563,7 @@
                 "type": "null"
               }
             ],
-            "title": "Name",
+            "title": "Template Name",
             "description": "Name of the block if it is a template."
           },
           "template": {
@@ -7636,8 +7727,10 @@
         "properties": {
           "id": {
             "type": "string",
+            "pattern": "^user-[a-fA-F0-9]{8}",
             "title": "Id",
-            "description": "The id of the user."
+            "description": "The human-friendly ID of the User",
+            "examples": [["user-123e4567-e89b-12d3-a456-426614174000"]]
           },
           "organization_id": {
             "anyOf": [
@@ -7650,7 +7743,7 @@
             ],
             "title": "Organization Id",
             "description": "The organization id of the user",
-            "default": "organization-00000000-0000-4000-8000-000000000000"
+            "default": "org-00000000-0000-4000-8000-000000000000"
           },
           "name": {
             "type": "string",
@@ -7658,14 +7751,28 @@
             "description": "The name of the user."
           },
           "created_at": {
-            "type": "string",
-            "format": "date-time",
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Created At",
             "description": "The creation date of the user."
           },
           "updated_at": {
-            "type": "string",
-            "format": "date-time",
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Updated At",
             "description": "The update date of the user."
           },
@@ -7678,7 +7785,7 @@
         },
         "additionalProperties": false,
         "type": "object",
-        "required": ["id", "name"],
+        "required": ["name"],
         "title": "User",
         "description": "Representation of a user.\n\nParameters:\n    id (str): The unique identifier of the user.\n    name (str): The name of the user.\n    created_at (datetime): The creation date of the user."
       },
@@ -8145,8 +8252,10 @@
         "properties": {
           "id": {
             "type": "string",
+            "pattern": "^tool-[a-fA-F0-9]{8}",
             "title": "Id",
-            "description": "The id of the tool."
+            "description": "The human-friendly ID of the Tool",
+            "examples": [["tool-123e4567-e89b-12d3-a456-426614174000"]]
           },
           "description": {
             "anyOf": [
@@ -8185,12 +8294,26 @@
             "description": "The module of the function."
           },
           "organization_id": {
-            "type": "string",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Organization Id",
             "description": "The unique identifier of the organization associated with the tool."
           },
           "name": {
-            "type": "string",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Name",
             "description": "The name of the function."
           },
@@ -8200,7 +8323,8 @@
             },
             "type": "array",
             "title": "Tags",
-            "description": "Metadata tags."
+            "description": "Metadata tags.",
+            "default": []
           },
           "source_code": {
             "type": "string",
@@ -8208,32 +8332,45 @@
             "description": "The source code of the function."
           },
           "json_schema": {
-            "type": "object",
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Json Schema",
             "description": "The JSON schema of the function."
           },
           "created_by_id": {
-            "type": "string",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Created By Id",
             "description": "The id of the user that made this Tool."
           },
           "last_updated_by_id": {
-            "type": "string",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Last Updated By Id",
             "description": "The id of the user that made this Tool."
           }
         },
         "additionalProperties": false,
         "type": "object",
-        "required": [
-          "id",
-          "organization_id",
-          "name",
-          "tags",
-          "source_code",
-          "created_by_id",
-          "last_updated_by_id"
-        ],
+        "required": ["source_code"],
         "title": "Tool",
         "description": "Representation of a tool, which is a function that can be called by the agent.\n\nParameters:\n    id (str): The unique identifier of the tool.\n    name (str): The name of the function.\n    tags (List[str]): Metadata tags.\n    source_code (str): The source code of the function.\n    json_schema (Dict): The JSON schema of the function."
       },

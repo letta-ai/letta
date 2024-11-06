@@ -841,6 +841,35 @@ export const useToolsServiceCreateTool = <
       }) as unknown as Promise<TData>,
     ...options,
   });
+export const useToolsServiceAddBaseTools = <
+  TData = Common.ToolsServiceAddBaseToolsMutationResult,
+  TError = unknown,
+  TContext = unknown
+>(
+  options?: Omit<
+    UseMutationOptions<
+      TData,
+      TError,
+      {
+        userId?: string;
+      },
+      TContext
+    >,
+    'mutationFn'
+  >
+) =>
+  useMutation<
+    TData,
+    TError,
+    {
+      userId?: string;
+    },
+    TContext
+  >({
+    mutationFn: ({ userId }) =>
+      ToolsService.addBaseTools({ userId }) as unknown as Promise<TData>,
+    ...options,
+  });
 export const useSourcesServiceCreateSource = <
   TData = Common.SourcesServiceCreateSourceMutationResult,
   TError = unknown,
@@ -1641,6 +1670,7 @@ export const useToolsServiceDeleteTool = <
       TError,
       {
         toolId: string;
+        userId?: string;
       },
       TContext
     >,
@@ -1652,11 +1682,12 @@ export const useToolsServiceDeleteTool = <
     TError,
     {
       toolId: string;
+      userId?: string;
     },
     TContext
   >({
-    mutationFn: ({ toolId }) =>
-      ToolsService.deleteTool({ toolId }) as unknown as Promise<TData>,
+    mutationFn: ({ toolId, userId }) =>
+      ToolsService.deleteTool({ toolId, userId }) as unknown as Promise<TData>,
     ...options,
   });
 export const useSourcesServiceDeleteSource = <
