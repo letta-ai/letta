@@ -59,7 +59,7 @@
                             "limit": {
                               "type": "number"
                             },
-                            "name": {
+                            "template_name": {
                               "type": "string",
                               "nullable": true
                             },
@@ -67,8 +67,7 @@
                               "type": "boolean"
                             },
                             "label": {
-                              "type": "string",
-                              "nullable": true
+                              "type": "string"
                             },
                             "description": {
                               "type": "string",
@@ -387,7 +386,14 @@
           "description": "Body",
           "content": {
             "application/json": {
-              "schema": {}
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "migrate_deployed_agents": {
+                    "type": "boolean"
+                  }
+                }
+              }
             }
           }
         },
