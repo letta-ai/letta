@@ -67,9 +67,14 @@ export async function createOrganization(args: CreateOrganizationArgs) {
     );
   }
 
-  await ToolsService.addBaseTools({
-    userId: account.id,
-  });
+  await ToolsService.addBaseTools(
+    {
+      userId: account.id,
+    },
+    {
+      user_id: account.id,
+    }
+  );
 
   const [createdOrg] = await db
     .insert(organizations)
