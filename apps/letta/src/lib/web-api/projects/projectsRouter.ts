@@ -4,9 +4,11 @@ import {
   deployedAgents,
   projects,
   deployedAgentTemplates,
+  agentTemplates,
+  organizationPreferences,
 } from '@letta-web/database';
-import { getUserOrganizationIdOrThrow } from '$letta/server/auth';
-import { eq, and, like, desc, count } from 'drizzle-orm';
+import { getUserActiveOrganizationIdOrThrow } from '$letta/server/auth';
+import { eq, and, like, desc, count, isNull } from 'drizzle-orm';
 import type { contracts, projectsContract } from '$letta/web-api/contracts';
 import { generateSlug } from '$letta/server';
 
@@ -20,12 +22,13 @@ export async function getProjects(
 ): Promise<ResponseShapes['getProjects']> {
   const { search, offset, limit } = req.query;
 
-  const organizationId = await getUserOrganizationIdOrThrow();
+  const organizationId = await getUserActiveOrganizationIdOrThrow();
 
   const projectsList = await db.query.projects.findMany({
     where: and(
+      isNull(projects.deletedAt),
       eq(projects.organizationId, organizationId),
-      like(projects.name, search || '%')
+      like(projects.name, `%${search}%`)
     ),
     columns: {
       name: true,
@@ -63,9 +66,12 @@ export async function getProjectByIdOrSlug(
   const { projectId } = req.params;
   const { lookupBy } = req.query;
 
-  const organizationId = await getUserOrganizationIdOrThrow();
+  const organizationId = await getUserActiveOrganizationIdOrThrow();
 
-  const query = [eq(projects.organizationId, organizationId)];
+  const query = [
+    isNull(projects.deletedAt),
+    eq(projects.organizationId, organizationId),
+  ];
 
   if (lookupBy === 'slug') {
     query.push(eq(projects.slug, projectId));
@@ -113,12 +119,13 @@ export async function createProject(
 ): Promise<CreateProjectResponse> {
   const { name } = req.body;
 
-  const organizationId = await getUserOrganizationIdOrThrow();
+  const organizationId = await getUserActiveOrganizationIdOrThrow();
 
   let projectSlug = generateSlug(name);
 
   const existingProject = await db.query.projects.findFirst({
     where: and(
+      isNull(projects.deletedAt),
       eq(projects.organizationId, organizationId),
       eq(projects.slug, projectSlug)
     ),
@@ -126,7 +133,7 @@ export async function createProject(
 
   if (existingProject) {
     // get total project count
-    const projectCount = await db
+    const [{ count: projectCount }] = await db
       .select({ count: count() })
       .from(projects)
       .where(eq(projects.organizationId, organizationId));
@@ -166,18 +173,19 @@ type GetProjectDeployedAgentTemplatesResponse = ServerInferResponses<
 export async function getProjectDeployedAgentTemplates(
   req: GetProjectDeployedAgentTemplatesRequest
 ): Promise<GetProjectDeployedAgentTemplatesResponse> {
-  const organizationId = await getUserOrganizationIdOrThrow();
+  const organizationId = await getUserActiveOrganizationIdOrThrow();
   const { projectId } = req.params;
   const { search, offset, agentTemplateId, limit, includeAgentTemplateInfo } =
     req.query;
 
   const where = [
+    isNull(deployedAgentTemplates.deletedAt),
     eq(deployedAgentTemplates.organizationId, organizationId),
     eq(deployedAgentTemplates.projectId, projectId),
   ];
 
   if (search) {
-    where.push(like(deployedAgentTemplates.version, search || '%'));
+    where.push(like(deployedAgentTemplates.version, `%${search}%`));
   }
 
   if (agentTemplateId) {
@@ -233,11 +241,12 @@ type GetProjectDeployedAgentsResponse = ServerInferResponses<
 export async function getDeployedAgents(
   req: GetProjectDeployedAgentsRequest
 ): Promise<GetProjectDeployedAgentsResponse> {
-  const organizationId = await getUserOrganizationIdOrThrow();
+  const organizationId = await getUserActiveOrganizationIdOrThrow();
   const { projectId } = req.params;
   const { search, offset, limit = 10, deployedAgentTemplateId } = req.query;
 
   const where = [
+    isNull(deployedAgentTemplates.deletedAt),
     eq(deployedAgents.organizationId, organizationId),
     eq(deployedAgents.projectId, projectId),
   ];
@@ -296,11 +305,12 @@ export async function updateProject(
   req: UpdateProjectRequest
 ): Promise<UpdateProjectResponse> {
   const { projectId } = req.params;
-  const organizationId = await getUserOrganizationIdOrThrow();
+  const organizationId = await getUserActiveOrganizationIdOrThrow();
   const { name } = req.body;
 
   const project = await db.query.projects.findFirst({
     where: and(
+      isNull(projects.deletedAt),
       eq(projects.id, projectId),
       eq(projects.organizationId, organizationId)
     ),
@@ -343,10 +353,11 @@ export async function deleteProject(
   req: DeleteProjectRequest
 ): Promise<DeleteProjectResponse> {
   const { projectId } = req.params;
-  const organizationId = await getUserOrganizationIdOrThrow();
+  const organizationId = await getUserActiveOrganizationIdOrThrow();
 
   const project = await db.query.projects.findFirst({
     where: and(
+      isNull(projects.deletedAt),
       eq(projects.id, projectId),
       eq(projects.organizationId, organizationId)
     ),
@@ -359,7 +370,59 @@ export async function deleteProject(
     };
   }
 
-  await db.delete(projects).where(eq(projects.id, projectId));
+  const operations = [];
+  operations.push(
+    db
+      .update(projects)
+      .set({ deletedAt: new Date() })
+      .where(eq(projects.id, projectId))
+  );
+
+  // delete all deployed agents
+  operations.push(
+    db
+      .update(deployedAgents)
+      .set({ deletedAt: new Date() })
+      .where(eq(deployedAgents.projectId, projectId))
+  );
+
+  // delete all deployed agent templates
+  operations.push(
+    db
+      .update(deployedAgentTemplates)
+      .set({ deletedAt: new Date() })
+      .where(eq(deployedAgentTemplates.projectId, projectId))
+  );
+
+  // delete all templates
+  operations.push(
+    db
+      .update(agentTemplates)
+      .set({ deletedAt: new Date() })
+      .where(eq(agentTemplates.projectId, projectId))
+  );
+
+  await Promise.all([
+    ...operations,
+    (async () => {
+      // check if deleted project is the organizationPreferences.catchAllAgentsProjectId
+      // if it is, set it to null
+
+      const isMatching = await db.query.organizationPreferences.findFirst({
+        where: and(
+          eq(organizationPreferences.organizationId, organizationId),
+          eq(organizationPreferences.catchAllAgentsProjectId, projectId)
+        ),
+      });
+
+      if (isMatching) {
+        await db
+          .update(organizationPreferences)
+          .set({ catchAllAgentsProjectId: null })
+          .where(eq(organizationPreferences.organizationId, organizationId));
+      }
+    })(),
+  ]);
 
   return {
     status: 200,

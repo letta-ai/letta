@@ -51,7 +51,7 @@ const frameVariants = cva('', {
     },
     width: {
       centered: 'max-w-[800px]',
-      contained: 'max-w-[610px]',
+      contained: 'max-w-[610px] w-full',
       sidebar: 'w-sidebar',
     },
     height: {

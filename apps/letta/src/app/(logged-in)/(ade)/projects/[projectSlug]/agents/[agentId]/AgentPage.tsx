@@ -3,6 +3,8 @@ import type { panelRegistry } from './panelRegistry';
 import { usePanelManager } from './panelRegistry';
 import { PanelManagerProvider, PanelRenderer } from './panelRegistry';
 import type { PanelItemPositionsMatrix } from '@letta-web/component-library';
+import { Card, Checkbox, ExternalLink } from '@letta-web/component-library';
+import { TrashIcon } from '@letta-web/component-library';
 import {
   FormField,
   FormProvider,
@@ -155,6 +157,10 @@ function DeleteAgentDialog(props: DeleteAgentDialogProps) {
     [name]
   );
 
+  const t = useTranslations(
+    'projects/(projectSlug)/agents/(agentId)/AgentPage'
+  );
+
   const form = useForm<z.infer<typeof DeleteAgentDialogFormSchema>>({
     resolver: zodResolver(DeleteAgentDialogFormSchema),
     defaultValues: {
@@ -162,11 +168,12 @@ function DeleteAgentDialog(props: DeleteAgentDialogProps) {
     },
   });
 
-  const { mutate, isPending } = webOriginSDKApi.agents.deleteAgent.useMutation({
-    onSuccess: () => {
-      window.location.href = `/projects/${projectSlug}`;
-    },
-  });
+  const { mutate, isPending, isSuccess, isError } =
+    webOriginSDKApi.agents.deleteAgent.useMutation({
+      onSuccess: () => {
+        window.location.href = `/projects/${projectSlug}`;
+      },
+    });
 
   const handleSubmit = useCallback(() => {
     mutate({
@@ -179,33 +186,32 @@ function DeleteAgentDialog(props: DeleteAgentDialogProps) {
   return (
     <FormProvider {...form}>
       <Dialog
+        isOpen
         onOpenChange={(next) => {
           if (!next) {
             onClose();
           }
         }}
+        errorMessage={isError ? t('DeleteAgentDialog.error') : undefined}
         confirmColor="destructive"
-        confirmText="Delete Agent"
-        title="Are you sure you want to delete this agent?"
-        trigger={<Button label="Delete Agent" color="destructive" />}
+        confirmText={t('DeleteAgentDialog.confirm')}
+        title={t('DeleteAgentDialog.title')}
         onSubmit={form.handleSubmit(handleSubmit)}
-        isConfirmBusy={isPending}
+        isConfirmBusy={isPending || isSuccess}
       >
+        <Typography>{t('DeleteAgentDialog.description')}</Typography>
         <Typography>
-          This action cannot be undone. All data associated with this agent will
-          be permanently deleted.
-        </Typography>
-        <Typography>
-          Your agent{"'"}s name is:
-          <br />
-          <strong>{name}</strong>
+          {t.rich('DeleteAgentDialog.confirmText', {
+            templateName: name,
+            strong: (chunks) => <Typography bold>{chunks}</Typography>,
+          })}
         </Typography>
         <FormField
           name="agentName"
           render={({ field }) => (
             <Input
               fullWidth
-              label={`Type the name of the agent name confirm`}
+              label={t('DeleteAgentDialog.confirmTextLabel')}
               {...field}
             />
           )}
@@ -331,6 +337,12 @@ function DeployAgentDialog(props: DeployAgentDialogProps) {
   );
 }
 
+const versionAgentFormSchema = z.object({
+  migrate: z.boolean(),
+});
+
+type VersionAgentFormValues = z.infer<typeof versionAgentFormSchema>;
+
 function VersionAgentDialog() {
   const { id: agentTemplateId } = useCurrentAgent();
   const { id: projectId } = useCurrentProject();
@@ -339,6 +351,13 @@ function VersionAgentDialog() {
   const t = useTranslations(
     'projects/(projectSlug)/agents/(agentId)/AgentPage'
   );
+
+  const form = useForm<VersionAgentFormValues>({
+    resolver: zodResolver(versionAgentFormSchema),
+    defaultValues: {
+      migrate: true,
+    },
+  });
 
   const { mutate, isPending } =
     webOriginSDKApi.agents.versionAgentTemplate.useMutation({
@@ -394,34 +413,75 @@ function VersionAgentDialog() {
       },
     });
 
-  const handleVersionNewAgent = useCallback(() => {
-    mutate({
-      query: {
-        returnAgentId: true,
-      },
-      params: { agent_id: agentTemplateId },
-    });
-  }, [mutate, agentTemplateId]);
+  const handleVersionNewAgent = useCallback(
+    (values: VersionAgentFormValues) => {
+      mutate({
+        query: {
+          returnAgentId: true,
+        },
+        body: {
+          migrate_deployed_agents: values.migrate,
+        },
+        params: { agent_id: agentTemplateId },
+      });
+    },
+    [mutate, agentTemplateId]
+  );
 
   return (
-    <Dialog
-      onOpenChange={setOpen}
-      isOpen={open}
-      testId="stage-agent-dialog"
-      title={t('VersionAgentDialog.title')}
-      onConfirm={handleVersionNewAgent}
-      isConfirmBusy={isPending}
-      trigger={
-        <Button
-          data-testid="stage-new-version-button"
-          color="secondary"
-          fullWidth
-          label={t('VersionAgentDialog.trigger')}
-        />
-      }
-    >
-      <VStack gap="form">{t('VersionAgentDialog.description')}</VStack>
-    </Dialog>
+    <FormProvider {...form}>
+      <Dialog
+        onOpenChange={setOpen}
+        isOpen={open}
+        testId="stage-agent-dialog"
+        title={t('VersionAgentDialog.title')}
+        onConfirm={form.handleSubmit(handleVersionNewAgent)}
+        isConfirmBusy={isPending}
+        trigger={
+          <Button
+            data-testid="stage-new-version-button"
+            color="secondary"
+            fullWidth
+            label={t('VersionAgentDialog.trigger')}
+          />
+        }
+      >
+        <VStack gap="form">
+          <Typography>{t('VersionAgentDialog.description')}</Typography>
+          <Card>
+            <FormField
+              render={({ field }) => {
+                return (
+                  <Checkbox
+                    checked={field.value}
+                    description={t.rich(
+                      'VersionAgentDialog.migrateDescription',
+                      {
+                        link: (chunks) => (
+                          <ExternalLink href="https://docs.letta.com/api-reference/agents/migrate-agent">
+                            {chunks}
+                          </ExternalLink>
+                        ),
+                      }
+                    )}
+                    label={t('VersionAgentDialog.migrate')}
+                    onCheckedChange={(value) => {
+                      field.onChange({
+                        target: {
+                          value: value,
+                          name: field.name,
+                        },
+                      });
+                    }}
+                  />
+                );
+              }}
+              name="migrate"
+            />
+          </Card>
+        </VStack>
+      </Dialog>
+    </FormProvider>
   );
 }
 
@@ -521,6 +581,7 @@ function TemplateVersionDisplay() {
     const {
       message_ids: _m,
       created_at: _c,
+      metadata_: _meta,
       name: _name,
       id: _id,
       ...rest
@@ -528,6 +589,7 @@ function TemplateVersionDisplay() {
     const {
       message_ids: _m2,
       created_at: _m3,
+      metadata_: _meta2,
       name: _name2,
       id: _id2,
       ...rest2
@@ -639,7 +701,15 @@ function AgentSettingsDropdown() {
           preIcon={<ForkIcon />}
           label={t('ForkAgentDialog.trigger')}
         />
+
         <RestoreLayoutButton />
+        <DropdownMenuItem
+          onClick={() => {
+            setOpenDialog('deleteAgent');
+          }}
+          preIcon={<TrashIcon />}
+          label={t('DeleteAgentDialog.trigger')}
+        />
         <HStack padding="small" justify="end" borderTop fullWidth>
           <ThemeSelector />
         </HStack>

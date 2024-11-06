@@ -9,7 +9,7 @@ import {
 } from '@tanstack/react-query';
 import React from 'react';
 import { db, agentTemplates } from '@letta-web/database';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, isNull } from 'drizzle-orm';
 import { redirect } from 'next/navigation';
 import { webApiQueryKeys, webOriginSDKQueryKeys } from '$letta/client';
 import { getProjectByIdOrSlug } from '$letta/web-api/router';
@@ -48,7 +48,8 @@ async function AgentsAgentPage(context: AgentsAgentPageProps) {
   const agentTemplate = await db.query.agentTemplates.findFirst({
     where: and(
       eq(agentTemplates.name, templateName),
-      eq(agentTemplates.organizationId, user.organizationId)
+      eq(agentTemplates.organizationId, user.activeOrganizationId),
+      isNull(agentTemplates.deletedAt)
     ),
     columns: {
       name: true,

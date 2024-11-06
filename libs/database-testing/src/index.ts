@@ -16,7 +16,11 @@ beforeEach(() => {
 });
 
 function mockDatabaseInsert() {
-  const values = jest.fn();
+  const returning = jest.fn(() => []);
+
+  const values = jest.fn(() => ({
+    returning,
+  }));
 
   mockDatabase.insert.mockReturnValue({
     values: values,
@@ -24,6 +28,7 @@ function mockDatabaseInsert() {
 
   return {
     valuesFn: values,
+    returningFn: returning,
   };
 }
 

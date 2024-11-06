@@ -13,7 +13,10 @@ export const WhitelistedEmailSchema = z.object({
   id: z.string(),
 });
 
-export const WhitelistedEmailsSchema = z.array(WhitelistedEmailSchema);
+export const WhitelistedEmailsSchema = z.object({
+  emails: z.array(WhitelistedEmailSchema),
+  hasNextPage: z.boolean(),
+});
 
 export type WhitelistedEmailType = z.infer<typeof WhitelistedEmailSchema>;
 

@@ -7,8 +7,8 @@ import {
   bigint,
   uniqueIndex,
   json,
-  serial,
   numeric,
+  primaryKey,
 } from 'drizzle-orm/pg-core';
 import { sql, relations } from 'drizzle-orm';
 import type {
@@ -35,18 +35,21 @@ export const organizations = pgTable('organizations', {
   lettaAgentsId: text('letta_agents_id').notNull().unique(),
   isAdmin: boolean('is_admin').notNull().default(false),
   createdAt: timestamp('created_at').notNull().defaultNow(),
+  deletedAt: timestamp('deleted_at'),
   updatedAt: timestamp('updated_at')
     .notNull()
     .$onUpdate(() => new Date()),
 });
 
 export const orgRelationsTable = relations(organizations, ({ many }) => ({
-  users: many(users),
   apiKeys: many(lettaAPIKeys),
   projects: many(projects),
   testingAgents: many(agentTemplates),
   sourceAgents: many(deployedAgentTemplates),
   deployedAgents: many(deployedAgents),
+  organizationUsers: many(organizationUsers),
+  organizationPreferences: many(organizationPreferences),
+  organizationInvitedUsers: many(organizationInvitedUsers),
 }));
 
 export const organizationPreferences = pgTable('organization_preferences', {
@@ -85,24 +88,61 @@ export const users = pgTable('users', {
   email: text('email').notNull().unique(),
   name: text('name').notNull(),
   imageUrl: text('image_url').notNull(),
-  organizationId: text('organization_id')
-    .notNull()
-    .references(() => organizations.id, { onDelete: 'cascade' })
-    .notNull(),
+  activeOrganizationId: text('active_organization_id'),
   lettaAgentsId: text('letta_agents_id').notNull().unique(),
   theme: text('theme').default('light'),
+  deletedAt: timestamp('deleted_at'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at')
     .notNull()
     .$onUpdate(() => new Date()),
 });
 
-export const userRelations = relations(users, ({ one }) => ({
-  organization: one(organizations, {
-    fields: [users.organizationId],
-    references: [organizations.id],
-  }),
+export const userRelations = relations(users, ({ many }) => ({
+  organizationUsers: many(organizationUsers),
 }));
+
+export interface OrganizationPermissionType {
+  isOrganizationAdmin?: boolean;
+}
+
+export const organizationUsers = pgTable(
+  'organization_users',
+  {
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' })
+      .notNull(),
+    organizationId: text('organization_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' })
+      .notNull(),
+    permissions: json('permissions')
+      .$type<OrganizationPermissionType>()
+      .notNull(),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at')
+      .notNull()
+      .$onUpdate(() => new Date()),
+  },
+  (table) => ({
+    pk: primaryKey({ columns: [table.userId, table.organizationId] }),
+  })
+);
+
+export const organizationUsersRelations = relations(
+  organizationUsers,
+  ({ one }) => ({
+    user: one(users, {
+      fields: [organizationUsers.userId],
+      references: [users.id],
+    }),
+    organization: one(organizations, {
+      fields: [organizationUsers.organizationId],
+      references: [organizations.id],
+    }),
+  })
+);
 
 export const lettaAPIKeys = pgTable('letta_api_keys', {
   id: text('id')
@@ -119,6 +159,7 @@ export const lettaAPIKeys = pgTable('letta_api_keys', {
     .references(() => organizations.id, { onDelete: 'cascade' })
     .notNull(),
   createdAt: timestamp('created_at').notNull().defaultNow(),
+  deletedAt: timestamp('deleted_at'),
   updatedAt: timestamp('updated_at')
     .notNull()
     .$onUpdate(() => new Date()),
@@ -151,6 +192,7 @@ export const projects = pgTable(
       .references(() => organizations.id, { onDelete: 'cascade' })
       .notNull(),
     createdAt: timestamp('created_at').notNull().defaultNow(),
+    deletedAt: timestamp('deleted_at'),
     updatedAt: timestamp('updated_at')
       .notNull()
       .$onUpdate(() => new Date()),
@@ -190,6 +232,7 @@ export const agentTemplates = pgTable(
         onDelete: 'cascade',
       }),
     createdAt: timestamp('created_at').notNull().defaultNow(),
+    deletedAt: timestamp('deleted_at'),
     updatedAt: timestamp('updated_at')
       .notNull()
       .$onUpdate(() => new Date()),
@@ -236,6 +279,7 @@ export const deployedAgentTemplates = pgTable(
     agentTemplateId: text('agent_template_id').notNull(),
     version: text('version').notNull(),
     createdAt: timestamp('created_at').notNull().defaultNow(),
+    deletedAt: timestamp('deleted_at'),
     updatedAt: timestamp('updated_at')
       .notNull()
       .$onUpdate(() => new Date()),
@@ -270,11 +314,34 @@ export const deployedAgentTemplatesRelations = relations(
   })
 );
 
+export const deployedAgentVariables = pgTable('deployed_agent_variables', {
+  deployedAgentId: text('deployed_agent_id')
+    .notNull()
+    .references(() => deployedAgents.id, { onDelete: 'cascade' })
+    .primaryKey(),
+  value: json('value').notNull().$type<Record<string, string>>(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at')
+    .notNull()
+    .$onUpdate(() => new Date()),
+});
+
+export const deployedAgentVariablesRelations = relations(
+  deployedAgentVariables,
+  ({ one }) => ({
+    deployedAgent: one(deployedAgents, {
+      fields: [deployedAgentVariables.deployedAgentId],
+      references: [deployedAgents.id],
+    }),
+  })
+);
+
 export const deployedAgents = pgTable(
   'deployed_agents',
   {
     id: text('id').primaryKey(),
     key: text('key').notNull(),
+    rootAgentTemplateId: text('root_agent_template_id'),
     deployedAgentTemplateId: text('deployed_agent_template_id'),
     projectId: text('project_id')
       .notNull()
@@ -289,6 +356,7 @@ export const deployedAgents = pgTable(
       .references(() => organizations.id, { onDelete: 'cascade' })
       .notNull(),
     createdAt: timestamp('created_at').notNull().defaultNow(),
+    deletedAt: timestamp('deleted_at'),
     updatedAt: timestamp('updated_at')
       .notNull()
       .$onUpdate(() => new Date()),
@@ -317,6 +385,14 @@ export const deployedAgentRelations = relations(deployedAgents, ({ one }) => ({
     fields: [deployedAgents.projectId],
     references: [projects.id],
   }),
+  rootAgentTemplate: one(agentTemplates, {
+    fields: [deployedAgents.rootAgentTemplateId],
+    references: [agentTemplates.id],
+  }),
+  deployedAgentVariables: one(deployedAgentVariables, {
+    fields: [deployedAgents.id],
+    references: [deployedAgentVariables.deployedAgentId],
+  }),
 }));
 
 export const agentSimulatorSessions = pgTable('agent_simulator_sessions', {
@@ -334,6 +410,7 @@ export const agentSimulatorSessions = pgTable('agent_simulator_sessions', {
     .notNull(),
   variables: json('variables').notNull(),
   createdAt: timestamp('created_at').notNull().defaultNow(),
+  deletedAt: timestamp('deleted_at'),
   updatedAt: timestamp('updated_at')
     .notNull()
     .$onUpdate(() => new Date()),
@@ -405,6 +482,32 @@ export const inferenceTransactionRelations = relations(
   ({ one }) => ({
     organization: one(organizations, {
       fields: [inferenceTransactions.organizationId],
+      references: [organizations.id],
+    }),
+  })
+);
+
+export const organizationInvitedUsers = pgTable('organization_invites', {
+  id: text('id')
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  email: text('email').notNull().unique(),
+  organizationId: text('organization_id')
+    .notNull()
+    .references(() => organizations.id, { onDelete: 'cascade' })
+    .notNull(),
+  invitedBy: text('invited_by').notNull(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at')
+    .notNull()
+    .$onUpdate(() => new Date()),
+});
+
+export const organizationInvitedUsersRelations = relations(
+  organizationInvitedUsers,
+  ({ one }) => ({
+    organization: one(organizations, {
+      fields: [organizationInvitedUsers.organizationId],
       references: [organizations.id],
     }),
   })

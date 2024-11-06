@@ -97,8 +97,14 @@ async function handleEventStreamRequest(options: RequestOptions) {
             return;
           }
 
+          if (e.data.includes('DONE_GEN')) {
+            stepCount += 1;
+            return;
+          }
+
           if (e.data.includes('DONE_STEP')) {
             stepCount += 1;
+            return;
           }
 
           try {
@@ -122,10 +128,8 @@ async function handleEventStreamRequest(options: RequestOptions) {
         void writer.write(`data: ${e.data}\n\n`);
       };
 
-      eventsource.onerror = async (e) => {
+      eventsource.onerror = async () => {
         try {
-          console.error('zadu', e);
-
           await onCompletion();
 
           if (closed) {

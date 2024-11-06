@@ -13,21 +13,24 @@ type GetWhitelistedEmailsQuery = ServerInferRequest<
 export async function getWhitelistedEmails(
   req: GetWhitelistedEmailsQuery
 ): Promise<GetWhitelistedEmailsResponse> {
-  const { offset, limit, search } = req.query;
+  const { offset, limit = 10, search } = req.query;
   const where = search ? like(emailWhitelist.email, search) : undefined;
 
   const response = await db.query.emailWhitelist.findMany({
     offset,
-    limit,
+    limit: limit + 1,
     where: where,
   });
 
   return {
     status: 200,
-    body: response.map((email) => ({
-      id: email.id,
-      email: email.email,
-    })),
+    body: {
+      emails: response.slice(0, limit).map((email) => ({
+        id: email.id,
+        email: email.email,
+      })),
+      hasNextPage: response.length > limit,
+    },
   };
 }
 

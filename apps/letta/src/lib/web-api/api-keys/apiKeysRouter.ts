@@ -2,11 +2,11 @@ import { db, lettaAPIKeys } from '@letta-web/database';
 import {
   generateAPIKey,
   getUser,
-  getUserOrganizationIdOrThrow,
+  getUserActiveOrganizationIdOrThrow,
 } from '$letta/server/auth';
 import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
 import type { contracts } from '$letta/web-api/contracts';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, isNull } from 'drizzle-orm';
 
 type CreateAPIKeyPayload = ServerInferRequest<
   typeof contracts.apiKeys.createAPIKey
@@ -22,16 +22,16 @@ export async function createAPIKey(
 
   const user = await getUser();
 
-  if (!user) {
+  if (!user?.activeOrganizationId) {
     throw new Error('User not found');
   }
 
-  const apiKey = await generateAPIKey(user.organizationId);
+  const apiKey = await generateAPIKey(user.activeOrganizationId);
 
   await db.insert(lettaAPIKeys).values({
     name,
     userId: user.id,
-    organizationId: user.organizationId,
+    organizationId: user.activeOrganizationId,
     apiKey,
   });
 
@@ -53,10 +53,13 @@ type GetAPIKeysResponse = ServerInferResponses<
 export async function getAPIKeys(
   req: GetAPIKeysRequest
 ): Promise<GetAPIKeysResponse> {
-  const organizationId = await getUserOrganizationIdOrThrow();
+  const organizationId = await getUserActiveOrganizationIdOrThrow();
   const { offset, limit = 10, search } = req.query;
 
-  const where = [eq(lettaAPIKeys.organizationId, organizationId)];
+  const where = [
+    eq(lettaAPIKeys.organizationId, organizationId),
+    isNull(lettaAPIKeys.deletedAt),
+  ];
 
   if (search) {
     where.push(eq(lettaAPIKeys.apiKey, search));
@@ -100,7 +103,7 @@ export async function deleteAPIKey(
 ): Promise<DeleteAPIKeyResponse> {
   const { apiKeyId } = req.params;
 
-  const organizationId = await getUserOrganizationIdOrThrow();
+  const organizationId = await getUserActiveOrganizationIdOrThrow();
 
   await db
     .delete(lettaAPIKeys)
@@ -128,9 +131,12 @@ export async function getAPIKey(
 ): Promise<GetAPIKeyResponse> {
   const { apiKeyId } = req.params;
 
-  const organizationId = await getUserOrganizationIdOrThrow();
+  const organizationId = await getUserActiveOrganizationIdOrThrow();
 
-  const where = [eq(lettaAPIKeys.organizationId, organizationId)];
+  const where = [
+    eq(lettaAPIKeys.organizationId, organizationId),
+    isNull(lettaAPIKeys.deletedAt),
+  ];
 
   if (apiKeyId !== 'first') {
     where.push(eq(lettaAPIKeys.id, apiKeyId));

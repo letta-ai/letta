@@ -1,3 +1,4 @@
+'use client';
 import { useParams } from 'next/navigation';
 import { useSourcesServiceGetSource } from '@letta-web/letta-agents-api';
 

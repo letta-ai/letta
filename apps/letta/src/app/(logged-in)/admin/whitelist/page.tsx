@@ -169,22 +169,21 @@ const emailWhitelistColumns: Array<ColumnDef<WhitelistedEmailType>> = [
   },
 ];
 
-const PAGE_SIZE = 10;
-
 function EmailWhitelistPage() {
   const [offset, setOffset] = useState(0);
+  const [limit, setLimit] = useState(10);
 
   const { data, isFetching, isError } =
     webApi.admin.whitelistedEmails.getWhitelistedEmails.useQuery({
       queryKey:
         webApiQueryKeys.admin.whitelistedEmails.getWhitelistedEmailsWithSearch({
           offset,
-          limit: PAGE_SIZE,
+          limit,
         }),
       queryData: {
         query: {
           offset,
-          limit: PAGE_SIZE,
+          limit,
         },
       },
     });
@@ -197,8 +196,11 @@ function EmailWhitelistPage() {
     return undefined;
   }, [data]);
 
+  const [search, setSearch] = useState('');
+
   return (
     <DashboardPageLayout
+      encapsulatedFullHeight
       title="Email Whitelist"
       actions={
         <>
@@ -206,7 +208,8 @@ function EmailWhitelistPage() {
         </>
       }
     >
-      {(!emailWhitelist || emailWhitelist.length === 0) && offset === 0 ? (
+      {(!emailWhitelist || emailWhitelist.emails.length === 0) &&
+      offset === 0 ? (
         <LoadingEmptyStatusComponent
           emptyMessage="Nothing in our whitelist? Weird..."
           emptyAction={<CreateEmailWhitelist />}
@@ -215,15 +218,21 @@ function EmailWhitelistPage() {
           isError={isError}
         />
       ) : (
-        <DashboardPageSection>
+        <DashboardPageSection fullHeight>
           <DataTable
+            onLimitChange={setLimit}
+            searchValue={search}
+            autofitHeight
+            onSearch={setSearch}
             isLoading={isFetching}
-            limit={PAGE_SIZE}
+            limit={limit}
             offset={offset}
+            minHeight={450}
             onSetOffset={setOffset}
             showPagination
             columns={emailWhitelistColumns}
-            data={emailWhitelist || []}
+            data={emailWhitelist?.emails || []}
+            hasNextPage={emailWhitelist?.hasNextPage}
           />
         </DashboardPageSection>
       )}

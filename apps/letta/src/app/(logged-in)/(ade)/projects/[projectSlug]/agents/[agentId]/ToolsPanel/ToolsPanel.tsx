@@ -170,7 +170,21 @@ interface AddToolsListItem {
 function AddToolDialog(props: AddToolDialogProps) {
   const { onClose } = props;
   const t = useTranslations('ADE/Tools');
-  const { data: allTools } = useToolsServiceListTools();
+  const { data: _allTools } = useToolsServiceListTools();
+
+  const allTools = useMemo(() => {
+    // deuplicate tools on name
+    const tools = _allTools || [];
+
+    const toolsMap = new Map<string, Tool_Output>();
+
+    tools.forEach((tool) => {
+      toolsMap.set(tool.name, tool);
+    });
+
+    return Array.from(toolsMap.values());
+  }, [_allTools]);
+
   const { tools } = useCurrentAgent();
 
   const addedToolNameSet = useMemo(() => {
@@ -342,7 +356,20 @@ interface ToolsProps {
 function ToolsList(props: ToolsProps) {
   const { search } = props;
   const { tools: currentToolNames } = useCurrentAgent();
-  const { data: allTools, isLoading } = useToolsServiceListTools();
+  const { data: _allTools, isLoading } = useToolsServiceListTools();
+
+  const allTools = useMemo(() => {
+    // deuplicate tools on name
+    const tools = _allTools || [];
+
+    const toolsMap = new Map<string, Tool_Output>();
+
+    tools.forEach((tool) => {
+      toolsMap.set(tool.name, tool);
+    });
+
+    return Array.from(toolsMap.values());
+  }, [_allTools]);
 
   const t = useTranslations('ADE/Tools');
 

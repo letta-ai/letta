@@ -618,6 +618,14 @@ export function generateAgentStateHash(
   agentState: Partial<AgentState>,
   datasources: Source[]
 ): GenerateAgentStateHashResponse {
+  const agentStateCopy = { ...agentState };
+
+  if (agentStateCopy.memory?.memory) {
+    for (const memory in agentStateCopy.memory.memory) {
+      agentStateCopy.memory.memory[memory].id = '';
+    }
+  }
+
   return {
     ...agentState,
     datasources: datasources.map((source) => source.id || '').filter(Boolean),

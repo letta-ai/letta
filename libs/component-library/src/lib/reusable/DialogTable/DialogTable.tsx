@@ -16,17 +16,25 @@ export interface DialogTableItem {
 interface DialogTableProps {
   items: DialogTableItem[];
   emptyMessage: string;
+  errorMessage?: string;
   isLoading?: boolean;
   loadingMessage?: string;
   emptyAction?: React.ReactNode;
 }
 
 export function DialogTable(props: DialogTableProps) {
-  const { items, emptyAction, emptyMessage, loadingMessage, isLoading } = props;
+  const {
+    items,
+    emptyAction,
+    errorMessage,
+    emptyMessage,
+    loadingMessage,
+    isLoading,
+  } = props;
 
   const showStatusComponent = useMemo(() => {
-    return isLoading || items.length === 0;
-  }, [isLoading, items]);
+    return isLoading || items.length === 0 || errorMessage;
+  }, [errorMessage, isLoading, items]);
 
   return (
     <VStack
@@ -39,6 +47,7 @@ export function DialogTable(props: DialogTableProps) {
       {showStatusComponent ? (
         <LoadingEmptyStatusComponent
           emptyMessage={emptyMessage}
+          errorMessage={errorMessage}
           emptyAction={emptyAction}
           loadingMessage={loadingMessage}
           isLoading={isLoading}

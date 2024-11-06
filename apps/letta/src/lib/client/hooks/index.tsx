@@ -8,3 +8,12 @@ export function useCurrentUser() {
 
   return data?.body;
 }
+
+export function useCurrentOrganization() {
+  const { data: organization } =
+    webApi.organizations.getCurrentOrganization.useQuery({
+      queryKey: webApiQueryKeys.organizations.getCurrentOrganization,
+    });
+
+  return organization?.body;
+}

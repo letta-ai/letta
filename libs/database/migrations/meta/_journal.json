@@ -64,6 +64,48 @@
       "when": 1729279432928,
       "tag": "0008_typical_moon_knight",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1730745272370,
+      "tag": "0009_busy_viper",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1730749668741,
+      "tag": "0010_overrated_screwball",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1730750455592,
+      "tag": "0011_high_storm",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1730754364539,
+      "tag": "0012_same_kylun",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1730757152896,
+      "tag": "0013_friendly_thundra",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1730831535915,
+      "tag": "0014_complete_the_watchers",
+      "breakpoints": true
     }
   ]
 }

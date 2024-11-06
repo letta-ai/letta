@@ -1,11 +1,11 @@
 import type { NextRequest } from 'next/server';
-import { getUserOrganizationIdOrThrow } from '$letta/server/auth';
+import { getUserActiveOrganizationIdOrThrow } from '$letta/server/auth';
 import * as process from 'node:process';
 import { db, lettaAPIKeys } from '@letta-web/database';
 import { and, eq } from 'drizzle-orm';
 
 export async function POST(req: NextRequest) {
-  const organizationId = await getUserOrganizationIdOrThrow();
+  const organizationId = await getUserActiveOrganizationIdOrThrow();
 
   if (
     !(
