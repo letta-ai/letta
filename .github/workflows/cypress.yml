@@ -154,7 +154,7 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           TAG: ${{ github.sha }}
       - name: Cleanup Docs
-        run: docker-compose logs > memgpt.log
+        run: docker compose logs > memgpt.log
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
