@@ -17,10 +17,6 @@
     }
   },
   "theme": "quill",
-  "topbarCTA": {
-    "name": "Letta Cloud",
-    "url": "https://forms.letta.com/early-access"
-  },
   "topbarCtaButton": {
     "type": "github",
     "url": "https://github.com/letta-ai/letta"
