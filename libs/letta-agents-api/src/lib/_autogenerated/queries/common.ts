@@ -26,11 +26,13 @@ export const useToolsServiceGetToolKey = 'ToolsServiceGetTool';
 export const UseToolsServiceGetToolKeyFn = (
   {
     toolId,
+    userId,
   }: {
     toolId: string;
+    userId?: string;
   },
   queryKey?: Array<unknown>
-) => [useToolsServiceGetToolKey, ...(queryKey ?? [{ toolId }])];
+) => [useToolsServiceGetToolKey, ...(queryKey ?? [{ toolId, userId }])];
 export type ToolsServiceGetToolIdByNameDefaultResponse = Awaited<
   ReturnType<typeof ToolsService.getToolIdByName>
 >;
@@ -62,12 +64,19 @@ export type ToolsServiceListToolsQueryResult<
 export const useToolsServiceListToolsKey = 'ToolsServiceListTools';
 export const UseToolsServiceListToolsKeyFn = (
   {
+    cursor,
+    limit,
     userId,
   }: {
+    cursor?: string;
+    limit?: number;
     userId?: string;
   } = {},
   queryKey?: Array<unknown>
-) => [useToolsServiceListToolsKey, ...(queryKey ?? [{ userId }])];
+) => [
+  useToolsServiceListToolsKey,
+  ...(queryKey ?? [{ cursor, limit, userId }]),
+];
 export type SourcesServiceGetSourceDefaultResponse = Awaited<
   ReturnType<typeof SourcesService.getSource>
 >;
@@ -228,6 +237,28 @@ export const UseAgentsServiceGetAgentKeyFn = (
   },
   queryKey?: Array<unknown>
 ) => [useAgentsServiceGetAgentKey, ...(queryKey ?? [{ agentId, userId }])];
+export type AgentsServiceGetToolsFromAgentDefaultResponse = Awaited<
+  ReturnType<typeof AgentsService.getToolsFromAgent>
+>;
+export type AgentsServiceGetToolsFromAgentQueryResult<
+  TData = AgentsServiceGetToolsFromAgentDefaultResponse,
+  TError = unknown
+> = UseQueryResult<TData, TError>;
+export const useAgentsServiceGetToolsFromAgentKey =
+  'AgentsServiceGetToolsFromAgent';
+export const UseAgentsServiceGetToolsFromAgentKeyFn = (
+  {
+    agentId,
+    userId,
+  }: {
+    agentId: string;
+    userId?: string;
+  },
+  queryKey?: Array<unknown>
+) => [
+  useAgentsServiceGetToolsFromAgentKey,
+  ...(queryKey ?? [{ agentId, userId }]),
+];
 export type AgentsServiceGetAgentSourcesDefaultResponse = Awaited<
   ReturnType<typeof AgentsService.getAgentSources>
 >;
@@ -653,6 +684,9 @@ export const UseOrganizationServiceListOrgsKeyFn = (
 export type ToolsServiceCreateToolMutationResult = Awaited<
   ReturnType<typeof ToolsService.createTool>
 >;
+export type ToolsServiceAddBaseToolsMutationResult = Awaited<
+  ReturnType<typeof ToolsService.addBaseTools>
+>;
 export type SourcesServiceCreateSourceMutationResult = Awaited<
   ReturnType<typeof SourcesService.createSource>
 >;
@@ -755,9 +789,9 @@ export type AdminServiceDeleteUserMutationResult = Awaited<
 export type AdminServiceDeleteApiKeyMutationResult = Awaited<
   ReturnType<typeof AdminService.deleteApiKey>
 >;
-export type AdminServiceDeleteOrganizationMutationResult = Awaited<
-  ReturnType<typeof AdminService.deleteOrganization>
+export type AdminServiceDeleteOrganizationByIdMutationResult = Awaited<
+  ReturnType<typeof AdminService.deleteOrganizationById>
 >;
-export type OrganizationServiceDeleteOrganizationMutationResult = Awaited<
-  ReturnType<typeof OrganizationService.deleteOrganization>
+export type OrganizationServiceDeleteOrganizationByIdMutationResult = Awaited<
+  ReturnType<typeof OrganizationService.deleteOrganizationById>
 >;

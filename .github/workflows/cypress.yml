@@ -66,7 +66,7 @@ jobs:
       postgres:
         image: postgres
         ports:
-          - 5432:5432
+          - 5433:5432
         env:
           POSTGRES_DB: postgres
           POSTGRES_PASSWORD: postgres
@@ -86,7 +86,7 @@ jobs:
           cache-name: cache-node-modules-${{ env.node-version }}
         with:
           path: node_modules
-          key: ${{ runner.os }}-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
+          key: ${{ runner.os }}-${{ env.cache-name }}-${{ hashFiles('package-lock.json') }}
 
       - name: Restore NPM cache if exist
         id: cache-npm
@@ -104,46 +104,22 @@ jobs:
         with:
           path: ~/.cache/Cypress
           key: ${{ runner.os }}-${{ env.cache-name }}
-#      - uses: 'google-github-actions/auth@v2'
-#        id: auth
-#        with:
-#          project_id: 'memgpt-428419'
-#          service_account: 'github-actions-service-account@memgpt-428419.iam.gserviceaccount.com'
-#          workload_identity_provider: 'projects/231889654562/locations/global/workloadIdentityPools/letta-web-dev-pool/providers/github-actions-provider'
-#          token_format: 'access_token'
-#      - name: 'Set up Cloud SDK'
-#        uses: 'google-github-actions/setup-gcloud@v2'
-#        with:
-#          version: '>= 363.0.0'
-#      - name: 'Set gcloud docker credential'
-#        run: gcloud auth configure-docker us-central1-docker.pkg.dev
       - name: Checkout letta agents
         uses: actions/checkout@v4
         with:
+          submodules: 'true'
           repository: letta-ai/letta-agents
           token: ${{ secrets.PULLER_TOKEN }}
           path: letta-agents
       - name: Turn on Letta agents
+        working-directory: letta-agents/MemGPT
         env:
+          LETTA_PG_DB: letta
+          LETTA_PG_USER: letta
+          LETTA_PG_PASSWORD: letta
+          LETTA_PG_PORT: 8888
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          LETTA_PG_DB: postgres
-          LETTA_PG_USER: postgres
-          LETTA_PG_PASSWORD: postgres
-          LETTA_PG_HOST: localhost
-          LETTA_PG_PORT: 5432
-          LETTA_LLM_ENDPOINT: https://api.openai.com/v1
-          LETTA_LLM_ENDPOINT_TYPE: openai
-          LETTA_LLM_MODEL: gpt-4
-          LETTA_LLM_CONTEXT_WINDOW: 8192
-          LETTA_EMBEDDING_ENDPOINT: https://api.openai.com/v1
-          LETTA_EMBEDDING_ENDPOINT_TYPE: openai
-          LETTA_EMBEDDING_DIM: 1536
-          LETTA_EMBEDDING_MODEL: text-embedding-ada-002
-          LETTA_DEBUG: True
-        working-directory: letta-agents
-        run: |
-          docker build -t letta-agents .
-          docker run -d -p 8083:8083 --name letta-agents letta-agents
+        run: docker compose -f dev-compose.yaml up --build -d
       - name: Install Dependencies
         if: steps.cache-nodemodules.outputs.cache-hit != 'true'
         run: npm ci
@@ -163,15 +139,18 @@ jobs:
         env:
           CYPRESS_RECORD_KEY: ${{ secrets.CYPRESS_RECORD_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
+          DATABASE_URL: postgres://postgres:postgres@localhost:5433/postgres
           REDIS_HOST: localhost
           REDIS_PORT: 6379
           CYPRESS_GOOGLE_CLIENT_ID: ${{ secrets.CYPRESS_GOOGLE_CLIENT_ID }}
           CYPRESS_GOOGLE_CLIENT_SECRET: ${{ secrets.CYPRESS_GOOGLE_CLIENT_SECRET }}
           CYPRESS_GOOGLE_REFRESH_TOKEN: ${{ secrets.CYPRESS_GOOGLE_REFRESH_TOKEN }}
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-          LETTA_AGENTS_ENDPOINT: http://localhost:8083
+          LETTA_AGENTS_ENDPOINT: http://localhost:8283
           NEXT_PUBLIC_CURRENT_HOST: http://localhost:3000
           IS_CYPRESS_RUN: yes
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           TAG: ${{ github.sha }}
+
+
+

@@ -22,15 +22,17 @@ export const useToolsServiceGetToolSuspense = <
 >(
   {
     toolId,
+    userId,
   }: {
     toolId: string;
+    userId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
 ) =>
   useSuspenseQuery<TData, TError>({
-    queryKey: Common.UseToolsServiceGetToolKeyFn({ toolId }, queryKey),
-    queryFn: () => ToolsService.getTool({ toolId }) as TData,
+    queryKey: Common.UseToolsServiceGetToolKeyFn({ toolId, userId }, queryKey),
+    queryFn: () => ToolsService.getTool({ toolId, userId }) as TData,
     ...options,
   });
 export const useToolsServiceGetToolIdByNameSuspense = <
@@ -62,16 +64,23 @@ export const useToolsServiceListToolsSuspense = <
   TQueryKey extends Array<unknown> = unknown[]
 >(
   {
+    cursor,
+    limit,
     userId,
   }: {
+    cursor?: string;
+    limit?: number;
     userId?: string;
   } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
 ) =>
   useSuspenseQuery<TData, TError>({
-    queryKey: Common.UseToolsServiceListToolsKeyFn({ userId }, queryKey),
-    queryFn: () => ToolsService.listTools({ userId }) as TData,
+    queryKey: Common.UseToolsServiceListToolsKeyFn(
+      { cursor, limit, userId },
+      queryKey
+    ),
+    queryFn: () => ToolsService.listTools({ cursor, limit, userId }) as TData,
     ...options,
   });
 export const useSourcesServiceGetSourceSuspense = <
@@ -259,6 +268,30 @@ export const useAgentsServiceGetAgentSuspense = <
       queryKey
     ),
     queryFn: () => AgentsService.getAgent({ agentId, userId }) as TData,
+    ...options,
+  });
+export const useAgentsServiceGetToolsFromAgentSuspense = <
+  TData = Common.AgentsServiceGetToolsFromAgentDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[]
+>(
+  {
+    agentId,
+    userId,
+  }: {
+    agentId: string;
+    userId?: string;
+  },
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
+) =>
+  useSuspenseQuery<TData, TError>({
+    queryKey: Common.UseAgentsServiceGetToolsFromAgentKeyFn(
+      { agentId, userId },
+      queryKey
+    ),
+    queryFn: () =>
+      AgentsService.getToolsFromAgent({ agentId, userId }) as TData,
     ...options,
   });
 export const useAgentsServiceGetAgentSourcesSuspense = <

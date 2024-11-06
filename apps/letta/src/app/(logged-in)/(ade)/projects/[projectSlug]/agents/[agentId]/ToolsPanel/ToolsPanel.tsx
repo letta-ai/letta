@@ -41,7 +41,10 @@ import {
   HStack,
 } from '@letta-web/component-library';
 import { useCurrentAgent } from '../hooks';
-import type { AgentState, Tool_Output } from '@letta-web/letta-agents-api';
+import type {
+  AgentState,
+  letta__schemas__tool__Tool,
+} from '@letta-web/letta-agents-api';
 import { useAgentsServiceAddToolToAgent } from '@letta-web/letta-agents-api';
 import { useAgentsServiceRemoveToolFromAgent } from '@letta-web/letta-agents-api';
 import {
@@ -173,10 +176,10 @@ function AddToolDialog(props: AddToolDialogProps) {
     // deuplicate tools on name
     const tools = _allTools || [];
 
-    const toolsMap = new Map<string, Tool_Output>();
+    const toolsMap = new Map<string, letta__schemas__tool__Tool>();
 
     tools.forEach((tool) => {
-      toolsMap.set(tool.name, tool);
+      toolsMap.set(tool.name || '', tool);
     });
 
     return Array.from(toolsMap.values());
@@ -194,18 +197,18 @@ function AddToolDialog(props: AddToolDialogProps) {
     return (allTools || [])
       .filter(
         (tool) =>
-          !tool.tags.includes('letta-base') &&
-          !tool.tags.includes('memgpt-base')
+          !tool.tags?.includes('letta-base') &&
+          !tool.tags?.includes('memgpt-base')
       )
       .map((tool) => {
-        const creator = tool.tags.find((tag) => isBrandKey(tag)) || '';
+        const creator = tool.tags?.find((tag) => isBrandKey(tag)) || '';
 
         return {
           name: tool.name || '',
           id: tool.id || '',
           creator: brandKeyToName(creator || 'letta'),
           description: tool.description || '',
-          alreadyAdded: addedToolNameSet.has(tool.name),
+          alreadyAdded: addedToolNameSet.has(tool.name || ''),
           icon: isBrandKey(creator) ? brandKeyToLogo(creator) : <ToolsIcon />,
         };
       })
@@ -359,10 +362,10 @@ function ToolsList(props: ToolsProps) {
     // deuplicate tools on name
     const tools = _allTools || [];
 
-    const toolsMap = new Map<string, Tool_Output>();
+    const toolsMap = new Map<string, letta__schemas__tool__Tool>();
 
     tools.forEach((tool) => {
-      toolsMap.set(tool.name, tool);
+      toolsMap.set(tool.name || '', tool);
     });
 
     return Array.from(toolsMap.values());
@@ -378,7 +381,7 @@ function ToolsList(props: ToolsProps) {
   }, [currentToolNames]);
 
   const currentUserTools = useMemo(() => {
-    return allTools?.filter((tool) => currentToolsAsSet.has(tool.name));
+    return allTools?.filter((tool) => currentToolsAsSet.has(tool.name || ''));
   }, [allTools, currentToolsAsSet]);
 
   const [isAddToolDialogOpen, setIsAddToolDialogOpen] = useState(false);
@@ -406,18 +409,18 @@ function ToolsList(props: ToolsProps) {
     ];
 
     currentUserTools.forEach((tool) => {
-      if (!tool.name.toLowerCase().includes(search.toLowerCase())) {
+      if (!tool.name?.toLowerCase().includes(search.toLowerCase())) {
         return;
       }
 
       if (
-        tool.tags.includes('letta-base') ||
-        tool.tags.includes('memgpt-base')
+        tool.tags?.includes('letta-base') ||
+        tool.tags?.includes('memgpt-base')
       ) {
         lettaCoreToolCount += 1;
         if (getIsGenericFolder(fileTreeTools[0])) {
           fileTreeTools[0].contents.push({
-            name: tool.name,
+            name: tool.name || '',
             id: tool.id || '',
             icon: <Logo size="small" />,
           });
@@ -425,10 +428,10 @@ function ToolsList(props: ToolsProps) {
       } else {
         otherToolCount += 1;
         if (getIsGenericFolder(fileTreeTools[1])) {
-          const creator = tool.tags.find((tag) => isBrandKey(tag)) || '';
+          const creator = tool.tags?.find((tag) => isBrandKey(tag)) || '';
 
           fileTreeTools[1].contents.push({
-            name: tool.name,
+            name: tool.name || '',
             id: tool.id,
             icon: isBrandKey(creator) ? brandKeyToLogo(creator) : <ToolsIcon />,
             actions: [
@@ -521,6 +524,7 @@ function ToolCreator() {
       mutate({
         requestBody: {
           tags: [],
+          source_type: 'python',
           name: values.name,
           source_code: values.sourceCode,
         },
@@ -572,7 +576,7 @@ const editToolSchema = z.object({
 });
 
 interface ToolEditorProps {
-  initialTool?: Tool_Output;
+  initialTool?: letta__schemas__tool__Tool;
   isLoading: boolean;
 }
 
@@ -604,7 +608,6 @@ function ToolEditor(props: ToolEditorProps) {
       mutate({
         toolId: initialTool?.id || '',
         requestBody: {
-          id: initialTool?.id || '',
           description: values.description,
           source_code: values.sourceCode,
         },
@@ -622,7 +625,7 @@ function ToolEditor(props: ToolEditorProps) {
           ) : (
             <>
               <RawInput
-                value={initialTool?.name}
+                value={initialTool?.name || ''}
                 fullWidth
                 disabled
                 label="Name"

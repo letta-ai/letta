@@ -45,10 +45,10 @@ const BlockMetadataSchema = z.record(z.unknown());
 export const BlockSchema: ToZod<Omit<Block, 'metadata_'>> = z.object({
   value: z.string(),
   limit: z.number().optional(),
-  name: z.string().nullable().optional(),
+  template_name: z.string().nullable().optional(),
 
   template: z.boolean().optional(),
-  label: z.string().nullable().optional(),
+  label: z.string().optional(),
 
   description: z.string().nullable().optional(),
   metadata_: BlockMetadataSchema.optional(),

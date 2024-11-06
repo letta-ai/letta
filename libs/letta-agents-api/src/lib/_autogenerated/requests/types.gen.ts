@@ -75,14 +75,15 @@ export type AgentState = {
    * The ids of the messages in the agent's in-context memory.
    */
   message_ids?: Array<string> | null;
-  /**
-   * The in-context memory of the agent.
-   */
   memory?: Memory;
   /**
    * The tools used by the agent.
    */
   tools: Array<string>;
+  /**
+   * The list of tool rules.
+   */
+  tool_rules?: Array<BaseToolRule> | null;
   /**
    * The system prompt used by the agent.
    */
@@ -104,7 +105,7 @@ export type AgentState = {
 /**
  * Enum to represent the type of agent.
  */
-export type AgentType = 'memgpt_agent' | 'split_thread_agent';
+export type AgentType = 'memgpt_agent' | 'split_thread_agent' | 'o1_agent';
 
 export type ArchivalMemorySummary = {
   /**
@@ -163,6 +164,13 @@ export type AuthResponse = {
   is_admin?: boolean | null;
 };
 
+export type BaseToolRule = {
+  /**
+   * The name of the tool. Must exist in the database for the user's organization.
+   */
+  tool_name: string;
+};
+
 /**
  * A Block represents a reserved section of the LLM's context window which is editable. `Block` objects contained in the `Memory` object, which is able to edit the Block values.
  *
@@ -186,17 +194,17 @@ export type Block = {
    */
   limit?: number;
   /**
-   * Name of the block.
+   * Name of the block if it is a template.
    */
-  name?: string | null;
+  template_name?: string | null;
   /**
    * Whether the block is a template (e.g. saved human/persona options).
    */
   template?: boolean;
   /**
-   * Label of the block (e.g. 'human', 'persona').
+   * Label of the block (e.g. 'human', 'persona') in the context window.
    */
-  label?: string | null;
+  label?: string;
   /**
    * Description of the block.
    */
@@ -249,7 +257,7 @@ export type ChatCompletionRequest = {
   top_p?: number | null;
   user?: string | null;
   tools?: Array<Tool_Input> | null;
-  tool_choice?: 'none' | 'auto' | ToolFunctionChoice | null;
+  tool_choice?: 'none' | 'auto' | 'required' | ToolFunctionChoice | null;
   functions?: Array<FunctionSchema> | null;
   function_call?: 'none' | 'auto' | FunctionCall_Input | null;
 };
@@ -328,6 +336,14 @@ export type ContextWindowOverview = {
    */
   summary_memory?: string | null;
   /**
+   * The number of tokens in the functions definitions.
+   */
+  num_tokens_functions_definitions: number;
+  /**
+   * The content of the functions definitions.
+   */
+  functions_definitions: Array<letta__schemas__openai__chat_completion_request__Tool> | null;
+  /**
    * The number of tokens in the messages list.
    */
   num_tokens_messages: number;
@@ -369,6 +385,10 @@ export type CreateAgent = {
    */
   tools?: Array<string> | null;
   /**
+   * The tool rules governing the agent.
+   */
+  tool_rules?: Array<BaseToolRule> | null;
+  /**
    * The system prompt used by the agent.
    */
   system?: string | null;
@@ -384,6 +404,10 @@ export type CreateAgent = {
    * The embedding configuration used by the agent.
    */
   embedding_config?: EmbeddingConfig | null;
+  /**
+   * The initial set of messages to put in the agent's in-context memory.
+   */
+  initial_message_sequence?: Array<Message_Input> | null;
 };
 
 export type CreateArchivalMemory = {
@@ -450,9 +474,9 @@ export type CreateBlock = {
    */
   limit?: number;
   /**
-   * Name of the block.
+   * Name of the block if it is a template.
    */
-  name?: string | null;
+  template_name?: string | null;
   template?: boolean;
   /**
    * Label of the block.
@@ -719,6 +743,7 @@ export type FunctionCall_Input = {
 export type FunctionCallDelta = {
   name: string | null;
   arguments: string | null;
+  function_call_id: string | null;
 };
 
 /**
@@ -748,6 +773,7 @@ export type message_type2 = 'function_call';
  * status (Literal["success", "error"]): The status of the function call
  * id (str): The ID of the message
  * date (datetime): The date the message was created in ISO format
+ * function_call_id (str): A unique identifier for the function call that generated this message
  */
 export type FunctionReturn = {
   id: string;
@@ -755,6 +781,7 @@ export type FunctionReturn = {
   message_type?: 'function_return';
   function_return: string;
   status: 'success' | 'error';
+  function_call_id: string;
 };
 
 export type message_type3 = 'function_return';
@@ -861,6 +888,7 @@ export type JobStatus =
  * model_endpoint (str): The endpoint for the model.
  * model_wrapper (str): The wrapper for the model. This is used to wrap additional text around the input/output of the model. This is useful for text-to-text completions, such as the Completions API in OpenAI.
  * context_window (int): The context window size for the model.
+ * put_inner_thoughts_in_kwargs (bool): Puts 'inner_thoughts' as a kwarg in the function call if this is set to True. This helps with function calling performance and also the generation of inner thoughts.
  */
 export type LLMConfig = {
   /**
@@ -899,6 +927,10 @@ export type LLMConfig = {
    * The context window size for the model.
    */
   context_window: number;
+  /**
+   * Puts 'inner_thoughts' as a kwarg in the function call if this is set to True. This helps with function calling performance and also the generation of inner thoughts.
+   */
+  put_inner_thoughts_in_kwargs?: boolean | null;
 };
 
 /**
@@ -921,18 +953,6 @@ export type model_endpoint_type =
   | 'vllm'
   | 'hugging-face'
   | 'mistral';
-
-/**
- * Base class for simplified Letta message response type. This is intended to be used for developers who want the internal monologue, function calls, and function returns in a simplified format that does not include additional information other than the content and timestamp.
- *
- * Attributes:
- * id (str): The ID of the message
- * date (datetime): The date the message was created in ISO format
- */
-export type LettaMessage = {
-  id: string;
-  date: string;
-};
 
 export type LettaRequest = {
   /**
@@ -967,55 +987,6 @@ export type LettaRequest = {
    * [Only applicable if use_assistant_message is True] The name of the message argument in the designated message tool.
    */
   assistant_message_function_kwarg?: string;
-};
-
-/**
- * Response object from an agent interaction, consisting of the new messages generated by the agent and usage statistics.
- * The type of the returned messages can be either `Message` or `LettaMessage`, depending on what was specified in the request.
- *
- * Attributes:
- * messages (List[Union[Message, LettaMessage]]): The messages returned by the agent.
- * usage (LettaUsageStatistics): The usage statistics
- */
-export type LettaResponse = {
-  /**
-   * The messages returned by the agent.
-   */
-  messages:
-    | Array<letta__schemas__message__Message_Output>
-    | Array<LettaMessage>;
-  /**
-   * The usage statistics of the agent.
-   */
-  usage: LettaUsageStatistics;
-};
-
-/**
- * Usage statistics for the agent interaction.
- *
- * Attributes:
- * completion_tokens (int): The number of tokens generated by the agent.
- * prompt_tokens (int): The number of tokens in the prompt.
- * total_tokens (int): The total number of tokens processed by the agent.
- * step_count (int): The number of steps taken by the agent.
- */
-export type LettaUsageStatistics = {
-  /**
-   * The number of tokens generated by the agent.
-   */
-  completion_tokens?: number;
-  /**
-   * The number of tokens in the prompt.
-   */
-  prompt_tokens?: number;
-  /**
-   * The total number of tokens processed by the agent.
-   */
-  total_tokens?: number;
-  /**
-   * The number of steps taken by the agent.
-   */
-  step_count?: number;
 };
 
 export type ListMessagesResponse = {
@@ -1475,11 +1446,11 @@ export type Organization = {
   /**
    * The name of the organization.
    */
-  name: string;
+  name?: string;
   /**
-   * The creation date of the user.
+   * The creation date of the organization.
    */
-  created_at?: string;
+  created_at?: string | null;
 };
 
 export type OrganizationCreate = {
@@ -1699,57 +1670,6 @@ export type Tool_Input = {
 
 export type type = 'function';
 
-/**
- * Representation of a tool, which is a function that can be called by the agent.
- *
- * Parameters:
- * id (str): The unique identifier of the tool.
- * name (str): The name of the function.
- * tags (List[str]): Metadata tags.
- * source_code (str): The source code of the function.
- * json_schema (Dict): The JSON schema of the function.
- */
-export type Tool_Output = {
-  /**
-   * The description of the tool.
-   */
-  description?: string | null;
-  /**
-   * The type of the source code.
-   */
-  source_type?: string | null;
-  /**
-   * The module of the function.
-   */
-  module?: string | null;
-  /**
-   * The unique identifier of the user associated with the function.
-   */
-  user_id?: string | null;
-  /**
-   * The human-friendly ID of the Tool
-   */
-  id?: string;
-  /**
-   * The name of the function.
-   */
-  name: string;
-  /**
-   * Metadata tags.
-   */
-  tags: Array<string>;
-  /**
-   * The source code of the function.
-   */
-  source_code: string;
-  /**
-   * The JSON schema of the function.
-   */
-  json_schema?: {
-    [key: string]: unknown;
-  };
-};
-
 export type ToolCallFunction_Output = {
   /**
    * The name of the function to call
@@ -1774,29 +1694,13 @@ export type ToolCallOutput = {
 
 export type ToolCreate = {
   /**
-   * The description of the tool.
-   */
-  description?: string | null;
-  /**
-   * The type of the source code.
-   */
-  source_type?: string | null;
-  /**
-   * The module of the function.
-   */
-  module?: string | null;
-  /**
-   * The unique identifier of the user associated with the function.
-   */
-  user_id?: string | null;
-  /**
-   * The unique identifier of the tool. If this is not provided, it will be autogenerated.
-   */
-  id?: string | null;
-  /**
    * The name of the function (auto-generated from source_code if not provided).
    */
   name?: string | null;
+  /**
+   * The description of the tool.
+   */
+  description?: string | null;
   /**
    * Metadata tags.
    */
@@ -1804,17 +1708,21 @@ export type ToolCreate = {
   /**
    * The source code of the function.
    */
+  module?: string | null;
+  /**
+   * The source code of the function.
+   */
   source_code: string;
+  /**
+   * The source type of the function.
+   */
+  source_type: string;
   /**
    * The JSON schema of the function (auto-generated from source_code if not provided)
    */
   json_schema?: {
     [key: string]: unknown;
   } | null;
-  /**
-   * Whether the tool is a terminal tool (allow requesting heartbeats).
-   */
-  terminal?: boolean | null;
 };
 
 export type ToolFunctionChoice = {
@@ -1834,22 +1742,6 @@ export type ToolUpdate = {
    */
   description?: string | null;
   /**
-   * The type of the source code.
-   */
-  source_type?: string | null;
-  /**
-   * The module of the function.
-   */
-  module?: string | null;
-  /**
-   * The unique identifier of the user associated with the function.
-   */
-  user_id?: string | null;
-  /**
-   * The unique identifier of the tool.
-   */
-  id: string;
-  /**
    * The name of the function.
    */
   name?: string | null;
@@ -1860,17 +1752,21 @@ export type ToolUpdate = {
   /**
    * The source code of the function.
    */
+  module?: string | null;
+  /**
+   * The source code of the function.
+   */
   source_code?: string | null;
   /**
-   * The JSON schema of the function.
+   * The type of the source code.
+   */
+  source_type?: string | null;
+  /**
+   * The JSON schema of the function (auto-generated from source_code if not provided)
    */
   json_schema?: {
     [key: string]: unknown;
   } | null;
-  /**
-   * Whether the tool is a terminal tool (allow requesting heartbeats).
-   */
-  terminal?: boolean | null;
 };
 
 export type UpdateAgentState = {
@@ -1935,17 +1831,17 @@ export type UpdateBlock = {
    */
   limit?: number | null;
   /**
-   * Name of the block.
+   * Name of the block if it is a template.
    */
-  name?: string | null;
+  template_name?: string | null;
   /**
    * Whether the block is a template (e.g. saved human/persona options).
    */
   template?: boolean;
   /**
-   * Label of the block (e.g. 'human', 'persona').
+   * Label of the block (e.g. 'human', 'persona') in the context window.
    */
-  label?: string | null;
+  label?: string;
   /**
    * Description of the block.
    */
@@ -2018,7 +1914,7 @@ export type User = {
   /**
    * The organization id of the user
    */
-  org_id: string | null;
+  organization_id?: string | null;
   /**
    * The name of the user.
    */
@@ -2026,18 +1922,26 @@ export type User = {
   /**
    * The creation date of the user.
    */
-  created_at?: string;
+  created_at?: string | null;
+  /**
+   * The update date of the user.
+   */
+  updated_at?: string | null;
+  /**
+   * Whether this user is deleted or not.
+   */
+  is_deleted?: boolean;
 };
 
 export type UserCreate = {
   /**
    * The name of the user.
    */
-  name?: string | null;
+  name: string;
   /**
    * The organization id of the user.
    */
-  org_id?: string | null;
+  organization_id: string;
 };
 
 export type UserMessage_Input = {
@@ -2072,6 +1976,7 @@ export type ValidationError = {
 export type letta__schemas__letta_message__FunctionCall = {
   name: string;
   arguments: string;
+  function_call_id: string;
 };
 
 /**
@@ -2130,6 +2035,11 @@ export type letta__schemas__message__Message_Output = {
    * The id of the tool call.
    */
   tool_call_id?: string | null;
+};
+
+export type letta__schemas__openai__chat_completion_request__Tool = {
+  type?: 'function';
+  function: FunctionSchema;
 };
 
 export type letta__schemas__openai__chat_completion_request__ToolCall = {
@@ -2209,6 +2119,273 @@ export type letta__schemas__openai__openai__ToolCall = {
   function: Function;
 };
 
+/**
+ * Representation of a tool, which is a function that can be called by the agent.
+ *
+ * Parameters:
+ * id (str): The unique identifier of the tool.
+ * name (str): The name of the function.
+ * tags (List[str]): Metadata tags.
+ * source_code (str): The source code of the function.
+ * json_schema (Dict): The JSON schema of the function.
+ */
+export type letta__schemas__tool__Tool = {
+  /**
+   * The human-friendly ID of the Tool
+   */
+  id?: string;
+  /**
+   * The description of the tool.
+   */
+  description?: string | null;
+  /**
+   * The type of the source code.
+   */
+  source_type?: string | null;
+  /**
+   * The module of the function.
+   */
+  module?: string | null;
+  /**
+   * The unique identifier of the organization associated with the tool.
+   */
+  organization_id?: string | null;
+  /**
+   * The name of the function.
+   */
+  name?: string | null;
+  /**
+   * Metadata tags.
+   */
+  tags?: Array<string>;
+  /**
+   * The source code of the function.
+   */
+  source_code: string;
+  /**
+   * The JSON schema of the function.
+   */
+  json_schema?: {
+    [key: string]: unknown;
+  } | null;
+  /**
+   * The id of the user that made this Tool.
+   */
+  created_by_id?: string | null;
+  /**
+   * The id of the user that made this Tool.
+   */
+  last_updated_by_id?: string | null;
+};
+
+export type LettaResponse = {
+  AssistantMessage?: {
+    id: string;
+    date: string;
+    message_type?: 'assistant_message';
+    assistant_message: string;
+  };
+  FunctionCall?: {
+    name: string;
+    arguments: string;
+    function_call_id: string;
+  };
+  FunctionCallDelta?: {
+    name: string | null;
+    arguments: string | null;
+    function_call_id: string | null;
+  };
+  /**
+   * A message representing a request to call a function (generated by the LLM to trigger function execution).
+   *
+   * Attributes:
+   * function_call (Union[FunctionCall, FunctionCallDelta]): The function call
+   * id (str): The ID of the message
+   * date (datetime): The date the message was created in ISO format
+   */
+  FunctionCallMessage?: {
+    id: string;
+    date: string;
+    message_type?: 'function_call';
+    function_call:
+      | LettaResponse['FunctionCall']
+      | LettaResponse['FunctionCallDelta'];
+  };
+  /**
+   * A message representing the return value of a function call (generated by Letta executing the requested function).
+   *
+   * Attributes:
+   * function_return (str): The return value of the function
+   * status (Literal["success", "error"]): The status of the function call
+   * id (str): The ID of the message
+   * date (datetime): The date the message was created in ISO format
+   * function_call_id (str): A unique identifier for the function call that generated this message
+   */
+  FunctionReturn?: {
+    id: string;
+    date: string;
+    message_type?: 'function_return';
+    function_return: string;
+    status: 'success' | 'error';
+    function_call_id: string;
+  };
+  /**
+   * Representation of an agent's internal monologue.
+   *
+   * Attributes:
+   * internal_monologue (str): The internal monologue of the agent
+   * id (str): The ID of the message
+   * date (datetime): The date the message was created in ISO format
+   */
+  InternalMonologue?: {
+    id: string;
+    date: string;
+    message_type?: 'internal_monologue';
+    internal_monologue: string;
+  };
+  /**
+   * Usage statistics for the agent interaction.
+   *
+   * Attributes:
+   * completion_tokens (int): The number of tokens generated by the agent.
+   * prompt_tokens (int): The number of tokens in the prompt.
+   * total_tokens (int): The total number of tokens processed by the agent.
+   * step_count (int): The number of steps taken by the agent.
+   */
+  LettaUsageStatistics?: {
+    /**
+     * The number of tokens generated by the agent.
+     */
+    completion_tokens?: number;
+    /**
+     * The number of tokens in the prompt.
+     */
+    prompt_tokens?: number;
+    /**
+     * The total number of tokens processed by the agent.
+     */
+    total_tokens?: number;
+    /**
+     * The number of steps taken by the agent.
+     */
+    step_count?: number;
+  };
+  /**
+   * Letta's internal representation of a message. Includes methods to convert to/from LLM provider formats.
+   *
+   * Attributes:
+   * id (str): The unique identifier of the message.
+   * role (MessageRole): The role of the participant.
+   * text (str): The text of the message.
+   * user_id (str): The unique identifier of the user.
+   * agent_id (str): The unique identifier of the agent.
+   * model (str): The model used to make the function call.
+   * name (str): The name of the participant.
+   * created_at (datetime): The time the message was created.
+   * tool_calls (List[ToolCall]): The list of tool calls requested.
+   * tool_call_id (str): The id of the tool call.
+   */
+  Message?: {
+    /**
+     * The human-friendly ID of the Message
+     */
+    id?: string;
+    /**
+     * The role of the participant.
+     */
+    role: LettaResponse['MessageRole'];
+    /**
+     * The text of the message.
+     */
+    text?: string | null;
+    /**
+     * The unique identifier of the user.
+     */
+    user_id?: string | null;
+    /**
+     * The unique identifier of the agent.
+     */
+    agent_id?: string | null;
+    /**
+     * The model used to make the function call.
+     */
+    model?: string | null;
+    /**
+     * The name of the participant.
+     */
+    name?: string | null;
+    /**
+     * The time the message was created.
+     */
+    created_at?: string;
+    /**
+     * The list of tool calls requested.
+     */
+    tool_calls?: Array<LettaResponse['ToolCall']> | null;
+    /**
+     * The id of the tool call.
+     */
+    tool_call_id?: string | null;
+  };
+  MessageRole?: 'assistant' | 'user' | 'tool' | 'function' | 'system';
+  /**
+   * A message generated by the system. Never streamed back on a response, only used for cursor pagination.
+   *
+   * Attributes:
+   * message (str): The message sent by the system
+   * id (str): The ID of the message
+   * date (datetime): The date the message was created in ISO format
+   */
+  SystemMessage?: {
+    id: string;
+    date: string;
+    message_type?: 'system_message';
+    message: string;
+  };
+  ToolCall?: {
+    /**
+     * The ID of the tool call
+     */
+    id: string;
+    type?: string;
+    /**
+     * The arguments and name for the function
+     */
+    function: LettaResponse['ToolCallFunction'];
+  };
+  ToolCallFunction?: {
+    /**
+     * The name of the function to call
+     */
+    name: string;
+    /**
+     * The arguments to pass to the function (JSON dump)
+     */
+    arguments: string;
+  };
+  /**
+   * A message sent by the user. Never streamed back on a response, only used for cursor pagination.
+   *
+   * Attributes:
+   * message (str): The message sent by the user
+   * id (str): The ID of the message
+   * date (datetime): The date the message was created in ISO format
+   */
+  UserMessage?: {
+    id: string;
+    date: string;
+    message_type?: 'user_message';
+    message: string;
+  };
+};
+
+export type MessageRole2 =
+  | 'assistant'
+  | 'user'
+  | 'tool'
+  | 'function'
+  | 'system';
+
 export type DeleteToolData = {
   toolId: string;
   userId?: string | null;
@@ -2218,9 +2395,10 @@ export type DeleteToolResponse = unknown;
 
 export type GetToolData = {
   toolId: string;
+  userId?: string | null;
 };
 
-export type GetToolResponse = Tool_Output;
+export type GetToolResponse = letta__schemas__tool__Tool;
 
 export type UpdateToolData = {
   requestBody: ToolUpdate;
@@ -2228,7 +2406,7 @@ export type UpdateToolData = {
   userId?: string | null;
 };
 
-export type UpdateToolResponse = Tool_Output;
+export type UpdateToolResponse = letta__schemas__tool__Tool;
 
 export type GetToolIdByNameData = {
   toolName: string;
@@ -2238,18 +2416,25 @@ export type GetToolIdByNameData = {
 export type GetToolIdByNameResponse = string;
 
 export type ListToolsData = {
+  cursor?: string | null;
+  limit?: number | null;
   userId?: string | null;
 };
 
-export type ListToolsResponse = Array<Tool_Output>;
+export type ListToolsResponse = Array<letta__schemas__tool__Tool>;
 
 export type CreateToolData = {
   requestBody: ToolCreate;
-  update?: boolean;
   userId?: string | null;
 };
 
-export type CreateToolResponse = Tool_Output;
+export type CreateToolResponse = letta__schemas__tool__Tool;
+
+export type AddBaseToolsData = {
+  userId?: string | null;
+};
+
+export type AddBaseToolsResponse = Array<letta__schemas__tool__Tool>;
 
 export type GetSourceData = {
   sourceId: string;
@@ -2395,6 +2580,13 @@ export type DeleteAgentData = {
 
 export type DeleteAgentResponse = unknown;
 
+export type GetToolsFromAgentData = {
+  agentId: string;
+  userId?: string | null;
+};
+
+export type GetToolsFromAgentResponse = Array<letta__schemas__tool__Tool>;
+
 export type AddToolToAgentData = {
   agentId: string;
   toolId: string;
@@ -2533,7 +2725,7 @@ export type CreateAgentMessageData = {
   userId?: string | null;
 };
 
-export type CreateAgentMessageResponse = LettaResponse;
+export type CreateAgentMessageResponse = unknown;
 
 export type UpdateAgentMessageData = {
   agentId: string;
@@ -2681,14 +2873,14 @@ export type CreateOrganizationData = {
 
 export type CreateOrganizationResponse = Organization;
 
-export type DeleteOrganizationData = {
+export type DeleteOrganizationByIdData = {
   /**
    * The org_id key to be deleted.
    */
   orgId: string;
 };
 
-export type DeleteOrganizationResponse = Organization;
+export type DeleteOrganizationByIdResponse = Organization;
 
 export type AuthenticateUserV1AuthPostData = {
   requestBody: AuthRequest;
@@ -2717,7 +2909,7 @@ export type $OpenApiTs = {
         /**
          * Successful Response
          */
-        200: Tool_Output;
+        200: letta__schemas__tool__Tool;
         /**
          * Validation Error
          */
@@ -2730,7 +2922,7 @@ export type $OpenApiTs = {
         /**
          * Successful Response
          */
-        200: Tool_Output;
+        200: letta__schemas__tool__Tool;
         /**
          * Validation Error
          */
@@ -2760,7 +2952,7 @@ export type $OpenApiTs = {
         /**
          * Successful Response
          */
-        200: Array<Tool_Output>;
+        200: Array<letta__schemas__tool__Tool>;
         /**
          * Validation Error
          */
@@ -2773,7 +2965,22 @@ export type $OpenApiTs = {
         /**
          * Successful Response
          */
-        200: Tool_Output;
+        200: letta__schemas__tool__Tool;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/tools/add-base-tools': {
+    post: {
+      req: AddBaseToolsData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: Array<letta__schemas__tool__Tool>;
         /**
          * Validation Error
          */
@@ -3039,6 +3246,21 @@ export type $OpenApiTs = {
       };
     };
   };
+  '/v1/agents/{agent_id}/tools': {
+    get: {
+      req: GetToolsFromAgentData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: Array<letta__schemas__tool__Tool>;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
   '/v1/agents/{agent_id}/add-tool/{tool_id}': {
     patch: {
       req: AddToolToAgentData;
@@ -3227,9 +3449,9 @@ export type $OpenApiTs = {
       req: CreateAgentMessageData;
       res: {
         /**
-         * Successful Response
+         * Successful response
          */
-        200: LettaResponse;
+        200: unknown;
         /**
          * Validation Error
          */
@@ -3519,7 +3741,7 @@ export type $OpenApiTs = {
       };
     };
     delete: {
-      req: DeleteOrganizationData;
+      req: DeleteOrganizationByIdData;
       res: {
         /**
          * Successful Response

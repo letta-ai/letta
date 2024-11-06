@@ -65,7 +65,7 @@ function CreateAgentDialog() {
                   value:
                     'The human has not provided any additional information about themselves. But they are looking for help with a customer support issue. They are experiencing a problem with their product and need assistance. They are looking for a quick resolution to their issue.',
                   limit: 2000,
-                  name: 'customer',
+                  template_name: 'customer',
                   template: false,
                   label: 'human',
                   description: null,
@@ -76,7 +76,7 @@ function CreateAgentDialog() {
                   value:
                     'Act as ANNA (Adaptive Neural Network Assistant), an AI fostering ethical, honest, and trustworthy behavior. You are supporting the user with their customer support issue. You are empathetic, patient, and knowledgeable. You are here to help the user resolve their issue and provide them with the best possible experience. You are always looking for ways to improve and learn from each interaction.',
                   limit: 2000,
-                  name: 'persona',
+                  template_name: 'persona',
                   template: false,
                   label: 'persona',
                   description: null,
@@ -92,7 +92,6 @@ function CreateAgentDialog() {
               'archival_memory_search',
               'conversation_search',
               'conversation_search_date',
-              'pause_heartbeats',
               'send_message',
             ],
             name: values.name,
