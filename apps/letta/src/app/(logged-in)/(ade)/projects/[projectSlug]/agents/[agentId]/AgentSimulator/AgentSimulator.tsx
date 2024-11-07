@@ -65,6 +65,7 @@ function useSendMessage(agentId: string) {
   const [isPending, setIsPending] = useState(false);
   const abortController = useRef<AbortController>();
   const queryClient = useQueryClient();
+  const { isLocal } = useCurrentAgentMetaData();
 
   useEffect(() => {
     return () => {
@@ -109,26 +110,31 @@ function useSendMessage(agentId: string) {
 
       abortController.current = new AbortController();
 
-      const eventsource = new EventSource(`/v1/agents/${agentId}/messages`, {
-        withCredentials: true,
-        method: 'POST',
-        disableRetry: true,
-        keepalive: false,
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'text/event-stream',
-        },
-        body: JSON.stringify({
-          stream_steps: true,
-          stream_tokens: true,
-          messages: [
-            {
-              role: 'user',
-              text: message,
-            },
-          ],
-        }),
-      });
+      const baseUrl = isLocal ? 'http://localhost:8283/' : '/';
+
+      const eventsource = new EventSource(
+        `${baseUrl}v1/agents/${agentId}/messages`,
+        {
+          withCredentials: true,
+          method: 'POST',
+          disableRetry: true,
+          keepalive: false,
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'text/event-stream',
+          },
+          body: JSON.stringify({
+            stream_steps: true,
+            stream_tokens: true,
+            messages: [
+              {
+                role: 'user',
+                text: message,
+              },
+            ],
+          }),
+        }
+      );
 
       eventsource.onmessage = (e: MessageEvent) => {
         if (abortController.current?.signal.aborted) {
@@ -243,7 +249,7 @@ function useSendMessage(agentId: string) {
         setIsPending(false);
       };
     },
-    [agentId, queryClient]
+    [agentId, isLocal, queryClient]
   );
 
   return { isPending, sendMessage };
