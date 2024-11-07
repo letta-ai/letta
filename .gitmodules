@@ -1,0 +1,3 @@
+[submodule "services/letta-agents"]
+	path = services/letta-agents
+	url = git@github.com:letta-ai/letta-agents.git

@@ -58,3 +58,6 @@ tsconfig.tsbuildinfo
 .env.sentry-build-plugin
 
 data/
+
+external-services/*
+!external-services/.gitkeep
