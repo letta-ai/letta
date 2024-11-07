@@ -160,11 +160,11 @@ function AdvancedCoreMemoryEditor(props: AdvancedCoreMemoryEditorProps) {
               {memories.map((block) => (
                 <DropdownMenuItem
                   key={block.label || ''}
-                  label={block.template_name || ''}
+                  label={block.label || ''}
                   onClick={() => {
                     onChangeMemory({
                       label: block.label || '',
-                      name: block.template_name || '',
+                      name: block.label || '',
                       type: 'memory',
                     });
                   }}
@@ -397,12 +397,12 @@ function EditMemory() {
           onAdvancedEdit={() => {
             setLabelToEdit({
               label: block.label || '',
-              name: block.template_name || '',
+              name: block.label || '',
               type: 'memory',
             });
           }}
           label={block.label || ''}
-          name={block.template_name || ''}
+          name={block.label || ''}
           type="memory"
           key={block.label || ''}
         />

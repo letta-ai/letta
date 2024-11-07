@@ -125,12 +125,10 @@ export const prefetchUseSourcesServiceListFilesFromSource = (
     cursor,
     limit,
     sourceId,
-    userId,
   }: {
     cursor?: string;
     limit?: number;
     sourceId: string;
-    userId?: string;
   }
 ) =>
   queryClient.prefetchQuery({
@@ -138,22 +136,25 @@ export const prefetchUseSourcesServiceListFilesFromSource = (
       cursor,
       limit,
       sourceId,
-      userId,
     }),
     queryFn: () =>
-      SourcesService.listFilesFromSource({ cursor, limit, sourceId, userId }),
+      SourcesService.listFilesFromSource({ cursor, limit, sourceId }),
   });
 export const prefetchUseAgentsServiceListAgents = (
   queryClient: QueryClient,
   {
+    name,
+    tags,
     userId,
   }: {
+    name?: string;
+    tags?: string[];
     userId?: string;
   } = {}
 ) =>
   queryClient.prefetchQuery({
-    queryKey: Common.UseAgentsServiceListAgentsKeyFn({ userId }),
-    queryFn: () => AgentsService.listAgents({ userId }),
+    queryKey: Common.UseAgentsServiceListAgentsKeyFn({ name, tags, userId }),
+    queryFn: () => AgentsService.listAgents({ name, tags, userId }),
   });
 export const prefetchUseAgentsServiceGetAgentContextWindow = (
   queryClient: QueryClient,

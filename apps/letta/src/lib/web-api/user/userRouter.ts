@@ -14,6 +14,7 @@ import {
 import { and, eq, inArray, isNull } from 'drizzle-orm';
 import { cookies } from 'next/headers';
 import { CookieNames } from '$letta/server/cookies/types';
+import { AdminService } from '@letta-web/letta-agents-api';
 
 type ResponseShapes = ServerInferResponses<typeof userContract>;
 
@@ -158,10 +159,15 @@ async function updateActiveOrganization(
 
   const { activeOrganizationId } = request.body;
 
-  await db
-    .update(users)
-    .set({ activeOrganizationId })
-    .where(eq(users.id, user.id));
+  await Promise.all([
+    db.update(users).set({ activeOrganizationId }).where(eq(users.id, user.id)),
+    AdminService.updateUser({
+      requestBody: {
+        id: user.lettaAgentsId,
+        organization_id: activeOrganizationId,
+      },
+    }),
+  ]);
 
   return {
     status: 200,

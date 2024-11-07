@@ -21,22 +21,6 @@
               "type": "string",
               "title": "Tool Id"
             }
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
           }
         ],
         "responses": {
@@ -1082,22 +1066,6 @@
               "title": "Cursor"
             },
             "description": "Pagination cursor to fetch the next set of results"
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
           }
         ],
         "responses": {
@@ -1194,6 +1162,45 @@
         "description": "List all agents associated with a given user.\nThis endpoint retrieves a list of all agents and their configurations associated with the specified user ID.",
         "operationId": "list_agents",
         "parameters": [
+          {
+            "name": "name",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Name of the agent",
+              "title": "Name"
+            },
+            "description": "Name of the agent"
+          },
+          {
+            "name": "tags",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "List of tags to filter agents by",
+              "title": "Tags"
+            },
+            "description": "List of tags to filter agents by"
+          },
           {
             "name": "user_id",
             "in": "header",
@@ -1592,7 +1599,7 @@
       "patch": {
         "tags": ["agents"],
         "summary": "Add Tool To Agent",
-        "description": "Add tools to an exsiting agent",
+        "description": "Add tools to an existing agent",
         "operationId": "add_tool_to_agent",
         "parameters": [
           {
@@ -1658,7 +1665,7 @@
       "patch": {
         "tags": ["agents"],
         "summary": "Remove Tool From Agent",
-        "description": "Add tools to an exsiting agent",
+        "description": "Add tools to an existing agent",
         "operationId": "remove_tool_from_agent",
         "parameters": [
           {
@@ -3206,6 +3213,44 @@
           }
         }
       },
+      "put": {
+        "tags": ["users", "admin", "admin"],
+        "summary": "Update User",
+        "description": "Update a user in the database",
+        "operationId": "update_user",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
       "delete": {
         "tags": ["users", "admin", "admin"],
         "summary": "Delete User",
@@ -3714,6 +3759,21 @@
             "title": "Tool Rules",
             "description": "The list of tool rules."
           },
+          "tags": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tags",
+            "description": "The tags associated with the agent."
+          },
           "system": {
             "type": "string",
             "title": "System",
@@ -3926,7 +3986,7 @@
             "description": "Character limit of the block.",
             "default": 2000
           },
-          "template_name": {
+          "name": {
             "anyOf": [
               {
                 "type": "string"
@@ -3935,7 +3995,7 @@
                 "type": "null"
               }
             ],
-            "title": "Template Name",
+            "title": "Name",
             "description": "Name of the block if it is a template."
           },
           "template": {
@@ -3998,7 +4058,7 @@
         "type": "object",
         "required": ["value"],
         "title": "Block",
-        "description": "A Block represents a reserved section of the LLM's context window which is editable. `Block` objects contained in the `Memory` object, which is able to edit the Block values.\n\nParameters:\n    name (str): The name of the block.\n    value (str): The value of the block. This is the string that is represented in the context window.\n    limit (int): The character limit of the block.\n    template (bool): Whether the block is a template (e.g. saved human/persona options). Non-template blocks are not stored in the database and are ephemeral, while templated blocks are stored in the database.\n    label (str): The label of the block (e.g. 'human', 'persona'). This defines a category for the block.\n    description (str): Description of the block.\n    metadata_ (Dict): Metadata of the block.\n    user_id (str): The unique identifier of the user associated with the block."
+        "description": "A Block represents a reserved section of the LLM's context window which is editable. `Block` objects contained in the `Memory` object, which is able to edit the Block values.\n\nParameters:\n    label (str): The label of the block (e.g. 'human', 'persona'). This defines a category for the block.\n    value (str): The value of the block. This is the string that is represented in the context window.\n    limit (int): The character limit of the block.\n    template_name (str): The name of the block template (if it is a template).\n    template (bool): Whether the block is a template (e.g. saved human/persona options). Non-template blocks are not stored in the database and are ephemeral, while templated blocks are stored in the database.\n    description (str): Description of the block.\n    metadata_ (Dict): Metadata of the block.\n    user_id (str): The unique identifier of the user associated with the block."
       },
       "Body_upload_file_to_source": {
         "properties": {
@@ -4599,6 +4659,21 @@
             "title": "Tool Rules",
             "description": "The tool rules governing the agent."
           },
+          "tags": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tags",
+            "description": "The tags associated with the agent."
+          },
           "system": {
             "anyOf": [
               {
@@ -4761,7 +4836,7 @@
             "description": "Character limit of the block.",
             "default": 2000
           },
-          "template_name": {
+          "name": {
             "anyOf": [
               {
                 "type": "string"
@@ -4770,7 +4845,7 @@
                 "type": "null"
               }
             ],
-            "title": "Template Name",
+            "title": "Name",
             "description": "Name of the block if it is a template."
           },
           "template": {
@@ -5686,7 +5761,7 @@
         "type": "object",
         "required": ["model", "model_endpoint_type", "context_window"],
         "title": "LLMConfig",
-        "description": "Configuration for a Language Model (LLM) model. This object specifies all the information necessary to access an LLM model to usage with Letta, except for secret keys.\n\nAttributes:\n    model (str): The name of the LLM model.\n    model_endpoint_type (str): The endpoint type for the model.\n    model_endpoint (str): The endpoint for the model.\n    model_wrapper (str): The wrapper for the model. This is used to wrap additional text around the input/output of the model. This is useful for text-to-text completions, such as the Completions API in OpenAI.\n    context_window (int): The context window size for the model.\n    put_inner_thoughts_in_kwargs (bool): Puts 'inner_thoughts' as a kwarg in the function call if this is set to True. This helps with function calling performance and also the generation of inner thoughts."
+        "description": "Configuration for a Language Model (LLM) model. This object specifies all the information necessary to access an LLM model to usage with Letta, except for secret keys.\n\nAttributes:\n    model (str): The name of the LLM model.\n    model_endpoint_type (str): The endpoint type for the model.\n    model_endpoint (str): The endpoint for the model.\n    model_wrapper (str): The wrapper for the model. This is used to wrap additional text around the input/output of the model. This is useful for text-to-text completions, such as the Completions API in OpenAI.\n    context_window (int): The context window size for the model.\n    put_inner_thoughts_in_kwargs (bool): Puts `inner_thoughts` as a kwarg in the function call if this is set to True. This helps with function calling performance and also the generation of inner thoughts."
       },
       "LettaRequest": {
         "properties": {
@@ -6683,7 +6758,7 @@
             "type": "string",
             "title": "Name",
             "description": "The name of the organization.",
-            "default": "GracefulCastle"
+            "default": "LoyalKumquat"
           },
           "created_at": {
             "anyOf": [
@@ -7240,7 +7315,8 @@
           "source_type": {
             "type": "string",
             "title": "Source Type",
-            "description": "The source type of the function."
+            "description": "The source type of the function.",
+            "default": "python"
           },
           "json_schema": {
             "anyOf": [
@@ -7257,7 +7333,7 @@
         },
         "additionalProperties": false,
         "type": "object",
-        "required": ["source_code", "source_type"],
+        "required": ["source_code"],
         "title": "ToolCreate"
       },
       "ToolFunctionChoice": {
@@ -7387,7 +7463,6 @@
             "description": "The JSON schema of the function (auto-generated from source_code if not provided)"
           }
         },
-        "additionalProperties": false,
         "type": "object",
         "title": "ToolUpdate"
       },
@@ -7460,6 +7535,21 @@
             ],
             "title": "Tools",
             "description": "The tools used by the agent."
+          },
+          "tags": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tags",
+            "description": "The tags associated with the agent."
           },
           "system": {
             "anyOf": [
@@ -7554,7 +7644,7 @@
             "description": "Character limit of the block.",
             "default": 2000
           },
-          "template_name": {
+          "name": {
             "anyOf": [
               {
                 "type": "string"
@@ -7563,7 +7653,7 @@
                 "type": "null"
               }
             ],
-            "title": "Template Name",
+            "title": "Name",
             "description": "Name of the block if it is a template."
           },
           "template": {
@@ -7871,6 +7961,43 @@
         "required": ["id", "date", "message"],
         "title": "UserMessage",
         "description": "A message sent by the user. Never streamed back on a response, only used for cursor pagination.\n\nAttributes:\n    message (str): The message sent by the user\n    id (str): The ID of the message\n    date (datetime): The date the message was created in ISO format"
+      },
+      "UserUpdate": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "The id of the user to update."
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name",
+            "description": "The new name of the user."
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "The new organization id of the user."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["id"],
+        "title": "UserUpdate"
       },
       "ValidationError": {
         "properties": {
