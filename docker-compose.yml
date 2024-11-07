@@ -50,6 +50,25 @@ services:
       GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI}
       LETTA_AGENTS_ENDPOINT: ${LETTA_AGENTS_ENDPOINT}
       NEXT_PUBLIC_CURRENT_HOST: ${NEXT_PUBLIC_CURRENT_HOST}
+  letta-agents:
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    container_name: letta-agents
+    build:
+      context: ./external-services/letta-agents/MemGPT
+      dockerfile: Dockerfile
+      target: development
+    ports:
+      - '8283:8283'
+    environment:
+        LETTA_PG_USER: postgres
+        LETTA_PG_PASSWORD: postgres
+        LETTA_PG_DB: memgpt
+        LETTA_PG_PORT: 5432
+        LETTA_PG_HOST: postgres
 
   migrations:
     depends_on:

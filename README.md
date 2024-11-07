@@ -19,35 +19,62 @@ This is the monorepo for all internal Letta web projects. It uses [Nx](https://n
 
 ### Prerequisites
 
-- Docker
-- `nvm` from [here](https://github.com/nvm-sh/nvm) and then run:
-
-Run the following commands
-
+- Docker - [linky](https://docs.docker.com/get-docker/)
 ```sh
-nvm use
+# Install Docker on mac
+brew install docker
 ```
 
+- `nvm` - [linky](https://github.com/nvm-sh/nvm) 
+```sh
+# Install nvm on mac
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
+```
+
+- `just` - [linky](https://github.com/casey/just)
+```sh
+# Install just on mac
+brew install just
+```
+
+### Setup
 Then run the following commands to setup the environment:
 
 ```sh
+cd ~/Developer
+
+git clone git@github.com:letta-ai/letta-web.git letta-web
+git clone --recurse-submodules -j8 git@github.com:letta-ai/letta-agents.git external-services/letta-agents
+
+cd letta-web
+
+nvm install
+nvm use
+
 npm install
+
+# Start the required services
+docker compose up -d redis postgres letta-agents
+
+# Generates .env and migrates the database
 npm run setup
 ```
 
-
-## Letta
-
-## Running Letta Locally
-
-To run the dev server for your app, use:
-
-```sh
-docker compose up -d redis postgres
+### Starting the Development Environment
+#### The basic way
+```shell
 npm run dev
 ```
 
+#### The advanced way (requires tmux and tmuxinator)
+```shell
+just dev
+```
+
 Access the app at [http://localhost:3000](http://localhost:3000)
+
+#### Other useful commands
+- `docker logs -f letta-agents` - loads the logs of the letta-agents server
 
 ## Docs Site
 ### Running the Docs Site Locally

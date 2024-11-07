@@ -105,6 +105,12 @@ migration-logs:
     kubectl logs job/{{HELM_CHART_NAME}}-migration
 
 
+# starts up cool dev environment
+dev:
+    @echo "🚧 Starting up dev environment..."
+    tmuxinator start
+
+
 check-github-status:
     @echo "🚧 Checking GitHub status..."
     npm run check-github-status
