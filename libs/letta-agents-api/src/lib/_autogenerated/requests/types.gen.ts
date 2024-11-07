@@ -85,6 +85,10 @@ export type AgentState = {
    */
   tool_rules?: Array<BaseToolRule> | null;
   /**
+   * The tags associated with the agent.
+   */
+  tags?: Array<string> | null;
+  /**
    * The system prompt used by the agent.
    */
   system: string;
@@ -175,11 +179,11 @@ export type BaseToolRule = {
  * A Block represents a reserved section of the LLM's context window which is editable. `Block` objects contained in the `Memory` object, which is able to edit the Block values.
  *
  * Parameters:
- * name (str): The name of the block.
+ * label (str): The label of the block (e.g. 'human', 'persona'). This defines a category for the block.
  * value (str): The value of the block. This is the string that is represented in the context window.
  * limit (int): The character limit of the block.
+ * template_name (str): The name of the block template (if it is a template).
  * template (bool): Whether the block is a template (e.g. saved human/persona options). Non-template blocks are not stored in the database and are ephemeral, while templated blocks are stored in the database.
- * label (str): The label of the block (e.g. 'human', 'persona'). This defines a category for the block.
  * description (str): Description of the block.
  * metadata_ (Dict): Metadata of the block.
  * user_id (str): The unique identifier of the user associated with the block.
@@ -196,7 +200,7 @@ export type Block = {
   /**
    * Name of the block if it is a template.
    */
-  template_name?: string | null;
+  name?: string | null;
   /**
    * Whether the block is a template (e.g. saved human/persona options).
    */
@@ -389,6 +393,10 @@ export type CreateAgent = {
    */
   tool_rules?: Array<BaseToolRule> | null;
   /**
+   * The tags associated with the agent.
+   */
+  tags?: Array<string> | null;
+  /**
    * The system prompt used by the agent.
    */
   system?: string | null;
@@ -476,7 +484,7 @@ export type CreateBlock = {
   /**
    * Name of the block if it is a template.
    */
-  template_name?: string | null;
+  name?: string | null;
   template?: boolean;
   /**
    * Label of the block.
@@ -888,7 +896,7 @@ export type JobStatus =
  * model_endpoint (str): The endpoint for the model.
  * model_wrapper (str): The wrapper for the model. This is used to wrap additional text around the input/output of the model. This is useful for text-to-text completions, such as the Completions API in OpenAI.
  * context_window (int): The context window size for the model.
- * put_inner_thoughts_in_kwargs (bool): Puts 'inner_thoughts' as a kwarg in the function call if this is set to True. This helps with function calling performance and also the generation of inner thoughts.
+ * put_inner_thoughts_in_kwargs (bool): Puts `inner_thoughts` as a kwarg in the function call if this is set to True. This helps with function calling performance and also the generation of inner thoughts.
  */
 export type LLMConfig = {
   /**
@@ -1716,7 +1724,7 @@ export type ToolCreate = {
   /**
    * The source type of the function.
    */
-  source_type: string;
+  source_type?: string;
   /**
    * The JSON schema of the function (auto-generated from source_code if not provided)
    */
@@ -1797,6 +1805,10 @@ export type UpdateAgentState = {
    */
   tools?: Array<string> | null;
   /**
+   * The tags associated with the agent.
+   */
+  tags?: Array<string> | null;
+  /**
    * The system prompt used by the agent.
    */
   system?: string | null;
@@ -1833,7 +1845,7 @@ export type UpdateBlock = {
   /**
    * Name of the block if it is a template.
    */
-  template_name?: string | null;
+  name?: string | null;
   /**
    * Whether the block is a template (e.g. saved human/persona options).
    */
@@ -1966,6 +1978,21 @@ export type UserMessage_Output = {
 };
 
 export type message_type6 = 'user_message';
+
+export type UserUpdate = {
+  /**
+   * The id of the user to update.
+   */
+  id: string;
+  /**
+   * The new name of the user.
+   */
+  name?: string | null;
+  /**
+   * The new organization id of the user.
+   */
+  organization_id?: string | null;
+};
 
 export type ValidationError = {
   loc: Array<string | number>;
@@ -2388,7 +2415,6 @@ export type MessageRole2 =
 
 export type DeleteToolData = {
   toolId: string;
-  userId?: string | null;
 };
 
 export type DeleteToolResponse = unknown;
@@ -2525,7 +2551,6 @@ export type ListFilesFromSourceData = {
    */
   limit?: number;
   sourceId: string;
-  userId?: string | null;
 };
 
 export type ListFilesFromSourceResponse = Array<FileMetadata>;
@@ -2539,6 +2564,14 @@ export type DeleteFileFromSourceData = {
 export type DeleteFileFromSourceResponse = void;
 
 export type ListAgentsData = {
+  /**
+   * Name of the agent
+   */
+  name?: string | null;
+  /**
+   * List of tags to filter agents by
+   */
+  tags?: Array<string> | null;
   userId?: string | null;
 };
 
@@ -2826,6 +2859,12 @@ export type CreateUserData = {
 };
 
 export type CreateUserResponse = User;
+
+export type UpdateUserData = {
+  requestBody: UserUpdate;
+};
+
+export type UpdateUserResponse = User;
 
 export type DeleteUserData = {
   /**
@@ -3647,6 +3686,19 @@ export type $OpenApiTs = {
     };
     post: {
       req: CreateUserData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: User;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+    put: {
+      req: UpdateUserData;
       res: {
         /**
          * Successful Response

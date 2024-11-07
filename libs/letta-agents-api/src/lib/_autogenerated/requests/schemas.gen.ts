@@ -156,6 +156,21 @@ export const $AgentState = {
       title: 'Tool Rules',
       description: 'The list of tool rules.',
     },
+    tags: {
+      anyOf: [
+        {
+          items: {
+            type: 'string',
+          },
+          type: 'array',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Tags',
+      description: 'The tags associated with the agent.',
+    },
     system: {
       type: 'string',
       title: 'System',
@@ -389,7 +404,7 @@ export const $Block = {
       description: 'Character limit of the block.',
       default: 2000,
     },
-    template_name: {
+    name: {
       anyOf: [
         {
           type: 'string',
@@ -398,7 +413,7 @@ export const $Block = {
           type: 'null',
         },
       ],
-      title: 'Template Name',
+      title: 'Name',
       description: 'Name of the block if it is a template.',
     },
     template: {
@@ -467,11 +482,11 @@ export const $Block = {
   description: `A Block represents a reserved section of the LLM's context window which is editable. \`Block\` objects contained in the \`Memory\` object, which is able to edit the Block values.
 
 Parameters:
-    name (str): The name of the block.
+    label (str): The label of the block (e.g. 'human', 'persona'). This defines a category for the block.
     value (str): The value of the block. This is the string that is represented in the context window.
     limit (int): The character limit of the block.
+    template_name (str): The name of the block template (if it is a template).
     template (bool): Whether the block is a template (e.g. saved human/persona options). Non-template blocks are not stored in the database and are ephemeral, while templated blocks are stored in the database.
-    label (str): The label of the block (e.g. 'human', 'persona'). This defines a category for the block.
     description (str): Description of the block.
     metadata_ (Dict): Metadata of the block.
     user_id (str): The unique identifier of the user associated with the block.`,
@@ -1083,6 +1098,21 @@ export const $CreateAgent = {
       title: 'Tool Rules',
       description: 'The tool rules governing the agent.',
     },
+    tags: {
+      anyOf: [
+        {
+          items: {
+            type: 'string',
+          },
+          type: 'array',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Tags',
+      description: 'The tags associated with the agent.',
+    },
     system: {
       anyOf: [
         {
@@ -1250,7 +1280,7 @@ export const $CreateBlock = {
       description: 'Character limit of the block.',
       default: 2000,
     },
-    template_name: {
+    name: {
       anyOf: [
         {
           type: 'string',
@@ -1259,7 +1289,7 @@ export const $CreateBlock = {
           type: 'null',
         },
       ],
-      title: 'Template Name',
+      title: 'Name',
       description: 'Name of the block if it is a template.',
     },
     template: {
@@ -2233,7 +2263,7 @@ Attributes:
     model_endpoint (str): The endpoint for the model.
     model_wrapper (str): The wrapper for the model. This is used to wrap additional text around the input/output of the model. This is useful for text-to-text completions, such as the Completions API in OpenAI.
     context_window (int): The context window size for the model.
-    put_inner_thoughts_in_kwargs (bool): Puts 'inner_thoughts' as a kwarg in the function call if this is set to True. This helps with function calling performance and also the generation of inner thoughts.`,
+    put_inner_thoughts_in_kwargs (bool): Puts \`inner_thoughts\` as a kwarg in the function call if this is set to True. This helps with function calling performance and also the generation of inner thoughts.`,
 } as const;
 
 export const $LettaRequest = {
@@ -3277,7 +3307,7 @@ export const $Organization = {
       type: 'string',
       title: 'Name',
       description: 'The name of the organization.',
-      default: 'GracefulCastle',
+      default: 'LoyalKumquat',
     },
     created_at: {
       anyOf: [
@@ -3879,6 +3909,7 @@ export const $ToolCreate = {
       type: 'string',
       title: 'Source Type',
       description: 'The source type of the function.',
+      default: 'python',
     },
     json_schema: {
       anyOf: [
@@ -3896,7 +3927,7 @@ export const $ToolCreate = {
   },
   additionalProperties: false,
   type: 'object',
-  required: ['source_code', 'source_type'],
+  required: ['source_code'],
   title: 'ToolCreate',
 } as const;
 
@@ -4030,7 +4061,6 @@ export const $ToolUpdate = {
         'The JSON schema of the function (auto-generated from source_code if not provided)',
     },
   },
-  additionalProperties: false,
   type: 'object',
   title: 'ToolUpdate',
 } as const;
@@ -4104,6 +4134,21 @@ export const $UpdateAgentState = {
       ],
       title: 'Tools',
       description: 'The tools used by the agent.',
+    },
+    tags: {
+      anyOf: [
+        {
+          items: {
+            type: 'string',
+          },
+          type: 'array',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Tags',
+      description: 'The tags associated with the agent.',
     },
     system: {
       anyOf: [
@@ -4199,7 +4244,7 @@ export const $UpdateBlock = {
       description: 'Character limit of the block.',
       default: 2000,
     },
-    template_name: {
+    name: {
       anyOf: [
         {
           type: 'string',
@@ -4208,7 +4253,7 @@ export const $UpdateBlock = {
           type: 'null',
         },
       ],
-      title: 'Template Name',
+      title: 'Name',
       description: 'Name of the block if it is a template.',
     },
     template: {
@@ -4535,6 +4580,44 @@ Attributes:
     message (str): The message sent by the user
     id (str): The ID of the message
     date (datetime): The date the message was created in ISO format`,
+} as const;
+
+export const $UserUpdate = {
+  properties: {
+    id: {
+      type: 'string',
+      title: 'Id',
+      description: 'The id of the user to update.',
+    },
+    name: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Name',
+      description: 'The new name of the user.',
+    },
+    organization_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Organization Id',
+      description: 'The new organization id of the user.',
+    },
+  },
+  additionalProperties: false,
+  type: 'object',
+  required: ['id'],
+  title: 'UserUpdate',
 } as const;
 
 export const $ValidationError = {

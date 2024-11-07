@@ -169,17 +169,15 @@ export const UseSourcesServiceListFilesFromSourceKeyFn = (
     cursor,
     limit,
     sourceId,
-    userId,
   }: {
     cursor?: string;
     limit?: number;
     sourceId: string;
-    userId?: string;
   },
   queryKey?: Array<unknown>
 ) => [
   useSourcesServiceListFilesFromSourceKey,
-  ...(queryKey ?? [{ cursor, limit, sourceId, userId }]),
+  ...(queryKey ?? [{ cursor, limit, sourceId }]),
 ];
 export type AgentsServiceListAgentsDefaultResponse = Awaited<
   ReturnType<typeof AgentsService.listAgents>
@@ -191,12 +189,16 @@ export type AgentsServiceListAgentsQueryResult<
 export const useAgentsServiceListAgentsKey = 'AgentsServiceListAgents';
 export const UseAgentsServiceListAgentsKeyFn = (
   {
+    name,
+    tags,
     userId,
   }: {
+    name?: string;
+    tags?: string[];
     userId?: string;
   } = {},
   queryKey?: Array<unknown>
-) => [useAgentsServiceListAgentsKey, ...(queryKey ?? [{ userId }])];
+) => [useAgentsServiceListAgentsKey, ...(queryKey ?? [{ name, tags, userId }])];
 export type AgentsServiceGetAgentContextWindowDefaultResponse = Awaited<
   ReturnType<typeof AgentsService.getAgentContextWindow>
 >;
@@ -731,6 +733,12 @@ export type OrganizationServiceCreateOrganizationMutationResult = Awaited<
 >;
 export type AuthServiceAuthenticateUserV1AuthPostMutationResult = Awaited<
   ReturnType<typeof AuthService.authenticateUserV1AuthPost>
+>;
+export type UsersServiceUpdateUserMutationResult = Awaited<
+  ReturnType<typeof UsersService.updateUser>
+>;
+export type AdminServiceUpdateUserMutationResult = Awaited<
+  ReturnType<typeof AdminService.updateUser>
 >;
 export type ToolsServiceUpdateToolMutationResult = Awaited<
   ReturnType<typeof ToolsService.updateTool>

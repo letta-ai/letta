@@ -181,28 +181,21 @@ export const useSourcesServiceListFilesFromSourceSuspense = <
     cursor,
     limit,
     sourceId,
-    userId,
   }: {
     cursor?: string;
     limit?: number;
     sourceId: string;
-    userId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
 ) =>
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseSourcesServiceListFilesFromSourceKeyFn(
-      { cursor, limit, sourceId, userId },
+      { cursor, limit, sourceId },
       queryKey
     ),
     queryFn: () =>
-      SourcesService.listFilesFromSource({
-        cursor,
-        limit,
-        sourceId,
-        userId,
-      }) as TData,
+      SourcesService.listFilesFromSource({ cursor, limit, sourceId }) as TData,
     ...options,
   });
 export const useAgentsServiceListAgentsSuspense = <
@@ -211,16 +204,23 @@ export const useAgentsServiceListAgentsSuspense = <
   TQueryKey extends Array<unknown> = unknown[]
 >(
   {
+    name,
+    tags,
     userId,
   }: {
+    name?: string;
+    tags?: string[];
     userId?: string;
   } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
 ) =>
   useSuspenseQuery<TData, TError>({
-    queryKey: Common.UseAgentsServiceListAgentsKeyFn({ userId }, queryKey),
-    queryFn: () => AgentsService.listAgents({ userId }) as TData,
+    queryKey: Common.UseAgentsServiceListAgentsKeyFn(
+      { name, tags, userId },
+      queryKey
+    ),
+    queryFn: () => AgentsService.listAgents({ name, tags, userId }) as TData,
     ...options,
   });
 export const useAgentsServiceGetAgentContextWindowSuspense = <

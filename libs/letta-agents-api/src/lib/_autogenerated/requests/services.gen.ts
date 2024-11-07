@@ -109,6 +109,8 @@ import type {
   ListUsersResponse,
   CreateUserData,
   CreateUserResponse,
+  UpdateUserData,
+  UpdateUserResponse,
   DeleteUserData,
   DeleteUserResponse,
   CreateApiKeyData,
@@ -133,7 +135,6 @@ export class ToolsService {
    * Delete a tool by name
    * @param data The data for the request.
    * @param data.toolId
-   * @param data.userId
    * @returns unknown Successful Response
    * @throws ApiError
    */
@@ -588,7 +589,6 @@ export class SourcesService {
    * @param data.sourceId
    * @param data.limit Number of files to return
    * @param data.cursor Pagination cursor to fetch the next set of results
-   * @param data.userId
    * @returns FileMetadata Successful Response
    * @throws ApiError
    */
@@ -648,6 +648,8 @@ export class AgentsService {
    * List all agents associated with a given user.
    * This endpoint retrieves a list of all agents and their configurations associated with the specified user ID.
    * @param data The data for the request.
+   * @param data.name Name of the agent
+   * @param data.tags List of tags to filter agents by
    * @param data.userId
    * @returns AgentState Successful Response
    * @throws ApiError
@@ -659,6 +661,10 @@ export class AgentsService {
     return __request(OpenAPI, {
       method: 'GET',
       url: '/v1/agents/',
+      query: {
+        name: data.name,
+        tags: data.tags,
+      },
       errors: {
         422: 'Validation Error',
       },
@@ -826,7 +832,7 @@ export class AgentsService {
 
   /**
    * Add Tool To Agent
-   * Add tools to an exsiting agent
+   * Add tools to an existing agent
    * @param data The data for the request.
    * @param data.agentId
    * @param data.toolId
@@ -854,7 +860,7 @@ export class AgentsService {
 
   /**
    * Remove Tool From Agent
-   * Add tools to an exsiting agent
+   * Add tools to an existing agent
    * @param data The data for the request.
    * @param data.agentId
    * @param data.toolId
@@ -1593,6 +1599,30 @@ export class UsersService {
   }
 
   /**
+   * Update User
+   * Update a user in the database
+   * @param data The data for the request.
+   * @param data.requestBody
+   * @returns User Successful Response
+   * @throws ApiError
+   */
+  public static updateUser(
+    data: UpdateUserData,
+    headers?: { user_id: string }
+  ): CancelablePromise<UpdateUserResponse> {
+    return __request(OpenAPI, {
+      method: 'PUT',
+      url: '/v1/admin/users/',
+      body: data.requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
    * Delete User
    * @param data The data for the request.
    * @param data.userId The user_id key to be deleted.
@@ -1732,6 +1762,30 @@ export class AdminService {
   ): CancelablePromise<CreateUserResponse> {
     return __request(OpenAPI, {
       method: 'POST',
+      url: '/v1/admin/users/',
+      body: data.requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Update User
+   * Update a user in the database
+   * @param data The data for the request.
+   * @param data.requestBody
+   * @returns User Successful Response
+   * @throws ApiError
+   */
+  public static updateUser(
+    data: UpdateUserData,
+    headers?: { user_id: string }
+  ): CancelablePromise<UpdateUserResponse> {
+    return __request(OpenAPI, {
+      method: 'PUT',
       url: '/v1/admin/users/',
       body: data.requestBody,
       mediaType: 'application/json',

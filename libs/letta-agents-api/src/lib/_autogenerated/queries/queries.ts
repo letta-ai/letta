@@ -37,6 +37,7 @@ import {
   UpdateBlock,
   UpdateMessage,
   UserCreate,
+  UserUpdate,
 } from '../requests/types.gen';
 import * as Common from './common';
 export const useToolsServiceGetTool = <
@@ -205,28 +206,21 @@ export const useSourcesServiceListFilesFromSource = <
     cursor,
     limit,
     sourceId,
-    userId,
   }: {
     cursor?: string;
     limit?: number;
     sourceId: string;
-    userId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseSourcesServiceListFilesFromSourceKeyFn(
-      { cursor, limit, sourceId, userId },
+      { cursor, limit, sourceId },
       queryKey
     ),
     queryFn: () =>
-      SourcesService.listFilesFromSource({
-        cursor,
-        limit,
-        sourceId,
-        userId,
-      }) as TData,
+      SourcesService.listFilesFromSource({ cursor, limit, sourceId }) as TData,
     ...options,
   });
 export const useAgentsServiceListAgents = <
@@ -235,16 +229,23 @@ export const useAgentsServiceListAgents = <
   TQueryKey extends Array<unknown> = unknown[]
 >(
   {
+    name,
+    tags,
     userId,
   }: {
+    name?: string;
+    tags?: string[];
     userId?: string;
   } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
 ) =>
   useQuery<TData, TError>({
-    queryKey: Common.UseAgentsServiceListAgentsKeyFn({ userId }, queryKey),
-    queryFn: () => AgentsService.listAgents({ userId }) as TData,
+    queryKey: Common.UseAgentsServiceListAgentsKeyFn(
+      { name, tags, userId },
+      queryKey
+    ),
+    queryFn: () => AgentsService.listAgents({ name, tags, userId }) as TData,
     ...options,
   });
 export const useAgentsServiceGetAgentContextWindow = <
@@ -1366,6 +1367,64 @@ export const useAuthServiceAuthenticateUserV1AuthPost = <
       }) as unknown as Promise<TData>,
     ...options,
   });
+export const useUsersServiceUpdateUser = <
+  TData = Common.UsersServiceUpdateUserMutationResult,
+  TError = unknown,
+  TContext = unknown
+>(
+  options?: Omit<
+    UseMutationOptions<
+      TData,
+      TError,
+      {
+        requestBody: UserUpdate;
+      },
+      TContext
+    >,
+    'mutationFn'
+  >
+) =>
+  useMutation<
+    TData,
+    TError,
+    {
+      requestBody: UserUpdate;
+    },
+    TContext
+  >({
+    mutationFn: ({ requestBody }) =>
+      UsersService.updateUser({ requestBody }) as unknown as Promise<TData>,
+    ...options,
+  });
+export const useAdminServiceUpdateUser = <
+  TData = Common.AdminServiceUpdateUserMutationResult,
+  TError = unknown,
+  TContext = unknown
+>(
+  options?: Omit<
+    UseMutationOptions<
+      TData,
+      TError,
+      {
+        requestBody: UserUpdate;
+      },
+      TContext
+    >,
+    'mutationFn'
+  >
+) =>
+  useMutation<
+    TData,
+    TError,
+    {
+      requestBody: UserUpdate;
+    },
+    TContext
+  >({
+    mutationFn: ({ requestBody }) =>
+      AdminService.updateUser({ requestBody }) as unknown as Promise<TData>,
+    ...options,
+  });
 export const useToolsServiceUpdateTool = <
   TData = Common.ToolsServiceUpdateToolMutationResult,
   TError = unknown,
@@ -1670,7 +1729,6 @@ export const useToolsServiceDeleteTool = <
       TError,
       {
         toolId: string;
-        userId?: string;
       },
       TContext
     >,
@@ -1682,12 +1740,11 @@ export const useToolsServiceDeleteTool = <
     TError,
     {
       toolId: string;
-      userId?: string;
     },
     TContext
   >({
-    mutationFn: ({ toolId, userId }) =>
-      ToolsService.deleteTool({ toolId, userId }) as unknown as Promise<TData>,
+    mutationFn: ({ toolId }) =>
+      ToolsService.deleteTool({ toolId }) as unknown as Promise<TData>,
     ...options,
   });
 export const useSourcesServiceDeleteSource = <
