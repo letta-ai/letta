@@ -145,7 +145,7 @@ const overridenComponents = {
 /* eslint-enable @typescript-eslint/naming-convention */
 
 const classNames = {
-  container: () => 'min-w-[200px] w-full z-dropdown',
+  container: () => 'min-w-[200px] w-full',
   control: () =>
     cn(
       'border bg-background border-solid h-[auto] px-2 py-1 min-h-[36px]! w-full text-base',
