@@ -174,7 +174,7 @@ function useStyles(args: UseStylesArgs) {
   };
 }
 
-interface AsyncSelectProps extends BaseSelectProps {
+export interface AsyncSelectProps extends BaseSelectProps {
   loadOptions: (inputValue: string) => Promise<OptionType[]>;
   cacheOptions?: boolean;
   hideIconsOnOptions?: boolean;
@@ -222,7 +222,7 @@ function AsyncSelectPrimitive(_props: AsyncSelectProps) {
   );
 }
 
-interface SelectProps extends BaseSelectProps {
+export interface SelectProps extends BaseSelectProps {
   options: OptionType[];
   hideIconsOnOptions?: boolean;
 }

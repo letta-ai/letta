@@ -11,10 +11,6 @@ import {
   primaryKey,
 } from 'drizzle-orm/pg-core';
 import { sql, relations } from 'drizzle-orm';
-import type {
-  GenericPanelTemplateId,
-  PanelItemPositionsMatrix,
-} from '@letta-web/component-library';
 
 export const emailWhitelist = pgTable('email_whitelist', {
   id: text('id')
@@ -437,9 +433,7 @@ export const adePreferences = pgTable(
       .references(() => users.id, { onDelete: 'cascade' })
       .notNull(),
     agentId: text('agent_id'),
-    displayConfig: json('display_config')
-      .$type<PanelItemPositionsMatrix<GenericPanelTemplateId>>()
-      .notNull(),
+    displayConfig: json('display_config').$type().notNull(),
   },
   (table) => ({
     unique: {

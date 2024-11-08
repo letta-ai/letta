@@ -303,8 +303,58 @@ const updateAgentContract = c.mutation({
   },
 });
 
+/* Search Deployed Agents */
+const SearchByAgentVersionSchema = z.object({
+  field: z.literal('version'),
+  value: z.string(),
+});
+
+const SearchByProjectIdSchema = z.object({
+  field: z.literal('project_id'),
+  value: z.string(),
+  operator: z.enum(['eq', 'ne']),
+});
+
+export const OrderByValuesEnum = z.enum(['created_at', 'updated_at']);
+
+export type OrderByValuesEnumType = z.infer<typeof OrderByValuesEnum>;
+
+const OrderBySchema = z.object({
+  field: z.literal('order_by'),
+  value: OrderByValuesEnum,
+  direction: z.enum(['asc', 'desc']),
+});
+
+const SearchDeployedAgentsSchema = z.object({
+  search: z.array(
+    z.union([
+      SearchByAgentVersionSchema,
+      SearchByProjectIdSchema,
+      OrderBySchema,
+    ])
+  ),
+  limit: z.number().optional(),
+  offset: z.number().optional(),
+});
+
+const SearchDeployedAgentsResponseSchema = c.type<{
+  agents: ModifiedAgentState[];
+}>();
+
+const searchDeployedAgentsContract = c.mutation({
+  method: 'POST',
+  summary: 'Search Deployed Agents',
+  path: '/v1/agents/search',
+  description: 'Search deployed agents',
+  body: SearchDeployedAgentsSchema,
+  responses: {
+    200: SearchDeployedAgentsResponseSchema,
+  },
+});
+
 export const agentsContract = c.router({
   createAgent: createAgentContract,
+  searchDeployedAgents: searchDeployedAgentsContract,
   versionAgentTemplate: versionAgentTemplateContract,
   migrateAgent: migrateAgentContract,
   listAgents: listAgentsContract,

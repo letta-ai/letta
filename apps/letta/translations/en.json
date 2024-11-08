@@ -23,6 +23,11 @@
   "settings/layout": {
     "profile": "Profile"
   },
+  "components/QueryBuilder": {
+    "addCondition": "Add Condition",
+    "removeCondition": "Remove Condition",
+    "addCombinator": "Add Combinator"
+  },
   "create-organization": {
     "error": "There was an error creating the organization, please try again or contact support.",
     "title": "Create a new Organization",
