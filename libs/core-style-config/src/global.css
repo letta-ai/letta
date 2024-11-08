@@ -103,6 +103,12 @@
     --media-breakpoint-sidebar-visible: 840px;
 
 
+    --font-sans: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI',
+    'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans',
+    'Helvetica Neue', sans-serif;
+    --font-serif: Georgia, Times, serif;
+    --font-mono: 'Fira Code', Menlo, Courier, monospace;
+
   }
 
 
@@ -160,7 +166,30 @@
   }
 
 
+  .hacker {
+    --font-sans: var(--font-mono);
 
+    --background: 240, 100%, 33%;
+    --background-hover: 240, 54%, 48%;
+
+    --background-grey: 0, 0, 67%;
+    --background-greyer: 0, 0, 0;
+
+    --content: 0 0% 98%;
+    --on-transparent: 0, 0%, 0%;
+
+    --primary:  0 0% 9%;
+    --primary-content: 0 0% 100%;
+    --primary-hover: 0 0% 20%;
+
+    --secondary: 180, 100%, 67%;
+
+    --tertiary: 0, 0, 67%;
+    --tertiary-content: 0, 0, 100%;
+    --tertiary-active: 180 100% 33%;
+    --tertiary-hover: 180 100% 33%;
+
+  }
 
 
 }
@@ -175,13 +204,7 @@ body {
 }
 
 
-:root {
-  --font-sans: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI',
-    'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans',
-    'Helvetica Neue', sans-serif;
-  --font-serif: Georgia, Times, serif;
-  --font-mono: 'Fira Code', Menlo, Courier, monospace;
-}
+
 
 @font-face {
   font-family: 'Manrope';
@@ -212,7 +235,6 @@ body {
     @apply border-border;
   }
   body {
-
     @apply bg-background text-content;
     font-feature-settings: 'rlig' 1, 'calt' 1;
   }
