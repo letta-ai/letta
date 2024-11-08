@@ -11,6 +11,7 @@ import { z } from 'zod';
 import { HStack } from '../../framing/HStack/HStack';
 import { Slot } from '@radix-ui/react-slot';
 import { Typography } from '../Typography/Typography';
+import { useDialogContext } from '../Dialog/Dialog';
 
 interface SelectOptionsContextProps {
   hideIconsOnOptions?: boolean;
@@ -164,6 +165,7 @@ const classNames = {
 function useStyles(args: UseStylesArgs) {
   const { menuWidth } = args;
   return {
+    menuPortal: (base: any) => ({ ...base, zIndex: 10 }),
     control: (base: any) => ({ ...base, height: 'auto', minHeight: '36px' }),
     option: () => ({ fontSize: 'var(--font-size-base)' }),
     noOptionsMessage: () => ({ fontSize: 'var(--font-size-base)' }),
@@ -230,13 +232,15 @@ interface SelectProps extends BaseSelectProps {
 function SelectPrimitive(_props: SelectProps) {
   const { hideIconsOnOptions, ...props } = _props;
   const styles = useStyles(props.styleConfig || {});
+  const { isInDialog } = useDialogContext();
 
   return (
     <SelectOptionsProvider value={{ hideIconsOnOptions }}>
       <ReactSelect
         unstyled
+        // menuIsOpen
         menuPortalTarget={
-          typeof document !== 'undefined' ? document.body : null
+          !isInDialog && typeof document !== 'undefined' ? document.body : null
         }
         onChange={(value) => {
           props.onSelect?.(value);

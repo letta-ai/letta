@@ -7,6 +7,20 @@ import {
 } from '@letta-web/letta-agents-api';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+function removeIdFromMemory(oldAgent: Partial<AgentState>) {
+  const newAgentData = { ...oldAgent };
+
+  if (newAgentData.memory?.memory) {
+    for (const key in newAgentData.memory.memory) {
+      if (typeof newAgentData.memory.memory[key].id !== 'undefined') {
+        delete newAgentData.memory.memory[key].id;
+      }
+    }
+  }
+
+  return newAgentData;
+}
+
 export function useSyncUpdateCurrentAgent() {
   const currentAgent = useCurrentAgent();
   const queryClient = useQueryClient();
@@ -49,7 +63,7 @@ export function useSyncUpdateCurrentAgent() {
                 agentId: currentAgent.id,
                 requestBody: {
                   id: currentAgent.id,
-                  ...newAgentData,
+                  ...removeIdFromMemory(newAgentData),
                 },
               },
               {

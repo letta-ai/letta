@@ -1,5 +1,5 @@
 'use client';
-import React, { useCallback } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import {
   Button,
   DashboardPageLayout,
@@ -13,9 +13,16 @@ import {
   PlusIcon,
   TextArea,
   useForm,
+  Select,
+  isBrandKey,
+  brandKeyToLogo,
+  brandKeyToName,
+  isMultiValue,
+  OptionTypeSchemaSingle,
 } from '@letta-web/component-library';
 import type { ColumnDef } from '@tanstack/react-table';
 import type { Source } from '@letta-web/letta-agents-api';
+import { useModelsServiceListEmbeddingModels } from '@letta-web/letta-agents-api';
 import {
   useSourcesServiceCreateSource,
   UseSourcesServiceListSourcesKeyFn,
@@ -25,16 +32,19 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 
 const createDataSourceSchema = z.object({
-  name: z.string(),
+  name: z.string().min(3),
   description: z.string(),
+  embedding_config_model: OptionTypeSchemaSingle,
 });
 
 type CreateDataSourceSchemaType = z.infer<typeof createDataSourceSchema>;
 
 function CreateDataSourceDialog() {
   const { push } = useRouter();
+  const t = useTranslations('data-sources/page');
 
   const queryClient = useQueryClient();
   const { mutate, isPending } = useSourcesServiceCreateSource({
@@ -47,6 +57,34 @@ function CreateDataSourceDialog() {
     },
   });
 
+  const { data: embeddingModels, isLoading } =
+    useModelsServiceListEmbeddingModels();
+
+  const formattedModelsList = useMemo(() => {
+    if (!embeddingModels) {
+      return [];
+    }
+
+    const modelEndpointMap = embeddingModels.reduce((acc, model) => {
+      acc[model.embedding_endpoint_type] =
+        acc[model.embedding_endpoint_type] || [];
+
+      acc[model.embedding_endpoint_type].push(model.embedding_model);
+
+      return acc;
+    }, {} as Record<string, string[]>);
+
+    return Object.entries(modelEndpointMap).map(([key, value]) => ({
+      icon: isBrandKey(key) ? brandKeyToLogo(key) : '',
+      label: isBrandKey(key) ? brandKeyToName(key) : key,
+      options: value.map((model) => ({
+        icon: isBrandKey(key) ? brandKeyToLogo(key) : '',
+        label: model,
+        value: model,
+      })),
+    }));
+  }, [embeddingModels]);
+
   const form = useForm<CreateDataSourceSchemaType>({
     resolver: zodResolver(createDataSourceSchema),
     defaultValues: {
@@ -57,29 +95,68 @@ function CreateDataSourceDialog() {
 
   const handleSubmit = useCallback(
     (values: CreateDataSourceSchemaType) => {
+      const embeddingModel = embeddingModels?.find(
+        (model) => model.embedding_model === values.embedding_config_model.value
+      );
+
+      if (!embeddingModel) {
+        return;
+      }
+
       mutate({
         requestBody: {
           name: values.name,
           description: values.description,
+          embedding_config: embeddingModel,
         },
       });
     },
-    [mutate]
+    [embeddingModels, mutate]
   );
 
   return (
     <FormProvider {...form}>
       <Dialog
-        title="Create Data Source"
-        confirmText="Create"
-        cancelText="Cancel"
+        title={t('CreateDataSourceDialog.title')}
+        confirmText={t('CreateDataSourceDialog.createButton')}
         isConfirmBusy={isPending}
-        trigger={<Button preIcon={<PlusIcon />} label="Create Data Source" />}
+        trigger={
+          <Button
+            preIcon={<PlusIcon />}
+            label={t('CreateDataSourceDialog.trigger')}
+          />
+        }
         onSubmit={form.handleSubmit(handleSubmit)}
       >
         <FormField
           name="name"
-          render={({ field }) => <Input fullWidth label="Name" {...field} />}
+          render={({ field }) => (
+            <Input
+              fullWidth
+              label={t('CreateDataSourceDialog.name.label')}
+              {...field}
+            />
+          )}
+        />
+        <FormField
+          name="embedding_config_model"
+          render={({ field }) => (
+            <Select
+              fullWidth
+              hideIconsOnOptions
+              isLoading={isLoading}
+              onSelect={(value) => {
+                if (isMultiValue(value)) {
+                  return;
+                }
+
+                field.onChange(value);
+              }}
+              value={field.value}
+              label={t('CreateDataSourceDialog.embeddingModel.label')}
+              options={formattedModelsList}
+            />
+          )}
         />
         <FormField
           name="description"

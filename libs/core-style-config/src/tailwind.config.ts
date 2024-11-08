@@ -26,6 +26,7 @@ export function buildConfig(appDir: string): Config {
           sidebarNav: '7',
           header: '8',
           dialog: '9',
+          dropdown: '10',
           tooltip: '10',
           draggedItem: '11',
         },
