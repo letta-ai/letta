@@ -438,6 +438,7 @@ function DialogSessionSheet(props: DialogSessionDialogProps) {
                   <Typography>{variable}</Typography>
                 </TableCell>
                 <TableCellInput
+                  testId={`variable-input-${variable}`}
                   value={variableData[variable] || ''}
                   label={t('DialogSessionSheet.label')}
                   placeholder={t('DialogSessionSheet.placeholder')}
@@ -755,6 +756,7 @@ function Chatroom() {
               onClick={() => {
                 setShowVariablesMenu((v) => !v);
               }}
+              data-testid="toggle-variables-button"
               active={showVariablesMenu}
               preIcon={
                 hasVariableIssue ? (

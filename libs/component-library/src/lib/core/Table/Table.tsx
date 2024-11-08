@@ -112,6 +112,7 @@ TableCaption.displayName = 'TableCaption';
 interface TableCellInputProps {
   label: string;
   value: string;
+  testId?: string;
   placeholder: string;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }
@@ -120,12 +121,13 @@ const TableCellInput = React.forwardRef<
   HTMLTableCellElement,
   TableCellInputProps
 >((props, ref) => {
-  const { label, value, placeholder, onChange } = props;
+  const { label, testId, value, placeholder, onChange } = props;
 
   return (
     <TableCell className="focus-within:outline-1 " ref={ref}>
       <div className="sr-only">{label}</div>
       <input
+        data-testid={testId}
         className="px-2 w-full h-full bg-transparent border-0 focus:ring-0"
         value={value}
         placeholder={placeholder}

@@ -50,13 +50,18 @@ describe('letta', () => {
     cy.findByTestId('edit-memory-block:human').click();
 
     cy.findByTestId('edit-memory-block-content').type(
-      'They also want to be referred to as BananaMan, make sure to always call them that in every response.'
+      'Please include the word BananaMan at the end of every message.'
     );
+
+    cy.findByTestId('toggle-variables-button').click();
+
+    cy.findByTestId('variable-input-name').type('Shubham');
 
     cy.findByTestId('chat-simulator-input').type('What is my name');
 
     cy.findByTestId('chat-simulator-send').click();
 
+    cy.findByTestId('messages-list').contains('Shubham', { timeout: 10000 });
     cy.findByTestId('messages-list').contains('BananaMan', { timeout: 10000 });
 
     // stage the agent
