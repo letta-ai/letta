@@ -20,6 +20,18 @@ const DialogPortal = DialogPrimitive.Portal;
 
 const DialogClose = DialogPrimitive.Close;
 
+interface DialogContextState {
+  isInDialog: boolean;
+}
+
+const DialogContext = React.createContext<DialogContextState>({
+  isInDialog: true,
+});
+
+export function useDialogContext() {
+  return React.useContext(DialogContext);
+}
+
 type DialogOverlayProps = React.ComponentPropsWithoutRef<
   typeof DialogPrimitive.Overlay
 >;
@@ -273,36 +285,38 @@ export function Dialog(props: DialogProps) {
         }}
         aria-describedby=""
       >
-        <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className="contents">
-          {children}
-          <DialogFooter
-            className={
-              reverseButtons ? 'sm:flex-row-reverse sm:justify-start' : ''
-            }
-          >
-            {!hideCancel && (
-              <DialogClose asChild>
+        <DialogContext.Provider value={{ isInDialog: true }}>
+          <DialogHeader>
+            <DialogTitle>{title}</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSubmit} className="contents">
+            {children}
+            <DialogFooter
+              className={
+                reverseButtons ? 'sm:flex-row-reverse sm:justify-start' : ''
+              }
+            >
+              {!hideCancel && (
+                <DialogClose asChild>
+                  <Button
+                    data-testid={`${testId}-cancel-button`}
+                    label={cancelText}
+                    color="tertiary"
+                  />
+                </DialogClose>
+              )}
+              {!hideConfirm && (
                 <Button
-                  data-testid={`${testId}-cancel-button`}
-                  label={cancelText}
-                  color="tertiary"
+                  data-testid={`${testId}-confirm-button`}
+                  color={confirmColor}
+                  type="submit"
+                  busy={isConfirmBusy}
+                  label={confirmText}
                 />
-              </DialogClose>
-            )}
-            {!hideConfirm && (
-              <Button
-                data-testid={`${testId}-confirm-button`}
-                color={confirmColor}
-                type="submit"
-                busy={isConfirmBusy}
-                label={confirmText}
-              />
-            )}
-          </DialogFooter>
-        </form>
+              )}
+            </DialogFooter>
+          </form>
+        </DialogContext.Provider>
       </DialogContent>
     </DialogRoot>
   );

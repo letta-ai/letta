@@ -23,6 +23,24 @@
   "settings/layout": {
     "profile": "Profile"
   },
+  "data-sources/page": {
+    "CreateDataSourceDialog": {
+      "title": "Create a new data source",
+      "trigger": "Create Data Source",
+      "name": {
+        "label": "Data Source Name",
+        "placeholder": "my-data-source-name"
+      },
+      "embeddingModel": {
+        "label": "Embedding Model"
+      },
+      "descriptionInput": {
+        "label": "Description",
+        "placeholder": "my-data-source-description"
+      },
+      "createButton": "Create Data Source"
+    }
+  },
   "create-organization": {
     "error": "There was an error creating the organization, please try again or contact support.",
     "title": "Create a new Organization",
