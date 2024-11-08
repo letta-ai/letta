@@ -45,6 +45,7 @@ interface ToggleCardProps extends VariantProps<typeof actionCardVariants> {
   description?: string;
   children?: React.ReactNode;
   onCardClick?: () => void;
+  testId?: string;
   actions?: React.ReactNode;
 }
 
@@ -53,6 +54,7 @@ export function ActionCard(props: ToggleCardProps) {
     title,
     icon,
     badge,
+    testId,
     isActive,
     onCardClick,
     mainAction,
@@ -63,6 +65,7 @@ export function ActionCard(props: ToggleCardProps) {
 
   return (
     <Card
+      testId={testId}
       onClick={onCardClick}
       className={cn(
         actionCardVariants({ ...props, clickable: !!onCardClick }),

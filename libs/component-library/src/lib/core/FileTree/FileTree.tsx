@@ -14,6 +14,7 @@ import { Typography } from '../Typography/Typography';
 import { useMemo } from 'react';
 import { Slot } from '@radix-ui/react-slot';
 import { DropdownMenu, DropdownMenuItem } from '../DropdownMenu/DropdownMenu';
+import { Button } from '../Button/Button';
 
 interface Action {
   label: string;
@@ -47,10 +48,11 @@ interface RowItemProps {
   children: React.ReactNode;
   onClick?: () => void;
   actions?: Action[];
+  index: number;
 }
 
 function RowItem(props: RowItemProps) {
-  const { depth, badge, onClick, actions } = props;
+  const { depth, index, badge, onClick, actions } = props;
 
   return (
     <li className="w-full block">
@@ -74,9 +76,22 @@ function RowItem(props: RowItemProps) {
         <HStack align="center">
           {badge}
           {actions && (
-            <DropdownMenu trigger={<DotsHorizontalIcon className="w-4" />}>
+            <DropdownMenu
+              triggerAsChild
+              trigger={
+                <Button
+                  label="Actions"
+                  color="tertiary-transparent"
+                  size="small"
+                  hideLabel
+                  data-testid={`filetree-actions:${depth}-${index}`}
+                  preIcon={<DotsHorizontalIcon className="w-4" />}
+                />
+              }
+            >
               {actions.map((action) => (
                 <DropdownMenuItem
+                  data-testid={`filetree-action-${action.id}`}
                   key={action.id || action.label}
                   onClick={action.onClick}
                   preIcon={action.icon}
@@ -123,7 +138,12 @@ function RenderFolderInnerContent(props: RenderFolderContentProps) {
       {contents.map((content, index) => {
         if ('contents' in content || 'useContents' in content) {
           return (
-            <FolderComponent depth={depth + 1} key={index} folder={content} />
+            <FolderComponent
+              depth={depth + 1}
+              index={index}
+              key={index}
+              folder={content}
+            />
           );
         }
 
@@ -149,6 +169,7 @@ function RenderFolderInnerContent(props: RenderFolderContentProps) {
 
         return (
           <RowItem
+            index={index}
             onClick={onClick}
             actions={actions}
             depth={depth + 1}
@@ -177,7 +198,7 @@ function RenderAsyncFolderInnerContent(props: RenderAsyncFolderContentProps) {
 
   if (isLoading) {
     return (
-      <RowItem depth={depth + 1}>
+      <RowItem index={0} depth={depth + 1}>
         <LettaLoader size="small" /> {t('loading')}
       </RowItem>
     );
@@ -194,10 +215,11 @@ function RenderAsyncFolderInnerContent(props: RenderAsyncFolderContentProps) {
 interface FolderComponentProps {
   folder: FolderType;
   depth?: number;
+  index?: number;
 }
 
 export function FolderComponent(props: FolderComponentProps) {
-  const { folder, depth = 0 } = props;
+  const { folder, index = 0, depth = 0 } = props;
   const {
     name,
     badge,
@@ -235,7 +257,7 @@ export function FolderComponent(props: FolderComponentProps) {
       }}
     >
       <HStack as="summary" className="w-full cursor-pointer" align="center">
-        <RowItem badge={badge} actions={actions} depth={depth}>
+        <RowItem index={index} badge={badge} actions={actions} depth={depth}>
           {isOpen ? openIcon : icon}
           <Typography overflow="ellipsis" fullWidth noWrap align="left">
             {name}
