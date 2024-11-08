@@ -18,9 +18,14 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useCurrentProject } from '../hooks';
 import { webApi, webApiQueryKeys } from '$letta/client';
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import type { GetProjectByIdContractSuccessResponse } from '$letta/web-api/contracts';
+import type {
+  GetProjectByIdContractSuccessResponse,
+  UpdateProjectPayloadType,
+} from '$letta/web-api/contracts';
+import { useTranslations } from 'next-intl';
+import { useErrorTranslationMessage } from '@letta-web/helpful-client-utils';
 
 const DeleteProjectSchema = z.object({
   name: z.string(),
@@ -123,18 +128,30 @@ function DeleteProjectSettings() {
   );
 }
 
-const EditProjectSettingsSchema = z.object({
-  name: z.string(),
-});
-
-type EditProjectSettingsFormType = z.infer<typeof EditProjectSettingsSchema>;
-
 function EditSettingsSection() {
   const { slug, id: projectId } = useCurrentProject();
+  const t = useTranslations('project/[projectId]/settings');
+
+  const EditProjectSettingsSchema = useMemo(() => {
+    return z.object({
+      name: z.string(),
+      slug: z.string().regex(/^[a-zA-Z0-9_-]+$/, {
+        message: t('EditProjectSettings.errors.slug'),
+      }),
+    });
+  }, [t]);
+
+  type EditProjectSettingsFormType = z.infer<typeof EditProjectSettingsSchema>;
+
   const queryClient = useQueryClient();
-  const { mutate, isError, isPending } =
+  const { mutate, error, isPending } =
     webApi.projects.updateProject.useMutation({
       onSuccess: (response) => {
+        // if we have a new slug, redirect the user to the new slug
+        if (response.body.slug !== slug) {
+          window.location.href = `/projects/${response.body.slug}/settings`;
+        }
+
         queryClient.setQueriesData<
           GetProjectByIdContractSuccessResponse | undefined
         >(
@@ -169,21 +186,43 @@ function EditSettingsSection() {
     resolver: zodResolver(EditProjectSettingsSchema),
     defaultValues: {
       name,
+      slug,
     },
+  });
+
+  const errorMessage = useErrorTranslationMessage(error, {
+    atLeastOneFieldRequired: t(
+      'EditProjectSettings.errors.atLeastOneFieldRequired'
+    ),
+    slugAlreadyTaken: t('EditProjectSettings.errors.slugAlreadyTaken'),
+    default: t('EditProjectSettings.errors.default'),
   });
 
   const handleSubmit = useCallback(
     (values: EditProjectSettingsFormType) => {
+      // create a payload of only changed values
+      const body: UpdateProjectPayloadType = {};
+
+      if (values.name !== name) {
+        body.name = values.name;
+      }
+
+      if (values.slug !== slug) {
+        body.slug = values.slug;
+      }
+
+      if (Object.keys(body).length === 0) {
+        return;
+      }
+
       mutate({
-        body: {
-          name: values.name,
-        },
+        body,
         params: {
           projectId,
         },
       });
     },
-    [mutate, projectId]
+    [mutate, name, projectId, slug]
   );
 
   return (
@@ -197,21 +236,28 @@ function EditSettingsSection() {
                   <Input
                     fullWidth
                     autoComplete="false"
-                    label="Project Name"
+                    label={t('EditProjectSettings.name.label')}
                     {...field}
                   />
                 );
               }}
               name="name"
             />
-            <FormActions
-              align="start"
-              errorMessage={
-                isError
-                  ? 'Failed to save changes, contact support if this persists'
-                  : undefined
-              }
-            >
+            <FormField
+              render={({ field }) => {
+                return (
+                  <Input
+                    fullWidth
+                    autoComplete="false"
+                    label={t('EditProjectSettings.slug.label')}
+                    placeholder={t('EditProjectSettings.slug.placeholder')}
+                    {...field}
+                  />
+                );
+              }}
+              name="slug"
+            />
+            <FormActions align="start" errorMessage={errorMessage}>
               <Button
                 busy={isPending}
                 color="tertiary"
@@ -227,8 +273,10 @@ function EditSettingsSection() {
 }
 
 function SettingsPage() {
+  const t = useTranslations('project/[projectId]/settings');
+
   return (
-    <DashboardPageLayout title="Project Settings">
+    <DashboardPageLayout title={t('title')}>
       <EditSettingsSection />
       <DeleteProjectSettings />
     </DashboardPageLayout>

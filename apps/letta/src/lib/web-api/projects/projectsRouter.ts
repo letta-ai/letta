@@ -306,7 +306,17 @@ export async function updateProject(
 ): Promise<UpdateProjectResponse> {
   const { projectId } = req.params;
   const organizationId = await getUserActiveOrganizationIdOrThrow();
-  const { name } = req.body;
+  const { name, slug } = req.body;
+
+  if (Object.values(req.body).filter(Boolean).length === 0) {
+    return {
+      status: 400,
+      body: {
+        message: 'At least one field is required',
+        errorCode: 'atLeastOneFieldRequired',
+      },
+    };
+  }
 
   const project = await db.query.projects.findFirst({
     where: and(
@@ -323,10 +333,31 @@ export async function updateProject(
     };
   }
 
+  if (slug) {
+    // check if slug is already taken
+    const existingProject = await db.query.projects.findFirst({
+      where: and(
+        eq(projects.organizationId, organizationId),
+        eq(projects.slug, slug)
+      ),
+    });
+
+    if (existingProject) {
+      return {
+        status: 409,
+        body: {
+          message: 'Slug already taken',
+          errorCode: 'slugAlreadyTaken',
+        },
+      };
+    }
+  }
+
   await db
     .update(projects)
     .set({
       name,
+      slug,
     })
     .where(eq(projects.id, projectId));
 
@@ -336,7 +367,7 @@ export async function updateProject(
       updatedAt: project.updatedAt.toISOString(),
       name: name || project.name,
       id: project.id,
-      slug: project.slug,
+      slug: slug || project.slug,
     },
   };
 }
