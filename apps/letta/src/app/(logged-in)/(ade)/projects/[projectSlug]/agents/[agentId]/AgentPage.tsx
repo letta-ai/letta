@@ -3,6 +3,7 @@ import type { panelRegistry } from './panelRegistry';
 import { usePanelManager } from './panelRegistry';
 import { PanelManagerProvider, PanelRenderer } from './panelRegistry';
 import type { PanelItemPositionsMatrix } from '@letta-web/component-library';
+import { EditIcon } from '@letta-web/component-library';
 import { Card, Checkbox, ExternalLink } from '@letta-web/component-library';
 import { TrashIcon } from '@letta-web/component-library';
 import {
@@ -52,6 +53,7 @@ import { useCurrentAgent } from './hooks';
 import {
   useAgentsServiceGetAgent,
   UseAgentsServiceGetAgentKeyFn,
+  useAgentsServiceUpdateAgent,
 } from '@letta-web/letta-agents-api';
 import { useTranslations } from 'next-intl';
 import { ContextWindowPreview } from './ContextEditorPanel/ContextEditorPanel';
@@ -65,6 +67,7 @@ import type { InfiniteGetProjectDeployedAgentTemplates200Response } from '$letta
 import { ThemeSelector } from '$letta/client/components/ThemeSelector/ThemeSelector';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { isFetchError } from '@ts-rest/react-query/v5';
 
 function RestoreLayoutButton() {
   const t = useTranslations(
@@ -136,6 +139,175 @@ export function NavOverlay() {
   );
 }
 
+function useAgentBaseTypeName() {
+  const { isTemplate } = useCurrentAgentMetaData();
+  const t = useTranslations(
+    'projects/(projectSlug)/agents/(agentId)/AgentPage'
+  );
+
+  if (isTemplate) {
+    return {
+      capitalized: t('agentBaseType.capitalized.template'),
+      base: t('agentBaseType.base.template'),
+    };
+  }
+
+  return {
+    capitalized: t('agentBaseType.capitalized.agent'),
+    base: t('agentBaseType.base.agent'),
+  };
+}
+
+interface UpdateNameDialogProps {
+  onClose: () => void;
+}
+
+const updateNameFormSchema = z.object({
+  name: z
+    .string()
+    .regex(/^[a-zA-Z0-9_-]+$/, {
+      message: 'Name must be alphanumeric, with underscores or dashes',
+    })
+    .min(3, { message: 'Name must be at least 3 characters long' })
+    .max(50, { message: 'Name must be at most 50 characters long' }),
+});
+
+type UpdateNameFormValues = z.infer<typeof updateNameFormSchema>;
+
+function UpdateNameDialog(props: UpdateNameDialogProps) {
+  const { onClose } = props;
+  const { agentName, isTemplate, isLocal, agentId } = useCurrentAgentMetaData();
+  const { slug: projectSlug } = useCurrentProject();
+
+  const t = useTranslations(
+    'projects/(projectSlug)/agents/(agentId)/AgentPage'
+  );
+
+  const form = useForm({
+    resolver: zodResolver(updateNameFormSchema),
+    defaultValues: {
+      name: agentName,
+    },
+  });
+
+  const {
+    mutate: localMutate,
+    isPending: localIsPending,
+    error: localError,
+  } = useAgentsServiceUpdateAgent();
+
+  const agentBaseType = useAgentBaseTypeName();
+
+  const { id: agentTemplateId } = useCurrentAgent();
+
+  const { mutate, isPending, error } =
+    webOriginSDKApi.agents.updateAgent.useMutation();
+
+  const handleSubmit = useCallback(
+    (values: UpdateNameFormValues) => {
+      if (isLocal) {
+        localMutate(
+          {
+            agentId: agentTemplateId,
+            requestBody: {
+              id: agentTemplateId,
+              name: values.name,
+            },
+          },
+          {
+            onSuccess: () => {
+              window.location.href = `/local-project/agents/${agentId}`;
+            },
+          }
+        );
+
+        return;
+      }
+
+      mutate(
+        {
+          body: { name: values.name, id: agentTemplateId },
+          params: {
+            agent_id: agentTemplateId,
+          },
+        },
+        {
+          onSuccess: async () => {
+            if (isTemplate) {
+              window.location.href = `/projects/${projectSlug}/templates/${values.name}`;
+            } else {
+              window.location.href = `/projects/${projectSlug}/agents/${agentTemplateId}`;
+            }
+          },
+        }
+      );
+    },
+    [
+      isLocal,
+      agentId,
+      localMutate,
+      mutate,
+      agentTemplateId,
+      isTemplate,
+      projectSlug,
+    ]
+  );
+
+  useEffect(() => {
+    if (error && !isFetchError(error)) {
+      if (error.status === 409) {
+        form.setError('name', {
+          message: t('UpdateNameDialog.error.conflict', {
+            agentBaseType: agentBaseType.base,
+          }),
+        });
+
+        return;
+      }
+
+      form.setError('name', {
+        message: t('UpdateNameDialog.error.default'),
+      });
+    }
+  }, [t, error, form, agentBaseType.base]);
+
+  return (
+    <FormProvider {...form}>
+      <Dialog
+        title={t('UpdateNameDialog.title', {
+          agentBaseType: agentBaseType.capitalized,
+        })}
+        isOpen
+        onOpenChange={(next) => {
+          if (!next) {
+            onClose();
+          }
+        }}
+        errorMessage={
+          localError ? t('UpdateNameDialog.error.default') : undefined
+        }
+        isConfirmBusy={isPending || localIsPending}
+        confirmText={t('UpdateNameDialog.confirm')}
+        onSubmit={form.handleSubmit(handleSubmit)}
+      >
+        <FormField
+          name="name"
+          render={({ field }) => (
+            <Input
+              fullWidth
+              description={t('UpdateNameDialog.name.description', {
+                agentBaseType: agentBaseType.base,
+              })}
+              label={t('UpdateNameDialog.name.label')}
+              {...field}
+            />
+          )}
+        />
+      </Dialog>
+    </FormProvider>
+  );
+}
+
 interface DeleteAgentDialogProps {
   onClose: () => void;
 }
@@ -175,6 +347,8 @@ function DeleteAgentDialog(props: DeleteAgentDialogProps) {
       },
     });
 
+  const agentBaseType = useAgentBaseTypeName();
+
   const handleSubmit = useCallback(() => {
     mutate({
       params: {
@@ -192,17 +366,32 @@ function DeleteAgentDialog(props: DeleteAgentDialogProps) {
             onClose();
           }
         }}
-        errorMessage={isError ? t('DeleteAgentDialog.error') : undefined}
+        errorMessage={
+          isError
+            ? t('DeleteAgentDialog.error', {
+                agentBaseType: agentBaseType.base,
+              })
+            : undefined
+        }
         confirmColor="destructive"
-        confirmText={t('DeleteAgentDialog.confirm')}
-        title={t('DeleteAgentDialog.title')}
+        confirmText={t('DeleteAgentDialog.confirm', {
+          agentBaseType: agentBaseType.capitalized,
+        })}
+        title={t('DeleteAgentDialog.title', {
+          agentBaseType: agentBaseType.capitalized,
+        })}
         onSubmit={form.handleSubmit(handleSubmit)}
         isConfirmBusy={isPending || isSuccess}
       >
-        <Typography>{t('DeleteAgentDialog.description')}</Typography>
+        <Typography>
+          {t('DeleteAgentDialog.description', {
+            agentBaseType: agentBaseType.base,
+          })}
+        </Typography>
         <Typography>
           {t.rich('DeleteAgentDialog.confirmText', {
             templateName: name,
+            agentBaseType: agentBaseType.base,
             strong: (chunks) => <Typography bold>{chunks}</Typography>,
           })}
         </Typography>
@@ -211,7 +400,9 @@ function DeleteAgentDialog(props: DeleteAgentDialogProps) {
           render={({ field }) => (
             <Input
               fullWidth
-              label={t('DeleteAgentDialog.confirmTextLabel')}
+              label={t('DeleteAgentDialog.confirmTextLabel', {
+                agentBaseType: agentBaseType.capitalized,
+              })}
               {...field}
             />
           )}
@@ -229,6 +420,8 @@ function ForkAgentDialog(props: ForkAgentDialogProps) {
   const t = useTranslations(
     'projects/(projectSlug)/agents/(agentId)/AgentPage'
   );
+
+  const agentBaseType = useAgentBaseTypeName();
 
   const { id: agentTemplateId } = useCurrentAgent();
   const { push } = useRouter();
@@ -260,12 +453,18 @@ function ForkAgentDialog(props: ForkAgentDialogProps) {
           onClose();
         }
       }}
-      title={t('ForkAgentDialog.title')}
-      confirmText={t('ForkAgentDialog.confirm')}
+      title={t('ForkAgentDialog.title', {
+        agentBaseType: agentBaseType.capitalized,
+      })}
+      confirmText={t('ForkAgentDialog.confirm', {
+        agentBaseType: agentBaseType.capitalized,
+      })}
       onConfirm={handleForkAgent}
       isConfirmBusy={isPending}
     >
-      {t('ForkAgentDialog.description')}
+      {t('ForkAgentDialog.description', {
+        agentBaseType: agentBaseType.base,
+      })}
     </Dialog>
   );
 }
@@ -661,7 +860,7 @@ function TemplateVersionDisplay() {
   );
 }
 
-type Dialogs = 'deleteAgent' | 'forkAgent';
+type Dialogs = 'deleteAgent' | 'forkAgent' | 'renameAgent';
 
 function AgentSettingsDropdown() {
   const t = useTranslations(
@@ -669,9 +868,12 @@ function AgentSettingsDropdown() {
   );
   const [openDialog, setOpenDialog] = useState<Dialogs | null>(null);
 
+  const { isTemplate } = useCurrentAgentMetaData();
   const handleCloseDialog = useCallback(() => {
     setOpenDialog(null);
   }, []);
+
+  const agentBaseType = useAgentBaseTypeName();
 
   return (
     <>
@@ -681,34 +883,53 @@ function AgentSettingsDropdown() {
       {openDialog == 'deleteAgent' && (
         <DeleteAgentDialog onClose={handleCloseDialog} />
       )}
+      {openDialog == 'renameAgent' && (
+        <UpdateNameDialog onClose={handleCloseDialog} />
+      )}
       <DropdownMenu
         align="end"
         triggerAsChild
         trigger={
           <Button
             preIcon={<CogIcon />}
-            label={t('AgentSettingsDropdown.trigger')}
+            label={t('AgentSettingsDropdown.trigger', {
+              agentBaseType: agentBaseType.capitalized,
+            })}
             hideLabel
             size="small"
             color="tertiary-transparent"
           />
         }
       >
+        {isTemplate && (
+          <DropdownMenuItem
+            onClick={() => {
+              setOpenDialog('forkAgent');
+            }}
+            preIcon={<ForkIcon />}
+            label={t('ForkAgentDialog.trigger', {
+              agentBaseType: agentBaseType.capitalized,
+            })}
+          />
+        )}
         <DropdownMenuItem
           onClick={() => {
-            setOpenDialog('forkAgent');
+            setOpenDialog('renameAgent');
           }}
-          preIcon={<ForkIcon />}
-          label={t('ForkAgentDialog.trigger')}
+          preIcon={<EditIcon />}
+          label={t('UpdateNameDialog.trigger', {
+            agentBaseType: agentBaseType.capitalized,
+          })}
         />
-
         <RestoreLayoutButton />
         <DropdownMenuItem
           onClick={() => {
             setOpenDialog('deleteAgent');
           }}
           preIcon={<TrashIcon />}
-          label={t('DeleteAgentDialog.trigger')}
+          label={t('DeleteAgentDialog.trigger', {
+            agentBaseType: agentBaseType.capitalized,
+          })}
         />
         <HStack padding="small" justify="end" borderTop fullWidth>
           <ThemeSelector />

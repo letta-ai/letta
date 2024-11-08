@@ -3,16 +3,4 @@
   "$id": "GenerateIcons",
   "title": "",
   "type": "object",
-  "properties": {
-    "regenerate": {
-      "type": "boolean",
-      "description": "",
-      "$default": {
-        "$source": "argv",
-        "index": 0
-      },
-      "x-prompt": "Should we regenerate old icons?"
-    }
-  },
-  "required": ["regenerate"]
 }

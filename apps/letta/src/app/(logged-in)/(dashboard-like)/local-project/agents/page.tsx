@@ -162,12 +162,12 @@ function LocalProjectPage() {
   const columns: Array<ColumnDef<AgentState>> = useMemo(
     () => [
       {
-        header: t('table.columns.id'),
-        accessorKey: 'id',
-      },
-      {
         header: t('table.columns.name'),
         accessorKey: 'name',
+      },
+      {
+        header: t('table.columns.id'),
+        accessorKey: 'id',
       },
       {
         header: t('table.columns.actions'),
