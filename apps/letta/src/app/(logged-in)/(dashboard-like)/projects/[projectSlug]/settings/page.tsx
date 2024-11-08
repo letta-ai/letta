@@ -20,11 +20,10 @@ import { useCurrentProject } from '../hooks';
 import { webApi, webApiQueryKeys } from '$letta/client';
 import { useCallback, useMemo } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import {
+import type {
   GetProjectByIdContractSuccessResponse,
   UpdateProjectPayloadType,
 } from '$letta/web-api/contracts';
-import { useFormState } from 'react-hook-form';
 import { useTranslations } from 'next-intl';
 import { useErrorTranslationMessage } from '@letta-web/helpful-client-utils';
 
