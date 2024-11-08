@@ -126,6 +126,7 @@ function AttachDataSourceAction(props: AttachDataSourceActionProps) {
       color="primary"
       type="button"
       disabled={isAttached}
+      data-testid="attach-data-source-button"
       size="small"
       busy={isPending}
       onClick={() => {
@@ -331,6 +332,7 @@ function CreateDataSourceDialogInner(props: CreateDataSourceDialogInnerProps) {
       return (
         <VStack>
           <ActionCard
+            testId="attach-existing-data-source"
             icon={<DatabaseUploadIcon />}
             onCardClick={() => {
               setMode('attach');
@@ -343,6 +345,7 @@ function CreateDataSourceDialogInner(props: CreateDataSourceDialogInnerProps) {
             )}
           />
           <ActionCard
+            testId="create-new-data-source"
             onCardClick={() => {
               setMode('create');
               handleCreateDataSource();
@@ -390,6 +393,7 @@ function CreateDataSourceDialog() {
           preIcon={<PlusIcon />}
           color="tertiary"
           hideLabel
+          data-testid="create-data-source-dialog-trigger"
           label={t('CreateDataSourceDialog.trigger')}
         />
       }
@@ -398,7 +402,7 @@ function CreateDataSourceDialog() {
       <CreateDataSourceDialogInner
         mode={mode}
         onClose={() => {
-          setOpen(false);
+          handleOpenChange(false);
         }}
         setMode={setMode}
       />
@@ -562,6 +566,7 @@ function DetachDataSourceConfirmDialog(
         }
       }}
       isOpen
+      testId="detach-data-source-dialog"
       title={t('DetachDataSourceConfirmDialog.title', { sourceName })}
       confirmText={t('DetachDataSourceConfirmDialog.confirm')}
       isConfirmBusy={isPending}

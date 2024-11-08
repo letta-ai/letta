@@ -640,12 +640,12 @@
     "DeploymentButton": {
       "version": "VERSION {version}",
       "readyToDeploy": {
-        "trigger": "Deploy Agent",
+        "trigger": "Deploy Agents",
         "heading": "Your template is good to go!",
         "copy": "This template has not had any changes since the last version. You can deploy following the instructions below:"
       },
       "updateAvailable": {
-        "trigger": "Deploy Agent",
+        "trigger": "Deploy Agents",
         "heading": "You may want to version your template",
         "copy": "This template has had changes since the last version. You can create a new version below or follow deployment instructions below:"
       }

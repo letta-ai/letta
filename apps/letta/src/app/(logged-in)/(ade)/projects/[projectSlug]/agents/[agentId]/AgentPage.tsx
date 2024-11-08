@@ -521,6 +521,7 @@ function DeployAgentDialog(props: DeployAgentDialogProps) {
       trigger={
         <Button
           fullWidth
+          data-testid="deploy-agent-dialog-trigger"
           color={!isAtLatestVersion ? 'tertiary-transparent' : 'secondary'}
           label={t('DeployAgentDialog.trigger')}
           target="_blank"
@@ -808,6 +809,7 @@ function TemplateVersionDisplay() {
       trigger={
         <Button
           color="secondary"
+          data-testid="version-template-trigger"
           label={
             isAtLatestVersion
               ? t('DeploymentButton.readyToDeploy.trigger')
@@ -848,6 +850,7 @@ function TemplateVersionDisplay() {
             deployedAgents.body.agents.length > 0 && (
               <Button
                 fullWidth
+                data-testid="version-template-trigger"
                 target="_blank"
                 color="tertiary-transparent"
                 label={t('VersionAgentDialog.deployedAgents')}

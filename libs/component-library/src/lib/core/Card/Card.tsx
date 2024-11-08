@@ -5,6 +5,7 @@ import type { PropsWithChildren } from 'react';
 type CardProps = PropsWithChildren<{
   className?: string;
   onClick?: () => void;
+  testId?: string;
 }>;
 
 export function Card(props: CardProps) {
@@ -12,6 +13,7 @@ export function Card(props: CardProps) {
 
   return (
     <Frame
+      data-testid={props.testId}
       as={onClick ? 'button' : 'div'}
       onClick={(e) => {
         if (onClick) {
