@@ -34,7 +34,7 @@ import { webApi, webApiQueryKeys } from '$letta/client';
 import { useQueryClient } from '@tanstack/react-query';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { createErrorTranslationFinder } from '@letta-web/helpful-client-utils';
+import { useErrorTranslationMessage } from '@letta-web/helpful-client-utils';
 
 const inviteMemberDialogFormSchema = z.object({
   email: z.string().email(),
@@ -44,22 +44,16 @@ type InviteMemberDialogFormValues = z.infer<
   typeof inviteMemberDialogFormSchema
 >;
 
-const errorMessageFinder = createErrorTranslationFinder();
-
 function useErrorMessages(error: unknown) {
   const t = useTranslations('organization/members');
 
-  if (!error) {
-    return undefined;
-  }
-
-  return {
+  return useErrorTranslationMessage(error, {
     userAlreadyInvited: t('InviteMemberDialog.error.userAlreadyInvited'),
     userAlreadyInOrganization: t(
       'InviteMemberDialog.error.userAlreadyInOrganization'
     ),
     default: t('InviteMemberDialog.error.default'),
-  }[errorMessageFinder(error)];
+  });
 }
 
 function InviteMemberDialog() {

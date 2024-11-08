@@ -32,6 +32,24 @@
     },
     "submit": "Create Organization"
   },
+  "project/[projectId]/settings": {
+    "title": "Project Settings",
+    "EditProjectSettings": {
+      "name": {
+        "label": "Project Name"
+      },
+      "slug": {
+        "label": "Project Slug",
+        "placeholder": "my-project-slug"
+      },
+      "errors": {
+        "atLeastOneFieldRequired": "At least one field is required",
+        "default": "There was an error updating project settings, please try again or contact support.",
+        "slug": "Slugs can only contain lowercase letters, numbers, underscores, and hyphens",
+        "slugAlreadyTaken": "This slug is already taken by an existing or recently deleted project, please choose another"
+      }
+    }
+  },
   "select-organization": {
     "title": "Select an Organization",
     "loading": "Loading organizations...",
