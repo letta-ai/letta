@@ -53,16 +53,6 @@ describe('letta', () => {
       'They also want to be referred to as BananaMan, make sure to always call them that in every response.'
     );
 
-
-    cy.findByTestId('edit-memory-block-save').click();
-
-    // simulate a conversation
-    cy.findByTestId('ade-navigate-to:Simulator').then(($btn) => {
-      if (!$btn.hasClass('active-ade-nav')) {
-        $btn.click();
-      }
-    });
-
     cy.findByTestId('chat-simulator-input').type('What is my name');
 
     cy.findByTestId('chat-simulator-send').click();
