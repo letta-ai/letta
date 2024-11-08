@@ -3,7 +3,7 @@ import { useMemo } from 'react';
 
 export function useErrorTranslationMessage(
   error: unknown,
-  messageMap: Record<string, string>
+  messageMap: Record<string, string> & { default: string }
 ) {
   return useMemo(() => {
     if (!error) {
