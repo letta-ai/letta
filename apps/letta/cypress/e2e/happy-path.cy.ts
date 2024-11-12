@@ -72,7 +72,7 @@ describe('letta', () => {
 
     cy.findByTestId('create-data-source-dialog-trigger', {
       timeout: 10000,
-    }).click();
+    }).click({ waitForAnimations: true });
     cy.findByTestId('attach-existing-data-source').click();
 
     cy.findAllByTestId('attach-data-source-button').first().click();
