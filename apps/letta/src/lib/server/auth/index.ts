@@ -351,14 +351,14 @@ interface FindOrCreateUserAndOrganizationFromProviderLoginResponse {
 async function findOrCreateUserAndOrganizationFromProviderLogin(
   userData: ProviderUserPayload
 ): Promise<FindOrCreateUserAndOrganizationFromProviderLoginResponse> {
-  if (!(await isUserInWhitelist(userData.email))) {
-    throw new Error(LoginErrorsEnum.USER_NOT_IN_WHITELIST);
-  }
-
   let newUserDetails: NewUserDetails | undefined;
   let user = await findExistingUser(userData);
 
   if (!user) {
+    if (!(await isUserInWhitelist(userData.email))) {
+      throw new Error(LoginErrorsEnum.USER_NOT_IN_WHITELIST);
+    }
+
     const res = await createUserAndOrganization(userData);
 
     newUserDetails = {
