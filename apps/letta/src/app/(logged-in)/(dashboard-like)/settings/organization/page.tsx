@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 
 function OrganizationsPage() {
-  redirect('/organization/members');
+  redirect('/settings/organization/general');
 }
 
 export default OrganizationsPage;

@@ -21,7 +21,13 @@
     }
   },
   "settings/layout": {
-    "profile": "Profile"
+    "personal": "Personal",
+    "profile": "Profile",
+    "organization": {
+      "general": "General",
+      "members": "Members",
+      "root": "Organization"
+    }
   },
   "data-sources/page": {
     "CreateDataSourceDialog": {

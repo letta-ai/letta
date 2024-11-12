@@ -2,6 +2,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import ReactDOM from 'react-dom';
 import Link from 'next/link';
+import type { SubNavigationItem } from '@letta-web/component-library';
 import {
   Avatar,
   Button,
@@ -20,7 +21,6 @@ import {
   Typography,
   useDashboardNavigationItems,
   VStack,
-  CompanyIcon,
   SwitchOrganizationIcon,
   ChevronLeftIcon,
 } from '@letta-web/component-library';
@@ -88,6 +88,7 @@ function AdminNav() {
   );
 }
 
+const UNCATEGORIZED_GROUP = 'uncategorized';
 interface MainNavigationItemsProps {
   isMobile?: boolean;
 }
@@ -142,10 +143,24 @@ function MainNavigationItems(props: MainNavigationItemsProps) {
 
   const subNavItems = useMemo(() => {
     if (!specificSubNavigationData) {
-      return [];
+      return {};
     }
 
-    return specificSubNavigationData.items;
+    return specificSubNavigationData.items.reduce((acc, item) => {
+      let group = UNCATEGORIZED_GROUP;
+
+      if (item.group) {
+        group = item.group;
+      }
+
+      if (!acc[group]) {
+        acc[group] = [];
+      }
+
+      acc[group].push(item);
+
+      return acc;
+    }, {} as Record<string, SubNavigationItem[]>);
   }, [specificSubNavigationData]);
 
   const title = useMemo(() => {
@@ -186,7 +201,7 @@ function MainNavigationItems(props: MainNavigationItemsProps) {
       )}
       {!isBaseNav && (
         <VStack fullWidth>
-          <VStack padding="small" gap="large" fullWidth>
+          <VStack padding="small" fullWidth>
             {!isMobile && (
               <HStack
                 align="start"
@@ -211,15 +226,36 @@ function MainNavigationItems(props: MainNavigationItemsProps) {
               </HStack>
             )}
             <VStack gap="small">
-              {subNavItems.map((item) => (
-                <NavButton
-                  id={item.id}
-                  key={item.href}
-                  href={item.href}
-                  label={item.label}
-                  icon={item.icon}
-                />
-              ))}
+              {Object.entries(subNavItems).map(([group, items]) => {
+                if (group === UNCATEGORIZED_GROUP) {
+                  return items.map((item) => (
+                    <NavButton
+                      id={item.id}
+                      key={item.href}
+                      href={item.href}
+                      label={item.label}
+                    />
+                  ));
+                }
+
+                return (
+                  <VStack key={group} gap="small" paddingBottom="small">
+                    <Frame borderBottom padding="small">
+                      <Typography bold variant="body2">
+                        {group}
+                      </Typography>
+                    </Frame>
+                    {items.map((item) => (
+                      <NavButton
+                        id={item.id}
+                        key={item.href}
+                        href={item.href}
+                        label={item.label}
+                      />
+                    ))}
+                  </VStack>
+                );
+              })}
             </VStack>
           </VStack>
           {isMobile && (
@@ -255,12 +291,6 @@ function SecondaryMenuItems() {
             href="/settings"
             label={t('secondaryNav.settings')}
             icon={<CogIcon />}
-          />
-          <NavButton
-            id="organization"
-            href="/organization"
-            label={t('secondaryNav.organization')}
-            icon={<CompanyIcon />}
           />
           <AdminNav />
         </VStack>

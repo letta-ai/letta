@@ -1,5 +1,4 @@
 import React from 'react';
-import { ClientSideOrganizationLayout } from './_components/ClientSideOrganizationLayout/ClientSideOrganizationLayout';
 import {
   getOrganizationFromOrganizationId,
   getUserOrRedirect,
@@ -46,7 +45,7 @@ async function OrganizationLayout(props: SettingsLayoutProps) {
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
-      <ClientSideOrganizationLayout>{children}</ClientSideOrganizationLayout>
+      {children}
     </HydrationBoundary>
   );
 }
