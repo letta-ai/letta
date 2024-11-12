@@ -71,7 +71,7 @@ describe('letta', () => {
     }).contains('Sources (-)');
 
     // eslint-disable-next-line cypress/no-unnecessary-waiting
-    cy.wait(250);
+    cy.wait(1250);
 
     cy.findByTestId('create-data-source-dialog-trigger', {
       timeout: 10000,
