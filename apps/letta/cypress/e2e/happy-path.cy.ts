@@ -80,7 +80,9 @@ describe('letta', () => {
     cy.findByTestId('chat-simulator-input').type('What is my name', {
       force: true,
     });
-    cy.findByTestId('chat-simulator-send').click();
+    cy.findByTestId('chat-simulator-send').click({
+      force: true,
+    });
 
     cy.findByTestId('messages-list').contains('Shubham', { timeout: 10000 });
     cy.findByTestId('messages-list').contains('BananaMan', { timeout: 10000 });
