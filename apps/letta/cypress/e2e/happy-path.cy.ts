@@ -68,7 +68,7 @@ describe('letta', () => {
     cy.findByTestId('detach-data-source-dialog-confirm-button').click();
     cy.findByTestId('tab:edit-data-sources', {
       timeout: 10000,
-    }).contains('Sources (0)');
+    }).contains('Sources (-)');
 
     cy.findByTestId('create-data-source-dialog-trigger', {
       timeout: 10000,
