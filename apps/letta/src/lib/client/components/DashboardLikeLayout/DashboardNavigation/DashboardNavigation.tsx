@@ -4,6 +4,11 @@ import ReactDOM from 'react-dom';
 import Link from 'next/link';
 import type { SubNavigationItem } from '@letta-web/component-library';
 import {
+  CreditCardIcon,
+  GroupIcon,
+  HiddenOnMobile,
+} from '@letta-web/component-library';
+import {
   Avatar,
   Button,
   CogIcon,
@@ -27,10 +32,14 @@ import {
 import { useCurrentUser } from '$letta/client/hooks';
 import { usePathname } from 'next/navigation';
 import { webApi, webApiQueryKeys } from '$letta/client';
-import { CurrentUserDetailsBlock } from '$letta/client/components';
+import {
+  CurrentUserDetailsBlock,
+  ProjectSelector,
+} from '$letta/client/components';
 import { cn } from '@letta-web/core-style-config';
 import { useTranslations } from 'next-intl';
 import { ThemeSelector } from '$letta/client/components/ThemeSelector/ThemeSelector';
+import { useCurrentProject } from '../../../../../app/(logged-in)/(dashboard-like)/projects/[projectSlug]/hooks';
 
 interface NavButtonProps {
   href: string;
@@ -40,15 +49,17 @@ interface NavButtonProps {
   active?: boolean;
   hideLabel?: boolean;
   icon?: React.ReactNode;
+  disabled?: boolean;
 }
 
 function NavButton(props: NavButtonProps) {
-  const { href, preload, active, hideLabel, label, id, icon } = props;
+  const { href, preload, active, disabled, hideLabel, label, id, icon } = props;
   const pathname = usePathname();
 
   return (
     <Button
       animate
+      disabled={disabled}
       data-testid={`nav-button-${id}`}
       preload={preload}
       active={active || pathname === href}
@@ -79,12 +90,14 @@ function AdminNav() {
   }
 
   return (
-    <NavButton
-      id="admin"
-      href="/admin"
-      label={t('nav.admin')}
-      icon={<BirdIcon />}
-    />
+    <VStack borderBottom gap="small" padding="small">
+      <NavButton
+        id="admin"
+        href="/admin"
+        label={t('nav.admin')}
+        icon={<BirdIcon />}
+      />
+    </VStack>
   );
 }
 
@@ -124,11 +137,35 @@ function MainNavigationItems(props: MainNavigationItemsProps) {
         id: 'data-sources',
         icon: <DatabaseIcon />,
       },
+      {
+        label: t('nav.team'),
+        href: '/settings/organization/members',
+        id: 'team',
+        icon: <GroupIcon />,
+      },
+      {
+        label: t('nav.billing'),
+        href: '/settings/organization/billing',
+        id: 'usage',
+        icon: <CreditCardIcon />,
+      },
+      {
+        label: t('nav.settings'),
+        href: '/settings',
+        id: 'usage',
+        icon: <CogIcon />,
+      },
     ];
   }, [t]);
 
   const isBaseNav = useMemo(() => {
-    return baseNavItems.some((item) => item.href === pathname);
+    const isBase = baseNavItems.some((item) => item.href === pathname);
+
+    if (pathname.includes('settings')) {
+      return false;
+    }
+
+    return isBase;
   }, [baseNavItems, pathname]);
 
   const specificSubNavigationData = useMemo(() => {
@@ -277,7 +314,12 @@ function MainNavigationItems(props: MainNavigationItemsProps) {
   );
 }
 
-function SecondaryMenuItems() {
+interface SecondaryMenuItemsProps {
+  isMobile?: boolean;
+}
+
+function SecondaryMenuItems(props: SecondaryMenuItemsProps) {
+  const { isMobile } = props;
   const t = useTranslations(
     'components/DashboardLikeLayout/DashboardNavigation'
   );
@@ -285,15 +327,18 @@ function SecondaryMenuItems() {
   return (
     <VStack gap="medium">
       <VStack gap={false}>
-        <VStack borderBottom gap="small" padding="small">
-          <NavButton
-            id="settings"
-            href="/settings"
-            label={t('secondaryNav.settings')}
-            icon={<CogIcon />}
-          />
-          <AdminNav />
-        </VStack>
+        {!isMobile && (
+          <VStack borderBottom gap="small" padding="small">
+            <NavButton
+              id="settings"
+              href="/settings"
+              label={t('secondaryNav.settings')}
+              icon={<CogIcon />}
+            />
+          </VStack>
+        )}
+        <AdminNav />
+
         <VStack borderBottom gap="small" padding="small">
           <NavButton
             id="select-organization"
@@ -430,9 +475,13 @@ function NavigationOverlay(props: NavigationOverlayProps) {
             >
               <VStack gap="small">
                 <div className="h-header" />
-                {variant !== 'minimal' && <MainNavigationItems isMobile />}
+                {variant !== 'minimal' && (
+                  <VStack paddingLeft="small">
+                    <MainNavigationItems isMobile />
+                  </VStack>
+                )}
                 <HStack fullWidth borderBottom />
-                <SecondaryMenuItems />
+                <SecondaryMenuItems isMobile />
               </VStack>
             </VStack>
             <div
@@ -450,33 +499,13 @@ function NavigationOverlay(props: NavigationOverlayProps) {
   );
 }
 
-function SubRoute() {
-  const pathname = usePathname();
-
-  const subRouteHref = pathname.split('/')[1];
-  const subRouteName = pathname.split('/')[1].replace(/\/|-/g, ' ');
-
-  if (!subRouteName) {
-    return null;
-  }
-
-  return (
-    // eslint-disable-next-line react/forbid-component-props
-    <HStack gap="medium" align="center" className="visibleSidebar:hidden flex">
-      /{/* eslint-disable-next-line react/forbid-component-props */}
-      <Link className="hover:underline capitalize" href={`/${subRouteHref}`}>
-        {subRouteName}
-      </Link>
-    </HStack>
-  );
-}
-
 interface DashboardHeaderProps {
   variant?: 'default' | 'minimal';
 }
 
 export function DashboardHeader(props: DashboardHeaderProps) {
   const { variant = 'default' } = props;
+  const currentProject = useCurrentProject();
 
   const t = useTranslations(
     'components/DashboardLikeLayout/DashboardNavigation'
@@ -516,18 +545,26 @@ export function DashboardHeader(props: DashboardHeaderProps) {
                       <Logo withText size="medium" />
                     </Link>
                   </Frame>
+
+                  {currentProject.id && (
+                    <>
+                      <HStack paddingLeft="small">/</HStack>
+                      <ProjectSelector />
+                    </>
+                  )}
                 </>
-                <SubRoute />
               </HStack>
             </HStack>
           </HStack>
           <HStack align="center">
-            <Button
-              color="tertiary-transparent"
-              target="_blank"
-              href="https://docs.letta.com"
-              label={t('header.Documentation')}
-            />
+            <HiddenOnMobile>
+              <Button
+                color="tertiary-transparent"
+                target="_blank"
+                href="https://docs.letta.com"
+                label={t('header.Documentation')}
+              />
+            </HiddenOnMobile>
             <ProfilePopover />
           </HStack>
         </HStack>

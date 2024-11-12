@@ -7,8 +7,11 @@
     "nav": {
       "projects": "Projects",
       "apiKeys": "API Keys",
+      "team": "Members",
+      "billing": "Usage and Billing",
       "dataSources": "Data Sources",
-      "admin": "Admin"
+      "admin": "Admin",
+      "settings": "Settings"
     },
     "secondaryNav": {
       "settings": "Settings",
@@ -26,7 +29,8 @@
     "organization": {
       "general": "General",
       "members": "Members",
-      "root": "Organization"
+      "root": "Organization",
+      "billing": "Usage and Billing"
     }
   },
   "data-sources/page": {
@@ -84,6 +88,10 @@
     },
     "createNewOrganization": "Create a new organization",
     "missingOrg": "If you do not see your organization, you may have not been invited yet. Please contact your organization's administrator."
+  },
+  "organization/billing": {
+    "title": "Usage and Billing",
+    "description": "You are currently using a managed enterprise plan. If you have any questions or need help, please contact support."
   },
   "organization/settings": {
     "title": "Organization Settings",
@@ -191,6 +199,15 @@
       "summaryMemory": "Summary Memory",
       "recallMemory": "Recall Memory",
       "archivalMemory": "Archival Memory"
+    }
+  },
+  "components/ProjectSelector": {
+    "selectAProject": "Select a Project",
+    "seeMore": "See all projects",
+    "projects": "Projects",
+    "search": {
+      "placeholder": "Search projects",
+      "label": "Search projects"
     }
   },
   "projects/page": {

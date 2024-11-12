@@ -7,7 +7,6 @@ import {
   OptionTypeSchemaSingle,
 } from '@letta-web/component-library';
 import {
-  ADEHeader,
   ADEPage,
   Button,
   HStack,
@@ -31,6 +30,7 @@ import { AgentRecipeVariant } from '$letta/types';
 import { useTranslations } from 'next-intl';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { ADEHeader } from '$letta/client/components';
 
 function useDefaultAgentTemplate() {
   const t = useTranslations('projects/(projectSlug)/templates/new/page');

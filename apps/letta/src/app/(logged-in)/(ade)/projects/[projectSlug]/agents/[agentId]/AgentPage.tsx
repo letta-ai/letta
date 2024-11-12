@@ -22,7 +22,6 @@ import {
 import { toast } from '@letta-web/component-library';
 import { LayoutIcon } from '@letta-web/component-library';
 import {
-  ADEHeader,
   ADEPage,
   Alert,
   ArrowUpIcon,
@@ -46,7 +45,7 @@ import { useDebouncedValue } from '@mantine/hooks';
 import { webApi, webApiQueryKeys, webOriginSDKApi } from '$letta/client';
 import { useRouter } from 'next/navigation';
 import { useCurrentUser } from '$letta/client/hooks';
-import { CurrentUserDetailsBlock } from '$letta/client/components';
+import { ADEHeader, CurrentUserDetailsBlock } from '$letta/client/components';
 import './AgentPage.scss';
 import { useCurrentAgentMetaData } from './hooks/useCurrentAgentMetaData/useCurrentAgentMetaData';
 import { useCurrentAgent } from './hooks';
