@@ -25,6 +25,10 @@ import {
   agentTemplatesContracts,
 } from '$letta/web-api/agent-templates/agentTemplatesContracts';
 import { flushLayoutsContract } from '$letta/web-api/admin/flush-layouts/flushLayoutsContracts';
+import {
+  developmentServerQueryClientKeys,
+  developmentServersContracts,
+} from '$letta/web-api/development-servers/developmentServersContracts';
 
 export const contracts = {
   user: userContract,
@@ -34,6 +38,7 @@ export const contracts = {
   adePreferences: adePreferencesContracts,
   featureFlags: featureFlagsContracts,
   agentTemplates: agentTemplatesContracts,
+  developmentServers: developmentServersContracts,
   admin: {
     flushLayouts: flushLayoutsContract,
     whitelistedEmails: adminWhitelistedEmailsContract,
@@ -48,6 +53,7 @@ export const queryClientKeys = {
   featureFlags: featureFlagsQueryClientKeys,
   agentTemplates: agentTemplatesQueryClientKeys,
   adePreferences: adePreferencesQueryClientKeys,
+  developmentServers: developmentServerQueryClientKeys,
   admin: {
     whitelistedEmails: adminWhitelistedEmailsQueryKeys,
   },

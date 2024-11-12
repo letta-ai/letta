@@ -6,7 +6,8 @@ import * as adminWhitelistedEmailsRouter from './admin/whitelisted-emails/whitel
 import * as featureFlagsRouter from './feature-flags/featureFlagsRouter';
 import { adePreferencesRouter } from './ade-preferences/adePreferencesRouter';
 import { agentTemplateRoutes } from './agent-templates/agentTemplateRoutes';
-import { flushLayoutsRouter } from '$letta/web-api/admin/flush-layouts/flushLayoutsRouter';
+import { flushLayoutsRouter } from './admin/flush-layouts/flushLayoutsRouter';
+import { developmentServersRouter } from './development-servers/developmentServersRouter';
 
 export const router = {
   user: userRouter,
@@ -16,6 +17,7 @@ export const router = {
   organizations: organizationsRouter,
   agentTemplates: agentTemplateRoutes,
   adePreferences: adePreferencesRouter,
+  developmentServers: developmentServersRouter,
   admin: {
     flushLayouts: flushLayoutsRouter,
     whitelistedEmails: adminWhitelistedEmailsRouter,

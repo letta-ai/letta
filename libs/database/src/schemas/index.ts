@@ -50,6 +50,7 @@ export const orgRelationsTable = relations(organizations, ({ many }) => ({
   organizationUsers: many(organizationUsers),
   organizationPreferences: many(organizationPreferences),
   organizationInvitedUsers: many(organizationInvitedUsers),
+  organizationDevelopmentServers: many(developmentServers),
 }));
 
 export const organizationPreferences = pgTable('organization_preferences', {
@@ -508,6 +509,32 @@ export const organizationInvitedUsersRelations = relations(
   ({ one }) => ({
     organization: one(organizations, {
       fields: [organizationInvitedUsers.organizationId],
+      references: [organizations.id],
+    }),
+  })
+);
+
+export const developmentServers = pgTable('development_servers', {
+  id: text('id')
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  organizationId: text('organization_id')
+    .notNull()
+    .references(() => organizations.id, { onDelete: 'cascade' })
+    .notNull(),
+  name: text('name').notNull(),
+  url: text('url').notNull(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at')
+    .notNull()
+    .$onUpdate(() => new Date()),
+});
+
+export const developmentServerRelations = relations(
+  developmentServers,
+  ({ one }) => ({
+    organization: one(organizations, {
+      fields: [developmentServers.organizationId],
       references: [organizations.id],
     }),
   })
