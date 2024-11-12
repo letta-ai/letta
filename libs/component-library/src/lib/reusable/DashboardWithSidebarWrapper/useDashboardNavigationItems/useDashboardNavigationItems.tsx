@@ -10,6 +10,7 @@ export interface SubNavigationItem {
   href: string;
   id: string;
   icon?: React.ReactNode;
+  group?: string;
 }
 
 interface SubnavigationData {

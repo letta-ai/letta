@@ -20,6 +20,19 @@ function SettingsLayout(props: SettingsLayoutProps) {
           id: 'profile',
           label: t('profile'),
           href: '/settings/profile',
+          group: t('personal'),
+        },
+        {
+          id: 'organization',
+          label: t('organization.general'),
+          href: '/settings/organization/general',
+          group: t('organization.root'),
+        },
+        {
+          id: 'members',
+          label: t('organization.members'),
+          href: '/settings/organization/members',
+          group: t('organization.root'),
         },
       ]}
     >
