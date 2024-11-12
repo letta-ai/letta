@@ -1,11 +1,14 @@
 'use client';
 import * as React from 'react';
-import { HStack } from '../../framing/HStack/HStack';
-import { Tooltip } from '../../core/Tooltip/Tooltip';
 import Link from 'next/link';
-import { Logo } from '../../marketing/Logo/Logo';
-import { Typography } from '../../core/Typography/Typography';
 import { useTranslations } from 'next-intl';
+import { ProjectSelector } from '$letta/client/components';
+import {
+  HStack,
+  Logo,
+  Tooltip,
+  Typography,
+} from '@letta-web/component-library';
 
 interface ADEHeaderProps {
   children?: React.ReactNode;
@@ -21,8 +24,7 @@ interface ADEHeaderProps {
 export function ADEHeader(props: ADEHeaderProps) {
   const t = useTranslations('ADE/ADEHeader');
 
-  const { project, agent } = props;
-  const { url: projectUrl, name: projectName } = project;
+  const { agent } = props;
   const { name: agentName } = agent;
 
   return (
@@ -30,15 +32,17 @@ export function ADEHeader(props: ADEHeaderProps) {
       justify="spaceBetween"
       align="center"
       border
+      /* eslint-disable-next-line react/forbid-component-props */
       className="h-[40px] min-h-[40px] relative"
       fullWidth
       color="background"
     >
-      <HStack align="center" fullHeight>
+      <HStack align="center" fullHeight gap={false}>
         <HStack
           align="center"
           justify="center"
           color="primary"
+          /* eslint-disable-next-line react/forbid-component-props */
           className="w-[40px]"
           fullHeight
         >
@@ -48,13 +52,11 @@ export function ADEHeader(props: ADEHeaderProps) {
             </Link>
           </Tooltip>
         </HStack>
-        /
-        <Tooltip content={t('returnToProjectHome')}>
-          <Link href={projectUrl}>
-            <Typography>{projectName}</Typography>
-          </Link>
-        </Tooltip>
-        /<Typography>{agentName}</Typography>
+        <ProjectSelector />
+        <Typography variant="body2">/</Typography>
+        <HStack paddingLeft="small">
+          <Typography variant="body2">{agentName}</Typography>
+        </HStack>
       </HStack>
       {props.children}
     </HStack>

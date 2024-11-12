@@ -31,7 +31,7 @@ export const ButtonPrimitive = forwardRef<
   PossibleRootType,
   ButtonPrimitiveProps
 >(function ButtonPrimitive({ children, preload = true, ...props }, ref) {
-  if (isAnchorElement(props) && isAnchorRef(ref)) {
+  if (isAnchorElement(props) && isAnchorRef(ref) && !props.disabled) {
     if (!preload) {
       return (
         // @ts-expect-error this is a valid anchor element
