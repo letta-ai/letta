@@ -490,8 +490,7 @@ function ToolsList(props: ToolsProps) {
           }}
         />
       )}
-      {isLoading && <LettaLoaderPanel />}
-      <FileTree root={toolsList} />
+      {isLoading ? <LettaLoaderPanel /> : <FileTree root={toolsList} />}
     </PanelMainContent>
   );
 }
