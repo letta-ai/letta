@@ -70,6 +70,9 @@ describe('letta', () => {
       timeout: 10000,
     }).contains('Sources (-)');
 
+    // eslint-disable-next-line cypress/no-unnecessary-waiting
+    cy.wait(250);
+
     cy.findByTestId('create-data-source-dialog-trigger', {
       timeout: 10000,
     }).click({ waitForAnimations: true });
