@@ -24,12 +24,17 @@ export async function getProjects(
 
   const organizationId = await getUserActiveOrganizationIdOrThrow();
 
+  const where = [
+    isNull(projects.deletedAt),
+    eq(projects.organizationId, organizationId),
+  ];
+
+  if (search) {
+    where.push(like(projects.name, `%${search}%`));
+  }
+
   const projectsList = await db.query.projects.findMany({
-    where: and(
-      isNull(projects.deletedAt),
-      eq(projects.organizationId, organizationId),
-      like(projects.name, `%${search}%`)
-    ),
+    where: and(...where),
     columns: {
       name: true,
       id: true,

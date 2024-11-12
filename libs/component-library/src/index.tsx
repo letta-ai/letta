@@ -55,8 +55,6 @@ export * from './lib/reusable/DashboardPageLayout/DashboardPageLayout';
 
 export * from './lib/reusable/LoadingEmptyStatusComponent/LoadingEmptyStatusComponent';
 
-export * from './lib/ade/ADEHeader/ADEHeader';
-
 export * from './lib/ade/ADEPage/ADEPage';
 
 export * from './lib/reusable/DashboardPageSection/DashboardPageSection';

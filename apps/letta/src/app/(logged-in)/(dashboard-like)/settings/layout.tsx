@@ -34,6 +34,12 @@ function SettingsLayout(props: SettingsLayoutProps) {
           href: '/settings/organization/members',
           group: t('organization.root'),
         },
+        {
+          id: 'billing',
+          label: t('organization.billing'),
+          href: '/settings/organization/billing',
+          group: t('organization.root'),
+        },
       ]}
     >
       {children}
