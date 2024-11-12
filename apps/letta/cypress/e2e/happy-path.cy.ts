@@ -66,9 +66,10 @@ describe('letta', () => {
     cy.findByTestId('filetree-actions:1-0').click();
     cy.findByTestId('filetree-action-detach').click();
     cy.findByTestId('detach-data-source-dialog-confirm-button').click();
-    cy.get('[data-testid="detach-data-source-dialog-confirm-button"]', {
+    cy.findByTestId('tab:edit-data-sources', {
       timeout: 10000,
-    }).should('not.be.visible');
+    }).contains('Sources (0)');
+
     cy.findByTestId('create-data-source-dialog-trigger', {
       timeout: 10000,
     }).click();
