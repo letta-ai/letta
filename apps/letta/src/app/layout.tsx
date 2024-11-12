@@ -6,11 +6,17 @@ import { LoadMixpanelAnalytics } from '@letta-web/analytics/client';
 import { getLocale, getMessages } from 'next-intl/server';
 import { NextIntlClientProvider } from 'next-intl';
 import { Body } from './_components/ThemeProvider/Body';
+import { Manrope } from 'next/font/google';
 
 export const metadata = {
   title: 'Letta',
   description: 'Letta lets you build Agents',
 };
+
+const manrope = Manrope({
+  display: 'swap',
+  subsets: ['latin'],
+});
 
 export default async function RootLayout({
   children,
@@ -22,7 +28,7 @@ export default async function RootLayout({
   const messages = await getMessages();
 
   return (
-    <html lang={locale}>
+    <html lang={locale} className={manrope.className}>
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <link
