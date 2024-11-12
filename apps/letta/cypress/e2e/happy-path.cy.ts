@@ -77,7 +77,9 @@ describe('letta', () => {
 
     cy.findAllByTestId('attach-data-source-button').first().click();
 
-    cy.findByTestId('chat-simulator-input').type('What is my name');
+    cy.findByTestId('chat-simulator-input').type('What is my name', {
+      force: true,
+    });
     cy.findByTestId('chat-simulator-send').click();
 
     cy.findByTestId('messages-list').contains('Shubham', { timeout: 10000 });
