@@ -24,6 +24,7 @@ import {
 } from '@letta-web/component-library';
 import { useTranslations } from 'next-intl';
 import type { AgentState } from '@letta-web/letta-agents-api';
+import { useResetAllLettaAgentsQueryKeys } from '@letta-web/letta-agents-api';
 import { useAgentsServiceListAgents } from '@letta-web/letta-agents-api';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import type { ColumnDef } from '@tanstack/react-table';
@@ -139,6 +140,8 @@ interface UpdateDevelopmentServerDetailsDialogProps {
 function UpdateDevelopmentServerDetailsDialog(
   props: UpdateDevelopmentServerDetailsDialogProps
 ) {
+  const { resetAllLettaAgentsQueryKeys } = useResetAllLettaAgentsQueryKeys();
+
   const t = useTranslations('development-servers/page');
   const [isOpen, setIsOpen] = useState(false);
   const { trigger, ...rest } = props;
@@ -153,7 +156,7 @@ function UpdateDevelopmentServerDetailsDialog(
     },
   });
 
-  const { mutate, isPending, isSuccess, isError } =
+  const { mutate, isPending, isSuccess, reset, isError } =
     webApi.developmentServers.updateDevelopmentServer.useMutation({
       onSuccess: (_res, values) => {
         try {
@@ -231,8 +234,12 @@ function UpdateDevelopmentServerDetailsDialog(
             }
           );
 
+          setTimeout(() => {
+            resetAllLettaAgentsQueryKeys();
+          }, 1);
+
+          reset();
           setIsOpen(false);
-          form.reset();
         } catch (e) {
           console.error(e);
         }
