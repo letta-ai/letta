@@ -1,6 +1,8 @@
 'use server';
 import type { ProviderUserPayload } from '$letta/types';
+import { AgentRecipeVariant } from '$letta/types';
 import {
+  adePreferences,
   db,
   emailWhitelist,
   lettaAPIKeys,
@@ -25,6 +27,8 @@ import {
 import { AnalyticsEvent } from '@letta-web/analytics';
 import { jwtDecode } from 'jwt-decode';
 import { AdminService, ToolsService } from '@letta-web/letta-agents-api';
+import { createAgent, versionAgentTemplate } from '$letta/sdk';
+import { generateDefaultADELayout } from '$letta/utils';
 import { cookies } from 'next/headers';
 
 function isLettaEmail(email: string) {
@@ -101,8 +105,110 @@ export async function createOrganization(args: CreateOrganizationArgs) {
   };
 }
 
+interface CreateFirstAgentArgs {
+  organizationId: string;
+  lettaAgentsUserId: string;
+  userId: string;
+}
+
+async function createFirstAgent(args: CreateFirstAgentArgs) {
+  const { organizationId, lettaAgentsUserId, userId } = args;
+
+  const catchAllProject = await db.query.organizationPreferences.findFirst({
+    where: eq(organizationPreferences.organizationId, organizationId),
+  });
+
+  if (!catchAllProject?.catchAllAgentsProjectId) {
+    throw new Error('Organization preferences not found');
+  }
+
+  const createdProject = await db.query.projects.findFirst({
+    where: eq(projects.id, catchAllProject.catchAllAgentsProjectId),
+  });
+
+  if (!createdProject) {
+    throw new Error('Project not found');
+  }
+
+  const firstProjectSlug = createdProject.slug;
+
+  const createdAgentTemplate = await createAgent(
+    {
+      body: {
+        template: true,
+        project_id: createdProject.id,
+        from_template: AgentRecipeVariant.CUSTOMER_SUPPORT,
+      },
+    },
+    {
+      request: {
+        lettaAgentsUserId: lettaAgentsUserId,
+        userId: userId,
+        organizationId,
+      },
+    }
+  );
+
+  if (createdAgentTemplate.status !== 201 || !createdAgentTemplate.body.id) {
+    throw new Error(JSON.stringify(createdAgentTemplate.body, null, 2));
+  }
+
+  const [versionedAgentTemplate] = await Promise.all([
+    await versionAgentTemplate(
+      {
+        params: {
+          agent_id: createdAgentTemplate.body.id,
+        },
+        body: {},
+        query: {},
+      },
+      {
+        request: {
+          userId,
+          organizationId,
+          lettaAgentsUserId,
+        },
+      }
+    ),
+    db.insert(adePreferences).values({
+      userId: userId,
+      displayConfig: generateDefaultADELayout().displayConfig,
+      agentId: createdAgentTemplate.body.id,
+    }),
+  ]);
+
+  if (versionedAgentTemplate.status !== 201) {
+    throw new Error('Failed to create source agent');
+  }
+
+  await createAgent(
+    {
+      body: {
+        from_template: versionedAgentTemplate.body.version,
+        name: `${createdAgentTemplate.body.name}-deployed-1`,
+      },
+    },
+    {
+      request: {
+        organizationId,
+        userId,
+        lettaAgentsUserId,
+      },
+    }
+  );
+
+  return {
+    firstProjectSlug,
+    firstCreatedAgentName: createdAgentTemplate.body.name,
+  };
+}
+
 interface CreateUserAndOrganizationResponse {
   user: UserSession;
+  newProjectPayload?: {
+    firstProjectSlug: string;
+    firstCreatedAgentName: string;
+  };
 }
 
 async function createUserAndOrganization(
@@ -210,6 +316,20 @@ async function createUserAndOrganization(
     }),
   ]);
 
+  let firstCreatedAgentName = '';
+  let firstProjectSlug = '';
+
+  if (isNewOrganization) {
+    const res = await createFirstAgent({
+      organizationId,
+      lettaAgentsUserId: lettaAgentsUser.id,
+      userId: createdUser.userId,
+    });
+
+    firstProjectSlug = res.firstProjectSlug;
+    firstCreatedAgentName = res.firstCreatedAgentName;
+  }
+
   return {
     user: {
       email: userData.email,
@@ -219,6 +339,12 @@ async function createUserAndOrganization(
       id: createdUser.userId,
       activeOrganizationId: organizationId,
     },
+    newProjectPayload: firstCreatedAgentName
+      ? {
+          firstCreatedAgentName,
+          firstProjectSlug,
+        }
+      : undefined,
   };
 }
 
@@ -261,15 +387,20 @@ async function isUserInWhitelist(email: string) {
   return a || b;
 }
 
+interface NewUserDetails {
+  firstProjectSlug: string;
+  firstCreatedAgentName: string;
+}
+
 interface FindOrCreateUserAndOrganizationFromProviderLoginResponse {
   user: UserSession;
-  isNewUser: boolean;
+  newUserDetails: NewUserDetails | undefined;
 }
 
 async function findOrCreateUserAndOrganizationFromProviderLogin(
   userData: ProviderUserPayload
 ): Promise<FindOrCreateUserAndOrganizationFromProviderLoginResponse> {
-  let isNewUser = false;
+  let newUserDetails: NewUserDetails | undefined;
   let user = await findExistingUser(userData);
 
   if (!user) {
@@ -278,7 +409,14 @@ async function findOrCreateUserAndOrganizationFromProviderLogin(
     }
 
     const res = await createUserAndOrganization(userData);
-    isNewUser = true;
+
+    if (res.newProjectPayload) {
+      newUserDetails = {
+        firstProjectSlug: res.newProjectPayload.firstProjectSlug,
+        firstCreatedAgentName: res.newProjectPayload.firstCreatedAgentName,
+      };
+    }
+
     user = res.user;
   }
 
@@ -288,7 +426,7 @@ async function findOrCreateUserAndOrganizationFromProviderLogin(
     email: user.email,
   });
 
-  if (isNewUser) {
+  if (newUserDetails) {
     trackServerSideEvent(AnalyticsEvent.USER_CREATED, {
       userId: user.id,
     });
@@ -307,21 +445,21 @@ async function findOrCreateUserAndOrganizationFromProviderLogin(
       imageUrl: user.imageUrl,
       name: user.name,
     },
-    isNewUser,
+    newUserDetails,
   };
 }
 
 const SESSION_EXPIRY_MS = 31536000000; // one year
 
 interface SignInUserFromProviderLoginResponse {
-  isNewUser?: boolean;
+  newUserDetails: NewUserDetails | undefined;
   user: UserSession;
 }
 
 export async function signInUserFromProviderLogin(
   userData: ProviderUserPayload
 ): Promise<SignInUserFromProviderLoginResponse> {
-  const { user, isNewUser } =
+  const { user, newUserDetails } =
     await findOrCreateUserAndOrganizationFromProviderLogin(userData);
 
   const sessionId = crypto.randomUUID();
@@ -340,7 +478,7 @@ export async function signInUserFromProviderLogin(
   });
 
   return {
-    isNewUser,
+    newUserDetails,
     user,
   };
 }
@@ -580,19 +718,19 @@ export async function extractGoogleIdTokenData(
 }
 
 interface GenerateRedirectSignatureForLoggedInUserOptions {
-  isNewUser?: boolean | undefined;
+  newUserDetails?: NewUserDetails | undefined;
 }
 
 export async function generateRedirectSignatureForLoggedInUser(
   options: GenerateRedirectSignatureForLoggedInUserOptions
 ) {
-  const { isNewUser } = options;
+  const { newUserDetails } = options;
 
-  if (isNewUser) {
+  if (newUserDetails) {
     return new Response('Successfully signed in', {
       status: 302,
       headers: {
-        location: `/projects`,
+        location: `/projects/${newUserDetails.firstProjectSlug}/templates/${newUserDetails.firstCreatedAgentName}`,
       },
     });
   }
