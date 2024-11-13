@@ -149,6 +149,54 @@ export function prepareAgentForUser(
   };
 }
 
+interface GetCatchAllProjectId {
+  organizationId: string;
+}
+
+async function getCatchAllProjectId(args: GetCatchAllProjectId) {
+  const { organizationId } = args;
+
+  const orgPrefResponse = await db.query.organizationPreferences.findFirst({
+    where: eq(organizationPreferences.organizationId, organizationId),
+    columns: {
+      catchAllAgentsProjectId: true,
+    },
+  });
+
+  if (!orgPrefResponse) {
+    Sentry.captureMessage(
+      `Organization preferences not found for organization ${organizationId}`
+    );
+
+    throw new Error('Organization preferences not found');
+  }
+
+  let projectId = orgPrefResponse.catchAllAgentsProjectId || '';
+
+  const randomThreeDigitNumber = Math.floor(100 + Math.random() * 900);
+
+  if (!projectId) {
+    // create a catch-all project
+    const catchAllRes = await createProject({
+      body: {
+        name: `Catch-all agents project ${randomThreeDigitNumber}`,
+      },
+    });
+
+    if (catchAllRes.status !== 201) {
+      Sentry.captureMessage(
+        `Failed to make catch all project for - ${organizationId}`
+      );
+
+      throw new Error('Failed to create catch all project');
+    }
+
+    projectId = catchAllRes.body.id;
+  }
+
+  return projectId;
+}
+
 export async function createAgent(
   req: CreateAgentRequest,
   context: SDKContext
@@ -166,20 +214,14 @@ export async function createAgent(
   let name = preName;
 
   if (name) {
-    if (!project_id) {
-      return {
-        status: 400,
-        body: {
-          message: 'project_id is required when providing a name',
-        },
-      };
-    }
+    const projectId =
+      project_id || (await getCatchAllProjectId({ organizationId }));
 
     if (template) {
       const exists = await db.query.agentTemplates.findFirst({
         where: and(
           eq(agentTemplates.organizationId, organizationId),
-          eq(agentTemplates.projectId, project_id),
+          eq(agentTemplates.projectId, projectId),
           eq(agentTemplates.name, name),
           isNull(agentTemplates.deletedAt)
         ),
@@ -197,7 +239,7 @@ export async function createAgent(
       const exists = await db.query.deployedAgents.findFirst({
         where: and(
           eq(deployedAgents.organizationId, organizationId),
-          eq(deployedAgents.projectId, project_id),
+          eq(deployedAgents.projectId, projectId),
           eq(deployedAgents.key, name),
           isNull(agentTemplates.deletedAt)
         ),
@@ -434,57 +476,8 @@ export async function createAgent(
     };
   }
 
-  let projectId = project_id;
-
-  if (!projectId) {
-    const orgPrefResponse = await db.query.organizationPreferences.findFirst({
-      where: eq(organizationPreferences.organizationId, organizationId),
-      columns: {
-        catchAllAgentsProjectId: true,
-      },
-    });
-
-    if (!orgPrefResponse) {
-      Sentry.captureMessage(
-        `Organization preferences not found for organization ${organizationId}`
-      );
-
-      return {
-        status: 500,
-        body: {
-          message: 'Failed to create agent',
-        },
-      };
-    }
-
-    projectId = orgPrefResponse.catchAllAgentsProjectId || '';
-
-    const randomThreeDigitNumber = Math.floor(100 + Math.random() * 900);
-
-    if (!projectId) {
-      // create a catch-all project
-      const catchAllRes = await createProject({
-        body: {
-          name: `Catch-all agents project ${randomThreeDigitNumber}`,
-        },
-      });
-
-      if (catchAllRes.status !== 201) {
-        Sentry.captureMessage(
-          `Failed to make catch all project for - ${organizationId}`
-        );
-
-        return {
-          status: 500,
-          body: {
-            message: 'Failed to create agent',
-          },
-        };
-      }
-
-      projectId = catchAllRes.body.id;
-    }
-  }
+  const projectId =
+    project_id || (await getCatchAllProjectId({ organizationId }));
 
   if (template) {
     await db.insert(agentTemplates).values({

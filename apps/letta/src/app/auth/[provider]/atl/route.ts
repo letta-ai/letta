@@ -14,9 +14,9 @@ export async function GET(req: NextRequest) {
 
   const userPayload = await extractGoogleIdTokenData(idToken);
 
-  const { newUserDetails } = await signInUserFromProviderLogin(userPayload);
+  const { isNewUser } = await signInUserFromProviderLogin(userPayload);
 
   return generateRedirectSignatureForLoggedInUser({
-    newUserDetails,
+    isNewUser,
   });
 }

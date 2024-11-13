@@ -62,10 +62,10 @@ export async function GET(
       code
     );
 
-    const { newUserDetails } = await signInUserFromProviderLogin(userPayload);
+    const { isNewUser } = await signInUserFromProviderLogin(userPayload);
 
     return generateRedirectSignatureForLoggedInUser({
-      newUserDetails,
+      isNewUser,
     });
   } catch (e) {
     console.error(e);

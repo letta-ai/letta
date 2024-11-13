@@ -1,8 +1,6 @@
 'use server';
 import type { ProviderUserPayload } from '$letta/types';
-import { AgentRecipeVariant } from '$letta/types';
 import {
-  adePreferences,
   db,
   emailWhitelist,
   lettaAPIKeys,
@@ -27,9 +25,6 @@ import {
 import { AnalyticsEvent } from '@letta-web/analytics';
 import { jwtDecode } from 'jwt-decode';
 import { AdminService, ToolsService } from '@letta-web/letta-agents-api';
-import { createAgent, versionAgentTemplate } from '$letta/sdk';
-import { generateSlug } from '$letta/server';
-import { generateDefaultADELayout } from '$letta/utils';
 import { cookies } from 'next/headers';
 
 function isLettaEmail(email: string) {
@@ -84,8 +79,20 @@ export async function createOrganization(args: CreateOrganizationArgs) {
     })
     .returning({ organizationId: organizations.id });
 
+  const [createdProject] = await await db
+    .insert(projects)
+    .values({
+      slug: 'default-project',
+      name: 'Default Project',
+      organizationId: createdOrg.organizationId,
+    })
+    .returning({
+      id: projects.id,
+    });
+
   await db.insert(organizationPreferences).values({
     organizationId: createdOrg.organizationId,
+    catchAllAgentsProjectId: createdProject.id,
   });
 
   return {
@@ -96,8 +103,6 @@ export async function createOrganization(args: CreateOrganizationArgs) {
 
 interface CreateUserAndOrganizationResponse {
   user: UserSession;
-  firstProjectSlug: string;
-  firstCreatedAgentName: string;
 }
 
 async function createUserAndOrganization(
@@ -185,20 +190,7 @@ async function createUserAndOrganization(
 
   const userFullName = userData.name;
 
-  const projectName = `${userFullName}'s Project`;
-
-  const [project] = await Promise.all([
-    db
-      .insert(projects)
-      .values({
-        slug: generateSlug(projectName),
-        organizationId,
-        name: projectName,
-      })
-      .returning({
-        projectId: projects.id,
-        slug: projects.slug,
-      }),
+  await Promise.all([
     db.insert(lettaAPIKeys).values({
       name: `${userFullName}'s API Key`,
       organizationId,
@@ -218,73 +210,6 @@ async function createUserAndOrganization(
     }),
   ]);
 
-  const firstProjectSlug = project[0].slug;
-
-  const createdAgentTemplate = await createAgent(
-    {
-      body: {
-        template: true,
-        project_id: project[0].projectId,
-        from_template: AgentRecipeVariant.CUSTOMER_SUPPORT,
-      },
-    },
-    {
-      request: {
-        lettaAgentsUserId: lettaAgentsUser.id,
-        userId: createdUser.userId,
-        organizationId,
-      },
-    }
-  );
-
-  if (createdAgentTemplate.status !== 201 || !createdAgentTemplate.body.id) {
-    throw new Error(JSON.stringify(createdAgentTemplate.body, null, 2));
-  }
-
-  const [versionedAgentTemplate] = await Promise.all([
-    await versionAgentTemplate(
-      {
-        params: {
-          agent_id: createdAgentTemplate.body.id,
-        },
-        body: {},
-        query: {},
-      },
-      {
-        request: {
-          userId: createdUser.userId,
-          organizationId,
-          lettaAgentsUserId: lettaAgentsUser.id,
-        },
-      }
-    ),
-    db.insert(adePreferences).values({
-      userId: createdUser.userId,
-      displayConfig: generateDefaultADELayout().displayConfig,
-      agentId: createdAgentTemplate.body.id,
-    }),
-  ]);
-
-  if (versionedAgentTemplate.status !== 201) {
-    throw new Error('Failed to create source agent');
-  }
-
-  await createAgent(
-    {
-      body: {
-        from_template: versionedAgentTemplate.body.version,
-        name: `${createdAgentTemplate.body.name}-deployed-1`,
-      },
-    },
-    {
-      request: {
-        organizationId,
-        userId: createdUser.userId,
-        lettaAgentsUserId: lettaAgentsUser.id,
-      },
-    }
-  );
-
   return {
     user: {
       email: userData.email,
@@ -294,8 +219,6 @@ async function createUserAndOrganization(
       id: createdUser.userId,
       activeOrganizationId: organizationId,
     },
-    firstCreatedAgentName: createdAgentTemplate.body.name,
-    firstProjectSlug: firstProjectSlug,
   };
 }
 
@@ -338,20 +261,15 @@ async function isUserInWhitelist(email: string) {
   return a || b;
 }
 
-interface NewUserDetails {
-  firstProjectSlug: string;
-  firstCreatedAgentName: string;
-}
-
 interface FindOrCreateUserAndOrganizationFromProviderLoginResponse {
   user: UserSession;
-  newUserDetails: NewUserDetails | undefined;
+  isNewUser: boolean;
 }
 
 async function findOrCreateUserAndOrganizationFromProviderLogin(
   userData: ProviderUserPayload
 ): Promise<FindOrCreateUserAndOrganizationFromProviderLoginResponse> {
-  let newUserDetails: NewUserDetails | undefined;
+  let isNewUser = false;
   let user = await findExistingUser(userData);
 
   if (!user) {
@@ -360,11 +278,7 @@ async function findOrCreateUserAndOrganizationFromProviderLogin(
     }
 
     const res = await createUserAndOrganization(userData);
-
-    newUserDetails = {
-      firstProjectSlug: res.firstProjectSlug,
-      firstCreatedAgentName: res.firstCreatedAgentName,
-    };
+    isNewUser = true;
     user = res.user;
   }
 
@@ -374,7 +288,7 @@ async function findOrCreateUserAndOrganizationFromProviderLogin(
     email: user.email,
   });
 
-  if (newUserDetails) {
+  if (isNewUser) {
     trackServerSideEvent(AnalyticsEvent.USER_CREATED, {
       userId: user.id,
     });
@@ -393,21 +307,21 @@ async function findOrCreateUserAndOrganizationFromProviderLogin(
       imageUrl: user.imageUrl,
       name: user.name,
     },
-    newUserDetails,
+    isNewUser,
   };
 }
 
 const SESSION_EXPIRY_MS = 31536000000; // one year
 
 interface SignInUserFromProviderLoginResponse {
-  newUserDetails: NewUserDetails | undefined;
+  isNewUser?: boolean;
   user: UserSession;
 }
 
 export async function signInUserFromProviderLogin(
   userData: ProviderUserPayload
 ): Promise<SignInUserFromProviderLoginResponse> {
-  const { user, newUserDetails } =
+  const { user, isNewUser } =
     await findOrCreateUserAndOrganizationFromProviderLogin(userData);
 
   const sessionId = crypto.randomUUID();
@@ -426,7 +340,7 @@ export async function signInUserFromProviderLogin(
   });
 
   return {
-    newUserDetails,
+    isNewUser,
     user,
   };
 }
@@ -666,19 +580,19 @@ export async function extractGoogleIdTokenData(
 }
 
 interface GenerateRedirectSignatureForLoggedInUserOptions {
-  newUserDetails?: NewUserDetails | undefined;
+  isNewUser?: boolean | undefined;
 }
 
 export async function generateRedirectSignatureForLoggedInUser(
   options: GenerateRedirectSignatureForLoggedInUserOptions
 ) {
-  const { newUserDetails } = options;
+  const { isNewUser } = options;
 
-  if (newUserDetails) {
+  if (isNewUser) {
     return new Response('Successfully signed in', {
       status: 302,
       headers: {
-        location: `/projects/${newUserDetails.firstProjectSlug}/templates/${newUserDetails.firstCreatedAgentName}`,
+        location: `/projects`,
       },
     });
   }
