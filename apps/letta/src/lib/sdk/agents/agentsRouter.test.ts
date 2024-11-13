@@ -17,27 +17,85 @@ const createProjectSpy = jest.spyOn(router, 'createProject');
 
 describe('agentsRouter', () => {
   describe('createAgent', () => {
-    it('should return an error if user is creating an agent with a name with no project id', async () => {
+    it('should create an agent with no project id with a name', async () => {
+      mockDatabase.query.organizationPreferences.findFirst.mockResolvedValue({
+        catchAllAgentsProjectId: null,
+        id: 'test-org-id',
+        organizationId: 'test-org-id',
+      });
+
+      const createdAgent = {
+        id: 'test-agent-id',
+        name: 'test-agent',
+        created_at: new Date().toISOString(),
+        system: '',
+        ...premadeAgentTemplates[AgentRecipeVariant.CUSTOMER_SUPPORT],
+      };
+
+      createProjectSpy.mockResolvedValue({
+        status: 201,
+        body: {
+          slug: 'new-project-id',
+          name: 'new-project',
+          id: 'new-project-id',
+        },
+      });
+
+      lettaAgentAPIMock.AgentsService.createAgent.mockResolvedValue(
+        createdAgent
+      );
+
+      const { valuesFn, returningFn } = mockDatabaseInsert();
+
+      returningFn.mockReturnValue([
+        {
+          deployedAgentId: 'deployed-test-template-id',
+        },
+      ]);
+
       const response = await createAgent(
         {
           body: {
             name: 'test-agent',
+            system: 'swag',
           },
         },
         {
           request: {
             userId: 'test-id',
             organizationId: 'test-org-id',
-            lettaAgentsUserId: 'test-id',
+            lettaAgentsUserId: 'letta-test-id',
           },
         }
       );
 
       expect(response).toEqual({
-        status: 400,
+        status: 201,
         body: {
-          message: 'project_id is required when providing a name',
+          ...createdAgent,
+          name: expect.any(String),
         },
+      });
+
+      expect(lettaAgentAPIMock.AgentsService.createAgent).toHaveBeenCalledWith(
+        {
+          requestBody: {
+            system: 'swag',
+            name: expect.any(String),
+          },
+        },
+        {
+          user_id: 'letta-test-id',
+        }
+      );
+
+      expect(valuesFn).toHaveBeenCalledWith({
+        deployedAgentTemplateId: '',
+        id: 'test-agent-id',
+        key: expect.any(String),
+        internalAgentCountId: 0,
+        organizationId: 'test-org-id',
+        projectId: 'new-project-id',
       });
     });
 

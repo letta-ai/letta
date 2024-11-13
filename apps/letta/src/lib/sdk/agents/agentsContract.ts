@@ -75,9 +75,7 @@ const FailedToCreateAgentErrorSchema = z.object({
 });
 
 const UniqueIdentifierConflictResponseSchema = z.object({
-  message: z
-    .literal('An agent with the same name already exists')
-    .or(z.literal('project_id is required when providing a name')),
+  message: z.literal('An agent with the same name already exists'),
 });
 
 const createAgentContract = c.mutation({
