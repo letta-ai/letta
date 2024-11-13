@@ -10,6 +10,7 @@ import './ActionCard.scss';
 import { ChevronRightIcon } from '../../icons';
 import { Slot } from '@radix-ui/react-slot';
 import { forwardRef } from 'react';
+import { Skeleton } from '../../core/Skeleton/Skeleton';
 
 const actionCardVariants = cva('', {
   variants: {
@@ -43,6 +44,7 @@ interface ToggleCardProps extends VariantProps<typeof actionCardVariants> {
   icon?: React.ReactNode;
   badge?: React.ReactNode;
   mainAction?: React.ReactNode;
+  isSkeleton?: boolean;
   description?: string;
   children?: React.ReactNode;
   onClick?: () => void;
@@ -65,19 +67,27 @@ export const ActionCard = forwardRef<HTMLElement, ToggleCardProps>(
       children,
       description,
       actions,
+      isSkeleton,
     } = props;
 
     return (
       <Card
         testId={testId}
         ref={ref}
-        onClick={onClick}
+        onClick={!isSkeleton ? onClick : undefined}
         className={cn(
           actionCardVariants({ ...props, clickable: !!onClick }),
           isActive ? 'bg-background-grey' : 'bg-background',
-          'action-card'
+          'action-card',
+          'relative'
         )}
       >
+        {isSkeleton && (
+          <>
+            <Skeleton className="w-full h-full z-[1] top-0 left-0 absolute" />
+            <div className="bg-background w-full h-full z-0 absolute" />
+          </>
+        )}
         <VStack justify="start" fullHeight fullWidth>
           <HStack
             className="action-card-header"

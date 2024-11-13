@@ -221,13 +221,7 @@
       "createButton": "Create Project",
       "triggerButton": "Create Project"
     },
-    "connectToLocalProject": {
-      "triggerButton": "Connect to Local Project",
-      "title": "Connect to a Local Project",
-      "instructions": "To connect to a local project, you need to have the Letta CLI installed. Run the following command in your terminal to connect to a local project:"
-    },
     "projectsList": {
-      "localProjectName": "Local Project",
       "loadingMessage": "Loading projects...",
       "noProjects": "You have no projects, create one below",
       "noSearchResults": "We couldn't find any projects matching your search",
@@ -566,7 +560,10 @@
     }
   },
   "development-servers/dashboard/page": {
+    "description": "Welcome to the remote development dashboard! ",
     "title": "Dashboard",
+    "notConnected": "Please connect to your local server to view quick actions and information.",
+    "start": "You can connect to your local server by running the command below:",
     "gettingStarted": {
       "title": "Getting Started",
       "actions": {
@@ -664,6 +661,8 @@
     "ErrorView": {
       "title": "There has been an issue connecting to this server",
       "description": "We were not able to connect to your development server, please make sure it is running and accessible from the internet.",
+      "localConnection": "Please make sure your local server is running and accessible from the internet.",
+      "runTheServer": "Run the following command to start the server:",
       "connection": {
         "title": "Below is your current connection configuration:",
         "url": {
