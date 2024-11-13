@@ -52,8 +52,6 @@ export function attachVariablesToTemplates(
     }
   });
 
-  console.log('x', JSON.stringify(nextAgent.memory, null, 2));
-
   return {
     tools: nextAgent.tools,
     name: `name-${crypto.randomUUID()}`,

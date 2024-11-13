@@ -417,10 +417,14 @@ function ForkAgentDialog(props: ForkAgentDialogProps) {
   const { id: agentTemplateId } = useCurrentAgent();
   const { push } = useRouter();
   const { id: projectId, slug: projectSlug } = useCurrentProject();
-  const { mutate, isPending } =
+  const { mutate, isPending, isSuccess } =
     webApi.agentTemplates.forkAgentTemplate.useMutation();
 
   const handleForkAgent = useCallback(() => {
+    if (isPending || isSuccess) {
+      return;
+    }
+
     mutate(
       {
         params: {
@@ -430,11 +434,19 @@ function ForkAgentDialog(props: ForkAgentDialogProps) {
       },
       {
         onSuccess: (response) => {
-          push(`/projects/${projectSlug}/agents/${response.body.name}`);
+          push(`/projects/${projectSlug}/templates/${response.body.name}`);
         },
       }
     );
-  }, [agentTemplateId, mutate, projectId, projectSlug, push]);
+  }, [
+    agentTemplateId,
+    isPending,
+    isSuccess,
+    mutate,
+    projectId,
+    projectSlug,
+    push,
+  ]);
 
   return (
     <Dialog
@@ -451,7 +463,7 @@ function ForkAgentDialog(props: ForkAgentDialogProps) {
         agentBaseType: agentBaseType.capitalized,
       })}
       onConfirm={handleForkAgent}
-      isConfirmBusy={isPending}
+      isConfirmBusy={isPending || isSuccess}
     >
       {t('ForkAgentDialog.description', {
         agentBaseType: agentBaseType.base,

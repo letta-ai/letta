@@ -159,12 +159,25 @@ async function updateActiveOrganization(
 
   const { activeOrganizationId } = request.body;
 
+  const organization = await db.query.organizations.findFirst({
+    where: eq(organizations.id, activeOrganizationId),
+  });
+
+  if (!organization) {
+    return {
+      status: 404,
+      body: {
+        message: 'Organization not found',
+      },
+    };
+  }
+
   await Promise.all([
     db.update(users).set({ activeOrganizationId }).where(eq(users.id, user.id)),
     AdminService.updateUser({
       requestBody: {
         id: user.lettaAgentsId,
-        organization_id: activeOrganizationId,
+        organization_id: organization.lettaAgentsId,
       },
     }),
   ]);
