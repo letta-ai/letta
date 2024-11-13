@@ -1,29 +1,22 @@
-'use client';
+import { z } from 'zod';
+import {
+  useAgentsServiceCreateAgent,
+  useLlmsServiceListEmbeddingModels,
+  useLlmsServiceListModels,
+} from '@letta-web/letta-agents-api';
+import { useTranslations } from 'next-intl';
 import {
   Alert,
-  Button,
-  DashboardPageLayout,
-  DashboardPageSection,
-  DataTable,
   Dialog,
   FormField,
   FormProvider,
   Input,
   useForm,
 } from '@letta-web/component-library';
-import { useTranslations } from 'next-intl';
-import type { AgentState } from '@letta-web/letta-agents-api';
-import {
-  useLlmsServiceListEmbeddingModels,
-  useLlmsServiceListModels,
-} from '@letta-web/letta-agents-api';
-import { useAgentsServiceCreateAgent } from '@letta-web/letta-agents-api';
-import { useAgentsServiceListAgents } from '@letta-web/letta-agents-api';
-import { useCallback, useMemo, useState } from 'react';
-import type { ColumnDef } from '@tanstack/react-table';
-import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
+import { useCallback } from 'react';
+import { useCurrentDevelopmentServerConfig } from '../../[developmentServerId]/hooks/useCurrentDevelopmentServerConfig/useCurrentDevelopmentServerConfig';
 
 const agentFormSchema = z.object({
   name: z.string(),
@@ -31,16 +24,24 @@ const agentFormSchema = z.object({
 
 type AgentFormValues = z.infer<typeof agentFormSchema>;
 
-function CreateAgentDialog() {
+interface CreateLocalAgentDialogProps {
+  trigger: React.ReactNode;
+}
+
+export function CreateLocalAgentDialog(props: CreateLocalAgentDialogProps) {
+  const { trigger } = props;
   const {
     mutate: createAgent,
     isPending,
+    isSuccess,
     error,
   } = useAgentsServiceCreateAgent();
   const { data: llmModels } = useLlmsServiceListModels();
   const { data: embeddingModels } = useLlmsServiceListEmbeddingModels();
-
-  const t = useTranslations('local-project/page');
+  const developmentServerConfig = useCurrentDevelopmentServerConfig();
+  const t = useTranslations(
+    'development-servers/shared/CreateLocalAgentDialog'
+  );
 
   const form = useForm<AgentFormValues>({
     resolver: zodResolver(agentFormSchema),
@@ -52,7 +53,11 @@ function CreateAgentDialog() {
   const { push } = useRouter();
   const handleAgent = useCallback(
     (values: AgentFormValues) => {
-      if (isPending) {
+      if (!developmentServerConfig) {
+        return;
+      }
+
+      if (isPending || isSuccess) {
         return;
       }
 
@@ -99,32 +104,42 @@ function CreateAgentDialog() {
         },
         {
           onSuccess: (response) => {
-            push(`/local-project/agents/${response.id}`);
+            push(
+              `/development-servers/${developmentServerConfig.id}/agents/${response.id}`
+            );
           },
         }
       );
     },
-    [createAgent, embeddingModels, isPending, llmModels, push]
+    [
+      createAgent,
+      developmentServerConfig,
+      embeddingModels,
+      isPending,
+      isSuccess,
+      llmModels,
+      push,
+    ]
   );
 
   return (
     <FormProvider {...form}>
       <Dialog
         onSubmit={form.handleSubmit(handleAgent)}
-        isConfirmBusy={isPending}
-        errorMessage={error ? t('CreateAgentDialog.error') : ''}
+        isConfirmBusy={isPending || isSuccess}
+        errorMessage={error ? t('error') : ''}
         errorAdditionalMessage={error ? JSON.stringify(error) : ''}
-        trigger={<Button label={t('createAgent')} />}
-        title={t('CreateAgentDialog.title')}
+        trigger={trigger}
+        title={t('title')}
       >
-        <Alert title={t('CreateAgentDialog.info')} variant="info" />
+        <Alert title={t('info')} variant="info" />
         <FormField
           name="name"
           render={({ field }) => (
             <Input
               fullWidth
-              placeholder={t('CreateAgentDialog.nameInput.placeholder')}
-              label={t('CreateAgentDialog.nameInput.label')}
+              placeholder={t('nameInput.placeholder')}
+              label={t('nameInput.label')}
               {...field}
             />
           )}
@@ -133,78 +148,3 @@ function CreateAgentDialog() {
     </FormProvider>
   );
 }
-
-const LIMIT = 10;
-
-function LocalProjectPage() {
-  const t = useTranslations('local-project/page');
-  const { data } = useAgentsServiceListAgents();
-
-  const [offset, setOffset] = useState(0);
-  const [limit, setLimit] = useState(LIMIT);
-
-  const pagedData = useMemo(() => {
-    if (!data) {
-      return [];
-    }
-
-    return data.slice(offset, offset + limit);
-  }, [data, offset, limit]);
-
-  const hasNextPage = useMemo(() => {
-    if (!data) {
-      return false;
-    }
-
-    return data.length > offset + LIMIT;
-  }, [data, offset]);
-
-  const columns: Array<ColumnDef<AgentState>> = useMemo(
-    () => [
-      {
-        header: t('table.columns.name'),
-        accessorKey: 'name',
-      },
-      {
-        header: t('table.columns.id'),
-        accessorKey: 'id',
-      },
-      {
-        header: t('table.columns.actions'),
-        id: 'actions',
-        cell: ({ row }) => (
-          <Button
-            size="small"
-            href={`/local-project/agents/${row.original.id}`}
-            color="secondary"
-            label={t('table.openInADE')}
-          />
-        ),
-      },
-    ],
-    [t]
-  );
-
-  return (
-    <DashboardPageLayout title={t('title')} actions={<CreateAgentDialog />}>
-      <DashboardPageSection>
-        <DataTable
-          autofitHeight
-          offset={offset}
-          onLimitChange={setLimit}
-          limit={limit}
-          hasNextPage={hasNextPage}
-          showPagination
-          onSetOffset={setOffset}
-          columns={columns}
-          data={pagedData}
-          isLoading={!data}
-          loadingText={t('table.loading')}
-          noResultsText={t('table.noResults')}
-        />
-      </DashboardPageSection>
-    </DashboardPageLayout>
-  );
-}
-
-export default LocalProjectPage;

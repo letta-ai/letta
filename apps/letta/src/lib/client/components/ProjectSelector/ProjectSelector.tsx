@@ -1,6 +1,9 @@
 import React, { useCallback, useMemo } from 'react';
 import { webApi, webApiQueryKeys } from '$letta/client';
-import { useCurrentProject } from '../../../../app/(logged-in)/(dashboard-like)/projects/[projectSlug]/hooks';
+import {
+  REMOTE_DEVELOPMENT_ID,
+  useCurrentProject,
+} from '../../../../app/(logged-in)/(dashboard-like)/projects/[projectSlug]/hooks';
 import {
   Button,
   Popover,
@@ -14,12 +17,20 @@ import { useTranslations } from 'next-intl';
 interface ProjectItemProps {
   name: string;
   isCurrent?: boolean;
+  id: string;
   onClick: () => void;
   slug: string;
 }
 
 function ProjectItem(props: ProjectItemProps) {
-  const { name, onClick, isCurrent, slug } = props;
+  const { name, id, onClick, isCurrent, slug } = props;
+  const href = useMemo(() => {
+    if (id === REMOTE_DEVELOPMENT_ID) {
+      return '/development-servers/dashboard';
+    }
+
+    return `/projects/${slug}`;
+  }, [id, slug]);
 
   return (
     <Button
@@ -29,7 +40,7 @@ function ProjectItem(props: ProjectItemProps) {
       color="tertiary-transparent"
       size="small"
       fullWidth
-      href={`/projects/${slug}`}
+      href={href}
       label={name}
     />
   );
@@ -41,6 +52,7 @@ export function ProjectSelector() {
   const t = useTranslations('components/ProjectSelector');
 
   const currentProject = useCurrentProject();
+
   const { data, isLoading } = webApi.projects.getProjects.useQuery({
     queryKey: webApiQueryKeys.projects.getProjectsWithSearch({
       limit: LIMIT,
@@ -71,6 +83,7 @@ export function ProjectSelector() {
       open={open}
       align="start"
       onOpenChange={setOpen}
+      triggerAsChild
       trigger={
         <Button
           color="tertiary-transparent"
@@ -86,6 +99,7 @@ export function ProjectSelector() {
         </Typography>
         <ProjectItem
           isCurrent
+          id={currentProject.id}
           onClick={handleClickProject}
           name={currentProject.name}
           slug={currentProject.slug}
@@ -93,6 +107,7 @@ export function ProjectSelector() {
         {isLoading && <ProgressBar indeterminate />}
         {projectsList.map((project) => (
           <ProjectItem
+            id={project.id}
             key={project.id}
             onClick={handleClickProject}
             name={project.name}

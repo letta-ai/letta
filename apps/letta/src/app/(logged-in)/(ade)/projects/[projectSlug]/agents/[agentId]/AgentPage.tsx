@@ -175,7 +175,7 @@ type UpdateNameFormValues = z.infer<typeof updateNameFormSchema>;
 
 function UpdateNameDialog(props: UpdateNameDialogProps) {
   const { onClose } = props;
-  const { agentName, isTemplate, isLocal, agentId } = useCurrentAgentMetaData();
+  const { agentName, isTemplate, isLocal } = useCurrentAgentMetaData();
   const { slug: projectSlug } = useCurrentProject();
 
   const t = useTranslations(
@@ -215,7 +215,7 @@ function UpdateNameDialog(props: UpdateNameDialogProps) {
           },
           {
             onSuccess: () => {
-              window.location.href = `/local-project/agents/${agentId}`;
+              window.location.reload();
             },
           }
         );
@@ -241,15 +241,7 @@ function UpdateNameDialog(props: UpdateNameDialogProps) {
         }
       );
     },
-    [
-      isLocal,
-      agentId,
-      localMutate,
-      mutate,
-      agentTemplateId,
-      isTemplate,
-      projectSlug,
-    ]
+    [isLocal, localMutate, mutate, agentTemplateId, isTemplate, projectSlug]
   );
 
   useEffect(() => {
@@ -1017,7 +1009,7 @@ export function AgentPage() {
             <ADEHeader
               project={{
                 url: isLocal
-                  ? '/local-project/agents'
+                  ? '/development-servers/local/agents'
                   : `/projects/${projectSlug}`,
                 name: isLocal ? 'Local Project' : projectName,
               }}

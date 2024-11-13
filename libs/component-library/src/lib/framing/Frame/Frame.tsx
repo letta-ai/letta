@@ -98,6 +98,8 @@ const frameVariants = cva('', {
       medium: 'py-3',
       large: 'py-4',
       true: 'py-5',
+      xlarge: 'py-6',
+      xxlarge: 'py-8',
     },
     paddingX: {
       xxsmall: 'px-1',

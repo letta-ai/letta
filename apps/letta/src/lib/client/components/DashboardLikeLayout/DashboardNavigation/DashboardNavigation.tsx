@@ -40,6 +40,7 @@ import { cn } from '@letta-web/core-style-config';
 import { useTranslations } from 'next-intl';
 import { ThemeSelector } from '$letta/client/components/ThemeSelector/ThemeSelector';
 import { useCurrentProject } from '../../../../../app/(logged-in)/(dashboard-like)/projects/[projectSlug]/hooks';
+import { LaptopIcon } from '@radix-ui/react-icons';
 
 interface NavButtonProps {
   href: string;
@@ -47,13 +48,24 @@ interface NavButtonProps {
   label: string;
   id: string;
   active?: boolean;
+  onClick?: () => void;
   hideLabel?: boolean;
   icon?: React.ReactNode;
   disabled?: boolean;
 }
 
 function NavButton(props: NavButtonProps) {
-  const { href, preload, active, disabled, hideLabel, label, id, icon } = props;
+  const {
+    href,
+    preload,
+    onClick,
+    active,
+    disabled,
+    hideLabel,
+    label,
+    id,
+    icon,
+  } = props;
   const pathname = usePathname();
 
   return (
@@ -62,6 +74,7 @@ function NavButton(props: NavButtonProps) {
       disabled={disabled}
       data-testid={`nav-button-${id}`}
       preload={preload}
+      onClick={onClick}
       active={active || pathname === href}
       href={href}
       hideLabel={hideLabel}
@@ -124,6 +137,12 @@ function MainNavigationItems(props: MainNavigationItemsProps) {
         href: '/projects',
         id: 'projects',
         icon: <ProjectsIcon />,
+      },
+      {
+        label: t('nav.localDev'),
+        href: '/development-servers',
+        id: 'development-servers',
+        icon: <LaptopIcon />,
       },
       {
         label: t('nav.apiKeys'),
@@ -269,6 +288,7 @@ function MainNavigationItems(props: MainNavigationItemsProps) {
                     <NavButton
                       id={item.id}
                       key={item.href}
+                      icon={item.icon}
                       href={item.href}
                       label={item.label}
                     />
@@ -287,6 +307,7 @@ function MainNavigationItems(props: MainNavigationItemsProps) {
                         id={item.id}
                         key={item.href}
                         href={item.href}
+                        icon={item.icon}
                         label={item.label}
                       />
                     ))}

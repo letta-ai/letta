@@ -6,3 +6,4 @@ export * from './DashboardLikeLayout/DashboardLikeLayout';
 export * from './CenteredPageCard/CenteredPageCard';
 export * from './ProjectSelector/ProjectSelector';
 export * from './ADEHeader/ADEHeader';
+export * from './Tutorials/Tutorials';

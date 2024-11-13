@@ -1,0 +1,5 @@
+import { redirect } from 'next/navigation';
+
+export default function DevelopmentServersPage() {
+  return redirect('/development-servers/local/agents');
+}

@@ -334,7 +334,7 @@ function CreateDataSourceDialogInner(props: CreateDataSourceDialogInnerProps) {
           <ActionCard
             testId="attach-existing-data-source"
             icon={<DatabaseUploadIcon />}
-            onCardClick={() => {
+            onClick={() => {
               setMode('attach');
             }}
             title={t(
@@ -346,7 +346,7 @@ function CreateDataSourceDialogInner(props: CreateDataSourceDialogInnerProps) {
           />
           <ActionCard
             testId="create-new-data-source"
-            onCardClick={() => {
+            onClick={() => {
               setMode('create');
               handleCreateDataSource();
             }}
