@@ -52,9 +52,8 @@ export function attachVariablesToTemplates(
     }
   });
 
-  console.log('x', JSON.stringify(nextAgent.memory, null, 2));
-
   return {
+    system: nextAgent.system,
     tools: nextAgent.tools,
     name: `name-${crypto.randomUUID()}`,
     embedding_config: nextAgent.embedding_config,
@@ -746,13 +745,16 @@ export async function updateAgentFromAgentId(options: UpdateAgentFromAgentId) {
       !oldDatasources.some((oldDatasource) => oldDatasource.id === source.id)
   );
 
-  const requestBody: UpdateAgentState = {
+  let requestBody: UpdateAgentState = {
     id: toAgent,
     tools: agentTemplateData.tools,
   };
 
   if (!preserveCoreMemories) {
-    attachVariablesToTemplates(agentTemplateData, variables);
+    requestBody = {
+      ...requestBody,
+      ...attachVariablesToTemplates(agentTemplateData, variables),
+    };
   }
 
   await AgentsService.updateAgent(
