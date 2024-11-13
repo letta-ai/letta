@@ -28,7 +28,6 @@ import { AnalyticsEvent } from '@letta-web/analytics';
 import { jwtDecode } from 'jwt-decode';
 import { AdminService, ToolsService } from '@letta-web/letta-agents-api';
 import { createAgent, versionAgentTemplate } from '$letta/sdk';
-import { generateSlug } from '$letta/server';
 import { generateDefaultADELayout } from '$letta/utils';
 import { cookies } from 'next/headers';
 
@@ -84,8 +83,20 @@ export async function createOrganization(args: CreateOrganizationArgs) {
     })
     .returning({ organizationId: organizations.id });
 
+  const [createdProject] = await await db
+    .insert(projects)
+    .values({
+      slug: 'default-project',
+      name: 'Default Project',
+      organizationId: createdOrg.organizationId,
+    })
+    .returning({
+      id: projects.id,
+    });
+
   await db.insert(organizationPreferences).values({
     organizationId: createdOrg.organizationId,
+    catchAllAgentsProjectId: createdProject.id,
   });
 
   return {
@@ -94,10 +105,110 @@ export async function createOrganization(args: CreateOrganizationArgs) {
   };
 }
 
+interface CreateFirstAgentArgs {
+  organizationId: string;
+  lettaAgentsUserId: string;
+  userId: string;
+}
+
+async function createFirstAgent(args: CreateFirstAgentArgs) {
+  const { organizationId, lettaAgentsUserId, userId } = args;
+
+  const catchAllProject = await db.query.organizationPreferences.findFirst({
+    where: eq(organizationPreferences.organizationId, organizationId),
+  });
+
+  if (!catchAllProject?.catchAllAgentsProjectId) {
+    throw new Error('Organization preferences not found');
+  }
+
+  const createdProject = await db.query.projects.findFirst({
+    where: eq(projects.id, catchAllProject.catchAllAgentsProjectId),
+  });
+
+  if (!createdProject) {
+    throw new Error('Project not found');
+  }
+
+  const firstProjectSlug = createdProject.slug;
+
+  const createdAgentTemplate = await createAgent(
+    {
+      body: {
+        template: true,
+        project_id: createdProject.id,
+        from_template: AgentRecipeVariant.CUSTOMER_SUPPORT,
+      },
+    },
+    {
+      request: {
+        lettaAgentsUserId: lettaAgentsUserId,
+        userId: userId,
+        organizationId,
+      },
+    }
+  );
+
+  if (createdAgentTemplate.status !== 201 || !createdAgentTemplate.body.id) {
+    throw new Error(JSON.stringify(createdAgentTemplate.body, null, 2));
+  }
+
+  const [versionedAgentTemplate] = await Promise.all([
+    await versionAgentTemplate(
+      {
+        params: {
+          agent_id: createdAgentTemplate.body.id,
+        },
+        body: {},
+        query: {},
+      },
+      {
+        request: {
+          userId,
+          organizationId,
+          lettaAgentsUserId,
+        },
+      }
+    ),
+    db.insert(adePreferences).values({
+      userId: userId,
+      displayConfig: generateDefaultADELayout().displayConfig,
+      agentId: createdAgentTemplate.body.id,
+    }),
+  ]);
+
+  if (versionedAgentTemplate.status !== 201) {
+    throw new Error('Failed to create source agent');
+  }
+
+  await createAgent(
+    {
+      body: {
+        from_template: versionedAgentTemplate.body.version,
+        name: `${createdAgentTemplate.body.name}-deployed-1`,
+      },
+    },
+    {
+      request: {
+        organizationId,
+        userId,
+        lettaAgentsUserId,
+      },
+    }
+  );
+
+  return {
+    firstProjectSlug,
+    firstCreatedAgentName: createdAgentTemplate.body.name,
+  };
+}
+
 interface CreateUserAndOrganizationResponse {
   user: UserSession;
-  firstProjectSlug: string;
-  firstCreatedAgentName: string;
+  newProjectPayload?: {
+    firstProjectSlug: string;
+    firstCreatedAgentName: string;
+  };
 }
 
 async function createUserAndOrganization(
@@ -185,20 +296,7 @@ async function createUserAndOrganization(
 
   const userFullName = userData.name;
 
-  const projectName = `${userFullName}'s Project`;
-
-  const [project] = await Promise.all([
-    db
-      .insert(projects)
-      .values({
-        slug: generateSlug(projectName),
-        organizationId,
-        name: projectName,
-      })
-      .returning({
-        projectId: projects.id,
-        slug: projects.slug,
-      }),
+  await Promise.all([
     db.insert(lettaAPIKeys).values({
       name: `${userFullName}'s API Key`,
       organizationId,
@@ -218,72 +316,19 @@ async function createUserAndOrganization(
     }),
   ]);
 
-  const firstProjectSlug = project[0].slug;
+  let firstCreatedAgentName = '';
+  let firstProjectSlug = '';
 
-  const createdAgentTemplate = await createAgent(
-    {
-      body: {
-        template: true,
-        project_id: project[0].projectId,
-        from_template: AgentRecipeVariant.CUSTOMER_SUPPORT,
-      },
-    },
-    {
-      request: {
-        lettaAgentsUserId: lettaAgentsUser.id,
-        userId: createdUser.userId,
-        organizationId,
-      },
-    }
-  );
-
-  if (createdAgentTemplate.status !== 201 || !createdAgentTemplate.body.id) {
-    throw new Error(JSON.stringify(createdAgentTemplate.body, null, 2));
-  }
-
-  const [versionedAgentTemplate] = await Promise.all([
-    await versionAgentTemplate(
-      {
-        params: {
-          agent_id: createdAgentTemplate.body.id,
-        },
-        body: {},
-        query: {},
-      },
-      {
-        request: {
-          userId: createdUser.userId,
-          organizationId,
-          lettaAgentsUserId: lettaAgentsUser.id,
-        },
-      }
-    ),
-    db.insert(adePreferences).values({
+  if (isNewOrganization) {
+    const res = await createFirstAgent({
+      organizationId,
+      lettaAgentsUserId: lettaAgentsUser.id,
       userId: createdUser.userId,
-      displayConfig: generateDefaultADELayout().displayConfig,
-      agentId: createdAgentTemplate.body.id,
-    }),
-  ]);
+    });
 
-  if (versionedAgentTemplate.status !== 201) {
-    throw new Error('Failed to create source agent');
+    firstProjectSlug = res.firstProjectSlug;
+    firstCreatedAgentName = res.firstCreatedAgentName;
   }
-
-  await createAgent(
-    {
-      body: {
-        from_template: versionedAgentTemplate.body.version,
-        name: `${createdAgentTemplate.body.name}-deployed-1`,
-      },
-    },
-    {
-      request: {
-        organizationId,
-        userId: createdUser.userId,
-        lettaAgentsUserId: lettaAgentsUser.id,
-      },
-    }
-  );
 
   return {
     user: {
@@ -294,8 +339,12 @@ async function createUserAndOrganization(
       id: createdUser.userId,
       activeOrganizationId: organizationId,
     },
-    firstCreatedAgentName: createdAgentTemplate.body.name,
-    firstProjectSlug: firstProjectSlug,
+    newProjectPayload: firstCreatedAgentName
+      ? {
+          firstCreatedAgentName,
+          firstProjectSlug,
+        }
+      : undefined,
   };
 }
 
@@ -361,10 +410,13 @@ async function findOrCreateUserAndOrganizationFromProviderLogin(
 
     const res = await createUserAndOrganization(userData);
 
-    newUserDetails = {
-      firstProjectSlug: res.firstProjectSlug,
-      firstCreatedAgentName: res.firstCreatedAgentName,
-    };
+    if (res.newProjectPayload) {
+      newUserDetails = {
+        firstProjectSlug: res.newProjectPayload.firstProjectSlug,
+        firstCreatedAgentName: res.newProjectPayload.firstCreatedAgentName,
+      };
+    }
+
     user = res.user;
   }
 
