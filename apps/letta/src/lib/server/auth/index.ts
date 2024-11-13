@@ -294,6 +294,13 @@ async function createUserAndOrganization(
       .returning({ userId: users.id }),
   ]);
 
+  await AdminService.updateUser({
+    requestBody: {
+      id: lettaAgentsUser.id,
+      name: userData.name,
+    },
+  });
+
   const userFullName = userData.name;
 
   await Promise.all([

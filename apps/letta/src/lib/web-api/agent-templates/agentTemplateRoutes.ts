@@ -15,8 +15,15 @@ import {
   copyAgentById,
   updateAgentFromAgentId,
 } from '$letta/sdk';
-import { capitalize } from 'lodash';
 import { AgentsService } from '@letta-web/letta-agents-api';
+
+function randomThreeDigitNumber() {
+  return Math.floor(Math.random() * 1000);
+}
+
+function getDateAsAlphanumericString(date: Date): string {
+  return date.valueOf().toString(36) + randomThreeDigitNumber().toString(36);
+}
 
 type ListAgentTemplatesQueryRequest = ServerInferRequest<
   typeof contracts.agentTemplates.listAgentTemplates
@@ -119,7 +126,21 @@ export async function forkAgentTemplate(
     };
   }
 
-  const name = capitalize(`Forked ${testingAgent.name}`);
+  let name = `forked-${testingAgent.name}`;
+
+  // check if name already exists
+  const existingAgent = await db.query.agentTemplates.findFirst({
+    where: and(
+      isNull(agentTemplates.deletedAt),
+      eq(agentTemplates.organizationId, activeOrganizationId),
+      eq(agentTemplates.projectId, projectId),
+      eq(agentTemplates.name, name)
+    ),
+  });
+
+  if (existingAgent) {
+    name = `${name}-${getDateAsAlphanumericString(new Date())}`;
+  }
 
   const [agent] = await db
     .insert(agentTemplates)
