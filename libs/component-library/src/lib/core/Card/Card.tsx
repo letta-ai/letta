@@ -19,6 +19,7 @@ export const Card = forwardRef<HTMLElement, CardProps>(function Card(
     <Frame
       ref={ref}
       data-testid={props.testId}
+      {...(onClick ? { type: 'button' } : {})}
       as={onClick ? 'button' : 'div'}
       onClick={onClick}
       className={className}
