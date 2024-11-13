@@ -8,18 +8,25 @@ iconType: "solid"
 ## Sending messages 
 You can send message to agents from both the REST API and Python client: 
 ```python
-response = client.user_message(
+# message an agent as a user
+response = client.send_message(
     agent_id=agent_state.id, 
-    message="hello!", 
+    role="user", 
+    message="hello"
 )
+print("Usage", response.usage)
+print("Agent messages", response.messages)
 ```
 You can also send messages with different roles, such as `system`, `assistant`, or `user`: 
 ```python
+# message a system message (non-user)
 response = client.send_message(
     agent_id=agent_state.id, 
-    message="[SYSTEM] User has logged back in", 
-    role="system" 
+    role="system", 
+    message="[system] user has logged in. send a friendly message."
 )
+print("Usage", response.usage)
+print("Agent messages", response.messages)
 ```
 The `response` object contains the following attributes:
 * `usage`: The usage of the agent after the message was sent (the prompt tokens, completition tokens, and total tokens) 
