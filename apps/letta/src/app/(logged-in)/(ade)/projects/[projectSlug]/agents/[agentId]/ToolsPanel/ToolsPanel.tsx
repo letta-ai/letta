@@ -1,8 +1,9 @@
 'use client';
 import React, { useCallback, useMemo, useState } from 'react';
-import type {
-  FileTreeContentsType,
-  PanelTemplate,
+import {
+  ActionCard, ChevronLeftIcon, ChevronRightIcon, CodeIcon, DialogContentWithCategories,
+  FileTreeContentsType, Frame, ListIcon, LoadedTypography,
+  PanelTemplate, RawCodeEditor, RawToggleGroup, ToggleGroup
 } from '@letta-web/component-library';
 import {
   brandKeyToLogo,
@@ -154,22 +155,15 @@ function AddToolDialogDetailActions(props: AddToolDialogDetailActionsProps) {
   );
 }
 
-interface AddToolDialogProps {
-  onClose: () => void;
+interface AllToolsViewProps {
+  setSelectedToolId: (toolId: string) => void;
 }
 
-interface AddToolsListItem {
-  name: string;
-  description: string;
-  id: string;
-  alreadyAdded: boolean;
-  creator: string;
-  icon: React.ReactNode;
-}
+function AllToolsView(props: AllToolsViewProps) {
+  const { setSelectedToolId } = props;
 
-function AddToolDialog(props: AddToolDialogProps) {
-  const { onClose } = props;
   const t = useTranslations('ADE/Tools');
+
   const { data: _allTools } = useToolsServiceListTools();
 
   const allTools = useMemo(() => {
@@ -216,66 +210,179 @@ function AddToolDialog(props: AddToolDialogProps) {
   }, [allTools, addedToolNameSet, search]);
 
   return (
-    <Dialog
-      isOpen
-      color="background"
-      hideConfirm
-      title={t('AddToolDialog.title')}
-      onOpenChange={(state) => {
-        if (!state) {
-          onClose();
-        }
-      }}
-      size="full"
-    >
-      <HStack fullHeight>
-        <VStack fullHeight fullWidth>
-          <RawInput
-            preIcon={<SearchIcon />}
-            hideLabel
-            placeholder={t('AddToolDialog.search.placeholder')}
-            label={t('AddToolDialog.search.label')}
-            fullWidth
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-            }}
-          />
-          <VStack fullHeight fullWidth overflowY="auto">
-            <NiceGridDisplay>
-              {toolsList.map((tool) => (
-                <Card
-                  key={tool.id}
-                  /* eslint-disable-next-line react/forbid-component-props */
-                  className="h-[300px] max-h-[300px]"
-                >
-                  <VStack fullHeight overflow="hidden">
-                    <HStack align="center" justify="spaceBetween">
-                      <VStack justify="start" gap="small">
-                        <HStack>
-                          {/* eslint-disable-next-line react/forbid-component-props */}
-                          <Slot className="w-5 h-5">{tool.icon}</Slot>
+    <DialogContentWithCategories categories={[{
+      id: 'all-tools',
+      icon: <ToolsIcon />,
+      title: t('AddToolDialog.categories.allTools'),
+      children: (
+        <HStack padding fullHeight>
+          <VStack gap="large" fullHeight fullWidth>
+            <HStack justify="spaceBetween">
+              <RawInput
+                preIcon={<SearchIcon />}
+                hideLabel
+                placeholder={t('AddToolDialog.search.placeholder')}
+                label={t('AddToolDialog.search.label')}
+                value={search}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                }}
+              />
+              <Button
+                preIcon={<PlusIcon />}
+                label={t('AddToolDialog.createTool')} color="secondary" />
+            </HStack>
+            <VStack fullHeight fullWidth overflowY="auto">
+              <NiceGridDisplay>
+                {toolsList.map((tool) => (
+                  <ActionCard
+                    noMobileViewChange
+                    icon={tool.icon}
+                    title={tool.name}
+                    onClick={() => {
+                      setSelectedToolId(tool.id);
+                    }}
+                    subtitle={t('AddToolDialog.creator', {
+                      creator: tool.creator,
+                    })}
+                    key={tool.id}
+                  >
+                  </ActionCard>
+                ))}
+              </NiceGridDisplay>
+            </VStack>
+          </VStack>
+        </HStack>
+      )
+    }]}
+    />
+  )
+}
 
-                          <InlineCode hideCopyButton code={`${tool.name}()`} />
-                        </HStack>
-                        <Typography align="left" variant="body2">
-                          {t('AddToolDialog.creator', {
-                            creator: tool.creator,
-                          })}
-                        </Typography>
-                      </VStack>
-                    </HStack>
-                    <VStack overflowY="auto" collapseHeight>
-                      <Typography variant="body">{tool.description}</Typography>
-                    </VStack>
-                    <AddToolDialogDetailActions tool={tool} />
-                  </VStack>
-                </Card>
-              ))}
-            </NiceGridDisplay>
+interface ViewToolToAddProps {
+  toolId: string;
+  onAddTool?: VoidFunction;
+  onRemoveTool?: VoidFunction;
+  onClose?: VoidFunction
+}
+
+type ViewMode = 'code' | 'schema';
+
+function ViewTool(props: ViewToolToAddProps) {
+  const { toolId, onAddTool, onClose } = props;
+  const t = useTranslations('ADE/Tools');
+
+  const [viewMode, setViewMode] = useState<ViewMode>('code');
+  const { data: tool } = useToolsServiceGetTool({
+    toolId,
+  });
+
+  return (
+    <VStack flex fullHeight="withMinHeight" paddingBottom>
+      <VStack flex fullHeight="withMinHeight" flex color="background" border padding fullWidth>
+        <VStack borderBottom paddingBottom>
+          <div>
+            {onClose && (
+              <Button
+                size="small"
+                preIcon={<ChevronLeftIcon />}
+                color="tertiary"
+                label={t('ViewTool.back')}
+                onClick={onClose}
+              />
+            )}
+          </div>
+
+          <HStack fullWidth>
+            <HStack align="center">
+              <LoadedTypography
+                text={tool?.name}
+                font="mono"
+                variant="heading2"
+                fillerText="SUPERLONGTOOLNAMESOCOOL"
+              />
+            </HStack>
+          </HStack>
+          <HStack fullWidth>
+            <LoadedTypography
+              fillerText="Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed non risus. Suspendisse lectus tortor, dignissim sit amet, adipiscing nec, ultricies sed, dolor."
+              text={tool?.description}
+              variant="body"
+            />
+          </HStack>
+        </VStack>
+        <VStack flex fullHeight>
+          <RawToggleGroup
+            hideLabel
+            border
+            value={viewMode}
+            onValueChange={mode => {
+              if (mode) {
+                setViewMode(mode as ViewMode);
+              }
+            }}
+            label={t('ViewTool.viewToggle.label')} items={[{
+            label: t('ViewTool.viewToggle.options.code'),
+            value: 'code',
+            icon: <CodeIcon />,
+          }, {
+            label: t('ViewTool.viewToggle.options.schema'),
+            value: 'schema',
+            icon: <ListIcon />,
+          }]} />
+          <VStack fullHeight flex>
+            {viewMode === 'code' ? (
+              <RawCodeEditor flex fullWidth fullHeight label="" language="python" code={tool?.source_code || ''} /> ) : (
+              <div />
+            )}
           </VStack>
         </VStack>
-      </HStack>
+      </VStack>
+    </VStack>
+  );
+}
+
+interface AddToolsListItem {
+  name: string;
+  description: string;
+  id: string;
+  alreadyAdded: boolean;
+  creator: string;
+  icon: React.ReactNode;
+}
+
+function AddToolDialog() {
+  const [open, setOpen] = useState(false);
+  const t = useTranslations('ADE/Tools');
+
+  const [toolIdToView, setToolIdToView] = useState<string | null>(null);
+
+  return (
+    <Dialog
+      isOpen
+      hideFooter
+      trigger={
+        <Button
+          label={t('AddToolDialog.trigger')}
+          color="tertiary"
+          hideLabel
+          preIcon={<PlusIcon />}
+        />
+      }
+      title={t('AddToolDialog.title')}
+      onOpenChange={setOpen}
+      size="full"
+    >
+      {toolIdToView ? (
+        <ViewTool
+          toolId={toolIdToView}
+          onClose={() => {
+            setToolIdToView(null);
+          }}
+        />
+      ) : (
+        <AllToolsView setSelectedToolId={setToolIdToView} />
+      )}
     </Dialog>
   );
 }
@@ -384,7 +491,6 @@ function ToolsList(props: ToolsProps) {
     return allTools?.filter((tool) => currentToolsAsSet.has(tool.name || ''));
   }, [allTools, currentToolsAsSet]);
 
-  const [isAddToolDialogOpen, setIsAddToolDialogOpen] = useState(false);
 
   const toolsList: FileTreeContentsType = useMemo(() => {
     if (!currentUserTools) {
@@ -458,29 +564,11 @@ function ToolsList(props: ToolsProps) {
       toolCount: otherToolCount,
     });
 
-    if (getIsGenericFolder(fileTreeTools[1])) {
-      fileTreeTools[1].contents.push({
-        name: t('ToolsList.addNewTool'),
-        id: 'new',
-        icon: <PlusIcon />,
-        onClick: () => {
-          setIsAddToolDialogOpen(true);
-        },
-      });
-    }
-
     return fileTreeTools;
   }, [currentUserTools, search, t]);
 
   return (
     <PanelMainContent>
-      {isAddToolDialogOpen && (
-        <AddToolDialog
-          onClose={() => {
-            setIsAddToolDialogOpen(false);
-          }}
-        />
-      )}
       {removeToolPayload && (
         <RemoveToolDialog
           toolId={removeToolPayload.toolId}
@@ -699,9 +787,7 @@ export function EditToolPage() {
 }
 
 function ToolsListPage() {
-  const { setCurrentPage } = usePanelPageContext();
   const [search, setSearch] = useState('');
-  const { isLocal } = useCurrentAgentMetaData();
 
   return (
     <>
@@ -710,20 +796,9 @@ function ToolsListPage() {
         onSearch={(value) => {
           setSearch(value);
         }}
-        actions={
-          isLocal && (
-            <>
-              <Button
-                onClick={() => {
-                  setCurrentPage('editTool', { toolId: '', toolName: '' });
-                }}
-                size="small"
-                color="secondary"
-                label="Create Tool"
-              />
-            </>
-          )
-        }
+        actions={(
+          <AddToolDialog />
+        )}
       />
       <ToolsList search={search} />
     </>

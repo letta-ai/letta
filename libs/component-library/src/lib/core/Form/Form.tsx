@@ -92,6 +92,7 @@ interface InputWrapperProps {
   inline?: boolean | 'reverse';
   fullWidth?: boolean;
   fullHeight?: boolean;
+  flex?: boolean;
   inputAndLabel: React.ReactNode;
   otherContent: React.ReactNode;
 }
@@ -99,6 +100,7 @@ interface InputWrapperProps {
 function InputWrapper({
   inline,
   fullWidth,
+                flex,
   fullHeight,
   inputAndLabel,
   otherContent,
@@ -107,7 +109,8 @@ function InputWrapper({
     return cn(
       'flex flex-col gap-[6px]',
       fullWidth ? 'w-full' : 'w-fit',
-      fullHeight ? 'h-full' : ''
+      fullHeight ? 'h-full' : '',
+      flex ? 'flex-1' : ''
     );
   }, [fullHeight, fullWidth]);
 

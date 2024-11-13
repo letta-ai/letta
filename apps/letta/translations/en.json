@@ -701,15 +701,29 @@
       "removeError": "There was an error removing this tool, please try again or contact support.",
       "addError": "There was an error adding this tool, please try again or contact support."
     },
+    "ViewTool": {
+      "back": "Back",
+      "viewToggle": {
+        "label": "View Mode",
+        "options": {
+          "schema": "JSON Schema",
+          "code": "Code"
+        }
+      }
+    },
     "AddToolDialog": {
+      "createTool": "Create new tool",
+      "categories": {
+        "allTools": "All Tools"
+      },
       "description": "Description",
       "added": "Added",
-      "creator": "from {creator}",
+      "creator": "{creator}",
       "search": {
         "placeholder": "Tool name",
         "label": "Search tools"
       },
-      "title": "All Tools",
+      "title": "Add tool to agent",
       "trigger": "Add Tool",
       "noDescription": "This tool does not have a description",
       "noToolSelected": {

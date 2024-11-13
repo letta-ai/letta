@@ -11,6 +11,10 @@ import type { VariantProps } from 'class-variance-authority';
 import { cva } from 'class-variance-authority';
 import { Alert } from '../Alert/Alert';
 import { VStack } from '../../framing/VStack/VStack';
+import { HStack } from '../../framing/HStack/HStack';
+import { Typography } from '../Typography/Typography';
+import { Slot } from '@radix-ui/react-slot';
+import './Dialog.scss';
 
 const DialogRoot = DialogPrimitive.Root;
 
@@ -101,10 +105,10 @@ const DialogContent = React.forwardRef<
               />
             )}
 
-            <VStack padding gap="form" position="relative" fullHeight={isFull}>
+            <VStack gap={false} position="relative" fullHeight={isFull}>
               {children}
               <DialogPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
-                <CloseIcon className="h-4 w-4" />
+                <CloseIcon className="h-5 w-5" />
                 <span className="sr-only">Close</span>
               </DialogPrimitive.Close>
             </VStack>
@@ -123,12 +127,14 @@ function DialogHeader({
   ...props
 }: React.HTMLAttributes<HTMLDivElement>) {
   return (
-    <div
+    <HStack
+      paddingX="xlarge"
       className={cn(
         'flex flex-col space-y-1.5 text-center sm:text-left',
         className
       )}
       {...props}
+      color={undefined}
     />
   );
 }
@@ -139,12 +145,15 @@ function DialogFooter({
   ...props
 }: React.HTMLAttributes<HTMLDivElement>) {
   return (
-    <div
+    <HStack
+      paddingY
+      paddingX="xlarge"
       className={cn(
         'flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:space-x-2',
         className
       )}
       {...props}
+      color={undefined}
     />
   );
 }
@@ -157,7 +166,7 @@ const DialogTitle = React.forwardRef<
   <DialogPrimitive.Title
     ref={ref}
     className={cn(
-      'text-xl font-semibold leading-none tracking-tight',
+      'text-lg font-bold h-[48px] flex items-center justify-start leading-none tracking-tight',
       className
     )}
     {...props}
@@ -184,13 +193,93 @@ const dialogVariants = cva('', {
       medium: 'max-w-md',
       large: 'max-w-[600px]',
       xlarge: 'max-w-[800px]',
-      full: 'max-w-[95vw] h-full max-h-[95vh]',
+      full: 'max-w-[85vw] h-full max-h-[85vh]',
     },
   },
   defaultVariants: {
     size: 'medium',
   },
 });
+
+interface ContentCategory {
+  id: string;
+  icon?: React.ReactNode,
+  title: string;
+  subtitle?: string;
+  children: React.ReactNode,
+}
+
+export interface DialogContentWithCategoriesProps {
+  categories: ContentCategory[];
+  category?: string;
+  onSetCategory?: (category: string) => void;
+}
+
+export function DialogContentWithCategories(props: DialogContentWithCategoriesProps) {
+  const { categories } = props;
+  const [selectedCategory, setSelectedCategory] = React.useState(categories[0].id);
+
+
+
+  const handleCategoryClick = useCallback((categoryId: string) => {
+    setSelectedCategory(categoryId);
+  }, []);
+
+  return (
+    <HStack
+      borderTop
+      gap={false} className="dialog-category-hack" fullWidth fullHeight>
+      <VStack               borderRight
+                            gap={false} fullHeight width="sidebar">
+        {categories.map((category) => {
+          const isActive = selectedCategory === category.id;
+
+
+          return (
+            <HStack
+              type="button"
+              color={isActive ? 'background' : undefined}
+              as="button"
+              borderBottom
+              align="center"
+              className={cn('relative h-[58px]', isActive ? 'active-dialog-category' : '')}
+              onClick={() => {
+                handleCategoryClick(category.id);
+              }}
+              key={category.id}
+              fullWidth
+            >
+              <HStack
+                align="center"
+                fullWidth>
+                {isActive && <div className="w-[2px] absolute h-full bg-primary" />}
+                <HStack
+                  paddingY="small"
+                  paddingX="xlarge"
+                  align="center"
+                  gap="large"
+                >
+                  {category.icon && (
+                    <Slot className="w-4 h-4">{category.icon}</Slot>
+                  )}
+                  <VStack gap="text">
+                    <Typography variant="body2" align="left">{category.title}</Typography>
+                    {category.subtitle && <Typography variant="body2" align="left" color="muted">{category.subtitle}</Typography>}
+
+                  </VStack>
+                </HStack>
+              </HStack>
+            </HStack>
+          );
+        })}
+      </VStack>
+      <VStack fullHeight fullWidth color="background">
+        {categories.find((category) => category.id === selectedCategory)?.children}
+      </VStack>
+    </HStack>
+  );
+}
+
 
 interface DialogProps extends VariantProps<typeof dialogVariants> {
   isOpen?: boolean;
@@ -212,6 +301,7 @@ interface DialogProps extends VariantProps<typeof dialogVariants> {
   onSubmit?: (e: React.FormEvent<HTMLFormElement>) => void;
   hideCancel?: boolean;
   hideConfirm?: boolean;
+  hideFooter?: boolean;
   color?: 'background-grey' | 'background';
   reverseButtons?: boolean;
 }
@@ -226,6 +316,7 @@ export function Dialog(props: DialogProps) {
     onOpenChange,
     title,
     testId,
+    hideFooter,
     children,
     reverseButtons,
     isConfirmBusy,
@@ -289,32 +380,37 @@ export function Dialog(props: DialogProps) {
           <DialogHeader>
             <DialogTitle>{title}</DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleSubmit} className="contents">
-            {children}
-            <DialogFooter
-              className={
-                reverseButtons ? 'sm:flex-row-reverse sm:justify-start' : ''
-              }
-            >
-              {!hideCancel && (
-                <DialogClose asChild>
+          <form className="contents" onSubmit={handleSubmit}>
+            <div className="px-[24px] h-full">
+              {children}
+            </div>
+            {!hideFooter && (
+              <DialogFooter
+                className={
+                  reverseButtons ? 'sm:flex-row-reverse sm:justify-start' : ''
+                }
+              >
+                {!hideCancel && (
+                  <DialogClose asChild>
+                    <Button
+                      data-testid={`${testId}-cancel-button`}
+                      label={cancelText}
+                      color="tertiary"
+                    />
+                  </DialogClose>
+                )}
+                {!hideConfirm && (
                   <Button
-                    data-testid={`${testId}-cancel-button`}
-                    label={cancelText}
-                    color="tertiary"
+                    data-testid={`${testId}-confirm-button`}
+                    color={confirmColor}
+                    type="submit"
+                    busy={isConfirmBusy}
+                    label={confirmText}
                   />
-                </DialogClose>
-              )}
-              {!hideConfirm && (
-                <Button
-                  data-testid={`${testId}-confirm-button`}
-                  color={confirmColor}
-                  type="submit"
-                  busy={isConfirmBusy}
-                  label={confirmText}
-                />
-              )}
-            </DialogFooter>
+                )}
+              </DialogFooter>
+            )}
+
           </form>
         </DialogContext.Provider>
       </DialogContent>
