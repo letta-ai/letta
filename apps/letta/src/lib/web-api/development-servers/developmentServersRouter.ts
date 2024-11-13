@@ -5,18 +5,22 @@ import type {
 } from '$letta/web-api/development-servers/developmentServersContracts';
 import { getUserActiveOrganizationIdOrThrow } from '$letta/server/auth';
 import { and, eq, like } from 'drizzle-orm';
-import { db, developmentServers } from '@letta-web/database';
+import {
+  db,
+  developmentServerPasswords,
+  developmentServers,
+} from '@letta-web/database';
 
-type GetDevelopmentServerRequest = ServerInferRequest<
+type GetDevelopmentServersRequest = ServerInferRequest<
   typeof developmentServersContracts.getDevelopmentServers
 >;
-type GetDevelopmentServerResponse = ServerInferResponses<
+type GetDevelopmentServersResponse = ServerInferResponses<
   typeof developmentServersContracts.getDevelopmentServers
 >;
 
 async function getDevelopmentServers(
-  request: GetDevelopmentServerRequest
-): Promise<GetDevelopmentServerResponse> {
+  request: GetDevelopmentServersRequest
+): Promise<GetDevelopmentServersResponse> {
   const { query } = request;
   const organizationId = await getUserActiveOrganizationIdOrThrow();
 
@@ -55,6 +59,65 @@ async function getDevelopmentServers(
   };
 }
 
+type GetDevelopmentServerRequest = ServerInferRequest<
+  typeof developmentServersContracts.getDevelopmentServer
+>;
+
+type GetDevelopmentServerResponse = ServerInferResponses<
+  typeof developmentServersContracts.getDevelopmentServer
+>;
+
+async function getDevelopmentServer(
+  request: GetDevelopmentServerRequest
+): Promise<GetDevelopmentServerResponse> {
+  const { params } = request;
+  const organizationId = await getUserActiveOrganizationIdOrThrow();
+
+  const developmentServer = await db.query.developmentServers.findFirst({
+    where: and(
+      eq(developmentServers.id, params.developmentServerId),
+      eq(developmentServers.organizationId, organizationId)
+    ),
+    columns: {
+      id: true,
+      name: true,
+      url: true,
+      createdAt: true,
+      updatedAt: true,
+    },
+    with: {
+      developmentServerPasswords: {
+        columns: {
+          password: true,
+        },
+      },
+    },
+  });
+
+  if (!developmentServer) {
+    return {
+      status: 404,
+      body: {
+        error: 'Development server not found',
+      },
+    };
+  }
+
+  return {
+    status: 200,
+    body: {
+      developmentServer: {
+        id: developmentServer.id,
+        name: developmentServer.name,
+        password: developmentServer.developmentServerPasswords?.password || '',
+        url: developmentServer.url,
+        createdAt: developmentServer.createdAt.toISOString(),
+        updatedAt: developmentServer.updatedAt.toISOString(),
+      },
+    },
+  };
+}
+
 type CreateDevelopmentServerRequest = ServerInferRequest<
   typeof developmentServersContracts.createDevelopmentServer
 >;
@@ -76,6 +139,12 @@ async function createDevelopmentServer(
       organizationId,
     })
     .returning({ id: developmentServers.id });
+
+  await db.insert(developmentServerPasswords).values({
+    developmentServerId: developmentServer.id,
+    password: body.password,
+    organizationId,
+  });
 
   return {
     status: 201,
@@ -112,6 +181,21 @@ async function updateDevelopmentServer(
 
   if (body.url) {
     valuesToUpdate.url = body.url;
+  }
+
+  if (body.password) {
+    await db
+      .update(developmentServerPasswords)
+      .set({ password: body.password })
+      .where(
+        and(
+          eq(
+            developmentServerPasswords.developmentServerId,
+            params.developmentServerId
+          ),
+          eq(developmentServerPasswords.organizationId, organizationId)
+        )
+      );
   }
 
   if (!Object.keys(valuesToUpdate).length) {
@@ -188,5 +272,6 @@ export const developmentServersRouter = {
   getDevelopmentServers,
   createDevelopmentServer,
   updateDevelopmentServer,
+  getDevelopmentServer,
   deleteDevelopmentServer,
 };

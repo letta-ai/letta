@@ -9,6 +9,7 @@ import { cn } from '@letta-web/core-style-config';
 import './ActionCard.scss';
 import { ChevronRightIcon } from '../../icons';
 import { Slot } from '@radix-ui/react-slot';
+import { forwardRef } from 'react';
 
 const actionCardVariants = cva('', {
   variants: {
@@ -44,87 +45,101 @@ interface ToggleCardProps extends VariantProps<typeof actionCardVariants> {
   mainAction?: React.ReactNode;
   description?: string;
   children?: React.ReactNode;
-  onCardClick?: () => void;
+  onClick?: () => void;
+  hideClickArrow?: boolean;
   testId?: string;
   actions?: React.ReactNode;
 }
 
-export function ActionCard(props: ToggleCardProps) {
-  const {
-    title,
-    icon,
-    badge,
-    testId,
-    isActive,
-    onCardClick,
-    mainAction,
-    children,
-    description,
-    actions,
-  } = props;
+export const ActionCard = forwardRef<HTMLElement, ToggleCardProps>(
+  function ActionCard(props, ref) {
+    const {
+      title,
+      icon,
+      badge,
+      testId,
+      isActive,
+      onClick,
+      hideClickArrow,
+      mainAction,
+      children,
+      description,
+      actions,
+    } = props;
 
-  return (
-    <Card
-      testId={testId}
-      onClick={onCardClick}
-      className={cn(
-        actionCardVariants({ ...props, clickable: !!onCardClick }),
-        isActive ? 'bg-background-grey' : 'bg-background',
-        'action-card'
-      )}
-    >
-      <VStack fullHeight fullWidth>
-        <HStack
-          className="action-card-header"
-          justify="spaceBetween"
-          fullWidth
-          align="center"
-        >
-          <VStack overflow="hidden" gap="text" fullWidth>
-            <HStack fullWidth className="action-card-titlearea" align="center">
-              {icon && <Slot className="w-5 h-5">{icon}</Slot>}
-              <VStack gap={false} align="start">
-                <HStack paddingRight fullWidth overflow="hidden">
-                  <Typography
-                    align="left"
-                    noWrap
-                    fullWidth
-                    overflow="ellipsis"
-                    bold
-                  >
-                    {title}
-                  </Typography>
-                </HStack>
-                {props.subtitle && (
-                  <Typography
-                    fullWidth
-                    overflow="ellipsis"
-                    noWrap
-                    variant="body2"
-                    color="muted"
-                  >
-                    {props.subtitle}
-                  </Typography>
-                )}
-              </VStack>
-              {badge}
-            </HStack>
-          </VStack>
-          {mainAction && <HStack align="center">{mainAction}</HStack>}
-          {onCardClick && <ChevronRightIcon size="large" color="muted" />}
-        </HStack>
-        {description && (
-          <VStack fullHeight>
-            <Typography variant="body">{description}</Typography>
-          </VStack>
+    return (
+      <Card
+        testId={testId}
+        ref={ref}
+        onClick={onClick}
+        className={cn(
+          actionCardVariants({ ...props, clickable: !!onClick }),
+          isActive ? 'bg-background-grey' : 'bg-background',
+          'action-card'
         )}
-        {children}
-        {actions && (
-          <HStack justify="spaceBetween" paddingTop="large">
-            {actions}
+      >
+        <VStack justify="start" fullHeight fullWidth>
+          <HStack
+            className="action-card-header"
+            justify="spaceBetween"
+            fullWidth
+            align="center"
+          >
+            <VStack overflow="hidden" gap="text" fullWidth>
+              <HStack
+                fullWidth
+                className="action-card-titlearea"
+                align="center"
+              >
+                {icon && <Slot className="w-5 h-5">{icon}</Slot>}
+                <VStack gap={false} align="start">
+                  <HStack paddingRight fullWidth overflow="hidden">
+                    <Typography
+                      align="left"
+                      noWrap
+                      fullWidth
+                      overflow="ellipsis"
+                      bold
+                    >
+                      {title}
+                    </Typography>
+                  </HStack>
+                  {props.subtitle && (
+                    <Typography
+                      fullWidth
+                      align="left"
+                      overflow="ellipsis"
+                      noWrap
+                      variant="body2"
+                      color="muted"
+                    >
+                      {props.subtitle}
+                    </Typography>
+                  )}
+                </VStack>
+                {badge}
+              </HStack>
+            </VStack>
+            {mainAction && <HStack align="center">{mainAction}</HStack>}
+            {onClick && !hideClickArrow && (
+              <ChevronRightIcon size="large" color="muted" />
+            )}
           </HStack>
-        )}
-      </VStack>
-    </Card>
-  );
-}
+          {description && (
+            <VStack fullHeight>
+              <Typography align="left" variant="body">
+                {description}
+              </Typography>
+            </VStack>
+          )}
+          {children}
+          {actions && (
+            <HStack justify="spaceBetween" paddingTop="large">
+              {actions}
+            </HStack>
+          )}
+        </VStack>
+      </Card>
+    );
+  }
+);

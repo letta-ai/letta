@@ -40,6 +40,7 @@ type DashboardPageSectionProps = PropsWithChildren<
     fullHeight?: boolean;
     borderBottom?: boolean;
     title?: string;
+    description?: string;
   }
 >;
 
@@ -49,6 +50,7 @@ export function DashboardPageSection(props: DashboardPageSectionProps) {
     actions,
     fullHeight,
     title,
+    description,
     borderBottom,
     searchPlaceholder,
     searchValue,
@@ -72,6 +74,7 @@ export function DashboardPageSection(props: DashboardPageSectionProps) {
           <HStack>{actions}</HStack>
         </HStack>
       )}
+      {description && <Typography variant="body">{description}</Typography>}
       {onSearch && (
         <Frame paddingTop>
           <DashboardSearchBar

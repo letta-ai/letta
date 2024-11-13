@@ -33,7 +33,7 @@ async function AgentsAgentPage(context: AgentsAgentPageProps) {
 
   const { agentId, projectSlug } = context.params;
 
-  if (projectSlug === 'local-project') {
+  if (projectSlug === 'development-servers') {
     redirect('/projects');
     return;
   }

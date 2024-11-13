@@ -9,9 +9,12 @@ export const DevelopmentServerSchema = z.object({
   id: z.string(),
   name: z.string(),
   url: z.string(),
+  password: z.string().optional(),
   createdAt: z.string(),
   updatedAt: z.string(),
 });
+
+export type DevelopmentServerType = z.infer<typeof DevelopmentServerSchema>;
 
 export const DevelopmentServersSchema = z.array(DevelopmentServerSchema);
 
@@ -29,10 +32,29 @@ const getDevelopmentServersContract = c.query({
   query: GenericSearchSchema,
 });
 
+/* Get Development Server */
+const GetDevelopmentServerParamsSchema = z.object({
+  developmentServerId: z.string(),
+});
+
+export const GetDevelopmentServerResponseSchema = z.object({
+  developmentServer: DevelopmentServerSchema,
+});
+
+export const getDevelopmentServerContract = c.query({
+  method: 'GET',
+  path: '/development-servers/:developmentServerId',
+  pathParams: GetDevelopmentServerParamsSchema,
+  responses: {
+    200: GetDevelopmentServerResponseSchema,
+  },
+});
+
 /* Create Development Server */
 export const CreateDevelopmentServerRequestSchema = z.object({
-  name: z.string(),
-  url: z.string(),
+  name: z.string().min(3).max(50),
+  password: z.string(),
+  url: z.string().url(),
 });
 
 export const CreateDevelopmentServerResponseSchema = z.object({
@@ -55,7 +77,8 @@ const UpdateDevelopmentServerParamsSchema = z.object({
 
 export const UpdateDevelopmentServerRequestSchema = z.object({
   name: z.string().min(3).max(50).optional(),
-  url: z.string().optional(),
+  url: z.string().url().optional(),
+  password: z.string().optional(),
 });
 
 export type UpdateDevelopmentServerRequestSchemaType = z.infer<
@@ -98,6 +121,7 @@ export const developmentServersContracts = {
   createDevelopmentServer: createDevelopmentServerContract,
   updateDevelopmentServer: updateDevelopmentServerContract,
   deleteDevelopmentServer: deleteDevelopmentServerContract,
+  getDevelopmentServer: getDevelopmentServerContract,
 };
 
 export const developmentServerQueryClientKeys = {
@@ -105,5 +129,9 @@ export const developmentServerQueryClientKeys = {
   getDevelopmentServersWithSearch: (search: GenericSearch) => [
     'development-servers',
     search,
+  ],
+  getDevelopmentServer: (developmentServerId: string) => [
+    'development-servers',
+    developmentServerId,
   ],
 };

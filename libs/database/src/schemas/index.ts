@@ -537,5 +537,40 @@ export const developmentServerRelations = relations(
       fields: [developmentServers.organizationId],
       references: [organizations.id],
     }),
+    developmentServerPasswords: one(developmentServerPasswords, {
+      fields: [developmentServers.id],
+      references: [developmentServerPasswords.developmentServerId],
+    }),
+  })
+);
+
+export const developmentServerPasswords = pgTable(
+  'development_server_passwords',
+  {
+    developmentServerId: text('development_server_id')
+      .references(() => developmentServers.id, { onDelete: 'cascade' })
+      .notNull(),
+    organizationId: text('organization_id')
+      .references(() => organizations.id, { onDelete: 'cascade' })
+      .notNull(),
+    password: text('password').notNull(),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at')
+      .notNull()
+      .$onUpdate(() => new Date()),
+  }
+);
+
+export const developmentServerPasswordRelations = relations(
+  developmentServerPasswords,
+  ({ one }) => ({
+    developmentServer: one(developmentServers, {
+      fields: [developmentServerPasswords.developmentServerId],
+      references: [developmentServers.id],
+    }),
+    organization: one(organizations, {
+      fields: [developmentServerPasswords.organizationId],
+      references: [organizations.id],
+    }),
   })
 );

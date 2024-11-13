@@ -75,7 +75,7 @@ function ConnectToLocalProjectDialog() {
     const isOnline = await getIsLocalServiceOnline();
 
     if (isOnline) {
-      push('/local-project/agents');
+      push('/development-servers/local/agents');
     } else {
       setOpen(true);
     }
@@ -281,7 +281,7 @@ function ProjectsList(props: ProjectsListProps) {
             projectId="local"
             projectName={t('projectsList.localProjectName')}
             lastUpdatedAt=""
-            url="/local-project/agents"
+            url="/development-servers/local/agents"
           />
         )}
         {data.body.projects.map((project) => (

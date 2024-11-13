@@ -81,6 +81,7 @@ interface DropdownMenuItemProps
   extends React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Item> {
   inset?: boolean;
   label: string;
+  doNotCloseOnSelect?: boolean;
   href?: string;
   target?: string;
   preIcon?: React.ReactNode;
@@ -109,26 +110,36 @@ function MaybeLink(props: MaybeLinkProps) {
 const DropdownMenuItem = React.forwardRef<
   React.ElementRef<typeof DropdownMenuPrimitive.Item>,
   DropdownMenuItemProps
->(({ className, inset, href, label, preIcon, ...props }, ref) => {
-  return (
-    <DropdownMenuPrimitive.Item
-      ref={ref}
-      className={cn(
-        'relative flex gap-2  cursor-pointer select-none items-center px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
-        inset && 'pl-8',
-        className
-      )}
-      {...props}
-    >
-      <MaybeLink>
-        <HStack align="center">
-          {preIcon && <Slot className="w-3">{preIcon}</Slot>}
-          <Typography variant="body2">{label}</Typography>
-        </HStack>
-      </MaybeLink>
-    </DropdownMenuPrimitive.Item>
-  );
-});
+>(
+  (
+    { className, inset, href, label, doNotCloseOnSelect, preIcon, ...props },
+    ref
+  ) => {
+    return (
+      <DropdownMenuPrimitive.Item
+        ref={ref}
+        onSelect={(event) => {
+          if (doNotCloseOnSelect) {
+            event.preventDefault();
+          }
+        }}
+        className={cn(
+          'relative flex gap-2  cursor-pointer select-none items-center px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
+          inset && 'pl-8',
+          className
+        )}
+        {...props}
+      >
+        <MaybeLink href={href}>
+          <HStack align="center">
+            {preIcon && <Slot className="w-3">{preIcon}</Slot>}
+            <Typography variant="body2">{label}</Typography>
+          </HStack>
+        </MaybeLink>
+      </DropdownMenuPrimitive.Item>
+    );
+  }
+);
 DropdownMenuItem.displayName = DropdownMenuPrimitive.Item.displayName;
 
 const DropdownMenuCheckboxItem = React.forwardRef<
