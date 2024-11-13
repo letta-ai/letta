@@ -84,7 +84,7 @@ function DeleteDevelopmentServerDialog(
           }
         );
 
-        push('/development-servers/dashboard');
+        push('/development-servers/local/dashboard');
       },
     });
 

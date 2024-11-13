@@ -42,7 +42,7 @@ function LocalProjectLayout(props: LocalProjectLayoutProps) {
         {
           id: 'dashboard',
           label: t('nav.dashboard'),
-          href: `/development-servers/dashboard`,
+          href: `/development-servers/local/dashboard`,
         },
         {
           id: 'agents',

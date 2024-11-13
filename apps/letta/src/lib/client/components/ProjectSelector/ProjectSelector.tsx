@@ -26,7 +26,7 @@ function ProjectItem(props: ProjectItemProps) {
   const { name, id, onClick, isCurrent, slug } = props;
   const href = useMemo(() => {
     if (id === REMOTE_DEVELOPMENT_ID) {
-      return '/development-servers/dashboard';
+      return '/development-servers/local/dashboard';
     }
 
     return `/projects/${slug}`;
