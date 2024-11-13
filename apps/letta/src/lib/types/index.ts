@@ -17,6 +17,7 @@ export interface ProviderUserPayload {
 }
 
 export interface AgentTemplate {
+  system: AgentState['system'];
   memory: AgentState['memory'];
   tools: AgentState['tools'];
   llm_config: AgentState['llm_config'];

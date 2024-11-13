@@ -41,7 +41,8 @@ export function attachVariablesToTemplates(
   Object.keys(nextAgent.memory?.memory || {}).forEach((key) => {
     if (typeof nextAgent.memory?.memory?.[key]?.value === 'string') {
       // needs to be done or memory will rely on the existing block id
-      nextAgent.memory.memory[key].id = undefined;
+      const { id: _id, ...rest } = nextAgent.memory.memory[key];
+      nextAgent.memory.memory[key] = rest;
       if (variables) {
         nextAgent.memory.memory[key].value = nextAgent.memory.memory[
           key
