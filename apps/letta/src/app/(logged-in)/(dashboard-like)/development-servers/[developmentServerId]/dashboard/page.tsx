@@ -12,7 +12,7 @@ import {
 } from '@letta-web/component-library';
 import { useTranslations } from 'next-intl';
 import { Tutorials } from '$letta/client/components';
-import { CreateLocalAgentDialog } from '../shared/CreateLocalAgentDialog/CreateLocalAgentDialog';
+import { CreateLocalAgentDialog } from '../../shared/CreateLocalAgentDialog/CreateLocalAgentDialog';
 import React, { useEffect, useRef } from 'react';
 import { getIsLocalServiceOnline } from '$letta/client/local-project-manager';
 import { ConnectToLocalServerCommand } from '$letta/client/components/ConnectToLocalServerCommand/ConnectToLocalServerCommand';
