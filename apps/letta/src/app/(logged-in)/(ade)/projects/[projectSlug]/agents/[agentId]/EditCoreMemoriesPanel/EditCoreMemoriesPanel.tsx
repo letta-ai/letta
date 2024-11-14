@@ -28,69 +28,11 @@ import { VStack } from '@letta-web/component-library';
 import { PanelMainContent } from '@letta-web/component-library';
 import { useTranslations } from 'next-intl';
 import { useCurrentAgent, useSyncUpdateCurrentAgent } from '../hooks';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import React, { useCallback, useMemo } from 'react';
 import { nicelyFormattedDateAndTime } from '@letta-web/helpful-client-utils';
 import { zodResolver } from '@hookform/resolvers/zod';
-
-function useUpdateMemory(payload: AdvancedEditorPayload) {
-  const { type, label } = payload;
-  const { memory, system } = useCurrentAgent();
-  const { syncUpdateCurrentAgent, error, lastUpdatedAt, isUpdating } =
-    useSyncUpdateCurrentAgent();
-
-  const value = useMemo(() => {
-    if (type === 'system') {
-      return system;
-    }
-
-    return memory?.memory?.[label || '']?.value;
-  }, [type, memory?.memory, label, system]);
-
-  const [localValue, setLocalValue] = useState(value || '');
-
-  const handleChange = useCallback(
-    (nextValue: string) => {
-      setLocalValue(nextValue);
-
-      if (type === 'system') {
-        syncUpdateCurrentAgent(() => ({
-          system: nextValue,
-        }));
-
-        return;
-      }
-
-      syncUpdateCurrentAgent((prev) => ({
-        memory: {
-          ...prev.memory,
-          memory: {
-            ...prev.memory?.memory,
-            [label || '']: {
-              ...prev.memory?.memory?.[label || ''],
-              value: nextValue,
-            },
-          },
-        },
-      }));
-    },
-    [label, syncUpdateCurrentAgent, type]
-  );
-
-  useEffect(() => {
-    if (value !== localValue) {
-      setLocalValue(value || '');
-    }
-  }, [localValue, value]);
-
-  return {
-    value: localValue,
-    onChange: handleChange,
-    error,
-    lastUpdatedAt,
-    isUpdating,
-  };
-}
+import { useUpdateMemory } from '../hooks/useUpdateMemory/useUpdateMemory';
 
 interface AdvancedCoreMemoryEditorProps extends AdvancedEditorPayload {
   onClose: () => void;

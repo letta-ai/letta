@@ -3,7 +3,7 @@ import { agentSimulatorTemplate } from './AgentSimulator/AgentSimulator';
 import { archivalMemoriesPanelTemplate } from './ArchivalMemoriesPanel/ArchivalMemoriesPanel';
 import { configPanelTemplate } from './ConfigPanel/ConfigPanelWrapped';
 import { welcomePanelTemplate } from './WelcomePanel/WelcomePanel';
-import { modelTemplate } from './ModelPanel/ModelPanel';
+import { agentSettingsPanel } from './AgentSettingsPanel/AgentSettingsPanel';
 import { toolsPanelTemplate } from './ToolsPanel/ToolsPanel';
 import { deploymentPanelTemplate } from './TemplateVersionManager/TemplateVersionManager';
 import { editCoreMemories } from './EditCoreMemoriesPanel/EditCoreMemoriesPanel';
@@ -20,7 +20,7 @@ const {
   PanelCloser,
   PanelRenderer,
 } = createPanelManager({
-  'model-details': modelTemplate,
+  'agent-settings': agentSettingsPanel,
   'model-parameters': modelParametersPanel,
   'agent-simulator': agentSimulatorTemplate,
   'archival-memories': archivalMemoriesPanelTemplate,

@@ -11,6 +11,9 @@ const typographyVariants = cva('break-words', {
     inline: {
       true: 'inline',
     },
+    uppercase: {
+      true: 'uppercase',
+    },
     variant: {
       heading1: 'text-[1.8rem] font-semibold',
       heading2: 'text-[1.725rem] font-semibold',

@@ -11,7 +11,7 @@ export function InlineCode({ code, hideCopyButton }: InlineCodeProps) {
   const t = useTranslations('ComponentLibrary/InlineCode');
 
   return (
-    <span className="inline-flex bg-background-greyer py-0 pl-2  text-sm items-center rounded font-mono">
+    <span className="inline-flex bg-background-grey2 py-0 pl-2  text-sm items-center rounded font-mono">
       {code}
       {!hideCopyButton && (
         <CopyButton

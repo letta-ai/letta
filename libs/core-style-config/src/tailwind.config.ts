@@ -91,9 +91,9 @@ export function buildConfig(appDir: string): Config {
             content: 'hsl(var(--background-grey-content))',
             hover: 'hsl(var(--background-grey-hover))',
           },
-          'background-greyer': {
-            DEFAULT: 'hsl(var(--background-greyer))',
-            content: 'hsl(var(--background-greyer-content))',
+          'background-grey2': {
+            DEFAULT: 'hsl(var(--background-grey2))',
+            content: 'hsl(var(--background-grey2-content))',
           },
           'background-black': {
             DEFAULT: 'hsl(var(--background-black))',
