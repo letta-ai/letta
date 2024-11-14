@@ -36,6 +36,7 @@ import type {
   AgentState,
   Source,
 } from '@letta-web/letta-agents-api';
+import { useLettaAgentsAPI } from '@letta-web/letta-agents-api';
 import { getIsAgentState } from '@letta-web/letta-agents-api';
 import { AgentsService } from '@letta-web/letta-agents-api';
 import { useAgentsServiceGetAgentSources } from '@letta-web/letta-agents-api';
@@ -65,7 +66,8 @@ function useSendMessage(agentId: string) {
   const [isPending, setIsPending] = useState(false);
   const abortController = useRef<AbortController>();
   const queryClient = useQueryClient();
-  const { isLocal } = useCurrentAgentMetaData();
+
+  const { baseUrl, password } = useLettaAgentsAPI();
 
   useEffect(() => {
     return () => {
@@ -110,10 +112,8 @@ function useSendMessage(agentId: string) {
 
       abortController.current = new AbortController();
 
-      const baseUrl = isLocal ? 'http://localhost:8283/' : '/';
-
       const eventsource = new EventSource(
-        `${baseUrl}v1/agents/${agentId}/messages`,
+        `${baseUrl}/v1/agents/${agentId}/messages`,
         {
           withCredentials: true,
           method: 'POST',
@@ -122,6 +122,7 @@ function useSendMessage(agentId: string) {
           headers: {
             'Content-Type': 'application/json',
             Accept: 'text/event-stream',
+            ...(password ? { 'X-BARE-PASSWORD': `password ${password}` } : {}),
           },
           body: JSON.stringify({
             stream_steps: true,
@@ -249,7 +250,7 @@ function useSendMessage(agentId: string) {
         setIsPending(false);
       };
     },
-    [agentId, isLocal, queryClient]
+    [agentId, baseUrl, password, queryClient]
   );
 
   return { isPending, sendMessage };

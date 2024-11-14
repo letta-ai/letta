@@ -1,8 +1,6 @@
 'use server';
 import React from 'react';
 import { redirect } from 'next/navigation';
-import { LettaAgentsAPIWrapper } from '@letta-web/letta-agents-api';
-import { LOCAL_PROJECT_SERVER_URL } from '$letta/constants';
 import { webApiQueryKeys } from '$letta/client';
 import {
   dehydrate,
@@ -27,11 +25,7 @@ async function LocalServiceLayout(props: LocalServiceLayoutProps) {
   const queryClient = new QueryClient();
 
   if (developmentServerId === 'local') {
-    return (
-      <LettaAgentsAPIWrapper baseUrl={LOCAL_PROJECT_SERVER_URL}>
-        {children}
-      </LettaAgentsAPIWrapper>
-    );
+    return <DevelopmentServerWrapper>{children}</DevelopmentServerWrapper>;
   }
 
   const developmentServer =
