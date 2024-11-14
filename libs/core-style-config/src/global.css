@@ -67,11 +67,11 @@
     --background-destructive-content: 0, 100%, 10%;
 
     --background-grey-content: 240 10% 3.9%;
-    --background-grey: 210, 10%, 96%;
+    --background-grey: 210,16.7%,97.6%;
     --background-grey-hover: 210, 10%, 80%;
 
-    --background-greyer: 210, 40%, 96%;
-    --background-greyer-content: 240 10% 3.9%;
+    --background-grey2: 210, 10%, 96%;
+    --background-grey2-content: 240 10% 3.9%;
 
     --background-black: 0, 0%, 0%;
     --background-black-content: 0 0% 100%;
@@ -127,8 +127,8 @@
     --background-grey: 0, 0%, 13%;
     --background-grey-content: 0 0% 100%;
 
-    --background-greyer: 200, 3%, 17%;
-    --background-greyer-content: 0 0% 100%;
+    --background-grey2: 200, 3%, 17%;
+    --background-grey2-content: 0 0% 100%;
 
     --card: 240 10% 3.9%;
     --card-content: 0 0% 98%;
@@ -173,7 +173,7 @@
     --background-hover: 240, 54%, 48%;
 
     --background-grey: 0, 0, 67%;
-    --background-greyer: 0, 0, 0;
+    --background-grey2: 0, 0, 0;
 
     --content: 0 0% 98%;
     --on-transparent: 0, 0%, 0%;

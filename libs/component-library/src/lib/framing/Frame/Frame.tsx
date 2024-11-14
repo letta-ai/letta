@@ -39,8 +39,7 @@ const frameVariants = cva('', {
       transparent: 'bg-transparent',
       background: 'bg-background text-background-content',
       'background-grey': 'bg-background-grey text-background-grey-content',
-      'background-greyer':
-        'bg-background-greyer text-background-greyer-content',
+      'background-grey2': 'bg-background-grey2 text-background-grey2-content',
       'background-black': 'bg-background-black text-background-black-content',
       tertiary: 'bg-tertiary text-tertiary-content',
       success: 'bg-background-success text-background-success-content',

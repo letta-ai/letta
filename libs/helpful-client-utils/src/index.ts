@@ -3,13 +3,6 @@ import type * as z from 'zod';
 
 export * from './useErrorTranslationMessage/useErrorTranslationMessage';
 
-export function nicelyFormattedDateAndTime(date: string) {
-  return new Intl.DateTimeFormat('en-US', {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  }).format(new Date(date));
-}
-
 declare type IsAny<T> = [any extends T ? 'true' : 'false'] extends ['true']
   ? true
   : false;
@@ -68,3 +61,4 @@ export declare type ToZod<T> = IsAny<T> extends true
   : never;
 
 export * from './getTextareaCaretPosition/getTextareaCaretPosition';
+export * from './useDateFormatter/useDateFormatter';

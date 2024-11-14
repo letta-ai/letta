@@ -186,6 +186,7 @@ function AsyncSelectPrimitive(_props: AsyncSelectProps) {
   const { hideIconsOnOptions, ...props } = _props;
   const styles = useStyles(props.styleConfig || {});
   const [open, setOpen] = React.useState(false);
+  const { isInDialog } = useDialogContext();
 
   return (
     <SelectOptionsProvider value={{ hideIconsOnOptions }}>
@@ -208,7 +209,7 @@ function AsyncSelectPrimitive(_props: AsyncSelectProps) {
         }}
         menuIsOpen={open}
         menuPortalTarget={
-          typeof document !== 'undefined' ? document.body : null
+          !isInDialog && typeof document !== 'undefined' ? document.body : null
         }
         onChange={(value) => {
           props.onSelect?.(value);

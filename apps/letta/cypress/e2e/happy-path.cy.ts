@@ -47,11 +47,7 @@ describe('letta', () => {
       /\/projects\/(.+)\/templates\/(.+)/
     );
 
-    cy.findByTestId('tab:edit-core-memories').click();
-
-    cy.findByTestId('edit-memory-block:human').click();
-
-    cy.findByTestId('edit-memory-block-content').type(
+    cy.findByTestId('edit-memory-block-human-content', { timeout: 10000 }).type(
       'Please include the word BananaMan at the end of every message.'
     );
 
@@ -75,7 +71,11 @@ describe('letta', () => {
     }).click({ waitForAnimations: true, force: true });
     cy.findByTestId('attach-existing-data-source').click();
 
-    cy.findAllByTestId('attach-data-source-button').first().click();
+    cy.findAllByTestId('attach-data-source-button', {
+      timeout: 10000,
+    })
+      .first()
+      .click();
 
     cy.findByTestId('chat-simulator-input').type('What is my name', {
       force: true,

@@ -16,7 +16,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { webApi, webApiQueryKeys, webOriginSDKApi } from '$letta/client';
 import { DeployAgentUsageInstructions } from '$letta/client/code-reference/DeployAgentUsageInstructions';
 import { z } from 'zod';
-import { nicelyFormattedDateAndTime } from '@letta-web/helpful-client-utils';
+import { useDateFormatter } from '@letta-web/helpful-client-utils';
 import { useCurrentAgent } from '../hooks';
 import { useTranslations } from 'next-intl';
 import type { InfiniteGetProjectDeployedAgentTemplates200Response } from '$letta/web-api/projects/projectContracts';
@@ -155,6 +155,8 @@ function DeployedAgentTemplateCard(props: DeployedAgentTemplateCardProps) {
 
   const t = useTranslations('ADE/DeploymentAgentMangerPanel');
 
+  const { formatDate } = useDateFormatter();
+
   return (
     <VStack
       borderBottom
@@ -178,7 +180,7 @@ function DeployedAgentTemplateCard(props: DeployedAgentTemplateCardProps) {
         </div>
         <Typography color="muted">
           {t('DeployedAgentTemplateCard.createdAt', {
-            date: nicelyFormattedDateAndTime(createdAt),
+            date: formatDate(createdAt),
           })}
         </Typography>
       </HStack>

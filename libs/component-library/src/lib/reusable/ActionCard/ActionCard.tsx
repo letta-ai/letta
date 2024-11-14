@@ -19,7 +19,7 @@ const actionCardVariants = cva('', {
       medium: 'max-w-[300px]',
     },
     clickable: {
-      true: 'cursor-pointer hover:bg-background-greyer',
+      true: 'cursor-pointer hover:bg-background-grey2',
     },
     fullWidthOnMobile: {
       true: '',

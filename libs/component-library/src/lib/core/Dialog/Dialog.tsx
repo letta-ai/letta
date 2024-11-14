@@ -29,7 +29,7 @@ interface DialogContextState {
 }
 
 const DialogContext = React.createContext<DialogContextState>({
-  isInDialog: true,
+  isInDialog: false,
 });
 
 export function useDialogContext() {
@@ -107,7 +107,7 @@ const DialogContent = React.forwardRef<
 
             <VStack gap={false} position="relative" fullHeight={isFull}>
               {children}
-              <DialogPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
+              <DialogPrimitive.Close className="absolute right-4 top-[13px] rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
                 <CloseIcon className="h-5 w-5" />
                 <span className="sr-only">Close</span>
               </DialogPrimitive.Close>
@@ -129,12 +129,13 @@ function DialogHeader({
   return (
     <HStack
       paddingX="xlarge"
+      borderBottom
       className={cn(
         'flex flex-col space-y-1.5 text-center sm:text-left',
         className
       )}
       {...props}
-      color={undefined}
+      color="background-grey2"
     />
   );
 }
@@ -166,7 +167,7 @@ const DialogTitle = React.forwardRef<
   <DialogPrimitive.Title
     ref={ref}
     className={cn(
-      'text-lg font-bold h-[48px] flex items-center justify-start leading-none tracking-tight',
+      'text-base font-bold h-[48px] flex items-center justify-start leading-none tracking-tight',
       className
     )}
     {...props}
@@ -212,15 +213,16 @@ interface ContentCategory {
 export interface DialogContentWithCategoriesProps {
   categories: ContentCategory[];
   category?: string;
+  defaultCategory?: string;
   onSetCategory?: (category: string) => void;
 }
 
 export function DialogContentWithCategories(
   props: DialogContentWithCategoriesProps
 ) {
-  const { categories } = props;
+  const { categories, defaultCategory } = props;
   const [selectedCategory, setSelectedCategory] = React.useState(
-    categories[0].id
+    defaultCategory || categories[0].id
   );
 
   const handleCategoryClick = useCallback((categoryId: string) => {
@@ -228,13 +230,7 @@ export function DialogContentWithCategories(
   }, []);
 
   return (
-    <HStack
-      borderTop
-      gap={false}
-      className="dialog-category-hack"
-      fullWidth
-      fullHeight
-    >
+    <HStack borderTop gap={false} fullWidth fullHeight>
       <VStack borderRight gap={false} fullHeight width="sidebar">
         {categories.map((category) => {
           const isActive = selectedCategory === category.id;
@@ -397,14 +393,16 @@ export function Dialog(props: DialogProps) {
         aria-describedby=""
       >
         <DialogContext.Provider value={{ isInDialog: true }}>
-          <DialogHeader>
+          <DialogHeader className={!noContentPadding ? 'mb-4' : ''}>
             <DialogTitle>{title}</DialogTitle>
           </DialogHeader>
           {/* @ts-expect-error - element */}
           <Element className="contents" onSubmit={handleSubmit}>
-            <div className={cn('h-full', noContentPadding ? '' : 'px-[24px]')}>
+            <VStack
+              className={cn('h-full', noContentPadding ? '' : 'px-[24px]')}
+            >
               {children}
-            </div>
+            </VStack>
             {!hideFooter && (
               <DialogFooter
                 className={

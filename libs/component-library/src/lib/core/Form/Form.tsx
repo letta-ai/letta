@@ -209,6 +209,7 @@ export function InputContainer(props: InputContainerProps) {
 
 export interface RawInputContainerProps extends InputContainerProps {
   id?: string;
+  errorMessage?: string;
 }
 
 export function RawInputContainer(props: RawInputContainerProps) {

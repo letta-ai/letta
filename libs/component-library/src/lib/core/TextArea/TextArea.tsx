@@ -5,6 +5,9 @@ import { makeInput, makeRawInput } from '../Form/Form';
 import TextareaAutosize, {
   type TextareaAutosizeProps,
 } from 'react-textarea-autosize';
+import { Button } from '../Button/Button';
+import { ExpandTextareaIcon } from '../../icons';
+import { Frame } from '../../framing/Frame/Frame';
 
 type TextAreaProps = TextareaAutosizeProps & {
   fullWidth?: boolean;
@@ -12,6 +15,10 @@ type TextAreaProps = TextareaAutosizeProps & {
   hideLabel?: boolean;
   autosize?: boolean;
   hideFocus?: boolean;
+  expandable?: {
+    onExpand: () => void;
+    expandText: string;
+  };
 };
 
 const defaultClass =
@@ -60,5 +67,27 @@ const PrimitiveTextArea = React.forwardRef<HTMLTextAreaElement, TextAreaProps>(
 
 PrimitiveTextArea.displayName = 'Textarea';
 
-export const TextArea = makeInput(PrimitiveTextArea, 'TextArea');
-export const RawTextArea = makeRawInput(PrimitiveTextArea, 'RawTextArea');
+function WrappedTextArea(props: TextAreaProps) {
+  const { expandable, fullHeight, fullWidth } = props;
+
+  return (
+    <Frame fullWidth={fullWidth} fullHeight={fullHeight} position="relative">
+      <PrimitiveTextArea {...props} />
+      {expandable && (
+        <div className="absolute bottom-0 right-[15px]">
+          <Button
+            size="small"
+            label={expandable.expandText}
+            hideLabel
+            color="tertiary-transparent"
+            onClick={expandable.onExpand}
+            preIcon={<ExpandTextareaIcon color="muted" />}
+          />
+        </div>
+      )}
+    </Frame>
+  );
+}
+
+export const TextArea = makeInput(WrappedTextArea, 'TextArea');
+export const RawTextArea = makeRawInput(WrappedTextArea, 'RawTextArea');
