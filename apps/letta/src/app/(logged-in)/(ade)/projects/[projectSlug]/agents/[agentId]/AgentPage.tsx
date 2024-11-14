@@ -813,6 +813,7 @@ function Navigation() {
         href="https://docs.letta.com/api-reference"
       />
       <Popover
+        triggerAsChild
         trigger={
           <Button
             size="small"

@@ -10,7 +10,7 @@ export function generateDefaultADELayout(): AdePreferencesData {
   return {
     displayConfig: [
       {
-        size: 25,
+        size: 30,
         positions: [
           {
             size: 33,
@@ -60,7 +60,7 @@ export function generateDefaultADELayout(): AdePreferencesData {
         ],
       },
       {
-        size: 50,
+        size: 40,
         positions: [
           {
             size: 100,
@@ -84,7 +84,7 @@ export function generateDefaultADELayout(): AdePreferencesData {
         ],
       },
       {
-        size: 25,
+        size: 30,
         positions: [
           {
             size: 50,

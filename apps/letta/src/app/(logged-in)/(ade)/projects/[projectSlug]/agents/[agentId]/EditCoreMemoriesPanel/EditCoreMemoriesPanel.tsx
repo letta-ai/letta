@@ -108,7 +108,7 @@ function EditMemoryForm(props: EditMemoryFormProps) {
             autosize={false}
             flex={isModelView}
             fullHeight={isModelView}
-            data-testid="edit-memory-block-content"
+            data-testid={`edit-memory-block-${label}-content`}
             fullWidth
             label={t('content')}
             onChange={(e) => {
