@@ -29,7 +29,7 @@ import { useAgentsServiceListAgents } from '@letta-web/letta-agents-api';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import type { ColumnDef } from '@tanstack/react-table';
 import { CreateLocalAgentDialog } from '../../shared/CreateLocalAgentDialog/CreateLocalAgentDialog';
-import { nicelyFormattedDateAndTime } from '@letta-web/helpful-client-utils';
+import { useDateFormatter } from '@letta-web/helpful-client-utils';
 import { useCurrentDevelopmentServerConfig } from '../hooks/useCurrentDevelopmentServerConfig/useCurrentDevelopmentServerConfig';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -432,6 +432,8 @@ function LocalProjectPage() {
     return data.length > offset + LIMIT;
   }, [data, offset]);
 
+  const { formatDate } = useDateFormatter();
+
   const columns: Array<ColumnDef<AgentState>> = useMemo(
     () => [
       {
@@ -446,7 +448,7 @@ function LocalProjectPage() {
         header: t('table.columns.createdAt'),
         accessorKey: 'created_at',
         cell: ({ row }) => {
-          return nicelyFormattedDateAndTime(row.original?.created_at || '');
+          return formatDate(row.original?.created_at || '');
         },
       },
       {
@@ -468,7 +470,7 @@ function LocalProjectPage() {
         ),
       },
     ],
-    [t, currentDevelopmentServerConfig?.id]
+    [t, formatDate, currentDevelopmentServerConfig?.id]
   );
 
   return (

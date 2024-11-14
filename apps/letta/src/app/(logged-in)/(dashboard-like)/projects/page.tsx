@@ -26,7 +26,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
-import { nicelyFormattedDateAndTime } from '@letta-web/helpful-client-utils';
+import { useDateFormatter } from '@letta-web/helpful-client-utils';
 import Link from 'next/link';
 
 interface ProjectsListProps {
@@ -118,6 +118,7 @@ interface ProjectCardProps {
 function ProjectCard(props: ProjectCardProps) {
   const { projectName, lastUpdatedAt, url } = props;
   const t = useTranslations('projects/page');
+  const { formatDate } = useDateFormatter();
 
   return (
     <Link href={url}>
@@ -144,7 +145,7 @@ function ProjectCard(props: ProjectCardProps) {
                   <Typography variant="body" color="muted">
                     {lastUpdatedAt
                       ? t('projectsList.projectItem.lastUpdatedAt', {
-                          date: nicelyFormattedDateAndTime(lastUpdatedAt),
+                          date: formatDate(lastUpdatedAt),
                         })
                       : t('projectsList.projectItem.noLastUpdatedAt')}
                   </Typography>

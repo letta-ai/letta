@@ -22,16 +22,13 @@ import {
 import { useCurrentAgent, useSyncUpdateCurrentAgent } from '../hooks';
 import { z } from 'zod';
 import type { AgentState } from '@letta-web/letta-agents-api';
-import {
-  useModelsServiceListEmbeddingModels,
-  useModelsServiceListModels,
-} from '@letta-web/letta-agents-api';
+import { useModelsServiceListModels } from '@letta-web/letta-agents-api';
 import { useTranslations } from 'next-intl';
 import { useDebouncedValue } from '@mantine/hooks';
 import { UpdateNameDialog } from '../shared/UpdateAgentNameDialog/UpdateAgentNameDialog';
 import { useAgentBaseTypeName } from '../hooks/useAgentBaseNameType/useAgentBaseNameType';
 import { useUpdateMemory } from '../hooks/useUpdateMemory/useUpdateMemory';
-import { nicelyFormattedDateAndTime } from '@letta-web/helpful-client-utils';
+import { useDateFormatter } from '@letta-web/helpful-client-utils';
 
 interface SelectedModelType {
   icon: React.ReactNode;
@@ -128,106 +125,14 @@ function ModelSelector(props: ModelSelectorProps) {
   );
 }
 
-interface EmbeddingConfig {
-  embeddingConfig?: AgentState['embedding_config'];
-}
-
-export function EmbeddingSelector(props: EmbeddingConfig) {
-  const { embeddingConfig } = props;
-  const t = useTranslations('ADE/AgentSettingsPanel');
-  const { syncUpdateCurrentAgent, error } = useSyncUpdateCurrentAgent();
-
-  const { data: embeddingModels } = useModelsServiceListEmbeddingModels();
-
-  const formattedModelsList = useMemo(() => {
-    if (!embeddingModels) {
-      return [];
-    }
-
-    const modelEndpointMap = embeddingModels.reduce((acc, model) => {
-      acc[model.embedding_endpoint_type] =
-        acc[model.embedding_endpoint_type] || [];
-
-      acc[model.embedding_endpoint_type].push(model.embedding_model);
-
-      return acc;
-    }, {} as Record<string, string[]>);
-
-    return Object.entries(modelEndpointMap).map(([key, value]) => ({
-      icon: isBrandKey(key) ? brandKeyToLogo(key) : '',
-      label: isBrandKey(key) ? brandKeyToName(key) : key,
-      options: value.map((model) => ({
-        icon: isBrandKey(key) ? brandKeyToLogo(key) : '',
-        label: model,
-        value: model,
-      })),
-    }));
-  }, [embeddingModels]);
-
-  const [modelState, setModelState] = useState<SelectedModelType | undefined>(
-    embeddingConfig
-      ? {
-          icon: isBrandKey(embeddingConfig.embedding_endpoint_type)
-            ? brandKeyToLogo(embeddingConfig.embedding_endpoint_type)
-            : '',
-          label: embeddingConfig.embedding_model,
-          value: embeddingConfig.embedding_model,
-        }
-      : undefined
-  );
-
-  const [debouncedModelState] = useDebouncedValue(modelState, 500);
-
-  useEffect(() => {
-    if (!embeddingModels || !debouncedModelState) {
-      return;
-    }
-
-    if (debouncedModelState.value !== embeddingConfig?.embedding_model) {
-      syncUpdateCurrentAgent(() => ({
-        embedding_config: embeddingModels.find(
-          (model) => model.embedding_model === debouncedModelState.value
-        ),
-      }));
-    }
-  }, [
-    embeddingConfig?.embedding_model,
-    debouncedModelState,
-    embeddingModels,
-    syncUpdateCurrentAgent,
-  ]);
-
-  return (
-    <>
-      {error && <Alert title={t('error')} variant="destructive" />}
-      <RawSelect
-        hideIconsOnOptions
-        fullWidth
-        onSelect={(value) => {
-          if (isMultiValue(value)) {
-            return;
-          }
-
-          setModelState({
-            value: value?.value || '',
-            label: value?.label || '',
-            icon: value?.icon || '',
-          });
-        }}
-        value={modelState}
-        label={t('embeddingInput.label')}
-        options={formattedModelsList}
-      />
-    </>
-  );
-}
-
 function SystemPromptEditor() {
   const t = useTranslations('ADE/AgentSettingsPanel');
   const [isExpanded, setIsExpanded] = useState(false);
   const { value, onChange, error, lastUpdatedAt } = useUpdateMemory({
     type: 'system',
   });
+
+  const { formatDate } = useDateFormatter();
 
   return (
     <>
@@ -268,7 +173,7 @@ function SystemPromptEditor() {
           {lastUpdatedAt && (
             <Typography>
               {t('SystemPromptEditor.updatedAt', {
-                date: nicelyFormattedDateAndTime(lastUpdatedAt),
+                date: formatDate(lastUpdatedAt),
               })}
             </Typography>
           )}

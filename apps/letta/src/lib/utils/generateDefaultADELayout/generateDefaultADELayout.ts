@@ -10,10 +10,10 @@ export function generateDefaultADELayout(): AdePreferencesData {
   return {
     displayConfig: [
       {
-        size: 30,
+        size: 25,
         positions: [
           {
-            size: 40,
+            size: 33,
             positions: [
               {
                 id: 'agent-settings',
@@ -22,15 +22,15 @@ export function generateDefaultADELayout(): AdePreferencesData {
                 data: undefined,
               },
               {
-                id: 'model-parameters',
+                id: 'advanced-settings',
                 isActive: false,
-                templateId: 'model-parameters',
+                templateId: 'advanced-settings',
                 data: undefined,
               },
             ],
           },
           {
-            size: 30,
+            size: 33,
             positions: [
               {
                 id: 'edit-data-sources',
@@ -47,7 +47,7 @@ export function generateDefaultADELayout(): AdePreferencesData {
             ],
           },
           {
-            size: 30,
+            size: 33,
             positions: [
               {
                 id: 'tools-panel',
@@ -60,7 +60,7 @@ export function generateDefaultADELayout(): AdePreferencesData {
         ],
       },
       {
-        size: 40,
+        size: 50,
         positions: [
           {
             size: 100,
@@ -84,7 +84,7 @@ export function generateDefaultADELayout(): AdePreferencesData {
         ],
       },
       {
-        size: 30,
+        size: 25,
         positions: [
           {
             size: 50,

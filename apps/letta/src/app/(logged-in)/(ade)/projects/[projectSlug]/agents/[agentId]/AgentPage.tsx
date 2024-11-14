@@ -64,6 +64,8 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { UpdateNameDialog } from './shared/UpdateAgentNameDialog/UpdateAgentNameDialog';
 import { useAgentBaseTypeName } from './hooks/useAgentBaseNameType/useAgentBaseNameType';
+import { useLocalStorage } from '@mantine/hooks';
+import { DiscordWhiteLogo } from '@letta-web/component-library';
 
 function RestoreLayoutButton() {
   const t = useTranslations(
@@ -782,9 +784,73 @@ function AgentSettingsDropdown() {
   );
 }
 
+function Navigation() {
+  const { isLocal } = useCurrentAgentMetaData();
+  const t = useTranslations(
+    'projects/(projectSlug)/agents/(agentId)/AgentPage'
+  );
+
+  return (
+    <HStack align="center">
+      <Button
+        size="small"
+        color="tertiary-transparent"
+        label={t('Navigation.dashboard')}
+        href={isLocal ? '/development-servers/local/dashboard' : '/projects'}
+      />
+      <Button
+        size="small"
+        color="tertiary-transparent"
+        target="_blank"
+        label={t('Navigation.documentation')}
+        href="https://docs.letta.com/introduction"
+      />
+      <Button
+        size="small"
+        color="tertiary-transparent"
+        target="_blank"
+        label={t('Navigation.apiReference')}
+        href="https://docs.letta.com/api-reference"
+      />
+      <Popover
+        trigger={
+          <Button
+            size="small"
+            color="tertiary-transparent"
+            label={t('Navigation.support')}
+          />
+        }
+      >
+        <VStack padding>
+          <Typography variant="heading5">
+            {t('Navigation.supportPopover.title')}
+          </Typography>
+          <Typography>{t('Navigation.supportPopover.description')}</Typography>
+          <a
+            target="_blank"
+            className="px-3 flex justify-center items-center gap-2 py-2 text-white bg-[#7289da]"
+            href="https://discord.gg/letta"
+          >
+            {/* eslint-disable-next-line react/forbid-component-props */}
+            <DiscordWhiteLogo className="h-4 w-auto" />
+            <Typography bold>
+              {t('Navigation.supportPopover.joinUs')}
+            </Typography>
+          </a>
+        </VStack>
+      </Popover>
+    </HStack>
+  );
+}
+
 export function AgentPage() {
   const { name: projectName, slug: projectSlug } = useCurrentProject();
   const { agentName, agentId, isTemplate, isLocal } = useCurrentAgentMetaData();
+
+  const [adeLayout, setADELayout] = useLocalStorage({
+    key: `ade-layout-${agentId}`,
+    defaultValue: generateDefaultADELayout().displayConfig,
+  });
 
   const t = useTranslations(
     'projects/(projectSlug)/agents/(agentId)/AgentPage'
@@ -821,7 +887,10 @@ export function AgentPage() {
         }}
         templateIdDenyList={!isTemplate ? ['deployment'] : []}
         fallbackPositions={generateDefaultADELayout().displayConfig}
-        initialPositions={generateDefaultADELayout().displayConfig}
+        initialPositions={adeLayout}
+        onPositionChange={(positions) => {
+          setADELayout(positions);
+        }}
       >
         <ADEPage
           header={
@@ -837,6 +906,7 @@ export function AgentPage() {
               }}
             >
               <HStack align="center">
+                <Navigation />
                 <ContextWindowPreview />
                 <AgentSettingsDropdown />
                 {/*<NavOverlay />*/}

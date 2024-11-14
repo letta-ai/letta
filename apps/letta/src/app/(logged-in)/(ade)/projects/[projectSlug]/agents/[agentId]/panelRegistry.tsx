@@ -9,7 +9,7 @@ import { deploymentPanelTemplate } from './TemplateVersionManager/TemplateVersio
 import { editCoreMemories } from './EditCoreMemoriesPanel/EditCoreMemoriesPanel';
 import { editDataSourcesPanel } from './EditDataSourcesPanel/EditDataSourcesPanel';
 import { deployedAgentsPanel } from './DeployedAgentsPanel/DeployedAgentsPanel';
-import { modelParametersPanel } from './ModelParameters/ModelParameters';
+import { advancedSettingsPanel } from './AdvancedSettingsPanel/AdvancedSettingsPanel';
 
 const {
   panelRegistry,
@@ -21,7 +21,7 @@ const {
   PanelRenderer,
 } = createPanelManager({
   'agent-settings': agentSettingsPanel,
-  'model-parameters': modelParametersPanel,
+  'advanced-settings': advancedSettingsPanel,
   'agent-simulator': agentSimulatorTemplate,
   'archival-memories': archivalMemoriesPanelTemplate,
   'agent-config': configPanelTemplate,

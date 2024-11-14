@@ -14,7 +14,7 @@ import {
   EyeClosedIcon,
   LockClosedIcon,
 } from '../../icons';
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import { SpinnerPrimitive } from '../../../primitives';
 import { HStack } from '../../framing/HStack/HStack';
 import { VStack } from '../../framing/VStack/VStack';
@@ -86,6 +86,7 @@ type InputPrimitiveProps = Omit<
     bottomContent?: React.ReactNode;
     hideLabel?: boolean;
     allowCopy?: boolean;
+    onNumericValueChange?: (value: number | undefined) => void;
     showVisibilityControls?: boolean;
     isUpdating?: boolean;
   };
@@ -126,12 +127,36 @@ const InputPrimitive = React.forwardRef<HTMLInputElement, InputPrimitiveProps>(
       type,
       showVisibilityControls,
       size,
+      onNumericValueChange,
+      onChange,
       color,
       ...props
     },
     ref
   ) => {
     const [visibility, setVisibility] = React.useState(false);
+
+    const handleOnChange = useCallback(
+      (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (type === 'number') {
+          if (e.target.value === '') {
+            onNumericValueChange?.(undefined);
+            return;
+          }
+
+          const value = parseFloat(e.target.value);
+
+          if (Number.isNaN(value)) {
+            return;
+          }
+
+          onNumericValueChange?.(value);
+        }
+
+        onChange?.(e);
+      },
+      [onChange, onNumericValueChange, type]
+    );
 
     const typeOverride = useMemo(() => {
       if (showVisibilityControls) {
@@ -167,6 +192,7 @@ const InputPrimitive = React.forwardRef<HTMLInputElement, InputPrimitiveProps>(
             data-lpignore="true"
             data-form-type="other"
             {...props}
+            onChange={handleOnChange}
             disabled={disabled}
             type={typeOverride}
             className="w-full h-full focus:outline-none bg-transparent"

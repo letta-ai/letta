@@ -353,6 +353,7 @@
       "titles": "Add New Data Source",
       "trigger": "Create Source",
       "goBack": "Go back",
+      "error": "There was an error creating the data source, please try again or contact support.",
       "creatingDataSource": "Creating data source...",
       "title": "Create a new data source",
       "options": {
@@ -475,10 +476,11 @@
     "localProject": "Local Project"
   },
   "ADE/EditCoreMemoriesPanel": {
-    "AdvancedCoreMemoryEditor": {
-      "title": "Edit {name}",
-      "label": "Edit Memory",
-      "switchView": "Switch"
+    "EditMemoryForm": {
+      "characterLimit": "{count}/{limit} chars"
+    },
+    "AdvancedEditMemory": {
+      "title": "Update Core Memories"
     },
     "systemPrompt": "System Prompt",
     "EditSystemPrompt": {
@@ -820,6 +822,17 @@
     }
   },
   "projects/(projectSlug)/agents/(agentId)/AgentPage": {
+    "Navigation": {
+      "dashboard": "Dashboard",
+      "documentation": "Documentation",
+      "apiReference": "API Reference",
+      "support": "Support",
+      "supportPopover": {
+        "title": "Get support via Discord",
+        "description": "Join our Discord server to get help from the community and the Letta team.",
+        "joinUs": "Join us on Discord"
+      }
+    },
     "UpdateNameDialog": {
       "title": "Rename {agentBaseType}",
       "trigger": "Rename {agentBaseType}",
@@ -893,7 +906,7 @@
     "restoreLayout": "Restore Layout",
     "positionError": "There was a unhandled error while positioning the window, will fallback to default position, we have notified our team about this issue."
   },
-  "ADE/ModelParameters": {
+  "ADE/AdvancedSettings": {
     "title": "Advanced",
     "model": "Model",
     "modelParameters": "Model Parameters",
@@ -902,6 +915,14 @@
     "errorLoadingModelParameters": "There has been an error loading model parameters, please refresh the page or contact support.",
     "contextWindowController": {
       "label": "Context Window Size"
+    },
+    "AdvancedSettingsPanel": {
+      "embeddingDimensions": {
+        "label": "Embedding Dimensions"
+      },
+      "embeddingChunkSize": {
+        "label": "Embedding Chunk Size"
+      }
     }
   },
   "ADE/TemplateVersionManager": {

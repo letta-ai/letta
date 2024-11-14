@@ -29,7 +29,7 @@ interface DialogContextState {
 }
 
 const DialogContext = React.createContext<DialogContextState>({
-  isInDialog: true,
+  isInDialog: false,
 });
 
 export function useDialogContext() {
@@ -213,15 +213,16 @@ interface ContentCategory {
 export interface DialogContentWithCategoriesProps {
   categories: ContentCategory[];
   category?: string;
+  defaultCategory?: string;
   onSetCategory?: (category: string) => void;
 }
 
 export function DialogContentWithCategories(
   props: DialogContentWithCategoriesProps
 ) {
-  const { categories } = props;
+  const { categories, defaultCategory } = props;
   const [selectedCategory, setSelectedCategory] = React.useState(
-    categories[0].id
+    defaultCategory || categories[0].id
   );
 
   const handleCategoryClick = useCallback((categoryId: string) => {
@@ -229,13 +230,7 @@ export function DialogContentWithCategories(
   }, []);
 
   return (
-    <HStack
-      borderTop
-      gap={false}
-      className="dialog-category-hack"
-      fullWidth
-      fullHeight
-    >
+    <HStack borderTop gap={false} fullWidth fullHeight>
       <VStack borderRight gap={false} fullHeight width="sidebar">
         {categories.map((category) => {
           const isActive = selectedCategory === category.id;
@@ -403,9 +398,11 @@ export function Dialog(props: DialogProps) {
           </DialogHeader>
           {/* @ts-expect-error - element */}
           <Element className="contents" onSubmit={handleSubmit}>
-            <div className={cn('h-full', noContentPadding ? '' : 'px-[24px]')}>
+            <VStack
+              className={cn('h-full', noContentPadding ? '' : 'px-[24px]')}
+            >
               {children}
-            </div>
+            </VStack>
             {!hideFooter && (
               <DialogFooter
                 className={

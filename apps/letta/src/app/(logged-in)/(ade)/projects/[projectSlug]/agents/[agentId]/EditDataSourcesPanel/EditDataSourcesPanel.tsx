@@ -246,8 +246,11 @@ function CreateDataSourceDialogInner(props: CreateDataSourceDialogInnerProps) {
   const t = useTranslations('ADE/EditDataSourcesPanel');
   const { id, embedding_config } = useCurrentAgent();
 
-  const { mutate: createDataSource, isPending: isCreatingDataSource } =
-    useSourcesServiceCreateSource();
+  const {
+    mutate: createDataSource,
+    isPending: isCreatingDataSource,
+    isError,
+  } = useSourcesServiceCreateSource();
   const { mutate: attachDataSource, isPending: isAttachingDataSource } =
     useSourcesServiceAttachAgentToSource();
   const queryClient = useQueryClient();
@@ -325,6 +328,8 @@ function CreateDataSourceDialogInner(props: CreateDataSourceDialogInnerProps) {
         <LoadingEmptyStatusComponent
           emptyMessage=""
           isLoading
+          isError={isError}
+          errorMessage={isError ? t('CreateDataSourceDialog.error') : undefined}
           loadingMessage={t('CreateDataSourceDialog.creatingDataSource')}
         />
       );
