@@ -459,7 +459,7 @@ function LocalProjectPage() {
         },
         cell: ({ row }) => (
           <Button
-            href={`/development-servers/local/agents/${row.original.id}`}
+            href={`/development-servers/${currentDevelopmentServerConfig?.id || 'local'}/agents/${row.original.id}`}
             color="tertiary"
             label={t('table.openInADE')}
           />
