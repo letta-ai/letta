@@ -703,9 +703,10 @@
     },
     "SpecificToolComponent": {
       "back": "Back",
+      "noDescription": "No description provided",
       "add": "Add tool to Agent",
       "edit": "Edit Tool",
-      "restore": "Cancel Edit Tool",
+      "cancel": "Cancel",
       "alreadyAdded": "This tool is already added",
       "viewToggle": {
         "label": "View Mode",
@@ -716,6 +717,7 @@
       }
     },
     "EditTool": {
+      "cancel": "Cancel",
       "name": {
         "label": "Name"
       },
@@ -728,6 +730,7 @@
       "update": "Update Tool"
     },
     "ToolCreator": {
+      "cancel": "Cancel",
       "error": "There was an error creating this tool, please try again or contact support.",
       "name": {
         "label": "Name",
@@ -749,7 +752,7 @@
       "title": {
         "create": "Create a new tool",
         "add": "Add tool to agent",
-        "view": "View and eid tool"
+        "view": "View and edit tool"
       },
       "categories": {
         "allTools": "All Tools"

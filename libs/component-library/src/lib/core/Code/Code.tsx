@@ -19,6 +19,7 @@ import type { VariantProps } from 'class-variance-authority';
 import { cva } from 'class-variance-authority';
 import { cn } from '@letta-web/core-style-config';
 import { VStack } from '../../framing/VStack/VStack';
+import type { FrameProps } from '../../framing/Frame/Frame';
 
 export type SupportedLangauges =
   | 'bash'
@@ -69,6 +70,7 @@ export interface CodeProps extends VariantProps<typeof codeVariants> {
   fullHeight?: boolean;
   toolbarPosition?: 'bottom' | 'top';
   inline?: boolean;
+  color?: FrameProps['color'];
 }
 
 const languageToFileNameMap: Record<SupportedLangauges, string> = {
@@ -84,6 +86,7 @@ export function Code(props: CodeProps) {
   const {
     language,
     code,
+    color = 'background',
     fontSize,
     variant,
     testId,
@@ -143,11 +146,13 @@ export function Code(props: CodeProps) {
         {code}
       </div>
       {toolbarPosition === 'top' && toolbar}
-      <VStack className="flex-1" position="relative">
+      <VStack color={color} className="flex-1" position="relative">
         <div className={cn(showLineNumbers ? 'line-number-wrapper' : '')} />
         <Editor
+          id={`code-editor-${id}`}
           className={cn(
-            'editor bg-background w-full',
+            'editor w-full',
+            fullHeight && 'h-full flex-1',
             showLineNumbers && 'line-numbers'
           )}
           value={code}

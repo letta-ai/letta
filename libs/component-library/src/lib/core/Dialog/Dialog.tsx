@@ -203,10 +203,10 @@ const dialogVariants = cva('', {
 
 interface ContentCategory {
   id: string;
-  icon?: React.ReactNode,
+  icon?: React.ReactNode;
   title: string;
   subtitle?: string;
-  children: React.ReactNode,
+  children: React.ReactNode;
 }
 
 export interface DialogContentWithCategoriesProps {
@@ -215,11 +215,13 @@ export interface DialogContentWithCategoriesProps {
   onSetCategory?: (category: string) => void;
 }
 
-export function DialogContentWithCategories(props: DialogContentWithCategoriesProps) {
+export function DialogContentWithCategories(
+  props: DialogContentWithCategoriesProps
+) {
   const { categories } = props;
-  const [selectedCategory, setSelectedCategory] = React.useState(categories[0].id);
-
-
+  const [selectedCategory, setSelectedCategory] = React.useState(
+    categories[0].id
+  );
 
   const handleCategoryClick = useCallback((categoryId: string) => {
     setSelectedCategory(categoryId);
@@ -228,12 +230,14 @@ export function DialogContentWithCategories(props: DialogContentWithCategoriesPr
   return (
     <HStack
       borderTop
-      gap={false} className="dialog-category-hack" fullWidth fullHeight>
-      <VStack               borderRight
-                            gap={false} fullHeight width="sidebar">
+      gap={false}
+      className="dialog-category-hack"
+      fullWidth
+      fullHeight
+    >
+      <VStack borderRight gap={false} fullHeight width="sidebar">
         {categories.map((category) => {
           const isActive = selectedCategory === category.id;
-
 
           return (
             <HStack
@@ -242,17 +246,20 @@ export function DialogContentWithCategories(props: DialogContentWithCategoriesPr
               as="button"
               borderBottom
               align="center"
-              className={cn('relative h-[58px]', isActive ? 'active-dialog-category' : '')}
+              className={cn(
+                'relative h-[58px]',
+                isActive ? 'active-dialog-category' : ''
+              )}
               onClick={() => {
                 handleCategoryClick(category.id);
               }}
               key={category.id}
               fullWidth
             >
-              <HStack
-                align="center"
-                fullWidth>
-                {isActive && <div className="w-[2px] absolute h-full bg-primary" />}
+              <HStack align="center" fullWidth>
+                {isActive && (
+                  <div className="w-[2px] absolute h-full bg-primary" />
+                )}
                 <HStack
                   paddingY="small"
                   paddingX="xlarge"
@@ -263,9 +270,14 @@ export function DialogContentWithCategories(props: DialogContentWithCategoriesPr
                     <Slot className="w-4 h-4">{category.icon}</Slot>
                   )}
                   <VStack gap="text">
-                    <Typography variant="body2" align="left">{category.title}</Typography>
-                    {category.subtitle && <Typography variant="body2" align="left" color="muted">{category.subtitle}</Typography>}
-
+                    <Typography variant="body2" align="left">
+                      {category.title}
+                    </Typography>
+                    {category.subtitle && (
+                      <Typography variant="body2" align="left" color="muted">
+                        {category.subtitle}
+                      </Typography>
+                    )}
                   </VStack>
                 </HStack>
               </HStack>
@@ -274,12 +286,14 @@ export function DialogContentWithCategories(props: DialogContentWithCategoriesPr
         })}
       </VStack>
       <VStack fullHeight fullWidth color="background">
-        {categories.find((category) => category.id === selectedCategory)?.children}
+        {
+          categories.find((category) => category.id === selectedCategory)
+            ?.children
+        }
       </VStack>
     </HStack>
   );
 }
-
 
 interface DialogProps extends VariantProps<typeof dialogVariants> {
   isOpen?: boolean;
@@ -302,6 +316,7 @@ interface DialogProps extends VariantProps<typeof dialogVariants> {
   disableForm?: boolean;
   hideCancel?: boolean;
   hideConfirm?: boolean;
+  noContentPadding?: boolean;
   hideFooter?: boolean;
   color?: 'background-grey' | 'background';
   reverseButtons?: boolean;
@@ -313,6 +328,7 @@ export function Dialog(props: DialogProps) {
     color = 'background-grey',
     defaultOpen,
     errorMessage,
+    noContentPadding,
     errorAdditionalMessage,
     onOpenChange,
     title,
@@ -384,8 +400,9 @@ export function Dialog(props: DialogProps) {
           <DialogHeader>
             <DialogTitle>{title}</DialogTitle>
           </DialogHeader>
-          <Element className="contents" {...!disableForm ? { handleSubmit } : {}}>
-            <div className="px-[24px] h-full">
+          {/* @ts-expect-error - element */}
+          <Element className="contents" onSubmit={handleSubmit}>
+            <div className={cn('h-full', noContentPadding ? '' : 'px-[24px]')}>
               {children}
             </div>
             {!hideFooter && (
@@ -414,7 +431,6 @@ export function Dialog(props: DialogProps) {
                 )}
               </DialogFooter>
             )}
-
           </Element>
         </DialogContext.Provider>
       </DialogContent>

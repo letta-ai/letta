@@ -1,5 +1,6 @@
 'use client';
-import { HTMLProps, useMemo } from 'react';
+import type { HTMLProps } from 'react';
+import { useMemo } from 'react';
 import { forwardRef } from 'react';
 import React from 'react';
 import { cva, type VariantProps } from 'class-variance-authority';

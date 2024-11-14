@@ -100,7 +100,7 @@ interface InputWrapperProps {
 function InputWrapper({
   inline,
   fullWidth,
-                flex,
+  flex,
   fullHeight,
   inputAndLabel,
   otherContent,
@@ -112,7 +112,7 @@ function InputWrapper({
       fullHeight ? 'h-full' : '',
       flex ? 'flex-1' : ''
     );
-  }, [fullHeight, fullWidth]);
+  }, [flex, fullHeight, fullWidth]);
 
   if (inline) {
     return (
