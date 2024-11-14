@@ -1,8 +1,6 @@
 'use client';
-import type { panelRegistry } from './panelRegistry';
 import { usePanelManager } from './panelRegistry';
 import { PanelManagerProvider, PanelRenderer } from './panelRegistry';
-import type { PanelItemPositionsMatrix } from '@letta-web/component-library';
 import { EditIcon } from '@letta-web/component-library';
 import { Card, Checkbox, ExternalLink } from '@letta-web/component-library';
 import { TrashIcon } from '@letta-web/component-library';
@@ -39,9 +37,8 @@ import {
   ForkIcon,
   VStack,
 } from '@letta-web/component-library';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { useCurrentProject } from '../../../../../(dashboard-like)/projects/[projectSlug]/hooks';
-import { useDebouncedValue } from '@mantine/hooks';
 import { webApi, webApiQueryKeys, webOriginSDKApi } from '$letta/client';
 import { useRouter } from 'next/navigation';
 import { useCurrentUser } from '$letta/client/hooks';
@@ -52,7 +49,6 @@ import { useCurrentAgent } from './hooks';
 import {
   useAgentsServiceGetAgent,
   UseAgentsServiceGetAgentKeyFn,
-  useAgentsServiceUpdateAgent,
 } from '@letta-web/letta-agents-api';
 import { useTranslations } from 'next-intl';
 import { ContextWindowPreview } from './ContextEditorPanel/ContextEditorPanel';
@@ -66,7 +62,10 @@ import type { InfiniteGetProjectDeployedAgentTemplates200Response } from '$letta
 import { ThemeSelector } from '$letta/client/components/ThemeSelector/ThemeSelector';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { isFetchError } from '@ts-rest/react-query/v5';
+import { UpdateNameDialog } from './shared/UpdateAgentNameDialog/UpdateAgentNameDialog';
+import { useAgentBaseTypeName } from './hooks/useAgentBaseNameType/useAgentBaseNameType';
+import { useLocalStorage } from '@mantine/hooks';
+import { DiscordWhiteLogo } from '@letta-web/component-library';
 
 function RestoreLayoutButton() {
   const t = useTranslations(
@@ -103,7 +102,7 @@ export function NavOverlay() {
       align="start"
     >
       <CurrentUserDetailsBlock />
-      <Frame borderTop color="background-greyer" as="nav">
+      <Frame borderTop color="background-grey2" as="nav">
         <VStack as="ul" paddingY="small" paddingX="xsmall">
           <Button
             href={`/projects/${projectSlug}`}
@@ -135,167 +134,6 @@ export function NavOverlay() {
         </VStack>
       </Frame>
     </Popover>
-  );
-}
-
-function useAgentBaseTypeName() {
-  const { isTemplate } = useCurrentAgentMetaData();
-  const t = useTranslations(
-    'projects/(projectSlug)/agents/(agentId)/AgentPage'
-  );
-
-  if (isTemplate) {
-    return {
-      capitalized: t('agentBaseType.capitalized.template'),
-      base: t('agentBaseType.base.template'),
-    };
-  }
-
-  return {
-    capitalized: t('agentBaseType.capitalized.agent'),
-    base: t('agentBaseType.base.agent'),
-  };
-}
-
-interface UpdateNameDialogProps {
-  onClose: () => void;
-}
-
-const updateNameFormSchema = z.object({
-  name: z
-    .string()
-    .regex(/^[a-zA-Z0-9_-]+$/, {
-      message: 'Name must be alphanumeric, with underscores or dashes',
-    })
-    .min(3, { message: 'Name must be at least 3 characters long' })
-    .max(50, { message: 'Name must be at most 50 characters long' }),
-});
-
-type UpdateNameFormValues = z.infer<typeof updateNameFormSchema>;
-
-function UpdateNameDialog(props: UpdateNameDialogProps) {
-  const { onClose } = props;
-  const { agentName, isTemplate, isLocal } = useCurrentAgentMetaData();
-  const { slug: projectSlug } = useCurrentProject();
-
-  const t = useTranslations(
-    'projects/(projectSlug)/agents/(agentId)/AgentPage'
-  );
-
-  const form = useForm({
-    resolver: zodResolver(updateNameFormSchema),
-    defaultValues: {
-      name: agentName,
-    },
-  });
-
-  const {
-    mutate: localMutate,
-    isPending: localIsPending,
-    error: localError,
-  } = useAgentsServiceUpdateAgent();
-
-  const agentBaseType = useAgentBaseTypeName();
-
-  const { id: agentTemplateId } = useCurrentAgent();
-
-  const { mutate, isPending, error } =
-    webOriginSDKApi.agents.updateAgent.useMutation();
-
-  const handleSubmit = useCallback(
-    (values: UpdateNameFormValues) => {
-      if (isLocal) {
-        localMutate(
-          {
-            agentId: agentTemplateId,
-            requestBody: {
-              id: agentTemplateId,
-              name: values.name,
-            },
-          },
-          {
-            onSuccess: () => {
-              window.location.reload();
-            },
-          }
-        );
-
-        return;
-      }
-
-      mutate(
-        {
-          body: { name: values.name, id: agentTemplateId },
-          params: {
-            agent_id: agentTemplateId,
-          },
-        },
-        {
-          onSuccess: async () => {
-            if (isTemplate) {
-              window.location.href = `/projects/${projectSlug}/templates/${values.name}`;
-            } else {
-              window.location.href = `/projects/${projectSlug}/agents/${agentTemplateId}`;
-            }
-          },
-        }
-      );
-    },
-    [isLocal, localMutate, mutate, agentTemplateId, isTemplate, projectSlug]
-  );
-
-  useEffect(() => {
-    if (error && !isFetchError(error)) {
-      if (error.status === 409) {
-        form.setError('name', {
-          message: t('UpdateNameDialog.error.conflict', {
-            agentBaseType: agentBaseType.base,
-          }),
-        });
-
-        return;
-      }
-
-      form.setError('name', {
-        message: t('UpdateNameDialog.error.default'),
-      });
-    }
-  }, [t, error, form, agentBaseType.base]);
-
-  return (
-    <FormProvider {...form}>
-      <Dialog
-        title={t('UpdateNameDialog.title', {
-          agentBaseType: agentBaseType.capitalized,
-        })}
-        isOpen
-        onOpenChange={(next) => {
-          if (!next) {
-            onClose();
-          }
-        }}
-        errorMessage={
-          localError ? t('UpdateNameDialog.error.default') : undefined
-        }
-        isConfirmBusy={isPending || localIsPending}
-        confirmText={t('UpdateNameDialog.confirm')}
-        onSubmit={form.handleSubmit(handleSubmit)}
-      >
-        <FormField
-          name="name"
-          render={({ field }) => (
-            <Input
-              fullWidth
-              description={t('UpdateNameDialog.name.description', {
-                agentBaseType: agentBaseType.base,
-              })}
-              label={t('UpdateNameDialog.name.label')}
-              {...field}
-            />
-          )}
-        />
-      </Dialog>
-    </FormProvider>
   );
 }
 
@@ -889,9 +727,7 @@ function AgentSettingsDropdown() {
       {openDialog == 'deleteAgent' && (
         <DeleteAgentDialog onClose={handleCloseDialog} />
       )}
-      {openDialog == 'renameAgent' && (
-        <UpdateNameDialog onClose={handleCloseDialog} />
-      )}
+
       <DropdownMenu
         align="end"
         triggerAsChild
@@ -918,15 +754,18 @@ function AgentSettingsDropdown() {
             })}
           />
         )}
-        <DropdownMenuItem
-          onClick={() => {
-            setOpenDialog('renameAgent');
-          }}
-          preIcon={<EditIcon />}
-          label={t('UpdateNameDialog.trigger', {
-            agentBaseType: agentBaseType.capitalized,
-          })}
+        <UpdateNameDialog
+          trigger={
+            <DropdownMenuItem
+              doNotCloseOnSelect
+              preIcon={<EditIcon />}
+              label={t('UpdateNameDialog.trigger', {
+                agentBaseType: agentBaseType.capitalized,
+              })}
+            />
+          }
         />
+
         <RestoreLayoutButton />
         <DropdownMenuItem
           onClick={() => {
@@ -945,16 +784,73 @@ function AgentSettingsDropdown() {
   );
 }
 
+function Navigation() {
+  const { isLocal } = useCurrentAgentMetaData();
+  const t = useTranslations(
+    'projects/(projectSlug)/agents/(agentId)/AgentPage'
+  );
+
+  return (
+    <HStack align="center">
+      <Button
+        size="small"
+        color="tertiary-transparent"
+        label={t('Navigation.dashboard')}
+        href={isLocal ? '/development-servers/local/dashboard' : '/projects'}
+      />
+      <Button
+        size="small"
+        color="tertiary-transparent"
+        target="_blank"
+        label={t('Navigation.documentation')}
+        href="https://docs.letta.com/introduction"
+      />
+      <Button
+        size="small"
+        color="tertiary-transparent"
+        target="_blank"
+        label={t('Navigation.apiReference')}
+        href="https://docs.letta.com/api-reference"
+      />
+      <Popover
+        triggerAsChild
+        trigger={
+          <Button
+            size="small"
+            color="tertiary-transparent"
+            label={t('Navigation.support')}
+          />
+        }
+      >
+        <VStack padding>
+          <Typography variant="heading5">
+            {t('Navigation.supportPopover.title')}
+          </Typography>
+          <Typography>{t('Navigation.supportPopover.description')}</Typography>
+          <a
+            target="_blank"
+            className="px-3 flex justify-center items-center gap-2 py-2 text-white bg-[#7289da]"
+            href="https://discord.gg/letta"
+          >
+            {/* eslint-disable-next-line react/forbid-component-props */}
+            <DiscordWhiteLogo className="h-4 w-auto" />
+            <Typography bold>
+              {t('Navigation.supportPopover.joinUs')}
+            </Typography>
+          </a>
+        </VStack>
+      </Popover>
+    </HStack>
+  );
+}
+
 export function AgentPage() {
   const { name: projectName, slug: projectSlug } = useCurrentProject();
   const { agentName, agentId, isTemplate, isLocal } = useCurrentAgentMetaData();
-  const { data, isError } = webApi.adePreferences.getADEPreferences.useQuery({
-    queryKey: webApiQueryKeys.adePreferences.getADEPreferences(agentId),
-    queryData: {
-      params: {
-        agentId,
-      },
-    },
+
+  const [adeLayout, setADELayout] = useLocalStorage({
+    key: `ade-layout-${agentId}`,
+    defaultValue: generateDefaultADELayout().displayConfig,
   });
 
   const t = useTranslations(
@@ -964,27 +860,6 @@ export function AgentPage() {
   const { data: agent } = useAgentsServiceGetAgent({
     agentId,
   });
-
-  const { mutate } = webApi.adePreferences.updateADEPreferences.useMutation();
-
-  const [updatedPositions, setUpdatedPositions] = useState<
-    PanelItemPositionsMatrix<keyof typeof panelRegistry>
-  >([]);
-
-  const [debouncedPositions] = useDebouncedValue(updatedPositions, 500);
-
-  useEffect(() => {
-    if (debouncedPositions.length) {
-      mutate({
-        params: {
-          agentId,
-        },
-        body: {
-          displayConfig: debouncedPositions,
-        },
-      });
-    }
-  }, [agentId, debouncedPositions, mutate]);
 
   const fullPageWarning = useMemo(() => {
     if (isLocal) {
@@ -998,8 +873,8 @@ export function AgentPage() {
     return null;
   }, [isLocal, isTemplate, t]);
 
-  if (!data?.body?.displayConfig || !agent) {
-    return <LoaderContent isError={isError} />;
+  if (!agent) {
+    return <LoaderContent />;
   }
 
   return (
@@ -1013,8 +888,10 @@ export function AgentPage() {
         }}
         templateIdDenyList={!isTemplate ? ['deployment'] : []}
         fallbackPositions={generateDefaultADELayout().displayConfig}
-        initialPositions={data.body.displayConfig}
-        onPositionChange={setUpdatedPositions}
+        initialPositions={adeLayout}
+        onPositionChange={(positions) => {
+          setADELayout(positions);
+        }}
       >
         <ADEPage
           header={
@@ -1030,6 +907,7 @@ export function AgentPage() {
               }}
             >
               <HStack align="center">
+                <Navigation />
                 <ContextWindowPreview />
                 <AgentSettingsDropdown />
                 {/*<NavOverlay />*/}

@@ -31,6 +31,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslations } from 'next-intl';
 import { useCurrentSimulatedAgent } from '../hooks/useCurrentSimulatedAgent/useCurrentSimulatedAgent';
+import { useDateFormatter } from '@letta-web/helpful-client-utils';
 
 interface MemoryItemProps {
   memory: Passage;
@@ -45,6 +46,8 @@ function MemoryItem(props: MemoryItemProps) {
   const queryClient = useQueryClient();
 
   const t = useTranslations('ADE/ArchivalMemories');
+
+  const { formatDate } = useDateFormatter();
 
   const { mutate: deleteMemory, isPending: isDeletingMemory } =
     useAgentsServiceDeleteAgentArchivalMemory({
@@ -83,7 +86,9 @@ function MemoryItem(props: MemoryItemProps) {
   return (
     <ActionCard
       key={memory.id}
-      title={`Memory at ${memory.created_at}`}
+      title={t('MemoryItem.memoryText', {
+        date: formatDate(memory?.created_at || ''),
+      })}
       description={`${memory.text.slice(0, 180)}${
         memory.text.length > 180 ? '...' : ''
       }`}

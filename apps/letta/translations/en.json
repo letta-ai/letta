@@ -353,6 +353,7 @@
       "titles": "Add New Data Source",
       "trigger": "Create Source",
       "goBack": "Go back",
+      "error": "There was an error creating the data source, please try again or contact support.",
       "creatingDataSource": "Creating data source...",
       "title": "Create a new data source",
       "options": {
@@ -367,10 +368,28 @@
       }
     }
   },
-  "ADE/ModelPanel": {
+  "ADE/AgentSettingsPanel": {
+    "SystemPromptEditor": {
+      "updatedAt": "Last updated on {date}",
+      "label": "System Instructions",
+      "error": "There was an error while updating the system prompt, please try again or contact support.",
+      "expand": "Show full system prompt editor",
+      "dialog": {
+        "title": "Update System Prompt",
+        "label": "System Prompt",
+        "info": "The system instructions are not editable by the agent itself (unlike core memory).",
+        "characterCount": "{count} characters"
+      }
+    },
     "embeddingInput": {
       "label": "Embedding Model"
     },
+    "agentName": {
+      "label": "{baseName} Name",
+      "edit": "Edit {baseName} Name"
+    },
+    "copyAgentId": "Copy {baseName} ID",
+    "title": "{baseName} Settings",
     "modelInput": {
       "label": "Model"
     },
@@ -442,7 +461,7 @@
 
       "tools": "Tools",
       "agentSimulator": "Simulator",
-      "archivalMemories": "Vector Database",
+      "archivalMemories": "Archival Memories",
       "templateVersionManager": "Template Version Manager",
       "deployedAgents": "Deployed Agents",
       "distribute": "Distribute",
@@ -457,10 +476,11 @@
     "localProject": "Local Project"
   },
   "ADE/EditCoreMemoriesPanel": {
-    "AdvancedCoreMemoryEditor": {
-      "title": "Edit {name}",
-      "label": "Edit Memory",
-      "switchView": "Switch"
+    "EditMemoryForm": {
+      "characterLimit": "{count}/{limit} chars"
+    },
+    "AdvancedEditMemory": {
+      "title": "Update Core Memories"
     },
     "systemPrompt": "System Prompt",
     "EditSystemPrompt": {
@@ -785,7 +805,7 @@
     }
   },
   "ADE/ArchivalMemories": {
-    "title": "Vector Database",
+    "title": "Archival Memories",
     "MemoryItem": {
       "removeMemory": "Remove Memory",
       "deleteMemory": "Delete Memory",
@@ -802,6 +822,17 @@
     }
   },
   "projects/(projectSlug)/agents/(agentId)/AgentPage": {
+    "Navigation": {
+      "dashboard": "Dashboard",
+      "documentation": "Documentation",
+      "apiReference": "API Reference",
+      "support": "Support",
+      "supportPopover": {
+        "title": "Get support via Discord",
+        "description": "Join our Discord server to get help from the community and the Letta team.",
+        "joinUs": "Join us on Discord"
+      }
+    },
     "UpdateNameDialog": {
       "title": "Rename {agentBaseType}",
       "trigger": "Rename {agentBaseType}",
@@ -875,8 +906,8 @@
     "restoreLayout": "Restore Layout",
     "positionError": "There was a unhandled error while positioning the window, will fallback to default position, we have notified our team about this issue."
   },
-  "ADE/ModelParameters": {
-    "title": "Model Parameters",
+  "ADE/AdvancedSettings": {
+    "title": "Advanced",
     "model": "Model",
     "modelParameters": "Model Parameters",
     "modelEndpoint": "Model Endpoint",
@@ -884,6 +915,14 @@
     "errorLoadingModelParameters": "There has been an error loading model parameters, please refresh the page or contact support.",
     "contextWindowController": {
       "label": "Context Window Size"
+    },
+    "AdvancedSettingsPanel": {
+      "embeddingDimensions": {
+        "label": "Embedding Dimensions"
+      },
+      "embeddingChunkSize": {
+        "label": "Embedding Chunk Size"
+      }
     }
   },
   "ADE/TemplateVersionManager": {
@@ -951,7 +990,7 @@
     "editDataSources": "Attach <editDataSourcesButton></editDataSourcesButton> to your template so your agent can look up information from external sources.",
     "simulate": "Use the <agentSimulatorButton></agentSimulatorButton> to test talking to a deployed agent",
     "agentSimulatorButton": "Simulator",
-    "archivalMemoriesButton": "Vector Database",
+    "archivalMemoriesButton": "Archival Memories",
     "exploreArchivalMemories": "Explore the <archivalMemoriesButton></archivalMemoriesButton> of your agents (see what your agents have learned).",
     "evenMore": "When you're ready to create agents from your template, you can visit the <templateVersionButton></templateVersionButton> and create a new version of your template, then follow the instructions on that page to deploy your agents."
   },

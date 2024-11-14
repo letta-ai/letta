@@ -13,31 +13,42 @@ export function generateDefaultADELayout(): AdePreferencesData {
         size: 30,
         positions: [
           {
-            size: 30,
+            size: 33,
             positions: [
               {
-                id: 'model-details',
+                id: 'agent-settings',
                 isActive: true,
-                templateId: 'model-details',
+                templateId: 'agent-settings',
                 data: undefined,
               },
               {
-                id: 'model-parameters',
+                id: 'advanced-settings',
                 isActive: false,
-                templateId: 'model-parameters',
+                templateId: 'advanced-settings',
                 data: undefined,
               },
             ],
           },
           {
-            size: 70,
+            size: 33,
             positions: [
               {
-                id: 'edit-core-memories',
-                templateId: 'edit-core-memories',
+                id: 'edit-data-sources',
                 isActive: true,
+                templateId: 'edit-data-sources',
                 data: undefined,
               },
+              {
+                id: 'tools-panel',
+                isActive: false,
+                templateId: 'tools-panel',
+                data: undefined,
+              },
+            ],
+          },
+          {
+            size: 33,
+            positions: [
               {
                 id: 'tools-panel',
                 isActive: false,
@@ -79,9 +90,9 @@ export function generateDefaultADELayout(): AdePreferencesData {
             size: 50,
             positions: [
               {
-                id: 'archival-memories',
+                id: 'edit-core-memories',
+                templateId: 'edit-core-memories',
                 isActive: true,
-                templateId: 'archival-memories',
                 data: undefined,
               },
             ],
@@ -90,9 +101,9 @@ export function generateDefaultADELayout(): AdePreferencesData {
             size: 50,
             positions: [
               {
-                id: 'edit-data-sources',
+                id: 'archival-memories',
                 isActive: true,
-                templateId: 'edit-data-sources',
+                templateId: 'archival-memories',
                 data: undefined,
               },
             ],

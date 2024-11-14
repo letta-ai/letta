@@ -119,8 +119,8 @@ export function ColorSwatchTable() {
           />
           <ColorSwatches
             colors={{
-              default: 'bg-background-greyer',
-              content: 'bg-background-greyer-content',
+              default: 'bg-background-grey2',
+              content: 'bg-background-grey2-content',
             }}
             name="Background Greyer"
             notes="Used for even more grey backgrounds in the app"

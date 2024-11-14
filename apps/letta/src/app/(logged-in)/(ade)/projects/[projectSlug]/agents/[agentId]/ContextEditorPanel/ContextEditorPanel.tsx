@@ -25,9 +25,10 @@ export function ContextWindowPreview() {
     computedMemoryStringAtom
   );
 
-  const { data: contextWindow } = useAgentsServiceGetAgentContextWindow({
-    agentId: id,
-  });
+  const { data: contextWindow, isSuccess } =
+    useAgentsServiceGetAgentContextWindow({
+      agentId: id,
+    });
 
   const { postMessage } = useCoreMemorySummaryWorker({
     onMessage: (message: MessageEvent<WorkerResponse>) => {
@@ -334,6 +335,10 @@ export function ContextWindowPreview() {
   const handleMouseLeave = useCallback(() => {
     handleSetOpen(false);
   }, [handleSetOpen]);
+
+  if (!isSuccess) {
+    return null;
+  }
 
   return (
     <Popover

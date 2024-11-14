@@ -147,7 +147,7 @@ function DeployAgentInstructionsCurl(props: DeployAgentInstructionsCurlProps) {
           rounded
           align="center"
           border
-          color="background-greyer"
+          color="background-grey2"
           padding="small"
         >
           <div>
