@@ -29,7 +29,7 @@ export function useCurrentProject(): PartialProjectType {
       updatedAt: '',
       id: REMOTE_DEVELOPMENT_ID,
       name: t('remoteDevelopment'),
-      slug: '/development-servers/dashboard',
+      slug: '/development-servers/local/dashboard',
     };
   }
 

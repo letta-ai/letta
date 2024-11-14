@@ -441,7 +441,7 @@ describe('agentsRouter', () => {
 
       lettaAgentAPIMock.AgentsService.getAgent.mockResolvedValue({
         ...premadeAgentTemplates[AgentRecipeVariant.CUSTOMER_SUPPORT],
-        system: '',
+        system: 'test',
         memory: {
           ...premadeAgentTemplates[AgentRecipeVariant.CUSTOMER_SUPPORT].memory,
           memory: {
@@ -464,6 +464,7 @@ describe('agentsRouter', () => {
 
       lettaAgentAPIMock.AgentsService.createAgent.mockResolvedValue({
         ...premadeAgentTemplates[AgentRecipeVariant.CUSTOMER_SUPPORT],
+        system: 'test',
         agent_type: 'memgpt_agent',
         id: 'test-agent-id',
         name: 'next-test',
@@ -510,6 +511,7 @@ describe('agentsRouter', () => {
         {
           requestBody: {
             ...premadeAgentTemplates[AgentRecipeVariant.CUSTOMER_SUPPORT],
+            system: 'test',
             name: expect.any(String),
             memory: {
               ...premadeAgentTemplates[AgentRecipeVariant.CUSTOMER_SUPPORT]
@@ -546,6 +548,7 @@ describe('agentsRouter', () => {
         status: 201,
         body: {
           ...premadeAgentTemplates[AgentRecipeVariant.CUSTOMER_SUPPORT],
+          system: 'test',
           agent_type: 'memgpt_agent',
           name: valuesFn.mock.calls[0][0].key,
           id: 'test-agent-id',
@@ -575,7 +578,6 @@ describe('agentsRouter', () => {
 
       lettaAgentAPIMock.AgentsService.getAgent.mockResolvedValue({
         ...premadeAgentTemplates[AgentRecipeVariant.CUSTOMER_SUPPORT],
-        system: '',
         id: 'test-agent-id',
         name: 'test',
       });
@@ -584,7 +586,6 @@ describe('agentsRouter', () => {
 
       lettaAgentAPIMock.AgentsService.createAgent.mockResolvedValue({
         ...premadeAgentTemplates[AgentRecipeVariant.CUSTOMER_SUPPORT],
-        system: '',
         id: 'test-agent-id',
         name: 'next-test',
       });
@@ -654,7 +655,6 @@ describe('agentsRouter', () => {
         status: 201,
         body: {
           ...premadeAgentTemplates[AgentRecipeVariant.CUSTOMER_SUPPORT],
-          system: '',
           name: valuesFn.mock.calls[0][0].key,
           id: 'test-agent-id',
         },
@@ -683,7 +683,7 @@ describe('agentsRouter', () => {
 
       lettaAgentAPIMock.AgentsService.getAgent.mockResolvedValue({
         ...premadeAgentTemplates[AgentRecipeVariant.CUSTOMER_SUPPORT],
-        system: '',
+        system: 'hi',
         id: 'test-agent-id',
         name: 'test',
       });
@@ -692,7 +692,6 @@ describe('agentsRouter', () => {
 
       lettaAgentAPIMock.AgentsService.createAgent.mockResolvedValue({
         ...premadeAgentTemplates[AgentRecipeVariant.CUSTOMER_SUPPORT],
-        system: '',
         id: 'test-agent-id',
         name: 'next-test',
       });
@@ -735,6 +734,7 @@ describe('agentsRouter', () => {
         {
           requestBody: {
             ...premadeAgentTemplates[AgentRecipeVariant.CUSTOMER_SUPPORT],
+            system: 'hi',
             name: expect.any(String),
           },
         },
@@ -762,7 +762,6 @@ describe('agentsRouter', () => {
         status: 201,
         body: {
           ...premadeAgentTemplates[AgentRecipeVariant.CUSTOMER_SUPPORT],
-          system: '',
           name: valuesFn.mock.calls[0][0].key,
           id: 'test-agent-id',
         },
@@ -774,8 +773,8 @@ describe('agentsRouter', () => {
         id: 'test-agent-id',
         name: 'test-agent',
         created_at: new Date().toISOString(),
-        system: '',
         ...premadeAgentTemplates[AgentRecipeVariant.CUSTOMER_SUPPORT],
+        system: '',
       };
 
       lettaAgentAPIMock.AgentsService.createAgent.mockResolvedValue(

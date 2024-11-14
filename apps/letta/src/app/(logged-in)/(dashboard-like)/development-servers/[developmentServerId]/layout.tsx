@@ -1,9 +1,6 @@
 'use server';
 import React from 'react';
 import { redirect } from 'next/navigation';
-import { developmentServersRouter } from '$letta/web-api/development-servers/developmentServersRouter';
-import { LettaAgentsAPIWrapper } from '@letta-web/letta-agents-api';
-import { LOCAL_PROJECT_SERVER_URL } from '$letta/constants';
 import { webApiQueryKeys } from '$letta/client';
 import {
   dehydrate,
@@ -11,6 +8,7 @@ import {
   QueryClient,
 } from '@tanstack/react-query';
 import { DevelopmentServerWrapper } from './components/DevelopmentServerWrapper/DevelopmentServerWrapper';
+import { router } from '$letta/web-api/router';
 
 interface LocalServiceLayoutProps {
   children: React.ReactNode;
@@ -27,23 +25,18 @@ async function LocalServiceLayout(props: LocalServiceLayoutProps) {
   const queryClient = new QueryClient();
 
   if (developmentServerId === 'local') {
-    return (
-      <LettaAgentsAPIWrapper baseUrl={LOCAL_PROJECT_SERVER_URL}>
-        {children}
-      </LettaAgentsAPIWrapper>
-    );
+    return <DevelopmentServerWrapper>{children}</DevelopmentServerWrapper>;
   }
 
-  const developmentServer = await developmentServersRouter.getDevelopmentServer(
-    {
+  const developmentServer =
+    await router.developmentServers.getDevelopmentServer({
       params: {
         developmentServerId,
       },
-    }
-  );
+    });
 
   if (!developmentServer || developmentServer.status !== 200) {
-    return redirect('/development-servers/dashboard');
+    return redirect('/development-servers/local/dashboard');
   }
 
   await queryClient.prefetchQuery({

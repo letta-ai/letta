@@ -38,6 +38,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import type { ServerInferResponses } from '@ts-rest/core';
 import type { developmentServersContracts } from '$letta/web-api/development-servers/developmentServersContracts';
 import { useRouter } from 'next/navigation';
+import { ConnectToLocalServerCommand } from '$letta/client/components/ConnectToLocalServerCommand/ConnectToLocalServerCommand';
 
 interface DeleteDevelopmentServerDialogProps {
   trigger: React.ReactNode;
@@ -83,7 +84,7 @@ function DeleteDevelopmentServerDialog(
           }
         );
 
-        push('/development-servers/dashboard');
+        push('/development-servers/local/dashboard');
       },
     });
 
@@ -324,42 +325,57 @@ function ErrorView(props: ErrorViewProps) {
   const t = useTranslations('development-servers/page');
   const currentDevelopmentServerConfig = useCurrentDevelopmentServerConfig();
 
+  const isLocal = useMemo(() => {
+    return currentDevelopmentServerConfig?.id === 'local';
+  }, [currentDevelopmentServerConfig]);
+
   return (
     <VStack paddingTop="xxlarge" align="center">
       <Card>
         <VStack paddingY="xxlarge" align="center" width="contained">
           <WarningIcon size="xxlarge" />
           <Typography variant="heading3">{t('ErrorView.title')}</Typography>
-          <Typography>{t('ErrorView.description')}</Typography>
-          <VStack>
-            <Typography>{t('ErrorView.connection.title')}</Typography>
-            <RawInput
-              hideLabel
-              label={t('ErrorView.connection.url.label')}
-              fullWidth
-              onChange={() => {
-                return false;
-              }}
-              value={currentDevelopmentServerConfig?.url || ''}
-            />
-            <RawInput
-              hideLabel
-              showVisibilityControls
-              onChange={() => {
-                return false;
-              }}
-              label={t('ErrorView.connection.password.label')}
-              fullWidth
-              value={currentDevelopmentServerConfig?.password || ''}
-            />
-          </VStack>
+          <Typography>
+            {isLocal
+              ? t('ErrorView.localConnection')
+              : t('ErrorView.description')}
+          </Typography>
+          {isLocal ? (
+            <VStack>
+              <Typography>{t('ErrorView.runTheServer')}</Typography>
+              <ConnectToLocalServerCommand />
+            </VStack>
+          ) : (
+            <VStack>
+              <Typography>{t('ErrorView.connection.title')}</Typography>
+              <RawInput
+                hideLabel
+                label={t('ErrorView.connection.url.label')}
+                fullWidth
+                onChange={() => {
+                  return false;
+                }}
+                value={currentDevelopmentServerConfig?.url || ''}
+              />
+              <RawInput
+                hideLabel
+                showVisibilityControls
+                onChange={() => {
+                  return false;
+                }}
+                label={t('ErrorView.connection.password.label')}
+                fullWidth
+                value={currentDevelopmentServerConfig?.password || ''}
+              />
+            </VStack>
+          )}
           <HStack paddingTop="small">
             <Button
               onClick={onRetry}
               color="secondary"
               label={t('ErrorView.retry')}
             />
-            {currentDevelopmentServerConfig && (
+            {currentDevelopmentServerConfig && !isLocal && (
               <UpdateDevelopmentServerDetailsDialog
                 trigger={
                   <Button
@@ -443,14 +459,16 @@ function LocalProjectPage() {
         },
         cell: ({ row }) => (
           <Button
-            href={`/development-servers/local/agents/${row.original.id}`}
+            href={`/development-servers/${
+              currentDevelopmentServerConfig?.id || 'local'
+            }/agents/${row.original.id}`}
             color="tertiary"
             label={t('table.openInADE')}
           />
         ),
       },
     ],
-    [t]
+    [t, currentDevelopmentServerConfig?.id]
   );
 
   return (
