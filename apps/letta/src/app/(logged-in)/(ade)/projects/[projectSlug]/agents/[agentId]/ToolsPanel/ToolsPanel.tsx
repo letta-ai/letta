@@ -1,16 +1,16 @@
 'use client';
 import React, { useCallback, useMemo, useState } from 'react';
 import {
-  ActionCard, ChevronLeftIcon, ChevronRightIcon, CodeIcon, DialogContentWithCategories,
-  FileTreeContentsType, Frame, ListIcon, LoadedTypography,
-  PanelTemplate, RawCodeEditor, RawToggleGroup, ToggleGroup
+  FileTreeContentsType,
+  PanelTemplate, Typography
+} from '@letta-web/component-library';
+import {
+  ActionCard, ChevronLeftIcon, CloseIcon, CodeIcon, DialogContentWithCategories, EditIcon, FormActions, Frame, LettaLoader, ListIcon, LoadedTypography, RawCodeEditor, RawToggleGroup, TextArea
 } from '@letta-web/component-library';
 import {
   brandKeyToLogo,
   brandKeyToName,
-  Card,
   CheckIcon,
-  InlineCode,
   isBrandKey,
   NiceGridDisplay,
   SearchIcon,
@@ -23,7 +23,6 @@ import {
   Logo,
   PlusIcon,
   ToolsIcon,
-  Typography,
 } from '@letta-web/component-library';
 import {
   Button,
@@ -43,8 +42,8 @@ import {
 } from '@letta-web/component-library';
 import { useCurrentAgent } from '../hooks';
 import type {
-  AgentState,
-  letta__schemas__tool__Tool,
+  AgentState, GetToolResponse,
+  letta__schemas__tool__Tool
 } from '@letta-web/letta-agents-api';
 import { useAgentsServiceAddToolToAgent } from '@letta-web/letta-agents-api';
 import { useAgentsServiceRemoveToolFromAgent } from '@letta-web/letta-agents-api';
@@ -66,6 +65,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useCurrentAgentMetaData } from '../hooks/useCurrentAgentMetaData/useCurrentAgentMetaData';
 import { useTranslations } from 'next-intl';
 import { Slot } from '@radix-ui/react-slot';
+import { ResetIcon } from '@radix-ui/react-icons';
 
 const { usePanelRouteData, usePanelPageContext } = createPageRouter(
   {
@@ -157,17 +157,18 @@ function AddToolDialogDetailActions(props: AddToolDialogDetailActionsProps) {
 
 interface AllToolsViewProps {
   setSelectedToolId: (toolId: string) => void;
+  startCreateNewTool: VoidFunction
 }
 
 function AllToolsView(props: AllToolsViewProps) {
-  const { setSelectedToolId } = props;
+  const { setSelectedToolId, startCreateNewTool } = props;
 
   const t = useTranslations('ADE/Tools');
 
   const { data: _allTools } = useToolsServiceListTools();
 
   const allTools = useMemo(() => {
-    // deuplicate tools on name
+    // deduplicate tools on name
     const tools = _allTools || [];
 
     const toolsMap = new Map<string, letta__schemas__tool__Tool>();
@@ -230,7 +231,13 @@ function AllToolsView(props: AllToolsViewProps) {
               />
               <Button
                 preIcon={<PlusIcon />}
-                label={t('AddToolDialog.createTool')} color="secondary" />
+                type="button"
+                label={t('AddToolDialog.createTool')}
+                color="secondary"
+                onClick={() => {
+                  startCreateNewTool();
+                }}
+              />
             </HStack>
             <VStack fullHeight fullWidth overflowY="auto">
               <NiceGridDisplay>
@@ -259,84 +266,297 @@ function AllToolsView(props: AllToolsViewProps) {
   )
 }
 
-interface ViewToolToAddProps {
+type ViewMode = 'code' | 'schema';
+
+interface ViewToolProps {
+  tool?: letta__schemas__tool__Tool;
+}
+
+function ViewTool(props: ViewToolProps) {
+  const { tool } = props;
+
+  const t = useTranslations('ADE/Tools');
+
+  const [viewMode, setViewMode] = useState<ViewMode>('code');
+
+  return (
+    <VStack fullHeight flex>
+      <VStack borderBottom paddingBottom fullWidth>
+        <HStack fullWidth>
+          <HStack align="center">
+            <LoadedTypography
+              text={tool?.name}
+              font="mono"
+              variant="heading2"
+              fillerText="SUPERLONGTOOLNAMESOCOOL"
+            />
+          </HStack>
+        </HStack>
+        {tool?.description && <HStack fullWidth>
+          <Typography>
+            {tool.description}
+          </Typography>
+        </HStack>}
+      </VStack>
+      <VStack flex fullHeight>
+        <RawToggleGroup
+          hideLabel
+          border
+          value={viewMode}
+          onValueChange={mode => {
+            if (mode) {
+              setViewMode(mode as ViewMode);
+            }
+          }}
+          label={t('SpecificToolComponent.viewToggle.label')} items={[{
+          label: t('SpecificToolComponent.viewToggle.options.code'),
+          value: 'code',
+          icon: <CodeIcon />,
+        }, {
+          label: t('SpecificToolComponent.viewToggle.options.schema'),
+          value: 'schema',
+          icon: <ListIcon />,
+        }]} />
+        <VStack fullHeight flex>
+          {viewMode === 'code' ? (
+            <RawCodeEditor toolbarPosition="bottom" flex fullWidth fullHeight label="" language="python" code={tool?.source_code || ''} /> ) : (
+            <RawCodeEditor toolbarPosition="bottom" flex fullWidth fullHeight label="" language="javascript" code={tool?.json_schema ? JSON.stringify(tool.json_schema, null, 2) : ''} />
+          )}
+        </VStack>
+      </VStack>
+    </VStack>
+  )
+}
+
+interface EditToolProps {
+  tool: letta__schemas__tool__Tool;
+  onClose: VoidFunction;
+}
+
+const editToolSchema = z.object({
+  name: z.string(),
+  description: z.string(),
+  sourceCode: z.string(),
+});
+
+type EditToolFormValues = z.infer<typeof editToolSchema>;
+
+function EditTool(props: EditToolProps) {
+  const { tool, onClose } = props;
+
+  const queryClient = useQueryClient();
+  const form = useForm<EditToolFormValues>({
+    resolver: zodResolver(editToolSchema),
+    defaultValues: {
+      name: tool.name || '',
+      description: tool.description || '',
+      sourceCode: tool.source_code || '',
+    },
+  });
+
+  const { mutate, isPending, isSuccess } = useToolsServiceUpdateTool();
+
+  const t = useTranslations('ADE/Tools');
+
+  const handleSubmit = useCallback((values: EditToolFormValues) => {
+    mutate({
+      toolId: tool.id || '',
+      requestBody: {
+        description: values.description,
+        source_code: values.sourceCode,
+      }
+    }, {
+      onSuccess: () => {
+        queryClient.setQueriesData<GetToolResponse | undefined>(
+          {
+            queryKey: UseToolsServiceGetToolKeyFn({
+              toolId: tool.id || '',
+            })
+          },
+          (oldData) => {
+            if (!oldData) {
+              return oldData;
+            }
+
+            return {
+              ...oldData,
+              description: values.description,
+              source_code: values.sourceCode,
+            };
+          }
+        );
+
+        onClose();
+      }
+    })
+
+  }, [mutate, onClose, queryClient, tool.id]);
+
+
+  return (
+    <FormProvider {...form}>
+      <Form onSubmit={form.handleSubmit(handleSubmit)}>
+        <VStack flex fullHeight gap="form">
+          <HStack width="contained">
+            <FormField
+              name="name"
+              render={({ field }) => <Input
+                disabled
+                fullWidth label={t('EditTool.name.label')} {...field} />}
+            />
+          </HStack>
+          <FormField
+            name="description"
+            render={({ field }) => <TextArea fullWidth label={t('EditTool.description.label')} {...field} />}
+          />
+          <FormField
+            name="sourceCode"
+            render={({ field }) => (
+              <CodeEditor
+                fullWidth
+                fullHeight
+                flex
+                toolbarPosition="bottom"
+                language="python"
+                code={field.value}
+                onSetCode={field.onChange}
+                label={t('EditTool.sourceCode.label')}
+              />
+            )}
+          />
+          <FormActions>
+            <Button
+              type="submit"
+              label={t('EditTool.update')}
+              color="secondary"
+              busy={isPending || isSuccess}
+            />
+          </FormActions>
+        </VStack>
+
+
+      </Form>
+    </FormProvider>
+  )
+}
+
+
+interface SpecificToolComponentProps {
   toolId: string;
-  onAddTool?: VoidFunction;
+  onAddTool?: {
+    operation: VoidFunction,
+    isPending?: boolean,
+    isError?: boolean,
+    isSuccess?: boolean,
+  };
+  defaultIsEditingToolMode?: boolean;
   onRemoveTool?: VoidFunction;
   onClose?: VoidFunction
 }
 
-type ViewMode = 'code' | 'schema';
 
-function ViewTool(props: ViewToolToAddProps) {
-  const { toolId, onAddTool, onClose } = props;
+function SpecificToolComponent(props: SpecificToolComponentProps) {
+  const { toolId, onAddTool, onClose, defaultIsEditingToolMode = false } = props;
+  const { tools } = useCurrentAgent();
+
   const t = useTranslations('ADE/Tools');
+  const [isEditingToolMode, setIsEditingToolMode] = useState(defaultIsEditingToolMode);
 
-  const [viewMode, setViewMode] = useState<ViewMode>('code');
+
+  const handleClose = useCallback(() => {
+    setIsEditingToolMode(false);
+
+    if (onClose) {
+      onClose();
+    }
+  }, [onClose]);
+
+
+
   const { data: tool } = useToolsServiceGetTool({
     toolId,
   });
 
+  const isToolAdded = useMemo(() => {
+    if (!tools || !tool?.name) {
+      return false;
+    }
+
+    return tools.includes(tool.name);
+  }, [tools, tool]);
+
+  const isToolsLoading = useMemo(() => {
+    return !tool && !tools
+  }, [tool, tools]);
+
   return (
     <VStack flex fullHeight="withMinHeight" paddingBottom>
-      <VStack flex fullHeight="withMinHeight" flex color="background" border padding fullWidth>
-        <VStack borderBottom paddingBottom>
-          <div>
-            {onClose && (
+      <VStack flex fullHeight="withMinHeight" color="background" border padding fullWidth>
+        <HStack fullWidth justify="spaceBetween">
+          <HStack>
+            {handleClose && (
               <Button
                 size="small"
+                disabled={isEditingToolMode}
                 preIcon={<ChevronLeftIcon />}
                 color="tertiary"
-                label={t('ViewTool.back')}
-                onClick={onClose}
+                label={t('SpecificToolComponent.back')}
+                onClick={handleClose}
               />
             )}
-          </div>
-
-          <HStack fullWidth>
-            <HStack align="center">
-              <LoadedTypography
-                text={tool?.name}
-                font="mono"
-                variant="heading2"
-                fillerText="SUPERLONGTOOLNAMESOCOOL"
+            {isEditingToolMode && (
+              <Button
+                size="small"
+                type="button"
+                busy={isToolsLoading}
+                onClick={() => {
+                  setIsEditingToolMode(false);
+                }               }
+                preIcon={<CloseIcon />}
+                color="tertiary"
+                label={t('SpecificToolComponent.restore')}
               />
-            </HStack>
-          </HStack>
-          <HStack fullWidth>
-            <LoadedTypography
-              fillerText="Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed non risus. Suspendisse lectus tortor, dignissim sit amet, adipiscing nec, ultricies sed, dolor."
-              text={tool?.description}
-              variant="body"
-            />
-          </HStack>
-        </VStack>
-        <VStack flex fullHeight>
-          <RawToggleGroup
-            hideLabel
-            border
-            value={viewMode}
-            onValueChange={mode => {
-              if (mode) {
-                setViewMode(mode as ViewMode);
-              }
-            }}
-            label={t('ViewTool.viewToggle.label')} items={[{
-            label: t('ViewTool.viewToggle.options.code'),
-            value: 'code',
-            icon: <CodeIcon />,
-          }, {
-            label: t('ViewTool.viewToggle.options.schema'),
-            value: 'schema',
-            icon: <ListIcon />,
-          }]} />
-          <VStack fullHeight flex>
-            {viewMode === 'code' ? (
-              <RawCodeEditor flex fullWidth fullHeight label="" language="python" code={tool?.source_code || ''} /> ) : (
-              <div />
             )}
-          </VStack>
-        </VStack>
+          </HStack>
+          <HStack>
+            {!isEditingToolMode && (
+              <Button
+                size="small"
+                type="button"
+                busy={isToolsLoading}
+                onClick={() => {
+                  setIsEditingToolMode(true);
+                }               }
+                preIcon={<EditIcon />}
+                color="tertiary"
+                label={t('SpecificToolComponent.edit')}
+              />
+            )}
+            {onAddTool && !isEditingToolMode && (
+              <Button
+                size="small"
+                disabled={isToolAdded}
+                type="button"
+                busy={isToolsLoading || onAddTool.isPending || onAddTool.isSuccess}
+                preIcon={<PlusIcon />}
+                color="secondary"
+                label={isToolAdded ? t('SpecificToolComponent.alreadyAdded') : t('SpecificToolComponent.add')}
+                onClick={onAddTool.operation}
+              />
+            )}
+          </HStack>
+        </HStack>
+        {isEditingToolMode ? (
+          <>
+            {!tool ? (
+              <LettaLoader size="large" />
+            ) : (
+              <EditTool onClose={() => {
+                setIsEditingToolMode(false);
+              }} tool={tool} />
+            )}
+          </>
+        ) : <ViewTool tool={tool} />}
       </VStack>
     </VStack>
   );
@@ -355,11 +575,105 @@ function AddToolDialog() {
   const [open, setOpen] = useState(false);
   const t = useTranslations('ADE/Tools');
 
+  const { id: agentId } = useCurrentAgent();
   const [toolIdToView, setToolIdToView] = useState<string | null>(null);
+  const [isCreatingNewTool, setIsCreatingNewTool] = useState(false);
+
+  const { mutate, isError, isSuccess, isPending } = useAgentsServiceAddToolToAgent();
+
+  const queryClient = useQueryClient();
+
+  const handleOpenChange = useCallback((state: boolean) => {
+    if (!state) {
+      setIsCreatingNewTool(false);
+      setToolIdToView(null);
+    }
+
+    setOpen(state);
+  }, []);
+
+  const handleAddTool = useCallback((toolId: string) => {
+    mutate({
+      agentId,
+      toolId,
+    }, {
+      onSuccess: (nextAgentState) => {
+        queryClient.setQueriesData<AgentState | undefined>(
+          {
+            queryKey: UseAgentsServiceGetAgentKeyFn({
+              agentId: agentId,
+            }),
+          },
+          (oldData) => {
+            if (!oldData) {
+              return oldData;
+            }
+
+            return {
+              ...oldData,
+              tools: nextAgentState.tools,
+            };
+          }
+        );
+
+        handleOpenChange(false);
+      },
+    });
+  }, [agentId, handleOpenChange, mutate, queryClient]);
+
+  const component = useMemo(() => {
+    if (isCreatingNewTool) {
+      return <ToolCreator onClose={() => {
+        setIsCreatingNewTool(false);
+      }} />;
+    }
+
+    if (toolIdToView) {
+      return (
+        <SpecificToolComponent
+          toolId={toolIdToView}
+          onAddTool={{
+            operation: () => {
+              handleAddTool(toolIdToView);
+            },
+            isPending,
+            isError,
+            isSuccess,
+          }}
+          onClose={() => {
+            setToolIdToView(null);
+          }}
+        />
+      );
+    }
+
+    return (
+      <AllToolsView
+        startCreateNewTool={() => {
+          setIsCreatingNewTool(true);
+        }}
+        setSelectedToolId={setToolIdToView}
+      />
+    );
+  }, [handleAddTool, isCreatingNewTool, isError, isSuccess, isPending, setToolIdToView, toolIdToView]);
+
+  const title = useMemo(() => {
+    if (isCreatingNewTool) {
+      return t('AddToolDialog.title.create');
+    }
+
+    if (toolIdToView) {
+      return t('AddToolDialog.title.view');
+    }
+
+    return t('AddToolDialog.title.add');
+  }, []);
 
   return (
     <Dialog
-      isOpen
+      disableForm
+      isOpen={open}
+      errorMessage={isError ? t('AddToolDialog.error') : undefined}
       hideFooter
       trigger={
         <Button
@@ -369,20 +683,11 @@ function AddToolDialog() {
           preIcon={<PlusIcon />}
         />
       }
-      title={t('AddToolDialog.title')}
-      onOpenChange={setOpen}
+      title={title}
+      onOpenChange={handleOpenChange}
       size="full"
     >
-      {toolIdToView ? (
-        <ViewTool
-          toolId={toolIdToView}
-          onClose={() => {
-            setToolIdToView(null);
-          }}
-        />
-      ) : (
-        <AllToolsView setSelectedToolId={setToolIdToView} />
-      )}
+      {component}
     </Dialog>
   );
 }
@@ -583,25 +888,43 @@ function ToolsList(props: ToolsProps) {
   );
 }
 
-const createToolSchema = z.object({
-  name: z.string(),
-  sourceCode: z.string(),
-});
 
-function ToolCreator() {
+interface ToolCreatorProps {
+  onClose: VoidFunction;
+}
+
+function ToolCreator(props: ToolCreatorProps) {
+  const { onClose } = props;
+  const t = useTranslations('ADE/Tools');
+
+  const createToolSchema = useMemo(() => {
+    return  z.object({
+      // alphanumeric, underscores, and underscores
+      name: z.string().regex(/^[a-zA-Z0-9_]+$/, {
+        message: t('ToolCreator.name.validation'),
+      }),
+      description: z.string(),
+      sourceCode: z.string(),
+    });
+  }, [t]);
+
   const queryClient = useQueryClient();
 
-  const { mutate, isPending: isCreatingTool } = useToolsServiceCreateTool({
+  const { mutate, isPending: isCreatingTool, isSuccess, isError } = useToolsServiceCreateTool({
     onSuccess: async () => {
       await queryClient.invalidateQueries({
         queryKey: UseToolsServiceListToolsKeyFn(),
       });
+
+      onClose();
     },
   });
 
   const form = useForm<z.infer<typeof createToolSchema>>({
     resolver: zodResolver(createToolSchema),
     defaultValues: {
+      name: '',
+      description: '',
       sourceCode: '',
     },
   });
@@ -621,170 +944,59 @@ function ToolCreator() {
   );
 
   return (
+    <VStack flex fullHeight="withMinHeight" paddingBottom>
+      <VStack flex fullHeight="withMinHeight" color="background" border padding fullWidth>
     <FormProvider {...form}>
       <Form onSubmit={form.handleSubmit(handleSubmit)}>
-        <PanelMainContent>
-          <FormField
-            control={form.control}
-            name="name"
-            render={({ field }) => <Input fullWidth label="Name" {...field} />}
-          />
-          <FormField
-            control={form.control}
-            name="sourceCode"
-            render={({ field }) => (
-              <CodeEditor
-                fullWidth
-                toolbarPosition="bottom"
-                language="python"
-                code={field.value}
-                onSetCode={field.onChange}
-                label="Source Code"
-              />
-            )}
-          />
-          <HStack fullWidth justify="end">
-            <Button
-              type="submit"
-              label="Create"
-              color="primary"
-              busy={isCreatingTool}
+          <VStack flex fullHeight gap="form">
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => <Input
+                placeholder={t('ToolCreator.name.placeholder')}
+                fullWidth label={t('ToolCreator.name.label')} {...field} />}
             />
-          </HStack>
-        </PanelMainContent>
+            <FormField
+              control={form.control}
+              name="description"
+              render={({ field }) => <TextArea
+                placeholder={t('ToolCreator.description.placeholder')}
+                fullWidth label={t('ToolCreator.description.label')} {...field} />}          />
+            <FormField
+              control={form.control}
+              name="sourceCode"
+              render={({ field }) => (
+                <CodeEditor
+                  flex
+                  fullHeight
+                  fullWidth
+                  toolbarPosition="bottom"
+                  language="python"
+                  code={field.value}
+                  onSetCode={field.onChange}
+                  label={t('ToolCreator.sourceCode.label')}
+                />
+              )}
+            />
+            <FormActions
+              errorMessage={isError ? t('ToolCreator.error') : undefined}
+            >
+              <Button
+                type="submit"
+                label="Create"
+                color="secondary"
+                busy={isCreatingTool ||isSuccess}
+              />
+            </FormActions>
+          </VStack>
       </Form>
     </FormProvider>
+      </VStack>
+      </VStack>
   );
 }
 
-const editToolSchema = z.object({
-  sourceCode: z.string(),
-  description: z.string(),
-});
 
-interface ToolEditorProps {
-  initialTool?: letta__schemas__tool__Tool;
-  isLoading: boolean;
-}
-
-function ToolEditor(props: ToolEditorProps) {
-  const { initialTool, isLoading } = props;
-  const queryClient = useQueryClient();
-  const { setCurrentPage } = usePanelPageContext();
-
-  const { mutate, isPending: isUpdatingTool } = useToolsServiceUpdateTool({
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({
-        queryKey: UseToolsServiceGetToolKeyFn({
-          toolId: initialTool?.id || '',
-        }),
-      });
-    },
-  });
-
-  const form = useForm<z.infer<typeof editToolSchema>>({
-    resolver: zodResolver(editToolSchema),
-    defaultValues: {
-      sourceCode: initialTool?.source_code || '',
-      description: initialTool?.description || '',
-    },
-  });
-
-  const handleSubmit = useCallback(
-    (values: z.infer<typeof editToolSchema>) => {
-      mutate({
-        toolId: initialTool?.id || '',
-        requestBody: {
-          description: values.description,
-          source_code: values.sourceCode,
-        },
-      });
-    },
-    [initialTool?.id, mutate]
-  );
-
-  return (
-    <FormProvider {...form}>
-      <Form onSubmit={form.handleSubmit(handleSubmit)}>
-        <PanelMainContent>
-          {isLoading ? (
-            <LettaLoaderPanel />
-          ) : (
-            <>
-              <RawInput
-                value={initialTool?.name || ''}
-                fullWidth
-                disabled
-                label="Name"
-              />
-              <FormField
-                control={form.control}
-                name="sourceCode"
-                render={({ field }) => (
-                  <CodeEditor
-                    fullWidth
-                    toolbarPosition="bottom"
-                    language="python"
-                    code={field.value}
-                    onSetCode={field.onChange}
-                    label="Source Code"
-                  />
-                )}
-              />
-              <HStack fullWidth justify="end">
-                <Button
-                  type="button"
-                  label="Cancel"
-                  color="tertiary"
-                  onClick={() => {
-                    setCurrentPage('root', {});
-                  }}
-                />
-                <Button
-                  type="submit"
-                  label="Save"
-                  color="primary"
-                  busy={isUpdatingTool}
-                />
-              </HStack>
-            </>
-          )}
-        </PanelMainContent>
-      </Form>
-    </FormProvider>
-  );
-}
-
-export function EditToolPage() {
-  const { toolId } = usePanelRouteData<'editTool'>();
-  const { data, isLoading } = useToolsServiceGetTool(
-    {
-      toolId,
-    },
-    undefined,
-    {
-      enabled: !!toolId,
-    }
-  );
-
-  const isNewTool = useMemo(() => {
-    return !toolId;
-  }, [toolId]);
-
-  return (
-    <>
-      {isNewTool ? (
-        <ToolCreator />
-      ) : (
-        <ToolEditor
-          initialTool={data}
-          key={data?.source_code}
-          isLoading={isLoading}
-        />
-      )}
-    </>
-  );
-}
 
 function ToolsListPage() {
   const [search, setSearch] = useState('');

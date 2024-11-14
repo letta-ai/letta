@@ -432,6 +432,17 @@ pre > code.diff-highlight .token.token.inserted:not(.prefix) *::selection {
   font-size: var(--font-size-sm);
 }
 
+.line-number-wrapper {
+  position: absolute;
+  display: block;
+  padding-right: 10px;
+  width: 60px;
+  height: 100%;
+  border-right: 1px solid hsl(var(--border));
+  background-color: hsl(var(--background-greyer));
+  overflow: hidden;
+}
+
 .editor.line-numbers textarea {
   outline: none;
   padding-left: calc(var(--editor-lineNumber-gutter-width) + 20px) !important;

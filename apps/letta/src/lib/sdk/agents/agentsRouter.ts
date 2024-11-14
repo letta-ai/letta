@@ -703,6 +703,7 @@ export async function updateAgentFromAgentId(options: UpdateAgentFromAgentId) {
   const {
     preserveCoreMemories = false,
     variables,
+    // this will be the base to copy from
     fromAgent,
     toAgent,
     lettaAgentsUserId,

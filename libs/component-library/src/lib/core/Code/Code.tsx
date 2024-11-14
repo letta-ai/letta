@@ -15,10 +15,10 @@ import { CopyButton } from '../../reusable/CopyButton/CopyButton';
 import { DownloadButton } from '../../reusable/DownloadButton/DownloadButton';
 import { HStack } from '../../framing/HStack/HStack';
 import { makeRawInput } from '../Form/Form';
-import { Frame } from '../../framing/Frame/Frame';
 import type { VariantProps } from 'class-variance-authority';
 import { cva } from 'class-variance-authority';
 import { cn } from '@letta-web/core-style-config';
+import { VStack } from '../../framing/VStack/VStack';
 
 export type SupportedLangauges =
   | 'bash'
@@ -48,7 +48,7 @@ const codeVariants = cva('font-mono', {
       small: 'text-xs',
     },
     variant: {
-      default: 'rounded border',
+      default: 'border',
       minimal: '',
     },
   },
@@ -61,6 +61,7 @@ export interface CodeProps extends VariantProps<typeof codeVariants> {
   language: SupportedLangauges;
   toolbarAction?: React.ReactNode;
   code: string;
+  flex?: boolean;
   testId?: string;
   showLineNumbers?: boolean;
   border?: boolean;
@@ -91,6 +92,7 @@ export function Code(props: CodeProps) {
     toolbarPosition,
     inline,
     fullHeight,
+    flex,
     toolbarAction,
   } = props;
 
@@ -128,55 +130,62 @@ export function Code(props: CodeProps) {
   }
 
   return (
-    <Frame
+    <VStack
+      gap={false}
       className={cn(codeVariants({ variant, fontSize }))}
       fullHeight={fullHeight}
+      flex={flex}
+      position="relative"
+      overflow="hidden"
       fullWidth
     >
       <div className="hidden" data-testid={`${testId}-raw-code`}>
         {code}
       </div>
       {toolbarPosition === 'top' && toolbar}
-      <Editor
-        className={cn(
-          'editor bg-background w-full',
-          showLineNumbers && 'line-numbers'
-        )}
-        value={code}
-        disabled={!onSetCode}
-        data-testid={`${testId}-code-editor`}
-        onValueChange={(code) => {
-          if (!onSetCode) {
-            return;
-          }
+      <VStack className="flex-1" position="relative">
+        <div className={cn(showLineNumbers ? 'line-number-wrapper' : '')} />
+        <Editor
+          className={cn(
+            'editor bg-background w-full',
+            showLineNumbers && 'line-numbers'
+          )}
+          value={code}
+          disabled={!onSetCode}
+          data-testid={`${testId}-code-editor`}
+          onValueChange={(code) => {
+            if (!onSetCode) {
+              return;
+            }
 
-          onSetCode(code);
-        }}
-        highlight={(code) => {
-          let res = highlight(code, languages[language], language);
+            onSetCode(code);
+          }}
+          highlight={(code) => {
+            let res = highlight(code, languages[language], language);
 
-          if (showLineNumbers) {
-            res = res
-              .split('\n')
-              .map(
-                (line, i) =>
-                  `<span class='editorLineNumber'>${i + 1}</span>${line}`
-              )
-              .join('\n');
-          }
+            if (showLineNumbers) {
+              res = res
+                .split('\n')
+                .map(
+                  (line, i) =>
+                    `<span class='editorLineNumber'>${i + 1}</span>${line}`
+                )
+                .join('\n');
+            }
 
-          return res;
-        }}
-        padding={10}
-        textareaId={id}
-        style={{
-          fontFamily: 'inherit',
-          fontSize: 'inherit',
-          outline: 0,
-        }}
-      />
+            return res;
+          }}
+          padding={10}
+          textareaId={id}
+          style={{
+            fontFamily: 'inherit',
+            fontSize: 'inherit',
+            outline: 0,
+          }}
+        />
+      </VStack>
       {toolbarPosition === 'bottom' && toolbar}
-    </Frame>
+    </VStack>
   );
 }
 

@@ -299,6 +299,7 @@ interface DialogProps extends VariantProps<typeof dialogVariants> {
   cancelText?: string;
   onConfirm?: () => void;
   onSubmit?: (e: React.FormEvent<HTMLFormElement>) => void;
+  disableForm?: boolean;
   hideCancel?: boolean;
   hideConfirm?: boolean;
   hideFooter?: boolean;
@@ -320,6 +321,7 @@ export function Dialog(props: DialogProps) {
     children,
     reverseButtons,
     isConfirmBusy,
+    disableForm,
     trigger,
     confirmColor = 'secondary',
     preventCloseFromOutside,
@@ -352,6 +354,8 @@ export function Dialog(props: DialogProps) {
     [onConfirm, onSubmit]
   );
 
+  const Element = disableForm ? 'div' : 'form';
+
   return (
     <DialogRoot
       defaultOpen={defaultOpen}
@@ -380,7 +384,7 @@ export function Dialog(props: DialogProps) {
           <DialogHeader>
             <DialogTitle>{title}</DialogTitle>
           </DialogHeader>
-          <form className="contents" onSubmit={handleSubmit}>
+          <Element className="contents" {...!disableForm ? { handleSubmit } : {}}>
             <div className="px-[24px] h-full">
               {children}
             </div>
@@ -411,7 +415,7 @@ export function Dialog(props: DialogProps) {
               </DialogFooter>
             )}
 
-          </form>
+          </Element>
         </DialogContext.Provider>
       </DialogContent>
     </DialogRoot>

@@ -160,6 +160,7 @@ export interface InputContainerProps {
   inline?: boolean | 'reverse';
   fullWidth?: boolean;
   fullHeight?: boolean;
+  flex?: boolean;
   children?: React.ReactNode;
 }
 
@@ -170,6 +171,7 @@ export function InputContainer(props: InputContainerProps) {
     preLabelIcon,
     fullWidth,
     fullHeight,
+    flex,
     description,
     inline,
     children,
@@ -180,6 +182,7 @@ export function InputContainer(props: InputContainerProps) {
         fullWidth={fullWidth}
         fullHeight={fullHeight}
         inline={inline}
+        flex={flex}
         inputAndLabel={
           <>
             <FormLabel
@@ -214,6 +217,7 @@ export function RawInputContainer(props: RawInputContainerProps) {
     id,
     hideLabel,
     fullHeight,
+    flex,
     inline,
     fullWidth,
     preLabelIcon,
@@ -225,6 +229,7 @@ export function RawInputContainer(props: RawInputContainerProps) {
     <InputWrapper
       fullWidth={fullWidth}
       fullHeight={fullHeight}
+      flex={flex}
       inputAndLabel={
         <>
           <LabelPrimitive
