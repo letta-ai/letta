@@ -42,6 +42,7 @@ interface ToggleCardProps extends VariantProps<typeof actionCardVariants> {
   subtitle?: string;
   isActive?: boolean;
   icon?: React.ReactNode;
+  smallImage?: React.ReactNode;
   badge?: React.ReactNode;
   mainAction?: React.ReactNode;
   isSkeleton?: boolean;
@@ -49,6 +50,7 @@ interface ToggleCardProps extends VariantProps<typeof actionCardVariants> {
   children?: React.ReactNode;
   onClick?: () => void;
   hideClickArrow?: boolean;
+  noMobileViewChange?: boolean;
   testId?: string;
   actions?: React.ReactNode;
 }
@@ -58,10 +60,12 @@ export const ActionCard = forwardRef<HTMLElement, ToggleCardProps>(
     const {
       title,
       icon,
+      smallImage,
       badge,
       testId,
       isActive,
       onClick,
+      noMobileViewChange,
       hideClickArrow,
       mainAction,
       children,
@@ -98,10 +102,13 @@ export const ActionCard = forwardRef<HTMLElement, ToggleCardProps>(
             <VStack overflow="hidden" gap="text" fullWidth>
               <HStack
                 fullWidth
-                className="action-card-titlearea"
+                className={cn(
+                  noMobileViewChange ? '' : 'action-card-titlearea'
+                )}
                 align="center"
               >
                 {icon && <Slot className="w-5 h-5">{icon}</Slot>}
+                {smallImage}
                 <VStack gap={false} align="start">
                   <HStack paddingRight fullWidth overflow="hidden">
                     <Typography

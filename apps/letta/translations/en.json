@@ -700,15 +700,69 @@
       "removeError": "There was an error removing this tool, please try again or contact support.",
       "addError": "There was an error adding this tool, please try again or contact support."
     },
+    "SpecificToolComponent": {
+      "back": "Back",
+      "noDescription": "No description provided",
+      "add": "Add tool to Agent",
+      "edit": "Edit Tool",
+      "cancel": "Cancel",
+      "alreadyAdded": "This tool is already added",
+      "viewToggle": {
+        "label": "View Mode",
+        "options": {
+          "schema": "JSON Schema",
+          "code": "Code"
+        }
+      }
+    },
+    "EditTool": {
+      "cancel": "Cancel",
+      "name": {
+        "label": "Name"
+      },
+      "description": {
+        "label": "Description"
+      },
+      "sourceCode": {
+        "label": "Source Code"
+      },
+      "update": "Update Tool"
+    },
+    "ToolCreator": {
+      "cancel": "Cancel",
+      "error": "There was an error creating this tool, please try again or contact support.",
+      "name": {
+        "label": "Name",
+        "placeholder": "my-tool-name",
+        "validation": "'Name must be alphanumeric and underscores only"
+      },
+      "description": {
+        "label": "Description",
+        "placeholder": "my-tool-description"
+      },
+      "sourceCode": {
+        "label": "Source Code",
+        "placeholder": "my-tool-source-code"
+      }
+    },
     "AddToolDialog": {
+      "error": "There was an error adding this tool, please try again or contact support.",
+      "createTool": "Create new tool",
+      "title": {
+        "create": "Create a new tool",
+        "add": "Add tool to agent",
+        "view": "View and edit tool"
+      },
+      "categories": {
+        "allTools": "All Tools"
+      },
       "description": "Description",
       "added": "Added",
-      "creator": "from {creator}",
+      "creator": "{creator}",
       "search": {
         "placeholder": "Tool name",
         "label": "Search tools"
       },
-      "title": "All Tools",
       "trigger": "Add Tool",
       "noDescription": "This tool does not have a description",
       "noToolSelected": {

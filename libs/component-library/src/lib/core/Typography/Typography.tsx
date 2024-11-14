@@ -1,5 +1,6 @@
 'use client';
 import type { HTMLProps } from 'react';
+import { useMemo } from 'react';
 import { forwardRef } from 'react';
 import React from 'react';
 import { cva, type VariantProps } from 'class-variance-authority';
@@ -119,17 +120,20 @@ export const Typography = forwardRef<HTMLElement, TypographyProps>(
 
 interface LoadedTypographyProps extends TypographyProps {
   fillerText: string;
-  text?: string;
-  isLoading?: boolean;
+  text?: string | null | undefined;
 }
 
 export function LoadedTypography(props: LoadedTypographyProps) {
-  const { fillerText, text, isLoading, ...rest } = props;
+  const { fillerText, text, ...rest } = props;
+
+  const doesTextExist = useMemo(() => {
+    return typeof text === 'string';
+  }, [text]);
 
   return (
-    <div className="relative">
-      {!isLoading && text && (
-        <Typography {...rest} className="absolute right-0 text-right left-0">
+    <div className="relative w-fit">
+      {doesTextExist && (
+        <Typography {...rest} className="absolute left-0 text-right">
           {text}
         </Typography>
       )}
@@ -138,8 +142,8 @@ export function LoadedTypography(props: LoadedTypographyProps) {
         role="presentation"
         tabIndex={-1}
         className={cn(
-          'pointer-events-none bg-gray-200 select-none  rounded text-transparent',
-          !isLoading ? 'opacity-0' : 'animate-pulse'
+          'pointer-events-none bg-gray-200 select-none  text-transparent ',
+          doesTextExist ? 'opacity-0 ' : 'animate-pulse'
         )}
       >
         {fillerText}

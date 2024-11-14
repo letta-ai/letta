@@ -18,6 +18,7 @@ const frameVariants = cva('', {
     },
     fullHeight: {
       true: 'h-full',
+      withMinHeight: 'min-h-full',
     },
     zIndex: {
       rightAboveZero: 'z-rightAboveZero',
@@ -167,6 +168,7 @@ const frameVariants = cva('', {
 export type FrameProps = React.HTMLAttributes<HTMLDivElement> &
   VariantProps<typeof frameVariants> & {
     as?: React.ElementType;
+    type?: string;
   };
 
 export const Frame = forwardRef<HTMLElement, PropsWithChildren<FrameProps>>(

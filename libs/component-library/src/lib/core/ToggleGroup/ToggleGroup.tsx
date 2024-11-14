@@ -109,7 +109,9 @@ const ToggleGroupItem = React.forwardRef<
       )}
       {...props}
     >
-      {children}
+      <div className="flex gap-2 items-center">
+        {children}
+      </div>
     </ToggleGroupPrimitive.Item>
   );
 });
