@@ -172,11 +172,11 @@ function AllToolsView(props: AllToolsViewProps) {
                 hideClickArrow
                 noMobileViewChange
                 smallImage={
-                  // eslint-disable-next-line react/forbid-component-props
                   <HStack
                     align="center"
                     justify="center"
                     border
+                    // eslint-disable-next-line react/forbid-component-props
                     className="w-10 h-10"
                   >
                     {tool.icon}
