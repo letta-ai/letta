@@ -21,6 +21,7 @@ export const router = {
   admin: {
     flushLayouts: flushLayoutsRouter,
     whitelistedEmails: adminWhitelistedEmailsRouter,
+    organizations: organizationsRouter,
   },
 };
 

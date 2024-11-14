@@ -29,6 +29,7 @@ import {
   developmentServerQueryClientKeys,
   developmentServersContracts,
 } from '$letta/web-api/development-servers/developmentServersContracts';
+import { adminOrganizationsContracts, adminOrganizationsQueryClientKeys } from '$letta/web-api/admin/admin-organizations/adminOrganizationsContracts';
 
 export const contracts = {
   user: userContract,
@@ -42,6 +43,7 @@ export const contracts = {
   admin: {
     flushLayouts: flushLayoutsContract,
     whitelistedEmails: adminWhitelistedEmailsContract,
+    organizations: adminOrganizationsContracts,
   },
 };
 
@@ -56,6 +58,7 @@ export const queryClientKeys = {
   developmentServers: developmentServerQueryClientKeys,
   admin: {
     whitelistedEmails: adminWhitelistedEmailsQueryKeys,
+    organizations: adminOrganizationsQueryClientKeys,
   },
 };
 

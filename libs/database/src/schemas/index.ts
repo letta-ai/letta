@@ -34,6 +34,7 @@ export const organizations = pgTable('organizations', {
   name: text('name').notNull(),
   lettaAgentsId: text('letta_agents_id').notNull().unique(),
   isAdmin: boolean('is_admin').notNull().default(false),
+  enabledCloudAt: timestamp('enabled_cloud_at'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   deletedAt: timestamp('deleted_at'),
   updatedAt: timestamp('updated_at')
