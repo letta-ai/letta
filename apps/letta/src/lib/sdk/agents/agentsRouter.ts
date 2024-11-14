@@ -623,9 +623,9 @@ export async function versionAgentTemplate(
     context.request.lettaAgentsUserId
   );
 
-  const createdAgentId = createdAgent?.id;
+  const deployedAgentTemplateId = createdAgent?.id;
 
-  if (!createdAgentId) {
+  if (!deployedAgentTemplateId) {
     return {
       status: 500,
       body: {
@@ -635,7 +635,7 @@ export async function versionAgentTemplate(
   }
 
   await db.insert(deployedAgentTemplates).values({
-    id: createdAgentId,
+    id: deployedAgentTemplateId,
     projectId,
     organizationId: context.request.organizationId,
     agentTemplateId,
@@ -672,8 +672,8 @@ export async function versionAgentTemplate(
 
         await updateAgentFromAgentId({
           variables: deployedAgentVariablesItem?.value || {},
-          fromAgent: deployedAgent.id,
-          toAgent: createdAgentId,
+          baseAgentId: deployedAgentTemplateId,
+          agentToUpdateId: deployedAgent.id,
           lettaAgentsUserId: context.request.lettaAgentsUserId,
           preserveCoreMemories: false,
         });
@@ -694,8 +694,8 @@ export async function versionAgentTemplate(
 interface UpdateAgentFromAgentId {
   preserveCoreMemories?: boolean;
   variables: Record<string, string>;
-  fromAgent: string;
-  toAgent: string;
+  baseAgentId: string;
+  agentToUpdateId: string;
   lettaAgentsUserId: string;
 }
 
@@ -703,8 +703,8 @@ export async function updateAgentFromAgentId(options: UpdateAgentFromAgentId) {
   const {
     preserveCoreMemories = false,
     variables,
-    fromAgent,
-    toAgent,
+    baseAgentId,
+    agentToUpdateId,
     lettaAgentsUserId,
   } = options;
 
@@ -712,7 +712,7 @@ export async function updateAgentFromAgentId(options: UpdateAgentFromAgentId) {
     [
       AgentsService.getAgent(
         {
-          agentId: fromAgent,
+          agentId: baseAgentId,
         },
         {
           user_id: lettaAgentsUserId,
@@ -720,7 +720,7 @@ export async function updateAgentFromAgentId(options: UpdateAgentFromAgentId) {
       ),
       AgentsService.getAgentSources(
         {
-          agentId: toAgent,
+          agentId: agentToUpdateId,
         },
         {
           user_id: lettaAgentsUserId,
@@ -728,7 +728,7 @@ export async function updateAgentFromAgentId(options: UpdateAgentFromAgentId) {
       ),
       AgentsService.getAgentSources(
         {
-          agentId: fromAgent,
+          agentId: baseAgentId,
         },
         {
           user_id: lettaAgentsUserId,
@@ -747,7 +747,7 @@ export async function updateAgentFromAgentId(options: UpdateAgentFromAgentId) {
   );
 
   let requestBody: UpdateAgentState = {
-    id: toAgent,
+    id: agentToUpdateId,
     tools: agentTemplateData.tools,
   };
 
@@ -760,7 +760,7 @@ export async function updateAgentFromAgentId(options: UpdateAgentFromAgentId) {
 
   await AgentsService.updateAgent(
     {
-      agentId: toAgent,
+      agentId: agentToUpdateId,
       requestBody: requestBody,
     },
     {
@@ -772,7 +772,7 @@ export async function updateAgentFromAgentId(options: UpdateAgentFromAgentId) {
     Promise.all(
       datasourceToAttach.map(async (datasource) => {
         return SourcesService.attachAgentToSource({
-          agentId: toAgent,
+          agentId: agentToUpdateId,
           sourceId: datasource.id || '',
         });
       })
@@ -780,7 +780,7 @@ export async function updateAgentFromAgentId(options: UpdateAgentFromAgentId) {
     Promise.all(
       datasourcesToDetach.map(async (datasource) => {
         return SourcesService.detachAgentFromSource({
-          agentId: toAgent,
+          agentId: agentToUpdateId,
           sourceId: datasource.id || '',
         });
       })
@@ -802,7 +802,7 @@ export async function migrateAgent(
 ): Promise<MigrateAgentResponse> {
   const { to_template, preserve_core_memories } = req.body;
   let { variables } = req.body;
-  const { agent_id: agentId } = req.params;
+  const { agent_id: agentIdToMigrate } = req.params;
   const { lettaAgentsUserId } = context.request;
 
   const split = to_template.split(':');
@@ -873,7 +873,7 @@ export async function migrateAgent(
   if (!variables) {
     const deployedAgentVariablesItem =
       await db.query.deployedAgentVariables.findFirst({
-        where: eq(deployedAgentVariables.deployedAgentId, agentId),
+        where: eq(deployedAgentVariables.deployedAgentId, agentIdToMigrate),
       });
 
     variables = deployedAgentVariablesItem?.value || {};
@@ -890,8 +890,8 @@ export async function migrateAgent(
 
   await updateAgentFromAgentId({
     variables: variables || {},
-    fromAgent: agentId,
-    toAgent: agentTemplate.id,
+    baseAgentId: agentTemplate.id,
+    agentToUpdateId: agentIdToMigrate,
     lettaAgentsUserId,
     preserveCoreMemories: preserve_core_memories,
   });
