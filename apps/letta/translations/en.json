@@ -720,6 +720,9 @@
       "removeError": "There was an error removing this tool, please try again or contact support.",
       "addError": "There was an error adding this tool, please try again or contact support."
     },
+    "ViewToolDialog": {
+      "title": "Viewing Tool"
+    },
     "SpecificToolComponent": {
       "back": "Back",
       "noDescription": "No description provided",

@@ -464,6 +464,12 @@ function SpecificToolComponent(props: SpecificToolComponentProps) {
     toolId,
   });
 
+  const isLettaTool = useMemo(() => {
+    return (
+      tool?.tags?.includes('letta-base') || tool?.tags?.includes('memgpt-base')
+    );
+  }, [tool]);
+
   const isToolAdded = useMemo(() => {
     if (!tools || !tool?.name) {
       return false;
@@ -505,7 +511,7 @@ function SpecificToolComponent(props: SpecificToolComponentProps) {
           )}
         </HStack>
         <HStack>
-          {!isEditingToolMode && isLocal && (
+          {!isEditingToolMode && isLocal && !isLettaTool && (
             <Button
               size="small"
               type="button"
@@ -781,6 +787,36 @@ function RemoveToolDialog(props: RemoveToolFromAgentDialogProps) {
   );
 }
 
+interface ViewToolDialogProps {
+  toolId: string;
+  onClose: VoidFunction;
+}
+
+function ViewToolDialog(props: ViewToolDialogProps) {
+  const { toolId, onClose } = props;
+
+  const t = useTranslations('ADE/Tools');
+
+  return (
+    <Dialog
+      size="full"
+      disableForm
+      noContentPadding
+      hideFooter
+      preventCloseFromOutside
+      isOpen
+      onOpenChange={(state) => {
+        if (!state) {
+          onClose();
+        }
+      }}
+      title={t('ViewToolDialog.title')}
+    >
+      <SpecificToolComponent onClose={onClose} toolId={toolId} />
+    </Dialog>
+  );
+}
+
 interface ToolsProps {
   search: string;
 }
@@ -789,6 +825,7 @@ function ToolsList(props: ToolsProps) {
   const { search } = props;
   const { tools: currentToolNames } = useCurrentAgent();
   const { data: _allTools, isLoading } = useToolsServiceListTools();
+  const [toolIdToView, setToolIdToView] = useState<string | null>(null);
 
   const allTools = useMemo(() => {
     // deuplicate tools on name
@@ -863,6 +900,9 @@ function ToolsList(props: ToolsProps) {
           fileTreeTools[1].contents.push({
             name: tool.name || '',
             id: tool.id,
+            onClick: () => {
+              setToolIdToView(tool.id || '');
+            },
             icon: isBrandKey(creator) ? brandKeyToLogo(creator) : <ToolsIcon />,
             actions: [
               {
@@ -893,6 +933,14 @@ function ToolsList(props: ToolsProps) {
 
   return (
     <PanelMainContent>
+      {toolIdToView && (
+        <ViewToolDialog
+          toolId={toolIdToView}
+          onClose={() => {
+            setToolIdToView(null);
+          }}
+        />
+      )}
       {removeToolPayload && (
         <RemoveToolDialog
           toolId={removeToolPayload.toolId}
