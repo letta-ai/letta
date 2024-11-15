@@ -428,11 +428,13 @@ async function findOrCreateUserAndOrganizationFromProviderLogin(
       throw new Error(LoginErrorsEnum.USER_NOT_IN_WHITELIST);
     }
 
+    const isCloudEnabled = isWhitelisted;
+
     const res = await createUserAndOrganization(userData, {
-      enableCloud: isWhitelisted,
+      enableCloud: isCloudEnabled,
     });
 
-    if (res.newProjectPayload) {
+    if (res.newProjectPayload && isCloudEnabled) {
       newUserDetails = {
         firstProjectSlug: res.newProjectPayload.firstProjectSlug,
         firstCreatedAgentName: res.newProjectPayload.firstCreatedAgentName,
