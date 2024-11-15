@@ -324,6 +324,28 @@
       "confirm": "Detach",
       "error": "There was an error detaching this data source, please try again or contact support."
     },
+    "RenameDataSourceDialog": {
+      "title": "Rename Source",
+      "trigger": "Rename Source",
+      "confirm": "Rename",
+      "error": "There was an error renaming this data source, please try again or contact support.",
+      "name": {
+        "label": "Source Name",
+        "placeholder": "my-source-name"
+      }
+    },
+    "DeleteDataSourceDialog": {
+      "title": "Delete Source",
+      "trigger": "Delete Source",
+      "confirm": "Delete",
+      "error": "There was an error deleting this source, please try again or contact support.",
+      "description": "Be aware you are deleting this source from all agents, not detaching it. If you want to detach it, click the detach button instead.",
+      "confirmName": {
+        "label": "Type the name of the source to confirm",
+        "placeholder": "my-data-source-name",
+        "error": "The name you entered does not match the source name"
+      }
+    },
     "EditDataSourcesContent": {
       "notCompatible": {
         "details": "This data source's embedding config does not match the agent config, this may lead to the agent not remembering data properly",
@@ -349,6 +371,7 @@
     "edit": "Edit",
     "detach": "Detach Data Source",
     "loading": "Loading data sources...",
+    "error": "There was an error loading data sources, please try again or contact support.",
     "noDataSources": "You have no data sources attached to this agent yet. Click the button in the top right to attach a data source.",
     "CreateDataSourceDialog": {
       "titles": "Add New Data Source",

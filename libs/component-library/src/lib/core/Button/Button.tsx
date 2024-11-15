@@ -112,6 +112,7 @@ export type ButtonProps = Omit<
       hideLabel?: boolean;
       target?: string;
       type?: 'button' | 'reset' | 'submit';
+      _use_rarely_className?: string;
     },
   'children' | 'className'
 >;
@@ -135,6 +136,7 @@ export const Button = forwardRef<
     fullHeight,
     size,
     hideLabel,
+    _use_rarely_className,
     ...rest
   } = props;
 
@@ -171,7 +173,8 @@ export const Button = forwardRef<
             disabled: rest.disabled,
             fullHeight,
             active,
-          })
+          }),
+          _use_rarely_className
         )}
         {...rest}
         disabled={rest.disabled || busy}

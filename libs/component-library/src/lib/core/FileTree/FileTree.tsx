@@ -55,7 +55,7 @@ function RowItem(props: RowItemProps) {
   const { depth, index, badge, onClick, actions } = props;
 
   return (
-    <li className="w-full block">
+    <li className="w-full relative block">
       <HStack
         justify="spaceBetween"
         align="center"
@@ -73,35 +73,34 @@ function RowItem(props: RowItemProps) {
         <HStack overflow="hidden" collapseWidth justify="start" align="center">
           {props.children}
         </HStack>
-        <HStack align="center">
-          {badge}
-          {actions && (
-            <DropdownMenu
-              triggerAsChild
-              trigger={
-                <Button
-                  label="Actions"
-                  color="tertiary-transparent"
-                  size="small"
-                  hideLabel
-                  data-testid={`filetree-actions:${depth}-${index}`}
-                  preIcon={<DotsHorizontalIcon className="w-4" />}
-                />
-              }
-            >
-              {actions.map((action) => (
-                <DropdownMenuItem
-                  data-testid={`filetree-action-${action.id}`}
-                  key={action.id || action.label}
-                  onClick={action.onClick}
-                  preIcon={action.icon}
-                  label={action.label}
-                />
-              ))}
-            </DropdownMenu>
-          )}
-        </HStack>
+        <HStack align="center">{badge}</HStack>
       </HStack>
+      {actions && (
+        <DropdownMenu
+          triggerAsChild
+          trigger={
+            <Button
+              label="Actions"
+              color="tertiary-transparent"
+              size="small"
+              hideLabel
+              _use_rarely_className="absolute right-5 top-0 h-full"
+              data-testid={`filetree-actions:${depth}-${index}`}
+              preIcon={<DotsHorizontalIcon className="w-4" />}
+            />
+          }
+        >
+          {actions.map((action) => (
+            <DropdownMenuItem
+              data-testid={`filetree-action-${action.id}`}
+              key={action.id || action.label}
+              onClick={action.onClick}
+              preIcon={action.icon}
+              label={action.label}
+            />
+          ))}
+        </DropdownMenu>
+      )}
     </li>
   );
 }

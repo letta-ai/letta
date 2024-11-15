@@ -46,7 +46,11 @@ function AdvancedEditMemory(props: AdvancedEditMemoryProps) {
         categories={memories.map((block) => ({
           id: block.label || '',
           title: block.label || '',
-          children: <EditMemoryForm label={block.label || ''} isModelView />,
+          children: (
+            <VStack flex fullHeight borderBottom padding>
+              <EditMemoryForm label={block.label || ''} isModelView />
+            </VStack>
+          ),
         }))}
       />
     </Dialog>
@@ -87,13 +91,8 @@ function EditMemoryForm(props: EditMemoryFormProps) {
           defaultLabel={label}
         />
       )}
-      <VStack
-        borderBottom={isModelView}
-        fullHeight={isModelView}
-        paddingX="small"
-        paddingTop="small"
-      >
-        <VStack fullWidth fullHeight={isModelView}>
+      <VStack flex fullHeight>
+        <VStack fullWidth fullHeight>
           <HStack fullWidth justify="spaceBetween">
             <Typography variant="body2">{label}</Typography>
             <Typography variant="body2" color="muted">
@@ -106,8 +105,8 @@ function EditMemoryForm(props: EditMemoryFormProps) {
           <RawTextArea
             hideLabel
             autosize={false}
-            flex={isModelView}
-            fullHeight={isModelView}
+            flex
+            fullHeight
             data-testid={`edit-memory-block-${label}-content`}
             fullWidth
             label={t('content')}
@@ -161,10 +160,17 @@ function EditMemory() {
   }, [agent.memory?.memory]);
 
   return (
-    <PanelMainContent>
-      <VStack gap="small">
-        {memories.map((block) => (
-          <EditMemoryForm label={block.label || ''} key={block.label || ''} />
+    <PanelMainContent variant="noPadding">
+      <VStack fullHeight gap="small" paddingX="large" paddingBottom="small">
+        {memories.map((block, index) => (
+          <VStack
+            paddingTop="small"
+            fullHeight
+            borderBottom={index !== memories.length - 1}
+            key={block.label || ''}
+          >
+            <EditMemoryForm label={block.label || ''} />
+          </VStack>
         ))}
       </VStack>
     </PanelMainContent>

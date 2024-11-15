@@ -30,6 +30,10 @@ import { useTranslations } from 'next-intl';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import type { Source } from '@letta-web/letta-agents-api';
 import {
+  type GetAgentSourcesResponse,
+  useSourcesServiceUpdateSource,
+} from '@letta-web/letta-agents-api';
+import {
   type AgentsServiceGetAgentSourcesDefaultResponse,
   type ListFilesFromSourceResponse,
   useAgentsServiceGetAgentSources,
@@ -651,6 +655,199 @@ export function DeleteFileDialog(props: DeleteFileDialogProps) {
   );
 }
 
+interface DeleteDataSourceDialogProps {
+  source: Source;
+  onClose: () => void;
+}
+
+function DeleteDataSourceDialog(props: DeleteDataSourceDialogProps) {
+  const { source, onClose } = props;
+  const t = useTranslations('ADE/EditDataSourcesPanel');
+
+  const queryClient = useQueryClient();
+
+  const { id: agentId } = useCurrentAgent();
+
+  const deleteDataSourceSchema = z.object({
+    confirmName: z.string().refine((value) => value === source.name, {
+      message: t('DeleteDataSourceDialog.confirmName.error'),
+    }),
+  });
+
+  type DeleteDataSourceFormValues = z.infer<typeof deleteDataSourceSchema>;
+
+  const form = useForm<DeleteDataSourceFormValues>({
+    resolver: zodResolver(deleteDataSourceSchema),
+    defaultValues: {
+      confirmName: '',
+    },
+  });
+
+  const { mutate, isPending, isError } = useSourcesServiceDetachAgentFromSource(
+    {
+      onSuccess: () => {
+        queryClient.setQueriesData<GetAgentSourcesResponse | undefined>(
+          {
+            queryKey: UseAgentsServiceGetAgentSourcesKeyFn({
+              agentId,
+            }),
+          },
+          (oldData) => {
+            if (!oldData) {
+              return oldData;
+            }
+            return oldData.filter(
+              (currentSource) => currentSource.id !== source.id
+            );
+          }
+        );
+        onClose();
+      },
+    }
+  );
+
+  const onSubmit = useCallback(() => {
+    mutate({
+      agentId,
+      sourceId: source.id || '',
+    });
+  }, [mutate, source.id, agentId]);
+
+  return (
+    <FormProvider {...form}>
+      <Dialog
+        errorMessage={isError ? t('DeleteDataSourceDialog.error') : undefined}
+        isOpen
+        onOpenChange={(state) => {
+          if (!state) {
+            onClose();
+          }
+        }}
+        onSubmit={form.handleSubmit(onSubmit)}
+        title={t('DeleteDataSourceDialog.title')}
+        confirmText={t('DeleteDataSourceDialog.confirm')}
+        isConfirmBusy={isPending}
+      >
+        <Alert
+          title={t('DeleteDataSourceDialog.description', {
+            sourceName: source.name,
+          })}
+          variant="destructive"
+        ></Alert>
+        <FormField
+          render={({ field }) => (
+            <RawInput
+              fullWidth
+              {...field}
+              label={t('DeleteDataSourceDialog.confirmName.label')}
+            />
+          )}
+          name="confirmName"
+        />
+      </Dialog>
+    </FormProvider>
+  );
+}
+
+interface RenameDataSourceDialogProps {
+  source: Source;
+  onClose: () => void;
+}
+
+const renameDataSourceSchema = z.object({
+  name: z.string(),
+});
+
+type RenameDataSourceFormValues = z.infer<typeof renameDataSourceSchema>;
+
+function RenameDataSourceDialog(props: RenameDataSourceDialogProps) {
+  const { source, onClose } = props;
+  const t = useTranslations('ADE/EditDataSourcesPanel');
+
+  const queryClient = useQueryClient();
+  const { id: agentId } = useCurrentAgent();
+
+  const form = useForm<RenameDataSourceFormValues>({
+    resolver: zodResolver(renameDataSourceSchema),
+    defaultValues: {
+      name: source.name,
+    },
+  });
+
+  const { mutate, isPending, isError } = useSourcesServiceUpdateSource({
+    onSuccess: (response, inputs) => {
+      queryClient.setQueriesData<GetAgentSourcesResponse | undefined>(
+        {
+          queryKey: UseAgentsServiceGetAgentSourcesKeyFn({
+            agentId,
+          }),
+        },
+        (oldData) => {
+          if (!oldData) {
+            return oldData;
+          }
+
+          return oldData.map((source) => {
+            if (source.id === response.id) {
+              return {
+                ...source,
+                name: inputs.requestBody.name || '',
+              };
+            }
+
+            return source;
+          });
+        }
+      );
+
+      onClose();
+    },
+  });
+
+  const onSubmit = useCallback(
+    (values: RenameDataSourceFormValues) => {
+      mutate({
+        sourceId: source.id || '',
+        requestBody: {
+          name: values.name,
+        },
+      });
+    },
+    [mutate, source.id]
+  );
+
+  return (
+    <FormProvider {...form}>
+      <Dialog
+        errorMessage={isError ? t('RenameDataSourceDialog.error') : undefined}
+        isOpen
+        onOpenChange={(state) => {
+          if (!state) {
+            onClose();
+          }
+        }}
+        onSubmit={form.handleSubmit(onSubmit)}
+        title={t('RenameDataSourceDialog.title')}
+        confirmText={t('RenameDataSourceDialog.confirm')}
+        isConfirmBusy={isPending}
+      >
+        <FormField
+          render={({ field }) => (
+            <RawInput
+              fullWidth
+              {...field}
+              hideLabel
+              label={t('RenameDataSourceDialog.name.label')}
+              placeholder={t('RenameDataSourceDialog.name.placeholder')}
+            />
+          )}
+          name="name"
+        />
+      </Dialog>
+    </FormProvider>
+  );
+}
+
 interface EditDataSourcesContentProps {
   search: string;
 }
@@ -660,13 +857,15 @@ function EditDataSourcesContent(props: EditDataSourcesContentProps) {
     useCurrentAgent();
   const t = useTranslations('ADE/EditDataSourcesPanel');
   const [sourceToDetach, setSourceToDetach] = useState<Source | null>(null);
+  const [sourceToRename, setSourceToRename] = useState<Source | null>(null);
+  const [sourceToDelete, setSourceToDelete] = useState<Source | null>(null);
   const [fileToDelete, setFileToDelete] = useState<Omit<
     DeleteFilePayload,
     'onClose'
   > | null>(null);
 
   const { search } = props;
-  const { data: sources } = useAgentsServiceGetAgentSources({
+  const { data: sources, isError } = useAgentsServiceGetAgentSources({
     agentId,
   });
 
@@ -748,6 +947,21 @@ function EditDataSourcesContent(props: EditDataSourcesContentProps) {
                 setSourceToDetach(source);
               },
             },
+            {
+              id: 'rename',
+              label: t('RenameDataSourceDialog.trigger'),
+              onClick: () => {
+                setSourceToRename(source);
+              },
+            },
+            {
+              id: 'delete',
+              color: 'destructive',
+              label: t('DeleteDataSourceDialog.trigger'),
+              onClick: () => {
+                setSourceToDelete(source);
+              },
+            },
           ],
           useContents: () => {
             const { data, isLoading } = useSourcesServiceListFilesFromSource({
@@ -812,6 +1026,14 @@ function EditDataSourcesContent(props: EditDataSourcesContentProps) {
     fileIdsBeingProcessedSet,
   ]);
 
+  if (isError) {
+    return (
+      <HStack fullWidth>
+        <Alert variant="destructive" title={t('error')} />
+      </HStack>
+    );
+  }
+
   if (!sources) {
     return (
       <HStack fullWidth align="center">
@@ -831,6 +1053,22 @@ function EditDataSourcesContent(props: EditDataSourcesContentProps) {
 
   return (
     <>
+      {sourceToDelete && (
+        <DeleteDataSourceDialog
+          source={sourceToDelete}
+          onClose={() => {
+            setSourceToDelete(null);
+          }}
+        />
+      )}
+      {sourceToRename && (
+        <RenameDataSourceDialog
+          source={sourceToRename}
+          onClose={() => {
+            setSourceToRename(null);
+          }}
+        />
+      )}
       {fileToDelete && (
         <DeleteFileDialog
           limit={1000}
