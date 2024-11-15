@@ -12,6 +12,7 @@ import { Frame } from '../../framing/Frame/Frame';
 type TextAreaProps = TextareaAutosizeProps & {
   fullWidth?: boolean;
   fullHeight?: boolean;
+  flex?: boolean;
   hideLabel?: boolean;
   autosize?: boolean;
   hideFocus?: boolean;
@@ -31,6 +32,7 @@ const PrimitiveTextArea = React.forwardRef<HTMLTextAreaElement, TextAreaProps>(
       hideFocus,
       autosize = true,
       fullHeight,
+      flex,
       hideLabel: _hideLabel,
       fullWidth,
       ...props
@@ -47,7 +49,8 @@ const PrimitiveTextArea = React.forwardRef<HTMLTextAreaElement, TextAreaProps>(
               : 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
             className,
             fullHeight && 'h-full',
-            fullWidth && 'w-full'
+            fullWidth && 'w-full',
+            flex && 'flex'
           )}
           ref={ref}
           {...props}

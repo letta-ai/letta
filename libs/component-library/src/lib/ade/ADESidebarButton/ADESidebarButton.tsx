@@ -25,7 +25,6 @@ export function ADESidebarButton(props: ADESidebarButtonProps) {
       data-testid={`ade-navigate-to:${label}`}
       paddingX="small"
       paddingY="small"
-      rounded
       className={cn(
         'hover:bg-background-grey-hover bg-background-grey cursor-pointer'
       )}

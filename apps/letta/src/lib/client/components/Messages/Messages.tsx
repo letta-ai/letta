@@ -59,7 +59,7 @@ interface MessageWrapperProps
 
 function MessageWrapper({ header, type, children }: MessageWrapperProps) {
   return (
-    <VStack fullWidth rounded gap={false}>
+    <VStack fullWidth gap={false}>
       <HStack>
         <HStack
           paddingX="small"

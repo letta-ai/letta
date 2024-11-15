@@ -152,7 +152,7 @@ const TooltipContent = React.forwardRef<
     <FloatingPortal root={document.body}>
       <div
         ref={ref}
-        className="z-tooltip bg-background-black text-background-black-content text-sm rounded px-2"
+        className="z-tooltip bg-background-black text-background-black-content text-sm px-2"
         style={{
           ...context.floatingStyles,
           ...style,

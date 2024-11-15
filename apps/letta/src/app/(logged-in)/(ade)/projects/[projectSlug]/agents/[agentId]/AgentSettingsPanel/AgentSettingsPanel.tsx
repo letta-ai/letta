@@ -231,7 +231,14 @@ export function AgentSettingsPanel() {
           />
         </HStack>
         <HStack fullWidth align="center">
-          <Typography font="mono" color="muted" variant="body2">
+          <Typography
+            noWrap
+            overflow="ellipsis"
+            align="left"
+            font="mono"
+            color="muted"
+            variant="body2"
+          >
             {currentAgent.id}
           </Typography>
           <CopyButton
