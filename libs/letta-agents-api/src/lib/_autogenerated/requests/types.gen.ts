@@ -1624,10 +1624,6 @@ export type SourceUpdate = {
     [key: string]: unknown;
   } | null;
   /**
-   * The ID of the source.
-   */
-  id: string;
-  /**
    * The name of the source.
    */
   name?: string | null;

@@ -493,7 +493,7 @@ function SpecificToolComponent(props: SpecificToolComponentProps) {
     >
       <HStack fullWidth justify="spaceBetween">
         <HStack>
-          {handleClose && (
+          {(onClose || isEditingToolMode) && (
             <Button
               size="small"
               preIcon={<ChevronLeftIcon />}
@@ -812,7 +812,7 @@ function ViewToolDialog(props: ViewToolDialogProps) {
       }}
       title={t('ViewToolDialog.title')}
     >
-      <SpecificToolComponent onClose={onClose} toolId={toolId} />
+      <SpecificToolComponent toolId={toolId} />
     </Dialog>
   );
 }
