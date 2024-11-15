@@ -41,9 +41,7 @@ export const Primary: Story = {
           />
         )),
         Nothing: [
-          <div className="bg-blue-50 rounded w-full h-full">
-            Panel Main Content
-          </div>,
+          <div className="bg-blue-50 w-full h-full">Panel Main Content</div>,
         ],
       },
     },

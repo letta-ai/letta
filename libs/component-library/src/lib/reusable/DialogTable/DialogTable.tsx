@@ -42,7 +42,6 @@ export function DialogTable(props: DialogTableProps) {
       overflowY={showStatusComponent ? 'hidden' : 'auto'}
       className="h-[400px]"
       border
-      rounded
     >
       {showStatusComponent ? (
         <LoadingEmptyStatusComponent

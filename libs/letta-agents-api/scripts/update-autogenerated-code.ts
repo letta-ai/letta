@@ -20,7 +20,7 @@ async function job() {
   const typesFile = project.getSourceFileOrThrow('types.gen.ts');
 
   // find type name 'object' and delete it
-  typesFile.getTypeAliasOrThrow('object').remove();
+  typesFile.getTypeAlias('object')?.remove();
 
   const openAPIFile = project.getSourceFileOrThrow(
     path.join(

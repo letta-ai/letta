@@ -77,7 +77,6 @@ export function ChatInput(props: ChatInputProps) {
         onSubmit={handleSubmit}
         as="form"
         className="z-[1] relative focus-within:ring-ring focus-within:ring-1"
-        rounded
         border
         fullWidth
         padding="large"
@@ -99,7 +98,6 @@ export function ChatInput(props: ChatInputProps) {
           <div />
           <Button
             data-testid="chat-simulator-send"
-            size="small"
             type="submit"
             color="secondary"
             preIcon={<SendIcon />}

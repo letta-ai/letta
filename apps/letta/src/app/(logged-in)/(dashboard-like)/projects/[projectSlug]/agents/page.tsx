@@ -49,7 +49,7 @@ function AgentMessagesList(props: AgentMessagesListProps) {
   const t = useTranslations('projects/(projectSlug)/agents/page');
 
   return (
-    <VStack rounded border collapseHeight>
+    <VStack border collapseHeight>
       <HStack borderBottom paddingX="small" paddingY="small">
         <Typography>{t('latestMessages')}</Typography>
       </HStack>
@@ -84,13 +84,11 @@ function DeployedAgentView(props: DeployedAgentViewProps) {
         fullWidth
         /* eslint-disable-next-line react/forbid-component-props */
         className="absolute z-[1] fade-in-5 opacity-10"
-        rounded
       />
       <VStack
         /* eslint-disable-next-line react/forbid-component-props */
         className="absolute z-10 sm:animate-in slide-in-from-right-10 sm:w-[70%] right-0"
         color="background"
-        rounded
         border
         fullHeight
         fullWidth

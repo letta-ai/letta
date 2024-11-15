@@ -137,9 +137,6 @@ const frameVariants = cva('', {
       large: 'pr-4',
       true: 'pr-5',
     },
-    rounded: {
-      true: 'rounded',
-    },
     overflow: {
       hidden: 'overflow-hidden',
       auto: 'overflow-auto',
@@ -181,7 +178,6 @@ export const Frame = forwardRef<HTMLElement, PropsWithChildren<FrameProps>>(
       borderY,
       transparent,
       borderX,
-      rounded,
       borderRight,
       flex,
       borderLeft,
@@ -220,7 +216,6 @@ export const Frame = forwardRef<HTMLElement, PropsWithChildren<FrameProps>>(
       position,
       animate,
       width,
-      rounded,
       borderLeft,
       borderTop,
       borderBottom,

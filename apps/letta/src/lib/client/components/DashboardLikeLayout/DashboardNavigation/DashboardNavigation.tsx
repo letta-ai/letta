@@ -244,110 +244,141 @@ function MainNavigationItems(props: MainNavigationItemsProps) {
   }, [specificSubNavigationData]);
 
   return (
-    <HStack
-      fullHeight={!isMobile}
-      paddingTop={isMobile ? 'large' : false}
-      gap={false}
-    >
-      {!isMobile && (
-        <VStack fullWidth={isBaseNav} padding="small" borderRight={!isBaseNav}>
+    <VStack fullHeight={!isMobile} gap={false}>
+      <HStack
+        fullHeight={!isMobile}
+        paddingTop={isMobile ? 'large' : false}
+        gap={false}
+      >
+        {!isMobile && (
           <VStack
             fullWidth={isBaseNav}
-            gap="small"
-            /*eslint-disable-next-line react/forbid-component-props*/
-            className="min-w-[36px]"
+            padding="small"
+            borderRight={!isBaseNav}
           >
-            {baseNavItems.map((item) => (
-              <NavButton
-                id={item.id}
-                key={item.href}
-                href={item.href}
-                active={pathroot === item.id}
-                label={item.label}
-                icon={item.icon}
-                hideLabel={!isBaseNav}
-              />
-            ))}
-          </VStack>
-        </VStack>
-      )}
-      {!isBaseNav && (
-        <VStack fullWidth>
-          <VStack padding="small" fullWidth>
-            {!isMobile && hasCloudAccess && (
-              <HStack
-                align="start"
-                borderBottom
-                paddingBottom="small"
-                fullWidth
-              >
-                <Button
-                  size="small"
-                  color="tertiary-transparent"
-                  preIcon={<ChevronLeftIcon />}
-                  label="Back"
-                  align="left"
-                  fullWidth
-                  href={specificSubNavigationData?.returnPath || '/'}
-                />
-              </HStack>
-            )}
-            {title && (
-              <HStack justify="start" align="center">
-                {title}
-              </HStack>
-            )}
-            <VStack gap="small">
-              {Object.entries(subNavItems).map(([group, items]) => {
-                if (group === UNCATEGORIZED_GROUP) {
-                  return items.map((item) => (
-                    <NavButton
-                      id={item.id}
-                      key={item.href}
-                      icon={item.icon}
-                      href={item.href}
-                      label={item.label}
-                    />
-                  ));
-                }
-
-                return (
-                  <VStack key={group} gap="small" paddingBottom="small">
-                    <Frame borderBottom padding="small">
-                      <Typography bold variant="body2">
-                        {group}
-                      </Typography>
-                    </Frame>
-                    {items.map((item) => (
-                      <NavButton
-                        id={item.id}
-                        key={item.href}
-                        href={item.href}
-                        icon={item.icon}
-                        label={item.label}
-                      />
-                    ))}
-                  </VStack>
-                );
-              })}
-            </VStack>
-          </VStack>
-          {isMobile && (
-            <VStack borderTop paddingTop="small" gap="small">
+            <VStack
+              fullWidth={isBaseNav}
+              gap="small"
+              /*eslint-disable-next-line react/forbid-component-props*/
+              className="min-w-[36px]"
+            >
               {baseNavItems.map((item) => (
                 <NavButton
                   id={item.id}
                   key={item.href}
                   href={item.href}
+                  active={pathroot === item.id}
                   label={item.label}
                   icon={item.icon}
+                  hideLabel={!isBaseNav}
                 />
               ))}
             </VStack>
-          )}
+          </VStack>
+        )}
+        {!isBaseNav && (
+          <VStack fullWidth>
+            <VStack padding={isMobile ? undefined : 'small'} fullWidth>
+              {!isMobile && hasCloudAccess && (
+                <HStack
+                  align="start"
+                  borderBottom
+                  paddingBottom="small"
+                  fullWidth
+                >
+                  <Button
+                    size="small"
+                    color="tertiary-transparent"
+                    preIcon={<ChevronLeftIcon />}
+                    label="Back"
+                    align="left"
+                    fullWidth
+                    href={specificSubNavigationData?.returnPath || '/'}
+                  />
+                </HStack>
+              )}
+              {title && (
+                <HStack
+                  justify="start"
+                  align="center"
+                  paddingX={isMobile ? 'small' : undefined}
+                >
+                  {title}
+                </HStack>
+              )}
+              <VStack gap="small">
+                {Object.entries(subNavItems).map(([group, items]) => {
+                  if (group === UNCATEGORIZED_GROUP) {
+                    return (
+                      <VStack
+                        gap="small"
+                        key={group}
+                        paddingX={isMobile ? 'small' : undefined}
+                        paddingBottom={isMobile ? 'small' : undefined}
+                      >
+                        {items.map((item) => (
+                          <NavButton
+                            id={item.id}
+                            key={item.href}
+                            icon={item.icon}
+                            href={item.href}
+                            label={item.label}
+                          />
+                        ))}
+                      </VStack>
+                    );
+                  }
+
+                  return (
+                    <VStack key={group} gap="small" paddingBottom="small">
+                      <Frame borderBottom padding="small">
+                        <Typography bold variant="body2">
+                          {group}
+                        </Typography>
+                      </Frame>
+                      <VStack
+                        gap="small"
+                        paddingX={isMobile ? 'small' : undefined}
+                      >
+                        {items.map((item) => (
+                          <NavButton
+                            id={item.id}
+                            key={item.href}
+                            href={item.href}
+                            icon={item.icon}
+                            label={item.label}
+                          />
+                        ))}
+                      </VStack>
+                    </VStack>
+                  );
+                })}
+              </VStack>
+            </VStack>
+          </VStack>
+        )}
+      </HStack>
+      {isMobile && (
+        <VStack
+          paddingX="small"
+          fullWidth
+          borderTop={!isBaseNav}
+          paddingTop={!isBaseNav ? 'small' : undefined}
+          paddingBottom="small"
+          gap="small"
+        >
+          {baseNavItems.map((item) => (
+            <NavButton
+              id={item.id}
+              key={item.href}
+              href={item.href}
+              label={item.label}
+              icon={item.icon}
+            />
+          ))}
         </VStack>
       )}
-    </HStack>
+    </VStack>
   );
 }
 
@@ -456,13 +487,7 @@ function ProfilePopover() {
 
 export const SIDEBAR_OVERLAY_MOUNT_POINT_ID = 'sidebar-overlay-mount-point';
 
-interface NavigationOverlayProps {
-  variant?: 'default' | 'minimal';
-}
-
-function NavigationOverlay(props: NavigationOverlayProps) {
-  const { variant = 'default' } = props;
-
+function NavigationOverlay() {
   const [open, setOpen] = useState(false);
 
   const handleCloseOnClickInside = useCallback((event: React.MouseEvent) => {
@@ -512,11 +537,9 @@ function NavigationOverlay(props: NavigationOverlayProps) {
             >
               <VStack gap="small">
                 <div className="h-header" />
-                {variant !== 'minimal' && (
-                  <VStack paddingLeft="small">
-                    <MainNavigationItems isMobile />
-                  </VStack>
-                )}
+                <VStack>
+                  <MainNavigationItems isMobile />
+                </VStack>
                 <HStack fullWidth borderBottom />
                 <SecondaryMenuItems isMobile />
               </VStack>
@@ -536,12 +559,7 @@ function NavigationOverlay(props: NavigationOverlayProps) {
   );
 }
 
-interface DashboardHeaderProps {
-  variant?: 'default' | 'minimal';
-}
-
-export function DashboardHeader(props: DashboardHeaderProps) {
-  const { variant = 'default' } = props;
+export function DashboardHeader() {
   const currentProject = useCurrentProject();
 
   const t = useTranslations(
@@ -574,7 +592,7 @@ export function DashboardHeader(props: DashboardHeaderProps) {
                 <>
                   {/* eslint-disable-next-line react/forbid-component-props */}
                   <Frame className="contents visibleSidebar:hidden">
-                    <NavigationOverlay variant={variant} />
+                    <NavigationOverlay />
                   </Frame>
                   {/* eslint-disable-next-line react/forbid-component-props */}
                   <Frame className="hidden visibleSidebar:contents">

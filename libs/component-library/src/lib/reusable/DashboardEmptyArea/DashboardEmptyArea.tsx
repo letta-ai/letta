@@ -10,15 +10,8 @@ interface DashboardEmptyAreaProps {
 export function DashboardEmptyArea(props: DashboardEmptyAreaProps) {
   const { message, action } = props;
   return (
-    <VStack
-      fullHeight
-      fullWidth
-      className="border-dashed p-[1px]"
-      border
-      rounded
-    >
+    <VStack fullHeight fullWidth className="border-dashed p-[1px]" border>
       <VStack
-        rounded
         className="fade-in-0"
         fullWidth
         border
