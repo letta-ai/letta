@@ -173,7 +173,9 @@
     --background-hover: 240, 54%, 48%;
 
     --background-grey: 0, 0, 67%;
+    --background-grey-content: 0, 0, 100%;
     --background-grey2: 0, 0, 0;
+    --backbround-grey2-content: 0, 0, 100%;
 
     --content: 0 0% 98%;
     --on-transparent: 0, 0%, 0%;
@@ -183,6 +185,7 @@
     --primary-hover: 0 0% 20%;
 
     --secondary: 180, 100%, 67%;
+    --secondary-content: 0 0% 0%;
 
     --tertiary: 0, 0, 67%;
     --tertiary-content: 0, 0, 100%;

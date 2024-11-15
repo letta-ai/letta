@@ -204,6 +204,7 @@
   },
   "components/ProjectSelector": {
     "selectAProject": "Select a Project",
+    "noProject": "No project",
     "seeMore": "See all projects",
     "projects": "Projects",
     "search": {

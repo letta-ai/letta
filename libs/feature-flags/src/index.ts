@@ -3,7 +3,7 @@ import * as ld from '@launchdarkly/node-server-sdk';
 
 export * from './flags';
 import { environment } from '@letta-web/environmental-variables';
-import type { Flag, FlagValue } from './flags';
+import type { Flag, FlagMap, FlagValue } from './flags';
 
 // Client fixing issue for launchdarkly reconnecting spam
 // dev issue only
@@ -99,13 +99,18 @@ export async function getSingleFlag<SingleFlag extends Flag>(
   });
 }
 
-export async function getDefaultFlags() {
-  const ldClient = await getLaunchDarklyClient();
+export async function getDefaultFlags(): Promise<Partial<FlagMap>> {
+  try {
+    const ldClient = await getLaunchDarklyClient();
 
-  const response = await ldClient.allFlagsState({
-    key: 'default',
-    anonymous: true,
-  });
+    const response = await ldClient.allFlagsState({
+      key: 'default',
+      anonymous: true,
+    });
 
-  return response.toJSON();
+    return response.toJSON();
+  } catch (e) {
+    console.error('Error fetching default flags', e);
+    return {};
+  }
 }

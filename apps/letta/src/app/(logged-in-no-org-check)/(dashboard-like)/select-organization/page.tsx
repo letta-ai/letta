@@ -15,6 +15,7 @@ import { webApi } from '$letta/client';
 import type { ListUserOrganizationsItemSchemaType } from '$letta/web-api/contracts';
 import { queryClientKeys } from '$letta/web-api/contracts';
 import { CenteredPageCard } from '$letta/client/components';
+import { useCurrentUser } from '$letta/client/hooks';
 
 interface OrganizationRowProps {
   name: string;
@@ -65,6 +66,7 @@ function OrganizationsList(props: OrganizationsListProps) {
 
 function SelectOrganizationPage() {
   const t = useTranslations('select-organization');
+  const currentUser = useCurrentUser();
 
   const { data: organizations, isError } =
     webApi.user.listUserOrganizations.useQuery({
@@ -87,13 +89,15 @@ function SelectOrganizationPage() {
           <OrganizationsList organizations={organizations.body.organizations} />
         )}
       </VStack>
-      <Frame borderTop padding>
-        <Button
-          href="/create-organization"
-          fullWidth
-          label={t('createNewOrganization')}
-        />
-      </Frame>
+      {currentUser?.hasCloudAccess && (
+        <Frame borderTop padding>
+          <Button
+            href="/create-organization"
+            fullWidth
+            label={t('createNewOrganization')}
+          />
+        </Frame>
+      )}
     </CenteredPageCard>
   );
 }
