@@ -85,7 +85,8 @@ function DeleteAccountDialog() {
           render={({ field }) => (
             <Checkbox
               label={t('DeleteAccountDialog.confirmCheckbox.label')}
-              {...field}
+              onCheckedChange={field.onChange}
+              checked={field.value}
             />
           )}
         />
