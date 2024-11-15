@@ -26,6 +26,12 @@ function SettingsLayout(props: SettingsLayoutProps) {
           href: '/settings/profile',
           group: t('personal'),
         },
+        {
+          id: 'account',
+          label: t('account'),
+          href: '/settings/account',
+          group: t('personal'),
+        },
         ...(currentUser?.hasCloudAccess
           ? [
               {

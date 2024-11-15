@@ -24,9 +24,28 @@
       "Documentation": "Documentation"
     }
   },
+  "settings/account/page": {
+    "title": "Account Settings",
+    "DeleteAccountSection": {
+      "title": "Delete Account",
+      "description": "Deleting your account is permanent and cannot be undone. This will delete any organizations you are the sole member of. Those organizations will have all their projects, agents, data sources, and other data deleted as well."
+    },
+    "DeleteAccountDialog": {
+      "title": "Delete Account",
+      "trigger": "Delete Account",
+      "confirm": "Delete Account",
+      "error": "There was an error deleting your account, please try again or contact support.",
+      "description": "Are you sure you want to delete your account? This is permanent and cannot be undone. If you are the sole member of any organizations, they will be deleted as well.",
+      "confirmCheckbox": {
+        "label": "I understand the consequences of deleting this account",
+        "error": "You must confirm that you understand the consequences of deleting your account"
+      }
+    }
+  },
   "settings/layout": {
     "personal": "Personal",
     "profile": "Profile",
+    "account": "Account",
     "organization": {
       "general": "General",
       "members": "Members",
