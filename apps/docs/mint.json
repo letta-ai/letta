@@ -75,6 +75,7 @@
             "models/openai_proxy",
             "models/anthropic",
             "models/groq",
+            "models/together",
             "models/google",
             "models/ollama",
             "models/vllm",
