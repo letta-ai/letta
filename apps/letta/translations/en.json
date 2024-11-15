@@ -202,6 +202,13 @@
       "archivalMemory": "Archival Memory"
     }
   },
+  "components/LocaleSelector": {
+    "changeLocale": "Change Language",
+    "options": {
+      "en": "English",
+      "fr": "Français"
+    }
+  },
   "components/ProjectSelector": {
     "selectAProject": "Select a Project",
     "noProject": "No project",

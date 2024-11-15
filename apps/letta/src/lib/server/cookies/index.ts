@@ -28,6 +28,10 @@ const cookieConfiguration: Record<
     httpOnly: true,
     path: '/',
   },
+  [CookieNames.LOCALE]: {
+    httpOnly: true,
+    path: '/',
+  },
 };
 
 export async function setCookie<CookieName extends CookieNames>(

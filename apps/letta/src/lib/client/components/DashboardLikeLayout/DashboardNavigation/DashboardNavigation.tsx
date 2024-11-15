@@ -41,6 +41,7 @@ import { useTranslations } from 'next-intl';
 import { ThemeSelector } from '$letta/client/components/ThemeSelector/ThemeSelector';
 import { useCurrentProject } from '../../../../../app/(logged-in)/(dashboard-like)/projects/[projectSlug]/hooks';
 import { LaptopIcon } from '@radix-ui/react-icons';
+import { LocaleSelector } from '$letta/client/components/LocaleSelector/LocaleSelector';
 
 interface NavButtonProps {
   href: string;
@@ -392,7 +393,8 @@ function SecondaryMenuItems(props: SecondaryMenuItemsProps) {
           />
         </VStack>
       </VStack>
-      <HStack justify="end" paddingX="small">
+      <HStack justify="spaceBetween" paddingX="small">
+        <LocaleSelector />
         <ThemeSelector />
       </HStack>
     </VStack>
