@@ -9,6 +9,7 @@ export const PublicUserSchema = z.object({
   email: z.string(),
   imageUrl: z.string(),
   theme: z.string(),
+  locale: z.string(),
   activeOrganizationId: z.string(),
   hasCloudAccess: z.boolean(),
   id: z.string(),
@@ -33,6 +34,7 @@ const getUserContract = c.query({
 export const UpdateUserPayloadSchema = z.object({
   name: z.string().optional(),
   theme: z.string().optional(),
+  locale: z.string().optional(),
 });
 
 const updateCurrentUserContract = c.mutation({

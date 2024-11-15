@@ -93,6 +93,7 @@ export const users = pgTable('users', {
   activeOrganizationId: text('active_organization_id'),
   lettaAgentsId: text('letta_agents_id').notNull().unique(),
   theme: text('theme').default('light'),
+  locale: text('locale').default('en'),
   deletedAt: timestamp('deleted_at'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at')

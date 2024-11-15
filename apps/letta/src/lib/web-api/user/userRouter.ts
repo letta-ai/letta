@@ -36,6 +36,7 @@ async function getCurrentUser(): Promise<ResponseShapes['getCurrentUser']> {
       theme: user.theme,
       name: user.name,
       email: user.email,
+      locale: user.locale,
       imageUrl: user.imageUrl,
       hasCloudAccess: user.hasCloudAccess,
       activeOrganizationId: user.activeOrganizationId || '',
@@ -69,6 +70,10 @@ async function updateCurrentUser(
     cookies().set(CookieNames.THEME, payload.body.theme);
   }
 
+  if (payload.body.locale) {
+    cookies().set(CookieNames.LOCALE, payload.body.locale);
+  }
+
   const updatedUser = {
     ...user,
     ...payload.body,
@@ -79,6 +84,7 @@ async function updateCurrentUser(
     .set({
       name: updatedUser.name,
       theme: updatedUser.theme,
+      locale: updatedUser.locale,
     })
     .where(eq(users.id, user.id));
 
@@ -87,6 +93,7 @@ async function updateCurrentUser(
     body: {
       theme: updatedUser.theme,
       name: updatedUser.name,
+      locale: updatedUser.locale,
       email: updatedUser.email,
       hasCloudAccess: user.hasCloudAccess,
       imageUrl: updatedUser.imageUrl,

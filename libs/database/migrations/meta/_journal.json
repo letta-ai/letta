@@ -127,6 +127,13 @@
       "when": 1731627517039,
       "tag": "0017_nifty_kate_bishop",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1731706898745,
+      "tag": "0018_loving_tusk",
+      "breakpoints": true
     }
   ]
 }
