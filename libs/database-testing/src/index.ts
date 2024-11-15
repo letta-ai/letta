@@ -52,4 +52,16 @@ export function mockDatabaseUpdate() {
   };
 }
 
+export function mockDatabaseDelete() {
+  const where = jest.fn();
+
+  mockDatabase.delete.mockReturnValue({
+    where,
+  } as any);
+
+  return {
+    whereFn: where,
+  };
+}
+
 export { mockDatabase, mockDatabaseInsert };

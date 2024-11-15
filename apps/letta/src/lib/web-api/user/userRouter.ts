@@ -3,7 +3,7 @@ import type {
   updateActiveOrganizationContract,
   userContract,
 } from '$letta/web-api/contracts';
-import { getUser } from '$letta/server/auth';
+import { deleteUser, getUser } from '$letta/server/auth';
 import type { contracts } from '$letta/web-api/contracts';
 import {
   db,
@@ -192,9 +192,36 @@ async function updateActiveOrganization(
   };
 }
 
+type DeleteUserResponse = ServerInferResponses<
+  typeof userContract.deleteCurrentUser
+>;
+
+async function deleteCurrentUser(): Promise<DeleteUserResponse> {
+  const user = await getUser();
+
+  if (!user) {
+    return {
+      status: 401,
+      body: {
+        message: 'User not found',
+      },
+    };
+  }
+
+  await deleteUser(user.id);
+
+  return {
+    status: 200,
+    body: {
+      success: true,
+    },
+  };
+}
+
 export const userRouter = {
   getCurrentUser,
   updateCurrentUser,
   listUserOrganizations,
   updateActiveOrganization,
+  deleteCurrentUser,
 };

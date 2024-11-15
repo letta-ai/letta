@@ -86,11 +86,24 @@ export const updateActiveOrganizationContract = c.mutation({
   },
 });
 
+/* Delete user */
+export const deleteCurrentUserCurrent = c.mutation({
+  method: 'DELETE',
+  path: '/user/self',
+  responses: {
+    200: z.object({
+      success: z.boolean(),
+    }),
+  },
+  body: z.undefined(),
+});
+
 export const userContract = c.router({
   getCurrentUser: getUserContract,
   updateCurrentUser: updateCurrentUserContract,
   listUserOrganizations: listUserOrganizationsContract,
   updateActiveOrganization: updateActiveOrganizationContract,
+  deleteCurrentUser: deleteCurrentUserCurrent,
 });
 
 export const userQueryClientKeys = {

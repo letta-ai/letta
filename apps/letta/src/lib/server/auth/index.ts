@@ -778,3 +778,7 @@ export async function generateRedirectSignatureForLoggedInUser(
     },
   });
 }
+
+import { deleteUser } from './lib/deleteUser/deleteUser';
+
+export { deleteUser };
