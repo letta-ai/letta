@@ -10,6 +10,7 @@ export const PublicUserSchema = z.object({
   imageUrl: z.string(),
   theme: z.string(),
   activeOrganizationId: z.string(),
+  hasCloudAccess: z.boolean(),
   id: z.string(),
 });
 

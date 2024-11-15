@@ -100,8 +100,12 @@ export const users = pgTable('users', {
     .$onUpdate(() => new Date()),
 });
 
-export const userRelations = relations(users, ({ many }) => ({
+export const userRelations = relations(users, ({ many, one }) => ({
   organizationUsers: many(organizationUsers),
+  activeOrganization: one(organizations, {
+    fields: [users.activeOrganizationId],
+    references: [organizations.id],
+  }),
 }));
 
 export interface OrganizationPermissionType {

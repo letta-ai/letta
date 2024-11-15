@@ -63,6 +63,7 @@ export function DashboardPageSection(props: DashboardPageSectionProps) {
       paddingTop="medium"
       paddingBottom="small"
       fullHeight={fullHeight}
+      flex={fullHeight}
       fullWidth
       borderBottom={borderBottom}
     >

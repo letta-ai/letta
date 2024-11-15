@@ -13,6 +13,7 @@ import {
   VStack,
 } from '@letta-web/component-library';
 import { useTranslations } from 'next-intl';
+import { useCurrentUser } from '$letta/client/hooks';
 
 interface ProjectItemProps {
   name: string;
@@ -51,6 +52,8 @@ export function ProjectSelector() {
   const [open, setOpen] = React.useState(false);
   const t = useTranslations('components/ProjectSelector');
 
+  const currentUser = useCurrentUser();
+
   const currentProject = useCurrentProject();
 
   const { data, isLoading } = webApi.projects.getProjects.useQuery({
@@ -62,6 +65,7 @@ export function ProjectSelector() {
         limit: LIMIT,
       },
     },
+    enabled: currentUser?.hasCloudAccess,
   });
 
   const projectsList = useMemo(() => {
@@ -77,6 +81,16 @@ export function ProjectSelector() {
   const handleClickProject = useCallback(() => {
     setOpen(false);
   }, []);
+
+  if (!currentUser?.hasCloudAccess) {
+    return (
+      <Button
+        color="tertiary-transparent"
+        size="small"
+        label={currentProject?.name || t('noProject')}
+      />
+    );
+  }
 
   return (
     <Popover

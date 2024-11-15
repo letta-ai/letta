@@ -3,62 +3,77 @@
 import { webApi } from '$letta/client';
 import React, { useMemo, useState } from 'react';
 import { queryClientKeys } from '$letta/web-api/contracts';
-import { DashboardPageLayout, DashboardPageSection, DataTable } from '@letta-web/component-library';
+import {
+  Button,
+  DashboardPageLayout,
+  DashboardPageSection,
+  DataTable,
+} from '@letta-web/component-library';
 import type { ColumnDef } from '@tanstack/react-table';
 import type { PublicOrganizationType } from '$letta/web-api/admin/admin-organizations/adminOrganizationsContracts';
-
-
-
-const organizationColumns: Array<ColumnDef<PublicOrganizationType>> =  [
-  {
-    header: 'Name',
-    accessorKey: 'name',
-  },
-  {
-    header: 'Created at',
-    accessorKey: 'created_at',
-  },
-  {
-    header: 'Updated at',
-    accessorKey: 'updated_at',
-  },
-]
+import { useDateFormatter } from '@letta-web/helpful-client-utils';
 
 function AdminOrganizationsPage() {
   const [offset, setOffset] = useState(0);
   const [limit, setLimit] = useState(10);
   const [search, setSearch] = useState('');
 
-  const { data, isFetching, isError } = webApi.admin.organizations.getOrganizations.useQuery({
-    queryKey: queryClientKeys.admin.organizations.getOrganizationsWithSearch({
-      offset,
-      limit,
-      search
-    }),
-    queryData: {
-      query: {
+  const { data, isFetching, isError } =
+    webApi.admin.organizations.getOrganizations.useQuery({
+      queryKey: queryClientKeys.admin.organizations.getOrganizationsWithSearch({
         offset,
         limit,
-        search
-      }
-    }
-  })
+        search,
+      }),
+      queryData: {
+        query: {
+          offset,
+          limit,
+          search,
+        },
+      },
+    });
 
+  const { formatDate } = useDateFormatter();
 
-
-
-
+  const organizationColumns: Array<ColumnDef<PublicOrganizationType>> = useMemo(
+    () => [
+      {
+        header: 'Name',
+        accessorKey: 'name',
+      },
+      {
+        header: 'Created at',
+        accessorKey: 'createdAt',
+        cell: ({ row }) => formatDate(row.original.updatedAt),
+      },
+      {
+        header: 'Updated at',
+        accessorKey: 'updatedAt',
+        cell: ({ row }) => formatDate(row.original.updatedAt),
+      },
+      {
+        header: 'Actions',
+        id: 'actions',
+        cell: ({ row }) => (
+          <Button
+            size="small"
+            href={`/admin/organizations/${row.original.id}`}
+            color="secondary"
+            label="View"
+          />
+        ),
+      },
+    ],
+    [formatDate]
+  );
 
   const organizations = useMemo(() => {
     return data?.body;
-  }, [data])
-
+  }, [data]);
 
   return (
-    <DashboardPageLayout
-      encapsulatedFullHeight
-      title="Organizations"
-    >
+    <DashboardPageLayout encapsulatedFullHeight title="Organizations">
       <DashboardPageSection fullHeight>
         <DataTable
           onLimitChange={setLimit}
@@ -69,7 +84,6 @@ function AdminOrganizationsPage() {
           errorMessage={isError ? 'Error fetching organizations' : undefined}
           limit={limit}
           offset={offset}
-          minHeight={450}
           onSetOffset={setOffset}
           showPagination
           columns={organizationColumns}
@@ -78,7 +92,7 @@ function AdminOrganizationsPage() {
         />
       </DashboardPageSection>
     </DashboardPageLayout>
-  )
+  );
 }
 
 export default AdminOrganizationsPage;

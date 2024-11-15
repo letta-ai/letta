@@ -2,9 +2,15 @@ import { getUserOrRedirect } from '$letta/server/auth';
 import { redirect } from 'next/navigation';
 
 async function HomePage() {
-  await getUserOrRedirect();
+  const user = await getUserOrRedirect();
 
-  redirect(`/projects`);
+  if (user?.hasCloudAccess) {
+    redirect(`/projects`);
+
+    return;
+  }
+
+  redirect(`/development-servers`);
 }
 
 export default HomePage;

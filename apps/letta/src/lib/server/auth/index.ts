@@ -517,6 +517,7 @@ export async function getOrganizationFromOrganizationId(
 
 export interface GetUserDataResponse {
   activeOrganizationId: string | null;
+  hasCloudAccess: boolean;
   id: string;
   lettaAgentsId: string;
   email: string;
@@ -549,6 +550,13 @@ export async function getUser(): Promise<GetUserDataResponse | null> {
       imageUrl: true,
       name: true,
     },
+    with: {
+      activeOrganization: {
+        columns: {
+          enabledCloudAt: true,
+        },
+      },
+    },
   });
 
   if (!userFromDb) {
@@ -573,7 +581,13 @@ export async function getUser(): Promise<GetUserDataResponse | null> {
   }
 
   return {
-    ...userFromDb,
+    activeOrganizationId: userFromDb.activeOrganizationId || null,
+    hasCloudAccess: !!userFromDb.activeOrganization?.enabledCloudAt,
+    id: userFromDb.id,
+    lettaAgentsId: userFromDb.lettaAgentsId,
+    email: userFromDb.email,
+    imageUrl: userFromDb.imageUrl,
+    name: userFromDb.name,
     theme: userFromDb.theme || 'light',
   };
 }

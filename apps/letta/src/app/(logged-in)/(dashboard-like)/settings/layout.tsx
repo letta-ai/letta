@@ -1,6 +1,8 @@
+'use client';
 import React from 'react';
 import { DashboardWithSidebarWrapper } from '@letta-web/component-library';
 import { useTranslations } from 'next-intl';
+import { useCurrentUser } from '$letta/client/hooks';
 
 interface SettingsLayoutProps {
   children: React.ReactNode;
@@ -10,6 +12,8 @@ function SettingsLayout(props: SettingsLayoutProps) {
   const { children } = props;
 
   const t = useTranslations('settings/layout');
+
+  const currentUser = useCurrentUser();
 
   return (
     <DashboardWithSidebarWrapper
@@ -22,24 +26,28 @@ function SettingsLayout(props: SettingsLayoutProps) {
           href: '/settings/profile',
           group: t('personal'),
         },
-        {
-          id: 'organization',
-          label: t('organization.general'),
-          href: '/settings/organization/general',
-          group: t('organization.root'),
-        },
-        {
-          id: 'members',
-          label: t('organization.members'),
-          href: '/settings/organization/members',
-          group: t('organization.root'),
-        },
-        {
-          id: 'billing',
-          label: t('organization.billing'),
-          href: '/settings/organization/billing',
-          group: t('organization.root'),
-        },
+        ...(currentUser?.hasCloudAccess
+          ? [
+              {
+                id: 'organization',
+                label: t('organization.general'),
+                href: '/settings/organization/general',
+                group: t('organization.root'),
+              },
+              {
+                id: 'members',
+                label: t('organization.members'),
+                href: '/settings/organization/members',
+                group: t('organization.root'),
+              },
+              {
+                id: 'billing',
+                label: t('organization.billing'),
+                href: '/settings/organization/billing',
+                group: t('organization.root'),
+              },
+            ]
+          : []),
       ]}
     >
       {children}

@@ -124,6 +124,13 @@ function MainNavigationItems(props: MainNavigationItemsProps) {
   const t = useTranslations(
     'components/DashboardLikeLayout/DashboardNavigation'
   );
+
+  const currentUser = useCurrentUser();
+
+  const hasCloudAccess = useMemo(() => {
+    return currentUser?.hasCloudAccess;
+  }, [currentUser]);
+
   const pathname = usePathname();
 
   const { subnavigationData } = useDashboardNavigationItems();
@@ -143,6 +150,7 @@ function MainNavigationItems(props: MainNavigationItemsProps) {
         href: '/development-servers',
         id: 'development-servers',
         icon: <LaptopIcon />,
+        doesNotNeedCloudAccess: true,
       },
       {
         label: t('nav.apiKeys'),
@@ -173,9 +181,16 @@ function MainNavigationItems(props: MainNavigationItemsProps) {
         href: '/settings',
         id: 'usage',
         icon: <CogIcon />,
+        doesNotNeedCloudAccess: true,
       },
-    ];
-  }, [t]);
+    ].filter((item) => {
+      if (item.doesNotNeedCloudAccess) {
+        return true;
+      }
+
+      return hasCloudAccess;
+    });
+  }, [t, hasCloudAccess]);
 
   const isBaseNav = useMemo(() => {
     const isBase = baseNavItems.some((item) => item.href === pathname);
@@ -258,7 +273,7 @@ function MainNavigationItems(props: MainNavigationItemsProps) {
       {!isBaseNav && (
         <VStack fullWidth>
           <VStack padding="small" fullWidth>
-            {!isMobile && (
+            {!isMobile && hasCloudAccess && (
               <HStack
                 align="start"
                 borderBottom
@@ -359,7 +374,6 @@ function SecondaryMenuItems(props: SecondaryMenuItemsProps) {
           </VStack>
         )}
         <AdminNav />
-
         <VStack borderBottom gap="small" padding="small">
           <NavButton
             id="select-organization"

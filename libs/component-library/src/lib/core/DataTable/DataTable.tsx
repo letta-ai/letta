@@ -107,7 +107,7 @@ const dataTableVariants = cva('h-full', {
       minimal: 'border-none',
     },
     fullHeight: {
-      true: 'h-full',
+      true: 'h-full flex-1',
     },
   },
   defaultVariants: {
@@ -177,16 +177,7 @@ export function DataTable<TData, TValue>(props: DataTableProps<TData, TValue>) {
       }
 
       // get the top position of the table
-      const { top, bottom } = tableContainerRef.current.getBoundingClientRect();
-
-      // get the height of the window
-      const windowHeight = window.innerHeight;
-
-      // calculate the distance from the bottom of the window
-      const distanceFromBottom = windowHeight - bottom;
-
-      // calculate the maximum height of the table
-      let height = windowHeight - top - distanceFromBottom;
+      let { height } = tableContainerRef.current.getBoundingClientRect();
 
       if (typeof minHeight === 'number') {
         height = Math.max(height, minHeight);
@@ -194,15 +185,6 @@ export function DataTable<TData, TValue>(props: DataTableProps<TData, TValue>) {
 
       // calculate the number of rows that can fit in the table
       const rows = Math.floor(height / TABLE_ROW_HEIGHT) - 1;
-
-      const rowsForHeight = Math.max(2, rows + 1);
-
-      tableContainerRef.current.style.minHeight = `${
-        rowsForHeight * TABLE_ROW_HEIGHT
-      }px`;
-      tableContainerRef.current.style.height = `${
-        rowsForHeight * TABLE_ROW_HEIGHT
-      }px`;
 
       mounted.current = true;
 
@@ -267,7 +249,7 @@ export function DataTable<TData, TValue>(props: DataTableProps<TData, TValue>) {
       ref={tableParentRef}
       className={cn(
         'flex flex-col gap-2 w-full',
-        fullHeight || autofitHeight ? 'h-full' : ''
+        fullHeight || autofitHeight ? 'h-full flex-1' : ''
       )}
     >
       {props.onSearch && (
@@ -282,9 +264,14 @@ export function DataTable<TData, TValue>(props: DataTableProps<TData, TValue>) {
         />
       )}
       <div
-        style={{ minHeight: minHeight }}
         ref={tableContainerRef}
-        className={cn(dataTableVariants({ variant, fullHeight, className }))}
+        className={cn(
+          dataTableVariants({
+            variant,
+            fullHeight: fullHeight || autofitHeight,
+            className,
+          })
+        )}
       >
         <Table>
           <TableHeader>

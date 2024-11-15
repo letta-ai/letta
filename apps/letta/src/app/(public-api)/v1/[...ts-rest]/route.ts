@@ -43,12 +43,37 @@ const handler = createNextHandler(sdkContracts, sdkRouter, {
               activeOrganizationId: true,
               id: true,
             },
+            with: {
+              activeOrganization: {
+                columns: {
+                  enabledCloudAt: true,
+                },
+              },
+            },
           });
+
+          if (!response?.activeOrganization?.enabledCloudAt) {
+            return new Response(JSON.stringify({ message: 'Unauthorized' }), {
+              status: 401,
+              headers: {
+                'Content-Type': 'application/json',
+              },
+            });
+          }
 
           middlewareData.lettaAgentsUserId = response?.lettaAgentsId || '';
         }
       } else {
         const user = await getUser();
+
+        if (!user?.hasCloudAccess) {
+          return new Response(JSON.stringify({ message: 'Unauthorized' }), {
+            status: 401,
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          });
+        }
 
         middlewareData.organizationId = user?.activeOrganizationId || '';
         middlewareData.userId = user?.id || '';

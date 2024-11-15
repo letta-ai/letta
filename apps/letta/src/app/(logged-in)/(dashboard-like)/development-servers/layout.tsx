@@ -37,7 +37,7 @@ function LocalProjectLayout(props: LocalProjectLayoutProps) {
   return (
     <DashboardWithSidebarWrapper
       baseUrl="/development-servers"
-      returnOverride="/projects"
+      returnOverride="/"
       navigationItems={[
         {
           id: 'dashboard',
