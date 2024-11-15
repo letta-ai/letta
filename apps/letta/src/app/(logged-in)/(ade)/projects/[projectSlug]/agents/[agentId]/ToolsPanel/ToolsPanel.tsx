@@ -889,6 +889,9 @@ function ToolsList(props: ToolsProps) {
           fileTreeTools[0].contents.push({
             name: tool.name || '',
             id: tool.id || '',
+            onClick: () => {
+              setToolIdToView(tool.id || '');
+            },
             icon: <Logo size="small" />,
           });
         }
