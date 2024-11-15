@@ -30,6 +30,7 @@ import { AdminService, ToolsService } from '@letta-web/letta-agents-api';
 import { createAgent, versionAgentTemplate } from '$letta/sdk';
 import { generateDefaultADELayout } from '$letta/utils';
 import { cookies } from 'next/headers';
+import { getDefaultFlags } from '@letta-web/feature-flags';
 
 function isLettaEmail(email: string) {
   return email.endsWith('@letta.com') || email.endsWith('@memgpt.ai');
@@ -38,10 +39,11 @@ function isLettaEmail(email: string) {
 interface CreateOrganizationArgs {
   name: string;
   isAdmin?: boolean;
+  enableCloud?: boolean;
 }
 
 export async function createOrganization(args: CreateOrganizationArgs) {
-  const { name } = args;
+  const { name, enableCloud } = args;
 
   const lettaAgentsOrganization = await AdminService.createOrganization({
     requestBody: {
@@ -80,6 +82,7 @@ export async function createOrganization(args: CreateOrganizationArgs) {
     .values({
       name,
       lettaAgentsId: lettaAgentsOrganization.id,
+      enabledCloudAt: enableCloud ? new Date() : null,
     })
     .returning({ organizationId: organizations.id });
 
@@ -211,8 +214,13 @@ interface CreateUserAndOrganizationResponse {
   };
 }
 
+interface CreateUserAndOrganizationOptions {
+  enableCloud?: boolean;
+}
+
 async function createUserAndOrganization(
-  userData: ProviderUserPayload
+  userData: ProviderUserPayload,
+  options: CreateUserAndOrganizationOptions = {}
 ): Promise<CreateUserAndOrganizationResponse> {
   let organizationId = '';
   let lettaOrganizationId = '';
@@ -252,6 +260,7 @@ async function createUserAndOrganization(
 
     const createdOrg = await createOrganization({
       name: organizationName,
+      enableCloud: options.enableCloud,
     });
 
     lettaOrganizationId = createdOrg.lettaOrganizationId;
@@ -391,7 +400,7 @@ async function isUserInWhitelist(email: string) {
     }),
   ]);
 
-  return a || b;
+  return !!(a || b);
 }
 
 interface NewUserDetails {
@@ -411,11 +420,17 @@ async function findOrCreateUserAndOrganizationFromProviderLogin(
   let user = await findExistingUser(userData);
 
   if (!user) {
-    if (!(await isUserInWhitelist(userData.email))) {
+    const flags = await getDefaultFlags();
+
+    const isWhitelisted = await isUserInWhitelist(userData.email);
+
+    if (!flags.GA_ADE && !isWhitelisted) {
       throw new Error(LoginErrorsEnum.USER_NOT_IN_WHITELIST);
     }
 
-    const res = await createUserAndOrganization(userData);
+    const res = await createUserAndOrganization(userData, {
+      enableCloud: isWhitelisted,
+    });
 
     if (res.newProjectPayload) {
       newUserDetails = {
