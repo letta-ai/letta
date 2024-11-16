@@ -28,10 +28,12 @@ const SliderRoot = React.forwardRef<
 ));
 SliderRoot.displayName = SliderPrimitive.Root.displayName;
 
-type SliderProps = React.ComponentProps<typeof SliderRoot>;
+type SliderProps = React.ComponentProps<typeof SliderRoot> & {
+  fullWidth?: boolean;
+};
 
 function SliderInput(props: SliderProps) {
-  const { value, onValueChange, ...sliderProps } = props;
+  const { value, onValueChange, fullWidth, ...sliderProps } = props;
 
   const [sliderNumericValue, setSliderNumericValue] = useState<number>(
     value?.[0] || 0
@@ -69,7 +71,7 @@ function SliderInput(props: SliderProps) {
   }, [controlledValue, sliderValue]);
 
   return (
-    <HStack className="min-w-[250px]" fullWidth>
+    <HStack className="min-w-[250px]" fullWidth={fullWidth}>
       <SliderRoot
         value={controlledValue}
         className="w-full"

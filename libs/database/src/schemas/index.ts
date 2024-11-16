@@ -482,6 +482,7 @@ export const inferenceTransactions = pgTable('inference_transactions', {
   providerModel: text('providerModel').notNull(),
   startedAt: timestamp('started_at').notNull(),
   endedAt: timestamp('ended_at').notNull(),
+  source: text('source').notNull(),
 });
 
 export const inferenceTransactionRelations = relations(

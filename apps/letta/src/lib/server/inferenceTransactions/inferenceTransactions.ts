@@ -8,6 +8,7 @@ interface CreateInferenceTransactionOptions {
   inputTokens: number;
   totalTokens: number;
   outputTokens: number;
+  source: string;
   organizationId: string;
   startedAt: Date;
   endedAt: Date;
@@ -23,6 +24,7 @@ export async function createInferenceTransaction(
     totalTokens,
     endedAt,
     outputTokens,
+    source,
     startedAt,
     organizationId,
     agentId,
@@ -36,6 +38,7 @@ export async function createInferenceTransaction(
     referenceId,
     agentId,
     organizationId,
+    source,
     inputTokens: inputTokens.toString(),
     outputTokens: outputTokens.toString(),
     totalTokens: totalTokens.toString(),

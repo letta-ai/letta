@@ -27,6 +27,7 @@ const handler = createNextHandler(sdkContracts, sdkRouter, {
         userId: '',
         organizationId: '',
         lettaAgentsUserId: '',
+        source: 'api',
       };
 
       if (apiKey) {
@@ -75,6 +76,7 @@ const handler = createNextHandler(sdkContracts, sdkRouter, {
           });
         }
 
+        middlewareData.source = 'web';
         middlewareData.organizationId = user?.activeOrganizationId || '';
         middlewareData.userId = user?.id || '';
         middlewareData.lettaAgentsUserId = user?.lettaAgentsId || '';
@@ -89,6 +91,7 @@ const handler = createNextHandler(sdkContracts, sdkRouter, {
         });
       }
 
+      req.source = middlewareData.source;
       req.organizationId = middlewareData.organizationId;
       req.lettaAgentsUserId = middlewareData.lettaAgentsUserId;
       req.userId = middlewareData.userId;
@@ -119,6 +122,8 @@ const handler = createNextHandler(sdkContracts, sdkRouter, {
 
       const response = await makeRequestToSDK({
         method: req.method,
+        // @ts-expect-error - this is a middleware
+        source: req.source,
         body: req.content,
         formData: req.headers.get('Content-Type')?.includes('multipart')
           ? await req.formData()
