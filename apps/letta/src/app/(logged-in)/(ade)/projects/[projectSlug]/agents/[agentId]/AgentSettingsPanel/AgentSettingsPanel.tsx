@@ -181,6 +181,8 @@ function SystemPromptEditor() {
       </Dialog>
       <RawTextArea
         fullWidth
+        fullHeight
+        flex
         autosize={false}
         label={t('SystemPromptEditor.label')}
         onChange={(e) => {
