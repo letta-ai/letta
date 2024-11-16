@@ -145,6 +145,7 @@ async function createFirstAgent(args: CreateFirstAgentArgs) {
     },
     {
       request: {
+        source: 'web',
         lettaAgentsUserId: lettaAgentsUserId,
         userId: userId,
         organizationId,
@@ -167,6 +168,7 @@ async function createFirstAgent(args: CreateFirstAgentArgs) {
       },
       {
         request: {
+          source: 'web',
           userId,
           organizationId,
           lettaAgentsUserId,
@@ -195,6 +197,7 @@ async function createFirstAgent(args: CreateFirstAgentArgs) {
       request: {
         organizationId,
         userId,
+        source: 'web',
         lettaAgentsUserId,
       },
     }

@@ -134,6 +134,13 @@
       "when": 1731706898745,
       "tag": "0018_loving_tusk",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1731714692471,
+      "tag": "0019_daily_fantastic_four",
+      "breakpoints": true
     }
   ]
 }

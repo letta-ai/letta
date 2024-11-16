@@ -93,7 +93,6 @@ async function AgentsAgentPage(context: AgentsAgentPageProps) {
   ];
 
   await Promise.all(queries);
-  console.log('a', queries);
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
