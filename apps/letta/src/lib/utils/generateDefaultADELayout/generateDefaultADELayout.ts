@@ -13,7 +13,7 @@ export function generateDefaultADELayout(): AdePreferencesData {
         size: 30,
         positions: [
           {
-            size: 33,
+            size: 50,
             positions: [
               {
                 id: 'agent-settings',
@@ -30,29 +30,18 @@ export function generateDefaultADELayout(): AdePreferencesData {
             ],
           },
           {
-            size: 33,
+            size: 50,
             positions: [
+              {
+                id: 'tools-panel',
+                isActive: true,
+                templateId: 'tools-panel',
+                data: undefined,
+              },
               {
                 id: 'edit-data-sources',
-                isActive: true,
+                isActive: false,
                 templateId: 'edit-data-sources',
-                data: undefined,
-              },
-              {
-                id: 'tools-panel',
-                isActive: false,
-                templateId: 'tools-panel',
-                data: undefined,
-              },
-            ],
-          },
-          {
-            size: 33,
-            positions: [
-              {
-                id: 'tools-panel',
-                isActive: false,
-                templateId: 'tools-panel',
                 data: undefined,
               },
             ],
