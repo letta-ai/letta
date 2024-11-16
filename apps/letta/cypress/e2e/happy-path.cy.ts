@@ -55,6 +55,8 @@ describe('letta', () => {
 
     cy.findByTestId('variable-input-name').type('Shubham');
 
+    cy.findByTestId('tab:edit-data-sources').click();
+
     cy.findByTestId('create-data-source-dialog-trigger').click();
     cy.findByTestId('create-new-data-source').click();
 
