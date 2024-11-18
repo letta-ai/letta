@@ -6,6 +6,7 @@ import {
   ChatBubbleIcon,
   ChatInput,
   CodeIcon,
+  ComputerIcon,
   Dialog,
   DotsHorizontalIcon,
   DropdownMenu,
@@ -820,5 +821,7 @@ export const agentSimulatorTemplate = {
   templateId: 'agent-simulator',
   useGetTitle: () => 'Agent Simulator',
   content: Chatroom,
+  useGetMobileTitle: () => 'Simulator',
+  icon: <ComputerIcon />,
   data: z.undefined(),
 } satisfies PanelTemplate<'agent-simulator'>;

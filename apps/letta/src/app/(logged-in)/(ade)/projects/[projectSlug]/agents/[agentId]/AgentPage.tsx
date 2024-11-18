@@ -1,7 +1,17 @@
 'use client';
-import { usePanelManager } from './panelRegistry';
+import {
+  panelRegistry,
+  usePanelManager,
+  RenderSinglePanel,
+} from './panelRegistry';
 import { PanelManagerProvider, PanelRenderer } from './panelRegistry';
-import { EditIcon } from '@letta-web/component-library';
+import {
+  ChevronDownIcon,
+  EditIcon,
+  HiddenOnMobile,
+  MobileFooterNavigation,
+  MobileFooterNavigationButton,
+} from '@letta-web/component-library';
 import { Card, Checkbox, ExternalLink } from '@letta-web/component-library';
 import { TrashIcon } from '@letta-web/component-library';
 import {
@@ -33,7 +43,10 @@ import {
   SupportIcon,
   Popover,
   Typography,
+  VisibleOnMobile,
   DatabaseIcon,
+  RocketIcon,
+  ChevronUpIcon,
   ForkIcon,
   VStack,
 } from '@letta-web/component-library';
@@ -53,7 +66,6 @@ import {
 import { useTranslations } from 'next-intl';
 import { ContextWindowPreview } from './ContextEditorPanel/ContextEditorPanel';
 import { generateDefaultADELayout } from '$letta/utils';
-import { RocketIcon } from '@radix-ui/react-icons';
 import { isEqual } from 'lodash-es';
 import { generateAgentStateHash } from './AgentSimulator/AgentSimulator';
 import { DeployAgentUsageInstructions } from '$letta/client/code-reference/DeployAgentUsageInstructions';
@@ -844,8 +856,159 @@ function Navigation() {
   );
 }
 
+interface MobileNavigationContextData {
+  activePanel: string | null;
+  setActivePanelId: (panelId: string | null) => void;
+}
+
+const MobileNavigationContext =
+  React.createContext<MobileNavigationContextData>({
+    activePanel: null,
+    setActivePanelId: () => {
+      return;
+    },
+  });
+
+interface MobileNavigationProviderProps {
+  children: React.ReactNode;
+}
+
+function MobileNavigationProvider(props: MobileNavigationProviderProps) {
+  const [activePanel, setActivePanelId] = useState<string | null>(
+    'agent-simulator'
+  );
+
+  const { children } = props;
+
+  return (
+    <MobileNavigationContext.Provider value={{ activePanel, setActivePanelId }}>
+      {children}
+    </MobileNavigationContext.Provider>
+  );
+}
+function useMobileNavigationContext() {
+  return React.useContext(MobileNavigationContext);
+}
+
+interface AgentMobileNavigationButtonType {
+  panelId: string;
+  onClick?: () => void;
+}
+
+function AgentMobileNavigationButton(props: AgentMobileNavigationButtonType) {
+  const { panelId, onClick } = props;
+  const { activePanel, setActivePanelId } = useMobileNavigationContext();
+  const panelTemplateId = panelId as keyof typeof panelRegistry;
+
+  const title = panelRegistry[panelTemplateId].useGetMobileTitle();
+  const icon = panelRegistry[panelTemplateId].icon;
+
+  const handleClick = useCallback(() => {
+    setActivePanelId(panelId);
+    onClick?.();
+  }, [setActivePanelId, panelId, onClick]);
+
+  return (
+    <MobileFooterNavigationButton
+      onClick={handleClick}
+      size="large"
+      preIcon={icon}
+      color="tertiary-transparent"
+      label={title}
+      active={activePanel === panelId}
+    />
+  );
+}
+
+const MORE_PANELS = 'more-panels';
+
+function AgentMobileNavigation() {
+  const t = useTranslations(
+    'projects/(projectSlug)/agents/(agentId)/AgentPage'
+  );
+
+  const [expanded, setExpanded] = useState(false);
+  const { activePanel } = useMobileNavigationContext();
+
+  const panelToShowInMainNavigation = useMemo(() => {
+    const firstElements = ['agent-simulator', 'agent-settings'];
+
+    const activePanelIsFirstElement = firstElements.includes(activePanel || '');
+
+    const defaultPanelIdsToShow = [
+      ...firstElements,
+      !activePanelIsFirstElement ? activePanel : 'edit-core-memories',
+      MORE_PANELS,
+      'edit-core-memories',
+      'tools-panel',
+      'edit-data-sources',
+      'advanced-settings',
+    ];
+
+    const list = Array.from(new Set(defaultPanelIdsToShow));
+
+    if (expanded) {
+      return list;
+    }
+
+    return list.slice(0, 4);
+  }, [activePanel, expanded]);
+
+  return (
+    <MobileFooterNavigation>
+      {panelToShowInMainNavigation.map((panelId) => {
+        if (panelId === MORE_PANELS) {
+          return (
+            <MobileFooterNavigationButton
+              onClick={() => {
+                setExpanded((prev) => !prev);
+              }}
+              key={MORE_PANELS}
+              size="large"
+              preIcon={!expanded ? <ChevronUpIcon /> : <ChevronDownIcon />}
+              color="tertiary-transparent"
+              label={
+                !expanded
+                  ? t('AgentMobileNavigation.more')
+                  : t('AgentMobileNavigation.less')
+              }
+            />
+          );
+        }
+
+        if (!panelId) {
+          return null;
+        }
+
+        return (
+          <AgentMobileNavigationButton
+            onClick={() => {
+              setExpanded(false);
+            }}
+            key={panelId}
+            panelId={panelId}
+          />
+        );
+      })}
+    </MobileFooterNavigation>
+  );
+}
+
+function AgentMobileContent() {
+  const { activePanel } = useMobileNavigationContext();
+
+  if (!activePanel) {
+    return <LoaderContent />;
+  }
+
+  return (
+    <VStack collapseHeight flex fullWidth>
+      <RenderSinglePanel panelId={activePanel} />
+    </VStack>
+  );
+}
+
 export function AgentPage() {
-  const { name: projectName, slug: projectSlug } = useCurrentProject();
   const { agentName, agentId, isTemplate, isLocal } = useCurrentAgentMetaData();
 
   const [adeLayout, setADELayout] = useLocalStorage({
@@ -878,30 +1041,23 @@ export function AgentPage() {
   }
 
   return (
-    <>
+    <PanelManagerProvider
+      onPositionError={() => {
+        toast.error(t('positionError'));
+      }}
+      fallbackPositions={generateDefaultADELayout().displayConfig}
+      initialPositions={adeLayout}
+      onPositionChange={(positions) => {
+        setADELayout(positions);
+      }}
+    >
       <div className="agent-page-fade-out fixed pointer-events-none z-[-1]">
         <LoaderContent />
       </div>
-      <PanelManagerProvider
-        onPositionError={() => {
-          toast.error(t('positionError'));
-        }}
-        templateIdDenyList={!isTemplate ? ['deployment'] : []}
-        fallbackPositions={generateDefaultADELayout().displayConfig}
-        initialPositions={adeLayout}
-        onPositionChange={(positions) => {
-          setADELayout(positions);
-        }}
-      >
+      <HiddenOnMobile>
         <ADEPage
           header={
             <ADEHeader
-              project={{
-                url: isLocal
-                  ? '/development-servers/local/agents'
-                  : `/projects/${projectSlug}`,
-                name: isLocal ? 'Local Project' : projectName,
-              }}
               agent={{
                 name: agentName,
               }}
@@ -925,7 +1081,27 @@ export function AgentPage() {
             </Frame>
           </VStack>
         </ADEPage>
-      </PanelManagerProvider>
-    </>
+      </HiddenOnMobile>
+      <VisibleOnMobile>
+        <MobileNavigationProvider>
+          <ADEPage
+            header={
+              <ADEHeader
+                agent={{
+                  name: agentName,
+                }}
+              >
+                <AgentSettingsDropdown />
+              </ADEHeader>
+            }
+          >
+            <VStack fullHeight fullWidth flex>
+              <AgentMobileContent />
+              <AgentMobileNavigation />
+            </VStack>
+          </ADEPage>
+        </MobileNavigationProvider>
+      </VisibleOnMobile>
+    </PanelManagerProvider>
   );
 }

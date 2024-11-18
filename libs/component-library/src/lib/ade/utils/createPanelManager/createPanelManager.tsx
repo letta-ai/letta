@@ -47,6 +47,8 @@ export interface PanelTemplate<
   noTab?: boolean;
   templateId: TPanelTemplateId;
   useGetTitle: (data?: ZodSchema['_output']) => string;
+  useGetMobileTitle: (data?: ZodSchema['_output']) => string;
+  icon: React.ReactNode;
   data: ZodSchema;
   content: React.ComponentType<ZodSchema['_output']>;
 }
@@ -1424,7 +1426,40 @@ export function createPanelManager<
     );
   }
 
+  interface RenderSinglePanelProps {
+    panelId: PanelId;
+  }
+
+  function RenderSinglePanel({ panelId }: RenderSinglePanelProps) {
+    const { panelIdToPositionMap, positions } = usePanelManager();
+
+    console.log(panelIdToPositionMap);
+    const position = panelIdToPositionMap[panelId];
+
+    if (!position) {
+      return null;
+    }
+
+    const [x, y, tab] = position;
+
+    const panel = positions[x].positions[y].positions[tab];
+
+    return (
+      <PanelTabRenderer
+        x={x}
+        y={y}
+        tabs={[
+          {
+            ...panel,
+            isActive: true,
+          },
+        ]}
+      />
+    );
+  }
+
   return {
+    RenderSinglePanel,
     panelRegistry,
     PanelToggle,
     PanelRenderer,

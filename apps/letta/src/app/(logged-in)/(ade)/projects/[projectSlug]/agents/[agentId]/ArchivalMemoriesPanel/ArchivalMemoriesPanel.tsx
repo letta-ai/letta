@@ -1,6 +1,7 @@
 'use client';
 import React, { useCallback, useMemo, useState } from 'react';
 import type { PanelTemplate } from '@letta-web/component-library';
+import { ThoughtsIcon } from '@letta-web/component-library';
 import { PlusIcon } from '@letta-web/component-library';
 import {
   ActionCard,
@@ -251,10 +252,16 @@ function CreateMemoryDialog() {
 
 export const archivalMemoriesPanelTemplate = {
   templateId: 'archival-memories',
+  icon: <ThoughtsIcon />,
   useGetTitle: () => {
     const t = useTranslations('ADE/ArchivalMemories');
 
     return t('title');
+  },
+  useGetMobileTitle: () => {
+    const t = useTranslations('ADE/ArchivalMemories');
+
+    return t('mobileTitle');
   },
   content: MemoryRootPage,
   data: z.object({}),

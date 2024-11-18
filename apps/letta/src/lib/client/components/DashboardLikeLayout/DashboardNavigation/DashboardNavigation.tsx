@@ -115,6 +115,21 @@ function AdminNav() {
   );
 }
 
+interface GroupHeaderProps {
+  title: string;
+}
+
+function GroupHeader(props: GroupHeaderProps) {
+  const { title } = props;
+  return (
+    <Frame borderBottom padding="small">
+      <Typography bold variant="body2">
+        {title}
+      </Typography>
+    </Frame>
+  );
+}
+
 const UNCATEGORIZED_GROUP = 'uncategorized';
 interface MainNavigationItemsProps {
   isMobile?: boolean;
@@ -331,11 +346,7 @@ function MainNavigationItems(props: MainNavigationItemsProps) {
 
                   return (
                     <VStack key={group} gap="small" paddingBottom="small">
-                      <Frame borderBottom padding="small">
-                        <Typography bold variant="body2">
-                          {group}
-                        </Typography>
-                      </Frame>
+                      <GroupHeader title={group} />
                       <VStack
                         gap="small"
                         paddingX={isMobile ? 'small' : undefined}
@@ -359,23 +370,25 @@ function MainNavigationItems(props: MainNavigationItemsProps) {
         )}
       </HStack>
       {isMobile && (
-        <VStack
-          paddingX="small"
-          fullWidth
-          borderTop={!isBaseNav}
-          paddingTop={!isBaseNav ? 'small' : undefined}
-          paddingBottom="small"
-          gap="small"
-        >
-          {baseNavItems.map((item) => (
-            <NavButton
-              id={item.id}
-              key={item.href}
-              href={item.href}
-              label={item.label}
-              icon={item.icon}
-            />
-          ))}
+        <VStack gap="small">
+          {isMobile && !isBaseNav && <GroupHeader title={t('rootTitle')} />}
+          <VStack
+            paddingX="small"
+            fullWidth
+            paddingTop={!isBaseNav ? 'small' : undefined}
+            paddingBottom="small"
+            gap="small"
+          >
+            {baseNavItems.map((item) => (
+              <NavButton
+                id={item.id}
+                key={item.href}
+                href={item.href}
+                label={item.label}
+                icon={item.icon}
+              />
+            ))}
+          </VStack>
         </VStack>
       )}
     </VStack>

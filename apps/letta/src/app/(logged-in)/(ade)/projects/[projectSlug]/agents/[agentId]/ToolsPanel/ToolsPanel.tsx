@@ -1119,6 +1119,12 @@ function ToolsListPage() {
 export const toolsPanelTemplate = {
   templateId: 'tools-panel',
   content: ToolsListPage,
+  icon: <ToolsIcon />,
+  useGetMobileTitle: () => {
+    const t = useTranslations('ADE/Tools');
+
+    return t('mobileTitle');
+  },
   useGetTitle: () => {
     const t = useTranslations('ADE/Tools');
     const { tools } = useCurrentAgent();
