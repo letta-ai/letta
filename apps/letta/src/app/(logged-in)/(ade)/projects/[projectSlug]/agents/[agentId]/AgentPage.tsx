@@ -913,6 +913,7 @@ function AgentMobileNavigationButton(props: AgentMobileNavigationButtonType) {
       onClick={handleClick}
       size="large"
       preIcon={icon}
+      data-testId={`mobile-navigation-button:${panelId}`}
       color="tertiary-transparent"
       label={title}
       active={activePanel === panelId}

@@ -51,7 +51,12 @@ describe('letta', () => {
       'Please include the word BananaMan at the end of every message.'
     );
 
-    cy.findByTestId('toggle-variables-button').click();
+    // hack to prevent duplicate clicks due to mobile hiding uis
+    cy.findByTestId('mobile-navigation-button:advanced-settings').click({
+      force: true,
+    });
+
+    cy.findByTestId('toggle-variables-button').first().click();
 
     cy.findByTestId('variable-input-name').type('Shubham');
 
