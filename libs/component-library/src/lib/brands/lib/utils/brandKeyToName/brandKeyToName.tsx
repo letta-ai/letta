@@ -28,7 +28,7 @@ type BrandKeys =
   | 'webui-legacy'
   | 'webui';
 
-const brandKeyToNameMap: Record<BrandKeys, string> = {
+export const brandKeyToNameMap: Record<BrandKeys, string> = {
   openai: 'OpenAI',
   anthropic: 'Anthropic',
   cohere: 'Cohere',
