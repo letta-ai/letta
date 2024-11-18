@@ -2,21 +2,30 @@
 
 import { webApi } from '$letta/client';
 import React, { useMemo, useState } from 'react';
-import { contracts, queryClientKeys } from '$letta/web-api/contracts';
+import type { contracts } from '$letta/web-api/contracts';
+import { queryClientKeys } from '$letta/web-api/contracts';
+import type { DialogTableItem } from '@letta-web/component-library';
 import {
   brandKeyToLogo,
   brandKeyToName,
-  Button, CheckIcon, CloseIcon,
+  Button,
+  CheckIcon,
+  CloseIcon,
   DashboardPageLayout,
   DashboardPageSection,
-  DataTable, Dialog, DialogTable, DialogTableItem, HStack, IconWrapper, isBrandKey, Typography
+  DataTable,
+  Dialog,
+  DialogTable,
+  HStack,
+  IconWrapper,
+  isBrandKey,
+  Typography,
 } from '@letta-web/component-library';
 import type { ColumnDef } from '@tanstack/react-table';
 import { useDateFormatter } from '@letta-web/helpful-client-utils';
 import type { AdminEmbeddingModelType } from '$letta/web-api/admin/models/adminModelsContracts';
-import { useModelsServiceListModels } from '@letta-web/letta-agents-api';
 import { useQueryClient } from '@tanstack/react-query';
-import { ServerInferResponses } from '@ts-rest/core';
+import type { ServerInferResponses } from '@ts-rest/core';
 
 interface ImportModelActionProps {
   modelName: string;
@@ -26,81 +35,99 @@ interface ImportModelActionProps {
 function ImportModelAction(props: ImportModelActionProps) {
   const { modelName, modelEndpoint } = props;
   const queryClient = useQueryClient();
-  const { mutate, isPending } = webApi.admin.models.createAdminEmbeddingModel.useMutation({
-    onSuccess: (response) => {
-      queryClient.setQueriesData<
-      ServerInferResponses<typeof  contracts.admin.models.getAdminEmbeddingModels, 200>>({
-        queryKey: queryClientKeys.admin.models.getAdminEmbeddingModelsWithSearch({
-          offset: 0,
-          limit: 1,
-          search: '',
-          modelEndpoint,
-          modelName,
-        }),
-      }, () => {
-        return {
-          status: 200,
-          body: {
-            embeddingModels: [
-              response.body,
-            ],
-            hasNextPage: false,
+  const { mutate, isPending } =
+    webApi.admin.models.createAdminEmbeddingModel.useMutation({
+      onSuccess: (response) => {
+        queryClient.setQueriesData<
+          ServerInferResponses<
+            typeof contracts.admin.models.getAdminEmbeddingModels,
+            200
+          >
+        >(
+          {
+            queryKey:
+              queryClientKeys.admin.models.getAdminEmbeddingModelsWithSearch({
+                offset: 0,
+                limit: 1,
+                search: '',
+                modelEndpoint,
+                modelName,
+              }),
           },
-        };
-      });
+          () => {
+            return {
+              status: 200,
+              body: {
+                embeddingModels: [response.body],
+                hasNextPage: false,
+              },
+            };
+          }
+        );
 
-
-      queryClient.setQueriesData<ServerInferResponses<typeof contracts.admin.models.getAdminEmbeddingModels, 200> | undefined>({
-        queryKey: queryClientKeys.admin.models.getAdminEmbeddingModelsWithSearch({
-          offset: 0,
-          limit: 10,
-          search: '',
-        }),
-      }, (oldData) => {
-        if (!oldData) {
-          return oldData
-        }
-
-        return {
-          ...oldData,
-          body: {
-            ...oldData.body,
-            embeddingModels: [
-              response.body,
-              ...oldData.body.embeddingModels,
-            ],
+        queryClient.setQueriesData<
+          | ServerInferResponses<
+              typeof contracts.admin.models.getAdminEmbeddingModels,
+              200
+            >
+          | undefined
+        >(
+          {
+            queryKey:
+              queryClientKeys.admin.models.getAdminEmbeddingModelsWithSearch({
+                offset: 0,
+                limit: 10,
+                search: '',
+              }),
           },
-        };
-      });
-    },
-  });
-  const { data: existingAdmin, isLoading } = webApi.admin.models.getAdminEmbeddingModels.useQuery({
+          (oldData) => {
+            if (!oldData) {
+              return oldData;
+            }
 
-    queryKey: queryClientKeys.admin.models.getAdminEmbeddingModelsWithSearch({
-      offset: 0,
-      limit: 1,
-      search: '',
-      modelEndpoint,
-      modelName,
-    }),
-    queryData: {
-      query: {
+            return {
+              ...oldData,
+              body: {
+                ...oldData.body,
+                embeddingModels: [
+                  response.body,
+                  ...oldData.body.embeddingModels,
+                ],
+              },
+            };
+          }
+        );
+      },
+    });
+  const { data: existingAdmin, isLoading } =
+    webApi.admin.models.getAdminEmbeddingModels.useQuery({
+      queryKey: queryClientKeys.admin.models.getAdminEmbeddingModelsWithSearch({
         offset: 0,
         limit: 1,
         search: '',
         modelEndpoint,
         modelName,
+      }),
+      queryData: {
+        query: {
+          offset: 0,
+          limit: 1,
+          search: '',
+          modelEndpoint,
+          modelName,
+        },
       },
-    },
-
-  });
+    });
 
   if (existingAdmin?.body.embeddingModels.length === 1) {
     return (
       <Button
         color="secondary"
-        size="small" disabled label="Already imported" />
-    )
+        size="small"
+        disabled
+        label="Already imported"
+      />
+    );
   }
 
   return (
@@ -114,46 +141,69 @@ function ImportModelAction(props: ImportModelActionProps) {
           body: {
             modelName,
             modelEndpoint,
-          }
+          },
         });
       }}
       busy={isPending}
     />
-  )
+  );
 }
 
 function ImportModelsDialog() {
-  const { data: modelsList } = useModelsServiceListModels();
-
-
+  const { data: modelsList } =
+    webApi.admin.models.getAdminEmbeddingModels.useQuery({
+      queryKey: queryClientKeys.admin.models.getAdminEmbeddingModelsWithSearch({
+        fromAgents: true,
+      }),
+      queryData: {
+        query: {
+          fromAgents: true,
+        },
+      },
+    });
 
   const items: DialogTableItem[] = useMemo(() => {
     if (!modelsList) {
       return [];
     }
 
-    return modelsList.map((model) => ({
-      icon: isBrandKey(model.model_endpoint_type) ? brandKeyToLogo(model.model_endpoint_type) : null,
-      label: model.model,
-      action: (
-        <ImportModelAction
-          modelName={model.model}
-          modelEndpoint={model.model_endpoint || ''}
-        />
-      ),
-    }));
+    return modelsList.body.embeddingModels.map(({ config }) => {
+      if (!config) {
+        return {
+          label: 'Unknown model',
+          action: null,
+        };
+      }
+
+      return {
+        icon: isBrandKey(config.embedding_endpoint_type)
+          ? brandKeyToLogo(config.embedding_endpoint_type)
+          : null,
+        label: config.embedding_model,
+        action: (
+          <ImportModelAction
+            modelName={config.embedding_model}
+            modelEndpoint={config.embedding_endpoint || ''}
+          />
+        ),
+      };
+    });
   }, [modelsList]);
 
   return (
     <Dialog
       disableForm
+      hideConfirm
       trigger={<Button label="Import Models" />}
       title="Import Embedding Model"
     >
-      <Typography>You can import models into cloud here given what Letta Agents is providing.</Typography>
+      <Typography>
+        You can import models into cloud here given what Letta Agents is
+        providing.
+      </Typography>
       <DialogTable items={items} emptyMessage="No models available" />
     </Dialog>
-  )
+  );
 }
 
 function AdminEmbeddingModelsPage() {
@@ -179,55 +229,57 @@ function AdminEmbeddingModelsPage() {
 
   const { formatDate } = useDateFormatter();
 
-  const embeddingModelsColumns: Array<ColumnDef<AdminEmbeddingModelType>> = useMemo(
-    () => [
-      {
-        header: 'Name',
-        accessorKey: 'name',
-      },
-      {
-        header: 'Brand',
-        accessorKey: 'brand',
-        cell: ({ row }) => {
-          if (isBrandKey(row.original.brand)) {
-            return (
-              <HStack align="center">
-                <IconWrapper>
-                  {brandKeyToLogo(row.original.brand)}
-                </IconWrapper>
-                {brandKeyToName(row.original.brand)}
-              </HStack>
-            )
-          }
-
-          return `Unknown brand: ${row.original.brand}`;
+  const embeddingModelsColumns: Array<ColumnDef<AdminEmbeddingModelType>> =
+    useMemo(
+      () => [
+        {
+          header: 'Name',
+          accessorKey: 'name',
         },
-      },
-      {
-        header: 'Created at',
-        accessorKey: 'createdAt',
-        cell: ({ row }) => formatDate(row.original.updatedAt),
-      },
-      {
-        header: 'Visible to users',
-        accessorKey: 'disabledAt',
-        cell: ({ row }) => row.original.disabledAt ? <CloseIcon /> : <CheckIcon />,
-      },
-      {
-        header: 'Actions',
-        id: 'actions',
-        cell: ({ row }) => (
-          <Button
-            size="small"
-            href={`/admin/models/embedding/${row.original.id}`}
-            color="secondary"
-            label="View"
-          />
-        ),
-      },
-    ],
-    [formatDate]
-  );
+        {
+          header: 'Brand',
+          accessorKey: 'brand',
+          cell: ({ row }) => {
+            if (isBrandKey(row.original.brand)) {
+              return (
+                <HStack align="center">
+                  <IconWrapper>
+                    {brandKeyToLogo(row.original.brand)}
+                  </IconWrapper>
+                  {brandKeyToName(row.original.brand)}
+                </HStack>
+              );
+            }
+
+            return `Unknown brand: ${row.original.brand}`;
+          },
+        },
+        {
+          header: 'Created at',
+          accessorKey: 'createdAt',
+          cell: ({ row }) => formatDate(row.original.updatedAt),
+        },
+        {
+          header: 'Visible to users',
+          accessorKey: 'disabledAt',
+          cell: ({ row }) =>
+            row.original.disabledAt ? <CloseIcon /> : <CheckIcon />,
+        },
+        {
+          header: 'Actions',
+          id: 'actions',
+          cell: ({ row }) => (
+            <Button
+              size="small"
+              href={`/admin/models/embedding/${row.original.id}`}
+              color="secondary"
+              label="View"
+            />
+          ),
+        },
+      ],
+      [formatDate]
+    );
 
   const embeddingModels = useMemo(() => {
     return data?.body;
@@ -236,7 +288,9 @@ function AdminEmbeddingModelsPage() {
   return (
     <DashboardPageLayout
       actions={<ImportModelsDialog />}
-      encapsulatedFullHeight title="Embedding Models">
+      encapsulatedFullHeight
+      title="Embedding Models"
+    >
       <DashboardPageSection fullHeight>
         <DataTable
           onLimitChange={setLimit}

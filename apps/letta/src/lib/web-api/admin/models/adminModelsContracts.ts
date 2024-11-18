@@ -1,11 +1,12 @@
 import { initContract } from '@ts-rest/core';
 import { z } from 'zod';
-import { EmbeddingConfigSchema, LLMConfigSchema } from '@letta-web/letta-agents-api';
+import {
+  EmbeddingConfigSchema,
+  LLMConfigSchema,
+} from '@letta-web/letta-agents-api';
 import { GenericSearchSchema } from '$letta/web-api/shared/sharedContracts';
 
 const c = initContract();
-
-
 
 export const InferenceModelSchema = z.object({
   id: z.string(),
@@ -24,6 +25,7 @@ const GetModelSearchSchema = GenericSearchSchema.extend({
   disabled: z.boolean().optional(),
   modelName: z.string().optional(),
   modelEndpoint: z.string().optional(),
+  fromAgents: z.boolean().optional(),
 });
 
 type GetModelSearch = z.infer<typeof GetModelSearchSchema>;
@@ -33,13 +35,12 @@ const GetInferenceModelResponseSchema = z.object({
   hasNextPage: z.boolean(),
 });
 
-
 const getAdminInferenceModelsContract = c.query({
   method: 'GET',
   path: '/admin/models/inference',
   query: GetModelSearchSchema,
   responses: {
-    200: GetInferenceModelResponseSchema
+    200: GetInferenceModelResponseSchema,
   },
 });
 
@@ -115,20 +116,19 @@ export const EmbeddingModelSchema = z.object({
   updatedAt: z.string(),
 });
 
-type AdminEmbeddingModelType = z.infer<typeof EmbeddingModelSchema>;
+export type AdminEmbeddingModelType = z.infer<typeof EmbeddingModelSchema>;
 
 const EmbeddingModelResponseSchema = z.object({
   embeddingModels: z.array(EmbeddingModelSchema),
   hasNextPage: z.boolean(),
 });
 
-
 const getAdminEmbeddingModelsContract = c.query({
   method: 'GET',
   path: '/admin/models/embedding',
   query: GetModelSearchSchema,
   responses: {
-    200: EmbeddingModelResponseSchema
+    200: EmbeddingModelResponseSchema,
   },
 });
 
@@ -143,7 +143,6 @@ const getAdminEmbeddingModelContract = c.query({
     id: z.string(),
   }),
 });
-
 
 /* Import Embedding Model */
 const ImportEmbeddingModelRequestBodySchema = z.object({
@@ -209,10 +208,21 @@ export const adminModelsContracts = {
 
 export const adminModelsQueryClientKeys = {
   getAdminEmbeddingModels: ['getAdminEmbeddingModels'],
-  getAdminEmbeddingModelsWithSearch: (search: GetModelSearch) => [...adminModelsQueryClientKeys.getAdminEmbeddingModels, search],
-  getAdminInferenceModelById: (id: string) => ['getAdminInferenceModelById', id],
+  getAdminEmbeddingModelsWithSearch: (search: GetModelSearch) => [
+    ...adminModelsQueryClientKeys.getAdminEmbeddingModels,
+    search,
+  ],
+  getAdminInferenceModelById: (id: string) => [
+    'getAdminInferenceModelById',
+    id,
+  ],
   getAdminInferenceModels: ['getAdminInferenceModels'],
-  getAdminInferenceModelsWithSearch: (search: GetModelSearch) => [...adminModelsQueryClientKeys.getAdminInferenceModels, search],
-  getAdminEmbeddingModelById: (id: string) => ['getAdminEmbeddingModelById', id],
-}
-
+  getAdminInferenceModelsWithSearch: (search: GetModelSearch) => [
+    ...adminModelsQueryClientKeys.getAdminInferenceModels,
+    search,
+  ],
+  getAdminEmbeddingModelById: (id: string) => [
+    'getAdminEmbeddingModelById',
+    id,
+  ],
+};
