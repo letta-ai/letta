@@ -104,14 +104,12 @@ function AdminNav() {
   }
 
   return (
-    <VStack borderBottom gap="small" padding="small">
-      <NavButton
-        id="admin"
-        href="/admin"
-        label={t('nav.admin')}
-        icon={<BirdIcon />}
-      />
-    </VStack>
+    <NavButton
+      id="admin"
+      href="/admin"
+      label={t('nav.admin')}
+      icon={<BirdIcon />}
+    />
   );
 }
 
@@ -408,26 +406,22 @@ function SecondaryMenuItems(props: SecondaryMenuItemsProps) {
   return (
     <VStack gap="medium">
       <VStack gap={false}>
-        {!isMobile && (
-          <VStack borderBottom gap="small" padding="small">
+        <VStack borderBottom gap="small" padding="small">
+          {!isMobile && (
             <NavButton
               id="settings"
               href="/settings"
               label={t('secondaryNav.settings')}
               icon={<CogIcon />}
             />
-          </VStack>
-        )}
-        <AdminNav />
-        <VStack borderBottom gap="small" padding="small">
+          )}
+          <AdminNav />
           <NavButton
             id="select-organization"
             href="/select-organization"
             label={t('secondaryNav.switchOrganizations')}
             icon={<SwitchOrganizationIcon />}
           />
-        </VStack>
-        <VStack borderBottom gap="small" padding="small">
           <NavButton
             id="sign-out"
             preload={false}
@@ -472,8 +466,13 @@ export function NavigationSidebar() {
   );
 }
 
-function ProfilePopover() {
+interface ProfilePopoverProps {
+  size?: 'large' | 'medium' | 'small';
+}
+
+export function ProfilePopover(props: ProfilePopoverProps) {
   const user = useCurrentUser();
+  const { size } = props;
 
   return (
     <Popover
@@ -484,7 +483,13 @@ function ProfilePopover() {
           color="tertiary-transparent"
           label="Settings"
           hideLabel
-          preIcon={<Avatar name={user?.name || ''} />}
+          preIcon={
+            <Avatar
+              imageSrc={user?.imageUrl || ''}
+              size={size}
+              name={user?.name || ''}
+            />
+          }
         />
       }
     >

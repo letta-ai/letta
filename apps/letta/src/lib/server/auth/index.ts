@@ -411,6 +411,33 @@ interface NewUserDetails {
   firstCreatedAgentName: string;
 }
 
+interface UpdateExistingUserArgs {
+  name?: string;
+  imageUrl?: string;
+  email?: string;
+  id: string;
+}
+
+async function updateExistingUser(args: UpdateExistingUserArgs) {
+  const { name, imageUrl, email, id } = args;
+
+  const set: Partial<UpdateExistingUserArgs> = {};
+
+  if (name) {
+    set.name = name;
+  }
+
+  if (imageUrl) {
+    set.imageUrl = imageUrl;
+  }
+
+  if (email) {
+    set.email = email;
+  }
+
+  await db.update(users).set(set).where(eq(users.id, id));
+}
+
 interface FindOrCreateUserAndOrganizationFromProviderLoginResponse {
   user: UserSession;
   newUserDetails: NewUserDetails | undefined;
@@ -445,6 +472,21 @@ async function findOrCreateUserAndOrganizationFromProviderLogin(
     }
 
     user = res.user;
+  } else {
+    try {
+      await updateExistingUser({
+        name: userData.name,
+        imageUrl: userData.imageUrl,
+        email: userData.email,
+        id: user.id,
+      });
+
+      user.email = userData.email;
+      user.imageUrl = userData.imageUrl;
+      user.name = userData.name;
+    } catch (e) {
+      console.error('Failed to update user', e);
+    }
   }
 
   trackUserOnServer({

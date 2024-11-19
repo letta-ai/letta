@@ -5,12 +5,12 @@ import type {
   HTTPValidationError,
   UpdateAgentState,
 } from '@letta-web/letta-agents-api';
-import { z } from 'zod';
 import {
   EmbeddingConfigSchema,
   LLMConfigSchema,
-  MemorySchema,
-} from '$letta/sdk/types';
+} from '@letta-web/letta-agents-api';
+import { z } from 'zod';
+import { MemorySchema } from '$letta/sdk/types';
 import { extendZodWithOpenApi } from '@anatine/zod-openapi';
 
 extendZodWithOpenApi(z);

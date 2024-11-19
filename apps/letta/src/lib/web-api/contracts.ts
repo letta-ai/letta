@@ -29,7 +29,14 @@ import {
   developmentServerQueryClientKeys,
   developmentServersContracts,
 } from '$letta/web-api/development-servers/developmentServersContracts';
-import { adminOrganizationsContracts, adminOrganizationsQueryClientKeys } from '$letta/web-api/admin/admin-organizations/adminOrganizationsContracts';
+import {
+  adminOrganizationsContracts,
+  adminOrganizationsQueryClientKeys,
+} from '$letta/web-api/admin/admin-organizations/adminOrganizationsContracts';
+import {
+  adminModelsContracts,
+  adminModelsQueryClientKeys,
+} from '$letta/web-api/admin/models/adminModelsContracts';
 
 export const contracts = {
   user: userContract,
@@ -41,6 +48,7 @@ export const contracts = {
   agentTemplates: agentTemplatesContracts,
   developmentServers: developmentServersContracts,
   admin: {
+    models: adminModelsContracts,
     flushLayouts: flushLayoutsContract,
     whitelistedEmails: adminWhitelistedEmailsContract,
     organizations: adminOrganizationsContracts,
@@ -57,6 +65,7 @@ export const queryClientKeys = {
   adePreferences: adePreferencesQueryClientKeys,
   developmentServers: developmentServerQueryClientKeys,
   admin: {
+    models: adminModelsQueryClientKeys,
     whitelistedEmails: adminWhitelistedEmailsQueryKeys,
     organizations: adminOrganizationsQueryClientKeys,
   },

@@ -885,15 +885,27 @@
     }
   },
   "projects/(projectSlug)/agents/(agentId)/AgentPage": {
+    "error": "There was a severe error in this application, please refresh this page. If the error persists, please contact support in the top right corner.",
+    "ReportAnIssueForm": {
+      "yourMessage": "Your message",
+      "submit": "Submit",
+      "submitted": "Your issue has been submitted, we will get back to you as soon as possible."
+    },
     "Navigation": {
       "dashboard": "Dashboard",
-      "documentation": "Documentation",
+      "documentation": "Docs",
       "apiReference": "API Reference",
       "support": "Support",
       "supportPopover": {
-        "title": "Get support via Discord",
-        "description": "Join our Discord server to get help from the community and the Letta team.",
-        "joinUs": "Join us on Discord"
+        "bugReport": {
+          "title": "Report an issue",
+          "description": "Fill out the form below to report an issue"
+        },
+        "discord": {
+          "title": "Get support via Discord",
+          "description": "Join our Discord server to get help from the community and the Letta team.",
+          "joinUs": "Join us on Discord"
+        }
       }
     },
     "AgentMobileNavigation": {
@@ -930,15 +942,20 @@
       "migrate": "Migrate all deployed agents to this version",
       "migrateDescription": "Selecting this option will migrate all deployed agents to this version, to programmatically migrate agents, visit the <link>API documentation</link>."
     },
+    "CloudUpsellDeploy": {
+      "title": "Deploy, Manage and Monitor your agents on Letta Cloud",
+      "description": "Deploy your agent to Letta Cloud to manage and monitor your agents, get insights and more. Apply for early access below.",
+      "cta": "Apply for early access"
+    },
     "DeploymentButton": {
       "version": "VERSION {version}",
       "readyToDeploy": {
-        "trigger": "Deploy Agents",
+        "trigger": "Deploy",
         "heading": "Your template is good to go!",
         "copy": "This template has not had any changes since the last version. You can deploy following the instructions below:"
       },
       "updateAvailable": {
-        "trigger": "Deploy Agents",
+        "trigger": "Deploy",
         "heading": "You may want to version your template",
         "copy": "This template has had changes since the last version. You can create a new version below or follow deployment instructions below:"
       }

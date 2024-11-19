@@ -1,4 +1,3 @@
-import type { LLMConfig } from '@letta-web/letta-agents-api';
 import React from 'react';
 import { OpenAILogo } from '../../open-ai/OpenAILogo/OpenAILogo';
 import { HuggingFaceLogo } from '../../hugging-face/HuggingFaceLogo/HuggingFaceLogo';
@@ -8,13 +7,28 @@ import { LangChainLogo } from '../../langchain/LangChainLogo/LangChainLogo';
 import { Logo } from '../../../../marketing/Logo/Logo';
 
 type BrandKeys =
-  | LLMConfig['model_endpoint_type']
+  | 'anthropic'
+  | 'azure'
+  | 'cohere'
   | 'composio'
   | 'crew-ai'
+  | 'google_ai'
+  | 'groq'
+  | 'hugging-face'
+  | 'koboldcpp'
   | 'langchain'
-  | 'letta';
+  | 'letta'
+  | 'llamacpp'
+  | 'lmstudio-legacy'
+  | 'lmstudio'
+  | 'mistral'
+  | 'ollama'
+  | 'openai'
+  | 'vllm'
+  | 'webui-legacy'
+  | 'webui';
 
-const brandKeyToNameMap: Record<BrandKeys, string> = {
+export const brandKeyToNameMap: Record<BrandKeys, string> = {
   openai: 'OpenAI',
   anthropic: 'Anthropic',
   cohere: 'Cohere',
