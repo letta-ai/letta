@@ -1,7 +1,12 @@
 'use client';
 import { usePanelManager } from './panelRegistry';
 import { PanelManagerProvider, PanelRenderer } from './panelRegistry';
-import { EditIcon } from '@letta-web/component-library';
+import {
+  EditIcon,
+  Form,
+  LoadingEmptyStatusComponent,
+  TextArea,
+} from '@letta-web/component-library';
 import { Card, Checkbox, ExternalLink } from '@letta-web/component-library';
 import { TrashIcon } from '@letta-web/component-library';
 import {
@@ -11,7 +16,6 @@ import {
   useForm,
 } from '@letta-web/component-library';
 import { Badge } from '@letta-web/component-library';
-import { UpdateAvailableIcon } from '@letta-web/component-library';
 import {
   CogIcon,
   DropdownMenu,
@@ -22,18 +26,14 @@ import { LayoutIcon } from '@letta-web/component-library';
 import {
   ADEPage,
   Alert,
-  ArrowUpIcon,
-  Avatar,
   Button,
   Dialog,
   Frame,
   HStack,
-  KeyIcon,
+  RocketIcon,
   LettaLoader,
-  SupportIcon,
   Popover,
   Typography,
-  DatabaseIcon,
   ForkIcon,
   VStack,
 } from '@letta-web/component-library';
@@ -42,7 +42,7 @@ import { useCurrentProject } from '../../../../../(dashboard-like)/projects/[pro
 import { webApi, webApiQueryKeys, webOriginSDKApi } from '$letta/client';
 import { useRouter } from 'next/navigation';
 import { useCurrentUser } from '$letta/client/hooks';
-import { ADEHeader, CurrentUserDetailsBlock } from '$letta/client/components';
+import { ADEHeader } from '$letta/client/components';
 import './AgentPage.scss';
 import { useCurrentAgentMetaData } from './hooks/useCurrentAgentMetaData/useCurrentAgentMetaData';
 import { useCurrentAgent } from './hooks';
@@ -53,19 +53,20 @@ import {
 import { useTranslations } from 'next-intl';
 import { ContextWindowPreview } from './ContextEditorPanel/ContextEditorPanel';
 import { generateDefaultADELayout } from '$letta/utils';
-import { RocketIcon } from '@radix-ui/react-icons';
 import { isEqual } from 'lodash-es';
 import { generateAgentStateHash } from './AgentSimulator/AgentSimulator';
 import { DeployAgentUsageInstructions } from '$letta/client/code-reference/DeployAgentUsageInstructions';
 import { useQueryClient } from '@tanstack/react-query';
 import type { InfiniteGetProjectDeployedAgentTemplates200Response } from '$letta/web-api/projects/projectContracts';
-import { ThemeSelector } from '$letta/client/components/ThemeSelector/ThemeSelector';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { UpdateNameDialog } from './shared/UpdateAgentNameDialog/UpdateAgentNameDialog';
 import { useAgentBaseTypeName } from './hooks/useAgentBaseNameType/useAgentBaseNameType';
 import { useLocalStorage } from '@mantine/hooks';
 import { DiscordWhiteLogo } from '@letta-web/component-library';
+import { ErrorBoundary } from 'react-error-boundary';
+import * as Sentry from '@sentry/browser';
+import { ProfilePopover } from '$letta/client/components/DashboardLikeLayout/DashboardNavigation/DashboardNavigation';
 
 function RestoreLayoutButton() {
   const t = useTranslations(
@@ -85,55 +86,6 @@ function RestoreLayoutButton() {
       color="tertiary-transparent"
       label={t('restoreLayout')}
     />
-  );
-}
-
-export function NavOverlay() {
-  const { slug: projectSlug } = useCurrentProject();
-  const user = useCurrentUser();
-
-  return (
-    <Popover
-      trigger={
-        <HStack align="center">
-          <Avatar size="small" name={user?.name || ''} />
-        </HStack>
-      }
-      align="start"
-    >
-      <CurrentUserDetailsBlock />
-      <Frame borderTop color="background-grey2" as="nav">
-        <VStack as="ul" paddingY="small" paddingX="xsmall">
-          <Button
-            href={`/projects/${projectSlug}`}
-            color="tertiary-transparent"
-            preIcon={<ArrowUpIcon />}
-            label="Return to Project"
-          />
-          <Button
-            href="/data-sources"
-            target="_blank"
-            color="tertiary-transparent"
-            label="Data Sources"
-            preIcon={<DatabaseIcon />}
-          />
-          <Button
-            target="_blank"
-            href="/api-keys"
-            color="tertiary-transparent"
-            label="API Keys"
-            preIcon={<KeyIcon />}
-          />
-          <Button
-            target="_blank"
-            href="/support"
-            color="tertiary-transparent"
-            label="Support"
-            preIcon={<SupportIcon />}
-          />
-        </VStack>
-      </Frame>
-    </Popover>
   );
 }
 
@@ -526,6 +478,44 @@ function VersionAgentDialog() {
   );
 }
 
+function CloudUpsellDeploy() {
+  const t = useTranslations(
+    'projects/(projectSlug)/agents/(agentId)/AgentPage'
+  );
+
+  return (
+    <Popover
+      triggerAsChild
+      trigger={
+        <Button
+          size="small"
+          color="secondary"
+          preIcon={<RocketIcon size="small" />}
+          data-testid="version-template-trigger"
+          label={t('DeploymentButton.readyToDeploy.trigger')}
+        />
+      }
+      align="end"
+    >
+      <VStack padding="medium" gap="large">
+        <VStack>
+          <Typography variant="heading5" bold>
+            {t('CloudUpsellDeploy.title')}
+          </Typography>
+          <Typography>{t('CloudUpsellDeploy.description')}</Typography>
+          <Button
+            fullWidth
+            label={t('CloudUpsellDeploy.cta')}
+            href="https://forms.letta.com/early-access"
+            target="_blank"
+            color="secondary"
+          />
+        </VStack>
+      </VStack>
+    </Popover>
+  );
+}
+
 function TemplateVersionDisplay() {
   // get latest template version
   const { id: agentTemplateId } = useCurrentAgent();
@@ -649,14 +639,11 @@ function TemplateVersionDisplay() {
       triggerAsChild
       trigger={
         <Button
+          size="small"
           color="secondary"
           data-testid="version-template-trigger"
-          label={
-            isAtLatestVersion
-              ? t('DeploymentButton.readyToDeploy.trigger')
-              : t('DeploymentButton.updateAvailable.trigger')
-          }
-          preIcon={isAtLatestVersion ? <RocketIcon /> : <UpdateAvailableIcon />}
+          label={t('DeploymentButton.readyToDeploy.trigger')}
+          preIcon={!isAtLatestVersion ? <RocketIcon size="small" /> : undefined}
         />
       }
       align="end"
@@ -776,13 +763,74 @@ function AgentSettingsDropdown() {
             agentBaseType: agentBaseType.capitalized,
           })}
         />
-        <HStack padding="small" justify="end" borderTop fullWidth>
-          <ThemeSelector />
-        </HStack>
       </DropdownMenu>
     </>
   );
 }
+
+const reportAnIssueFormSchema = z.object({
+  error: z.string(),
+});
+
+function ReportAnIssueForm() {
+  const t = useTranslations(
+    'projects/(projectSlug)/agents/(agentId)/AgentPage'
+  );
+  const [submitted, setSubmitted] = useState(false);
+  const user = useCurrentUser();
+  const form = useForm<z.infer<typeof reportAnIssueFormSchema>>({
+    resolver: zodResolver(reportAnIssueFormSchema),
+    defaultValues: {
+      error: '',
+    },
+  });
+
+  const handleReportIssue = useCallback(
+    (values: z.infer<typeof reportAnIssueFormSchema>) => {
+      Sentry.captureFeedback({
+        email: user?.email,
+        name: user?.name,
+        message: values.error,
+      });
+
+      setSubmitted(true);
+    },
+    [user?.email, user?.name]
+  );
+
+  if (submitted) {
+    return (
+      <Alert variant="info" title={t('ReportAnIssueForm.submitted')}></Alert>
+    );
+  }
+
+  return (
+    <FormProvider {...form}>
+      <Form onSubmit={form.handleSubmit(handleReportIssue)}>
+        <VStack gap="form">
+          <FormField
+            name="error"
+            render={({ field }) => (
+              <TextArea
+                fullWidth
+                hideLabel
+                label={t('ReportAnIssueForm.yourMessage')}
+                {...field}
+              />
+            )}
+          />
+          <Button
+            fullWidth
+            type="submit"
+            label={t('ReportAnIssueForm.submit')}
+          />
+        </VStack>
+      </Form>
+    </FormProvider>
+  );
+}
+
+const SUPPORT_BUTTON_ID = 'support-button';
 
 function Navigation() {
   const { isLocal } = useCurrentAgentMetaData();
@@ -791,7 +839,7 @@ function Navigation() {
   );
 
   return (
-    <HStack align="center">
+    <HStack gap="small" align="center">
       <Button
         size="small"
         color="tertiary-transparent"
@@ -816,17 +864,29 @@ function Navigation() {
         triggerAsChild
         trigger={
           <Button
+            id={SUPPORT_BUTTON_ID}
             size="small"
             color="tertiary-transparent"
             label={t('Navigation.support')}
           />
         }
       >
-        <VStack padding>
+        <VStack borderBottom padding>
           <Typography variant="heading5">
-            {t('Navigation.supportPopover.title')}
+            {t('Navigation.supportPopover.bugReport.title')}
           </Typography>
-          <Typography>{t('Navigation.supportPopover.description')}</Typography>
+          <Typography>
+            {t('Navigation.supportPopover.bugReport.description')}
+          </Typography>
+          <ReportAnIssueForm />
+        </VStack>
+        <VStack borderBottom padding>
+          <Typography variant="heading5">
+            {t('Navigation.supportPopover.discord.title')}
+          </Typography>
+          <Typography>
+            {t('Navigation.supportPopover.discord.description')}
+          </Typography>
           <a
             target="_blank"
             className="px-3 flex justify-center items-center gap-2 py-2 text-white bg-[#7289da]"
@@ -835,13 +895,44 @@ function Navigation() {
             {/* eslint-disable-next-line react/forbid-component-props */}
             <DiscordWhiteLogo className="h-4 w-auto" />
             <Typography bold>
-              {t('Navigation.supportPopover.joinUs')}
+              {t('Navigation.supportPopover.discord.joinUs')}
             </Typography>
           </a>
         </VStack>
       </Popover>
     </HStack>
   );
+}
+
+function AgentPageError() {
+  const t = useTranslations(
+    'projects/(projectSlug)/agents/(agentId)/AgentPage'
+  );
+
+  return (
+    <VStack gap="large" padding border fullWidth fullHeight flex align="center">
+      <LoadingEmptyStatusComponent
+        emptyMessage=""
+        isError
+        errorMessage={t('error')}
+      />
+    </VStack>
+  );
+}
+
+function RenderDeployButton() {
+  const { isLocal, isTemplate } = useCurrentAgentMetaData();
+  const user = useCurrentUser();
+
+  if (isLocal && !user?.hasCloudAccess) {
+    return <CloudUpsellDeploy />;
+  }
+
+  if (isTemplate) {
+    return <TemplateVersionDisplay />;
+  }
+
+  return null;
 }
 
 export function AgentPage() {
@@ -906,24 +997,28 @@ export function AgentPage() {
                 name: agentName,
               }}
             >
-              <HStack align="center">
+              <HStack gap={false} align="center">
                 <Navigation />
                 <ContextWindowPreview />
-                <AgentSettingsDropdown />
-                {/*<NavOverlay />*/}
-                {isTemplate && <TemplateVersionDisplay />}
+                <HStack paddingRight="small" align="center" gap="small">
+                  <AgentSettingsDropdown />
+                  <RenderDeployButton />
+                  <ProfilePopover size="small" />
+                </HStack>
               </HStack>
             </ADEHeader>
           }
         >
-          <VStack overflow="hidden" position="relative" fullWidth fullHeight>
-            {fullPageWarning && (
-              <Alert variant="warning" title={fullPageWarning} />
-            )}
-            <Frame overflow="hidden" position="relative" fullWidth fullHeight>
-              <PanelRenderer />
-            </Frame>
-          </VStack>
+          <ErrorBoundary fallback={<AgentPageError />}>
+            <VStack overflow="hidden" position="relative" fullWidth fullHeight>
+              {fullPageWarning && (
+                <Alert variant="warning" title={fullPageWarning} />
+              )}
+              <Frame overflow="hidden" position="relative" fullWidth fullHeight>
+                <PanelRenderer />
+              </Frame>
+            </VStack>
+          </ErrorBoundary>
         </ADEPage>
       </PanelManagerProvider>
     </>
