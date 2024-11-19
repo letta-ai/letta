@@ -3,8 +3,14 @@ import { ModelsService } from '@letta-web/letta-agents-api';
 
 let inferenceModelsList: LLMConfig[] = [];
 
-export async function getLettaAgentsInferenceModelsSingleton() {
-  if (inferenceModelsList.length === 0) {
+interface CommonProps {
+  cacheBust?: boolean;
+}
+
+export async function getLettaAgentsInferenceModelsSingleton(
+  props: CommonProps = {}
+) {
+  if (inferenceModelsList.length === 0 || props.cacheBust) {
     inferenceModelsList = await ModelsService.listModels();
   }
 
@@ -13,8 +19,10 @@ export async function getLettaAgentsInferenceModelsSingleton() {
 
 let embeddingModelsList: EmbeddingConfig[] = [];
 
-export async function getLettaAgentsEmbeddingModelsSingleton() {
-  if (inferenceModelsList.length === 0) {
+export async function getLettaAgentsEmbeddingModelsSingleton(
+  props: CommonProps = {}
+) {
+  if (inferenceModelsList.length === 0 || props.cacheBust) {
     embeddingModelsList = await ModelsService.listEmbeddingModels();
   }
 
