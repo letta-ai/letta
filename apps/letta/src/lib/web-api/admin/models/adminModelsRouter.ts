@@ -11,7 +11,6 @@ import {
   getLettaAgentsInferenceModelsSingleton,
 } from '$letta/server';
 import type { EmbeddingConfig, LLMConfig } from '@letta-web/letta-agents-api';
-import { ModelsService } from '@letta-web/letta-agents-api';
 
 type GetAdminInferenceModelsResponse = ServerInferResponses<
   typeof contracts.admin.models.getAdminInferenceModels
@@ -36,7 +35,9 @@ async function getAdminInferenceModels(
   } = req.query;
 
   if (fromAgents) {
-    const res = await ModelsService.listModels();
+    const res = await getLettaAgentsInferenceModelsSingleton({
+      cacheBust: true,
+    });
 
     return {
       status: 200,
@@ -389,7 +390,9 @@ async function getAdminEmbeddingModels(
   } = req.query;
 
   if (fromAgents) {
-    const res = await ModelsService.listEmbeddingModels();
+    const res = await getLettaAgentsEmbeddingModelsSingleton({
+      cacheBust: true,
+    });
 
     return {
       status: 200,
