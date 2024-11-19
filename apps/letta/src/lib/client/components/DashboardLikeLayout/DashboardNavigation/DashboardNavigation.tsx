@@ -2,7 +2,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import ReactDOM from 'react-dom';
 import Link from 'next/link';
-import type { SubNavigationItem } from '@letta-web/component-library';
+import { isSubNavigationGroup } from '@letta-web/component-library';
 import {
   CreditCardIcon,
   GroupIcon,
@@ -28,6 +28,7 @@ import {
   VStack,
   SwitchOrganizationIcon,
   ChevronLeftIcon,
+  LaptopIcon,
 } from '@letta-web/component-library';
 import { useCurrentUser } from '$letta/client/hooks';
 import { usePathname } from 'next/navigation';
@@ -40,7 +41,6 @@ import { cn } from '@letta-web/core-style-config';
 import { useTranslations } from 'next-intl';
 import { ThemeSelector } from '$letta/client/components/ThemeSelector/ThemeSelector';
 import { useCurrentProject } from '../../../../../app/(logged-in)/(dashboard-like)/projects/[projectSlug]/hooks';
-import { LaptopIcon } from '@radix-ui/react-icons';
 import { LocaleSelector } from '$letta/client/components/LocaleSelector/LocaleSelector';
 
 interface NavButtonProps {
@@ -128,7 +128,6 @@ function GroupHeader(props: GroupHeaderProps) {
   );
 }
 
-const UNCATEGORIZED_GROUP = 'uncategorized';
 interface MainNavigationItemsProps {
   isMobile?: boolean;
 }
@@ -228,24 +227,10 @@ function MainNavigationItems(props: MainNavigationItemsProps) {
 
   const subNavItems = useMemo(() => {
     if (!specificSubNavigationData) {
-      return {};
+      return [];
     }
 
-    return specificSubNavigationData.items.reduce((acc, item) => {
-      let group = UNCATEGORIZED_GROUP;
-
-      if (item.group) {
-        group = item.group;
-      }
-
-      if (!acc[group]) {
-        acc[group] = [];
-      }
-
-      acc[group].push(item);
-
-      return acc;
-    }, {} as Record<string, SubNavigationItem[]>);
+    return specificSubNavigationData.items;
   }, [specificSubNavigationData]);
 
   const title = useMemo(() => {
@@ -320,46 +305,48 @@ function MainNavigationItems(props: MainNavigationItemsProps) {
                 </HStack>
               )}
               <VStack gap="small">
-                {Object.entries(subNavItems).map(([group, items]) => {
-                  if (group === UNCATEGORIZED_GROUP) {
+                {subNavItems.map((item, index) => {
+                  if (isSubNavigationGroup(item)) {
+                    const { title, titleOverride, items: groupItems } = item;
+
                     return (
-                      <VStack
-                        gap="small"
-                        key={group}
-                        paddingX={isMobile ? 'small' : undefined}
-                        paddingBottom={isMobile ? 'small' : undefined}
-                      >
-                        {items.map((item) => (
-                          <NavButton
-                            id={item.id}
-                            key={item.href}
-                            icon={item.icon}
-                            href={item.href}
-                            label={item.label}
-                          />
-                        ))}
+                      <VStack key={title} gap="small" paddingBottom="small">
+                        <Frame
+                          borderTop={index !== 0}
+                          paddingTop={false}
+                          padding="small"
+                        >
+                          {titleOverride ? (
+                            titleOverride
+                          ) : (
+                            <Typography bold variant="body2">
+                              {title}
+                            </Typography>
+                          )}
+                        </Frame>
+                        <VStack gap="small">
+                          {groupItems.map((item) => (
+                            <NavButton
+                              id={item.id}
+                              key={item.href}
+                              href={item.href}
+                              icon={item.icon}
+                              label={item.label}
+                            />
+                          ))}
+                        </VStack>
                       </VStack>
                     );
                   }
 
                   return (
-                    <VStack key={group} gap="small" paddingBottom="small">
-                      <GroupHeader title={group} />
-                      <VStack
-                        gap="small"
-                        paddingX={isMobile ? 'small' : undefined}
-                      >
-                        {items.map((item) => (
-                          <NavButton
-                            id={item.id}
-                            key={item.href}
-                            href={item.href}
-                            icon={item.icon}
-                            label={item.label}
-                          />
-                        ))}
-                      </VStack>
-                    </VStack>
+                    <NavButton
+                      id={item.id}
+                      key={item.href}
+                      href={item.href}
+                      icon={item.icon}
+                      label={item.label}
+                    />
                   );
                 })}
               </VStack>
