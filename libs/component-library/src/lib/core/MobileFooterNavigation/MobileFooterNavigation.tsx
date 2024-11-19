@@ -16,6 +16,7 @@ export function MobileFooterNavigationButton(props: ButtonProps) {
           ? 'bg-tertiary-active text-tertiary-content'
           : 'bg-tertiary text-tertiary-content'
       )}
+      data-testid={props['id']}
     >
       <Slot className="w-4 h-4">{props.preIcon}</Slot>
       <Typography variant="body3">{props.label}</Typography>

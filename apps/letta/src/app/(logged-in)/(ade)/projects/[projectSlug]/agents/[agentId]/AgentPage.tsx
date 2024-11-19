@@ -986,7 +986,7 @@ function AgentMobileNavigationButton(props: AgentMobileNavigationButtonType) {
       onClick={handleClick}
       size="large"
       preIcon={icon}
-      data-testId={`mobile-navigation-button:${panelId}`}
+      id={`mobile-navigation-button:${panelId}`}
       color="tertiary-transparent"
       label={title}
       active={activePanel === panelId}
@@ -1037,7 +1037,7 @@ function AgentMobileNavigation() {
               onClick={() => {
                 setExpanded((prev) => !prev);
               }}
-              data-testId="open-more-panels"
+              id="open-more-panels"
               key={MORE_PANELS}
               size="large"
               preIcon={!expanded ? <ChevronUpIcon /> : <ChevronDownIcon />}

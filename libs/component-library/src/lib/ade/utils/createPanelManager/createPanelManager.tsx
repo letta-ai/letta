@@ -1433,7 +1433,6 @@ export function createPanelManager<
   function RenderSinglePanel({ panelId }: RenderSinglePanelProps) {
     const { panelIdToPositionMap, positions } = usePanelManager();
 
-    console.log(panelIdToPositionMap);
     const position = panelIdToPositionMap[panelId];
 
     if (!position) {

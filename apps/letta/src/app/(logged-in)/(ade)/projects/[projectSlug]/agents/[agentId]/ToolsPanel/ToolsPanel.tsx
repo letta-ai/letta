@@ -117,8 +117,6 @@ function AllToolsView(props: AllToolsViewProps) {
       .map((tool) => {
         const creator = tool.tags?.find((tag) => isBrandKey(tag)) || '';
 
-        console.log(creator);
-
         return {
           name: tool.name || '',
           id: tool.id || '',
