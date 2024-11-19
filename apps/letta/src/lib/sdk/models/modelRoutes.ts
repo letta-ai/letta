@@ -10,6 +10,7 @@ async function listLLMBackends(): Promise<ListLLMBackendsResponseType> {
   const llmBackends = await router.admin.models.getAdminInferenceModels({
     query: {
       limit: 250,
+      disabled: false,
     },
   });
 
@@ -41,6 +42,7 @@ async function listEmbeddingBackends(): Promise<ListEmbeddingBackendsResponseTyp
   const embeddingBackends = await router.admin.models.getAdminEmbeddingModels({
     query: {
       limit: 250,
+      disabled: false,
     },
   });
 
