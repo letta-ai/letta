@@ -169,15 +169,17 @@ export const UseSourcesServiceListFilesFromSourceKeyFn = (
     cursor,
     limit,
     sourceId,
+    userId,
   }: {
     cursor?: string;
     limit?: number;
     sourceId: string;
+    userId?: string;
   },
   queryKey?: Array<unknown>
 ) => [
   useSourcesServiceListFilesFromSourceKey,
-  ...(queryKey ?? [{ cursor, limit, sourceId }]),
+  ...(queryKey ?? [{ cursor, limit, sourceId, userId }]),
 ];
 export type AgentsServiceListAgentsDefaultResponse = Awaited<
   ReturnType<typeof AgentsService.listAgents>

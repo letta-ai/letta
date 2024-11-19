@@ -181,21 +181,28 @@ export const useSourcesServiceListFilesFromSourceSuspense = <
     cursor,
     limit,
     sourceId,
+    userId,
   }: {
     cursor?: string;
     limit?: number;
     sourceId: string;
+    userId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
 ) =>
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseSourcesServiceListFilesFromSourceKeyFn(
-      { cursor, limit, sourceId },
+      { cursor, limit, sourceId, userId },
       queryKey
     ),
     queryFn: () =>
-      SourcesService.listFilesFromSource({ cursor, limit, sourceId }) as TData,
+      SourcesService.listFilesFromSource({
+        cursor,
+        limit,
+        sourceId,
+        userId,
+      }) as TData,
     ...options,
   });
 export const useAgentsServiceListAgentsSuspense = <

@@ -125,10 +125,12 @@ export const prefetchUseSourcesServiceListFilesFromSource = (
     cursor,
     limit,
     sourceId,
+    userId,
   }: {
     cursor?: string;
     limit?: number;
     sourceId: string;
+    userId?: string;
   }
 ) =>
   queryClient.prefetchQuery({
@@ -136,9 +138,10 @@ export const prefetchUseSourcesServiceListFilesFromSource = (
       cursor,
       limit,
       sourceId,
+      userId,
     }),
     queryFn: () =>
-      SourcesService.listFilesFromSource({ cursor, limit, sourceId }),
+      SourcesService.listFilesFromSource({ cursor, limit, sourceId, userId }),
   });
 export const prefetchUseAgentsServiceListAgents = (
   queryClient: QueryClient,

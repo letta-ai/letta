@@ -859,6 +859,17 @@ export const $Choice = {
       ],
       title: 'Logprobs',
     },
+    seed: {
+      anyOf: [
+        {
+          type: 'integer',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Seed',
+    },
   },
   type: 'object',
   required: ['finish_reason', 'index', 'message'],
@@ -1735,11 +1746,18 @@ export const $FileMetadata = {
       description: 'The human-friendly ID of the File',
       examples: [['file-123e4567-e89b-12d3-a456-426614174000']],
     },
-    user_id: {
-      type: 'string',
-      title: 'User Id',
+    organization_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Organization Id',
       description:
-        'The unique identifier of the user associated with the document.',
+        'The unique identifier of the organization associated with the document.',
     },
     source_id: {
       type: 'string',
@@ -1820,15 +1838,41 @@ export const $FileMetadata = {
       description: 'The last modified date of the file.',
     },
     created_at: {
-      type: 'string',
-      format: 'date-time',
+      anyOf: [
+        {
+          type: 'string',
+          format: 'date-time',
+        },
+        {
+          type: 'null',
+        },
+      ],
       title: 'Created At',
-      description: 'The creation date of this file metadata object.',
+      description: 'The creation date of the file.',
+    },
+    updated_at: {
+      anyOf: [
+        {
+          type: 'string',
+          format: 'date-time',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Updated At',
+      description: 'The update date of the file.',
+    },
+    is_deleted: {
+      type: 'boolean',
+      title: 'Is Deleted',
+      description: 'Whether this file is deleted or not.',
+      default: false,
     },
   },
-  additionalProperties: true,
+  additionalProperties: false,
   type: 'object',
-  required: ['user_id', 'source_id'],
+  required: ['source_id'],
   title: 'FileMetadata',
   description: 'Representation of a single FileMetadata',
 } as const;
@@ -2204,6 +2248,7 @@ export const $LLMConfig = {
         'vllm',
         'hugging-face',
         'mistral',
+        'together',
       ],
       title: 'Model Endpoint Type',
       description: 'The endpoint type for the model.',
@@ -3307,7 +3352,7 @@ export const $Organization = {
       type: 'string',
       title: 'Name',
       description: 'The name of the organization.',
-      default: 'LoyalKumquat',
+      default: 'QuietZebra',
     },
     created_at: {
       anyOf: [
@@ -3524,6 +3569,18 @@ export const $ResponseFormat = {
 
 export const $Source = {
   properties: {
+    id: {
+      type: 'string',
+      pattern: '^source-[a-fA-F0-9]{8}',
+      title: 'Id',
+      description: 'The human-friendly ID of the Source',
+      examples: [['source-123e4567-e89b-12d3-a456-426614174000']],
+    },
+    name: {
+      type: 'string',
+      title: 'Name',
+      description: 'The name of the source.',
+    },
     description: {
       anyOf: [
         {
@@ -3540,6 +3597,18 @@ export const $Source = {
       $ref: '#/components/schemas/EmbeddingConfig',
       description: 'The embedding configuration used by the source.',
     },
+    organization_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Organization Id',
+      description: 'The ID of the organization that created the source.',
+    },
     metadata_: {
       anyOf: [
         {
@@ -3552,33 +3621,60 @@ export const $Source = {
       title: 'Metadata ',
       description: 'Metadata associated with the source.',
     },
-    id: {
-      type: 'string',
-      pattern: '^source-[a-fA-F0-9]{8}',
-      title: 'Id',
-      description: 'The human-friendly ID of the Source',
-      examples: [['source-123e4567-e89b-12d3-a456-426614174000']],
+    created_by_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Created By Id',
+      description: 'The id of the user that made this Tool.',
     },
-    name: {
-      type: 'string',
-      title: 'Name',
-      description: 'The name of the source.',
+    last_updated_by_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Last Updated By Id',
+      description: 'The id of the user that made this Tool.',
     },
     created_at: {
-      type: 'string',
-      format: 'date-time',
+      anyOf: [
+        {
+          type: 'string',
+          format: 'date-time',
+        },
+        {
+          type: 'null',
+        },
+      ],
       title: 'Created At',
-      description: 'The creation date of the source.',
+      description: 'The timestamp when the source was created.',
     },
-    user_id: {
-      type: 'string',
-      title: 'User Id',
-      description: 'The ID of the user that created the source.',
+    updated_at: {
+      anyOf: [
+        {
+          type: 'string',
+          format: 'date-time',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Updated At',
+      description: 'The timestamp when the source was last updated.',
     },
   },
   additionalProperties: false,
   type: 'object',
-  required: ['embedding_config', 'name', 'user_id'],
+  required: ['name', 'embedding_config'],
   title: 'Source',
   description: `Representation of a source, which is a collection of files and passages.
 
@@ -3586,7 +3682,6 @@ Parameters:
     id (str): The ID of the source
     name (str): The name of the source.
     embedding_config (EmbeddingConfig): The embedding configuration used by the source.
-    created_at (datetime): The creation date of the source.
     user_id (str): The ID of the user that created the source.
     metadata_ (dict): Metadata associated with the source.
     description (str): The description of the source.`,
@@ -3594,6 +3689,22 @@ Parameters:
 
 export const $SourceCreate = {
   properties: {
+    name: {
+      type: 'string',
+      title: 'Name',
+      description: 'The name of the source.',
+    },
+    embedding_config: {
+      anyOf: [
+        {
+          $ref: '#/components/schemas/EmbeddingConfig',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      description: 'The embedding configuration used by the source.',
+    },
     description: {
       anyOf: [
         {
@@ -3606,17 +3717,6 @@ export const $SourceCreate = {
       title: 'Description',
       description: 'The description of the source.',
     },
-    embedding_config: {
-      anyOf: [
-        {
-          $ref: '#/components/schemas/EmbeddingConfig',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      description: 'The embedding configuration used by the passage.',
-    },
     metadata_: {
       anyOf: [
         {
@@ -3628,21 +3728,29 @@ export const $SourceCreate = {
       ],
       title: 'Metadata ',
       description: 'Metadata associated with the source.',
-    },
-    name: {
-      type: 'string',
-      title: 'Name',
-      description: 'The name of the source.',
     },
   },
   additionalProperties: false,
   type: 'object',
   required: ['name'],
   title: 'SourceCreate',
+  description: 'Schema for creating a new Source.',
 } as const;
 
 export const $SourceUpdate = {
   properties: {
+    name: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Name',
+      description: 'The name of the source.',
+    },
     description: {
       anyOf: [
         {
@@ -3654,17 +3762,6 @@ export const $SourceUpdate = {
       ],
       title: 'Description',
       description: 'The description of the source.',
-    },
-    embedding_config: {
-      anyOf: [
-        {
-          $ref: '#/components/schemas/EmbeddingConfig',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      description: 'The embedding configuration used by the passage.',
     },
     metadata_: {
       anyOf: [
@@ -3678,28 +3775,22 @@ export const $SourceUpdate = {
       title: 'Metadata ',
       description: 'Metadata associated with the source.',
     },
-    id: {
-      type: 'string',
-      title: 'Id',
-      description: 'The ID of the source.',
-    },
-    name: {
+    embedding_config: {
       anyOf: [
         {
-          type: 'string',
+          $ref: '#/components/schemas/EmbeddingConfig',
         },
         {
           type: 'null',
         },
       ],
-      title: 'Name',
-      description: 'The name of the source.',
+      description: 'The embedding configuration used by the source.',
     },
   },
   additionalProperties: false,
   type: 'object',
-  required: ['id'],
   title: 'SourceUpdate',
+  description: 'Schema for updating an existing Source.',
 } as const;
 
 export const $SubmitToolOutputsToRunRequest = {

@@ -1066,6 +1066,22 @@
               "title": "Cursor"
             },
             "description": "Pagination cursor to fetch the next set of results"
+          },
+          {
+            "name": "user_id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "User Id"
+            }
           }
         ],
         "responses": {
@@ -4423,6 +4439,17 @@
               }
             ],
             "title": "Logprobs"
+          },
+          "seed": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seed"
           }
         },
         "type": "object",
@@ -5275,10 +5302,17 @@
             "description": "The human-friendly ID of the File",
             "examples": [["file-123e4567-e89b-12d3-a456-426614174000"]]
           },
-          "user_id": {
-            "type": "string",
-            "title": "User Id",
-            "description": "The unique identifier of the user associated with the document."
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "The unique identifier of the organization associated with the document."
           },
           "source_id": {
             "type": "string",
@@ -5358,15 +5392,41 @@
             "description": "The last modified date of the file."
           },
           "created_at": {
-            "type": "string",
-            "format": "date-time",
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Created At",
-            "description": "The creation date of this file metadata object."
+            "description": "The creation date of the file."
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At",
+            "description": "The update date of the file."
+          },
+          "is_deleted": {
+            "type": "boolean",
+            "title": "Is Deleted",
+            "description": "Whether this file is deleted or not.",
+            "default": false
           }
         },
-        "additionalProperties": true,
+        "additionalProperties": false,
         "type": "object",
-        "required": ["user_id", "source_id"],
+        "required": ["source_id"],
         "title": "FileMetadata",
         "description": "Representation of a single FileMetadata"
       },
@@ -5710,7 +5770,8 @@
               "koboldcpp",
               "vllm",
               "hugging-face",
-              "mistral"
+              "mistral",
+              "together"
             ],
             "title": "Model Endpoint Type",
             "description": "The endpoint type for the model."
@@ -6758,7 +6819,7 @@
             "type": "string",
             "title": "Name",
             "description": "The name of the organization.",
-            "default": "LoyalKumquat"
+            "default": "QuietZebra"
           },
           "created_at": {
             "anyOf": [
@@ -6956,6 +7017,18 @@
       },
       "Source": {
         "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^source-[a-fA-F0-9]{8}",
+            "title": "Id",
+            "description": "The human-friendly ID of the Source",
+            "examples": [["source-123e4567-e89b-12d3-a456-426614174000"]]
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "The name of the source."
+          },
           "description": {
             "anyOf": [
               {
@@ -6972,6 +7045,18 @@
             "$ref": "#/components/schemas/EmbeddingConfig",
             "description": "The embedding configuration used by the source."
           },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "The ID of the organization that created the source."
+          },
           "metadata_": {
             "anyOf": [
               {
@@ -6984,38 +7069,81 @@
             "title": "Metadata ",
             "description": "Metadata associated with the source."
           },
-          "id": {
-            "type": "string",
-            "pattern": "^source-[a-fA-F0-9]{8}",
-            "title": "Id",
-            "description": "The human-friendly ID of the Source",
-            "examples": [["source-123e4567-e89b-12d3-a456-426614174000"]]
+          "created_by_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created By Id",
+            "description": "The id of the user that made this Tool."
           },
+          "last_updated_by_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Updated By Id",
+            "description": "The id of the user that made this Tool."
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At",
+            "description": "The timestamp when the source was created."
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At",
+            "description": "The timestamp when the source was last updated."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["name", "embedding_config"],
+        "title": "Source",
+        "description": "Representation of a source, which is a collection of files and passages.\n\nParameters:\n    id (str): The ID of the source\n    name (str): The name of the source.\n    embedding_config (EmbeddingConfig): The embedding configuration used by the source.\n    user_id (str): The ID of the user that created the source.\n    metadata_ (dict): Metadata associated with the source.\n    description (str): The description of the source."
+      },
+      "SourceCreate": {
+        "properties": {
           "name": {
             "type": "string",
             "title": "Name",
             "description": "The name of the source."
           },
-          "created_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Created At",
-            "description": "The creation date of the source."
+          "embedding_config": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EmbeddingConfig"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The embedding configuration used by the source."
           },
-          "user_id": {
-            "type": "string",
-            "title": "User Id",
-            "description": "The ID of the user that created the source."
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": ["embedding_config", "name", "user_id"],
-        "title": "Source",
-        "description": "Representation of a source, which is a collection of files and passages.\n\nParameters:\n    id (str): The ID of the source\n    name (str): The name of the source.\n    embedding_config (EmbeddingConfig): The embedding configuration used by the source.\n    created_at (datetime): The creation date of the source.\n    user_id (str): The ID of the user that created the source.\n    metadata_ (dict): Metadata associated with the source.\n    description (str): The description of the source."
-      },
-      "SourceCreate": {
-        "properties": {
           "description": {
             "anyOf": [
               {
@@ -7028,17 +7156,6 @@
             "title": "Description",
             "description": "The description of the source."
           },
-          "embedding_config": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/EmbeddingConfig"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "The embedding configuration used by the passage."
-          },
           "metadata_": {
             "anyOf": [
               {
@@ -7050,20 +7167,28 @@
             ],
             "title": "Metadata ",
             "description": "Metadata associated with the source."
-          },
-          "name": {
-            "type": "string",
-            "title": "Name",
-            "description": "The name of the source."
           }
         },
         "additionalProperties": false,
         "type": "object",
         "required": ["name"],
-        "title": "SourceCreate"
+        "title": "SourceCreate",
+        "description": "Schema for creating a new Source."
       },
       "SourceUpdate": {
         "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name",
+            "description": "The name of the source."
+          },
           "description": {
             "anyOf": [
               {
@@ -7075,17 +7200,6 @@
             ],
             "title": "Description",
             "description": "The description of the source."
-          },
-          "embedding_config": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/EmbeddingConfig"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "The embedding configuration used by the passage."
           },
           "metadata_": {
             "anyOf": [
@@ -7099,28 +7213,22 @@
             "title": "Metadata ",
             "description": "Metadata associated with the source."
           },
-          "id": {
-            "type": "string",
-            "title": "Id",
-            "description": "The ID of the source."
-          },
-          "name": {
+          "embedding_config": {
             "anyOf": [
               {
-                "type": "string"
+                "$ref": "#/components/schemas/EmbeddingConfig"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Name",
-            "description": "The name of the source."
+            "description": "The embedding configuration used by the source."
           }
         },
         "additionalProperties": false,
         "type": "object",
-        "required": ["id"],
-        "title": "SourceUpdate"
+        "title": "SourceUpdate",
+        "description": "Schema for updating an existing Source."
       },
       "SubmitToolOutputsToRunRequest": {
         "properties": {
@@ -8961,6 +9069,9 @@
     },
     {
       "url": "http://localhost:3000"
+    },
+    {
+      "url": "https://app.letta.com"
     }
   ]
 }

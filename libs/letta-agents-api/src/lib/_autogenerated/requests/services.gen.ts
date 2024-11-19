@@ -589,6 +589,7 @@ export class SourcesService {
    * @param data.sourceId
    * @param data.limit Number of files to return
    * @param data.cursor Pagination cursor to fetch the next set of results
+   * @param data.userId
    * @returns FileMetadata Successful Response
    * @throws ApiError
    */
