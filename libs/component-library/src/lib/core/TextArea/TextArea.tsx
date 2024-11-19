@@ -8,22 +8,36 @@ import TextareaAutosize, {
 import { Button } from '../Button/Button';
 import { ExpandTextareaIcon } from '../../icons';
 import { Frame } from '../../framing/Frame/Frame';
-
-type TextAreaProps = TextareaAutosizeProps & {
-  fullWidth?: boolean;
-  fullHeight?: boolean;
-  flex?: boolean;
-  hideLabel?: boolean;
-  autosize?: boolean;
-  hideFocus?: boolean;
-  expandable?: {
-    onExpand: () => void;
-    expandText: string;
-  };
-};
+import type { VariantProps } from 'class-variance-authority';
+import { cva } from 'class-variance-authority';
 
 const defaultClass =
   'flex min-h-[80px] w-full border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground  disabled:cursor-not-allowed disabled:opacity-50';
+
+const textareaVariants = cva(defaultClass, {
+  variants: {
+    resize: {
+      both: 'resize',
+      horizontal: 'resize-x',
+      none: 'resize-none',
+      vertical: 'resize-y',
+    },
+  },
+});
+
+type TextAreaProps = TextareaAutosizeProps &
+  VariantProps<typeof textareaVariants> & {
+    fullWidth?: boolean;
+    fullHeight?: boolean;
+    flex?: boolean;
+    hideLabel?: boolean;
+    autosize?: boolean;
+    hideFocus?: boolean;
+    expandable?: {
+      onExpand: () => void;
+      expandText: string;
+    };
+  };
 
 const PrimitiveTextArea = React.forwardRef<HTMLTextAreaElement, TextAreaProps>(
   (
@@ -31,6 +45,7 @@ const PrimitiveTextArea = React.forwardRef<HTMLTextAreaElement, TextAreaProps>(
       className,
       hideFocus,
       autosize = true,
+      resize = 'none',
       fullHeight,
       flex,
       hideLabel: _hideLabel,
@@ -43,6 +58,7 @@ const PrimitiveTextArea = React.forwardRef<HTMLTextAreaElement, TextAreaProps>(
       return (
         <textarea
           className={cn(
+            textareaVariants({ resize }),
             defaultClass,
             hideFocus
               ? 'focus-visible:outline-none'
