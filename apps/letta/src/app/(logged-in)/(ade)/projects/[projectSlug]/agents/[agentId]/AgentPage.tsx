@@ -501,7 +501,7 @@ function CloudUpsellDeploy() {
           size="small"
           color="secondary"
           preIcon={<RocketIcon size="small" />}
-          data-testid="version-template-trigger"
+          data-testid="trigger-cloud-upsell"
           label={t('DeploymentButton.readyToDeploy.trigger')}
         />
       }
@@ -688,7 +688,7 @@ function TemplateVersionDisplay() {
             deployedAgents.body.agents.length > 0 && (
               <Button
                 fullWidth
-                data-testid="version-template-trigger"
+                data-testid="view-deployed-agents"
                 target="_blank"
                 color="tertiary-transparent"
                 label={t('VersionAgentDialog.deployedAgents')}
