@@ -964,6 +964,7 @@ function AgentMobileNavigation() {
               onClick={() => {
                 setExpanded((prev) => !prev);
               }}
+              data-testId="open-more-panels"
               key={MORE_PANELS}
               size="large"
               preIcon={!expanded ? <ChevronUpIcon /> : <ChevronDownIcon />}
