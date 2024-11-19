@@ -9,7 +9,7 @@ export async function getLettaAgentsInferenceModelsSingleton() {
   }
 
   return inferenceModelsList;
-};
+}
 
 let embeddingModelsList: EmbeddingConfig[] = [];
 

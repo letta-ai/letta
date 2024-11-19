@@ -1,12 +1,11 @@
 import { initContract } from '@ts-rest/core';
 import {
   LLMConfigSchema,
-  EmbeddingConfigSchema
+  EmbeddingConfigSchema,
 } from '@letta-web/letta-agents-api';
 import { z } from 'zod';
 
 const c = initContract();
-
 
 const listLLMBackendsContract = c.query({
   method: 'GET',

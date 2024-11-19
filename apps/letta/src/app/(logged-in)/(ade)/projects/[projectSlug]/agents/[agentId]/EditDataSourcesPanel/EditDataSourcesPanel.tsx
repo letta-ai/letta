@@ -1120,6 +1120,12 @@ function EditDataSourcesPanel() {
 }
 
 export const editDataSourcesPanel = {
+  useGetMobileTitle: () => {
+    const t = useTranslations('ADE/EditDataSourcesPanel');
+
+    return t('mobileTitle');
+  },
+  icon: <DatabaseIcon />,
   useGetTitle: () => {
     const t = useTranslations('ADE/EditDataSourcesPanel');
     const { data: sources } = useAgentsServiceGetAgentSources({

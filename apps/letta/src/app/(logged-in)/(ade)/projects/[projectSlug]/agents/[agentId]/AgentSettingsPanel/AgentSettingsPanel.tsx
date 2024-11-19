@@ -18,6 +18,7 @@ import {
   VStack,
   RawTextArea,
   Dialog,
+  RobotIcon,
 } from '@letta-web/component-library';
 import { useCurrentAgent, useSyncUpdateCurrentAgent } from '../hooks';
 import { z } from 'zod';
@@ -39,7 +40,6 @@ interface SelectedModelType {
 interface ModelSelectorProps {
   llmConfig: AgentState['llm_config'];
 }
-
 
 function ModelSelector(props: ModelSelectorProps) {
   const { llmConfig } = props;
@@ -262,11 +262,18 @@ export function AgentSettingsPanel() {
 export const agentSettingsPanel = {
   templateId: 'agent-settings',
   content: AgentSettingsPanel,
+  useGetMobileTitle: () => {
+    const t = useTranslations('ADE/AgentSettingsPanel');
+    const { capitalized: baseName } = useAgentBaseTypeName();
+
+    return t('mobileTitle', { baseName });
+  },
   useGetTitle: () => {
     const t = useTranslations('ADE/AgentSettingsPanel');
     const { capitalized: baseName } = useAgentBaseTypeName();
 
     return t('title', { baseName });
   },
+  icon: <RobotIcon />,
   data: z.undefined(),
 } satisfies PanelTemplate<'agent-settings'>;

@@ -582,50 +582,58 @@ export const developmentServerPasswordRelations = relations(
   })
 );
 
-export const inferenceModelsMetadata = pgTable('inference_models_metadata', {
-  id: text('id')
-    .notNull()
-    .unique()
-    .primaryKey()
-    .default(sql`gen_random_uuid()`),
-  name: text('name').notNull(),
-  brand: text('brand').notNull(),
-  modelName: text('model_name').notNull(),
-  modelEndpoint: text('model_endpoint').notNull(),
-  createdAt: timestamp('created_at').notNull().defaultNow(),
-  disabledAt: timestamp('disabled_at'),
-  updatedAt: timestamp('updated_at')
-    .notNull()
-    .$onUpdate(() => new Date()),
-}, self => ({
-  unique: {
-    uniqueModelName: uniqueIndex('unique_model_name').on(
-      self.modelName,
-      self.modelEndpoint
-    ),
+export const inferenceModelsMetadata = pgTable(
+  'inference_models_metadata',
+  {
+    id: text('id')
+      .notNull()
+      .unique()
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    name: text('name').notNull(),
+    brand: text('brand').notNull(),
+    modelName: text('model_name').notNull(),
+    modelEndpoint: text('model_endpoint').notNull(),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    disabledAt: timestamp('disabled_at'),
+    updatedAt: timestamp('updated_at')
+      .notNull()
+      .$onUpdate(() => new Date()),
   },
-}));
+  (self) => ({
+    unique: {
+      uniqueModelName: uniqueIndex('unique_model_name').on(
+        self.modelName,
+        self.modelEndpoint
+      ),
+    },
+  })
+);
 
-export const embeddingModelsMetadata = pgTable('embedding_models_metadata', {
-  id: text('id')
-    .notNull()
-    .unique()
-    .primaryKey()
-    .default(sql`gen_random_uuid()`),
-  name: text('name').notNull(),
-  brand: text('brand').notNull(),
-  modelName: text('model_name').notNull(),
-  modelEndpoint: text('model_endpoint').notNull(),
-  createdAt: timestamp('created_at').notNull().defaultNow(),
-  disabledAt: timestamp('disabled_at'),
-  updatedAt: timestamp('updated_at')
-    .notNull()
-    .$onUpdate(() => new Date()),
-}, self => ({
-  unique: {
-    uniqueModelName: uniqueIndex('unique_model_name').on(
-      self.modelName,
-      self.modelEndpoint
-    ),
+export const embeddingModelsMetadata = pgTable(
+  'embedding_models_metadata',
+  {
+    id: text('id')
+      .notNull()
+      .unique()
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    name: text('name').notNull(),
+    brand: text('brand').notNull(),
+    modelName: text('model_name').notNull(),
+    modelEndpoint: text('model_endpoint').notNull(),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    disabledAt: timestamp('disabled_at'),
+    updatedAt: timestamp('updated_at')
+      .notNull()
+      .$onUpdate(() => new Date()),
   },
-}));
+  (self) => ({
+    unique: {
+      uniqueModelName: uniqueIndex('unique_model_name').on(
+        self.modelName,
+        self.modelEndpoint
+      ),
+    },
+  })
+);

@@ -47,6 +47,7 @@ const buttonVariants = cva(
           'bg-background-black text-background-black-content hover:bg-background-black-hover border-transparent',
       },
       size: {
+        large: 'px-6 py-2 h-biHeight-lg text-lg font-medium gap-2',
         default: 'px-4 py-1 h-biHeight text-base font-medium gap-2',
         small: 'px-3 py-1 h-biHeight-sm text-sm font-medium gap-2',
       },

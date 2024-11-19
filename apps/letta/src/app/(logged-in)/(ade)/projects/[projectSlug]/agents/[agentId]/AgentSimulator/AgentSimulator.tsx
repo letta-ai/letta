@@ -1,4 +1,3 @@
-'use client';
 import {
   Alert,
   BirdIcon,
@@ -6,6 +5,7 @@ import {
   ChatBubbleIcon,
   ChatInput,
   CodeIcon,
+  ComputerIcon,
   Dialog,
   DotsHorizontalIcon,
   DropdownMenu,
@@ -61,9 +61,12 @@ import type { GetAgentTemplateSimulatorSessionResponseBody } from '$letta/web-ap
 import { isEqual } from 'lodash-es';
 import { useCurrentSimulatedAgent } from '../hooks/useCurrentSimulatedAgent/useCurrentSimulatedAgent';
 import { useCurrentAgentMetaData } from '../hooks/useCurrentAgentMetaData/useCurrentAgentMetaData';
+import { atom, useAtom } from 'jotai';
+
+const isSendingMessageAtom = atom(false);
 
 function useSendMessage(agentId: string) {
-  const [isPending, setIsPending] = useState(false);
+  const [isPending, setIsPending] = useAtom(isSendingMessageAtom);
   const abortController = useRef<AbortController>();
   const queryClient = useQueryClient();
 
@@ -250,7 +253,7 @@ function useSendMessage(agentId: string) {
         setIsPending(false);
       };
     },
-    [agentId, baseUrl, password, queryClient]
+    [agentId, baseUrl, password, queryClient, setIsPending]
   );
 
   return { isPending, sendMessage };
@@ -820,5 +823,7 @@ export const agentSimulatorTemplate = {
   templateId: 'agent-simulator',
   useGetTitle: () => 'Agent Simulator',
   content: Chatroom,
+  useGetMobileTitle: () => 'Simulator',
+  icon: <ComputerIcon />,
   data: z.undefined(),
 } satisfies PanelTemplate<'agent-simulator'>;

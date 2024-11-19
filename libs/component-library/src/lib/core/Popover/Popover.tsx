@@ -37,6 +37,7 @@ export interface PopoverProps {
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   align?: 'center' | 'end' | 'start';
+  side?: 'bottom' | 'left' | 'right' | 'top';
   className?: string;
   offset?: number;
 }
@@ -53,6 +54,7 @@ export function Popover(props: PopoverProps) {
     offset,
     align,
     children,
+    side,
     className,
   } = props;
 
@@ -68,6 +70,7 @@ export function Popover(props: PopoverProps) {
         onMouseEnter={onMouseEnter}
         sideOffset={offset}
         align={align}
+        side={side}
         className={className}
       >
         {children}

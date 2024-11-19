@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { PanelTemplate } from '@letta-web/component-library';
+import { CodeIcon } from '@letta-web/component-library';
 import { DialogContentWithCategories } from '@letta-web/component-library';
 
 import { Dialog } from '@letta-web/component-library';
@@ -180,6 +181,12 @@ function EditMemory() {
 export const editCoreMemories = {
   templateId: 'edit-core-memories',
   content: EditMemory,
+  icon: <CodeIcon />,
+  useGetMobileTitle: () => {
+    const t = useTranslations('ADE/EditCoreMemoriesPanel');
+
+    return t('mobileTitle');
+  },
   useGetTitle: () => {
     const t = useTranslations('ADE/EditCoreMemoriesPanel');
     const { memory } = useCurrentAgent();

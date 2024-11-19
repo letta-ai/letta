@@ -370,6 +370,7 @@
     }
   },
   "ADE/AgentSettingsPanel": {
+    "mobileTitle": "{baseName}",
     "SystemPromptEditor": {
       "updatedAt": "Dernière mise à jour le {date}",
       "label": "Instructions système",

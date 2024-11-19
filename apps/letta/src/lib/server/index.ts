@@ -113,4 +113,4 @@ export function generateSlug(name: string) {
 }
 
 export * from './lib/findUniqueAgentTemplateName/findUniqueAgentTemplateName';
-export * from '$letta/server/lib/getLettaAgentsInferenceModelsSingleton/getLettaAgentsInferenceModelsSingleton'
+export * from '$letta/server/lib/getLettaAgentsInferenceModelsSingleton/getLettaAgentsInferenceModelsSingleton';

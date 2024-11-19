@@ -14,6 +14,7 @@
       "localDev": "Remote Development",
       "settings": "Settings"
     },
+    "rootTitle": "Dashboard",
     "secondaryNav": {
       "settings": "Settings",
       "signOut": "Sign out",
@@ -321,6 +322,7 @@
     }
   },
   "ADE/EditDataSourcesPanel": {
+    "mobileTitle": "Sources",
     "AttachDataSourceView": {
       "notCompatible": {
         "title": "Not Compatible",
@@ -419,6 +421,7 @@
     }
   },
   "ADE/AgentSettingsPanel": {
+    "mobileTitle": "{baseName}",
     "SystemPromptEditor": {
       "updatedAt": "Last updated on {date}",
       "label": "System Instructions",
@@ -526,6 +529,7 @@
     "localProject": "Local Project"
   },
   "ADE/EditCoreMemoriesPanel": {
+    "mobileTitle": "Core Memories",
     "EditMemoryForm": {
       "characterLimit": "{count}/{limit} chars"
     },
@@ -640,6 +644,10 @@
         "createAgent": {
           "title": "Create an agent",
           "description": "Create an agent to deploy to your local server."
+        },
+        "viewAgents": {
+          "title": "View local agents",
+          "description": "View all agents on your local server."
         }
       }
     }
@@ -763,6 +771,7 @@
     "error": "There was an error fetching the simulated agent, please try again or contact support."
   },
   "ADE/Tools": {
+    "mobileTitle": "Tools",
     "title": "Tools ({toolCount})",
     "AddToolDialogDetailActions": {
       "addToAgent": "Add to Agent",
@@ -859,6 +868,7 @@
   },
   "ADE/ArchivalMemories": {
     "title": "Archival Memories",
+    "mobileTitle": "Archival Memories",
     "MemoryItem": {
       "removeMemory": "Remove Memory",
       "deleteMemory": "Delete Memory",
@@ -897,6 +907,10 @@
           "joinUs": "Join us on Discord"
         }
       }
+    },
+    "AgentMobileNavigation": {
+      "more": "More panels",
+      "less": "Less panels"
     },
     "UpdateNameDialog": {
       "title": "Rename {agentBaseType}",
@@ -979,6 +993,7 @@
   "ADE/AdvancedSettings": {
     "title": "Advanced",
     "model": "Model",
+    "mobileTitle": "Advanced",
     "modelParameters": "Model Parameters",
     "modelEndpoint": "Model Endpoint",
     "endpointType": "Endpoint Type",

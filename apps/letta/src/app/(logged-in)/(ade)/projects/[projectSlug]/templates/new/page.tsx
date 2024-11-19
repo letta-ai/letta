@@ -300,21 +300,10 @@ function CreateAgentsView() {
 }
 
 function NewAgentPage() {
-  const { slug: projectSlug, name } = useCurrentProject();
   const t = useTranslations('projects/(projectSlug)/templates/new/page');
 
   return (
-    <ADEPage
-      header={
-        <ADEHeader
-          agent={{ name: t('pageTitle') }}
-          project={{
-            url: `/projects/${projectSlug}`,
-            name: name,
-          }}
-        ></ADEHeader>
-      }
-    >
+    <ADEPage header={<ADEHeader agent={{ name: t('pageTitle') }}></ADEHeader>}>
       <VStack paddingY fullHeight fullWidth align="center">
         <HStack
           width="contained"

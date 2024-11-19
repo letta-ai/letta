@@ -5,6 +5,7 @@ import {
   DashboardPageLayout,
   DashboardPageSection,
   HStack,
+  ListIcon,
   NiceGridDisplay,
   RobotIcon,
   Typography,
@@ -16,6 +17,7 @@ import { CreateLocalAgentDialog } from '../../shared/CreateLocalAgentDialog/Crea
 import React, { useEffect, useRef } from 'react';
 import { getIsLocalServiceOnline } from '$letta/client/local-project-manager';
 import { ConnectToLocalServerCommand } from '$letta/client/components/ConnectToLocalServerCommand/ConnectToLocalServerCommand';
+import Link from 'next/link';
 
 function useIsLocalServiceOnline() {
   const [isLoading, setIsLoading] = React.useState(true);
@@ -72,6 +74,16 @@ function DevelopmentServersDashboardPage() {
                 />
               }
             />
+            <Link href="/development-servers/local/agents">
+              <ActionCard
+                icon={<ListIcon />}
+                onClick={() => {
+                  // do nothing
+                }}
+                title={t('gettingStarted.actions.viewAgents.title')}
+                description={t('gettingStarted.actions.viewAgents.description')}
+              />
+            </Link>
           </NiceGridDisplay>
         ) : (
           <VStack width="contained">

@@ -51,7 +51,16 @@ describe('letta', () => {
       'Please include the word BananaMan at the end of every message.'
     );
 
-    cy.findByTestId('toggle-variables-button').click();
+    // hack to prevent duplicate clicks due to mobile hiding uis
+
+    cy.findByTestId('open-more-panels').click({
+      force: true,
+    });
+    cy.findByTestId('mobile-navigation-button:advanced-settings').click({
+      force: true,
+    });
+
+    cy.findByTestId('toggle-variables-button').first().click();
 
     cy.findByTestId('variable-input-name').type('Shubham');
 
@@ -89,7 +98,9 @@ describe('letta', () => {
     cy.findByTestId('messages-list').contains('Shubham', { timeout: 10000 });
     cy.findByTestId('messages-list').contains('BananaMan', { timeout: 10000 });
 
-    cy.findByTestId('version-template-trigger').click({ force: true });
+    cy.findAllByTestId('version-template-trigger')
+      .first()
+      .click({ force: true });
 
     cy.findByTestId('stage-new-version-button').click({ force: true });
     cy.findByTestId('stage-agent-dialog-confirm-button').click({ force: true });

@@ -9,6 +9,7 @@ import type {
 import { createPanelManager } from './createPanelManager';
 import { z } from 'zod';
 import { screen } from '@testing-library/react';
+import { SupportIcon } from '../../../icons';
 
 function Component({ test }: { test: string }) {
   return <div>{test}</div>;
@@ -19,6 +20,8 @@ const { usePanelManager, PanelRenderer, PanelManagerProvider } =
     'test-panel': {
       templateId: 'test-panel',
       useGetTitle: () => 'Test Panel',
+      useGetMobileTitle: () => 'Test Panel',
+      icon: <SupportIcon />,
       data: z.object({
         test: z.string(),
       }),

@@ -2,8 +2,6 @@ import type { ToZod } from '@letta-web/helpful-client-utils';
 import type { Block } from '@letta-web/letta-agents-api';
 import { z } from 'zod';
 
-
-
 const BlockMetadataSchema = z.record(z.unknown());
 
 export const BlockSchema: ToZod<Omit<Block, 'metadata_'>> = z.object({

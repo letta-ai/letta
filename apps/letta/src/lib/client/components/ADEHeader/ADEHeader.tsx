@@ -4,26 +4,43 @@ import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { ProjectSelector } from '$letta/client/components';
 import {
+  HiddenOnMobile,
   HStack,
   Logo,
   Tooltip,
+  VisibleOnMobile,
   Typography,
 } from '@letta-web/component-library';
 
 interface ADEHeaderProps {
   children?: React.ReactNode;
-  project: {
-    url: string;
-    name: string;
-  };
   agent: {
     name: string;
   };
 }
 
-export function ADEHeader(props: ADEHeaderProps) {
+function LogoContainer() {
   const t = useTranslations('ADE/ADEHeader');
 
+  return (
+    <HStack
+      align="center"
+      justify="center"
+      color="primary"
+      /* eslint-disable-next-line react/forbid-component-props */
+      className="w-[40px]"
+      fullHeight
+    >
+      <Tooltip content={t('returnToHome')}>
+        <Link href="/">
+          <Logo size="small" />
+        </Link>
+      </Tooltip>
+    </HStack>
+  );
+}
+
+export function ADEHeader(props: ADEHeaderProps) {
   const { agent } = props;
   const { name: agentName } = agent;
 
@@ -37,28 +54,32 @@ export function ADEHeader(props: ADEHeaderProps) {
       fullWidth
       color="background"
     >
-      <HStack align="center" fullHeight gap={false}>
+      <HiddenOnMobile>
+        <HStack align="center" fullHeight gap={false}>
+          <LogoContainer />
+          <ProjectSelector />
+          <Typography variant="body2">/</Typography>
+          <HStack paddingLeft="small">
+            <Typography variant="body2">{agentName}</Typography>
+          </HStack>
+        </HStack>
+        {props.children}
+      </HiddenOnMobile>
+      <VisibleOnMobile>
         <HStack
+          position="relative"
           align="center"
-          justify="center"
-          color="primary"
-          /* eslint-disable-next-line react/forbid-component-props */
-          className="w-[40px]"
+          fullWidth
           fullHeight
+          gap={false}
         >
-          <Tooltip content={t('returnToHome')}>
-            <Link href="/">
-              <Logo size="small" />
-            </Link>
-          </Tooltip>
+          <LogoContainer />
+          <HStack justify="center" fullWidth align="center">
+            <Typography variant="body2">{agentName}</Typography>
+          </HStack>
         </HStack>
-        <ProjectSelector />
-        <Typography variant="body2">/</Typography>
-        <HStack paddingLeft="small">
-          <Typography variant="body2">{agentName}</Typography>
-        </HStack>
-      </HStack>
-      {props.children}
+        {props.children}
+      </VisibleOnMobile>
     </HStack>
   );
 }

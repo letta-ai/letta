@@ -29,8 +29,14 @@ import {
   developmentServerQueryClientKeys,
   developmentServersContracts,
 } from '$letta/web-api/development-servers/developmentServersContracts';
-import { adminOrganizationsContracts, adminOrganizationsQueryClientKeys } from '$letta/web-api/admin/admin-organizations/adminOrganizationsContracts';
-import { adminModelsContracts, adminModelsQueryClientKeys } from '$letta/web-api/admin/models/adminModelsContracts';
+import {
+  adminOrganizationsContracts,
+  adminOrganizationsQueryClientKeys,
+} from '$letta/web-api/admin/admin-organizations/adminOrganizationsContracts';
+import {
+  adminModelsContracts,
+  adminModelsQueryClientKeys,
+} from '$letta/web-api/admin/models/adminModelsContracts';
 
 export const contracts = {
   user: userContract,
