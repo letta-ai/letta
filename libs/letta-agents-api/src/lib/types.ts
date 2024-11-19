@@ -111,6 +111,7 @@ const modelEndpointTypesSchema = z.enum([
   'vllm',
   'hugging-face',
   'mistral',
+  'together',
 ]);
 
 // matches LLMConfig but enum is broken with ToZod

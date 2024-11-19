@@ -285,6 +285,7 @@ export type Choice = {
   logprobs?: {
     [key: string]: Array<MessageContentLogProb> | null;
   } | null;
+  seed?: number | null;
 };
 
 /**
@@ -695,9 +696,9 @@ export type FileMetadata = {
    */
   id?: string;
   /**
-   * The unique identifier of the user associated with the document.
+   * The unique identifier of the organization associated with the document.
    */
-  user_id: string;
+  organization_id?: string | null;
   /**
    * The unique identifier of the source associated with the document.
    */
@@ -727,10 +728,17 @@ export type FileMetadata = {
    */
   file_last_modified_date?: string | null;
   /**
-   * The creation date of this file metadata object.
+   * The creation date of the file.
    */
-  created_at?: string;
-  [key: string]: unknown | string;
+  created_at?: string | null;
+  /**
+   * The update date of the file.
+   */
+  updated_at?: string | null;
+  /**
+   * Whether this file is deleted or not.
+   */
+  is_deleted?: boolean;
 };
 
 export type Function = {
@@ -922,7 +930,8 @@ export type LLMConfig = {
     | 'koboldcpp'
     | 'vllm'
     | 'hugging-face'
-    | 'mistral';
+    | 'mistral'
+    | 'together';
   /**
    * The endpoint for the model.
    */
@@ -960,7 +969,8 @@ export type model_endpoint_type =
   | 'koboldcpp'
   | 'vllm'
   | 'hugging-face'
-  | 'mistral';
+  | 'mistral'
+  | 'together';
 
 export type LettaRequest = {
   /**
@@ -1549,26 +1559,11 @@ export type ResponseFormat = {
  * id (str): The ID of the source
  * name (str): The name of the source.
  * embedding_config (EmbeddingConfig): The embedding configuration used by the source.
- * created_at (datetime): The creation date of the source.
  * user_id (str): The ID of the user that created the source.
  * metadata_ (dict): Metadata associated with the source.
  * description (str): The description of the source.
  */
 export type Source = {
-  /**
-   * The description of the source.
-   */
-  description?: string | null;
-  /**
-   * The embedding configuration used by the source.
-   */
-  embedding_config: EmbeddingConfig;
-  /**
-   * Metadata associated with the source.
-   */
-  metadata_?: {
-    [key: string]: unknown;
-  } | null;
   /**
    * The human-friendly ID of the Source
    */
@@ -1578,45 +1573,77 @@ export type Source = {
    */
   name: string;
   /**
-   * The creation date of the source.
-   */
-  created_at?: string;
-  /**
-   * The ID of the user that created the source.
-   */
-  user_id: string;
-};
-
-export type SourceCreate = {
-  /**
    * The description of the source.
    */
   description?: string | null;
   /**
-   * The embedding configuration used by the passage.
+   * The embedding configuration used by the source.
    */
-  embedding_config?: EmbeddingConfig | null;
+  embedding_config: EmbeddingConfig;
+  /**
+   * The ID of the organization that created the source.
+   */
+  organization_id?: string | null;
   /**
    * Metadata associated with the source.
    */
   metadata_?: {
     [key: string]: unknown;
   } | null;
+  /**
+   * The id of the user that made this Tool.
+   */
+  created_by_id?: string | null;
+  /**
+   * The id of the user that made this Tool.
+   */
+  last_updated_by_id?: string | null;
+  /**
+   * The timestamp when the source was created.
+   */
+  created_at?: string | null;
+  /**
+   * The timestamp when the source was last updated.
+   */
+  updated_at?: string | null;
+};
+
+/**
+ * Schema for creating a new Source.
+ */
+export type SourceCreate = {
   /**
    * The name of the source.
    */
   name: string;
-};
-
-export type SourceUpdate = {
+  /**
+   * The embedding configuration used by the source.
+   */
+  embedding_config?: EmbeddingConfig | null;
   /**
    * The description of the source.
    */
   description?: string | null;
   /**
-   * The embedding configuration used by the passage.
+   * Metadata associated with the source.
    */
-  embedding_config?: EmbeddingConfig | null;
+  metadata_?: {
+    [key: string]: unknown;
+  } | null;
+};
+
+/**
+ * Schema for updating an existing Source.
+ */
+export type SourceUpdate = {
+  /**
+   * The name of the source.
+   */
+  name?: string | null;
+  /**
+   * The description of the source.
+   */
+  description?: string | null;
   /**
    * Metadata associated with the source.
    */
@@ -1624,9 +1651,9 @@ export type SourceUpdate = {
     [key: string]: unknown;
   } | null;
   /**
-   * The name of the source.
+   * The embedding configuration used by the source.
    */
-  name?: string | null;
+  embedding_config?: EmbeddingConfig | null;
 };
 
 export type SubmitToolOutputsToRunRequest = {
@@ -2547,6 +2574,7 @@ export type ListFilesFromSourceData = {
    */
   limit?: number;
   sourceId: string;
+  userId?: string | null;
 };
 
 export type ListFilesFromSourceResponse = Array<FileMetadata>;
