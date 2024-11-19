@@ -8,7 +8,6 @@ import * as Sentry from '@sentry/node';
 
 import type { SDKContext } from '$letta/sdk/shared';
 import type { AgentState } from '@letta-web/letta-agents-api';
-import { LlmsService } from '@letta-web/letta-agents-api';
 import {
   AgentsService,
   SourcesService,
@@ -264,27 +263,6 @@ export async function createAgent(
     if (isTemplateNameAPremadeAgentTemplate(templateName)) {
       const premadeAgentTemplate = premadeAgentTemplates[templateName];
 
-      const [listModels, listEmbeddingModels] = await Promise.all([
-        LlmsService.listModels({
-          user_id: lettaAgentsUserId,
-        }),
-        LlmsService.listEmbeddingModels({
-          user_id: lettaAgentsUserId,
-        }),
-      ]);
-
-      const [availableModel] = listModels;
-      const [availableEmbeddingModel] = listEmbeddingModels;
-
-      if (!availableModel || !availableEmbeddingModel) {
-        return {
-          status: 418,
-          body: {
-            message: 'No LLM models available',
-          },
-        };
-      }
-
       if (!premadeAgentTemplate) {
         throw new Error('Premade agent template not found');
       }
@@ -313,8 +291,23 @@ export async function createAgent(
         {
           requestBody: {
             ...premadeAgentTemplate,
-            llm_config: availableModel,
-            embedding_config: availableEmbeddingModel,
+            llm_config: {
+              model: 'gpt-4',
+              model_endpoint_type: 'openai',
+              model_endpoint: 'https://api.openai.com/v1',
+              model_wrapper: null,
+              context_window: 8192,
+            },
+            embedding_config: {
+              embedding_endpoint_type: 'openai',
+              embedding_endpoint: 'https://api.openai.com/v1',
+              embedding_model: 'text-embedding-ada-002',
+              embedding_dim: 1536,
+              embedding_chunk_size: 300,
+              azure_endpoint: null,
+              azure_version: null,
+              azure_deployment: null,
+            },
             name: crypto.randomUUID(),
           },
         },
