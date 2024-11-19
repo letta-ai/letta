@@ -3,13 +3,167 @@
 import {
   DashboardWithSidebarWrapper,
   PlusIcon,
+  RobotIcon,
+  DashboardIcon,
+  HStack,
+  Typography,
+  StatusIndicator,
+  Button,
+  DotsHorizontalIcon,
+  DropdownMenuItem,
+  CogIcon,
+  TrashIcon,
+  DropdownMenu,
+  Dialog,
 } from '@letta-web/component-library';
-import React, { useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { webApi, webApiQueryKeys } from '$letta/client';
+import { LOCAL_PROJECT_SERVER_URL } from '$letta/constants';
+import { UpdateDevelopmentServerDetailsDialog } from './shared/UpdateDevelopmentServerDetailsDialog/UpdateDevelopmentServerDetailsDialog';
+import { useQueryClient } from '@tanstack/react-query';
+import { useRouter } from 'next/navigation';
+import type { ServerInferResponses } from '@ts-rest/core';
+import type { developmentServersContracts } from '$letta/web-api/development-servers/developmentServersContracts';
+
+interface DeleteDevelopmentServerDialogProps {
+  trigger: React.ReactNode;
+  id: string;
+}
+
+function DeleteDevelopmentServerDialog(
+  props: DeleteDevelopmentServerDialogProps
+) {
+  const t = useTranslations('development-servers/layout');
+  const { trigger, id } = props;
+  const queryClient = useQueryClient();
+  const { push } = useRouter();
+  const [isOpen, setIsOpen] = useState(false);
+
+  const { mutate, isPending, isSuccess, isError } =
+    webApi.developmentServers.deleteDevelopmentServer.useMutation({
+      onSuccess: () => {
+        queryClient.setQueriesData<
+          ServerInferResponses<
+            typeof developmentServersContracts.getDevelopmentServers,
+            200
+          >
+        >(
+          {
+            queryKey: webApiQueryKeys.developmentServers.getDevelopmentServers,
+            exact: true,
+          },
+          (oldData) => {
+            if (!oldData) {
+              return oldData;
+            }
+
+            return {
+              ...oldData,
+              body: {
+                ...oldData.body,
+                developmentServers: oldData.body.developmentServers.filter(
+                  (server) => server.id !== id
+                ),
+              },
+            };
+          }
+        );
+
+        push('/development-servers/local/dashboard');
+      },
+    });
+
+  const handleDelete = useCallback(() => {
+    if (isPending || isSuccess) {
+      return;
+    }
+
+    mutate({
+      params: {
+        developmentServerId: id,
+      },
+    });
+  }, [isPending, isSuccess, mutate, id]);
+
+  return (
+    <Dialog
+      trigger={trigger}
+      isConfirmBusy={isPending || isSuccess}
+      onConfirm={handleDelete}
+      errorMessage={
+        isError ? t('DeleteDevelopmentServerDialog.error') : undefined
+      }
+      title={t('DeleteDevelopmentServerDialog.title')}
+      confirmText={t('DeleteDevelopmentServerDialog.confirm')}
+      isOpen={isOpen}
+      onOpenChange={setIsOpen}
+    >
+      {t('DeleteDevelopmentServerDialog.description')}
+    </Dialog>
+  );
+}
 
 interface LocalProjectLayoutProps {
   children: React.ReactNode;
+}
+
+interface ServerStatusTitleProps {
+  serverUrl: string;
+  title: string;
+}
+
+function ServerStatusTitle(props: ServerStatusTitleProps) {
+  const { serverUrl, title } = props;
+  const [isHealthy, setIsHealthy] = React.useState<boolean | null>(null);
+  const t = useTranslations('development-servers/layout');
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetch(`${serverUrl}/v1/health`)
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error('Server is not healthy');
+          }
+
+          setIsHealthy(true);
+        })
+        .catch(() => {
+          setIsHealthy(false);
+        });
+    }, 5000);
+
+    return () => {
+      clearInterval(interval);
+    };
+  }, [serverUrl]);
+
+  const status = useMemo(() => {
+    if (typeof isHealthy === 'boolean') {
+      return isHealthy ? 'active' : 'inactive';
+    }
+
+    return 'processing';
+  }, [isHealthy]);
+
+  const statusText = useMemo(() => {
+    if (isHealthy === null) {
+      return t('ServerStatusTitle.checking');
+    }
+
+    return isHealthy
+      ? t('ServerStatusTitle.isHealthy')
+      : t('ServerStatusTitle.isUnhealthy');
+  }, [isHealthy, t]);
+
+  return (
+    <HStack align="center">
+      <StatusIndicator tooltipContent={statusText} status={status} />
+      <Typography bold variant="body2">
+        {title}
+      </Typography>
+    </HStack>
+  );
 }
 
 function LocalProjectLayout(props: LocalProjectLayoutProps) {
@@ -27,10 +181,56 @@ function LocalProjectLayout(props: LocalProjectLayoutProps) {
     }
 
     return remoteConnections.body.developmentServers.map((server) => ({
-      id: server.id,
-      label: server.name,
-      group: t('nav.remote'),
-      href: `/development-servers/${server.id}/agents`,
+      title: server.name,
+      titleOverride: (
+        <HStack justify="spaceBetween" fullWidth>
+          <ServerStatusTitle serverUrl={server.url} title={server.name} />
+          <DropdownMenu
+            triggerAsChild
+            trigger={
+              <Button
+                hideLabel
+                color="tertiary-transparent"
+                size="small"
+                preIcon={<DotsHorizontalIcon />}
+                label={t('settings')}
+              />
+            }
+          >
+            <UpdateDevelopmentServerDetailsDialog
+              trigger={
+                <DropdownMenuItem
+                  preIcon={<CogIcon />}
+                  doNotCloseOnSelect
+                  label={t('updateDetails')}
+                />
+              }
+              name={server.name}
+              password={server.password || ''}
+              url={server.url}
+              id={server.id}
+            />
+            <DeleteDevelopmentServerDialog
+              trigger={
+                <DropdownMenuItem
+                  preIcon={<TrashIcon />}
+                  doNotCloseOnSelect
+                  label={t('delete')}
+                />
+              }
+              id={server.id}
+            />
+          </DropdownMenu>
+        </HStack>
+      ),
+      items: [
+        {
+          id: server.id,
+          icon: <RobotIcon />,
+          label: t('nav.agents'),
+          href: `/development-servers/${server.id}/agents`,
+        },
+      ],
     }));
   }, [remoteConnections, t]);
 
@@ -40,14 +240,27 @@ function LocalProjectLayout(props: LocalProjectLayoutProps) {
       returnOverride="/"
       navigationItems={[
         {
-          id: 'dashboard',
-          label: t('nav.dashboard'),
-          href: `/development-servers/local/dashboard`,
-        },
-        {
-          id: 'agents',
-          label: t('nav.local'),
-          href: `/development-servers/local/agents`,
+          title: t('nav.local'),
+          titleOverride: (
+            <ServerStatusTitle
+              serverUrl={LOCAL_PROJECT_SERVER_URL}
+              title={t('nav.local')}
+            />
+          ),
+          items: [
+            {
+              id: 'dashboard',
+              icon: <DashboardIcon />,
+              label: t('nav.dashboard'),
+              href: `/development-servers/local/dashboard`,
+            },
+            {
+              id: 'agents',
+              icon: <RobotIcon />,
+              label: t('nav.agents'),
+              href: `/development-servers/local/agents`,
+            },
+          ],
         },
         ...additionalNavigationItems,
         {
@@ -55,7 +268,6 @@ function LocalProjectLayout(props: LocalProjectLayoutProps) {
           icon: <PlusIcon />,
           label: t('nav.create'),
           href: '/development-servers/add',
-          group: t('nav.remote'),
         },
       ]}
     >

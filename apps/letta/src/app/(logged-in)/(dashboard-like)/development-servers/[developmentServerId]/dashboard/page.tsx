@@ -76,6 +76,7 @@ function DevelopmentServersDashboardPage() {
             />
             <Link href="/development-servers/local/agents">
               <ActionCard
+                fullHeight
                 icon={<ListIcon />}
                 onClick={() => {
                   // do nothing

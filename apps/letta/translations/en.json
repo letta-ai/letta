@@ -11,7 +11,7 @@
       "billing": "Usage and Billing",
       "dataSources": "Data Sources",
       "admin": "Admin",
-      "localDev": "Remote Development",
+      "localDev": "Self-Hosted",
       "settings": "Settings"
     },
     "rootTitle": "Dashboard",
@@ -628,13 +628,29 @@
     "title": "Local Project",
     "nav": {
       "dashboard": "Dashboard",
-      "local": "Local agents",
+      "agents": "Agents",
+      "local": "Local server",
       "remote": "Remote",
       "create": "Add remote server"
-    }
+    },
+    "ServerStatusTitle": {
+      "checking": "Checking server status...",
+      "isHealthy": "Connected",
+      "isUnhealthy": "Not connected"
+    },
+    "settings": "Settings",
+    "delete": "Delete",
+    "DeleteDevelopmentServerDialog": {
+      "error": "There was an error deleting the remote server, please try again or contact support.",
+      "title": "Delete Remote Server Connection",
+      "trigger": "Delete Remote Server Connection",
+      "confirm": "Delete",
+      "description": "Are you sure you want to delete this remote server connection? This will not delete any agents you have created."
+    },
+    "updateDetails": "Update Configuration"
   },
   "development-servers/dashboard/page": {
-    "description": "Welcome to the remote development dashboard! ",
+    "description": "Welcome to the Letta developer platform! ",
     "title": "Dashboard",
     "notConnected": "Please connect to your local server to view quick actions and information.",
     "start": "You can connect to your local server by running the command below:",
@@ -678,7 +694,7 @@
     }
   },
   "projects/hooks": {
-    "remoteDevelopment": "Remote Development"
+    "remoteDevelopment": "Self-hosted"
   },
   "development-servers/add": {
     "title": "Add Remote Server",
@@ -704,16 +720,6 @@
     "localAgents": "Local Agents"
   },
   "development-servers/page": {
-    "delete": "Delete",
-    "DeleteDevelopmentServerDialog": {
-      "error": "There was an error deleting the remote server, please try again or contact support.",
-      "title": "Delete Remote Server Connection",
-      "trigger": "Delete Remote Server Connection",
-      "confirm": "Delete",
-      "description": "Are you sure you want to delete this remote server connection? This will not delete any agents you have created."
-    },
-    "settings": "Settings",
-    "updateDetails": "Update Configuration",
     "UpdateDevelopmentServerDetailsDialog": {
       "title": "Update Remote Server Connection",
       "trigger": "Update Remote Server Connection",

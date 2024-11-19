@@ -21,36 +21,41 @@ function SettingsLayout(props: SettingsLayoutProps) {
       returnOverride="/"
       navigationItems={[
         {
-          id: 'profile',
-          label: t('profile'),
-          href: '/settings/profile',
-          group: t('personal'),
-        },
-        {
-          id: 'account',
-          label: t('account'),
-          href: '/settings/account',
-          group: t('personal'),
+          title: t('personal'),
+          items: [
+            {
+              id: 'profile',
+              label: t('profile'),
+              href: '/settings/profile',
+            },
+            {
+              id: 'account',
+              label: t('account'),
+              href: '/settings/account',
+            },
+          ],
         },
         ...(currentUser?.hasCloudAccess
           ? [
               {
-                id: 'organization',
-                label: t('organization.general'),
-                href: '/settings/organization/general',
-                group: t('organization.root'),
-              },
-              {
-                id: 'members',
-                label: t('organization.members'),
-                href: '/settings/organization/members',
-                group: t('organization.root'),
-              },
-              {
-                id: 'billing',
-                label: t('organization.billing'),
-                href: '/settings/organization/billing',
-                group: t('organization.root'),
+                title: t('organization.root'),
+                items: [
+                  {
+                    id: 'organization',
+                    label: t('organization.general'),
+                    href: '/settings/organization/general',
+                  },
+                  {
+                    id: 'members',
+                    label: t('organization.members'),
+                    href: '/settings/organization/members',
+                  },
+                  {
+                    id: 'billing',
+                    label: t('organization.billing'),
+                    href: '/settings/organization/billing',
+                  },
+                ],
               },
             ]
           : []),
