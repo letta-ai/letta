@@ -444,6 +444,8 @@
     "copyAgentId": "Copy {baseName} ID",
     "title": "{baseName} Settings",
     "modelInput": {
+      "recommended": "Recommended models",
+      "others": "All available models",
       "label": "Model"
     },
     "updateModel": "Update",

@@ -3,7 +3,6 @@ import { workspaceRoot, formatFiles } from '@nx/devkit';
 import { startCase } from 'lodash';
 import * as fs from 'fs';
 import * as path from 'path';
-import type { GenerateIconsGeneratorSchema } from './schema';
 
 function generateComponentFiles(name: string, svgContent: string) {
   return `import * as React from 'react';

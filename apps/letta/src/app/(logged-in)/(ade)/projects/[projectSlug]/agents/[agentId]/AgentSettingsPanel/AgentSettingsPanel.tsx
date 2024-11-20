@@ -3,7 +3,6 @@ import {
   PanelMainContent,
   type PanelTemplate,
   Alert,
-  brandKeyToName,
   isBrandKey,
   brandKeyToLogo,
   RawSelect,
@@ -19,6 +18,7 @@ import {
   RawTextArea,
   Dialog,
   RobotIcon,
+  Badge,
 } from '@letta-web/component-library';
 import { useCurrentAgent, useSyncUpdateCurrentAgent } from '../hooks';
 import { z } from 'zod';
@@ -30,6 +30,10 @@ import { UpdateNameDialog } from '../shared/UpdateAgentNameDialog/UpdateAgentNam
 import { useAgentBaseTypeName } from '../hooks/useAgentBaseNameType/useAgentBaseNameType';
 import { useUpdateMemory } from '../hooks/useUpdateMemory/useUpdateMemory';
 import { useDateFormatter } from '@letta-web/helpful-client-utils';
+import { useCurrentAgentMetaData } from '../hooks/useCurrentAgentMetaData/useCurrentAgentMetaData';
+import { webOriginSDKApi, webOriginSDKQueryKeys } from '$letta/client';
+import { ExtendedLLMSchema } from '$letta/sdk/models/modelsContracts';
+import { getBrandFromModelName } from '$letta/utils';
 
 interface SelectedModelType {
   icon: React.ReactNode;
@@ -45,42 +49,122 @@ function ModelSelector(props: ModelSelectorProps) {
   const { llmConfig } = props;
   const t = useTranslations('ADE/AgentSettingsPanel');
   const { syncUpdateCurrentAgent, error } = useSyncUpdateCurrentAgent();
+  const { isLocal } = useCurrentAgentMetaData();
 
-  const { data: modelsList } = useModelsServiceListModels();
+  const { data: localModelsList } = useModelsServiceListModels(undefined, {
+    enabled: isLocal,
+  });
+
+  const { data: serverModlesList } =
+    webOriginSDKApi.models.listLLMBackends.useQuery({
+      queryKey: webOriginSDKQueryKeys.models.listEmbeddingBackendsWithSearch({
+        extended: true,
+      }),
+      queryData: {
+        query: {
+          extended: true,
+        },
+      },
+      enabled: !isLocal,
+    });
+
+  const modelsList = useMemo(() => {
+    return isLocal ? localModelsList : serverModlesList?.body;
+  }, [isLocal, localModelsList, serverModlesList]);
 
   const formattedModelsList = useMemo(() => {
     if (!modelsList) {
       return [];
     }
 
-    const modelEndpointMap = modelsList.reduce((acc, model) => {
-      acc[model.model_endpoint_type] = acc[model.model_endpoint_type] || [];
+    return modelsList
+      .map((value) => {
+        const { model } = value;
+        let brand = 'llama';
+        let isRecommended = false;
+        let badge = '';
 
-      acc[model.model_endpoint_type].push(model.model);
+        if (ExtendedLLMSchema.safeParse(value).success) {
+          const out = ExtendedLLMSchema.safeParse(value).data;
 
-      return acc;
-    }, {} as Record<string, string[]>);
+          brand = out?.brand || brand;
+          isRecommended = out?.isRecommended || isRecommended;
+          badge = out?.tag || badge;
+        } else {
+          brand = getBrandFromModelName(model) || brand;
+        }
 
-    return Object.entries(modelEndpointMap).map(([key, value]) => ({
-      icon: isBrandKey(key) ? brandKeyToLogo(key) : '',
-      label: isBrandKey(key) ? brandKeyToName(key) : key,
-      options: value.map((model) => ({
-        icon: isBrandKey(key) ? brandKeyToLogo(key) : '',
-        label: model,
-        value: model,
-      })),
-    }));
+        return {
+          icon: isBrandKey(brand) ? brandKeyToLogo(brand) : '',
+          label: model,
+          value: model,
+          brand,
+          isRecommended,
+          badge: badge ? <Badge size="small" content={badge} /> : '',
+        };
+      })
+      .sort(function (a, b) {
+        if (a.brand < b.brand) {
+          return -1;
+        }
+        if (a.brand > b.brand) {
+          return 1;
+        }
+        return 0;
+      });
   }, [modelsList]);
 
   const [modelState, setModelState] = useState<SelectedModelType>({
-    icon: isBrandKey(llmConfig.model_endpoint_type)
-      ? brandKeyToLogo(llmConfig.model_endpoint_type)
-      : '',
+    icon: '',
     label: llmConfig.model,
     value: llmConfig.model,
   });
 
   const [debouncedModelState] = useDebouncedValue(modelState, 500);
+
+  const value = useMemo(() => {
+    const selectedModel = formattedModelsList.find(
+      (model) => model.value === modelState.value
+    );
+
+    return {
+      ...modelState,
+      icon: selectedModel?.icon || '',
+      badge: selectedModel?.badge || '',
+    };
+  }, [formattedModelsList, modelState]);
+
+  const groupedModelsList = useMemo(() => {
+    if (isLocal) {
+      return formattedModelsList;
+    }
+
+    const list = formattedModelsList.reduce(
+      (acc, model) => {
+        if (model.isRecommended) {
+          acc.recommended.push(model);
+        } else {
+          acc.others.push(model);
+        }
+
+        return acc;
+      },
+      {
+        recommended: [] as SelectedModelType[],
+        others: [] as SelectedModelType[],
+      }
+    );
+
+    return Object.entries(list).map(([key, value]) => {
+      return {
+        label:
+          key === 'recommended'
+            ? t('modelInput.recommended')
+            : t('modelInput.others'),
+        options: value,
+      };
+    });
+  }, [formattedModelsList, isLocal, t]);
 
   useEffect(() => {
     if (!modelsList) {
@@ -105,7 +189,6 @@ function ModelSelector(props: ModelSelectorProps) {
     <>
       {error && <Alert title={t('error')} variant="destructive" />}
       <RawSelect
-        hideIconsOnOptions
         fullWidth
         onSelect={(value) => {
           if (isMultiValue(value)) {
@@ -118,9 +201,9 @@ function ModelSelector(props: ModelSelectorProps) {
             icon: value?.icon || '',
           });
         }}
-        value={modelState}
+        value={value}
         label={t('modelInput.label')}
-        options={formattedModelsList}
+        options={groupedModelsList}
       />
     </>
   );

@@ -16,11 +16,11 @@ const iconWrapperVariants = cva('inline-flex items-center justify-center', {
       muted: 'text-muted',
     },
     size: {
-      small: 'w-4 h-4',
-      medium: 'w-5 h-5',
-      large: 'w-6 h-6',
-      xlarge: 'w-8 h-8',
-      xxlarge: 'w-10 h-10',
+      small: 'w-4 h-auto',
+      medium: 'w-5 h-auto',
+      large: 'w-6 h-auto',
+      xlarge: 'w-8 h-auto',
+      xxlarge: 'w-10 h-auto',
     },
   },
   defaultVariants: {

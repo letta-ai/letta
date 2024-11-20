@@ -13,6 +13,8 @@ export const InferenceModelSchema = z.object({
   name: z.string(),
   brand: z.string(),
   config: LLMConfigSchema.optional().nullable(),
+  isRecommended: z.boolean(),
+  tag: z.string(),
   disabledAt: z.string().nullable().optional(),
   createdAt: z.string(),
   updatedAt: z.string(),
@@ -76,6 +78,8 @@ const UpdateInferenceModelRequestBodySchema = z.object({
   brand: z.string().optional(),
   disabled: z.boolean().optional(),
   name: z.string().optional(),
+  tag: z.string().optional(),
+  isRecommended: z.boolean().optional(),
 });
 
 const updateAdminInferenceModelContract = c.mutation({

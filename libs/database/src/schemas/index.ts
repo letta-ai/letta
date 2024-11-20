@@ -592,6 +592,8 @@ export const inferenceModelsMetadata = pgTable(
       .default(sql`gen_random_uuid()`),
     name: text('name').notNull(),
     brand: text('brand').notNull(),
+    isRecommended: boolean('is_recommended').notNull().default(false),
+    tag: text('tag'),
     modelName: text('model_name').notNull(),
     modelEndpoint: text('model_endpoint').notNull(),
     createdAt: timestamp('created_at').notNull().defaultNow(),

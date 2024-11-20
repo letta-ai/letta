@@ -1,4 +1,4 @@
-import type { ServerInferResponses } from '@ts-rest/core';
+import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
 import type { sdkContracts } from '$letta/sdk/contracts';
 import { router } from '$letta/web-api/router';
 
@@ -6,7 +6,14 @@ type ListLLMBackendsResponseType = ServerInferResponses<
   typeof sdkContracts.models.listLLMBackends
 >;
 
-async function listLLMBackends(): Promise<ListLLMBackendsResponseType> {
+type ListLLMBackendsRequestType = ServerInferRequest<
+  typeof sdkContracts.models.listLLMBackends
+>;
+
+async function listLLMBackends(
+  req: ListLLMBackendsRequestType
+): Promise<ListLLMBackendsResponseType> {
+  const { extended } = req.query;
   const llmBackends = await router.admin.models.getAdminInferenceModels({
     query: {
       limit: 250,
@@ -28,8 +35,17 @@ async function listLLMBackends(): Promise<ListLLMBackendsResponseType> {
     body: llmBackends.body.inferenceModels
       .filter((model) => !!model.config)
       .map((model) => {
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        return model.config!;
+        return {
+          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+          ...model.config!,
+          ...(extended
+            ? {
+                brand: model.brand,
+                isRecommended: model.isRecommended,
+                tag: model.tag,
+              }
+            : {}),
+        };
       }),
   };
 }
@@ -38,7 +54,15 @@ type ListEmbeddingBackendsResponseType = ServerInferResponses<
   typeof sdkContracts.models.listEmbeddingBackends
 >;
 
-async function listEmbeddingBackends(): Promise<ListEmbeddingBackendsResponseType> {
+type ListEmbeddingBackendsRequestType = ServerInferRequest<
+  typeof sdkContracts.models.listEmbeddingBackends
+>;
+
+async function listEmbeddingBackends(
+  req: ListEmbeddingBackendsRequestType
+): Promise<ListEmbeddingBackendsResponseType> {
+  const { extended } = req.query;
+
   const embeddingBackends = await router.admin.models.getAdminEmbeddingModels({
     query: {
       limit: 250,
@@ -60,8 +84,11 @@ async function listEmbeddingBackends(): Promise<ListEmbeddingBackendsResponseTyp
     body: embeddingBackends.body.embeddingModels
       .filter((model) => !!model.config)
       .map((model) => {
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        return model.config!;
+        return {
+          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+          ...model.config!,
+          ...(extended ? { brand: model.brand } : {}),
+        };
       }),
   };
 }
