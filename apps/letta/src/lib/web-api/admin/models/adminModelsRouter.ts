@@ -12,6 +12,7 @@ import {
 } from '$letta/server';
 import type { EmbeddingConfig, LLMConfig } from '@letta-web/letta-agents-api';
 import { ModelsService } from '@letta-web/letta-agents-api';
+import { getBrandFromModelName } from '$letta/utils';
 
 type GetAdminInferenceModelsResponse = ServerInferResponses<
   typeof contracts.admin.models.getAdminInferenceModels
@@ -200,7 +201,7 @@ async function createAdminInferenceModel(
     .values({
       name: selectedModel.model,
       modelEndpoint: selectedModel.model_endpoint,
-      brand: selectedModel.model_endpoint_type,
+      brand: getBrandFromModelName(selectedModel.model) || 'unknown',
       modelName: selectedModel.model,
       disabledAt: new Date(),
     })

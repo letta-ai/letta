@@ -33,6 +33,7 @@ import { useDateFormatter } from '@letta-web/helpful-client-utils';
 import { useCurrentAgentMetaData } from '../hooks/useCurrentAgentMetaData/useCurrentAgentMetaData';
 import { webOriginSDKApi, webOriginSDKQueryKeys } from '$letta/client';
 import { ExtendedLLMSchema } from '$letta/sdk/models/modelsContracts';
+import { getBrandFromModelName } from '$letta/utils';
 
 interface SelectedModelType {
   icon: React.ReactNode;
@@ -90,25 +91,7 @@ function ModelSelector(props: ModelSelectorProps) {
           isRecommended = out?.isRecommended || isRecommended;
           badge = out?.tag || badge;
         } else {
-          const includerMapper = {
-            letta: 'letta',
-            gpt: 'openai',
-            claude: 'claude',
-            meta: 'meta',
-            mistral: 'mistral',
-            qwen: 'qwen',
-            nous: 'nous-research',
-            snorkel: 'snorkel-ai',
-            google: 'google',
-            nvidia: 'nvidia',
-            together: 'together-ai',
-          };
-
-          Object.entries(includerMapper).forEach(([key, value]) => {
-            if (model.split('/')[0].toLowerCase().includes(key)) {
-              brand = value;
-            }
-          });
+          brand = getBrandFromModelName(model) || brand;
         }
 
         return {
