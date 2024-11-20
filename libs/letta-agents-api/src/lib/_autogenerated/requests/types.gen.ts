@@ -182,8 +182,9 @@ export type BaseToolRule = {
  * label (str): The label of the block (e.g. 'human', 'persona'). This defines a category for the block.
  * value (str): The value of the block. This is the string that is represented in the context window.
  * limit (int): The character limit of the block.
+ * is_template (bool): Whether the block is a template (e.g. saved human/persona options). Non-template blocks are not stored in the database and are ephemeral, while templated blocks are stored in the database.
+ * label (str): The label of the block (e.g. 'human', 'persona'). This defines a category for the block.
  * template_name (str): The name of the block template (if it is a template).
- * template (bool): Whether the block is a template (e.g. saved human/persona options). Non-template blocks are not stored in the database and are ephemeral, while templated blocks are stored in the database.
  * description (str): Description of the block.
  * metadata_ (Dict): Metadata of the block.
  * user_id (str): The unique identifier of the user associated with the block.
@@ -204,11 +205,11 @@ export type Block = {
   /**
    * Whether the block is a template (e.g. saved human/persona options).
    */
-  template?: boolean;
+  is_template?: boolean;
   /**
    * Label of the block (e.g. 'human', 'persona') in the context window.
    */
-  label?: string;
+  label?: string | null;
   /**
    * Description of the block.
    */
@@ -220,13 +221,90 @@ export type Block = {
     [key: string]: unknown;
   } | null;
   /**
-   * The unique identifier of the user associated with the block.
-   */
-  user_id?: string | null;
-  /**
    * The human-friendly ID of the Block
    */
   id?: string;
+  /**
+   * The unique identifier of the organization associated with the block.
+   */
+  organization_id?: string | null;
+  /**
+   * The id of the user that made this Block.
+   */
+  created_by_id?: string | null;
+  /**
+   * The id of the user that last updated this Block.
+   */
+  last_updated_by_id?: string | null;
+};
+
+/**
+ * Create a block
+ */
+export type BlockCreate = {
+  /**
+   * Value of the block.
+   */
+  value: string;
+  /**
+   * Character limit of the block.
+   */
+  limit?: number;
+  /**
+   * Name of the block if it is a template.
+   */
+  name?: string | null;
+  is_template?: boolean;
+  /**
+   * Label of the block.
+   */
+  label: string;
+  /**
+   * Description of the block.
+   */
+  description?: string | null;
+  /**
+   * Metadata of the block.
+   */
+  metadata_?: {
+    [key: string]: unknown;
+  } | null;
+};
+
+/**
+ * Update a block
+ */
+export type BlockUpdate = {
+  /**
+   * Value of the block.
+   */
+  value?: string | null;
+  /**
+   * Character limit of the block.
+   */
+  limit?: number | null;
+  /**
+   * Name of the block if it is a template.
+   */
+  name?: string | null;
+  /**
+   * Whether the block is a template (e.g. saved human/persona options).
+   */
+  is_template?: boolean;
+  /**
+   * Label of the block (e.g. 'human', 'persona') in the context window.
+   */
+  label?: string | null;
+  /**
+   * Description of the block.
+   */
+  description?: string | null;
+  /**
+   * Metadata of the block.
+   */
+  metadata_?: {
+    [key: string]: unknown;
+  } | null;
 };
 
 export type Body_upload_file_to_source = {
@@ -468,43 +546,6 @@ export type CreateAssistantRequest = {
    * The model to use for the assistant.
    */
   embedding_model?: string;
-};
-
-/**
- * Create a block
- */
-export type CreateBlock = {
-  /**
-   * Value of the block.
-   */
-  value?: string | null;
-  /**
-   * Character limit of the block.
-   */
-  limit?: number;
-  /**
-   * Name of the block if it is a template.
-   */
-  name?: string | null;
-  template?: boolean;
-  /**
-   * Label of the block.
-   */
-  label: string;
-  /**
-   * Description of the block.
-   */
-  description?: string | null;
-  /**
-   * Metadata of the block.
-   */
-  metadata_?: {
-    [key: string]: unknown;
-  } | null;
-  /**
-   * The unique identifier of the user associated with the block.
-   */
-  user_id?: string | null;
 };
 
 export type CreateMessageRequest = {
@@ -1854,50 +1895,6 @@ export type UpdateAgentState = {
 };
 
 /**
- * Update a block
- */
-export type UpdateBlock = {
-  /**
-   * Value of the block.
-   */
-  value?: string | null;
-  /**
-   * Character limit of the block.
-   */
-  limit?: number | null;
-  /**
-   * Name of the block if it is a template.
-   */
-  name?: string | null;
-  /**
-   * Whether the block is a template (e.g. saved human/persona options).
-   */
-  template?: boolean;
-  /**
-   * Label of the block (e.g. 'human', 'persona') in the context window.
-   */
-  label?: string;
-  /**
-   * Description of the block.
-   */
-  description?: string | null;
-  /**
-   * Metadata of the block.
-   */
-  metadata_?: {
-    [key: string]: unknown;
-  } | null;
-  /**
-   * The unique identifier of the user associated with the block.
-   */
-  user_id?: string | null;
-  /**
-   * The unique identifier of the block.
-   */
-  id: string;
-};
-
-/**
  * Request to update a message
  */
 export type UpdateMessage = {
@@ -2816,7 +2813,7 @@ export type ListMemoryBlocksData = {
 export type ListMemoryBlocksResponse = Array<Block>;
 
 export type CreateMemoryBlockData = {
-  requestBody: CreateBlock;
+  requestBody: BlockCreate;
   userId?: string | null;
 };
 
@@ -2824,19 +2821,22 @@ export type CreateMemoryBlockResponse = Block;
 
 export type UpdateMemoryBlockData = {
   blockId: string;
-  requestBody: UpdateBlock;
+  requestBody: BlockUpdate;
+  userId?: string | null;
 };
 
 export type UpdateMemoryBlockResponse = Block;
 
 export type DeleteMemoryBlockData = {
   blockId: string;
+  userId?: string | null;
 };
 
 export type DeleteMemoryBlockResponse = Block;
 
 export type GetMemoryBlockData = {
   blockId: string;
+  userId?: string | null;
 };
 
 export type GetMemoryBlockResponse = Block;

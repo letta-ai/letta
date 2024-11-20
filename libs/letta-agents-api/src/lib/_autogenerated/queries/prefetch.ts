@@ -403,13 +403,15 @@ export const prefetchUseBlocksServiceGetMemoryBlock = (
   queryClient: QueryClient,
   {
     blockId,
+    userId,
   }: {
     blockId: string;
+    userId?: string;
   }
 ) =>
   queryClient.prefetchQuery({
-    queryKey: Common.UseBlocksServiceGetMemoryBlockKeyFn({ blockId }),
-    queryFn: () => BlocksService.getMemoryBlock({ blockId }),
+    queryKey: Common.UseBlocksServiceGetMemoryBlockKeyFn({ blockId, userId }),
+    queryFn: () => BlocksService.getMemoryBlock({ blockId, userId }),
   });
 export const prefetchUseJobsServiceListJobs = (
   queryClient: QueryClient,

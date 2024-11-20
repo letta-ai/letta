@@ -588,15 +588,20 @@ export const useBlocksServiceGetMemoryBlockSuspense = <
 >(
   {
     blockId,
+    userId,
   }: {
     blockId: string;
+    userId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
 ) =>
   useSuspenseQuery<TData, TError>({
-    queryKey: Common.UseBlocksServiceGetMemoryBlockKeyFn({ blockId }, queryKey),
-    queryFn: () => BlocksService.getMemoryBlock({ blockId }) as TData,
+    queryKey: Common.UseBlocksServiceGetMemoryBlockKeyFn(
+      { blockId, userId },
+      queryKey
+    ),
+    queryFn: () => BlocksService.getMemoryBlock({ blockId, userId }) as TData,
     ...options,
   });
 export const useJobsServiceListJobsSuspense = <

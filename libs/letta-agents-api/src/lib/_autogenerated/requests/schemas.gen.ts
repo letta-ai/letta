@@ -416,15 +416,22 @@ export const $Block = {
       title: 'Name',
       description: 'Name of the block if it is a template.',
     },
-    template: {
+    is_template: {
       type: 'boolean',
-      title: 'Template',
+      title: 'Is Template',
       description:
         'Whether the block is a template (e.g. saved human/persona options).',
       default: false,
     },
     label: {
-      type: 'string',
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
       title: 'Label',
       description:
         "Label of the block (e.g. 'human', 'persona') in the context window.",
@@ -454,7 +461,14 @@ export const $Block = {
       description: 'Metadata of the block.',
       default: {},
     },
-    user_id: {
+    id: {
+      type: 'string',
+      pattern: '^block-[a-fA-F0-9]{8}',
+      title: 'Id',
+      description: 'The human-friendly ID of the Block',
+      examples: [['block-123e4567-e89b-12d3-a456-426614174000']],
+    },
+    organization_id: {
       anyOf: [
         {
           type: 'string',
@@ -463,19 +477,35 @@ export const $Block = {
           type: 'null',
         },
       ],
-      title: 'User Id',
+      title: 'Organization Id',
       description:
-        'The unique identifier of the user associated with the block.',
+        'The unique identifier of the organization associated with the block.',
     },
-    id: {
-      type: 'string',
-      pattern: '^block-[a-fA-F0-9]{8}',
-      title: 'Id',
-      description: 'The human-friendly ID of the Block',
-      examples: [['block-123e4567-e89b-12d3-a456-426614174000']],
+    created_by_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Created By Id',
+      description: 'The id of the user that made this Block.',
+    },
+    last_updated_by_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Last Updated By Id',
+      description: 'The id of the user that last updated this Block.',
     },
   },
-  additionalProperties: false,
   type: 'object',
   required: ['value'],
   title: 'Block',
@@ -485,11 +515,169 @@ Parameters:
     label (str): The label of the block (e.g. 'human', 'persona'). This defines a category for the block.
     value (str): The value of the block. This is the string that is represented in the context window.
     limit (int): The character limit of the block.
+    is_template (bool): Whether the block is a template (e.g. saved human/persona options). Non-template blocks are not stored in the database and are ephemeral, while templated blocks are stored in the database.
+    label (str): The label of the block (e.g. 'human', 'persona'). This defines a category for the block.
     template_name (str): The name of the block template (if it is a template).
-    template (bool): Whether the block is a template (e.g. saved human/persona options). Non-template blocks are not stored in the database and are ephemeral, while templated blocks are stored in the database.
     description (str): Description of the block.
     metadata_ (Dict): Metadata of the block.
     user_id (str): The unique identifier of the user associated with the block.`,
+} as const;
+
+export const $BlockCreate = {
+  properties: {
+    value: {
+      type: 'string',
+      title: 'Value',
+      description: 'Value of the block.',
+    },
+    limit: {
+      type: 'integer',
+      title: 'Limit',
+      description: 'Character limit of the block.',
+      default: 2000,
+    },
+    name: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Name',
+      description: 'Name of the block if it is a template.',
+    },
+    is_template: {
+      type: 'boolean',
+      title: 'Is Template',
+      default: true,
+    },
+    label: {
+      type: 'string',
+      title: 'Label',
+      description: 'Label of the block.',
+    },
+    description: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Description',
+      description: 'Description of the block.',
+    },
+    metadata_: {
+      anyOf: [
+        {
+          type: 'object',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Metadata ',
+      description: 'Metadata of the block.',
+      default: {},
+    },
+  },
+  type: 'object',
+  required: ['value', 'label'],
+  title: 'BlockCreate',
+  description: 'Create a block',
+} as const;
+
+export const $BlockUpdate = {
+  properties: {
+    value: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Value',
+      description: 'Value of the block.',
+    },
+    limit: {
+      anyOf: [
+        {
+          type: 'integer',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Limit',
+      description: 'Character limit of the block.',
+      default: 2000,
+    },
+    name: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Name',
+      description: 'Name of the block if it is a template.',
+    },
+    is_template: {
+      type: 'boolean',
+      title: 'Is Template',
+      description:
+        'Whether the block is a template (e.g. saved human/persona options).',
+      default: false,
+    },
+    label: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Label',
+      description:
+        "Label of the block (e.g. 'human', 'persona') in the context window.",
+    },
+    description: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Description',
+      description: 'Description of the block.',
+    },
+    metadata_: {
+      anyOf: [
+        {
+          type: 'object',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Metadata ',
+      description: 'Metadata of the block.',
+      default: {},
+    },
+  },
+  type: 'object',
+  title: 'BlockUpdate',
+  description: 'Update a block',
 } as const;
 
 export const $Body_upload_file_to_source = {
@@ -1269,94 +1457,6 @@ export const $CreateAssistantRequest = {
   type: 'object',
   required: ['model', 'name', 'instructions'],
   title: 'CreateAssistantRequest',
-} as const;
-
-export const $CreateBlock = {
-  properties: {
-    value: {
-      anyOf: [
-        {
-          type: 'string',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Value',
-      description: 'Value of the block.',
-    },
-    limit: {
-      type: 'integer',
-      title: 'Limit',
-      description: 'Character limit of the block.',
-      default: 2000,
-    },
-    name: {
-      anyOf: [
-        {
-          type: 'string',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Name',
-      description: 'Name of the block if it is a template.',
-    },
-    template: {
-      type: 'boolean',
-      title: 'Template',
-      default: true,
-    },
-    label: {
-      type: 'string',
-      title: 'Label',
-      description: 'Label of the block.',
-    },
-    description: {
-      anyOf: [
-        {
-          type: 'string',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Description',
-      description: 'Description of the block.',
-    },
-    metadata_: {
-      anyOf: [
-        {
-          type: 'object',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Metadata ',
-      description: 'Metadata of the block.',
-      default: {},
-    },
-    user_id: {
-      anyOf: [
-        {
-          type: 'string',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'User Id',
-      description:
-        'The unique identifier of the user associated with the block.',
-    },
-  },
-  additionalProperties: false,
-  type: 'object',
-  required: ['label'],
-  title: 'CreateBlock',
-  description: 'Create a block',
 } as const;
 
 export const $CreateMessageRequest = {
@@ -3352,7 +3452,7 @@ export const $Organization = {
       type: 'string',
       title: 'Name',
       description: 'The name of the organization.',
-      default: 'QuietZebra',
+      default: 'PeacefulKoala',
     },
     created_at: {
       anyOf: [
@@ -4306,109 +4406,6 @@ export const $UpdateAgentState = {
   type: 'object',
   required: ['id'],
   title: 'UpdateAgentState',
-} as const;
-
-export const $UpdateBlock = {
-  properties: {
-    value: {
-      anyOf: [
-        {
-          type: 'string',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Value',
-      description: 'Value of the block.',
-    },
-    limit: {
-      anyOf: [
-        {
-          type: 'integer',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Limit',
-      description: 'Character limit of the block.',
-      default: 2000,
-    },
-    name: {
-      anyOf: [
-        {
-          type: 'string',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Name',
-      description: 'Name of the block if it is a template.',
-    },
-    template: {
-      type: 'boolean',
-      title: 'Template',
-      description:
-        'Whether the block is a template (e.g. saved human/persona options).',
-      default: false,
-    },
-    label: {
-      type: 'string',
-      title: 'Label',
-      description:
-        "Label of the block (e.g. 'human', 'persona') in the context window.",
-    },
-    description: {
-      anyOf: [
-        {
-          type: 'string',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Description',
-      description: 'Description of the block.',
-    },
-    metadata_: {
-      anyOf: [
-        {
-          type: 'object',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Metadata ',
-      description: 'Metadata of the block.',
-      default: {},
-    },
-    user_id: {
-      anyOf: [
-        {
-          type: 'string',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'User Id',
-      description:
-        'The unique identifier of the user associated with the block.',
-    },
-    id: {
-      type: 'string',
-      title: 'Id',
-      description: 'The unique identifier of the block.',
-    },
-  },
-  additionalProperties: false,
-  type: 'object',
-  required: ['id'],
-  title: 'UpdateBlock',
-  description: 'Update a block',
 } as const;
 
 export const $UpdateMessage = {

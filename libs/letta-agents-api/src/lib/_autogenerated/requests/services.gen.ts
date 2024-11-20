@@ -1359,6 +1359,7 @@ export class BlocksService {
    * @param data The data for the request.
    * @param data.blockId
    * @param data.requestBody
+   * @param data.userId
    * @returns Block Successful Response
    * @throws ApiError
    */
@@ -1385,6 +1386,7 @@ export class BlocksService {
    * Delete Block
    * @param data The data for the request.
    * @param data.blockId
+   * @param data.userId
    * @returns Block Successful Response
    * @throws ApiError
    */
@@ -1409,6 +1411,7 @@ export class BlocksService {
    * Get Block
    * @param data The data for the request.
    * @param data.blockId
+   * @param data.userId
    * @returns Block Successful Response
    * @throws ApiError
    */
