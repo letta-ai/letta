@@ -12,6 +12,7 @@ import {
   NavigationSidebar,
   SIDEBAR_OVERLAY_MOUNT_POINT_ID,
 } from './DashboardNavigation/DashboardNavigation';
+import { DashboardTransition } from './DashboardTransition/DashboardTransition';
 
 interface DashboardLikeLayoutProps {
   children: ReactNode;
@@ -28,8 +29,9 @@ export async function DashboardLikeLayout(props: DashboardLikeLayoutProps) {
           <DashboardHeader />
           <HStack gap={false} fullWidth>
             {!hideSidebar && <NavigationSidebar />}
+
             <Frame position="relative" fullWidth>
-              {children}
+              <DashboardTransition>{children}</DashboardTransition>
             </Frame>
           </HStack>
           <div id={SIDEBAR_OVERLAY_MOUNT_POINT_ID} />

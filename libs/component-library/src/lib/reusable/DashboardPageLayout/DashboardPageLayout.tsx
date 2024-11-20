@@ -56,16 +56,6 @@ export function DashboardPageLayout(props: DashboardPageLayoutProps) {
   return (
     <>
       <VStack
-        className="encapsulated-full-height z-[-1]"
-        paddingY="xxsmall"
-        paddingRight="xxsmall"
-        fullWidth
-        fullHeight
-        position="absolute"
-      >
-        <VStack fullWidth fullHeight border></VStack>
-      </VStack>
-      <VStack
         className={cn(
           encapsulatedFullHeight && 'encapsulated-full-height',
           'max-w-[95%] mx-[auto]'
@@ -73,7 +63,12 @@ export function DashboardPageLayout(props: DashboardPageLayoutProps) {
         gap={false}
         fullWidth
       >
-        <VStack paddingX="large" paddingTop="xxlarge" paddingBottom="small">
+        <VStack
+          gap={false}
+          paddingX="large"
+          paddingTop="xxlarge"
+          paddingBottom="small"
+        >
           <VStack gap={false}>
             {returnButton && (
               <div className="flex">

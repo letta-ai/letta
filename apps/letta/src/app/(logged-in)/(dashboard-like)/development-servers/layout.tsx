@@ -16,7 +16,7 @@ import {
   DropdownMenu,
   Dialog,
 } from '@letta-web/component-library';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { webApi, webApiQueryKeys } from '$letta/client';
 import { LOCAL_PROJECT_SERVER_URL } from '$letta/constants';
@@ -25,6 +25,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import type { ServerInferResponses } from '@ts-rest/core';
 import type { developmentServersContracts } from '$letta/web-api/development-servers/developmentServersContracts';
+import { useDevelopmentServerStatus } from './hooks/useDevelopmentServerStatus/useDevelopmentServerStatus';
 
 interface DeleteDevelopmentServerDialogProps {
   trigger: React.ReactNode;
@@ -115,46 +116,27 @@ interface ServerStatusTitleProps {
 
 function ServerStatusTitle(props: ServerStatusTitleProps) {
   const { serverUrl, title } = props;
-  const [isHealthy, setIsHealthy] = React.useState<boolean | null>(null);
   const t = useTranslations('development-servers/layout');
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      fetch(`${serverUrl}/v1/health`)
-        .then((response) => {
-          if (!response.ok) {
-            throw new Error('Server is not healthy');
-          }
-
-          setIsHealthy(true);
-        })
-        .catch(() => {
-          setIsHealthy(false);
-        });
-    }, 5000);
-
-    return () => {
-      clearInterval(interval);
-    };
-  }, [serverUrl]);
+  const { isHealthy, isFetching } = useDevelopmentServerStatus(serverUrl);
 
   const status = useMemo(() => {
-    if (typeof isHealthy === 'boolean') {
-      return isHealthy ? 'active' : 'inactive';
+    if (isFetching) {
+      return 'processing';
     }
 
-    return 'processing';
-  }, [isHealthy]);
+    return isHealthy ? 'active' : 'inactive';
+  }, [isFetching, isHealthy]);
 
   const statusText = useMemo(() => {
-    if (isHealthy === null) {
+    if (isFetching) {
       return t('ServerStatusTitle.checking');
     }
 
     return isHealthy
       ? t('ServerStatusTitle.isHealthy')
       : t('ServerStatusTitle.isUnhealthy');
-  }, [isHealthy, t]);
+  }, [isFetching, isHealthy, t]);
 
   return (
     <HStack align="center">

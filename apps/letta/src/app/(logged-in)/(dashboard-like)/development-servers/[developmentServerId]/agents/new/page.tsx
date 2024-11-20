@@ -8,6 +8,7 @@ import {
   LoadingEmptyStatusComponent,
   NiceGridDisplay,
   RawCodeEditor,
+  toast,
   Typography,
   VStack,
 } from '@letta-web/component-library';
@@ -22,6 +23,7 @@ import {
   useLlmsServiceListModels,
 } from '@letta-web/letta-agents-api';
 import { useRouter } from 'next/navigation';
+import { useDevelopmentServerStatus } from '../../../hooks/useDevelopmentServerStatus/useDevelopmentServerStatus';
 
 interface StarterKitItemProps {
   starterKit: StarterKit;
@@ -58,6 +60,12 @@ function NewAgentPage() {
   const { data: embeddingModels } = useLlmsServiceListEmbeddingModels();
 
   const {
+    isHealthy,
+    isInitialFetch,
+    isFetching: isFetchingStatus,
+  } = useDevelopmentServerStatus(config?.url || '');
+
+  const {
     mutate: createAgent,
     isPending,
     isSuccess,
@@ -70,6 +78,11 @@ function NewAgentPage() {
   const handleCreateAgent = useCallback(
     (title: string, agentState: Partial<AgentState>) => {
       if (!developmentServerConfig) {
+        return;
+      }
+
+      if (isFetchingStatus) {
+        toast.error(t('isFetchingStatus'));
         return;
       }
 
@@ -107,6 +120,8 @@ function NewAgentPage() {
       );
     },
     [
+      t,
+      isFetchingStatus,
       createAgent,
       developmentServerConfig,
       embeddingModels,
@@ -139,11 +154,16 @@ function NewAgentPage() {
         ) : (
           /* eslint-disable-next-line react/forbid-component-props */
           <VStack gap="form" className="max-w-[1052px]">
-            <Alert variant="info" title={t('alert.title')}>
-              {config?.id === 'local'
-                ? t('alert.descriptionLocal')
-                : t('alert.descriptionRemote')}
-            </Alert>
+            {isHealthy && (
+              <Alert
+                variant="info"
+                title={t('alert.title', { serverName: config?.name || '' })}
+              >
+                {config?.id === 'local'
+                  ? t('alert.descriptionLocal')
+                  : t('alert.descriptionRemote')}
+              </Alert>
+            )}
             {!!error && (
               <Alert variant="destructive" title={t('error')}>
                 <RawCodeEditor
@@ -161,15 +181,19 @@ function NewAgentPage() {
                   {t('starterKits.description')}
                 </Typography>
               </VStack>
-              <NiceGridDisplay itemWidth="250px" itemHeight="260px">
-                {starterKits.map(([id, starterKit]) => (
-                  <StarterKitItem
-                    onCreateAgent={handleCreateAgent}
-                    key={id}
-                    starterKit={starterKit}
-                  />
-                ))}
-              </NiceGridDisplay>
+              {!isHealthy && !isInitialFetch ? (
+                <Alert title={t('serverOffline')} variant="destructive" />
+              ) : (
+                <NiceGridDisplay itemWidth="250px" itemHeight="260px">
+                  {starterKits.map(([id, starterKit]) => (
+                    <StarterKitItem
+                      onCreateAgent={handleCreateAgent}
+                      key={id}
+                      starterKit={starterKit}
+                    />
+                  ))}
+                </NiceGridDisplay>
+              )}
             </VStack>
           </VStack>
         )}

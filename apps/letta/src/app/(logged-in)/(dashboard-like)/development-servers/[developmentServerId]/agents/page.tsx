@@ -181,24 +181,24 @@ function LocalProjectPage() {
   );
 
   return (
-    <DashboardPageLayout encapsulatedFullHeight>
+    <DashboardPageLayout
+      subtitle={t('description')}
+      title={currentDevelopmentServerConfig?.name || ''}
+      actions={
+        <HStack>
+          <Button
+            preIcon={<PlusIcon />}
+            color="secondary"
+            href={`/development-servers/${currentDevelopmentServerConfig?.id}/agents/new`}
+            label={t('createAgent')}
+          />
+        </HStack>
+      }
+      encapsulatedFullHeight
+    >
       <DashboardPageSection
         fullHeight
-        description={t('description')}
-        title={currentDevelopmentServerConfig?.name || ''}
-        searchValue={search}
-        onSearch={!isError ? setSearch : undefined}
         searchPlaceholder={t('searchInput.placeholder')}
-        actions={
-          <HStack>
-            <Button
-              preIcon={<PlusIcon />}
-              color="secondary"
-              href={`/development-servers/${currentDevelopmentServerConfig?.id}/agents/new`}
-              label={t('createAgent')}
-            />
-          </HStack>
-        }
       >
         {isError ? (
           <ErrorView
@@ -210,6 +210,8 @@ function LocalProjectPage() {
           <DataTable
             autofitHeight
             offset={offset}
+            searchValue={search}
+            onSearch={!isError ? setSearch : undefined}
             onLimitChange={setLimit}
             limit={limit}
             hasNextPage={hasNextPage}

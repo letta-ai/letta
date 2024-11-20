@@ -11,9 +11,7 @@ import {
   HiddenOnMobile,
   MobileFooterNavigation,
   MobileFooterNavigationButton,
-  Form,
   LoadingEmptyStatusComponent,
-  TextArea,
 } from '@letta-web/component-library';
 import { Card, Checkbox, ExternalLink } from '@letta-web/component-library';
 import { TrashIcon } from '@letta-web/component-library';
@@ -74,9 +72,10 @@ import { UpdateNameDialog } from './shared/UpdateAgentNameDialog/UpdateAgentName
 import { useAgentBaseTypeName } from './hooks/useAgentBaseNameType/useAgentBaseNameType';
 import { useLocalStorage } from '@mantine/hooks';
 import { ErrorBoundary } from 'react-error-boundary';
-import * as Sentry from '@sentry/browser';
-import { ProfilePopover } from '$letta/client/components/DashboardLikeLayout/DashboardNavigation/DashboardNavigation';
-import { DiscordLogoMarkDynamic } from '@letta-web/component-library';
+import {
+  DashboardHeaderNavigation,
+  ProfilePopover,
+} from '$letta/client/components/DashboardLikeLayout/DashboardNavigation/DashboardNavigation';
 import { CLOUD_UPSELL_URL } from '$letta/constants';
 
 function RestoreLayoutButton() {
@@ -779,70 +778,6 @@ function AgentSettingsDropdown() {
   );
 }
 
-const reportAnIssueFormSchema = z.object({
-  error: z.string(),
-});
-
-function ReportAnIssueForm() {
-  const t = useTranslations(
-    'projects/(projectSlug)/agents/(agentId)/AgentPage'
-  );
-  const [submitted, setSubmitted] = useState(false);
-  const user = useCurrentUser();
-  const form = useForm<z.infer<typeof reportAnIssueFormSchema>>({
-    resolver: zodResolver(reportAnIssueFormSchema),
-    defaultValues: {
-      error: '',
-    },
-  });
-
-  const handleReportIssue = useCallback(
-    (values: z.infer<typeof reportAnIssueFormSchema>) => {
-      Sentry.captureFeedback({
-        email: user?.email,
-        name: user?.name,
-        message: values.error,
-      });
-
-      setSubmitted(true);
-    },
-    [user?.email, user?.name]
-  );
-
-  if (submitted) {
-    return (
-      <Alert variant="info" title={t('ReportAnIssueForm.submitted')}></Alert>
-    );
-  }
-
-  return (
-    <FormProvider {...form}>
-      <Form onSubmit={form.handleSubmit(handleReportIssue)}>
-        <VStack gap="form">
-          <FormField
-            name="error"
-            render={({ field }) => (
-              <TextArea
-                fullWidth
-                hideLabel
-                label={t('ReportAnIssueForm.yourMessage')}
-                {...field}
-              />
-            )}
-          />
-          <Button
-            fullWidth
-            type="submit"
-            label={t('ReportAnIssueForm.submit')}
-          />
-        </VStack>
-      </Form>
-    </FormProvider>
-  );
-}
-
-const SUPPORT_BUTTON_ID = 'support-button';
-
 function Navigation() {
   const { isLocal } = useCurrentAgentMetaData();
   const t = useTranslations(
@@ -850,68 +785,16 @@ function Navigation() {
   );
 
   return (
-    <HStack gap="small" align="center">
-      <Button
-        size="small"
-        color="tertiary-transparent"
-        label={t('Navigation.dashboard')}
-        href={isLocal ? '/development-servers/local/dashboard' : '/projects'}
-      />
-      <Button
-        size="small"
-        color="tertiary-transparent"
-        target="_blank"
-        label={t('Navigation.documentation')}
-        href="https://docs.letta.com/introduction"
-      />
-      <Button
-        size="small"
-        color="tertiary-transparent"
-        target="_blank"
-        label={t('Navigation.apiReference')}
-        href="https://docs.letta.com/api-reference"
-      />
-      <Popover
-        triggerAsChild
-        trigger={
-          <Button
-            id={SUPPORT_BUTTON_ID}
-            size="small"
-            color="tertiary-transparent"
-            label={t('Navigation.support')}
-          />
-        }
-      >
-        <VStack borderBottom padding>
-          <Typography variant="heading5">
-            {t('Navigation.supportPopover.bugReport.title')}
-          </Typography>
-          <Typography>
-            {t('Navigation.supportPopover.bugReport.description')}
-          </Typography>
-          <ReportAnIssueForm />
-        </VStack>
-        <VStack borderBottom padding>
-          <Typography variant="heading5">
-            {t('Navigation.supportPopover.discord.title')}
-          </Typography>
-          <Typography>
-            {t('Navigation.supportPopover.discord.description')}
-          </Typography>
-          <a
-            target="_blank"
-            className="px-3 flex justify-center items-center gap-2 py-2 text-white bg-[#7289da]"
-            href="https://discord.gg/letta"
-          >
-            {/* eslint-disable-next-line react/forbid-component-props */}
-            <DiscordLogoMarkDynamic size="small" />
-            <Typography bold>
-              {t('Navigation.supportPopover.discord.joinUs')}
-            </Typography>
-          </a>
-        </VStack>
-      </Popover>
-    </HStack>
+    <DashboardHeaderNavigation
+      preItems={
+        <Button
+          size="small"
+          color="tertiary-transparent"
+          label={t('Navigation.dashboard')}
+          href={isLocal ? '/development-servers/local/dashboard' : '/projects'}
+        />
+      }
+    />
   );
 }
 

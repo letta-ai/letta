@@ -23,6 +23,27 @@
     },
     "header": {
       "Documentation": "Documentation"
+    },
+    "ReportAnIssueForm": {
+      "yourMessage": "Your message",
+      "submit": "Submit",
+      "submitted": "Your issue has been submitted, we will get back to you as soon as possible."
+    },
+    "DashboardHeaderNavigation": {
+      "documentation": "Documentation",
+      "apiReference": "API Reference",
+      "support": "Support",
+      "supportPopover": {
+        "bugReport": {
+          "title": "Report an issue",
+          "description": "Fill out the form below to report an issue"
+        },
+        "discord": {
+          "title": "Get support via Discord",
+          "description": "Join our Discord server to get help from the community and the Letta team.",
+          "joinUs": "Join us on Discord"
+        }
+      }
     }
   },
   "settings/account/page": {
@@ -626,6 +647,10 @@
   "ComponentLibrary/ADEInput": {
     "disabledTooltip": "This field cannot be edited"
   },
+  "development-servers/components/UserIsNotConnectedComponent": {
+    "notConnected": "Please connect to your local server to view quick actions and information.",
+    "start": "You can connect to your local server by running the command below:"
+  },
   "development-servers/layout": {
     "title": "Local Project",
     "nav": {
@@ -660,8 +685,6 @@
     },
     "description": "Letta allows you to create, deploy, and monitor stateful LLM agents",
     "title": "Welcome to the Letta developer platform!",
-    "notConnected": "Please connect to your local server to view quick actions and information.",
-    "start": "You can connect to your local server by running the command below:",
     "gettingStarted": {
       "title": "Getting Started",
       "actions": {
@@ -703,10 +726,12 @@
     }
   },
   "development-servers/agents/new/page": {
+    "serverOffline": "Your server is offline, please start it to create a new agent.",
+    "isFetchingStatus": "Sorry, we are still attempting to connect to your server. Please wait a moment.",
     "title": "Create a new agent",
     "error": "There was an error creating the agent, below is the error message, please try again or contact support.",
     "alert": {
-      "title": "You are creating an agent on \"Local server\"",
+      "title": "You are creating an agent on \"{serverName}\"",
       "descriptionLocal": "This will create an agent locally on your machine. This does not deploy the agent to Letta Cloud.",
       "descriptionRemote": "This will create an agent on the remote server. This will not deploy the agent to Letta Cloud."
     },
@@ -945,27 +970,8 @@
   },
   "projects/(projectSlug)/agents/(agentId)/AgentPage": {
     "error": "There was a severe error in this application, please refresh this page. If the error persists, please contact support in the top right corner.",
-    "ReportAnIssueForm": {
-      "yourMessage": "Your message",
-      "submit": "Submit",
-      "submitted": "Your issue has been submitted, we will get back to you as soon as possible."
-    },
     "Navigation": {
-      "dashboard": "Dashboard",
-      "documentation": "Docs",
-      "apiReference": "API Reference",
-      "support": "Support",
-      "supportPopover": {
-        "bugReport": {
-          "title": "Report an issue",
-          "description": "Fill out the form below to report an issue"
-        },
-        "discord": {
-          "title": "Get support via Discord",
-          "description": "Join our Discord server to get help from the community and the Letta team.",
-          "joinUs": "Join us on Discord"
-        }
-      }
+      "dashboard": "Dashboard"
     },
     "AgentMobileNavigation": {
       "more": "More panels",

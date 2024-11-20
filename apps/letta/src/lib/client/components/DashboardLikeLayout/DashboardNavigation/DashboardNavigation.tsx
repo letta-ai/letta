@@ -2,7 +2,16 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import ReactDOM from 'react-dom';
 import Link from 'next/link';
-import { isSubNavigationGroup } from '@letta-web/component-library';
+import {
+  Alert,
+  DiscordLogoMarkDynamic,
+  Form,
+  FormField,
+  FormProvider,
+  isSubNavigationGroup,
+  TextArea,
+  useForm,
+} from '@letta-web/component-library';
 import {
   CreditCardIcon,
   GroupIcon,
@@ -42,6 +51,9 @@ import { useTranslations } from 'next-intl';
 import { ThemeSelector } from '$letta/client/components/ThemeSelector/ThemeSelector';
 import { useCurrentProject } from '../../../../../app/(logged-in)/(dashboard-like)/projects/[projectSlug]/hooks';
 import { LocaleSelector } from '$letta/client/components/LocaleSelector/LocaleSelector';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as Sentry from '@sentry/browser';
 
 interface NavButtonProps {
   href: string;
@@ -564,12 +576,149 @@ function NavigationOverlay() {
   );
 }
 
-export function DashboardHeader() {
-  const currentProject = useCurrentProject();
+const reportAnIssueFormSchema = z.object({
+  error: z.string(),
+});
 
+function ReportAnIssueForm() {
   const t = useTranslations(
     'components/DashboardLikeLayout/DashboardNavigation'
   );
+  const [submitted, setSubmitted] = useState(false);
+  const user = useCurrentUser();
+  const form = useForm<z.infer<typeof reportAnIssueFormSchema>>({
+    resolver: zodResolver(reportAnIssueFormSchema),
+    defaultValues: {
+      error: '',
+    },
+  });
+
+  const handleReportIssue = useCallback(
+    (values: z.infer<typeof reportAnIssueFormSchema>) => {
+      Sentry.captureFeedback({
+        email: user?.email,
+        name: user?.name,
+        message: values.error,
+      });
+
+      setSubmitted(true);
+    },
+    [user?.email, user?.name]
+  );
+
+  if (submitted) {
+    return (
+      <Alert variant="info" title={t('ReportAnIssueForm.submitted')}></Alert>
+    );
+  }
+
+  return (
+    <FormProvider {...form}>
+      <Form onSubmit={form.handleSubmit(handleReportIssue)}>
+        <VStack gap="form">
+          <FormField
+            name="error"
+            render={({ field }) => (
+              <TextArea
+                fullWidth
+                hideLabel
+                label={t('ReportAnIssueForm.yourMessage')}
+                {...field}
+              />
+            )}
+          />
+          <Button
+            fullWidth
+            type="submit"
+            label={t('ReportAnIssueForm.submit')}
+          />
+        </VStack>
+      </Form>
+    </FormProvider>
+  );
+}
+
+interface DashboardHeaderNavigationProps {
+  preItems?: React.ReactNode;
+}
+
+export function DashboardHeaderNavigation(
+  props: DashboardHeaderNavigationProps
+) {
+  const { preItems } = props;
+  const t = useTranslations(
+    'components/DashboardLikeLayout/DashboardNavigation'
+  );
+
+  return (
+    <HiddenOnMobile>
+      <HStack gap="small" align="center">
+        {preItems}
+        <Button
+          size="small"
+          color="tertiary-transparent"
+          target="_blank"
+          label={t('DashboardHeaderNavigation.documentation')}
+          href="https://docs.letta.com/introduction"
+        />
+        <Button
+          size="small"
+          color="tertiary-transparent"
+          target="_blank"
+          label={t('DashboardHeaderNavigation.apiReference')}
+          href="https://docs.letta.com/api-reference"
+        />
+        <Popover
+          triggerAsChild
+          trigger={
+            <Button
+              size="small"
+              color="tertiary-transparent"
+              label={t('DashboardHeaderNavigation.support')}
+            />
+          }
+        >
+          <VStack borderBottom padding>
+            <Typography variant="heading5">
+              {t('DashboardHeaderNavigation.supportPopover.bugReport.title')}
+            </Typography>
+            <Typography>
+              {t(
+                'DashboardHeaderNavigation.supportPopover.bugReport.description'
+              )}
+            </Typography>
+            <ReportAnIssueForm />
+          </VStack>
+          <VStack borderBottom padding>
+            <Typography variant="heading5">
+              {t('DashboardHeaderNavigation.supportPopover.discord.title')}
+            </Typography>
+            <Typography>
+              {t(
+                'DashboardHeaderNavigation.supportPopover.discord.description'
+              )}
+            </Typography>
+            <a
+              target="_blank"
+              className="px-3 flex justify-center items-center gap-2 py-2 text-white bg-[#7289da]"
+              href="https://discord.gg/letta"
+            >
+              {/* eslint-disable-next-line react/forbid-component-props */}
+              <DiscordLogoMarkDynamic size="small" />
+              <Typography bold>
+                {t('DashboardHeaderNavigation.supportPopover.discord.joinUs')}
+              </Typography>
+            </a>
+          </VStack>
+        </Popover>
+      </HStack>
+    </HiddenOnMobile>
+  );
+}
+
+export function DashboardHeader() {
+  const currentProject = useCurrentProject();
+
   return (
     <>
       {/* eslint-disable-next-line react/forbid-component-props */}
@@ -606,25 +755,20 @@ export function DashboardHeader() {
                     </Link>
                   </Frame>
 
-                  {currentProject.id && (
-                    <>
-                      <HStack paddingLeft="small">/</HStack>
-                      <ProjectSelector />
-                    </>
-                  )}
+                  <HiddenOnMobile>
+                    {currentProject.id && (
+                      <>
+                        <HStack paddingLeft="small">/</HStack>
+                        <ProjectSelector />
+                      </>
+                    )}
+                  </HiddenOnMobile>
                 </>
               </HStack>
             </HStack>
           </HStack>
           <HStack align="center">
-            <HiddenOnMobile>
-              <Button
-                color="tertiary-transparent"
-                target="_blank"
-                href="https://docs.letta.com"
-                label={t('header.Documentation')}
-              />
-            </HiddenOnMobile>
+            <DashboardHeaderNavigation />
             <ProfilePopover />
           </HStack>
         </HStack>

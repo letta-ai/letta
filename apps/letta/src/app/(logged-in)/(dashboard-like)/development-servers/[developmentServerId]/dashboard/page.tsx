@@ -3,27 +3,25 @@ import {
   ActionCard,
   AdBanner,
   Button,
-  Card,
   DashboardPageLayout,
   DashboardPageSection,
   HStack,
   NiceGridDisplay,
   RobotIcon,
   SearchIcon,
-  Typography,
   VStack,
 } from '@letta-web/component-library';
 import { useTranslations } from 'next-intl';
 import { Tutorials } from '$letta/client/components';
 import React, { useEffect, useRef } from 'react';
 import { getIsLocalServiceOnline } from '$letta/client/local-project-manager';
-import { ConnectToLocalServerCommand } from '$letta/client/components/ConnectToLocalServerCommand/ConnectToLocalServerCommand';
 import Link from 'next/link';
 import bannerBlue from './banner_blue.png';
 import bannerOrange from './banner_orange.png';
 import { useCurrentUser } from '$letta/client/hooks';
 import { useLocalStorageWithLoadingState } from '@letta-web/helpful-client-utils';
 import { CLOUD_UPSELL_URL } from '$letta/constants';
+import { UserIsNotConnectedComponent } from '../components/UserIsNotConnectedComponent/UserIsNotConnectedComponent';
 
 function useIsLocalServiceOnline() {
   const [isLoading, setIsLoading] = React.useState(true);
@@ -76,7 +74,7 @@ function UpgradeBanner() {
     <AdBanner
       /* eslint-disable-next-line react/forbid-component-props */
       className="min-h-[350px] max-w-[1216px]"
-      textContentClassName="w-[60%]"
+      textContentClassName="largerThanMobile:w-[70%] largerThanMobile:w-[60%]"
       title={t('UpgradeBanner.title')}
       description={t('UpgradeBanner.description')}
       action={
@@ -109,7 +107,12 @@ function DevelopmentServersDashboardPage() {
 
   return (
     <DashboardPageLayout title={t('title')} subtitle={t('description')}>
-      {!user?.hasCloudAccess && <UpgradeBanner />}
+      {!user?.hasCloudAccess && (
+        <VStack paddingTop="medium">
+          <UpgradeBanner />{' '}
+        </VStack>
+      )}
+
       <DashboardPageSection title={t('gettingStarted.title')}>
         {isLocalServiceOnline ? (
           <NiceGridDisplay>
@@ -137,13 +140,7 @@ function DevelopmentServersDashboardPage() {
           </NiceGridDisplay>
         ) : (
           <VStack width="contained">
-            <Card>
-              <Typography bold>{t('notConnected')}</Typography>
-              <Typography>{t('start')}</Typography>
-              <HStack paddingTop>
-                <ConnectToLocalServerCommand />
-              </HStack>
-            </Card>
+            <UserIsNotConnectedComponent />
           </VStack>
         )}
       </DashboardPageSection>
