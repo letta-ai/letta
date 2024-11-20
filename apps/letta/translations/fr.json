@@ -578,6 +578,9 @@
       "local": "Agents locaux",
       "remote": "Télécommande",
       "create": "Ajouter un serveur distant"
+    },
+    "ServerStatusTitle": {
+      "checking": "Vérification de l'état du serveur..."
     }
   },
   "development-servers/dashboard/page": {

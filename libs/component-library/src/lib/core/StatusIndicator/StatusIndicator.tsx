@@ -6,7 +6,7 @@ import { MaybeTooltip } from '../Tooltip/Tooltip';
 const statusIndicatorVariants = cva('relative w-2 h-2 rounded-full', {
   variants: {
     status: {
-      active: 'bg-green',
+      active: 'bg-green-500',
       processing: 'bg-warning',
       inactive: 'bg-destructive',
     },

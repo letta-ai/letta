@@ -1,15 +1,11 @@
 import React, { useCallback } from 'react';
 
-import * as icons from '@radix-ui/react-icons';
-import type { IconProps } from '@radix-ui/react-icons/dist/types';
+import * as icons from '../icons';
 
 export * from './index';
 
 interface IconWrapperProps {
-  Icon: React.ForwardRefExoticComponent<
-    // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
-    IconProps & React.RefAttributes<SVGSVGElement>
-  >;
+  Icon: any;
   name: string;
 }
 

@@ -5,13 +5,13 @@ import { VStack } from '../../framing/VStack/VStack';
 import { Frame } from '../../framing/Frame/Frame';
 import { useEffect, useMemo } from 'react';
 import './DashboardWithSidebarWrapper.scss';
-import type { SubNavigationItem } from './useDashboardNavigationItems/useDashboardNavigationItems';
+import type { SubnavigationData } from './useDashboardNavigationItems/useDashboardNavigationItems';
 import { useDashboardNavigationItems } from './useDashboardNavigationItems/useDashboardNavigationItems';
 
 interface DashboardWithSidebarWrapperProps {
   children: React.ReactNode;
   baseUrl: string;
-  navigationItems: SubNavigationItem[];
+  navigationItems: SubnavigationData['items'];
   returnOverride?: string;
   projectTitle?: React.ReactNode;
 }

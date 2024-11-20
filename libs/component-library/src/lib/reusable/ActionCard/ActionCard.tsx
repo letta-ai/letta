@@ -46,6 +46,7 @@ interface ToggleCardProps extends VariantProps<typeof actionCardVariants> {
   badge?: React.ReactNode;
   mainAction?: React.ReactNode;
   isSkeleton?: boolean;
+  fullHeight?: boolean;
   description?: string;
   children?: React.ReactNode;
   onClick?: () => void;
@@ -60,6 +61,7 @@ export const ActionCard = forwardRef<HTMLElement, ToggleCardProps>(
     const {
       title,
       icon,
+      fullHeight,
       smallImage,
       badge,
       testId,
@@ -81,6 +83,7 @@ export const ActionCard = forwardRef<HTMLElement, ToggleCardProps>(
         onClick={!isSkeleton ? onClick : undefined}
         className={cn(
           actionCardVariants({ ...props, clickable: !!onClick }),
+          fullHeight ? 'h-full' : '',
           isActive ? 'bg-background-grey' : 'bg-background',
           'action-card',
           'relative'
