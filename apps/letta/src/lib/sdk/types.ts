@@ -8,14 +8,14 @@ export const BlockSchema: ToZod<Omit<Block, 'metadata_'>> = z.object({
   value: z.string(),
   limit: z.number().optional(),
   name: z.string().nullable().optional(),
-
-  template: z.boolean().optional(),
-  label: z.string().optional(),
-
+  label: z.string().nullable().optional(),
   description: z.string().nullable().optional(),
   metadata_: BlockMetadataSchema.optional(),
-  user_id: z.string().nullable().optional(),
   id: z.string().optional(),
+  organization_id: z.string().nullable().optional(),
+  created_by_id: z.string().nullable().optional(),
+  last_updated_by_id: z.string().nullable().optional(),
+  is_template: z.boolean().optional(),
 });
 
 export const MemorySchema = z.object({

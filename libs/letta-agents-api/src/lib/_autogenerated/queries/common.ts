@@ -514,11 +514,16 @@ export const useBlocksServiceGetMemoryBlockKey = 'BlocksServiceGetMemoryBlock';
 export const UseBlocksServiceGetMemoryBlockKeyFn = (
   {
     blockId,
+    userId,
   }: {
     blockId: string;
+    userId?: string;
   },
   queryKey?: Array<unknown>
-) => [useBlocksServiceGetMemoryBlockKey, ...(queryKey ?? [{ blockId }])];
+) => [
+  useBlocksServiceGetMemoryBlockKey,
+  ...(queryKey ?? [{ blockId, userId }]),
+];
 export type JobsServiceListJobsDefaultResponse = Awaited<
   ReturnType<typeof JobsService.listJobs>
 >;

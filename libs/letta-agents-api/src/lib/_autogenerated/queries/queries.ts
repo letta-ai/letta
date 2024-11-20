@@ -23,10 +23,11 @@ import {
 import {
   APIKeyCreate,
   AuthRequest,
+  BlockCreate,
+  BlockUpdate,
   Body_upload_file_to_source,
   CreateAgent,
   CreateArchivalMemory,
-  CreateBlock,
   LettaRequest,
   OrganizationCreate,
   SourceCreate,
@@ -34,7 +35,6 @@ import {
   ToolCreate,
   ToolUpdate,
   UpdateAgentState,
-  UpdateBlock,
   UpdateMessage,
   UserCreate,
   UserUpdate,
@@ -613,15 +613,20 @@ export const useBlocksServiceGetMemoryBlock = <
 >(
   {
     blockId,
+    userId,
   }: {
     blockId: string;
+    userId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
 ) =>
   useQuery<TData, TError>({
-    queryKey: Common.UseBlocksServiceGetMemoryBlockKeyFn({ blockId }, queryKey),
-    queryFn: () => BlocksService.getMemoryBlock({ blockId }) as TData,
+    queryKey: Common.UseBlocksServiceGetMemoryBlockKeyFn(
+      { blockId, userId },
+      queryKey
+    ),
+    queryFn: () => BlocksService.getMemoryBlock({ blockId, userId }) as TData,
     ...options,
   });
 export const useJobsServiceListJobs = <
@@ -1141,7 +1146,7 @@ export const useBlocksServiceCreateMemoryBlock = <
       TData,
       TError,
       {
-        requestBody: CreateBlock;
+        requestBody: BlockCreate;
         userId?: string;
       },
       TContext
@@ -1153,7 +1158,7 @@ export const useBlocksServiceCreateMemoryBlock = <
     TData,
     TError,
     {
-      requestBody: CreateBlock;
+      requestBody: BlockCreate;
       userId?: string;
     },
     TContext
@@ -1702,7 +1707,8 @@ export const useBlocksServiceUpdateMemoryBlock = <
       TError,
       {
         blockId: string;
-        requestBody: UpdateBlock;
+        requestBody: BlockUpdate;
+        userId?: string;
       },
       TContext
     >,
@@ -1714,14 +1720,16 @@ export const useBlocksServiceUpdateMemoryBlock = <
     TError,
     {
       blockId: string;
-      requestBody: UpdateBlock;
+      requestBody: BlockUpdate;
+      userId?: string;
     },
     TContext
   >({
-    mutationFn: ({ blockId, requestBody }) =>
+    mutationFn: ({ blockId, requestBody, userId }) =>
       BlocksService.updateMemoryBlock({
         blockId,
         requestBody,
+        userId,
       }) as unknown as Promise<TData>,
     ...options,
   });
@@ -1907,6 +1915,7 @@ export const useBlocksServiceDeleteMemoryBlock = <
       TError,
       {
         blockId: string;
+        userId?: string;
       },
       TContext
     >,
@@ -1918,11 +1927,15 @@ export const useBlocksServiceDeleteMemoryBlock = <
     TError,
     {
       blockId: string;
+      userId?: string;
     },
     TContext
   >({
-    mutationFn: ({ blockId }) =>
-      BlocksService.deleteMemoryBlock({ blockId }) as unknown as Promise<TData>,
+    mutationFn: ({ blockId, userId }) =>
+      BlocksService.deleteMemoryBlock({
+        blockId,
+        userId,
+      }) as unknown as Promise<TData>,
     ...options,
   });
 export const useJobsServiceDeleteJob = <
