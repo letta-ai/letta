@@ -77,6 +77,7 @@ import { ErrorBoundary } from 'react-error-boundary';
 import * as Sentry from '@sentry/browser';
 import { ProfilePopover } from '$letta/client/components/DashboardLikeLayout/DashboardNavigation/DashboardNavigation';
 import { DiscordLogoMarkDynamic } from '@letta-web/component-library';
+import { CLOUD_UPSELL_URL } from '$letta/constants';
 
 function RestoreLayoutButton() {
   const t = useTranslations(
@@ -516,7 +517,7 @@ function CloudUpsellDeploy() {
           <Button
             fullWidth
             label={t('CloudUpsellDeploy.cta')}
-            href="https://forms.letta.com/early-access"
+            href={CLOUD_UPSELL_URL}
             target="_blank"
             color="secondary"
           />

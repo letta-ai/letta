@@ -652,8 +652,14 @@
     "updateDetails": "Update Configuration"
   },
   "development-servers/dashboard/page": {
-    "description": "Welcome to the Letta developer platform! ",
-    "title": "Dashboard",
+    "UpgradeBanner": {
+      "title": "Deploy, monitor and scale your agents in seconds",
+      "description": "Letta Cloud is the easiest way to scale with zero infrastructure. Get early access to Letta Cloud below.",
+      "cta": "Get early access",
+      "dismiss": "Close"
+    },
+    "description": "Letta allows you to create, deploy, and monitor stateful LLM agents",
+    "title": "Welcome to the Letta developer platform!",
     "notConnected": "Please connect to your local server to view quick actions and information.",
     "start": "You can connect to your local server by running the command below:",
     "gettingStarted": {
@@ -665,10 +671,51 @@
         },
         "viewAgents": {
           "title": "View local agents",
-          "description": "View all agents on your local server."
+          "description": "View all of your agents on the local server."
         }
       }
     }
+  },
+  "starter-kits": {
+    "internetChatbot": {
+      "title": "Internet Chatbot",
+      "description": "A general purpose chatbot designed to answer queries via the internet."
+    },
+    "characterRoleplay": {
+      "title": "Character Roleplay",
+      "description": "Create an agent to roleplay as a character from a fantasy world."
+    },
+    "personalAssistant": {
+      "title": "Personal Assistant",
+      "description": "Chat between a user and a personal assistant designed to enhance the user's productivity."
+    },
+    "scratch": {
+      "title": "Start from Scratch",
+      "description": "Start with an empty agent with minimal default tools and a blank initial memory state."
+    },
+    "customerSupport": {
+      "title": "Customer Support",
+      "description": "An agent designed to answer customer support requests."
+    },
+    "companion": {
+      "title": "Companion",
+      "description": "Chat between a user an an AI companion named Sam, designed to learn and adapt over time."
+    }
+  },
+  "development-servers/agents/new/page": {
+    "title": "Create a new agent",
+    "error": "There was an error creating the agent, below is the error message, please try again or contact support.",
+    "alert": {
+      "title": "You are creating an agent on \"Local server\"",
+      "descriptionLocal": "This will create an agent locally on your machine. This does not deploy the agent to Letta Cloud.",
+      "descriptionRemote": "This will create an agent on the remote server. This will not deploy the agent to Letta Cloud."
+    },
+    "loading": "Creating agent...",
+    "starterKits": {
+      "title": "Starter Kits",
+      "description": "Choose from a starter pack and customize it in the ADE, or start from scratch"
+    },
+    "back": "All agents"
   },
   "components/tutorials": {
     "title": "Tutorials",
@@ -677,12 +724,16 @@
       "description": "Learn how to create a chatbot that can remember information from previous conversations."
     },
     "buildMultiAgentSystems": {
-      "title": "Build multi-agent systems",
-      "description": "Learn how to create a multi-agent system that can interact with multiple agents."
+      "title": "Multi-agent systems",
+      "description": "Learn how to create a multi-agent system where an orchestrator agent controls multiple (stateful) worker agents."
     },
-    "characterAIApp": {
-      "title": "Character AI applications",
-      "description": "Learn how to create a character AI that can interact with users in a conversational manner."
+    "discord": {
+      "title": "Create a Discord bot",
+      "description": "Learn how to connect Letta agents to Discord to create Discord bots that have long-term memory and access to powerful tools."
+    },
+    "voice": {
+      "title": "Activate voice mode",
+      "description": "Learn how to connect Letta agents to a voice service to allow users to chat with agents over speech-to-text and text-to-speech."
     }
   },
   "development-servers/shared/CreateLocalAgentDialog": {
