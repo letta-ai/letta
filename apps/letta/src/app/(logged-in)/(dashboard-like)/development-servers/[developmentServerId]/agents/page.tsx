@@ -17,7 +17,6 @@ import type { AgentState } from '@letta-web/letta-agents-api';
 import { useAgentsServiceListAgents } from '@letta-web/letta-agents-api';
 import React, { useEffect, useMemo, useState } from 'react';
 import type { ColumnDef } from '@tanstack/react-table';
-import { CreateLocalAgentDialog } from '../../shared/CreateLocalAgentDialog/CreateLocalAgentDialog';
 import { useDateFormatter } from '@letta-web/helpful-client-utils';
 import { useCurrentDevelopmentServerConfig } from '../hooks/useCurrentDevelopmentServerConfig/useCurrentDevelopmentServerConfig';
 import { ConnectToLocalServerCommand } from '$letta/client/components/ConnectToLocalServerCommand/ConnectToLocalServerCommand';
@@ -192,14 +191,11 @@ function LocalProjectPage() {
         searchPlaceholder={t('searchInput.placeholder')}
         actions={
           <HStack>
-            <CreateLocalAgentDialog
-              trigger={
-                <Button
-                  preIcon={<PlusIcon />}
-                  color="secondary"
-                  label={t('createAgent')}
-                />
-              }
+            <Button
+              preIcon={<PlusIcon />}
+              color="secondary"
+              href={`/development-servers/${currentDevelopmentServerConfig?.id}/agents/new`}
+              label={t('createAgent')}
             />
           </HStack>
         }

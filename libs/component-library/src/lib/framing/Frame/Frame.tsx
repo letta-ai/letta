@@ -51,6 +51,7 @@ const frameVariants = cva('', {
     },
     width: {
       centered: 'max-w-[800px]',
+      largeContained: 'max-w-[1024px] w-full',
       contained: 'max-w-[610px] w-full',
       sidebar: 'w-sidebar',
     },
@@ -90,6 +91,7 @@ const frameVariants = cva('', {
       large: 'p-4',
       true: 'p-5',
       xlarge: 'p-5',
+      xxlarge: 'p-8',
     },
     paddingY: {
       xxsmall: 'py-1',

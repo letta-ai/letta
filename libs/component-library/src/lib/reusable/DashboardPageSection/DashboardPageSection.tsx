@@ -69,13 +69,17 @@ export function DashboardPageSection(props: DashboardPageSectionProps) {
     >
       {title && (
         <HStack align="center" justify="spaceBetween">
-          <Typography noWrap bold variant="heading3">
+          <Typography align="left" noWrap bold variant="heading3">
             {title}
           </Typography>
           <HStack>{actions}</HStack>
         </HStack>
       )}
-      {description && <Typography variant="body">{description}</Typography>}
+      {description && (
+        <Typography align="left" variant="body">
+          {description}
+        </Typography>
+      )}
       {onSearch && (
         <Frame paddingTop>
           <DashboardSearchBar

@@ -246,3 +246,18 @@ body {
 }
 
 
+.dark .visible-on-dark {
+  display: inherit;
+}
+
+.dark .invisible-on-dark {
+  display: none;
+}
+
+.visible-on-dark {
+  display: none;
+}
+
+.invisible-on-dark {
+  display: inherit;
+}
