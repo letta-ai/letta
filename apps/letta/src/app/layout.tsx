@@ -1,5 +1,4 @@
 import './global.css';
-import NextTopLoader from 'nextjs-toploader';
 import { ClientSideProviders } from './_components/ClientSideProviders/ClientSideProviders';
 import React from 'react';
 import { LoadMixpanelAnalytics } from '@letta-web/analytics/client';
@@ -110,11 +109,6 @@ export default async function RootLayout({
       </head>
       <Body>
         <LoadMixpanelAnalytics />
-        <NextTopLoader
-          showSpinner={false}
-          color="hsl(var(--primary))"
-          zIndex={9999}
-        />
         <NextIntlClientProvider messages={messages}>
           <ClientSideProviders>{children}</ClientSideProviders>
         </NextIntlClientProvider>

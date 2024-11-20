@@ -1,3 +1,4 @@
+'use client';
 import { useEffect, useState } from 'react';
 
 export function useLocalStorageWithLoadingState<T>(
@@ -5,6 +6,10 @@ export function useLocalStorageWithLoadingState<T>(
   initialValue: T
 ): [T, (nextValue: T) => void, boolean] {
   const [value, setValue] = useState<T>(() => {
+    if (typeof window === 'undefined') {
+      return initialValue;
+    }
+
     const storedValue = localStorage.getItem(key);
     return storedValue ? JSON.parse(storedValue) : initialValue;
   });

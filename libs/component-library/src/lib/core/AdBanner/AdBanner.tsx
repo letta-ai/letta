@@ -61,19 +61,19 @@ export function AdBanner(props: AdBannerProps) {
       {darkModeImage ? (
         <>
           <Image
-            className="visible-on-dark absolute object-cover h-full z-[-1]"
+            className="visible-on-dark bg-background-black absolute object-cover h-full z-[-1]"
             src={darkModeImage}
             alt=""
           />
           <Image
-            className="invisible-on-dark absolute object-cover h-full z-[-1]"
+            className="invisible-on-dark bg-background-black absolute object-cover h-full z-[-1]"
             src={imageUrl}
             alt=""
           />
         </>
       ) : (
         <Image
-          className="absolute object-cover h-full z-[-1]"
+          className="absolute object-cover bg-background-black h-full z-[-1]"
           src={imageUrl}
           alt=""
         />

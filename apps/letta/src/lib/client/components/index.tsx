@@ -7,3 +7,4 @@ export * from './CenteredPageCard/CenteredPageCard';
 export * from './ProjectSelector/ProjectSelector';
 export * from './ADEHeader/ADEHeader';
 export * from './Tutorials/Tutorials';
+export * from './ConnectToLocalServerCommand/ConnectToLocalServerCommand';
