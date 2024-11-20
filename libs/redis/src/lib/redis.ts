@@ -8,38 +8,42 @@ const BOUNCE = 200;
 const MAX_BOUNCE = 1000;
 const TOTAL_RETRIES = 3;
 
+let redisInstance: Redis | null = null;
+
+const options: RedisOptions = {
+  host: environment.REDIS_HOST,
+  lazyConnect: true,
+  showFriendlyErrorStack: true,
+  enableAutoPipelining: true,
+  maxRetriesPerRequest: 0,
+  retryStrategy: (times: number) => {
+    if (times > TOTAL_RETRIES) {
+      throw new Error(`[Redis] Could not connect after ${times} attempts`);
+    }
+
+    return Math.min(times * BOUNCE, MAX_BOUNCE);
+  },
+};
+
+if (environment.REDIS_PORT) {
+  options.port = environment.REDIS_PORT;
+}
+
+if (environment.REDIS_PASSWORD) {
+  options.password = environment.REDIS_PASSWORD;
+}
+
 function createRedisInstance() {
   try {
-    const options: RedisOptions = {
-      host: environment.REDIS_HOST,
-      lazyConnect: true,
-      showFriendlyErrorStack: true,
-      enableAutoPipelining: true,
-      maxRetriesPerRequest: 0,
-      retryStrategy: (times: number) => {
-        if (times > TOTAL_RETRIES) {
-          throw new Error(`[Redis] Could not connect after ${times} attempts`);
-        }
+    if (!redisInstance) {
+      redisInstance = new Redis(options);
 
-        return Math.min(times * BOUNCE, MAX_BOUNCE);
-      },
-    };
-
-    if (environment.REDIS_PORT) {
-      options.port = environment.REDIS_PORT;
+      redisInstance.on('error', (error: unknown) => {
+        console.warn('[Redis] Error connecting', error);
+      });
     }
 
-    if (environment.REDIS_PASSWORD) {
-      options.password = environment.REDIS_PASSWORD;
-    }
-
-    const redis = new Redis(options);
-
-    redis.on('error', (error: unknown) => {
-      console.warn('[Redis] Error connecting', error);
-    });
-
-    return redis;
+    return redisInstance;
   } catch (_) {
     throw new Error(`[Redis] Could not create a Redis instance`);
   }
