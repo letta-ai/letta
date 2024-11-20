@@ -1,0 +1,11 @@
+import React from 'react';
+import Image from 'next/image';
+import image from './<%= logoMarkFilePath %>';
+
+
+
+export function <%= name %>LogoMark() {
+  return (
+    <Image src={image} alt="<%= name %> LogoMark" />
+  );
+}

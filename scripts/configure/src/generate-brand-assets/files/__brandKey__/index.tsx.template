@@ -1,0 +1,3 @@
+export * from './<%= name %>Lockup';
+export * from './<%= name %>LogoMark';
+export * from './<%= name %>LogoMarkDynamic';

@@ -44,6 +44,8 @@ async function getAdminInferenceModels(
         inferenceModels: res.map((model) => ({
           id: model.model,
           name: model.model,
+          tag: '',
+          isRecommended: false,
           brand: model.model_endpoint_type,
           config: model,
           disabledAt: null,
@@ -103,6 +105,8 @@ async function getAdminInferenceModels(
         id: model.id,
         name: model.name,
         brand: model.brand,
+        tag: model.tag || '',
+        isRecommended: model.isRecommended,
         config: configMap.get(`${model.modelEndpoint}${model.modelName}`),
         disabledAt: model.disabledAt?.toISOString(),
         createdAt: model.createdAt.toISOString(),
@@ -146,6 +150,8 @@ async function getAdminInferenceModel(
     body: {
       id: response.id,
       name: response.name,
+      isRecommended: response.isRecommended,
+      tag: response.tag || '',
       brand: response.brand,
       config: inferenceModels.find(
         (model) =>
@@ -203,6 +209,8 @@ async function createAdminInferenceModel(
       name: inferenceModelsMetadata.name,
       brand: inferenceModelsMetadata.brand,
       modelEndpoint: inferenceModelsMetadata.modelEndpoint,
+      tag: inferenceModelsMetadata.tag,
+      isRecommended: inferenceModelsMetadata.isRecommended,
       modelName: inferenceModelsMetadata.modelName,
       disabledAt: inferenceModelsMetadata.disabledAt,
       createdAt: inferenceModelsMetadata.createdAt,
@@ -215,6 +223,8 @@ async function createAdminInferenceModel(
       id: response.id,
       name: response.name,
       brand: response.brand,
+      tag: response.tag || '',
+      isRecommended: response.isRecommended,
       config: null,
       disabledAt: response.disabledAt?.toISOString(),
       createdAt: response.createdAt.toISOString(),
@@ -235,13 +245,15 @@ interface UpdateAdminInferenceSetterType {
   brand?: string;
   disabledAt?: Date | null;
   name?: string;
+  tag?: string;
+  isRecommended?: boolean;
 }
 
 async function updateAdminInferenceModel(
   req: UpdateAdminInferenceModelRequest
 ): Promise<UpdateAdminInferenceModelResponse> {
   const { id } = req.params;
-  const { brand, disabled, name } = req.body;
+  const { brand, disabled, name, isRecommended, tag } = req.body;
 
   const set: Partial<UpdateAdminInferenceSetterType> = {};
 
@@ -255,6 +267,14 @@ async function updateAdminInferenceModel(
 
   if (name) {
     set.name = name;
+  }
+
+  if (tag) {
+    set.tag = tag;
+  }
+
+  if (typeof isRecommended === 'boolean') {
+    set.isRecommended = isRecommended;
   }
 
   if (Object.keys(set).length === 0) {
@@ -275,6 +295,8 @@ async function updateAdminInferenceModel(
       name: inferenceModelsMetadata.name,
       brand: inferenceModelsMetadata.brand,
       modelEndpoint: inferenceModelsMetadata.modelEndpoint,
+      isRecommended: inferenceModelsMetadata.isRecommended,
+      tag: inferenceModelsMetadata.tag,
       modelName: inferenceModelsMetadata.modelName,
       disabledAt: inferenceModelsMetadata.disabledAt,
       createdAt: inferenceModelsMetadata.createdAt,
@@ -288,6 +310,8 @@ async function updateAdminInferenceModel(
       name: response.name,
       brand: response.brand,
       config: null,
+      isRecommended: response.isRecommended,
+      tag: response.tag || '',
       disabledAt: response.disabledAt?.toISOString(),
       createdAt: response.createdAt.toISOString(),
       updatedAt: response.updatedAt.toISOString(),

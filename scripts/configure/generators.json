@@ -14,6 +14,11 @@
       "factory": "./src/generate-icons/generator",
       "schema": "./src/generate-icons/schema.json",
       "description": "generate-icons generator"
+    },
+    "generate-brand-assets": {
+      "factory": "./src/generate-brand-assets/generator",
+      "schema": "./src/generate-brand-assets/schema.json",
+      "description": "generate-brand-assets generator"
     }
   }
 }

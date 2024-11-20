@@ -37,6 +37,8 @@ interface UpdateInferenceModelFormProps {
 const updateInferenceModelSchema = z.object({
   name: z.string(),
   disabled: z.boolean(),
+  isRecommended: z.boolean().optional(),
+  tag: z.string().optional(),
   brand: z.string(),
 });
 
@@ -81,6 +83,8 @@ function UpdateInferenceModelForm(props: UpdateInferenceModelFormProps) {
           name: values.name,
           disabled: values.disabled,
           brand: values.brand,
+          isRecommended: values.isRecommended,
+          tag: values.tag,
         },
       });
     },
@@ -98,6 +102,17 @@ function UpdateInferenceModelForm(props: UpdateInferenceModelFormProps) {
                 <Input fullWidth label="Display Name" {...field} />
               )}
             />
+            <FormField
+              name="tag"
+              render={({ field }) => (
+                <Input
+                  fullWidth
+                  description="This is shown to the right of the model name in the model selection dropdown"
+                  label="Tag"
+                  {...field}
+                />
+              )}
+            />
 
             <FormField
               name="brand"
@@ -110,6 +125,21 @@ function UpdateInferenceModelForm(props: UpdateInferenceModelFormProps) {
                 />
               )}
             />
+            <VStack border paddingTop="large" padding="medium" fullWidth>
+              <FormField
+                name="isRecommended"
+                render={({ field }) => (
+                  <Checkbox
+                    label="Recommended"
+                    onCheckedChange={(checked) => {
+                      field.onChange(checked);
+                    }}
+                    checked={field.value}
+                  />
+                )}
+              />
+            </VStack>
+
             <VStack border paddingTop="large" padding="medium" fullWidth>
               <FormField
                 name="disabled"

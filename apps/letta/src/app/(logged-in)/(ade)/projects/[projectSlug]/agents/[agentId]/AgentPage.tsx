@@ -73,10 +73,10 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { UpdateNameDialog } from './shared/UpdateAgentNameDialog/UpdateAgentNameDialog';
 import { useAgentBaseTypeName } from './hooks/useAgentBaseNameType/useAgentBaseNameType';
 import { useLocalStorage } from '@mantine/hooks';
-import { DiscordWhiteLogo } from '@letta-web/component-library';
 import { ErrorBoundary } from 'react-error-boundary';
 import * as Sentry from '@sentry/browser';
 import { ProfilePopover } from '$letta/client/components/DashboardLikeLayout/DashboardNavigation/DashboardNavigation';
+import { DiscordLogoMarkDynamic } from '@letta-web/component-library';
 
 function RestoreLayoutButton() {
   const t = useTranslations(
@@ -903,7 +903,7 @@ function Navigation() {
             href="https://discord.gg/letta"
           >
             {/* eslint-disable-next-line react/forbid-component-props */}
-            <DiscordWhiteLogo className="h-4 w-auto" />
+            <DiscordLogoMarkDynamic size="small" />
             <Typography bold>
               {t('Navigation.supportPopover.discord.joinUs')}
             </Typography>

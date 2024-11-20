@@ -1,9 +1,0 @@
-import React from 'react';
-import { IconProps } from '../types';
-import { cn } from '@letta-web/core-style-config';
-
-export function <%= name %>() {
-  return (
-    <%= svgContent %>
-  );
-}

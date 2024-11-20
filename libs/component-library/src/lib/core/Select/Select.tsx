@@ -92,10 +92,15 @@ const overridenComponents = {
     // @ts-expect-error yest
     <components.SingleValue {...props}>
       <HStack align="center" gap="medium">
-        {props.data.icon && (
-          <Slot className="max-h-3 w-3">{props.data.icon}</Slot>
-        )}
-        <Typography>{children}</Typography>
+        <HStack align="center" gap="small" fullWidth>
+          {props.data.icon && (
+            <Slot className="max-h-3 w-3">{props.data.icon}</Slot>
+          )}
+          <Typography align="left" noWrap overflow="ellipsis">
+            {children}
+          </Typography>
+        </HStack>
+        {props.data.badge}
       </HStack>
     </components.SingleValue>
   ),
@@ -129,10 +134,14 @@ const overridenComponents = {
           align="center"
           data-testid={`select-box-option-${props.data.value}`}
         >
-          {props.data.icon && !hideIconsOnOptions && (
-            <Slot className="max-h-3  w-3">{props.data.icon}</Slot>
-          )}
-          {children}
+          <HStack align="center" fullWidth>
+            {props.data.icon && !hideIconsOnOptions && (
+              <Slot className="max-h-3  w-3">{props.data.icon}</Slot>
+            )}
+            <Typography align="left" noWrap overflow="ellipsis">
+              {children}
+            </Typography>
+          </HStack>
           {props.data.badge}
         </HStack>
         {props.data.description && (
