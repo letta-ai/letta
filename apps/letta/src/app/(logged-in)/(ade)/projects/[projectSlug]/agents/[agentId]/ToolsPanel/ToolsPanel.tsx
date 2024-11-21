@@ -132,7 +132,7 @@ function AllToolsView(props: AllToolsViewProps) {
   const { isLocal } = useCurrentAgentMetaData();
 
   return (
-    <HStack color="background" padding fullHeight>
+    <HStack padding fullHeight>
       <VStack gap="large" fullHeight fullWidth>
         <HStack align="center" fullWidth justify="spaceBetween">
           <Typography variant="heading4" bold>
@@ -478,14 +478,7 @@ function SpecificToolComponent(props: SpecificToolComponentProps) {
   }, [tool, tools]);
 
   return (
-    <VStack
-      flex
-      fullHeight="withMinHeight"
-      color="background"
-      border
-      padding
-      fullWidth
-    >
+    <VStack flex fullHeight="withMinHeight" border padding fullWidth>
       <HStack fullWidth justify="spaceBetween">
         <HStack>
           {(onClose || isEditingToolMode) && (
@@ -694,6 +687,7 @@ function AddToolDialog() {
       disableForm
       noContentPadding
       isOpen={open}
+      color="background"
       errorMessage={isError ? t('AddToolDialog.error') : undefined}
       hideFooter
       trigger={
@@ -795,6 +789,7 @@ function ViewToolDialog(props: ViewToolDialogProps) {
   return (
     <Dialog
       size="full"
+      color="background"
       disableForm
       noContentPadding
       hideFooter
@@ -957,6 +952,22 @@ interface ToolCreatorProps {
   onClose: VoidFunction;
 }
 
+const DEFAULT_SOURCE_CODE = `def roll_d20(self):
+    """
+    Simulate the roll of a 20-sided die (d20).
+
+    This function generates a random integer between 1 and 20, inclusive,
+    which represents the outcome of a single roll of a d20.
+
+    Returns:
+        str: The result of the die roll.
+    """
+    import random
+    dice_role_outcome = random.randint(1, 20)
+    output_string = f"You rolled a {dice_role_outcome}"
+    return output_string
+`;
+
 function ToolCreator(props: ToolCreatorProps) {
   const { onClose } = props;
   const t = useTranslations('ADE/Tools');
@@ -994,7 +1005,7 @@ function ToolCreator(props: ToolCreatorProps) {
     defaultValues: {
       name: '',
       description: '',
-      sourceCode: '',
+      sourceCode: DEFAULT_SOURCE_CODE,
     },
   });
 
@@ -1013,15 +1024,8 @@ function ToolCreator(props: ToolCreatorProps) {
   );
 
   return (
-    <VStack flex fullHeight="withMinHeight" paddingBottom>
-      <VStack
-        flex
-        fullHeight="withMinHeight"
-        color="background"
-        border
-        padding
-        fullWidth
-      >
+    <VStack flex paddingBottom>
+      <VStack flex padding fullWidth>
         <HStack>
           <Button
             size="small"
