@@ -40,6 +40,9 @@ const typographyVariants = cva('break-words', {
     bold: {
       true: 'font-semibold',
     },
+    semibold: {
+      true: 'font-medium',
+    },
     fullWidth: {
       true: 'w-full',
     },

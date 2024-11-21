@@ -265,23 +265,36 @@ function SystemPromptEditor() {
           )}
         </VStack>
       </Dialog>
-      <RawTextArea
-        fullWidth
-        fullHeight
-        flex
-        autosize={false}
-        label={t('SystemPromptEditor.label')}
-        onChange={(e) => {
-          onChange(e.target.value);
-        }}
-        value={value}
-        expandable={{
-          expandText: t('SystemPromptEditor.expand'),
-          onExpand: () => {
-            setIsExpanded(true);
-          },
-        }}
-      />
+      <VStack fullHeight gap="small">
+        <HStack fullWidth justify="spaceBetween">
+          <Typography semibold variant="body">
+            {t('SystemPromptEditor.label')}
+          </Typography>
+          <Typography variant="body2" color="muted">
+            {t('SystemPromptEditor.characterCount', {
+              count: value.length,
+            })}
+          </Typography>
+        </HStack>
+        <RawTextArea
+          fullWidth
+          hideLabel
+          fullHeight
+          flex
+          autosize={false}
+          label={t('SystemPromptEditor.label')}
+          onChange={(e) => {
+            onChange(e.target.value);
+          }}
+          value={value}
+          expandable={{
+            expandText: t('SystemPromptEditor.expand'),
+            onExpand: () => {
+              setIsExpanded(true);
+            },
+          }}
+        />
+      </VStack>
     </>
   );
 }
