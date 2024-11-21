@@ -77,6 +77,7 @@
     "extended-eventsource": "^1.6.4",
     "ioredis": "^5.4.1",
     "jotai": "^2.10.0",
+    "js-tiktoken": "^1.0.15",
     "jsonrepair": "^3.8.1",
     "jwt-decode": "^4.0.0",
     "libsodium": "^0.7.15",

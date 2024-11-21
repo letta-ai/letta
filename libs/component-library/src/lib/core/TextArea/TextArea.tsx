@@ -12,7 +12,7 @@ import type { VariantProps } from 'class-variance-authority';
 import { cva } from 'class-variance-authority';
 
 const defaultClass =
-  'flex min-h-[80px] w-full border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground  disabled:cursor-not-allowed disabled:opacity-50';
+  'flex min-h-[80px] w-full border border-input bg-background px-3 py-2 pr-5 text-base ring-offset-background placeholder:text-muted-foreground  disabled:cursor-not-allowed disabled:opacity-50';
 
 const textareaVariants = cva(defaultClass, {
   variants: {

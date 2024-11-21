@@ -211,12 +211,14 @@
     "mobileTitle": "Context Window",
     "ContextWindowPreview": {
       "usage": "{used}/{total} TOKENS",
-      "systemPrompt": "System Prompt",
-      "memoryBlocks": "Memory Blocks",
+      "systemPrompt": "System instructions",
+      "toolPrompt": "Tools descriptions",
+      "memoryBlocks": "Core memory",
+      "externalSummaryLength": "External summary",
       "totalOverage": "Total Overage",
       "remaining": "Remaining",
-      "messagesTokens": "Messages Tokens",
-      "summaryMemory": "Summary Memory",
+      "messagesTokens": "Messages",
+      "summaryMemory": "Recursive Memory",
       "recallMemory": "Recall Memory",
       "archivalMemory": "Archival Memory"
     }

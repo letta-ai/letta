@@ -1,7 +1,7 @@
 'use client';
 import { useCallback, useEffect } from 'react';
 import type {
-  ComputeCoreMemoryWorkerPayload,
+  ComputeTokenCountWorkerPayload,
   WorkerResponse,
 } from '../../types';
 
@@ -14,13 +14,13 @@ let worker: Worker;
 if (typeof Worker !== 'undefined') {
   worker = new Worker(
     new URL(
-      '../../workers/computeCoreMemorySummaryWorker/computeCoreMemorySummaryWorker.ts',
+      '../../workers/computeTokenCountWorker/computeTokenCountWorker.ts',
       import.meta.url
     )
   );
 }
 
-export function useCoreMemorySummaryWorker(options: WorkerOptions) {
+export function useTokenCounterWorker(options: WorkerOptions) {
   const { onMessage } = options;
 
   useEffect(() => {
@@ -36,7 +36,7 @@ export function useCoreMemorySummaryWorker(options: WorkerOptions) {
     };
   }, [onMessage]);
 
-  const postMessage = useCallback((message: ComputeCoreMemoryWorkerPayload) => {
+  const postMessage = useCallback((message: ComputeTokenCountWorkerPayload) => {
     worker.postMessage(message);
   }, []);
 

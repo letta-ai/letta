@@ -1103,7 +1103,7 @@ export function AgentPage() {
   const { agentName, agentId, isTemplate, isLocal } = useCurrentAgentMetaData();
 
   const [adeLayout, setADELayout] = useLocalStorage({
-    key: `ade-layout-${agentId}`,
+    key: `ade-layout-${agentId}-2`,
     defaultValue: generateDefaultADELayout().displayConfig,
   });
 

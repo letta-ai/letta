@@ -7,6 +7,7 @@ import { HStack } from '../../framing/HStack/HStack';
 import { Typography } from '../Typography/Typography';
 import { VStack } from '../../framing/VStack/VStack';
 import { useDebouncedCallback } from '@mantine/hooks';
+import './Chart.css';
 
 interface ChartOptions {
   options: EChartsOption;
@@ -76,6 +77,10 @@ export function Chart(props: ChartOptions) {
       currentChart.setOption({
         ...defaultOptions,
         ...options,
+        tooltip: {
+          ...options.tooltip,
+          className: 'chart-tooltip',
+        },
         legend: {
           show: false,
         },

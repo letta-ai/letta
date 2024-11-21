@@ -16,9 +16,10 @@ import type { EChartsOption } from 'echarts';
 import { useTranslations } from 'next-intl';
 import { atom, useAtom } from 'jotai';
 import { z } from 'zod';
+import type { TiktokenModel } from 'js-tiktoken';
+import { encodingForModel } from 'js-tiktoken';
 
 const computedMemoryStringAtom = atom<string | null>(null);
-
 
 const supportedModels: TiktokenModel[] = [
   'davinci-002',
@@ -89,6 +90,10 @@ const supportedModels: TiktokenModel[] = [
   'gpt-4o-realtime-preview-2024-10-01',
 ];
 
+function isTiktokenModel(model: string): model is TiktokenModel {
+  return supportedModels.includes(model as TiktokenModel);
+}
+
 function ContextWindowPanel() {
   const t = useTranslations('ADE/ContextEditorPanel');
   const { memory, system, id, llm_config } = useCurrentAgent();
@@ -106,6 +111,16 @@ function ContextWindowPanel() {
     },
   });
 
+  const encorder = useMemo(() => {
+    let tokenModel: TiktokenModel = 'gpt-4';
+
+    if (llm_config && isTiktokenModel(llm_config.model)) {
+      tokenModel = llm_config.model;
+    }
+
+    return encodingForModel(tokenModel);
+  }, [llm_config]);
+
   useEffect(() => {
     if (!memory) {
       return;
@@ -120,10 +135,22 @@ function ContextWindowPanel() {
   }, [memory, postMessage]);
 
   const systemPromptLength = useMemo(() => {
-    return numTokensFromString(system || '', llm_config?.model || '') || 0;
-  }, [llm_config?.model, system]);
+    return encorder.encode(system || '').length;
+  }, [encorder, system]);
 
-  const summaryMemoryLength = useMemo(() => {
+  const toolLength = useMemo(() => {
+    return contextWindow?.num_tokens_functions_definitions || 0;
+  }, [contextWindow?.num_tokens_functions_definitions]);
+
+  const externalSummaryLength = useMemo(() => {
+    return contextWindow?.num_tokens_external_memory_summary || 0;
+  }, [contextWindow?.num_tokens_external_memory_summary]);
+
+  const coreMemoryLength = useMemo(() => {
+    return encorder.encode(computedMemoryString || '').length;
+  }, [computedMemoryString, encorder]);
+
+  const recursiveMemoryLength = useMemo(() => {
     return contextWindow?.num_tokens_summary_memory || 0;
   }, [contextWindow?.num_tokens_summary_memory]);
 
@@ -131,26 +158,21 @@ function ContextWindowPanel() {
     return contextWindow?.num_tokens_messages || 0;
   }, [contextWindow?.num_tokens_messages]);
 
-  const coreMemoryLength = useMemo(() => {
-    return (
-      numTokensFromString(
-        computedMemoryString || '',
-        llm_config?.model || ''
-      ) || 0
-    );
-  }, [computedMemoryString, llm_config?.model]);
-
   const totalUsedLength = useMemo(() => {
     return (
       systemPromptLength +
+      toolLength +
+      externalSummaryLength +
       coreMemoryLength +
-      summaryMemoryLength +
+      recursiveMemoryLength +
       messagesTokensLength
     );
   }, [
     systemPromptLength,
+    toolLength,
+    externalSummaryLength,
     coreMemoryLength,
-    summaryMemoryLength,
+    recursiveMemoryLength,
     messagesTokensLength,
   ]);
 
@@ -229,10 +251,40 @@ function ContextWindowPanel() {
             show: false,
           },
           tooltip: {
+            formatter: (e) => `${e.seriesName}: ${toolLength}`,
+          },
+          data: [toolLength / totalLength],
+          color: '#37e2f9',
+          name: t('ContextWindowPreview.toolPrompt'),
+          itemStyle: {
+            borderRadius: [0, 0, 0, 0],
+          },
+        },
+        {
+          ...commonSeriesStyles,
+          label: {
+            show: false,
+          },
+          tooltip: {
+            formatter: (e) => `${e.seriesName}: ${externalSummaryLength}`,
+          },
+          data: [externalSummaryLength / totalLength],
+          color: '#37f9a2',
+          name: t('ContextWindowPreview.externalSummaryLength'),
+          itemStyle: {
+            borderRadius: [0, 0, 0, 0],
+          },
+        },
+        {
+          ...commonSeriesStyles,
+          label: {
+            show: false,
+          },
+          tooltip: {
             formatter: (e) => `${e.seriesName}: ${coreMemoryLength}`,
           },
           data: [coreMemoryLength / totalLength],
-          color: '#6EE7B7',
+          color: '#76e76e',
           name: t('ContextWindowPreview.memoryBlocks'),
         },
         {
@@ -241,9 +293,9 @@ function ContextWindowPanel() {
             show: false,
           },
           tooltip: {
-            formatter: (e) => `${e.seriesName}: ${summaryMemoryLength}`,
+            formatter: (e) => `${e.seriesName}: ${recursiveMemoryLength}`,
           },
-          data: [summaryMemoryLength / totalLength],
+          data: [recursiveMemoryLength / totalLength],
           color: 'green',
           name: t('ContextWindowPreview.summaryMemory'),
         },
@@ -306,13 +358,15 @@ function ContextWindowPanel() {
 
     return opts;
   }, [
+    systemPromptLength,
+    totalLength,
+    t,
+    toolLength,
+    externalSummaryLength,
     coreMemoryLength,
+    recursiveMemoryLength,
     messagesTokensLength,
     remainingLength,
-    summaryMemoryLength,
-    systemPromptLength,
-    t,
-    totalLength,
   ]);
 
   return (
