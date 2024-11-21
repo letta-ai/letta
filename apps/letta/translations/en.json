@@ -447,6 +447,7 @@
   "ADE/AgentSettingsPanel": {
     "mobileTitle": "{baseName}",
     "SystemPromptEditor": {
+      "characterCount": "{count} CHARS",
       "updatedAt": "Last updated on {date}",
       "label": "System Instructions",
       "error": "There was an error while updating the system prompt, please try again or contact support.",
