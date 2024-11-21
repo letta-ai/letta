@@ -101,9 +101,15 @@ function ContextWindowPanel() {
     computedMemoryStringAtom
   );
 
-  const { data: contextWindow } = useAgentsServiceGetAgentContextWindow({
-    agentId: id,
-  });
+  const { data: contextWindow } = useAgentsServiceGetAgentContextWindow(
+    {
+      agentId: id,
+    },
+    undefined,
+    {
+      refetchInterval: 2500,
+    }
+  );
 
   const { postMessage } = useCoreMemorySummaryWorker({
     onMessage: (message: MessageEvent<WorkerResponse>) => {
@@ -176,16 +182,16 @@ function ContextWindowPanel() {
     messagesTokensLength,
   ]);
 
-  const contextWindowLength = useMemo(() => {
+  const totalLength = useMemo(() => {
     return llm_config?.context_window || 0;
   }, [llm_config?.context_window]);
 
-  const totalLength = useMemo(() => {
-    return Math.max(contextWindowLength, totalUsedLength);
-  }, [contextWindowLength, totalUsedLength]);
-
   const remainingLength = useMemo(() => {
-    return totalLength - totalUsedLength;
+    return Math.max(0, totalLength - totalUsedLength);
+  }, [totalLength, totalUsedLength]);
+
+  const totalLengthForChart = useMemo(() => {
+    return Math.max(totalLength, totalUsedLength);
   }, [totalLength, totalUsedLength]);
 
   const standardChartOptions = useMemo(() => {
@@ -194,6 +200,7 @@ function ContextWindowPanel() {
         show: true,
       },
       type: 'bar',
+      stackStrategy: 'positive',
       stack: 'total',
     } as const;
 
@@ -238,7 +245,7 @@ function ContextWindowPanel() {
           tooltip: {
             formatter: (e) => `${e.seriesName}: ${systemPromptLength}`,
           },
-          data: [systemPromptLength / totalLength],
+          data: [systemPromptLength / totalLengthForChart],
           color: '#3758F9',
           name: t('ContextWindowPreview.systemPrompt'),
           itemStyle: {
@@ -253,7 +260,7 @@ function ContextWindowPanel() {
           tooltip: {
             formatter: (e) => `${e.seriesName}: ${toolLength}`,
           },
-          data: [toolLength / totalLength],
+          data: [toolLength / totalLengthForChart],
           color: '#37e2f9',
           name: t('ContextWindowPreview.toolPrompt'),
           itemStyle: {
@@ -268,7 +275,7 @@ function ContextWindowPanel() {
           tooltip: {
             formatter: (e) => `${e.seriesName}: ${externalSummaryLength}`,
           },
-          data: [externalSummaryLength / totalLength],
+          data: [externalSummaryLength / totalLengthForChart],
           color: '#37f9a2',
           name: t('ContextWindowPreview.externalSummaryLength'),
           itemStyle: {
@@ -283,7 +290,7 @@ function ContextWindowPanel() {
           tooltip: {
             formatter: (e) => `${e.seriesName}: ${coreMemoryLength}`,
           },
-          data: [coreMemoryLength / totalLength],
+          data: [coreMemoryLength / totalLengthForChart],
           color: '#76e76e',
           name: t('ContextWindowPreview.memoryBlocks'),
         },
@@ -295,7 +302,7 @@ function ContextWindowPanel() {
           tooltip: {
             formatter: (e) => `${e.seriesName}: ${recursiveMemoryLength}`,
           },
-          data: [recursiveMemoryLength / totalLength],
+          data: [recursiveMemoryLength / totalLengthForChart],
           color: 'green',
           name: t('ContextWindowPreview.summaryMemory'),
         },
@@ -307,7 +314,7 @@ function ContextWindowPanel() {
           tooltip: {
             formatter: (e) => `${e.seriesName}: ${messagesTokensLength}`,
           },
-          data: [messagesTokensLength / totalLength],
+          data: [messagesTokensLength / totalLengthForChart],
           color: 'orange',
           name: t('ContextWindowPreview.messagesTokens'),
         },
@@ -321,7 +328,7 @@ function ContextWindowPanel() {
               return `${e.seriesName}: ${remainingLength}`;
             },
           },
-          data: [remainingLength / totalLength],
+          data: [remainingLength / totalLengthForChart],
           color: '#eee',
           name: t('ContextWindowPreview.remaining'),
           itemStyle: {
@@ -359,7 +366,7 @@ function ContextWindowPanel() {
     return opts;
   }, [
     systemPromptLength,
-    totalLength,
+    totalLengthForChart,
     t,
     toolLength,
     externalSummaryLength,
@@ -375,14 +382,12 @@ function ContextWindowPanel() {
         <HStack fullWidth justify="spaceBetween">
           <div />
           <Typography
-            color={
-              totalUsedLength > contextWindowLength ? 'destructive' : 'muted'
-            }
+            color={totalUsedLength > totalLength ? 'destructive' : 'muted'}
             variant="body2"
           >
             {t('ContextWindowPreview.usage', {
               used: totalUsedLength,
-              total: contextWindowLength,
+              total: totalLength,
             })}
           </Typography>
         </HStack>
