@@ -45,11 +45,24 @@ export function ThemeSelector() {
         }
       );
 
-      updateCurrentUser({
-        body: {
-          theme: nextTheme,
+      updateCurrentUser(
+        {
+          body: {
+            theme: nextTheme,
+          },
         },
-      });
+        {
+          onSuccess: () => {
+            const faviconHref = document.getElementById('favicon');
+
+            if (faviconHref) {
+              (
+                faviconHref as HTMLAnchorElement
+              ).href = `/icon?theme=${nextTheme}`;
+            }
+          },
+        }
+      );
     },
     [queryClient, updateCurrentUser]
   );

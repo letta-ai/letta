@@ -101,6 +101,7 @@ export default async function RootLayout({
         />
         <link
           rel="icon"
+          id="favicon"
           href="/icon?<generated>"
           type="image/png"
           sizes="32x32"
