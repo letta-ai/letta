@@ -63,7 +63,7 @@ function NewAgentPage() {
     isHealthy,
     isInitialFetch,
     isFetching: isFetchingStatus,
-  } = useDevelopmentServerStatus(config?.url || '');
+  } = useDevelopmentServerStatus(config);
 
   const {
     mutate: createAgent,

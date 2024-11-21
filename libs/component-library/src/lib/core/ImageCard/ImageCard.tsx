@@ -5,6 +5,7 @@ import { VStack } from '../../framing/VStack/VStack';
 import Image from 'next/image';
 import { Typography } from '../Typography/Typography';
 import { cn } from '@letta-web/core-style-config';
+import { HStack } from '../../framing/HStack/HStack';
 
 interface ImageCardProps {
   imageUrl: StaticImport | string;
@@ -15,6 +16,7 @@ interface ImageCardProps {
   href?: string;
   onClick?: () => void;
   target?: string;
+  badge?: React.ReactNode;
 }
 
 export function ImageCard(props: ImageCardProps) {
@@ -27,6 +29,7 @@ export function ImageCard(props: ImageCardProps) {
     href,
     onClick,
     target,
+    badge,
   } = props;
 
   const Component = href ? 'a' : 'button';
@@ -48,6 +51,11 @@ export function ImageCard(props: ImageCardProps) {
           <Typography bold>{title}</Typography>
           <Typography>{description}</Typography>
         </VStack>
+        {badge && (
+          <HStack justify="end" className="mt-4">
+            {badge}
+          </HStack>
+        )}
       </Card>
     </Component>
   );

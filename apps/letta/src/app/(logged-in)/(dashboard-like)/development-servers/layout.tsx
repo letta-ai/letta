@@ -26,6 +26,7 @@ import { useRouter } from 'next/navigation';
 import type { ServerInferResponses } from '@ts-rest/core';
 import type { developmentServersContracts } from '$letta/web-api/development-servers/developmentServersContracts';
 import { useDevelopmentServerStatus } from './hooks/useDevelopmentServerStatus/useDevelopmentServerStatus';
+import type { DevelopmentServerConfig } from './[developmentServerId]/hooks/useCurrentDevelopmentServerConfig/useCurrentDevelopmentServerConfig';
 
 interface DeleteDevelopmentServerDialogProps {
   trigger: React.ReactNode;
@@ -110,15 +111,15 @@ interface LocalProjectLayoutProps {
 }
 
 interface ServerStatusTitleProps {
-  serverUrl: string;
+  config: DevelopmentServerConfig;
   title: string;
 }
 
 function ServerStatusTitle(props: ServerStatusTitleProps) {
-  const { serverUrl, title } = props;
+  const { config, title } = props;
   const t = useTranslations('development-servers/layout');
 
-  const { isHealthy, isFetching } = useDevelopmentServerStatus(serverUrl);
+  const { isHealthy, isFetching } = useDevelopmentServerStatus(config);
 
   const status = useMemo(() => {
     if (isFetching) {
@@ -166,7 +167,15 @@ function LocalProjectLayout(props: LocalProjectLayoutProps) {
       title: server.name,
       titleOverride: (
         <HStack justify="spaceBetween" fullWidth>
-          <ServerStatusTitle serverUrl={server.url} title={server.name} />
+          <ServerStatusTitle
+            config={{
+              password: server.password || '',
+              url: server.url,
+              id: server.id,
+              name: server.name,
+            }}
+            title={server.name}
+          />
           <DropdownMenu
             triggerAsChild
             trigger={
@@ -225,7 +234,12 @@ function LocalProjectLayout(props: LocalProjectLayoutProps) {
           title: t('nav.local'),
           titleOverride: (
             <ServerStatusTitle
-              serverUrl={LOCAL_PROJECT_SERVER_URL}
+              config={{
+                id: 'local',
+                url: LOCAL_PROJECT_SERVER_URL,
+                password: '',
+                name: t('nav.local'),
+              }}
               title={t('nav.local')}
             />
           ),

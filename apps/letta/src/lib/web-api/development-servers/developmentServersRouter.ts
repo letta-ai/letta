@@ -43,6 +43,13 @@ async function getDevelopmentServers(
       createdAt: true,
       updatedAt: true,
     },
+    with: {
+      developmentServerPasswords: {
+        columns: {
+          password: true,
+        },
+      },
+    },
   });
 
   return {
@@ -52,6 +59,7 @@ async function getDevelopmentServers(
         id: developmentServer.id,
         name: developmentServer.name,
         url: developmentServer.url,
+        password: developmentServer.developmentServerPasswords?.password || '',
         createdAt: developmentServer.createdAt.toISOString(),
         updatedAt: developmentServer.updatedAt.toISOString(),
       })),
