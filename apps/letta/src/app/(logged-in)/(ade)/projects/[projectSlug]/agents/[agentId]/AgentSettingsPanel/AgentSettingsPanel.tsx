@@ -90,7 +90,9 @@ function ModelSelector(props: ModelSelectorProps) {
           brand = out?.brand || brand;
           isRecommended = out?.isRecommended || isRecommended;
           badge = out?.tag || badge;
-        } else {
+        }
+
+        if (brand === 'llama') {
           brand = getBrandFromModelName(model) || brand;
         }
 

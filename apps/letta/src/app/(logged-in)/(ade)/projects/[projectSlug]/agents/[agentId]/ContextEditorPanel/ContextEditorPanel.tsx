@@ -1,40 +1,125 @@
 import { useCurrentAgent } from '../hooks';
 
 import { useAgentsServiceGetAgentContextWindow } from '@letta-web/letta-agents-api';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { useCoreMemorySummaryWorker } from './hooks/useCoreMemorySummaryWorker/useCoreMemorySummaryWorker';
 import type { WorkerResponse } from './types';
 import {
   Chart,
+  ContextWindowIcon,
   HStack,
-  Popover,
+  type PanelTemplate,
   Typography,
   VStack,
 } from '@letta-web/component-library';
 import type { EChartsOption } from 'echarts';
 import { useTranslations } from 'next-intl';
 import { atom, useAtom } from 'jotai';
+import { z } from 'zod';
+import type { TiktokenModel } from 'js-tiktoken';
+import { encodingForModel } from 'js-tiktoken';
 
 const computedMemoryStringAtom = atom<string | null>(null);
 
-export function ContextWindowPreview() {
-  const [open, setOpen] = useState(false);
+const supportedModels: TiktokenModel[] = [
+  'davinci-002',
+  'babbage-002',
+  'text-davinci-003',
+  'text-davinci-002',
+  'text-davinci-001',
+  'text-curie-001',
+  'text-babbage-001',
+  'text-ada-001',
+  'davinci',
+  'curie',
+  'babbage',
+  'ada',
+  'code-davinci-002',
+  'code-davinci-001',
+  'code-cushman-002',
+  'code-cushman-001',
+  'davinci-codex',
+  'cushman-codex',
+  'text-davinci-edit-001',
+  'code-davinci-edit-001',
+  'text-embedding-ada-002',
+  'text-similarity-davinci-001',
+  'text-similarity-curie-001',
+  'text-similarity-babbage-001',
+  'text-similarity-ada-001',
+  'text-search-davinci-doc-001',
+  'text-search-curie-doc-001',
+  'text-search-babbage-doc-001',
+  'text-search-ada-doc-001',
+  'code-search-babbage-code-001',
+  'code-search-ada-code-001',
+  'gpt2',
+  'gpt-3.5-turbo',
+  'gpt-35-turbo',
+  'gpt-3.5-turbo-0301',
+  'gpt-3.5-turbo-0613',
+  'gpt-3.5-turbo-1106',
+  'gpt-3.5-turbo-0125',
+  'gpt-3.5-turbo-16k',
+  'gpt-3.5-turbo-16k-0613',
+  'gpt-3.5-turbo-instruct',
+  'gpt-3.5-turbo-instruct-0914',
+  'gpt-4',
+  'gpt-4-0314',
+  'gpt-4-0613',
+  'gpt-4-32k',
+  'gpt-4-32k-0314',
+  'gpt-4-32k-0613',
+  'gpt-4-turbo',
+  'gpt-4-turbo-2024-04-09',
+  'gpt-4-turbo-preview',
+  'gpt-4-1106-preview',
+  'gpt-4-0125-preview',
+  'gpt-4-vision-preview',
+  'gpt-4o',
+  'gpt-4o-2024-05-13',
+  'gpt-4o-2024-08-06',
+  'gpt-4o-mini-2024-07-18',
+  'gpt-4o-mini',
+  'o1-mini',
+  'o1-preview',
+  'o1-preview-2024-09-12',
+  'o1-mini-2024-09-12',
+  'chatgpt-4o-latest',
+  'gpt-4o-realtime',
+  'gpt-4o-realtime-preview-2024-10-01',
+];
+
+function isTiktokenModel(model: string): model is TiktokenModel {
+  return supportedModels.includes(model as TiktokenModel);
+}
+
+function ContextWindowPanel() {
   const t = useTranslations('ADE/ContextEditorPanel');
   const { memory, system, id, llm_config } = useCurrentAgent();
   const [computedMemoryString, setComputedMemoryString] = useAtom(
     computedMemoryStringAtom
   );
 
-  const { data: contextWindow, isSuccess } =
-    useAgentsServiceGetAgentContextWindow({
-      agentId: id,
-    });
+  const { data: contextWindow } = useAgentsServiceGetAgentContextWindow({
+    agentId: id,
+  });
 
   const { postMessage } = useCoreMemorySummaryWorker({
     onMessage: (message: MessageEvent<WorkerResponse>) => {
       setComputedMemoryString(message.data);
     },
   });
+
+  const encorder = useMemo(() => {
+    let tokenModel: TiktokenModel = 'gpt-4';
+
+    if (llm_config && isTiktokenModel(llm_config.model)) {
+      tokenModel = llm_config.model;
+    }
+
+    return encodingForModel(tokenModel);
+  }, [llm_config]);
 
   useEffect(() => {
     if (!memory) {
@@ -49,15 +134,23 @@ export function ContextWindowPreview() {
     });
   }, [memory, postMessage]);
 
-  const totalLength = useMemo(() => {
-    return llm_config?.context_window || 0;
-  }, [llm_config?.context_window]);
-
   const systemPromptLength = useMemo(() => {
-    return system?.split(' ').length || 0;
-  }, [system]);
+    return encorder.encode(system || '').length;
+  }, [encorder, system]);
 
-  const summaryMemoryLength = useMemo(() => {
+  const toolLength = useMemo(() => {
+    return contextWindow?.num_tokens_functions_definitions || 0;
+  }, [contextWindow?.num_tokens_functions_definitions]);
+
+  const externalSummaryLength = useMemo(() => {
+    return contextWindow?.num_tokens_external_memory_summary || 0;
+  }, [contextWindow?.num_tokens_external_memory_summary]);
+
+  const coreMemoryLength = useMemo(() => {
+    return encorder.encode(computedMemoryString || '').length;
+  }, [computedMemoryString, encorder]);
+
+  const recursiveMemoryLength = useMemo(() => {
     return contextWindow?.num_tokens_summary_memory || 0;
   }, [contextWindow?.num_tokens_summary_memory]);
 
@@ -65,105 +158,35 @@ export function ContextWindowPreview() {
     return contextWindow?.num_tokens_messages || 0;
   }, [contextWindow?.num_tokens_messages]);
 
-  const coreMemoryLength = useMemo(() => {
-    return computedMemoryString?.split(' ').length || 0;
-  }, [computedMemoryString]);
-
   const totalUsedLength = useMemo(() => {
     return (
       systemPromptLength +
+      toolLength +
+      externalSummaryLength +
       coreMemoryLength +
-      summaryMemoryLength +
+      recursiveMemoryLength +
       messagesTokensLength
     );
   }, [
     systemPromptLength,
+    toolLength,
+    externalSummaryLength,
     coreMemoryLength,
-    summaryMemoryLength,
+    recursiveMemoryLength,
     messagesTokensLength,
   ]);
+
+  const contextWindowLength = useMemo(() => {
+    return llm_config?.context_window || 0;
+  }, [llm_config?.context_window]);
+
+  const totalLength = useMemo(() => {
+    return Math.max(contextWindowLength, totalUsedLength);
+  }, [contextWindowLength, totalUsedLength]);
 
   const remainingLength = useMemo(() => {
     return totalLength - totalUsedLength;
   }, [totalLength, totalUsedLength]);
-
-  const miniChartOptions: EChartsOption = useMemo(() => {
-    return {
-      tooltip: {
-        show: false,
-      },
-      grid: {
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-      },
-      xAxis: {
-        type: 'value',
-        splitLine: {
-          show: false,
-        },
-        axisLine: {
-          show: false,
-        },
-      },
-      yAxis: {
-        type: 'category',
-        data: [''],
-        splitLine: {
-          show: false,
-        },
-        axisLine: {
-          show: false,
-        },
-      },
-      series: [
-        {
-          data: [systemPromptLength / totalLength],
-          type: 'bar',
-          stack: 'total',
-          color: '#3758F9',
-          name: t('ContextWindowPreview.systemPrompt'),
-        },
-        {
-          data: [coreMemoryLength / totalLength],
-          type: 'bar',
-          color: '#6EE7B7',
-          stack: 'total',
-          name: t('ContextWindowPreview.memoryBlocks'),
-        },
-        {
-          data: [summaryMemoryLength / totalLength],
-          type: 'bar',
-          color: 'green',
-          stack: 'total',
-          name: t('ContextWindowPreview.summaryMemory'),
-        },
-        {
-          data: [messagesTokensLength / totalLength],
-          type: 'bar',
-          color: 'orange',
-          stack: 'total',
-          name: t('ContextWindowPreview.messagesTokens'),
-        },
-        {
-          data: [remainingLength / totalLength],
-          type: 'bar',
-          color: 'gray',
-          stack: 'total',
-          name: t('ContextWindowPreview.remaining'),
-        },
-      ],
-    };
-  }, [
-    coreMemoryLength,
-    messagesTokensLength,
-    remainingLength,
-    summaryMemoryLength,
-    systemPromptLength,
-    t,
-    totalLength,
-  ]);
 
   const standardChartOptions = useMemo(() => {
     const commonSeriesStyles = {
@@ -177,6 +200,7 @@ export function ContextWindowPreview() {
     const opts: EChartsOption = {
       tooltip: {
         show: true,
+        appendToBody: true,
       },
       grid: {
         top: 0,
@@ -218,7 +242,37 @@ export function ContextWindowPreview() {
           color: '#3758F9',
           name: t('ContextWindowPreview.systemPrompt'),
           itemStyle: {
-            borderRadius: [6, 0, 0, 6],
+            borderRadius: [0, 0, 0, 0],
+          },
+        },
+        {
+          ...commonSeriesStyles,
+          label: {
+            show: false,
+          },
+          tooltip: {
+            formatter: (e) => `${e.seriesName}: ${toolLength}`,
+          },
+          data: [toolLength / totalLength],
+          color: '#37e2f9',
+          name: t('ContextWindowPreview.toolPrompt'),
+          itemStyle: {
+            borderRadius: [0, 0, 0, 0],
+          },
+        },
+        {
+          ...commonSeriesStyles,
+          label: {
+            show: false,
+          },
+          tooltip: {
+            formatter: (e) => `${e.seriesName}: ${externalSummaryLength}`,
+          },
+          data: [externalSummaryLength / totalLength],
+          color: '#37f9a2',
+          name: t('ContextWindowPreview.externalSummaryLength'),
+          itemStyle: {
+            borderRadius: [0, 0, 0, 0],
           },
         },
         {
@@ -230,7 +284,7 @@ export function ContextWindowPreview() {
             formatter: (e) => `${e.seriesName}: ${coreMemoryLength}`,
           },
           data: [coreMemoryLength / totalLength],
-          color: '#6EE7B7',
+          color: '#76e76e',
           name: t('ContextWindowPreview.memoryBlocks'),
         },
         {
@@ -239,9 +293,9 @@ export function ContextWindowPreview() {
             show: false,
           },
           tooltip: {
-            formatter: (e) => `${e.seriesName}: ${summaryMemoryLength}`,
+            formatter: (e) => `${e.seriesName}: ${recursiveMemoryLength}`,
           },
-          data: [summaryMemoryLength / totalLength],
+          data: [recursiveMemoryLength / totalLength],
           color: 'green',
           name: t('ContextWindowPreview.summaryMemory'),
         },
@@ -268,10 +322,10 @@ export function ContextWindowPreview() {
             },
           },
           data: [remainingLength / totalLength],
-          color: 'gray',
+          color: '#eee',
           name: t('ContextWindowPreview.remaining'),
           itemStyle: {
-            borderRadius: [0, 6, 6, 0],
+            borderRadius: [0, 0, 0, 0],
           },
         },
       ],
@@ -287,111 +341,71 @@ export function ContextWindowPreview() {
     if (totalSeriesSize === 1) {
       // @ts-expect-error - this is a valid type
       opts.series[0].itemStyle = {
-        borderRadius: 6,
+        borderRadius: 0,
       };
     }
 
     if (totalSeriesSize > 1) {
       // @ts-expect-error - this is a valid type
       opts.series[0].itemStyle = {
-        borderRadius: [6, 0, 0, 6],
+        borderRadius: [0, 0, 0, 0],
       };
       // @ts-expect-error - this is a valid type
       opts.series[totalSeriesSize - 1].itemStyle = {
-        borderRadius: [0, 6, 6, 0],
+        borderRadius: [0, 0, 0, 0],
       };
     }
 
     return opts;
   }, [
+    systemPromptLength,
+    totalLength,
+    t,
+    toolLength,
+    externalSummaryLength,
     coreMemoryLength,
+    recursiveMemoryLength,
     messagesTokensLength,
     remainingLength,
-    summaryMemoryLength,
-    systemPromptLength,
-    t,
-    totalLength,
   ]);
 
-  const isReady = useMemo(() => {
-    return computedMemoryString && !!contextWindow;
-  }, [computedMemoryString, contextWindow]);
-  const handleSetOpen = useCallback(
-    (status: boolean) => {
-      if (!isReady && status) {
-        setOpen(false);
-        return;
-      }
-
-      setOpen(status);
-    },
-    [isReady]
-  );
-
-  const handleMouseEnter = useCallback(() => {
-    handleSetOpen(true);
-  }, [handleSetOpen]);
-
-  const handleMouseLeave = useCallback(() => {
-    handleSetOpen(false);
-  }, [handleSetOpen]);
-
-  if (!isSuccess) {
-    return null;
-  }
-
   return (
-    <Popover
-      /* eslint-disable-next-line react/forbid-component-props */
-      className="w-[400px]"
-      align="end"
-      offset={-2}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-      trigger={
-        <HStack
-          onMouseEnter={handleMouseEnter}
-          onMouseLeave={handleMouseLeave}
-          align="center"
-          animate
-          justify="end"
-          transparent={!isReady}
-        >
-          <HStack
-            justify="end"
-            /* eslint-disable-next-line react/forbid-component-props*/
-            className="h-[24px] mt-[1px] transition-all w-[100px]"
-            paddingY="small"
-            overflow="hidden"
-          >
-            <Chart options={miniChartOptions} />
-          </HStack>
-          <Typography variant="body2" color="muted">
-            {t('ContextWindowPreview.usage', {
-              total: totalLength,
-              used: totalUsedLength,
-            })}
-          </Typography>
-        </HStack>
-      }
-      open={open}
-      onOpenChange={handleSetOpen}
-    >
-      <VStack gap="small" paddingX="small" paddingY="xsmall">
+    <VStack gap="small" paddingX="large" paddingY="xsmall">
+      <div className="mt-[-35px]">
         <HStack fullWidth justify="spaceBetween">
-          <Typography variant="body2" bold>
-            {t('ContextWindowPreview.popover.title')}
-          </Typography>
-          <Typography variant="body2">
-            {t('ContextWindowPreview.popover.usage', {
+          <div />
+          <Typography
+            color={
+              totalUsedLength > contextWindowLength ? 'destructive' : 'muted'
+            }
+            variant="body2"
+          >
+            {t('ContextWindowPreview.usage', {
               used: totalUsedLength,
-              total: totalLength,
+              total: contextWindowLength,
             })}
           </Typography>
         </HStack>
-        {/* eslint-disable-next-line react/forbid-component-props */}
-        <Chart showLegend height={30} options={standardChartOptions} />
-      </VStack>
-    </Popover>
+      </div>
+      {/* eslint-disable-next-line react/forbid-component-props */}
+      <Chart height={35} options={standardChartOptions} />
+    </VStack>
   );
 }
+
+export const contextWindowPanel = {
+  templateId: 'context-window',
+  icon: <ContextWindowIcon />,
+  useGetTitle: () => {
+    const t = useTranslations('ADE/ContextEditorPanel');
+
+    return t('title');
+  },
+  useGetMobileTitle: () => {
+    const t = useTranslations('ADE/ContextEditorPanel');
+
+    return t('mobileTitle');
+  },
+  content: ContextWindowPanel,
+  data: z.object({}),
+} satisfies PanelTemplate<'context-window'>;

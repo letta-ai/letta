@@ -67,6 +67,7 @@ interface PanelPositionItem<TPanelTemplateId extends GenericPanelTemplateId> {
 
 export interface PanelDimensionType<TPositions> {
   size: number;
+  overridesizeInPx?: number;
   positions: TPositions;
 }
 
@@ -489,12 +490,13 @@ export function createPanelManager<
         // first convert the percentage to px
         const desiredHeightInPx = (size / 100) * totalWidthInPx;
 
-        if (desiredHeightInPx < 200 || neighbourPanelNewHeightInPx < 200) {
+        if (desiredHeightInPx < 100 || neighbourPanelNewHeightInPx < 100) {
           return prevState;
         }
 
         nextState.positions[x].positions[y + 1].size = neighbourPanelNewHeight;
         nextState.positions[x].positions[y].size = size;
+        nextState.positions[x].positions[y].overridesizeInPx = undefined;
 
         return nextState;
       });
@@ -1334,11 +1336,15 @@ export function createPanelManager<
             >
               <VStack gap={false} fullWidth fullHeight key={x}>
                 {xElement.positions.map((yElement, y) => {
+                  const size = yElement.overridesizeInPx
+                    ? `${yElement.overridesizeInPx}px`
+                    : `${yElement.size}%`;
+
                   return (
                     <VStack
                       id={getDimensionId(x, y)}
                       position="relative"
-                      style={{ height: `${yElement.size}%` }}
+                      style={{ height: size }}
                       key={y}
                     >
                       <PanelTabRenderer

@@ -6,6 +6,8 @@ import * as echarts from 'echarts';
 import { HStack } from '../../framing/HStack/HStack';
 import { Typography } from '../Typography/Typography';
 import { VStack } from '../../framing/VStack/VStack';
+import { useDebouncedCallback } from '@mantine/hooks';
+import './Chart.css';
 
 interface ChartOptions {
   options: EChartsOption;
@@ -25,6 +27,26 @@ export function Chart(props: ChartOptions) {
   const mounted = useRef(false);
   const chartRef = React.useRef<HTMLDivElement>(null);
   const chart = useRef<echarts.ECharts | null>(null);
+  const chartContainer = useRef<HTMLDivElement | null>(null);
+
+  const resizeDebounce = useDebouncedCallback(() => {
+    if (chart.current) {
+      chart.current.resize();
+    }
+  }, 100);
+
+  // re-render chart on resize of the parent container
+  useEffect(() => {
+    if (chartContainer.current) {
+      const resizeObserver = new ResizeObserver(resizeDebounce);
+
+      resizeObserver.observe(chartContainer.current);
+
+      return () => {
+        resizeObserver.disconnect();
+      };
+    }
+  }, [resizeDebounce]);
 
   useEffect(() => {
     if (mounted.current) {
@@ -55,6 +77,10 @@ export function Chart(props: ChartOptions) {
       currentChart.setOption({
         ...defaultOptions,
         ...options,
+        tooltip: {
+          ...options.tooltip,
+          className: 'chart-tooltip',
+        },
         legend: {
           show: false,
         },
@@ -67,7 +93,7 @@ export function Chart(props: ChartOptions) {
   }, [options]);
 
   return (
-    <VStack fullHeight fullWidth>
+    <VStack ref={chartContainer} fullHeight fullWidth>
       <div
         ref={chartRef}
         className="w-full h-full"
@@ -78,7 +104,7 @@ export function Chart(props: ChartOptions) {
           {options?.series?.map((series) => (
             <HStack align="center" key={series.name}>
               <div
-                className="min-w-2 min-h-2 rounded-full"
+                className="min-w-2 min-h-2"
                 style={{
                   backgroundColor:
                     typeof series.color === 'string'

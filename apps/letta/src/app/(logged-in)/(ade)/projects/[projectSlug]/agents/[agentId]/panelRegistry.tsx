@@ -6,6 +6,7 @@ import { toolsPanelTemplate } from './ToolsPanel/ToolsPanel';
 import { editCoreMemories } from './EditCoreMemoriesPanel/EditCoreMemoriesPanel';
 import { editDataSourcesPanel } from './EditDataSourcesPanel/EditDataSourcesPanel';
 import { advancedSettingsPanel } from './AdvancedSettingsPanel/AdvancedSettingsPanel';
+import { contextWindowPanel } from './ContextEditorPanel/ContextEditorPanel';
 
 const {
   panelRegistry,
@@ -18,6 +19,7 @@ const {
   PanelRenderer,
 } = createPanelManager({
   'agent-settings': agentSettingsPanel,
+  'context-window': contextWindowPanel,
   'advanced-settings': advancedSettingsPanel,
   'agent-simulator': agentSimulatorTemplate,
   'archival-memories': archivalMemoriesPanelTemplate,
