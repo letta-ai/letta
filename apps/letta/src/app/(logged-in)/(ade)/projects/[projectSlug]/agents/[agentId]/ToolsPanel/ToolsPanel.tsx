@@ -232,12 +232,9 @@ function ViewTool(props: ViewToolProps) {
           </HStack>
         </HStack>
         <HStack fullWidth>
-          <LoadedTypography
-            text={toolDescription}
-            variant="body"
-            italic={!tool?.description}
-            fillerText="SUPERLONGTOOLNAMESOCOOL"
-          />
+          <Typography fullWidth variant="body" italic={!tool?.description}>
+            {toolDescription?.replace(/\n|\t/g, ' ').trim()}
+          </Typography>
         </HStack>
       </VStack>
       <VStack flex fullHeight>
