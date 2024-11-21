@@ -1128,11 +1128,19 @@ export const editDataSourcesPanel = {
   icon: <DatabaseIcon />,
   useGetTitle: () => {
     const t = useTranslations('ADE/EditDataSourcesPanel');
-    const { data: sources } = useAgentsServiceGetAgentSources({
+    const { data: sources, isLoading } = useAgentsServiceGetAgentSources({
       agentId: useCurrentAgent().id,
     });
 
-    return t('title', { count: sources?.length || '-' });
+    const count = useMemo(() => {
+      if (isLoading || !sources) {
+        return '-';
+      }
+
+      return sources.length || 0;
+    }, [sources, isLoading]);
+
+    return t('title', { count });
   },
   data: z.undefined(),
   content: EditDataSourcesPanel,
