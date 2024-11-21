@@ -207,14 +207,13 @@
     }
   },
   "ADE/ContextEditorPanel": {
+    "title": "Context Window",
+    "mobileTitle": "Context Window",
     "ContextWindowPreview": {
-      "popover": {
-        "title": "Context Window",
-        "usage": "{used} of {total} tokens used"
-      },
-      "usage": "{used}/{total}",
+      "usage": "{used}/{total} TOKENS",
       "systemPrompt": "System Prompt",
       "memoryBlocks": "Memory Blocks",
+      "totalOverage": "Total Overage",
       "remaining": "Remaining",
       "messagesTokens": "Messages Tokens",
       "summaryMemory": "Summary Memory",
@@ -533,7 +532,7 @@
   "ADE/EditCoreMemoriesPanel": {
     "mobileTitle": "Core Memories",
     "EditMemoryForm": {
-      "characterLimit": "{count}/{limit} chars"
+      "characterLimit": "{count}/{limit} CHARS"
     },
     "AdvancedEditMemory": {
       "title": "Update Core Memories"

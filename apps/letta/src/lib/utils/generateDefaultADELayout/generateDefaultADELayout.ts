@@ -76,6 +76,18 @@ export function generateDefaultADELayout(): AdePreferencesData {
         size: 30,
         positions: [
           {
+            size: 10,
+            overridesizeInPx: 85,
+            positions: [
+              {
+                id: 'context-window',
+                isActive: true,
+                templateId: 'context-window',
+                data: undefined,
+              },
+            ],
+          },
+          {
             size: 50,
             positions: [
               {

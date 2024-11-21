@@ -99,6 +99,7 @@
     "react-textarea-autosize": "^8.5.3",
     "tailwind-merge": "^2.3.0",
     "tailwindcss-animate": "^1.0.7",
+    "tiktoken": "^1.0.17",
     "tslib": "^2.3.0",
     "unique-names-generator": "^4.7.1",
     "uuid": "^10.0.0",

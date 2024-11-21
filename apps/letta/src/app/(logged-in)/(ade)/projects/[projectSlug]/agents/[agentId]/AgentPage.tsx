@@ -61,7 +61,6 @@ import {
   UseAgentsServiceGetAgentKeyFn,
 } from '@letta-web/letta-agents-api';
 import { useTranslations } from 'next-intl';
-import { ContextWindowPreview } from './ContextEditorPanel/ContextEditorPanel';
 import { generateDefaultADELayout } from '$letta/utils';
 import { isEqual } from 'lodash-es';
 import { generateAgentStateHash } from './AgentSimulator/AgentSimulator';
@@ -1156,7 +1155,6 @@ export function AgentPage() {
             >
               <HStack gap={false} align="center">
                 <Navigation />
-                <ContextWindowPreview />
                 <HStack paddingRight="small" align="center" gap="small">
                   <AgentSettingsDropdown />
                   <RenderDeployButton />
