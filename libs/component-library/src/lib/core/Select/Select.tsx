@@ -243,9 +243,19 @@ function SelectPrimitive(_props: SelectProps) {
   const { hideIconsOnOptions, ...props } = _props;
   const styles = useStyles(props.styleConfig || {});
   const { isInDialog } = useDialogContext();
+  const [open, setOpen] = React.useState(false);
 
   return (
     <SelectOptionsProvider value={{ hideIconsOnOptions }}>
+      {props['data-testid'] && (
+        <div
+          className="absolute"
+          onClick={() => {
+            setOpen(true);
+          }}
+          data-testid={`${props['data-testid']}-trigger`}
+        />
+      )}
       <ReactSelect
         unstyled
         // menuIsOpen
@@ -255,6 +265,13 @@ function SelectPrimitive(_props: SelectProps) {
         onChange={(value) => {
           props.onSelect?.(value);
         }}
+        onMenuOpen={() => {
+          setOpen(true);
+        }}
+        onMenuClose={() => {
+          setOpen(false);
+        }}
+        menuIsOpen={open}
         value={props.value}
         // @ts-expect-error yest
         components={overridenComponents}
