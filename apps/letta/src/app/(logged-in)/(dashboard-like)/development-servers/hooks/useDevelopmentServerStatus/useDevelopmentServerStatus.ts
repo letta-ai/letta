@@ -56,10 +56,12 @@ export function useDevelopmentServerStatus(
         }));
       })
       .catch(() => {
-        setDevelopmentServerStatus((prev) => ({
-          ...prev,
-          [serverUrl]: { isHealthy: false, isFetching: false },
-        }));
+        setTimeout(() => {
+          setDevelopmentServerStatus((prev) => ({
+            ...prev,
+            [serverUrl]: { isHealthy: false, isFetching: false },
+          }));
+        }, 2500);
       })
       .finally(() => {
         setIsInitialFetch(false);

@@ -7,7 +7,7 @@ const statusIndicatorVariants = cva('relative w-2 h-2 rounded-full', {
   variants: {
     status: {
       active: 'bg-green-500',
-      processing: 'bg-warning',
+      processing: 'bg-warning animate-pulse',
       inactive: 'bg-destructive',
     },
   },
