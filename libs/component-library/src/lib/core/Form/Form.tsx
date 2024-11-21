@@ -160,6 +160,7 @@ export interface InputContainerProps {
   inline?: boolean | 'reverse';
   fullWidth?: boolean;
   fullHeight?: boolean;
+  rightOfLabelContent?: React.ReactNode;
   flex?: boolean;
   children?: React.ReactNode;
 }
@@ -174,6 +175,7 @@ export function InputContainer(props: InputContainerProps) {
     flex,
     description,
     inline,
+    rightOfLabelContent,
     children,
   } = props;
   return (
@@ -185,13 +187,14 @@ export function InputContainer(props: InputContainerProps) {
         flex={flex}
         inputAndLabel={
           <>
-            <FormLabel
-              className={
-                hideLabel ? 'sr-only' : 'flex flex-row gap-1 items-center'
-              }
-            >
-              {preLabelIcon && <Slot className="h-3">{preLabelIcon}</Slot>}
-              {label}
+            <FormLabel className={hideLabel ? 'sr-only' : ''}>
+              <HStack gap="text" justify="spaceBetween">
+                <HStack gap="text">
+                  {preLabelIcon && <Slot className="h-3">{preLabelIcon}</Slot>}
+                  {label}
+                </HStack>
+                {rightOfLabelContent}
+              </HStack>
             </FormLabel>
             <FormControl>{children}</FormControl>
           </>

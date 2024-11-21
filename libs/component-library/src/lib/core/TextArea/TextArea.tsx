@@ -23,6 +23,9 @@ const textareaVariants = cva(defaultClass, {
       vertical: 'resize-y',
     },
   },
+  defaultVariants: {
+    resize: 'none',
+  },
 });
 
 type TextAreaProps = TextareaAutosizeProps &
