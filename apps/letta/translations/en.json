@@ -955,7 +955,7 @@
     }
   },
   "ADE/ArchivalMemories": {
-    "title": "Archival Memories",
+    "title": "Archival Memories ({count})",
     "mobileTitle": "Archival Memories",
     "MemoryItem": {
       "removeMemory": "Remove Memory",

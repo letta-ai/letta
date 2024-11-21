@@ -255,8 +255,21 @@ export const archivalMemoriesPanelTemplate = {
   icon: <ThoughtsIcon />,
   useGetTitle: () => {
     const t = useTranslations('ADE/ArchivalMemories');
+    const { id: currentAgentId } = useCurrentSimulatedAgent();
 
-    return t('title');
+    const { data, isLoading } = useAgentsServiceListAgentArchivalMemory({
+      agentId: currentAgentId,
+    });
+
+    const count = useMemo(() => {
+      if (!data || isLoading) {
+        return '-';
+      }
+
+      return data.length;
+    }, [data, isLoading]);
+
+    return t('title', { count });
   },
   useGetMobileTitle: () => {
     const t = useTranslations('ADE/ArchivalMemories');
