@@ -1,7 +1,7 @@
 .chart-tooltip {
-  background: var(--background);
+  background: hsl(var(--background)) !important;
   border-radius: 0 !important;
   box-shadow: none !important;;
   font-family: var(--font-sans) !important;
-  color: var(--content) !important;
+  color: hsl(var(--content)) !important;
 }
