@@ -776,6 +776,9 @@
       "placeholder": "my-agent-name"
     }
   },
+  "component-library/hooks/useCopyToClipboard": {
+    "copied": "Copied to clipboard"
+  },
   "projects/hooks": {
     "remoteDevelopment": "Self-hosted"
   },
@@ -956,9 +959,16 @@
     }
   },
   "ADE/ArchivalMemories": {
+    "ViewArchivalMemoryDialog": {
+      "trigger": "...see all",
+      "copyText": "Copy Memory Text",
+      "title": "View Memory",
+      "label": "Memory Text"
+    },
     "title": "Archival Memories ({count})",
     "mobileTitle": "Archival Memories",
     "MemoryItem": {
+      "copyText": "Copy Memory Text",
       "removeMemory": "Remove Memory",
       "deleteMemory": "Delete Memory",
       "deleteConfirm": "Delete Memory",

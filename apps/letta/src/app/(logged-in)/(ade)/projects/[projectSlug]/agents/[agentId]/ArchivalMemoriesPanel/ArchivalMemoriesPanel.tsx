@@ -1,6 +1,12 @@
 'use client';
 import React, { useCallback, useMemo, useState } from 'react';
 import type { PanelTemplate } from '@letta-web/component-library';
+import {
+  CopyButton,
+  HStack,
+  RawTextArea,
+  Typography,
+} from '@letta-web/component-library';
 import { ThoughtsIcon } from '@letta-web/component-library';
 import { PlusIcon } from '@letta-web/component-library';
 import {
@@ -34,9 +40,52 @@ import { useTranslations } from 'next-intl';
 import { useCurrentSimulatedAgent } from '../hooks/useCurrentSimulatedAgent/useCurrentSimulatedAgent';
 import { useDateFormatter } from '@letta-web/helpful-client-utils';
 
+interface ViewArchivalMemoryDialogProps {
+  memory: Passage;
+}
+
+function ViewArchivalMemoryDialog(props: ViewArchivalMemoryDialogProps) {
+  const { memory } = props;
+  const t = useTranslations('ADE/ArchivalMemories');
+
+  return (
+    <Dialog
+      disableForm
+      hideConfirm
+      trigger={
+        <button>
+          <Typography color="primary" underline overrideEl="span">
+            {t('ViewArchivalMemoryDialog.trigger')}
+          </Typography>
+        </button>
+      }
+      title={t('ViewArchivalMemoryDialog.title')}
+    >
+      <RawTextArea
+        resize="none"
+        fullHeight
+        fullWidth
+        disabled
+        hideLabel
+        label={t('ViewArchivalMemoryDialog.label')}
+        value={memory.text}
+        readOnly
+      />
+      <HStack>
+        <CopyButton
+          copyButtonText={t('ViewArchivalMemoryDialog.copyText')}
+          textToCopy={memory.text}
+        />
+      </HStack>
+    </Dialog>
+  );
+}
+
 interface MemoryItemProps {
   memory: Passage;
 }
+
+const MAX_MEMORY_LENGTH = 180;
 
 function MemoryItem(props: MemoryItemProps) {
   const { id: currentAgentId } = useCurrentSimulatedAgent();
@@ -90,35 +139,49 @@ function MemoryItem(props: MemoryItemProps) {
       title={t('MemoryItem.memoryText', {
         date: formatDate(memory?.created_at || ''),
       })}
-      description={`${memory.text.slice(0, 180)}${
-        memory.text.length > 180 ? '...' : ''
-      }`}
       mainAction={
-        <Dialog
-          onOpenChange={setOpen}
-          isOpen={open}
-          trigger={
-            <Button
-              label={t('MemoryItem.deleteMemory')}
-              color="tertiary"
-              preIcon={<TrashIcon />}
-              hideLabel
-              type="button"
-              size="small"
-            />
-          }
-          isConfirmBusy={isDeletingMemory}
-          onConfirm={() => {
-            handleRemoveMemory(memory.id || '');
-          }}
-          confirmText={t('MemoryItem.deleteConfirm')}
-          cancelText="Cancel"
-          title="Delete Memory"
-        >
-          {t('MemoryItem.deleteConfirmation')}
-        </Dialog>
+        <HStack gap="small">
+          <CopyButton
+            size="small"
+            hideLabel
+            copyButtonText={t('MemoryItem.copyText')}
+            textToCopy={memory.text}
+          />
+          <Dialog
+            onOpenChange={setOpen}
+            isOpen={open}
+            trigger={
+              <Button
+                label={t('MemoryItem.deleteMemory')}
+                color="tertiary"
+                preIcon={<TrashIcon />}
+                hideLabel
+                type="button"
+                size="small"
+              />
+            }
+            isConfirmBusy={isDeletingMemory}
+            onConfirm={() => {
+              handleRemoveMemory(memory.id || '');
+            }}
+            confirmText={t('MemoryItem.deleteConfirm')}
+            cancelText="Cancel"
+            title="Delete Memory"
+          >
+            {t('MemoryItem.deleteConfirmation')}
+          </Dialog>
+        </HStack>
       }
-    />
+    >
+      <Typography variant="body">
+        {memory.text.slice(0, MAX_MEMORY_LENGTH)}
+        {memory.text.length > MAX_MEMORY_LENGTH ? (
+          <ViewArchivalMemoryDialog memory={memory} />
+        ) : (
+          ''
+        )}
+      </Typography>
+    </ActionCard>
   );
 }
 
