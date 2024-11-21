@@ -26,7 +26,7 @@ function TransitionLoader() {
   return (
     <div
       id="loader"
-      className={`z-[-1] fixed top-0 w-full h-full ${
+      className={`z-[-1] top-0 w-full h-full ${
         isVisibile ? 'opacity-100' : 'opacity-0'
       } transition-opacity duration-150`}
     >

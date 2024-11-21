@@ -1,17 +1,17 @@
 'use client';
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback } from 'react';
 import {
   Badge,
   FormActions,
   Input,
   OptionTypeSchemaSingle,
+  Select,
 } from '@letta-web/component-library';
 import {
   ADEPage,
   Button,
   HStack,
   LettaLoader,
-  AsyncSelect,
   Typography,
   VStack,
   Alert,
@@ -20,10 +20,9 @@ import {
   Form,
   FormProvider,
   FormField,
-  RawSelect,
 } from '@letta-web/component-library';
 import { useCurrentProject } from '../../../../../(dashboard-like)/projects/[projectSlug]/hooks';
-import { webApi, webApiQueryKeys, webOriginSDKApi } from '$letta/client';
+import { webApiQueryKeys, webOriginSDKApi } from '$letta/client';
 import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { AgentRecipeVariant } from '$letta/types';
@@ -72,93 +71,19 @@ function usePreMadeAgentTemplates() {
 function PreExistingTemplateDropdown() {
   const t = useTranslations('projects/(projectSlug)/templates/new/page');
   const premadeAgentTemplates = usePreMadeAgentTemplates();
-  const defaultValue = useDefaultAgentTemplate();
-
-  const { data, isPending, isError } =
-    webApi.agentTemplates.listAgentTemplates.useQuery({
-      queryKey: webApiQueryKeys.agentTemplates.listAgentTemplatesWithSearch({
-        limit: 10,
-      }),
-      queryData: {
-        query: {
-          limit: 10,
-        },
-      },
-    });
-
-  const handleLoadAgentTemplates = useCallback(
-    async (search: string) => {
-      const response = await webApi.agentTemplates.listAgentTemplates.query({
-        query: {
-          search,
-          limit: 10,
-        },
-      });
-
-      if (response.status !== 200) {
-        throw new Error('Failed to load agent templates');
-      }
-
-      const res = response.body.agentTemplates.map((template) => ({
-        label: template.name,
-        value: template.name,
-      }));
-
-      res.unshift(...premadeAgentTemplates);
-
-      return res;
-    },
-    [premadeAgentTemplates]
-  );
-
-  const agentTemplates = useMemo(() => {
-    if (!data?.body) {
-      return null;
-    }
-
-    const res = data.body.agentTemplates.map((template) => ({
-      label: template.name,
-      value: template.name,
-    }));
-
-    res.unshift(...premadeAgentTemplates);
-
-    return res;
-  }, [data?.body, premadeAgentTemplates]);
-
-  if (isError) {
-    return (
-      <Alert
-        title={t('PreExistingTemplateDropdown.error')}
-        variant="destructive"
-      />
-    );
-  }
-
-  if (!agentTemplates) {
-    return (
-      <RawSelect
-        value={defaultValue}
-        placeholder={t('PreExistingTemplateDropdown.placeholder')}
-        options={[]}
-        isLoading={isPending}
-        label={t('PreExistingTemplateDropdown.label')}
-      />
-    );
-  }
 
   return (
     <>
       <FormField
         name="fromTemplate"
         render={({ field }) => (
-          <AsyncSelect
+          <Select
             styleConfig={{
               menuWidth: 400,
             }}
             data-testid="pre-existing-template-dropdown"
             label={t('PreExistingTemplateDropdown.label')}
-            loadOptions={handleLoadAgentTemplates}
+            options={premadeAgentTemplates}
             placeholder={t('PreExistingTemplateDropdown.placeholder')}
             value={field.value}
             onSelect={(value) => {
@@ -168,7 +93,6 @@ function PreExistingTemplateDropdown() {
 
               field.onChange(value);
             }}
-            defaultOptions={agentTemplates}
           />
         )}
       />

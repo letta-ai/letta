@@ -4,7 +4,14 @@ import { webApi, webApiQueryKeys } from '$letta/client';
 import { useTranslations } from 'next-intl';
 import { LOCAL_PROJECT_SERVER_URL } from '$letta/constants';
 
-export function useCurrentDevelopmentServerConfig() {
+export interface DevelopmentServerConfig {
+  id: string;
+  name: string;
+  url: string;
+  password: string;
+}
+
+export function useCurrentDevelopmentServerConfig(): DevelopmentServerConfig | null {
   const { developmentServerId } = useParams<{ developmentServerId: string }>();
   const t = useTranslations('development-servers/hooks');
 
@@ -36,5 +43,10 @@ export function useCurrentDevelopmentServerConfig() {
     return null;
   }
 
-  return data.body.developmentServer;
+  return {
+    id: data.body.developmentServer.id,
+    name: data.body.developmentServer.name,
+    url: data.body.developmentServer.url,
+    password: data.body.developmentServer.password || '',
+  };
 }

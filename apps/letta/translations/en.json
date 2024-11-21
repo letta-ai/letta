@@ -744,6 +744,7 @@
   },
   "components/tutorials": {
     "title": "Tutorials",
+    "comingSoon": "Coming soon",
     "createChatBotWithMemory": {
       "title": "Create a chatbot with memory",
       "description": "Learn how to create a chatbot that can remember information from previous conversations."

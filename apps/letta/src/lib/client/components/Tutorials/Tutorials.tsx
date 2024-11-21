@@ -1,4 +1,5 @@
 import {
+  Badge,
   DashboardPageSection,
   ImageCard,
   NiceGridDisplay,
@@ -20,24 +21,28 @@ export function Tutorials() {
           altText=""
           title={t('createChatBotWithMemory.title')}
           description={t('createChatBotWithMemory.description')}
+          badge={<Badge content={t('comingSoon')} />}
         />
         <ImageCard
           imageUrl={multiagent}
           altText=""
           title={t('buildMultiAgentSystems.title')}
           description={t('buildMultiAgentSystems.description')}
+          badge={<Badge content={t('comingSoon')} />}
         />
         <ImageCard
           imageUrl={discord}
           altText=""
           title={t('discord.title')}
           description={t('discord.description')}
+          badge={<Badge content={t('comingSoon')} />}
         />
         <ImageCard
           imageUrl={voice}
           altText=""
           title={t('voice.title')}
           description={t('voice.description')}
+          badge={<Badge content={t('comingSoon')} />}
         />
       </NiceGridDisplay>
     </DashboardPageSection>

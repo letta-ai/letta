@@ -1,6 +1,7 @@
 import { atom, useAtom } from 'jotai';
 import { useEffect, useState } from 'react';
 import { useDebouncedCallback } from '@mantine/hooks';
+import type { DevelopmentServerConfig } from '../../[developmentServerId]/hooks/useCurrentDevelopmentServerConfig/useCurrentDevelopmentServerConfig';
 
 interface Status {
   isHealthy: boolean | null;
@@ -9,16 +10,20 @@ interface Status {
 
 const developmentServerStatusAtom = atom<Record<string, Status>>({});
 
-export function useDevelopmentServerStatus(serverUrl: string) {
+export function useDevelopmentServerStatus(
+  config?: DevelopmentServerConfig | null
+) {
   const [developmentServerStatus, setDevelopmentServerStatus] = useAtom(
     developmentServerStatusAtom
   );
   const [isInitialFetch, setIsInitialFetch] = useState(true);
 
   const checkHealth = useDebouncedCallback(() => {
-    if (!serverUrl) {
+    if (!config) {
       return;
     }
+
+    const { url: serverUrl, password } = config;
 
     const currentStatus = developmentServerStatus[serverUrl] || {
       isHealthy: null,
@@ -34,7 +39,12 @@ export function useDevelopmentServerStatus(serverUrl: string) {
       [serverUrl]: { ...currentStatus, isFetching: true },
     }));
 
-    fetch(`${serverUrl}/v1/health`)
+    fetch(`${serverUrl}/v1/health`, {
+      method: 'GET',
+      headers: {
+        ...(password ? { 'X-BARE-PASSWORD': `password ${password}` } : {}),
+      },
+    })
       .then((response) => {
         if (!response.ok) {
           throw new Error('Server is not healthy');
@@ -57,6 +67,10 @@ export function useDevelopmentServerStatus(serverUrl: string) {
   }, 200);
 
   useEffect(() => {
+    if (!config) {
+      return;
+    }
+
     checkHealth();
 
     const interval = setInterval(() => {
@@ -66,10 +80,10 @@ export function useDevelopmentServerStatus(serverUrl: string) {
     return () => {
       clearInterval(interval);
     };
-  }, [checkHealth, serverUrl]);
+  }, [checkHealth, config]);
 
   return {
-    ...(developmentServerStatus[serverUrl] || {
+    ...(developmentServerStatus[config?.url || ''] || {
       isHealthy: false,
       isFetching: false,
     }),
