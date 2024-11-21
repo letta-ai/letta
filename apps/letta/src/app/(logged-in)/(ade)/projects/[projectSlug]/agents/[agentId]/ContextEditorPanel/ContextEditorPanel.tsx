@@ -19,8 +19,6 @@ import { z } from 'zod';
 
 const computedMemoryStringAtom = atom<string | null>(null);
 
-import type { TiktokenModel } from 'tiktoken';
-import { encoding_for_model } from 'tiktoken';
 
 const supportedModels: TiktokenModel[] = [
   'davinci-002',
@@ -90,25 +88,6 @@ const supportedModels: TiktokenModel[] = [
   'gpt-4o-realtime',
   'gpt-4o-realtime-preview-2024-10-01',
 ];
-
-function isTiktokenModel(model: string): model is TiktokenModel {
-  return supportedModels.includes(model as TiktokenModel);
-}
-
-function numTokensFromString(message: string, model: string) {
-  let tiktokenModel: TiktokenModel = 'gpt-4';
-
-  if (isTiktokenModel(model)) {
-    tiktokenModel = model;
-  }
-
-  const encoder = encoding_for_model(tiktokenModel);
-
-  const tokens = encoder.encode(message);
-
-  encoder.free();
-  return tokens.length;
-}
 
 function ContextWindowPanel() {
   const t = useTranslations('ADE/ContextEditorPanel');
