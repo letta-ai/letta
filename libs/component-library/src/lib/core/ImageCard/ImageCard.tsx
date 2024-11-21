@@ -41,8 +41,13 @@ export function ImageCard(props: ImageCardProps) {
       onClick={onClick}
       target={target}
     >
-      <Card className={cn('h-full hover:bg-tertiary-hover', className)}>
-        <VStack align="start">
+      <Card
+        className={cn(
+          'h-full flex flex-col hover:bg-tertiary-hover',
+          className
+        )}
+      >
+        <VStack fullHeight flex align="start">
           <Image
             className="max-h-[87px] object-cover"
             src={imageUrl}
@@ -52,7 +57,7 @@ export function ImageCard(props: ImageCardProps) {
           <Typography>{description}</Typography>
         </VStack>
         {badge && (
-          <HStack justify="end" className="mt-4">
+          <HStack justify="end" paddingTop>
             {badge}
           </HStack>
         )}

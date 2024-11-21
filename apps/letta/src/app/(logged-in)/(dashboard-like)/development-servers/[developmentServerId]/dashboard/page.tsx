@@ -118,6 +118,9 @@ function DevelopmentServersDashboardPage() {
           <NiceGridDisplay>
             <Link href="/development-servers/local/agents/new">
               <ActionCard
+                onClick={() => {
+                  // do nothing (this makes the UI show a hover state)
+                }}
                 isSkeleton={isLoading}
                 icon={<RobotIcon />}
                 title={t('gettingStarted.actions.createAgent.title')}
@@ -131,7 +134,7 @@ function DevelopmentServersDashboardPage() {
                 fullHeight
                 icon={<SearchIcon />}
                 onClick={() => {
-                  // do nothing
+                  // do nothing (this makes the UI show a hover state)
                 }}
                 title={t('gettingStarted.actions.viewAgents.title')}
                 description={t('gettingStarted.actions.viewAgents.description')}
