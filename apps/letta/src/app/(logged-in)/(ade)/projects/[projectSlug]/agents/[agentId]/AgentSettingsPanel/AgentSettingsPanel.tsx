@@ -1,24 +1,24 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
-  PanelMainContent,
-  type PanelTemplate,
   Alert,
-  isBrandKey,
+  Badge,
   brandKeyToLogo,
-  RawSelect,
-  isMultiValue,
-  LoadingEmptyStatusComponent,
-  HStack,
-  RawInput,
   Button,
   CogIcon,
   CopyButton,
+  Dialog,
+  HStack,
+  isBrandKey,
+  isMultiValue,
+  LoadingEmptyStatusComponent,
+  PanelMainContent,
+  type PanelTemplate,
+  RawInput,
+  RawSelect,
+  RawTextArea,
+  RobotIcon,
   Typography,
   VStack,
-  RawTextArea,
-  Dialog,
-  RobotIcon,
-  Badge,
 } from '@letta-web/component-library';
 import { useCurrentAgent, useSyncUpdateCurrentAgent } from '../hooks';
 import { z } from 'zod';
@@ -34,6 +34,9 @@ import { useCurrentAgentMetaData } from '../hooks/useCurrentAgentMetaData/useCur
 import { webOriginSDKApi, webOriginSDKQueryKeys } from '$letta/client';
 import { ExtendedLLMSchema } from '$letta/sdk/models/modelsContracts';
 import { getBrandFromModelName } from '$letta/utils';
+import { useCurrentUser } from '$letta/client/hooks';
+import { trackClientSideEvent } from '@letta-web/analytics/client';
+import { AnalyticsEvent } from '@letta-web/analytics';
 
 interface SelectedModelType {
   icon: React.ReactNode;
@@ -187,6 +190,8 @@ function ModelSelector(props: ModelSelectorProps) {
     syncUpdateCurrentAgent,
   ]);
 
+  const user = useCurrentUser();
+
   return (
     <>
       {error && <Alert title={t('error')} variant="destructive" />}
@@ -195,6 +200,20 @@ function ModelSelector(props: ModelSelectorProps) {
         onSelect={(value) => {
           if (isMultiValue(value)) {
             return;
+          }
+
+          if (value?.value) {
+            if (isLocal) {
+              trackClientSideEvent(AnalyticsEvent.LOCAL_AGENT_MODEL_CHANGED, {
+                userId: user?.id || '',
+                model: value.value,
+              });
+            } else {
+              trackClientSideEvent(AnalyticsEvent.CLOUD_AGENT_MODEL_CHANGED, {
+                userId: user?.id || '',
+                model: value.value,
+              });
+            }
           }
 
           setModelState({

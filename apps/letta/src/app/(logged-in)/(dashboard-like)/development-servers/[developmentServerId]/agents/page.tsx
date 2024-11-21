@@ -21,6 +21,10 @@ import { useDateFormatter } from '@letta-web/helpful-client-utils';
 import { useCurrentDevelopmentServerConfig } from '../hooks/useCurrentDevelopmentServerConfig/useCurrentDevelopmentServerConfig';
 import { ConnectToLocalServerCommand } from '$letta/client/components/ConnectToLocalServerCommand/ConnectToLocalServerCommand';
 import { UpdateDevelopmentServerDetailsDialog } from '../../shared/UpdateDevelopmentServerDetailsDialog/UpdateDevelopmentServerDetailsDialog';
+import { useCurrentUser } from '$letta/client/hooks';
+import { trackClientSideEvent } from '@letta-web/analytics/client';
+import { AnalyticsEvent } from '@letta-web/analytics';
+
 const LIMIT = 10;
 
 interface ErrorViewProps {
@@ -140,6 +144,7 @@ function LocalProjectPage() {
   }, [data, offset]);
 
   const { formatDate } = useDateFormatter();
+  const user = useCurrentUser();
 
   const columns: Array<ColumnDef<AgentState>> = useMemo(
     () => [
@@ -168,6 +173,11 @@ function LocalProjectPage() {
         },
         cell: ({ row }) => (
           <Button
+            onClick={() => {
+              trackClientSideEvent(AnalyticsEvent.LOCAL_AGENT_VISITED, {
+                userId: user?.id || '',
+              });
+            }}
             href={`/development-servers/${
               currentDevelopmentServerConfig?.id || 'local'
             }/agents/${row.original.id}`}
@@ -177,7 +187,7 @@ function LocalProjectPage() {
         ),
       },
     ],
-    [t, formatDate, currentDevelopmentServerConfig?.id]
+    [t, formatDate, currentDevelopmentServerConfig?.id, user?.id]
   );
 
   return (

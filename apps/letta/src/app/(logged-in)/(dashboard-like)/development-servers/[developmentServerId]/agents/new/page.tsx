@@ -24,15 +24,22 @@ import {
   useLlmsServiceListModels,
 } from '@letta-web/letta-agents-api';
 import { useRouter } from 'next/navigation';
+import { trackClientSideEvent } from '@letta-web/analytics/client';
+import { AnalyticsEvent } from '@letta-web/analytics';
+import { useCurrentUser } from '$letta/client/hooks';
 
 interface StarterKitItemProps {
   starterKit: StarterKit;
-  onCreateAgent: (title: string, agentState: Partial<AgentState>) => void;
+  onCreateAgent: (
+    title: string,
+    agentState: Partial<AgentState>,
+    starterKitId: string
+  ) => void;
 }
 
 function StarterKitItem(props: StarterKitItemProps) {
   const { starterKit, onCreateAgent } = props;
-  const { useGetTitle, useGetDescription, image, agentState } = starterKit;
+  const { useGetTitle, useGetDescription, image, agentState, id } = starterKit;
 
   const title = useGetTitle();
   const description = useGetDescription();
@@ -42,7 +49,7 @@ function StarterKitItem(props: StarterKitItemProps) {
       /* eslint-disable-next-line react/forbid-component-props */
       className="h-[260px]"
       onClick={() => {
-        onCreateAgent(title, agentState);
+        onCreateAgent(title, agentState, id);
       }}
       imageUrl={image}
       altText=""
@@ -73,9 +80,10 @@ function NewAgentPage() {
 
   const developmentServerConfig = useCurrentDevelopmentServerConfig();
   const { push } = useRouter();
+  const user = useCurrentUser();
 
   const handleCreateAgent = useCallback(
-    (title: string, agentState: Partial<AgentState>) => {
+    (title: string, agentState: Partial<AgentState>, starterKitId: string) => {
       if (!developmentServerConfig) {
         return;
       }
@@ -111,6 +119,11 @@ function NewAgentPage() {
         },
         {
           onSuccess: (response) => {
+            trackClientSideEvent(AnalyticsEvent.LOCAL_AGENT_CREATED, {
+              userId: user?.id || '',
+              starterKitId,
+            });
+
             push(
               `/development-servers/${developmentServerConfig.id}/agents/${response.id}`
             );
@@ -119,14 +132,15 @@ function NewAgentPage() {
       );
     },
     [
-      t,
-      isFetchingStatus,
-      createAgent,
       developmentServerConfig,
-      embeddingModels,
+      isFetchingStatus,
       isPending,
       isSuccess,
+      createAgent,
       llmModels,
+      embeddingModels,
+      t,
+      user?.id,
       push,
     ]
   );
