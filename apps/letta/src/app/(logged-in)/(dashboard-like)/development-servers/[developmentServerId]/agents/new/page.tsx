@@ -17,13 +17,13 @@ import { useCallback, useMemo } from 'react';
 import type { StarterKit } from '$letta/client';
 import { STARTER_KITS } from '$letta/client';
 import type { AgentState } from '@letta-web/letta-agents-api';
+import { useHealthServiceHealthCheck } from '@letta-web/letta-agents-api';
 import {
   useAgentsServiceCreateAgent,
   useLlmsServiceListEmbeddingModels,
   useLlmsServiceListModels,
 } from '@letta-web/letta-agents-api';
 import { useRouter } from 'next/navigation';
-import { useDevelopmentServerStatus } from '../../../hooks/useDevelopmentServerStatus/useDevelopmentServerStatus';
 
 interface StarterKitItemProps {
   starterKit: StarterKit;
@@ -54,16 +54,15 @@ function StarterKitItem(props: StarterKitItemProps) {
 
 function NewAgentPage() {
   const t = useTranslations('development-servers/agents/new/page');
-  const config = useCurrentDevelopmentServerConfig();
 
   const { data: llmModels } = useLlmsServiceListModels();
   const { data: embeddingModels } = useLlmsServiceListEmbeddingModels();
+  const config = useCurrentDevelopmentServerConfig();
 
-  const {
-    isHealthy,
-    isInitialFetch,
-    isFetching: isFetchingStatus,
-  } = useDevelopmentServerStatus(config);
+  const { data: isHealthy, isLoading: isFetchingStatus } =
+    useHealthServiceHealthCheck(undefined, {
+      retry: false,
+    });
 
   const {
     mutate: createAgent,
@@ -181,7 +180,7 @@ function NewAgentPage() {
                   {t('starterKits.description')}
                 </Typography>
               </VStack>
-              {!isHealthy && !isInitialFetch ? (
+              {!isHealthy && !isFetchingStatus ? (
                 <Alert title={t('serverOffline')} variant="destructive" />
               ) : (
                 <NiceGridDisplay itemWidth="250px" itemHeight="260px">
