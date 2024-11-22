@@ -701,7 +701,7 @@ export async function updateAgentFromAgentId(options: UpdateAgentFromAgentId) {
     lettaAgentsUserId,
   } = options;
 
-  const [agentTemplateData, oldDatasources, newDatasources, existingAgentMemory] = await Promise.all(
+  const [agentTemplateData, oldDatasources, newDatasources] = await Promise.all(
     [
       AgentsService.getAgent(
         {
@@ -734,7 +734,7 @@ export async function updateAgentFromAgentId(options: UpdateAgentFromAgentId) {
         {
           user_id: lettaAgentsUserId,
         }
-      )
+      ),
     ]
   );
 
@@ -758,7 +758,6 @@ export async function updateAgentFromAgentId(options: UpdateAgentFromAgentId) {
       ...attachVariablesToTemplates(agentTemplateData, variables),
     };
   }
-
 
   const agent = await AgentsService.updateAgent(
     {

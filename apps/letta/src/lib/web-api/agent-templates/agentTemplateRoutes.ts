@@ -10,11 +10,7 @@ import {
   agentTemplates,
   db,
 } from '@letta-web/database';
-import {
-  attachVariablesToTemplates,
-  copyAgentById,
-  updateAgentFromAgentId,
-} from '$letta/sdk';
+import { copyAgentById, updateAgentFromAgentId } from '$letta/sdk';
 import { AgentsService } from '@letta-web/letta-agents-api';
 
 function randomThreeDigitNumber() {
