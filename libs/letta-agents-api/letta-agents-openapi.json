@@ -8,7 +8,9 @@
   "paths": {
     "/v1/tools/{tool_id}": {
       "delete": {
-        "tags": ["tools"],
+        "tags": [
+          "tools"
+        ],
         "summary": "Delete Tool",
         "description": "Delete a tool by name",
         "operationId": "delete_tool",
@@ -45,7 +47,9 @@
         }
       },
       "get": {
-        "tags": ["tools"],
+        "tags": [
+          "tools"
+        ],
         "summary": "Get Tool",
         "description": "Get a tool by ID",
         "operationId": "get_tool",
@@ -100,7 +104,9 @@
         }
       },
       "patch": {
-        "tags": ["tools"],
+        "tags": [
+          "tools"
+        ],
         "summary": "Update Tool",
         "description": "Update an existing tool",
         "operationId": "update_tool",
@@ -167,7 +173,9 @@
     },
     "/v1/tools/name/{tool_name}": {
       "get": {
-        "tags": ["tools"],
+        "tags": [
+          "tools"
+        ],
         "summary": "Get Tool Id",
         "description": "Get a tool ID by name",
         "operationId": "get_tool_id_by_name",
@@ -225,7 +233,9 @@
     },
     "/v1/tools/": {
       "get": {
-        "tags": ["tools"],
+        "tags": [
+          "tools"
+        ],
         "summary": "List Tools",
         "description": "Get a list of all tools available to agents belonging to the org of the user",
         "operationId": "list_tools",
@@ -308,7 +318,9 @@
         }
       },
       "post": {
-        "tags": ["tools"],
+        "tags": [
+          "tools"
+        ],
         "summary": "Create Tool",
         "description": "Create a new tool",
         "operationId": "create_tool",
@@ -366,7 +378,9 @@
     },
     "/v1/tools/add-base-tools": {
       "post": {
-        "tags": ["tools"],
+        "tags": [
+          "tools"
+        ],
         "summary": "Add Base Tools",
         "description": "Add base tools",
         "operationId": "add_base_tools",
@@ -418,7 +432,9 @@
     },
     "/v1/sources/{source_id}": {
       "get": {
-        "tags": ["sources"],
+        "tags": [
+          "sources"
+        ],
         "summary": "Get Source",
         "description": "Get all sources",
         "operationId": "get_source",
@@ -473,7 +489,9 @@
         }
       },
       "patch": {
-        "tags": ["sources"],
+        "tags": [
+          "sources"
+        ],
         "summary": "Update Source",
         "description": "Update the name or documentation of an existing data source.",
         "operationId": "update_source",
@@ -538,7 +556,9 @@
         }
       },
       "delete": {
-        "tags": ["sources"],
+        "tags": [
+          "sources"
+        ],
         "summary": "Delete Source",
         "description": "Delete a data source.",
         "operationId": "delete_source",
@@ -593,7 +613,9 @@
     },
     "/v1/sources/name/{source_name}": {
       "get": {
-        "tags": ["sources"],
+        "tags": [
+          "sources"
+        ],
         "summary": "Get Source Id By Name",
         "description": "Get a source by name",
         "operationId": "get_source_id_by_name",
@@ -651,7 +673,9 @@
     },
     "/v1/sources/": {
       "get": {
-        "tags": ["sources"],
+        "tags": [
+          "sources"
+        ],
         "summary": "List Sources",
         "description": "List all data sources created by a user.",
         "operationId": "list_sources",
@@ -701,7 +725,9 @@
         }
       },
       "post": {
-        "tags": ["sources"],
+        "tags": [
+          "sources"
+        ],
         "summary": "Create Source",
         "description": "Create a new data source.",
         "operationId": "create_source",
@@ -759,7 +785,9 @@
     },
     "/v1/sources/{source_id}/attach": {
       "post": {
-        "tags": ["sources"],
+        "tags": [
+          "sources"
+        ],
         "summary": "Attach Source To Agent",
         "description": "Attach a data source to an existing agent.",
         "operationId": "attach_agent_to_source",
@@ -827,7 +855,9 @@
     },
     "/v1/sources/{source_id}/detach": {
       "post": {
-        "tags": ["sources"],
+        "tags": [
+          "sources"
+        ],
         "summary": "Detach Source From Agent",
         "description": "Detach a data source from an existing agent.",
         "operationId": "detach_agent_from_source",
@@ -895,7 +925,9 @@
     },
     "/v1/sources/{source_id}/upload": {
       "post": {
-        "tags": ["sources"],
+        "tags": [
+          "sources"
+        ],
         "summary": "Upload File To Source",
         "description": "Upload a file to a data source.",
         "operationId": "upload_file_to_source",
@@ -962,7 +994,9 @@
     },
     "/v1/sources/{source_id}/passages": {
       "get": {
-        "tags": ["sources"],
+        "tags": [
+          "sources"
+        ],
         "summary": "List Passages",
         "description": "List all passages associated with a data source.",
         "operationId": "list_source_passages",
@@ -1023,7 +1057,9 @@
     },
     "/v1/sources/{source_id}/files": {
       "get": {
-        "tags": ["sources"],
+        "tags": [
+          "sources"
+        ],
         "summary": "List Files From Source",
         "description": "List paginated files associated with a data source.",
         "operationId": "list_files_from_source",
@@ -1114,7 +1150,9 @@
     },
     "/v1/sources/{source_id}/{file_id}": {
       "delete": {
-        "tags": ["sources"],
+        "tags": [
+          "sources"
+        ],
         "summary": "Delete File From Source",
         "description": "Delete a data source.",
         "operationId": "delete_file_from_source",
@@ -1173,7 +1211,9 @@
     },
     "/v1/agents/": {
       "get": {
-        "tags": ["agents"],
+        "tags": [
+          "agents"
+        ],
         "summary": "List Agents",
         "description": "List all agents associated with a given user.\nThis endpoint retrieves a list of all agents and their configurations associated with the specified user ID.",
         "operationId": "list_agents",
@@ -1262,7 +1302,9 @@
         }
       },
       "post": {
-        "tags": ["agents"],
+        "tags": [
+          "agents"
+        ],
         "summary": "Create Agent",
         "description": "Create a new agent with the specified configuration.",
         "operationId": "create_agent",
@@ -1320,7 +1362,9 @@
     },
     "/v1/agents/{agent_id}/context": {
       "get": {
-        "tags": ["agents"],
+        "tags": [
+          "agents"
+        ],
         "summary": "Get Agent Context Window",
         "description": "Retrieve the context window of a specific agent.",
         "operationId": "get_agent_context_window",
@@ -1377,7 +1421,9 @@
     },
     "/v1/agents/{agent_id}": {
       "patch": {
-        "tags": ["agents"],
+        "tags": [
+          "agents"
+        ],
         "summary": "Update Agent",
         "description": "Update an exsiting agent",
         "operationId": "update_agent",
@@ -1442,7 +1488,9 @@
         }
       },
       "get": {
-        "tags": ["agents"],
+        "tags": [
+          "agents"
+        ],
         "summary": "Get Agent State",
         "description": "Get the state of the agent.",
         "operationId": "get_agent",
@@ -1497,7 +1545,9 @@
         }
       },
       "delete": {
-        "tags": ["agents"],
+        "tags": [
+          "agents"
+        ],
         "summary": "Delete Agent",
         "description": "Delete an agent.",
         "operationId": "delete_agent",
@@ -1552,7 +1602,9 @@
     },
     "/v1/agents/{agent_id}/tools": {
       "get": {
-        "tags": ["agents"],
+        "tags": [
+          "agents"
+        ],
         "summary": "Get Tools From Agent",
         "description": "Get tools from an existing agent",
         "operationId": "get_tools_from_agent",
@@ -1613,7 +1665,9 @@
     },
     "/v1/agents/{agent_id}/add-tool/{tool_id}": {
       "patch": {
-        "tags": ["agents"],
+        "tags": [
+          "agents"
+        ],
         "summary": "Add Tool To Agent",
         "description": "Add tools to an existing agent",
         "operationId": "add_tool_to_agent",
@@ -1679,7 +1733,9 @@
     },
     "/v1/agents/{agent_id}/remove-tool/{tool_id}": {
       "patch": {
-        "tags": ["agents"],
+        "tags": [
+          "agents"
+        ],
         "summary": "Remove Tool From Agent",
         "description": "Add tools to an existing agent",
         "operationId": "remove_tool_from_agent",
@@ -1745,7 +1801,9 @@
     },
     "/v1/agents/{agent_id}/sources": {
       "get": {
-        "tags": ["agents"],
+        "tags": [
+          "agents"
+        ],
         "summary": "Get Agent Sources",
         "description": "Get the sources associated with an agent.",
         "operationId": "get_agent_sources",
@@ -1790,7 +1848,9 @@
     },
     "/v1/agents/{agent_id}/memory/messages": {
       "get": {
-        "tags": ["agents"],
+        "tags": [
+          "agents"
+        ],
         "summary": "Get Agent In Context Messages",
         "description": "Retrieve the messages in the context of a specific agent.",
         "operationId": "list_agent_in_context_messages",
@@ -1835,7 +1895,9 @@
     },
     "/v1/agents/{agent_id}/memory": {
       "get": {
-        "tags": ["agents"],
+        "tags": [
+          "agents"
+        ],
         "summary": "Get Agent Memory",
         "description": "Retrieve the memory state of a specific agent.\nThis endpoint fetches the current memory state of the agent identified by the user ID and agent ID.",
         "operationId": "get_agent_memory",
@@ -1874,9 +1936,11 @@
         }
       },
       "patch": {
-        "tags": ["agents"],
+        "tags": [
+          "agents"
+        ],
         "summary": "Update Agent Memory",
-        "description": "Update the core memory of a specific agent.\nThis endpoint accepts new memory contents (human and persona) and updates the core memory of the agent identified by the user ID and agent ID.",
+        "description": "Update the core memory of a specific agent.\n    This endpoint accepts new memory contents (labels as keys, and values as values) and updates the core memory of the agent identified by the user ID and agent ID.\nThis endpoint accepts new memory contents to update the core memory of the agent.\nThis endpoint only supports modifying existing blocks; it does not support deleting/unlinking or creating/linking blocks.",
         "operationId": "update_agent_memory",
         "parameters": [
           {
@@ -1940,9 +2004,286 @@
         }
       }
     },
+    "/v1/agents/{agent_id}/memory/label": {
+      "patch": {
+        "tags": [
+          "agents"
+        ],
+        "summary": "Update Agent Memory Label",
+        "description": "Update the label of a block in an agent's memory.",
+        "operationId": "update_agent_memory_label",
+        "parameters": [
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Agent Id"
+            }
+          },
+          {
+            "name": "user_id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "User Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BlockLabelUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Memory"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/agents/{agent_id}/memory/block": {
+      "post": {
+        "tags": [
+          "agents"
+        ],
+        "summary": "Add Agent Memory Block",
+        "description": "Creates a memory block and links it to the agent.",
+        "operationId": "add_agent_memory_block",
+        "parameters": [
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Agent Id"
+            }
+          },
+          {
+            "name": "user_id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "User Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BlockCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Memory"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/agents/{agent_id}/memory/block/{block_label}": {
+      "delete": {
+        "tags": [
+          "agents"
+        ],
+        "summary": "Remove Agent Memory Block",
+        "description": "Removes a memory block from an agent by unlnking it. If the block is not linked to any other agent, it is deleted.",
+        "operationId": "remove_agent_memory_block",
+        "parameters": [
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Agent Id"
+            }
+          },
+          {
+            "name": "block_label",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Block Label"
+            }
+          },
+          {
+            "name": "user_id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "User Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Memory"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/agents/{agent_id}/memory/limit": {
+      "patch": {
+        "tags": [
+          "agents"
+        ],
+        "summary": "Update Agent Memory Limit",
+        "description": "Update the limit of a block in an agent's memory.",
+        "operationId": "update_agent_memory_limit",
+        "parameters": [
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Agent Id"
+            }
+          },
+          {
+            "name": "user_id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "User Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BlockLimitUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Memory"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/agents/{agent_id}/memory/recall": {
       "get": {
-        "tags": ["agents"],
+        "tags": [
+          "agents"
+        ],
         "summary": "Get Agent Recall Memory Summary",
         "description": "Retrieve the summary of the recall memory of a specific agent.",
         "operationId": "get_agent_recall_memory_summary",
@@ -1983,7 +2324,9 @@
     },
     "/v1/agents/{agent_id}/memory/archival": {
       "get": {
-        "tags": ["agents"],
+        "tags": [
+          "agents"
+        ],
         "summary": "Get Agent Archival Memory Summary",
         "description": "Retrieve the summary of the archival memory of a specific agent.",
         "operationId": "get_agent_archival_memory_summary",
@@ -2024,7 +2367,9 @@
     },
     "/v1/agents/{agent_id}/archival": {
       "get": {
-        "tags": ["agents"],
+        "tags": [
+          "agents"
+        ],
         "summary": "Get Agent Archival Memory",
         "description": "Retrieve the memories in an agent's archival memory store (paginated query).",
         "operationId": "list_agent_archival_memory",
@@ -2137,7 +2482,9 @@
         }
       },
       "post": {
-        "tags": ["agents"],
+        "tags": [
+          "agents"
+        ],
         "summary": "Insert Agent Archival Memory",
         "description": "Insert a memory into an agent's archival memory store.",
         "operationId": "create_agent_archival_memory",
@@ -2208,7 +2555,9 @@
     },
     "/v1/agents/{agent_id}/archival/{memory_id}": {
       "delete": {
-        "tags": ["agents"],
+        "tags": [
+          "agents"
+        ],
         "summary": "Delete Agent Archival Memory",
         "description": "Delete a memory from an agent's archival memory store.",
         "operationId": "delete_agent_archival_memory",
@@ -2272,7 +2621,9 @@
     },
     "/v1/agents/{agent_id}/messages": {
       "get": {
-        "tags": ["agents"],
+        "tags": [
+          "agents"
+        ],
         "summary": "Get Agent Messages",
         "description": "Retrieve message history for an agent.",
         "operationId": "list_agent_messages",
@@ -2449,7 +2800,9 @@
         }
       },
       "post": {
-        "tags": ["agents"],
+        "tags": [
+          "agents"
+        ],
         "summary": "Send Message",
         "description": "Process a user message and return the agent's response.\nThis endpoint accepts a message from a user and processes it through the agent.\nIt can optionally stream the response if 'stream_steps' or 'stream_tokens' is set to True.",
         "operationId": "create_agent_message",
@@ -2518,7 +2871,9 @@
     },
     "/v1/agents/{agent_id}/messages/{message_id}": {
       "patch": {
-        "tags": ["agents"],
+        "tags": [
+          "agents"
+        ],
         "summary": "Update Message",
         "description": "Update the details of a message associated with an agent.",
         "operationId": "update_agent_message",
@@ -2578,7 +2933,10 @@
     },
     "/v1/models/": {
       "get": {
-        "tags": ["models", "llms"],
+        "tags": [
+          "models",
+          "llms"
+        ],
         "summary": "List Llm Backends",
         "operationId": "list_models",
         "responses": {
@@ -2601,7 +2959,10 @@
     },
     "/v1/models/embedding": {
       "get": {
-        "tags": ["models", "llms"],
+        "tags": [
+          "models",
+          "llms"
+        ],
         "summary": "List Embedding Backends",
         "operationId": "list_embedding_models",
         "responses": {
@@ -2624,7 +2985,9 @@
     },
     "/v1/blocks/": {
       "get": {
-        "tags": ["blocks"],
+        "tags": [
+          "blocks"
+        ],
         "summary": "List Blocks",
         "operationId": "list_memory_blocks",
         "parameters": [
@@ -2721,7 +3084,9 @@
         }
       },
       "post": {
-        "tags": ["blocks"],
+        "tags": [
+          "blocks"
+        ],
         "summary": "Create Block",
         "operationId": "create_memory_block",
         "parameters": [
@@ -2778,7 +3143,9 @@
     },
     "/v1/blocks/{block_id}": {
       "patch": {
-        "tags": ["blocks"],
+        "tags": [
+          "blocks"
+        ],
         "summary": "Update Block",
         "operationId": "update_memory_block",
         "parameters": [
@@ -2842,7 +3209,9 @@
         }
       },
       "delete": {
-        "tags": ["blocks"],
+        "tags": [
+          "blocks"
+        ],
         "summary": "Delete Block",
         "operationId": "delete_memory_block",
         "parameters": [
@@ -2896,7 +3265,9 @@
         }
       },
       "get": {
-        "tags": ["blocks"],
+        "tags": [
+          "blocks"
+        ],
         "summary": "Get Block",
         "operationId": "get_memory_block",
         "parameters": [
@@ -2952,7 +3323,9 @@
     },
     "/v1/jobs/": {
       "get": {
-        "tags": ["jobs"],
+        "tags": [
+          "jobs"
+        ],
         "summary": "List Jobs",
         "description": "List all jobs.",
         "operationId": "list_jobs",
@@ -3022,7 +3395,9 @@
     },
     "/v1/jobs/active": {
       "get": {
-        "tags": ["jobs"],
+        "tags": [
+          "jobs"
+        ],
         "summary": "List Active Jobs",
         "description": "List all active jobs.",
         "operationId": "list_active_jobs",
@@ -3074,7 +3449,9 @@
     },
     "/v1/jobs/{job_id}": {
       "get": {
-        "tags": ["jobs"],
+        "tags": [
+          "jobs"
+        ],
         "summary": "Get Job",
         "description": "Get the status of a job.",
         "operationId": "get_job",
@@ -3113,7 +3490,9 @@
         }
       },
       "delete": {
-        "tags": ["jobs"],
+        "tags": [
+          "jobs"
+        ],
         "summary": "Delete Job",
         "description": "Delete a job by its job_id.",
         "operationId": "delete_job",
@@ -3154,7 +3533,9 @@
     },
     "/v1/health/": {
       "get": {
-        "tags": ["health"],
+        "tags": [
+          "health"
+        ],
         "summary": "Health Check",
         "operationId": "health_check",
         "responses": {
@@ -3171,9 +3552,545 @@
         }
       }
     },
+    "/v1/sandbox-config/": {
+      "post": {
+        "tags": [
+          "sandbox-config"
+        ],
+        "summary": "Create Sandbox Config",
+        "operationId": "create_sandbox_config_v1_sandbox_config__post",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "User Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SandboxConfigCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SandboxConfig"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "sandbox-config"
+        ],
+        "summary": "List Sandbox Configs",
+        "operationId": "list_sandbox_configs_v1_sandbox_config__get",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "description": "Number of results to return",
+              "default": 1000,
+              "title": "Limit"
+            },
+            "description": "Number of results to return"
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Pagination cursor to fetch the next set of results",
+              "title": "Cursor"
+            },
+            "description": "Pagination cursor to fetch the next set of results"
+          },
+          {
+            "name": "user_id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "User Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SandboxConfig"
+                  },
+                  "title": "Response List Sandbox Configs V1 Sandbox Config  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/sandbox-config/{sandbox_config_id}": {
+      "patch": {
+        "tags": [
+          "sandbox-config"
+        ],
+        "summary": "Update Sandbox Config",
+        "operationId": "update_sandbox_config_v1_sandbox_config__sandbox_config_id__patch",
+        "parameters": [
+          {
+            "name": "sandbox_config_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Sandbox Config Id"
+            }
+          },
+          {
+            "name": "user_id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "User Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SandboxConfigUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SandboxConfig"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "sandbox-config"
+        ],
+        "summary": "Delete Sandbox Config",
+        "operationId": "delete_sandbox_config_v1_sandbox_config__sandbox_config_id__delete",
+        "parameters": [
+          {
+            "name": "sandbox_config_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Sandbox Config Id"
+            }
+          },
+          {
+            "name": "user_id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "User Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/sandbox-config/{sandbox_config_id}/environment-variable": {
+      "post": {
+        "tags": [
+          "sandbox-config"
+        ],
+        "summary": "Create Sandbox Env Var",
+        "operationId": "create_sandbox_env_var_v1_sandbox_config__sandbox_config_id__environment_variable_post",
+        "parameters": [
+          {
+            "name": "sandbox_config_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Sandbox Config Id"
+            }
+          },
+          {
+            "name": "user_id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "User Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SandboxEnvironmentVariableCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SandboxEnvironmentVariable"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "sandbox-config"
+        ],
+        "summary": "List Sandbox Env Vars",
+        "operationId": "list_sandbox_env_vars_v1_sandbox_config__sandbox_config_id__environment_variable_get",
+        "parameters": [
+          {
+            "name": "sandbox_config_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Sandbox Config Id"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "description": "Number of results to return",
+              "default": 1000,
+              "title": "Limit"
+            },
+            "description": "Number of results to return"
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Pagination cursor to fetch the next set of results",
+              "title": "Cursor"
+            },
+            "description": "Pagination cursor to fetch the next set of results"
+          },
+          {
+            "name": "user_id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "User Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SandboxEnvironmentVariable"
+                  },
+                  "title": "Response List Sandbox Env Vars V1 Sandbox Config  Sandbox Config Id  Environment Variable Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/sandbox-config/environment-variable/{env_var_id}": {
+      "patch": {
+        "tags": [
+          "sandbox-config"
+        ],
+        "summary": "Update Sandbox Env Var",
+        "operationId": "update_sandbox_env_var_v1_sandbox_config_environment_variable__env_var_id__patch",
+        "parameters": [
+          {
+            "name": "env_var_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Env Var Id"
+            }
+          },
+          {
+            "name": "user_id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "User Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SandboxEnvironmentVariableUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SandboxEnvironmentVariable"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "sandbox-config"
+        ],
+        "summary": "Delete Sandbox Env Var",
+        "operationId": "delete_sandbox_env_var_v1_sandbox_config_environment_variable__env_var_id__delete",
+        "parameters": [
+          {
+            "name": "env_var_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Env Var Id"
+            }
+          },
+          {
+            "name": "user_id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "User Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/admin/users/": {
       "get": {
-        "tags": ["users", "admin", "admin"],
+        "tags": [
+          "users",
+          "admin",
+          "admin"
+        ],
         "summary": "List Users",
         "description": "Get a list of all users in the database",
         "operationId": "list_users",
@@ -3240,7 +4157,11 @@
         }
       },
       "post": {
-        "tags": ["users", "admin", "admin"],
+        "tags": [
+          "users",
+          "admin",
+          "admin"
+        ],
         "summary": "Create User",
         "description": "Create a new user in the database",
         "operationId": "create_user",
@@ -3278,7 +4199,11 @@
         }
       },
       "put": {
-        "tags": ["users", "admin", "admin"],
+        "tags": [
+          "users",
+          "admin",
+          "admin"
+        ],
         "summary": "Update User",
         "description": "Update a user in the database",
         "operationId": "update_user",
@@ -3316,7 +4241,11 @@
         }
       },
       "delete": {
-        "tags": ["users", "admin", "admin"],
+        "tags": [
+          "users",
+          "admin",
+          "admin"
+        ],
         "summary": "Delete User",
         "operationId": "delete_user",
         "parameters": [
@@ -3358,7 +4287,10 @@
     },
     "/v1/admin/users/keys": {
       "post": {
-        "tags": ["users", "admin"],
+        "tags": [
+          "users",
+          "admin"
+        ],
         "summary": "Create New Api Key",
         "description": "Create a new API key for a user",
         "operationId": "create_api_key",
@@ -3396,7 +4328,10 @@
         }
       },
       "get": {
-        "tags": ["users", "admin"],
+        "tags": [
+          "users",
+          "admin"
+        ],
         "summary": "Get Api Keys",
         "description": "Get a list of all API keys for a user",
         "operationId": "list_api_keys",
@@ -3441,7 +4376,10 @@
         }
       },
       "delete": {
-        "tags": ["users", "admin"],
+        "tags": [
+          "users",
+          "admin"
+        ],
         "summary": "Delete Api Key",
         "operationId": "delete_api_key",
         "parameters": [
@@ -3483,7 +4421,11 @@
     },
     "/v1/admin/orgs/": {
       "get": {
-        "tags": ["organization", "admin", "admin"],
+        "tags": [
+          "organization",
+          "admin",
+          "admin"
+        ],
         "summary": "Get All Orgs",
         "description": "Get a list of all orgs in the database",
         "operationId": "list_orgs",
@@ -3550,7 +4492,11 @@
         }
       },
       "post": {
-        "tags": ["organization", "admin", "admin"],
+        "tags": [
+          "organization",
+          "admin",
+          "admin"
+        ],
         "summary": "Create Org",
         "description": "Create a new org in the database",
         "operationId": "create_organization",
@@ -3588,7 +4534,11 @@
         }
       },
       "delete": {
-        "tags": ["organization", "admin", "admin"],
+        "tags": [
+          "organization",
+          "admin",
+          "admin"
+        ],
         "summary": "Delete Org",
         "operationId": "delete_organization_by_id",
         "parameters": [
@@ -3630,7 +4580,9 @@
     },
     "/v1/auth": {
       "post": {
-        "tags": ["auth"],
+        "tags": [
+          "auth"
+        ],
         "summary": "Authenticate User",
         "description": "Authenticates the user and sends response with User related data.\n\nCurrently, this is a placeholder that simply returns a UUID placeholder",
         "operationId": "authenticate_user_v1_auth_post",
@@ -3678,7 +4630,11 @@
             "pattern": "^sk-[a-fA-F0-9]{8}",
             "title": "Id",
             "description": "The human-friendly ID of the Sk",
-            "examples": [["sk-123e4567-e89b-12d3-a456-426614174000"]]
+            "examples": [
+              [
+                "sk-123e4567-e89b-12d3-a456-426614174000"
+              ]
+            ]
           },
           "user_id": {
             "type": "string",
@@ -3698,7 +4654,11 @@
         },
         "additionalProperties": false,
         "type": "object",
-        "required": ["user_id", "key", "name"],
+        "required": [
+          "user_id",
+          "key",
+          "name"
+        ],
         "title": "APIKey"
       },
       "APIKeyCreate": {
@@ -3723,7 +4683,9 @@
         },
         "additionalProperties": false,
         "type": "object",
-        "required": ["user_id"],
+        "required": [
+          "user_id"
+        ],
         "title": "APIKeyCreate"
       },
       "AgentState": {
@@ -3769,7 +4731,11 @@
             "pattern": "^agent-[a-fA-F0-9]{8}",
             "title": "Id",
             "description": "The human-friendly ID of the Agent",
-            "examples": [["agent-123e4567-e89b-12d3-a456-426614174000"]]
+            "examples": [
+              [
+                "agent-123e4567-e89b-12d3-a456-426614174000"
+              ]
+            ]
           },
           "name": {
             "type": "string",
@@ -3871,7 +4837,11 @@
       },
       "AgentType": {
         "type": "string",
-        "enum": ["memgpt_agent", "split_thread_agent", "o1_agent"],
+        "enum": [
+          "memgpt_agent",
+          "split_thread_agent",
+          "o1_agent"
+        ],
         "title": "AgentType",
         "description": "Enum to represent the type of agent."
       },
@@ -3884,7 +4854,9 @@
           }
         },
         "type": "object",
-        "required": ["size"],
+        "required": [
+          "size"
+        ],
         "title": "ArchivalMemorySummary"
       },
       "AssistantFile": {
@@ -3911,7 +4883,11 @@
           }
         },
         "type": "object",
-        "required": ["id", "created_at", "assistant_id"],
+        "required": [
+          "id",
+          "created_at",
+          "assistant_id"
+        ],
         "title": "AssistantFile"
       },
       "AssistantMessage-Input": {
@@ -3974,7 +4950,9 @@
           },
           "message_type": {
             "type": "string",
-            "enum": ["assistant_message"],
+            "enum": [
+              "assistant_message"
+            ],
             "const": "assistant_message",
             "title": "Message Type",
             "default": "assistant_message"
@@ -3985,7 +4963,11 @@
           }
         },
         "type": "object",
-        "required": ["id", "date", "assistant_message"],
+        "required": [
+          "id",
+          "date",
+          "assistant_message"
+        ],
         "title": "AssistantMessage"
       },
       "AuthRequest": {
@@ -4021,7 +5003,9 @@
           }
         },
         "type": "object",
-        "required": ["uuid"],
+        "required": [
+          "uuid"
+        ],
         "title": "AuthResponse"
       },
       "BaseToolRule": {
@@ -4034,7 +5018,9 @@
         },
         "additionalProperties": false,
         "type": "object",
-        "required": ["tool_name"],
+        "required": [
+          "tool_name"
+        ],
         "title": "BaseToolRule"
       },
       "Block": {
@@ -4110,7 +5096,11 @@
             "pattern": "^block-[a-fA-F0-9]{8}",
             "title": "Id",
             "description": "The human-friendly ID of the Block",
-            "examples": [["block-123e4567-e89b-12d3-a456-426614174000"]]
+            "examples": [
+              [
+                "block-123e4567-e89b-12d3-a456-426614174000"
+              ]
+            ]
           },
           "organization_id": {
             "anyOf": [
@@ -4150,7 +5140,9 @@
           }
         },
         "type": "object",
-        "required": ["value"],
+        "required": [
+          "value"
+        ],
         "title": "Block",
         "description": "A Block represents a reserved section of the LLM's context window which is editable. `Block` objects contained in the `Memory` object, which is able to edit the Block values.\n\nParameters:\n    label (str): The label of the block (e.g. 'human', 'persona'). This defines a category for the block.\n    value (str): The value of the block. This is the string that is represented in the context window.\n    limit (int): The character limit of the block.\n    is_template (bool): Whether the block is a template (e.g. saved human/persona options). Non-template blocks are not stored in the database and are ephemeral, while templated blocks are stored in the database.\n    label (str): The label of the block (e.g. 'human', 'persona'). This defines a category for the block.\n    template_name (str): The name of the block template (if it is a template).\n    description (str): Description of the block.\n    metadata_ (Dict): Metadata of the block.\n    user_id (str): The unique identifier of the user associated with the block."
       },
@@ -4216,9 +5208,54 @@
           }
         },
         "type": "object",
-        "required": ["value", "label"],
+        "required": [
+          "value",
+          "label"
+        ],
         "title": "BlockCreate",
         "description": "Create a block"
+      },
+      "BlockLabelUpdate": {
+        "properties": {
+          "current_label": {
+            "type": "string",
+            "title": "Current Label",
+            "description": "Current label of the block."
+          },
+          "new_label": {
+            "type": "string",
+            "title": "New Label",
+            "description": "New label of the block."
+          }
+        },
+        "type": "object",
+        "required": [
+          "current_label",
+          "new_label"
+        ],
+        "title": "BlockLabelUpdate",
+        "description": "Update the label of a block"
+      },
+      "BlockLimitUpdate": {
+        "properties": {
+          "label": {
+            "type": "string",
+            "title": "Label",
+            "description": "Label of the block."
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit",
+            "description": "New limit of the block."
+          }
+        },
+        "type": "object",
+        "required": [
+          "label",
+          "limit"
+        ],
+        "title": "BlockLimitUpdate",
+        "description": "Update the limit of a block"
       },
       "BlockUpdate": {
         "properties": {
@@ -4316,7 +5353,9 @@
           }
         },
         "type": "object",
-        "required": ["file"],
+        "required": [
+          "file"
+        ],
         "title": "Body_upload_file_to_source"
       },
       "ChatCompletionRequest": {
@@ -4532,7 +5571,11 @@
             "anyOf": [
               {
                 "type": "string",
-                "enum": ["none", "auto", "required"]
+                "enum": [
+                  "none",
+                  "auto",
+                  "required"
+                ]
               },
               {
                 "$ref": "#/components/schemas/ToolFunctionChoice"
@@ -4561,7 +5604,10 @@
             "anyOf": [
               {
                 "type": "string",
-                "enum": ["none", "auto"]
+                "enum": [
+                  "none",
+                  "auto"
+                ]
               },
               {
                 "$ref": "#/components/schemas/FunctionCall-Input"
@@ -4574,7 +5620,10 @@
           }
         },
         "type": "object",
-        "required": ["model", "messages"],
+        "required": [
+          "model",
+          "messages"
+        ],
         "title": "ChatCompletionRequest",
         "description": "https://platform.openai.com/docs/api-reference/chat/create"
       },
@@ -4620,7 +5669,9 @@
           },
           "object": {
             "type": "string",
-            "enum": ["chat.completion"],
+            "enum": [
+              "chat.completion"
+            ],
             "const": "chat.completion",
             "title": "Object",
             "default": "chat.completion"
@@ -4630,7 +5681,12 @@
           }
         },
         "type": "object",
-        "required": ["id", "choices", "created", "usage"],
+        "required": [
+          "id",
+          "choices",
+          "created",
+          "usage"
+        ],
         "title": "ChatCompletionResponse",
         "description": "https://platform.openai.com/docs/api-reference/chat/object"
       },
@@ -4684,7 +5740,11 @@
           }
         },
         "type": "object",
-        "required": ["finish_reason", "index", "message"],
+        "required": [
+          "finish_reason",
+          "index",
+          "message"
+        ],
         "title": "Choice"
       },
       "ContextWindowOverview": {
@@ -5006,7 +6066,9 @@
           }
         },
         "type": "object",
-        "required": ["text"],
+        "required": [
+          "text"
+        ],
         "title": "CreateArchivalMemory"
       },
       "CreateAssistantFileRequest": {
@@ -5018,7 +6080,9 @@
           }
         },
         "type": "object",
-        "required": ["file_id"],
+        "required": [
+          "file_id"
+        ],
         "title": "CreateAssistantFileRequest"
       },
       "CreateAssistantRequest": {
@@ -5071,7 +6135,11 @@
           }
         },
         "type": "object",
-        "required": ["model", "name", "instructions"],
+        "required": [
+          "model",
+          "name",
+          "instructions"
+        ],
         "title": "CreateAssistantRequest"
       },
       "CreateMessageRequest": {
@@ -5115,7 +6183,10 @@
           }
         },
         "type": "object",
-        "required": ["role", "content"],
+        "required": [
+          "role",
+          "content"
+        ],
         "title": "CreateMessageRequest"
       },
       "CreateRunRequest": {
@@ -5183,7 +6254,10 @@
           }
         },
         "type": "object",
-        "required": ["assistant_id", "instructions"],
+        "required": [
+          "assistant_id",
+          "instructions"
+        ],
         "title": "CreateRunRequest"
       },
       "CreateThreadRequest": {
@@ -5281,7 +6355,12 @@
           }
         },
         "type": "object",
-        "required": ["assistant_id", "thread", "model", "instructions"],
+        "required": [
+          "assistant_id",
+          "thread",
+          "model",
+          "instructions"
+        ],
         "title": "CreateThreadRunRequest"
       },
       "DeleteAssistantFileResponse": {
@@ -5303,7 +6382,10 @@
           }
         },
         "type": "object",
-        "required": ["id", "deleted"],
+        "required": [
+          "id",
+          "deleted"
+        ],
         "title": "DeleteAssistantFileResponse"
       },
       "DeleteAssistantResponse": {
@@ -5325,7 +6407,10 @@
           }
         },
         "type": "object",
-        "required": ["id", "deleted"],
+        "required": [
+          "id",
+          "deleted"
+        ],
         "title": "DeleteAssistantResponse"
       },
       "DeleteThreadResponse": {
@@ -5347,8 +6432,50 @@
           }
         },
         "type": "object",
-        "required": ["id", "deleted"],
+        "required": [
+          "id",
+          "deleted"
+        ],
         "title": "DeleteThreadResponse"
+      },
+      "E2BSandboxConfig": {
+        "properties": {
+          "timeout": {
+            "type": "integer",
+            "title": "Timeout",
+            "description": "Time limit for the sandbox (in seconds).",
+            "default": 300
+          },
+          "template": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Template",
+            "description": "The E2B template id (docker image)."
+          },
+          "pip_requirements": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pip Requirements",
+            "description": "A list of pip packages to install on the E2B Sandbox"
+          }
+        },
+        "type": "object",
+        "title": "E2BSandboxConfig"
       },
       "EmbeddingConfig": {
         "properties": {
@@ -5445,7 +6572,11 @@
             "pattern": "^file-[a-fA-F0-9]{8}",
             "title": "Id",
             "description": "The human-friendly ID of the File",
-            "examples": [["file-123e4567-e89b-12d3-a456-426614174000"]]
+            "examples": [
+              [
+                "file-123e4567-e89b-12d3-a456-426614174000"
+              ]
+            ]
           },
           "organization_id": {
             "anyOf": [
@@ -5571,7 +6702,9 @@
         },
         "additionalProperties": false,
         "type": "object",
-        "required": ["source_id"],
+        "required": [
+          "source_id"
+        ],
         "title": "FileMetadata",
         "description": "Representation of a single FileMetadata"
       },
@@ -5589,7 +6722,10 @@
           }
         },
         "type": "object",
-        "required": ["name", "arguments"],
+        "required": [
+          "name",
+          "arguments"
+        ],
         "title": "Function"
       },
       "FunctionCall-Input": {
@@ -5600,7 +6736,9 @@
           }
         },
         "type": "object",
-        "required": ["name"],
+        "required": [
+          "name"
+        ],
         "title": "FunctionCall"
       },
       "FunctionCallDelta": {
@@ -5640,7 +6778,11 @@
           }
         },
         "type": "object",
-        "required": ["name", "arguments", "function_call_id"],
+        "required": [
+          "name",
+          "arguments",
+          "function_call_id"
+        ],
         "title": "FunctionCallDelta"
       },
       "FunctionCallMessage": {
@@ -5656,7 +6798,9 @@
           },
           "message_type": {
             "type": "string",
-            "enum": ["function_call"],
+            "enum": [
+              "function_call"
+            ],
             "const": "function_call",
             "title": "Message Type",
             "default": "function_call"
@@ -5674,7 +6818,11 @@
           }
         },
         "type": "object",
-        "required": ["id", "date", "function_call"],
+        "required": [
+          "id",
+          "date",
+          "function_call"
+        ],
         "title": "FunctionCallMessage",
         "description": "A message representing a request to call a function (generated by the LLM to trigger function execution).\n\nAttributes:\n    function_call (Union[FunctionCall, FunctionCallDelta]): The function call\n    id (str): The ID of the message\n    date (datetime): The date the message was created in ISO format"
       },
@@ -5691,7 +6839,9 @@
           },
           "message_type": {
             "type": "string",
-            "enum": ["function_return"],
+            "enum": [
+              "function_return"
+            ],
             "const": "function_return",
             "title": "Message Type",
             "default": "function_return"
@@ -5702,7 +6852,10 @@
           },
           "status": {
             "type": "string",
-            "enum": ["success", "error"],
+            "enum": [
+              "success",
+              "error"
+            ],
             "title": "Status"
           },
           "function_call_id": {
@@ -5751,7 +6904,9 @@
           }
         },
         "type": "object",
-        "required": ["name"],
+        "required": [
+          "name"
+        ],
         "title": "FunctionSchema"
       },
       "HTTPValidationError": {
@@ -5779,7 +6934,10 @@
           }
         },
         "type": "object",
-        "required": ["version", "status"],
+        "required": [
+          "version",
+          "status"
+        ],
         "title": "Health",
         "description": "Health check response body"
       },
@@ -5796,7 +6954,9 @@
           }
         },
         "type": "object",
-        "required": ["file_id"],
+        "required": [
+          "file_id"
+        ],
         "title": "ImageFile"
       },
       "InternalMonologue": {
@@ -5812,7 +6972,9 @@
           },
           "message_type": {
             "type": "string",
-            "enum": ["internal_monologue"],
+            "enum": [
+              "internal_monologue"
+            ],
             "const": "internal_monologue",
             "title": "Message Type",
             "default": "internal_monologue"
@@ -5823,7 +6985,11 @@
           }
         },
         "type": "object",
-        "required": ["id", "date", "internal_monologue"],
+        "required": [
+          "id",
+          "date",
+          "internal_monologue"
+        ],
         "title": "InternalMonologue",
         "description": "Representation of an agent's internal monologue.\n\nAttributes:\n    internal_monologue (str): The internal monologue of the agent\n    id (str): The ID of the message\n    date (datetime): The date the message was created in ISO format"
       },
@@ -5846,7 +7012,11 @@
             "pattern": "^job-[a-fA-F0-9]{8}",
             "title": "Id",
             "description": "The human-friendly ID of the Job",
-            "examples": [["job-123e4567-e89b-12d3-a456-426614174000"]]
+            "examples": [
+              [
+                "job-123e4567-e89b-12d3-a456-426614174000"
+              ]
+            ]
           },
           "status": {
             "$ref": "#/components/schemas/JobStatus",
@@ -5880,13 +7050,21 @@
         },
         "additionalProperties": false,
         "type": "object",
-        "required": ["user_id"],
+        "required": [
+          "user_id"
+        ],
         "title": "Job",
         "description": "Representation of offline jobs, used for tracking status of data loading tasks (involving parsing and embedding files).\n\nParameters:\n    id (str): The unique identifier of the job.\n    status (JobStatus): The status of the job.\n    created_at (datetime): The unix timestamp of when the job was created.\n    completed_at (datetime): The unix timestamp of when the job was completed.\n    user_id (str): The unique identifier of the user associated with the."
       },
       "JobStatus": {
         "type": "string",
-        "enum": ["created", "running", "completed", "failed", "pending"],
+        "enum": [
+          "created",
+          "running",
+          "completed",
+          "failed",
+          "pending"
+        ],
         "title": "JobStatus",
         "description": "Status of the job."
       },
@@ -5965,7 +7143,11 @@
           }
         },
         "type": "object",
-        "required": ["model", "model_endpoint_type", "context_window"],
+        "required": [
+          "model",
+          "model_endpoint_type",
+          "context_window"
+        ],
         "title": "LLMConfig",
         "description": "Configuration for a Language Model (LLM) model. This object specifies all the information necessary to access an LLM model to usage with Letta, except for secret keys.\n\nAttributes:\n    model (str): The name of the LLM model.\n    model_endpoint_type (str): The endpoint type for the model.\n    model_endpoint (str): The endpoint for the model.\n    model_wrapper (str): The wrapper for the model. This is used to wrap additional text around the input/output of the model. This is useful for text-to-text completions, such as the Completions API in OpenAI.\n    context_window (int): The context window size for the model.\n    put_inner_thoughts_in_kwargs (bool): Puts `inner_thoughts` as a kwarg in the function call if this is set to True. This helps with function calling performance and also the generation of inner thoughts."
       },
@@ -6033,7 +7215,9 @@
           }
         },
         "type": "object",
-        "required": ["messages"],
+        "required": [
+          "messages"
+        ],
         "title": "LettaRequest"
       },
       "ListMessagesResponse": {
@@ -6048,8 +7232,24 @@
           }
         },
         "type": "object",
-        "required": ["messages"],
+        "required": [
+          "messages"
+        ],
         "title": "ListMessagesResponse"
+      },
+      "LocalSandboxConfig": {
+        "properties": {
+          "sandbox_dir": {
+            "type": "string",
+            "title": "Sandbox Dir",
+            "description": "Directory for the sandbox environment."
+          }
+        },
+        "type": "object",
+        "required": [
+          "sandbox_dir"
+        ],
+        "title": "LocalSandboxConfig"
       },
       "LogProbToken": {
         "properties": {
@@ -6077,7 +7277,11 @@
           }
         },
         "type": "object",
-        "required": ["token", "logprob", "bytes"],
+        "required": [
+          "token",
+          "logprob",
+          "bytes"
+        ],
         "title": "LogProbToken"
       },
       "Memory": {
@@ -6108,7 +7312,11 @@
             "pattern": "^message-[a-fA-F0-9]{8}",
             "title": "Id",
             "description": "The human-friendly ID of the Message",
-            "examples": [["message-123e4567-e89b-12d3-a456-426614174000"]]
+            "examples": [
+              [
+                "message-123e4567-e89b-12d3-a456-426614174000"
+              ]
+            ]
           },
           "role": {
             "$ref": "#/components/schemas/MessageRole",
@@ -6210,7 +7418,9 @@
         },
         "additionalProperties": false,
         "type": "object",
-        "required": ["role"],
+        "required": [
+          "role"
+        ],
         "title": "Message",
         "description": "Letta's internal representation of a message. Includes methods to convert to/from LLM provider formats.\n\nAttributes:\n    id (str): The unique identifier of the message.\n    role (MessageRole): The role of the participant.\n    text (str): The text of the message.\n    user_id (str): The unique identifier of the user.\n    agent_id (str): The unique identifier of the agent.\n    model (str): The model used to make the function call.\n    name (str): The name of the participant.\n    created_at (datetime): The time the message was created.\n    tool_calls (List[ToolCall]): The list of tool calls requested.\n    tool_call_id (str): The id of the tool call."
       },
@@ -6254,14 +7464,22 @@
           }
         },
         "type": "object",
-        "required": ["token", "logprob", "bytes", "top_logprobs"],
+        "required": [
+          "token",
+          "logprob",
+          "bytes",
+          "top_logprobs"
+        ],
         "title": "MessageContentLogProb"
       },
       "MessageCreate": {
         "properties": {
           "role": {
             "type": "string",
-            "enum": ["user", "system"],
+            "enum": [
+              "user",
+              "system"
+            ],
             "title": "Role",
             "description": "The role of the participant."
           },
@@ -6285,7 +7503,10 @@
         },
         "additionalProperties": false,
         "type": "object",
-        "required": ["role", "text"],
+        "required": [
+          "role",
+          "text"
+        ],
         "title": "MessageCreate",
         "description": "Request to create a message"
       },
@@ -6313,12 +7534,22 @@
           }
         },
         "type": "object",
-        "required": ["id", "created_at", "message_id"],
+        "required": [
+          "id",
+          "created_at",
+          "message_id"
+        ],
         "title": "MessageFile"
       },
       "MessageRole": {
         "type": "string",
-        "enum": ["assistant", "user", "tool", "function", "system"],
+        "enum": [
+          "assistant",
+          "user",
+          "tool",
+          "function",
+          "system"
+        ],
         "title": "MessageRole"
       },
       "ModifyMessageRequest": {
@@ -6442,7 +7673,13 @@
           }
         },
         "type": "object",
-        "required": ["id", "name", "created_at", "model", "instructions"],
+        "required": [
+          "id",
+          "name",
+          "created_at",
+          "model",
+          "instructions"
+        ],
         "title": "OpenAIAssistant",
         "description": "Represents an OpenAI assistant (equivalent to Letta preset)"
       },
@@ -6460,7 +7697,10 @@
           }
         },
         "type": "object",
-        "required": ["code", "message"],
+        "required": [
+          "code",
+          "message"
+        ],
         "title": "OpenAIError"
       },
       "OpenAIMessage": {
@@ -6551,7 +7791,13 @@
           }
         },
         "type": "object",
-        "required": ["id", "created_at", "thread_id", "role", "assistant_id"],
+        "required": [
+          "id",
+          "created_at",
+          "thread_id",
+          "role",
+          "assistant_id"
+        ],
         "title": "OpenAIMessage"
       },
       "OpenAIMessageCreationStep": {
@@ -6568,7 +7814,9 @@
           }
         },
         "type": "object",
-        "required": ["message_id"],
+        "required": [
+          "message_id"
+        ],
         "title": "OpenAIMessageCreationStep"
       },
       "OpenAIRun": {
@@ -6905,7 +8153,10 @@
           }
         },
         "type": "object",
-        "required": ["id", "created_at"],
+        "required": [
+          "id",
+          "created_at"
+        ],
         "title": "OpenAIThread",
         "description": "Represents an OpenAI thread (equivalent to Letta agent)"
       },
@@ -6926,7 +8177,9 @@
           }
         },
         "type": "object",
-        "required": ["tool_calls"],
+        "required": [
+          "tool_calls"
+        ],
         "title": "OpenAIToolCallsStep"
       },
       "OpenAIUsage": {
@@ -6948,7 +8201,11 @@
           }
         },
         "type": "object",
-        "required": ["completion_tokens", "prompt_tokens", "total_tokens"],
+        "required": [
+          "completion_tokens",
+          "prompt_tokens",
+          "total_tokens"
+        ],
         "title": "OpenAIUsage"
       },
       "Organization": {
@@ -6958,13 +8215,17 @@
             "pattern": "^org-[a-fA-F0-9]{8}",
             "title": "Id",
             "description": "The human-friendly ID of the Org",
-            "examples": [["org-123e4567-e89b-12d3-a456-426614174000"]]
+            "examples": [
+              [
+                "org-123e4567-e89b-12d3-a456-426614174000"
+              ]
+            ]
           },
           "name": {
             "type": "string",
             "title": "Name",
             "description": "The name of the organization.",
-            "default": "PeacefulKoala"
+            "default": "InnovativeHamburger"
           },
           "created_at": {
             "anyOf": [
@@ -7071,7 +8332,11 @@
             "pattern": "^passage-[a-fA-F0-9]{8}",
             "title": "Id",
             "description": "The human-friendly ID of the Passage",
-            "examples": [["passage-123e4567-e89b-12d3-a456-426614174000"]]
+            "examples": [
+              [
+                "passage-123e4567-e89b-12d3-a456-426614174000"
+              ]
+            ]
           },
           "text": {
             "type": "string",
@@ -7113,7 +8378,11 @@
         },
         "additionalProperties": false,
         "type": "object",
-        "required": ["text", "embedding", "embedding_config"],
+        "required": [
+          "text",
+          "embedding",
+          "embedding_config"
+        ],
         "title": "Passage",
         "description": "Representation of a passage, which is stored in archival memory.\n\nParameters:\n    text (str): The text of the passage.\n    embedding (List[float]): The embedding of the passage.\n    embedding_config (EmbeddingConfig): The embedding configuration used by the passage.\n    created_at (datetime): The creation date of the passage.\n    user_id (str): The unique identifier of the user associated with the passage.\n    agent_id (str): The unique identifier of the agent associated with the passage.\n    source_id (str): The data source of the passage.\n    file_id (str): The unique identifier of the file associated with the passage."
       },
@@ -7126,7 +8395,9 @@
           }
         },
         "type": "object",
-        "required": ["size"],
+        "required": [
+          "size"
+        ],
         "title": "RecallMemorySummary"
       },
       "RequiredAction": {
@@ -7145,7 +8416,9 @@
           }
         },
         "type": "object",
-        "required": ["submit_tool_outputs"],
+        "required": [
+          "submit_tool_outputs"
+        ],
         "title": "RequiredAction"
       },
       "ResponseFormat": {
@@ -7160,6 +8433,334 @@
         "type": "object",
         "title": "ResponseFormat"
       },
+      "SandboxConfig": {
+        "properties": {
+          "created_by_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created By Id",
+            "description": "The id of the user that made this object."
+          },
+          "last_updated_by_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Updated By Id",
+            "description": "The id of the user that made this object."
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At",
+            "description": "The timestamp when the object was created."
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At",
+            "description": "The timestamp when the object was last updated."
+          },
+          "id": {
+            "type": "string",
+            "pattern": "^sandbox-[a-fA-F0-9]{8}",
+            "title": "Id",
+            "description": "The human-friendly ID of the Sandbox",
+            "examples": [
+              [
+                "sandbox-123e4567-e89b-12d3-a456-426614174000"
+              ]
+            ]
+          },
+          "type": {
+            "$ref": "#/components/schemas/SandboxType",
+            "description": "The type of sandbox."
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "The unique identifier of the organization associated with the sandbox."
+          },
+          "config": {
+            "type": "object",
+            "title": "Config",
+            "description": "The JSON sandbox settings data."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "SandboxConfig"
+      },
+      "SandboxConfigCreate": {
+        "properties": {
+          "config": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LocalSandboxConfig"
+              },
+              {
+                "$ref": "#/components/schemas/E2BSandboxConfig"
+              }
+            ],
+            "title": "Config",
+            "description": "The configuration for the sandbox."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "config"
+        ],
+        "title": "SandboxConfigCreate"
+      },
+      "SandboxConfigUpdate": {
+        "properties": {
+          "config": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LocalSandboxConfig"
+              },
+              {
+                "$ref": "#/components/schemas/E2BSandboxConfig"
+              }
+            ],
+            "title": "Config",
+            "description": "The JSON configuration data for the sandbox."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "SandboxConfigUpdate",
+        "description": "Pydantic model for updating SandboxConfig fields."
+      },
+      "SandboxEnvironmentVariable": {
+        "properties": {
+          "created_by_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created By Id",
+            "description": "The id of the user that made this object."
+          },
+          "last_updated_by_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Updated By Id",
+            "description": "The id of the user that made this object."
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At",
+            "description": "The timestamp when the object was created."
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At",
+            "description": "The timestamp when the object was last updated."
+          },
+          "id": {
+            "type": "string",
+            "pattern": "^sandbox-env-[a-fA-F0-9]{8}",
+            "title": "Id",
+            "description": "The human-friendly ID of the Sandbox-env",
+            "examples": [
+              [
+                "sandbox-env-123e4567-e89b-12d3-a456-426614174000"
+              ]
+            ]
+          },
+          "key": {
+            "type": "string",
+            "title": "Key",
+            "description": "The name of the environment variable."
+          },
+          "value": {
+            "type": "string",
+            "title": "Value",
+            "description": "The value of the environment variable."
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description",
+            "description": "An optional description of the environment variable."
+          },
+          "sandbox_config_id": {
+            "type": "string",
+            "title": "Sandbox Config Id",
+            "description": "The ID of the sandbox config this environment variable belongs to."
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "The ID of the organization this environment variable belongs to."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "key",
+          "value",
+          "sandbox_config_id"
+        ],
+        "title": "SandboxEnvironmentVariable"
+      },
+      "SandboxEnvironmentVariableCreate": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key",
+            "description": "The name of the environment variable."
+          },
+          "value": {
+            "type": "string",
+            "title": "Value",
+            "description": "The value of the environment variable."
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description",
+            "description": "An optional description of the environment variable."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "key",
+          "value"
+        ],
+        "title": "SandboxEnvironmentVariableCreate"
+      },
+      "SandboxEnvironmentVariableUpdate": {
+        "properties": {
+          "key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Key",
+            "description": "The name of the environment variable."
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value",
+            "description": "The value of the environment variable."
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description",
+            "description": "An optional description of the environment variable."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "SandboxEnvironmentVariableUpdate",
+        "description": "Pydantic model for updating SandboxEnvironmentVariable fields."
+      },
+      "SandboxType": {
+        "type": "string",
+        "enum": [
+          "e2b",
+          "local"
+        ],
+        "title": "SandboxType"
+      },
       "Source": {
         "properties": {
           "id": {
@@ -7167,7 +8768,11 @@
             "pattern": "^source-[a-fA-F0-9]{8}",
             "title": "Id",
             "description": "The human-friendly ID of the Source",
-            "examples": [["source-123e4567-e89b-12d3-a456-426614174000"]]
+            "examples": [
+              [
+                "source-123e4567-e89b-12d3-a456-426614174000"
+              ]
+            ]
           },
           "name": {
             "type": "string",
@@ -7267,7 +8872,10 @@
         },
         "additionalProperties": false,
         "type": "object",
-        "required": ["name", "embedding_config"],
+        "required": [
+          "name",
+          "embedding_config"
+        ],
         "title": "Source",
         "description": "Representation of a source, which is a collection of files and passages.\n\nParameters:\n    id (str): The ID of the source\n    name (str): The name of the source.\n    embedding_config (EmbeddingConfig): The embedding configuration used by the source.\n    user_id (str): The ID of the user that created the source.\n    metadata_ (dict): Metadata associated with the source.\n    description (str): The description of the source."
       },
@@ -7316,7 +8924,9 @@
         },
         "additionalProperties": false,
         "type": "object",
-        "required": ["name"],
+        "required": [
+          "name"
+        ],
         "title": "SourceCreate",
         "description": "Schema for creating a new Source."
       },
@@ -7387,7 +8997,9 @@
           }
         },
         "type": "object",
-        "required": ["tools_outputs"],
+        "required": [
+          "tools_outputs"
+        ],
         "title": "SubmitToolOutputsToRunRequest"
       },
       "SystemMessage-Input": {
@@ -7414,7 +9026,9 @@
           }
         },
         "type": "object",
-        "required": ["content"],
+        "required": [
+          "content"
+        ],
         "title": "SystemMessage"
       },
       "SystemMessage-Output": {
@@ -7430,7 +9044,9 @@
           },
           "message_type": {
             "type": "string",
-            "enum": ["system_message"],
+            "enum": [
+              "system_message"
+            ],
             "const": "system_message",
             "title": "Message Type",
             "default": "system_message"
@@ -7441,7 +9057,11 @@
           }
         },
         "type": "object",
-        "required": ["id", "date", "message"],
+        "required": [
+          "id",
+          "date",
+          "message"
+        ],
         "title": "SystemMessage",
         "description": "A message generated by the system. Never streamed back on a response, only used for cursor pagination.\n\nAttributes:\n    message (str): The message sent by the system\n    id (str): The ID of the message\n    date (datetime): The date the message was created in ISO format"
       },
@@ -7459,14 +9079,18 @@
           }
         },
         "type": "object",
-        "required": ["text"],
+        "required": [
+          "text"
+        ],
         "title": "Text"
       },
       "Tool-Input": {
         "properties": {
           "type": {
             "type": "string",
-            "enum": ["function"],
+            "enum": [
+              "function"
+            ],
             "const": "function",
             "title": "Type",
             "default": "function"
@@ -7476,7 +9100,9 @@
           }
         },
         "type": "object",
-        "required": ["function"],
+        "required": [
+          "function"
+        ],
         "title": "Tool"
       },
       "ToolCallFunction-Output": {
@@ -7493,7 +9119,10 @@
           }
         },
         "type": "object",
-        "required": ["name", "arguments"],
+        "required": [
+          "name",
+          "arguments"
+        ],
         "title": "ToolCallFunction"
       },
       "ToolCallOutput": {
@@ -7510,7 +9139,10 @@
           }
         },
         "type": "object",
-        "required": ["tool_call_id", "output"],
+        "required": [
+          "tool_call_id",
+          "output"
+        ],
         "title": "ToolCallOutput"
       },
       "ToolCreate": {
@@ -7586,14 +9218,18 @@
         },
         "additionalProperties": false,
         "type": "object",
-        "required": ["source_code"],
+        "required": [
+          "source_code"
+        ],
         "title": "ToolCreate"
       },
       "ToolFunctionChoice": {
         "properties": {
           "type": {
             "type": "string",
-            "enum": ["function"],
+            "enum": [
+              "function"
+            ],
             "const": "function",
             "title": "Type",
             "default": "function"
@@ -7603,7 +9239,9 @@
           }
         },
         "type": "object",
-        "required": ["function"],
+        "required": [
+          "function"
+        ],
         "title": "ToolFunctionChoice"
       },
       "ToolMessage": {
@@ -7623,7 +9261,10 @@
           }
         },
         "type": "object",
-        "required": ["content", "tool_call_id"],
+        "required": [
+          "content",
+          "tool_call_id"
+        ],
         "title": "ToolMessage"
       },
       "ToolUpdate": {
@@ -7867,7 +9508,9 @@
         },
         "additionalProperties": false,
         "type": "object",
-        "required": ["id"],
+        "required": [
+          "id"
+        ],
         "title": "UpdateAgentState"
       },
       "UpdateMessage": {
@@ -7942,7 +9585,9 @@
         },
         "additionalProperties": false,
         "type": "object",
-        "required": ["id"],
+        "required": [
+          "id"
+        ],
         "title": "UpdateMessage",
         "description": "Request to update a message"
       },
@@ -7974,7 +9619,11 @@
             "pattern": "^user-[a-fA-F0-9]{8}",
             "title": "Id",
             "description": "The human-friendly ID of the User",
-            "examples": [["user-123e4567-e89b-12d3-a456-426614174000"]]
+            "examples": [
+              [
+                "user-123e4567-e89b-12d3-a456-426614174000"
+              ]
+            ]
           },
           "organization_id": {
             "anyOf": [
@@ -8029,7 +9678,9 @@
         },
         "additionalProperties": false,
         "type": "object",
-        "required": ["name"],
+        "required": [
+          "name"
+        ],
         "title": "User",
         "description": "Representation of a user.\n\nParameters:\n    id (str): The unique identifier of the user.\n    name (str): The name of the user.\n    created_at (datetime): The creation date of the user."
       },
@@ -8048,7 +9699,10 @@
         },
         "additionalProperties": false,
         "type": "object",
-        "required": ["name", "organization_id"],
+        "required": [
+          "name",
+          "organization_id"
+        ],
         "title": "UserCreate"
       },
       "UserMessage-Input": {
@@ -8085,7 +9739,9 @@
           }
         },
         "type": "object",
-        "required": ["content"],
+        "required": [
+          "content"
+        ],
         "title": "UserMessage"
       },
       "UserMessage-Output": {
@@ -8101,7 +9757,9 @@
           },
           "message_type": {
             "type": "string",
-            "enum": ["user_message"],
+            "enum": [
+              "user_message"
+            ],
             "const": "user_message",
             "title": "Message Type",
             "default": "user_message"
@@ -8112,7 +9770,11 @@
           }
         },
         "type": "object",
-        "required": ["id", "date", "message"],
+        "required": [
+          "id",
+          "date",
+          "message"
+        ],
         "title": "UserMessage",
         "description": "A message sent by the user. Never streamed back on a response, only used for cursor pagination.\n\nAttributes:\n    message (str): The message sent by the user\n    id (str): The ID of the message\n    date (datetime): The date the message was created in ISO format"
       },
@@ -8150,7 +9812,9 @@
         },
         "additionalProperties": false,
         "type": "object",
-        "required": ["id"],
+        "required": [
+          "id"
+        ],
         "title": "UserUpdate"
       },
       "ValidationError": {
@@ -8179,7 +9843,11 @@
           }
         },
         "type": "object",
-        "required": ["loc", "msg", "type"],
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
         "title": "ValidationError"
       },
       "letta__schemas__letta_message__FunctionCall": {
@@ -8198,7 +9866,11 @@
           }
         },
         "type": "object",
-        "required": ["name", "arguments", "function_call_id"],
+        "required": [
+          "name",
+          "arguments",
+          "function_call_id"
+        ],
         "title": "FunctionCall"
       },
       "letta__schemas__message__Message-Output": {
@@ -8208,7 +9880,11 @@
             "pattern": "^message-[a-fA-F0-9]{8}",
             "title": "Id",
             "description": "The human-friendly ID of the Message",
-            "examples": [["message-123e4567-e89b-12d3-a456-426614174000"]]
+            "examples": [
+              [
+                "message-123e4567-e89b-12d3-a456-426614174000"
+              ]
+            ]
           },
           "role": {
             "$ref": "#/components/schemas/MessageRole",
@@ -8310,7 +9986,9 @@
         },
         "additionalProperties": false,
         "type": "object",
-        "required": ["role"],
+        "required": [
+          "role"
+        ],
         "title": "Message",
         "description": "Letta's internal representation of a message. Includes methods to convert to/from LLM provider formats.\n\nAttributes:\n    id (str): The unique identifier of the message.\n    role (MessageRole): The role of the participant.\n    text (str): The text of the message.\n    user_id (str): The unique identifier of the user.\n    agent_id (str): The unique identifier of the agent.\n    model (str): The model used to make the function call.\n    name (str): The name of the participant.\n    created_at (datetime): The time the message was created.\n    tool_calls (List[ToolCall]): The list of tool calls requested.\n    tool_call_id (str): The id of the tool call."
       },
@@ -8318,7 +9996,9 @@
         "properties": {
           "type": {
             "type": "string",
-            "enum": ["function"],
+            "enum": [
+              "function"
+            ],
             "const": "function",
             "title": "Type",
             "default": "function"
@@ -8328,7 +10008,9 @@
           }
         },
         "type": "object",
-        "required": ["function"],
+        "required": [
+          "function"
+        ],
         "title": "Tool"
       },
       "letta__schemas__openai__chat_completion_request__ToolCall": {
@@ -8339,7 +10021,9 @@
           },
           "type": {
             "type": "string",
-            "enum": ["function"],
+            "enum": [
+              "function"
+            ],
             "const": "function",
             "title": "Type",
             "default": "function"
@@ -8349,7 +10033,10 @@
           }
         },
         "type": "object",
-        "required": ["id", "function"],
+        "required": [
+          "id",
+          "function"
+        ],
         "title": "ToolCall"
       },
       "letta__schemas__openai__chat_completion_request__ToolCallFunction": {
@@ -8364,7 +10051,10 @@
           }
         },
         "type": "object",
-        "required": ["name", "arguments"],
+        "required": [
+          "name",
+          "arguments"
+        ],
         "title": "ToolCallFunction"
       },
       "letta__schemas__openai__chat_completion_response__FunctionCall": {
@@ -8379,7 +10069,10 @@
           }
         },
         "type": "object",
-        "required": ["arguments", "name"],
+        "required": [
+          "arguments",
+          "name"
+        ],
         "title": "FunctionCall"
       },
       "letta__schemas__openai__chat_completion_response__Message": {
@@ -8425,7 +10118,9 @@
           }
         },
         "type": "object",
-        "required": ["role"],
+        "required": [
+          "role"
+        ],
         "title": "Message"
       },
       "letta__schemas__openai__chat_completion_response__ToolCall": {
@@ -8436,7 +10131,9 @@
           },
           "type": {
             "type": "string",
-            "enum": ["function"],
+            "enum": [
+              "function"
+            ],
             "const": "function",
             "title": "Type",
             "default": "function"
@@ -8446,7 +10143,10 @@
           }
         },
         "type": "object",
-        "required": ["id", "function"],
+        "required": [
+          "id",
+          "function"
+        ],
         "title": "ToolCall"
       },
       "letta__schemas__openai__chat_completions__ToolCall-Input": {
@@ -8467,7 +10167,10 @@
           }
         },
         "type": "object",
-        "required": ["id", "function"],
+        "required": [
+          "id",
+          "function"
+        ],
         "title": "ToolCall"
       },
       "letta__schemas__openai__chat_completions__ToolCall-Output": {
@@ -8488,7 +10191,10 @@
           }
         },
         "type": "object",
-        "required": ["id", "function"],
+        "required": [
+          "id",
+          "function"
+        ],
         "title": "ToolCall"
       },
       "letta__schemas__openai__chat_completions__ToolCallFunction": {
@@ -8505,7 +10211,10 @@
           }
         },
         "type": "object",
-        "required": ["name", "arguments"],
+        "required": [
+          "name",
+          "arguments"
+        ],
         "title": "ToolCallFunction"
       },
       "letta__schemas__openai__openai__ToolCall": {
@@ -8526,7 +10235,10 @@
           }
         },
         "type": "object",
-        "required": ["id", "function"],
+        "required": [
+          "id",
+          "function"
+        ],
         "title": "ToolCall"
       },
       "letta__schemas__tool__Tool": {
@@ -8536,7 +10248,11 @@
             "pattern": "^tool-[a-fA-F0-9]{8}",
             "title": "Id",
             "description": "The human-friendly ID of the Tool",
-            "examples": [["tool-123e4567-e89b-12d3-a456-426614174000"]]
+            "examples": [
+              [
+                "tool-123e4567-e89b-12d3-a456-426614174000"
+              ]
+            ]
           },
           "description": {
             "anyOf": [
@@ -8651,7 +10367,9 @@
         },
         "additionalProperties": false,
         "type": "object",
-        "required": ["source_code"],
+        "required": [
+          "source_code"
+        ],
         "title": "Tool",
         "description": "Representation of a tool, which is a function that can be called by the agent.\n\nParameters:\n    id (str): The unique identifier of the tool.\n    name (str): The name of the function.\n    tags (List[str]): Metadata tags.\n    source_code (str): The source code of the function.\n    json_schema (Dict): The JSON schema of the function."
       },
@@ -8671,7 +10389,9 @@
               "message_type": {
                 "const": "assistant_message",
                 "default": "assistant_message",
-                "enum": ["assistant_message"],
+                "enum": [
+                  "assistant_message"
+                ],
                 "title": "Message Type",
                 "type": "string"
               },
@@ -8680,7 +10400,11 @@
                 "type": "string"
               }
             },
-            "required": ["id", "date", "assistant_message"],
+            "required": [
+              "id",
+              "date",
+              "assistant_message"
+            ],
             "title": "AssistantMessage",
             "type": "object"
           },
@@ -8699,7 +10423,11 @@
                 "type": "string"
               }
             },
-            "required": ["name", "arguments", "function_call_id"],
+            "required": [
+              "name",
+              "arguments",
+              "function_call_id"
+            ],
             "title": "FunctionCall",
             "type": "object"
           },
@@ -8739,7 +10467,11 @@
                 "title": "Function Call Id"
               }
             },
-            "required": ["name", "arguments", "function_call_id"],
+            "required": [
+              "name",
+              "arguments",
+              "function_call_id"
+            ],
             "title": "FunctionCallDelta",
             "type": "object"
           },
@@ -8758,7 +10490,9 @@
               "message_type": {
                 "const": "function_call",
                 "default": "function_call",
-                "enum": ["function_call"],
+                "enum": [
+                  "function_call"
+                ],
                 "title": "Message Type",
                 "type": "string"
               },
@@ -8774,7 +10508,11 @@
                 "title": "Function Call"
               }
             },
-            "required": ["id", "date", "function_call"],
+            "required": [
+              "id",
+              "date",
+              "function_call"
+            ],
             "title": "FunctionCallMessage",
             "type": "object"
           },
@@ -8793,7 +10531,9 @@
               "message_type": {
                 "const": "function_return",
                 "default": "function_return",
-                "enum": ["function_return"],
+                "enum": [
+                  "function_return"
+                ],
                 "title": "Message Type",
                 "type": "string"
               },
@@ -8802,7 +10542,10 @@
                 "type": "string"
               },
               "status": {
-                "enum": ["success", "error"],
+                "enum": [
+                  "success",
+                  "error"
+                ],
                 "title": "Status",
                 "type": "string"
               },
@@ -8836,7 +10579,9 @@
               "message_type": {
                 "const": "internal_monologue",
                 "default": "internal_monologue",
-                "enum": ["internal_monologue"],
+                "enum": [
+                  "internal_monologue"
+                ],
                 "title": "Message Type",
                 "type": "string"
               },
@@ -8845,7 +10590,11 @@
                 "type": "string"
               }
             },
-            "required": ["id", "date", "internal_monologue"],
+            "required": [
+              "id",
+              "date",
+              "internal_monologue"
+            ],
             "title": "InternalMonologue",
             "type": "object"
           },
@@ -8886,7 +10635,11 @@
             "properties": {
               "id": {
                 "description": "The human-friendly ID of the Message",
-                "examples": [["message-123e4567-e89b-12d3-a456-426614174000"]],
+                "examples": [
+                  [
+                    "message-123e4567-e89b-12d3-a456-426614174000"
+                  ]
+                ],
                 "pattern": "^message-[a-fA-F0-9]{8}",
                 "title": "Id",
                 "type": "string"
@@ -8996,12 +10749,20 @@
                 "title": "Tool Call Id"
               }
             },
-            "required": ["role"],
+            "required": [
+              "role"
+            ],
             "title": "Message",
             "type": "object"
           },
           "MessageRole": {
-            "enum": ["assistant", "user", "tool", "function", "system"],
+            "enum": [
+              "assistant",
+              "user",
+              "tool",
+              "function",
+              "system"
+            ],
             "title": "MessageRole",
             "type": "string"
           },
@@ -9020,7 +10781,9 @@
               "message_type": {
                 "const": "system_message",
                 "default": "system_message",
-                "enum": ["system_message"],
+                "enum": [
+                  "system_message"
+                ],
                 "title": "Message Type",
                 "type": "string"
               },
@@ -9029,7 +10792,11 @@
                 "type": "string"
               }
             },
-            "required": ["id", "date", "message"],
+            "required": [
+              "id",
+              "date",
+              "message"
+            ],
             "title": "SystemMessage",
             "type": "object"
           },
@@ -9050,7 +10817,10 @@
                 "description": "The arguments and name for the function"
               }
             },
-            "required": ["id", "function"],
+            "required": [
+              "id",
+              "function"
+            ],
             "title": "ToolCall",
             "type": "object"
           },
@@ -9067,7 +10837,10 @@
                 "type": "string"
               }
             },
-            "required": ["name", "arguments"],
+            "required": [
+              "name",
+              "arguments"
+            ],
             "title": "ToolCallFunction",
             "type": "object"
           },
@@ -9086,7 +10859,9 @@
               "message_type": {
                 "const": "user_message",
                 "default": "user_message",
-                "enum": ["user_message"],
+                "enum": [
+                  "user_message"
+                ],
                 "title": "Message Type",
                 "type": "string"
               },
@@ -9095,7 +10870,11 @@
                 "type": "string"
               }
             },
-            "required": ["id", "date", "message"],
+            "required": [
+              "id",
+              "date",
+              "message"
+            ],
             "title": "UserMessage",
             "type": "object"
           }

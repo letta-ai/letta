@@ -28,9 +28,12 @@ import { useDateFormatter } from '@letta-web/helpful-client-utils';
 import { useUpdateMemory } from '../hooks/useUpdateMemory/useUpdateMemory';
 import { useCurrentAgentMetaData } from '../hooks/useCurrentAgentMetaData/useCurrentAgentMetaData';
 import { useCurrentSimulatedAgent } from '../hooks/useCurrentSimulatedAgent/useCurrentSimulatedAgent';
-import type { AgentState, Block } from '@letta-web/letta-agents-api';
+import type { Block, AgentState } from '@letta-web/letta-agents-api';
+import {
+  useAgentsServiceUpdateAgentMemory,
+  useAgentsServiceUpdateAgentMemoryLimit,
+} from '@letta-web/letta-agents-api';
 import { UseAgentsServiceGetAgentKeyFn } from '@letta-web/letta-agents-api';
-import { useAgentsServiceUpdateAgent } from '@letta-web/letta-agents-api';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useFormContext } from 'react-hook-form';
 import { useQueryClient } from '@tanstack/react-query';
@@ -118,73 +121,98 @@ function AdvancedMemoryEditorForm(props: AdvancedMemoryEditorProps) {
 
   const queryClient = useQueryClient();
 
-  const { mutate, isPending } = useAgentsServiceUpdateAgent({
-    onSuccess: (response) => {
-      queryClient.setQueriesData<AgentState | undefined>(
-        {
-          queryKey: UseAgentsServiceGetAgentKeyFn({
-            agentId: agent.id,
-          }),
-        },
-        (oldData) => {
-          if (!oldData) {
-            return oldData;
-          }
-
-          return {
-            ...oldData,
-            ...response,
-          };
-        }
-      );
-    },
-  });
+  const { mutateAsync: updateMemoryLimit } =
+    useAgentsServiceUpdateAgentMemoryLimit();
+  const { mutateAsync: updateMemoryValue } =
+    useAgentsServiceUpdateAgentMemory();
+  const [isPending, setIsPending] = useState(false);
+  const [isError, setIsError] = useState(false);
 
   const handleUpdate = useCallback(
-    (values: MemoryUpdatePayload) => {
-      let existingMemoryArr = Object.values(agent.memory?.memory || {});
+    async (values: MemoryUpdatePayload) => {
+      try {
+        setIsPending(true);
+        setIsError(false);
 
-      // remove the memory from the existing memory array
-      existingMemoryArr = existingMemoryArr.filter(
-        (mem) => mem.label !== memory.label
-      );
-
-      // add the new memory to the array
-
-      existingMemoryArr.push({
-        label: values.label,
-        limit: values.maxCharacters,
-        value: values.value,
-      });
-
-      // construct key value pair object from the array
-      const newMemory = existingMemoryArr.reduce((acc, mem) => {
-        if (!mem.label) {
-          return acc;
+        if (isPending) {
+          return;
         }
 
-        acc[mem.label] = {
-          label: mem.label,
-          limit: mem.limit,
-          value: mem.value,
-          is_template: false,
-        };
-        return acc;
-      }, {} as Record<string, Block>);
+        const existingMemory = agent?.memory?.memory?.[memory.label || ''];
 
-      mutate({
-        agentId: agent.id,
-        requestBody: {
-          id: agent.id,
+        if (!existingMemory) {
+          throw new Error('Memory not found');
+        }
 
-          memory: {
-            ...agent.memory,
-            memory: newMemory,
+        if (!existingMemory.label) {
+          throw new Error('Memory label is required');
+        }
+
+        if (values.maxCharacters !== existingMemory.limit) {
+          existingMemory.limit = values.maxCharacters;
+
+          await updateMemoryLimit({
+            agentId: agent.id,
+            requestBody: {
+              label: existingMemory.label,
+              limit: values.maxCharacters,
+            },
+          });
+        }
+
+        if (values.value !== existingMemory.value) {
+          existingMemory.value = values.value;
+
+          await updateMemoryValue({
+            agentId: agent.id,
+            requestBody: {
+              [existingMemory.label]: {
+                label: existingMemory.label,
+                value: values.value,
+              },
+            },
+          });
+        }
+
+        queryClient.setQueriesData<AgentState | undefined>(
+          {
+            queryKey: UseAgentsServiceGetAgentKeyFn({
+              agentId: agent.id,
+            }),
           },
-        },
-      });
+          (oldData) => {
+            if (!oldData) {
+              return oldData;
+            }
+
+            return {
+              ...oldData,
+              memory: {
+                ...oldData.memory,
+                memory: {
+                  ...(oldData.memory?.memory || {}),
+                  [memory.label || '']: existingMemory,
+                },
+              },
+            };
+          }
+        );
+      } catch (_e) {
+        console.log(_e);
+        setIsError(true);
+      } finally {
+        setIsPending(false);
+      }
     },
-    [agent.id, agent.memory, memory.label, mutate]
+    [
+      agent.id,
+      agent?.memory?.memory,
+      isPending,
+      memory.label,
+      queryClient,
+      updateMemoryLimit,
+      updateMemoryValue,
+    ]
   );
 
   return (
@@ -196,8 +224,8 @@ function AdvancedMemoryEditorForm(props: AdvancedMemoryEditorProps) {
             name="label"
             render={({ field }) => (
               <Input
-                disabled
                 fullWidth
+                disabled
                 warned={field.value !== memory.label}
                 label={t('AdvancedMemoryEditorForm.label.label')}
                 {...field}
@@ -209,7 +237,6 @@ function AdvancedMemoryEditorForm(props: AdvancedMemoryEditorProps) {
             name="maxCharacters"
             render={({ field }) => (
               <Input
-                disabled
                 fullWidth
                 type="number"
                 label={t('AdvancedMemoryEditorForm.maxCharacters.label')}
@@ -231,7 +258,11 @@ function AdvancedMemoryEditorForm(props: AdvancedMemoryEditorProps) {
             )}
           />
 
-          <FormActions>
+          <FormActions
+            errorMessage={
+              isError ? t('AdvancedMemoryEditorForm.error') : undefined
+            }
+          >
             <Button
               label={t('AdvancedMemoryEditorForm.update')}
               busy={isPending}
