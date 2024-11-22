@@ -560,6 +560,14 @@
     "localProject": "Local Project"
   },
   "ADE/EditCoreMemoriesPanel": {
+    "SimulatedMemory": {
+      "error": "There was an error while reading the simulated memory block, please try again or contact support."
+    },
+    "toggleMemoryType": {
+      "label": "Toggle Memory Type",
+      "templated": "Templated Memory",
+      "simulated": "Simulated Memory"
+    },
     "mobileTitle": "Core Memories",
     "EditMemoryForm": {
       "characterLimit": "{count}/{limit} CHARS"

@@ -6,6 +6,8 @@ import {
   Form,
   FormActions,
   FormField,
+  LettaLoaderPanel,
+  RawToggleGroup,
   FormProvider,
   Input,
   TextArea,
@@ -24,6 +26,8 @@ import { useCallback, useState } from 'react';
 import React, { useMemo } from 'react';
 import { useDateFormatter } from '@letta-web/helpful-client-utils';
 import { useUpdateMemory } from '../hooks/useUpdateMemory/useUpdateMemory';
+import { useCurrentAgentMetaData } from '../hooks/useCurrentAgentMetaData/useCurrentAgentMetaData';
+import { useCurrentSimulatedAgent } from '../hooks/useCurrentSimulatedAgent/useCurrentSimulatedAgent';
 import type { AgentState, Block } from '@letta-web/letta-agents-api';
 import { UseAgentsServiceGetAgentKeyFn } from '@letta-web/letta-agents-api';
 import { useAgentsServiceUpdateAgent } from '@letta-web/letta-agents-api';
@@ -323,23 +327,21 @@ function EditMemoryForm(props: EditMemoryFormProps) {
       )}
       <VStack flex fullHeight>
         <VStack fullWidth fullHeight>
-          <HStack fullWidth justify="spaceBetween">
-            <Typography variant="body2">{label}</Typography>
-            <Typography variant="body2" color="muted">
-              {t('EditMemoryForm.characterLimit', {
-                count: value.length,
-                limit: memory.limit,
-              })}
-            </Typography>
-          </HStack>
           <RawTextArea
-            hideLabel
+            rightOfLabelContent={
+              <Typography variant="body2" color="muted">
+                {t('EditMemoryForm.characterLimit', {
+                  count: value.length,
+                  limit: memory.limit,
+                })}
+              </Typography>
+            }
             autosize={false}
             flex
             fullHeight
             data-testid={`edit-memory-block-${label}-content`}
             fullWidth
-            label={t('content')}
+            label={label}
             onChange={(e) => {
               onChange(e.target.value);
             }}
@@ -382,26 +384,108 @@ function EditMemoryForm(props: EditMemoryFormProps) {
   );
 }
 
-function EditMemory() {
+function DefaultMemory() {
   const agent = useCurrentAgent();
 
   const memories = useMemo(() => {
     return Object.values(agent.memory?.memory || {});
   }, [agent.memory?.memory]);
 
+  return memories.map((block, index) => (
+    <VStack
+      paddingTop="small"
+      fullHeight
+      borderBottom={index !== memories.length - 1}
+      key={block.label || ''}
+    >
+      <EditMemoryForm memory={block} label={block.label || ''} />
+    </VStack>
+  ));
+}
+
+function SimulatedMemory() {
+  const { agentSession } = useCurrentSimulatedAgent();
+  const agent = useMemo(() => {
+    return agentSession?.body.agent;
+  }, [agentSession]);
+
+  const memories = useMemo(() => {
+    if (!agent) {
+      return [];
+    }
+
+    return Object.values(agent.memory?.memory || {});
+  }, [agent]);
+
+  if (!agent) {
+    return <LettaLoaderPanel />;
+  }
+
+  return memories.map((block, index) => (
+    <VStack
+      paddingTop="small"
+      fullHeight
+      borderBottom={index !== memories.length - 1}
+      key={block.label || ''}
+    >
+      <VStack fullHeight flex paddingBottom="small">
+        <RawTextArea
+          autosize={false}
+          flex
+          fullHeight
+          resize="none"
+          fullWidth
+          disabled
+          label={block.label || ''}
+          value={block.value}
+        />
+      </VStack>
+    </VStack>
+  ));
+}
+
+type MemoryType = 'simulated' | 'templated';
+
+function EditMemory() {
+  const { isTemplate } = useCurrentAgentMetaData();
+  const [memoryType, setMemoryType] = useState<MemoryType>('templated');
+
+  const t = useTranslations('ADE/EditCoreMemoriesPanel');
+
   return (
     <PanelMainContent variant="noPadding">
-      <VStack fullHeight gap="small" paddingX="large" paddingBottom="small">
-        {memories.map((block, index) => (
-          <VStack
-            paddingTop="small"
-            fullHeight
-            borderBottom={index !== memories.length - 1}
-            key={block.label || ''}
-          >
-            <EditMemoryForm memory={block} label={block.label || ''} />
-          </VStack>
-        ))}
+      <VStack fullHeight gap={false}>
+        <VStack paddingX="small">
+          {isTemplate && (
+            <RawToggleGroup
+              border
+              fullWidth
+              value={memoryType}
+              hideLabel
+              onValueChange={(value) => {
+                if (!value) {
+                  return;
+                }
+
+                setMemoryType(value as MemoryType);
+              }}
+              label={t('toggleMemoryType.label')}
+              items={[
+                {
+                  label: t('toggleMemoryType.templated'),
+                  value: 'templated',
+                },
+                {
+                  label: t('toggleMemoryType.simulated'),
+                  value: 'simulated',
+                },
+              ]}
+            />
+          )}
+        </VStack>
+        <VStack fullHeight gap="small" paddingX="large" paddingBottom="small">
+          {memoryType === 'templated' ? <DefaultMemory /> : <SimulatedMemory />}
+        </VStack>
       </VStack>
     </PanelMainContent>
   );

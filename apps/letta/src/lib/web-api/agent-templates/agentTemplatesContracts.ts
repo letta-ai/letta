@@ -2,6 +2,7 @@ import type { ServerInferResponses } from '@ts-rest/core';
 import { initContract } from '@ts-rest/core';
 import { z } from 'zod';
 import { ProjectAgentTemplateSchema } from '$letta/web-api/projects/projectContracts';
+import type { AgentState } from '@letta-web/letta-agents-api';
 
 const c = initContract();
 
@@ -71,15 +72,12 @@ type GetAgentTemplateSessionParams = z.infer<
   typeof GetAgentTemplateSessionParamsSchema
 >;
 
-export const GetAgentTemplateSessionResponseSchema = z.object({
-  id: z.string(),
-  agentId: z.string(),
-  variables: z.record(z.string()),
-});
-
-export type GetAgentTemplateSessionResponse = z.infer<
-  typeof GetAgentTemplateSessionResponseSchema
->;
+export const GetAgentTemplateSessionResponseSchema = c.type<{
+  id: string;
+  agentId: string;
+  variables: Record<string, string>;
+  agent: AgentState;
+}>();
 
 const getAgentTemplateSimulatorSessionContract = c.query({
   method: 'GET',
@@ -101,11 +99,12 @@ const CreateAgentTemplateSessionParamsSchema = z.object({
   agentTemplateId: z.string(),
 });
 
-export const CreateAgentTemplateSessionResponseSchema = z.object({
-  id: z.string(),
-  agentId: z.string(),
-  variables: z.record(z.string()),
-});
+export const CreateAgentTemplateSessionResponseSchema = c.type<{
+  id: string;
+  agentId: string;
+  variables: Record<string, string>;
+  agent: AgentState;
+}>();
 
 export const CreateAgentTemplateSessionBodySchema = z.object({
   variables: z.record(z.string()),

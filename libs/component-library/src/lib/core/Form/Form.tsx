@@ -188,15 +188,20 @@ export function InputContainer(props: InputContainerProps) {
         flex={flex}
         inputAndLabel={
           <>
-            <FormLabel className={hideLabel ? 'sr-only' : ''}>
-              <HStack gap="text" justify="spaceBetween">
+            <HStack
+              className={hideLabel ? 'sr-only' : ''}
+              fullWidth
+              gap="text"
+              justify="spaceBetween"
+            >
+              <FormLabel>
                 <HStack gap="text">
                   {preLabelIcon && <Slot className="h-3">{preLabelIcon}</Slot>}
                   {label}
                 </HStack>
-                {rightOfLabelContent}
-              </HStack>
-            </FormLabel>
+              </FormLabel>
+              {rightOfLabelContent}
+            </HStack>
             <FormControl>{children}</FormControl>
           </>
         }

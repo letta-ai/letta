@@ -149,6 +149,7 @@ export function ChatInput<Roles extends string>(props: ChatInputProps<Roles>) {
                 <VStack gap={false}>
                   {roles.map((r) => (
                     <Button
+                      key={r.value}
                       color="tertiary-transparent"
                       label={r.label}
                       preIcon={r.icon}

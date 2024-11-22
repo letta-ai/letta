@@ -198,6 +198,9 @@ async function getAgentTemplateSimulatorSession(
     where: eq(agentSimulatorSessions.agentTemplateId, agentTemplateId),
   });
 
+  let agentId = '';
+  let id = '';
+
   if (!simulatorSession) {
     // create new simulator session
     const newAgent = await copyAgentById(agentTemplate.id, lettaAgentsId);
@@ -225,22 +228,24 @@ async function getAgentTemplateSimulatorSession(
         id: agentSimulatorSessions.id,
       });
 
-    return {
-      status: 200,
-      body: {
-        agentId: newAgentId,
-        id: simulatorSession.id,
-        variables: {},
-      },
-    };
+    agentId = newAgentId;
+    id = simulatorSession.id;
+  } else {
+    agentId = simulatorSession.agentId;
+    id = simulatorSession.id;
   }
+
+  const agent = await AgentsService.getAgent({
+    agentId,
+  });
 
   return {
     status: 200,
     body: {
-      agentId: simulatorSession.agentId,
-      id: simulatorSession.id,
-      variables: simulatorSession.variables as Record<string, string>,
+      agent,
+      agentId,
+      id,
+      variables: (simulatorSession?.variables as Record<string, string>) || {},
     },
   };
 }
@@ -304,7 +309,7 @@ async function createAgentTemplateSimulatorSession(
       };
     }
 
-    await AgentsService.updateAgent({
+    const agentState = await AgentsService.updateAgent({
       agentId: existingSimulatorSession.agentId,
       requestBody: {
         id: existingSimulatorSession.agentId,
@@ -323,6 +328,7 @@ async function createAgentTemplateSimulatorSession(
     return {
       status: 200,
       body: {
+        agent: agentState,
         agentId: existingSimulatorSession.agentId,
         id: existingSimulatorSession.id,
         variables,
@@ -362,6 +368,7 @@ async function createAgentTemplateSimulatorSession(
   return {
     status: 201,
     body: {
+      agent: newAgent,
       id: simulatorSession.id,
       agentId: newAgentId,
       variables,
@@ -414,7 +421,7 @@ async function refreshAgentTemplateSimulatorSession(
     };
   }
 
-  await updateAgentFromAgentId({
+  const agent = await updateAgentFromAgentId({
     variables: (simulatorSession.variables as Record<string, string>) || {},
     baseAgentId: agentTemplate.id,
     agentToUpdateId: simulatorSession.agentId,
@@ -425,6 +432,7 @@ async function refreshAgentTemplateSimulatorSession(
   return {
     status: 200,
     body: {
+      agent,
       agentId: simulatorSession.agentId,
       id: simulatorSession.id,
       variables: simulatorSession.variables as Record<string, string>,
