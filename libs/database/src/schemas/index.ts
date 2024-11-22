@@ -475,6 +475,7 @@ export const inferenceTransactions = pgTable('inference_transactions', {
   organizationId: text('organization_id').notNull(),
   inputTokens: numeric('input_tokens').notNull(),
   outputTokens: numeric('output_tokens').notNull(),
+  projectId: text('project_id'),
   totalTokens: numeric('total_tokens').notNull(),
   stepCount: numeric('step_count').notNull(),
   providerType: text('providerType').notNull(),

@@ -1,5 +1,6 @@
-import { db, inferenceTransactions } from '@letta-web/database';
+import { db, deployedAgents, inferenceTransactions } from '@letta-web/database';
 import { AgentsService } from '@letta-web/letta-agents-api';
+import { eq } from 'drizzle-orm';
 
 interface CreateInferenceTransactionOptions {
   referenceId: string;
@@ -30,15 +31,23 @@ export async function createInferenceTransaction(
     agentId,
   } = options;
 
-  const agent = await AgentsService.getAgent({
-    agentId,
-  });
+  const [agent, maybeDeployedAgent] = await Promise.all([
+    AgentsService.getAgent({
+      agentId,
+    }),
+    db.query.deployedAgents
+      .findFirst({
+        where: eq(deployedAgents.id, agentId),
+      })
+      .catch(() => null),
+  ]);
 
   await db.insert(inferenceTransactions).values({
     referenceId,
     agentId,
     organizationId,
     source,
+    projectId: maybeDeployedAgent?.projectId,
     inputTokens: inputTokens.toString(),
     outputTokens: outputTokens.toString(),
     totalTokens: totalTokens.toString(),
