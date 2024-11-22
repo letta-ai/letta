@@ -76,6 +76,8 @@ import {
   ProfilePopover,
 } from '$letta/client/components/DashboardLikeLayout/DashboardNavigation/DashboardNavigation';
 import { CLOUD_UPSELL_URL } from '$letta/constants';
+import { trackClientSideEvent } from '@letta-web/analytics/client';
+import { AnalyticsEvent } from '@letta-web/analytics';
 
 function RestoreLayoutButton() {
   const t = useTranslations(
@@ -108,6 +110,8 @@ function DeleteAgentDialog(props: DeleteAgentDialogProps) {
 
   const { slug: projectSlug } = useCurrentProject();
   const { id: agentTemplateId } = useCurrentAgent();
+  const { isLocal } = useCurrentAgentMetaData();
+  const user = useCurrentUser();
 
   const DeleteAgentDialogFormSchema = useMemo(
     () =>
@@ -133,6 +137,16 @@ function DeleteAgentDialog(props: DeleteAgentDialogProps) {
   const { mutate, isPending, isSuccess, isError } =
     webOriginSDKApi.agents.deleteAgent.useMutation({
       onSuccess: () => {
+        if (isLocal) {
+          trackClientSideEvent(AnalyticsEvent.LOCAL_AGENT_DELETED, {
+            userId: user?.id || '',
+          });
+        } else {
+          trackClientSideEvent(AnalyticsEvent.CLOUD_AGENT_DELETED, {
+            userId: user?.id || '',
+          });
+        }
+
         window.location.href = `/projects/${projectSlug}`;
       },
     });

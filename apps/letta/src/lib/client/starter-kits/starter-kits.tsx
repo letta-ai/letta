@@ -10,6 +10,7 @@ import type { StaticImport } from 'next/dist/shared/lib/get-img-props';
 
 export interface StarterKit {
   image: StaticImport | string;
+  id: string;
   useGetTitle: () => string;
   useGetDescription: () => string;
   agentState: Partial<AgentState>;
@@ -17,6 +18,7 @@ export interface StarterKit {
 
 export const STARTER_KITS: Record<string, StarterKit> = {
   scratch: {
+    id: 'scratch',
     useGetTitle: () => {
       const t = useTranslations('starter-kits');
 
@@ -46,6 +48,7 @@ export const STARTER_KITS: Record<string, StarterKit> = {
     },
   },
   internetChatbot: {
+    id: 'internetChatbot',
     image: internetChatbot,
     useGetTitle: () => {
       const t = useTranslations('starter-kits');
@@ -77,6 +80,7 @@ export const STARTER_KITS: Record<string, StarterKit> = {
     },
   },
   characterRoleplay: {
+    id: 'characterRoleplay',
     image: characterRoleplay,
     useGetTitle: () => {
       const t = useTranslations('starter-kits');
@@ -109,6 +113,7 @@ export const STARTER_KITS: Record<string, StarterKit> = {
     },
   },
   personalAssistant: {
+    id: 'personalAssistant',
     useGetTitle: () => {
       const t = useTranslations('starter-kits');
 
@@ -141,6 +146,7 @@ export const STARTER_KITS: Record<string, StarterKit> = {
   },
 
   customerSupport: {
+    id: 'customerSupport',
     useGetTitle: () => {
       const t = useTranslations('starter-kits');
 
@@ -172,6 +178,7 @@ export const STARTER_KITS: Record<string, StarterKit> = {
     },
   },
   companion: {
+    id: 'companion',
     useGetTitle: () => {
       const t = useTranslations('starter-kits');
 

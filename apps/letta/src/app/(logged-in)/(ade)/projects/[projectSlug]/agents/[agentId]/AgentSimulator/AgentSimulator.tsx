@@ -62,6 +62,9 @@ import { isEqual } from 'lodash-es';
 import { useCurrentSimulatedAgent } from '../hooks/useCurrentSimulatedAgent/useCurrentSimulatedAgent';
 import { useCurrentAgentMetaData } from '../hooks/useCurrentAgentMetaData/useCurrentAgentMetaData';
 import { atom, useAtom } from 'jotai';
+import { trackClientSideEvent } from '@letta-web/analytics/client';
+import { AnalyticsEvent } from '@letta-web/analytics';
+import { useCurrentUser } from '$letta/client/hooks';
 
 const isSendingMessageAtom = atom(false);
 
@@ -69,6 +72,8 @@ function useSendMessage(agentId: string) {
   const [isPending, setIsPending] = useAtom(isSendingMessageAtom);
   const abortController = useRef<AbortController>();
   const queryClient = useQueryClient();
+  const { isLocal } = useCurrentAgentMetaData();
+  const user = useCurrentUser();
 
   const { baseUrl, password } = useLettaAgentsAPI();
 
@@ -112,6 +117,12 @@ function useSendMessage(agentId: string) {
           };
         }
       );
+
+      if (isLocal) {
+        trackClientSideEvent(AnalyticsEvent.LOCAL_AGENT_MESSAGE_CREATED, {
+          userId: user?.id || '',
+        });
+      }
 
       abortController.current = new AbortController();
 
@@ -253,7 +264,7 @@ function useSendMessage(agentId: string) {
         setIsPending(false);
       };
     },
-    [agentId, baseUrl, password, queryClient, setIsPending]
+    [agentId, baseUrl, isLocal, password, queryClient, setIsPending, user?.id]
   );
 
   return { isPending, sendMessage };

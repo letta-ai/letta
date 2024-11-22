@@ -60,6 +60,10 @@ import {
 } from 'unique-names-generator';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { get, isEqual } from 'lodash-es';
+import { useCurrentUser } from '$letta/client/hooks';
+import { trackClientSideEvent } from '@letta-web/analytics/client';
+import { AnalyticsEvent } from '@letta-web/analytics';
+import { useCurrentAgentMetaData } from '../hooks/useCurrentAgentMetaData/useCurrentAgentMetaData';
 
 interface AttachDataSourceActionProps {
   source: Source;
@@ -71,12 +75,24 @@ function AttachDataSourceAction(props: AttachDataSourceActionProps) {
   const { source, onAttach, isAttached } = props;
 
   const { id, embedding_config } = useCurrentAgent();
+  const { isLocal } = useCurrentAgentMetaData();
   const queryClient = useQueryClient();
+  const user = useCurrentUser();
 
   const t = useTranslations('ADE/EditDataSourcesPanel');
 
   const { mutate, isPending } = useSourcesServiceAttachAgentToSource({
     onSuccess: (response) => {
+      if (isLocal) {
+        trackClientSideEvent(AnalyticsEvent.LOCAL_AGENT_DATA_SOURCE_ATTACHED, {
+          userId: user?.id || '',
+        });
+      } else {
+        trackClientSideEvent(AnalyticsEvent.CLOUD_DATA_SOURCE_ATTACHED, {
+          userId: user?.id || '',
+        });
+      }
+
       queryClient.setQueriesData<
         AgentsServiceGetAgentSourcesDefaultResponse | undefined
       >(
@@ -533,12 +549,25 @@ function DetachDataSourceConfirmDialog(
   const t = useTranslations('ADE/EditDataSourcesPanel');
   const queryClient = useQueryClient();
 
+  const { isLocal } = useCurrentAgentMetaData();
+  const user = useCurrentUser();
+
   const {
     mutate: detachSource,
     isError,
     isPending,
   } = useSourcesServiceDetachAgentFromSource({
     onSuccess: (_, variables) => {
+      if (isLocal) {
+        trackClientSideEvent(AnalyticsEvent.LOCAL_AGENT_DATA_SOURCE_ATTACHED, {
+          userId: user?.id || '',
+        });
+      } else {
+        trackClientSideEvent(AnalyticsEvent.CLOUD_DATA_SOURCE_ATTACHED, {
+          userId: user?.id || '',
+        });
+      }
+
       onClose();
       queryClient.setQueriesData<
         AgentsServiceGetAgentSourcesDefaultResponse | undefined
