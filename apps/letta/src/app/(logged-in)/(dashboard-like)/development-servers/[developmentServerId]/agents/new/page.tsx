@@ -13,10 +13,15 @@ import {
   VStack,
 } from '@letta-web/component-library';
 import { useCurrentDevelopmentServerConfig } from '../../hooks/useCurrentDevelopmentServerConfig/useCurrentDevelopmentServerConfig';
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import type { StarterKit } from '$letta/client';
 import { STARTER_KITS } from '$letta/client';
-import type { AgentState } from '@letta-web/letta-agents-api';
+import {
+  AgentState,
+  ToolsService,
+  useToolsServiceGetTool,
+  useToolsServiceListTools
+} from '@letta-web/letta-agents-api';
 import { useHealthServiceHealthCheck } from '@letta-web/letta-agents-api';
 import {
   useAgentsServiceCreateAgent,
@@ -32,14 +37,13 @@ interface StarterKitItemProps {
   starterKit: StarterKit;
   onCreateAgent: (
     title: string,
-    agentState: Partial<AgentState>,
-    starterKitId: string
+    starterKit: StarterKit
   ) => void;
 }
 
 function StarterKitItem(props: StarterKitItemProps) {
   const { starterKit, onCreateAgent } = props;
-  const { useGetTitle, useGetDescription, image, agentState, id } = starterKit;
+  const { useGetTitle, useGetDescription, image } = starterKit;
 
   const title = useGetTitle();
   const description = useGetDescription();
@@ -49,7 +53,7 @@ function StarterKitItem(props: StarterKitItemProps) {
       /* eslint-disable-next-line react/forbid-component-props */
       className="h-[260px]"
       onClick={() => {
-        onCreateAgent(title, agentState, id);
+        onCreateAgent(title, starterKit);
       }}
       imageUrl={image}
       altText=""
@@ -71,19 +75,26 @@ function NewAgentPage() {
       retry: false,
     });
 
+  const [isPending, setIsPending] = useState(false);
+
   const {
     mutate: createAgent,
-    isPending,
     isSuccess,
     error,
   } = useAgentsServiceCreateAgent();
+
+  const {
+    refetch: getAllTools,
+  } = useToolsServiceListTools({ }, undefined, {
+    enabled: false,
+  });
 
   const developmentServerConfig = useCurrentDevelopmentServerConfig();
   const { push } = useRouter();
   const user = useCurrentUser();
 
   const handleCreateAgent = useCallback(
-    (title: string, agentState: Partial<AgentState>, starterKitId: string) => {
+    async (title: string, starterKit: StarterKit) => {
       if (!developmentServerConfig) {
         return;
       }
@@ -96,6 +107,32 @@ function NewAgentPage() {
       if (isPending || isSuccess) {
         return;
       }
+
+      setIsPending(true);
+
+      if (starterKit.tools) {
+        const existingTools = await getAllTools();
+
+        const toolNameMap = (existingTools.data || []).reduce((acc, tool) => {
+          acc.add(tool.name || '');
+
+          return acc;
+        }, new Set<string>());
+
+        const toolsToCreate = starterKit.tools.filter((tool) => {
+          return !toolNameMap.has(tool.name);
+        });
+
+        await Promise.all(toolsToCreate.map((tool) => {
+          return ToolsService.createTool({
+            requestBody: {
+              source_code: tool.code,
+              name: tool.name,
+            },
+          });
+        }));
+      }
+
 
       const nextName = `${title
         .toLowerCase()
@@ -119,6 +156,7 @@ function NewAgentPage() {
         },
         {
           onSuccess: (response) => {
+            setIsPending(false);
             trackClientSideEvent(AnalyticsEvent.LOCAL_AGENT_CREATED, {
               userId: user?.id || '',
               starterKitId,
