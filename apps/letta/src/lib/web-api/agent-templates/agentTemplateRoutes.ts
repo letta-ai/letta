@@ -300,7 +300,7 @@ async function createAgentTemplateSimulatorSession(
       }
     );
 
-    if (!existingTemplate) {
+    if (!existingTemplate?.id) {
       return {
         status: 500,
         body: {
@@ -309,12 +309,12 @@ async function createAgentTemplateSimulatorSession(
       };
     }
 
-    const agentState = await AgentsService.updateAgent({
-      agentId: existingSimulatorSession.agentId,
-      requestBody: {
-        id: existingSimulatorSession.agentId,
-        ...attachVariablesToTemplates(existingTemplate, variables),
-      },
+    const agentState = await updateAgentFromAgentId({
+      agentToUpdateId: existingSimulatorSession.agentId,
+      baseAgentId: existingTemplate.id,
+      preserveCoreMemories: false,
+      variables,
+      lettaAgentsUserId: lettaAgentsId,
     });
 
     await db
