@@ -489,6 +489,10 @@
     }
   },
   "ADE/AgentSimulator": {
+    "role": {
+      "user": "User",
+      "system": "System"
+    },
     "FlushSimulationSessionDialog": {
       "title": "Flush Simulation",
       "description": "Are you sure you want to flush the simulation? This will reset the simulated agent's memory and state.",
@@ -727,6 +731,13 @@
     "companion": {
       "title": "Companion",
       "description": "Chat between a user an an AI companion named Sam, designed to learn and adapt over time."
+    }
+  },
+  "component-library/reusable/ChatInput": {
+    "placeholder": "Type a message...",
+    "send": "Send",
+    "role": {
+      "label": "Click here to switch roles, the current role is {role}"
     }
   },
   "development-servers/agents/new/page": {

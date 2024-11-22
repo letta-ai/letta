@@ -12,8 +12,10 @@ import {
   DropdownMenuItem,
   HStack,
   LoadingEmptyStatusComponent,
+  PersonIcon,
   ProgressBar,
   RawToggleGroup,
+  SystemIcon,
   Table,
   TableBody,
   TableCell,
@@ -68,6 +70,13 @@ import { useCurrentUser } from '$letta/client/hooks';
 
 const isSendingMessageAtom = atom(false);
 
+interface SendMessagePayload {
+  role: 'system' | 'user';
+  text: string;
+}
+
+export type SendMessageType = (payload: SendMessagePayload) => void;
+
 function useSendMessage(agentId: string) {
   const [isPending, setIsPending] = useAtom(isSendingMessageAtom);
   const abortController = useRef<AbortController>();
@@ -85,8 +94,9 @@ function useSendMessage(agentId: string) {
     };
   }, []);
 
-  const sendMessage = useCallback(
-    (message: string) => {
+  const sendMessage: SendMessageType = useCallback(
+    (payload: SendMessagePayload) => {
+      const { text: message, role } = payload;
       setIsPending(true);
 
       queryClient.setQueriesData<InfiniteData<AgentMessage[]> | undefined>(
@@ -103,7 +113,7 @@ function useSendMessage(agentId: string) {
           const newMessage: AgentMessage = {
             message_type: 'user_message',
             message: JSON.stringify({
-              type: 'user_message',
+              type: role === 'user' ? 'user_message' : 'system_alert',
               message: message,
               time: new Date().toISOString(),
             }),
@@ -817,10 +827,26 @@ function Chatroom() {
                 />
               )}
             </VStack>
-            <ChatInput
+            <ChatInput<SendMessagePayload['role']>
               disabled={!agentIdToUse}
+              defaultRole="user"
+              roles={[
+                {
+                  value: 'user',
+                  label: t('role.user'),
+                  icon: <PersonIcon />,
+                  color: 'hsl(var(--user-color))',
+                },
+                {
+                  value: 'system',
+                  label: t('role.system'),
+                  icon: <SystemIcon />,
+                },
+              ]}
               sendingMessageText={t('sendingMessage')}
-              onSendMessage={sendMessage}
+              onSendMessage={(role, text) => {
+                sendMessage({ role, text });
+              }}
               isSendingMessage={isPending}
             />
           </VStack>
