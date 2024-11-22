@@ -243,20 +243,23 @@ export function RawInputContainer(props: RawInputContainerProps) {
       flex={flex}
       inputAndLabel={
         <>
-          <LabelPrimitive
-            htmlFor={id}
-            className={
-              hideLabel ? 'sr-only' : 'flex flex-row gap-1 items-center'
-            }
+          <HStack
+            fullWidth
+            className={hideLabel ? 'sr-only' : ''}
+            gap="text"
+            justify="spaceBetween"
           >
-            <HStack gap="text" justify="spaceBetween">
+            <LabelPrimitive
+              htmlFor={id}
+              className="flex flex-row gap-1 items-center"
+            >
               <HStack gap="text">
                 {preLabelIcon && <Slot className="h-3">{preLabelIcon}</Slot>}
                 {label}
               </HStack>
-              {rightOfLabelContent}
-            </HStack>
-          </LabelPrimitive>
+            </LabelPrimitive>
+            {rightOfLabelContent}
+          </HStack>
           {children}
         </>
       }
