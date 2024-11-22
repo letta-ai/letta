@@ -960,7 +960,8 @@
       },
       "description": {
         "label": "Description",
-        "placeholder": "my-tool-description"
+        "placeholder": "my-tool-description",
+        "validation": "Please provide a description for this tool"
       },
       "sourceCode": {
         "label": "Source Code",

@@ -71,7 +71,6 @@ import {
 import { useQueryClient } from '@tanstack/react-query';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useCurrentAgentMetaData } from '../hooks/useCurrentAgentMetaData/useCurrentAgentMetaData';
 import { useTranslations } from 'next-intl';
 
 interface AllToolsViewProps {
@@ -129,8 +128,6 @@ function AllToolsView(props: AllToolsViewProps) {
       .filter((tool) => tool.name.toLowerCase().includes(search.toLowerCase()));
   }, [allTools, addedToolNameSet, search]);
 
-  const { isLocal } = useCurrentAgentMetaData();
-
   return (
     <HStack padding fullHeight>
       <VStack gap="large" fullHeight fullWidth>
@@ -138,17 +135,15 @@ function AllToolsView(props: AllToolsViewProps) {
           <Typography variant="heading4" bold>
             All Tools
           </Typography>
-          {isLocal && (
-            <Button
-              preIcon={<PlusIcon />}
-              type="button"
-              label={t('AddToolDialog.createTool')}
-              color="secondary"
-              onClick={() => {
-                startCreateNewTool();
-              }}
-            />
-          )}
+          <Button
+            preIcon={<PlusIcon />}
+            type="button"
+            label={t('AddToolDialog.createTool')}
+            color="secondary"
+            onClick={() => {
+              startCreateNewTool();
+            }}
+          />
         </HStack>
         <HStack fullWidth>
           <RawInput
@@ -453,8 +448,6 @@ function SpecificToolComponent(props: SpecificToolComponentProps) {
     }
   }, [onClose]);
 
-  const { isLocal } = useCurrentAgentMetaData();
-
   const { data: tool } = useToolsServiceGetTool({
     toolId,
   });
@@ -499,7 +492,7 @@ function SpecificToolComponent(props: SpecificToolComponentProps) {
           )}
         </HStack>
         <HStack>
-          {!isEditingToolMode && isLocal && !isLettaTool && (
+          {!isEditingToolMode && !isLettaTool && (
             <Button
               size="small"
               type="button"
@@ -978,7 +971,9 @@ function ToolCreator(props: ToolCreatorProps) {
       name: z.string().regex(/^[a-zA-Z0-9_]+$/, {
         message: t('ToolCreator.name.validation'),
       }),
-      description: z.string(),
+      description: z.string().min(1, {
+        message: t('ToolCreator.description.validation'),
+      }),
       sourceCode: z.string(),
     });
   }, [t]);
@@ -1015,6 +1010,7 @@ function ToolCreator(props: ToolCreatorProps) {
         requestBody: {
           tags: [],
           source_type: 'python',
+          description: values.description || '',
           name: values.name,
           source_code: values.sourceCode,
         },
