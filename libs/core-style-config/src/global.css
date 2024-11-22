@@ -200,7 +200,7 @@
 }
 
 body {
-  scrollbar-color: hsl(var(--secondary)) hsl(var(--background-grey));
+  scrollbar-color: hsl(var(--secondary)) transparent;
   scrollbar-width: thin;
 }
 

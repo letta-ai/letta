@@ -10,9 +10,10 @@ import { ExpandTextareaIcon } from '../../icons';
 import { Frame } from '../../framing/Frame/Frame';
 import type { VariantProps } from 'class-variance-authority';
 import { cva } from 'class-variance-authority';
+import { forwardRef } from 'react';
 
 const defaultClass =
-  'flex min-h-[80px] w-full border border-input bg-background px-3 py-2 pr-5 text-base ring-offset-background placeholder:text-muted-foreground  disabled:cursor-not-allowed disabled:opacity-50';
+  'flex min-h-[80px] w-full border border-input bg-background px-3 py-2 pr-[10px] text-base ring-offset-background placeholder:text-muted-foreground  disabled:cursor-not-allowed disabled:opacity-50';
 
 const textareaVariants = cva(defaultClass, {
   variants: {
@@ -89,27 +90,29 @@ const PrimitiveTextArea = React.forwardRef<HTMLTextAreaElement, TextAreaProps>(
 
 PrimitiveTextArea.displayName = 'Textarea';
 
-function WrappedTextArea(props: TextAreaProps) {
-  const { expandable, fullHeight, fullWidth } = props;
+const WrappedTextArea = forwardRef<HTMLTextAreaElement, TextAreaProps>(
+  function WrappedTextArea(props, ref) {
+    const { expandable, fullHeight, fullWidth } = props;
 
-  return (
-    <Frame fullWidth={fullWidth} fullHeight={fullHeight} position="relative">
-      <PrimitiveTextArea {...props} />
-      {expandable && (
-        <div className="absolute bottom-0 right-[15px]">
-          <Button
-            size="small"
-            label={expandable.expandText}
-            hideLabel
-            color="tertiary-transparent"
-            onClick={expandable.onExpand}
-            preIcon={<ExpandTextareaIcon color="muted" />}
-          />
-        </div>
-      )}
-    </Frame>
-  );
-}
+    return (
+      <Frame fullWidth={fullWidth} fullHeight={fullHeight} position="relative">
+        <PrimitiveTextArea ref={ref} {...props} />
+        {expandable && (
+          <div className="absolute bottom-[4px] right-[6px]">
+            <Button
+              size="small"
+              label={expandable.expandText}
+              hideLabel
+              color="tertiary-transparent"
+              onClick={expandable.onExpand}
+              preIcon={<ExpandTextareaIcon color="muted" />}
+            />
+          </div>
+        )}
+      </Frame>
+    );
+  }
+);
 
 export const TextArea = makeInput(WrappedTextArea, 'TextArea');
 export const RawTextArea = makeRawInput(WrappedTextArea, 'RawTextArea');

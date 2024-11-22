@@ -14,6 +14,7 @@ import { useId, useMemo } from 'react';
 import { HStack } from '../../framing/HStack/HStack';
 import { Typography } from '../Typography/Typography';
 import type { ArgTypes } from '@storybook/csf';
+import { omit } from 'lodash-es';
 
 export { useForm } from 'react-hook-form';
 
@@ -227,6 +228,7 @@ export function RawInputContainer(props: RawInputContainerProps) {
     preLabelIcon,
     description,
     children,
+    rightOfLabelContent,
   } = props;
 
   return (
@@ -242,8 +244,13 @@ export function RawInputContainer(props: RawInputContainerProps) {
               hideLabel ? 'sr-only' : 'flex flex-row gap-1 items-center'
             }
           >
-            {preLabelIcon && <Slot className="h-3">{preLabelIcon}</Slot>}
-            {label}
+            <HStack gap="text" justify="spaceBetween">
+              <HStack gap="text">
+                {preLabelIcon && <Slot className="h-3">{preLabelIcon}</Slot>}
+                {label}
+              </HStack>
+              {rightOfLabelContent}
+            </HStack>
           </LabelPrimitive>
           {children}
         </>
@@ -271,6 +278,8 @@ interface MakeInputOptions {
   container?: MakeInputOptionsContainerType;
 }
 
+const omitProps = ['rightOfLabelContent'];
+
 export function makeInput<T>(
   Input: React.ComponentType<T>,
   componentName: string,
@@ -283,7 +292,7 @@ export function makeInput<T>(
         inline={options?.inline}
         fullWidth={props.fullWidth || options?.fullWidth}
       >
-        <Input ref={ref} {...props} />
+        <Input ref={ref} {...(omit(props, omitProps) as typeof props)} />
       </InputContainer>
     );
 
@@ -334,7 +343,7 @@ export function makeRawInput<T>(
         inline={options?.inline || props.inline}
         fullWidth={props.fullWidth || options?.fullWidth}
       >
-        <Input {...props} />
+        <Input {...(omit(props, omitProps) as typeof props)} />
       </RawInputContainer>
     );
 

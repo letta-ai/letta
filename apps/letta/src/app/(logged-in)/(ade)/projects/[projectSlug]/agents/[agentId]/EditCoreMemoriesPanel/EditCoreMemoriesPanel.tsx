@@ -24,10 +24,12 @@ import { useCallback, useState } from 'react';
 import React, { useMemo } from 'react';
 import { useDateFormatter } from '@letta-web/helpful-client-utils';
 import { useUpdateMemory } from '../hooks/useUpdateMemory/useUpdateMemory';
-import type { Block } from '@letta-web/letta-agents-api';
+import type { AgentState, Block } from '@letta-web/letta-agents-api';
+import { UseAgentsServiceGetAgentKeyFn } from '@letta-web/letta-agents-api';
 import { useAgentsServiceUpdateAgent } from '@letta-web/letta-agents-api';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useFormContext } from 'react-hook-form';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface MemoryWarningProps {
   rootLabel: string;
@@ -110,7 +112,29 @@ function AdvancedMemoryEditorForm(props: AdvancedMemoryEditorProps) {
     },
   });
 
-  const { mutate, isPending } = useAgentsServiceUpdateAgent();
+  const queryClient = useQueryClient();
+
+  const { mutate, isPending } = useAgentsServiceUpdateAgent({
+    onSuccess: (response) => {
+      queryClient.setQueriesData<AgentState | undefined>(
+        {
+          queryKey: UseAgentsServiceGetAgentKeyFn({
+            agentId: agent.id,
+          }),
+        },
+        (oldData) => {
+          if (!oldData) {
+            return oldData;
+          }
+
+          return {
+            ...oldData,
+            ...response,
+          };
+        }
+      );
+    },
+  });
 
   const handleUpdate = useCallback(
     (values: MemoryUpdatePayload) => {
@@ -168,6 +192,8 @@ function AdvancedMemoryEditorForm(props: AdvancedMemoryEditorProps) {
             name="label"
             render={({ field }) => (
               <Input
+                disabled
+                fullWidth
                 warned={field.value !== memory.label}
                 label={t('AdvancedMemoryEditorForm.label.label')}
                 {...field}
@@ -179,6 +205,8 @@ function AdvancedMemoryEditorForm(props: AdvancedMemoryEditorProps) {
             name="maxCharacters"
             render={({ field }) => (
               <Input
+                disabled
+                fullWidth
                 type="number"
                 label={t('AdvancedMemoryEditorForm.maxCharacters.label')}
                 {...field}
