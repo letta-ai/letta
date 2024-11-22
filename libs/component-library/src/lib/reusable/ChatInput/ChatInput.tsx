@@ -1,5 +1,5 @@
 'use client';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { Frame } from '../../framing/Frame/Frame';
 import { HStack } from '../../framing/HStack/HStack';
 import { cn } from '@letta-web/core-style-config';
@@ -9,18 +9,38 @@ import { VStack } from '../../framing/VStack/VStack';
 import TextareaAutosize from 'react-textarea-autosize';
 import { Button } from '../../core/Button/Button';
 import { SendIcon } from '../../icons';
+import { Popover } from '../../core/Popover/Popover';
+import { useTranslations } from 'next-intl';
+import { Slot } from '@radix-ui/react-slot';
 
-interface ChatInputProps {
-  onSendMessage: (message: string) => void;
+interface RoleOption<Role> {
+  value: Role;
+  label: string;
+  icon?: React.ReactNode;
+  color?: string;
+}
+
+interface ChatInputProps<Role> {
+  onSendMessage: (role: Role, message: string) => void;
   isSendingMessage: boolean;
   disabled?: boolean;
+  defaultRole: Role;
+  roles: Array<RoleOption<Role>>;
   sendingMessageText?: string;
 }
 
-export function ChatInput(props: ChatInputProps) {
-  const { onSendMessage, disabled, sendingMessageText, isSendingMessage } =
-    props;
+export function ChatInput<Roles extends string>(props: ChatInputProps<Roles>) {
+  const {
+    onSendMessage,
+    disabled,
+    roles,
+    defaultRole,
+    sendingMessageText,
+    isSendingMessage,
+  } = props;
   const [text, setText] = useState('');
+  const [role, setRole] = useState<Roles>(defaultRole);
+  const t = useTranslations('component-library/reusable/ChatInput');
 
   const handleSendMessage = useCallback(() => {
     if (isSendingMessage) {
@@ -32,9 +52,9 @@ export function ChatInput(props: ChatInputProps) {
     }
     if (text) {
       setText('');
-      onSendMessage(text);
+      onSendMessage(role, text);
     }
-  }, [isSendingMessage, disabled, onSendMessage, text]);
+  }, [isSendingMessage, disabled, text, onSendMessage, role]);
 
   const handleKeyPress = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -52,6 +72,13 @@ export function ChatInput(props: ChatInputProps) {
       handleSendMessage();
     },
     [handleSendMessage]
+  );
+
+  const [open, setOpen] = useState(false);
+
+  const selectedRole = useMemo(
+    () => roles.find((r) => r.value === role),
+    [role, roles]
   );
 
   return (
@@ -72,7 +99,7 @@ export function ChatInput(props: ChatInputProps) {
           {sendingMessageText}
         </Typography>
       </HStack>
-      <HStack
+      <VStack
         color="background"
         onSubmit={handleSubmit}
         as="form"
@@ -92,20 +119,59 @@ export function ChatInput(props: ChatInputProps) {
           className="w-full bg-transparent text-base font-inherit resize-none	focus:outline-none"
           maxRows={10}
           minRows={4}
-          placeholder="Type a message here"
+          placeholder={t('placeholder')}
         />
-        <VStack justify="spaceBetween">
-          <div />
+        <HStack justify="spaceBetween">
+          <HStack>
+            {roles.length > 1 && (
+              <Popover
+                className="w-auto"
+                open={open}
+                onOpenChange={setOpen}
+                side="top"
+                align="start"
+                triggerAsChild
+                trigger={
+                  <button
+                    style={{
+                      backgroundColor: selectedRole?.color,
+                    }}
+                    className="flex bg-background-grey2 font-medium text-base h-biHeight gap-2 items-center px-4"
+                  >
+                    {selectedRole?.icon && (
+                      <Slot className="w-5">{selectedRole.icon}</Slot>
+                    )}
+                    <div className="sr-only">{t('role.label', { role })}</div>
+                    <span>{selectedRole?.label || role}</span>
+                  </button>
+                }
+              >
+                <VStack gap={false}>
+                  {roles.map((r) => (
+                    <Button
+                      color="tertiary-transparent"
+                      label={r.label}
+                      preIcon={r.icon}
+                      onClick={() => {
+                        setOpen(false);
+                        setRole(r.value);
+                      }}
+                    />
+                  ))}
+                </VStack>
+              </Popover>
+            )}
+          </HStack>
           <Button
             data-testid="chat-simulator-send"
             type="submit"
             color="secondary"
             preIcon={<SendIcon />}
             disabled={isSendingMessage || disabled}
-            label="Send"
+            label={t('send')}
           />
-        </VStack>
-      </HStack>
+        </HStack>
+      </VStack>
     </Frame>
   );
 }
