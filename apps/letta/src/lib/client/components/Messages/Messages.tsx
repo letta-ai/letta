@@ -127,12 +127,12 @@ function MessageGroup({ group }: MessageGroupType) {
         textColor={
           name === 'Agent'
             ? 'hsl(var(--primary-light-content))'
-            : 'hsl(var(--background-grey-content))'
+            : 'hsl(var(--user-color-content))'
         }
         backgroundColor={
           name === 'Agent'
             ? 'hsl(var(--primary-light))'
-            : 'hsl(var(--background-grey))'
+            : 'hsl(var(--user-color))'
         }
         icon={name === 'Agent' ? <RobotIcon /> : <PersonIcon />}
       />

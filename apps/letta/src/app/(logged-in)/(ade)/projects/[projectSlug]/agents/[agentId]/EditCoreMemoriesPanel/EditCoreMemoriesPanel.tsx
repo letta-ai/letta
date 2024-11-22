@@ -1,6 +1,18 @@
 import { z } from 'zod';
 import type { PanelTemplate } from '@letta-web/component-library';
-import { LettaLoaderPanel, RawToggleGroup } from '@letta-web/component-library';
+import {
+  Alert,
+  Button,
+  Form,
+  FormActions,
+  FormField,
+  LettaLoaderPanel,
+  RawToggleGroup,
+  FormProvider,
+  Input,
+  TextArea,
+  useForm,
+} from '@letta-web/component-library';
 import { CodeIcon } from '@letta-web/component-library';
 import { DialogContentWithCategories } from '@letta-web/component-library';
 
@@ -10,12 +22,226 @@ import { VStack } from '@letta-web/component-library';
 import { PanelMainContent } from '@letta-web/component-library';
 import { useTranslations } from 'next-intl';
 import { useCurrentAgent } from '../hooks';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import React, { useMemo } from 'react';
 import { useDateFormatter } from '@letta-web/helpful-client-utils';
 import { useUpdateMemory } from '../hooks/useUpdateMemory/useUpdateMemory';
 import { useCurrentAgentMetaData } from '../hooks/useCurrentAgentMetaData/useCurrentAgentMetaData';
 import { useCurrentSimulatedAgent } from '../hooks/useCurrentSimulatedAgent/useCurrentSimulatedAgent';
+import type { AgentState, Block } from '@letta-web/letta-agents-api';
+import { UseAgentsServiceGetAgentKeyFn } from '@letta-web/letta-agents-api';
+import { useAgentsServiceUpdateAgent } from '@letta-web/letta-agents-api';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useFormContext } from 'react-hook-form';
+import { useQueryClient } from '@tanstack/react-query';
+
+interface MemoryWarningProps {
+  rootLabel: string;
+}
+function MemoryWarning(props: MemoryWarningProps) {
+  const { getValues } = useFormContext();
+  const { rootLabel } = props;
+  const t = useTranslations('ADE/EditCoreMemoriesPanel');
+
+  const { label } = getValues();
+
+  if (label === rootLabel) {
+    return null;
+  }
+
+  return (
+    <Alert title={t('MemoryWarning.title')} variant="warning">
+      {t('MemoryWarning.message')}
+    </Alert>
+  );
+}
+
+interface CharacterCounterProps {
+  value: string;
+}
+
+function CharacterCounter(props: CharacterCounterProps) {
+  const { value } = props;
+  const t = useTranslations('ADE/EditCoreMemoriesPanel');
+  const { getValues } = useFormContext();
+
+  const { maxCharacters } = getValues();
+
+  return (
+    <Typography
+      variant="body2"
+      color={value.length > maxCharacters ? 'destructive' : 'muted'}
+    >
+      {t('CharacterCounter.count', {
+        count: value.length,
+      })}
+    </Typography>
+  );
+}
+
+interface AdvancedMemoryEditorProps {
+  memory: Block;
+  onClose: () => void;
+}
+
+function AdvancedMemoryEditorForm(props: AdvancedMemoryEditorProps) {
+  const { memory } = props;
+  const t = useTranslations('ADE/EditCoreMemoriesPanel');
+
+  const agent = useCurrentAgent();
+
+  const memoryUpdateSchema = useMemo(() => {
+    return z.object({
+      label: z
+        .string()
+        .regex(
+          /^[a-zA-Z_][a-zA-Z0-9_]*$/,
+          t('AdvancedMemoryEditorForm.label.error')
+        ),
+      maxCharacters: z.coerce
+        .number()
+        .min(100, t('AdvancedMemoryEditorForm.maxCharacters.error')),
+      value: z.string(),
+    });
+  }, [t]);
+
+  type MemoryUpdatePayload = z.infer<typeof memoryUpdateSchema>;
+
+  const form = useForm<MemoryUpdatePayload>({
+    resolver: zodResolver(memoryUpdateSchema),
+    defaultValues: {
+      label: memory.label || '',
+      maxCharacters: memory.limit,
+      value: memory.value,
+    },
+  });
+
+  const queryClient = useQueryClient();
+
+  const { mutate, isPending } = useAgentsServiceUpdateAgent({
+    onSuccess: (response) => {
+      queryClient.setQueriesData<AgentState | undefined>(
+        {
+          queryKey: UseAgentsServiceGetAgentKeyFn({
+            agentId: agent.id,
+          }),
+        },
+        (oldData) => {
+          if (!oldData) {
+            return oldData;
+          }
+
+          return {
+            ...oldData,
+            ...response,
+          };
+        }
+      );
+    },
+  });
+
+  const handleUpdate = useCallback(
+    (values: MemoryUpdatePayload) => {
+      let existingMemoryArr = Object.values(agent.memory?.memory || {});
+
+      // remove the memory from the existing memory array
+      existingMemoryArr = existingMemoryArr.filter(
+        (mem) => mem.label !== memory.label
+      );
+
+      // add the new memory to the array
+
+      existingMemoryArr.push({
+        label: values.label,
+        limit: values.maxCharacters,
+        value: values.value,
+      });
+
+      // construct key value pair object from the array
+      const newMemory = existingMemoryArr.reduce((acc, mem) => {
+        if (!mem.label) {
+          return acc;
+        }
+
+        acc[mem.label] = {
+          label: mem.label,
+          limit: mem.limit,
+          value: mem.value,
+          is_template: false,
+        };
+        return acc;
+      }, {} as Record<string, Block>);
+
+      mutate({
+        agentId: agent.id,
+        requestBody: {
+          id: agent.id,
+
+          memory: {
+            ...agent.memory,
+            memory: newMemory,
+          },
+        },
+      });
+    },
+    [agent.id, agent.memory, memory.label, mutate]
+  );
+
+  return (
+    <FormProvider {...form}>
+      <Form onSubmit={form.handleSubmit(handleUpdate)}>
+        <VStack fullHeight fullWidth padding gap="form">
+          <MemoryWarning rootLabel={memory.label || ''} />
+          <FormField
+            name="label"
+            render={({ field }) => (
+              <Input
+                disabled
+                fullWidth
+                warned={field.value !== memory.label}
+                label={t('AdvancedMemoryEditorForm.label.label')}
+                {...field}
+              />
+            )}
+          />
+
+          <FormField
+            name="maxCharacters"
+            render={({ field }) => (
+              <Input
+                disabled
+                fullWidth
+                type="number"
+                label={t('AdvancedMemoryEditorForm.maxCharacters.label')}
+                {...field}
+              />
+            )}
+          />
+          <FormField
+            name="value"
+            render={({ field }) => (
+              <TextArea
+                rightOfLabelContent={<CharacterCounter value={field.value} />}
+                autosize={false}
+                fullHeight
+                fullWidth
+                label={t('AdvancedMemoryEditorForm.value.label')}
+                {...field}
+              />
+            )}
+          />
+
+          <FormActions>
+            <Button
+              label={t('AdvancedMemoryEditorForm.update')}
+              busy={isPending}
+            />
+          </FormActions>
+        </VStack>
+      </Form>
+    </FormProvider>
+  );
+}
 
 interface AdvancedEditMemoryProps {
   defaultLabel: string;
@@ -35,9 +261,10 @@ function AdvancedEditMemory(props: AdvancedEditMemoryProps) {
     <Dialog
       isOpen
       noContentPadding
+      disableForm
       preventCloseFromOutside
       size="full"
-      hideConfirm
+      hideFooter
       title={t('AdvancedEditMemory.title')}
       onOpenChange={(state) => {
         if (!state) {
@@ -51,9 +278,11 @@ function AdvancedEditMemory(props: AdvancedEditMemoryProps) {
           id: block.label || '',
           title: block.label || '',
           children: (
-            <VStack flex fullHeight borderBottom padding>
-              <EditMemoryForm label={block.label || ''} isModelView />
-            </VStack>
+            <AdvancedMemoryEditorForm
+              key={block.label}
+              memory={block}
+              onClose={onClose}
+            />
           ),
         }))}
       />
@@ -63,6 +292,7 @@ function AdvancedEditMemory(props: AdvancedEditMemoryProps) {
 
 interface AdvancedEditorPayload {
   label: string;
+  memory: Block;
 }
 
 interface EditMemoryFormProps extends AdvancedEditorPayload {
@@ -70,7 +300,7 @@ interface EditMemoryFormProps extends AdvancedEditorPayload {
 }
 
 function EditMemoryForm(props: EditMemoryFormProps) {
-  const { label, isModelView } = props;
+  const { label, memory, isModelView } = props;
 
   const { formatDate } = useDateFormatter();
 
@@ -97,25 +327,21 @@ function EditMemoryForm(props: EditMemoryFormProps) {
       )}
       <VStack flex fullHeight>
         <VStack fullWidth fullHeight>
-          <HStack fullWidth justify="spaceBetween">
-            <Typography semibold variant="body">
-              {label}
-            </Typography>
-            <Typography variant="body2" color="muted">
-              {t('EditMemoryForm.characterLimit', {
-                count: value.length,
-                limit: 4000,
-              })}
-            </Typography>
-          </HStack>
           <RawTextArea
-            hideLabel
+            rightOfLabelContent={
+              <Typography variant="body2" color="muted">
+                {t('EditMemoryForm.characterLimit', {
+                  count: value.length,
+                  limit: memory.limit,
+                })}
+              </Typography>
+            }
             autosize={false}
             flex
             fullHeight
             data-testid={`edit-memory-block-${label}-content`}
             fullWidth
-            label={t('content')}
+            label={label}
             onChange={(e) => {
               onChange(e.target.value);
             }}
@@ -172,7 +398,7 @@ function DefaultMemory() {
       borderBottom={index !== memories.length - 1}
       key={block.label || ''}
     >
-      <EditMemoryForm label={block.label || ''} />
+      <EditMemoryForm memory={block} label={block.label || ''} />
     </VStack>
   ));
 }

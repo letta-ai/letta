@@ -102,6 +102,8 @@
 
     --media-breakpoint-sidebar-visible: 840px;
 
+    --user-color: 180, 66%, 92%;
+    --user-color-content: 0, 0%, 0%;
 
     --font-sans: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI',
     'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans',
@@ -194,13 +196,14 @@
     --tertiary-active: 180 100% 33%;
     --tertiary-hover: 180 100% 33%;
 
+
   }
 
 
 }
 
 body {
-  scrollbar-color: hsl(var(--secondary)) hsl(var(--background-grey));
+  scrollbar-color: hsl(var(--secondary)) transparent;
   scrollbar-width: thin;
 }
 

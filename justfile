@@ -67,6 +67,7 @@ deploy: push
         --set env.GOOGLE_REDIRECT_URI="${GOOGLE_REDIRECT_URI}" \
         --set env.LETTA_AGENTS_ENDPOINT="${LETTA_AGENTS_ENDPOINT}" \
         --set env.MIXPANEL_TOKEN="${MIXPANEL_TOKEN}" \
+        --set env.NEXT_PUBLIC_MIXPANEL_TOKEN="${MIXPANEL_TOKEN}" \
         --set env.LAUNCH_DARKLY_SDK_KEY="${LAUNCH_DARKLY_SDK_KEY}" \
         --set env.SENTRY_AUTH_TOKEN="${SENTRY_AUTH_TOKEN}" \
         --set env.NEXT_PUBLIC_CURRENT_HOST="${NEXT_PUBLIC_CURRENT_HOST}" \

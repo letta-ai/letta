@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
-import { CloseIcon } from '../../icons';
+import { CloseIcon, PlusIcon } from '../../icons';
 import { cn } from '@letta-web/core-style-config';
 import type { ButtonProps } from '../Button/Button';
 import { Button } from '../Button/Button';
@@ -210,17 +210,66 @@ interface ContentCategory {
   children: React.ReactNode;
 }
 
+interface DialogCategoryProps {
+  icon?: React.ReactNode;
+  title: string;
+  subtitle?: string;
+  isActive?: boolean;
+  onClick?: () => void;
+}
+
+export function DialogCategory(props: DialogCategoryProps) {
+  const { icon, title, subtitle, isActive, onClick } = props;
+
+  return (
+    <HStack
+      type="button"
+      color={isActive ? 'background' : undefined}
+      as="button"
+      borderBottom
+      align="center"
+      className={cn(
+        'relative h-[58px]',
+        isActive ? 'active-dialog-category' : ''
+      )}
+      onClick={onClick}
+      fullWidth
+    >
+      <HStack align="center" fullWidth>
+        {isActive && <div className="w-[2px] absolute h-full bg-primary" />}
+        <HStack paddingY="small" paddingX="xlarge" align="center" gap="large">
+          {icon && <Slot className="w-4 h-4">{icon}</Slot>}
+          <VStack gap="text">
+            <Typography variant="body2" align="left">
+              {title}
+            </Typography>
+            {subtitle && (
+              <Typography variant="body2" align="left" color="muted">
+                {subtitle}
+              </Typography>
+            )}
+          </VStack>
+        </HStack>
+      </HStack>
+    </HStack>
+  );
+}
+
 export interface DialogContentWithCategoriesProps {
   categories: ContentCategory[];
   category?: string;
   defaultCategory?: string;
   onSetCategory?: (category: string) => void;
+  onCreateNewCategory?: {
+    operation: () => string;
+    title: string;
+  };
 }
 
 export function DialogContentWithCategories(
   props: DialogContentWithCategoriesProps
 ) {
-  const { categories, defaultCategory } = props;
+  const { categories, onCreateNewCategory, defaultCategory } = props;
   const [selectedCategory, setSelectedCategory] = React.useState(
     defaultCategory || categories[0].id
   );
@@ -236,50 +285,27 @@ export function DialogContentWithCategories(
           const isActive = selectedCategory === category.id;
 
           return (
-            <HStack
-              type="button"
-              color={isActive ? 'background' : undefined}
-              as="button"
-              borderBottom
-              align="center"
-              className={cn(
-                'relative h-[58px]',
-                isActive ? 'active-dialog-category' : ''
-              )}
+            <DialogCategory
+              key={category.id}
+              icon={category.icon}
+              title={category.title}
+              subtitle={category.subtitle}
+              isActive={isActive}
               onClick={() => {
                 handleCategoryClick(category.id);
               }}
-              key={category.id}
-              fullWidth
-            >
-              <HStack align="center" fullWidth>
-                {isActive && (
-                  <div className="w-[2px] absolute h-full bg-primary" />
-                )}
-                <HStack
-                  paddingY="small"
-                  paddingX="xlarge"
-                  align="center"
-                  gap="large"
-                >
-                  {category.icon && (
-                    <Slot className="w-4 h-4">{category.icon}</Slot>
-                  )}
-                  <VStack gap="text">
-                    <Typography variant="body2" align="left">
-                      {category.title}
-                    </Typography>
-                    {category.subtitle && (
-                      <Typography variant="body2" align="left" color="muted">
-                        {category.subtitle}
-                      </Typography>
-                    )}
-                  </VStack>
-                </HStack>
-              </HStack>
-            </HStack>
+            />
           );
         })}
+        {onCreateNewCategory && (
+          <DialogCategory
+            title={onCreateNewCategory.title}
+            icon={<PlusIcon />}
+            onClick={async () => {
+              setSelectedCategory(onCreateNewCategory.operation());
+            }}
+          />
+        )}
       </VStack>
       <VStack fullHeight fullWidth color="background">
         {
