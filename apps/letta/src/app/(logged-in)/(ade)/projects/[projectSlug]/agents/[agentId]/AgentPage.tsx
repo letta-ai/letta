@@ -295,7 +295,7 @@ function LoaderContent(props: LoaderContentProps) {
   return (
     <VStack
       /* eslint-disable-next-line react/forbid-component-props */
-      className="fixed z-draggedItem top-0 left-0 w-[100vw] h-[100vh]"
+      className="fixed z-draggedItem top-0 left-0 w-[100vw] h-[100dvh]"
       fullHeight
       fullWidth
       align="center"

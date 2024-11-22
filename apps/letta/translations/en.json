@@ -565,8 +565,8 @@
     },
     "toggleMemoryType": {
       "label": "Toggle Memory Type",
-      "templated": "Templated Memory",
-      "simulated": "Simulated Memory"
+      "templated": "Template",
+      "simulated": "Simulated"
     },
     "mobileTitle": "Core Memories",
     "EditMemoryForm": {
