@@ -1,10 +1,8 @@
 'use client';
 import {
   Button,
-  Checkbox,
   DashboardPageLayout,
   DashboardPageSection,
-  Dialog,
   Form,
   FormActions,
   FormField,
@@ -126,35 +124,8 @@ function EditOrganizationSettings(props: EditOrganizationSettingsProps) {
   );
 }
 
-const DeleteOrganizationSchema = z.object({
-  name: z.string(),
-  confirmed: z.boolean(),
-});
-
-type DeleteOrganizationFormType = z.infer<typeof DeleteOrganizationSchema>;
-
 function DeleteOrganizationSettings() {
   const t = useTranslations('organization/settings');
-  const { mutate, isError, isPending } =
-    webApi.organizations.deleteOrganization.useMutation();
-  const form = useForm<DeleteOrganizationFormType>({
-    resolver: zodResolver(DeleteOrganizationSchema),
-  });
-
-  const handleReset = useCallback(() => {
-    form.reset();
-  }, [form]);
-
-  const handleSubmit = useCallback(() => {
-    mutate(
-      {},
-      {
-        onSuccess: () => {
-          window.location.href = '/select-organization';
-        },
-      }
-    );
-  }, [mutate]);
 
   return (
     <DashboardPageSection>
@@ -165,67 +136,6 @@ function DeleteOrganizationSettings() {
         <Typography variant="body">
           {t('DeleteOrganizationSettings.description')}
         </Typography>
-        <FormActions align="start">
-          <FormProvider {...form}>
-            <Dialog
-              isConfirmBusy={isPending}
-              errorMessage={
-                isError
-                  ? t('DeleteOrganizationSettings.dialog.error')
-                  : undefined
-              }
-              onSubmit={form.handleSubmit(handleSubmit)}
-              onOpenChange={(isOpen) => {
-                if (!isOpen) {
-                  handleReset();
-                }
-              }}
-              title={t('DeleteOrganizationSettings.dialog.title')}
-              confirmText={t('DeleteOrganizationSettings.dialog.confirm')}
-              confirmColor="destructive"
-              trigger={
-                <Button
-                  label={t('DeleteOrganizationSettings.dialog.trigger')}
-                  color="destructive"
-                />
-              }
-            >
-              <Typography>
-                {t('DeleteOrganizationSettings.dialog.description')}
-              </Typography>
-              <FormField
-                name="name"
-                render={({ field }) => (
-                  <Input
-                    fullWidth
-                    {...field}
-                    label={t(
-                      'DeleteOrganizationSettings.dialog.confirmName.label'
-                    )}
-                    placeholder={t(
-                      'DeleteOrganizationSettings.dialog.confirmName.placeholder'
-                    )}
-                  />
-                )}
-              />
-              <FormField
-                name="confirmed"
-                render={({ field }) => {
-                  return (
-                    <Checkbox
-                      fullWidth
-                      label={t(
-                        'DeleteOrganizationSettings.dialog.confirmCheckbox'
-                      )}
-                      onCheckedChange={field.onChange}
-                      checked={field.value}
-                    />
-                  );
-                }}
-              />
-            </Dialog>
-          </FormProvider>
-        </FormActions>
       </VStack>
     </DashboardPageSection>
   );
