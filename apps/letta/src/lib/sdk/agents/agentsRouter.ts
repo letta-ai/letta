@@ -751,7 +751,7 @@ export async function updateAgentFromAgentId(options: UpdateAgentFromAgentId) {
     };
   }
 
-  await AgentsService.updateAgent(
+  const agent = await AgentsService.updateAgent(
     {
       agentId: agentToUpdateId,
       requestBody: requestBody,
@@ -779,6 +779,8 @@ export async function updateAgentFromAgentId(options: UpdateAgentFromAgentId) {
       })
     ),
   ]);
+
+  return agent;
 }
 
 type MigrateAgentRequest = ServerInferRequest<

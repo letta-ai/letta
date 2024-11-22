@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { PanelTemplate } from '@letta-web/component-library';
+import { LettaLoaderPanel, RawToggleGroup } from '@letta-web/component-library';
 import { CodeIcon } from '@letta-web/component-library';
 import { DialogContentWithCategories } from '@letta-web/component-library';
 
@@ -13,6 +14,8 @@ import { useState } from 'react';
 import React, { useMemo } from 'react';
 import { useDateFormatter } from '@letta-web/helpful-client-utils';
 import { useUpdateMemory } from '../hooks/useUpdateMemory/useUpdateMemory';
+import { useCurrentAgentMetaData } from '../hooks/useCurrentAgentMetaData/useCurrentAgentMetaData';
+import { useCurrentSimulatedAgent } from '../hooks/useCurrentSimulatedAgent/useCurrentSimulatedAgent';
 
 interface AdvancedEditMemoryProps {
   defaultLabel: string;
@@ -95,7 +98,9 @@ function EditMemoryForm(props: EditMemoryFormProps) {
       <VStack flex fullHeight>
         <VStack fullWidth fullHeight>
           <HStack fullWidth justify="spaceBetween">
-            <Typography variant="body2">{label}</Typography>
+            <Typography semibold variant="body">
+              {label}
+            </Typography>
             <Typography variant="body2" color="muted">
               {t('EditMemoryForm.characterLimit', {
                 count: value.length,
@@ -153,26 +158,108 @@ function EditMemoryForm(props: EditMemoryFormProps) {
   );
 }
 
-function EditMemory() {
+function DefaultMemory() {
   const agent = useCurrentAgent();
 
   const memories = useMemo(() => {
     return Object.values(agent.memory?.memory || {});
   }, [agent.memory?.memory]);
 
+  return memories.map((block, index) => (
+    <VStack
+      paddingTop="small"
+      fullHeight
+      borderBottom={index !== memories.length - 1}
+      key={block.label || ''}
+    >
+      <EditMemoryForm label={block.label || ''} />
+    </VStack>
+  ));
+}
+
+function SimulatedMemory() {
+  const { agentSession } = useCurrentSimulatedAgent();
+  const agent = useMemo(() => {
+    return agentSession?.body.agent;
+  }, [agentSession]);
+
+  const memories = useMemo(() => {
+    if (!agent) {
+      return [];
+    }
+
+    return Object.values(agent.memory?.memory || {});
+  }, [agent]);
+
+  if (!agent) {
+    return <LettaLoaderPanel />;
+  }
+
+  return memories.map((block, index) => (
+    <VStack
+      paddingTop="small"
+      fullHeight
+      borderBottom={index !== memories.length - 1}
+      key={block.label || ''}
+    >
+      <VStack fullHeight flex paddingBottom="small">
+        <RawTextArea
+          autosize={false}
+          flex
+          fullHeight
+          resize="none"
+          fullWidth
+          disabled
+          label={block.label || ''}
+          value={block.value}
+        />
+      </VStack>
+    </VStack>
+  ));
+}
+
+type MemoryType = 'simulated' | 'templated';
+
+function EditMemory() {
+  const { isTemplate } = useCurrentAgentMetaData();
+  const [memoryType, setMemoryType] = useState<MemoryType>('templated');
+
+  const t = useTranslations('ADE/EditCoreMemoriesPanel');
+
   return (
     <PanelMainContent variant="noPadding">
-      <VStack fullHeight gap="small" paddingX="large" paddingBottom="small">
-        {memories.map((block, index) => (
-          <VStack
-            paddingTop="small"
-            fullHeight
-            borderBottom={index !== memories.length - 1}
-            key={block.label || ''}
-          >
-            <EditMemoryForm label={block.label || ''} />
-          </VStack>
-        ))}
+      <VStack fullHeight gap={false}>
+        <VStack paddingX="small">
+          {isTemplate && (
+            <RawToggleGroup
+              border
+              fullWidth
+              value={memoryType}
+              hideLabel
+              onValueChange={(value) => {
+                if (!value) {
+                  return;
+                }
+
+                setMemoryType(value as MemoryType);
+              }}
+              label={t('toggleMemoryType.label')}
+              items={[
+                {
+                  label: t('toggleMemoryType.templated'),
+                  value: 'templated',
+                },
+                {
+                  label: t('toggleMemoryType.simulated'),
+                  value: 'simulated',
+                },
+              ]}
+            />
+          )}
+        </VStack>
+        <VStack fullHeight gap="small" paddingX="large" paddingBottom="small">
+          {memoryType === 'templated' ? <DefaultMemory /> : <SimulatedMemory />}
+        </VStack>
       </VStack>
     </PanelMainContent>
   );
