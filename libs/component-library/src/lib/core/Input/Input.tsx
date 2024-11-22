@@ -20,11 +20,14 @@ import { HStack } from '../../framing/HStack/HStack';
 import { VStack } from '../../framing/VStack/VStack';
 
 const inputVariants = cva(
-  'flex  items-center w-full overflow-hidden border border-input text-base transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-content focus-visible:outline-none focus-within:ring-1 focus-within:ring-ring',
+  'flex  items-center overflow-hidden border border-input text-base transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-content focus-visible:outline-none focus-within:ring-1 focus-within:ring-ring',
   {
     variants: {
       disabled: {
         true: '',
+      },
+      warned: {
+        true: 'border-warning',
       },
       color: {
         transparent: 'bg-transparent text-content border-transparent',
@@ -120,6 +123,7 @@ const InputPrimitive = React.forwardRef<HTMLInputElement, InputPrimitiveProps>(
       hideLabel,
       fullWidth,
       disabled,
+      warned,
       allowCopy,
       postIcon,
       isUpdating,
@@ -178,7 +182,9 @@ const InputPrimitive = React.forwardRef<HTMLInputElement, InputPrimitiveProps>(
       <VStack
         gap={false}
         fullWidth={fullWidth}
-        className={cn(inputVariants({ disabled, fullWidth, color, className }))}
+        className={cn(
+          inputVariants({ disabled, warned, fullWidth, color, className })
+        )}
       >
         <HStack
           align="center"

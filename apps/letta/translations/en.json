@@ -560,8 +560,37 @@
     "EditMemoryForm": {
       "characterLimit": "{count}/{limit} CHARS"
     },
+    "MemoryWarning": {
+      "title": "You may need to update your system instructions",
+      "message": "Adjusting the memory label may require you to update your system instructions to reflect the new memory label."
+    },
+    "CharacterCounter": {
+      "count": "{count} CHARS"
+    },
+    "AdvancedMemoryEditorForm": {
+      "label": {
+        "label": "Label",
+        "placeholder": "my-label",
+        "error": "Labels must be alphanumeric and underscores only, and cannot start with a number"
+      },
+      "maxCharacters": {
+        "label": "Character Limit",
+        "placeholder": "100",
+        "error": "Minimum value is 100"
+      },
+      "value": {
+        "label": "Value",
+        "placeholder": "my-value"
+      },
+      "update": "Update memory",
+      "delete": {
+        "title": "Delete Memory",
+        "confirm": "Are you sure you want to delete this memory?"
+      }
+    },
     "AdvancedEditMemory": {
-      "title": "Update Core Memories"
+      "title": "Update Core Memories",
+      "newMemory": "Add memory block"
     },
     "systemPrompt": "System Prompt",
     "EditSystemPrompt": {

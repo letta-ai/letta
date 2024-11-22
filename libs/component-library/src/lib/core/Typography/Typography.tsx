@@ -98,6 +98,7 @@ export const Typography = forwardRef<HTMLElement, TypographyProps>(
       italic,
       noWrap,
       variant,
+      semibold,
       bold,
       ...rest
     } = props;
@@ -113,6 +114,7 @@ export const Typography = forwardRef<HTMLElement, TypographyProps>(
           italic,
           noWrap,
           bold,
+          semibold,
           inline,
           fullWidth,
           variant,
