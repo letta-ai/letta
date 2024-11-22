@@ -1,0 +1,1 @@
+ALTER TABLE "inference_transactions" ADD COLUMN "project_id" text;
