@@ -147,7 +147,7 @@
     },
     "DeleteOrganizationSettings": {
       "title": "Delete Organization",
-      "description": "Deleting an organization is permanent and cannot be undone. This will delete all projects, agents, and members in the organization.",
+      "description": "Deleting an organization is permanent and cannot be undone. Please contact us to delete your organization.",
       "dialog": {
         "error": "There was an error deleting the organization, please try again or contact support.",
         "title": "Are you sure you want to delete this organization?",

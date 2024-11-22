@@ -3,8 +3,6 @@ import {
   organizationInvitedUsers,
   users,
   organizations,
-  projects,
-  lettaAPIKeys,
   organizationUsers,
 } from '@letta-web/database';
 import {
@@ -16,8 +14,6 @@ import {
 import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
 import type { contracts } from '$letta/web-api/contracts';
 import { and, eq, gt, inArray, like } from 'drizzle-orm';
-import { deleteProject } from '$letta/web-api/projects/projectsRouter';
-import { AdminService } from '@letta-web/letta-agents-api';
 
 type GetCurrentOrganizationResponse = ServerInferResponses<
   typeof contracts.organizations.getCurrentOrganization
@@ -377,84 +373,11 @@ type DeleteOrganizationResponse = ServerInferResponses<
 >;
 
 async function deleteOrganization(): Promise<DeleteOrganizationResponse> {
-  const { activeOrganizationId } =
-    await getUserWithActiveOrganizationIdOrThrow();
-
-  if (!activeOrganizationId) {
-    return {
-      status: 400,
-      body: {
-        message: 'No active organization',
-      },
-    };
-  }
-
-  const organization = await db.query.organizations.findFirst({
-    where: eq(organizations.id, activeOrganizationId),
-  });
-
-  if (!organization) {
-    return {
-      status: 404,
-      body: {
-        message: 'Organization not found',
-      },
-    };
-  }
-
-  await db
-    .update(organizations)
-    .set({ deletedAt: new Date() })
-    .where(eq(organizations.id, activeOrganizationId));
-
-  // return all projects in this organization
-  const projectsList = await db.query.projects.findMany({
-    where: eq(projects.organizationId, activeOrganizationId),
-  });
-
-  const operations = [];
-
-  // remove users from the organization
-  operations.push(
-    db
-      .delete(organizationUsers)
-      .where(eq(organizationUsers.organizationId, activeOrganizationId))
-  );
-
-  operations.push(
-    await Promise.all(
-      projectsList.map(async (project) => {
-        return deleteProject({
-          params: {
-            projectId: project.id,
-          },
-        });
-      })
-    )
-  );
-
-  // delete api keys
-  operations.push(
-    db
-      .update(lettaAPIKeys)
-      .set({ deletedAt: new Date() })
-      .where(eq(lettaAPIKeys.organizationId, activeOrganizationId))
-  );
-
-  // delete data on letta-agents
-  // this should propagate to all agents, tools, etc
-  operations.push(
-    AdminService.deleteOrganizationById({
-      orgId: organization.lettaAgentsId,
-    })
-  );
-
-  await Promise.all(operations);
-
+  // not implemented yet
   return {
-    status: 200,
+    status: 501,
     body: {
-      success: true,
+      message: 'Not implemented',
     },
   };
 }
