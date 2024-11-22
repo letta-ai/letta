@@ -26,6 +26,7 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 ENV NEXT_PUBLIC_CURRENT_HOST="https://app.letta.com"
+ENV NEXT_PUBLIC_MIXPANEL_TOKEN="0790fe817b0407efb691ea896533d3ae"
 ENV NODE_ENV=production
 ARG SENTRY_AUTH_TOKEN
 RUN echo "SENTRY_AUTH_TOKEN=${SENTRY_AUTH_TOKEN}" >> .env
