@@ -8,12 +8,18 @@ import { useTranslations } from 'next-intl';
 import type { AgentState } from '@letta-web/letta-agents-api';
 import type { StaticImport } from 'next/dist/shared/lib/get-img-props';
 
+interface StarterKitTool {
+  name: string;
+  code: string;
+}
+
 export interface StarterKit {
   image: StaticImport | string;
   id: string;
   useGetTitle: () => string;
   useGetDescription: () => string;
   agentState: Partial<AgentState>;
+  tools?: StarterKitTool[];
 }
 
 export const STARTER_KITS: Record<string, StarterKit> = {
@@ -50,6 +56,24 @@ export const STARTER_KITS: Record<string, StarterKit> = {
   internetChatbot: {
     id: 'internetChatbot',
     image: internetChatbot,
+    tools: [
+      {
+        name: 'google_search',
+        code: `def google_search(query: str):
+    """
+    Search Google using a query.
+
+    Args:
+        query (str): The search query.
+
+    Returns:
+        str: A concatenated list of the top search results.
+    """
+    # TODO replace this with a real query to Google, e.g. by using serpapi (https://serpapi.com/integrations/python)
+    dummy_message = "The search tool is currently offline for regularly scheduled maintenance."
+    return dummy_message`,
+      }
+    ],
     useGetTitle: () => {
       const t = useTranslations('starter-kits');
 
@@ -111,6 +135,25 @@ export const STARTER_KITS: Record<string, StarterKit> = {
           '{% for section, block in memory.items() %}<{{ section }} characters="{{ block.value|length }}/{{ block.limit }}">\n{{ block.value }}\n</{{ section }}>{% if not loop.last %}\n{% endif %}{% endfor %}',
       },
     },
+    tools: [
+      {
+        name: 'role_d20',
+        code: `def roll_d20():
+    """
+    Simulate the roll of a 20-sided die (d20).
+
+    This function generates a random integer between 1 and 20, inclusive,
+    which represents the outcome of a single roll of a d20.
+
+    Returns:
+        str: The result of the die roll.
+    """
+    import random
+    dice_role_outcome = random.randint(1, 20)
+    output_string = f"You rolled a {dice_role_outcome}"
+    return output_string`,
+      }
+    ]
   },
   personalAssistant: {
     id: 'personalAssistant',
@@ -176,6 +219,73 @@ export const STARTER_KITS: Record<string, StarterKit> = {
           '{% for section, block in memory.items() %}<{{ section }} characters="{{ block.value|length }}/{{ block.limit }}">\n{{ block.value }}\n</{{ section }}>{% if not loop.last %}\n{% endif %}{% endfor %}',
       },
     },
+    tools: [
+      {
+        name: 'check_order_status',
+        code: `def check_order_status(order_number: int):
+    """
+    Check the status for an order number (integeter value).
+
+    Args:
+        order_number (int): The order number to check on.
+
+    Returns:
+        str: The status of the order (e.g. cancelled, refunded, processed, processing, shipping).
+    """
+    # TODO replace this with a real query to a database
+    dummy_message = f"Order {order_number} is currently processing."
+    return dummy_message`,
+      },
+      {
+        name: 'cancel_order',
+        code: `def cancel_order(order_number: int, reason: str):
+    """
+    Cancels an order.
+
+    Args:
+        order_number (int): The order number to cancel.
+        reason (str): The cancellation reason.
+
+    Returns:
+        str: The status of order cancellation request.
+    """
+    # TODO replace this with a real write to a database
+    dummy_message = f"The order {order_number} could not be cancelled."
+    return dummy_message`,
+      },
+      {
+        name: 'escalate',
+        code: `def escalate(reason: str):
+    """
+    Escalates the current chat session to a human support agent.
+
+    Args:
+        reason (str): The reason for the escalation.
+
+    Returns:
+        str: The status of escalation request.
+    """
+    # TODO replace this with a real REST API call / trigger
+    dummy_message = f"A human operator will be on the line shortly. The estimated wait time is NULL_ERROR minutes."
+    return dummy_message`,
+      },
+      {
+        name: 'terminate_chat',
+        code: `def terminate_chat(reason: str):
+    """
+    Terminate the current chat session. Only use in cases of emergencies with extremely rude customers.
+
+    Args:
+        reason (str): The reason for the termination.
+
+    Returns:
+        str: The status of termination request.
+    """
+    # TODO replace this with a real REST API call / trigger
+    dummy_message = f"ERROR"
+    return dummy_message`,
+      }
+    ]
   },
   companion: {
     id: 'companion',
