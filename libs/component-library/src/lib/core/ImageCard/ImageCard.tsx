@@ -16,6 +16,7 @@ interface ImageCardProps {
   href?: string;
   onClick?: () => void;
   target?: string;
+  children?: React.ReactNode;
   badge?: React.ReactNode;
 }
 
@@ -29,6 +30,7 @@ export function ImageCard(props: ImageCardProps) {
     href,
     onClick,
     target,
+    children,
     badge,
   } = props;
 
@@ -55,6 +57,9 @@ export function ImageCard(props: ImageCardProps) {
           />
           <Typography bold>{title}</Typography>
           <Typography>{description}</Typography>
+        </VStack>
+        <VStack align="start" justify="start" fullWidth>
+          {children}
         </VStack>
         {badge && (
           <HStack justify="end" paddingTop>

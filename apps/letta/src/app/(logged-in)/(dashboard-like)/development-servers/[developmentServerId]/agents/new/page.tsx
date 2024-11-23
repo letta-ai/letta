@@ -17,10 +17,8 @@ import { useCallback, useMemo, useState } from 'react';
 import type { StarterKit } from '$letta/client';
 import { STARTER_KITS } from '$letta/client';
 import {
-  AgentState,
   ToolsService,
-  useToolsServiceGetTool,
-  useToolsServiceListTools
+  useToolsServiceListTools,
 } from '@letta-web/letta-agents-api';
 import { useHealthServiceHealthCheck } from '@letta-web/letta-agents-api';
 import {
@@ -35,14 +33,12 @@ import { useCurrentUser } from '$letta/client/hooks';
 
 interface StarterKitItemProps {
   starterKit: StarterKit;
-  onCreateAgent: (
-    title: string,
-    starterKit: StarterKit
-  ) => void;
+  onCreateAgent: (title: string, starterKit: StarterKit) => void;
 }
 
 function StarterKitItem(props: StarterKitItemProps) {
   const { starterKit, onCreateAgent } = props;
+  const t = useTranslations('development-servers/agents/new/page');
   const { useGetTitle, useGetDescription, image } = starterKit;
 
   const title = useGetTitle();
@@ -51,7 +47,7 @@ function StarterKitItem(props: StarterKitItemProps) {
   return (
     <ImageCard
       /* eslint-disable-next-line react/forbid-component-props */
-      className="h-[260px]"
+      className="h-[270px]"
       onClick={() => {
         onCreateAgent(title, starterKit);
       }}
@@ -59,7 +55,22 @@ function StarterKitItem(props: StarterKitItemProps) {
       altText=""
       title={title}
       description={description}
-    />
+    >
+      <VStack paddingTop>
+        {starterKit.tools && (
+          <Typography variant="body2" align="left">
+            {t.rich('tools', {
+              strong: (v) => (
+                <Typography variant="body2" overrideEl="span" bold>
+                  {v}
+                </Typography>
+              ),
+              toolsList: starterKit.tools.map((v) => v.name).join(', '),
+            })}
+          </Typography>
+        )}
+      </VStack>
+    </ImageCard>
   );
 }
 
@@ -78,14 +89,12 @@ function NewAgentPage() {
   const [isPending, setIsPending] = useState(false);
 
   const {
-    mutate: createAgent,
+    mutateAsync: createAgent,
     isSuccess,
     error,
   } = useAgentsServiceCreateAgent();
 
-  const {
-    refetch: getAllTools,
-  } = useToolsServiceListTools({ }, undefined, {
+  const { refetch: getAllTools } = useToolsServiceListTools({}, undefined, {
     enabled: false,
   });
 
@@ -108,38 +117,42 @@ function NewAgentPage() {
         return;
       }
 
-      setIsPending(true);
+      try {
+        setIsPending(true);
 
-      if (starterKit.tools) {
-        const existingTools = await getAllTools();
+        const { agentState } = starterKit;
 
-        const toolNameMap = (existingTools.data || []).reduce((acc, tool) => {
-          acc.add(tool.name || '');
+        if (starterKit.tools) {
+          const existingTools = await getAllTools();
 
-          return acc;
-        }, new Set<string>());
+          const toolNameMap = (existingTools.data || []).reduce((acc, tool) => {
+            acc.add(tool.name || '');
 
-        const toolsToCreate = starterKit.tools.filter((tool) => {
-          return !toolNameMap.has(tool.name);
-        });
+            return acc;
+          }, new Set<string>());
 
-        await Promise.all(toolsToCreate.map((tool) => {
-          return ToolsService.createTool({
-            requestBody: {
-              source_code: tool.code,
-              name: tool.name,
-            },
+          const toolsToCreate = starterKit.tools.filter((tool) => {
+            return !toolNameMap.has(tool.name);
           });
-        }));
-      }
 
+          await Promise.all(
+            toolsToCreate.map((tool) => {
+              return ToolsService.createTool({
+                requestBody: {
+                  source_code: tool.code,
+                  description: 'A custom tool',
+                  name: tool.name,
+                },
+              });
+            })
+          );
+        }
 
-      const nextName = `${title
-        .toLowerCase()
-        .replace(/ /g, '-')}-agent-${Date.now()}`;
+        const nextName = `${title
+          .toLowerCase()
+          .replace(/ /g, '-')}-agent-${Date.now()}`;
 
-      createAgent(
-        {
+        const response = await createAgent({
           requestBody: {
             name: nextName,
             tools: [
@@ -148,38 +161,40 @@ function NewAgentPage() {
               'conversation_search',
               'conversation_search_date',
               'send_message',
+              ...(starterKit.tools || []).map((tool) => tool.name),
             ],
             llm_config: llmModels?.[0],
             embedding_config: embeddingModels?.[0],
             ...agentState,
           },
-        },
-        {
-          onSuccess: (response) => {
-            setIsPending(false);
-            trackClientSideEvent(AnalyticsEvent.LOCAL_AGENT_CREATED, {
-              userId: user?.id || '',
-              starterKitId,
-            });
+        });
 
-            push(
-              `/development-servers/${developmentServerConfig.id}/agents/${response.id}`
-            );
-          },
-        }
-      );
+        trackClientSideEvent(AnalyticsEvent.LOCAL_AGENT_CREATED, {
+          userId: user?.id || '',
+          starterKitId: starterKit.id,
+        });
+
+        push(
+          `/development-servers/${developmentServerConfig.id}/agents/${response.id}`
+        );
+      } catch (_e) {
+        setIsPending(false);
+      } finally {
+        setIsPending(false);
+      }
     },
     [
       developmentServerConfig,
       isFetchingStatus,
       isPending,
       isSuccess,
+      t,
       createAgent,
       llmModels,
       embeddingModels,
-      t,
       user?.id,
       push,
+      getAllTools,
     ]
   );
 
