@@ -320,9 +320,15 @@ export const archivalMemoriesPanelTemplate = {
     const t = useTranslations('ADE/ArchivalMemories');
     const { id: currentAgentId } = useCurrentSimulatedAgent();
 
-    const { data, isLoading } = useAgentsServiceListAgentArchivalMemory({
-      agentId: currentAgentId,
-    });
+    const { data, isLoading } = useAgentsServiceListAgentArchivalMemory(
+      {
+        agentId: currentAgentId,
+      },
+      undefined,
+      {
+        enabled: !!currentAgentId,
+      }
+    );
 
     const count = useMemo(() => {
       if (!data || isLoading) {
