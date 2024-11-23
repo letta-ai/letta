@@ -59,7 +59,7 @@ export const STARTER_KITS: Record<string, StarterKit> = {
     tools: [
       {
         name: 'google_search',
-        code: `def google_search(self, query: str):
+        code: `def google_search(query: str):
     """
     Search Google using a query.
 
@@ -138,7 +138,7 @@ export const STARTER_KITS: Record<string, StarterKit> = {
     tools: [
       {
         name: 'role_d20',
-        code: `def roll_d20(self):
+        code: `def roll_d20():
     """
     Simulate the roll of a 20-sided die (d20).
 
@@ -222,7 +222,7 @@ export const STARTER_KITS: Record<string, StarterKit> = {
     tools: [
       {
         name: 'check_order_status',
-        code: `def check_order_status(self, order_number: int):
+        code: `def check_order_status(order_number: int):
     """
     Check the status for an order number (integeter value).
 
@@ -238,7 +238,7 @@ export const STARTER_KITS: Record<string, StarterKit> = {
       },
       {
         name: 'cancel_order',
-        code: `def cancel_order(self, order_number: int, reason: str):
+        code: `def cancel_order(order_number: int, reason: str):
     """
     Cancels an order.
 
@@ -255,7 +255,7 @@ export const STARTER_KITS: Record<string, StarterKit> = {
       },
       {
         name: 'escalate',
-        code: `def escalate(self, reason: str):
+        code: `def escalate(reason: str):
     """
     Escalates the current chat session to a human support agent.
 
@@ -271,7 +271,7 @@ export const STARTER_KITS: Record<string, StarterKit> = {
       },
       {
         name: 'terminate_chat',
-        code: `def terminate_chat(self, reason: str):
+        code: `def terminate_chat(reason: str):
     """
     Terminate the current chat session. Only use in cases of emergencies with extremely rude customers.
 
