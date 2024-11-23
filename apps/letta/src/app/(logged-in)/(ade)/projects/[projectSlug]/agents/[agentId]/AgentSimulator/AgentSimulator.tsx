@@ -132,6 +132,10 @@ function useSendMessage(agentId: string) {
         trackClientSideEvent(AnalyticsEvent.LOCAL_AGENT_MESSAGE_CREATED, {
           userId: user?.id || '',
         });
+      } else {
+        trackClientSideEvent(AnalyticsEvent.CLOUD_AGENT_MESSAGE_CREATED, {
+          userId: user?.id || '',
+        });
       }
 
       abortController.current = new AbortController();

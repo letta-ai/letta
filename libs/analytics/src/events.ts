@@ -18,6 +18,7 @@ export enum AnalyticsEvent {
   AGENT_CREATED = 'Agent Created',
   AGENT_STAGED = 'Agent Staged',
   AGENT_DEPLOYED = 'Agent Deployed',
+  APP_ERROR = 'App Error',
 }
 
 export interface BaseProperty {
@@ -52,4 +53,5 @@ export interface AnalyticsEventProperties {
   [AnalyticsEvent.CLOUD_AGENT_MESSAGE_CREATED]: BaseProperty;
   [AnalyticsEvent.CLOUD_AGENT_MODEL_CHANGED]: LocalAgentModelChangedProperty;
   [AnalyticsEvent.CLOUD_AGENT_DELETED]: BaseProperty;
+  [AnalyticsEvent.APP_ERROR]: BaseProperty;
 }
