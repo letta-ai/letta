@@ -17,7 +17,10 @@ interface RoleOption<Role> {
   value: Role;
   label: string;
   icon?: React.ReactNode;
-  color?: string;
+  color?: {
+    text: string;
+    background: string;
+  };
 }
 
 interface ChatInputProps<Role> {
@@ -134,7 +137,8 @@ export function ChatInput<Roles extends string>(props: ChatInputProps<Roles>) {
                 trigger={
                   <button
                     style={{
-                      backgroundColor: selectedRole?.color,
+                      backgroundColor: selectedRole?.color?.background,
+                      color: selectedRole?.color?.text,
                     }}
                     className="flex bg-background-grey2 font-medium text-base h-biHeight gap-2 items-center px-4"
                   >

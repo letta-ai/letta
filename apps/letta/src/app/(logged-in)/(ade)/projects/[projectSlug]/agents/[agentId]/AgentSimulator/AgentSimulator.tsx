@@ -839,7 +839,10 @@ function Chatroom() {
                   value: 'user',
                   label: t('role.user'),
                   icon: <PersonIcon />,
-                  color: 'hsl(var(--user-color))',
+                  color: {
+                    background: 'hsl(var(--user-color))',
+                    text: 'hsl(var(--user-color-content))',
+                  },
                 },
                 {
                   value: 'system',
