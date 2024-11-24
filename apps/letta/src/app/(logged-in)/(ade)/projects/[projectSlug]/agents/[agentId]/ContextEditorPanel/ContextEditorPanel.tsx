@@ -18,6 +18,7 @@ import { atom, useAtom } from 'jotai';
 import { z } from 'zod';
 import type { TiktokenModel } from 'js-tiktoken';
 import { encodingForModel } from 'js-tiktoken';
+import { useCurrentUser } from '$letta/client/hooks';
 
 const computedMemoryStringAtom = atom<string | null>(null);
 
@@ -190,6 +191,8 @@ function ContextWindowPanel() {
     return Math.max(0, totalLength - totalUsedLength);
   }, [totalLength, totalUsedLength]);
 
+  const user = useCurrentUser();
+
   const totalLengthForChart = useMemo(() => {
     return Math.max(totalLength, totalUsedLength);
   }, [totalLength, totalUsedLength]);
@@ -329,7 +332,7 @@ function ContextWindowPanel() {
             },
           },
           data: [remainingLength / totalLengthForChart],
-          color: '#eee',
+          color: user?.theme === 'dark' ? '#333' : '#eee',
           name: t('ContextWindowPreview.remaining'),
           itemStyle: {
             borderRadius: [0, 0, 0, 0],
@@ -374,6 +377,7 @@ function ContextWindowPanel() {
     recursiveMemoryLength,
     messagesTokensLength,
     remainingLength,
+    user?.theme,
   ]);
 
   return (
