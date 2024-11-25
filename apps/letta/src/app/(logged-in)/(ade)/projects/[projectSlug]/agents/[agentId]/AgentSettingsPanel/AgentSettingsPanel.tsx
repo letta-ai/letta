@@ -83,6 +83,7 @@ function ModelSelector(props: ModelSelectorProps) {
     return modelsList
       .map((value) => {
         const { model } = value;
+        let modelName = model;
         let brand = 'llama';
         let isRecommended = false;
         let badge = '';
@@ -93,6 +94,7 @@ function ModelSelector(props: ModelSelectorProps) {
           brand = out?.brand || brand;
           isRecommended = out?.isRecommended || isRecommended;
           badge = out?.tag || badge;
+          modelName = out?.displayName || modelName;
         }
 
         if (brand === 'llama') {
@@ -101,7 +103,7 @@ function ModelSelector(props: ModelSelectorProps) {
 
         return {
           icon: isBrandKey(brand) ? brandKeyToLogo(brand) : '',
-          label: model,
+          label: modelName,
           value: model,
           brand,
           isRecommended,

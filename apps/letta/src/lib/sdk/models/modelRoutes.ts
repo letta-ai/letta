@@ -43,6 +43,7 @@ async function listLLMBackends(
                 brand: model.brand,
                 isRecommended: model.isRecommended,
                 tag: model.tag,
+                displayName: model.name,
               }
             : {}),
         };
