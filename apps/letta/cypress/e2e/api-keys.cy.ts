@@ -12,7 +12,8 @@ describe('Allow users to create and manage API keys', () => {
 
   it('should create an api key', () => {
     cy.visit('/');
-    cy.findByTestId('nav-button-api-keys').as('apiKeysButton').click();
+
+    cy.findByTestId('nav-button-api-keys').click();
 
     cy.get('h1').contains(/API Keys/);
 
