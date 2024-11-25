@@ -13,7 +13,7 @@ import { cva } from 'class-variance-authority';
 import { forwardRef } from 'react';
 
 const defaultClass =
-  'flex min-h-[80px] w-full border border-input bg-background px-3 py-2 pr-[10px] text-base ring-offset-background placeholder:text-muted-foreground  disabled:cursor-not-allowed disabled:opacity-50';
+  'flex min-h-[40px] w-full border border-input bg-background px-3 py-2 pr-[10px] text-base ring-offset-background placeholder:text-muted-foreground  disabled:cursor-not-allowed disabled:opacity-50';
 
 const textareaVariants = cva(defaultClass, {
   variants: {
@@ -92,10 +92,15 @@ PrimitiveTextArea.displayName = 'Textarea';
 
 const WrappedTextArea = forwardRef<HTMLTextAreaElement, TextAreaProps>(
   function WrappedTextArea(props, ref) {
-    const { expandable, fullHeight, fullWidth } = props;
+    const { expandable, fullHeight, flex, fullWidth } = props;
 
     return (
-      <Frame fullWidth={fullWidth} fullHeight={fullHeight} position="relative">
+      <Frame
+        fullWidth={fullWidth}
+        flex={flex}
+        fullHeight={fullHeight}
+        position="relative"
+      >
         <PrimitiveTextArea ref={ref} {...props} />
         {expandable && (
           <div className="absolute bottom-[4px] right-[6px]">

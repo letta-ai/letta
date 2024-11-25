@@ -232,7 +232,7 @@ function ViewTool(props: ViewToolProps) {
           </Typography>
         </HStack>
       </VStack>
-      <VStack flex fullHeight>
+      <VStack flex collapseHeight>
         <RawToggleGroup
           hideLabel
           border
@@ -256,14 +256,14 @@ function ViewTool(props: ViewToolProps) {
             },
           ]}
         />
-        <VStack fullHeight flex>
+        <VStack collapseHeight flex>
           {viewMode === 'code' ? (
             <RawCodeEditor
               color="background-grey"
               toolbarPosition="bottom"
               flex
               fullWidth
-              fullHeight
+              collapseHeight
               label=""
               language="python"
               code={tool?.source_code || ''}
@@ -274,7 +274,7 @@ function ViewTool(props: ViewToolProps) {
               toolbarPosition="bottom"
               flex
               fullWidth
-              fullHeight
+              collapseHeight
               label=""
               language="javascript"
               code={
@@ -362,7 +362,7 @@ function EditTool(props: EditToolProps) {
   return (
     <FormProvider {...form}>
       <Form onSubmit={form.handleSubmit(handleSubmit)}>
-        <VStack flex fullHeight gap="form">
+        <VStack collapseHeight flex gap="form">
           <FormField
             name="name"
             render={({ field }) => (
@@ -379,6 +379,7 @@ function EditTool(props: EditToolProps) {
             render={({ field }) => (
               <TextArea
                 fullWidth
+                resize="none"
                 label={t('EditTool.description.label')}
                 {...field}
               />
@@ -389,7 +390,7 @@ function EditTool(props: EditToolProps) {
             render={({ field }) => (
               <CodeEditor
                 fullWidth
-                fullHeight
+                collapseHeight
                 flex
                 toolbarPosition="bottom"
                 language="python"
@@ -786,7 +787,6 @@ function ViewToolDialog(props: ViewToolDialogProps) {
       disableForm
       noContentPadding
       hideFooter
-      preventCloseFromOutside
       isOpen
       onOpenChange={(state) => {
         if (!state) {
@@ -1020,8 +1020,8 @@ function ToolCreator(props: ToolCreatorProps) {
   );
 
   return (
-    <VStack flex paddingBottom>
-      <VStack flex padding fullWidth>
+    <VStack flex collapseHeight paddingBottom>
+      <VStack flex collapseHeight padding fullWidth>
         <HStack>
           <Button
             size="small"
@@ -1035,7 +1035,7 @@ function ToolCreator(props: ToolCreatorProps) {
         </HStack>
         <FormProvider {...form}>
           <Form onSubmit={form.handleSubmit(handleSubmit)}>
-            <VStack flex fullHeight gap="form">
+            <VStack flex collapseHeight gap="form">
               <FormField
                 control={form.control}
                 name="name"
@@ -1053,6 +1053,8 @@ function ToolCreator(props: ToolCreatorProps) {
                 name="description"
                 render={({ field }) => (
                   <TextArea
+                    rows={2}
+                    resize="none"
                     placeholder={t('ToolCreator.description.placeholder')}
                     fullWidth
                     label={t('ToolCreator.description.label')}
@@ -1066,7 +1068,7 @@ function ToolCreator(props: ToolCreatorProps) {
                 render={({ field }) => (
                   <CodeEditor
                     flex
-                    fullHeight
+                    collapseHeight
                     fullWidth
                     toolbarPosition="bottom"
                     language="python"

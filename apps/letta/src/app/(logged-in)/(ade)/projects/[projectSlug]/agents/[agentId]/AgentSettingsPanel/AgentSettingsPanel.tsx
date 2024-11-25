@@ -250,9 +250,8 @@ function SystemPromptEditor() {
         errorMessage={error ? t('SystemPromptEditor.error') : ''}
         title={t('SystemPromptEditor.dialog.title')}
         hideConfirm
-        preventCloseFromOutside
       >
-        <VStack fullHeight gap="form">
+        <VStack collapseHeight flex gap="form">
           <HStack gap="xlarge" align="center" justify="spaceBetween">
             <div>
               <Alert
@@ -268,6 +267,7 @@ function SystemPromptEditor() {
           </HStack>
           <RawTextArea
             fullWidth
+            flex
             fullHeight
             autosize={false}
             hideLabel

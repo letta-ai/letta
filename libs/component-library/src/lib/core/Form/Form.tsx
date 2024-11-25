@@ -95,12 +95,14 @@ interface InputWrapperProps {
   fullHeight?: boolean;
   flex?: boolean;
   inputAndLabel: React.ReactNode;
+  collapseHeight?: boolean;
   otherContent: React.ReactNode;
 }
 
 function InputWrapper({
   inline,
   fullWidth,
+  collapseHeight,
   flex,
   fullHeight,
   inputAndLabel,
@@ -109,11 +111,12 @@ function InputWrapper({
   const className = useMemo(() => {
     return cn(
       'flex flex-col gap-[6px]',
+      collapseHeight ? 'h-0' : '',
       fullWidth ? 'w-full' : 'w-fit',
       fullHeight ? 'h-full' : '',
       flex ? 'flex-1' : ''
     );
-  }, [flex, fullHeight, fullWidth]);
+  }, [collapseHeight, flex, fullHeight, fullWidth]);
 
   if (inline) {
     return (
@@ -161,6 +164,7 @@ export interface InputContainerProps {
   inline?: boolean | 'reverse';
   fullWidth?: boolean;
   fullHeight?: boolean;
+  collapseHeight?: boolean;
   rightOfLabelContent?: React.ReactNode;
   flex?: boolean;
   children?: React.ReactNode;
@@ -231,6 +235,7 @@ export function RawInputContainer(props: RawInputContainerProps) {
     inline,
     fullWidth,
     preLabelIcon,
+    collapseHeight,
     description,
     children,
     rightOfLabelContent,
@@ -240,6 +245,7 @@ export function RawInputContainer(props: RawInputContainerProps) {
     <InputWrapper
       fullWidth={fullWidth}
       fullHeight={fullHeight}
+      collapseHeight={collapseHeight}
       flex={flex}
       inputAndLabel={
         <>
@@ -326,6 +332,7 @@ export const inputStorybookArgs = {
   hideLabel: false,
   description: '',
   fullWidth: false,
+  collapseHeight: false,
   fullHeight: false,
 };
 
@@ -349,6 +356,7 @@ export function makeRawInput<T>(
         {...props}
         id={baseId || props.id}
         inline={options?.inline || props.inline}
+        collapseHeight={props.collapseHeight}
         fullWidth={props.fullWidth || options?.fullWidth}
       >
         <Input {...(omit(props, omitProps) as typeof props)} />
