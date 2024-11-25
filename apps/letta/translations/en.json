@@ -7,8 +7,6 @@
     "nav": {
       "projects": "Projects",
       "apiKeys": "API Keys",
-      "team": "Members",
-      "billing": "Usage and Billing",
       "dataSources": "Data Sources",
       "admin": "Admin",
       "localDev": "Self-Hosted",
