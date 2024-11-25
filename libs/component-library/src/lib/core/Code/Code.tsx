@@ -146,12 +146,19 @@ export function Code(props: CodeProps) {
         {code}
       </div>
       {toolbarPosition === 'top' && toolbar}
-      <VStack color={color} className="flex-1" position="relative">
+      <VStack
+        collapseHeight={flex}
+        overflowY="auto"
+        color={color}
+        className="flex-1"
+        position="relative"
+      >
         <div className={cn(showLineNumbers ? 'line-number-wrapper' : '')} />
         <Editor
           id={`code-editor-${id}`}
           className={cn(
-            'editor w-full',
+            'editor w-full overflow-auto',
+            flex && 'flex-1',
             fullHeight && 'h-full flex-1',
             showLineNumbers && 'line-numbers'
           )}
@@ -183,6 +190,7 @@ export function Code(props: CodeProps) {
           padding={10}
           textareaId={id}
           style={{
+            overflow: 'auto',
             fontFamily: 'inherit',
             fontSize: 'inherit',
             outline: 0,

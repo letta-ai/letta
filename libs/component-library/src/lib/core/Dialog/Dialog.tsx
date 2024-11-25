@@ -94,7 +94,7 @@ const DialogContent = React.forwardRef<
           )}
           {...props}
         >
-          <VStack gap={false} fullHeight={isFull}>
+          <VStack collapseHeight flex gap={false} fullHeight={isFull}>
             {errorMessage && (
               <Alert
                 fullWidth
@@ -105,7 +105,13 @@ const DialogContent = React.forwardRef<
               />
             )}
 
-            <VStack gap={false} position="relative" fullHeight={isFull}>
+            <VStack
+              flex
+              collapseHeight
+              gap={false}
+              position="relative"
+              fullHeight={isFull}
+            >
               {children}
               <DialogPrimitive.Close className="absolute right-4 top-[13px] opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
                 <CloseIcon className="h-5 w-5" />
@@ -307,7 +313,7 @@ export function DialogContentWithCategories(
           />
         )}
       </VStack>
-      <VStack fullHeight fullWidth color="background">
+      <VStack fullHeight flex overflowY="auto" fullWidth color="background">
         {
           categories.find((category) => category.id === selectedCategory)
             ?.children
@@ -419,19 +425,24 @@ export function Dialog(props: DialogProps) {
         aria-describedby=""
       >
         <DialogContext.Provider value={{ isInDialog: true }}>
-          <DialogHeader className={!noContentPadding ? 'mb-4' : ''}>
+          <DialogHeader>
             <DialogTitle>{title}</DialogTitle>
           </DialogHeader>
           <Element
             className={cn(
-              'overflow-y-auto overflow-x-hidden',
+              'overflow-y-auto overflow-x-hidden flex flex-col flex-1',
+              !noContentPadding ? 'pt-4' : '',
               size === 'full' ? 'h-full' : ''
             )}
             /* @ts-expect-error - element */
             onSubmit={handleSubmit}
           >
             <VStack
-              className={cn('h-full', noContentPadding ? '' : 'px-[24px]')}
+              className={cn(
+                'flex-1',
+                noContentPadding ? '' : 'px-[24px]',
+                size === 'full' ? 'h-full flex flex-col' : ''
+              )}
             >
               {children}
             </VStack>

@@ -333,7 +333,7 @@ function DeployAgentDialog(props: DeployAgentDialogProps) {
   return (
     <Dialog
       title={t('DeployAgentDialog.title')}
-      size="large"
+      size="xlarge"
       trigger={
         <Button
           fullWidth
