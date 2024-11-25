@@ -35,22 +35,6 @@
               "type": "string",
               "title": "Tool Id"
             }
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
           }
         ],
         "responses": {
@@ -96,7 +80,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Tool-Output"
+                  "$ref": "#/components/schemas/letta__schemas__tool__Tool"
                 }
               }
             }
@@ -127,22 +111,6 @@
               "type": "string",
               "title": "Tool Id"
             }
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
           }
         ],
         "requestBody": {
@@ -161,7 +129,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Tool-Output"
+                  "$ref": "#/components/schemas/letta__schemas__tool__Tool"
                 }
               }
             }
@@ -194,22 +162,6 @@
               "type": "string",
               "title": "Tool Name"
             }
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
           }
         ],
         "responses": {
@@ -240,13 +192,13 @@
     "/v1/tools/": {
       "get": {
         "tags": ["tools"],
-        "summary": "List All Tools",
-        "description": "Get a list of all tools available to agents created by a user",
+        "summary": "List Tools",
+        "description": "Get a list of all tools available to agents belonging to the org of the user",
         "operationId": "list_tools",
         "parameters": [
           {
-            "name": "user_id",
-            "in": "header",
+            "name": "cursor",
+            "in": "query",
             "required": false,
             "schema": {
               "anyOf": [
@@ -257,7 +209,24 @@
                   "type": "null"
                 }
               ],
-              "title": "User Id"
+              "title": "Cursor"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": 50,
+              "title": "Limit"
             }
           }
         ],
@@ -269,7 +238,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/Tool-Output"
+                    "$ref": "#/components/schemas/letta__schemas__tool__Tool"
                   },
                   "title": "Response List Tools"
                 }
@@ -293,34 +262,7 @@
         "summary": "Create Tool",
         "description": "Create a new tool",
         "operationId": "create_tool",
-        "parameters": [
-          {
-            "name": "update",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "boolean",
-              "default": false,
-              "title": "Update"
-            }
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
-          }
-        ],
+        "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
@@ -337,7 +279,42 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Tool-Output"
+                  "$ref": "#/components/schemas/letta__schemas__tool__Tool"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/tools/add-base-tools": {
+      "post": {
+        "tags": ["tools"],
+        "summary": "Add Base Tools",
+        "description": "Add base tools",
+        "operationId": "add_base_tools",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/letta__schemas__tool__Tool"
+                  },
+                  "title": "Response Add Base Tools"
                 }
               }
             }
@@ -369,22 +346,6 @@
             "schema": {
               "type": "string",
               "title": "Source Id"
-            }
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
             }
           }
         ],
@@ -424,22 +385,6 @@
             "schema": {
               "type": "string",
               "title": "Source Id"
-            }
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
             }
           }
         ],
@@ -490,22 +435,6 @@
               "type": "string",
               "title": "Source Id"
             }
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
           }
         ],
         "responses": {
@@ -545,22 +474,6 @@
               "type": "string",
               "title": "Source Name"
             }
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
           }
         ],
         "responses": {
@@ -594,24 +507,7 @@
         "summary": "List Sources",
         "description": "List all data sources created by a user.",
         "operationId": "list_sources",
-        "parameters": [
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
-          }
-        ],
+        "parameters": [],
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -644,24 +540,7 @@
         "summary": "Create Source",
         "description": "Create a new data source.",
         "operationId": "create_source",
-        "parameters": [
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
-          }
-        ],
+        "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
@@ -722,22 +601,6 @@
               "title": "Agent Id"
             },
             "description": "The unique identifier of the agent to attach the source to."
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
           }
         ],
         "responses": {
@@ -790,22 +653,6 @@
               "title": "Agent Id"
             },
             "description": "The unique identifier of the agent to detach the source from."
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
           }
         ],
         "responses": {
@@ -846,22 +693,6 @@
             "schema": {
               "type": "string",
               "title": "Source Id"
-            }
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
             }
           }
         ],
@@ -913,22 +744,6 @@
             "schema": {
               "type": "string",
               "title": "Source Id"
-            }
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
             }
           }
         ],
@@ -1005,22 +820,6 @@
               "title": "Cursor"
             },
             "description": "Pagination cursor to fetch the next set of results"
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
           }
         ],
         "responses": {
@@ -1075,22 +874,6 @@
               "type": "string",
               "title": "File Id"
             }
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
           }
         ],
         "responses": {
@@ -1118,8 +901,8 @@
         "operationId": "list_agents",
         "parameters": [
           {
-            "name": "user_id",
-            "in": "header",
+            "name": "name",
+            "in": "query",
             "required": false,
             "schema": {
               "anyOf": [
@@ -1130,8 +913,31 @@
                   "type": "null"
                 }
               ],
-              "title": "User Id"
-            }
+              "description": "Name of the agent",
+              "title": "Name"
+            },
+            "description": "Name of the agent"
+          },
+          {
+            "name": "tags",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "List of tags to filter agents by",
+              "title": "Tags"
+            },
+            "description": "List of tags to filter agents by"
           }
         ],
         "responses": {
@@ -1166,24 +972,7 @@
         "summary": "Create Agent",
         "description": "Create a new agent with the specified configuration.",
         "operationId": "create_agent",
-        "parameters": [
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
-          }
-        ],
+        "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
@@ -1233,22 +1022,6 @@
               "type": "string",
               "title": "Agent Id"
             }
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
           }
         ],
         "responses": {
@@ -1289,22 +1062,6 @@
             "schema": {
               "type": "string",
               "title": "Agent Id"
-            }
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
             }
           }
         ],
@@ -1355,22 +1112,6 @@
               "type": "string",
               "title": "Agent Id"
             }
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
           }
         ],
         "responses": {
@@ -1410,22 +1151,6 @@
               "type": "string",
               "title": "Agent Id"
             }
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
           }
         ],
         "responses": {
@@ -1450,11 +1175,56 @@
         }
       }
     },
+    "/v1/agents/{agent_id}/tools": {
+      "get": {
+        "tags": ["agents"],
+        "summary": "Get Tools From Agent",
+        "description": "Get tools from an existing agent",
+        "operationId": "get_tools_from_agent",
+        "parameters": [
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Agent Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/letta__schemas__tool__Tool"
+                  },
+                  "title": "Response Get Tools From Agent"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/agents/{agent_id}/add-tool/{tool_id}": {
       "patch": {
         "tags": ["agents"],
         "summary": "Add Tool To Agent",
-        "description": "Add tools to an exsiting agent",
+        "description": "Add tools to an existing agent",
         "operationId": "add_tool_to_agent",
         "parameters": [
           {
@@ -1473,22 +1243,6 @@
             "schema": {
               "type": "string",
               "title": "Tool Id"
-            }
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
             }
           }
         ],
@@ -1520,7 +1274,7 @@
       "patch": {
         "tags": ["agents"],
         "summary": "Remove Tool From Agent",
-        "description": "Add tools to an exsiting agent",
+        "description": "Add tools to an existing agent",
         "operationId": "remove_tool_from_agent",
         "parameters": [
           {
@@ -1539,22 +1293,6 @@
             "schema": {
               "type": "string",
               "title": "Tool Id"
-            }
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
             }
           }
         ],
@@ -1715,8 +1453,162 @@
       "patch": {
         "tags": ["agents"],
         "summary": "Update Agent Memory",
-        "description": "Update the core memory of a specific agent.\nThis endpoint accepts new memory contents (human and persona) and updates the core memory of the agent identified by the user ID and agent ID.",
+        "description": "Update the core memory of a specific agent.\n    This endpoint accepts new memory contents (labels as keys, and values as values) and updates the core memory of the agent identified by the user ID and agent ID.\nThis endpoint accepts new memory contents to update the core memory of the agent.\nThis endpoint only supports modifying existing blocks; it does not support deleting/unlinking or creating/linking blocks.",
         "operationId": "update_agent_memory",
+        "parameters": [
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Agent Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "title": "Request"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Memory"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/agents/{agent_id}/memory/label": {
+      "patch": {
+        "tags": ["agents"],
+        "summary": "Update Agent Memory Label",
+        "description": "Update the label of a block in an agent's memory.",
+        "operationId": "update_agent_memory_label",
+        "parameters": [
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Agent Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BlockLabelUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Memory"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/agents/{agent_id}/memory/block": {
+      "post": {
+        "tags": ["agents"],
+        "summary": "Add Agent Memory Block",
+        "description": "Creates a memory block and links it to the agent.",
+        "operationId": "add_agent_memory_block",
+        "parameters": [
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Agent Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BlockCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Memory"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/agents/{agent_id}/memory/block/{block_label}": {
+      "delete": {
+        "tags": ["agents"],
+        "summary": "Remove Agent Memory Block",
+        "description": "Removes a memory block from an agent by unlnking it. If the block is not linked to any other agent, it is deleted.",
+        "operationId": "remove_agent_memory_block",
         "parameters": [
           {
             "name": "agent_id",
@@ -1728,19 +1620,53 @@
             }
           },
           {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
+            "name": "block_label",
+            "in": "path",
+            "required": true,
             "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
+              "type": "string",
+              "title": "Block Label"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Memory"
                 }
-              ],
-              "title": "User Id"
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/agents/{agent_id}/memory/limit": {
+      "patch": {
+        "tags": ["agents"],
+        "summary": "Update Agent Memory Limit",
+        "description": "Update the limit of a block in an agent's memory.",
+        "operationId": "update_agent_memory_limit",
+        "parameters": [
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Agent Id"
             }
           }
         ],
@@ -1749,8 +1675,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "object",
-                "title": "Request"
+                "$ref": "#/components/schemas/BlockLimitUpdate"
               }
             }
           }
@@ -1930,22 +1855,6 @@
               "title": "Limit"
             },
             "description": "How many results to include in the response."
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
           }
         ],
         "responses": {
@@ -1988,22 +1897,6 @@
             "schema": {
               "type": "string",
               "title": "Agent Id"
-            }
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
             }
           }
         ],
@@ -2068,22 +1961,6 @@
             "schema": {
               "type": "string",
               "title": "Memory Id"
-            }
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
             }
           }
         ],
@@ -2202,22 +2079,6 @@
               "title": "Assistant Message Function Kwarg"
             },
             "description": "[Only applicable if use_assistant_message is True] The name of the message argument in the designated message tool."
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
           }
         ],
         "responses": {
@@ -2301,22 +2162,6 @@
               "type": "string",
               "title": "Agent Id"
             }
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
           }
         ],
         "requestBody": {
@@ -2331,12 +2176,14 @@
         },
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "Successful response",
             "content": {
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/LettaResponse"
-                }
+                "schema": {},
+                "$ref": "#/components/schemas/LettaResponse"
+              },
+              "text/event-stream": {
+                "description": "Server-Sent Events stream"
               }
             }
           },
@@ -2512,22 +2359,6 @@
               "title": "Name"
             },
             "description": "Name of the block"
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
           }
         ],
         "responses": {
@@ -2561,30 +2392,13 @@
         "tags": ["blocks"],
         "summary": "Create Block",
         "operationId": "create_memory_block",
-        "parameters": [
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
-          }
-        ],
+        "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateBlock"
+                "$ref": "#/components/schemas/BlockCreate"
               }
             }
           }
@@ -2634,7 +2448,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpdateBlock"
+                "$ref": "#/components/schemas/BlockUpdate"
               }
             }
           }
@@ -2763,22 +2577,6 @@
               "title": "Source Id"
             },
             "description": "Only list jobs associated with the source."
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
           }
         ],
         "responses": {
@@ -2815,24 +2613,7 @@
         "summary": "List Active Jobs",
         "description": "List all active jobs.",
         "operationId": "list_active_jobs",
-        "parameters": [
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
-          }
-        ],
+        "parameters": [],
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -2960,6 +2741,393 @@
         }
       }
     },
+    "/v1/sandbox-config/": {
+      "post": {
+        "tags": ["sandbox-config"],
+        "summary": "Create Sandbox Config",
+        "operationId": "create_sandbox_config_v1_sandbox_config__post",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SandboxConfigCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SandboxConfig"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": ["sandbox-config"],
+        "summary": "List Sandbox Configs",
+        "operationId": "list_sandbox_configs_v1_sandbox_config__get",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "description": "Number of results to return",
+              "default": 1000,
+              "title": "Limit"
+            },
+            "description": "Number of results to return"
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Pagination cursor to fetch the next set of results",
+              "title": "Cursor"
+            },
+            "description": "Pagination cursor to fetch the next set of results"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SandboxConfig"
+                  },
+                  "title": "Response List Sandbox Configs V1 Sandbox Config  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/sandbox-config/{sandbox_config_id}": {
+      "patch": {
+        "tags": ["sandbox-config"],
+        "summary": "Update Sandbox Config",
+        "operationId": "update_sandbox_config_v1_sandbox_config__sandbox_config_id__patch",
+        "parameters": [
+          {
+            "name": "sandbox_config_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Sandbox Config Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SandboxConfigUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SandboxConfig"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["sandbox-config"],
+        "summary": "Delete Sandbox Config",
+        "operationId": "delete_sandbox_config_v1_sandbox_config__sandbox_config_id__delete",
+        "parameters": [
+          {
+            "name": "sandbox_config_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Sandbox Config Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/sandbox-config/{sandbox_config_id}/environment-variable": {
+      "post": {
+        "tags": ["sandbox-config"],
+        "summary": "Create Sandbox Env Var",
+        "operationId": "create_sandbox_env_var_v1_sandbox_config__sandbox_config_id__environment_variable_post",
+        "parameters": [
+          {
+            "name": "sandbox_config_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Sandbox Config Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SandboxEnvironmentVariableCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SandboxEnvironmentVariable"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": ["sandbox-config"],
+        "summary": "List Sandbox Env Vars",
+        "operationId": "list_sandbox_env_vars_v1_sandbox_config__sandbox_config_id__environment_variable_get",
+        "parameters": [
+          {
+            "name": "sandbox_config_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Sandbox Config Id"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "description": "Number of results to return",
+              "default": 1000,
+              "title": "Limit"
+            },
+            "description": "Number of results to return"
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Pagination cursor to fetch the next set of results",
+              "title": "Cursor"
+            },
+            "description": "Pagination cursor to fetch the next set of results"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SandboxEnvironmentVariable"
+                  },
+                  "title": "Response List Sandbox Env Vars V1 Sandbox Config  Sandbox Config Id  Environment Variable Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/sandbox-config/environment-variable/{env_var_id}": {
+      "patch": {
+        "tags": ["sandbox-config"],
+        "summary": "Update Sandbox Env Var",
+        "operationId": "update_sandbox_env_var_v1_sandbox_config_environment_variable__env_var_id__patch",
+        "parameters": [
+          {
+            "name": "env_var_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Env Var Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SandboxEnvironmentVariableUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SandboxEnvironmentVariable"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["sandbox-config"],
+        "summary": "Delete Sandbox Env Var",
+        "operationId": "delete_sandbox_env_var_v1_sandbox_config_environment_variable__env_var_id__delete",
+        "parameters": [
+          {
+            "name": "env_var_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Env Var Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/agents/{agent_id}/version-template": {
       "post": {
         "description": "Creates a versioned version of an agent",
@@ -2988,7 +3156,14 @@
           "description": "Body",
           "content": {
             "application/json": {
-              "schema": {}
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "migrate_deployed_agents": {
+                    "type": "boolean"
+                  }
+                }
+              }
             }
           }
         },
@@ -3298,8 +3473,7 @@
             "description": "The ids of the messages in the agent's in-context memory."
           },
           "memory": {
-            "$ref": "#/components/schemas/Memory",
-            "description": "The in-context memory of the agent."
+            "$ref": "#/components/schemas/Memory"
           },
           "tools": {
             "items": {
@@ -3308,6 +3482,36 @@
             "type": "array",
             "title": "Tools",
             "description": "The tools used by the agent."
+          },
+          "tool_rules": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/BaseToolRule"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tool Rules",
+            "description": "The list of tool rules."
+          },
+          "tags": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tags",
+            "description": "The tags associated with the agent."
           },
           "system": {
             "type": "string",
@@ -3342,7 +3546,7 @@
       },
       "AgentType": {
         "type": "string",
-        "enum": ["memgpt_agent", "split_thread_agent"],
+        "enum": ["memgpt_agent", "split_thread_agent", "o1_agent"],
         "title": "AgentType",
         "description": "Enum to represent the type of agent."
       },
@@ -3495,6 +3699,19 @@
         "required": ["uuid"],
         "title": "AuthResponse"
       },
+      "BaseToolRule": {
+        "properties": {
+          "tool_name": {
+            "type": "string",
+            "title": "Tool Name",
+            "description": "The name of the tool. Must exist in the database for the user's organization."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["tool_name"],
+        "title": "BaseToolRule"
+      },
       "Block": {
         "properties": {
           "value": {
@@ -3518,11 +3735,11 @@
               }
             ],
             "title": "Name",
-            "description": "Name of the block."
+            "description": "Name of the block if it is a template."
           },
-          "template": {
+          "is_template": {
             "type": "boolean",
-            "title": "Template",
+            "title": "Is Template",
             "description": "Whether the block is a template (e.g. saved human/persona options).",
             "default": false
           },
@@ -3536,7 +3753,7 @@
               }
             ],
             "title": "Label",
-            "description": "Label of the block (e.g. 'human', 'persona')."
+            "description": "Label of the block (e.g. 'human', 'persona') in the context window."
           },
           "description": {
             "anyOf": [
@@ -3563,7 +3780,14 @@
             "description": "Metadata of the block.",
             "default": {}
           },
-          "user_id": {
+          "id": {
+            "type": "string",
+            "pattern": "^block-[a-fA-F0-9]{8}",
+            "title": "Id",
+            "description": "The human-friendly ID of the Block",
+            "examples": [["block-123e4567-e89b-12d3-a456-426614174000"]]
+          },
+          "organization_id": {
             "anyOf": [
               {
                 "type": "string"
@@ -3572,22 +3796,227 @@
                 "type": "null"
               }
             ],
-            "title": "User Id",
-            "description": "The unique identifier of the user associated with the block."
+            "title": "Organization Id",
+            "description": "The unique identifier of the organization associated with the block."
           },
-          "id": {
-            "type": "string",
-            "pattern": "^block-[a-fA-F0-9]{8}",
-            "title": "Id",
-            "description": "The human-friendly ID of the Block",
-            "examples": [["block-123e4567-e89b-12d3-a456-426614174000"]]
+          "created_by_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created By Id",
+            "description": "The id of the user that made this Block."
+          },
+          "last_updated_by_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Updated By Id",
+            "description": "The id of the user that last updated this Block."
           }
         },
-        "additionalProperties": false,
         "type": "object",
         "required": ["value"],
         "title": "Block",
-        "description": "A Block represents a reserved section of the LLM's context window which is editable. `Block` objects contained in the `Memory` object, which is able to edit the Block values.\n\nParameters:\n    name (str): The name of the block.\n    value (str): The value of the block. This is the string that is represented in the context window.\n    limit (int): The character limit of the block.\n    template (bool): Whether the block is a template (e.g. saved human/persona options). Non-template blocks are not stored in the database and are ephemeral, while templated blocks are stored in the database.\n    label (str): The label of the block (e.g. 'human', 'persona'). This defines a category for the block.\n    description (str): Description of the block.\n    metadata_ (Dict): Metadata of the block.\n    user_id (str): The unique identifier of the user associated with the block."
+        "description": "A Block represents a reserved section of the LLM's context window which is editable. `Block` objects contained in the `Memory` object, which is able to edit the Block values.\n\nParameters:\n    label (str): The label of the block (e.g. 'human', 'persona'). This defines a category for the block.\n    value (str): The value of the block. This is the string that is represented in the context window.\n    limit (int): The character limit of the block.\n    is_template (bool): Whether the block is a template (e.g. saved human/persona options). Non-template blocks are not stored in the database and are ephemeral, while templated blocks are stored in the database.\n    label (str): The label of the block (e.g. 'human', 'persona'). This defines a category for the block.\n    template_name (str): The name of the block template (if it is a template).\n    description (str): Description of the block.\n    metadata_ (Dict): Metadata of the block.\n    user_id (str): The unique identifier of the user associated with the block."
+      },
+      "BlockCreate": {
+        "properties": {
+          "value": {
+            "type": "string",
+            "title": "Value",
+            "description": "Value of the block."
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit",
+            "description": "Character limit of the block.",
+            "default": 2000
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name",
+            "description": "Name of the block if it is a template."
+          },
+          "is_template": {
+            "type": "boolean",
+            "title": "Is Template",
+            "default": true
+          },
+          "label": {
+            "type": "string",
+            "title": "Label",
+            "description": "Label of the block."
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description",
+            "description": "Description of the block."
+          },
+          "metadata_": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata ",
+            "description": "Metadata of the block.",
+            "default": {}
+          }
+        },
+        "type": "object",
+        "required": ["value", "label"],
+        "title": "BlockCreate",
+        "description": "Create a block"
+      },
+      "BlockLabelUpdate": {
+        "properties": {
+          "current_label": {
+            "type": "string",
+            "title": "Current Label",
+            "description": "Current label of the block."
+          },
+          "new_label": {
+            "type": "string",
+            "title": "New Label",
+            "description": "New label of the block."
+          }
+        },
+        "type": "object",
+        "required": ["current_label", "new_label"],
+        "title": "BlockLabelUpdate",
+        "description": "Update the label of a block"
+      },
+      "BlockLimitUpdate": {
+        "properties": {
+          "label": {
+            "type": "string",
+            "title": "Label",
+            "description": "Label of the block."
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit",
+            "description": "New limit of the block."
+          }
+        },
+        "type": "object",
+        "required": ["label", "limit"],
+        "title": "BlockLimitUpdate",
+        "description": "Update the limit of a block"
+      },
+      "BlockUpdate": {
+        "properties": {
+          "value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value",
+            "description": "Value of the block."
+          },
+          "limit": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Limit",
+            "description": "Character limit of the block.",
+            "default": 2000
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name",
+            "description": "Name of the block if it is a template."
+          },
+          "is_template": {
+            "type": "boolean",
+            "title": "Is Template",
+            "description": "Whether the block is a template (e.g. saved human/persona options).",
+            "default": false
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label",
+            "description": "Label of the block (e.g. 'human', 'persona') in the context window."
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description",
+            "description": "Description of the block."
+          },
+          "metadata_": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata ",
+            "description": "Metadata of the block.",
+            "default": {}
+          }
+        },
+        "type": "object",
+        "title": "BlockUpdate",
+        "description": "Update a block"
       },
       "Body_upload_file_to_source": {
         "properties": {
@@ -3814,7 +4243,7 @@
             "anyOf": [
               {
                 "type": "string",
-                "enum": ["none", "auto"]
+                "enum": ["none", "auto", "required"]
               },
               {
                 "$ref": "#/components/schemas/ToolFunctionChoice"
@@ -3823,8 +4252,7 @@
                 "type": "null"
               }
             ],
-            "title": "Tool Choice",
-            "default": "none"
+            "title": "Tool Choice"
           },
           "functions": {
             "anyOf": [
@@ -3953,6 +4381,17 @@
               }
             ],
             "title": "Logprobs"
+          },
+          "seed": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seed"
           }
         },
         "type": "object",
@@ -4028,6 +4467,26 @@
             "title": "Summary Memory",
             "description": "The content of the summary memory."
           },
+          "num_tokens_functions_definitions": {
+            "type": "integer",
+            "title": "Num Tokens Functions Definitions",
+            "description": "The number of tokens in the functions definitions."
+          },
+          "functions_definitions": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/letta__schemas__openai__chat_completion_request__Tool"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Functions Definitions",
+            "description": "The content of the functions definitions."
+          },
           "num_tokens_messages": {
             "type": "integer",
             "title": "Num Tokens Messages",
@@ -4055,6 +4514,8 @@
           "num_tokens_core_memory",
           "core_memory",
           "num_tokens_summary_memory",
+          "num_tokens_functions_definitions",
+          "functions_definitions",
           "num_tokens_messages",
           "messages"
         ],
@@ -4115,8 +4576,7 @@
             "anyOf": [
               {
                 "items": {
-                  "type": "string",
-                  "format": "uuid"
+                  "type": "string"
                 },
                 "type": "array"
               },
@@ -4152,6 +4612,36 @@
             ],
             "title": "Tools",
             "description": "The tools used by the agent."
+          },
+          "tool_rules": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/BaseToolRule"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tool Rules",
+            "description": "The tool rules governing the agent."
+          },
+          "tags": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tags",
+            "description": "The tags associated with the agent."
           },
           "system": {
             "anyOf": [
@@ -4197,6 +4687,21 @@
               }
             ],
             "description": "The embedding configuration used by the agent."
+          },
+          "initial_message_sequence": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/Message-Input"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Initial Message Sequence",
+            "description": "The initial set of messages to put in the agent's in-context memory."
           }
         },
         "additionalProperties": false,
@@ -4279,92 +4784,6 @@
         "type": "object",
         "required": ["model", "name", "instructions"],
         "title": "CreateAssistantRequest"
-      },
-      "CreateBlock": {
-        "properties": {
-          "value": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Value",
-            "description": "Value of the block."
-          },
-          "limit": {
-            "type": "integer",
-            "title": "Limit",
-            "description": "Character limit of the block.",
-            "default": 2000
-          },
-          "name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Name",
-            "description": "Name of the block."
-          },
-          "template": {
-            "type": "boolean",
-            "title": "Template",
-            "default": true
-          },
-          "label": {
-            "type": "string",
-            "title": "Label",
-            "description": "Label of the block."
-          },
-          "description": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Description",
-            "description": "Description of the block."
-          },
-          "metadata_": {
-            "anyOf": [
-              {
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Metadata ",
-            "description": "Metadata of the block.",
-            "default": {}
-          },
-          "user_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "User Id",
-            "description": "The unique identifier of the user associated with the block."
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": ["label"],
-        "title": "CreateBlock",
-        "description": "Create a block"
       },
       "CreateMessageRequest": {
         "properties": {
@@ -4642,6 +5061,45 @@
         "required": ["id", "deleted"],
         "title": "DeleteThreadResponse"
       },
+      "E2BSandboxConfig": {
+        "properties": {
+          "timeout": {
+            "type": "integer",
+            "title": "Timeout",
+            "description": "Time limit for the sandbox (in seconds).",
+            "default": 300
+          },
+          "template": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Template",
+            "description": "The E2B template id (docker image)."
+          },
+          "pip_requirements": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pip Requirements",
+            "description": "A list of pip packages to install on the E2B Sandbox"
+          }
+        },
+        "type": "object",
+        "title": "E2BSandboxConfig"
+      },
       "EmbeddingConfig": {
         "properties": {
           "embedding_endpoint_type": {
@@ -4739,10 +5197,17 @@
             "description": "The human-friendly ID of the File",
             "examples": [["file-123e4567-e89b-12d3-a456-426614174000"]]
           },
-          "user_id": {
-            "type": "string",
-            "title": "User Id",
-            "description": "The unique identifier of the user associated with the document."
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "The unique identifier of the organization associated with the document."
           },
           "source_id": {
             "type": "string",
@@ -4822,15 +5287,41 @@
             "description": "The last modified date of the file."
           },
           "created_at": {
-            "type": "string",
-            "format": "date-time",
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Created At",
-            "description": "The creation date of this file metadata object."
+            "description": "The creation date of the file."
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At",
+            "description": "The update date of the file."
+          },
+          "is_deleted": {
+            "type": "boolean",
+            "title": "Is Deleted",
+            "description": "Whether this file is deleted or not.",
+            "default": false
           }
         },
-        "additionalProperties": true,
+        "additionalProperties": false,
         "type": "object",
-        "required": ["user_id", "source_id"],
+        "required": ["source_id"],
         "title": "FileMetadata",
         "description": "Representation of a single FileMetadata"
       },
@@ -4885,10 +5376,21 @@
               }
             ],
             "title": "Arguments"
+          },
+          "function_call_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Function Call Id"
           }
         },
         "type": "object",
-        "required": ["name", "arguments"],
+        "required": ["name", "arguments", "function_call_id"],
         "title": "FunctionCallDelta"
       },
       "FunctionCallMessage": {
@@ -4952,12 +5454,22 @@
             "type": "string",
             "enum": ["success", "error"],
             "title": "Status"
+          },
+          "function_call_id": {
+            "type": "string",
+            "title": "Function Call Id"
           }
         },
         "type": "object",
-        "required": ["id", "date", "function_return", "status"],
+        "required": [
+          "id",
+          "date",
+          "function_return",
+          "status",
+          "function_call_id"
+        ],
         "title": "FunctionReturn",
-        "description": "A message representing the return value of a function call (generated by Letta executing the requested function).\n\nAttributes:\n    function_return (str): The return value of the function\n    status (Literal[\"success\", \"error\"]): The status of the function call\n    id (str): The ID of the message\n    date (datetime): The date the message was created in ISO format"
+        "description": "A message representing the return value of a function call (generated by Letta executing the requested function).\n\nAttributes:\n    function_return (str): The return value of the function\n    status (Literal[\"success\", \"error\"]): The status of the function call\n    id (str): The ID of the message\n    date (datetime): The date the message was created in ISO format\n    function_call_id (str): A unique identifier for the function call that generated this message"
       },
       "FunctionSchema": {
         "properties": {
@@ -5153,7 +5665,8 @@
               "koboldcpp",
               "vllm",
               "hugging-face",
-              "mistral"
+              "mistral",
+              "together"
             ],
             "title": "Model Endpoint Type",
             "description": "The endpoint type for the model."
@@ -5186,29 +5699,25 @@
             "type": "integer",
             "title": "Context Window",
             "description": "The context window size for the model."
+          },
+          "put_inner_thoughts_in_kwargs": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Put Inner Thoughts In Kwargs",
+            "description": "Puts 'inner_thoughts' as a kwarg in the function call if this is set to True. This helps with function calling performance and also the generation of inner thoughts.",
+            "default": true
           }
         },
         "type": "object",
         "required": ["model", "model_endpoint_type", "context_window"],
         "title": "LLMConfig",
-        "description": "Configuration for a Language Model (LLM) model. This object specifies all the information necessary to access an LLM model to usage with Letta, except for secret keys.\n\nAttributes:\n    model (str): The name of the LLM model.\n    model_endpoint_type (str): The endpoint type for the model.\n    model_endpoint (str): The endpoint for the model.\n    model_wrapper (str): The wrapper for the model. This is used to wrap additional text around the input/output of the model. This is useful for text-to-text completions, such as the Completions API in OpenAI.\n    context_window (int): The context window size for the model."
-      },
-      "LettaMessage": {
-        "properties": {
-          "id": {
-            "type": "string",
-            "title": "Id"
-          },
-          "date": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Date"
-          }
-        },
-        "type": "object",
-        "required": ["id", "date"],
-        "title": "LettaMessage",
-        "description": "Base class for simplified Letta message response type. This is intended to be used for developers who want the internal monologue, function calls, and function returns in a simplified format that does not include additional information other than the content and timestamp.\n\nAttributes:\n    id (str): The ID of the message\n    date (datetime): The date the message was created in ISO format"
+        "description": "Configuration for a Language Model (LLM) model. This object specifies all the information necessary to access an LLM model to usage with Letta, except for secret keys.\n\nAttributes:\n    model (str): The name of the LLM model.\n    model_endpoint_type (str): The endpoint type for the model.\n    model_endpoint (str): The endpoint for the model.\n    model_wrapper (str): The wrapper for the model. This is used to wrap additional text around the input/output of the model. This is useful for text-to-text completions, such as the Completions API in OpenAI.\n    context_window (int): The context window size for the model.\n    put_inner_thoughts_in_kwargs (bool): Puts `inner_thoughts` as a kwarg in the function call if this is set to True. This helps with function calling performance and also the generation of inner thoughts."
       },
       "LettaRequest": {
         "properties": {
@@ -5277,67 +5786,6 @@
         "required": ["messages"],
         "title": "LettaRequest"
       },
-      "LettaResponse": {
-        "properties": {
-          "messages": {
-            "anyOf": [
-              {
-                "items": {
-                  "$ref": "#/components/schemas/letta__schemas__message__Message-Output"
-                },
-                "type": "array"
-              },
-              {
-                "items": {
-                  "$ref": "#/components/schemas/LettaMessage"
-                },
-                "type": "array"
-              }
-            ],
-            "title": "Messages",
-            "description": "The messages returned by the agent."
-          },
-          "usage": {
-            "$ref": "#/components/schemas/LettaUsageStatistics",
-            "description": "The usage statistics of the agent."
-          }
-        },
-        "type": "object",
-        "required": ["messages", "usage"],
-        "title": "LettaResponse",
-        "description": "Response object from an agent interaction, consisting of the new messages generated by the agent and usage statistics.\nThe type of the returned messages can be either `Message` or `LettaMessage`, depending on what was specified in the request.\n\nAttributes:\n    messages (List[Union[Message, LettaMessage]]): The messages returned by the agent.\n    usage (LettaUsageStatistics): The usage statistics"
-      },
-      "LettaUsageStatistics": {
-        "properties": {
-          "completion_tokens": {
-            "type": "integer",
-            "title": "Completion Tokens",
-            "description": "The number of tokens generated by the agent.",
-            "default": 0
-          },
-          "prompt_tokens": {
-            "type": "integer",
-            "title": "Prompt Tokens",
-            "description": "The number of tokens in the prompt.",
-            "default": 0
-          },
-          "total_tokens": {
-            "type": "integer",
-            "title": "Total Tokens",
-            "description": "The total number of tokens processed by the agent.",
-            "default": 0
-          },
-          "step_count": {
-            "type": "integer",
-            "title": "Step Count",
-            "description": "The number of steps taken by the agent.",
-            "default": 0
-          }
-        },
-        "type": "object",
-        "title": "LettaUsageStatistics",
-        "description": "Usage statistics for the agent interaction.\n\nAttributes:\n    completion_tokens (int): The number of tokens generated by the agent.\n    prompt_tokens (int): The number of tokens in the prompt.\n    total_tokens (int): The total number of tokens processed by the agent.\n    step_count (int): The number of steps taken by the agent."
-      },
       "ListMessagesResponse": {
         "properties": {
           "messages": {
@@ -5352,6 +5800,18 @@
         "type": "object",
         "required": ["messages"],
         "title": "ListMessagesResponse"
+      },
+      "LocalSandboxConfig": {
+        "properties": {
+          "sandbox_dir": {
+            "type": "string",
+            "title": "Sandbox Dir",
+            "description": "Directory for the sandbox environment."
+          }
+        },
+        "type": "object",
+        "required": ["sandbox_dir"],
+        "title": "LocalSandboxConfig"
       },
       "LogProbToken": {
         "properties": {
@@ -6265,18 +6725,25 @@
           "name": {
             "type": "string",
             "title": "Name",
-            "description": "The name of the organization."
+            "description": "The name of the organization.",
+            "default": "InnovativeHamburger"
           },
           "created_at": {
-            "type": "string",
-            "format": "date-time",
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Created At",
-            "description": "The creation date of the user."
+            "description": "The creation date of the organization."
           }
         },
         "additionalProperties": false,
         "type": "object",
-        "required": ["name"],
         "title": "Organization"
       },
       "OrganizationCreate": {
@@ -6455,8 +6922,328 @@
         "type": "object",
         "title": "ResponseFormat"
       },
+      "SandboxConfig": {
+        "properties": {
+          "created_by_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created By Id",
+            "description": "The id of the user that made this object."
+          },
+          "last_updated_by_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Updated By Id",
+            "description": "The id of the user that made this object."
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At",
+            "description": "The timestamp when the object was created."
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At",
+            "description": "The timestamp when the object was last updated."
+          },
+          "id": {
+            "type": "string",
+            "pattern": "^sandbox-[a-fA-F0-9]{8}",
+            "title": "Id",
+            "description": "The human-friendly ID of the Sandbox",
+            "examples": [["sandbox-123e4567-e89b-12d3-a456-426614174000"]]
+          },
+          "type": {
+            "$ref": "#/components/schemas/SandboxType",
+            "description": "The type of sandbox."
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "The unique identifier of the organization associated with the sandbox."
+          },
+          "config": {
+            "type": "object",
+            "title": "Config",
+            "description": "The JSON sandbox settings data."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "SandboxConfig"
+      },
+      "SandboxConfigCreate": {
+        "properties": {
+          "config": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LocalSandboxConfig"
+              },
+              {
+                "$ref": "#/components/schemas/E2BSandboxConfig"
+              }
+            ],
+            "title": "Config",
+            "description": "The configuration for the sandbox."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["config"],
+        "title": "SandboxConfigCreate"
+      },
+      "SandboxConfigUpdate": {
+        "properties": {
+          "config": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LocalSandboxConfig"
+              },
+              {
+                "$ref": "#/components/schemas/E2BSandboxConfig"
+              }
+            ],
+            "title": "Config",
+            "description": "The JSON configuration data for the sandbox."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "SandboxConfigUpdate",
+        "description": "Pydantic model for updating SandboxConfig fields."
+      },
+      "SandboxEnvironmentVariable": {
+        "properties": {
+          "created_by_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created By Id",
+            "description": "The id of the user that made this object."
+          },
+          "last_updated_by_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Updated By Id",
+            "description": "The id of the user that made this object."
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At",
+            "description": "The timestamp when the object was created."
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At",
+            "description": "The timestamp when the object was last updated."
+          },
+          "id": {
+            "type": "string",
+            "pattern": "^sandbox-env-[a-fA-F0-9]{8}",
+            "title": "Id",
+            "description": "The human-friendly ID of the Sandbox-env",
+            "examples": [["sandbox-env-123e4567-e89b-12d3-a456-426614174000"]]
+          },
+          "key": {
+            "type": "string",
+            "title": "Key",
+            "description": "The name of the environment variable."
+          },
+          "value": {
+            "type": "string",
+            "title": "Value",
+            "description": "The value of the environment variable."
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description",
+            "description": "An optional description of the environment variable."
+          },
+          "sandbox_config_id": {
+            "type": "string",
+            "title": "Sandbox Config Id",
+            "description": "The ID of the sandbox config this environment variable belongs to."
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "The ID of the organization this environment variable belongs to."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["key", "value", "sandbox_config_id"],
+        "title": "SandboxEnvironmentVariable"
+      },
+      "SandboxEnvironmentVariableCreate": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key",
+            "description": "The name of the environment variable."
+          },
+          "value": {
+            "type": "string",
+            "title": "Value",
+            "description": "The value of the environment variable."
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description",
+            "description": "An optional description of the environment variable."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["key", "value"],
+        "title": "SandboxEnvironmentVariableCreate"
+      },
+      "SandboxEnvironmentVariableUpdate": {
+        "properties": {
+          "key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Key",
+            "description": "The name of the environment variable."
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value",
+            "description": "The value of the environment variable."
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description",
+            "description": "An optional description of the environment variable."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "SandboxEnvironmentVariableUpdate",
+        "description": "Pydantic model for updating SandboxEnvironmentVariable fields."
+      },
+      "SandboxType": {
+        "type": "string",
+        "enum": ["e2b", "local"],
+        "title": "SandboxType"
+      },
       "Source": {
         "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^source-[a-fA-F0-9]{8}",
+            "title": "Id",
+            "description": "The human-friendly ID of the Source",
+            "examples": [["source-123e4567-e89b-12d3-a456-426614174000"]]
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "The name of the source."
+          },
           "description": {
             "anyOf": [
               {
@@ -6473,6 +7260,18 @@
             "$ref": "#/components/schemas/EmbeddingConfig",
             "description": "The embedding configuration used by the source."
           },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "The ID of the organization that created the source."
+          },
           "metadata_": {
             "anyOf": [
               {
@@ -6485,38 +7284,81 @@
             "title": "Metadata ",
             "description": "Metadata associated with the source."
           },
-          "id": {
-            "type": "string",
-            "pattern": "^source-[a-fA-F0-9]{8}",
-            "title": "Id",
-            "description": "The human-friendly ID of the Source",
-            "examples": [["source-123e4567-e89b-12d3-a456-426614174000"]]
+          "created_by_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created By Id",
+            "description": "The id of the user that made this Tool."
           },
+          "last_updated_by_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Updated By Id",
+            "description": "The id of the user that made this Tool."
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At",
+            "description": "The timestamp when the source was created."
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At",
+            "description": "The timestamp when the source was last updated."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["name", "embedding_config"],
+        "title": "Source",
+        "description": "Representation of a source, which is a collection of files and passages.\n\nParameters:\n    id (str): The ID of the source\n    name (str): The name of the source.\n    embedding_config (EmbeddingConfig): The embedding configuration used by the source.\n    user_id (str): The ID of the user that created the source.\n    metadata_ (dict): Metadata associated with the source.\n    description (str): The description of the source."
+      },
+      "SourceCreate": {
+        "properties": {
           "name": {
             "type": "string",
             "title": "Name",
             "description": "The name of the source."
           },
-          "created_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Created At",
-            "description": "The creation date of the source."
+          "embedding_config": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EmbeddingConfig"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The embedding configuration used by the source."
           },
-          "user_id": {
-            "type": "string",
-            "title": "User Id",
-            "description": "The ID of the user that created the source."
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": ["embedding_config", "name", "user_id"],
-        "title": "Source",
-        "description": "Representation of a source, which is a collection of files and passages.\n\nParameters:\n    id (str): The ID of the source\n    name (str): The name of the source.\n    embedding_config (EmbeddingConfig): The embedding configuration used by the source.\n    created_at (datetime): The creation date of the source.\n    user_id (str): The ID of the user that created the source.\n    metadata_ (dict): Metadata associated with the source.\n    description (str): The description of the source."
-      },
-      "SourceCreate": {
-        "properties": {
           "description": {
             "anyOf": [
               {
@@ -6529,17 +7371,6 @@
             "title": "Description",
             "description": "The description of the source."
           },
-          "embedding_config": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/EmbeddingConfig"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "The embedding configuration used by the passage."
-          },
           "metadata_": {
             "anyOf": [
               {
@@ -6551,20 +7382,28 @@
             ],
             "title": "Metadata ",
             "description": "Metadata associated with the source."
-          },
-          "name": {
-            "type": "string",
-            "title": "Name",
-            "description": "The name of the source."
           }
         },
         "additionalProperties": false,
         "type": "object",
         "required": ["name"],
-        "title": "SourceCreate"
+        "title": "SourceCreate",
+        "description": "Schema for creating a new Source."
       },
       "SourceUpdate": {
         "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name",
+            "description": "The name of the source."
+          },
           "description": {
             "anyOf": [
               {
@@ -6576,17 +7415,6 @@
             ],
             "title": "Description",
             "description": "The description of the source."
-          },
-          "embedding_config": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/EmbeddingConfig"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "The embedding configuration used by the passage."
           },
           "metadata_": {
             "anyOf": [
@@ -6600,28 +7428,22 @@
             "title": "Metadata ",
             "description": "Metadata associated with the source."
           },
-          "id": {
-            "type": "string",
-            "title": "Id",
-            "description": "The ID of the source."
-          },
-          "name": {
+          "embedding_config": {
             "anyOf": [
               {
-                "type": "string"
+                "$ref": "#/components/schemas/EmbeddingConfig"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Name",
-            "description": "The name of the source."
+            "description": "The embedding configuration used by the source."
           }
         },
         "additionalProperties": false,
         "type": "object",
-        "required": ["id"],
-        "title": "SourceUpdate"
+        "title": "SourceUpdate",
+        "description": "Schema for updating an existing Source."
       },
       "SubmitToolOutputsToRunRequest": {
         "properties": {
@@ -6727,93 +7549,6 @@
         "required": ["function"],
         "title": "Tool"
       },
-      "Tool-Output": {
-        "properties": {
-          "description": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Description",
-            "description": "The description of the tool."
-          },
-          "source_type": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Source Type",
-            "description": "The type of the source code."
-          },
-          "module": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Module",
-            "description": "The module of the function."
-          },
-          "user_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "User Id",
-            "description": "The unique identifier of the user associated with the function."
-          },
-          "id": {
-            "type": "string",
-            "pattern": "^tool-[a-fA-F0-9]{8}",
-            "title": "Id",
-            "description": "The human-friendly ID of the Tool",
-            "examples": [["tool-123e4567-e89b-12d3-a456-426614174000"]]
-          },
-          "name": {
-            "type": "string",
-            "title": "Name",
-            "description": "The name of the function."
-          },
-          "tags": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Tags",
-            "description": "Metadata tags."
-          },
-          "source_code": {
-            "type": "string",
-            "title": "Source Code",
-            "description": "The source code of the function."
-          },
-          "json_schema": {
-            "type": "object",
-            "title": "Json Schema",
-            "description": "The JSON schema of the function."
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": ["name", "tags", "source_code"],
-        "title": "Tool",
-        "description": "Representation of a tool, which is a function that can be called by the agent.\n\nParameters:\n    id (str): The unique identifier of the tool.\n    name (str): The name of the function.\n    tags (List[str]): Metadata tags.\n    source_code (str): The source code of the function.\n    json_schema (Dict): The JSON schema of the function."
-      },
       "ToolCallFunction-Output": {
         "properties": {
           "name": {
@@ -6850,66 +7585,6 @@
       },
       "ToolCreate": {
         "properties": {
-          "description": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Description",
-            "description": "The description of the tool."
-          },
-          "source_type": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Source Type",
-            "description": "The type of the source code."
-          },
-          "module": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Module",
-            "description": "The module of the function."
-          },
-          "user_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "User Id",
-            "description": "The unique identifier of the user associated with the function."
-          },
-          "id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Id",
-            "description": "The unique identifier of the tool. If this is not provided, it will be autogenerated."
-          },
           "name": {
             "anyOf": [
               {
@@ -6922,6 +7597,18 @@
             "title": "Name",
             "description": "The name of the function (auto-generated from source_code if not provided)."
           },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description",
+            "description": "The description of the tool."
+          },
           "tags": {
             "items": {
               "type": "string"
@@ -6931,10 +7618,28 @@
             "description": "Metadata tags.",
             "default": []
           },
+          "module": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Module",
+            "description": "The source code of the function."
+          },
           "source_code": {
             "type": "string",
             "title": "Source Code",
             "description": "The source code of the function."
+          },
+          "source_type": {
+            "type": "string",
+            "title": "Source Type",
+            "description": "The source type of the function.",
+            "default": "python"
           },
           "json_schema": {
             "anyOf": [
@@ -6947,18 +7652,6 @@
             ],
             "title": "Json Schema",
             "description": "The JSON schema of the function (auto-generated from source_code if not provided)"
-          },
-          "terminal": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Terminal",
-            "description": "Whether the tool is a terminal tool (allow requesting heartbeats)."
           }
         },
         "additionalProperties": false,
@@ -7017,47 +7710,6 @@
             "title": "Description",
             "description": "The description of the tool."
           },
-          "source_type": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Source Type",
-            "description": "The type of the source code."
-          },
-          "module": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Module",
-            "description": "The module of the function."
-          },
-          "user_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "User Id",
-            "description": "The unique identifier of the user associated with the function."
-          },
-          "id": {
-            "type": "string",
-            "title": "Id",
-            "description": "The unique identifier of the tool."
-          },
           "name": {
             "anyOf": [
               {
@@ -7085,6 +7737,18 @@
             "title": "Tags",
             "description": "Metadata tags."
           },
+          "module": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Module",
+            "description": "The source code of the function."
+          },
           "source_code": {
             "anyOf": [
               {
@@ -7097,6 +7761,18 @@
             "title": "Source Code",
             "description": "The source code of the function."
           },
+          "source_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Type",
+            "description": "The type of the source code."
+          },
           "json_schema": {
             "anyOf": [
               {
@@ -7107,24 +7783,10 @@
               }
             ],
             "title": "Json Schema",
-            "description": "The JSON schema of the function."
-          },
-          "terminal": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Terminal",
-            "description": "Whether the tool is a terminal tool (allow requesting heartbeats)."
+            "description": "The JSON schema of the function (auto-generated from source_code if not provided)"
           }
         },
-        "additionalProperties": false,
         "type": "object",
-        "required": ["id"],
         "title": "ToolUpdate"
       },
       "UpdateAgentState": {
@@ -7197,6 +7859,21 @@
             "title": "Tools",
             "description": "The tools used by the agent."
           },
+          "tags": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tags",
+            "description": "The tags associated with the agent."
+          },
           "system": {
             "anyOf": [
               {
@@ -7262,112 +7939,6 @@
         "type": "object",
         "required": ["id"],
         "title": "UpdateAgentState"
-      },
-      "UpdateBlock": {
-        "properties": {
-          "value": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Value",
-            "description": "Value of the block."
-          },
-          "limit": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Limit",
-            "description": "Character limit of the block.",
-            "default": 2000
-          },
-          "name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Name",
-            "description": "Name of the block."
-          },
-          "template": {
-            "type": "boolean",
-            "title": "Template",
-            "description": "Whether the block is a template (e.g. saved human/persona options).",
-            "default": false
-          },
-          "label": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Label",
-            "description": "Label of the block (e.g. 'human', 'persona')."
-          },
-          "description": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Description",
-            "description": "Description of the block."
-          },
-          "metadata_": {
-            "anyOf": [
-              {
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Metadata ",
-            "description": "Metadata of the block.",
-            "default": {}
-          },
-          "user_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "User Id",
-            "description": "The unique identifier of the user associated with the block."
-          },
-          "id": {
-            "type": "string",
-            "title": "Id",
-            "description": "The unique identifier of the block."
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": ["id"],
-        "title": "UpdateBlock",
-        "description": "Update a block"
       },
       "UpdateMessage": {
         "properties": {
@@ -7475,7 +8046,7 @@
             "description": "The human-friendly ID of the User",
             "examples": [["user-123e4567-e89b-12d3-a456-426614174000"]]
           },
-          "org_id": {
+          "organization_id": {
             "anyOf": [
               {
                 "type": "string"
@@ -7484,8 +8055,9 @@
                 "type": "null"
               }
             ],
-            "title": "Org Id",
-            "description": "The organization id of the user"
+            "title": "Organization Id",
+            "description": "The organization id of the user",
+            "default": "org-00000000-0000-4000-8000-000000000000"
           },
           "name": {
             "type": "string",
@@ -7493,47 +8065,60 @@
             "description": "The name of the user."
           },
           "created_at": {
-            "type": "string",
-            "format": "date-time",
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Created At",
             "description": "The creation date of the user."
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At",
+            "description": "The update date of the user."
+          },
+          "is_deleted": {
+            "type": "boolean",
+            "title": "Is Deleted",
+            "description": "Whether this user is deleted or not.",
+            "default": false
           }
         },
         "additionalProperties": false,
         "type": "object",
-        "required": ["org_id", "name"],
+        "required": ["name"],
         "title": "User",
         "description": "Representation of a user.\n\nParameters:\n    id (str): The unique identifier of the user.\n    name (str): The name of the user.\n    created_at (datetime): The creation date of the user."
       },
       "UserCreate": {
         "properties": {
           "name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "string",
             "title": "Name",
             "description": "The name of the user."
           },
-          "org_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Org Id",
+          "organization_id": {
+            "type": "string",
+            "title": "Organization Id",
             "description": "The organization id of the user."
           }
         },
         "additionalProperties": false,
         "type": "object",
+        "required": ["name", "organization_id"],
         "title": "UserCreate"
       },
       "UserMessage-Input": {
@@ -7601,6 +8186,43 @@
         "title": "UserMessage",
         "description": "A message sent by the user. Never streamed back on a response, only used for cursor pagination.\n\nAttributes:\n    message (str): The message sent by the user\n    id (str): The ID of the message\n    date (datetime): The date the message was created in ISO format"
       },
+      "UserUpdate": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "The id of the user to update."
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name",
+            "description": "The new name of the user."
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "The new organization id of the user."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["id"],
+        "title": "UserUpdate"
+      },
       "ValidationError": {
         "properties": {
           "loc": {
@@ -7639,10 +8261,14 @@
           "arguments": {
             "type": "string",
             "title": "Arguments"
+          },
+          "function_call_id": {
+            "type": "string",
+            "title": "Function Call Id"
           }
         },
         "type": "object",
-        "required": ["name", "arguments"],
+        "required": ["name", "arguments", "function_call_id"],
         "title": "FunctionCall"
       },
       "letta__schemas__message__Message-Output": {
@@ -7757,6 +8383,23 @@
         "required": ["role"],
         "title": "Message",
         "description": "Letta's internal representation of a message. Includes methods to convert to/from LLM provider formats.\n\nAttributes:\n    id (str): The unique identifier of the message.\n    role (MessageRole): The role of the participant.\n    text (str): The text of the message.\n    user_id (str): The unique identifier of the user.\n    agent_id (str): The unique identifier of the agent.\n    model (str): The model used to make the function call.\n    name (str): The name of the participant.\n    created_at (datetime): The time the message was created.\n    tool_calls (List[ToolCall]): The list of tool calls requested.\n    tool_call_id (str): The id of the tool call."
+      },
+      "letta__schemas__openai__chat_completion_request__Tool": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": ["function"],
+            "const": "function",
+            "title": "Type",
+            "default": "function"
+          },
+          "function": {
+            "$ref": "#/components/schemas/FunctionSchema"
+          }
+        },
+        "type": "object",
+        "required": ["function"],
+        "title": "Tool"
       },
       "letta__schemas__openai__chat_completion_request__ToolCall": {
         "properties": {
@@ -7955,6 +8598,578 @@
         "type": "object",
         "required": ["id", "function"],
         "title": "ToolCall"
+      },
+      "letta__schemas__tool__Tool": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^tool-[a-fA-F0-9]{8}",
+            "title": "Id",
+            "description": "The human-friendly ID of the Tool",
+            "examples": [["tool-123e4567-e89b-12d3-a456-426614174000"]]
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description",
+            "description": "The description of the tool."
+          },
+          "source_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Type",
+            "description": "The type of the source code."
+          },
+          "module": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Module",
+            "description": "The module of the function."
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "The unique identifier of the organization associated with the tool."
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name",
+            "description": "The name of the function."
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tags",
+            "description": "Metadata tags.",
+            "default": []
+          },
+          "source_code": {
+            "type": "string",
+            "title": "Source Code",
+            "description": "The source code of the function."
+          },
+          "json_schema": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Json Schema",
+            "description": "The JSON schema of the function."
+          },
+          "created_by_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created By Id",
+            "description": "The id of the user that made this Tool."
+          },
+          "last_updated_by_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Updated By Id",
+            "description": "The id of the user that made this Tool."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["source_code"],
+        "title": "Tool",
+        "description": "Representation of a tool, which is a function that can be called by the agent.\n\nParameters:\n    id (str): The unique identifier of the tool.\n    name (str): The name of the function.\n    tags (List[str]): Metadata tags.\n    source_code (str): The source code of the function.\n    json_schema (Dict): The JSON schema of the function."
+      },
+      "LettaResponse": {
+        "properties": {
+          "AssistantMessage": {
+            "properties": {
+              "id": {
+                "title": "Id",
+                "type": "string"
+              },
+              "date": {
+                "format": "date-time",
+                "title": "Date",
+                "type": "string"
+              },
+              "message_type": {
+                "const": "assistant_message",
+                "default": "assistant_message",
+                "enum": ["assistant_message"],
+                "title": "Message Type",
+                "type": "string"
+              },
+              "assistant_message": {
+                "title": "Assistant Message",
+                "type": "string"
+              }
+            },
+            "required": ["id", "date", "assistant_message"],
+            "title": "AssistantMessage",
+            "type": "object"
+          },
+          "FunctionCall": {
+            "properties": {
+              "name": {
+                "title": "Name",
+                "type": "string"
+              },
+              "arguments": {
+                "title": "Arguments",
+                "type": "string"
+              },
+              "function_call_id": {
+                "title": "Function Call Id",
+                "type": "string"
+              }
+            },
+            "required": ["name", "arguments", "function_call_id"],
+            "title": "FunctionCall",
+            "type": "object"
+          },
+          "FunctionCallDelta": {
+            "properties": {
+              "name": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Name"
+              },
+              "arguments": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Arguments"
+              },
+              "function_call_id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Function Call Id"
+              }
+            },
+            "required": ["name", "arguments", "function_call_id"],
+            "title": "FunctionCallDelta",
+            "type": "object"
+          },
+          "FunctionCallMessage": {
+            "description": "A message representing a request to call a function (generated by the LLM to trigger function execution).\n\nAttributes:\n    function_call (Union[FunctionCall, FunctionCallDelta]): The function call\n    id (str): The ID of the message\n    date (datetime): The date the message was created in ISO format",
+            "properties": {
+              "id": {
+                "title": "Id",
+                "type": "string"
+              },
+              "date": {
+                "format": "date-time",
+                "title": "Date",
+                "type": "string"
+              },
+              "message_type": {
+                "const": "function_call",
+                "default": "function_call",
+                "enum": ["function_call"],
+                "title": "Message Type",
+                "type": "string"
+              },
+              "function_call": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/LettaResponse/properties/FunctionCall"
+                  },
+                  {
+                    "$ref": "#/components/schemas/LettaResponse/properties/FunctionCallDelta"
+                  }
+                ],
+                "title": "Function Call"
+              }
+            },
+            "required": ["id", "date", "function_call"],
+            "title": "FunctionCallMessage",
+            "type": "object"
+          },
+          "FunctionReturn": {
+            "description": "A message representing the return value of a function call (generated by Letta executing the requested function).\n\nAttributes:\n    function_return (str): The return value of the function\n    status (Literal[\"success\", \"error\"]): The status of the function call\n    id (str): The ID of the message\n    date (datetime): The date the message was created in ISO format\n    function_call_id (str): A unique identifier for the function call that generated this message",
+            "properties": {
+              "id": {
+                "title": "Id",
+                "type": "string"
+              },
+              "date": {
+                "format": "date-time",
+                "title": "Date",
+                "type": "string"
+              },
+              "message_type": {
+                "const": "function_return",
+                "default": "function_return",
+                "enum": ["function_return"],
+                "title": "Message Type",
+                "type": "string"
+              },
+              "function_return": {
+                "title": "Function Return",
+                "type": "string"
+              },
+              "status": {
+                "enum": ["success", "error"],
+                "title": "Status",
+                "type": "string"
+              },
+              "function_call_id": {
+                "title": "Function Call Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "date",
+              "function_return",
+              "status",
+              "function_call_id"
+            ],
+            "title": "FunctionReturn",
+            "type": "object"
+          },
+          "InternalMonologue": {
+            "description": "Representation of an agent's internal monologue.\n\nAttributes:\n    internal_monologue (str): The internal monologue of the agent\n    id (str): The ID of the message\n    date (datetime): The date the message was created in ISO format",
+            "properties": {
+              "id": {
+                "title": "Id",
+                "type": "string"
+              },
+              "date": {
+                "format": "date-time",
+                "title": "Date",
+                "type": "string"
+              },
+              "message_type": {
+                "const": "internal_monologue",
+                "default": "internal_monologue",
+                "enum": ["internal_monologue"],
+                "title": "Message Type",
+                "type": "string"
+              },
+              "internal_monologue": {
+                "title": "Internal Monologue",
+                "type": "string"
+              }
+            },
+            "required": ["id", "date", "internal_monologue"],
+            "title": "InternalMonologue",
+            "type": "object"
+          },
+          "LettaUsageStatistics": {
+            "description": "Usage statistics for the agent interaction.\n\nAttributes:\n    completion_tokens (int): The number of tokens generated by the agent.\n    prompt_tokens (int): The number of tokens in the prompt.\n    total_tokens (int): The total number of tokens processed by the agent.\n    step_count (int): The number of steps taken by the agent.",
+            "properties": {
+              "completion_tokens": {
+                "default": 0,
+                "description": "The number of tokens generated by the agent.",
+                "title": "Completion Tokens",
+                "type": "integer"
+              },
+              "prompt_tokens": {
+                "default": 0,
+                "description": "The number of tokens in the prompt.",
+                "title": "Prompt Tokens",
+                "type": "integer"
+              },
+              "total_tokens": {
+                "default": 0,
+                "description": "The total number of tokens processed by the agent.",
+                "title": "Total Tokens",
+                "type": "integer"
+              },
+              "step_count": {
+                "default": 0,
+                "description": "The number of steps taken by the agent.",
+                "title": "Step Count",
+                "type": "integer"
+              }
+            },
+            "title": "LettaUsageStatistics",
+            "type": "object"
+          },
+          "Message": {
+            "additionalProperties": false,
+            "description": "Letta's internal representation of a message. Includes methods to convert to/from LLM provider formats.\n\nAttributes:\n    id (str): The unique identifier of the message.\n    role (MessageRole): The role of the participant.\n    text (str): The text of the message.\n    user_id (str): The unique identifier of the user.\n    agent_id (str): The unique identifier of the agent.\n    model (str): The model used to make the function call.\n    name (str): The name of the participant.\n    created_at (datetime): The time the message was created.\n    tool_calls (List[ToolCall]): The list of tool calls requested.\n    tool_call_id (str): The id of the tool call.",
+            "properties": {
+              "id": {
+                "description": "The human-friendly ID of the Message",
+                "examples": [["message-123e4567-e89b-12d3-a456-426614174000"]],
+                "pattern": "^message-[a-fA-F0-9]{8}",
+                "title": "Id",
+                "type": "string"
+              },
+              "role": {
+                "$ref": "#/components/schemas/LettaResponse/properties/MessageRole",
+                "description": "The role of the participant."
+              },
+              "text": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "The text of the message.",
+                "title": "Text"
+              },
+              "user_id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "The unique identifier of the user.",
+                "title": "User Id"
+              },
+              "agent_id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "The unique identifier of the agent.",
+                "title": "Agent Id"
+              },
+              "model": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "The model used to make the function call.",
+                "title": "Model"
+              },
+              "name": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "The name of the participant.",
+                "title": "Name"
+              },
+              "created_at": {
+                "description": "The time the message was created.",
+                "format": "date-time",
+                "title": "Created At",
+                "type": "string"
+              },
+              "tool_calls": {
+                "anyOf": [
+                  {
+                    "items": {
+                      "$ref": "#/components/schemas/LettaResponse/properties/ToolCall"
+                    },
+                    "type": "array"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "The list of tool calls requested.",
+                "title": "Tool Calls"
+              },
+              "tool_call_id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "The id of the tool call.",
+                "title": "Tool Call Id"
+              }
+            },
+            "required": ["role"],
+            "title": "Message",
+            "type": "object"
+          },
+          "MessageRole": {
+            "enum": ["assistant", "user", "tool", "function", "system"],
+            "title": "MessageRole",
+            "type": "string"
+          },
+          "SystemMessage": {
+            "description": "A message generated by the system. Never streamed back on a response, only used for cursor pagination.\n\nAttributes:\n    message (str): The message sent by the system\n    id (str): The ID of the message\n    date (datetime): The date the message was created in ISO format",
+            "properties": {
+              "id": {
+                "title": "Id",
+                "type": "string"
+              },
+              "date": {
+                "format": "date-time",
+                "title": "Date",
+                "type": "string"
+              },
+              "message_type": {
+                "const": "system_message",
+                "default": "system_message",
+                "enum": ["system_message"],
+                "title": "Message Type",
+                "type": "string"
+              },
+              "message": {
+                "title": "Message",
+                "type": "string"
+              }
+            },
+            "required": ["id", "date", "message"],
+            "title": "SystemMessage",
+            "type": "object"
+          },
+          "ToolCall": {
+            "properties": {
+              "id": {
+                "description": "The ID of the tool call",
+                "title": "Id",
+                "type": "string"
+              },
+              "type": {
+                "default": "function",
+                "title": "Type",
+                "type": "string"
+              },
+              "function": {
+                "$ref": "#/components/schemas/LettaResponse/properties/ToolCallFunction",
+                "description": "The arguments and name for the function"
+              }
+            },
+            "required": ["id", "function"],
+            "title": "ToolCall",
+            "type": "object"
+          },
+          "ToolCallFunction": {
+            "properties": {
+              "name": {
+                "description": "The name of the function to call",
+                "title": "Name",
+                "type": "string"
+              },
+              "arguments": {
+                "description": "The arguments to pass to the function (JSON dump)",
+                "title": "Arguments",
+                "type": "string"
+              }
+            },
+            "required": ["name", "arguments"],
+            "title": "ToolCallFunction",
+            "type": "object"
+          },
+          "UserMessage": {
+            "description": "A message sent by the user. Never streamed back on a response, only used for cursor pagination.\n\nAttributes:\n    message (str): The message sent by the user\n    id (str): The ID of the message\n    date (datetime): The date the message was created in ISO format",
+            "properties": {
+              "id": {
+                "title": "Id",
+                "type": "string"
+              },
+              "date": {
+                "format": "date-time",
+                "title": "Date",
+                "type": "string"
+              },
+              "message_type": {
+                "const": "user_message",
+                "default": "user_message",
+                "enum": ["user_message"],
+                "title": "Message Type",
+                "type": "string"
+              },
+              "message": {
+                "title": "Message",
+                "type": "string"
+              }
+            },
+            "required": ["id", "date", "message"],
+            "title": "UserMessage",
+            "type": "object"
+          }
+        }
       }
     },
     "securitySchemes": {
