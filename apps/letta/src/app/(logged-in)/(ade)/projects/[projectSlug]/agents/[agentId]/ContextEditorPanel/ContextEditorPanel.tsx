@@ -119,14 +119,18 @@ function ContextWindowPanel() {
   });
 
   const encorder = useMemo(() => {
+    if (!llm_config?.model) {
+      return encodingForModel('gpt-4');
+    }
+
     let tokenModel: TiktokenModel = 'gpt-4';
 
-    if (llm_config && isTiktokenModel(llm_config.model)) {
+    if (isTiktokenModel(llm_config.model)) {
       tokenModel = llm_config.model;
     }
 
     return encodingForModel(tokenModel);
-  }, [llm_config]);
+  }, [llm_config?.model]);
 
   useEffect(() => {
     if (!memory) {
