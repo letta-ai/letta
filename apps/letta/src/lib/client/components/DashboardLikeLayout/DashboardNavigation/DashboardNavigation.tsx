@@ -12,11 +12,7 @@ import {
   TextArea,
   useForm,
 } from '@letta-web/component-library';
-import {
-  CreditCardIcon,
-  GroupIcon,
-  HiddenOnMobile,
-} from '@letta-web/component-library';
+import { HiddenOnMobile } from '@letta-web/component-library';
 import {
   Avatar,
   Button,
@@ -171,11 +167,10 @@ function MainNavigationItems(props: MainNavigationItemsProps) {
         icon: <ProjectsIcon />,
       },
       {
-        label: t('nav.localDev'),
-        href: '/development-servers',
-        id: 'development-servers',
-        icon: <LaptopIcon />,
-        doesNotNeedCloudAccess: true,
+        label: t('nav.dataSources'),
+        href: '/data-sources',
+        id: 'data-sources',
+        icon: <DatabaseIcon />,
       },
       {
         label: t('nav.apiKeys'),
@@ -184,24 +179,15 @@ function MainNavigationItems(props: MainNavigationItemsProps) {
         icon: <KeyIcon />,
       },
       {
-        label: t('nav.dataSources'),
-        href: '/data-sources',
-        id: 'data-sources',
-        icon: <DatabaseIcon />,
+        borderTop: true,
+        label: t('nav.localDev'),
+        href: '/development-servers',
+        id: 'development-servers',
+        icon: <LaptopIcon />,
+        doesNotNeedCloudAccess: true,
       },
       {
-        label: t('nav.team'),
-        href: '/settings/organization/members',
-        id: 'team',
-        icon: <GroupIcon />,
-      },
-      {
-        label: t('nav.billing'),
-        href: '/settings/organization/billing',
-        id: 'usage',
-        icon: <CreditCardIcon />,
-      },
-      {
+        borderTop: true,
         label: t('nav.settings'),
         href: '/settings',
         id: 'usage',
@@ -272,17 +258,41 @@ function MainNavigationItems(props: MainNavigationItemsProps) {
               /*eslint-disable-next-line react/forbid-component-props*/
               className="min-w-[36px]"
             >
-              {baseNavItems.map((item) => (
-                <NavButton
-                  id={item.id}
-                  key={item.href}
-                  href={item.href}
-                  active={pathroot === item.id}
-                  label={item.label}
-                  icon={item.icon}
-                  hideLabel={!isBaseNav}
-                />
-              ))}
+              {baseNavItems.map((item) => {
+                if (item.id === 'development-servers' && hasCloudAccess) {
+                  return (
+                    <VStack
+                      key={item.href}
+                      fullWidth
+                      borderTop
+                      borderBottom
+                      paddingY="xsmall"
+                    >
+                      <NavButton
+                        id={item.id}
+                        key={item.href}
+                        href={item.href}
+                        active={pathroot === item.id}
+                        label={item.label}
+                        icon={item.icon}
+                        hideLabel={!isBaseNav}
+                      />
+                    </VStack>
+                  );
+                }
+
+                return (
+                  <NavButton
+                    id={item.id}
+                    key={item.href}
+                    href={item.href}
+                    active={pathroot === item.id}
+                    label={item.label}
+                    icon={item.icon}
+                    hideLabel={!isBaseNav}
+                  />
+                );
+              })}
             </VStack>
           </VStack>
         )}

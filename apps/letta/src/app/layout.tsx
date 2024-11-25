@@ -6,6 +6,7 @@ import { getLocale, getMessages } from 'next-intl/server';
 import { NextIntlClientProvider } from 'next-intl';
 import { Body } from './_components/ThemeProvider/Body';
 import { Manrope } from 'next/font/google';
+import { cn } from '@letta-web/core-style-config';
 
 export const metadata = {
   title: 'Letta',
@@ -27,7 +28,7 @@ export default async function RootLayout({
   const messages = await getMessages();
 
   return (
-    <html lang={locale} className={manrope.className}>
+    <html lang={locale} className={cn(manrope.className, 'overflow-x-hidden')}>
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <link
