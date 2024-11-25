@@ -58,9 +58,9 @@ export function LettaAgentsAPIWrapper({
     });
   }, [baseUrl, password]);
 
-  return (
-    <LettaAgentsAPIContext.Provider value={{ baseUrl, password }}>
-      {children}
-    </LettaAgentsAPIContext.Provider>
+  return React.createElement(
+    LettaAgentsAPIContext.Provider,
+    { value: { baseUrl, password } },
+    children
   );
 }
