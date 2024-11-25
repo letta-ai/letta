@@ -173,7 +173,7 @@ function AdvancedSettingsPanel() {
           onValueChange={([value]) => {
             handleContextWindowChange(value);
           }}
-          min={0}
+          min={4000}
           max={currentBaseModel?.context_window || 10000}
         />
         <EmbeddingSelector embeddingConfig={currentAgent.embedding_config} />
