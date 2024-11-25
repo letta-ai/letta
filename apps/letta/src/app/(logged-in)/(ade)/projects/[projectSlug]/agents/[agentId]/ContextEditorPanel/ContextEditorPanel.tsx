@@ -382,18 +382,20 @@ function ContextWindowPanel() {
 
   return (
     <VStack gap="small" paddingX="large" paddingY="xsmall">
-      <div className="mt-[-35px]">
+      <div className="pointer-events-none mt-[-35px]">
         <HStack fullWidth justify="spaceBetween">
           <div />
-          <Typography
-            color={totalUsedLength > totalLength ? 'destructive' : 'muted'}
-            variant="body2"
-          >
-            {t('ContextWindowPreview.usage', {
-              used: totalUsedLength,
-              total: totalLength,
-            })}
-          </Typography>
+          <div className="pointer-events-auto">
+            <Typography
+              color={totalUsedLength > totalLength ? 'destructive' : 'muted'}
+              variant="body2"
+            >
+              {t('ContextWindowPreview.usage', {
+                used: totalUsedLength,
+                total: totalLength,
+              })}
+            </Typography>
+          </div>
         </HStack>
       </div>
       {/* eslint-disable-next-line react/forbid-component-props */}
@@ -411,6 +413,11 @@ export const contextWindowPanel = {
     return t('title');
   },
   useGetMobileTitle: () => {
+    const t = useTranslations('ADE/ContextEditorPanel');
+
+    return t('mobileTitle');
+  },
+  useGetInfoTooltipText: () => {
     const t = useTranslations('ADE/ContextEditorPanel');
 
     return t('mobileTitle');

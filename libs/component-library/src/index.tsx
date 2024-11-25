@@ -136,3 +136,5 @@ export * from './lib/icons/IconWrapper';
 export * from './lib/core/AdBanner/AdBanner';
 
 export * from './lib/core/ImageCard/ImageCard';
+
+export * from './lib/reusable/InfoTooltip/InfoTooltip';

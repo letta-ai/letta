@@ -287,19 +287,18 @@ function SystemPromptEditor() {
         </VStack>
       </Dialog>
       <VStack fullHeight gap="small">
-        <HStack fullWidth justify="spaceBetween">
-          <Typography semibold variant="body">
-            {t('SystemPromptEditor.label')}
-          </Typography>
-          <Typography variant="body2" color="muted">
-            {t('SystemPromptEditor.characterCount', {
-              count: value.length,
-            })}
-          </Typography>
-        </HStack>
         <RawTextArea
           fullWidth
-          hideLabel
+          infoTooltip={{
+            text: t('SystemPromptEditor.tooltip'),
+          }}
+          rightOfLabelContent={
+            <Typography variant="body2" color="muted">
+              {t('SystemPromptEditor.characterCount', {
+                count: value.length,
+              })}
+            </Typography>
+          }
           fullHeight
           flex
           autosize={false}
@@ -337,6 +336,9 @@ export function AgentSettingsPanel() {
         <HStack fullWidth align="end">
           <RawInput
             fullWidth
+            infoTooltip={{
+              text: t('agentName.tooltip', { baseName }),
+            }}
             label={t('agentName.label', { baseName })}
             value={currentAgent.name}
             disabled

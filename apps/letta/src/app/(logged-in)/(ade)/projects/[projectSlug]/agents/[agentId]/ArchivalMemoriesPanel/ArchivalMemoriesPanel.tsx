@@ -340,6 +340,11 @@ export const archivalMemoriesPanelTemplate = {
 
     return t('title', { count });
   },
+  useGetInfoTooltipText: () => {
+    const t = useTranslations('ADE/ArchivalMemories');
+
+    return t('infoTooltip');
+  },
   useGetMobileTitle: () => {
     const t = useTranslations('ADE/ArchivalMemories');
 
