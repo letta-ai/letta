@@ -72,22 +72,6 @@
               "type": "string",
               "title": "Tool Id"
             }
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
           }
         ],
         "responses": {
@@ -126,22 +110,6 @@
             "schema": {
               "type": "string",
               "title": "Tool Id"
-            }
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
             }
           }
         ],
@@ -193,22 +161,6 @@
             "schema": {
               "type": "string",
               "title": "Tool Name"
-            }
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
             }
           }
         ],
@@ -276,22 +228,6 @@
               "default": 50,
               "title": "Limit"
             }
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
           }
         ],
         "responses": {
@@ -326,24 +262,7 @@
         "summary": "Create Tool",
         "description": "Create a new tool",
         "operationId": "create_tool",
-        "parameters": [
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
-          }
-        ],
+        "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
@@ -384,24 +303,7 @@
         "summary": "Add Base Tools",
         "description": "Add base tools",
         "operationId": "add_base_tools",
-        "parameters": [
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
-          }
-        ],
+        "parameters": [],
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -445,22 +347,6 @@
               "type": "string",
               "title": "Source Id"
             }
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
           }
         ],
         "responses": {
@@ -499,22 +385,6 @@
             "schema": {
               "type": "string",
               "title": "Source Id"
-            }
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
             }
           }
         ],
@@ -565,22 +435,6 @@
               "type": "string",
               "title": "Source Id"
             }
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
           }
         ],
         "responses": {
@@ -620,22 +474,6 @@
               "type": "string",
               "title": "Source Name"
             }
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
           }
         ],
         "responses": {
@@ -669,24 +507,7 @@
         "summary": "List Sources",
         "description": "List all data sources created by a user.",
         "operationId": "list_sources",
-        "parameters": [
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
-          }
-        ],
+        "parameters": [],
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -719,24 +540,7 @@
         "summary": "Create Source",
         "description": "Create a new data source.",
         "operationId": "create_source",
-        "parameters": [
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
-          }
-        ],
+        "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
@@ -797,22 +601,6 @@
               "title": "Agent Id"
             },
             "description": "The unique identifier of the agent to attach the source to."
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
           }
         ],
         "responses": {
@@ -865,22 +653,6 @@
               "title": "Agent Id"
             },
             "description": "The unique identifier of the agent to detach the source from."
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
           }
         ],
         "responses": {
@@ -921,22 +693,6 @@
             "schema": {
               "type": "string",
               "title": "Source Id"
-            }
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
             }
           }
         ],
@@ -988,22 +744,6 @@
             "schema": {
               "type": "string",
               "title": "Source Id"
-            }
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
             }
           }
         ],
@@ -1080,22 +820,6 @@
               "title": "Cursor"
             },
             "description": "Pagination cursor to fetch the next set of results"
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
           }
         ],
         "responses": {
@@ -1149,22 +873,6 @@
             "schema": {
               "type": "string",
               "title": "File Id"
-            }
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
             }
           }
         ],
@@ -1230,22 +938,6 @@
               "title": "Tags"
             },
             "description": "List of tags to filter agents by"
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
           }
         ],
         "responses": {
@@ -1280,24 +972,7 @@
         "summary": "Create Agent",
         "description": "Create a new agent with the specified configuration.",
         "operationId": "create_agent",
-        "parameters": [
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
-          }
-        ],
+        "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
@@ -1347,22 +1022,6 @@
               "type": "string",
               "title": "Agent Id"
             }
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
           }
         ],
         "responses": {
@@ -1403,22 +1062,6 @@
             "schema": {
               "type": "string",
               "title": "Agent Id"
-            }
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
             }
           }
         ],
@@ -1469,22 +1112,6 @@
               "type": "string",
               "title": "Agent Id"
             }
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
           }
         ],
         "responses": {
@@ -1524,22 +1151,6 @@
               "type": "string",
               "title": "Agent Id"
             }
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
           }
         ],
         "responses": {
@@ -1578,22 +1189,6 @@
             "schema": {
               "type": "string",
               "title": "Agent Id"
-            }
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
             }
           }
         ],
@@ -1649,22 +1244,6 @@
               "type": "string",
               "title": "Tool Id"
             }
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
           }
         ],
         "responses": {
@@ -1714,22 +1293,6 @@
             "schema": {
               "type": "string",
               "title": "Tool Id"
-            }
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
             }
           }
         ],
@@ -1901,22 +1464,6 @@
               "type": "string",
               "title": "Agent Id"
             }
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
           }
         ],
         "requestBody": {
@@ -1969,22 +1516,6 @@
               "type": "string",
               "title": "Agent Id"
             }
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
           }
         ],
         "requestBody": {
@@ -2035,22 +1566,6 @@
             "schema": {
               "type": "string",
               "title": "Agent Id"
-            }
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
             }
           }
         ],
@@ -2112,22 +1627,6 @@
               "type": "string",
               "title": "Block Label"
             }
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
           }
         ],
         "responses": {
@@ -2168,22 +1667,6 @@
             "schema": {
               "type": "string",
               "title": "Agent Id"
-            }
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
             }
           }
         ],
@@ -2372,22 +1855,6 @@
               "title": "Limit"
             },
             "description": "How many results to include in the response."
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
           }
         ],
         "responses": {
@@ -2430,22 +1897,6 @@
             "schema": {
               "type": "string",
               "title": "Agent Id"
-            }
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
             }
           }
         ],
@@ -2510,22 +1961,6 @@
             "schema": {
               "type": "string",
               "title": "Memory Id"
-            }
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
             }
           }
         ],
@@ -2644,22 +2079,6 @@
               "title": "Assistant Message Function Kwarg"
             },
             "description": "[Only applicable if use_assistant_message is True] The name of the message argument in the designated message tool."
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
           }
         ],
         "responses": {
@@ -2742,22 +2161,6 @@
             "schema": {
               "type": "string",
               "title": "Agent Id"
-            }
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
             }
           }
         ],
@@ -2959,22 +2362,6 @@
               "title": "Name"
             },
             "description": "Name of the block"
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
           }
         ],
         "responses": {
@@ -3008,24 +2395,7 @@
         "tags": ["blocks"],
         "summary": "Create Block",
         "operationId": "create_memory_block",
-        "parameters": [
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
-          }
-        ],
+        "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
@@ -3073,22 +2443,6 @@
             "schema": {
               "type": "string",
               "title": "Block Id"
-            }
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
             }
           }
         ],
@@ -3138,22 +2492,6 @@
               "type": "string",
               "title": "Block Id"
             }
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
           }
         ],
         "responses": {
@@ -3191,22 +2529,6 @@
             "schema": {
               "type": "string",
               "title": "Block Id"
-            }
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
             }
           }
         ],
@@ -3258,22 +2580,6 @@
               "title": "Source Id"
             },
             "description": "Only list jobs associated with the source."
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
           }
         ],
         "responses": {
@@ -3310,24 +2616,7 @@
         "summary": "List Active Jobs",
         "description": "List all active jobs.",
         "operationId": "list_active_jobs",
-        "parameters": [
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
-          }
-        ],
+        "parameters": [],
         "responses": {
           "200": {
             "description": "Successful Response",
