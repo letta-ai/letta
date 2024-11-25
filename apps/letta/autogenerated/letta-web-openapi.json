@@ -59,15 +59,13 @@
                             "limit": {
                               "type": "number"
                             },
-                            "template_name": {
+                            "name": {
                               "type": "string",
                               "nullable": true
                             },
-                            "template": {
-                              "type": "boolean"
-                            },
                             "label": {
-                              "type": "string"
+                              "type": "string",
+                              "nullable": true
                             },
                             "description": {
                               "type": "string",
@@ -77,12 +75,23 @@
                               "type": "object",
                               "additionalProperties": {}
                             },
-                            "user_id": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "organization_id": {
                               "type": "string",
                               "nullable": true
                             },
-                            "id": {
-                              "type": "string"
+                            "created_by_id": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "last_updated_by_id": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "is_template": {
+                              "type": "boolean"
                             }
                           },
                           "required": ["value"]
@@ -128,7 +137,9 @@
                           "llamacpp",
                           "koboldcpp",
                           "vllm",
-                          "hugging-face"
+                          "hugging-face",
+                          "mistral",
+                          "together"
                         ]
                       },
                       "model_endpoint": {
@@ -255,10 +266,7 @@
                   "properties": {
                     "message": {
                       "type": "string",
-                      "enum": [
-                        "An agent with the same name already exists",
-                        "project_id is required when providing a name"
-                      ]
+                      "enum": ["An agent with the same name already exists"]
                     }
                   },
                   "required": ["message"]
@@ -781,6 +789,160 @@
                     }
                   },
                   "required": ["message"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/models/": {
+      "get": {
+        "tags": ["models"],
+        "parameters": [
+          {
+            "name": "extended",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "operationId": "models.listLLMBackends",
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "model": {
+                        "type": "string"
+                      },
+                      "model_endpoint_type": {
+                        "type": "string",
+                        "enum": [
+                          "openai",
+                          "anthropic",
+                          "cohere",
+                          "google_ai",
+                          "azure",
+                          "groq",
+                          "ollama",
+                          "webui",
+                          "webui-legacy",
+                          "lmstudio",
+                          "lmstudio-legacy",
+                          "llamacpp",
+                          "koboldcpp",
+                          "vllm",
+                          "hugging-face",
+                          "mistral",
+                          "together"
+                        ]
+                      },
+                      "model_endpoint": {
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "model_wrapper": {
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "context_window": {
+                        "type": "number"
+                      },
+                      "brand": {
+                        "type": "string"
+                      },
+                      "isRecommended": {
+                        "type": "boolean"
+                      },
+                      "tag": {
+                        "type": "string"
+                      },
+                      "displayName": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "model",
+                      "model_endpoint_type",
+                      "context_window"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/models/embedding/": {
+      "get": {
+        "tags": ["models"],
+        "parameters": [
+          {
+            "name": "extended",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "operationId": "models.listEmbeddingBackends",
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "embedding_endpoint_type": {
+                        "type": "string"
+                      },
+                      "embedding_endpoint": {
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "embedding_model": {
+                        "type": "string"
+                      },
+                      "embedding_dim": {
+                        "type": "number"
+                      },
+                      "embedding_chunk_size": {
+                        "type": "number",
+                        "nullable": true
+                      },
+                      "azure_endpoint": {
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "azure_version": {
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "azure_deployment": {
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "brand": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "embedding_endpoint_type",
+                      "embedding_model",
+                      "embedding_dim"
+                    ]
+                  }
                 }
               }
             }
