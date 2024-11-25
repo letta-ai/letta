@@ -118,6 +118,8 @@ export function EmbeddingSelector(props: EmbeddingConfig) {
   );
 }
 
+const MIN_CONTEXT_WINDOW = 4000;
+
 function AdvancedSettingsPanel() {
   const currentAgent = useCurrentAgent();
   const { data: modelsList } = useModelsServiceListModels();
@@ -137,6 +139,21 @@ function AdvancedSettingsPanel() {
 
   const handleContextWindowChange = useCallback(
     (value: number) => {
+      if (!currentAgent.llm_config) {
+        return;
+      }
+
+      if (value < MIN_CONTEXT_WINDOW) {
+        syncUpdateCurrentAgent((existing) => ({
+          llm_config: {
+            ...existing.llm_config,
+            context_window: MIN_CONTEXT_WINDOW,
+          },
+        }));
+
+        return;
+      }
+
       syncUpdateCurrentAgent((existing) => ({
         llm_config: {
           ...existing.llm_config,
@@ -144,7 +161,7 @@ function AdvancedSettingsPanel() {
         },
       }));
     },
-    [syncUpdateCurrentAgent]
+    [currentAgent.llm_config, syncUpdateCurrentAgent]
   );
 
   useEffect(() => {
