@@ -48,6 +48,7 @@ export interface PanelTemplate<
   templateId: TPanelTemplateId;
   useGetTitle: (data?: ZodSchema['_output']) => string;
   useGetMobileTitle: (data?: ZodSchema['_output']) => string;
+  useGetInfoTooltipText?: (data?: ZodSchema['_output']) => string;
   icon: React.ReactNode;
   data: ZodSchema;
   content: React.ComponentType<ZodSchema['_output']>;
@@ -1169,6 +1170,9 @@ export function createPanelManager<
     }, [tabId, movePanelToPosition, x, y]);
 
     const title = panelRegistry[tab.templateId].useGetTitle(tab.data);
+    const infoTooltipText = panelRegistry[
+      tab.templateId
+    ]?.useGetInfoTooltipText?.(tab.data);
 
     const dropdownItems = useMemo(
       () => [
@@ -1190,6 +1194,7 @@ export function createPanelManager<
         isActive={isActive}
         onClickTab={handleClickedTab}
         onCloseTab={handleCloseTab}
+        infoTooltipText={infoTooltipText}
         dropdownItems={dropdownItems}
         title={title}
       />

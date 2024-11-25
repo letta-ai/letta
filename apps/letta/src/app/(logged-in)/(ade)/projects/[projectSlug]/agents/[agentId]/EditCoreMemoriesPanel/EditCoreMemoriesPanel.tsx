@@ -531,6 +531,11 @@ export const editCoreMemories = {
 
     return t('mobileTitle');
   },
+  useGetInfoTooltipText: () => {
+    const t = useTranslations('ADE/ArchivalMemories');
+
+    return t('infoTooltip');
+  },
   useGetTitle: () => {
     const t = useTranslations('ADE/EditCoreMemoriesPanel');
     const { memory } = useCurrentAgent();

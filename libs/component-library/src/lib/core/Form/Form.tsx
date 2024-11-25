@@ -15,6 +15,7 @@ import { HStack } from '../../framing/HStack/HStack';
 import { Typography } from '../Typography/Typography';
 import type { ArgTypes } from '@storybook/csf';
 import { omit } from 'lodash-es';
+import { InfoTooltip } from '../../reusable/InfoTooltip/InfoTooltip';
 
 export { useForm } from 'react-hook-form';
 
@@ -166,6 +167,9 @@ export interface InputContainerProps {
   fullHeight?: boolean;
   collapseHeight?: boolean;
   rightOfLabelContent?: React.ReactNode;
+  infoTooltip?: {
+    text: string;
+  };
   flex?: boolean;
   children?: React.ReactNode;
 }
@@ -181,6 +185,7 @@ export function InputContainer(props: InputContainerProps) {
     description,
     inline,
     rightOfLabelContent,
+    infoTooltip,
     children,
   } = props;
   return (
@@ -199,9 +204,14 @@ export function InputContainer(props: InputContainerProps) {
               justify="spaceBetween"
             >
               <FormLabel>
-                <HStack gap="text">
-                  {preLabelIcon && <Slot className="h-3">{preLabelIcon}</Slot>}
-                  {label}
+                <HStack>
+                  <HStack gap="text">
+                    {preLabelIcon && (
+                      <Slot className="h-3">{preLabelIcon}</Slot>
+                    )}
+                    {label}
+                  </HStack>
+                  {infoTooltip && <InfoTooltip text={infoTooltip.text} />}
                 </HStack>
               </FormLabel>
               {rightOfLabelContent}
@@ -238,6 +248,7 @@ export function RawInputContainer(props: RawInputContainerProps) {
     collapseHeight,
     description,
     children,
+    infoTooltip,
     rightOfLabelContent,
   } = props;
 
@@ -259,9 +270,12 @@ export function RawInputContainer(props: RawInputContainerProps) {
               htmlFor={id}
               className="flex flex-row gap-1 items-center"
             >
-              <HStack gap="text">
-                {preLabelIcon && <Slot className="h-3">{preLabelIcon}</Slot>}
-                {label}
+              <HStack align="center" gap="small">
+                <HStack align="center" gap="text">
+                  {preLabelIcon && <Slot className="h-3">{preLabelIcon}</Slot>}
+                  {label}
+                </HStack>
+                {infoTooltip && <InfoTooltip text={infoTooltip.text} />}
               </HStack>
             </LabelPrimitive>
             {rightOfLabelContent}
@@ -292,7 +306,7 @@ interface MakeInputOptions {
   container?: MakeInputOptionsContainerType;
 }
 
-const omitProps = ['rightOfLabelContent'];
+const omitProps = ['rightOfLabelContent', 'infoTooltipText'];
 
 export function makeInput<T>(
   Input: React.ComponentType<T>,
@@ -337,9 +351,9 @@ export const inputStorybookArgs = {
 };
 
 export function extractAndRemoveInputProps<T>(
-  props: T & { label?: string; hideLabel?: boolean }
+  props: T & { label?: string; hideLabel?: boolean; infoTooltipText?: string }
 ) {
-  const { label, hideLabel, ...rest } = props;
+  const { label, hideLabel, infoTooltipText, ...rest } = props;
   return rest;
 }
 

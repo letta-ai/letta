@@ -14,6 +14,9 @@ export const Primary: Story = {
   args: {
     label: 'Username',
     placeholder: 'Enter your username',
+    infoTooltip: {
+      text: 'hi',
+    },
   },
   decorators: [
     generateWrapWithFormContext({

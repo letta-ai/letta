@@ -1171,6 +1171,11 @@ export const editDataSourcesPanel = {
 
     return t('title', { count });
   },
+  useGetInfoTooltipText: () => {
+    const t = useTranslations('ADE/EditDataSourcesPanel');
+
+    return t('infoTooltip');
+  },
   data: z.undefined(),
   content: EditDataSourcesPanel,
   templateId: 'edit-data-sources',

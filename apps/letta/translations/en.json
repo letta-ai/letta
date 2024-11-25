@@ -230,6 +230,7 @@
     }
   },
   "ADE/ContextEditorPanel": {
+    "infoTooltip": "Current status of the LLM context window (Letta will automatically compress on overflow)",
     "title": "Context Window",
     "mobileTitle": "Context Window",
     "ContextWindowPreview": {
@@ -347,6 +348,7 @@
   },
   "ADE/EditDataSourcesPanel": {
     "mobileTitle": "Sources",
+    "infoTooltip": "External files loaded into the agent’s archival memory for RAG",
     "AttachDataSourceView": {
       "notCompatible": {
         "title": "Not Compatible",
@@ -449,6 +451,7 @@
     "SystemPromptEditor": {
       "characterCount": "{count} CHARS",
       "updatedAt": "Last updated on {date}",
+      "tooltip": "Configures the behavior of the agent, and placed in the context window",
       "label": "System Instructions",
       "error": "There was an error while updating the system prompt, please try again or contact support.",
       "expand": "Show full system prompt editor",
@@ -464,6 +467,7 @@
     },
     "agentName": {
       "label": "{baseName} Name",
+      "tooltip": "The LLM backend for the {baseName}",
       "edit": "Edit {baseName} Name"
     },
     "copyAgentId": "Copy {baseName} ID",
@@ -619,7 +623,8 @@
       },
       "title": "{label} Settings"
     },
-    "title": "Memory ({count})",
+    "title": "Core Memory ({count})",
+    "infoTooltip": "Editable, in-context memory of the agent that can be templated with variables",
     "content": "Content",
     "error": "There was an error while updating the memory block, please try again or contact support.",
     "lastUpdated": "Last updated on {date}",
@@ -1010,6 +1015,7 @@
     }
   },
   "ADE/ArchivalMemories": {
+    "infoTooltip": "Memories stored in an external database (read-write)",
     "ViewArchivalMemoryDialog": {
       "trigger": "...see all",
       "copyText": "Copy Memory Text",
