@@ -53,6 +53,7 @@ export const FunctionCallSchema = z.object({
     message_type: z.literal('function_call').optional(),
     type: z.literal('function_call').optional(),
     name: z.string().optional(),
+    function_call_id: z.string().optional(),
     arguments: z.string().optional(),
     formattedArguments: z.record(z.unknown()).optional(),
   }),
@@ -63,6 +64,7 @@ export const FunctionCallSchema = z.object({
 export const FunctionReturnSchema = z.object({
   message_type: z.literal('function_return'),
   function_return: z.string(),
+  function_call_id: z.string(),
   status: z.string(),
   date: z.string(),
   id: z.string(),

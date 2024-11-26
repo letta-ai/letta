@@ -212,6 +212,9 @@ function useSendMessage(agentId: string) {
                       );
 
                       newMessage.function_call = {
+                        function_call_id:
+                          newMessage.function_call.function_call_id ||
+                          extracted.function_call.function_call_id,
                         message_type:
                           newMessage.function_call.message_type ||
                           extracted.function_call.message_type,
@@ -290,7 +293,7 @@ interface ChatroomContextType {
 }
 
 const ChatroomContext = React.createContext<ChatroomContextType>({
-  renderMode: 'debug',
+  renderMode: 'interactive',
   setRenderMode: () => {
     return;
   },
