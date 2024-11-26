@@ -945,7 +945,7 @@ interface ToolCreatorProps {
   onClose: VoidFunction;
 }
 
-const DEFAULT_SOURCE_CODE = `def roll_d20(self):
+const DEFAULT_SOURCE_CODE = `def roll_d20():
     """
     Simulate the roll of a 20-sided die (d20).
 
