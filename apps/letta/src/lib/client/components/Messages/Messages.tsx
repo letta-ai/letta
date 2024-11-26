@@ -290,6 +290,7 @@ export function Messages(props: MessagesProps) {
                   message.message_type === 'function_return' &&
                   // eslint-disable-next-line @typescript-eslint/no-confusing-void-expression
                   get(message, 'function_call.function_call_id') ===
+                    // eslint-disable-next-line @typescript-eslint/no-confusing-void-expression
                     get(agentMessage, 'function_call_id')
               );
 
@@ -463,8 +464,8 @@ export function Messages(props: MessagesProps) {
 
     const preMessages = data.pages
       .flat()
-      // @ts-expect-error - the typing is wrong
       .map((message, _, allMessages) =>
+        // @ts-expect-error - the typing is wrong
         extractMessage(message, mode, allMessages)
       )
       .filter((message) => !!message)
