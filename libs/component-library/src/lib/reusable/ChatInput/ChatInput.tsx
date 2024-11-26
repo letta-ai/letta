@@ -12,7 +12,6 @@ import { SendIcon } from '../../icons';
 import { Popover } from '../../core/Popover/Popover';
 import { useTranslations } from 'next-intl';
 import { Slot } from '@radix-ui/react-slot';
-import { InfoTooltip } from '../InfoTooltip/InfoTooltip';
 
 interface RoleOption<Role> {
   value: Role;
@@ -167,16 +166,6 @@ export function ChatInput<Roles extends string>(props: ChatInputProps<Roles>) {
                 </VStack>
               </Popover>
             )}
-            <HStack
-              paddingTop="xxsmall"
-              borderY
-              justify="center"
-              fullHeight
-              borderRight
-              paddingX="small"
-            >
-              <InfoTooltip text={t('role.tooltip')} />
-            </HStack>
           </HStack>
           <Button
             data-testid="chat-simulator-send"

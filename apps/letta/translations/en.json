@@ -465,12 +465,12 @@
     },
     "agentName": {
       "label": "{baseName} Name",
-      "tooltip": "The LLM backend for the {baseName}",
       "edit": "Edit {baseName} Name"
     },
     "copyAgentId": "Copy {baseName} ID",
     "title": "{baseName} Settings",
     "modelInput": {
+      "tooltip": "The LLM backend for the {baseName}",
       "recommended": "Recommended models",
       "others": "All available models",
       "label": "Model"
@@ -784,8 +784,7 @@
     "placeholder": "Type a message...",
     "send": "Send",
     "role": {
-      "label": "Click here to switch roles, the current role is {role}",
-      "tooltip": "Change the role of your input message (use \"user\" for messages coming from the end-user, and \"system\" for non-user message e.g. automated alerts)"
+      "label": "Click here to switch roles, the current role is {role}"
     }
   },
   "development-servers/agents/new/page": {

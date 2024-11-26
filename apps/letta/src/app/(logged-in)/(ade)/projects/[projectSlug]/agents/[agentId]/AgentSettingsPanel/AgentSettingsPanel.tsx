@@ -194,13 +194,15 @@ function ModelSelector(props: ModelSelectorProps) {
 
   const user = useCurrentUser();
 
+  const { base: baseName } = useAgentBaseTypeName();
+
   return (
     <>
       {error && <Alert title={t('error')} variant="destructive" />}
       <RawSelect
         fullWidth
         infoTooltip={{
-          text: t('SystemPromptEditor.tooltip'),
+          text: t('modelInput.tooltip', { baseName }),
         }}
         onSelect={(value) => {
           if (isMultiValue(value)) {
@@ -292,6 +294,9 @@ function SystemPromptEditor() {
       <VStack fullHeight gap="small">
         <RawTextArea
           fullWidth
+          infoTooltip={{
+            text: t('SystemPromptEditor.tooltip'),
+          }}
           rightOfLabelContent={
             <Typography variant="body2" color="muted">
               {t('SystemPromptEditor.characterCount', {
@@ -336,9 +341,6 @@ export function AgentSettingsPanel() {
         <HStack fullWidth align="end">
           <RawInput
             fullWidth
-            infoTooltip={{
-              text: t('agentName.tooltip', { baseName }),
-            }}
             label={t('agentName.label', { baseName })}
             value={currentAgent.name}
             disabled
