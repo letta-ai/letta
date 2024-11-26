@@ -136,7 +136,7 @@ function MessageGroup({ group }: MessageGroupType) {
         }
         icon={name === 'Agent' ? <RobotIcon /> : <PersonIcon />}
       />
-      <VStack fullWidth gap="small">
+      <VStack collapseWidth flex gap="small">
         <Typography bold>{name}</Typography>
         <VStack gap="large">
           {sortedMessages.map((message, index) => (
