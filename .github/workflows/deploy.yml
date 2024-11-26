@@ -2,7 +2,7 @@ name: Build and Deploy
 
 on:
   push:
-    branches: [main]
+    branches: [deploy-from-github]
   workflow_dispatch:
 
 env:
