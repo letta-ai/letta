@@ -15,6 +15,7 @@ import { useMemo } from 'react';
 import { Slot } from '@radix-ui/react-slot';
 import { DropdownMenu, DropdownMenuItem } from '../DropdownMenu/DropdownMenu';
 import { Button } from '../Button/Button';
+import { InfoTooltip } from '../../reusable/InfoTooltip/InfoTooltip';
 
 interface Action {
   label: string;
@@ -27,6 +28,9 @@ interface RootType {
   name: string;
   id?: string;
   badge?: React.ReactNode;
+  infoTooltip?: {
+    text: string;
+  };
   actions?: Action[];
 }
 
@@ -223,6 +227,7 @@ export function FolderComponent(props: FolderComponentProps) {
     name,
     badge,
     actions,
+    infoTooltip,
     defaultOpen,
     openIcon: openIconOverride,
     icon: iconOverride,
@@ -260,6 +265,12 @@ export function FolderComponent(props: FolderComponentProps) {
           {isOpen ? openIcon : icon}
           <Typography overflow="ellipsis" fullWidth noWrap align="left">
             {name}
+            {infoTooltip && (
+              <>
+                {' '}
+                <InfoTooltip text={infoTooltip.text} />
+              </>
+            )}
           </Typography>
         </RowItem>
       </HStack>

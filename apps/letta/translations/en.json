@@ -567,8 +567,14 @@
     },
     "toggleMemoryType": {
       "label": "Toggle Memory Type",
-      "templated": "Template",
-      "simulated": "Simulated"
+      "templated": {
+        "label": "Template",
+        "tooltip": "The template memory is the initial memory state for any new deployed agents that use this template"
+      },
+      "simulated": {
+        "label": "Simulated",
+        "tooltip": "The memory state of the simulated agent (reset when you flush the simulator)"
+      }
     },
     "mobileTitle": "Core Memories",
     "EditMemoryForm": {
@@ -778,7 +784,8 @@
     "placeholder": "Type a message...",
     "send": "Send",
     "role": {
-      "label": "Click here to switch roles, the current role is {role}"
+      "label": "Click here to switch roles, the current role is {role}",
+      "tooltip": "Change the role of your input message (use \"user\" for messages coming from the end-user, and \"system\" for non-user message e.g. automated alerts)"
     }
   },
   "development-servers/agents/new/page": {
@@ -916,6 +923,7 @@
     "error": "There was an error fetching the simulated agent, please try again or contact support."
   },
   "ADE/Tools": {
+    "infoTooltip": "Connect tools to your agent to allow them to take custom actions",
     "mobileTitle": "Tools",
     "title": "Tools ({toolCount})",
     "AddToolDialogDetailActions": {
@@ -1001,6 +1009,7 @@
     "ToolsList": {
       "removeTool": "Remove Tool",
       "lettaCoreTools": "Letta Core Tools ({toolCount})",
+      "lettaCoreToolsInfo": "Default tools added to agents to enable memory management",
       "otherTools": "Other Tools ({toolCount})",
       "addNewTool": "Add New Tool"
     },

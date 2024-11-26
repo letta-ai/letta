@@ -199,6 +199,9 @@ function ModelSelector(props: ModelSelectorProps) {
       {error && <Alert title={t('error')} variant="destructive" />}
       <RawSelect
         fullWidth
+        infoTooltip={{
+          text: t('SystemPromptEditor.tooltip'),
+        }}
         onSelect={(value) => {
           if (isMultiValue(value)) {
             return;
@@ -289,9 +292,6 @@ function SystemPromptEditor() {
       <VStack fullHeight gap="small">
         <RawTextArea
           fullWidth
-          infoTooltip={{
-            text: t('SystemPromptEditor.tooltip'),
-          }}
           rightOfLabelContent={
             <Typography variant="body2" color="muted">
               {t('SystemPromptEditor.characterCount', {
