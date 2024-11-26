@@ -138,3 +138,5 @@ export * from './lib/core/AdBanner/AdBanner';
 export * from './lib/core/ImageCard/ImageCard';
 
 export * from './lib/reusable/InfoTooltip/InfoTooltip';
+
+export * from './lib/reusable/FunctionCall/FunctionCall';

@@ -1,14 +1,13 @@
 'use client';
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import {
-  Accordion,
   Alert,
   Badge,
   Button,
   Code,
+  FunctionCall,
   HStack,
   IconAvatar,
-  InlineCode,
   LettaLoaderPanel,
   Markdown,
   PersonIcon,
@@ -37,6 +36,7 @@ import { useTranslations } from 'next-intl';
 import type { VariantProps } from 'class-variance-authority';
 import { cva } from 'class-variance-authority';
 import { cn } from '@letta-web/core-style-config';
+import { get } from 'lodash-es';
 
 const messageWrapperVariants = cva('', {
   variants: {
@@ -199,7 +199,8 @@ export function Messages(props: MessagesProps) {
   const extractMessage = useCallback(
     function extractMessage(
       agentMessage: AgentMessage,
-      mode: MessagesDisplayMode
+      mode: MessagesDisplayMode,
+      allMessages: AgentMessage[]
     ): AgentSimulatorMessageType | null {
       switch (agentMessage.message_type) {
         case 'function_return':
@@ -208,35 +209,7 @@ export function Messages(props: MessagesProps) {
           }
 
           if (mode === 'interactive') {
-            if (agentMessage.function_return.includes('"message": "None",')) {
-              return null;
-            }
-
-            return {
-              id: agentMessage.id,
-              content: (
-                <HStack border fullWidth>
-                  <Accordion
-                    id={agentMessage.id}
-                    trigger={
-                      <HStack>
-                        <Typography>Function Result</Typography>
-                      </HStack>
-                    }
-                  >
-                    <Code
-                      fontSize="small"
-                      variant="minimal"
-                      showLineNumbers={false}
-                      code={agentMessage.function_return}
-                      language="javascript"
-                    ></Code>
-                  </Accordion>
-                </HStack>
-              ),
-              timestamp: new Date(agentMessage.date).toISOString(),
-              name: 'Agent',
-            };
+            return null;
           }
 
           return {
@@ -312,14 +285,22 @@ export function Messages(props: MessagesProps) {
             }
 
             if (mode === 'interactive') {
+              const functionResponse = allMessages.find(
+                (message) =>
+                  message.message_type === 'function_return' &&
+                  // eslint-disable-next-line @typescript-eslint/no-confusing-void-expression
+                  get(message, 'function_call.function_call_id') ===
+                    // eslint-disable-next-line @typescript-eslint/no-confusing-void-expression
+                    get(agentMessage, 'function_call_id')
+              );
+
               return {
                 id: `${agentMessage.id}-${agentMessage.message_type}`,
                 content: (
-                  <InlineCode
-                    code={`${
-                      agentMessage.function_call.name || 'Unknown Function'
-                    }()`}
-                    hideCopyButton
+                  <FunctionCall
+                    name={agentMessage.function_call.name || ''}
+                    inputs={agentMessage.function_call.arguments || ''}
+                    response={get(functionResponse, 'function_return')}
                   />
                 ),
                 timestamp: new Date(agentMessage.date).toISOString(),
@@ -483,8 +464,10 @@ export function Messages(props: MessagesProps) {
 
     const preMessages = data.pages
       .flat()
-      // @ts-expect-error - the typing is wrong
-      .map((message) => extractMessage(message, mode))
+      .map((message, _, allMessages) =>
+        // @ts-expect-error - the typing is wrong
+        extractMessage(message, mode, allMessages)
+      )
       .filter((message) => !!message)
       .sort(
         (a, b) =>

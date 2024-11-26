@@ -215,6 +215,12 @@
       "description": "Are you sure you want to remove {name} ({email}) from this organization? This will not remove any projects or agents they have created."
     }
   },
+  "component-library/FunctionCall": {
+    "isExecuting": "Executing",
+    "completed": "Completed",
+    "request": "Request",
+    "response": "Response"
+  },
   "settings/profile/page": {
     "title": "Profile Settings",
     "form": {
