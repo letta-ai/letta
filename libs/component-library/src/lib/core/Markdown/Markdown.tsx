@@ -4,6 +4,7 @@ import type { SupportedLangauges } from '../Code/Code';
 import { isSupportedLanguage, RawCodeEditor } from '../Code/Code';
 import { InlineCode } from '../InlineCode/InlineCode';
 import { Typography } from '../Typography/Typography';
+import remarkGfm from 'remark-gfm';
 
 interface MarkdownProps {
   text: string;
@@ -13,8 +14,47 @@ export function Markdown(props: MarkdownProps) {
   return (
     <ReactMarkdown
       children={props.text}
+      remarkPlugins={[remarkGfm]}
       className="text-base"
       components={{
+        table: function Table({ children }) {
+          return <table className="table-auto w-full">{children}</table>;
+        },
+        thead: function Thead({ children }) {
+          return <thead className="bg-background">{children}</thead>;
+        },
+        tbody: function Tbody({ children }) {
+          return <tbody>{children}</tbody>;
+        },
+        tr: function Tr({ children }) {
+          return <tr>{children}</tr>;
+        },
+        th: function Th({ children }) {
+          return (
+            <th className="text-left font-bold p-2 border border-border">
+              {children}
+            </th>
+          );
+        },
+        td: function Td({ children }) {
+          return <td className="p-2 border border-border">{children}</td>;
+        },
+        blockquote: function Blockquote({ children }) {
+          return (
+            <blockquote className="border-l-4 border-accent pl-4 my-4">
+              {children}
+            </blockquote>
+          );
+        },
+        ul: function Ul({ children }) {
+          return <ul className="list-disc pl-6">{children}</ul>;
+        },
+        li: function Li({ children }) {
+          return <li className="mb-2">{children}</li>;
+        },
+        ol: function Ol({ children }) {
+          return <ol className="list-decimal pl-6">{children}</ol>;
+        },
         p({ children }) {
           return <Typography className="block">{children}</Typography>;
         },
