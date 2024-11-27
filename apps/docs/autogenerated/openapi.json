@@ -2316,11 +2316,10 @@
           "200": {
             "description": "Successful response",
             "content": {
-              "application/json": {
-                "schema": {}
-              },
               "text/event-stream": {
-                "description": "Server-Sent Events stream"
+                "schema": {
+                  "description": "Server-Sent Events stream"
+                }
               }
             }
           },
