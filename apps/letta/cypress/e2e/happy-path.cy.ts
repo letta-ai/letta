@@ -88,9 +88,12 @@ describe('letta', () => {
       .first()
       .click();
 
+    cy.get('body').click({ force: true });
+
     cy.findByTestId('chat-simulator-input').type('What is my name', {
       force: true,
     });
+
     cy.findByTestId('chat-simulator-send').click({
       force: true,
     });

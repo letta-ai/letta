@@ -3,2045 +3,2494 @@
 import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
-import type { DeleteToolData, DeleteToolResponse, GetToolData, GetToolResponse, UpdateToolData, UpdateToolResponse, GetToolIdByNameData, GetToolIdByNameResponse, ListToolsData, ListToolsResponse, CreateToolData, CreateToolResponse, AddBaseToolsData, AddBaseToolsResponse, GetSourceData, GetSourceResponse, UpdateSourceData, UpdateSourceResponse, DeleteSourceData, DeleteSourceResponse, GetSourceIdByNameData, GetSourceIdByNameResponse, ListSourcesData, ListSourcesResponse, CreateSourceData, CreateSourceResponse, AttachAgentToSourceData, AttachAgentToSourceResponse, DetachAgentFromSourceData, DetachAgentFromSourceResponse, UploadFileToSourceData, UploadFileToSourceResponse, ListSourcePassagesData, ListSourcePassagesResponse, ListFilesFromSourceData, ListFilesFromSourceResponse, DeleteFileFromSourceData, DeleteFileFromSourceResponse, ListAgentsData, ListAgentsResponse, CreateAgentData, CreateAgentResponse, GetAgentContextWindowData, GetAgentContextWindowResponse, UpdateAgentData, UpdateAgentResponse, GetAgentData, GetAgentResponse, DeleteAgentData, DeleteAgentResponse, GetToolsFromAgentData, GetToolsFromAgentResponse, AddToolToAgentData, AddToolToAgentResponse, RemoveToolFromAgentData, RemoveToolFromAgentResponse, GetAgentSourcesData, GetAgentSourcesResponse, ListAgentInContextMessagesData, ListAgentInContextMessagesResponse, GetAgentMemoryData, GetAgentMemoryResponse, UpdateAgentMemoryData, UpdateAgentMemoryResponse, UpdateAgentMemoryLabelData, UpdateAgentMemoryLabelResponse, AddAgentMemoryBlockData, AddAgentMemoryBlockResponse, RemoveAgentMemoryBlockData, RemoveAgentMemoryBlockResponse, UpdateAgentMemoryLimitData, UpdateAgentMemoryLimitResponse, GetAgentRecallMemorySummaryData, GetAgentRecallMemorySummaryResponse, GetAgentArchivalMemorySummaryData, GetAgentArchivalMemorySummaryResponse, ListAgentArchivalMemoryData, ListAgentArchivalMemoryResponse, CreateAgentArchivalMemoryData, CreateAgentArchivalMemoryResponse, DeleteAgentArchivalMemoryData, DeleteAgentArchivalMemoryResponse, ListAgentMessagesData, ListAgentMessagesResponse, CreateAgentMessageData, CreateAgentMessageResponse, UpdateAgentMessageData, UpdateAgentMessageResponse, ListModelsResponse, ListEmbeddingModelsResponse, ListMemoryBlocksData, ListMemoryBlocksResponse, CreateMemoryBlockData, CreateMemoryBlockResponse, UpdateMemoryBlockData, UpdateMemoryBlockResponse, DeleteMemoryBlockData, DeleteMemoryBlockResponse, GetMemoryBlockData, GetMemoryBlockResponse, ListJobsData, ListJobsResponse, ListActiveJobsData, ListActiveJobsResponse, GetJobData, GetJobResponse, DeleteJobData, DeleteJobResponse, HealthCheckResponse, CreateSandboxConfigV1SandboxConfigPostData, CreateSandboxConfigV1SandboxConfigPostResponse, ListSandboxConfigsV1SandboxConfigGetData, ListSandboxConfigsV1SandboxConfigGetResponse, UpdateSandboxConfigV1SandboxConfigSandboxConfigIdPatchData, UpdateSandboxConfigV1SandboxConfigSandboxConfigIdPatchResponse, DeleteSandboxConfigV1SandboxConfigSandboxConfigIdDeleteData, DeleteSandboxConfigV1SandboxConfigSandboxConfigIdDeleteResponse, CreateSandboxEnvVarV1SandboxConfigSandboxConfigIdEnvironmentVariablePostData, CreateSandboxEnvVarV1SandboxConfigSandboxConfigIdEnvironmentVariablePostResponse, ListSandboxEnvVarsV1SandboxConfigSandboxConfigIdEnvironmentVariableGetData, ListSandboxEnvVarsV1SandboxConfigSandboxConfigIdEnvironmentVariableGetResponse, UpdateSandboxEnvVarV1SandboxConfigEnvironmentVariableEnvVarIdPatchData, UpdateSandboxEnvVarV1SandboxConfigEnvironmentVariableEnvVarIdPatchResponse, DeleteSandboxEnvVarV1SandboxConfigEnvironmentVariableEnvVarIdDeleteData, DeleteSandboxEnvVarV1SandboxConfigEnvironmentVariableEnvVarIdDeleteResponse, ListUsersData, ListUsersResponse, CreateUserData, CreateUserResponse, UpdateUserData, UpdateUserResponse, DeleteUserData, DeleteUserResponse, CreateApiKeyData, CreateApiKeyResponse, ListApiKeysData, ListApiKeysResponse, DeleteApiKeyData, DeleteApiKeyResponse, ListOrgsData, ListOrgsResponse, CreateOrganizationData, CreateOrganizationResponse, DeleteOrganizationByIdData, DeleteOrganizationByIdResponse, AuthenticateUserV1AuthPostData, AuthenticateUserV1AuthPostResponse } from './types.gen';
+import type {
+  DeleteToolData,
+  DeleteToolResponse,
+  GetToolData,
+  GetToolResponse,
+  UpdateToolData,
+  UpdateToolResponse,
+  GetToolIdByNameData,
+  GetToolIdByNameResponse,
+  ListToolsData,
+  ListToolsResponse,
+  CreateToolData,
+  CreateToolResponse,
+  UpsertToolData,
+  UpsertToolResponse,
+  AddBaseToolsData,
+  AddBaseToolsResponse,
+  GetSourceData,
+  GetSourceResponse,
+  UpdateSourceData,
+  UpdateSourceResponse,
+  DeleteSourceData,
+  DeleteSourceResponse,
+  GetSourceIdByNameData,
+  GetSourceIdByNameResponse,
+  ListSourcesData,
+  ListSourcesResponse,
+  CreateSourceData,
+  CreateSourceResponse,
+  AttachAgentToSourceData,
+  AttachAgentToSourceResponse,
+  DetachAgentFromSourceData,
+  DetachAgentFromSourceResponse,
+  UploadFileToSourceData,
+  UploadFileToSourceResponse,
+  ListSourcePassagesData,
+  ListSourcePassagesResponse,
+  ListFilesFromSourceData,
+  ListFilesFromSourceResponse,
+  DeleteFileFromSourceData,
+  DeleteFileFromSourceResponse,
+  ListAgentsData,
+  ListAgentsResponse,
+  CreateAgentData,
+  CreateAgentResponse,
+  GetAgentContextWindowData,
+  GetAgentContextWindowResponse,
+  UpdateAgentData,
+  UpdateAgentResponse,
+  GetAgentData,
+  GetAgentResponse,
+  DeleteAgentData,
+  DeleteAgentResponse,
+  GetToolsFromAgentData,
+  GetToolsFromAgentResponse,
+  AddToolToAgentData,
+  AddToolToAgentResponse,
+  RemoveToolFromAgentData,
+  RemoveToolFromAgentResponse,
+  GetAgentSourcesData,
+  GetAgentSourcesResponse,
+  ListAgentInContextMessagesData,
+  ListAgentInContextMessagesResponse,
+  GetAgentMemoryData,
+  GetAgentMemoryResponse,
+  UpdateAgentMemoryData,
+  UpdateAgentMemoryResponse,
+  UpdateAgentMemoryLabelData,
+  UpdateAgentMemoryLabelResponse,
+  AddAgentMemoryBlockData,
+  AddAgentMemoryBlockResponse,
+  RemoveAgentMemoryBlockData,
+  RemoveAgentMemoryBlockResponse,
+  UpdateAgentMemoryLimitData,
+  UpdateAgentMemoryLimitResponse,
+  GetAgentRecallMemorySummaryData,
+  GetAgentRecallMemorySummaryResponse,
+  GetAgentArchivalMemorySummaryData,
+  GetAgentArchivalMemorySummaryResponse,
+  ListAgentArchivalMemoryData,
+  ListAgentArchivalMemoryResponse,
+  CreateAgentArchivalMemoryData,
+  CreateAgentArchivalMemoryResponse,
+  DeleteAgentArchivalMemoryData,
+  DeleteAgentArchivalMemoryResponse,
+  ListAgentMessagesData,
+  ListAgentMessagesResponse,
+  CreateAgentMessageData,
+  CreateAgentMessageResponse,
+  UpdateAgentMessageData,
+  UpdateAgentMessageResponse,
+  CreateAgentMessage1Data,
+  CreateAgentMessage1Response,
+  ListModelsResponse,
+  ListEmbeddingModelsResponse,
+  ListMemoryBlocksData,
+  ListMemoryBlocksResponse,
+  CreateMemoryBlockData,
+  CreateMemoryBlockResponse,
+  UpdateMemoryBlockData,
+  UpdateMemoryBlockResponse,
+  DeleteMemoryBlockData,
+  DeleteMemoryBlockResponse,
+  GetMemoryBlockData,
+  GetMemoryBlockResponse,
+  ListJobsData,
+  ListJobsResponse,
+  ListActiveJobsData,
+  ListActiveJobsResponse,
+  GetJobData,
+  GetJobResponse,
+  DeleteJobData,
+  DeleteJobResponse,
+  HealthCheckResponse,
+  CreateSandboxConfigV1SandboxConfigPostData,
+  CreateSandboxConfigV1SandboxConfigPostResponse,
+  ListSandboxConfigsV1SandboxConfigGetData,
+  ListSandboxConfigsV1SandboxConfigGetResponse,
+  UpdateSandboxConfigV1SandboxConfigSandboxConfigIdPatchData,
+  UpdateSandboxConfigV1SandboxConfigSandboxConfigIdPatchResponse,
+  DeleteSandboxConfigV1SandboxConfigSandboxConfigIdDeleteData,
+  DeleteSandboxConfigV1SandboxConfigSandboxConfigIdDeleteResponse,
+  CreateSandboxEnvVarV1SandboxConfigSandboxConfigIdEnvironmentVariablePostData,
+  CreateSandboxEnvVarV1SandboxConfigSandboxConfigIdEnvironmentVariablePostResponse,
+  ListSandboxEnvVarsV1SandboxConfigSandboxConfigIdEnvironmentVariableGetData,
+  ListSandboxEnvVarsV1SandboxConfigSandboxConfigIdEnvironmentVariableGetResponse,
+  UpdateSandboxEnvVarV1SandboxConfigEnvironmentVariableEnvVarIdPatchData,
+  UpdateSandboxEnvVarV1SandboxConfigEnvironmentVariableEnvVarIdPatchResponse,
+  DeleteSandboxEnvVarV1SandboxConfigEnvironmentVariableEnvVarIdDeleteData,
+  DeleteSandboxEnvVarV1SandboxConfigEnvironmentVariableEnvVarIdDeleteResponse,
+  ListUsersData,
+  ListUsersResponse,
+  CreateUserData,
+  CreateUserResponse,
+  UpdateUserData,
+  UpdateUserResponse,
+  DeleteUserData,
+  DeleteUserResponse,
+  CreateApiKeyData,
+  CreateApiKeyResponse,
+  ListApiKeysData,
+  ListApiKeysResponse,
+  DeleteApiKeyData,
+  DeleteApiKeyResponse,
+  ListOrgsData,
+  ListOrgsResponse,
+  CreateOrganizationData,
+  CreateOrganizationResponse,
+  DeleteOrganizationByIdData,
+  DeleteOrganizationByIdResponse,
+  AuthenticateUserV1AuthPostData,
+  AuthenticateUserV1AuthPostResponse,
+} from './types.gen';
 
 export class ToolsService {
-    /**
-     * Delete Tool
-     * Delete a tool by name
-     * @param data The data for the request.
-     * @param data.toolId
-     * @returns unknown Successful Response
-     * @throws ApiError
-     */
-    public static deleteTool(data: DeleteToolData, headers?: { user_id: string }): CancelablePromise<DeleteToolResponse> {
-        return __request(OpenAPI, {
-            method: 'DELETE',
-            url: '/v1/tools/{tool_id}',
-            path: {
-                tool_id: data.toolId
-            },
-            errors: {
-                422: 'Validation Error'
-            },
-            headers
-        });
-    }
-    
-    /**
-     * Get Tool
-     * Get a tool by ID
-     * @param data The data for the request.
-     * @param data.toolId
-     * @param data.userId
-     * @returns letta__schemas__tool__Tool Successful Response
-     * @throws ApiError
-     */
-    public static getTool(data: GetToolData, headers?: { user_id: string }): CancelablePromise<GetToolResponse> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/v1/tools/{tool_id}',
-            path: {
-                tool_id: data.toolId
-            },
-            errors: {
-                422: 'Validation Error'
-            },
-            headers
-        });
-    }
-    
-    /**
-     * Update Tool
-     * Update an existing tool
-     * @param data The data for the request.
-     * @param data.toolId
-     * @param data.requestBody
-     * @param data.userId
-     * @returns letta__schemas__tool__Tool Successful Response
-     * @throws ApiError
-     */
-    public static updateTool(data: UpdateToolData, headers?: { user_id: string }): CancelablePromise<UpdateToolResponse> {
-        return __request(OpenAPI, {
-            method: 'PATCH',
-            url: '/v1/tools/{tool_id}',
-            path: {
-                tool_id: data.toolId
-            },
-            body: data.requestBody,
-            mediaType: 'application/json',
-            errors: {
-                422: 'Validation Error'
-            },
-            headers
-        });
-    }
-    
-    /**
-     * Get Tool Id
-     * Get a tool ID by name
-     * @param data The data for the request.
-     * @param data.toolName
-     * @param data.userId
-     * @returns string Successful Response
-     * @throws ApiError
-     */
-    public static getToolIdByName(data: GetToolIdByNameData, headers?: { user_id: string }): CancelablePromise<GetToolIdByNameResponse> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/v1/tools/name/{tool_name}',
-            path: {
-                tool_name: data.toolName
-            },
-            errors: {
-                422: 'Validation Error'
-            },
-            headers
-        });
-    }
-    
-    /**
-     * List Tools
-     * Get a list of all tools available to agents belonging to the org of the user
-     * @param data The data for the request.
-     * @param data.cursor
-     * @param data.limit
-     * @param data.userId
-     * @returns letta__schemas__tool__Tool Successful Response
-     * @throws ApiError
-     */
-    public static listTools(data: ListToolsData = {}, headers?: { user_id: string }): CancelablePromise<ListToolsResponse> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/v1/tools/',
-            query: {
-                cursor: data.cursor,
-                limit: data.limit
-            },
-            errors: {
-                422: 'Validation Error'
-            },
-            headers
-        });
-    }
-    
-    /**
-     * Create Tool
-     * Create a new tool
-     * @param data The data for the request.
-     * @param data.requestBody
-     * @param data.userId
-     * @returns letta__schemas__tool__Tool Successful Response
-     * @throws ApiError
-     */
-    public static createTool(data: CreateToolData, headers?: { user_id: string }): CancelablePromise<CreateToolResponse> {
-        return __request(OpenAPI, {
-            method: 'POST',
-            url: '/v1/tools/',
-            body: data.requestBody,
-            mediaType: 'application/json',
-            errors: {
-                422: 'Validation Error'
-            },
-            headers
-        });
-    }
-    
-    /**
-     * Add Base Tools
-     * Add base tools
-     * @param data The data for the request.
-     * @param data.userId
-     * @returns letta__schemas__tool__Tool Successful Response
-     * @throws ApiError
-     */
-    public static addBaseTools(data: AddBaseToolsData = {}, headers?: { user_id: string }): CancelablePromise<AddBaseToolsResponse> {
-        return __request(OpenAPI, {
-            method: 'POST',
-            url: '/v1/tools/add-base-tools',
-            errors: {
-                422: 'Validation Error'
-            },
-            headers
-        });
-    }
-    
+  /**
+   * Delete Tool
+   * Delete a tool by name
+   * @param data The data for the request.
+   * @param data.toolId
+   * @param data.userId
+   * @returns unknown Successful Response
+   * @throws ApiError
+   */
+  public static deleteTool(
+    data: DeleteToolData,
+    headers?: { user_id: string }
+  ): CancelablePromise<DeleteToolResponse> {
+    return __request(OpenAPI, {
+      method: 'DELETE',
+      url: '/v1/tools/{tool_id}',
+      path: {
+        tool_id: data.toolId,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Get Tool
+   * Get a tool by ID
+   * @param data The data for the request.
+   * @param data.toolId
+   * @param data.userId
+   * @returns letta__schemas__tool__Tool Successful Response
+   * @throws ApiError
+   */
+  public static getTool(
+    data: GetToolData,
+    headers?: { user_id: string }
+  ): CancelablePromise<GetToolResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/tools/{tool_id}',
+      path: {
+        tool_id: data.toolId,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Update Tool
+   * Update an existing tool
+   * @param data The data for the request.
+   * @param data.toolId
+   * @param data.requestBody
+   * @param data.userId
+   * @returns letta__schemas__tool__Tool Successful Response
+   * @throws ApiError
+   */
+  public static updateTool(
+    data: UpdateToolData,
+    headers?: { user_id: string }
+  ): CancelablePromise<UpdateToolResponse> {
+    return __request(OpenAPI, {
+      method: 'PATCH',
+      url: '/v1/tools/{tool_id}',
+      path: {
+        tool_id: data.toolId,
+      },
+      body: data.requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Get Tool Id
+   * Get a tool ID by name
+   * @param data The data for the request.
+   * @param data.toolName
+   * @param data.userId
+   * @returns string Successful Response
+   * @throws ApiError
+   */
+  public static getToolIdByName(
+    data: GetToolIdByNameData,
+    headers?: { user_id: string }
+  ): CancelablePromise<GetToolIdByNameResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/tools/name/{tool_name}',
+      path: {
+        tool_name: data.toolName,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * List Tools
+   * Get a list of all tools available to agents belonging to the org of the user
+   * @param data The data for the request.
+   * @param data.cursor
+   * @param data.limit
+   * @param data.userId
+   * @returns letta__schemas__tool__Tool Successful Response
+   * @throws ApiError
+   */
+  public static listTools(
+    data: ListToolsData = {},
+    headers?: { user_id: string }
+  ): CancelablePromise<ListToolsResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/tools/',
+      query: {
+        cursor: data.cursor,
+        limit: data.limit,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Create Tool
+   * Create a new tool
+   * @param data The data for the request.
+   * @param data.requestBody
+   * @param data.userId
+   * @returns letta__schemas__tool__Tool Successful Response
+   * @throws ApiError
+   */
+  public static createTool(
+    data: CreateToolData,
+    headers?: { user_id: string }
+  ): CancelablePromise<CreateToolResponse> {
+    return __request(OpenAPI, {
+      method: 'POST',
+      url: '/v1/tools/',
+      body: data.requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Upsert Tool
+   * Create or update a tool
+   * @param data The data for the request.
+   * @param data.requestBody
+   * @param data.userId
+   * @returns letta__schemas__tool__Tool Successful Response
+   * @throws ApiError
+   */
+  public static upsertTool(
+    data: UpsertToolData,
+    headers?: { user_id: string }
+  ): CancelablePromise<UpsertToolResponse> {
+    return __request(OpenAPI, {
+      method: 'PUT',
+      url: '/v1/tools/',
+      body: data.requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Add Base Tools
+   * Add base tools
+   * @param data The data for the request.
+   * @param data.userId
+   * @returns letta__schemas__tool__Tool Successful Response
+   * @throws ApiError
+   */
+  public static addBaseTools(
+    data: AddBaseToolsData = {},
+    headers?: { user_id: string }
+  ): CancelablePromise<AddBaseToolsResponse> {
+    return __request(OpenAPI, {
+      method: 'POST',
+      url: '/v1/tools/add-base-tools',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
 }
 
 export class SourcesService {
-    /**
-     * Get Source
-     * Get all sources
-     * @param data The data for the request.
-     * @param data.sourceId
-     * @param data.userId
-     * @returns Source Successful Response
-     * @throws ApiError
-     */
-    public static getSource(data: GetSourceData, headers?: { user_id: string }): CancelablePromise<GetSourceResponse> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/v1/sources/{source_id}',
-            path: {
-                source_id: data.sourceId
-            },
-            errors: {
-                422: 'Validation Error'
-            },
-            headers
-        });
-    }
-    
-    /**
-     * Update Source
-     * Update the name or documentation of an existing data source.
-     * @param data The data for the request.
-     * @param data.sourceId
-     * @param data.requestBody
-     * @param data.userId
-     * @returns Source Successful Response
-     * @throws ApiError
-     */
-    public static updateSource(data: UpdateSourceData, headers?: { user_id: string }): CancelablePromise<UpdateSourceResponse> {
-        return __request(OpenAPI, {
-            method: 'PATCH',
-            url: '/v1/sources/{source_id}',
-            path: {
-                source_id: data.sourceId
-            },
-            body: data.requestBody,
-            mediaType: 'application/json',
-            errors: {
-                422: 'Validation Error'
-            },
-            headers
-        });
-    }
-    
-    /**
-     * Delete Source
-     * Delete a data source.
-     * @param data The data for the request.
-     * @param data.sourceId
-     * @param data.userId
-     * @returns unknown Successful Response
-     * @throws ApiError
-     */
-    public static deleteSource(data: DeleteSourceData, headers?: { user_id: string }): CancelablePromise<DeleteSourceResponse> {
-        return __request(OpenAPI, {
-            method: 'DELETE',
-            url: '/v1/sources/{source_id}',
-            path: {
-                source_id: data.sourceId
-            },
-            errors: {
-                422: 'Validation Error'
-            },
-            headers
-        });
-    }
-    
-    /**
-     * Get Source Id By Name
-     * Get a source by name
-     * @param data The data for the request.
-     * @param data.sourceName
-     * @param data.userId
-     * @returns string Successful Response
-     * @throws ApiError
-     */
-    public static getSourceIdByName(data: GetSourceIdByNameData, headers?: { user_id: string }): CancelablePromise<GetSourceIdByNameResponse> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/v1/sources/name/{source_name}',
-            path: {
-                source_name: data.sourceName
-            },
-            errors: {
-                422: 'Validation Error'
-            },
-            headers
-        });
-    }
-    
-    /**
-     * List Sources
-     * List all data sources created by a user.
-     * @param data The data for the request.
-     * @param data.userId
-     * @returns Source Successful Response
-     * @throws ApiError
-     */
-    public static listSources(data: ListSourcesData = {}, headers?: { user_id: string }): CancelablePromise<ListSourcesResponse> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/v1/sources/',
-            errors: {
-                422: 'Validation Error'
-            },
-            headers
-        });
-    }
-    
-    /**
-     * Create Source
-     * Create a new data source.
-     * @param data The data for the request.
-     * @param data.requestBody
-     * @param data.userId
-     * @returns Source Successful Response
-     * @throws ApiError
-     */
-    public static createSource(data: CreateSourceData, headers?: { user_id: string }): CancelablePromise<CreateSourceResponse> {
-        return __request(OpenAPI, {
-            method: 'POST',
-            url: '/v1/sources/',
-            body: data.requestBody,
-            mediaType: 'application/json',
-            errors: {
-                422: 'Validation Error'
-            },
-            headers
-        });
-    }
-    
-    /**
-     * Attach Source To Agent
-     * Attach a data source to an existing agent.
-     * @param data The data for the request.
-     * @param data.sourceId
-     * @param data.agentId The unique identifier of the agent to attach the source to.
-     * @param data.userId
-     * @returns Source Successful Response
-     * @throws ApiError
-     */
-    public static attachAgentToSource(data: AttachAgentToSourceData, headers?: { user_id: string }): CancelablePromise<AttachAgentToSourceResponse> {
-        return __request(OpenAPI, {
-            method: 'POST',
-            url: '/v1/sources/{source_id}/attach',
-            path: {
-                source_id: data.sourceId
-            },
-            query: {
-                agent_id: data.agentId
-            },
-            errors: {
-                422: 'Validation Error'
-            },
-            headers
-        });
-    }
-    
-    /**
-     * Detach Source From Agent
-     * Detach a data source from an existing agent.
-     * @param data The data for the request.
-     * @param data.sourceId
-     * @param data.agentId The unique identifier of the agent to detach the source from.
-     * @param data.userId
-     * @returns Source Successful Response
-     * @throws ApiError
-     */
-    public static detachAgentFromSource(data: DetachAgentFromSourceData, headers?: { user_id: string }): CancelablePromise<DetachAgentFromSourceResponse> {
-        return __request(OpenAPI, {
-            method: 'POST',
-            url: '/v1/sources/{source_id}/detach',
-            path: {
-                source_id: data.sourceId
-            },
-            query: {
-                agent_id: data.agentId
-            },
-            errors: {
-                422: 'Validation Error'
-            },
-            headers
-        });
-    }
-    
-    /**
-     * Upload File To Source
-     * Upload a file to a data source.
-     * @param data The data for the request.
-     * @param data.sourceId
-     * @param data.formData
-     * @param data.userId
-     * @returns Job Successful Response
-     * @throws ApiError
-     */
-    public static uploadFileToSource(data: UploadFileToSourceData, headers?: { user_id: string }): CancelablePromise<UploadFileToSourceResponse> {
-        return __request(OpenAPI, {
-            method: 'POST',
-            url: '/v1/sources/{source_id}/upload',
-            path: {
-                source_id: data.sourceId
-            },
-            formData: data.formData,
-            mediaType: 'multipart/form-data',
-            errors: {
-                422: 'Validation Error'
-            },
-            headers
-        });
-    }
-    
-    /**
-     * List Passages
-     * List all passages associated with a data source.
-     * @param data The data for the request.
-     * @param data.sourceId
-     * @param data.userId
-     * @returns Passage Successful Response
-     * @throws ApiError
-     */
-    public static listSourcePassages(data: ListSourcePassagesData, headers?: { user_id: string }): CancelablePromise<ListSourcePassagesResponse> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/v1/sources/{source_id}/passages',
-            path: {
-                source_id: data.sourceId
-            },
-            errors: {
-                422: 'Validation Error'
-            },
-            headers
-        });
-    }
-    
-    /**
-     * List Files From Source
-     * List paginated files associated with a data source.
-     * @param data The data for the request.
-     * @param data.sourceId
-     * @param data.limit Number of files to return
-     * @param data.cursor Pagination cursor to fetch the next set of results
-     * @param data.userId
-     * @returns FileMetadata Successful Response
-     * @throws ApiError
-     */
-    public static listFilesFromSource(data: ListFilesFromSourceData, headers?: { user_id: string }): CancelablePromise<ListFilesFromSourceResponse> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/v1/sources/{source_id}/files',
-            path: {
-                source_id: data.sourceId
-            },
-            query: {
-                limit: data.limit,
-                cursor: data.cursor
-            },
-            errors: {
-                422: 'Validation Error'
-            },
-            headers
-        });
-    }
-    
-    /**
-     * Delete File From Source
-     * Delete a data source.
-     * @param data The data for the request.
-     * @param data.sourceId
-     * @param data.fileId
-     * @param data.userId
-     * @returns void Successful Response
-     * @throws ApiError
-     */
-    public static deleteFileFromSource(data: DeleteFileFromSourceData, headers?: { user_id: string }): CancelablePromise<DeleteFileFromSourceResponse> {
-        return __request(OpenAPI, {
-            method: 'DELETE',
-            url: '/v1/sources/{source_id}/{file_id}',
-            path: {
-                source_id: data.sourceId,
-                file_id: data.fileId
-            },
-            errors: {
-                422: 'Validation Error'
-            },
-            headers
-        });
-    }
-    
+  /**
+   * Get Source
+   * Get all sources
+   * @param data The data for the request.
+   * @param data.sourceId
+   * @param data.userId
+   * @returns Source Successful Response
+   * @throws ApiError
+   */
+  public static getSource(
+    data: GetSourceData,
+    headers?: { user_id: string }
+  ): CancelablePromise<GetSourceResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/sources/{source_id}',
+      path: {
+        source_id: data.sourceId,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Update Source
+   * Update the name or documentation of an existing data source.
+   * @param data The data for the request.
+   * @param data.sourceId
+   * @param data.requestBody
+   * @param data.userId
+   * @returns Source Successful Response
+   * @throws ApiError
+   */
+  public static updateSource(
+    data: UpdateSourceData,
+    headers?: { user_id: string }
+  ): CancelablePromise<UpdateSourceResponse> {
+    return __request(OpenAPI, {
+      method: 'PATCH',
+      url: '/v1/sources/{source_id}',
+      path: {
+        source_id: data.sourceId,
+      },
+      body: data.requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Delete Source
+   * Delete a data source.
+   * @param data The data for the request.
+   * @param data.sourceId
+   * @param data.userId
+   * @returns unknown Successful Response
+   * @throws ApiError
+   */
+  public static deleteSource(
+    data: DeleteSourceData,
+    headers?: { user_id: string }
+  ): CancelablePromise<DeleteSourceResponse> {
+    return __request(OpenAPI, {
+      method: 'DELETE',
+      url: '/v1/sources/{source_id}',
+      path: {
+        source_id: data.sourceId,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Get Source Id By Name
+   * Get a source by name
+   * @param data The data for the request.
+   * @param data.sourceName
+   * @param data.userId
+   * @returns string Successful Response
+   * @throws ApiError
+   */
+  public static getSourceIdByName(
+    data: GetSourceIdByNameData,
+    headers?: { user_id: string }
+  ): CancelablePromise<GetSourceIdByNameResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/sources/name/{source_name}',
+      path: {
+        source_name: data.sourceName,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * List Sources
+   * List all data sources created by a user.
+   * @param data The data for the request.
+   * @param data.userId
+   * @returns Source Successful Response
+   * @throws ApiError
+   */
+  public static listSources(
+    data: ListSourcesData = {},
+    headers?: { user_id: string }
+  ): CancelablePromise<ListSourcesResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/sources/',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Create Source
+   * Create a new data source.
+   * @param data The data for the request.
+   * @param data.requestBody
+   * @param data.userId
+   * @returns Source Successful Response
+   * @throws ApiError
+   */
+  public static createSource(
+    data: CreateSourceData,
+    headers?: { user_id: string }
+  ): CancelablePromise<CreateSourceResponse> {
+    return __request(OpenAPI, {
+      method: 'POST',
+      url: '/v1/sources/',
+      body: data.requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Attach Source To Agent
+   * Attach a data source to an existing agent.
+   * @param data The data for the request.
+   * @param data.sourceId
+   * @param data.agentId The unique identifier of the agent to attach the source to.
+   * @param data.userId
+   * @returns Source Successful Response
+   * @throws ApiError
+   */
+  public static attachAgentToSource(
+    data: AttachAgentToSourceData,
+    headers?: { user_id: string }
+  ): CancelablePromise<AttachAgentToSourceResponse> {
+    return __request(OpenAPI, {
+      method: 'POST',
+      url: '/v1/sources/{source_id}/attach',
+      path: {
+        source_id: data.sourceId,
+      },
+      query: {
+        agent_id: data.agentId,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Detach Source From Agent
+   * Detach a data source from an existing agent.
+   * @param data The data for the request.
+   * @param data.sourceId
+   * @param data.agentId The unique identifier of the agent to detach the source from.
+   * @param data.userId
+   * @returns Source Successful Response
+   * @throws ApiError
+   */
+  public static detachAgentFromSource(
+    data: DetachAgentFromSourceData,
+    headers?: { user_id: string }
+  ): CancelablePromise<DetachAgentFromSourceResponse> {
+    return __request(OpenAPI, {
+      method: 'POST',
+      url: '/v1/sources/{source_id}/detach',
+      path: {
+        source_id: data.sourceId,
+      },
+      query: {
+        agent_id: data.agentId,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Upload File To Source
+   * Upload a file to a data source.
+   * @param data The data for the request.
+   * @param data.sourceId
+   * @param data.formData
+   * @param data.userId
+   * @returns Job Successful Response
+   * @throws ApiError
+   */
+  public static uploadFileToSource(
+    data: UploadFileToSourceData,
+    headers?: { user_id: string }
+  ): CancelablePromise<UploadFileToSourceResponse> {
+    return __request(OpenAPI, {
+      method: 'POST',
+      url: '/v1/sources/{source_id}/upload',
+      path: {
+        source_id: data.sourceId,
+      },
+      formData: data.formData,
+      mediaType: 'multipart/form-data',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * List Passages
+   * List all passages associated with a data source.
+   * @param data The data for the request.
+   * @param data.sourceId
+   * @param data.userId
+   * @returns Passage Successful Response
+   * @throws ApiError
+   */
+  public static listSourcePassages(
+    data: ListSourcePassagesData,
+    headers?: { user_id: string }
+  ): CancelablePromise<ListSourcePassagesResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/sources/{source_id}/passages',
+      path: {
+        source_id: data.sourceId,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * List Files From Source
+   * List paginated files associated with a data source.
+   * @param data The data for the request.
+   * @param data.sourceId
+   * @param data.limit Number of files to return
+   * @param data.cursor Pagination cursor to fetch the next set of results
+   * @param data.userId
+   * @returns FileMetadata Successful Response
+   * @throws ApiError
+   */
+  public static listFilesFromSource(
+    data: ListFilesFromSourceData,
+    headers?: { user_id: string }
+  ): CancelablePromise<ListFilesFromSourceResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/sources/{source_id}/files',
+      path: {
+        source_id: data.sourceId,
+      },
+      query: {
+        limit: data.limit,
+        cursor: data.cursor,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Delete File From Source
+   * Delete a data source.
+   * @param data The data for the request.
+   * @param data.sourceId
+   * @param data.fileId
+   * @param data.userId
+   * @returns void Successful Response
+   * @throws ApiError
+   */
+  public static deleteFileFromSource(
+    data: DeleteFileFromSourceData,
+    headers?: { user_id: string }
+  ): CancelablePromise<DeleteFileFromSourceResponse> {
+    return __request(OpenAPI, {
+      method: 'DELETE',
+      url: '/v1/sources/{source_id}/{file_id}',
+      path: {
+        source_id: data.sourceId,
+        file_id: data.fileId,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
 }
 
 export class AgentsService {
-    /**
-     * List Agents
-     * List all agents associated with a given user.
-     * This endpoint retrieves a list of all agents and their configurations associated with the specified user ID.
-     * @param data The data for the request.
-     * @param data.name Name of the agent
-     * @param data.tags List of tags to filter agents by
-     * @param data.userId
-     * @returns AgentState Successful Response
-     * @throws ApiError
-     */
-    public static listAgents(data: ListAgentsData = {}, headers?: { user_id: string }): CancelablePromise<ListAgentsResponse> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/v1/agents/',
-            query: {
-                name: data.name,
-                tags: data.tags
-            },
-            errors: {
-                422: 'Validation Error'
-            },
-            headers
-        });
-    }
-    
-    /**
-     * Create Agent
-     * Create a new agent with the specified configuration.
-     * @param data The data for the request.
-     * @param data.requestBody
-     * @param data.userId
-     * @returns AgentState Successful Response
-     * @throws ApiError
-     */
-    public static createAgent(data: CreateAgentData, headers?: { user_id: string }): CancelablePromise<CreateAgentResponse> {
-        return __request(OpenAPI, {
-            method: 'POST',
-            url: '/v1/agents/',
-            body: data.requestBody,
-            mediaType: 'application/json',
-            errors: {
-                422: 'Validation Error'
-            },
-            headers
-        });
-    }
-    
-    /**
-     * Get Agent Context Window
-     * Retrieve the context window of a specific agent.
-     * @param data The data for the request.
-     * @param data.agentId
-     * @param data.userId
-     * @returns ContextWindowOverview Successful Response
-     * @throws ApiError
-     */
-    public static getAgentContextWindow(data: GetAgentContextWindowData, headers?: { user_id: string }): CancelablePromise<GetAgentContextWindowResponse> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/v1/agents/{agent_id}/context',
-            path: {
-                agent_id: data.agentId
-            },
-            errors: {
-                422: 'Validation Error'
-            },
-            headers
-        });
-    }
-    
-    /**
-     * Update Agent
-     * Update an exsiting agent
-     * @param data The data for the request.
-     * @param data.agentId
-     * @param data.requestBody
-     * @param data.userId
-     * @returns AgentState Successful Response
-     * @throws ApiError
-     */
-    public static updateAgent(data: UpdateAgentData, headers?: { user_id: string }): CancelablePromise<UpdateAgentResponse> {
-        return __request(OpenAPI, {
-            method: 'PATCH',
-            url: '/v1/agents/{agent_id}',
-            path: {
-                agent_id: data.agentId
-            },
-            body: data.requestBody,
-            mediaType: 'application/json',
-            errors: {
-                422: 'Validation Error'
-            },
-            headers
-        });
-    }
-    
-    /**
-     * Get Agent State
-     * Get the state of the agent.
-     * @param data The data for the request.
-     * @param data.agentId
-     * @param data.userId
-     * @returns AgentState Successful Response
-     * @throws ApiError
-     */
-    public static getAgent(data: GetAgentData, headers?: { user_id: string }): CancelablePromise<GetAgentResponse> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/v1/agents/{agent_id}',
-            path: {
-                agent_id: data.agentId
-            },
-            errors: {
-                422: 'Validation Error'
-            },
-            headers
-        });
-    }
-    
-    /**
-     * Delete Agent
-     * Delete an agent.
-     * @param data The data for the request.
-     * @param data.agentId
-     * @param data.userId
-     * @returns unknown Successful Response
-     * @throws ApiError
-     */
-    public static deleteAgent(data: DeleteAgentData, headers?: { user_id: string }): CancelablePromise<DeleteAgentResponse> {
-        return __request(OpenAPI, {
-            method: 'DELETE',
-            url: '/v1/agents/{agent_id}',
-            path: {
-                agent_id: data.agentId
-            },
-            errors: {
-                422: 'Validation Error'
-            },
-            headers
-        });
-    }
-    
-    /**
-     * Get Tools From Agent
-     * Get tools from an existing agent
-     * @param data The data for the request.
-     * @param data.agentId
-     * @param data.userId
-     * @returns letta__schemas__tool__Tool Successful Response
-     * @throws ApiError
-     */
-    public static getToolsFromAgent(data: GetToolsFromAgentData, headers?: { user_id: string }): CancelablePromise<GetToolsFromAgentResponse> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/v1/agents/{agent_id}/tools',
-            path: {
-                agent_id: data.agentId
-            },
-            errors: {
-                422: 'Validation Error'
-            },
-            headers
-        });
-    }
-    
-    /**
-     * Add Tool To Agent
-     * Add tools to an existing agent
-     * @param data The data for the request.
-     * @param data.agentId
-     * @param data.toolId
-     * @param data.userId
-     * @returns AgentState Successful Response
-     * @throws ApiError
-     */
-    public static addToolToAgent(data: AddToolToAgentData, headers?: { user_id: string }): CancelablePromise<AddToolToAgentResponse> {
-        return __request(OpenAPI, {
-            method: 'PATCH',
-            url: '/v1/agents/{agent_id}/add-tool/{tool_id}',
-            path: {
-                agent_id: data.agentId,
-                tool_id: data.toolId
-            },
-            errors: {
-                422: 'Validation Error'
-            },
-            headers
-        });
-    }
-    
-    /**
-     * Remove Tool From Agent
-     * Add tools to an existing agent
-     * @param data The data for the request.
-     * @param data.agentId
-     * @param data.toolId
-     * @param data.userId
-     * @returns AgentState Successful Response
-     * @throws ApiError
-     */
-    public static removeToolFromAgent(data: RemoveToolFromAgentData, headers?: { user_id: string }): CancelablePromise<RemoveToolFromAgentResponse> {
-        return __request(OpenAPI, {
-            method: 'PATCH',
-            url: '/v1/agents/{agent_id}/remove-tool/{tool_id}',
-            path: {
-                agent_id: data.agentId,
-                tool_id: data.toolId
-            },
-            errors: {
-                422: 'Validation Error'
-            },
-            headers
-        });
-    }
-    
-    /**
-     * Get Agent Sources
-     * Get the sources associated with an agent.
-     * @param data The data for the request.
-     * @param data.agentId
-     * @returns Source Successful Response
-     * @throws ApiError
-     */
-    public static getAgentSources(data: GetAgentSourcesData, headers?: { user_id: string }): CancelablePromise<GetAgentSourcesResponse> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/v1/agents/{agent_id}/sources',
-            path: {
-                agent_id: data.agentId
-            },
-            errors: {
-                422: 'Validation Error'
-            },
-            headers
-        });
-    }
-    
-    /**
-     * Get Agent In Context Messages
-     * Retrieve the messages in the context of a specific agent.
-     * @param data The data for the request.
-     * @param data.agentId
-     * @returns letta__schemas__message__Message_Output Successful Response
-     * @throws ApiError
-     */
-    public static listAgentInContextMessages(data: ListAgentInContextMessagesData, headers?: { user_id: string }): CancelablePromise<ListAgentInContextMessagesResponse> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/v1/agents/{agent_id}/memory/messages',
-            path: {
-                agent_id: data.agentId
-            },
-            errors: {
-                422: 'Validation Error'
-            },
-            headers
-        });
-    }
-    
-    /**
-     * Get Agent Memory
-     * Retrieve the memory state of a specific agent.
-     * This endpoint fetches the current memory state of the agent identified by the user ID and agent ID.
-     * @param data The data for the request.
-     * @param data.agentId
-     * @returns Memory Successful Response
-     * @throws ApiError
-     */
-    public static getAgentMemory(data: GetAgentMemoryData, headers?: { user_id: string }): CancelablePromise<GetAgentMemoryResponse> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/v1/agents/{agent_id}/memory',
-            path: {
-                agent_id: data.agentId
-            },
-            errors: {
-                422: 'Validation Error'
-            },
-            headers
-        });
-    }
-    
-    /**
-     * Update Agent Memory
-     * Update the core memory of a specific agent.
-     * This endpoint accepts new memory contents (labels as keys, and values as values) and updates the core memory of the agent identified by the user ID and agent ID.
-     * This endpoint accepts new memory contents to update the core memory of the agent.
-     * This endpoint only supports modifying existing blocks; it does not support deleting/unlinking or creating/linking blocks.
-     * @param data The data for the request.
-     * @param data.agentId
-     * @param data.requestBody
-     * @param data.userId
-     * @returns Memory Successful Response
-     * @throws ApiError
-     */
-    public static updateAgentMemory(data: UpdateAgentMemoryData, headers?: { user_id: string }): CancelablePromise<UpdateAgentMemoryResponse> {
-        return __request(OpenAPI, {
-            method: 'PATCH',
-            url: '/v1/agents/{agent_id}/memory',
-            path: {
-                agent_id: data.agentId
-            },
-            body: data.requestBody,
-            mediaType: 'application/json',
-            errors: {
-                422: 'Validation Error'
-            },
-            headers
-        });
-    }
-    
-    /**
-     * Update Agent Memory Label
-     * Update the label of a block in an agent's memory.
-     * @param data The data for the request.
-     * @param data.agentId
-     * @param data.requestBody
-     * @param data.userId
-     * @returns Memory Successful Response
-     * @throws ApiError
-     */
-    public static updateAgentMemoryLabel(data: UpdateAgentMemoryLabelData, headers?: { user_id: string }): CancelablePromise<UpdateAgentMemoryLabelResponse> {
-        return __request(OpenAPI, {
-            method: 'PATCH',
-            url: '/v1/agents/{agent_id}/memory/label',
-            path: {
-                agent_id: data.agentId
-            },
-            body: data.requestBody,
-            mediaType: 'application/json',
-            errors: {
-                422: 'Validation Error'
-            },
-            headers
-        });
-    }
-    
-    /**
-     * Add Agent Memory Block
-     * Creates a memory block and links it to the agent.
-     * @param data The data for the request.
-     * @param data.agentId
-     * @param data.requestBody
-     * @param data.userId
-     * @returns Memory Successful Response
-     * @throws ApiError
-     */
-    public static addAgentMemoryBlock(data: AddAgentMemoryBlockData, headers?: { user_id: string }): CancelablePromise<AddAgentMemoryBlockResponse> {
-        return __request(OpenAPI, {
-            method: 'POST',
-            url: '/v1/agents/{agent_id}/memory/block',
-            path: {
-                agent_id: data.agentId
-            },
-            body: data.requestBody,
-            mediaType: 'application/json',
-            errors: {
-                422: 'Validation Error'
-            },
-            headers
-        });
-    }
-    
-    /**
-     * Remove Agent Memory Block
-     * Removes a memory block from an agent by unlnking it. If the block is not linked to any other agent, it is deleted.
-     * @param data The data for the request.
-     * @param data.agentId
-     * @param data.blockLabel
-     * @param data.userId
-     * @returns Memory Successful Response
-     * @throws ApiError
-     */
-    public static removeAgentMemoryBlock(data: RemoveAgentMemoryBlockData, headers?: { user_id: string }): CancelablePromise<RemoveAgentMemoryBlockResponse> {
-        return __request(OpenAPI, {
-            method: 'DELETE',
-            url: '/v1/agents/{agent_id}/memory/block/{block_label}',
-            path: {
-                agent_id: data.agentId,
-                block_label: data.blockLabel
-            },
-            errors: {
-                422: 'Validation Error'
-            },
-            headers
-        });
-    }
-    
-    /**
-     * Update Agent Memory Limit
-     * Update the limit of a block in an agent's memory.
-     * @param data The data for the request.
-     * @param data.agentId
-     * @param data.requestBody
-     * @param data.userId
-     * @returns Memory Successful Response
-     * @throws ApiError
-     */
-    public static updateAgentMemoryLimit(data: UpdateAgentMemoryLimitData, headers?: { user_id: string }): CancelablePromise<UpdateAgentMemoryLimitResponse> {
-        return __request(OpenAPI, {
-            method: 'PATCH',
-            url: '/v1/agents/{agent_id}/memory/limit',
-            path: {
-                agent_id: data.agentId
-            },
-            body: data.requestBody,
-            mediaType: 'application/json',
-            errors: {
-                422: 'Validation Error'
-            },
-            headers
-        });
-    }
-    
-    /**
-     * Get Agent Recall Memory Summary
-     * Retrieve the summary of the recall memory of a specific agent.
-     * @param data The data for the request.
-     * @param data.agentId
-     * @returns RecallMemorySummary Successful Response
-     * @throws ApiError
-     */
-    public static getAgentRecallMemorySummary(data: GetAgentRecallMemorySummaryData, headers?: { user_id: string }): CancelablePromise<GetAgentRecallMemorySummaryResponse> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/v1/agents/{agent_id}/memory/recall',
-            path: {
-                agent_id: data.agentId
-            },
-            errors: {
-                422: 'Validation Error'
-            },
-            headers
-        });
-    }
-    
-    /**
-     * Get Agent Archival Memory Summary
-     * Retrieve the summary of the archival memory of a specific agent.
-     * @param data The data for the request.
-     * @param data.agentId
-     * @returns ArchivalMemorySummary Successful Response
-     * @throws ApiError
-     */
-    public static getAgentArchivalMemorySummary(data: GetAgentArchivalMemorySummaryData, headers?: { user_id: string }): CancelablePromise<GetAgentArchivalMemorySummaryResponse> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/v1/agents/{agent_id}/memory/archival',
-            path: {
-                agent_id: data.agentId
-            },
-            errors: {
-                422: 'Validation Error'
-            },
-            headers
-        });
-    }
-    
-    /**
-     * Get Agent Archival Memory
-     * Retrieve the memories in an agent's archival memory store (paginated query).
-     * @param data The data for the request.
-     * @param data.agentId
-     * @param data.after Unique ID of the memory to start the query range at.
-     * @param data.before Unique ID of the memory to end the query range at.
-     * @param data.limit How many results to include in the response.
-     * @param data.userId
-     * @returns Passage Successful Response
-     * @throws ApiError
-     */
-    public static listAgentArchivalMemory(data: ListAgentArchivalMemoryData, headers?: { user_id: string }): CancelablePromise<ListAgentArchivalMemoryResponse> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/v1/agents/{agent_id}/archival',
-            path: {
-                agent_id: data.agentId
-            },
-            query: {
-                after: data.after,
-                before: data.before,
-                limit: data.limit
-            },
-            errors: {
-                422: 'Validation Error'
-            },
-            headers
-        });
-    }
-    
-    /**
-     * Insert Agent Archival Memory
-     * Insert a memory into an agent's archival memory store.
-     * @param data The data for the request.
-     * @param data.agentId
-     * @param data.requestBody
-     * @param data.userId
-     * @returns Passage Successful Response
-     * @throws ApiError
-     */
-    public static createAgentArchivalMemory(data: CreateAgentArchivalMemoryData, headers?: { user_id: string }): CancelablePromise<CreateAgentArchivalMemoryResponse> {
-        return __request(OpenAPI, {
-            method: 'POST',
-            url: '/v1/agents/{agent_id}/archival',
-            path: {
-                agent_id: data.agentId
-            },
-            body: data.requestBody,
-            mediaType: 'application/json',
-            errors: {
-                422: 'Validation Error'
-            },
-            headers
-        });
-    }
-    
-    /**
-     * Delete Agent Archival Memory
-     * Delete a memory from an agent's archival memory store.
-     * @param data The data for the request.
-     * @param data.agentId
-     * @param data.memoryId
-     * @param data.userId
-     * @returns unknown Successful Response
-     * @throws ApiError
-     */
-    public static deleteAgentArchivalMemory(data: DeleteAgentArchivalMemoryData, headers?: { user_id: string }): CancelablePromise<DeleteAgentArchivalMemoryResponse> {
-        return __request(OpenAPI, {
-            method: 'DELETE',
-            url: '/v1/agents/{agent_id}/archival/{memory_id}',
-            path: {
-                agent_id: data.agentId,
-                memory_id: data.memoryId
-            },
-            errors: {
-                422: 'Validation Error'
-            },
-            headers
-        });
-    }
-    
-    /**
-     * Get Agent Messages
-     * Retrieve message history for an agent.
-     * @param data The data for the request.
-     * @param data.agentId
-     * @param data.before Message before which to retrieve the returned messages.
-     * @param data.limit Maximum number of messages to retrieve.
-     * @param data.msgObject If true, returns Message objects. If false, return LettaMessage objects.
-     * @param data.useAssistantMessage [Only applicable if msg_object is False] If true, returns AssistantMessage objects when the agent calls a designated message tool. If false, return FunctionCallMessage objects for all tool calls.
-     * @param data.assistantMessageFunctionName [Only applicable if use_assistant_message is True] The name of the designated message tool.
-     * @param data.assistantMessageFunctionKwarg [Only applicable if use_assistant_message is True] The name of the message argument in the designated message tool.
-     * @param data.userId
-     * @returns unknown Successful Response
-     * @throws ApiError
-     */
-    public static listAgentMessages(data: ListAgentMessagesData, headers?: { user_id: string }): CancelablePromise<ListAgentMessagesResponse> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/v1/agents/{agent_id}/messages',
-            path: {
-                agent_id: data.agentId
-            },
-            query: {
-                before: data.before,
-                limit: data.limit,
-                msg_object: data.msgObject,
-                use_assistant_message: data.useAssistantMessage,
-                assistant_message_function_name: data.assistantMessageFunctionName,
-                assistant_message_function_kwarg: data.assistantMessageFunctionKwarg
-            },
-            errors: {
-                422: 'Validation Error'
-            },
-            headers
-        });
-    }
-    
-    /**
-     * Send Message
-     * Process a user message and return the agent's response.
-     * This endpoint accepts a message from a user and processes it through the agent.
-     * It can optionally stream the response if 'stream_steps' or 'stream_tokens' is set to True.
-     * @param data The data for the request.
-     * @param data.agentId
-     * @param data.requestBody
-     * @param data.userId
-     * @returns unknown Successful response
-     * @throws ApiError
-     */
-    public static createAgentMessage(data: CreateAgentMessageData, headers?: { user_id: string }): CancelablePromise<CreateAgentMessageResponse> {
-        return __request(OpenAPI, {
-            method: 'POST',
-            url: '/v1/agents/{agent_id}/messages',
-            path: {
-                agent_id: data.agentId
-            },
-            body: data.requestBody,
-            mediaType: 'application/json',
-            errors: {
-                422: 'Validation Error'
-            },
-            headers
-        });
-    }
-    
-    /**
-     * Update Message
-     * Update the details of a message associated with an agent.
-     * @param data The data for the request.
-     * @param data.agentId
-     * @param data.messageId
-     * @param data.requestBody
-     * @returns letta__schemas__message__Message_Output Successful Response
-     * @throws ApiError
-     */
-    public static updateAgentMessage(data: UpdateAgentMessageData, headers?: { user_id: string }): CancelablePromise<UpdateAgentMessageResponse> {
-        return __request(OpenAPI, {
-            method: 'PATCH',
-            url: '/v1/agents/{agent_id}/messages/{message_id}',
-            path: {
-                agent_id: data.agentId,
-                message_id: data.messageId
-            },
-            body: data.requestBody,
-            mediaType: 'application/json',
-            errors: {
-                422: 'Validation Error'
-            },
-            headers
-        });
-    }
-    
+  /**
+   * List Agents
+   * List all agents associated with a given user.
+   * This endpoint retrieves a list of all agents and their configurations associated with the specified user ID.
+   * @param data The data for the request.
+   * @param data.name Name of the agent
+   * @param data.tags List of tags to filter agents by
+   * @param data.userId
+   * @returns AgentState Successful Response
+   * @throws ApiError
+   */
+  public static listAgents(
+    data: ListAgentsData = {},
+    headers?: { user_id: string }
+  ): CancelablePromise<ListAgentsResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/agents/',
+      query: {
+        name: data.name,
+        tags: data.tags,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Create Agent
+   * Create a new agent with the specified configuration.
+   * @param data The data for the request.
+   * @param data.requestBody
+   * @param data.userId
+   * @returns AgentState Successful Response
+   * @throws ApiError
+   */
+  public static createAgent(
+    data: CreateAgentData,
+    headers?: { user_id: string }
+  ): CancelablePromise<CreateAgentResponse> {
+    return __request(OpenAPI, {
+      method: 'POST',
+      url: '/v1/agents/',
+      body: data.requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Get Agent Context Window
+   * Retrieve the context window of a specific agent.
+   * @param data The data for the request.
+   * @param data.agentId
+   * @param data.userId
+   * @returns ContextWindowOverview Successful Response
+   * @throws ApiError
+   */
+  public static getAgentContextWindow(
+    data: GetAgentContextWindowData,
+    headers?: { user_id: string }
+  ): CancelablePromise<GetAgentContextWindowResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/agents/{agent_id}/context',
+      path: {
+        agent_id: data.agentId,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Update Agent
+   * Update an exsiting agent
+   * @param data The data for the request.
+   * @param data.agentId
+   * @param data.requestBody
+   * @param data.userId
+   * @returns AgentState Successful Response
+   * @throws ApiError
+   */
+  public static updateAgent(
+    data: UpdateAgentData,
+    headers?: { user_id: string }
+  ): CancelablePromise<UpdateAgentResponse> {
+    return __request(OpenAPI, {
+      method: 'PATCH',
+      url: '/v1/agents/{agent_id}',
+      path: {
+        agent_id: data.agentId,
+      },
+      body: data.requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Get Agent State
+   * Get the state of the agent.
+   * @param data The data for the request.
+   * @param data.agentId
+   * @param data.userId
+   * @returns AgentState Successful Response
+   * @throws ApiError
+   */
+  public static getAgent(
+    data: GetAgentData,
+    headers?: { user_id: string }
+  ): CancelablePromise<GetAgentResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/agents/{agent_id}',
+      path: {
+        agent_id: data.agentId,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Delete Agent
+   * Delete an agent.
+   * @param data The data for the request.
+   * @param data.agentId
+   * @param data.userId
+   * @returns unknown Successful Response
+   * @throws ApiError
+   */
+  public static deleteAgent(
+    data: DeleteAgentData,
+    headers?: { user_id: string }
+  ): CancelablePromise<DeleteAgentResponse> {
+    return __request(OpenAPI, {
+      method: 'DELETE',
+      url: '/v1/agents/{agent_id}',
+      path: {
+        agent_id: data.agentId,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Get Tools From Agent
+   * Get tools from an existing agent
+   * @param data The data for the request.
+   * @param data.agentId
+   * @param data.userId
+   * @returns letta__schemas__tool__Tool Successful Response
+   * @throws ApiError
+   */
+  public static getToolsFromAgent(
+    data: GetToolsFromAgentData,
+    headers?: { user_id: string }
+  ): CancelablePromise<GetToolsFromAgentResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/agents/{agent_id}/tools',
+      path: {
+        agent_id: data.agentId,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Add Tool To Agent
+   * Add tools to an existing agent
+   * @param data The data for the request.
+   * @param data.agentId
+   * @param data.toolId
+   * @param data.userId
+   * @returns AgentState Successful Response
+   * @throws ApiError
+   */
+  public static addToolToAgent(
+    data: AddToolToAgentData,
+    headers?: { user_id: string }
+  ): CancelablePromise<AddToolToAgentResponse> {
+    return __request(OpenAPI, {
+      method: 'PATCH',
+      url: '/v1/agents/{agent_id}/add-tool/{tool_id}',
+      path: {
+        agent_id: data.agentId,
+        tool_id: data.toolId,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Remove Tool From Agent
+   * Add tools to an existing agent
+   * @param data The data for the request.
+   * @param data.agentId
+   * @param data.toolId
+   * @param data.userId
+   * @returns AgentState Successful Response
+   * @throws ApiError
+   */
+  public static removeToolFromAgent(
+    data: RemoveToolFromAgentData,
+    headers?: { user_id: string }
+  ): CancelablePromise<RemoveToolFromAgentResponse> {
+    return __request(OpenAPI, {
+      method: 'PATCH',
+      url: '/v1/agents/{agent_id}/remove-tool/{tool_id}',
+      path: {
+        agent_id: data.agentId,
+        tool_id: data.toolId,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Get Agent Sources
+   * Get the sources associated with an agent.
+   * @param data The data for the request.
+   * @param data.agentId
+   * @returns Source Successful Response
+   * @throws ApiError
+   */
+  public static getAgentSources(
+    data: GetAgentSourcesData,
+    headers?: { user_id: string }
+  ): CancelablePromise<GetAgentSourcesResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/agents/{agent_id}/sources',
+      path: {
+        agent_id: data.agentId,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Get Agent In Context Messages
+   * Retrieve the messages in the context of a specific agent.
+   * @param data The data for the request.
+   * @param data.agentId
+   * @returns letta__schemas__message__Message_Output Successful Response
+   * @throws ApiError
+   */
+  public static listAgentInContextMessages(
+    data: ListAgentInContextMessagesData,
+    headers?: { user_id: string }
+  ): CancelablePromise<ListAgentInContextMessagesResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/agents/{agent_id}/memory/messages',
+      path: {
+        agent_id: data.agentId,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Get Agent Memory
+   * Retrieve the memory state of a specific agent.
+   * This endpoint fetches the current memory state of the agent identified by the user ID and agent ID.
+   * @param data The data for the request.
+   * @param data.agentId
+   * @returns Memory Successful Response
+   * @throws ApiError
+   */
+  public static getAgentMemory(
+    data: GetAgentMemoryData,
+    headers?: { user_id: string }
+  ): CancelablePromise<GetAgentMemoryResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/agents/{agent_id}/memory',
+      path: {
+        agent_id: data.agentId,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Update Agent Memory
+   * Update the core memory of a specific agent.
+   * This endpoint accepts new memory contents (labels as keys, and values as values) and updates the core memory of the agent identified by the user ID and agent ID.
+   * This endpoint accepts new memory contents to update the core memory of the agent.
+   * This endpoint only supports modifying existing blocks; it does not support deleting/unlinking or creating/linking blocks.
+   * @param data The data for the request.
+   * @param data.agentId
+   * @param data.requestBody
+   * @param data.userId
+   * @returns Memory Successful Response
+   * @throws ApiError
+   */
+  public static updateAgentMemory(
+    data: UpdateAgentMemoryData,
+    headers?: { user_id: string }
+  ): CancelablePromise<UpdateAgentMemoryResponse> {
+    return __request(OpenAPI, {
+      method: 'PATCH',
+      url: '/v1/agents/{agent_id}/memory',
+      path: {
+        agent_id: data.agentId,
+      },
+      body: data.requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Update Agent Memory Label
+   * Update the label of a block in an agent's memory.
+   * @param data The data for the request.
+   * @param data.agentId
+   * @param data.requestBody
+   * @param data.userId
+   * @returns Memory Successful Response
+   * @throws ApiError
+   */
+  public static updateAgentMemoryLabel(
+    data: UpdateAgentMemoryLabelData,
+    headers?: { user_id: string }
+  ): CancelablePromise<UpdateAgentMemoryLabelResponse> {
+    return __request(OpenAPI, {
+      method: 'PATCH',
+      url: '/v1/agents/{agent_id}/memory/label',
+      path: {
+        agent_id: data.agentId,
+      },
+      body: data.requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Add Agent Memory Block
+   * Creates a memory block and links it to the agent.
+   * @param data The data for the request.
+   * @param data.agentId
+   * @param data.requestBody
+   * @param data.userId
+   * @returns Memory Successful Response
+   * @throws ApiError
+   */
+  public static addAgentMemoryBlock(
+    data: AddAgentMemoryBlockData,
+    headers?: { user_id: string }
+  ): CancelablePromise<AddAgentMemoryBlockResponse> {
+    return __request(OpenAPI, {
+      method: 'POST',
+      url: '/v1/agents/{agent_id}/memory/block',
+      path: {
+        agent_id: data.agentId,
+      },
+      body: data.requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Remove Agent Memory Block
+   * Removes a memory block from an agent by unlnking it. If the block is not linked to any other agent, it is deleted.
+   * @param data The data for the request.
+   * @param data.agentId
+   * @param data.blockLabel
+   * @param data.userId
+   * @returns Memory Successful Response
+   * @throws ApiError
+   */
+  public static removeAgentMemoryBlock(
+    data: RemoveAgentMemoryBlockData,
+    headers?: { user_id: string }
+  ): CancelablePromise<RemoveAgentMemoryBlockResponse> {
+    return __request(OpenAPI, {
+      method: 'DELETE',
+      url: '/v1/agents/{agent_id}/memory/block/{block_label}',
+      path: {
+        agent_id: data.agentId,
+        block_label: data.blockLabel,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Update Agent Memory Limit
+   * Update the limit of a block in an agent's memory.
+   * @param data The data for the request.
+   * @param data.agentId
+   * @param data.requestBody
+   * @param data.userId
+   * @returns Memory Successful Response
+   * @throws ApiError
+   */
+  public static updateAgentMemoryLimit(
+    data: UpdateAgentMemoryLimitData,
+    headers?: { user_id: string }
+  ): CancelablePromise<UpdateAgentMemoryLimitResponse> {
+    return __request(OpenAPI, {
+      method: 'PATCH',
+      url: '/v1/agents/{agent_id}/memory/limit',
+      path: {
+        agent_id: data.agentId,
+      },
+      body: data.requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Get Agent Recall Memory Summary
+   * Retrieve the summary of the recall memory of a specific agent.
+   * @param data The data for the request.
+   * @param data.agentId
+   * @returns RecallMemorySummary Successful Response
+   * @throws ApiError
+   */
+  public static getAgentRecallMemorySummary(
+    data: GetAgentRecallMemorySummaryData,
+    headers?: { user_id: string }
+  ): CancelablePromise<GetAgentRecallMemorySummaryResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/agents/{agent_id}/memory/recall',
+      path: {
+        agent_id: data.agentId,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Get Agent Archival Memory Summary
+   * Retrieve the summary of the archival memory of a specific agent.
+   * @param data The data for the request.
+   * @param data.agentId
+   * @returns ArchivalMemorySummary Successful Response
+   * @throws ApiError
+   */
+  public static getAgentArchivalMemorySummary(
+    data: GetAgentArchivalMemorySummaryData,
+    headers?: { user_id: string }
+  ): CancelablePromise<GetAgentArchivalMemorySummaryResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/agents/{agent_id}/memory/archival',
+      path: {
+        agent_id: data.agentId,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Get Agent Archival Memory
+   * Retrieve the memories in an agent's archival memory store (paginated query).
+   * @param data The data for the request.
+   * @param data.agentId
+   * @param data.after Unique ID of the memory to start the query range at.
+   * @param data.before Unique ID of the memory to end the query range at.
+   * @param data.limit How many results to include in the response.
+   * @param data.userId
+   * @returns Passage Successful Response
+   * @throws ApiError
+   */
+  public static listAgentArchivalMemory(
+    data: ListAgentArchivalMemoryData,
+    headers?: { user_id: string }
+  ): CancelablePromise<ListAgentArchivalMemoryResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/agents/{agent_id}/archival',
+      path: {
+        agent_id: data.agentId,
+      },
+      query: {
+        after: data.after,
+        before: data.before,
+        limit: data.limit,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Insert Agent Archival Memory
+   * Insert a memory into an agent's archival memory store.
+   * @param data The data for the request.
+   * @param data.agentId
+   * @param data.requestBody
+   * @param data.userId
+   * @returns Passage Successful Response
+   * @throws ApiError
+   */
+  public static createAgentArchivalMemory(
+    data: CreateAgentArchivalMemoryData,
+    headers?: { user_id: string }
+  ): CancelablePromise<CreateAgentArchivalMemoryResponse> {
+    return __request(OpenAPI, {
+      method: 'POST',
+      url: '/v1/agents/{agent_id}/archival',
+      path: {
+        agent_id: data.agentId,
+      },
+      body: data.requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Delete Agent Archival Memory
+   * Delete a memory from an agent's archival memory store.
+   * @param data The data for the request.
+   * @param data.agentId
+   * @param data.memoryId
+   * @param data.userId
+   * @returns unknown Successful Response
+   * @throws ApiError
+   */
+  public static deleteAgentArchivalMemory(
+    data: DeleteAgentArchivalMemoryData,
+    headers?: { user_id: string }
+  ): CancelablePromise<DeleteAgentArchivalMemoryResponse> {
+    return __request(OpenAPI, {
+      method: 'DELETE',
+      url: '/v1/agents/{agent_id}/archival/{memory_id}',
+      path: {
+        agent_id: data.agentId,
+        memory_id: data.memoryId,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Get Agent Messages
+   * Retrieve message history for an agent.
+   * @param data The data for the request.
+   * @param data.agentId
+   * @param data.before Message before which to retrieve the returned messages.
+   * @param data.limit Maximum number of messages to retrieve.
+   * @param data.msgObject If true, returns Message objects. If false, return LettaMessage objects.
+   * @param data.assistantMessageToolName The name of the designated message tool.
+   * @param data.assistantMessageToolKwarg The name of the message argument in the designated message tool.
+   * @param data.userId
+   * @returns unknown Successful Response
+   * @throws ApiError
+   */
+  public static listAgentMessages(
+    data: ListAgentMessagesData,
+    headers?: { user_id: string }
+  ): CancelablePromise<ListAgentMessagesResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/agents/{agent_id}/messages',
+      path: {
+        agent_id: data.agentId,
+      },
+      query: {
+        before: data.before,
+        limit: data.limit,
+        msg_object: data.msgObject,
+        assistant_message_tool_name: data.assistantMessageToolName,
+        assistant_message_tool_kwarg: data.assistantMessageToolKwarg,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Send Message
+   * Process a user message and return the agent's response.
+   * This endpoint accepts a message from a user and processes it through the agent.
+   * @param data The data for the request.
+   * @param data.agentId
+   * @param data.requestBody
+   * @param data.userId
+   * @returns LettaResponse Successful Response
+   * @throws ApiError
+   */
+  public static createAgentMessage(
+    data: CreateAgentMessageData,
+    headers?: { user_id: string }
+  ): CancelablePromise<CreateAgentMessageResponse> {
+    return __request(OpenAPI, {
+      method: 'POST',
+      url: '/v1/agents/{agent_id}/messages',
+      path: {
+        agent_id: data.agentId,
+      },
+      body: data.requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Update Message
+   * Update the details of a message associated with an agent.
+   * @param data The data for the request.
+   * @param data.agentId
+   * @param data.messageId
+   * @param data.requestBody
+   * @returns letta__schemas__message__Message_Output Successful Response
+   * @throws ApiError
+   */
+  public static updateAgentMessage(
+    data: UpdateAgentMessageData,
+    headers?: { user_id: string }
+  ): CancelablePromise<UpdateAgentMessageResponse> {
+    return __request(OpenAPI, {
+      method: 'PATCH',
+      url: '/v1/agents/{agent_id}/messages/{message_id}',
+      path: {
+        agent_id: data.agentId,
+        message_id: data.messageId,
+      },
+      body: data.requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Send Message Streaming
+   * Process a user message and return the agent's response.
+   * This endpoint accepts a message from a user and processes it through the agent.
+   * It will stream the steps of the response always, and stream the tokens if 'stream_tokens' is set to True.
+   * @param data The data for the request.
+   * @param data.agentId
+   * @param data.requestBody
+   * @param data.userId
+   * @returns unknown Successful response
+   * @throws ApiError
+   */
+  public static createAgentMessage1(
+    data: CreateAgentMessage1Data,
+    headers?: { user_id: string }
+  ): CancelablePromise<CreateAgentMessage1Response> {
+    return __request(OpenAPI, {
+      method: 'POST',
+      url: '/v1/agents/{agent_id}/messages/stream',
+      path: {
+        agent_id: data.agentId,
+      },
+      body: data.requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
 }
 
 export class ModelsService {
-    /**
-     * List Llm Backends
-     * @returns LLMConfig Successful Response
-     * @throws ApiError
-     */
-    public static listModels(headers?: { user_id: string }): CancelablePromise<ListModelsResponse> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/v1/models/',
-            headers
-        });
-    }
-    
-    /**
-     * List Embedding Backends
-     * @returns EmbeddingConfig Successful Response
-     * @throws ApiError
-     */
-    public static listEmbeddingModels(headers?: { user_id: string }): CancelablePromise<ListEmbeddingModelsResponse> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/v1/models/embedding',
-            headers
-        });
-    }
-    
+  /**
+   * List Llm Backends
+   * @returns LLMConfig Successful Response
+   * @throws ApiError
+   */
+  public static listModels(headers?: {
+    user_id: string;
+  }): CancelablePromise<ListModelsResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/models/',
+      headers,
+    });
+  }
+
+  /**
+   * List Embedding Backends
+   * @returns EmbeddingConfig Successful Response
+   * @throws ApiError
+   */
+  public static listEmbeddingModels(headers?: {
+    user_id: string;
+  }): CancelablePromise<ListEmbeddingModelsResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/models/embedding',
+      headers,
+    });
+  }
 }
 
 export class LlmsService {
-    /**
-     * List Llm Backends
-     * @returns LLMConfig Successful Response
-     * @throws ApiError
-     */
-    public static listModels(headers?: { user_id: string }): CancelablePromise<ListModelsResponse> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/v1/models/',
-            headers
-        });
-    }
-    
-    /**
-     * List Embedding Backends
-     * @returns EmbeddingConfig Successful Response
-     * @throws ApiError
-     */
-    public static listEmbeddingModels(headers?: { user_id: string }): CancelablePromise<ListEmbeddingModelsResponse> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/v1/models/embedding',
-            headers
-        });
-    }
-    
+  /**
+   * List Llm Backends
+   * @returns LLMConfig Successful Response
+   * @throws ApiError
+   */
+  public static listModels(headers?: {
+    user_id: string;
+  }): CancelablePromise<ListModelsResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/models/',
+      headers,
+    });
+  }
+
+  /**
+   * List Embedding Backends
+   * @returns EmbeddingConfig Successful Response
+   * @throws ApiError
+   */
+  public static listEmbeddingModels(headers?: {
+    user_id: string;
+  }): CancelablePromise<ListEmbeddingModelsResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/models/embedding',
+      headers,
+    });
+  }
 }
 
 export class BlocksService {
-    /**
-     * List Blocks
-     * @param data The data for the request.
-     * @param data.label Labels to include (e.g. human, persona)
-     * @param data.templatesOnly Whether to include only templates
-     * @param data.name Name of the block
-     * @param data.userId
-     * @returns Block Successful Response
-     * @throws ApiError
-     */
-    public static listMemoryBlocks(data: ListMemoryBlocksData = {}, headers?: { user_id: string }): CancelablePromise<ListMemoryBlocksResponse> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/v1/blocks/',
-            query: {
-                label: data.label,
-                templates_only: data.templatesOnly,
-                name: data.name
-            },
-            errors: {
-                422: 'Validation Error'
-            },
-            headers
-        });
-    }
-    
-    /**
-     * Create Block
-     * @param data The data for the request.
-     * @param data.requestBody
-     * @param data.userId
-     * @returns Block Successful Response
-     * @throws ApiError
-     */
-    public static createMemoryBlock(data: CreateMemoryBlockData, headers?: { user_id: string }): CancelablePromise<CreateMemoryBlockResponse> {
-        return __request(OpenAPI, {
-            method: 'POST',
-            url: '/v1/blocks/',
-            body: data.requestBody,
-            mediaType: 'application/json',
-            errors: {
-                422: 'Validation Error'
-            },
-            headers
-        });
-    }
-    
-    /**
-     * Update Block
-     * @param data The data for the request.
-     * @param data.blockId
-     * @param data.requestBody
-     * @param data.userId
-     * @returns Block Successful Response
-     * @throws ApiError
-     */
-    public static updateMemoryBlock(data: UpdateMemoryBlockData, headers?: { user_id: string }): CancelablePromise<UpdateMemoryBlockResponse> {
-        return __request(OpenAPI, {
-            method: 'PATCH',
-            url: '/v1/blocks/{block_id}',
-            path: {
-                block_id: data.blockId
-            },
-            body: data.requestBody,
-            mediaType: 'application/json',
-            errors: {
-                422: 'Validation Error'
-            },
-            headers
-        });
-    }
-    
-    /**
-     * Delete Block
-     * @param data The data for the request.
-     * @param data.blockId
-     * @param data.userId
-     * @returns Block Successful Response
-     * @throws ApiError
-     */
-    public static deleteMemoryBlock(data: DeleteMemoryBlockData, headers?: { user_id: string }): CancelablePromise<DeleteMemoryBlockResponse> {
-        return __request(OpenAPI, {
-            method: 'DELETE',
-            url: '/v1/blocks/{block_id}',
-            path: {
-                block_id: data.blockId
-            },
-            errors: {
-                422: 'Validation Error'
-            },
-            headers
-        });
-    }
-    
-    /**
-     * Get Block
-     * @param data The data for the request.
-     * @param data.blockId
-     * @param data.userId
-     * @returns Block Successful Response
-     * @throws ApiError
-     */
-    public static getMemoryBlock(data: GetMemoryBlockData, headers?: { user_id: string }): CancelablePromise<GetMemoryBlockResponse> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/v1/blocks/{block_id}',
-            path: {
-                block_id: data.blockId
-            },
-            errors: {
-                422: 'Validation Error'
-            },
-            headers
-        });
-    }
-    
+  /**
+   * List Blocks
+   * @param data The data for the request.
+   * @param data.label Labels to include (e.g. human, persona)
+   * @param data.templatesOnly Whether to include only templates
+   * @param data.name Name of the block
+   * @param data.userId
+   * @returns Block Successful Response
+   * @throws ApiError
+   */
+  public static listMemoryBlocks(
+    data: ListMemoryBlocksData = {},
+    headers?: { user_id: string }
+  ): CancelablePromise<ListMemoryBlocksResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/blocks/',
+      query: {
+        label: data.label,
+        templates_only: data.templatesOnly,
+        name: data.name,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Create Block
+   * @param data The data for the request.
+   * @param data.requestBody
+   * @param data.userId
+   * @returns Block Successful Response
+   * @throws ApiError
+   */
+  public static createMemoryBlock(
+    data: CreateMemoryBlockData,
+    headers?: { user_id: string }
+  ): CancelablePromise<CreateMemoryBlockResponse> {
+    return __request(OpenAPI, {
+      method: 'POST',
+      url: '/v1/blocks/',
+      body: data.requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Update Block
+   * @param data The data for the request.
+   * @param data.blockId
+   * @param data.requestBody
+   * @param data.userId
+   * @returns Block Successful Response
+   * @throws ApiError
+   */
+  public static updateMemoryBlock(
+    data: UpdateMemoryBlockData,
+    headers?: { user_id: string }
+  ): CancelablePromise<UpdateMemoryBlockResponse> {
+    return __request(OpenAPI, {
+      method: 'PATCH',
+      url: '/v1/blocks/{block_id}',
+      path: {
+        block_id: data.blockId,
+      },
+      body: data.requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Delete Block
+   * @param data The data for the request.
+   * @param data.blockId
+   * @param data.userId
+   * @returns Block Successful Response
+   * @throws ApiError
+   */
+  public static deleteMemoryBlock(
+    data: DeleteMemoryBlockData,
+    headers?: { user_id: string }
+  ): CancelablePromise<DeleteMemoryBlockResponse> {
+    return __request(OpenAPI, {
+      method: 'DELETE',
+      url: '/v1/blocks/{block_id}',
+      path: {
+        block_id: data.blockId,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Get Block
+   * @param data The data for the request.
+   * @param data.blockId
+   * @param data.userId
+   * @returns Block Successful Response
+   * @throws ApiError
+   */
+  public static getMemoryBlock(
+    data: GetMemoryBlockData,
+    headers?: { user_id: string }
+  ): CancelablePromise<GetMemoryBlockResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/blocks/{block_id}',
+      path: {
+        block_id: data.blockId,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
 }
 
 export class JobsService {
-    /**
-     * List Jobs
-     * List all jobs.
-     * @param data The data for the request.
-     * @param data.sourceId Only list jobs associated with the source.
-     * @param data.userId
-     * @returns Job Successful Response
-     * @throws ApiError
-     */
-    public static listJobs(data: ListJobsData = {}, headers?: { user_id: string }): CancelablePromise<ListJobsResponse> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/v1/jobs/',
-            query: {
-                source_id: data.sourceId
-            },
-            errors: {
-                422: 'Validation Error'
-            },
-            headers
-        });
-    }
-    
-    /**
-     * List Active Jobs
-     * List all active jobs.
-     * @param data The data for the request.
-     * @param data.userId
-     * @returns Job Successful Response
-     * @throws ApiError
-     */
-    public static listActiveJobs(data: ListActiveJobsData = {}, headers?: { user_id: string }): CancelablePromise<ListActiveJobsResponse> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/v1/jobs/active',
-            errors: {
-                422: 'Validation Error'
-            },
-            headers
-        });
-    }
-    
-    /**
-     * Get Job
-     * Get the status of a job.
-     * @param data The data for the request.
-     * @param data.jobId
-     * @returns Job Successful Response
-     * @throws ApiError
-     */
-    public static getJob(data: GetJobData, headers?: { user_id: string }): CancelablePromise<GetJobResponse> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/v1/jobs/{job_id}',
-            path: {
-                job_id: data.jobId
-            },
-            errors: {
-                422: 'Validation Error'
-            },
-            headers
-        });
-    }
-    
-    /**
-     * Delete Job
-     * Delete a job by its job_id.
-     * @param data The data for the request.
-     * @param data.jobId
-     * @returns Job Successful Response
-     * @throws ApiError
-     */
-    public static deleteJob(data: DeleteJobData, headers?: { user_id: string }): CancelablePromise<DeleteJobResponse> {
-        return __request(OpenAPI, {
-            method: 'DELETE',
-            url: '/v1/jobs/{job_id}',
-            path: {
-                job_id: data.jobId
-            },
-            errors: {
-                422: 'Validation Error'
-            },
-            headers
-        });
-    }
-    
+  /**
+   * List Jobs
+   * List all jobs.
+   * @param data The data for the request.
+   * @param data.sourceId Only list jobs associated with the source.
+   * @param data.userId
+   * @returns Job Successful Response
+   * @throws ApiError
+   */
+  public static listJobs(
+    data: ListJobsData = {},
+    headers?: { user_id: string }
+  ): CancelablePromise<ListJobsResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/jobs/',
+      query: {
+        source_id: data.sourceId,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * List Active Jobs
+   * List all active jobs.
+   * @param data The data for the request.
+   * @param data.userId
+   * @returns Job Successful Response
+   * @throws ApiError
+   */
+  public static listActiveJobs(
+    data: ListActiveJobsData = {},
+    headers?: { user_id: string }
+  ): CancelablePromise<ListActiveJobsResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/jobs/active',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Get Job
+   * Get the status of a job.
+   * @param data The data for the request.
+   * @param data.jobId
+   * @returns Job Successful Response
+   * @throws ApiError
+   */
+  public static getJob(
+    data: GetJobData,
+    headers?: { user_id: string }
+  ): CancelablePromise<GetJobResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/jobs/{job_id}',
+      path: {
+        job_id: data.jobId,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Delete Job
+   * Delete a job by its job_id.
+   * @param data The data for the request.
+   * @param data.jobId
+   * @returns Job Successful Response
+   * @throws ApiError
+   */
+  public static deleteJob(
+    data: DeleteJobData,
+    headers?: { user_id: string }
+  ): CancelablePromise<DeleteJobResponse> {
+    return __request(OpenAPI, {
+      method: 'DELETE',
+      url: '/v1/jobs/{job_id}',
+      path: {
+        job_id: data.jobId,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
 }
 
 export class HealthService {
-    /**
-     * Health Check
-     * @returns Health Successful Response
-     * @throws ApiError
-     */
-    public static healthCheck(headers?: { user_id: string }): CancelablePromise<HealthCheckResponse> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/v1/health/',
-            headers
-        });
-    }
-    
+  /**
+   * Health Check
+   * @returns Health Successful Response
+   * @throws ApiError
+   */
+  public static healthCheck(headers?: {
+    user_id: string;
+  }): CancelablePromise<HealthCheckResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/health/',
+      headers,
+    });
+  }
 }
 
 export class SandboxConfigService {
-    /**
-     * Create Sandbox Config
-     * @param data The data for the request.
-     * @param data.requestBody
-     * @param data.userId
-     * @returns SandboxConfig Successful Response
-     * @throws ApiError
-     */
-    public static createSandboxConfigV1SandboxConfigPost(data: CreateSandboxConfigV1SandboxConfigPostData, headers?: { user_id: string }): CancelablePromise<CreateSandboxConfigV1SandboxConfigPostResponse> {
-        return __request(OpenAPI, {
-            method: 'POST',
-            url: '/v1/sandbox-config/',
-            body: data.requestBody,
-            mediaType: 'application/json',
-            errors: {
-                422: 'Validation Error'
-            },
-            headers
-        });
-    }
-    
-    /**
-     * List Sandbox Configs
-     * @param data The data for the request.
-     * @param data.limit Number of results to return
-     * @param data.cursor Pagination cursor to fetch the next set of results
-     * @param data.userId
-     * @returns SandboxConfig Successful Response
-     * @throws ApiError
-     */
-    public static listSandboxConfigsV1SandboxConfigGet(data: ListSandboxConfigsV1SandboxConfigGetData = {}, headers?: { user_id: string }): CancelablePromise<ListSandboxConfigsV1SandboxConfigGetResponse> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/v1/sandbox-config/',
-            query: {
-                limit: data.limit,
-                cursor: data.cursor
-            },
-            errors: {
-                422: 'Validation Error'
-            },
-            headers
-        });
-    }
-    
-    /**
-     * Update Sandbox Config
-     * @param data The data for the request.
-     * @param data.sandboxConfigId
-     * @param data.requestBody
-     * @param data.userId
-     * @returns SandboxConfig Successful Response
-     * @throws ApiError
-     */
-    public static updateSandboxConfigV1SandboxConfigSandboxConfigIdPatch(data: UpdateSandboxConfigV1SandboxConfigSandboxConfigIdPatchData, headers?: { user_id: string }): CancelablePromise<UpdateSandboxConfigV1SandboxConfigSandboxConfigIdPatchResponse> {
-        return __request(OpenAPI, {
-            method: 'PATCH',
-            url: '/v1/sandbox-config/{sandbox_config_id}',
-            path: {
-                sandbox_config_id: data.sandboxConfigId
-            },
-            body: data.requestBody,
-            mediaType: 'application/json',
-            errors: {
-                422: 'Validation Error'
-            },
-            headers
-        });
-    }
-    
-    /**
-     * Delete Sandbox Config
-     * @param data The data for the request.
-     * @param data.sandboxConfigId
-     * @param data.userId
-     * @returns void Successful Response
-     * @throws ApiError
-     */
-    public static deleteSandboxConfigV1SandboxConfigSandboxConfigIdDelete(data: DeleteSandboxConfigV1SandboxConfigSandboxConfigIdDeleteData, headers?: { user_id: string }): CancelablePromise<DeleteSandboxConfigV1SandboxConfigSandboxConfigIdDeleteResponse> {
-        return __request(OpenAPI, {
-            method: 'DELETE',
-            url: '/v1/sandbox-config/{sandbox_config_id}',
-            path: {
-                sandbox_config_id: data.sandboxConfigId
-            },
-            errors: {
-                422: 'Validation Error'
-            },
-            headers
-        });
-    }
-    
-    /**
-     * Create Sandbox Env Var
-     * @param data The data for the request.
-     * @param data.sandboxConfigId
-     * @param data.requestBody
-     * @param data.userId
-     * @returns SandboxEnvironmentVariable Successful Response
-     * @throws ApiError
-     */
-    public static createSandboxEnvVarV1SandboxConfigSandboxConfigIdEnvironmentVariablePost(data: CreateSandboxEnvVarV1SandboxConfigSandboxConfigIdEnvironmentVariablePostData, headers?: { user_id: string }): CancelablePromise<CreateSandboxEnvVarV1SandboxConfigSandboxConfigIdEnvironmentVariablePostResponse> {
-        return __request(OpenAPI, {
-            method: 'POST',
-            url: '/v1/sandbox-config/{sandbox_config_id}/environment-variable',
-            path: {
-                sandbox_config_id: data.sandboxConfigId
-            },
-            body: data.requestBody,
-            mediaType: 'application/json',
-            errors: {
-                422: 'Validation Error'
-            },
-            headers
-        });
-    }
-    
-    /**
-     * List Sandbox Env Vars
-     * @param data The data for the request.
-     * @param data.sandboxConfigId
-     * @param data.limit Number of results to return
-     * @param data.cursor Pagination cursor to fetch the next set of results
-     * @param data.userId
-     * @returns SandboxEnvironmentVariable Successful Response
-     * @throws ApiError
-     */
-    public static listSandboxEnvVarsV1SandboxConfigSandboxConfigIdEnvironmentVariableGet(data: ListSandboxEnvVarsV1SandboxConfigSandboxConfigIdEnvironmentVariableGetData, headers?: { user_id: string }): CancelablePromise<ListSandboxEnvVarsV1SandboxConfigSandboxConfigIdEnvironmentVariableGetResponse> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/v1/sandbox-config/{sandbox_config_id}/environment-variable',
-            path: {
-                sandbox_config_id: data.sandboxConfigId
-            },
-            query: {
-                limit: data.limit,
-                cursor: data.cursor
-            },
-            errors: {
-                422: 'Validation Error'
-            },
-            headers
-        });
-    }
-    
-    /**
-     * Update Sandbox Env Var
-     * @param data The data for the request.
-     * @param data.envVarId
-     * @param data.requestBody
-     * @param data.userId
-     * @returns SandboxEnvironmentVariable Successful Response
-     * @throws ApiError
-     */
-    public static updateSandboxEnvVarV1SandboxConfigEnvironmentVariableEnvVarIdPatch(data: UpdateSandboxEnvVarV1SandboxConfigEnvironmentVariableEnvVarIdPatchData, headers?: { user_id: string }): CancelablePromise<UpdateSandboxEnvVarV1SandboxConfigEnvironmentVariableEnvVarIdPatchResponse> {
-        return __request(OpenAPI, {
-            method: 'PATCH',
-            url: '/v1/sandbox-config/environment-variable/{env_var_id}',
-            path: {
-                env_var_id: data.envVarId
-            },
-            body: data.requestBody,
-            mediaType: 'application/json',
-            errors: {
-                422: 'Validation Error'
-            },
-            headers
-        });
-    }
-    
-    /**
-     * Delete Sandbox Env Var
-     * @param data The data for the request.
-     * @param data.envVarId
-     * @param data.userId
-     * @returns void Successful Response
-     * @throws ApiError
-     */
-    public static deleteSandboxEnvVarV1SandboxConfigEnvironmentVariableEnvVarIdDelete(data: DeleteSandboxEnvVarV1SandboxConfigEnvironmentVariableEnvVarIdDeleteData, headers?: { user_id: string }): CancelablePromise<DeleteSandboxEnvVarV1SandboxConfigEnvironmentVariableEnvVarIdDeleteResponse> {
-        return __request(OpenAPI, {
-            method: 'DELETE',
-            url: '/v1/sandbox-config/environment-variable/{env_var_id}',
-            path: {
-                env_var_id: data.envVarId
-            },
-            errors: {
-                422: 'Validation Error'
-            },
-            headers
-        });
-    }
-    
+  /**
+   * Create Sandbox Config
+   * @param data The data for the request.
+   * @param data.requestBody
+   * @param data.userId
+   * @returns SandboxConfig Successful Response
+   * @throws ApiError
+   */
+  public static createSandboxConfigV1SandboxConfigPost(
+    data: CreateSandboxConfigV1SandboxConfigPostData,
+    headers?: { user_id: string }
+  ): CancelablePromise<CreateSandboxConfigV1SandboxConfigPostResponse> {
+    return __request(OpenAPI, {
+      method: 'POST',
+      url: '/v1/sandbox-config/',
+      body: data.requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * List Sandbox Configs
+   * @param data The data for the request.
+   * @param data.limit Number of results to return
+   * @param data.cursor Pagination cursor to fetch the next set of results
+   * @param data.userId
+   * @returns SandboxConfig Successful Response
+   * @throws ApiError
+   */
+  public static listSandboxConfigsV1SandboxConfigGet(
+    data: ListSandboxConfigsV1SandboxConfigGetData = {},
+    headers?: { user_id: string }
+  ): CancelablePromise<ListSandboxConfigsV1SandboxConfigGetResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/sandbox-config/',
+      query: {
+        limit: data.limit,
+        cursor: data.cursor,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Update Sandbox Config
+   * @param data The data for the request.
+   * @param data.sandboxConfigId
+   * @param data.requestBody
+   * @param data.userId
+   * @returns SandboxConfig Successful Response
+   * @throws ApiError
+   */
+  public static updateSandboxConfigV1SandboxConfigSandboxConfigIdPatch(
+    data: UpdateSandboxConfigV1SandboxConfigSandboxConfigIdPatchData,
+    headers?: { user_id: string }
+  ): CancelablePromise<UpdateSandboxConfigV1SandboxConfigSandboxConfigIdPatchResponse> {
+    return __request(OpenAPI, {
+      method: 'PATCH',
+      url: '/v1/sandbox-config/{sandbox_config_id}',
+      path: {
+        sandbox_config_id: data.sandboxConfigId,
+      },
+      body: data.requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Delete Sandbox Config
+   * @param data The data for the request.
+   * @param data.sandboxConfigId
+   * @param data.userId
+   * @returns void Successful Response
+   * @throws ApiError
+   */
+  public static deleteSandboxConfigV1SandboxConfigSandboxConfigIdDelete(
+    data: DeleteSandboxConfigV1SandboxConfigSandboxConfigIdDeleteData,
+    headers?: { user_id: string }
+  ): CancelablePromise<DeleteSandboxConfigV1SandboxConfigSandboxConfigIdDeleteResponse> {
+    return __request(OpenAPI, {
+      method: 'DELETE',
+      url: '/v1/sandbox-config/{sandbox_config_id}',
+      path: {
+        sandbox_config_id: data.sandboxConfigId,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Create Sandbox Env Var
+   * @param data The data for the request.
+   * @param data.sandboxConfigId
+   * @param data.requestBody
+   * @param data.userId
+   * @returns SandboxEnvironmentVariable Successful Response
+   * @throws ApiError
+   */
+  public static createSandboxEnvVarV1SandboxConfigSandboxConfigIdEnvironmentVariablePost(
+    data: CreateSandboxEnvVarV1SandboxConfigSandboxConfigIdEnvironmentVariablePostData,
+    headers?: { user_id: string }
+  ): CancelablePromise<CreateSandboxEnvVarV1SandboxConfigSandboxConfigIdEnvironmentVariablePostResponse> {
+    return __request(OpenAPI, {
+      method: 'POST',
+      url: '/v1/sandbox-config/{sandbox_config_id}/environment-variable',
+      path: {
+        sandbox_config_id: data.sandboxConfigId,
+      },
+      body: data.requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * List Sandbox Env Vars
+   * @param data The data for the request.
+   * @param data.sandboxConfigId
+   * @param data.limit Number of results to return
+   * @param data.cursor Pagination cursor to fetch the next set of results
+   * @param data.userId
+   * @returns SandboxEnvironmentVariable Successful Response
+   * @throws ApiError
+   */
+  public static listSandboxEnvVarsV1SandboxConfigSandboxConfigIdEnvironmentVariableGet(
+    data: ListSandboxEnvVarsV1SandboxConfigSandboxConfigIdEnvironmentVariableGetData,
+    headers?: { user_id: string }
+  ): CancelablePromise<ListSandboxEnvVarsV1SandboxConfigSandboxConfigIdEnvironmentVariableGetResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/sandbox-config/{sandbox_config_id}/environment-variable',
+      path: {
+        sandbox_config_id: data.sandboxConfigId,
+      },
+      query: {
+        limit: data.limit,
+        cursor: data.cursor,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Update Sandbox Env Var
+   * @param data The data for the request.
+   * @param data.envVarId
+   * @param data.requestBody
+   * @param data.userId
+   * @returns SandboxEnvironmentVariable Successful Response
+   * @throws ApiError
+   */
+  public static updateSandboxEnvVarV1SandboxConfigEnvironmentVariableEnvVarIdPatch(
+    data: UpdateSandboxEnvVarV1SandboxConfigEnvironmentVariableEnvVarIdPatchData,
+    headers?: { user_id: string }
+  ): CancelablePromise<UpdateSandboxEnvVarV1SandboxConfigEnvironmentVariableEnvVarIdPatchResponse> {
+    return __request(OpenAPI, {
+      method: 'PATCH',
+      url: '/v1/sandbox-config/environment-variable/{env_var_id}',
+      path: {
+        env_var_id: data.envVarId,
+      },
+      body: data.requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Delete Sandbox Env Var
+   * @param data The data for the request.
+   * @param data.envVarId
+   * @param data.userId
+   * @returns void Successful Response
+   * @throws ApiError
+   */
+  public static deleteSandboxEnvVarV1SandboxConfigEnvironmentVariableEnvVarIdDelete(
+    data: DeleteSandboxEnvVarV1SandboxConfigEnvironmentVariableEnvVarIdDeleteData,
+    headers?: { user_id: string }
+  ): CancelablePromise<DeleteSandboxEnvVarV1SandboxConfigEnvironmentVariableEnvVarIdDeleteResponse> {
+    return __request(OpenAPI, {
+      method: 'DELETE',
+      url: '/v1/sandbox-config/environment-variable/{env_var_id}',
+      path: {
+        env_var_id: data.envVarId,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
 }
 
 export class UsersService {
-    /**
-     * List Users
-     * Get a list of all users in the database
-     * @param data The data for the request.
-     * @param data.cursor
-     * @param data.limit
-     * @returns User Successful Response
-     * @throws ApiError
-     */
-    public static listUsers(data: ListUsersData = {}, headers?: { user_id: string }): CancelablePromise<ListUsersResponse> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/v1/admin/users/',
-            query: {
-                cursor: data.cursor,
-                limit: data.limit
-            },
-            errors: {
-                422: 'Validation Error'
-            },
-            headers
-        });
-    }
-    
-    /**
-     * Create User
-     * Create a new user in the database
-     * @param data The data for the request.
-     * @param data.requestBody
-     * @returns User Successful Response
-     * @throws ApiError
-     */
-    public static createUser(data: CreateUserData, headers?: { user_id: string }): CancelablePromise<CreateUserResponse> {
-        return __request(OpenAPI, {
-            method: 'POST',
-            url: '/v1/admin/users/',
-            body: data.requestBody,
-            mediaType: 'application/json',
-            errors: {
-                422: 'Validation Error'
-            },
-            headers
-        });
-    }
-    
-    /**
-     * Update User
-     * Update a user in the database
-     * @param data The data for the request.
-     * @param data.requestBody
-     * @returns User Successful Response
-     * @throws ApiError
-     */
-    public static updateUser(data: UpdateUserData, headers?: { user_id: string }): CancelablePromise<UpdateUserResponse> {
-        return __request(OpenAPI, {
-            method: 'PUT',
-            url: '/v1/admin/users/',
-            body: data.requestBody,
-            mediaType: 'application/json',
-            errors: {
-                422: 'Validation Error'
-            },
-            headers
-        });
-    }
-    
-    /**
-     * Delete User
-     * @param data The data for the request.
-     * @param data.userId The user_id key to be deleted.
-     * @returns User Successful Response
-     * @throws ApiError
-     */
-    public static deleteUser(data: DeleteUserData, headers?: { user_id: string }): CancelablePromise<DeleteUserResponse> {
-        return __request(OpenAPI, {
-            method: 'DELETE',
-            url: '/v1/admin/users/',
-            query: {
-                user_id: data.userId
-            },
-            errors: {
-                422: 'Validation Error'
-            },
-            headers
-        });
-    }
-    
-    /**
-     * Create New Api Key
-     * Create a new API key for a user
-     * @param data The data for the request.
-     * @param data.requestBody
-     * @returns APIKey Successful Response
-     * @throws ApiError
-     */
-    public static createApiKey(data: CreateApiKeyData, headers?: { user_id: string }): CancelablePromise<CreateApiKeyResponse> {
-        return __request(OpenAPI, {
-            method: 'POST',
-            url: '/v1/admin/users/keys',
-            body: data.requestBody,
-            mediaType: 'application/json',
-            errors: {
-                422: 'Validation Error'
-            },
-            headers
-        });
-    }
-    
-    /**
-     * Get Api Keys
-     * Get a list of all API keys for a user
-     * @param data The data for the request.
-     * @param data.userId The unique identifier of the user.
-     * @returns APIKey Successful Response
-     * @throws ApiError
-     */
-    public static listApiKeys(data: ListApiKeysData, headers?: { user_id: string }): CancelablePromise<ListApiKeysResponse> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/v1/admin/users/keys',
-            query: {
-                user_id: data.userId
-            },
-            errors: {
-                422: 'Validation Error'
-            },
-            headers
-        });
-    }
-    
-    /**
-     * Delete Api Key
-     * @param data The data for the request.
-     * @param data.apiKey The API key to be deleted.
-     * @returns APIKey Successful Response
-     * @throws ApiError
-     */
-    public static deleteApiKey(data: DeleteApiKeyData, headers?: { user_id: string }): CancelablePromise<DeleteApiKeyResponse> {
-        return __request(OpenAPI, {
-            method: 'DELETE',
-            url: '/v1/admin/users/keys',
-            query: {
-                api_key: data.apiKey
-            },
-            errors: {
-                422: 'Validation Error'
-            },
-            headers
-        });
-    }
-    
+  /**
+   * List Users
+   * Get a list of all users in the database
+   * @param data The data for the request.
+   * @param data.cursor
+   * @param data.limit
+   * @returns User Successful Response
+   * @throws ApiError
+   */
+  public static listUsers(
+    data: ListUsersData = {},
+    headers?: { user_id: string }
+  ): CancelablePromise<ListUsersResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/admin/users/',
+      query: {
+        cursor: data.cursor,
+        limit: data.limit,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Create User
+   * Create a new user in the database
+   * @param data The data for the request.
+   * @param data.requestBody
+   * @returns User Successful Response
+   * @throws ApiError
+   */
+  public static createUser(
+    data: CreateUserData,
+    headers?: { user_id: string }
+  ): CancelablePromise<CreateUserResponse> {
+    return __request(OpenAPI, {
+      method: 'POST',
+      url: '/v1/admin/users/',
+      body: data.requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Update User
+   * Update a user in the database
+   * @param data The data for the request.
+   * @param data.requestBody
+   * @returns User Successful Response
+   * @throws ApiError
+   */
+  public static updateUser(
+    data: UpdateUserData,
+    headers?: { user_id: string }
+  ): CancelablePromise<UpdateUserResponse> {
+    return __request(OpenAPI, {
+      method: 'PUT',
+      url: '/v1/admin/users/',
+      body: data.requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Delete User
+   * @param data The data for the request.
+   * @param data.userId The user_id key to be deleted.
+   * @returns User Successful Response
+   * @throws ApiError
+   */
+  public static deleteUser(
+    data: DeleteUserData,
+    headers?: { user_id: string }
+  ): CancelablePromise<DeleteUserResponse> {
+    return __request(OpenAPI, {
+      method: 'DELETE',
+      url: '/v1/admin/users/',
+      query: {
+        user_id: data.userId,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Create New Api Key
+   * Create a new API key for a user
+   * @param data The data for the request.
+   * @param data.requestBody
+   * @returns APIKey Successful Response
+   * @throws ApiError
+   */
+  public static createApiKey(
+    data: CreateApiKeyData,
+    headers?: { user_id: string }
+  ): CancelablePromise<CreateApiKeyResponse> {
+    return __request(OpenAPI, {
+      method: 'POST',
+      url: '/v1/admin/users/keys',
+      body: data.requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Get Api Keys
+   * Get a list of all API keys for a user
+   * @param data The data for the request.
+   * @param data.userId The unique identifier of the user.
+   * @returns APIKey Successful Response
+   * @throws ApiError
+   */
+  public static listApiKeys(
+    data: ListApiKeysData,
+    headers?: { user_id: string }
+  ): CancelablePromise<ListApiKeysResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/admin/users/keys',
+      query: {
+        user_id: data.userId,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Delete Api Key
+   * @param data The data for the request.
+   * @param data.apiKey The API key to be deleted.
+   * @returns APIKey Successful Response
+   * @throws ApiError
+   */
+  public static deleteApiKey(
+    data: DeleteApiKeyData,
+    headers?: { user_id: string }
+  ): CancelablePromise<DeleteApiKeyResponse> {
+    return __request(OpenAPI, {
+      method: 'DELETE',
+      url: '/v1/admin/users/keys',
+      query: {
+        api_key: data.apiKey,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
 }
 
 export class AdminService {
-    /**
-     * List Users
-     * Get a list of all users in the database
-     * @param data The data for the request.
-     * @param data.cursor
-     * @param data.limit
-     * @returns User Successful Response
-     * @throws ApiError
-     */
-    public static listUsers(data: ListUsersData = {}, headers?: { user_id: string }): CancelablePromise<ListUsersResponse> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/v1/admin/users/',
-            query: {
-                cursor: data.cursor,
-                limit: data.limit
-            },
-            errors: {
-                422: 'Validation Error'
-            },
-            headers
-        });
-    }
-    
-    /**
-     * Create User
-     * Create a new user in the database
-     * @param data The data for the request.
-     * @param data.requestBody
-     * @returns User Successful Response
-     * @throws ApiError
-     */
-    public static createUser(data: CreateUserData, headers?: { user_id: string }): CancelablePromise<CreateUserResponse> {
-        return __request(OpenAPI, {
-            method: 'POST',
-            url: '/v1/admin/users/',
-            body: data.requestBody,
-            mediaType: 'application/json',
-            errors: {
-                422: 'Validation Error'
-            },
-            headers
-        });
-    }
-    
-    /**
-     * Update User
-     * Update a user in the database
-     * @param data The data for the request.
-     * @param data.requestBody
-     * @returns User Successful Response
-     * @throws ApiError
-     */
-    public static updateUser(data: UpdateUserData, headers?: { user_id: string }): CancelablePromise<UpdateUserResponse> {
-        return __request(OpenAPI, {
-            method: 'PUT',
-            url: '/v1/admin/users/',
-            body: data.requestBody,
-            mediaType: 'application/json',
-            errors: {
-                422: 'Validation Error'
-            },
-            headers
-        });
-    }
-    
-    /**
-     * Delete User
-     * @param data The data for the request.
-     * @param data.userId The user_id key to be deleted.
-     * @returns User Successful Response
-     * @throws ApiError
-     */
-    public static deleteUser(data: DeleteUserData, headers?: { user_id: string }): CancelablePromise<DeleteUserResponse> {
-        return __request(OpenAPI, {
-            method: 'DELETE',
-            url: '/v1/admin/users/',
-            query: {
-                user_id: data.userId
-            },
-            errors: {
-                422: 'Validation Error'
-            },
-            headers
-        });
-    }
-    
-    /**
-     * Create New Api Key
-     * Create a new API key for a user
-     * @param data The data for the request.
-     * @param data.requestBody
-     * @returns APIKey Successful Response
-     * @throws ApiError
-     */
-    public static createApiKey(data: CreateApiKeyData, headers?: { user_id: string }): CancelablePromise<CreateApiKeyResponse> {
-        return __request(OpenAPI, {
-            method: 'POST',
-            url: '/v1/admin/users/keys',
-            body: data.requestBody,
-            mediaType: 'application/json',
-            errors: {
-                422: 'Validation Error'
-            },
-            headers
-        });
-    }
-    
-    /**
-     * Get Api Keys
-     * Get a list of all API keys for a user
-     * @param data The data for the request.
-     * @param data.userId The unique identifier of the user.
-     * @returns APIKey Successful Response
-     * @throws ApiError
-     */
-    public static listApiKeys(data: ListApiKeysData, headers?: { user_id: string }): CancelablePromise<ListApiKeysResponse> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/v1/admin/users/keys',
-            query: {
-                user_id: data.userId
-            },
-            errors: {
-                422: 'Validation Error'
-            },
-            headers
-        });
-    }
-    
-    /**
-     * Delete Api Key
-     * @param data The data for the request.
-     * @param data.apiKey The API key to be deleted.
-     * @returns APIKey Successful Response
-     * @throws ApiError
-     */
-    public static deleteApiKey(data: DeleteApiKeyData, headers?: { user_id: string }): CancelablePromise<DeleteApiKeyResponse> {
-        return __request(OpenAPI, {
-            method: 'DELETE',
-            url: '/v1/admin/users/keys',
-            query: {
-                api_key: data.apiKey
-            },
-            errors: {
-                422: 'Validation Error'
-            },
-            headers
-        });
-    }
-    
-    /**
-     * Get All Orgs
-     * Get a list of all orgs in the database
-     * @param data The data for the request.
-     * @param data.cursor
-     * @param data.limit
-     * @returns Organization Successful Response
-     * @throws ApiError
-     */
-    public static listOrgs(data: ListOrgsData = {}, headers?: { user_id: string }): CancelablePromise<ListOrgsResponse> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/v1/admin/orgs/',
-            query: {
-                cursor: data.cursor,
-                limit: data.limit
-            },
-            errors: {
-                422: 'Validation Error'
-            },
-            headers
-        });
-    }
-    
-    /**
-     * Create Org
-     * Create a new org in the database
-     * @param data The data for the request.
-     * @param data.requestBody
-     * @returns Organization Successful Response
-     * @throws ApiError
-     */
-    public static createOrganization(data: CreateOrganizationData, headers?: { user_id: string }): CancelablePromise<CreateOrganizationResponse> {
-        return __request(OpenAPI, {
-            method: 'POST',
-            url: '/v1/admin/orgs/',
-            body: data.requestBody,
-            mediaType: 'application/json',
-            errors: {
-                422: 'Validation Error'
-            },
-            headers
-        });
-    }
-    
-    /**
-     * Delete Org
-     * @param data The data for the request.
-     * @param data.orgId The org_id key to be deleted.
-     * @returns Organization Successful Response
-     * @throws ApiError
-     */
-    public static deleteOrganizationById(data: DeleteOrganizationByIdData, headers?: { user_id: string }): CancelablePromise<DeleteOrganizationByIdResponse> {
-        return __request(OpenAPI, {
-            method: 'DELETE',
-            url: '/v1/admin/orgs/',
-            query: {
-                org_id: data.orgId
-            },
-            errors: {
-                422: 'Validation Error'
-            },
-            headers
-        });
-    }
-    
+  /**
+   * List Users
+   * Get a list of all users in the database
+   * @param data The data for the request.
+   * @param data.cursor
+   * @param data.limit
+   * @returns User Successful Response
+   * @throws ApiError
+   */
+  public static listUsers(
+    data: ListUsersData = {},
+    headers?: { user_id: string }
+  ): CancelablePromise<ListUsersResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/admin/users/',
+      query: {
+        cursor: data.cursor,
+        limit: data.limit,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Create User
+   * Create a new user in the database
+   * @param data The data for the request.
+   * @param data.requestBody
+   * @returns User Successful Response
+   * @throws ApiError
+   */
+  public static createUser(
+    data: CreateUserData,
+    headers?: { user_id: string }
+  ): CancelablePromise<CreateUserResponse> {
+    return __request(OpenAPI, {
+      method: 'POST',
+      url: '/v1/admin/users/',
+      body: data.requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Update User
+   * Update a user in the database
+   * @param data The data for the request.
+   * @param data.requestBody
+   * @returns User Successful Response
+   * @throws ApiError
+   */
+  public static updateUser(
+    data: UpdateUserData,
+    headers?: { user_id: string }
+  ): CancelablePromise<UpdateUserResponse> {
+    return __request(OpenAPI, {
+      method: 'PUT',
+      url: '/v1/admin/users/',
+      body: data.requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Delete User
+   * @param data The data for the request.
+   * @param data.userId The user_id key to be deleted.
+   * @returns User Successful Response
+   * @throws ApiError
+   */
+  public static deleteUser(
+    data: DeleteUserData,
+    headers?: { user_id: string }
+  ): CancelablePromise<DeleteUserResponse> {
+    return __request(OpenAPI, {
+      method: 'DELETE',
+      url: '/v1/admin/users/',
+      query: {
+        user_id: data.userId,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Create New Api Key
+   * Create a new API key for a user
+   * @param data The data for the request.
+   * @param data.requestBody
+   * @returns APIKey Successful Response
+   * @throws ApiError
+   */
+  public static createApiKey(
+    data: CreateApiKeyData,
+    headers?: { user_id: string }
+  ): CancelablePromise<CreateApiKeyResponse> {
+    return __request(OpenAPI, {
+      method: 'POST',
+      url: '/v1/admin/users/keys',
+      body: data.requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Get Api Keys
+   * Get a list of all API keys for a user
+   * @param data The data for the request.
+   * @param data.userId The unique identifier of the user.
+   * @returns APIKey Successful Response
+   * @throws ApiError
+   */
+  public static listApiKeys(
+    data: ListApiKeysData,
+    headers?: { user_id: string }
+  ): CancelablePromise<ListApiKeysResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/admin/users/keys',
+      query: {
+        user_id: data.userId,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Delete Api Key
+   * @param data The data for the request.
+   * @param data.apiKey The API key to be deleted.
+   * @returns APIKey Successful Response
+   * @throws ApiError
+   */
+  public static deleteApiKey(
+    data: DeleteApiKeyData,
+    headers?: { user_id: string }
+  ): CancelablePromise<DeleteApiKeyResponse> {
+    return __request(OpenAPI, {
+      method: 'DELETE',
+      url: '/v1/admin/users/keys',
+      query: {
+        api_key: data.apiKey,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Get All Orgs
+   * Get a list of all orgs in the database
+   * @param data The data for the request.
+   * @param data.cursor
+   * @param data.limit
+   * @returns Organization Successful Response
+   * @throws ApiError
+   */
+  public static listOrgs(
+    data: ListOrgsData = {},
+    headers?: { user_id: string }
+  ): CancelablePromise<ListOrgsResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/admin/orgs/',
+      query: {
+        cursor: data.cursor,
+        limit: data.limit,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Create Org
+   * Create a new org in the database
+   * @param data The data for the request.
+   * @param data.requestBody
+   * @returns Organization Successful Response
+   * @throws ApiError
+   */
+  public static createOrganization(
+    data: CreateOrganizationData,
+    headers?: { user_id: string }
+  ): CancelablePromise<CreateOrganizationResponse> {
+    return __request(OpenAPI, {
+      method: 'POST',
+      url: '/v1/admin/orgs/',
+      body: data.requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Delete Org
+   * @param data The data for the request.
+   * @param data.orgId The org_id key to be deleted.
+   * @returns Organization Successful Response
+   * @throws ApiError
+   */
+  public static deleteOrganizationById(
+    data: DeleteOrganizationByIdData,
+    headers?: { user_id: string }
+  ): CancelablePromise<DeleteOrganizationByIdResponse> {
+    return __request(OpenAPI, {
+      method: 'DELETE',
+      url: '/v1/admin/orgs/',
+      query: {
+        org_id: data.orgId,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
 }
 
 export class OrganizationService {
-    /**
-     * Get All Orgs
-     * Get a list of all orgs in the database
-     * @param data The data for the request.
-     * @param data.cursor
-     * @param data.limit
-     * @returns Organization Successful Response
-     * @throws ApiError
-     */
-    public static listOrgs(data: ListOrgsData = {}, headers?: { user_id: string }): CancelablePromise<ListOrgsResponse> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/v1/admin/orgs/',
-            query: {
-                cursor: data.cursor,
-                limit: data.limit
-            },
-            errors: {
-                422: 'Validation Error'
-            },
-            headers
-        });
-    }
-    
-    /**
-     * Create Org
-     * Create a new org in the database
-     * @param data The data for the request.
-     * @param data.requestBody
-     * @returns Organization Successful Response
-     * @throws ApiError
-     */
-    public static createOrganization(data: CreateOrganizationData, headers?: { user_id: string }): CancelablePromise<CreateOrganizationResponse> {
-        return __request(OpenAPI, {
-            method: 'POST',
-            url: '/v1/admin/orgs/',
-            body: data.requestBody,
-            mediaType: 'application/json',
-            errors: {
-                422: 'Validation Error'
-            },
-            headers
-        });
-    }
-    
-    /**
-     * Delete Org
-     * @param data The data for the request.
-     * @param data.orgId The org_id key to be deleted.
-     * @returns Organization Successful Response
-     * @throws ApiError
-     */
-    public static deleteOrganizationById(data: DeleteOrganizationByIdData, headers?: { user_id: string }): CancelablePromise<DeleteOrganizationByIdResponse> {
-        return __request(OpenAPI, {
-            method: 'DELETE',
-            url: '/v1/admin/orgs/',
-            query: {
-                org_id: data.orgId
-            },
-            errors: {
-                422: 'Validation Error'
-            },
-            headers
-        });
-    }
-    
+  /**
+   * Get All Orgs
+   * Get a list of all orgs in the database
+   * @param data The data for the request.
+   * @param data.cursor
+   * @param data.limit
+   * @returns Organization Successful Response
+   * @throws ApiError
+   */
+  public static listOrgs(
+    data: ListOrgsData = {},
+    headers?: { user_id: string }
+  ): CancelablePromise<ListOrgsResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/admin/orgs/',
+      query: {
+        cursor: data.cursor,
+        limit: data.limit,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Create Org
+   * Create a new org in the database
+   * @param data The data for the request.
+   * @param data.requestBody
+   * @returns Organization Successful Response
+   * @throws ApiError
+   */
+  public static createOrganization(
+    data: CreateOrganizationData,
+    headers?: { user_id: string }
+  ): CancelablePromise<CreateOrganizationResponse> {
+    return __request(OpenAPI, {
+      method: 'POST',
+      url: '/v1/admin/orgs/',
+      body: data.requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Delete Org
+   * @param data The data for the request.
+   * @param data.orgId The org_id key to be deleted.
+   * @returns Organization Successful Response
+   * @throws ApiError
+   */
+  public static deleteOrganizationById(
+    data: DeleteOrganizationByIdData,
+    headers?: { user_id: string }
+  ): CancelablePromise<DeleteOrganizationByIdResponse> {
+    return __request(OpenAPI, {
+      method: 'DELETE',
+      url: '/v1/admin/orgs/',
+      query: {
+        org_id: data.orgId,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
 }
 
 export class AuthService {
-    /**
-     * Authenticate User
-     * Authenticates the user and sends response with User related data.
-     *
-     * Currently, this is a placeholder that simply returns a UUID placeholder
-     * @param data The data for the request.
-     * @param data.requestBody
-     * @returns AuthResponse Successful Response
-     * @throws ApiError
-     */
-    public static authenticateUserV1AuthPost(data: AuthenticateUserV1AuthPostData, headers?: { user_id: string }): CancelablePromise<AuthenticateUserV1AuthPostResponse> {
-        return __request(OpenAPI, {
-            method: 'POST',
-            url: '/v1/auth',
-            body: data.requestBody,
-            mediaType: 'application/json',
-            errors: {
-                422: 'Validation Error'
-            },
-            headers
-        });
-    }
-    
+  /**
+   * Authenticate User
+   * Authenticates the user and sends response with User related data.
+   *
+   * Currently, this is a placeholder that simply returns a UUID placeholder
+   * @param data The data for the request.
+   * @param data.requestBody
+   * @returns AuthResponse Successful Response
+   * @throws ApiError
+   */
+  public static authenticateUserV1AuthPost(
+    data: AuthenticateUserV1AuthPostData,
+    headers?: { user_id: string }
+  ): CancelablePromise<AuthenticateUserV1AuthPostResponse> {
+    return __request(OpenAPI, {
+      method: 'POST',
+      url: '/v1/auth',
+      body: data.requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
 }
