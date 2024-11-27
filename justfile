@@ -115,3 +115,25 @@ dev:
 check-github-status:
     @echo "🚧 Checking GitHub status..."
     npm run check-github-status
+
+# Build all Docker images for GitHub Actions with cache management
+build-gh-actions: 
+    npm run slack-bot-says "Building Docker images for GitHub Actions with tag: {{TAG}}..."
+    @echo "🚧 Building web Docker image with tag: {{TAG}}..."
+    docker buildx build --platform linux/amd64 --target web \
+        --cache-from type=local,src=/tmp/.buildx-cache \
+        --cache-to type=local,dest=/tmp/.buildx-cache-new,mode=max \
+        -t {{DOCKER_REGISTRY}}/web:{{TAG}} . --load
+    
+    @echo "🚧 Building migrations Docker image with tag: {{TAG}}..."
+    docker buildx build --platform linux/amd64 --target migrations \
+        --cache-from type=local,src=/tmp/.buildx-cache \
+        --cache-to type=local,dest=/tmp/.buildx-cache-new,mode=max \
+        -t {{DOCKER_REGISTRY}}/web-migrations:{{TAG}} . --load
+    
+    @echo "🚧 Moving cache..."
+    @rm -rf /tmp/.buildx-cache
+    @mv /tmp/.buildx-cache-new /tmp/.buildx-cache
+    
+    @echo "✅ All Docker images built successfully."
+    npm run slack-bot-says "Docker images with tag: {{TAG}} built successfully."
