@@ -1,9 +1,13 @@
 name: Build and Deploy
 
 on:
-  push:
-    branches: [main]
-  workflow_dispatch:
+    workflow_run:
+      workflows: ["🕸️ Cypress Tests"]
+      types:
+        - completed
+      branches:
+        - main
+    workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
