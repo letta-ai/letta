@@ -120,6 +120,7 @@ check-github-status:
 build-gh-actions: 
     npm run slack-bot-says "Building Docker images for GitHub Actions with tag: {{TAG}}..."
     @echo "🚧 Building web Docker image with tag: {{TAG}}..."
+    @mkdir -p /tmp/.buildx-cache
     docker buildx build --platform linux/amd64 --target web \
         --cache-from type=local,src=/tmp/.buildx-cache \
         --cache-to type=local,dest=/tmp/.buildx-cache-new,mode=max \
