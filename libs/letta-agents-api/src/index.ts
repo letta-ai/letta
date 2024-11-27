@@ -10,3 +10,5 @@ export * from './lib/hooks/useResetAllLettaAgentsQueryKeys/useResetAllLettaAgent
 export function getIsAgentState(data: unknown): data is AgentState {
   return Object.prototype.hasOwnProperty.call(data, 'tools');
 }
+
+export * from './lib/utils/isAPIError/isAPIError';

@@ -787,6 +787,10 @@
       "label": "Click here to switch roles, the current role is {role}"
     }
   },
+  "component-library/core/Code": {
+    "errorResponse": "Error response",
+    "dismiss": "Dismiss"
+  },
   "development-servers/agents/new/page": {
     "tools": "<strong>Tools included:</strong> {toolsList}",
     "serverOffline": "Your server is offline, please start it to create a new agent.",
@@ -949,6 +953,7 @@
       }
     },
     "EditTool": {
+      "error": "There was an error updating your tool, see above for details.",
       "cancel": "Cancel",
       "name": {
         "label": "Name"
@@ -957,13 +962,15 @@
         "label": "Description"
       },
       "sourceCode": {
-        "label": "Source Code"
+        "label": "Source Code",
+        "error": "There was an error updating your tool, see below for details."
       },
       "update": "Update Tool"
     },
     "ToolCreator": {
+      "errorResponse": "There was an error creating your tool, see below for details.",
+      "error": "There was an error creating your tool, see above for details.",
       "cancel": "Cancel",
-      "error": "There was an error creating this tool, please try again or contact support.",
       "name": {
         "label": "Name",
         "placeholder": "my-tool-name",
