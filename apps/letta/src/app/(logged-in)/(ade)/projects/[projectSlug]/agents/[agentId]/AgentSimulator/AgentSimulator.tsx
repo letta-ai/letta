@@ -141,7 +141,7 @@ function useSendMessage(agentId: string) {
       abortController.current = new AbortController();
 
       const eventsource = new EventSource(
-        `${baseUrl}/v1/agents/${agentId}/messages`,
+        `${baseUrl}/v1/agents/${agentId}/messages/stream`,
         {
           withCredentials: true,
           method: 'POST',
