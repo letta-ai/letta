@@ -94,9 +94,6 @@ describe('letta', () => {
       force: true,
     });
 
-    // eslint-disable-next-line cypress/no-unnecessary-waiting
-    cy.wait(2500);
-
     cy.findByTestId('chat-simulator-send').click({
       force: true,
     });
