@@ -101,7 +101,7 @@ describe('letta', () => {
       force: true,
     });
 
-    cy.findByTestId('messages-list').contains('Shubham', { timeout: 20000 });
+    cy.findByTestId('messages-list').contains('Shubham', { timeout: 10000 });
     cy.findByTestId('messages-list').contains('BananaMan', { timeout: 10000 });
 
     cy.findAllByTestId('version-template-trigger')
