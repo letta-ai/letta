@@ -235,7 +235,10 @@ export function Messages(props: MessagesProps) {
                   fontSize="small"
                   variant="minimal"
                   showLineNumbers={false}
-                  code={agentMessage.function_return}
+                  code={JSON.stringify({
+                    ...agentMessage,
+                    function_return: tryFallbackParseJson(agentMessage.function_return),
+                  }, null, 2)}
                   language="javascript"
                 ></Code>
               </MessageWrapper>

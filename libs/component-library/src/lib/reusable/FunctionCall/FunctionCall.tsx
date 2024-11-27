@@ -24,11 +24,14 @@ export function FunctionCall(props: FunctionCallProps) {
   const [open, setOpen] = React.useState(false);
   const t = useTranslations('component-library/FunctionCall');
 
+
   return (
     <details
+
       className="bg-background w-full"
       open={open}
-      onClick={() => {
+      onToggle={(e) => {
+        e.preventDefault();
         setOpen(!open);
       }}
     >
@@ -40,7 +43,7 @@ export function FunctionCall(props: FunctionCallProps) {
           className="px-2 py-2 cursor-pointer"
         >
           <HStack gap="small">
-            {open ? (
+            {!open ? (
               <ChevronRightIcon size="small" />
             ) : (
               <ChevronDownIcon size="small" />
