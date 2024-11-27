@@ -21,6 +21,7 @@ const frameVariants = cva('', {
       withMinHeight: 'min-h-full',
     },
     zIndex: {
+      base: 'z-[0]',
       rightAboveZero: 'z-rightAboveZero',
       sidebarNavOverlay: 'z-sidebarNavOverlay',
       sidebarNav: 'z-sidebarNav',

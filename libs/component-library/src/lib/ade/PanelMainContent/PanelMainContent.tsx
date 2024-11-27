@@ -13,6 +13,7 @@ export function PanelMainContent(props: PanelElementsListProps) {
     <VStack
       padding={variant === 'noPadding' ? false : 'small'}
       overflow="auto"
+      zIndex="base"
       fullWidth
       gap="medium"
       collapseHeight

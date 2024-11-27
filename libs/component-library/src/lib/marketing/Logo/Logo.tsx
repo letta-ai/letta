@@ -72,7 +72,7 @@ export function LogoBaseOuter(props: LogoBaseProps) {
   );
 }
 
-const logoWithTextVariants = cva('', {
+const logoWithTextVariants = cva('w-auto', {
   variants: {
     color,
     size: {
