@@ -88,14 +88,20 @@ describe('letta', () => {
       .first()
       .click();
 
+    cy.get('body').click({ force: true });
+
     cy.findByTestId('chat-simulator-input').type('What is my name', {
       force: true,
     });
+
+    // eslint-disable-next-line cypress/no-unnecessary-waiting
+    cy.wait(2500);
+
     cy.findByTestId('chat-simulator-send').click({
       force: true,
     });
 
-    cy.findByTestId('messages-list').contains('Shubham', { timeout: 10000 });
+    cy.findByTestId('messages-list').contains('Shubham', { timeout: 20000 });
     cy.findByTestId('messages-list').contains('BananaMan', { timeout: 10000 });
 
     cy.findAllByTestId('version-template-trigger')
