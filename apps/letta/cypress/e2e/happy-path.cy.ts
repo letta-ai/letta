@@ -21,14 +21,16 @@ describe('letta', () => {
     cy.get('h1').contains(/Projects/);
 
     // creates a project
-    cy.findByTestId('create-project-button').click();
+    cy.findAllByTestId('create-project-button').first().click();
 
     cy.findByTestId('project-name-input').type('CYDOGGTestProject');
 
     cy.findByTestId('create-project-dialog-confirm-button').click();
 
     // creates an agent
-    cy.findByTestId('create-agent-template-button', { timeout: 10000 }).click();
+    cy.findAllByTestId('create-agent-template-button', { timeout: 10000 })
+      .first()
+      .click();
 
     cy.location('pathname').should('match', /\/projects\/(.+)\/templates\/new/);
 
