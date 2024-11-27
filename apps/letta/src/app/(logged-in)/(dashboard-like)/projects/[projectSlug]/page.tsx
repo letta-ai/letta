@@ -71,6 +71,27 @@ function AgentTemplatesList(props: AgentTemplatesListProps) {
   );
 }
 
+interface CreateAgentTemplateButtonProps {
+  hideLabel?: boolean;
+  projectSlug: string;
+}
+
+function CreateAgentTemplateButton(props: CreateAgentTemplateButtonProps) {
+  const { projectSlug, hideLabel } = props;
+  const t = useTranslations('projects/(projectSlug)/page');
+
+  return (
+    <Button
+      label={t('agentTemplatesSection.createAgentTemplate')}
+      data-testid="create-agent-template-button"
+      preIcon={<PlusIcon />}
+      color="tertiary"
+      hideLabel={hideLabel}
+      href={`/projects/${projectSlug}/templates/new`}
+    />
+  );
+}
+
 function AgentTemplatesSection() {
   const { id: currentProjectId, slug: projectSlug } = useCurrentProject();
   const { data } = webApi.agentTemplates.listAgentTemplates.useQuery({
@@ -106,13 +127,7 @@ function AgentTemplatesSection() {
           <>
             {/* This button should only be displayed if we have agents, otherwise we show an alert that asks them to do so instead */}
             {agentCount >= 1 && (
-              <Button
-                label={t('agentTemplatesSection.createAgentTemplate')}
-                data-testid="create-agent-template-button"
-                preIcon={<PlusIcon />}
-                color="tertiary"
-                href={`/projects/${projectSlug}/templates/new`}
-              />
+              <CreateAgentTemplateButton projectSlug={projectSlug} hideLabel />
             )}
           </>
         }

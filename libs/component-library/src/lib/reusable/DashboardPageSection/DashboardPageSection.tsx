@@ -6,6 +6,8 @@ import { Typography } from '../../core/Typography/Typography';
 import { RawInput } from '../../core/Input/Input';
 import { SearchIcon } from '../../icons';
 import { Frame } from '../../framing/Frame/Frame';
+import { HiddenOnMobile } from '../../framing/HiddenOnMobile/HiddenOnMobile';
+import { VisibleOnMobile } from '../../framing/VisibleOnMobile/VisibleOnMobile';
 
 interface DashboardSearchBarProps {
   onSearch: (searchTerm: string) => void;
@@ -72,7 +74,9 @@ export function DashboardPageSection(props: DashboardPageSectionProps) {
           <Typography align="left" noWrap bold variant="heading3">
             {title}
           </Typography>
-          <HStack>{actions}</HStack>
+          <HiddenOnMobile>
+            <HStack>{actions}</HStack>
+          </HiddenOnMobile>
         </HStack>
       )}
       {description && (
@@ -89,7 +93,9 @@ export function DashboardPageSection(props: DashboardPageSectionProps) {
           />
         </Frame>
       )}
-
+      <VisibleOnMobile>
+        <HStack fullHeight>{actions}</HStack>
+      </VisibleOnMobile>
       {children}
     </VStack>
   );

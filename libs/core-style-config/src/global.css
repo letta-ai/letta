@@ -264,3 +264,22 @@ body {
 .invisible-on-dark {
   display: inherit;
 }
+
+
+/* hide arrows on summary elements */
+summary::-webkit-details-marker {
+  display:none;
+}
+
+/* On mobile devices set knock up all font szies by 1 */
+@media (max-width: 480px) {
+  :root {
+    --font-size-xxs: 0.65rem;
+    --font-size-xs: 0.875rem;
+    --font-size-sm: 0.9rem;
+    --font-size-base: 1rem;
+    --font-size-lg: 1.125rem;
+    --font-size-xl: 1.25rem;
+
+  }
+}
