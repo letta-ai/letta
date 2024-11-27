@@ -306,7 +306,7 @@ interface MakeInputOptions {
   container?: MakeInputOptionsContainerType;
 }
 
-const omitProps = ['rightOfLabelContent', 'infoTooltipText'];
+const omitProps = ['rightOfLabelContent', 'infoTooltip'];
 
 export function makeInput<T>(
   Input: React.ComponentType<T>,

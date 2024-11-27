@@ -36,6 +36,7 @@ const typographyVariants = cva('break-words', {
     },
     font: {
       mono: 'font-mono',
+      default: 'font-sans',
     },
     bold: {
       true: 'font-semibold',

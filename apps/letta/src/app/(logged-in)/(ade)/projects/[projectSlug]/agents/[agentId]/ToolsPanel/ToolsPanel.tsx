@@ -16,7 +16,6 @@ import {
   LoadedTypography,
   RawCodeEditor,
   RawToggleGroup,
-  TextArea,
 } from '@letta-web/component-library';
 import {
   brandKeyToLogo,
@@ -39,7 +38,6 @@ import {
   Form,
   FormField,
   FormProvider,
-  Input,
   PanelBar,
   PanelMainContent,
   RawInput,
@@ -72,6 +70,9 @@ import { useQueryClient } from '@tanstack/react-query';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslations } from 'next-intl';
+import { isAxiosError } from 'axios';
+import { useCurrentAgentMetaData } from '../hooks/useCurrentAgentMetaData/useCurrentAgentMetaData';
+import { isAPIError } from '@letta-web/letta-agents-api';
 
 interface AllToolsViewProps {
   setSelectedToolId: (toolId: string) => void;
@@ -316,7 +317,8 @@ function EditTool(props: EditToolProps) {
     },
   });
 
-  const { mutate, isPending, isSuccess } = useToolsServiceUpdateTool();
+  const { mutate, reset, isPending, isSuccess, error } =
+    useToolsServiceUpdateTool();
 
   const t = useTranslations('ADE/Tools');
 
@@ -326,7 +328,6 @@ function EditTool(props: EditToolProps) {
         {
           toolId: tool.id || '',
           requestBody: {
-            description: values.description,
             source_code: values.sourceCode,
           },
         },
@@ -359,32 +360,24 @@ function EditTool(props: EditToolProps) {
     [mutate, onClose, queryClient, tool.id]
   );
 
+  const errorMessage = useMemo(() => {
+    if (!error) {
+      return '';
+    }
+
+    let message: unknown = '';
+
+    if (isAxiosError(error)) {
+      message = error.response?.data;
+    }
+
+    return JSON.stringify(message || error, null, 2);
+  }, [error]);
+
   return (
     <FormProvider {...form}>
       <Form onSubmit={form.handleSubmit(handleSubmit)}>
         <VStack collapseHeight flex gap="form">
-          <FormField
-            name="name"
-            render={({ field }) => (
-              <Input
-                disabled
-                fullWidth
-                label={t('EditTool.name.label')}
-                {...field}
-              />
-            )}
-          />
-          <FormField
-            name="description"
-            render={({ field }) => (
-              <TextArea
-                fullWidth
-                resize="none"
-                label={t('EditTool.description.label')}
-                {...field}
-              />
-            )}
-          />
           <FormField
             name="sourceCode"
             render={({ field }) => (
@@ -396,11 +389,20 @@ function EditTool(props: EditToolProps) {
                 language="python"
                 code={field.value}
                 onSetCode={field.onChange}
+                errorResponse={{
+                  title: t('EditTool.sourceCode.error'),
+                  content: errorMessage,
+                  onDismiss: () => {
+                    reset();
+                  },
+                }}
                 label={t('EditTool.sourceCode.label')}
               />
             )}
           />
-          <FormActions>
+          <FormActions
+            errorMessage={errorMessage ? t('EditTool.error') : undefined}
+          >
             <Button
               type="submit"
               label={t('EditTool.update')}
@@ -800,6 +802,13 @@ function ViewToolDialog(props: ViewToolDialogProps) {
   );
 }
 
+function inferNameFromPythonCode(code: string) {
+  const nameRegex = /def\s+(\w+)\s*\(/;
+  const match = nameRegex.exec(code);
+
+  return match ? match[1] : '';
+}
+
 interface ToolsProps {
   search: string;
 }
@@ -970,24 +979,18 @@ function ToolCreator(props: ToolCreatorProps) {
 
   const createToolSchema = useMemo(() => {
     return z.object({
-      // alphanumeric, underscores, and underscores
-      name: z.string().regex(/^[a-zA-Z0-9_]+$/, {
-        message: t('ToolCreator.name.validation'),
-      }),
-      description: z.string().min(1, {
-        message: t('ToolCreator.description.validation'),
-      }),
       sourceCode: z.string(),
     });
-  }, [t]);
+  }, []);
 
   const queryClient = useQueryClient();
 
   const {
     mutate,
+    error,
     isPending: isCreatingTool,
+    reset,
     isSuccess,
-    isError,
   } = useToolsServiceCreateTool({
     onSuccess: async () => {
       await queryClient.invalidateQueries({
@@ -1001,8 +1004,6 @@ function ToolCreator(props: ToolCreatorProps) {
   const form = useForm<z.infer<typeof createToolSchema>>({
     resolver: zodResolver(createToolSchema),
     defaultValues: {
-      name: '',
-      description: '',
       sourceCode: DEFAULT_SOURCE_CODE,
     },
   });
@@ -1013,14 +1014,34 @@ function ToolCreator(props: ToolCreatorProps) {
         requestBody: {
           tags: [],
           source_type: 'python',
-          description: values.description || '',
-          name: values.name,
+          description: '',
+          name: inferNameFromPythonCode(values.sourceCode),
           source_code: values.sourceCode,
         },
       });
     },
     [mutate]
   );
+
+  const { isLocal } = useCurrentAgentMetaData();
+
+  const errorMessage = useMemo(() => {
+    if (!error) {
+      return '';
+    }
+
+    const defaultError = !isLocal
+      ? { message: 'Unhandled error, please contact support' }
+      : error;
+
+    let message: unknown = '';
+
+    if (isAPIError(error)) {
+      message = error.body;
+    }
+
+    return JSON.stringify(message || defaultError, null, 2);
+  }, [error, isLocal]);
 
   return (
     <VStack flex collapseHeight paddingBottom>
@@ -1038,43 +1059,24 @@ function ToolCreator(props: ToolCreatorProps) {
         </HStack>
         <FormProvider {...form}>
           <Form onSubmit={form.handleSubmit(handleSubmit)}>
-            <VStack flex collapseHeight gap="form">
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <Input
-                    placeholder={t('ToolCreator.name.placeholder')}
-                    fullWidth
-                    label={t('ToolCreator.name.label')}
-                    {...field}
-                  />
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="description"
-                render={({ field }) => (
-                  <TextArea
-                    rows={2}
-                    resize="none"
-                    placeholder={t('ToolCreator.description.placeholder')}
-                    fullWidth
-                    label={t('ToolCreator.description.label')}
-                    {...field}
-                  />
-                )}
-              />
+            <VStack fullHeight flex gap="form" fullWidth>
               <FormField
                 control={form.control}
                 name="sourceCode"
                 render={({ field }) => (
                   <CodeEditor
-                    flex
                     collapseHeight
                     fullWidth
+                    flex
                     toolbarPosition="bottom"
                     language="python"
+                    errorResponse={{
+                      title: t('ToolCreator.errorResponse'),
+                      content: errorMessage,
+                      onDismiss: () => {
+                        reset();
+                      },
+                    }}
                     code={field.value}
                     onSetCode={field.onChange}
                     label={t('ToolCreator.sourceCode.label')}
@@ -1082,7 +1084,7 @@ function ToolCreator(props: ToolCreatorProps) {
                 )}
               />
               <FormActions
-                errorMessage={isError ? t('ToolCreator.error') : undefined}
+                errorMessage={errorMessage ? t('ToolCreator.error') : undefined}
               >
                 <Button
                   type="submit"
