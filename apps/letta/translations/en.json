@@ -471,12 +471,12 @@
     },
     "agentName": {
       "label": "{baseName} Name",
-      "tooltip": "The LLM backend for the {baseName}",
       "edit": "Edit {baseName} Name"
     },
     "copyAgentId": "Copy {baseName} ID",
     "title": "{baseName} Settings",
     "modelInput": {
+      "tooltip": "The LLM backend for the {baseName}",
       "recommended": "Recommended models",
       "others": "All available models",
       "label": "Model"
@@ -573,8 +573,14 @@
     },
     "toggleMemoryType": {
       "label": "Toggle Memory Type",
-      "templated": "Template",
-      "simulated": "Simulated"
+      "templated": {
+        "label": "Template",
+        "tooltip": "The template memory is the initial memory state for any new deployed agents that use this template"
+      },
+      "simulated": {
+        "label": "Simulated",
+        "tooltip": "The memory state of the simulated agent (reset when you flush the simulator)"
+      }
     },
     "mobileTitle": "Core Memories",
     "EditMemoryForm": {
@@ -922,6 +928,7 @@
     "error": "There was an error fetching the simulated agent, please try again or contact support."
   },
   "ADE/Tools": {
+    "infoTooltip": "Connect tools to your agent to allow them to take custom actions",
     "mobileTitle": "Tools",
     "title": "Tools ({toolCount})",
     "AddToolDialogDetailActions": {
@@ -1007,6 +1014,7 @@
     "ToolsList": {
       "removeTool": "Remove Tool",
       "lettaCoreTools": "Letta Core Tools ({toolCount})",
+      "lettaCoreToolsInfo": "Default tools added to agents to enable memory management",
       "otherTools": "Other Tools ({toolCount})",
       "addNewTool": "Add New Tool"
     },

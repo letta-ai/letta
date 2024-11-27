@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { PanelTemplate } from '@letta-web/component-library';
+import { InfoTooltip } from '@letta-web/component-library';
 import {
   Alert,
   Button,
@@ -503,12 +504,22 @@ function EditMemory() {
               label={t('toggleMemoryType.label')}
               items={[
                 {
-                  label: t('toggleMemoryType.templated'),
+                  label: t('toggleMemoryType.templated.label'),
                   value: 'templated',
+                  postIcon: (
+                    <InfoTooltip
+                      text={t('toggleMemoryType.templated.tooltip')}
+                    />
+                  ),
                 },
                 {
-                  label: t('toggleMemoryType.simulated'),
+                  label: t('toggleMemoryType.simulated.label'),
                   value: 'simulated',
+                  postIcon: (
+                    <InfoTooltip
+                      text={t('toggleMemoryType.simulated.tooltip')}
+                    />
+                  ),
                 },
               ]}
             />
@@ -532,7 +543,7 @@ export const editCoreMemories = {
     return t('mobileTitle');
   },
   useGetInfoTooltipText: () => {
-    const t = useTranslations('ADE/ArchivalMemories');
+    const t = useTranslations('ADE/EditCoreMemoriesPanel');
 
     return t('infoTooltip');
   },

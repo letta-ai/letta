@@ -130,6 +130,7 @@ interface ToggleGroupItemType {
   label: string;
   value: string;
   icon?: React.ReactNode;
+  postIcon?: React.ReactNode;
   hideLabel?: boolean;
 }
 
@@ -173,6 +174,7 @@ function ToggleGroupWrapper(props: ToggleGroupProps) {
               <span className={item.hideLabel ? 'sr-only' : ''}>
                 {item.label}
               </span>
+              {item.postIcon}
             </ToggleGroupItem>
           </MaybeTooltip>
         ))}

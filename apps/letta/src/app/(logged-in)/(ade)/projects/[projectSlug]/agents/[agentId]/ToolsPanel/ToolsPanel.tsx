@@ -910,6 +910,9 @@ function ToolsList(props: ToolsProps) {
     fileTreeTools[0].name = t('ToolsList.lettaCoreTools', {
       toolCount: lettaCoreToolCount,
     });
+    fileTreeTools[0].infoTooltip = {
+      text: t('ToolsList.lettaCoreToolsInfo'),
+    };
     fileTreeTools[1].name = t('ToolsList.otherTools', {
       toolCount: otherToolCount,
     });
@@ -1121,6 +1124,11 @@ export const toolsPanelTemplate = {
     const t = useTranslations('ADE/Tools');
 
     return t('mobileTitle');
+  },
+  useGetInfoTooltipText: () => {
+    const t = useTranslations('ADE/Tools');
+
+    return t('infoTooltip');
   },
   useGetTitle: () => {
     const t = useTranslations('ADE/Tools');

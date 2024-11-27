@@ -424,7 +424,7 @@ export const contextWindowPanel = {
   useGetInfoTooltipText: () => {
     const t = useTranslations('ADE/ContextEditorPanel');
 
-    return t('mobileTitle');
+    return t('infoTooltip');
   },
   content: ContextWindowPanel,
   data: z.object({}),

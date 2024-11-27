@@ -125,7 +125,7 @@ export function ChatInput<Roles extends string>(props: ChatInputProps<Roles>) {
           placeholder={t('placeholder')}
         />
         <HStack justify="spaceBetween">
-          <HStack>
+          <HStack align="center" gap={false}>
             {roles.length > 1 && (
               <Popover
                 className="w-auto"
