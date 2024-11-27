@@ -17,12 +17,14 @@ const cookieConfiguration: Record<
   [CookieNames.CSRF_PROTECTION]: {
     httpOnly: true,
     path: '/',
-    secure: true,
+    // safari does not allow secure cookies for localhost development
+    secure: process.env.NODE_ENV === 'production',
   },
   [CookieNames.LETTA_SESSION]: {
     httpOnly: true,
     path: '/',
-    secure: true,
+    // safari does not allow secure cookies for localhost development
+    secure: process.env.NODE_ENV === 'production',
   },
   [CookieNames.THEME]: {
     httpOnly: true,

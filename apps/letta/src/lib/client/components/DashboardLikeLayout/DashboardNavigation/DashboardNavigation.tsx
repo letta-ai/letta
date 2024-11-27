@@ -532,6 +532,7 @@ function NavigationOverlay() {
   return (
     <>
       <HStack
+        justify="start"
         as="button"
         onClick={() => {
           setOpen((v) => !v);
@@ -752,7 +753,7 @@ export function DashboardHeader() {
         >
           <HStack gap="large" align="center">
             <HStack fullWidth align="center">
-              <HStack align="center">
+              <HStack justify="start" align="center">
                 <>
                   {/* eslint-disable-next-line react/forbid-component-props */}
                   <Frame className="contents visibleSidebar:hidden">

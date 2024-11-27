@@ -94,7 +94,13 @@ const DialogContent = React.forwardRef<
           )}
           {...props}
         >
-          <VStack collapseHeight flex gap={false} fullHeight={isFull}>
+          <VStack
+            className="max-h-[100%]"
+            overflow="hidden"
+            flex
+            gap={false}
+            fullHeight={isFull}
+          >
             {errorMessage && (
               <Alert
                 fullWidth
@@ -107,7 +113,8 @@ const DialogContent = React.forwardRef<
 
             <VStack
               flex
-              collapseHeight
+              className="max-h-[100%]"
+              overflow="hidden"
               gap={false}
               position="relative"
               fullHeight={isFull}
