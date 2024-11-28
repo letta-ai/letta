@@ -7,7 +7,7 @@ organization:
 # whether to emit the Node SDK and what it's package name should be.
 targets:
   node:
-    package_name: "@letta/letta"
+    package_name: "@letta-ai/letta"
     production_repo: letta-ai/letta-node
     publish:
       npm: true
