@@ -26,6 +26,7 @@ import { useCallback, useEffect, useMemo } from 'react';
 import { LoadingEmptyStatusComponent } from '../../reusable/LoadingEmptyStatusComponent/LoadingEmptyStatusComponent';
 import { TABLE_ROW_HEIGHT } from '../../../constants';
 import { SearchIcon } from '../../icons';
+import './DataTable.scss';
 
 interface TableBodyContentProps<Data> {
   table: UseReactTableType<Data>;
@@ -86,6 +87,14 @@ function TableBodyContent<Data>(props: TableBodyContentProps<Data>) {
             {row.getVisibleCells().map((cell) => (
               <TableCell
                 align={cell.column.columnDef.meta?.style.columnAlign}
+                className={cn(
+                  cell.column.columnDef.meta?.style.sticky === 'left' &&
+                    'sticky left-0',
+                  cell.column.columnDef.meta?.style.sticky === 'right' &&
+                    'sticky right-0',
+                  cell.column.columnDef.meta?.style.sticky &&
+                    'linear-gradient-background'
+                )}
                 key={cell.id}
               >
                 {flexRender(cell.column.columnDef.cell, cell.getContext())}

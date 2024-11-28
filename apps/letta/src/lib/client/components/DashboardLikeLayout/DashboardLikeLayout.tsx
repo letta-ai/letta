@@ -30,7 +30,7 @@ export async function DashboardLikeLayout(props: DashboardLikeLayoutProps) {
           <HStack gap={false} fullWidth>
             {!hideSidebar && <NavigationSidebar />}
 
-            <Frame position="relative" fullWidth>
+            <Frame position="relative" overflow="hidden" fullWidth>
               <DashboardTransition>{children}</DashboardTransition>
             </Frame>
           </HStack>

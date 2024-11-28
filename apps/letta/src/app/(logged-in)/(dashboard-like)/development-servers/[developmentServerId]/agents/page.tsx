@@ -169,6 +169,7 @@ function LocalProjectPage() {
         meta: {
           style: {
             columnAlign: 'right',
+            sticky: 'right',
           },
         },
         cell: ({ row }) => (
