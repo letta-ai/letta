@@ -1,8 +1,4 @@
-# yaml-language-server: $schema=https://app.stainlessapi.com/config.schema.json
-
 organization:
-  # Name of your organization or company, used to determine the name of the client
-  # and headings.
   name: letta
   docs: https://docs.letta.com
   contact: dev-feedback@letta.com
@@ -11,13 +7,13 @@ organization:
 # whether to emit the Node SDK and what it's package name should be.
 targets:
   node:
-    package_name: "@letta/client"
-    production_repo: null
+    package_name: "@letta-ai/letta"
+    production_repo: letta-ai/letta-node
     publish:
-      npm: false
+      npm: true
   python:
     package_name: letta
-    production_repo: null
+    production_repo: letta-ai/letta-python
     publish:
       pypi: false
 
@@ -42,7 +38,8 @@ environments:
 
 # `pagination` defines [pagination schemes] which provides a template to match
 # endpoints and generate next-page and auto-pagination helpers in the SDKs.
-pagination: []
+pagination:
+  []
 
 # `resources` define the structure and organziation for your API, such as how
 # methods and models are grouped together and accessed. See the [configuration
@@ -68,6 +65,7 @@ resources:
           create: post /v1/agents/{agent_id}/messages
           update: patch /v1/agents/{agent_id}/messages/{message_id}
 
+
 settings:
   license: Apache-2.0
 
@@ -79,7 +77,8 @@ readme:
     default:
       type: request
       endpoint: get /v1/agents/
-      params: &ref_0 {}
+      params:
+        &ref_0 {}
     headline:
       type: request
       endpoint: get /v1/agents/
@@ -87,4 +86,5 @@ readme:
     pagination:
       type: request
       endpoint: get /v1/agents/
-      params: {}
+      params:
+        {}
