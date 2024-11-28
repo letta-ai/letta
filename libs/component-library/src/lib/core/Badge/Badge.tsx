@@ -5,6 +5,7 @@ import type { VariantProps } from 'class-variance-authority';
 import { cva } from 'class-variance-authority';
 import { cn } from '@letta-web/core-style-config';
 import { Slot } from '@radix-ui/react-slot';
+import { Typography } from '../Typography/Typography';
 
 const badgeVariants = cva('items-center flex', {
   variants: {
@@ -31,9 +32,12 @@ export function Badge(props: BadgeProps) {
     <HStack
       className={cn(badgeVariants({ size }))}
       color={props.color || 'background-grey'}
+      gap="small"
     >
-      {preIcon && <Slot className="w-4 h-4">{preIcon}</Slot>}
-      {content}
+      {preIcon && <Slot className="w-3 h-3">{preIcon}</Slot>}
+      <Typography variant="body2" bold>
+        {content}
+      </Typography>
     </HStack>
   );
 }

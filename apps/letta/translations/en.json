@@ -217,7 +217,8 @@
   },
   "component-library/FunctionCall": {
     "isExecuting": "Executing",
-    "completed": "Completed",
+    "error": "Error",
+    "success": "Success",
     "request": "Request",
     "response": "Response"
   },
