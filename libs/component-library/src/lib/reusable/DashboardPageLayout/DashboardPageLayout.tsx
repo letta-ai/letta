@@ -9,6 +9,8 @@ import './DashboardPageLayout.scss';
 import { cn } from '@letta-web/core-style-config';
 import Link from 'next/link';
 import { ChevronLeftIcon } from '../../icons';
+import { HiddenOnMobile } from '../../framing/HiddenOnMobile/HiddenOnMobile';
+import { VisibleOnMobile } from '../../framing/VisibleOnMobile/VisibleOnMobile';
 interface TitleProps {
   title?: BreadcrumbProps['items'] | string;
 }
@@ -99,7 +101,9 @@ export function DashboardPageLayout(props: DashboardPageLayoutProps) {
                 {icon}
                 <Title title={title} />
               </HStack>
-              <HStack align="center">{actions}</HStack>
+              <HiddenOnMobile>
+                <HStack align="center">{actions}</HStack>
+              </HiddenOnMobile>
             </HStack>
           </VStack>
           {subtitle && (
@@ -107,7 +111,13 @@ export function DashboardPageLayout(props: DashboardPageLayoutProps) {
               <Typography variant="heading5">{subtitle}</Typography>
             </VStack>
           )}
+          <VisibleOnMobile>
+            <HStack paddingTop="medium" fullWidth>
+              {actions}
+            </HStack>
+          </VisibleOnMobile>
         </VStack>
+
         <VStack fullWidth collapseHeight>
           {props.children}
         </VStack>

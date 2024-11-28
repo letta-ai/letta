@@ -28,7 +28,7 @@ function LogoContainer() {
       justify="center"
       color="primary"
       /* eslint-disable-next-line react/forbid-component-props */
-      className="w-[40px]"
+      className="w-[40px] min-w-[40px]"
       fullHeight
     >
       <Tooltip content={t('returnToHome')}>
@@ -50,17 +50,21 @@ export function ADEHeader(props: ADEHeaderProps) {
       align="center"
       border
       /* eslint-disable-next-line react/forbid-component-props */
-      className="h-[40px] min-h-[40px] relative"
+      className="h-[40px] min-h-[40px] largerThanMobile:pr-0 pr-3 relative"
       fullWidth
       color="background"
     >
       <HiddenOnMobile>
-        <HStack align="center" fullHeight gap={false}>
+        <HStack overflowX="hidden" align="center" fullHeight gap={false}>
           <LogoContainer />
           <ProjectSelector />
           <Typography variant="body2">/</Typography>
-          <HStack paddingLeft="small">
-            <Typography variant="body2">{agentName}</Typography>
+          <HStack overflowX="hidden" paddingLeft="small">
+            <Tooltip asChild content={agentName}>
+              <Typography fullWidth overflow="ellipsis" noWrap variant="body2">
+                {agentName}
+              </Typography>
+            </Tooltip>
           </HStack>
         </HStack>
         {props.children}
@@ -75,7 +79,7 @@ export function ADEHeader(props: ADEHeaderProps) {
         >
           <LogoContainer />
           <HStack justify="center" fullWidth align="center">
-            <Typography variant="body2">{agentName}</Typography>
+            <Typography variant="body">{agentName}</Typography>
           </HStack>
         </HStack>
         {props.children}

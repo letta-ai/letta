@@ -17,7 +17,7 @@ describe('Allow users to create and manage API keys', () => {
 
     cy.location('pathname').should('match', /\/api-keys/);
 
-    cy.findByTestId('create-api-key-button').click();
+    cy.findAllByTestId('create-api-key-button').first().click();
 
     cy.findByTestId('api-key-name-input').type(API_KEY_NAME);
 
