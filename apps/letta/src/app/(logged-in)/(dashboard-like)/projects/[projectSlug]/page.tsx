@@ -72,12 +72,11 @@ function AgentTemplatesList(props: AgentTemplatesListProps) {
 }
 
 interface CreateAgentTemplateButtonProps {
-  hideLabel?: boolean;
   projectSlug: string;
 }
 
 function CreateAgentTemplateButton(props: CreateAgentTemplateButtonProps) {
-  const { projectSlug, hideLabel } = props;
+  const { projectSlug } = props;
   const t = useTranslations('projects/(projectSlug)/page');
 
   return (
@@ -86,7 +85,6 @@ function CreateAgentTemplateButton(props: CreateAgentTemplateButtonProps) {
       data-testid="create-agent-template-button"
       preIcon={<PlusIcon />}
       color="tertiary"
-      hideLabel={hideLabel}
       href={`/projects/${projectSlug}/templates/new`}
     />
   );
@@ -127,7 +125,7 @@ function AgentTemplatesSection() {
           <>
             {/* This button should only be displayed if we have agents, otherwise we show an alert that asks them to do so instead */}
             {agentCount >= 1 && (
-              <CreateAgentTemplateButton projectSlug={projectSlug} hideLabel />
+              <CreateAgentTemplateButton projectSlug={projectSlug} />
             )}
           </>
         }

@@ -15,6 +15,7 @@ declare module '@tanstack/react-table' {
   interface ColumnMeta<TData extends RowData, TValue> {
     style: {
       columnAlign: 'center' | 'left' | 'right';
+      sticky?: 'left' | 'right';
     };
   }
 }
