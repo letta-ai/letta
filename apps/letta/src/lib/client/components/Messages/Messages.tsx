@@ -235,10 +235,16 @@ export function Messages(props: MessagesProps) {
                   fontSize="small"
                   variant="minimal"
                   showLineNumbers={false}
-                  code={JSON.stringify({
-                    ...agentMessage,
-                    function_return: tryFallbackParseJson(agentMessage.function_return),
-                  }, null, 2)}
+                  code={JSON.stringify(
+                    {
+                      ...agentMessage,
+                      function_return: tryFallbackParseJson(
+                        agentMessage.function_return
+                      ),
+                    },
+                    null,
+                    2
+                  )}
                   language="javascript"
                 ></Code>
               </MessageWrapper>
@@ -292,9 +298,9 @@ export function Messages(props: MessagesProps) {
                 (message) =>
                   message.message_type === 'function_return' &&
                   // eslint-disable-next-line @typescript-eslint/no-confusing-void-expression
-                  get(message, 'function_call.function_call_id') ===
+                  get(message, 'function_call_id') ===
                     // eslint-disable-next-line @typescript-eslint/no-confusing-void-expression
-                    get(agentMessage, 'function_call_id')
+                    agentMessage.function_call.function_call_id
               );
 
               return {
@@ -304,6 +310,7 @@ export function Messages(props: MessagesProps) {
                     name={agentMessage.function_call.name || ''}
                     inputs={agentMessage.function_call.arguments || ''}
                     response={get(functionResponse, 'function_return')}
+                    status={get(functionResponse, 'status')}
                   />
                 ),
                 timestamp: new Date(agentMessage.date).toISOString(),
