@@ -134,7 +134,7 @@ function AllToolsView(props: AllToolsViewProps) {
       <VStack gap="large" fullHeight fullWidth>
         <HStack align="center" fullWidth justify="spaceBetween">
           <Typography variant="heading4" bold>
-            All Tools
+            All tools
           </Typography>
           <Button
             preIcon={<PlusIcon />}
