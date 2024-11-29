@@ -95,6 +95,8 @@ export const premadeAgentTemplates: Record<AgentRecipeVariant, CreateAgent> = {
       'conversation_search',
       'conversation_search_date',
       'send_message',
+      'core_memory_append',
+      'core_memory_replace',
     ],
     llm_config: {
       model: 'gpt-4',
@@ -198,6 +200,8 @@ export const premadeAgentTemplates: Record<AgentRecipeVariant, CreateAgent> = {
       'conversation_search',
       'conversation_search_date',
       'send_message',
+      'core_memory_append',
+      'core_memory_replace',
     ],
     llm_config: {
       model: 'gpt-4',
@@ -301,6 +305,8 @@ export const premadeAgentTemplates: Record<AgentRecipeVariant, CreateAgent> = {
       'conversation_search',
       'conversation_search_date',
       'send_message',
+      'core_memory_append',
+      'core_memory_replace',
     ],
     llm_config: {
       model: 'gpt-4',
@@ -402,6 +408,8 @@ export const premadeAgentTemplates: Record<AgentRecipeVariant, CreateAgent> = {
       'conversation_search',
       'conversation_search_date',
       'send_message',
+      'core_memory_append',
+      'core_memory_replace',
     ],
     llm_config: {
       model: 'gpt-4',
