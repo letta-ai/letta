@@ -17,7 +17,7 @@
       "settings": "Settings",
       "signOut": "Sign out",
       "organization": "Organization",
-      "switchOrganizations": "Switch Organizations"
+      "switchOrganizations": "Switch organizations"
     },
     "header": {
       "Documentation": "Docs"
@@ -78,11 +78,11 @@
       "title": "Create a new data source",
       "trigger": "Create data source",
       "name": {
-        "label": "Data Source Name",
+        "label": "Data source name",
         "placeholder": "my-data-source-name"
       },
       "embeddingModel": {
-        "label": "Embedding Model"
+        "label": "Embedding model"
       },
       "descriptionInput": {
         "label": "Description",
@@ -101,13 +101,13 @@
     "submit": "Create Organization"
   },
   "project/[projectId]/settings": {
-    "title": "Project Settings",
+    "title": "Project settings",
     "EditProjectSettings": {
       "name": {
-        "label": "Project Name"
+        "label": "Project name"
       },
       "slug": {
-        "label": "Project Slug",
+        "label": "Project slug",
         "placeholder": "my-project-slug"
       },
       "errors": {
@@ -276,8 +276,8 @@
       "nameInput": {
         "label": "Project Name"
       },
-      "createButton": "Create Project",
-      "triggerButton": "Create Project"
+      "createButton": "Create project",
+      "triggerButton": "Create project"
     },
     "projectsList": {
       "loadingMessage": "Loading projects...",
@@ -424,7 +424,7 @@
     "title": "Sources ({count})",
     "errorDetaching": "There was an error detaching this data source, please try again or contact support.",
     "editName": {
-      "label": "Data Source Name",
+      "label": "Data source name",
       "placeholder": "my-data-source-name"
     },
     "edit": "Edit",
@@ -763,23 +763,23 @@
   },
   "starter-kits": {
     "internetChatbot": {
-      "title": "Internet Chatbot",
+      "title": "Internet chatbot",
       "description": "A general purpose chatbot designed to answer queries via the internet."
     },
     "characterRoleplay": {
-      "title": "Character Roleplay",
+      "title": "Character roleplay",
       "description": "Create an agent to roleplay as a character from a fantasy world."
     },
     "personalAssistant": {
-      "title": "Personal Assistant",
+      "title": "Personal assistant",
       "description": "Chat between a user and a personal assistant designed to enhance the user's productivity."
     },
     "scratch": {
-      "title": "Start from Scratch",
+      "title": "Start from scratch",
       "description": "Start with an empty agent with minimal default tools and a blank initial memory state."
     },
     "customerSupport": {
-      "title": "Customer Support",
+      "title": "Customer support",
       "description": "An agent designed to answer customer support requests."
     },
     "companion": {
@@ -811,7 +811,7 @@
     },
     "loading": "Creating agent...",
     "starterKits": {
-      "title": "Starter Kits",
+      "title": "Starter kits",
       "description": "Choose from a starter pack and customize it in the ADE, or start from scratch"
     },
     "back": "All agents"
@@ -873,7 +873,7 @@
     "submit": "Add Remote Server"
   },
   "development-servers/hooks": {
-    "localAgents": "Local Agents"
+    "localAgents": "Local agents"
   },
   "development-servers/page": {
     "UpdateDevelopmentServerDetailsDialog": {
@@ -892,8 +892,8 @@
         "label": "Password"
       }
     },
-    "title": "Local Agents",
-    "description": "View your available agents running inside the Letta server.",
+    "title": "Local agents",
+    "description": "View your available agents running inside the Letta server",
     "createAgent": "Create a new agent",
     "searchInput": {
       "placeholder": "Search agents"
@@ -1200,8 +1200,8 @@
       "generatedCopy": "We have generated you an API Key, please make sure to store it safely.",
       "downloadText": "Download API key",
       "copyToClipboard": "Copy API key to clipboard",
-      "description": "Provide a descriptive name for identifying for later use",
-      "label": "Name"
+      "description": "Provide a descriptive name for identifying this API key",
+      "label": "API key name"
     }
   },
   "ADE/DeploymentAgentMangerPanel": {
