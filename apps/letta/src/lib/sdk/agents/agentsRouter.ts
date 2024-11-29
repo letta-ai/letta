@@ -91,7 +91,11 @@ export async function copyAgentById(
   const nextAgent = await AgentsService.createAgent(
     {
       requestBody: {
-        ...agentBody,
+        llm_config: agentBody.llm_config,
+        embedding_config: agentBody.embedding_config,
+        system: agentBody.system,
+        tools: agentBody.tool_names,
+        name: agentBody.name,
         memory_blocks: agentBody.memory.blocks.map((block) => {
           return {
             limit: block.limit,

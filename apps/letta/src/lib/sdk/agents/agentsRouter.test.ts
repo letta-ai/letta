@@ -7,6 +7,7 @@ import { AgentRecipeVariant } from '$letta/types';
 import { lettaAgentAPIMock } from '@letta-web/letta-agents-api-testing';
 import { premadeAgentTemplates } from '$letta/sdk/agents/premadeAgentTemplates';
 import * as router from '$letta/web-api/router';
+import type { AgentState } from '@letta-web/letta-agents-api';
 
 jest.mock('$letta/web-api/router', () => ({
   ...jest.requireActual('$letta/web-api/router'),
@@ -14,6 +15,9 @@ jest.mock('$letta/web-api/router', () => ({
 }));
 
 const createProjectSpy = jest.spyOn(router, 'createProject');
+
+const premadeTemplate =
+  premadeAgentTemplates[AgentRecipeVariant.CUSTOMER_SUPPORT];
 
 describe('agentsRouter', () => {
   describe('createAgent', () => {
@@ -81,6 +85,7 @@ describe('agentsRouter', () => {
         {
           requestBody: {
             system: 'swag',
+            memory_blocks: [],
             name: expect.any(String),
           },
         },
@@ -440,20 +445,30 @@ describe('agentsRouter', () => {
       });
 
       lettaAgentAPIMock.AgentsService.getAgent.mockResolvedValue({
-        ...premadeAgentTemplates[AgentRecipeVariant.CUSTOMER_SUPPORT],
+        tool_names: premadeTemplate.tools || [],
+        embedding_config: premadeTemplate.embedding_config,
+        llm_config: premadeTemplate.llm_config,
         system: 'test',
         memory: {
-          ...premadeAgentTemplates[AgentRecipeVariant.CUSTOMER_SUPPORT].memory,
-          memory: {
-            ...premadeAgentTemplates[AgentRecipeVariant.CUSTOMER_SUPPORT].memory
-              ?.memory,
-            human: {
-              ...premadeAgentTemplates[AgentRecipeVariant.CUSTOMER_SUPPORT]
-                .memory?.memory?.human,
-              value:
-                "The human has not provided any information about themselves. But they are looking for help with a customer support issue. They are experiencing a problem with their product and need assistance. They are looking for a quick resolution to their issue. The human's name is {{name}}",
-            },
-          },
+          prompt_template: '',
+          blocks: premadeAgentTemplates[
+            AgentRecipeVariant.CUSTOMER_SUPPORT
+          ].memory_blocks.map((v) => {
+            if (v.label === 'human') {
+              return {
+                label: 'human',
+                limit: 2000,
+                value:
+                  "The human has not provided any information about themselves. But they are looking for help with a customer support issue. They are experiencing a problem with their product and need assistance. They are looking for a quick resolution to their issue. The human's name is {{name}}",
+              };
+            }
+
+            return {
+              label: v.label,
+              limit: 2000,
+              value: v.value || '',
+            };
+          }),
         },
         agent_type: 'memgpt_agent',
         id: 'test-agent-id',
@@ -513,20 +528,24 @@ describe('agentsRouter', () => {
             ...premadeAgentTemplates[AgentRecipeVariant.CUSTOMER_SUPPORT],
             system: 'test',
             name: expect.any(String),
-            memory: {
-              ...premadeAgentTemplates[AgentRecipeVariant.CUSTOMER_SUPPORT]
-                .memory,
-              memory: {
-                ...premadeAgentTemplates[AgentRecipeVariant.CUSTOMER_SUPPORT]
-                  .memory?.memory,
-                human: {
-                  ...premadeAgentTemplates[AgentRecipeVariant.CUSTOMER_SUPPORT]
-                    .memory?.memory?.human,
+            memory_blocks: premadeAgentTemplates[
+              AgentRecipeVariant.CUSTOMER_SUPPORT
+            ].memory_blocks.map((v) => {
+              if (v.label === 'human') {
+                return {
+                  label: 'human',
+                  limit: 2000,
                   value:
                     "The human has not provided any information about themselves. But they are looking for help with a customer support issue. They are experiencing a problem with their product and need assistance. They are looking for a quick resolution to their issue. The human's name is Timber",
-                },
-              },
-            },
+                };
+              }
+
+              return {
+                label: v.label,
+                limit: 2000,
+                value: v.value || '',
+              };
+            }),
           },
         },
         {
@@ -576,19 +595,53 @@ describe('agentsRouter', () => {
         updatedAt: new Date(),
       });
 
-      lettaAgentAPIMock.AgentsService.getAgent.mockResolvedValue({
-        ...premadeAgentTemplates[AgentRecipeVariant.CUSTOMER_SUPPORT],
+      const GetAgentResolvedValue = {
+        tool_names: premadeTemplate.tools || [],
+        embedding_config: premadeTemplate.embedding_config,
+        llm_config: premadeTemplate.llm_config,
+        system: 'test',
+        memory: {
+          prompt_template: '',
+          blocks: premadeAgentTemplates[
+            AgentRecipeVariant.CUSTOMER_SUPPORT
+          ].memory_blocks.map((v) => {
+            if (v.label === 'human') {
+              return {
+                label: 'human',
+                limit: 2000,
+                value:
+                  "The human has not provided any information about themselves. But they are looking for help with a customer support issue. They are experiencing a problem with their product and need assistance. They are looking for a quick resolution to their issue. The human's name is {{name}}",
+              };
+            }
+
+            return {
+              label: v.label,
+              limit: 2000,
+              value: v.value || '',
+            };
+          }),
+        },
+        agent_type: 'memgpt_agent',
         id: 'test-agent-id',
         name: 'test',
-      });
+      };
+
+      lettaAgentAPIMock.AgentsService.getAgent.mockResolvedValue(
+        GetAgentResolvedValue
+      );
 
       lettaAgentAPIMock.AgentsService.getAgentSources.mockResolvedValue([]);
 
-      lettaAgentAPIMock.AgentsService.createAgent.mockResolvedValue({
-        ...premadeAgentTemplates[AgentRecipeVariant.CUSTOMER_SUPPORT],
+      const createdAgent: AgentState = {
         id: 'test-agent-id',
-        name: 'next-test',
-      });
+        name: 'test',
+        created_at: new Date().toISOString(),
+        memory: GetAgentResolvedValue.memory,
+      };
+
+      lettaAgentAPIMock.AgentsService.createAgent.mockResolvedValue(
+        createdAgent
+      );
 
       const { valuesFn, returningFn } = mockDatabaseInsert();
 
@@ -628,7 +681,26 @@ describe('agentsRouter', () => {
         {
           requestBody: {
             ...premadeAgentTemplates[AgentRecipeVariant.CUSTOMER_SUPPORT],
+            system: 'test',
             name: expect.any(String),
+            memory_blocks: premadeAgentTemplates[
+              AgentRecipeVariant.CUSTOMER_SUPPORT
+            ].memory_blocks.map((v) => {
+              if (v.label === 'human') {
+                return {
+                  label: 'human',
+                  limit: 2000,
+                  value:
+                    "The human has not provided any information about themselves. But they are looking for help with a customer support issue. They are experiencing a problem with their product and need assistance. They are looking for a quick resolution to their issue. The human's name is {{name}}",
+                };
+              }
+
+              return {
+                label: v.label,
+                limit: 2000,
+                value: v.value || '',
+              };
+            }),
           },
         },
         {
@@ -654,7 +726,7 @@ describe('agentsRouter', () => {
       expect(response).toEqual({
         status: 201,
         body: {
-          ...premadeAgentTemplates[AgentRecipeVariant.CUSTOMER_SUPPORT],
+          ...createdAgent,
           name: valuesFn.mock.calls[0][0].key,
           id: 'test-agent-id',
         },
@@ -682,8 +754,32 @@ describe('agentsRouter', () => {
       });
 
       lettaAgentAPIMock.AgentsService.getAgent.mockResolvedValue({
-        ...premadeAgentTemplates[AgentRecipeVariant.CUSTOMER_SUPPORT],
-        system: 'hi',
+        tool_names: premadeTemplate.tools || [],
+        embedding_config: premadeTemplate.embedding_config,
+        llm_config: premadeTemplate.llm_config,
+        system: 'test',
+        memory: {
+          prompt_template: '',
+          blocks: premadeAgentTemplates[
+            AgentRecipeVariant.CUSTOMER_SUPPORT
+          ].memory_blocks.map((v) => {
+            if (v.label === 'human') {
+              return {
+                label: 'human',
+                limit: 2000,
+                value:
+                  "The human has not provided any information about themselves. But they are looking for help with a customer support issue. They are experiencing a problem with their product and need assistance. They are looking for a quick resolution to their issue. The human's name is {{name}}",
+              };
+            }
+
+            return {
+              label: v.label,
+              limit: 2000,
+              value: v.value || '',
+            };
+          }),
+        },
+        agent_type: 'memgpt_agent',
         id: 'test-agent-id',
         name: 'test',
       });
@@ -734,8 +830,26 @@ describe('agentsRouter', () => {
         {
           requestBody: {
             ...premadeAgentTemplates[AgentRecipeVariant.CUSTOMER_SUPPORT],
-            system: 'hi',
+            system: 'test',
             name: expect.any(String),
+            memory_blocks: premadeAgentTemplates[
+              AgentRecipeVariant.CUSTOMER_SUPPORT
+            ].memory_blocks.map((v) => {
+              if (v.label === 'human') {
+                return {
+                  label: 'human',
+                  limit: 2000,
+                  value:
+                    "The human has not provided any information about themselves. But they are looking for help with a customer support issue. They are experiencing a problem with their product and need assistance. They are looking for a quick resolution to their issue. The human's name is {{name}}",
+                };
+              }
+
+              return {
+                label: v.label,
+                limit: 2000,
+                value: v.value || '',
+              };
+            }),
           },
         },
         {
@@ -805,6 +919,7 @@ describe('agentsRouter', () => {
         {
           requestBody: {
             system: 'swag',
+            memory_blocks: [],
             name: expect.any(String),
           },
         },
@@ -871,6 +986,7 @@ describe('agentsRouter', () => {
         {
           requestBody: {
             system: 'swag',
+            memory_blocks: [],
             name: expect.any(String),
           },
         },
@@ -960,6 +1076,7 @@ describe('agentsRouter', () => {
         {
           requestBody: {
             system: 'swag',
+            memory_blocks: [],
             name: expect.any(String),
           },
         },
@@ -991,7 +1108,13 @@ describe('agentsRouter', () => {
       name: 'test-agent',
       created_at: new Date().toISOString(),
       system: '',
-      ...premadeAgentTemplates[AgentRecipeVariant.CUSTOMER_SUPPORT],
+      memory: {
+        prompt_template: '',
+        blocks: premadeTemplate.memory_blocks,
+      },
+      llm_config: premadeTemplate.llm_config,
+      tools: premadeTemplate.tools,
+      embedding_config: premadeTemplate.embedding_config,
     };
 
     createProjectSpy.mockResolvedValue({
@@ -1036,6 +1159,7 @@ describe('agentsRouter', () => {
         requestBody: {
           system: 'swag',
           name: expect.any(String),
+          memory_blocks: [],
         },
       },
       {
