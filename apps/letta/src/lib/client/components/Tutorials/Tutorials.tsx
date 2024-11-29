@@ -5,10 +5,10 @@ import {
   NiceGridDisplay,
 } from '@letta-web/component-library';
 import { useTranslations } from 'next-intl';
-import memory from './memory.png';
-import discord from './discord.png';
-import multiagent from './multiagent.png';
-import voice from './voice.png';
+import memory from './memory.webp';
+import discord from './discord.webp';
+import multiagent from './multiagent.webp';
+import voice from './voice.webp';
 
 export function Tutorials() {
   const t = useTranslations('components/tutorials');

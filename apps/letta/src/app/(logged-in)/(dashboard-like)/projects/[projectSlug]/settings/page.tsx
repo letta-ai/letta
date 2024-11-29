@@ -65,7 +65,7 @@ function DeleteProjectSettings() {
     <DashboardPageSection>
       <VStack width="contained" gap="large">
         <Typography variant="heading5" bold>
-          Delete Project
+          Delete project
         </Typography>
         <Typography variant="body">
           Deleting a project will permanently remove all data associated with
@@ -88,9 +88,9 @@ function DeleteProjectSettings() {
                 }
               }}
               title="Are you sure you want to delete this project?"
-              confirmText="Delete Project"
+              confirmText="Delete project"
               confirmColor="destructive"
-              trigger={<Button label="Delete Project" color="destructive" />}
+              trigger={<Button label="Delete project" color="destructive" />}
             >
               <Typography>
                 This action cannot be undone. All data associated with this
@@ -102,7 +102,7 @@ function DeleteProjectSettings() {
                   <Input
                     fullWidth
                     {...field}
-                    label="Project Name"
+                    label="Project name"
                     placeholder="Type the project name to confirm"
                   />
                 )}
