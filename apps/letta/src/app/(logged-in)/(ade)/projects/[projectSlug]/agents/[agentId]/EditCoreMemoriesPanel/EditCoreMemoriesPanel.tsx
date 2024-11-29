@@ -143,7 +143,7 @@ function AdvancedMemoryEditorForm(props: AdvancedMemoryEditorProps) {
           blockLabel: memory.label,
           requestBody: {
             limit: values.maxCharacters,
-            value: values.label,
+            value: values.value,
           },
         });
 
