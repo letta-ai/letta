@@ -805,6 +805,7 @@
     "title": "Create a new agent",
     "error": "There was an error creating the agent, below is the error message, please try again or contact support.",
     "alert": {
+      "local": "your local server (localhost)",
       "title": "You are creating an agent on {serverName}",
       "descriptionLocal": "This will create an agent locally on your machine. This will not deploy the agent to Letta Cloud.",
       "descriptionRemote": "This will create an agent on the remote server. This will not deploy the agent to Letta Cloud."

@@ -226,8 +226,8 @@ function NewAgentPage() {
                 variant="info"
                 title={t('alert.title', {
                   serverName:
-                    config?.name === 'Local agents'
-                      ? 'your local server (localhost)'
+                    config?.id === 'local'
+                      ? t('alert.local')
                       : `"${config?.name || ''}"` || '',
                 })}
               >
