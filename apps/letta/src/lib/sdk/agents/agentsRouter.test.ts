@@ -33,7 +33,7 @@ describe('agentsRouter', () => {
         name: 'test-agent',
         created_at: new Date().toISOString(),
         system: '',
-        ...premadeAgentTemplates[AgentRecipeVariant.CUSTOMER_SUPPORT],
+        ...premadeTemplate,
       };
 
       createProjectSpy.mockResolvedValue({
