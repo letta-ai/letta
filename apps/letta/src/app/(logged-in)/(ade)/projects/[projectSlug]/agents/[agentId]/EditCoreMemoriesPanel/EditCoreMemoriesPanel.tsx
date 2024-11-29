@@ -30,10 +30,7 @@ import { useUpdateMemory } from '../hooks/useUpdateMemory/useUpdateMemory';
 import { useCurrentAgentMetaData } from '../hooks/useCurrentAgentMetaData/useCurrentAgentMetaData';
 import { useCurrentSimulatedAgent } from '../hooks/useCurrentSimulatedAgent/useCurrentSimulatedAgent';
 import type { Block, AgentState } from '@letta-web/letta-agents-api';
-import {
-  useAgentsServiceUpdateAgentMemory,
-  useAgentsServiceUpdateAgentMemoryLimit,
-} from '@letta-web/letta-agents-api';
+import { useAgentsServiceUpdateAgentMemoryBlockByLabel } from '@letta-web/letta-agents-api';
 import { UseAgentsServiceGetAgentKeyFn } from '@letta-web/letta-agents-api';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useFormContext } from 'react-hook-form';
@@ -122,10 +119,8 @@ function AdvancedMemoryEditorForm(props: AdvancedMemoryEditorProps) {
 
   const queryClient = useQueryClient();
 
-  const { mutateAsync: updateMemoryLimit } =
-    useAgentsServiceUpdateAgentMemoryLimit();
-  const { mutateAsync: updateMemoryValue } =
-    useAgentsServiceUpdateAgentMemory();
+  const { mutateAsync: updateAgentMemoryByLabel } =
+    useAgentsServiceUpdateAgentMemoryBlockByLabel();
   const [isPending, setIsPending] = useState(false);
   const [isError, setIsError] = useState(false);
 
@@ -139,41 +134,18 @@ function AdvancedMemoryEditorForm(props: AdvancedMemoryEditorProps) {
           return;
         }
 
-        const existingMemory = agent?.memory?.memory?.[memory.label || ''];
-
-        if (!existingMemory) {
-          throw new Error('Memory not found');
+        if (!memory.label) {
+          return;
         }
 
-        if (!existingMemory.label) {
-          throw new Error('Memory label is required');
-        }
-
-        if (values.maxCharacters !== existingMemory.limit) {
-          existingMemory.limit = values.maxCharacters;
-
-          await updateMemoryLimit({
-            agentId: agent.id,
-            requestBody: {
-              label: existingMemory.label,
-              limit: values.maxCharacters,
-            },
-          });
-        }
-
-        if (values.value !== existingMemory.value) {
-          existingMemory.value = values.value;
-
-          await updateMemoryValue({
-            agentId: agent.id,
-            requestBody: {
-              [existingMemory.label]: {
-                label: existingMemory.label,
-                value: values.value,
-              },
-            },
-          });
-        }
+        await updateAgentMemoryByLabel({
+          agentId: agent.id,
+          blockLabel: memory.label,
+          requestBody: {
+            limit: values.maxCharacters,
+            value: values.label,
+          },
+        });
 
         queryClient.setQueriesData<AgentState | undefined>(
           {
@@ -190,10 +162,17 @@ function AdvancedMemoryEditorForm(props: AdvancedMemoryEditorProps) {
               ...oldData,
               memory: {
                 ...oldData.memory,
-                memory: {
-                  ...(oldData.memory?.memory || {}),
-                  [memory.label || '']: existingMemory,
-                },
+                blocks: oldData.memory.blocks.map((block) => {
+                  if (block.label === memory.label) {
+                    return {
+                      ...block,
+                      limit: values.maxCharacters,
+                      value: values.value,
+                    };
+                  }
+
+                  return block;
+                }),
               },
             };
           }
@@ -205,15 +184,7 @@ function AdvancedMemoryEditorForm(props: AdvancedMemoryEditorProps) {
         setIsPending(false);
       }
     },
-    [
-      agent.id,
-      agent?.memory?.memory,
-      isPending,
-      memory.label,
-      queryClient,
-      updateMemoryLimit,
-      updateMemoryValue,
-    ]
+    [agent.id, isPending, memory.label, queryClient, updateAgentMemoryByLabel]
   );
 
   return (
@@ -286,8 +257,8 @@ function AdvancedEditMemory(props: AdvancedEditMemoryProps) {
   const t = useTranslations('ADE/EditCoreMemoriesPanel');
 
   const memories = useMemo(() => {
-    return Object.values(agent.memory?.memory || {});
-  }, [agent.memory?.memory]);
+    return agent.memory?.blocks || [];
+  }, [agent.memory?.blocks]);
 
   return (
     <Dialog
@@ -343,7 +314,6 @@ function EditMemoryForm(props: EditMemoryFormProps) {
   const { value, onChange, error, lastUpdatedAt, isUpdating } = useUpdateMemory(
     {
       label,
-      type: 'memory',
     }
   );
 
@@ -420,8 +390,8 @@ function DefaultMemory() {
   const agent = useCurrentAgent();
 
   const memories = useMemo(() => {
-    return Object.values(agent.memory?.memory || {});
-  }, [agent.memory?.memory]);
+    return agent.memory?.blocks || [];
+  }, [agent.memory?.blocks]);
 
   return memories.map((block, index) => (
     <VStack
@@ -446,7 +416,7 @@ function SimulatedMemory() {
       return [];
     }
 
-    return Object.values(agent.memory?.memory || {});
+    return agent.memory?.blocks || [];
   }, [agent]);
 
   if (!agent) {
@@ -551,7 +521,7 @@ export const editCoreMemories = {
     const t = useTranslations('ADE/EditCoreMemoriesPanel');
     const { memory } = useCurrentAgent();
 
-    const memoryCount = Object.keys(memory?.memory || {}).length;
+    const memoryCount = (memory?.blocks || []).length;
 
     return t('title', { count: memoryCount || '-' });
   },

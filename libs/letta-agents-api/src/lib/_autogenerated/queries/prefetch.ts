@@ -246,6 +246,44 @@ export const prefetchUseAgentsServiceGetAgentMemory = (
     queryKey: Common.UseAgentsServiceGetAgentMemoryKeyFn({ agentId }),
     queryFn: () => AgentsService.getAgentMemory({ agentId }),
   });
+export const prefetchUseAgentsServiceGetAgentMemoryBlock = (
+  queryClient: QueryClient,
+  {
+    agentId,
+    blockLabel,
+    userId,
+  }: {
+    agentId: string;
+    blockLabel: string;
+    userId?: string;
+  }
+) =>
+  queryClient.prefetchQuery({
+    queryKey: Common.UseAgentsServiceGetAgentMemoryBlockKeyFn({
+      agentId,
+      blockLabel,
+      userId,
+    }),
+    queryFn: () =>
+      AgentsService.getAgentMemoryBlock({ agentId, blockLabel, userId }),
+  });
+export const prefetchUseAgentsServiceGetAgentMemoryBlocks = (
+  queryClient: QueryClient,
+  {
+    agentId,
+    userId,
+  }: {
+    agentId: string;
+    userId?: string;
+  }
+) =>
+  queryClient.prefetchQuery({
+    queryKey: Common.UseAgentsServiceGetAgentMemoryBlocksKeyFn({
+      agentId,
+      userId,
+    }),
+    queryFn: () => AgentsService.getAgentMemoryBlocks({ agentId, userId }),
+  });
 export const prefetchUseAgentsServiceGetAgentRecallMemorySummary = (
   queryClient: QueryClient,
   {

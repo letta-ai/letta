@@ -317,6 +317,52 @@ export const UseAgentsServiceGetAgentMemoryKeyFn = (
   },
   queryKey?: Array<unknown>
 ) => [useAgentsServiceGetAgentMemoryKey, ...(queryKey ?? [{ agentId }])];
+export type AgentsServiceGetAgentMemoryBlockDefaultResponse = Awaited<
+  ReturnType<typeof AgentsService.getAgentMemoryBlock>
+>;
+export type AgentsServiceGetAgentMemoryBlockQueryResult<
+  TData = AgentsServiceGetAgentMemoryBlockDefaultResponse,
+  TError = unknown
+> = UseQueryResult<TData, TError>;
+export const useAgentsServiceGetAgentMemoryBlockKey =
+  'AgentsServiceGetAgentMemoryBlock';
+export const UseAgentsServiceGetAgentMemoryBlockKeyFn = (
+  {
+    agentId,
+    blockLabel,
+    userId,
+  }: {
+    agentId: string;
+    blockLabel: string;
+    userId?: string;
+  },
+  queryKey?: Array<unknown>
+) => [
+  useAgentsServiceGetAgentMemoryBlockKey,
+  ...(queryKey ?? [{ agentId, blockLabel, userId }]),
+];
+export type AgentsServiceGetAgentMemoryBlocksDefaultResponse = Awaited<
+  ReturnType<typeof AgentsService.getAgentMemoryBlocks>
+>;
+export type AgentsServiceGetAgentMemoryBlocksQueryResult<
+  TData = AgentsServiceGetAgentMemoryBlocksDefaultResponse,
+  TError = unknown
+> = UseQueryResult<TData, TError>;
+export const useAgentsServiceGetAgentMemoryBlocksKey =
+  'AgentsServiceGetAgentMemoryBlocks';
+export const UseAgentsServiceGetAgentMemoryBlocksKeyFn = (
+  {
+    agentId,
+    userId,
+  }: {
+    agentId: string;
+    userId?: string;
+  },
+  queryKey?: Array<unknown>
+) => [
+  useAgentsServiceGetAgentMemoryBlocksKey,
+  ...(queryKey ?? [{ agentId, userId }]),
+];
 export type AgentsServiceGetAgentRecallMemorySummaryDefaultResponse = Awaited<
   ReturnType<typeof AgentsService.getAgentRecallMemorySummary>
 >;
@@ -837,20 +883,20 @@ export type AgentsServiceAddToolToAgentMutationResult = Awaited<
 export type AgentsServiceRemoveToolFromAgentMutationResult = Awaited<
   ReturnType<typeof AgentsService.removeToolFromAgent>
 >;
-export type AgentsServiceUpdateAgentMemoryMutationResult = Awaited<
-  ReturnType<typeof AgentsService.updateAgentMemory>
->;
-export type AgentsServiceUpdateAgentMemoryLabelMutationResult = Awaited<
-  ReturnType<typeof AgentsService.updateAgentMemoryLabel>
->;
-export type AgentsServiceUpdateAgentMemoryLimitMutationResult = Awaited<
-  ReturnType<typeof AgentsService.updateAgentMemoryLimit>
+export type AgentsServiceUpdateAgentMemoryBlockByLabelMutationResult = Awaited<
+  ReturnType<typeof AgentsService.updateAgentMemoryBlockByLabel>
 >;
 export type AgentsServiceUpdateAgentMessageMutationResult = Awaited<
   ReturnType<typeof AgentsService.updateAgentMessage>
 >;
 export type BlocksServiceUpdateMemoryBlockMutationResult = Awaited<
   ReturnType<typeof BlocksService.updateMemoryBlock>
+>;
+export type BlocksServiceUpdateAgentMemoryBlockMutationResult = Awaited<
+  ReturnType<typeof BlocksService.updateAgentMemoryBlock>
+>;
+export type BlocksServiceUpdateAgentMemoryBlock1MutationResult = Awaited<
+  ReturnType<typeof BlocksService.updateAgentMemoryBlock1>
 >;
 export type SandboxConfigServiceUpdateSandboxConfigV1SandboxConfigSandboxConfigIdPatchMutationResult =
   Awaited<
@@ -876,8 +922,8 @@ export type SourcesServiceDeleteFileFromSourceMutationResult = Awaited<
 export type AgentsServiceDeleteAgentMutationResult = Awaited<
   ReturnType<typeof AgentsService.deleteAgent>
 >;
-export type AgentsServiceRemoveAgentMemoryBlockMutationResult = Awaited<
-  ReturnType<typeof AgentsService.removeAgentMemoryBlock>
+export type AgentsServiceRemoveAgentMemoryBlockByLabelMutationResult = Awaited<
+  ReturnType<typeof AgentsService.removeAgentMemoryBlockByLabel>
 >;
 export type AgentsServiceDeleteAgentArchivalMemoryMutationResult = Awaited<
   ReturnType<typeof AgentsService.deleteAgentArchivalMemory>

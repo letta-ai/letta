@@ -75,19 +75,14 @@ export type AgentState = {
    * The ids of the messages in the agent's in-context memory.
    */
   message_ids?: Array<string> | null;
-  memory?: Memory;
   /**
    * The tools used by the agent.
    */
-  tools: Array<string>;
+  tool_names: Array<string>;
   /**
    * The list of tool rules.
    */
-  tool_rules?: Array<BaseToolRule> | null;
-  /**
-   * The tags associated with the agent.
-   */
-  tags?: Array<string> | null;
+  tool_rules?: Array<ChildToolRule | InitToolRule | TerminalToolRule> | null;
   /**
    * The system prompt used by the agent.
    */
@@ -104,6 +99,22 @@ export type AgentState = {
    * The embedding configuration used by the agent.
    */
   embedding_config: EmbeddingConfig;
+  /**
+   * The in-context memory of the agent.
+   */
+  memory: Memory;
+  /**
+   * The tools used by the agent.
+   */
+  tools: Array<letta__schemas__tool__Tool>;
+  /**
+   * The sources used by the agent.
+   */
+  sources: Array<Source>;
+  /**
+   * The tags associated with the agent.
+   */
+  tags: Array<string>;
 };
 
 /**
@@ -168,13 +179,6 @@ export type AuthResponse = {
   is_admin?: boolean | null;
 };
 
-export type BaseToolRule = {
-  /**
-   * The name of the tool. Must exist in the database for the user's organization.
-   */
-  tool_name: string;
-};
-
 /**
  * A Block represents a reserved section of the LLM's context window which is editable. `Block` objects contained in the `Memory` object, which is able to edit the Block values.
  *
@@ -236,67 +240,6 @@ export type Block = {
    * The id of the user that last updated this Block.
    */
   last_updated_by_id?: string | null;
-};
-
-/**
- * Create a block
- */
-export type BlockCreate = {
-  /**
-   * Value of the block.
-   */
-  value: string;
-  /**
-   * Character limit of the block.
-   */
-  limit?: number;
-  /**
-   * Name of the block if it is a template.
-   */
-  name?: string | null;
-  is_template?: boolean;
-  /**
-   * Label of the block.
-   */
-  label: string;
-  /**
-   * Description of the block.
-   */
-  description?: string | null;
-  /**
-   * Metadata of the block.
-   */
-  metadata_?: {
-    [key: string]: unknown;
-  } | null;
-};
-
-/**
- * Update the label of a block
- */
-export type BlockLabelUpdate = {
-  /**
-   * Current label of the block.
-   */
-  current_label: string;
-  /**
-   * New label of the block.
-   */
-  new_label: string;
-};
-
-/**
- * Update the limit of a block
- */
-export type BlockLimitUpdate = {
-  /**
-   * Label of the block.
-   */
-  label: string;
-  /**
-   * New limit of the block.
-   */
-  limit: number;
 };
 
 /**
@@ -384,6 +327,21 @@ export type ChatCompletionResponse = {
   object?: 'chat.completion';
   usage: UsageStatistics;
 };
+/**
+ * A ToolRule represents a tool that can be invoked by the agent.
+ */
+export type ChildToolRule = {
+  /**
+   * The name of the tool. Must exist in the database for the user's organization.
+   */
+  tool_name: string;
+  type?: ToolRuleType;
+  /**
+   * The children tools that can be invoked.
+   */
+  children: Array<string>;
+};
+
 export type Choice = {
   finish_reason: string;
   index: number;
@@ -488,9 +446,9 @@ export type CreateAgent = {
    */
   message_ids?: Array<string> | null;
   /**
-   * The in-context memory of the agent.
+   * The blocks to create in the agent's in-context memory.
    */
-  memory?: Memory | null;
+  memory_blocks: Array<CreateBlock>;
   /**
    * The tools used by the agent.
    */
@@ -498,7 +456,7 @@ export type CreateAgent = {
   /**
    * The tool rules governing the agent.
    */
-  tool_rules?: Array<BaseToolRule> | null;
+  tool_rules?: Array<ChildToolRule | InitToolRule | TerminalToolRule> | null;
   /**
    * The tags associated with the agent.
    */
@@ -574,6 +532,39 @@ export type CreateAssistantRequest = {
    * The model to use for the assistant.
    */
   embedding_model?: string;
+};
+
+/**
+ * Create a block
+ */
+export type CreateBlock = {
+  /**
+   * Value of the block.
+   */
+  value: string;
+  /**
+   * Character limit of the block.
+   */
+  limit?: number;
+  /**
+   * Name of the block if it is a template.
+   */
+  name?: string | null;
+  is_template?: boolean;
+  /**
+   * Label of the block.
+   */
+  label: string;
+  /**
+   * Description of the block.
+   */
+  description?: string | null;
+  /**
+   * Metadata of the block.
+   */
+  metadata_?: {
+    [key: string]: unknown;
+  } | null;
 };
 
 export type CreateMessageRequest = {
@@ -911,6 +902,17 @@ export type Health = {
 export type ImageFile = {
   type?: string;
   file_id: string;
+};
+
+/**
+ * Represents the initial tool rule configuration.
+ */
+export type InitToolRule = {
+  /**
+   * The name of the tool. Must exist in the database for the user's organization.
+   */
+  tool_name: string;
+  type?: ToolRuleType;
 };
 
 /**
@@ -1261,18 +1263,13 @@ export type LogProbToken = {
 };
 
 /**
- * Represents the in-context memory of the agent. This includes both the `Block` objects (labelled by sections), as well as tools to edit the blocks.
- *
- * Attributes:
- * memory (Dict[str, Block]): Mapping from memory block section to memory block.
+ * Represents the in-context memory (i.e. Core memory) of the agent. This includes both the `Block` objects (labelled by sections), as well as tools to edit the blocks.
  */
 export type Memory = {
   /**
-   * Mapping from memory block section to memory block.
+   * Memory blocks contained in the agent's in-context memory
    */
-  memory?: {
-    [key: string]: Block;
-  };
+  blocks: Array<Block>;
   /**
    * Jinja2 template for compiling memory blocks into a prompt string
    */
@@ -2058,6 +2055,17 @@ export type SystemMessage_Output = {
 
 export type message_type5 = 'system_message';
 
+/**
+ * Represents a terminal tool rule configuration where if this tool gets called, it must end the agent loop.
+ */
+export type TerminalToolRule = {
+  /**
+   * The name of the tool. Must exist in the database for the user's organization.
+   */
+  tool_name: string;
+  type?: ToolRuleType;
+};
+
 export type Text = {
   object?: string;
   /**
@@ -2139,6 +2147,16 @@ export type ToolMessage = {
   tool_call_id: string;
 };
 
+/**
+ * Type of tool rule.
+ */
+export type ToolRuleType =
+  | 'InitToolRule'
+  | 'TerminalToolRule'
+  | 'continue_loop'
+  | 'ToolRule'
+  | 'require_parent_tools';
+
 export type ToolUpdate = {
   /**
    * The description of the tool.
@@ -2198,7 +2216,7 @@ export type UpdateAgentState = {
   /**
    * The tools used by the agent.
    */
-  tools?: Array<string> | null;
+  tool_names?: Array<string> | null;
   /**
    * The tags associated with the agent.
    */
@@ -2219,10 +2237,6 @@ export type UpdateAgentState = {
    * The ids of the messages in the agent's in-context memory.
    */
   message_ids?: Array<string> | null;
-  /**
-   * The in-context memory of the agent.
-   */
-  memory?: Memory | null;
 };
 
 /**
@@ -2807,47 +2821,45 @@ export type GetAgentMemoryData = {
 
 export type GetAgentMemoryResponse = Memory;
 
-export type UpdateAgentMemoryData = {
-  agentId: string;
-  requestBody: {
-    [key: string]: unknown;
-  };
-  userId?: string | null;
-};
-
-export type UpdateAgentMemoryResponse = Memory;
-
-export type UpdateAgentMemoryLabelData = {
-  agentId: string;
-  requestBody: BlockLabelUpdate;
-  userId?: string | null;
-};
-
-export type UpdateAgentMemoryLabelResponse = Memory;
-
-export type AddAgentMemoryBlockData = {
-  agentId: string;
-  requestBody: BlockCreate;
-  userId?: string | null;
-};
-
-export type AddAgentMemoryBlockResponse = Memory;
-
-export type RemoveAgentMemoryBlockData = {
+export type GetAgentMemoryBlockData = {
   agentId: string;
   blockLabel: string;
   userId?: string | null;
 };
 
-export type RemoveAgentMemoryBlockResponse = Memory;
+export type GetAgentMemoryBlockResponse = Block;
 
-export type UpdateAgentMemoryLimitData = {
+export type RemoveAgentMemoryBlockByLabelData = {
   agentId: string;
-  requestBody: BlockLimitUpdate;
+  blockLabel: string;
   userId?: string | null;
 };
 
-export type UpdateAgentMemoryLimitResponse = Memory;
+export type RemoveAgentMemoryBlockByLabelResponse = Memory;
+
+export type UpdateAgentMemoryBlockByLabelData = {
+  agentId: string;
+  blockLabel: string;
+  requestBody: BlockUpdate;
+  userId?: string | null;
+};
+
+export type UpdateAgentMemoryBlockByLabelResponse = Block;
+
+export type GetAgentMemoryBlocksData = {
+  agentId: string;
+  userId?: string | null;
+};
+
+export type GetAgentMemoryBlocksResponse = Array<Block>;
+
+export type AddAgentMemoryBlockData = {
+  agentId: string;
+  requestBody: CreateBlock;
+  userId?: string | null;
+};
+
+export type AddAgentMemoryBlockResponse = Memory;
 
 export type GetAgentRecallMemorySummaryData = {
   agentId: string;
@@ -2980,7 +2992,7 @@ export type ListMemoryBlocksData = {
 export type ListMemoryBlocksResponse = Array<Block>;
 
 export type CreateMemoryBlockData = {
-  requestBody: BlockCreate;
+  requestBody: CreateBlock;
   userId?: string | null;
 };
 
@@ -3007,6 +3019,28 @@ export type GetMemoryBlockData = {
 };
 
 export type GetMemoryBlockResponse = Block;
+
+export type UpdateAgentMemoryBlockData = {
+  /**
+   * The unique identifier of the agent to attach the source to.
+   */
+  agentId: string;
+  blockId: string;
+  userId?: string | null;
+};
+
+export type UpdateAgentMemoryBlockResponse = Block;
+
+export type UpdateAgentMemoryBlock1Data = {
+  /**
+   * The unique identifier of the agent to attach the source to.
+   */
+  agentId: string;
+  blockId: string;
+  userId?: string | null;
+};
+
+export type UpdateAgentMemoryBlock1Response = Memory;
 
 export type ListJobsData = {
   /**
@@ -3662,8 +3696,23 @@ export type $OpenApiTs = {
         422: HTTPValidationError;
       };
     };
-    patch: {
-      req: UpdateAgentMemoryData;
+  };
+  '/v1/agents/{agent_id}/memory/block/{block_label}': {
+    get: {
+      req: GetAgentMemoryBlockData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: Block;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+    delete: {
+      req: RemoveAgentMemoryBlockByLabelData;
       res: {
         /**
          * Successful Response
@@ -3675,15 +3724,13 @@ export type $OpenApiTs = {
         422: HTTPValidationError;
       };
     };
-  };
-  '/v1/agents/{agent_id}/memory/label': {
     patch: {
-      req: UpdateAgentMemoryLabelData;
+      req: UpdateAgentMemoryBlockByLabelData;
       res: {
         /**
          * Successful Response
          */
-        200: Memory;
+        200: Block;
         /**
          * Validation Error
          */
@@ -3692,38 +3739,21 @@ export type $OpenApiTs = {
     };
   };
   '/v1/agents/{agent_id}/memory/block': {
+    get: {
+      req: GetAgentMemoryBlocksData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: Array<Block>;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
     post: {
       req: AddAgentMemoryBlockData;
-      res: {
-        /**
-         * Successful Response
-         */
-        200: Memory;
-        /**
-         * Validation Error
-         */
-        422: HTTPValidationError;
-      };
-    };
-  };
-  '/v1/agents/{agent_id}/memory/block/{block_label}': {
-    delete: {
-      req: RemoveAgentMemoryBlockData;
-      res: {
-        /**
-         * Successful Response
-         */
-        200: Memory;
-        /**
-         * Validation Error
-         */
-        422: HTTPValidationError;
-      };
-    };
-  };
-  '/v1/agents/{agent_id}/memory/limit': {
-    patch: {
-      req: UpdateAgentMemoryLimitData;
       res: {
         /**
          * Successful Response
@@ -3958,6 +3988,36 @@ export type $OpenApiTs = {
          * Successful Response
          */
         200: Block;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/blocks/{block_id}/attach': {
+    patch: {
+      req: UpdateAgentMemoryBlockData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: Block;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/blocks/{block_id}/detach': {
+    patch: {
+      req: UpdateAgentMemoryBlock1Data;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: Memory;
         /**
          * Validation Error
          */

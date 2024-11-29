@@ -659,10 +659,12 @@ export function generateAgentStateHash(
 ): GenerateAgentStateHashResponse {
   const agentStateCopy = { ...agentState };
 
-  if (agentStateCopy.memory?.memory) {
-    for (const memory in agentStateCopy.memory.memory) {
-      agentStateCopy.memory.memory[memory].id = '';
-    }
+  if (agentStateCopy.memory?.blocks) {
+    Object.keys(agentStateCopy.memory.blocks).forEach((_, index) => {
+      if (agentStateCopy.memory) {
+        agentStateCopy.memory.blocks[index].id = '';
+      }
+    });
   }
 
   return {

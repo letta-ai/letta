@@ -4,9 +4,9 @@ export function findMemoryBlockVariables(agentState: AgentState) {
   // find all instances {{variable}} in memory blocks
 
   const list = new Set<string>();
-  const memoryBlocks = agentState.memory?.memory || {};
+  const memoryBlocks = agentState.memory?.blocks || [];
 
-  Object.values(memoryBlocks).forEach((memoryBlock) => {
+  memoryBlocks.forEach((memoryBlock) => {
     const regex = /\{\{.*?\}\}/g;
     const matches = memoryBlock.value.match(regex);
     if (matches) {

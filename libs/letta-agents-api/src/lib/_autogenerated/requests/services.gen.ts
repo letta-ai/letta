@@ -68,16 +68,16 @@ import type {
   ListAgentInContextMessagesResponse,
   GetAgentMemoryData,
   GetAgentMemoryResponse,
-  UpdateAgentMemoryData,
-  UpdateAgentMemoryResponse,
-  UpdateAgentMemoryLabelData,
-  UpdateAgentMemoryLabelResponse,
+  GetAgentMemoryBlockData,
+  GetAgentMemoryBlockResponse,
+  RemoveAgentMemoryBlockByLabelData,
+  RemoveAgentMemoryBlockByLabelResponse,
+  UpdateAgentMemoryBlockByLabelData,
+  UpdateAgentMemoryBlockByLabelResponse,
+  GetAgentMemoryBlocksData,
+  GetAgentMemoryBlocksResponse,
   AddAgentMemoryBlockData,
   AddAgentMemoryBlockResponse,
-  RemoveAgentMemoryBlockData,
-  RemoveAgentMemoryBlockResponse,
-  UpdateAgentMemoryLimitData,
-  UpdateAgentMemoryLimitResponse,
   GetAgentRecallMemorySummaryData,
   GetAgentRecallMemorySummaryResponse,
   GetAgentArchivalMemorySummaryData,
@@ -108,6 +108,10 @@ import type {
   DeleteMemoryBlockResponse,
   GetMemoryBlockData,
   GetMemoryBlockResponse,
+  UpdateAgentMemoryBlockData,
+  UpdateAgentMemoryBlockResponse,
+  UpdateAgentMemoryBlock1Data,
+  UpdateAgentMemoryBlock1Response,
   ListJobsData,
   ListJobsResponse,
   ListActiveJobsData,
@@ -1018,27 +1022,82 @@ export class AgentsService {
   }
 
   /**
-   * Update Agent Memory
-   * Update the core memory of a specific agent.
-   * This endpoint accepts new memory contents (labels as keys, and values as values) and updates the core memory of the agent identified by the user ID and agent ID.
-   * This endpoint accepts new memory contents to update the core memory of the agent.
-   * This endpoint only supports modifying existing blocks; it does not support deleting/unlinking or creating/linking blocks.
+   * Get Agent Memory Block
+   * Retrieve a memory block from an agent.
    * @param data The data for the request.
    * @param data.agentId
-   * @param data.requestBody
+   * @param data.blockLabel
+   * @param data.userId
+   * @returns Block Successful Response
+   * @throws ApiError
+   */
+  public static getAgentMemoryBlock(
+    data: GetAgentMemoryBlockData,
+    headers?: { user_id: string }
+  ): CancelablePromise<GetAgentMemoryBlockResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/agents/{agent_id}/memory/block/{block_label}',
+      path: {
+        agent_id: data.agentId,
+        block_label: data.blockLabel,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Remove Agent Memory Block
+   * Removes a memory block from an agent by unlnking it. If the block is not linked to any other agent, it is deleted.
+   * @param data The data for the request.
+   * @param data.agentId
+   * @param data.blockLabel
    * @param data.userId
    * @returns Memory Successful Response
    * @throws ApiError
    */
-  public static updateAgentMemory(
-    data: UpdateAgentMemoryData,
+  public static removeAgentMemoryBlockByLabel(
+    data: RemoveAgentMemoryBlockByLabelData,
     headers?: { user_id: string }
-  ): CancelablePromise<UpdateAgentMemoryResponse> {
+  ): CancelablePromise<RemoveAgentMemoryBlockByLabelResponse> {
     return __request(OpenAPI, {
-      method: 'PATCH',
-      url: '/v1/agents/{agent_id}/memory',
+      method: 'DELETE',
+      url: '/v1/agents/{agent_id}/memory/block/{block_label}',
       path: {
         agent_id: data.agentId,
+        block_label: data.blockLabel,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Update Agent Memory Block
+   * Removes a memory block from an agent by unlnking it. If the block is not linked to any other agent, it is deleted.
+   * @param data The data for the request.
+   * @param data.agentId
+   * @param data.blockLabel
+   * @param data.requestBody
+   * @param data.userId
+   * @returns Block Successful Response
+   * @throws ApiError
+   */
+  public static updateAgentMemoryBlockByLabel(
+    data: UpdateAgentMemoryBlockByLabelData,
+    headers?: { user_id: string }
+  ): CancelablePromise<UpdateAgentMemoryBlockByLabelResponse> {
+    return __request(OpenAPI, {
+      method: 'PATCH',
+      url: '/v1/agents/{agent_id}/memory/block/{block_label}',
+      path: {
+        agent_id: data.agentId,
+        block_label: data.blockLabel,
       },
       body: data.requestBody,
       mediaType: 'application/json',
@@ -1050,27 +1109,24 @@ export class AgentsService {
   }
 
   /**
-   * Update Agent Memory Label
-   * Update the label of a block in an agent's memory.
+   * Get Agent Memory Blocks
+   * Retrieve the memory blocks of a specific agent.
    * @param data The data for the request.
    * @param data.agentId
-   * @param data.requestBody
    * @param data.userId
-   * @returns Memory Successful Response
+   * @returns Block Successful Response
    * @throws ApiError
    */
-  public static updateAgentMemoryLabel(
-    data: UpdateAgentMemoryLabelData,
+  public static getAgentMemoryBlocks(
+    data: GetAgentMemoryBlocksData,
     headers?: { user_id: string }
-  ): CancelablePromise<UpdateAgentMemoryLabelResponse> {
+  ): CancelablePromise<GetAgentMemoryBlocksResponse> {
     return __request(OpenAPI, {
-      method: 'PATCH',
-      url: '/v1/agents/{agent_id}/memory/label',
+      method: 'GET',
+      url: '/v1/agents/{agent_id}/memory/block',
       path: {
         agent_id: data.agentId,
       },
-      body: data.requestBody,
-      mediaType: 'application/json',
       errors: {
         422: 'Validation Error',
       },
@@ -1095,63 +1151,6 @@ export class AgentsService {
     return __request(OpenAPI, {
       method: 'POST',
       url: '/v1/agents/{agent_id}/memory/block',
-      path: {
-        agent_id: data.agentId,
-      },
-      body: data.requestBody,
-      mediaType: 'application/json',
-      errors: {
-        422: 'Validation Error',
-      },
-      headers,
-    });
-  }
-
-  /**
-   * Remove Agent Memory Block
-   * Removes a memory block from an agent by unlnking it. If the block is not linked to any other agent, it is deleted.
-   * @param data The data for the request.
-   * @param data.agentId
-   * @param data.blockLabel
-   * @param data.userId
-   * @returns Memory Successful Response
-   * @throws ApiError
-   */
-  public static removeAgentMemoryBlock(
-    data: RemoveAgentMemoryBlockData,
-    headers?: { user_id: string }
-  ): CancelablePromise<RemoveAgentMemoryBlockResponse> {
-    return __request(OpenAPI, {
-      method: 'DELETE',
-      url: '/v1/agents/{agent_id}/memory/block/{block_label}',
-      path: {
-        agent_id: data.agentId,
-        block_label: data.blockLabel,
-      },
-      errors: {
-        422: 'Validation Error',
-      },
-      headers,
-    });
-  }
-
-  /**
-   * Update Agent Memory Limit
-   * Update the limit of a block in an agent's memory.
-   * @param data The data for the request.
-   * @param data.agentId
-   * @param data.requestBody
-   * @param data.userId
-   * @returns Memory Successful Response
-   * @throws ApiError
-   */
-  public static updateAgentMemoryLimit(
-    data: UpdateAgentMemoryLimitData,
-    headers?: { user_id: string }
-  ): CancelablePromise<UpdateAgentMemoryLimitResponse> {
-    return __request(OpenAPI, {
-      method: 'PATCH',
-      url: '/v1/agents/{agent_id}/memory/limit',
       path: {
         agent_id: data.agentId,
       },
@@ -1623,6 +1622,66 @@ export class BlocksService {
       url: '/v1/blocks/{block_id}',
       path: {
         block_id: data.blockId,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Link Agent Memory Block
+   * Link a memory block to an agent.
+   * @param data The data for the request.
+   * @param data.blockId
+   * @param data.agentId The unique identifier of the agent to attach the source to.
+   * @param data.userId
+   * @returns Block Successful Response
+   * @throws ApiError
+   */
+  public static updateAgentMemoryBlock(
+    data: UpdateAgentMemoryBlockData,
+    headers?: { user_id: string }
+  ): CancelablePromise<UpdateAgentMemoryBlockResponse> {
+    return __request(OpenAPI, {
+      method: 'PATCH',
+      url: '/v1/blocks/{block_id}/attach',
+      path: {
+        block_id: data.blockId,
+      },
+      query: {
+        agent_id: data.agentId,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Unlink Agent Memory Block
+   * Unlink a memory block from an agent
+   * @param data The data for the request.
+   * @param data.blockId
+   * @param data.agentId The unique identifier of the agent to attach the source to.
+   * @param data.userId
+   * @returns Memory Successful Response
+   * @throws ApiError
+   */
+  public static updateAgentMemoryBlock1(
+    data: UpdateAgentMemoryBlock1Data,
+    headers?: { user_id: string }
+  ): CancelablePromise<UpdateAgentMemoryBlock1Response> {
+    return __request(OpenAPI, {
+      method: 'PATCH',
+      url: '/v1/blocks/{block_id}/detach',
+      path: {
+        block_id: data.blockId,
+      },
+      query: {
+        agent_id: data.agentId,
       },
       errors: {
         422: 'Validation Error',

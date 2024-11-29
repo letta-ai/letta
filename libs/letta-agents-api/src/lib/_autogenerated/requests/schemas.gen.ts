@@ -130,22 +130,29 @@ export const $AgentState = {
       title: 'Message Ids',
       description: "The ids of the messages in the agent's in-context memory.",
     },
-    memory: {
-      $ref: '#/components/schemas/Memory',
-    },
-    tools: {
+    tool_names: {
       items: {
         type: 'string',
       },
       type: 'array',
-      title: 'Tools',
+      title: 'Tool Names',
       description: 'The tools used by the agent.',
     },
     tool_rules: {
       anyOf: [
         {
           items: {
-            $ref: '#/components/schemas/BaseToolRule',
+            anyOf: [
+              {
+                $ref: '#/components/schemas/ChildToolRule',
+              },
+              {
+                $ref: '#/components/schemas/InitToolRule',
+              },
+              {
+                $ref: '#/components/schemas/TerminalToolRule',
+              },
+            ],
           },
           type: 'array',
         },
@@ -155,21 +162,6 @@ export const $AgentState = {
       ],
       title: 'Tool Rules',
       description: 'The list of tool rules.',
-    },
-    tags: {
-      anyOf: [
-        {
-          items: {
-            type: 'string',
-          },
-          type: 'array',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Tags',
-      description: 'The tags associated with the agent.',
     },
     system: {
       type: 'string',
@@ -188,16 +180,48 @@ export const $AgentState = {
       $ref: '#/components/schemas/EmbeddingConfig',
       description: 'The embedding configuration used by the agent.',
     },
+    memory: {
+      $ref: '#/components/schemas/Memory',
+      description: 'The in-context memory of the agent.',
+    },
+    tools: {
+      items: {
+        $ref: '#/components/schemas/letta__schemas__tool__Tool',
+      },
+      type: 'array',
+      title: 'Tools',
+      description: 'The tools used by the agent.',
+    },
+    sources: {
+      items: {
+        $ref: '#/components/schemas/Source',
+      },
+      type: 'array',
+      title: 'Sources',
+      description: 'The sources used by the agent.',
+    },
+    tags: {
+      items: {
+        type: 'string',
+      },
+      type: 'array',
+      title: 'Tags',
+      description: 'The tags associated with the agent.',
+    },
   },
   additionalProperties: false,
   type: 'object',
   required: [
     'name',
-    'tools',
+    'tool_names',
     'system',
     'agent_type',
     'llm_config',
     'embedding_config',
+    'memory',
+    'tools',
+    'sources',
+    'tags',
   ],
   title: 'AgentState',
   description: `Representation of an agent's state. This is the state of the agent at a given time, and is persisted in the DB backend. The state has all the information needed to recreate a persisted agent.
@@ -376,21 +400,6 @@ export const $AuthResponse = {
   title: 'AuthResponse',
 } as const;
 
-export const $BaseToolRule = {
-  properties: {
-    tool_name: {
-      type: 'string',
-      title: 'Tool Name',
-      description:
-        "The name of the tool. Must exist in the database for the user's organization.",
-    },
-  },
-  additionalProperties: false,
-  type: 'object',
-  required: ['tool_name'],
-  title: 'BaseToolRule',
-} as const;
-
 export const $Block = {
   properties: {
     value: {
@@ -521,111 +530,6 @@ Parameters:
     description (str): Description of the block.
     metadata_ (Dict): Metadata of the block.
     user_id (str): The unique identifier of the user associated with the block.`,
-} as const;
-
-export const $BlockCreate = {
-  properties: {
-    value: {
-      type: 'string',
-      title: 'Value',
-      description: 'Value of the block.',
-    },
-    limit: {
-      type: 'integer',
-      title: 'Limit',
-      description: 'Character limit of the block.',
-      default: 2000,
-    },
-    name: {
-      anyOf: [
-        {
-          type: 'string',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Name',
-      description: 'Name of the block if it is a template.',
-    },
-    is_template: {
-      type: 'boolean',
-      title: 'Is Template',
-      default: true,
-    },
-    label: {
-      type: 'string',
-      title: 'Label',
-      description: 'Label of the block.',
-    },
-    description: {
-      anyOf: [
-        {
-          type: 'string',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Description',
-      description: 'Description of the block.',
-    },
-    metadata_: {
-      anyOf: [
-        {
-          type: 'object',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Metadata ',
-      description: 'Metadata of the block.',
-      default: {},
-    },
-  },
-  type: 'object',
-  required: ['value', 'label'],
-  title: 'BlockCreate',
-  description: 'Create a block',
-} as const;
-
-export const $BlockLabelUpdate = {
-  properties: {
-    current_label: {
-      type: 'string',
-      title: 'Current Label',
-      description: 'Current label of the block.',
-    },
-    new_label: {
-      type: 'string',
-      title: 'New Label',
-      description: 'New label of the block.',
-    },
-  },
-  type: 'object',
-  required: ['current_label', 'new_label'],
-  title: 'BlockLabelUpdate',
-  description: 'Update the label of a block',
-} as const;
-
-export const $BlockLimitUpdate = {
-  properties: {
-    label: {
-      type: 'string',
-      title: 'Label',
-      description: 'Label of the block.',
-    },
-    limit: {
-      type: 'integer',
-      title: 'Limit',
-      description: 'New limit of the block.',
-    },
-  },
-  type: 'object',
-  required: ['label', 'limit'],
-  title: 'BlockLimitUpdate',
-  description: 'Update the limit of a block',
 } as const;
 
 export const $BlockUpdate = {
@@ -1048,6 +952,34 @@ export const $ChatCompletionResponse = {
   description: 'https://platform.openai.com/docs/api-reference/chat/object',
 } as const;
 
+export const $ChildToolRule = {
+  properties: {
+    tool_name: {
+      type: 'string',
+      title: 'Tool Name',
+      description:
+        "The name of the tool. Must exist in the database for the user's organization.",
+    },
+    type: {
+      $ref: '#/components/schemas/ToolRuleType',
+      default: 'ToolRule',
+    },
+    children: {
+      items: {
+        type: 'string',
+      },
+      type: 'array',
+      title: 'Children',
+      description: 'The children tools that can be invoked.',
+    },
+  },
+  additionalProperties: false,
+  type: 'object',
+  required: ['tool_name', 'children'],
+  title: 'ChildToolRule',
+  description: 'A ToolRule represents a tool that can be invoked by the agent.',
+} as const;
+
 export const $Choice = {
   properties: {
     finish_reason: {
@@ -1294,16 +1226,13 @@ export const $CreateAgent = {
       title: 'Message Ids',
       description: "The ids of the messages in the agent's in-context memory.",
     },
-    memory: {
-      anyOf: [
-        {
-          $ref: '#/components/schemas/Memory',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      description: 'The in-context memory of the agent.',
+    memory_blocks: {
+      items: {
+        $ref: '#/components/schemas/CreateBlock',
+      },
+      type: 'array',
+      title: 'Memory Blocks',
+      description: "The blocks to create in the agent's in-context memory.",
     },
     tools: {
       anyOf: [
@@ -1324,7 +1253,17 @@ export const $CreateAgent = {
       anyOf: [
         {
           items: {
-            $ref: '#/components/schemas/BaseToolRule',
+            anyOf: [
+              {
+                $ref: '#/components/schemas/ChildToolRule',
+              },
+              {
+                $ref: '#/components/schemas/InitToolRule',
+              },
+              {
+                $ref: '#/components/schemas/TerminalToolRule',
+              },
+            ],
           },
           type: 'array',
         },
@@ -1414,6 +1353,7 @@ export const $CreateAgent = {
   },
   additionalProperties: false,
   type: 'object',
+  required: ['memory_blocks'],
   title: 'CreateAgent',
 } as const;
 
@@ -1495,6 +1435,73 @@ export const $CreateAssistantRequest = {
   type: 'object',
   required: ['model', 'name', 'instructions'],
   title: 'CreateAssistantRequest',
+} as const;
+
+export const $CreateBlock = {
+  properties: {
+    value: {
+      type: 'string',
+      title: 'Value',
+      description: 'Value of the block.',
+    },
+    limit: {
+      type: 'integer',
+      title: 'Limit',
+      description: 'Character limit of the block.',
+      default: 2000,
+    },
+    name: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Name',
+      description: 'Name of the block if it is a template.',
+    },
+    is_template: {
+      type: 'boolean',
+      title: 'Is Template',
+      default: false,
+    },
+    label: {
+      type: 'string',
+      title: 'Label',
+      description: 'Label of the block.',
+    },
+    description: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Description',
+      description: 'Description of the block.',
+    },
+    metadata_: {
+      anyOf: [
+        {
+          type: 'object',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Metadata ',
+      description: 'Metadata of the block.',
+      default: {},
+    },
+  },
+  type: 'object',
+  required: ['value', 'label'],
+  title: 'CreateBlock',
+  description: 'Create a block',
 } as const;
 
 export const $CreateMessageRequest = {
@@ -2294,6 +2301,26 @@ export const $ImageFile = {
   title: 'ImageFile',
 } as const;
 
+export const $InitToolRule = {
+  properties: {
+    tool_name: {
+      type: 'string',
+      title: 'Tool Name',
+      description:
+        "The name of the tool. Must exist in the database for the user's organization.",
+    },
+    type: {
+      $ref: '#/components/schemas/ToolRuleType',
+      default: 'InitToolRule',
+    },
+  },
+  additionalProperties: false,
+  type: 'object',
+  required: ['tool_name'],
+  title: 'InitToolRule',
+  description: 'Represents the initial tool rule configuration.',
+} as const;
+
 export const $InternalMonologue = {
   properties: {
     id: {
@@ -2984,31 +3011,30 @@ export const $LogProbToken = {
 
 export const $Memory = {
   properties: {
-    memory: {
-      additionalProperties: {
+    blocks: {
+      items: {
         $ref: '#/components/schemas/Block',
       },
-      type: 'object',
-      title: 'Memory',
-      description: 'Mapping from memory block section to memory block.',
+      type: 'array',
+      title: 'Blocks',
+      description: "Memory blocks contained in the agent's in-context memory",
     },
     prompt_template: {
       type: 'string',
       title: 'Prompt Template',
       description:
         'Jinja2 template for compiling memory blocks into a prompt string',
-      default: `{% for block in memory.values() %}<{{ block.label }} characters="{{ block.value|length }}/{{ block.limit }}">
+      default: `{% for block in blocks %}<{{ block.label }} characters="{{ block.value|length }}/{{ block.limit }}">
 {{ block.value }}
 </{{ block.label }}>{% if not loop.last %}
 {% endif %}{% endfor %}`,
     },
   },
   type: 'object',
+  required: ['blocks'],
   title: 'Memory',
-  description: `Represents the in-context memory of the agent. This includes both the \`Block\` objects (labelled by sections), as well as tools to edit the blocks.
-
-Attributes:
-    memory (Dict[str, Block]): Mapping from memory block section to memory block.`,
+  description:
+    'Represents the in-context memory (i.e. Core memory) of the agent. This includes both the `Block` objects (labelled by sections), as well as tools to edit the blocks.',
 } as const;
 
 export const $Message_Input = {
@@ -3903,7 +3929,7 @@ export const $Organization = {
       type: 'string',
       title: 'Name',
       description: 'The name of the organization.',
-      default: 'LovableButterfly',
+      default: 'FriendlyJellyfish',
     },
     created_at: {
       anyOf: [
@@ -4740,6 +4766,27 @@ Attributes:
     date (datetime): The date the message was created in ISO format`,
 } as const;
 
+export const $TerminalToolRule = {
+  properties: {
+    tool_name: {
+      type: 'string',
+      title: 'Tool Name',
+      description:
+        "The name of the tool. Must exist in the database for the user's organization.",
+    },
+    type: {
+      $ref: '#/components/schemas/ToolRuleType',
+      default: 'TerminalToolRule',
+    },
+  },
+  additionalProperties: false,
+  type: 'object',
+  required: ['tool_name'],
+  title: 'TerminalToolRule',
+  description:
+    'Represents a terminal tool rule configuration where if this tool gets called, it must end the agent loop.',
+} as const;
+
 export const $Text = {
   properties: {
     object: {
@@ -4930,6 +4977,19 @@ export const $ToolMessage = {
   title: 'ToolMessage',
 } as const;
 
+export const $ToolRuleType = {
+  type: 'string',
+  enum: [
+    'InitToolRule',
+    'TerminalToolRule',
+    'continue_loop',
+    'ToolRule',
+    'require_parent_tools',
+  ],
+  title: 'ToolRuleType',
+  description: 'Type of tool rule.',
+} as const;
+
 export const $ToolUpdate = {
   properties: {
     description: {
@@ -5080,7 +5140,7 @@ export const $UpdateAgentState = {
       title: 'Name',
       description: 'The name of the agent.',
     },
-    tools: {
+    tool_names: {
       anyOf: [
         {
           items: {
@@ -5092,7 +5152,7 @@ export const $UpdateAgentState = {
           type: 'null',
         },
       ],
-      title: 'Tools',
+      title: 'Tool Names',
       description: 'The tools used by the agent.',
     },
     tags: {
@@ -5158,17 +5218,6 @@ export const $UpdateAgentState = {
       ],
       title: 'Message Ids',
       description: "The ids of the messages in the agent's in-context memory.",
-    },
-    memory: {
-      anyOf: [
-        {
-          $ref: '#/components/schemas/Memory',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      description: 'The in-context memory of the agent.',
     },
   },
   additionalProperties: false,
