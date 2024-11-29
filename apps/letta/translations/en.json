@@ -45,15 +45,15 @@
     }
   },
   "settings/account/page": {
-    "title": "Account Settings",
+    "title": "Account settings",
     "DeleteAccountSection": {
-      "title": "Delete Account",
+      "title": "Delete account",
       "description": "Deleting your account is permanent and cannot be undone. This will delete any organizations you are the sole member of. Those organizations will have all their projects, agents, data sources, and other data deleted as well."
     },
     "DeleteAccountDialog": {
-      "title": "Delete Account",
-      "trigger": "Delete Account",
-      "confirm": "Delete Account",
+      "title": "Delete account",
+      "trigger": "Delete account",
+      "confirm": "Delete account",
       "error": "There was an error deleting your account, please try again or contact support.",
       "description": "Are you sure you want to delete your account? This is permanent and cannot be undone. If you are the sole member of any organizations, they will be deleted as well.",
       "confirmCheckbox": {
@@ -132,25 +132,25 @@
     "missingOrg": "If you do not see your organization, you may have not been invited yet. Please contact your organization's administrator."
   },
   "organization/billing": {
-    "title": "Usage and Billing",
+    "title": "Usage and billing",
     "description": "You are currently using a managed enterprise plan. If you have any questions or need help, please contact support."
   },
   "organization/settings": {
-    "title": "Organization Settings",
+    "title": "Organization settings",
     "EditOrganizationSettings": {
       "name": {
-        "label": "Organization Name"
+        "label": "Organization name"
       },
       "error": "There was an error updating organization settings, please try again or contact support."
     },
     "DeleteOrganizationSettings": {
-      "title": "Delete Organization",
+      "title": "Delete organization",
       "description": "Deleting an organization is permanent and cannot be undone. Please contact us to delete your organization.",
       "dialog": {
         "error": "There was an error deleting the organization, please try again or contact support.",
         "title": "Are you sure you want to delete this organization?",
-        "confirm": "Delete Organization",
-        "trigger": "Delete Organization",
+        "confirm": "Delete organization",
+        "trigger": "Delete organization",
         "description": "This is permanent and cannot be undone. This will not remove any projects or agents they have created.",
         "confirmName": {
           "label": "Type the name of the organization to confirm",
@@ -169,8 +169,8 @@
       "dismiss": "Dismiss invitation"
     },
     "InvitedMembersDialog": {
-      "title": "Invited Members",
-      "trigger": "View Invited Members",
+      "title": "Invited members",
+      "trigger": "View invited members",
       "table": {
         "error": "There was an error loading invited members, please try again or contact support.",
         "empty": "No invited members"
@@ -192,12 +192,12 @@
         "userAlreadyInOrganization": "This user is already in your organization",
         "default": "There was an error inviting this user, please try again or contact support"
       },
-      "trigger": "Invite Member",
+      "trigger": "Invite member",
       "confirm": "Invite",
-      "title": "Invite Member",
-      "description": "Invite a new member to your organization. Once invited, they can sign in via Google and will have access to all projects and agents in the organization. If they already have an account with us, they will automatically get added to your organization"
+      "title": "Invite member",
+      "description": "Invite a new member to your organization. Once invited, they can sign in via Google and will have access to all projects and agents in the organization. If they already have an account with us, they will automatically get added to your organization."
     },
-    "title": "Organization Members",
+    "title": "Organization members",
     "table": {
       "columns": {
         "name": "Name",
@@ -210,8 +210,8 @@
     },
     "DeleteMemberDialog": {
       "error": "There was an error removing this member, please try again or contact support.",
-      "title": "Remove Member",
-      "trigger": "Remove Member",
+      "title": "Remove member",
+      "trigger": "Remove member",
       "description": "Are you sure you want to remove {name} ({email}) from this organization? This will not remove any projects or agents they have created."
     }
   },
@@ -223,7 +223,7 @@
     "response": "Response"
   },
   "settings/profile/page": {
-    "title": "Profile Settings",
+    "title": "Profile settings",
     "form": {
       "nameInput": {
         "label": "Name"
@@ -274,7 +274,7 @@
     "createProjectDialog": {
       "title": "Create a new project",
       "nameInput": {
-        "label": "Project Name"
+        "label": "Project name"
       },
       "createButton": "Create project",
       "triggerButton": "Create project"
