@@ -647,14 +647,14 @@
     "title": "Create an agent template",
     "description": "An agent template is used to define the structure of agents you deploy in your project. You can create an agent from scratch or reference a pre-existing agent template.",
     "backToProject": "Back to project",
-    "createButton": "Create Template",
+    "createButton": "Create template",
     "PreExistingTemplateDropdown": {
       "placeholder": "Select a pre-existing template",
       "label": "Create from existing template",
       "error": "An error occurred while fetching existing agent templates"
     },
     "nameInput": {
-      "label": "Template Name",
+      "label": "Template name",
       "placeholder": "my-agent-name"
     },
     "useDefaultAgentTemplate": {
@@ -853,11 +853,11 @@
     "remoteDevelopment": "Self-hosted"
   },
   "development-servers/add": {
-    "title": "Add Remote Server",
+    "title": "Add remote server",
     "description": "To add a remote server, you need to enable your remote letta server to accept public connections and add the <code>--secure</code> and <code>--ade</code> flags.",
     "error": "There was an error adding the remote server, please try again or contact support.",
     "name": {
-      "label": "Server Name",
+      "label": "Server name",
       "placeholder": "my-server-name"
     },
     "url": {
@@ -866,11 +866,11 @@
       "description": "Must be in the format as follows http://my-server-url.com, or http://my-server-url.com:8000"
     },
     "password": {
-      "label": "Password",
+      "label": "Server password",
       "placeholder": "my-server",
       "description": "This should be the randomly generated password when you started the server with --secure"
     },
-    "submit": "Add Remote Server"
+    "submit": "Add remote server"
   },
   "development-servers/hooks": {
     "localAgents": "Local agents"
