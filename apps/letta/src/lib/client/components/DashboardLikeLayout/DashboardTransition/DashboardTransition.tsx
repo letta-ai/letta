@@ -97,9 +97,9 @@ export function DashboardTransition({
           color="background"
           position="absolute"
         >
+          {isTransitioning && <TransitionLoader />}
           <VStack fullWidth fullHeight border></VStack>
         </VStack>
-        {isTransitioning && <TransitionLoader />}
         <HStack fullWidth id="main">
           {children}
         </HStack>
