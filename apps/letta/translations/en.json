@@ -253,7 +253,7 @@
     }
   },
   "components/LocaleSelector": {
-    "changeLocale": "Change Language",
+    "changeLocale": "Change language",
     "options": {
       "en": "English",
       "fr": "Français"
