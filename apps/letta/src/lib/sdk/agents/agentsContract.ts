@@ -10,7 +10,7 @@ import {
   LLMConfigSchema,
 } from '@letta-web/letta-agents-api';
 import { z } from 'zod';
-import { MemorySchema } from '$letta/sdk/types';
+import { MemoryBlocksSchema } from '$letta/sdk/types';
 import { extendZodWithOpenApi } from '@anatine/zod-openapi';
 
 extendZodWithOpenApi(z);
@@ -45,7 +45,7 @@ const CreateAgentBodySchema = z.object({
   message_ids: z.array(z.string()).nullable().optional().openapi({
     description: 'A list of message IDs associated with the agent',
   }),
-  memory: MemorySchema.optional().nullable(),
+  memory_blocks: MemoryBlocksSchema.nullable().optional(),
   tools: z.string().array().nullable().optional(),
   system: z.string().nullable().optional(),
   llm_config: LLMConfigSchema.nullable().optional(),

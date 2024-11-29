@@ -37,14 +37,14 @@ export function attachVariablesToTemplates(
     ...agentTemplate,
   };
 
-  Object.keys(nextAgent.memory?.memory || {}).forEach((key) => {
-    if (typeof nextAgent.memory?.memory?.[key]?.value === 'string') {
+  nextAgent.memory.blocks.forEach((_, index) => {
+    if (typeof nextAgent.memory.blocks[index]?.value === 'string') {
       // needs to be done or memory will rely on the existing block id
-      const { id: _id, ...rest } = nextAgent.memory.memory[key];
-      nextAgent.memory.memory[key] = rest;
+      const { id: _id, ...rest } = nextAgent.memory.blocks[index];
+      nextAgent.memory.blocks[index] = rest;
       if (variables) {
-        nextAgent.memory.memory[key].value = nextAgent.memory.memory[
-          key
+        nextAgent.memory.blocks[index].value = nextAgent.memory.blocks[
+          index
         ].value.replace(/{{(.*?)}}/g, (_m, p1) => {
           return variables?.[p1] || '';
         });
@@ -54,7 +54,7 @@ export function attachVariablesToTemplates(
 
   return {
     system: nextAgent.system,
-    tools: nextAgent.tools,
+    tool_names: nextAgent.tool_names,
     name: `name-${crypto.randomUUID()}`,
     embedding_config: nextAgent.embedding_config,
     memory: nextAgent.memory,
@@ -91,7 +91,18 @@ export async function copyAgentById(
   const nextAgent = await AgentsService.createAgent(
     {
       requestBody: {
-        ...agentBody,
+        llm_config: agentBody.llm_config,
+        embedding_config: agentBody.embedding_config,
+        system: agentBody.system,
+        tools: agentBody.tool_names,
+        name: agentBody.name,
+        memory_blocks: agentBody.memory.blocks.map((block) => {
+          return {
+            limit: block.limit,
+            label: block.label || '',
+            value: block.value,
+          };
+        }),
       },
     },
     {
@@ -452,6 +463,7 @@ export async function createAgent(
     {
       requestBody: {
         ...agent,
+        memory_blocks: agent.memory_blocks || [],
         name: crypto.randomUUID(),
       },
     },
@@ -749,20 +761,49 @@ export async function updateAgentFromAgentId(options: UpdateAgentFromAgentId) {
 
   let requestBody: UpdateAgentState = {
     id: agentToUpdateId,
-    tools: agentTemplateData.tools,
+    tool_names: agentTemplateData.tool_names,
   };
 
   if (!preserveCoreMemories) {
+    const { memory, ...rest } = attachVariablesToTemplates(
+      agentTemplateData,
+      variables
+    );
+
     requestBody = {
       ...requestBody,
-      ...attachVariablesToTemplates(agentTemplateData, variables),
+      ...rest,
     };
+
+    if (memory) {
+      await Promise.all(
+        memory.blocks.map(async (block) => {
+          if (!block.label) {
+            return;
+          }
+
+          return AgentsService.updateAgentMemoryBlockByLabel(
+            {
+              agentId: agentToUpdateId,
+              blockLabel: block.label,
+              requestBody: {
+                value: block.value,
+                limit: block.limit,
+              },
+            },
+            {
+              user_id: lettaAgentsUserId,
+            }
+          );
+        })
+      );
+    }
   }
 
   const agent = await AgentsService.updateAgent(
     {
       agentId: agentToUpdateId,
-      requestBody: requestBody,
+      requestBody,
     },
     {
       user_id: lettaAgentsUserId,

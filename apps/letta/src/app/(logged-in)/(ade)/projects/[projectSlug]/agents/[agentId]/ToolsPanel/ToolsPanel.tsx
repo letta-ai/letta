@@ -101,8 +101,8 @@ function AllToolsView(props: AllToolsViewProps) {
 
   const { tools } = useCurrentAgent();
 
-  const addedToolNameSet = useMemo(() => {
-    return new Set(tools);
+  const toolIdSet = useMemo(() => {
+    return new Set((tools || []).map((tool) => tool.id));
   }, [tools]);
 
   const [search, setSearch] = useState('');
@@ -122,12 +122,12 @@ function AllToolsView(props: AllToolsViewProps) {
           id: tool.id || '',
           creator: creator ? brandKeyToName(creator) : 'Custom',
           description: tool.description || '',
-          alreadyAdded: addedToolNameSet.has(tool.name || ''),
+          alreadyAdded: toolIdSet.has(tool.id),
           icon: isBrandKey(creator) ? brandKeyToLogo(creator) : <ToolsIcon />,
         };
       })
       .filter((tool) => tool.name.toLowerCase().includes(search.toLowerCase()));
-  }, [allTools, addedToolNameSet, search]);
+  }, [allTools, toolIdSet, search]);
 
   return (
     <HStack padding fullHeight>
@@ -466,7 +466,7 @@ function SpecificToolComponent(props: SpecificToolComponentProps) {
       return false;
     }
 
-    return tools.includes(tool.name);
+    return tools.some((someTool) => someTool.id === tool.id);
   }, [tools, tool]);
 
   const isToolsLoading = useMemo(() => {
@@ -815,7 +815,7 @@ interface ToolsProps {
 
 function ToolsList(props: ToolsProps) {
   const { search } = props;
-  const { tools: currentToolNames } = useCurrentAgent();
+  const { tools: curentTools } = useCurrentAgent();
   const { data: _allTools, isLoading } = useToolsServiceListTools();
   const [toolIdToView, setToolIdToView] = useState<string | null>(null);
 
@@ -837,13 +837,13 @@ function ToolsList(props: ToolsProps) {
   const [removeToolPayload, setRemoveToolPayload] =
     useState<RemoveToolPayload | null>(null);
 
-  const currentToolsAsSet = useMemo(() => {
-    return new Set(currentToolNames);
-  }, [currentToolNames]);
+  const currentToolIdSet = useMemo(() => {
+    return new Set((curentTools || []).map(({ id }) => id));
+  }, [curentTools]);
 
   const currentUserTools = useMemo(() => {
-    return allTools?.filter((tool) => currentToolsAsSet.has(tool.name || ''));
-  }, [allTools, currentToolsAsSet]);
+    return allTools?.filter((tool) => currentToolIdSet.has(tool.id));
+  }, [allTools, currentToolIdSet]);
 
   const toolsList: FileTreeContentsType = useMemo(() => {
     if (!currentUserTools) {

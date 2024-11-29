@@ -24,13 +24,11 @@ import {
 import {
   APIKeyCreate,
   AuthRequest,
-  BlockCreate,
-  BlockLabelUpdate,
-  BlockLimitUpdate,
   BlockUpdate,
   Body_upload_file_to_source,
   CreateAgent,
   CreateArchivalMemory,
+  CreateBlock,
   LettaRequest,
   LettaStreamingRequest,
   OrganizationCreate,
@@ -393,6 +391,60 @@ export const useAgentsServiceGetAgentMemory = <
   useQuery<TData, TError>({
     queryKey: Common.UseAgentsServiceGetAgentMemoryKeyFn({ agentId }, queryKey),
     queryFn: () => AgentsService.getAgentMemory({ agentId }) as TData,
+    ...options,
+  });
+export const useAgentsServiceGetAgentMemoryBlock = <
+  TData = Common.AgentsServiceGetAgentMemoryBlockDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[]
+>(
+  {
+    agentId,
+    blockLabel,
+    userId,
+  }: {
+    agentId: string;
+    blockLabel: string;
+    userId?: string;
+  },
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
+) =>
+  useQuery<TData, TError>({
+    queryKey: Common.UseAgentsServiceGetAgentMemoryBlockKeyFn(
+      { agentId, blockLabel, userId },
+      queryKey
+    ),
+    queryFn: () =>
+      AgentsService.getAgentMemoryBlock({
+        agentId,
+        blockLabel,
+        userId,
+      }) as TData,
+    ...options,
+  });
+export const useAgentsServiceGetAgentMemoryBlocks = <
+  TData = Common.AgentsServiceGetAgentMemoryBlocksDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[]
+>(
+  {
+    agentId,
+    userId,
+  }: {
+    agentId: string;
+    userId?: string;
+  },
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
+) =>
+  useQuery<TData, TError>({
+    queryKey: Common.UseAgentsServiceGetAgentMemoryBlocksKeyFn(
+      { agentId, userId },
+      queryKey
+    ),
+    queryFn: () =>
+      AgentsService.getAgentMemoryBlocks({ agentId, userId }) as TData,
     ...options,
   });
 export const useAgentsServiceGetAgentRecallMemorySummary = <
@@ -1140,7 +1192,7 @@ export const useAgentsServiceAddAgentMemoryBlock = <
       TError,
       {
         agentId: string;
-        requestBody: BlockCreate;
+        requestBody: CreateBlock;
         userId?: string;
       },
       TContext
@@ -1153,7 +1205,7 @@ export const useAgentsServiceAddAgentMemoryBlock = <
     TError,
     {
       agentId: string;
-      requestBody: BlockCreate;
+      requestBody: CreateBlock;
       userId?: string;
     },
     TContext
@@ -1287,7 +1339,7 @@ export const useBlocksServiceCreateMemoryBlock = <
       TData,
       TError,
       {
-        requestBody: BlockCreate;
+        requestBody: CreateBlock;
         userId?: string;
       },
       TContext
@@ -1299,7 +1351,7 @@ export const useBlocksServiceCreateMemoryBlock = <
     TData,
     TError,
     {
-      requestBody: BlockCreate;
+      requestBody: CreateBlock;
       userId?: string;
     },
     TContext
@@ -1867,8 +1919,8 @@ export const useAgentsServiceRemoveToolFromAgent = <
       }) as unknown as Promise<TData>,
     ...options,
   });
-export const useAgentsServiceUpdateAgentMemory = <
-  TData = Common.AgentsServiceUpdateAgentMemoryMutationResult,
+export const useAgentsServiceUpdateAgentMemoryBlockByLabel = <
+  TData = Common.AgentsServiceUpdateAgentMemoryBlockByLabelMutationResult,
   TError = unknown,
   TContext = unknown
 >(
@@ -1878,7 +1930,8 @@ export const useAgentsServiceUpdateAgentMemory = <
       TError,
       {
         agentId: string;
-        requestBody: { [key: string]: unknown };
+        blockLabel: string;
+        requestBody: BlockUpdate;
         userId?: string;
       },
       TContext
@@ -1891,88 +1944,16 @@ export const useAgentsServiceUpdateAgentMemory = <
     TError,
     {
       agentId: string;
-      requestBody: { [key: string]: unknown };
+      blockLabel: string;
+      requestBody: BlockUpdate;
       userId?: string;
     },
     TContext
   >({
-    mutationFn: ({ agentId, requestBody, userId }) =>
-      AgentsService.updateAgentMemory({
+    mutationFn: ({ agentId, blockLabel, requestBody, userId }) =>
+      AgentsService.updateAgentMemoryBlockByLabel({
         agentId,
-        requestBody,
-        userId,
-      }) as unknown as Promise<TData>,
-    ...options,
-  });
-export const useAgentsServiceUpdateAgentMemoryLabel = <
-  TData = Common.AgentsServiceUpdateAgentMemoryLabelMutationResult,
-  TError = unknown,
-  TContext = unknown
->(
-  options?: Omit<
-    UseMutationOptions<
-      TData,
-      TError,
-      {
-        agentId: string;
-        requestBody: BlockLabelUpdate;
-        userId?: string;
-      },
-      TContext
-    >,
-    'mutationFn'
-  >
-) =>
-  useMutation<
-    TData,
-    TError,
-    {
-      agentId: string;
-      requestBody: BlockLabelUpdate;
-      userId?: string;
-    },
-    TContext
-  >({
-    mutationFn: ({ agentId, requestBody, userId }) =>
-      AgentsService.updateAgentMemoryLabel({
-        agentId,
-        requestBody,
-        userId,
-      }) as unknown as Promise<TData>,
-    ...options,
-  });
-export const useAgentsServiceUpdateAgentMemoryLimit = <
-  TData = Common.AgentsServiceUpdateAgentMemoryLimitMutationResult,
-  TError = unknown,
-  TContext = unknown
->(
-  options?: Omit<
-    UseMutationOptions<
-      TData,
-      TError,
-      {
-        agentId: string;
-        requestBody: BlockLimitUpdate;
-        userId?: string;
-      },
-      TContext
-    >,
-    'mutationFn'
-  >
-) =>
-  useMutation<
-    TData,
-    TError,
-    {
-      agentId: string;
-      requestBody: BlockLimitUpdate;
-      userId?: string;
-    },
-    TContext
-  >({
-    mutationFn: ({ agentId, requestBody, userId }) =>
-      AgentsService.updateAgentMemoryLimit({
-        agentId,
+        blockLabel,
         requestBody,
         userId,
       }) as unknown as Promise<TData>,
@@ -2048,6 +2029,80 @@ export const useBlocksServiceUpdateMemoryBlock = <
       BlocksService.updateMemoryBlock({
         blockId,
         requestBody,
+        userId,
+      }) as unknown as Promise<TData>,
+    ...options,
+  });
+export const useBlocksServiceUpdateAgentMemoryBlock = <
+  TData = Common.BlocksServiceUpdateAgentMemoryBlockMutationResult,
+  TError = unknown,
+  TContext = unknown
+>(
+  options?: Omit<
+    UseMutationOptions<
+      TData,
+      TError,
+      {
+        agentId: string;
+        blockId: string;
+        userId?: string;
+      },
+      TContext
+    >,
+    'mutationFn'
+  >
+) =>
+  useMutation<
+    TData,
+    TError,
+    {
+      agentId: string;
+      blockId: string;
+      userId?: string;
+    },
+    TContext
+  >({
+    mutationFn: ({ agentId, blockId, userId }) =>
+      BlocksService.updateAgentMemoryBlock({
+        agentId,
+        blockId,
+        userId,
+      }) as unknown as Promise<TData>,
+    ...options,
+  });
+export const useBlocksServiceUpdateAgentMemoryBlock1 = <
+  TData = Common.BlocksServiceUpdateAgentMemoryBlock1MutationResult,
+  TError = unknown,
+  TContext = unknown
+>(
+  options?: Omit<
+    UseMutationOptions<
+      TData,
+      TError,
+      {
+        agentId: string;
+        blockId: string;
+        userId?: string;
+      },
+      TContext
+    >,
+    'mutationFn'
+  >
+) =>
+  useMutation<
+    TData,
+    TError,
+    {
+      agentId: string;
+      blockId: string;
+      userId?: string;
+    },
+    TContext
+  >({
+    mutationFn: ({ agentId, blockId, userId }) =>
+      BlocksService.updateAgentMemoryBlock1({
+        agentId,
+        blockId,
         userId,
       }) as unknown as Promise<TData>,
     ...options,
@@ -2260,8 +2315,8 @@ export const useAgentsServiceDeleteAgent = <
       }) as unknown as Promise<TData>,
     ...options,
   });
-export const useAgentsServiceRemoveAgentMemoryBlock = <
-  TData = Common.AgentsServiceRemoveAgentMemoryBlockMutationResult,
+export const useAgentsServiceRemoveAgentMemoryBlockByLabel = <
+  TData = Common.AgentsServiceRemoveAgentMemoryBlockByLabelMutationResult,
   TError = unknown,
   TContext = unknown
 >(
@@ -2290,7 +2345,7 @@ export const useAgentsServiceRemoveAgentMemoryBlock = <
     TContext
   >({
     mutationFn: ({ agentId, blockLabel, userId }) =>
-      AgentsService.removeAgentMemoryBlock({
+      AgentsService.removeAgentMemoryBlockByLabel({
         agentId,
         blockLabel,
         userId,

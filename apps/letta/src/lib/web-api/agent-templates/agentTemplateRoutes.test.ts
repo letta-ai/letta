@@ -27,6 +27,13 @@ describe('agentTemplateRoutes', () => {
         projectId: '123',
       });
 
+      lettaAgentAPIMock.AgentsService.getAgent.mockResolvedValue({
+        id: 'new-testing-agent-id',
+        memory: {
+          blocks: [],
+        },
+      });
+
       lettaAgentAPIMock.AgentsService.createAgent.mockResolvedValue({
         id: 'new-testing-agent-id',
       });
@@ -71,6 +78,13 @@ describe('agentTemplateRoutes', () => {
         id: 'testing-agent-id',
         name: 'existing-name',
         projectId: '123',
+      });
+
+      lettaAgentAPIMock.AgentsService.getAgent.mockResolvedValue({
+        id: 'new-testing-agent-id',
+        memory: {
+          blocks: [],
+        },
       });
 
       lettaAgentAPIMock.AgentsService.createAgent.mockResolvedValue({

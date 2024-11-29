@@ -154,6 +154,8 @@ function NewAgentPage() {
 
         const response = await createAgent({
           requestBody: {
+            ...agentState,
+            memory_blocks: agentState.memory_blocks || [],
             name: nextName,
             tools: [
               'archival_memory_insert',
@@ -165,7 +167,6 @@ function NewAgentPage() {
             ],
             llm_config: llmModels?.[0],
             embedding_config: embeddingModels?.[0],
-            ...agentState,
           },
         });
 

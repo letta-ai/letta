@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   Badge,
@@ -28,7 +28,6 @@ import { useTranslations } from 'next-intl';
 import { useDebouncedValue } from '@mantine/hooks';
 import { UpdateNameDialog } from '../shared/UpdateAgentNameDialog/UpdateAgentNameDialog';
 import { useAgentBaseTypeName } from '../hooks/useAgentBaseNameType/useAgentBaseNameType';
-import { useUpdateMemory } from '../hooks/useUpdateMemory/useUpdateMemory';
 import { useDateFormatter } from '@letta-web/helpful-client-utils';
 import { useCurrentAgentMetaData } from '../hooks/useCurrentAgentMetaData/useCurrentAgentMetaData';
 import { webOriginSDKApi, webOriginSDKQueryKeys } from '$letta/client';
@@ -240,9 +239,18 @@ function ModelSelector(props: ModelSelectorProps) {
 function SystemPromptEditor() {
   const t = useTranslations('ADE/AgentSettingsPanel');
   const [isExpanded, setIsExpanded] = useState(false);
-  const { value, onChange, error, lastUpdatedAt } = useUpdateMemory({
-    type: 'system',
-  });
+  const { syncUpdateCurrentAgent, error, lastUpdatedAt } =
+    useSyncUpdateCurrentAgent();
+  const { system = '' } = useCurrentAgent();
+
+  const handleChange = useCallback(
+    (value: string) => {
+      syncUpdateCurrentAgent(() => ({
+        system: value,
+      }));
+    },
+    [syncUpdateCurrentAgent]
+  );
 
   const { formatDate } = useDateFormatter();
 
@@ -266,7 +274,7 @@ function SystemPromptEditor() {
             </div>
             <Typography noWrap font="mono" color="muted" variant="body2">
               {t('SystemPromptEditor.dialog.characterCount', {
-                count: value.length,
+                count: system.length,
               })}
             </Typography>
           </HStack>
@@ -278,9 +286,9 @@ function SystemPromptEditor() {
             hideLabel
             label={t('SystemPromptEditor.label')}
             onChange={(e) => {
-              onChange(e.target.value);
+              handleChange(e.target.value);
             }}
-            value={value}
+            value={system}
           />
           {lastUpdatedAt && (
             <Typography>
@@ -300,7 +308,7 @@ function SystemPromptEditor() {
           rightOfLabelContent={
             <Typography variant="body2" color="muted">
               {t('SystemPromptEditor.characterCount', {
-                count: value.length,
+                count: system.length,
               })}
             </Typography>
           }
@@ -309,9 +317,9 @@ function SystemPromptEditor() {
           autosize={false}
           label={t('SystemPromptEditor.label')}
           onChange={(e) => {
-            onChange(e.target.value);
+            handleChange(e.target.value);
           }}
-          value={value}
+          value={system}
           expandable={{
             expandText: t('SystemPromptEditor.expand'),
             onExpand: () => {
