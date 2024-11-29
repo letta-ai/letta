@@ -8,7 +8,7 @@ import { useTranslations } from 'next-intl';
 import memory from './memory.webp';
 import discord from './discord.webp';
 import multiagent from './multiagent.webp';
-import voice from './voice.png';
+import voice from './voice.webp';
 
 export function Tutorials() {
   const t = useTranslations('components/tutorials');
