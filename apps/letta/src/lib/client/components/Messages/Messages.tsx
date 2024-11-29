@@ -219,7 +219,7 @@ export function Messages(props: MessagesProps) {
                 type="code"
                 header={
                   <>
-                    <Typography bold>Function Response</Typography>
+                    <Typography bold>Function response</Typography>
                     <Badge
                       content={agentMessage.status}
                       color={
@@ -383,7 +383,7 @@ export function Messages(props: MessagesProps) {
                 header={
                   <>
                     <ThoughtsIcon />
-                    <Typography bold>Internal Monologue</Typography>
+                    <Typography bold>Internal monologue</Typography>
                   </>
                 }
               >

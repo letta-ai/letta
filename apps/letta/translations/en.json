@@ -384,8 +384,8 @@
       "error": "There was an error detaching this data source, please try again or contact support."
     },
     "RenameDataSourceDialog": {
-      "title": "Rename Source",
-      "trigger": "Rename Source",
+      "title": "Rename source",
+      "trigger": "Rename source",
       "confirm": "Rename",
       "error": "There was an error renaming this data source, please try again or contact support.",
       "name": {
@@ -394,8 +394,8 @@
       }
     },
     "DeleteDataSourceDialog": {
-      "title": "Delete Source",
-      "trigger": "Delete Source",
+      "title": "Delete source",
+      "trigger": "Delete source",
       "confirm": "Delete",
       "error": "There was an error deleting this source, please try again or contact support.",
       "description": "Be aware you are deleting this source from all agents, not detaching it. If you want to detach it, click the detach button instead.",
@@ -414,7 +414,7 @@
       "delete": "Delete file",
       "addFile": "Add file",
       "uploadFile": "Upload file",
-      "detachSource": "Detach Source",
+      "detachSource": "Detach source",
       "fileProcessing": "File is being processed"
     },
     "FileUploadDialog": {
@@ -434,7 +434,7 @@
     "noDataSources": "You have no data sources attached to this agent yet. Click the button in the top right to attach a data source.",
     "CreateDataSourceDialog": {
       "titles": "Add New Data Source",
-      "trigger": "Create Source",
+      "trigger": "Create source",
       "goBack": "Go back",
       "error": "There was an error creating the data source, please try again or contact support.",
       "creatingDataSource": "Creating data source...",
@@ -457,7 +457,7 @@
       "characterCount": "{count} CHARS",
       "updatedAt": "Last updated on {date}",
       "tooltip": "Configures the behavior of the agent, and placed in the context window",
-      "label": "System Instructions",
+      "label": "System instructions",
       "error": "There was an error while updating the system prompt, please try again or contact support.",
       "expand": "Show full system prompt editor",
       "dialog": {
@@ -468,11 +468,11 @@
       }
     },
     "embeddingInput": {
-      "label": "Embedding Model"
+      "label": "Embedding model"
     },
     "agentName": {
-      "label": "{baseName} Name",
-      "edit": "Edit {baseName} Name"
+      "label": "{baseName} name",
+      "edit": "Edit {baseName} name"
     },
     "copyAgentId": "Copy {baseName} ID",
     "title": "{baseName} Settings",
@@ -487,7 +487,7 @@
     "error": "There was an error while updating the model, please try again or contact support."
   },
   "components/Messages": {
-    "hiddenUserMessage": "Internal User Message",
+    "hiddenUserMessage": "Internal user message",
     "noParsableMessages": "There are no messages available in this view, usually this is caused by a lack of triggered send_message actions in your agent, check the debug more to verify."
   },
   "components/ThemeSelector": {
@@ -512,9 +512,9 @@
     "AgentSimulatorOptionsMenu": {
       "trigger": "Options",
       "options": {
-        "flushSimulation": "Flush Simulation",
+        "flushSimulation": "Flush simulation",
         "printDebug": {
-          "title": "Print Simulated Agent Details",
+          "title": "Print simulated agent details",
           "notReady": "Simulated agent has not loaded yet, please try again soon",
           "success": "Simulated agent details have been printed to the console"
         }
@@ -539,8 +539,8 @@
       "noVariablesDefined": "You have no variables set yet, to define a variable, write a alphanumeric name wrapped in handlebars in Memory Blocks, e.g. {variableName}"
     },
     "showVariables": "Variables",
-    "hideVariables": "Hide Variables",
-    "updateVariables": "Update Variables"
+    "hideVariables": "Hide variables",
+    "updateVariables": "Update variables"
   },
   "ADE/ADESidebar": {
     "nav": {
@@ -843,7 +843,7 @@
     "title": "Create a new agent",
     "createAgent": "Create Agent",
     "nameInput": {
-      "label": "Agent Name",
+      "label": "Agent name",
       "placeholder": "my-agent-name"
     }
   },
@@ -944,19 +944,19 @@
       "addError": "There was an error adding this tool, please try again or contact support."
     },
     "ViewToolDialog": {
-      "title": "Viewing Tool"
+      "title": "Viewing tool"
     },
     "SpecificToolComponent": {
       "back": "Back",
       "noDescription": "No description provided",
       "add": "Add tool to Agent",
-      "edit": "Edit Tool",
+      "edit": "Edit tool",
       "cancel": "Cancel",
       "alreadyAdded": "This tool is already added",
       "viewToggle": {
         "label": "View Mode",
         "options": {
-          "schema": "JSON Schema",
+          "schema": "JSON schema",
           "code": "Code"
         }
       }
@@ -971,10 +971,10 @@
         "label": "Description"
       },
       "sourceCode": {
-        "label": "Source Code",
+        "label": "Source code",
         "error": "There was an error updating your tool, see below for details."
       },
-      "update": "Update Tool"
+      "update": "Update tool"
     },
     "ToolCreator": {
       "errorResponse": "There was an error creating your tool, see below for details.",
@@ -991,7 +991,7 @@
         "validation": "Please provide a description for this tool"
       },
       "sourceCode": {
-        "label": "Source Code",
+        "label": "Source code",
         "placeholder": "my-tool-source-code"
       }
     },
@@ -1004,7 +1004,7 @@
         "view": "View and edit tool"
       },
       "categories": {
-        "allTools": "All Tools"
+        "allTools": "All tools"
       },
       "description": "Description",
       "added": "Added",
@@ -1013,7 +1013,7 @@
         "placeholder": "Tool name",
         "label": "Search tools"
       },
-      "trigger": "Add Tool",
+      "trigger": "Add tool",
       "noDescription": "This tool does not have a description",
       "noToolSelected": {
         "title": "No tool selected",
@@ -1021,15 +1021,15 @@
       }
     },
     "ToolsList": {
-      "removeTool": "Remove Tool",
-      "lettaCoreTools": "Letta Core Tools ({toolCount})",
+      "removeTool": "Remove tool",
+      "lettaCoreTools": "Letta core tools ({toolCount})",
       "lettaCoreToolsInfo": "Default tools added to agents to enable memory management",
-      "otherTools": "Other Tools ({toolCount})",
-      "addNewTool": "Add New Tool"
+      "otherTools": "Other tools ({toolCount})",
+      "addNewTool": "Add new tool"
     },
     "RemoveToolDialog": {
       "title": "Remove {toolName}",
-      "trigger": "Remove Tool",
+      "trigger": "Remove tool",
       "confirm": "Remove",
       "error": "There was an error removing this tool, please try again or contact support.",
       "confirmation": "Are you sure you want to remove this tool?"
@@ -1054,10 +1054,10 @@
       "memoryText": "Memory at {date}"
     },
     "CreateMemoryDialog": {
-      "trigger": "Create Memory",
+      "trigger": "Create memory",
       "title": "Create a new memory",
       "placeholder": "Enter memory text here",
-      "label": "Memory Text",
+      "label": "Memory text",
       "info": "This memory you create here is unique to the simulated agent. It will not be carried to agents created from this template."
     }
   },
@@ -1152,19 +1152,19 @@
     "title": "Advanced",
     "model": "Model",
     "mobileTitle": "Advanced",
-    "modelParameters": "Model Parameters",
-    "modelEndpoint": "Model Endpoint",
-    "endpointType": "Endpoint Type",
+    "modelParameters": "Model parameters",
+    "modelEndpoint": "Model endpoint",
+    "endpointType": "Endpoint type",
     "errorLoadingModelParameters": "There has been an error loading model parameters, please refresh the page or contact support.",
     "contextWindowController": {
-      "label": "Context Window Size"
+      "label": "Context window size"
     },
     "AdvancedSettingsPanel": {
       "embeddingDimensions": {
-        "label": "Embedding Dimensions"
+        "label": "Embedding dimensions"
       },
       "embeddingChunkSize": {
-        "label": "Embedding Chunk Size"
+        "label": "Embedding chunk size"
       }
     }
   },
