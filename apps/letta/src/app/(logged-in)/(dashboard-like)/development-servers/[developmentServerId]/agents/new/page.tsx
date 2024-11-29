@@ -163,6 +163,8 @@ function NewAgentPage() {
               'conversation_search',
               'conversation_search_date',
               'send_message',
+              'core_memory_append',
+              'core_memory_replace',
               ...(starterKit.tools || []).map((tool) => tool.name),
             ],
             llm_config: llmModels?.[0],
