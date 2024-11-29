@@ -1083,18 +1083,18 @@
       }
     },
     "AgentSettingsDropdown": {
-      "trigger": "{agentBaseType} Settings",
-      "returnToProject": "Return to Project"
+      "trigger": "{agentBaseType} settings",
+      "returnToProject": "Return to project"
     },
     "DeployAgentDialog": {
-      "trigger": "Deployment Instructions",
-      "title": "Deploy Agent Instructions"
+      "trigger": "Deployment instructions",
+      "title": "Deploy agent instructions"
     },
     "VersionAgentDialog": {
-      "title": "Version Agent",
-      "trigger": "Version Agent",
-      "deployedAgents": "Deployed Agents",
-      "confirm": "Version Agent",
+      "title": "Version agent",
+      "trigger": "Version agent",
+      "deployedAgents": "Deployed agents",
+      "confirm": "Version agent",
       "description": "Versioning an agent creates a new version of the agent that is immutable and can be used to deploy agents. Are you sure you want to proceed?",
       "migrate": "Migrate all deployed agents to this version",
       "migrateDescription": "Selecting this option will migrate all deployed agents to this version, to programmatically migrate agents, visit the <link>API documentation</link>."
