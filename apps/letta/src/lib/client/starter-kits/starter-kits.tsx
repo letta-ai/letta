@@ -1,9 +1,9 @@
-import internetChatbot from './internet_chatbot.png';
-import characterRoleplay from './character_roleplay.png';
-import companion from './companion.png';
-import personalAssistant from './personal_assistant.png';
-import scratch from './scratch.png';
-import customerSupport from './customer_support.png';
+import internetChatbot from './internet_chatbot.webp';
+import characterRoleplay from './character_roleplay.webp';
+import companion from './companion.webp';
+import personalAssistant from './personal_assistant.webp';
+import scratch from './scratch.webp';
+import customerSupport from './customer_support.webp';
 import { useTranslations } from 'next-intl';
 import type { CreateAgent } from '@letta-web/letta-agents-api';
 import type { StaticImport } from 'next/dist/shared/lib/get-img-props';
