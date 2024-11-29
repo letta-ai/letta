@@ -1145,7 +1145,7 @@
     },
     "liveAgentWarning": "You are editing a live agent, be aware that editing this agent may impact live deployments",
     "localAgentDevelopment": "You are editing a local agent, changes made here will not effect your agents on Letta Cloud",
-    "restoreLayout": "Restore Layout",
+    "restoreLayout": "Restore layout",
     "positionError": "There was a unhandled error while positioning the window, will fallback to default position, we have notified our team about this issue."
   },
   "ADE/AdvancedSettings": {
