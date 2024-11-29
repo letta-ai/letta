@@ -6,10 +6,10 @@
   "components/DashboardLikeLayout/DashboardNavigation": {
     "nav": {
       "projects": "Projects",
-      "apiKeys": "API Keys",
-      "dataSources": "Data Sources",
+      "apiKeys": "API keys",
+      "dataSources": "Data sources",
       "admin": "Admin",
-      "localDev": "Self-Hosted",
+      "localDev": "Self-hosted",
       "settings": "Settings"
     },
     "rootTitle": "Dashboard",
@@ -20,25 +20,25 @@
       "switchOrganizations": "Switch Organizations"
     },
     "header": {
-      "Documentation": "Documentation"
+      "Documentation": "Docs"
     },
     "ReportAnIssueForm": {
       "yourMessage": "Your message",
-      "submit": "Submit",
+      "submit": "Submit report",
       "submitted": "Your issue has been submitted, we will get back to you as soon as possible."
     },
     "DashboardHeaderNavigation": {
-      "documentation": "Documentation",
-      "apiReference": "API Reference",
+      "documentation": "Docs",
+      "apiReference": "API reference",
       "support": "Support",
       "supportPopover": {
         "bugReport": {
           "title": "Report an issue",
-          "description": "Fill out the form below to report an issue"
+          "description": "Fill out the form below:"
         },
         "discord": {
           "title": "Get support via Discord",
-          "description": "Join our Discord server to get help from the community and the Letta team.",
+          "description": "Join our Discord server to get help from the community and Letta devs:",
           "joinUs": "Join us on Discord"
         }
       }
@@ -70,13 +70,13 @@
       "general": "General",
       "members": "Members",
       "root": "Organization",
-      "billing": "Usage and Billing"
+      "billing": "Usage and billing"
     }
   },
   "data-sources/page": {
     "CreateDataSourceDialog": {
       "title": "Create a new data source",
-      "trigger": "Create Data Source",
+      "trigger": "Create data source",
       "name": {
         "label": "Data Source Name",
         "placeholder": "my-data-source-name"
@@ -88,7 +88,7 @@
         "label": "Description",
         "placeholder": "my-data-source-description"
       },
-      "createButton": "Create Data Source"
+      "createButton": "Create data source"
     }
   },
   "create-organization": {
@@ -296,19 +296,19 @@
     }
   },
   "projects/(projectSlug)/page": {
-    "title": "Project Home",
+    "title": "Project dashboard",
     "agentTemplatesList": {
       "emptyMessage": "You have templates in this project",
-      "createAgentTemplate": "New Agent Template"
+      "createAgentTemplate": "New agent template"
     },
     "agentTemplatesSection": {
-      "title": "Recent Templates",
-      "createAgentTemplate": "New Agent Template"
+      "title": "Recent templates",
+      "createAgentTemplate": "New agent template"
     }
   },
   "projects/(projectSlug)/layout": {
     "nav": {
-      "home": "Project Home",
+      "home": "Dashboard",
       "templates": "Templates",
       "agents": "Agents",
       "settings": "Settings"
@@ -324,14 +324,14 @@
     }
   },
   "projects/(projectSlug)/templates/page": {
-    "title": "Agent Templates",
+    "title": "Agent templates",
     "searchInput": {
       "placeholder": "my-template-name-here",
       "label": "Search template by name"
     },
     "noTemplatesFound": "No templates found that match your search",
     "noTemplates": "You have no templates in this project, create one below",
-    "createTemplate": "New Template"
+    "createTemplate": "New template"
   },
   "ADE/DeployedAgentsPanel": {
     "title": "Deployed Agents",
@@ -548,8 +548,8 @@
       "config": "Config",
       "memoryBlocks": "Memory Blocks",
       "dataSources": {
-        "new": "New Data Source",
-        "main": "Data Sources"
+        "new": "New data source",
+        "main": "Data sources"
       },
 
       "tools": "Tools",
@@ -748,7 +748,7 @@
     "description": "Letta allows you to create, deploy, and monitor stateful LLM agents",
     "title": "Welcome to the Letta developer platform!",
     "gettingStarted": {
-      "title": "Getting Started",
+      "title": "Getting started",
       "actions": {
         "createAgent": {
           "title": "Create an agent",
@@ -805,8 +805,8 @@
     "title": "Create a new agent",
     "error": "There was an error creating the agent, below is the error message, please try again or contact support.",
     "alert": {
-      "title": "You are creating an agent on \"{serverName}\"",
-      "descriptionLocal": "This will create an agent locally on your machine. This does not deploy the agent to Letta Cloud.",
+      "title": "You are creating an agent on {serverName}",
+      "descriptionLocal": "This will create an agent locally on your machine. This will not deploy the agent to Letta Cloud.",
       "descriptionRemote": "This will create an agent on the remote server. This will not deploy the agent to Letta Cloud."
     },
     "loading": "Creating agent...",
@@ -824,7 +824,7 @@
       "description": "Learn how to create a chatbot that can remember information from previous conversations."
     },
     "buildMultiAgentSystems": {
-      "title": "Multi-agent systems",
+      "title": "Built a multi-agent system",
       "description": "Learn how to create a multi-agent system where an orchestrator agent controls multiple (stateful) worker agents."
     },
     "discord": {
@@ -1063,7 +1063,7 @@
   "projects/(projectSlug)/agents/(agentId)/AgentPage": {
     "error": "There was a severe error in this application, please refresh this page. If the error persists, please contact support in the top right corner.",
     "Navigation": {
-      "dashboard": "Dashboard"
+      "dashboard": "Project dashboard"
     },
     "AgentMobileNavigation": {
       "more": "More panels",
@@ -1171,7 +1171,7 @@
     "title": "Template Version Manager"
   },
   "api-keys/page": {
-    "title": "API Keys",
+    "title": "API keys",
     "emptyMessage": "No API keys found",
     "errorMessage": "An error occurred while fetching your API keys. Please try again or contact support.",
     "loadingMessage": "Loading API keys...",
@@ -1191,15 +1191,15 @@
       "actions": "Actions"
     },
     "createAPIKeyDialog": {
-      "title": "Create a new API Key",
-      "createdTitle": "API Key Created",
+      "title": "Create a new API key",
+      "createdTitle": "API key created",
       "cancel": "Cancel",
-      "alertTitle": "API Key Created",
+      "alertTitle": "API key created",
       "close": "Close",
-      "trigger": "Create API Key",
+      "trigger": "Create API key",
       "generatedCopy": "We have generated you an API Key, please make sure to store it safely.",
-      "downloadText": "Download API Key",
-      "copyToClipboard": "Copy API Key to Clipboard",
+      "downloadText": "Download API key",
+      "copyToClipboard": "Copy API key to clipboard",
       "description": "Provide a descriptive name for identifying for later use",
       "label": "Name"
     }

@@ -304,7 +304,7 @@ function APIKeysPage() {
   return (
     <DashboardPageLayout
       encapsulatedFullHeight
-      title="API Keys"
+      title="API keys"
       actions={
         <>
           <CreateAPIKeyDialog />

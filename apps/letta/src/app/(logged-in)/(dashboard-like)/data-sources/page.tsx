@@ -207,9 +207,9 @@ function DataSourcesTable() {
   if (!data || data.length === 0) {
     return (
       <LoadingEmptyStatusComponent
-        emptyMessage="No Data Sources found"
+        emptyMessage="No data sources found"
         isLoading={!data}
-        loadingMessage="Loading Data Sources"
+        loadingMessage="Loading data sources"
         isError={isError}
       />
     );
@@ -221,7 +221,7 @@ function DataSourcesTable() {
 function DataSourcesPage() {
   return (
     <DashboardPageLayout
-      title="Data Sources"
+      title="Data sources"
       actions={
         <>
           <CreateDataSourceDialog />

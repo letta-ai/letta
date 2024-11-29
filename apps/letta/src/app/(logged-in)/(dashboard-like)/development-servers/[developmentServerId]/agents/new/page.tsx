@@ -224,7 +224,12 @@ function NewAgentPage() {
             {isHealthy && (
               <Alert
                 variant="info"
-                title={t('alert.title', { serverName: config?.name || '' })}
+                title={t('alert.title', {
+                  serverName:
+                    config?.name === 'Local Agents'
+                      ? 'your local server (localhost)'
+                      : `"${config?.name || ''}"` || '',
+                })}
               >
                 {config?.id === 'local'
                   ? t('alert.descriptionLocal')
