@@ -538,9 +538,11 @@ async def send_message_to_agent(
 
         # Get the generator object off of the agent's streaming interface
         # This will be attached to the POST SSE request used under-the-hood
-        # letta_agent = server.load_agent(agent_id=agent_id)
         letta_agent = server.load_agent(agent_id=agent_id)
 
+        import ipdb
+
+        ipdb.set_trace()
         # Disable token streaming if not OpenAI
         # TODO: cleanup this logic
         llm_config = letta_agent.agent_state.llm_config
