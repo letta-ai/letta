@@ -78,6 +78,7 @@ from letta.services.sandbox_config_manager import SandboxConfigManager
 from letta.services.source_manager import SourceManager
 from letta.services.tool_manager import ToolManager
 from letta.services.user_manager import UserManager
+from letta.streaming_interface import AgentChunkStreamingInterface
 from letta.utils import create_random_username, json_dumps, json_loads
 
 logger = get_logger(__name__)
@@ -662,7 +663,7 @@ class SyncServer(Server):
         # whether or not to wrap user and system message as MemGPT-style stringified JSON
         wrap_user_message: bool = True,
         wrap_system_message: bool = True,
-        interface: Union[AgentInterface, None] = None,  # needed to getting responses
+        interface: Optional[Union[AgentInterface, AgentChunkStreamingInterface]] = None,  # needed to getting responses
     ) -> LettaUsageStatistics:
         """Send a list of messages to the agent
 

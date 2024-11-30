@@ -129,3 +129,47 @@ async def create_chat_completion(
             ),
         )
         return response
+
+
+@router.post("/voice", response_model=ChatCompletionResponse)
+async def create_chat_completion(
+    completion_request: ChatCompletionRequest = Body(...),
+    server: "SyncServer" = Depends(get_letta_server),
+    user_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+):
+    """Send a message to a Letta agent via a /chat/completions completion_request
+    The bearer token will be used to identify the user.
+    The 'user' field in the completion_request should be set to the agent ID.
+    """
+    if not completion_request.stream:
+        raise HTTPException(status_code=400, detail="Must be streaming request: `stream` was set to `False` in the request.")
+
+    actor = server.get_user_or_default(user_id=user_id)
+
+    agent_id = completion_request.user
+    if agent_id is None:
+        raise HTTPException(status_code=400, detail="Must pass agent_id in the 'user' field")
+
+    messages = completion_request.messages
+    if messages is None:
+        raise HTTPException(status_code=400, detail="'messages' field must not be empty")
+    if len(messages) > 1:
+        raise HTTPException(status_code=400, detail="'messages' field must be a list of length 1")
+    if messages[0].role != "user":
+        raise HTTPException(status_code=400, detail="'messages[0].role' must be a 'user'")
+
+    input_message = completion_request.messages[0]
+
+    assert isinstance(input_message.content, str)
+    return await send_message_to_agent(
+        server=server,
+        agent_id=agent_id,
+        user_id=actor.id,
+        role=MessageRole(input_message.role),
+        message=input_message.content,
+        # Turn streaming ON
+        stream_steps=True,
+        stream_tokens=True,
+        # Turn on ChatCompletion mode (eg remaps send_message to content)
+        chat_completion_mode=True,
+    )

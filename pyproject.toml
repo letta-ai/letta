@@ -76,6 +76,8 @@ e2b-code-interpreter = {version = "^1.0.1", optional = true}
 pathvalidate = "^3.2.1"
 langchain-community = {version = "^0.3.7", optional = true}
 langchain = {version = "^0.3.7", optional = true}
+ijson = "^3.3.0"
+pytest = "^8.3.3"
 
 [tool.poetry.extras]
 #local = ["llama-index-embeddings-huggingface"]
