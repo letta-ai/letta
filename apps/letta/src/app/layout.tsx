@@ -10,7 +10,7 @@ import { cn } from '@letta-web/core-style-config';
 
 export const metadata = {
   title: 'Letta',
-  description: 'Letta lets you build Agents',
+  description: 'Advancing the frontier of AI systems with memory',
 };
 
 const manrope = Manrope({

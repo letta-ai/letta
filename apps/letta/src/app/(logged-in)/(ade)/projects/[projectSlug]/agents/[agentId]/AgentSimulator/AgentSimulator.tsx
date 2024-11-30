@@ -1,9 +1,9 @@
 import {
   Alert,
-  BirdIcon,
   Button,
   ChatBubbleIcon,
   ChatInput,
+  ChatIcon,
   CodeIcon,
   ComputerIcon,
   Dialog,
@@ -322,7 +322,7 @@ function ControlChatroomRenderMode() {
           hideLabel: true,
         },
         {
-          icon: <BirdIcon />,
+          icon: <ChatIcon />,
           label: t('setChatroomRenderMode.options.interactive'),
           value: 'interactive',
           hideLabel: true,
