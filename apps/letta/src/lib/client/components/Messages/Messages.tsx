@@ -11,7 +11,7 @@ import {
   LettaLoaderPanel,
   Markdown,
   PersonIcon,
-  RobotIcon,
+  Robot2Icon,
   ThoughtsIcon,
   Typography,
   VStack,
@@ -134,7 +134,7 @@ function MessageGroup({ group }: MessageGroupType) {
             ? 'hsl(var(--primary-light))'
             : 'hsl(var(--user-color))'
         }
-        icon={name === 'Agent' ? <RobotIcon /> : <PersonIcon />}
+        icon={name === 'Agent' ? <Robot2Icon /> : <PersonIcon />}
       />
       <VStack collapseWidth flex gap="small">
         <Typography bold>{name}</Typography>

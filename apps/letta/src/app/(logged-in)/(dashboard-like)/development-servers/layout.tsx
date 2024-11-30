@@ -3,8 +3,8 @@
 import {
   DashboardWithSidebarWrapper,
   PlusIcon,
-  RobotIcon,
-  DashboardIcon,
+  Robot2Icon,
+  ControllerIcon,
   HStack,
   Typography,
   StatusIndicator,
@@ -217,7 +217,7 @@ function LocalProjectLayout(props: LocalProjectLayoutProps) {
       items: [
         {
           id: server.id,
-          icon: <RobotIcon />,
+          icon: <Robot2Icon />,
           label: t('nav.agents'),
           href: `/development-servers/${server.id}/agents`,
         },
@@ -246,13 +246,13 @@ function LocalProjectLayout(props: LocalProjectLayoutProps) {
           items: [
             {
               id: 'dashboard',
-              icon: <DashboardIcon />,
+              icon: <ControllerIcon />,
               label: t('nav.dashboard'),
               href: `/development-servers/local/dashboard`,
             },
             {
               id: 'agents',
-              icon: <RobotIcon />,
+              icon: <Robot2Icon />,
               label: t('nav.agents'),
               href: `/development-servers/local/agents`,
             },
