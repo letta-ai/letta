@@ -71,7 +71,8 @@ deploy: push
         --set env.LAUNCH_DARKLY_SDK_KEY="${LAUNCH_DARKLY_SDK_KEY}" \
         --set env.SENTRY_AUTH_TOKEN="${SENTRY_AUTH_TOKEN}" \
         --set env.NEXT_PUBLIC_CURRENT_HOST="${NEXT_PUBLIC_CURRENT_HOST}" \
-        --set env.REDIS_HOST="${REDIS_HOST}"
+        --set env.REDIS_HOST="${REDIS_HOST}" \
+        --set env.E2B_SANDBOX_TEMPLATE_ID="${E2B_SANDBOX_TEMPLATE_ID}"
     npm run slack-bot-says "Successfully deployed web service Helm chart with tag: {{TAG}}."
 
 # Destroy the Helm chart
@@ -117,7 +118,7 @@ check-github-status:
     npm run check-github-status
 
 # Build all Docker images for GitHub Actions with cache management
-build-gh-actions: 
+build-gh-actions:
     npm run slack-bot-says "Building Docker images for GitHub Actions with tag: {{TAG}}..."
     @echo "🚧 Building web Docker image with tag: {{TAG}}..."
     @mkdir -p /tmp/.buildx-cache
@@ -125,16 +126,16 @@ build-gh-actions:
         --cache-from type=local,src=/tmp/.buildx-cache \
         --cache-to type=local,dest=/tmp/.buildx-cache-new,mode=max \
         -t {{DOCKER_REGISTRY}}/web:{{TAG}} . --load
-    
+
     @echo "🚧 Building migrations Docker image with tag: {{TAG}}..."
     docker buildx build --platform linux/amd64 --target migrations \
         --cache-from type=local,src=/tmp/.buildx-cache \
         --cache-to type=local,dest=/tmp/.buildx-cache-new,mode=max \
         -t {{DOCKER_REGISTRY}}/web-migrations:{{TAG}} . --load
-    
+
     @echo "🚧 Moving cache..."
     @rm -rf /tmp/.buildx-cache
     @mv /tmp/.buildx-cache-new /tmp/.buildx-cache
-    
+
     @echo "✅ All Docker images built successfully."
     npm run slack-bot-says "Docker images with tag: {{TAG}} built successfully."
