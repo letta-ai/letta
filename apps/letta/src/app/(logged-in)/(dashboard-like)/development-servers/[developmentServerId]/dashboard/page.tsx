@@ -7,7 +7,7 @@ import {
   DashboardPageSection,
   HStack,
   NiceGridDisplay,
-  RobotIcon,
+  Robot2Icon,
   SearchIcon,
   VStack,
 } from '@letta-web/component-library';
@@ -122,7 +122,7 @@ function DevelopmentServersDashboardPage() {
                   // do nothing (this makes the UI show a hover state)
                 }}
                 isSkeleton={isLoading}
-                icon={<RobotIcon />}
+                icon={<Robot2Icon />}
                 title={t('gettingStarted.actions.createAgent.title')}
                 description={t(
                   'gettingStarted.actions.createAgent.description'

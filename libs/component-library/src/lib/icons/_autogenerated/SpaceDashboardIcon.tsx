@@ -1,0 +1,17 @@
+import * as React from 'react';
+import type { IconWrappedProps } from '../IconWrapper';
+import { IconWrapper } from '../IconWrapper';
+
+export function SpaceDashboardIcon(props: IconWrappedProps) {
+  return (
+    <IconWrapper {...props}>
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 -960 960 960"
+        fill="currentColor"
+      >
+        <path d="M219-144q-29 0-52-23t-23-52v-525q0-29.7 21.5-50.85Q187-816 216-816h528q29.7 0 50.85 21.15Q816-773.7 816-744v528q0 29-21.15 50.5T744-144H219Zm-3-72h228v-528H216v528Zm300 0h228v-264H516v264Zm0-336h228v-192H516v192Z" />
+      </svg>
+    </IconWrapper>
+  );
+}
