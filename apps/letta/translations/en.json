@@ -4,6 +4,7 @@
     "emptyAction": "Go home"
   },
   "components/DashboardLikeLayout/DashboardNavigation": {
+    "back": "Back",
     "nav": {
       "projects": "Projects",
       "apiKeys": "API keys",
@@ -308,6 +309,7 @@
   },
   "projects/(projectSlug)/layout": {
     "nav": {
+      "return": "View all Projects",
       "home": "Dashboard",
       "templates": "Templates",
       "agents": "Agents",

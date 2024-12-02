@@ -1,7 +1,6 @@
 'use client';
 
 import {
-  SidebarTitle,
   DashboardWithSidebarWrapper,
   Robot2Icon,
   ControllerIcon,
@@ -17,12 +16,12 @@ type ProjectLayoutInnerProps = PropsWithChildren;
 
 export function ProjectLayoutInner(props: ProjectLayoutInnerProps) {
   const t = useTranslations('projects/(projectSlug)/layout');
-  const { slug: projectSlug, name } = useCurrentProject();
+  const { slug: projectSlug } = useCurrentProject();
 
   return (
     <DashboardWithSidebarWrapper
       baseUrl="/projects"
-      projectTitle={<SidebarTitle name={name} />}
+      returnText={t('nav.return')}
       navigationItems={[
         {
           id: 'home',

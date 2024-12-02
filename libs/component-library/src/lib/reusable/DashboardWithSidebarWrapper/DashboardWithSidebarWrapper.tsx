@@ -13,14 +13,21 @@ interface DashboardWithSidebarWrapperProps {
   baseUrl: string;
   navigationItems: SubnavigationData['items'];
   returnOverride?: string;
+  returnText?: string;
   projectTitle?: React.ReactNode;
 }
 
 export function DashboardWithSidebarWrapper(
   props: DashboardWithSidebarWrapperProps
 ) {
-  const { navigationItems, baseUrl, returnOverride, projectTitle, children } =
-    props;
+  const {
+    navigationItems,
+    baseUrl,
+    returnText,
+    returnOverride,
+    projectTitle,
+    children,
+  } = props;
 
   const rootPath = useMemo(() => {
     if (returnOverride) {
@@ -37,8 +44,16 @@ export function DashboardWithSidebarWrapper(
       items: navigationItems,
       title: projectTitle,
       returnPath: rootPath,
+      returnText,
     });
-  }, [baseUrl, navigationItems, projectTitle, rootPath, setSubnavigationData]);
+  }, [
+    baseUrl,
+    navigationItems,
+    projectTitle,
+    returnText,
+    rootPath,
+    setSubnavigationData,
+  ]);
 
   return (
     <Frame fullWidth>
