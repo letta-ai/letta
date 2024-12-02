@@ -9,10 +9,6 @@ on:
         - main
     workflow_dispatch:
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
 env:
   PROJECT_ID: memgpt-428419
   DOCKER_REGISTRY: us-central1-docker.pkg.dev/memgpt-428419/letta
