@@ -82,5 +82,5 @@ async def test_parse_openai_stream(client, agent_state, mock_messages):
         finish_message=True,
     )
 
-    # async for chunk in generator:
-    #     print(chunk)
+    async for chunk in generator:
+        print(chunk)
