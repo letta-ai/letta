@@ -28,6 +28,7 @@ export interface SubnavigationData {
   items: Array<SubNavigationGroup | SubNavigationItem>;
   title: React.ReactNode;
   returnPath: string;
+  returnText?: string;
 }
 
 interface UseSubNavigationItemsContextData {

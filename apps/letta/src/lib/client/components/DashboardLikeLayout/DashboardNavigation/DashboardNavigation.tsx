@@ -239,6 +239,14 @@ function MainNavigationItems(props: MainNavigationItemsProps) {
     return specificSubNavigationData.title;
   }, [specificSubNavigationData]);
 
+  const returnText = useMemo(() => {
+    if (!specificSubNavigationData) {
+      return t('back');
+    }
+
+    return specificSubNavigationData.returnText || t('back');
+  }, [specificSubNavigationData, t]);
+
   return (
     <VStack fullHeight={!isMobile} gap={false}>
       <HStack
@@ -310,7 +318,7 @@ function MainNavigationItems(props: MainNavigationItemsProps) {
                     size="small"
                     color="tertiary-transparent"
                     preIcon={<ChevronLeftIcon />}
-                    label="Back"
+                    label={returnText}
                     align="left"
                     fullWidth
                     href={specificSubNavigationData?.returnPath || '/'}
