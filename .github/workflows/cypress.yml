@@ -1,8 +1,5 @@
 name: 🕸️ Cypress Tests
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
 
 permissions:
   actions: read
@@ -151,6 +148,3 @@ jobs:
           IS_CYPRESS_RUN: yes
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           TAG: ${{ github.sha }}
-
-
-
