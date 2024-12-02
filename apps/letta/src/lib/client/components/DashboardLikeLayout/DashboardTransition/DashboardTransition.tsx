@@ -89,11 +89,9 @@ export function DashboardTransition({
       >
         <VStack
           /* eslint-disable-next-line react/forbid-component-props */
-          className="transition-box largerThanMobile:pl-0 pl-1 z-[-1]"
+          className="transition-box z-[-1]"
           paddingTop="xxsmall"
           paddingRight="xxsmall"
-          fullWidth
-          fullHeight
           color="background"
           position="absolute"
         >

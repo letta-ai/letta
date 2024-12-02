@@ -55,8 +55,10 @@ export function ImageCard(props: ImageCardProps) {
             src={imageUrl}
             alt={altText}
           />
-          <Typography bold>{title}</Typography>
-          <Typography>{description}</Typography>
+          <Typography bold align="left">
+            {title}
+          </Typography>
+          <Typography align="left">{description}</Typography>
         </VStack>
         <VStack align="start" justify="start" fullWidth>
           {children}
