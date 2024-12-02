@@ -5,8 +5,9 @@
   z-index: -1;
 }
 
-@media screen and (max-width: 640px) {
+@media (max-width: 840px) {
   .transition-box {
-    width: 100vw;
+    width: 100dvw;
+    padding-left: 4px;
   }
 }
