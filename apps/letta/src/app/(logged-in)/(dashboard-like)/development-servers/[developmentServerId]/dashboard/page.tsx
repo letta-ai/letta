@@ -2,10 +2,12 @@
 import {
   ActionCard,
   AdBanner,
+  Alert,
   Button,
   DashboardPageLayout,
   DashboardPageSection,
   HStack,
+  InlineCode,
   NiceGridDisplay,
   Robot2Icon,
   SearchIcon,
@@ -13,49 +15,19 @@ import {
 } from '@letta-web/component-library';
 import { useTranslations } from 'next-intl';
 import { Tutorials } from '$letta/client/components';
-import React, { useEffect, useRef } from 'react';
-import { getIsLocalServiceOnline } from '$letta/client/local-project-manager';
+import React, { useMemo } from 'react';
 import Link from 'next/link';
 import bannerBlue from './banner_blue.png';
 import bannerOrange from './banner_orange.png';
 import { useCurrentUser } from '$letta/client/hooks';
 import { useLocalStorageWithLoadingState } from '@letta-web/helpful-client-utils';
-import { CLOUD_UPSELL_URL } from '$letta/constants';
+import {
+  CLOUD_UPSELL_URL,
+  MOST_RECENT_LETTA_AGENT_VERSION,
+  SUPPORTED_LETTA_AGENTS_VERSIONS,
+} from '$letta/constants';
 import { UserIsNotConnectedComponent } from '../components/UserIsNotConnectedComponent/UserIsNotConnectedComponent';
-
-function useIsLocalServiceOnline() {
-  const [isLoading, setIsLoading] = React.useState(true);
-  const [isLocalServiceOnline, setIsOnline] = React.useState(false);
-  const interval = useRef<ReturnType<typeof setTimeout>>();
-
-  const mounted = useRef(false);
-
-  useEffect(() => {
-    if (mounted.current) {
-      return;
-    }
-
-    mounted.current = true;
-
-    void getIsLocalServiceOnline()
-      .then(setIsOnline)
-      .finally(() => {
-        setIsLoading(false);
-      });
-  }, []);
-
-  useEffect(() => {
-    interval.current = setInterval(async () => {
-      void getIsLocalServiceOnline().then(setIsOnline);
-    }, 3000);
-
-    return () => {
-      clearInterval(interval.current);
-    };
-  }, []);
-
-  return { isLocalServiceOnline, isLoading };
-}
+import { useHealthServiceHealthCheck } from '@letta-web/letta-agents-api';
 
 function UpgradeBanner() {
   const [isDismissed, setIsDismissed, isLoading] =
@@ -102,8 +74,23 @@ function UpgradeBanner() {
 
 function DevelopmentServersDashboardPage() {
   const t = useTranslations('development-servers/dashboard/page');
-  const { isLocalServiceOnline, isLoading } = useIsLocalServiceOnline();
+  const { data: isLocalServiceOnline, isLoading } = useHealthServiceHealthCheck(
+    undefined,
+    {
+      refetchInterval: 3000,
+    }
+  );
   const user = useCurrentUser();
+
+  const showVersionCompatibilityBanner = useMemo(() => {
+    if (!isLocalServiceOnline) {
+      return false;
+    }
+
+    return !SUPPORTED_LETTA_AGENTS_VERSIONS.includes(
+      isLocalServiceOnline.version
+    );
+  }, [isLocalServiceOnline]);
 
   return (
     <DashboardPageLayout title={t('title')} subtitle={t('description')}>
@@ -114,6 +101,23 @@ function DevelopmentServersDashboardPage() {
       )}
 
       <DashboardPageSection title={t('gettingStarted.title')}>
+        {showVersionCompatibilityBanner && (
+          <Alert
+            title={t('versionCompatibilityBanner.title', {
+              version: MOST_RECENT_LETTA_AGENT_VERSION,
+            })}
+            variant="warning"
+          >
+            <VStack>
+              {t('versionCompatibilityBanner.description')}
+              <div>
+                <InlineCode
+                  code={`pip install letta==${MOST_RECENT_LETTA_AGENT_VERSION}`}
+                />
+              </div>
+            </VStack>
+          </Alert>
+        )}
         {isLocalServiceOnline ? (
           <NiceGridDisplay>
             <Link href="/development-servers/local/agents/new">

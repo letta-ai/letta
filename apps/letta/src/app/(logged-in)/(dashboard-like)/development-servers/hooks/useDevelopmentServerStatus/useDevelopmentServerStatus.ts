@@ -2,10 +2,12 @@ import { atom, useAtom } from 'jotai';
 import { useEffect, useState } from 'react';
 import { useDebouncedCallback } from '@mantine/hooks';
 import type { DevelopmentServerConfig } from '../../[developmentServerId]/hooks/useCurrentDevelopmentServerConfig/useCurrentDevelopmentServerConfig';
+import type { HealthCheckResponse } from '@letta-web/letta-agents-api';
 
 interface Status {
   isHealthy: boolean | null;
   isFetching: boolean;
+  version?: string;
 }
 
 const developmentServerStatusAtom = atom<Record<string, Status>>({});
@@ -45,14 +47,20 @@ export function useDevelopmentServerStatus(
         ...(password ? { 'X-BARE-PASSWORD': `password ${password}` } : {}),
       },
     })
-      .then((response) => {
+      .then(async (response) => {
         if (!response.ok) {
           throw new Error('Server is not healthy');
         }
 
+        const data = (await response.json()) as HealthCheckResponse;
+
         setDevelopmentServerStatus((prev) => ({
           ...prev,
-          [serverUrl]: { isHealthy: true, isFetching: false },
+          [serverUrl]: {
+            version: data.version,
+            isHealthy: true,
+            isFetching: false,
+          },
         }));
       })
       .catch(() => {
