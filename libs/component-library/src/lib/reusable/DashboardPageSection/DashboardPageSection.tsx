@@ -93,9 +93,11 @@ export function DashboardPageSection(props: DashboardPageSectionProps) {
           />
         </Frame>
       )}
-      <VisibleOnMobile>
-        <HStack fullHeight>{actions}</HStack>
-      </VisibleOnMobile>
+      {actions && (
+        <VisibleOnMobile>
+          <HStack>{actions}</HStack>
+        </VisibleOnMobile>
+      )}
       {children}
     </VStack>
   );
