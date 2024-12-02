@@ -679,7 +679,7 @@ function Chatroom() {
   const [showVariablesMenu, setShowVariablesMenu] = useState(false);
   const { id: agentId } = agentState;
   const [renderMode, setRenderMode] = useLocalStorage<MessagesDisplayMode>({
-    defaultValue: 'debug',
+    defaultValue: 'interactive',
     key: 'chatroom-render-mode',
   });
 
