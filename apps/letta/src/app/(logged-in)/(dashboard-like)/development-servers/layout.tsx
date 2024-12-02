@@ -19,7 +19,11 @@ import {
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { webApi, webApiQueryKeys } from '$letta/client';
-import { LOCAL_PROJECT_SERVER_URL } from '$letta/constants';
+import {
+  LOCAL_PROJECT_SERVER_URL,
+  MOST_RECENT_LETTA_AGENT_VERSION,
+  SUPPORTED_LETTA_AGENTS_VERSIONS,
+} from '$letta/constants';
 import { UpdateDevelopmentServerDetailsDialog } from './shared/UpdateDevelopmentServerDetailsDialog/UpdateDevelopmentServerDetailsDialog';
 import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
@@ -119,25 +123,39 @@ function ServerStatusTitle(props: ServerStatusTitleProps) {
   const { config, title } = props;
   const t = useTranslations('development-servers/layout');
 
-  const { isHealthy, isFetching } = useDevelopmentServerStatus(config);
+  const { isHealthy, version, isFetching } = useDevelopmentServerStatus(config);
+
+  const isNotCompatible = useMemo(() => {
+    return !SUPPORTED_LETTA_AGENTS_VERSIONS.includes(version || '');
+  }, [version]);
 
   const status = useMemo(() => {
     if (isFetching) {
       return 'processing';
     }
 
+    if (isNotCompatible) {
+      return 'warning';
+    }
+
     return isHealthy ? 'active' : 'inactive';
-  }, [isFetching, isHealthy]);
+  }, [isFetching, isHealthy, isNotCompatible]);
 
   const statusText = useMemo(() => {
     if (isFetching) {
       return t('ServerStatusTitle.checking');
     }
 
+    if (isNotCompatible) {
+      return t('ServerStatusTitle.incompatible', {
+        version: MOST_RECENT_LETTA_AGENT_VERSION,
+      });
+    }
+
     return isHealthy
       ? t('ServerStatusTitle.isHealthy')
       : t('ServerStatusTitle.isUnhealthy');
-  }, [isFetching, isHealthy, t]);
+  }, [isFetching, isHealthy, isNotCompatible, t]);
 
   return (
     <HStack align="center">
