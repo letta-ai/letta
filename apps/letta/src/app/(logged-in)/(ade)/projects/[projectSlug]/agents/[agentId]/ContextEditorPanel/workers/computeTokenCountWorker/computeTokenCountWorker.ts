@@ -9,8 +9,11 @@ declare global {
   var loadPyodide: any;
 }
 
-importScripts('https://cdn.jsdelivr.net/pyodide/dev/full/pyodide.js');
-
+try {
+  importScripts('https://cdn.jsdelivr.net/pyodide/dev/full/pyodide.js');
+} catch (_e) {
+  console.warn('Failed to import pyodide.js');
+}
 async function loadPyodideAndPackages() {
   self.pyodide = await loadPyodide();
   await self.pyodide.loadPackage(['tiktoken']);
