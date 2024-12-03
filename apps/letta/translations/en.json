@@ -100,7 +100,7 @@
     },
     "CreateEnvironmentVariableDialog": {
       "title": "Create environment variable",
-      "trigger": "Create environment variable",
+      "trigger": "Create variable",
       "confirm": "Create",
       "cancel": "Cancel",
       "key": {
@@ -112,7 +112,7 @@
         "label": "Value",
         "placeholder": "my-value"
       },
-      "createButton": "Create variable",
+      "createButton": "Create environment variable",
       "error": "There was an error creating the environment variable, please try again or contact support."
     }
   },
