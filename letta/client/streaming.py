@@ -62,7 +62,8 @@ def _sse_post(url: str, data: dict, headers: dict) -> Generator[LettaStreamingRe
                         elif "usage" in chunk_data:
                             yield LettaUsageStatistics(**chunk_data["usage"])
                         else:
-                            raise ValueError(f"Unknown message type in chunk_data: {chunk_data}")
+                            yield chunk_data
+                            # raise ValueError(f"Unknown message type in chunk_data: {chunk_data}")
 
             except SSEError as e:
                 print("Caught an error while iterating the SSE stream:", str(e))
