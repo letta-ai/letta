@@ -245,7 +245,7 @@ function CreateEnvironmentVariableDialog() {
   const [open, setOpen] = useState(false);
   const t = useTranslations('organization/environment-variables');
   const { mutate, isPending, isError, reset } =
-    webApi.environmentVariables.setEnvironmentVariable.useMutation();
+    webApi.environmentVariables.createEnvironmentVariable.useMutation();
 
   const CreateEnvironmentVariableSchema = useMemo(() => {
     return z.object({
