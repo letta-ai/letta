@@ -115,7 +115,7 @@ async function getEnvironmentVariables(
   req: GetEnvironmentVariablesRequest
 ): Promise<GetEnvironmentVariablesResponse> {
   const user = await getUserOrThrow();
-  const { search } = req.query;
+  const { search = '' } = req.query;
 
   const sandboxConfigId = await getE2BSandboxConfigIdByLettaUserId(
     user.lettaAgentsId
@@ -139,8 +139,72 @@ async function getEnvironmentVariables(
         .map((envVar) => ({
           id: envVar.id || '',
           key: envVar.key,
+          updatedAt: envVar.updated_at || envVar.created_at || '',
         })),
       hasNextPage: false,
+    },
+  };
+}
+
+export type CreateEnvironmentVariableResponse = ServerInferResponses<
+  typeof contracts.environmentVariables.createEnvironmentVariable
+>;
+
+export type CreateEnvironmentVariableRequest = ServerInferRequest<
+  typeof contracts.environmentVariables.createEnvironmentVariable
+>;
+
+async function createEnvironmentVariable(
+  req: CreateEnvironmentVariableRequest
+): Promise<CreateEnvironmentVariableResponse> {
+  const user = await getUserOrThrow();
+  const { key, value } = req.body;
+
+  const sandboxConfigId = await getE2BSandboxConfigIdByLettaUserId(
+    user.lettaAgentsId
+  );
+
+  // first get the existing environment variables
+  const existingEnvironmentVariables =
+    await listSandboxEnvVarsV1SandboxConfigSandboxConfigIdEnvironmentVariableGet(
+      user.lettaAgentsId,
+      sandboxConfigId
+    );
+
+  const existingEnvironmentVariable = existingEnvironmentVariables.find(
+    (envVar) => envVar.key === key
+  );
+
+  if (existingEnvironmentVariable) {
+    return {
+      status: 409,
+      body: {
+        errorCode: 'environmentVariableAlreadyExists',
+        message: 'Environment variable already exists',
+      },
+    };
+  }
+
+  const newEnvironmentVariable =
+    await SandboxConfigService.createSandboxEnvVarV1SandboxConfigSandboxConfigIdEnvironmentVariablePost(
+      {
+        userId: user.lettaAgentsId,
+        sandboxConfigId: sandboxConfigId,
+        requestBody: {
+          key,
+          value,
+        },
+      },
+      {
+        user_id: user.lettaAgentsId,
+      }
+    );
+
+  return {
+    status: 201,
+    body: {
+      id: newEnvironmentVariable.id || '',
+      key,
     },
   };
 }
@@ -268,6 +332,7 @@ async function deleteEnvironmentVariable(
 export const environmentVariablesRouter = {
   getEnvironmentVariables,
   setEnvironmentVariable,
+  createEnvironmentVariable,
   getEnvironmentVariableByKey,
   deleteEnvironmentVariable,
 };

@@ -11,7 +11,12 @@ export const HIDDEN_ENVIRONMENT_VARIABLES = [COMPOSE_IO_KEY_NAME];
 export const PublicEnvironmentVariableSchema = z.object({
   id: z.string(),
   key: z.string(),
+  updatedAt: z.string(),
 });
+
+export type PublicEnvironmentVariable = z.infer<
+  typeof PublicEnvironmentVariableSchema
+>;
 
 export const SetEnvironmentVariablePayloadSchema = z.object({
   key: z.string().regex(/^[a-zA-Z0-9_]+$/),
@@ -25,7 +30,7 @@ export const SetEnvironmentVariableResponseSchema = z.object({
 });
 
 const setEnvironmentVariableContract = c.mutation({
-  method: 'POST',
+  method: 'PUT',
   path: '/environmental-variables',
   body: SetEnvironmentVariablePayloadSchema,
   responses: {
@@ -35,7 +40,7 @@ const setEnvironmentVariableContract = c.mutation({
 });
 
 const GetEnvironmentVariablesSearchSchema = z.object({
-  search: z.string(),
+  search: z.string().optional(),
 });
 
 /* Get Environment Variable By Key */
@@ -57,6 +62,11 @@ const getEnvironmentVariableByKeyContract = c.query({
 
 export type GetEnvironmentVariableByKey200Response = ServerInferResponses<
   typeof getEnvironmentVariableByKeyContract,
+  200
+>;
+
+export type GetEnvironmentVariables200Response = ServerInferResponses<
+  typeof getEnvironmentVariablesContract,
   200
 >;
 
@@ -91,8 +101,24 @@ const deleteEnvironmentVariableContract = c.mutation({
   },
 });
 
+/* Create Environment Variable */
+export const CreateEnvironmentVariableSchema = z.object({
+  key: z.string(),
+  value: z.string(),
+});
+
+const createEnvironmentVariableContract = c.mutation({
+  method: 'POST',
+  path: '/environmental-variables',
+  body: CreateEnvironmentVariableSchema,
+  responses: {
+    200: SetEnvironmentVariableResponseSchema,
+  },
+});
+
 export const environmentVariablesContracts = {
   setEnvironmentVariable: setEnvironmentVariableContract,
+  createEnvironmentVariable: createEnvironmentVariableContract,
   getEnvironmentVariables: getEnvironmentVariablesContract,
   deleteEnvironmentVariable: deleteEnvironmentVariableContract,
   getEnvironmentVariableByKey: getEnvironmentVariableByKeyContract,
