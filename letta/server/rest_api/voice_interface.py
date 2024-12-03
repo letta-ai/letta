@@ -5,6 +5,8 @@ from collections import deque
 from datetime import datetime
 from typing import AsyncGenerator, Optional, Union
 
+import ijson
+
 from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG
 from letta.local_llm.constants import INNER_THOUGHTS_KWARG
 from letta.schemas.enums import MessageStreamStatus
@@ -19,7 +21,12 @@ from letta.schemas.letta_message import (
     LettaMessage,
 )
 from letta.schemas.message import Message
-from letta.schemas.openai.chat_completion_response import ChatCompletionChunkResponse
+from letta.schemas.openai.chat_completion_response import (
+    ChatCompletionChunkResponse,
+    ChunkChoice,
+    MessageDelta,
+)
+from letta.server.rest_api.routers.optimistic_json_parser import OptimisticJSONParser
 from letta.streaming_interface import AgentChunkStreamingInterface
 from letta.streaming_utils import (
     FunctionArgumentsStreamHandler,
@@ -50,6 +57,13 @@ class VoiceStreamingServerInterface(AgentChunkStreamingInterface):
         inner_thoughts_in_kwargs=True,
         inner_thoughts_kwarg=INNER_THOUGHTS_KWARG,
     ):
+        # State variables for parsing
+        self.current_function_name = ""
+        self.current_function_arguments = []
+        self.ijson_parser = None
+        self.events = ijson.sendable_list()
+        self.seen_events = set()
+
         # If streaming mode, ignores base interface calls like .assistant_message, etc
         self.streaming_mode = False
         # NOTE: flag for supporting legacy 'stream' flag where send_message is treated specially
@@ -90,14 +104,6 @@ class VoiceStreamingServerInterface(AgentChunkStreamingInterface):
         self.debug = False
         self.timeout = 30
 
-    def _reset_inner_thoughts_json_reader(self):
-        # A buffer for accumulating function arguments (we want to buffer keys and run checks on each one)
-        self.function_args_reader = JSONInnerThoughtsExtractor(inner_thoughts_key=self.inner_thoughts_kwarg, wait_for_first_key=True)
-        # Two buffers used to make sure that the 'name' comes after the inner thoughts stream (if inner_thoughts_in_kwargs)
-        self.function_name_buffer = None
-        self.function_args_buffer = None
-        self.function_id_buffer = None
-
     async def _create_generator(self) -> AsyncGenerator[Union[LettaMessage, LegacyLettaMessage, MessageStreamStatus], None]:
         """An asynchronous generator that yields chunks as they become available."""
         while self._active:
@@ -135,7 +141,10 @@ class VoiceStreamingServerInterface(AgentChunkStreamingInterface):
         """Add an item to the deque"""
         assert self._active, "Generator is inactive"
         assert (
-            isinstance(item, LettaMessage) or isinstance(item, LegacyLettaMessage) or isinstance(item, MessageStreamStatus)
+            isinstance(item, LettaMessage)
+            or isinstance(item, LegacyLettaMessage)
+            or isinstance(item, MessageStreamStatus)
+            or isinstance(item, ChatCompletionChunkResponse)
         ), f"Wrong type: {type(item)}"
 
         self._chunks.append(item)
@@ -158,7 +167,7 @@ class VoiceStreamingServerInterface(AgentChunkStreamingInterface):
             self._push_to_buffer(self.multi_step_gen_indicator)
 
         # Wipe the inner thoughts buffers
-        self._reset_inner_thoughts_json_reader()
+        self._reset_parsing_state()
 
     def step_complete(self):
         """Signal from the agent that one 'step' finished (step = LLM response + tool execution)"""
@@ -171,7 +180,7 @@ class VoiceStreamingServerInterface(AgentChunkStreamingInterface):
             self._push_to_buffer(self.multi_step_indicator)
 
         # Wipe the inner thoughts buffers
-        self._reset_inner_thoughts_json_reader()
+        self._reset_parsing_state()
 
     def step_yield(self):
         """If multi_step, this is the true 'stream_end' function."""
@@ -182,60 +191,82 @@ class VoiceStreamingServerInterface(AgentChunkStreamingInterface):
     def clear():
         return
 
-    def _process_chunk_to_openai_style(self, chunk: ChatCompletionChunkResponse) -> Optional[dict]:
-        """Chunks should look like OpenAI, but be remapped from letta-style concepts.
-
-        inner_thoughts are silenced:
-          - means that 'content' -> /dev/null
-        send_message is a "message"
-          - means that tool call to "send_message" should map to 'content'
-
-        TODO handle occurance of multi-step function calling
-        TODO handle partial stream of "name" in tool call
+    def _process_chunk_to_openai_style(self, chunk: ChatCompletionChunkResponse) -> Optional[ChatCompletionChunkResponse]:
         """
-        proxy_chunk = chunk.model_copy(deep=True)
-
+        Processes incoming chunks into OpenAI-style response while streaming deltas
+        of incomplete JSON arguments incrementally.
+        """
         choice = chunk.choices[0]
-        message_delta = choice.delta
+        delta = choice.delta
 
-        # inner thoughts
-        if message_delta.content is not None:
-            # skip inner monologue
-            return None
+        # Stream direct content deltas
+        if delta.content is not None:
+            return
+            # print("DEBUG: Streaming content delta:", delta.content)
+            # return ChatCompletionChunkResponse(
+            #     id=chunk.id,
+            #     object=chunk.object,
+            #     created=chunk.created.isoformat() + "Z",
+            #     model=chunk.model,
+            #     choices=[
+            #         ChunkChoice(
+            #             index=choice.index,
+            #             delta=MessageDelta(content=delta.content),
+            #             finish_reason=None
+            #         )
+            #     ]
+            # )
 
-        # tool call
-        elif message_delta.tool_calls is not None and len(message_delta.tool_calls) > 0:
-            tool_call = message_delta.tool_calls[0]
+        # Handle tool_calls (send_message)
+        if delta.tool_calls is not None and len(delta.tool_calls) > 0:
+            tool_call = delta.tool_calls[0]
 
-            if tool_call.function:
+            # Accumulate function name and arguments
+            if tool_call.function.name:
+                self.current_function_name += tool_call.function.name
+            if tool_call.function.arguments:
+                self.current_function_arguments.append(tool_call.function.arguments)
 
-                # Track the function name while streaming
-                # If we were previously on a 'send_message', we need to 'toggle' into 'content' mode
-                if tool_call.function.name:
-                    if self.streaming_chat_completion_mode_function_name is None:
-                        self.streaming_chat_completion_mode_function_name = tool_call.function.name
-                    else:
-                        self.streaming_chat_completion_mode_function_name += tool_call.function.name
+            # Only parse arguments for send_message
+            if self.current_function_name.strip() == "send_message":
+                arguments = "".join(self.current_function_arguments)
+                incomplete_send_message_arg = OptimisticJSONParser().parse(arguments)
 
-                    if tool_call.function.name == "send_message":
-                        # early exit to turn into content mode
-                        self.streaming_chat_completion_json_reader.reset()
-                        return None
+                if "message" in incomplete_send_message_arg and incomplete_send_message_arg["message"]:
+                    return ChatCompletionChunkResponse(
+                        id=chunk.id,
+                        object=chunk.object,
+                        created=chunk.created.isoformat() + "Z",
+                        model=chunk.model,
+                        choices=[
+                            ChunkChoice(
+                                index=choice.index, delta=MessageDelta(content=self.current_function_arguments[-1]), finish_reason=None
+                            )
+                        ],
+                    )
 
-                if tool_call.function.arguments:
-                    if self.streaming_chat_completion_mode_function_name == "send_message":
-                        cleaned_func_args = self.streaming_chat_completion_json_reader.process_json_chunk(tool_call.function.arguments)
-                        if cleaned_func_args is None:
-                            return None
-                        else:
-                            # Wipe tool call
-                            proxy_chunk.choices[0].delta.tool_calls = None
-                            # Replace with 'content'
-                            proxy_chunk.choices[0].delta.content = cleaned_func_args
+        # Handle finish_reason
+        if choice.finish_reason is not None:
+            return ChatCompletionChunkResponse(
+                id=chunk.id,
+                object=chunk.object,
+                created=chunk.created.isoformat() + "Z",
+                model=chunk.model,
+                choices=[ChunkChoice(index=choice.index, delta=MessageDelta(), finish_reason=choice.finish_reason)],
+            )
 
-        processed_chunk = proxy_chunk.model_dump(exclude_none=True)
+        return None
 
-        return processed_chunk
+    def _reset_parsing_state(self):
+        """
+        Reset parsing state for handling function calls.
+        """
+        self.current_function_name = ""
+        self.current_function_arguments = []
+        self.ijson_parser = None
+        self.events = ijson.sendable_list()
+        self.seen_events = set()
+        print("DEBUG: Reset parsing state.")
 
     def process_chunk(self, chunk: ChatCompletionChunkResponse, message_id: str, message_date: datetime):
         """Process a streaming chunk from an OpenAI-compatible server.
@@ -248,12 +279,13 @@ class VoiceStreamingServerInterface(AgentChunkStreamingInterface):
 
         data: {"function_return": "None", "status": "success", "date": "2024-02-29T06:07:50.847262+00:00"}
         """
-        # print("Processed CHUNK:", chunk)
-
         # Example where we just pass through the raw stream from the underlying OpenAI SSE stream
-        processed_chunk = chunk.model_dump_json(exclude_none=True)
+        processed_chunk = self._process_chunk_to_openai_style(chunk)
         if processed_chunk is None:
             return
+
+        print("LOOK HERE!!")
+        print(processed_chunk)
 
         self._push_to_buffer(processed_chunk)
 
