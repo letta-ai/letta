@@ -1397,6 +1397,70 @@ export const useSandboxConfigServiceCreateSandboxConfigV1SandboxConfigPost = <
       }) as unknown as Promise<TData>,
     ...options,
   });
+export const useSandboxConfigServiceCreateDefaultE2bSandboxConfigV1SandboxConfigE2bDefaultPost =
+  <
+    TData = Common.SandboxConfigServiceCreateDefaultE2bSandboxConfigV1SandboxConfigE2bDefaultPostMutationResult,
+    TError = unknown,
+    TContext = unknown
+  >(
+    options?: Omit<
+      UseMutationOptions<
+        TData,
+        TError,
+        {
+          userId?: string;
+        },
+        TContext
+      >,
+      'mutationFn'
+    >
+  ) =>
+    useMutation<
+      TData,
+      TError,
+      {
+        userId?: string;
+      },
+      TContext
+    >({
+      mutationFn: ({ userId }) =>
+        SandboxConfigService.createDefaultE2bSandboxConfigV1SandboxConfigE2bDefaultPost(
+          { userId }
+        ) as unknown as Promise<TData>,
+      ...options,
+    });
+export const useSandboxConfigServiceCreateDefaultLocalSandboxConfigV1SandboxConfigLocalDefaultPost =
+  <
+    TData = Common.SandboxConfigServiceCreateDefaultLocalSandboxConfigV1SandboxConfigLocalDefaultPostMutationResult,
+    TError = unknown,
+    TContext = unknown
+  >(
+    options?: Omit<
+      UseMutationOptions<
+        TData,
+        TError,
+        {
+          userId?: string;
+        },
+        TContext
+      >,
+      'mutationFn'
+    >
+  ) =>
+    useMutation<
+      TData,
+      TError,
+      {
+        userId?: string;
+      },
+      TContext
+    >({
+      mutationFn: ({ userId }) =>
+        SandboxConfigService.createDefaultLocalSandboxConfigV1SandboxConfigLocalDefaultPost(
+          { userId }
+        ) as unknown as Promise<TData>,
+      ...options,
+    });
 export const useSandboxConfigServiceCreateSandboxEnvVarV1SandboxConfigSandboxConfigIdEnvironmentVariablePost =
   <
     TData = Common.SandboxConfigServiceCreateSandboxEnvVarV1SandboxConfigSandboxConfigIdEnvironmentVariablePostMutationResult,

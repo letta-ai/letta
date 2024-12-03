@@ -2,6 +2,11 @@ import React from 'react';
 import Image from 'next/image';
 import image from './lockup.svg';
 
-export function MetaLockup() {
-  return <Image src={image} alt="Meta Lockup" />;
+interface MetaLockupProps {
+  width?: number;
+  height?: number;
+}
+
+export function MetaLockup(props: MetaLockupProps) {
+  return <Image src={image} alt="Meta Logo" {...props} />;
 }

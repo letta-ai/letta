@@ -55,6 +55,16 @@ function SettingsLayout(props: SettingsLayoutProps) {
                     label: t('organization.billing'),
                     href: '/settings/organization/billing',
                   },
+                  {
+                    id: 'integrations',
+                    label: t('organization.integrations'),
+                    href: '/settings/organization/integrations',
+                  },
+                  {
+                    id: 'billing',
+                    label: t('organization.environmentVariables'),
+                    href: '/settings/organization/environment-variables',
+                  },
                 ],
               },
             ]

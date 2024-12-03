@@ -3093,6 +3093,21 @@ export type ListSandboxConfigsV1SandboxConfigGetData = {
 
 export type ListSandboxConfigsV1SandboxConfigGetResponse = Array<SandboxConfig>;
 
+export type CreateDefaultE2bSandboxConfigV1SandboxConfigE2bDefaultPostData = {
+  userId?: string | null;
+};
+
+export type CreateDefaultE2bSandboxConfigV1SandboxConfigE2bDefaultPostResponse =
+  SandboxConfig;
+
+export type CreateDefaultLocalSandboxConfigV1SandboxConfigLocalDefaultPostData =
+  {
+    userId?: string | null;
+  };
+
+export type CreateDefaultLocalSandboxConfigV1SandboxConfigLocalDefaultPostResponse =
+  SandboxConfig;
+
 export type UpdateSandboxConfigV1SandboxConfigSandboxConfigIdPatchData = {
   requestBody: SandboxConfigUpdate;
   sandboxConfigId: string;
@@ -4114,6 +4129,36 @@ export type $OpenApiTs = {
          * Successful Response
          */
         200: Array<SandboxConfig>;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/sandbox-config/e2b/default': {
+    post: {
+      req: CreateDefaultE2bSandboxConfigV1SandboxConfigE2bDefaultPostData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: SandboxConfig;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/sandbox-config/local/default': {
+    post: {
+      req: CreateDefaultLocalSandboxConfigV1SandboxConfigLocalDefaultPostData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: SandboxConfig;
         /**
          * Validation Error
          */

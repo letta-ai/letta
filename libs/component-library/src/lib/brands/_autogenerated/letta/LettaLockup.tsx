@@ -2,6 +2,11 @@ import React from 'react';
 import Image from 'next/image';
 import image from './lockup.svg';
 
-export function LettaLockup() {
-  return <Image src={image} alt="Letta Lockup" />;
+interface LettaLockupProps {
+  width?: number;
+  height?: number;
+}
+
+export function LettaLockup(props: LettaLockupProps) {
+  return <Image src={image} alt="Letta Logo" {...props} />;
 }

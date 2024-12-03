@@ -3833,6 +3833,100 @@
         }
       }
     },
+    "/v1/sandbox-config/e2b/default": {
+      "post": {
+        "tags": ["sandbox-config"],
+        "summary": "Create Default E2B Sandbox Config",
+        "operationId": "create_default_e2b_sandbox_config_v1_sandbox_config_e2b_default_post",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "User Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SandboxConfig"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/sandbox-config/local/default": {
+      "post": {
+        "tags": ["sandbox-config"],
+        "summary": "Create Default Local Sandbox Config",
+        "operationId": "create_default_local_sandbox_config_v1_sandbox_config_local_default_post",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "User Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SandboxConfig"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/sandbox-config/{sandbox_config_id}": {
       "patch": {
         "tags": ["sandbox-config"],
@@ -8448,7 +8542,7 @@
             "type": "string",
             "title": "Name",
             "description": "The name of the organization.",
-            "default": "FriendlyJellyfish"
+            "default": "MagnificentJellyfish"
           },
           "created_at": {
             "anyOf": [
