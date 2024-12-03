@@ -10,6 +10,7 @@ import { flushLayoutsRouter } from './admin/flush-layouts/flushLayoutsRouter';
 import { developmentServersRouter } from './development-servers/developmentServersRouter';
 import { adminOrganizationsRouter } from '$letta/web-api/admin/admin-organizations/adminOrganizationsRouter';
 import { adminModelsRouter } from '$letta/web-api/admin/models/adminModelsRouter';
+import { environmentVariablesRouter } from '$letta/web-api/environment-variables/environmentVariablesRouter';
 
 export const router = {
   user: userRouter,
@@ -20,6 +21,7 @@ export const router = {
   agentTemplates: agentTemplateRoutes,
   adePreferences: adePreferencesRouter,
   developmentServers: developmentServersRouter,
+  environmentVariables: environmentVariablesRouter,
   admin: {
     models: adminModelsRouter,
     flushLayouts: flushLayoutsRouter,

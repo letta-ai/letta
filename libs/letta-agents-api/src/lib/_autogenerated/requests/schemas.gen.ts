@@ -3929,7 +3929,7 @@ export const $Organization = {
       type: 'string',
       title: 'Name',
       description: 'The name of the organization.',
-      default: 'FriendlyJellyfish',
+      default: 'MagnificentJellyfish',
     },
     created_at: {
       anyOf: [

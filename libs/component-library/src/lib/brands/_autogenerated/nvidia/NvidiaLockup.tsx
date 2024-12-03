@@ -2,6 +2,11 @@ import React from 'react';
 import Image from 'next/image';
 import image from './lockup.svg';
 
-export function NvidiaLockup() {
-  return <Image src={image} alt="Nvidia Lockup" />;
+interface NvidiaLockupProps {
+  width?: number;
+  height?: number;
+}
+
+export function NvidiaLockup(props: NvidiaLockupProps) {
+  return <Image src={image} alt="Nvidia Logo" {...props} />;
 }

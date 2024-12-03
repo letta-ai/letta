@@ -37,6 +37,10 @@ import {
   adminModelsContracts,
   adminModelsQueryClientKeys,
 } from '$letta/web-api/admin/models/adminModelsContracts';
+import {
+  environmentVariablesContracts,
+  environmentVariablesQueryKeys,
+} from '$letta/web-api/environment-variables/environmentVariablesContracts';
 
 export const contracts = {
   user: userContract,
@@ -47,6 +51,7 @@ export const contracts = {
   featureFlags: featureFlagsContracts,
   agentTemplates: agentTemplatesContracts,
   developmentServers: developmentServersContracts,
+  environmentVariables: environmentVariablesContracts,
   admin: {
     models: adminModelsContracts,
     flushLayouts: flushLayoutsContract,
@@ -64,6 +69,8 @@ export const queryClientKeys = {
   agentTemplates: agentTemplatesQueryClientKeys,
   adePreferences: adePreferencesQueryClientKeys,
   developmentServers: developmentServerQueryClientKeys,
+  environmentVariables: environmentVariablesQueryKeys,
+
   admin: {
     models: adminModelsQueryClientKeys,
     whitelistedEmails: adminWhitelistedEmailsQueryKeys,

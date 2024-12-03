@@ -125,6 +125,10 @@ import type {
   CreateSandboxConfigV1SandboxConfigPostResponse,
   ListSandboxConfigsV1SandboxConfigGetData,
   ListSandboxConfigsV1SandboxConfigGetResponse,
+  CreateDefaultE2bSandboxConfigV1SandboxConfigE2bDefaultPostData,
+  CreateDefaultE2bSandboxConfigV1SandboxConfigE2bDefaultPostResponse,
+  CreateDefaultLocalSandboxConfigV1SandboxConfigLocalDefaultPostData,
+  CreateDefaultLocalSandboxConfigV1SandboxConfigLocalDefaultPostResponse,
   UpdateSandboxConfigV1SandboxConfigSandboxConfigIdPatchData,
   UpdateSandboxConfigV1SandboxConfigSandboxConfigIdPatchResponse,
   DeleteSandboxConfigV1SandboxConfigSandboxConfigIdDeleteData,
@@ -1853,6 +1857,48 @@ export class SandboxConfigService {
         limit: data.limit,
         cursor: data.cursor,
       },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Create Default E2B Sandbox Config
+   * @param data The data for the request.
+   * @param data.userId
+   * @returns SandboxConfig Successful Response
+   * @throws ApiError
+   */
+  public static createDefaultE2bSandboxConfigV1SandboxConfigE2bDefaultPost(
+    data: CreateDefaultE2bSandboxConfigV1SandboxConfigE2bDefaultPostData = {},
+    headers?: { user_id: string }
+  ): CancelablePromise<CreateDefaultE2bSandboxConfigV1SandboxConfigE2bDefaultPostResponse> {
+    return __request(OpenAPI, {
+      method: 'POST',
+      url: '/v1/sandbox-config/e2b/default',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Create Default Local Sandbox Config
+   * @param data The data for the request.
+   * @param data.userId
+   * @returns SandboxConfig Successful Response
+   * @throws ApiError
+   */
+  public static createDefaultLocalSandboxConfigV1SandboxConfigLocalDefaultPost(
+    data: CreateDefaultLocalSandboxConfigV1SandboxConfigLocalDefaultPostData = {},
+    headers?: { user_id: string }
+  ): CancelablePromise<CreateDefaultLocalSandboxConfigV1SandboxConfigLocalDefaultPostResponse> {
+    return __request(OpenAPI, {
+      method: 'POST',
+      url: '/v1/sandbox-config/local/default',
       errors: {
         422: 'Validation Error',
       },

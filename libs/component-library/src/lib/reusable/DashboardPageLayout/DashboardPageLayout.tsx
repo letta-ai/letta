@@ -73,7 +73,7 @@ export function DashboardPageLayout(props: DashboardPageLayoutProps) {
         >
           <VStack gap={false}>
             {returnButton && (
-              <div className="flex">
+              <div className="flex mb-2">
                 <HStack
                   paddingY="xxsmall"
                   paddingX="small"
