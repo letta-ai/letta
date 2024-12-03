@@ -1,10 +1,15 @@
+import asyncio
 import json
-from typing import TYPE_CHECKING, Optional
+import warnings
+from typing import TYPE_CHECKING, List, Optional, Union
 
 from fastapi import APIRouter, Body, Depends, Header, HTTPException
+from fastapi.responses import StreamingResponse
 
+from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG
 from letta.schemas.enums import MessageRole
 from letta.schemas.letta_message import FunctionCall, LettaMessage
+from letta.schemas.message import MessageCreate
 from letta.schemas.openai.chat_completion_request import ChatCompletionRequest
 from letta.schemas.openai.chat_completion_response import (
     ChatCompletionResponse,
@@ -15,7 +20,8 @@ from letta.schemas.openai.chat_completion_response import (
 
 # TODO this belongs in a controller!
 from letta.server.rest_api.routers.v1.agents import send_message_to_agent
-from letta.server.rest_api.utils import get_letta_server
+from letta.server.rest_api.utils import get_letta_server, sse_async_generator
+from letta.server.rest_api.voice_interface import VoiceStreamingServerInterface
 
 if TYPE_CHECKING:
     pass
@@ -61,8 +67,7 @@ async def create_chat_completion(
             server=server,
             agent_id=agent_id,
             user_id=actor.id,
-            role=MessageRole(input_message.role),
-            message=input_message.content,
+            messages=[MessageCreate(role=input_message.role, text=input_message.content)],
             # Turn streaming ON
             stream_steps=True,
             stream_tokens=True,
@@ -161,15 +166,106 @@ async def create_chat_completion(
     input_message = completion_request.messages[0]
 
     assert isinstance(input_message.content, str)
-    return await send_message_to_agent(
+    return await send_voice_message_to_agent(
         server=server,
         agent_id=agent_id,
         user_id=actor.id,
-        role=MessageRole(input_message.role),
-        message=input_message.content,
+        messages=[MessageCreate(role=input_message.role, text=input_message.content)],
         # Turn streaming ON
         stream_steps=True,
         stream_tokens=True,
         # Turn on ChatCompletion mode (eg remaps send_message to content)
-        chat_completion_mode=True,
+        chat_completion_mode=False,
     )
+
+
+async def send_voice_message_to_agent(
+    server: "SyncServer",
+    agent_id: str,
+    user_id: str,
+    messages: Union[List[Message], List[MessageCreate]],
+    stream_steps: bool,
+    stream_tokens: bool,
+    chat_completion_mode: bool = False,
+    assistant_message_tool_name: str = DEFAULT_MESSAGE_TOOL,
+    assistant_message_tool_kwarg: str = DEFAULT_MESSAGE_TOOL_KWARG,
+) -> StreamingResponse:
+    """Split off into a separate function so that it can be imported in the /chat/completion proxy."""
+
+    # TODO: @charles is this the correct way to handle?
+    include_final_message = True
+
+    if not stream_steps and stream_tokens:
+        raise HTTPException(status_code=400, detail="stream_steps must be 'true' if stream_tokens is 'true'")
+
+    # For streaming response
+    try:
+
+        # TODO: move this logic into server.py
+
+        # Get the generator object off of the agent's streaming interface
+        # This will be attached to the POST SSE request used under-the-hood
+        letta_agent = server.load_agent(agent_id=agent_id)
+
+        # Disable token streaming if not OpenAI
+        # TODO: cleanup this logic
+        llm_config = letta_agent.agent_state.llm_config
+        if stream_tokens and (llm_config.model_endpoint_type != "openai" or "inference.memgpt.ai" in llm_config.model_endpoint):
+            warnings.warn(
+                "Token streaming is only supported for models with type 'openai' or `inference.memgpt.ai` in the model_endpoint: agent has endpoint type {llm_config.model_endpoint_type} and {llm_config.model_endpoint}. Setting stream_tokens to False."
+            )
+            stream_tokens = False
+
+        # Create a new interface per request
+        letta_agent.interface = VoiceStreamingServerInterface()
+        streaming_interface = letta_agent.interface
+        if not isinstance(streaming_interface, VoiceStreamingServerInterface):
+            raise ValueError(f"Agent has wrong type of interface: {type(streaming_interface)}")
+
+        # Enable token-streaming within the request if desired
+        streaming_interface.streaming_mode = stream_tokens
+        # "chatcompletion mode" does some remapping and ignores inner thoughts
+        streaming_interface.streaming_chat_completion_mode = chat_completion_mode
+
+        # streaming_interface.allow_assistant_message = stream
+        # streaming_interface.function_call_legacy_mode = stream
+
+        # Allow AssistantMessage is desired by client
+        streaming_interface.assistant_message_tool_name = assistant_message_tool_name
+        streaming_interface.assistant_message_tool_kwarg = assistant_message_tool_kwarg
+
+        # Related to JSON buffer reader
+        streaming_interface.inner_thoughts_in_kwargs = (
+            llm_config.put_inner_thoughts_in_kwargs if llm_config.put_inner_thoughts_in_kwargs is not None else False
+        )
+
+        # Offload the synchronous message_func to a separate thread
+        streaming_interface.stream_start()
+        task = asyncio.create_task(
+            asyncio.to_thread(
+                server.send_messages,
+                user_id=user_id,
+                agent_id=agent_id,
+                messages=messages,
+                interface=streaming_interface,
+            )
+        )
+
+        # return a stream
+        return StreamingResponse(
+            sse_async_generator(
+                streaming_interface.get_generator(),
+                usage_task=task,
+                finish_message=include_final_message,
+            ),
+            media_type="text/event-stream",
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(e)
+        import traceback
+
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"{e}")

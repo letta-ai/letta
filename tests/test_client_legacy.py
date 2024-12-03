@@ -27,7 +27,6 @@ from letta.schemas.letta_message import (
 )
 from letta.schemas.letta_response import LettaResponse, LettaStreamingResponse
 from letta.schemas.llm_config import LLMConfig
-from letta.schemas.message import Message
 from letta.schemas.usage import LettaUsageStatistics
 from letta.services.tool_manager import ToolManager
 from letta.settings import model_settings, tool_settings
@@ -221,8 +220,6 @@ def test_core_memory(mock_e2b_api_key_none, client: Union[LocalClient, RESTClien
 
 
 def test_streaming_send_message(mock_e2b_api_key_none, client: Union[LocalClient, RESTClient], agent: AgentState):
-    if isinstance(client, LocalClient):
-        pytest.skip("Skipping test_streaming_send_message because LocalClient does not support streaming")
     assert isinstance(client, RESTClient), client
 
     # First, try streaming just steps
