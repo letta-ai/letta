@@ -17,7 +17,7 @@ import {
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useCurrentProject } from '../hooks';
-import { webApi, webApiQueryKeys } from '$letta/client';
+import { webApi, webApiContracts, webApiQueryKeys } from '$letta/client';
 import { useCallback, useMemo } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import type {
@@ -190,12 +190,16 @@ function EditSettingsSection() {
     },
   });
 
-  const errorMessage = useErrorTranslationMessage(error, {
-    atLeastOneFieldRequired: t(
-      'EditProjectSettings.errors.atLeastOneFieldRequired'
-    ),
-    slugAlreadyTaken: t('EditProjectSettings.errors.slugAlreadyTaken'),
-    default: t('EditProjectSettings.errors.default'),
+  const errorTranslation = useErrorTranslationMessage(error, {
+    messageMap: {
+      atLeastOneFieldRequired: t(
+        'EditProjectSettings.errors.atLeastOneFieldRequired'
+      ),
+
+      slugAlreadyTaken: t('EditProjectSettings.errors.slugAlreadyTaken'),
+      default: t('EditProjectSettings.errors.default'),
+    },
+    contract: webApiContracts.projects.updateProject,
   });
 
   const handleSubmit = useCallback(
@@ -257,7 +261,7 @@ function EditSettingsSection() {
               }}
               name="slug"
             />
-            <FormActions align="start" errorMessage={errorMessage}>
+            <FormActions align="start" errorMessage={errorTranslation?.message}>
               <Button
                 busy={isPending}
                 color="tertiary"

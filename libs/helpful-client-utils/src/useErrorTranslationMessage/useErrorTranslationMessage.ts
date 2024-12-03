@@ -1,9 +1,26 @@
+import type { AppRoute, ServerInferResponseBody } from '@ts-rest/core';
 import { isErrorResponse } from '@ts-rest/core';
 import { useMemo } from 'react';
+import { get } from 'lodash-es';
 
-export function useErrorTranslationMessage(
+interface ServerWithError<T extends string> {
+  errorCode: T;
+}
+
+interface UseErrorTranslationMessageOptions<T extends AppRoute> {
+  contract: T;
+  // If the server response has an error code, this map will be used to translate the error message.
+  // otherwise we will return undefined, which means the error message is unknown.
+  messageMap: ServerInferResponseBody<T, 400> extends ServerWithError<string>
+    ? Record<ServerInferResponseBody<T, 400>['errorCode'], string> & {
+        default: string;
+      }
+    : undefined;
+}
+
+export function useErrorTranslationMessage<T extends AppRoute>(
   error: unknown,
-  messageMap: Record<string, string> & { default: string }
+  options: UseErrorTranslationMessageOptions<T>
 ) {
   return useMemo(() => {
     if (!error) {
@@ -18,6 +35,19 @@ export function useErrorTranslationMessage(
       }
     }
 
-    return messageMap[translationKey] ?? messageMap.default;
+    if (!options.messageMap) {
+      throw new Error('messageMap is required');
+    }
+
+    const message = get(
+      options.messageMap,
+      translationKey,
+      options.messageMap.default
+    );
+
+    return {
+      message,
+      errorCode: translationKey,
+    };
   }, [error]);
 }

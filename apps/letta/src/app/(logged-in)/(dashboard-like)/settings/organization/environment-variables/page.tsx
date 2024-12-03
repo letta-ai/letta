@@ -1,6 +1,7 @@
 'use client';
 import { useTranslations } from 'next-intl';
 import {
+  Badge,
   Button,
   DashboardPageLayout,
   DashboardPageSection,
@@ -11,22 +12,29 @@ import {
   DropdownMenuItem,
   FormField,
   FormProvider,
+  HStack,
+  InfoIcon,
   Input,
+  MaybeLink,
   PlusIcon,
   RawInput,
+  Tooltip,
   TrashIcon,
+  Typography,
   useForm,
 } from '@letta-web/component-library';
-import { webApi, webApiQueryKeys } from '$letta/client';
+import { webApi, webApiContracts, webApiQueryKeys } from '$letta/client';
 import React, { useCallback, useMemo, useState } from 'react';
 import type { ColumnDef } from '@tanstack/react-table';
 import type {
   GetEnvironmentVariables200Response,
   PublicEnvironmentVariable,
 } from '$letta/web-api/environment-variables/environmentVariablesContracts';
+import { COMPOSE_IO_KEY_NAME } from '$letta/web-api/environment-variables/environmentVariablesContracts';
 import { z } from 'zod';
 import { useQueryClient } from '@tanstack/react-query';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useErrorTranslationMessage } from '@letta-web/helpful-client-utils';
 
 interface DeleteEnvironmentVariableDialogProps {
   environmentVariableKey: string;
@@ -244,8 +252,19 @@ function CreateEnvironmentVariableDialog() {
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const t = useTranslations('organization/environment-variables');
-  const { mutate, isPending, isError, reset } =
-    webApi.environmentVariables.setEnvironmentVariable.useMutation();
+  const { mutate, isPending, error, reset } =
+    webApi.environmentVariables.createEnvironmentVariable.useMutation();
+
+  const errorTranslation = useErrorTranslationMessage(error, {
+    messageMap: {
+      keyAlreadyExists: t(
+        'CreateEnvironmentVariableDialog.errors.keyAlreadyExists'
+      ),
+
+      default: t('CreateEnvironmentVariableDialog.errors.default'),
+    },
+    contract: webApiContracts.environmentVariables.createEnvironmentVariable,
+  });
 
   const CreateEnvironmentVariableSchema = useMemo(() => {
     return z.object({
@@ -327,9 +346,7 @@ function CreateEnvironmentVariableDialog() {
         }}
         title={t('CreateEnvironmentVariableDialog.title')}
         isOpen={open}
-        errorMessage={
-          isError ? t('CreateEnvironmentVariableDialog.error') : undefined
-        }
+        errorMessage={errorTranslation?.message}
         onSubmit={form.handleSubmit(handleSubmit)}
         isConfirmBusy={isPending}
         trigger={
@@ -372,6 +389,48 @@ function CreateEnvironmentVariableDialog() {
   );
 }
 
+interface ManagedEnvironmentIndicatorProps {
+  keyName: string;
+}
+
+function ManagedEnvironmentIndicator(props: ManagedEnvironmentIndicatorProps) {
+  const { keyName } = props;
+  const t = useTranslations('organization/environment-variables');
+
+  const message = useMemo(
+    () =>
+      ({
+        [COMPOSE_IO_KEY_NAME]: t(
+          'ManagedEnvironmentIndicator.integrations.composio'
+        ),
+      }[keyName]),
+    [keyName, t]
+  );
+
+  const link = useMemo(
+    () =>
+      ({
+        [COMPOSE_IO_KEY_NAME]: '/settings/organization/integrations/composio',
+      }[keyName]),
+    [keyName]
+  );
+
+  if (!message) {
+    return null;
+  }
+
+  return (
+    <Tooltip content={message}>
+      <MaybeLink href={link}>
+        <Badge
+          preIcon={<InfoIcon />}
+          content={t('ManagedEnvironmentIndicator.label')}
+        />
+      </MaybeLink>
+    </Tooltip>
+  );
+}
+
 function EnvironmentVariablesPage() {
   const t = useTranslations('organization/environment-variables');
   const [limit, setLimit] = useState(10);
@@ -391,6 +450,12 @@ function EnvironmentVariablesPage() {
       {
         header: t('environmentVariablesColumns.key'),
         accessorKey: 'key',
+        cell: ({ cell }) => (
+          <HStack align="center" gap="medium" as="span">
+            <Typography>{cell.row.original.key}</Typography>
+            <ManagedEnvironmentIndicator keyName={cell.row.original.key} />
+          </HStack>
+        ),
       },
       {
         header: t('environmentVariablesColumns.lastUpdated'),
