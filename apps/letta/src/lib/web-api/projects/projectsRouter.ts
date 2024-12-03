@@ -317,7 +317,6 @@ export async function updateProject(
     return {
       status: 400,
       body: {
-        message: 'At least one field is required',
         errorCode: 'atLeastOneFieldRequired',
       },
     };
@@ -349,9 +348,8 @@ export async function updateProject(
 
     if (existingProject) {
       return {
-        status: 409,
+        status: 400,
         body: {
-          message: 'Slug already taken',
           errorCode: 'slugAlreadyTaken',
         },
       };

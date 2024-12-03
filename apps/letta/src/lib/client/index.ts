@@ -6,6 +6,7 @@ export const webOriginSDKApi = initTsrReactQuery(sdkContracts, {
   baseUrl: '',
 });
 
+export const webApiContracts = contracts;
 export const webApi = initTsrReactQuery(contracts, {
   baseUrl: '/api',
 });

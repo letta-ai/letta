@@ -30,7 +30,7 @@ import type {
   GetCurrentOrganizationTeamMembersResponseBodyType,
   ListInvitedMembersResponseBodyType,
 } from '$letta/web-api/organizations/organizationsContracts';
-import { webApi, webApiQueryKeys } from '$letta/client';
+import { webApi, webApiContracts, webApiQueryKeys } from '$letta/client';
 import { useQueryClient } from '@tanstack/react-query';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -48,11 +48,14 @@ function useErrorMessages(error: unknown) {
   const t = useTranslations('organization/members');
 
   return useErrorTranslationMessage(error, {
-    userAlreadyInvited: t('InviteMemberDialog.error.userAlreadyInvited'),
-    userAlreadyInOrganization: t(
-      'InviteMemberDialog.error.userAlreadyInOrganization'
-    ),
-    default: t('InviteMemberDialog.error.default'),
+    messageMap: {
+      userAlreadyInvited: t('InviteMemberDialog.error.userAlreadyInvited'),
+      userAlreadyInOrganization: t(
+        'InviteMemberDialog.error.userAlreadyInOrganization'
+      ),
+      default: t('InviteMemberDialog.error.default'),
+    },
+    contract: webApiContracts.organizations.inviteNewTeamMember,
   });
 }
 
