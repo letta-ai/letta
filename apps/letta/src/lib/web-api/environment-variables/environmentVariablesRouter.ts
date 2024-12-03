@@ -3,7 +3,6 @@ import type { contracts } from '$letta/web-api/contracts';
 import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
 import { getUserOrThrow } from '$letta/server/auth';
 import { SandboxConfigService } from '@letta-web/letta-agents-api';
-import { HIDDEN_ENVIRONMENT_VARIABLES } from '$letta/web-api/environment-variables/environmentVariablesContracts';
 
 async function getE2BSandboxConfigIdByLettaUserId(lettaUserId: string) {
   let configId = '';
@@ -131,10 +130,8 @@ async function getEnvironmentVariables(
     status: 200,
     body: {
       environmentVariables: environmentVariables
-        .filter(
-          (envVar) =>
-            envVar.key.toLowerCase().includes(search.toLowerCase()) &&
-            !HIDDEN_ENVIRONMENT_VARIABLES.includes(envVar.key)
+        .filter((envVar) =>
+          envVar.key.toLowerCase().includes(search.toLowerCase())
         )
         .map((envVar) => ({
           id: envVar.id || '',
@@ -177,9 +174,9 @@ async function createEnvironmentVariable(
 
   if (existingEnvironmentVariable) {
     return {
-      status: 409,
+      status: 400,
       body: {
-        errorCode: 'environmentVariableAlreadyExists',
+        errorCode: 'keyAlreadyExists',
         message: 'Environment variable already exists',
       },
     };
@@ -259,11 +256,7 @@ async function setEnvironmentVariable(
     };
   }
 
-  const filteredEnvironmentVariables = existingEnvironmentVariables.filter(
-    (envVar) => !HIDDEN_ENVIRONMENT_VARIABLES.includes(envVar.key)
-  );
-
-  if (filteredEnvironmentVariables.length + 1 > MAX_ENVIRONMENT_VARIABLES) {
+  if (existingEnvironmentVariables.length + 1 > MAX_ENVIRONMENT_VARIABLES) {
     return {
       status: 400,
       body: {

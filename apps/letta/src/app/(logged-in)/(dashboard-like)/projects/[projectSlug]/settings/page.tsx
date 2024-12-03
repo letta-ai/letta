@@ -190,7 +190,7 @@ function EditSettingsSection() {
     },
   });
 
-  const errorMessage = useErrorTranslationMessage(error, {
+  const errorTranslation = useErrorTranslationMessage(error, {
     messageMap: {
       atLeastOneFieldRequired: t(
         'EditProjectSettings.errors.atLeastOneFieldRequired'
@@ -261,7 +261,7 @@ function EditSettingsSection() {
               }}
               name="slug"
             />
-            <FormActions align="start" errorMessage={errorMessage}>
+            <FormActions align="start" errorMessage={errorTranslation?.message}>
               <Button
                 busy={isPending}
                 color="tertiary"

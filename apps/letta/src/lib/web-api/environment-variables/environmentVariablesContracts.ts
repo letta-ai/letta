@@ -6,7 +6,6 @@ import type { GenericSearch } from '$letta/web-api/shared/sharedContracts';
 const c = initContract();
 
 export const COMPOSE_IO_KEY_NAME = 'COMPOSE_IO_KEY';
-export const HIDDEN_ENVIRONMENT_VARIABLES = [COMPOSE_IO_KEY_NAME];
 
 export const PublicEnvironmentVariableSchema = z.object({
   id: z.string(),
@@ -113,6 +112,10 @@ const createEnvironmentVariableContract = c.mutation({
   body: CreateEnvironmentVariableSchema,
   responses: {
     200: SetEnvironmentVariableResponseSchema,
+    400: z.object({
+      errorCode: z.enum(['keyAlreadyExists']),
+      message: z.string(),
+    }),
   },
 });
 

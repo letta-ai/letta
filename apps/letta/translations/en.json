@@ -71,6 +71,12 @@
       "lastUpdated": "Last Updated",
       "actions": "Actions"
     },
+    "ManagedEnvironmentIndicator": {
+      "label": "Managed",
+      "integrations": {
+        "composio": "This environment variable is tied to the Composeio integration, for more information click this badge"
+      }
+    },
     "errorMessage": "There was an error loading environment variables, please try again or contact support.",
     "loadingMessage": "Loading environment variables...",
     "DeleteEnvironmentVariableDialog": {
@@ -113,7 +119,10 @@
         "placeholder": "my-value"
       },
       "createButton": "Create environment variable",
-      "error": "There was an error creating the environment variable, please try again or contact support."
+      "errors": {
+        "default": "There was an error creating the environment variable, please try again or contact support.",
+        "keyAlreadyExists": "A key with this name already exists, please choose another or update the existing one"
+      }
     }
   },
   "organization/integrations/composio": {

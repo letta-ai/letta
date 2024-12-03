@@ -36,9 +36,18 @@ export function useErrorTranslationMessage<T extends AppRoute>(
     }
 
     if (!options.messageMap) {
-      return undefined;
+      throw new Error('messageMap is required');
     }
 
-    return get(options.messageMap, translationKey, options.messageMap.default);
+    const message = get(
+      options.messageMap,
+      translationKey,
+      options.messageMap.default
+    );
+
+    return {
+      message,
+      errorCode: translationKey,
+    };
   }, [error]);
 }

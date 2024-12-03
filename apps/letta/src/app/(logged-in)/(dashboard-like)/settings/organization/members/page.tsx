@@ -127,7 +127,7 @@ function InviteMemberDialog() {
     },
   });
 
-  const errorMessage = useErrorMessages(error);
+  const errorTranslation = useErrorMessages(error);
 
   const handleInviteMember = useCallback(() => {
     mutate({
@@ -142,7 +142,7 @@ function InviteMemberDialog() {
       <Dialog
         isOpen={isDialogOpen}
         onOpenChange={setIsDialogOpen}
-        errorMessage={errorMessage}
+        errorMessage={errorTranslation?.message}
         title={t('InviteMemberDialog.title')}
         onSubmit={form.handleSubmit(handleInviteMember)}
         confirmText={t('InviteMemberDialog.confirm')}
