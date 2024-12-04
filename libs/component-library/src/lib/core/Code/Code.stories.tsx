@@ -25,3 +25,20 @@ def hello_world():
   print('Hello, World!')`,
   },
 };
+
+export const WithDebugger: Story = {
+  argTypes: {
+    language: {
+      control: {
+        type: 'select',
+        options: ['javascript', 'python', 'typescript'],
+      },
+    },
+  },
+  args: {
+    language: 'python',
+    code: `# python code
+def hello_world():
+  print('Hello, World!')`,
+  },
+};

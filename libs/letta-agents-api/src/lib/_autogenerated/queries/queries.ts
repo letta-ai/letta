@@ -39,6 +39,7 @@ import {
   SourceCreate,
   SourceUpdate,
   ToolCreate,
+  ToolRunFromSource,
   ToolUpdate,
   UpdateAgentState,
   UpdateMessage,
@@ -112,6 +113,41 @@ export const useToolsServiceListTools = <
       queryKey
     ),
     queryFn: () => ToolsService.listTools({ cursor, limit, userId }) as TData,
+    ...options,
+  });
+export const useToolsServiceListComposioApps = <
+  TData = Common.ToolsServiceListComposioAppsDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[]
+>(
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
+) =>
+  useQuery<TData, TError>({
+    queryKey: Common.UseToolsServiceListComposioAppsKeyFn(queryKey),
+    queryFn: () => ToolsService.listComposioApps() as TData,
+    ...options,
+  });
+export const useToolsServiceListComposioActionsByApp = <
+  TData = Common.ToolsServiceListComposioActionsByAppDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[]
+>(
+  {
+    composioAppName,
+  }: {
+    composioAppName: string;
+  },
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
+) =>
+  useQuery<TData, TError>({
+    queryKey: Common.UseToolsServiceListComposioActionsByAppKeyFn(
+      { composioAppName },
+      queryKey
+    ),
+    queryFn: () =>
+      ToolsService.listComposioActionsByApp({ composioAppName }) as TData,
     ...options,
   });
 export const useSourcesServiceGetSource = <
@@ -1000,6 +1036,74 @@ export const useToolsServiceAddBaseTools = <
   >({
     mutationFn: ({ userId }) =>
       ToolsService.addBaseTools({ userId }) as unknown as Promise<TData>,
+    ...options,
+  });
+export const useToolsServiceRunToolFromSource = <
+  TData = Common.ToolsServiceRunToolFromSourceMutationResult,
+  TError = unknown,
+  TContext = unknown
+>(
+  options?: Omit<
+    UseMutationOptions<
+      TData,
+      TError,
+      {
+        requestBody: ToolRunFromSource;
+        userId?: string;
+      },
+      TContext
+    >,
+    'mutationFn'
+  >
+) =>
+  useMutation<
+    TData,
+    TError,
+    {
+      requestBody: ToolRunFromSource;
+      userId?: string;
+    },
+    TContext
+  >({
+    mutationFn: ({ requestBody, userId }) =>
+      ToolsService.runToolFromSource({
+        requestBody,
+        userId,
+      }) as unknown as Promise<TData>,
+    ...options,
+  });
+export const useToolsServiceAddComposioTool = <
+  TData = Common.ToolsServiceAddComposioToolMutationResult,
+  TError = unknown,
+  TContext = unknown
+>(
+  options?: Omit<
+    UseMutationOptions<
+      TData,
+      TError,
+      {
+        composioActionName: string;
+        userId?: string;
+      },
+      TContext
+    >,
+    'mutationFn'
+  >
+) =>
+  useMutation<
+    TData,
+    TError,
+    {
+      composioActionName: string;
+      userId?: string;
+    },
+    TContext
+  >({
+    mutationFn: ({ composioActionName, userId }) =>
+      ToolsService.addComposioTool({
+        composioActionName,
+        userId,
+      }) as unknown as Promise<TData>,
     ...options,
   });
 export const useSourcesServiceCreateSource = <

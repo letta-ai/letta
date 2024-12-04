@@ -84,6 +84,41 @@ export const useToolsServiceListToolsSuspense = <
     queryFn: () => ToolsService.listTools({ cursor, limit, userId }) as TData,
     ...options,
   });
+export const useToolsServiceListComposioAppsSuspense = <
+  TData = Common.ToolsServiceListComposioAppsDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[]
+>(
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
+) =>
+  useSuspenseQuery<TData, TError>({
+    queryKey: Common.UseToolsServiceListComposioAppsKeyFn(queryKey),
+    queryFn: () => ToolsService.listComposioApps() as TData,
+    ...options,
+  });
+export const useToolsServiceListComposioActionsByAppSuspense = <
+  TData = Common.ToolsServiceListComposioActionsByAppDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[]
+>(
+  {
+    composioAppName,
+  }: {
+    composioAppName: string;
+  },
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
+) =>
+  useSuspenseQuery<TData, TError>({
+    queryKey: Common.UseToolsServiceListComposioActionsByAppKeyFn(
+      { composioAppName },
+      queryKey
+    ),
+    queryFn: () =>
+      ToolsService.listComposioActionsByApp({ composioAppName }) as TData,
+    ...options,
+  });
 export const useSourcesServiceGetSourceSuspense = <
   TData = Common.SourcesServiceGetSourceDefaultResponse,
   TError = unknown,

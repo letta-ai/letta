@@ -31,6 +31,46 @@ export type APIKeyCreate = {
 };
 
 /**
+ * Action data model.
+ */
+export type ActionModel = {
+  name: string;
+  display_name?: string | null;
+  parameters: ActionParametersModel;
+  response: ActionResponseModel;
+  appName: string;
+  appId: string;
+  tags: Array<string>;
+  enabled?: boolean;
+  logo?: string | null;
+  description?: string | null;
+};
+
+/**
+ * Action parameter data models.
+ */
+export type ActionParametersModel = {
+  properties: {
+    [key: string]: unknown;
+  };
+  title: string;
+  type: string;
+  required?: Array<string> | null;
+};
+
+/**
+ * Action response data model.
+ */
+export type ActionResponseModel = {
+  properties: {
+    [key: string]: unknown;
+  };
+  title: string;
+  type: string;
+  required?: Array<string> | null;
+};
+
+/**
  * Representation of an agent's state. This is the state of the agent at a given time, and is persisted in the DB backend. The state has all the information needed to recreate a persisted agent.
  *
  * Parameters:
@@ -122,6 +162,50 @@ export type AgentState = {
  */
 export type AgentType = 'memgpt_agent' | 'split_thread_agent' | 'o1_agent';
 
+/**
+ * App authenticatio scheme.
+ */
+export type AppAuthScheme = {
+  scheme_name: string;
+  auth_mode: string;
+  fields: Array<AuthSchemeField>;
+  proxy?: {
+    [key: string]: unknown;
+  } | null;
+  authorization_url?: string | null;
+  token_url?: string | null;
+  default_scopes?: Array<unknown> | null;
+  token_response_metadata?: Array<unknown> | null;
+  client_id?: string | null;
+  client_secret?: string | null;
+};
+
+/**
+ * App data model.
+ */
+export type AppModel = {
+  name: string;
+  key: string;
+  appId: string;
+  description: string;
+  categories: Array<string>;
+  meta: {
+    [key: string]: unknown;
+  };
+  logo?: string | null;
+  docs?: string | null;
+  group?: string | null;
+  status?: string | null;
+  enabled?: boolean;
+  no_auth?: boolean;
+  auth_schemes?: Array<AppAuthScheme> | null;
+  testConnectors?: Array<{
+    [key: string]: unknown;
+  }> | null;
+  documentation_doc_text?: string | null;
+  configuration_docs_text?: string | null;
+};
+
 export type ArchivalMemorySummary = {
   /**
    * Number of rows in archival memory
@@ -177,6 +261,20 @@ export type AuthResponse = {
    * Whether the user is an admin
    */
   is_admin?: boolean | null;
+};
+
+/**
+ * Auth scheme field.
+ */
+export type AuthSchemeField = {
+  name: string;
+  display_name?: string | null;
+  description: string;
+  type: string;
+  default?: string | null;
+  required?: boolean;
+  expected_from_customer?: boolean;
+  get_current_user_endpoint?: string | null;
 };
 
 /**
@@ -2157,6 +2255,25 @@ export type ToolRuleType =
   | 'ToolRule'
   | 'require_parent_tools';
 
+export type ToolRunFromSource = {
+  /**
+   * The arguments to pass to the tool (as stringified JSON).
+   */
+  args: string;
+  /**
+   * The name of the tool to run.
+   */
+  name: string | null;
+  /**
+   * The source code of the function.
+   */
+  source_code?: string;
+  /**
+   * The type of the source code.
+   */
+  source_type?: string | null;
+};
+
 export type ToolUpdate = {
   /**
    * The description of the tool.
@@ -2626,6 +2743,28 @@ export type AddBaseToolsData = {
 };
 
 export type AddBaseToolsResponse = Array<letta__schemas__tool__Tool>;
+
+export type RunToolFromSourceData = {
+  requestBody: ToolRunFromSource;
+  userId?: string | null;
+};
+
+export type RunToolFromSourceResponse = FunctionReturn;
+
+export type ListComposioAppsResponse = Array<AppModel>;
+
+export type ListComposioActionsByAppData = {
+  composioAppName: string;
+};
+
+export type ListComposioActionsByAppResponse = Array<ActionModel>;
+
+export type AddComposioToolData = {
+  composioActionName: string;
+  userId?: string | null;
+};
+
+export type AddComposioToolResponse = letta__schemas__tool__Tool;
 
 export type GetSourceData = {
   sourceId: string;
@@ -3357,6 +3496,61 @@ export type $OpenApiTs = {
          * Successful Response
          */
         200: Array<letta__schemas__tool__Tool>;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/tools/run': {
+    post: {
+      req: RunToolFromSourceData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: FunctionReturn;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/tools/composio/apps': {
+    get: {
+      res: {
+        /**
+         * Successful Response
+         */
+        200: Array<AppModel>;
+      };
+    };
+  };
+  '/v1/tools/composio/apps/{composio_app_name}/actions': {
+    get: {
+      req: ListComposioActionsByAppData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: Array<ActionModel>;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/tools/composio/{composio_action_name}': {
+    post: {
+      req: AddComposioToolData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: letta__schemas__tool__Tool;
         /**
          * Validation Error
          */

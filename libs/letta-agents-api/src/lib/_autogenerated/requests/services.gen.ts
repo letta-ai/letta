@@ -20,6 +20,13 @@ import type {
   UpsertToolResponse,
   AddBaseToolsData,
   AddBaseToolsResponse,
+  RunToolFromSourceData,
+  RunToolFromSourceResponse,
+  ListComposioAppsResponse,
+  ListComposioActionsByAppData,
+  ListComposioActionsByAppResponse,
+  AddComposioToolData,
+  AddComposioToolResponse,
   GetSourceData,
   GetSourceResponse,
   UpdateSourceData,
@@ -366,6 +373,98 @@ export class ToolsService {
     return __request(OpenAPI, {
       method: 'POST',
       url: '/v1/tools/add-base-tools',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Run Tool From Source
+   * Attempt to build a tool from source, then run it on the provided arguments
+   * @param data The data for the request.
+   * @param data.requestBody
+   * @param data.userId
+   * @returns FunctionReturn Successful Response
+   * @throws ApiError
+   */
+  public static runToolFromSource(
+    data: RunToolFromSourceData,
+    headers?: { user_id: string }
+  ): CancelablePromise<RunToolFromSourceResponse> {
+    return __request(OpenAPI, {
+      method: 'POST',
+      url: '/v1/tools/run',
+      body: data.requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * List Composio Apps
+   * Get a list of all Composio apps
+   * @returns AppModel Successful Response
+   * @throws ApiError
+   */
+  public static listComposioApps(headers?: {
+    user_id: string;
+  }): CancelablePromise<ListComposioAppsResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/tools/composio/apps',
+      headers,
+    });
+  }
+
+  /**
+   * List Composio Actions By App
+   * Get a list of all Composio actions for a specific app
+   * @param data The data for the request.
+   * @param data.composioAppName
+   * @returns ActionModel Successful Response
+   * @throws ApiError
+   */
+  public static listComposioActionsByApp(
+    data: ListComposioActionsByAppData,
+    headers?: { user_id: string }
+  ): CancelablePromise<ListComposioActionsByAppResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/tools/composio/apps/{composio_app_name}/actions',
+      path: {
+        composio_app_name: data.composioAppName,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Add Composio Tool
+   * Add a new Composio tool by action name (Composio refers to each tool as an `Action`)
+   * @param data The data for the request.
+   * @param data.composioActionName
+   * @param data.userId
+   * @returns letta__schemas__tool__Tool Successful Response
+   * @throws ApiError
+   */
+  public static addComposioTool(
+    data: AddComposioToolData,
+    headers?: { user_id: string }
+  ): CancelablePromise<AddComposioToolResponse> {
+    return __request(OpenAPI, {
+      method: 'POST',
+      url: '/v1/tools/composio/{composio_action_name}',
+      path: {
+        composio_action_name: data.composioActionName,
+      },
       errors: {
         422: 'Validation Error',
       },
