@@ -73,6 +73,9 @@ const updateProjectContract = c.mutation({
   body: UpdateProjectPayloadSchema,
   responses: {
     200: PartialProjectSchema,
+    400: z.object({
+      errorCode: z.enum(['atLeastOneFieldRequired', 'slugAlreadyTaken']),
+    }),
   },
 });
 
