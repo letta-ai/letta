@@ -65,6 +65,7 @@ describe('letta', () => {
     cy.findByTestId('toggle-variables-button').first().click();
 
     cy.findByTestId('variable-input-name').type('Shubham');
+    cy.findByTestId('save-variables-button').click();
 
     cy.findByTestId('tab:edit-data-sources').click();
 

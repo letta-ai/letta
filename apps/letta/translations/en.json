@@ -665,6 +665,7 @@
     "DialogSessionSheet": {
       "updating": "Updating variables...",
       "placeholder": "Variable Value",
+      "save": "Update Variables",
       "label": "Variable Name",
       "editLabel": "Edit {variableName}",
       "noVariablesDefined": "You have no variables set yet, to define a variable, write a alphanumeric name wrapped in handlebars in Memory Blocks, e.g. {variableName}"
