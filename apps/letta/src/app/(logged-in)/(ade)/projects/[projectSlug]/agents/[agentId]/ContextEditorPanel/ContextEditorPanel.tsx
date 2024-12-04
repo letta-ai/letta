@@ -137,8 +137,6 @@ function ContextWindowPanel() {
       return;
     }
 
-    console.log(memory);
-
     postMessage({
       templateString: memory.prompt_template || '',
       context: {
