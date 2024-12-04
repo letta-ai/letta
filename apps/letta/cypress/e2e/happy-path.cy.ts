@@ -67,6 +67,12 @@ describe('letta', () => {
     cy.findByTestId('variable-input-name').type('Shubham');
     cy.findByTestId('save-variables-button').click();
 
+    cy.findByTestId('toggle-group-item:simulated').click();
+    cy.findByTestId('simulated-memory:human').should(
+      'contain.value',
+      'Shubham'
+    );
+
     cy.findByTestId('tab:edit-data-sources').click();
 
     cy.findByTestId('create-data-source-dialog-trigger').click();
@@ -93,13 +99,9 @@ describe('letta', () => {
 
     cy.get('body').click({ force: true });
 
-    cy.findByTestId('chat-simulator-input').type('What is my name', {
-      force: true,
-    });
+    cy.findByTestId('chat-simulator-input').type('What is my name');
 
-    cy.findByTestId('chat-simulator-send').click({
-      force: true,
-    });
+    cy.findByTestId('chat-simulator-send').click();
 
     cy.findByTestId('messages-list').contains('Shubham', { timeout: 10000 });
     cy.findByTestId('messages-list').contains('BananaMan', { timeout: 10000 });

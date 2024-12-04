@@ -6,6 +6,7 @@ import {
   useAgentsServiceUpdateAgentMemoryBlockByLabel,
 } from '@letta-web/letta-agents-api';
 import { useQueryClient } from '@tanstack/react-query';
+import { useDebouncedCallback } from '@mantine/hooks';
 
 interface UseUpdateMemoryPayload {
   label: string;
@@ -31,6 +32,8 @@ export function useUpdateMemory(payload: UseUpdateMemoryPayload) {
     error,
     isPending: isUpdating,
   } = useAgentsServiceUpdateAgentMemoryBlockByLabel();
+
+  const debouncedMutation = useDebouncedCallback(mutate, 500);
 
   const [localValue, setLocalValue] = useState(value || '');
 
@@ -70,7 +73,7 @@ export function useUpdateMemory(payload: UseUpdateMemoryPayload) {
         }
       );
 
-      mutate(
+      debouncedMutation(
         {
           agentId: id,
           blockLabel: label,
@@ -85,7 +88,7 @@ export function useUpdateMemory(payload: UseUpdateMemoryPayload) {
         }
       );
     },
-    [id, label, mutate, queryClient]
+    [debouncedMutation, id, label, queryClient]
   );
 
   useEffect(() => {
