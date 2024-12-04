@@ -158,7 +158,7 @@ function DebuggerOutput(props: DebuggerOutputProps) {
             color="positive"
           >
             <CheckIcon />
-            {t('success', { duration: output.duration })}
+            {t('success')}
           </Typography>
         );
       }
