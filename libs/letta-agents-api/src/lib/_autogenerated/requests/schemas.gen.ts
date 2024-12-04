@@ -395,6 +395,14 @@ export const $AppAuthScheme = {
     },
     auth_mode: {
       type: 'string',
+      enum: [
+        'OAUTH2',
+        'OAUTH1',
+        'API_KEY',
+        'BASIC',
+        'BEARER_TOKEN',
+        'BASIC_WITH_JWT',
+      ],
       title: 'Auth Mode',
     },
     fields: {
@@ -860,7 +868,7 @@ export const $Block = {
       type: 'integer',
       title: 'Limit',
       description: 'Character limit of the block.',
-      default: 2000,
+      default: 5000,
     },
     name: {
       anyOf: [
@@ -1006,7 +1014,7 @@ export const $BlockUpdate = {
       ],
       title: 'Limit',
       description: 'Character limit of the block.',
-      default: 2000,
+      default: 5000,
     },
     name: {
       anyOf: [
@@ -1897,7 +1905,7 @@ export const $CreateBlock = {
       type: 'integer',
       title: 'Limit',
       description: 'Character limit of the block.',
-      default: 2000,
+      default: 5000,
     },
     name: {
       anyOf: [
@@ -4378,7 +4386,7 @@ export const $Organization = {
       type: 'string',
       title: 'Name',
       description: 'The name of the organization.',
-      default: 'OpenmindedGoblin',
+      default: 'GregariousHippopotamus',
     },
     created_at: {
       anyOf: [
@@ -5441,6 +5449,11 @@ export const $ToolRuleType = {
 
 export const $ToolRunFromSource = {
   properties: {
+    source_code: {
+      type: 'string',
+      title: 'Source Code',
+      description: 'The source code of the function.',
+    },
     args: {
       type: 'string',
       title: 'Args',
@@ -5458,11 +5471,6 @@ export const $ToolRunFromSource = {
       title: 'Name',
       description: 'The name of the tool to run.',
     },
-    source_code: {
-      type: 'string',
-      title: 'Source Code',
-      description: 'The source code of the function.',
-    },
     source_type: {
       anyOf: [
         {
@@ -5478,7 +5486,7 @@ export const $ToolRunFromSource = {
   },
   additionalProperties: false,
   type: 'object',
-  required: ['args', 'name'],
+  required: ['source_code', 'args'],
   title: 'ToolRunFromSource',
 } as const;
 

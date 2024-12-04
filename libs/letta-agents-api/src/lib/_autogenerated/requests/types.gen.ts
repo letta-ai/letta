@@ -167,7 +167,13 @@ export type AgentType = 'memgpt_agent' | 'split_thread_agent' | 'o1_agent';
  */
 export type AppAuthScheme = {
   scheme_name: string;
-  auth_mode: string;
+  auth_mode:
+    | 'OAUTH2'
+    | 'OAUTH1'
+    | 'API_KEY'
+    | 'BASIC'
+    | 'BEARER_TOKEN'
+    | 'BASIC_WITH_JWT';
   fields: Array<AuthSchemeField>;
   proxy?: {
     [key: string]: unknown;
@@ -179,6 +185,14 @@ export type AppAuthScheme = {
   client_id?: string | null;
   client_secret?: string | null;
 };
+
+export type auth_mode =
+  | 'OAUTH2'
+  | 'OAUTH1'
+  | 'API_KEY'
+  | 'BASIC'
+  | 'BEARER_TOKEN'
+  | 'BASIC_WITH_JWT';
 
 /**
  * App data model.
@@ -2257,17 +2271,17 @@ export type ToolRuleType =
 
 export type ToolRunFromSource = {
   /**
+   * The source code of the function.
+   */
+  source_code: string;
+  /**
    * The arguments to pass to the tool (as stringified JSON).
    */
   args: string;
   /**
    * The name of the tool to run.
    */
-  name: string | null;
-  /**
-   * The source code of the function.
-   */
-  source_code?: string;
+  name?: string | null;
   /**
    * The type of the source code.
    */
