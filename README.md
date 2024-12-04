@@ -164,5 +164,3 @@ To modify these variables, update either:
 - GitHub repository secrets for sensitive values
 - Environment variables in `.github/workflows/deploy.yml` for non-sensitive values
 
-
-
