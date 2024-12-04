@@ -137,12 +137,12 @@ function ContextWindowPanel() {
       return;
     }
 
+    console.log(memory);
+
     postMessage({
       templateString: memory.prompt_template || '',
       context: {
-        memory: Object.fromEntries(
-          memory.blocks.map((block) => [block.label, block])
-        ),
+        memory: memory.blocks,
       },
     });
   }, [memory, postMessage]);

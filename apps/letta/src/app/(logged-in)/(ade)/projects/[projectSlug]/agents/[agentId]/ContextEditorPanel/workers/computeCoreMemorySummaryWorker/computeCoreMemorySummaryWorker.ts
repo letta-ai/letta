@@ -72,9 +72,9 @@ template = Template('${templateString.replace(/(\r\n|\n|\r)/gm, '')}')
 
 # generate memories dict from context
 
-memory = ${createDict(context.memory)}
+memory = [${context.memory.map((m) => createDict(m)).join(',')}]
 
-template.render(memory=memory)
+template.render(blocks=memory)
 `;
 
   const results = await self.pyodide.runPythonAsync(python);
