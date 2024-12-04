@@ -20,9 +20,6 @@ import { cva } from 'class-variance-authority';
 import { cn } from '@letta-web/core-style-config';
 import { VStack } from '../../framing/VStack/VStack';
 import type { FrameProps } from '../../framing/Frame/Frame';
-import { useTranslations } from 'next-intl';
-import { Typography } from '../Typography/Typography';
-import { CloseIcon } from '../../icons';
 
 export type SupportedLangauges =
   | 'bash'
@@ -70,12 +67,8 @@ export interface CodeProps extends VariantProps<typeof codeVariants> {
   showLineNumbers?: boolean;
   border?: boolean;
   onSetCode?: (code: string) => void;
+  placeholder?: string;
   fullHeight?: boolean;
-  errorResponse?: {
-    title: string;
-    content: string;
-    onDismiss: () => void;
-  };
   toolbarPosition?: 'bottom' | 'top';
   inline?: boolean;
   color?: FrameProps['color'];
@@ -96,19 +89,17 @@ export function Code(props: CodeProps) {
     code,
     color = 'background',
     fontSize,
+    placeholder,
     variant,
     testId,
     onSetCode,
     showLineNumbers = true,
-    errorResponse,
     toolbarPosition,
     inline,
     fullHeight,
     flex,
     toolbarAction,
   } = props;
-
-  const t = useTranslations('component-library/core/Code');
 
   const id = useId();
 
@@ -166,7 +157,9 @@ export function Code(props: CodeProps) {
           className="flex-1"
           position="relative"
         >
-          <div className={cn(showLineNumbers ? 'line-number-wrapper' : '')} />
+          <div
+            className={cn(showLineNumbers ? 'line-number-wrapper' : 'hidden')}
+          />
           <Editor
             id={`code-editor-${id}`}
             className={cn('editor w-full', showLineNumbers && 'line-numbers')}
@@ -197,6 +190,7 @@ export function Code(props: CodeProps) {
             }}
             padding={10}
             textareaId={id}
+            placeholder={placeholder}
             style={{
               overflow: 'visible',
               fontFamily: 'inherit',
@@ -205,45 +199,7 @@ export function Code(props: CodeProps) {
             }}
           />
         </VStack>
-        {errorResponse?.content && (
-          <VStack
-            borderLeft
-            color="destructive"
-            fullWidth
-            gap={false}
-            className="flex-1 max-w-[50%]"
-          >
-            <HStack
-              padding="small"
-              borderBottom
-              align="center"
-              justify="spaceBetween"
-            >
-              <Typography bold font="default">
-                {errorResponse.title || t('errorResponse')}
-              </Typography>
-              <button
-                type="button"
-                onClick={errorResponse.onDismiss}
-                className="w-4 h-full flex items-center justify-center text-white"
-              >
-                <div className="sr-only">{t('dismiss')}</div>
-                <CloseIcon />
-              </button>
-            </HStack>
-            <Code
-              language="javascript"
-              color="background-grey"
-              code={errorResponse.content}
-              variant="minimal"
-              fontSize="small"
-              fullHeight
-              flex
-            />
-          </VStack>
-        )}
       </HStack>
-
       {toolbarPosition === 'bottom' && toolbar}
     </VStack>
   );

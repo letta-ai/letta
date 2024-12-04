@@ -271,7 +271,7 @@ export function RawInputContainer(props: RawInputContainerProps) {
               className="flex flex-row gap-1 items-center"
             >
               <HStack align="center" gap="small">
-                <HStack align="center" gap="text">
+                <HStack align="center" gap="small">
                   {preLabelIcon && <Slot className="h-3">{preLabelIcon}</Slot>}
                   {label}
                 </HStack>

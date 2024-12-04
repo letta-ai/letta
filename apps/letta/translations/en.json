@@ -63,6 +63,14 @@
       }
     }
   },
+  "component-library/Debugger": {
+    "invalidJSON": "Invalid JSON",
+    "run": "Run",
+    "success": "Succeeded in {duration}ms",
+    "error": "Failed to execute",
+    "output": "Output",
+    "inputPlaceholder": ""
+  },
   "organization/environment-variables": {
     "title": "Environment variables",
     "description": "Manage environment variables for your organization. All environment variables are scoped to the organization and are available to all agents in the organization via tools. Keys cannot be read after being set.",
@@ -1053,6 +1061,10 @@
     "error": "There was an error fetching the simulated agent, please try again or contact support."
   },
   "ADE/Tools": {
+    "ErrorMessageAlert": {
+      "title": "There was an error, see below for details:",
+      "dismiss": "Dismiss"
+    },
     "infoTooltip": "Connect tools to your agent to allow them to take custom actions",
     "mobileTitle": "Tools",
     "title": "Tools ({toolCount})",
@@ -1094,6 +1106,11 @@
         "error": "There was an error updating your tool, see below for details."
       },
       "update": "Update tool"
+    },
+    "ToolEditor": {
+      "label": "Debugger",
+      "inputLabel": "Tool input",
+      "outputLabel": "Tool output"
     },
     "ToolCreator": {
       "errorResponse": "There was an error creating your tool, see below for details.",

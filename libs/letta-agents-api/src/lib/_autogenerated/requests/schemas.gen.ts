@@ -59,6 +59,148 @@ export const $APIKeyCreate = {
   title: 'APIKeyCreate',
 } as const;
 
+export const $ActionModel = {
+  properties: {
+    name: {
+      type: 'string',
+      title: 'Name',
+    },
+    display_name: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Display Name',
+    },
+    parameters: {
+      $ref: '#/components/schemas/ActionParametersModel',
+    },
+    response: {
+      $ref: '#/components/schemas/ActionResponseModel',
+    },
+    appName: {
+      type: 'string',
+      title: 'Appname',
+    },
+    appId: {
+      type: 'string',
+      title: 'Appid',
+    },
+    tags: {
+      items: {
+        type: 'string',
+      },
+      type: 'array',
+      title: 'Tags',
+    },
+    enabled: {
+      type: 'boolean',
+      title: 'Enabled',
+      default: false,
+    },
+    logo: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Logo',
+    },
+    description: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Description',
+    },
+  },
+  type: 'object',
+  required: ['name', 'parameters', 'response', 'appName', 'appId', 'tags'],
+  title: 'ActionModel',
+  description: 'Action data model.',
+} as const;
+
+export const $ActionParametersModel = {
+  properties: {
+    properties: {
+      type: 'object',
+      title: 'Properties',
+    },
+    title: {
+      type: 'string',
+      title: 'Title',
+    },
+    type: {
+      type: 'string',
+      title: 'Type',
+    },
+    required: {
+      anyOf: [
+        {
+          items: {
+            type: 'string',
+          },
+          type: 'array',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Required',
+    },
+  },
+  type: 'object',
+  required: ['properties', 'title', 'type'],
+  title: 'ActionParametersModel',
+  description: 'Action parameter data models.',
+} as const;
+
+export const $ActionResponseModel = {
+  properties: {
+    properties: {
+      type: 'object',
+      title: 'Properties',
+    },
+    title: {
+      type: 'string',
+      title: 'Title',
+    },
+    type: {
+      type: 'string',
+      title: 'Type',
+    },
+    required: {
+      anyOf: [
+        {
+          items: {
+            type: 'string',
+          },
+          type: 'array',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Required',
+    },
+  },
+  type: 'object',
+  required: ['properties', 'title', 'type'],
+  title: 'ActionResponseModel',
+  description: 'Action response data model.',
+} as const;
+
 export const $AgentState = {
   properties: {
     description: {
@@ -245,6 +387,249 @@ export const $AgentType = {
   description: 'Enum to represent the type of agent.',
 } as const;
 
+export const $AppAuthScheme = {
+  properties: {
+    scheme_name: {
+      type: 'string',
+      title: 'Scheme Name',
+    },
+    auth_mode: {
+      type: 'string',
+      title: 'Auth Mode',
+    },
+    fields: {
+      items: {
+        $ref: '#/components/schemas/AuthSchemeField',
+      },
+      type: 'array',
+      title: 'Fields',
+    },
+    proxy: {
+      anyOf: [
+        {
+          type: 'object',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Proxy',
+    },
+    authorization_url: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Authorization Url',
+    },
+    token_url: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Token Url',
+    },
+    default_scopes: {
+      anyOf: [
+        {
+          items: {},
+          type: 'array',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Default Scopes',
+    },
+    token_response_metadata: {
+      anyOf: [
+        {
+          items: {},
+          type: 'array',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Token Response Metadata',
+    },
+    client_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Client Id',
+    },
+    client_secret: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Client Secret',
+    },
+  },
+  type: 'object',
+  required: ['scheme_name', 'auth_mode', 'fields'],
+  title: 'AppAuthScheme',
+  description: 'App authenticatio scheme.',
+} as const;
+
+export const $AppModel = {
+  properties: {
+    name: {
+      type: 'string',
+      title: 'Name',
+    },
+    key: {
+      type: 'string',
+      title: 'Key',
+    },
+    appId: {
+      type: 'string',
+      title: 'Appid',
+    },
+    description: {
+      type: 'string',
+      title: 'Description',
+    },
+    categories: {
+      items: {
+        type: 'string',
+      },
+      type: 'array',
+      title: 'Categories',
+    },
+    meta: {
+      type: 'object',
+      title: 'Meta',
+    },
+    logo: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Logo',
+    },
+    docs: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Docs',
+    },
+    group: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Group',
+    },
+    status: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Status',
+    },
+    enabled: {
+      type: 'boolean',
+      title: 'Enabled',
+      default: false,
+    },
+    no_auth: {
+      type: 'boolean',
+      title: 'No Auth',
+      default: false,
+    },
+    auth_schemes: {
+      anyOf: [
+        {
+          items: {
+            $ref: '#/components/schemas/AppAuthScheme',
+          },
+          type: 'array',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Auth Schemes',
+    },
+    testConnectors: {
+      anyOf: [
+        {
+          items: {
+            type: 'object',
+          },
+          type: 'array',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Testconnectors',
+    },
+    documentation_doc_text: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Documentation Doc Text',
+    },
+    configuration_docs_text: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Configuration Docs Text',
+    },
+  },
+  type: 'object',
+  required: ['name', 'key', 'appId', 'description', 'categories', 'meta'],
+  title: 'AppModel',
+  description: 'App data model.',
+} as const;
+
 export const $ArchivalMemorySummary = {
   properties: {
     size: {
@@ -398,6 +783,70 @@ export const $AuthResponse = {
   type: 'object',
   required: ['uuid'],
   title: 'AuthResponse',
+} as const;
+
+export const $AuthSchemeField = {
+  properties: {
+    name: {
+      type: 'string',
+      title: 'Name',
+    },
+    display_name: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Display Name',
+    },
+    description: {
+      type: 'string',
+      title: 'Description',
+    },
+    type: {
+      type: 'string',
+      title: 'Type',
+    },
+    default: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Default',
+    },
+    required: {
+      type: 'boolean',
+      title: 'Required',
+      default: false,
+    },
+    expected_from_customer: {
+      type: 'boolean',
+      title: 'Expected From Customer',
+      default: true,
+    },
+    get_current_user_endpoint: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Get Current User Endpoint',
+    },
+  },
+  type: 'object',
+  required: ['name', 'description', 'type'],
+  title: 'AuthSchemeField',
+  description: 'Auth scheme field.',
 } as const;
 
 export const $Block = {
@@ -3929,7 +4378,7 @@ export const $Organization = {
       type: 'string',
       title: 'Name',
       description: 'The name of the organization.',
-      default: 'MagnificentJellyfish',
+      default: 'OpenmindedGoblin',
     },
     created_at: {
       anyOf: [
@@ -4988,6 +5437,49 @@ export const $ToolRuleType = {
   ],
   title: 'ToolRuleType',
   description: 'Type of tool rule.',
+} as const;
+
+export const $ToolRunFromSource = {
+  properties: {
+    args: {
+      type: 'string',
+      title: 'Args',
+      description: 'The arguments to pass to the tool (as stringified JSON).',
+    },
+    name: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Name',
+      description: 'The name of the tool to run.',
+    },
+    source_code: {
+      type: 'string',
+      title: 'Source Code',
+      description: 'The source code of the function.',
+    },
+    source_type: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Source Type',
+      description: 'The type of the source code.',
+    },
+  },
+  additionalProperties: false,
+  type: 'object',
+  required: ['args', 'name'],
+  title: 'ToolRunFromSource',
 } as const;
 
 export const $ToolUpdate = {

@@ -439,7 +439,7 @@ pre > code.diff-highlight .token.token.inserted:not(.prefix) *::selection {
   width: 60px;
   height: 100%;
   border-right: 1px solid hsl(var(--border));
-  background-color: hsl(var(--background-grey2));
+  background-color: hsl(var(--background));
   overflow: hidden;
 }
 
@@ -475,6 +475,6 @@ pre > code.diff-highlight .token.token.inserted:not(.prefix) *::selection {
   width: var(--editor-lineNumber-gutter-width);
   height: 100%;
   border-right: 1px solid hsl(var(--border));
-  background-color: hsl(var(--background-grey2));
+  background-color: hsl(var(--background));
   z-index: 1;
 }

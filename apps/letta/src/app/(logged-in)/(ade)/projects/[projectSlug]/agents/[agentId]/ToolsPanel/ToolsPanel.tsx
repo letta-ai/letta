@@ -4,6 +4,13 @@ import type {
   FileTreeContentsType,
   PanelTemplate,
 } from '@letta-web/component-library';
+import {
+  Alert,
+  Code,
+  Debugger,
+  HiddenOnMobile,
+  TerminalIcon,
+} from '@letta-web/component-library';
 import { Typography } from '@letta-web/component-library';
 import {
   ActionCard,
@@ -52,6 +59,7 @@ import type {
   GetToolResponse,
   letta__schemas__tool__Tool,
 } from '@letta-web/letta-agents-api';
+import { useToolsServiceRunToolFromSource } from '@letta-web/letta-agents-api';
 import { useAgentsServiceAddToolToAgent } from '@letta-web/letta-agents-api';
 import { useAgentsServiceRemoveToolFromAgent } from '@letta-web/letta-agents-api';
 import {
@@ -378,31 +386,16 @@ function EditTool(props: EditToolProps) {
     <FormProvider {...form}>
       <Form onSubmit={form.handleSubmit(handleSubmit)}>
         <VStack collapseHeight flex gap="form">
+          {errorMessage && (
+            <ErrorMessageAlert message={errorMessage} onDismiss={reset} />
+          )}
           <FormField
             name="sourceCode"
             render={({ field }) => (
-              <CodeEditor
-                fullWidth
-                collapseHeight
-                flex
-                toolbarPosition="bottom"
-                language="python"
-                code={field.value}
-                onSetCode={field.onChange}
-                errorResponse={{
-                  title: t('EditTool.sourceCode.error'),
-                  content: errorMessage,
-                  onDismiss: () => {
-                    reset();
-                  },
-                }}
-                label={t('EditTool.sourceCode.label')}
-              />
+              <ToolEditor code={field.value} onSetCode={field.onChange} />
             )}
           />
-          <FormActions
-            errorMessage={errorMessage ? t('EditTool.error') : undefined}
-          >
+          <FormActions>
             <Button
               type="submit"
               label={t('EditTool.update')}
@@ -953,8 +946,159 @@ function ToolsList(props: ToolsProps) {
   );
 }
 
+interface ToolEditorProps {
+  code: string;
+  onSetCode: (code: string) => void;
+}
+
+function ToolEditor(props: ToolEditorProps) {
+  const { code, onSetCode } = props;
+  const t = useTranslations('ADE/Tools');
+  const [completedAt, setCompletedAt] = useState<number | null>(null);
+
+  const { mutate, error, submittedAt, reset, data, isPending } =
+    useToolsServiceRunToolFromSource();
+
+  const inputConfig = useMemo(
+    () => ({
+      defaultInput: {},
+      schema: z.record(z.string(), z.any()),
+      inputLabel: t('ToolEditor.inputLabel'),
+    }),
+    [t]
+  );
+
+  const extractedFunctionName = useMemo(() => {
+    const nameRegex = /def\s+(\w+)\s*\(/;
+    const match = nameRegex.exec(code);
+
+    return match ? match[1] : '';
+  }, [code]);
+
+  const handleRun = useCallback(
+    (input: z.infer<typeof inputConfig.schema>) => {
+      reset();
+
+      mutate(
+        {
+          requestBody: {
+            name: extractedFunctionName,
+            args: JSON.stringify(input),
+            source_code: code,
+          },
+        },
+        {
+          onSuccess: () => {
+            setCompletedAt(Date.now());
+          },
+        }
+      );
+    },
+    [code, extractedFunctionName, inputConfig, mutate, reset]
+  );
+
+  const outputValue = useMemo(() => {
+    if (error) {
+      return JSON.stringify(error, null, 2);
+    }
+
+    if (data) {
+      return JSON.stringify(data, null, 2);
+    }
+
+    return null;
+  }, [data, error]);
+
+  const outputStatus = useMemo(() => {
+    if (error) {
+      return 'error';
+    }
+
+    if (data) {
+      if (data.status === 'error') {
+        return 'error';
+      }
+
+      return 'success';
+    }
+
+    return undefined;
+  }, [data, error]);
+
+  return (
+    <HStack flex overflow="hidden" fullWidth>
+      <CodeEditor
+        preLabelIcon={<CodeIcon />}
+        collapseHeight
+        fullWidth
+        flex
+        fullHeight
+        language="python"
+        // errorResponse={{
+        //   title: t('ToolCreator.errorResponse'),
+        //   content: errorMessage,
+        //   onDismiss: () => {
+        //     reset();
+        //   },
+        // }}
+        fontSize="small"
+        code={code}
+        onSetCode={onSetCode}
+        label={t('ToolCreator.sourceCode.label')}
+      />
+      <HiddenOnMobile>
+        <Debugger
+          preLabelIcon={<TerminalIcon />}
+          outputConfig={{
+            label: t('ToolEditor.outputLabel'),
+          }}
+          isRunning={isPending}
+          onRun={handleRun}
+          output={
+            outputValue
+              ? {
+                  value: outputValue,
+                  duration: completedAt ? completedAt - submittedAt : 0,
+                  status: outputStatus,
+                }
+              : undefined
+          }
+          inputConfig={inputConfig}
+          label={t('ToolEditor.label')}
+        />
+      </HiddenOnMobile>
+    </HStack>
+  );
+}
+
 interface ToolCreatorProps {
   onClose: VoidFunction;
+}
+
+interface ErrorMessageAlertProps {
+  message: string;
+  onDismiss: VoidFunction;
+}
+
+function ErrorMessageAlert(props: ErrorMessageAlertProps) {
+  const { message, onDismiss } = props;
+  const t = useTranslations('ADE/Tools');
+
+  return (
+    <Alert
+      variant="destructive"
+      title={t('ErrorMessageAlert.title')}
+      onDismiss={onDismiss}
+      fullWidth
+    >
+      <Code
+        showLineNumbers={false}
+        fontSize="small"
+        language="javascript"
+        code={message}
+      />
+    </Alert>
+  );
 }
 
 const DEFAULT_SOURCE_CODE = `def roll_d20():
@@ -1045,18 +1189,10 @@ function ToolCreator(props: ToolCreatorProps) {
 
   return (
     <VStack flex collapseHeight paddingBottom>
-      <VStack flex collapseHeight padding fullWidth>
-        <HStack>
-          <Button
-            size="small"
-            preIcon={<ChevronLeftIcon />}
-            color="tertiary"
-            label={t('SpecificToolComponent.back')}
-            onClick={() => {
-              onClose();
-            }}
-          />
-        </HStack>
+      {errorMessage && (
+        <ErrorMessageAlert message={errorMessage} onDismiss={reset} />
+      )}
+      <VStack flex collapseHeight paddingTop paddingX fullWidth>
         <FormProvider {...form}>
           <Form onSubmit={form.handleSubmit(handleSubmit)}>
             <VStack fullHeight flex gap="form" fullWidth>
@@ -1064,28 +1200,17 @@ function ToolCreator(props: ToolCreatorProps) {
                 control={form.control}
                 name="sourceCode"
                 render={({ field }) => (
-                  <CodeEditor
-                    collapseHeight
-                    fullWidth
-                    flex
-                    toolbarPosition="bottom"
-                    language="python"
-                    errorResponse={{
-                      title: t('ToolCreator.errorResponse'),
-                      content: errorMessage,
-                      onDismiss: () => {
-                        reset();
-                      },
-                    }}
-                    code={field.value}
-                    onSetCode={field.onChange}
-                    label={t('ToolCreator.sourceCode.label')}
-                  />
+                  <ToolEditor code={field.value} onSetCode={field.onChange} />
                 )}
               />
-              <FormActions
-                errorMessage={errorMessage ? t('ToolCreator.error') : undefined}
-              >
+              <FormActions>
+                <Button
+                  color="tertiary"
+                  label={t('SpecificToolComponent.back')}
+                  onClick={() => {
+                    onClose();
+                  }}
+                />
                 <Button
                   type="submit"
                   label="Create"

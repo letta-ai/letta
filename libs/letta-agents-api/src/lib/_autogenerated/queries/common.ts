@@ -78,6 +78,38 @@ export const UseToolsServiceListToolsKeyFn = (
   useToolsServiceListToolsKey,
   ...(queryKey ?? [{ cursor, limit, userId }]),
 ];
+export type ToolsServiceListComposioAppsDefaultResponse = Awaited<
+  ReturnType<typeof ToolsService.listComposioApps>
+>;
+export type ToolsServiceListComposioAppsQueryResult<
+  TData = ToolsServiceListComposioAppsDefaultResponse,
+  TError = unknown
+> = UseQueryResult<TData, TError>;
+export const useToolsServiceListComposioAppsKey =
+  'ToolsServiceListComposioApps';
+export const UseToolsServiceListComposioAppsKeyFn = (
+  queryKey?: Array<unknown>
+) => [useToolsServiceListComposioAppsKey, ...(queryKey ?? [])];
+export type ToolsServiceListComposioActionsByAppDefaultResponse = Awaited<
+  ReturnType<typeof ToolsService.listComposioActionsByApp>
+>;
+export type ToolsServiceListComposioActionsByAppQueryResult<
+  TData = ToolsServiceListComposioActionsByAppDefaultResponse,
+  TError = unknown
+> = UseQueryResult<TData, TError>;
+export const useToolsServiceListComposioActionsByAppKey =
+  'ToolsServiceListComposioActionsByApp';
+export const UseToolsServiceListComposioActionsByAppKeyFn = (
+  {
+    composioAppName,
+  }: {
+    composioAppName: string;
+  },
+  queryKey?: Array<unknown>
+) => [
+  useToolsServiceListComposioActionsByAppKey,
+  ...(queryKey ?? [{ composioAppName }]),
+];
 export type SourcesServiceGetSourceDefaultResponse = Awaited<
   ReturnType<typeof SourcesService.getSource>
 >;
@@ -795,6 +827,12 @@ export type ToolsServiceCreateToolMutationResult = Awaited<
 >;
 export type ToolsServiceAddBaseToolsMutationResult = Awaited<
   ReturnType<typeof ToolsService.addBaseTools>
+>;
+export type ToolsServiceRunToolFromSourceMutationResult = Awaited<
+  ReturnType<typeof ToolsService.runToolFromSource>
+>;
+export type ToolsServiceAddComposioToolMutationResult = Awaited<
+  ReturnType<typeof ToolsService.addComposioTool>
 >;
 export type SourcesServiceCreateSourceMutationResult = Awaited<
   ReturnType<typeof SourcesService.createSource>

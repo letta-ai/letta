@@ -60,6 +60,27 @@ export const prefetchUseToolsServiceListTools = (
     queryKey: Common.UseToolsServiceListToolsKeyFn({ cursor, limit, userId }),
     queryFn: () => ToolsService.listTools({ cursor, limit, userId }),
   });
+export const prefetchUseToolsServiceListComposioApps = (
+  queryClient: QueryClient
+) =>
+  queryClient.prefetchQuery({
+    queryKey: Common.UseToolsServiceListComposioAppsKeyFn(),
+    queryFn: () => ToolsService.listComposioApps(),
+  });
+export const prefetchUseToolsServiceListComposioActionsByApp = (
+  queryClient: QueryClient,
+  {
+    composioAppName,
+  }: {
+    composioAppName: string;
+  }
+) =>
+  queryClient.prefetchQuery({
+    queryKey: Common.UseToolsServiceListComposioActionsByAppKeyFn({
+      composioAppName,
+    }),
+    queryFn: () => ToolsService.listComposioActionsByApp({ composioAppName }),
+  });
 export const prefetchUseSourcesServiceGetSource = (
   queryClient: QueryClient,
   {
