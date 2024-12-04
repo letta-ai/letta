@@ -82,7 +82,7 @@ function DebuggerInput<InputSchema extends GenericSchema>(
       return;
     }
 
-    onRun(parsed);
+    onRun(parsed.data);
   }, [code, inputSchema, onRun, t]);
 
   useEffect(() => {
