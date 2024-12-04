@@ -157,6 +157,29 @@ function FormItem({ children }: FormItemProps) {
   );
 }
 
+interface InputContainerHeaderProps {
+  preLabelIcon?: React.ReactNode;
+  infoTooltip?: {
+    text: string;
+  };
+  label: string;
+}
+
+function InputContainerHeader(props: InputContainerHeaderProps) {
+  const { preLabelIcon, label, infoTooltip } = props;
+  return (
+    <HStack>
+      <HStack gap="text">
+        {preLabelIcon && <Slot className="h-3">{preLabelIcon}</Slot>}
+        <Typography variant="body2" color="forceTextSecondary" uppercase>
+          {label}
+        </Typography>
+      </HStack>
+      {infoTooltip && <InfoTooltip text={infoTooltip.text} />}
+    </HStack>
+  );
+}
+
 export interface InputContainerProps {
   label: string;
   preLabelIcon?: React.ReactNode;
@@ -204,15 +227,11 @@ export function InputContainer(props: InputContainerProps) {
               justify="spaceBetween"
             >
               <FormLabel>
-                <HStack>
-                  <HStack gap="text">
-                    {preLabelIcon && (
-                      <Slot className="h-3">{preLabelIcon}</Slot>
-                    )}
-                    {label}
-                  </HStack>
-                  {infoTooltip && <InfoTooltip text={infoTooltip.text} />}
-                </HStack>
+                <InputContainerHeader
+                  preLabelIcon={preLabelIcon}
+                  label={label}
+                  infoTooltip={infoTooltip}
+                />
               </FormLabel>
               {rightOfLabelContent}
             </HStack>
@@ -270,13 +289,11 @@ export function RawInputContainer(props: RawInputContainerProps) {
               htmlFor={id}
               className="flex flex-row gap-1 items-center"
             >
-              <HStack align="center" gap="small">
-                <HStack align="center" gap="small">
-                  {preLabelIcon && <Slot className="h-3">{preLabelIcon}</Slot>}
-                  {label}
-                </HStack>
-                {infoTooltip && <InfoTooltip text={infoTooltip.text} />}
-              </HStack>
+              <InputContainerHeader
+                preLabelIcon={preLabelIcon}
+                label={label}
+                infoTooltip={infoTooltip}
+              />
             </LabelPrimitive>
             {rightOfLabelContent}
           </HStack>

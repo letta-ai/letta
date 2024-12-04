@@ -201,7 +201,7 @@ const InputPrimitive = React.forwardRef<HTMLInputElement, InputPrimitiveProps>(
             onChange={handleOnChange}
             disabled={disabled}
             type={typeOverride}
-            className="w-full h-full text-base focus:outline-none bg-transparent"
+            className="w-full h-full text-text-secondary text-base focus:outline-none bg-transparent"
             ref={ref}
           />
           {showVisibilityControls && (
