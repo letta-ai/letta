@@ -33,7 +33,7 @@ import {
   VStack,
   SwitchOrganizationIcon,
   ChevronLeftIcon,
-  ComputerHardIcon,
+  LaptopIcon,
 } from '@letta-web/component-library';
 import { useCurrentUser } from '$letta/client/hooks';
 import { usePathname } from 'next/navigation';
@@ -183,7 +183,7 @@ function MainNavigationItems(props: MainNavigationItemsProps) {
         label: t('nav.localDev'),
         href: '/development-servers',
         id: 'development-servers',
-        icon: <ComputerHardIcon />,
+        icon: <LaptopIcon />,
         doesNotNeedCloudAccess: true,
       },
       {
