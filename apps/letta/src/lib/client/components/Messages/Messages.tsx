@@ -8,7 +8,7 @@ import {
   FunctionCall,
   HStack,
   IconAvatar,
-  LaptopIcon,
+  SystemIcon,
   LettaLoaderPanel,
   Markdown,
   PersonIcon,
@@ -157,7 +157,7 @@ function MessageGroup({ group }: MessageGroupType) {
     }
 
     if (name === 'System') {
-      return <LaptopIcon />;
+      return <SystemIcon />;
     }
 
     return null;
