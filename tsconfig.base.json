@@ -26,6 +26,7 @@
       "@letta-web/configure": ["scripts/configure/src/index.ts"],
       "@letta-web/core-style-config": ["libs/core-style-config/src/index.ts"],
       "@letta-web/core-style-config/*": ["utils/src/*"],
+      "@letta-web/crm": ["libs/crm/src/index.ts"],
       "@letta-web/database": ["libs/database/src/index.ts"],
       "@letta-web/database-testing": ["libs/database-testing/src/index.ts"],
       "@letta-web/environmental-variables": [
