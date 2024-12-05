@@ -22,7 +22,7 @@ import {
   LogoutIcon,
   BirdIcon,
   DatabaseIcon,
-  KeyHardIcon,
+  KeyIcon,
   Frame,
   HamburgerMenuIcon,
   HStack,
@@ -176,7 +176,7 @@ function MainNavigationItems(props: MainNavigationItemsProps) {
         label: t('nav.apiKeys'),
         href: '/api-keys',
         id: 'api-keys',
-        icon: <KeyHardIcon />,
+        icon: <KeyIcon />,
       },
       {
         borderTop: true,
