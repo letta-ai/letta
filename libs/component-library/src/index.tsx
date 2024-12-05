@@ -148,3 +148,5 @@ export * from './lib/reusable/MaybeLink/MaybeLink';
 export * from './lib/core/ChipSelect/ChipSelect';
 
 export * from './lib/reusable/FadeInImage/FadeInImage';
+
+export * from './lib/reusable/CTACard/CTACard';

@@ -874,8 +874,9 @@
     "disabledTooltip": "This field cannot be edited"
   },
   "development-servers/components/UserIsNotConnectedComponent": {
-    "notConnected": "Please connect to your local server to view quick actions and information.",
-    "start": "You can connect to your local server by running the command below:"
+    "notConnected": "You are not connected to a local server",
+    "connecting": "Attempting to connect to your local server...",
+    "start": "Enter the command below to start your local server"
   },
   "development-servers/layout": {
     "title": "Local Project",
@@ -914,18 +915,25 @@
       "cta": "Get early access",
       "dismiss": "Close"
     },
-    "description": "Letta allows you to create, deploy, and monitor stateful LLM agents",
-    "title": "Welcome to the Letta developer platform!",
+    "description": "Manage and monitor your agents on self-hosted Letta servers",
+    "title": "Self-Hosted Agents",
     "gettingStarted": {
-      "title": "Getting started",
+      "title": "Quick Actions",
       "actions": {
+        "cloudSignup": {
+          "title": "Sign up for Letta Cloud",
+          "details": "Deploy agents at scale with zero infrastructure\nSign up for early access below",
+          "cta": "Sign up"
+        },
         "createAgent": {
-          "title": "Create an agent",
+          "title": "New Agent",
+          "cta": "Create agent",
           "description": "Create an agent to deploy to your local server"
         },
         "viewAgents": {
-          "title": "View local agents",
-          "description": "View all of your agents on the local server"
+          "title": "Local agents",
+          "description": "View all of your agents on the local server",
+          "cta": "View agents"
         }
       }
     }
@@ -988,6 +996,7 @@
   },
   "components/tutorials": {
     "title": "Tutorials",
+    "description": "Not sure where to start? Check out some of our tutorials ",
     "comingSoon": "Coming soon",
     "createChatBotWithMemory": {
       "title": "Create a chatbot with memory",
@@ -1015,6 +1024,11 @@
       "label": "Agent name",
       "placeholder": "my-agent-name"
     }
+  },
+  "client/hooks/useWelcomeText": {
+    "goodMorning": "☀\uFE0F Good morning, {firstName}",
+    "goodAfternoon": "☀\uFE0F Good afternoon, {firstName}",
+    "goodEvening": "\uD83C\uDF15 Good evening, {firstName}"
   },
   "component-library/hooks/useCopyToClipboard": {
     "copied": "Copied to clipboard"

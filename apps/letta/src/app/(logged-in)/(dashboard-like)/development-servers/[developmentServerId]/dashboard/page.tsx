@@ -1,22 +1,28 @@
 'use client';
 import {
-  ActionCard,
   AdBanner,
   Alert,
   Button,
+  CTACard,
   DashboardPageLayout,
   DashboardPageSection,
+  Frame,
   HStack,
   InlineCode,
+  LettaLoader,
+  Logo,
   NiceGridDisplay,
   Robot2Icon,
   SearchIcon,
+  Typography,
   VStack,
 } from '@letta-web/component-library';
 import { useTranslations } from 'next-intl';
-import { Tutorials } from '$letta/client/components';
+import {
+  ConnectToLocalServerCommand,
+  Tutorials,
+} from '$letta/client/components';
 import React, { useMemo } from 'react';
-import Link from 'next/link';
 import bannerBlue from './banner_blue.png';
 import bannerOrange from './banner_orange.png';
 import { useCurrentUser } from '$letta/client/hooks';
@@ -26,26 +32,61 @@ import {
   MOST_RECENT_LETTA_AGENT_VERSION,
   SUPPORTED_LETTA_AGENTS_VERSIONS,
 } from '$letta/constants';
-import { UserIsNotConnectedComponent } from '../components/UserIsNotConnectedComponent/UserIsNotConnectedComponent';
 import { useHealthServiceHealthCheck } from '@letta-web/letta-agents-api';
+import { useWelcomeText } from '$letta/client/hooks/useWelcomeText/useWelcomeText';
+import { cn } from '@letta-web/core-style-config';
 
-function UpgradeBanner() {
-  const [isDismissed, setIsDismissed, isLoading] =
-    useLocalStorageWithLoadingState<boolean>(
-      'development-servers/dashboard/page/upgrade-banner',
-      false
-    );
+import AdBannerTwo from './ad_banner_two.webp';
+import Image from 'next/image';
+
+interface UserIsNotConnectedComponentProps {
+  isAttemptingToConnect?: boolean;
+}
+
+function UserIsNotConnectedComponent(props: UserIsNotConnectedComponentProps) {
+  const t = useTranslations(
+    'development-servers/components/UserIsNotConnectedComponent'
+  );
+
+  const { isAttemptingToConnect } = props;
+
+  return (
+    <VStack
+      paddingY="xxlarge"
+      align="center"
+      justify="center"
+      border
+      fullHeight
+      fullWidth
+    >
+      <LettaLoader stopAnimation={!isAttemptingToConnect} size="large" />
+      <VStack gap="small" paddingTop>
+        <Typography variant="heading5">
+          {!isAttemptingToConnect ? t('notConnected') : t('connecting')}
+        </Typography>
+        <VStack align="center">
+          <Typography variant="heading6">{t('start')}</Typography>
+          <HStack>
+            <ConnectToLocalServerCommand />
+          </HStack>
+        </VStack>
+      </VStack>
+    </VStack>
+  );
+}
+
+interface UpgradeBannerProps {
+  isDismissed: boolean;
+  setIsDismissed: (value: boolean) => void;
+}
+
+function UpgradeBanner(props: UpgradeBannerProps) {
+  const { isDismissed, setIsDismissed } = props;
 
   const t = useTranslations('development-servers/dashboard/page');
 
-  if (isDismissed || isLoading) {
-    return null;
-  }
-
   return (
     <AdBanner
-      /* eslint-disable-next-line react/forbid-component-props */
-      className="min-h-[350px] max-w-[1216px]"
       textContentClassName="largerThanMobile:w-[70%] largerThanMobile:w-[60%]"
       title={t('UpgradeBanner.title')}
       description={t('UpgradeBanner.description')}
@@ -62,7 +103,7 @@ function UpgradeBanner() {
       }
       onClose={{
         operation: () => {
-          setIsDismissed(true);
+          setIsDismissed(!isDismissed);
         },
         text: t('UpgradeBanner.dismiss'),
       }}
@@ -77,6 +118,7 @@ function DevelopmentServersDashboardPage() {
   const { data: isLocalServiceOnline, isLoading } = useHealthServiceHealthCheck(
     undefined,
     {
+      retry: 1,
       refetchInterval: 3000,
     }
   );
@@ -92,11 +134,40 @@ function DevelopmentServersDashboardPage() {
     );
   }, [isLocalServiceOnline]);
 
+  const welcomeText = useWelcomeText();
+
+  const title = useMemo(() => {
+    if (user?.hasCloudAccess) {
+      return t('title');
+    }
+
+    return welcomeText || t('title');
+  }, [t, user?.hasCloudAccess, welcomeText]);
+
+  const [isDismissed, setIsDismissed, isLoadingDismissed] =
+    useLocalStorageWithLoadingState<boolean>(
+      'development-servers/dashboard/page/upgrade-banner',
+      false
+    );
+
   return (
-    <DashboardPageLayout title={t('title')} subtitle={t('description')}>
+    <DashboardPageLayout title={title} subtitle={t('description')}>
       {!user?.hasCloudAccess && (
-        <VStack paddingTop="medium">
-          <UpgradeBanner />{' '}
+        <VStack
+          /* eslint-disable-next-line react/forbid-component-props */
+          className={cn(
+            isDismissed || isLoadingDismissed ? 'h-0' : 'h-[350px]',
+            'overflow-hidden transition-all duration-300'
+          )}
+          overflow="hidden"
+          paddingTop="medium"
+        >
+          <div className="max-w-[1085px] h-full">
+            <UpgradeBanner
+              isDismissed={isDismissed}
+              setIsDismissed={setIsDismissed}
+            />
+          </div>
         </VStack>
       )}
 
@@ -119,36 +190,78 @@ function DevelopmentServersDashboardPage() {
           </Alert>
         )}
         {isLocalServiceOnline ? (
-          <NiceGridDisplay>
-            <Link href="/development-servers/local/agents/new">
-              <ActionCard
-                onClick={() => {
-                  // do nothing (this makes the UI show a hover state)
-                }}
-                isSkeleton={isLoading}
-                icon={<Robot2Icon />}
-                title={t('gettingStarted.actions.createAgent.title')}
-                description={t(
-                  'gettingStarted.actions.createAgent.description'
-                )}
-              />
-            </Link>
-            <Link href="/development-servers/local/agents">
-              <ActionCard
-                fullHeight
-                icon={<SearchIcon />}
-                onClick={() => {
-                  // do nothing (this makes the UI show a hover state)
-                }}
-                title={t('gettingStarted.actions.viewAgents.title')}
-                description={t('gettingStarted.actions.viewAgents.description')}
-              />
-            </Link>
+          <NiceGridDisplay itemWidth="252px" itemHeight="252px">
+            <CTACard
+              action={
+                <Button
+                  href="/development-servers/local/agents/new"
+                  label={t('gettingStarted.actions.createAgent.cta')}
+                  color="secondary"
+                />
+              }
+              icon={<Robot2Icon />}
+              title={t('gettingStarted.actions.createAgent.title')}
+              subtitle={t('gettingStarted.actions.createAgent.description')}
+            />
+            <CTACard
+              action={
+                <Button
+                  href="/development-servers/local/agents"
+                  label={t('gettingStarted.actions.viewAgents.cta')}
+                  color="secondary"
+                />
+              }
+              icon={<SearchIcon />}
+              title={t('gettingStarted.actions.viewAgents.title')}
+              subtitle={t('gettingStarted.actions.viewAgents.description')}
+            />
+            {isDismissed && !isLoadingDismissed && (
+              <VStack
+                justify="spaceBetween"
+                padding
+                overflow="hidden"
+                position="relative"
+              >
+                <button
+                  onClick={() => {
+                    setIsDismissed(false);
+                  }}
+                >
+                  <Logo size="large" color="steel" />
+                </button>
+                <VStack>
+                  <Typography color="white" variant="heading5">
+                    {t('gettingStarted.actions.cloudSignup.title')}
+                  </Typography>
+                  <Typography color="white">
+                    {t('gettingStarted.actions.cloudSignup.details')}
+                  </Typography>
+                </VStack>
+                <Frame>
+                  <Button
+                    href={CLOUD_UPSELL_URL}
+                    target="_blank"
+                    color="secondary"
+                    label={t('gettingStarted.actions.cloudSignup.cta')}
+                  />
+                </Frame>
+                <Frame
+                  color="primary"
+                  position="absolute"
+                  /* eslint-disable-next-line react/forbid-component-props */
+                  className="top-0 right-0 z-[-1]"
+                >
+                  <Image src={AdBannerTwo} alt="" />
+                </Frame>
+              </VStack>
+            )}
           </NiceGridDisplay>
         ) : (
-          <VStack width="contained">
-            <UserIsNotConnectedComponent />
-          </VStack>
+          <NiceGridDisplay>
+            <div className="col-span-4">
+              <UserIsNotConnectedComponent isAttemptingToConnect={isLoading} />
+            </div>
+          </NiceGridDisplay>
         )}
       </DashboardPageSection>
       <Tutorials />

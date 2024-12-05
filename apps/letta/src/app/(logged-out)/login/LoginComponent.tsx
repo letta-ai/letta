@@ -128,7 +128,7 @@ export function LoginComponent() {
       <VStack className="w-[300px] gap-[36px]" align="center">
         <VStack align="center" gap="large">
           <div className="relative" ref={logoRef}>
-            <Logo size="large" />
+            <Logo size="xlarge" />
           </div>
           <Typography bold variant="heading5">
             {t('title')}
