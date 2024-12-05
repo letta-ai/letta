@@ -60,6 +60,17 @@ export function WelcomeOverlayWrapper(props: WelcomeOverlayWrapperProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { isSuccess, mutate } = webApi.user.setUserAsOnboarded.useMutation();
 
+  // for cypress testing
+  const fastSubmit = useCallback(() => {
+    mutate({
+      body: {
+        reasons: [],
+        emailConsent: true,
+        useCases: [],
+      },
+    });
+  }, [mutate]);
+
   const handleSubmit = useCallback(
     (values: WelcomeFormValues) => {
       setIsSubmitting(true);
@@ -263,12 +274,13 @@ export function WelcomeOverlayWrapper(props: WelcomeOverlayWrapperProps) {
                   />
                 </VStack>
                 <HStack justify="spaceBetween">
-                  <Button
+                  <Button color="secondary" label={t('submit')} type="submit" />
+                  <button
+                    onClick={fastSubmit}
+                    className="hidden"
                     data-testid="complete-onboarding"
-                    color="secondary"
-                    label={t('submit')}
                     type="submit"
-                  />
+                  ></button>
                 </HStack>
               </Form>
             </FormProvider>
