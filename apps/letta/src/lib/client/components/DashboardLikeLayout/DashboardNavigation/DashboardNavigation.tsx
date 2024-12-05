@@ -8,7 +8,7 @@ import {
   Form,
   FormField,
   FormProvider,
-  GridViewHardIcon,
+  ProjectsIcon,
   isSubNavigationGroup,
   TextArea,
   useForm,
@@ -164,7 +164,7 @@ function MainNavigationItems(props: MainNavigationItemsProps) {
         label: t('nav.projects'),
         href: '/projects',
         id: 'projects',
-        icon: <GridViewHardIcon />,
+        icon: <ProjectsIcon />,
       },
       {
         label: t('nav.dataSources'),

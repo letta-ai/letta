@@ -6,11 +6,16 @@ export function TabGroupIcon(props: IconWrappedProps) {
   return (
     <IconWrapper {...props}>
       <svg
+        width="20"
+        height="20"
+        viewBox="0 0 20 20"
+        fill="none"
         xmlns="http://www.w3.org/2000/svg"
-        viewBox="0 -960 960 960"
-        fill="currentColor"
       >
-        <path d="M312-240q-29.7 0-50.85-21.15Q240-282.3 240-312v-480q0-29.7 21.15-50.85Q282.3-864 312-864h480q29.7 0 50.85 21.15Q864-821.7 864-792v480q0 29.7-21.15 50.85Q821.7-240 792-240H312Zm0-72h480v-360H528v-120H312v480ZM168-96q-29.7 0-50.85-21.15Q96-138.3 96-168v-552h72v552h552v72H168Zm144-696v480-480Z" />
+        <path
+          d="M4.91667 14.5V2H17.4167V14.5H4.91667ZM6.16667 13.25H16.1667V6.18271H10.654V3.25H6.16667V13.25ZM2 17.4167V5.17313H3.25V16.1667H14.2435V17.4167H2Z"
+          fill="currentColor"
+        />
       </svg>
     </IconWrapper>
   );
