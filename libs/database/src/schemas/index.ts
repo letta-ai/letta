@@ -121,6 +121,7 @@ export const userMarketingDetails = pgTable('user_marketing_details', {
     .primaryKey(),
   useCases: json('use_cases').$type<string[]>(),
   reasons: json('reasons').$type<string[]>(),
+  hubSpotContactId: text('hubspot_contact_id'),
   consentedToEmailsAt: timestamp('consented_to_emails_at'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at')

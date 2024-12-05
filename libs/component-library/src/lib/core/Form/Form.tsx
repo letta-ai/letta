@@ -157,21 +157,30 @@ function FormItem({ children }: FormItemProps) {
   );
 }
 
+type LabelVariant = 'default' | 'simple';
+
 interface InputContainerHeaderProps {
   preLabelIcon?: React.ReactNode;
   infoTooltip?: {
     text: string;
   };
   label: string;
+  variant?: LabelVariant;
 }
 
 function InputContainerHeader(props: InputContainerHeaderProps) {
-  const { preLabelIcon, label, infoTooltip } = props;
+  const { preLabelIcon, label, infoTooltip, variant = 'default' } = props;
   return (
     <HStack>
       <HStack gap="text">
         {preLabelIcon && <Slot className="h-3">{preLabelIcon}</Slot>}
-        <Typography variant="body2" color="forceTextSecondary" uppercase>
+        <Typography
+          variant={variant === 'default' ? 'body2' : 'body'}
+          color={
+            variant === 'default' ? 'forceTextSecondary' : 'forceTextPrimary'
+          }
+          uppercase={variant === 'default'}
+        >
           {label}
         </Typography>
       </HStack>
@@ -183,6 +192,7 @@ function InputContainerHeader(props: InputContainerHeaderProps) {
 export interface InputContainerProps {
   label: string;
   preLabelIcon?: React.ReactNode;
+  labelVariant?: LabelVariant;
   hideLabel?: boolean;
   description?: React.ReactNode | string;
   inline?: boolean | 'reverse';
@@ -204,6 +214,7 @@ export function InputContainer(props: InputContainerProps) {
     preLabelIcon,
     fullWidth,
     fullHeight,
+    labelVariant,
     flex,
     description,
     inline,
@@ -228,6 +239,7 @@ export function InputContainer(props: InputContainerProps) {
             >
               <FormLabel>
                 <InputContainerHeader
+                  variant={labelVariant}
                   preLabelIcon={preLabelIcon}
                   label={label}
                   infoTooltip={infoTooltip}
@@ -323,7 +335,7 @@ interface MakeInputOptions {
   container?: MakeInputOptionsContainerType;
 }
 
-const omitProps = ['rightOfLabelContent', 'infoTooltip'];
+const omitProps = ['rightOfLabelContent', 'infoTooltip', 'labelVariant'];
 
 export function makeInput<T>(
   Input: React.ComponentType<T>,

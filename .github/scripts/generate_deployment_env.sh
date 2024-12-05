@@ -6,6 +6,7 @@ echo "env_variables:" > deployment_env.yaml
 echo "     NODE_ENV: production" >> deployment_env.yaml
 echo "     DATABASE_URL: $DATABASE_URL" >> deployment_env.yaml
 echo "     E2B_API_KEY: $E2B_API_KEY" >> deployment_env.yaml
+echo "     HUBSPOT_API_KEY: $HUBSPOT_API_KEY" >> deployment_env.yaml
 echo "     E2B_SANDBOX_TEMPLATE_ID: $E2B_SANDBOX_TEMPLATE_ID" >> deployment_env.yaml
 echo "     GOOGLE_CLIENT_ID: $GOOGLE_CLIENT_ID" >> deployment_env.yaml
 echo "     GOOGLE_CLIENT_SECRET: $GOOGLE_CLIENT_SECRET" >> deployment_env.yaml

@@ -169,6 +169,13 @@
       "when": 1733351034302,
       "tag": "0023_woozy_black_tom",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1733363984761,
+      "tag": "0024_shocking_matthew_murdock",
+      "breakpoints": true
     }
   ]
 }
