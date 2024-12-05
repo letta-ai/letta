@@ -11,6 +11,7 @@ import {
   FormProvider,
   HStack,
   LettaLoader,
+  OptionTypeSchemaSingle,
   Typography,
   useForm,
   VStack,
@@ -29,8 +30,8 @@ import type { GetUser200ResponseType } from '$letta/web-api/user/userContracts';
 import { webApi, webApiQueryKeys } from '$letta/client';
 
 const welcomeFormSchema = z.object({
-  useCases: z.string().array(),
-  reasons: z.string().array(),
+  useCases: OptionTypeSchemaSingle.array(),
+  reasons: OptionTypeSchemaSingle.array(),
   emailConsent: z.boolean(),
 });
 
@@ -67,9 +68,9 @@ export function WelcomeOverlayWrapper(props: WelcomeOverlayWrapperProps) {
         mutate(
           {
             body: {
-              reasons: values.reasons,
+              reasons: values.reasons.map((v) => v.value || ''),
               emailConsent: values.emailConsent,
-              useCases: values.useCases,
+              useCases: values.useCases.map((v) => v.value || ''),
             },
           },
           {
@@ -126,7 +127,7 @@ export function WelcomeOverlayWrapper(props: WelcomeOverlayWrapperProps) {
         padding="xlarge"
         color="background"
       >
-        <div className="overflow-hidden relative flex largerThanMobile:flex-row flex-col">
+        <div className="overflow-hidden relative flex inner-container-flexer">
           <div className="h-auto image-placeholder bg-transparent"></div>
 
           <VStack
@@ -264,7 +265,7 @@ export function WelcomeOverlayWrapper(props: WelcomeOverlayWrapperProps) {
               </Form>
             </FormProvider>
           </VStack>
-          <div className="image-render-container absolute z-[-1px] flex items-end bg-primary w-full h-full">
+          <div className="image-render-container absolute z-[-1px] flex items-end bg-[#0707ab] w-full h-full">
             <div className="loader opacity-0 w-full flex h-full items-center absolute justify-center">
               <LettaLoader color="steel" size="large" />
             </div>

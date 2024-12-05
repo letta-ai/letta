@@ -78,12 +78,21 @@
   height: auto;
 }
 
+
+.inner-container-flexer {
+  flex-direction: row;
+}
+
 @media (max-width: 840px) {
   .welcome-overlay-wrapper {
     justify-content: start;
     align-items: start;
     width: 100%;
     padding: 0.25rem;
+  }
+
+  .inner-container-flexer {
+    flex-direction: column;
   }
 
   .inner-container {
@@ -104,12 +113,11 @@
 .image-render-container {
   img {
     object-fit: cover;
+    height: 100%;
   }
 
   @container (max-width: 780px) {
-    img {
-      height: 100%;
-    }
+
 
   }
 }
