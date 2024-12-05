@@ -8,6 +8,7 @@ import {
   Form,
   FormField,
   FormProvider,
+  ProjectsIcon,
   isSubNavigationGroup,
   TextArea,
   useForm,
@@ -21,7 +22,6 @@ import {
   LogoutIcon,
   BirdIcon,
   DatabaseIcon,
-  ProjectsIcon,
   KeyIcon,
   Frame,
   HamburgerMenuIcon,
@@ -744,6 +744,7 @@ export function DashboardHeader() {
       <HStack className="h-header min-h-header" fullWidth></HStack>
       <HStack
         as="header"
+        color="background"
         padding="xxsmall"
         position="fixed"
         zIndex="header"

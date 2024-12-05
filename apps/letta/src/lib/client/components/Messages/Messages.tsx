@@ -12,7 +12,7 @@ import {
   LettaLoaderPanel,
   Markdown,
   PersonIcon,
-  Robot2Icon,
+  LettaInvaderOutlineIcon,
   ThoughtsIcon,
   Typography,
   VStack,
@@ -149,7 +149,7 @@ function MessageGroup({ group }: MessageGroupType) {
 
   const icon = useMemo(() => {
     if (name === 'Agent') {
-      return <Robot2Icon />;
+      return <LettaInvaderOutlineIcon />;
     }
 
     if (name === 'User') {

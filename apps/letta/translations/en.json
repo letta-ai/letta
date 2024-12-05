@@ -907,23 +907,24 @@
   "development-servers/dashboard/page": {
     "versionCompatibilityBanner": {
       "title": "You are using a possibly incompatible version of the Letta server, please set your version to {version} for maximum compatibility",
-      "description": "You can set your version by running the command below:"
+      "description": "Configure your version by running the command below:"
     },
     "UpgradeBanner": {
       "title": "Deploy, monitor and scale your agents in seconds",
-      "description": "Letta Cloud is the easiest way to scale with zero infrastructure. Get early access to Letta Cloud below.",
+      "description": "Letta Cloud is the easiest way to scale with zero infrastructure",
       "cta": "Get early access",
       "dismiss": "Close"
     },
     "description": "Manage and monitor your agents on self-hosted Letta servers",
     "title": "Self-Hosted Agents",
     "gettingStarted": {
-      "title": "Quick Actions",
+      "title": "Quick actions",
+      "description": "Get started with these quick actions",
       "actions": {
         "cloudSignup": {
           "title": "Sign up for Letta Cloud",
-          "details": "Deploy agents at scale with zero infrastructure\nSign up for early access below",
-          "cta": "Sign up"
+          "details": "Deploy agents at scale with zero infrastructure",
+          "cta": "Early access"
         },
         "createAgent": {
           "title": "New Agent",
@@ -978,6 +979,7 @@
   "development-servers/agents/new/page": {
     "tools": "<strong>Tools included:</strong> {toolsList}",
     "serverOffline": "Your server is offline, please start it to create a new agent.",
+    "serverOfflineConnect": "Turn on your server with the command below:",
     "isFetchingStatus": "Sorry, we are still attempting to connect to your server. Please wait a moment.",
     "title": "Create a new agent",
     "error": "There was an error creating the agent, below is the error message, please try again or contact support.",
@@ -1026,9 +1028,9 @@
     }
   },
   "client/hooks/useWelcomeText": {
-    "goodMorning": "☀\uFE0F Good morning, {firstName}",
-    "goodAfternoon": "☀\uFE0F Good afternoon, {firstName}",
-    "goodEvening": "\uD83C\uDF15 Good evening, {firstName}"
+    "goodMorning": "Good morning, {firstName} ☀\uFE0F",
+    "goodAfternoon": "Good afternoon, {firstName} ☀\uFE0F",
+    "goodEvening": "Good evening, {firstName} \uD83C\uDF15"
   },
   "component-library/hooks/useCopyToClipboard": {
     "copied": "Copied to clipboard"
