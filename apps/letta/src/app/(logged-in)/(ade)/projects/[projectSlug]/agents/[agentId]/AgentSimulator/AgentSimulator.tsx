@@ -110,7 +110,7 @@ function useSendMessage(agentId: string) {
           const [firstPage, ...rest] = [...oldData.pages];
 
           const newMessage: AgentMessage = {
-            message_type: 'user_message',
+            message_type: role === 'user' ? 'user_message' : 'system_message',
             message: JSON.stringify({
               type: role === 'user' ? 'user_message' : 'system_alert',
               message: message,
@@ -156,7 +156,7 @@ function useSendMessage(agentId: string) {
             stream_tokens: true,
             messages: [
               {
-                role: 'user',
+                role,
                 text: message,
               },
             ],
