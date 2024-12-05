@@ -45,29 +45,29 @@ export function ImageCard(props: ImageCardProps) {
     >
       <Card
         className={cn(
-          'h-full flex flex-col hover:bg-tertiary-hover',
+          'h-full flex flex-row gap-2 hover:bg-tertiary-hover',
           className
         )}
       >
-        <VStack fullHeight flex align="start">
-          <Image
-            className="max-h-[87px] object-cover bg-background-grey"
-            src={imageUrl}
-            alt={altText}
-          />
-          <Typography bold align="left">
-            {title}
-          </Typography>
-          <Typography align="left">{description}</Typography>
+        <Image
+          className="max-h-[72px] max-w-[72px] object-cover bg-background-grey"
+          src={imageUrl}
+          alt={altText}
+        />
+        <VStack>
+          <VStack gap={false} fullHeight flex align="start">
+            <Typography bold align="left">
+              {title}
+            </Typography>
+            <Typography className="line-clamp-2" align="left">
+              {description}
+            </Typography>
+          </VStack>
+          <VStack align="start" justify="start" fullWidth>
+            {children}
+          </VStack>
+          {badge && <HStack justify="end">{badge}</HStack>}
         </VStack>
-        <VStack align="start" justify="start" fullWidth>
-          {children}
-        </VStack>
-        {badge && (
-          <HStack justify="end" paddingTop>
-            {badge}
-          </HStack>
-        )}
       </Card>
     </Component>
   );
