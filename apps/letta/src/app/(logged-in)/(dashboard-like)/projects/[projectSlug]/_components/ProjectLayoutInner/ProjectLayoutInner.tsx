@@ -2,7 +2,7 @@
 
 import {
   DashboardWithSidebarWrapper,
-  Robot2Icon,
+  LettaInvaderOutlineIcon,
   ControllerIcon,
   FactoryIcon,
   FolderManagedIcon,
@@ -30,7 +30,7 @@ export function ProjectLayoutInner(props: ProjectLayoutInnerProps) {
           href: `/projects/${projectSlug}`,
         },
         {
-          icon: <Robot2Icon />,
+          icon: <LettaInvaderOutlineIcon />,
           id: 'agents',
           label: t('nav.agents'),
           href: `/projects/${projectSlug}/agents`,
