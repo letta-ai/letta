@@ -9,6 +9,7 @@ const color = {
   inherit: 'text-inherit',
   error: 'text-destructive',
   muted: 'text-muted',
+  steel: 'text-steel',
 };
 
 const logoVariants = cva('', {

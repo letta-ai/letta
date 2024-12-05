@@ -3,6 +3,38 @@
     "emptyMessage": "This is not the page you're looking for",
     "emptyAction": "Go home"
   },
+  "WelcomeOverlay": {
+    "welcomeMessage": "Welcome to Letta",
+    "question": "Thank you for trying us out, we have a few questions to help us understand your needs better.",
+    "useCases": {
+      "label": "What use-cases are you building agents for?",
+      "options": {
+        "customerService": "Customer service",
+        "personalAssistant": "Personal assistant",
+        "entertainment": "Entertainment",
+        "chatbots": "Chatbots",
+        "taskOrchestration": "Task orchestration",
+        "experimentation": "Experimentation"
+      }
+    },
+    "reasons": {
+      "label": "What makes you interested in Letta?",
+      "options": {
+        "restAPI": "Agents as a REST API",
+        "memory": "Memory",
+        "toolExecution": "Tool execution",
+        "userPersonalization": "User personalization",
+        "openModelSupport": "Open model support",
+        "chainOfThoughtReasoning": "Chain of thought reasoning",
+        "deployingAgentsAtScale": "Deploying agents at scale"
+      }
+    },
+    "emailConsent": {
+      "label": "Sign up for emails for major releases and updates"
+    },
+    "skip": "Skip",
+    "submit": "Start using Letta"
+  },
   "components/DashboardLikeLayout/DashboardNavigation": {
     "back": "Back",
     "nav": {

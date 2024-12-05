@@ -1,0 +1,1 @@
+ALTER TABLE "user_marketing_details" ADD COLUMN "hubspot_contact_id" text;

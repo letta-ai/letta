@@ -14,6 +14,7 @@ import { queryClientKeys } from '$letta/web-api/contracts';
 import { IdentifyUserForMixpanel } from '@letta-web/analytics/client';
 import { webApiQueryKeys } from '$letta/client';
 import { LoggedInClientSideProviders } from './LoggedInClientSideProviders/LoggedInClientSideProviders';
+import { WelcomeOverlayWrapper } from './WelcomeOverlayWrapper/WelcomeOverlayWrapper';
 
 interface InAppProps {
   children: ReactNode;
@@ -64,7 +65,9 @@ export async function LoggedInLayout(props: InAppProps) {
     <GlobalSessionSettingsProvider>
       <IdentifyUserForMixpanel userId={user.id} />
       <HydrationBoundary state={dehydrate(queryClient)}>
-        <LoggedInClientSideProviders>{children}</LoggedInClientSideProviders>
+        <LoggedInClientSideProviders>
+          <WelcomeOverlayWrapper>{children}</WelcomeOverlayWrapper>
+        </LoggedInClientSideProviders>
       </HydrationBoundary>
     </GlobalSessionSettingsProvider>
   );

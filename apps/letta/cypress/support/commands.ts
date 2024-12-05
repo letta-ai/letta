@@ -15,6 +15,13 @@ Cypress.Commands.add('googleLogin', () => {
     const { id_token } = body;
 
     cy.visit(`/auth/google/atl?id_token=${id_token}`);
+
+    // complete onboarding if needed
+    cy.get('body').then(($btn) => {
+      if ($btn.find('[data-testid=complete-onboarding]').length) {
+        cy.get('[data-testid=complete-onboarding]').click({ force: true });
+      }
+    });
   });
 });
 

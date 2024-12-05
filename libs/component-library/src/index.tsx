@@ -144,3 +144,7 @@ export * from './lib/reusable/FunctionCall/FunctionCall';
 export * from './lib/core/Debugger/Debugger';
 
 export * from './lib/reusable/MaybeLink/MaybeLink';
+
+export * from './lib/core/ChipSelect/ChipSelect';
+
+export * from './lib/reusable/FadeInImage/FadeInImage';

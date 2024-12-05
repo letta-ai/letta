@@ -9,13 +9,15 @@ import {
   db,
   organizations,
   organizationUsers,
+  userMarketingDetails,
   users,
 } from '@letta-web/database';
 import { and, eq, inArray, isNull } from 'drizzle-orm';
 import { cookies } from 'next/headers';
 import { CookieNames } from '$letta/server/cookies/types';
 import { AdminService } from '@letta-web/letta-agents-api';
-
+import { createOrUpdateCRMContact } from '@letta-web/crm';
+import * as Sentry from '@sentry/node';
 type ResponseShapes = ServerInferResponses<typeof userContract>;
 
 async function getCurrentUser(): Promise<ResponseShapes['getCurrentUser']> {
@@ -39,6 +41,7 @@ async function getCurrentUser(): Promise<ResponseShapes['getCurrentUser']> {
       locale: user.locale,
       imageUrl: user.imageUrl,
       hasCloudAccess: user.hasCloudAccess,
+      hasOnboarded: user.hasOnboarded,
       activeOrganizationId: user.activeOrganizationId || '',
       id: user.id,
     },
@@ -93,6 +96,7 @@ async function updateCurrentUser(
     body: {
       theme: updatedUser.theme,
       name: updatedUser.name,
+      hasOnboarded: updatedUser.hasOnboarded,
       locale: updatedUser.locale,
       email: updatedUser.email,
       hasCloudAccess: user.hasCloudAccess,
@@ -225,10 +229,92 @@ async function deleteCurrentUser(): Promise<DeleteUserResponse> {
   };
 }
 
+type SetUserAsOnboardedResponse = ServerInferResponses<
+  typeof contracts.user.setUserAsOnboarded
+>;
+
+type SetUserAsOnboardedRequest = ServerInferRequest<
+  typeof contracts.user.setUserAsOnboarded
+>;
+
+async function setUserAsOnboarded(
+  req: SetUserAsOnboardedRequest
+): Promise<SetUserAsOnboardedResponse> {
+  const user = await getUser();
+
+  const { emailConsent, useCases, reasons } = req.body;
+
+  if (!user) {
+    return {
+      status: 401,
+      body: {
+        message: 'User not found',
+      },
+    };
+  }
+
+  // check if marketing details already exist
+  const marketingDetails = await db.query.userMarketingDetails.findFirst({
+    where: eq(userMarketingDetails.userId, user.id),
+  });
+
+  await db
+    .update(users)
+    .set({ submittedOnboardingAt: new Date() })
+    .where(eq(users.id, user.id));
+
+  if (!marketingDetails) {
+    const userMarketingDetailsPayload = {
+      userId: user.id,
+      consentedToEmailsAt: emailConsent ? new Date() : null,
+      useCases,
+      reasons,
+    };
+
+    await db.insert(userMarketingDetails).values(userMarketingDetailsPayload);
+  } else {
+    await db
+      .update(userMarketingDetails)
+      .set({
+        consentedToEmailsAt: emailConsent ? new Date() : null,
+        useCases,
+        reasons,
+      })
+      .where(eq(userMarketingDetails.userId, user.id));
+  }
+
+  void createOrUpdateCRMContact({
+    email: user.email,
+    firstName: user.name.split(' ')[0],
+    lastName: user.name.split(' ')[1],
+    consentedToEmailMarketing: emailConsent,
+    reasonsForUsingLetta: reasons,
+    usesLettaFor: useCases,
+  })
+    .then(async (res) => {
+      await db
+        .update(userMarketingDetails)
+        .set({ hubSpotContactId: res.id })
+        .where(eq(userMarketingDetails.userId, user.id));
+    })
+    .catch((e) => {
+      console.error('Error updating CRM contact', e);
+      Sentry.captureException(e);
+    });
+
+  return {
+    status: 200,
+    body: {
+      success: true,
+    },
+  };
+}
+
 export const userRouter = {
   getCurrentUser,
   updateCurrentUser,
   listUserOrganizations,
   updateActiveOrganization,
+  setUserAsOnboarded,
   deleteCurrentUser,
 };
