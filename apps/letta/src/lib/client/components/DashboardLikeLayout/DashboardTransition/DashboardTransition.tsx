@@ -10,6 +10,7 @@ import {
 } from '@letta-web/component-library';
 import * as React from 'react';
 import './DashboardTransition.scss';
+import { cn } from '@letta-web/core-style-config';
 
 function TransitionLoader() {
   // only will appear if element has existed for more than 0.5s
@@ -39,7 +40,9 @@ function TransitionLoader() {
 
 export function DashboardTransition({
   children,
+  alwaysFullscreenBox,
 }: {
+  alwaysFullscreenBox?: boolean;
   children: React.ReactNode;
 }) {
   const [isTransitioning, setIsTransitioning] = React.useState(false);
@@ -89,7 +92,10 @@ export function DashboardTransition({
       >
         <VStack
           /* eslint-disable-next-line react/forbid-component-props */
-          className="transition-box z-[-1]"
+          className={cn(
+            'transition-box z-[-1]',
+            alwaysFullscreenBox ? 'always-fullscreen-transition-box' : ''
+          )}
           paddingTop="xxsmall"
           paddingRight="xxsmall"
           color="background"

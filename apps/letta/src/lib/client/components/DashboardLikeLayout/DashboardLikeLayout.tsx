@@ -31,7 +31,9 @@ export async function DashboardLikeLayout(props: DashboardLikeLayoutProps) {
             {!hideSidebar && <NavigationSidebar />}
 
             <Frame position="relative" overflow="hidden" fullWidth>
-              <DashboardTransition>{children}</DashboardTransition>
+              <DashboardTransition alwaysFullscreenBox={hideSidebar}>
+                {children}
+              </DashboardTransition>
             </Frame>
           </HStack>
           <div id={SIDEBAR_OVERLAY_MOUNT_POINT_ID} />

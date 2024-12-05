@@ -129,10 +129,10 @@ export function WelcomeOverlayWrapper(props: WelcomeOverlayWrapperProps) {
         <div className="overflow-hidden relative flex largerThanMobile:flex-row flex-col">
           <div className="h-auto image-placeholder bg-transparent"></div>
 
-          {/* eslint-disable-next-line react/forbid-component-props */}
           <VStack
             fullHeight
             paddingLeft="xlarge"
+            /* eslint-disable-next-line react/forbid-component-props */
             className="main-content z-[1] right-0 relative"
             fullWidth
             color="background"
