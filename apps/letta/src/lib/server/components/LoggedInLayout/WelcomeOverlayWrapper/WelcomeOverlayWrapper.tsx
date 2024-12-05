@@ -263,7 +263,12 @@ export function WelcomeOverlayWrapper(props: WelcomeOverlayWrapperProps) {
                   />
                 </VStack>
                 <HStack justify="spaceBetween">
-                  <Button color="secondary" label={t('submit')} type="submit" />
+                  <Button
+                    data-testid="complete-onboarding"
+                    color="secondary"
+                    label={t('submit')}
+                    type="submit"
+                  />
                 </HStack>
               </Form>
             </FormProvider>
