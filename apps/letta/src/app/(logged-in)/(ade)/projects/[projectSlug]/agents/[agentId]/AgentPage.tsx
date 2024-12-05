@@ -23,7 +23,7 @@ import {
 } from '@letta-web/component-library';
 import { Badge } from '@letta-web/component-library';
 import {
-  SettingsHardIcon,
+  CogIcon,
   DropdownMenu,
   DropdownMenuItem,
 } from '@letta-web/component-library';
@@ -743,7 +743,7 @@ function AgentSettingsDropdown() {
         triggerAsChild
         trigger={
           <Button
-            preIcon={<SettingsHardIcon />}
+            preIcon={<CogIcon />}
             label={t('AgentSettingsDropdown.trigger', {
               agentBaseType: agentBaseType.capitalized,
             })}

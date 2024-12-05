@@ -11,7 +11,7 @@ import {
   Button,
   DotsHorizontalIcon,
   DropdownMenuItem,
-  SettingsHardIcon,
+  CogIcon,
   TrashIcon,
   DropdownMenu,
   Dialog,
@@ -209,7 +209,7 @@ function LocalProjectLayout(props: LocalProjectLayoutProps) {
             <UpdateDevelopmentServerDetailsDialog
               trigger={
                 <DropdownMenuItem
-                  preIcon={<SettingsHardIcon />}
+                  preIcon={<CogIcon />}
                   doNotCloseOnSelect
                   label={t('updateDetails')}
                 />

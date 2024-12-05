@@ -17,7 +17,7 @@ import { HiddenOnMobile } from '@letta-web/component-library';
 import {
   Avatar,
   Button,
-  SettingsHardIcon,
+  CogIcon,
   CloseIcon,
   LogoutIcon,
   BirdIcon,
@@ -191,7 +191,7 @@ function MainNavigationItems(props: MainNavigationItemsProps) {
         label: t('nav.settings'),
         href: '/settings',
         id: 'usage',
-        icon: <SettingsHardIcon />,
+        icon: <CogIcon />,
         doesNotNeedCloudAccess: true,
       },
     ].filter((item) => {
@@ -429,7 +429,7 @@ function SecondaryMenuItems(props: SecondaryMenuItemsProps) {
               id="settings"
               href="/settings"
               label={t('secondaryNav.settings')}
-              icon={<SettingsHardIcon />}
+              icon={<CogIcon />}
             />
           )}
           <AdminNav />
