@@ -4,14 +4,14 @@ import {
   DashboardWithSidebarWrapper,
   PlusIcon,
   LettaInvaderOutlineIcon,
-  ControllerIcon,
   HStack,
   Typography,
+  SpaceDashboardHardIcon,
   StatusIndicator,
   Button,
   DotsHorizontalIcon,
   DropdownMenuItem,
-  CogIcon,
+  SettingsHardIcon,
   TrashIcon,
   DropdownMenu,
   Dialog,
@@ -209,7 +209,7 @@ function LocalProjectLayout(props: LocalProjectLayoutProps) {
             <UpdateDevelopmentServerDetailsDialog
               trigger={
                 <DropdownMenuItem
-                  preIcon={<CogIcon />}
+                  preIcon={<SettingsHardIcon />}
                   doNotCloseOnSelect
                   label={t('updateDetails')}
                 />
@@ -264,7 +264,7 @@ function LocalProjectLayout(props: LocalProjectLayoutProps) {
           items: [
             {
               id: 'dashboard',
-              icon: <ControllerIcon />,
+              icon: <SpaceDashboardHardIcon />,
               label: t('nav.dashboard'),
               href: `/development-servers/local/dashboard`,
             },

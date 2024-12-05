@@ -2,7 +2,7 @@ import { useTranslations } from 'next-intl';
 import { z } from 'zod';
 import { useCurrentAgent, useSyncUpdateCurrentAgent } from '../hooks';
 import type { OptionType } from '@letta-web/component-library';
-import { CogIcon } from '@letta-web/component-library';
+import { SettingsHardIcon } from '@letta-web/component-library';
 import {
   Alert,
   brandKeyToLogo,
@@ -221,7 +221,7 @@ export const advancedSettingsPanel = {
 
     return t('mobileTitle');
   },
-  icon: <CogIcon />,
+  icon: <SettingsHardIcon />,
   useGetTitle: () => {
     const t = useTranslations('ADE/AdvancedSettings');
 

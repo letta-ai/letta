@@ -8,6 +8,7 @@ import {
   Form,
   FormField,
   FormProvider,
+  GridViewHardIcon,
   isSubNavigationGroup,
   TextArea,
   useForm,
@@ -16,13 +17,12 @@ import { HiddenOnMobile } from '@letta-web/component-library';
 import {
   Avatar,
   Button,
-  CogIcon,
+  SettingsHardIcon,
   CloseIcon,
   LogoutIcon,
   BirdIcon,
-  DatabaseIcon,
-  ProjectsIcon,
-  KeyIcon,
+  DatabaseHardIcon,
+  KeyHardIcon,
   Frame,
   HamburgerMenuIcon,
   HStack,
@@ -33,7 +33,7 @@ import {
   VStack,
   SwitchOrganizationIcon,
   ChevronLeftIcon,
-  LaptopIcon,
+  ComputerHardIcon,
 } from '@letta-web/component-library';
 import { useCurrentUser } from '$letta/client/hooks';
 import { usePathname } from 'next/navigation';
@@ -164,26 +164,26 @@ function MainNavigationItems(props: MainNavigationItemsProps) {
         label: t('nav.projects'),
         href: '/projects',
         id: 'projects',
-        icon: <ProjectsIcon />,
+        icon: <GridViewHardIcon />,
       },
       {
         label: t('nav.dataSources'),
         href: '/data-sources',
         id: 'data-sources',
-        icon: <DatabaseIcon />,
+        icon: <DatabaseHardIcon />,
       },
       {
         label: t('nav.apiKeys'),
         href: '/api-keys',
         id: 'api-keys',
-        icon: <KeyIcon />,
+        icon: <KeyHardIcon />,
       },
       {
         borderTop: true,
         label: t('nav.localDev'),
         href: '/development-servers',
         id: 'development-servers',
-        icon: <LaptopIcon />,
+        icon: <ComputerHardIcon />,
         doesNotNeedCloudAccess: true,
       },
       {
@@ -191,7 +191,7 @@ function MainNavigationItems(props: MainNavigationItemsProps) {
         label: t('nav.settings'),
         href: '/settings',
         id: 'usage',
-        icon: <CogIcon />,
+        icon: <SettingsHardIcon />,
         doesNotNeedCloudAccess: true,
       },
     ].filter((item) => {
@@ -429,7 +429,7 @@ function SecondaryMenuItems(props: SecondaryMenuItemsProps) {
               id="settings"
               href="/settings"
               label={t('secondaryNav.settings')}
-              icon={<CogIcon />}
+              icon={<SettingsHardIcon />}
             />
           )}
           <AdminNav />

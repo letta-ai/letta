@@ -4,7 +4,7 @@ import {
   Badge,
   brandKeyToLogo,
   Button,
-  CogIcon,
+  SettingsHardIcon,
   CopyButton,
   Dialog,
   HStack,
@@ -357,7 +357,7 @@ export function AgentSettingsPanel() {
             trigger={
               <Button
                 hideLabel
-                preIcon={<CogIcon />}
+                preIcon={<SettingsHardIcon />}
                 color="tertiary"
                 label={t('agentName.edit', { baseName })}
               />

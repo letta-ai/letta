@@ -1,0 +1,22 @@
+import * as React from 'react';
+import type { IconWrappedProps } from '../IconWrapper';
+import { IconWrapper } from '../IconWrapper';
+
+export function ComputerHardIcon(props: IconWrappedProps) {
+  return (
+    <IconWrapper {...props}>
+      <svg
+        width="20"
+        height="20"
+        viewBox="0 0 20 20"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path
+          d="M1 16.75V15.5H18.6921V16.75H1ZM1.92938 14.6667V3H17.7627V14.6667H1.92938ZM3.17938 13.4167H16.5127V4.25H3.17938V13.4167Z"
+          fill="currentColor"
+        />
+      </svg>
+    </IconWrapper>
+  );
+}
