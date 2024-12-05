@@ -21,7 +21,7 @@ import {
   CloseIcon,
   LogoutIcon,
   BirdIcon,
-  DatabaseHardIcon,
+  DatabaseIcon,
   KeyHardIcon,
   Frame,
   HamburgerMenuIcon,
@@ -170,7 +170,7 @@ function MainNavigationItems(props: MainNavigationItemsProps) {
         label: t('nav.dataSources'),
         href: '/data-sources',
         id: 'data-sources',
-        icon: <DatabaseHardIcon />,
+        icon: <DatabaseIcon />,
       },
       {
         label: t('nav.apiKeys'),
