@@ -3,7 +3,7 @@
 import {
   DashboardWithSidebarWrapper,
   LettaInvaderOutlineIcon,
-  SpaceDashboardHardIcon,
+  SpaceDashboardIcon,
   TabGroupHardIcon,
   InstantMixIcon,
 } from '@letta-web/component-library';
@@ -25,7 +25,7 @@ export function ProjectLayoutInner(props: ProjectLayoutInnerProps) {
       navigationItems={[
         {
           id: 'home',
-          icon: <SpaceDashboardHardIcon />,
+          icon: <SpaceDashboardIcon />,
           label: t('nav.home'),
           href: `/projects/${projectSlug}`,
         },
