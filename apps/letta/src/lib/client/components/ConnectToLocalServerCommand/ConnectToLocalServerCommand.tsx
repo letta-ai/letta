@@ -5,6 +5,7 @@ import React from 'react';
 export function ConnectToLocalServerCommand() {
   return (
     <InlineCode
+      size="medium"
       code={`letta server --ade --port=${LOCAL_PROJECT_SERVER_PORT}`}
     />
   );

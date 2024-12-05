@@ -164,6 +164,8 @@ function DevelopmentServersDashboardPage() {
               {t('versionCompatibilityBanner.description')}
               <div>
                 <InlineCode
+                  size="medium"
+                  color="warning"
                   code={`pip install letta==${MOST_RECENT_LETTA_AGENT_VERSION}`}
                 />
               </div>
