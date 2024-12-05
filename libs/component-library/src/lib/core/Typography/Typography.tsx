@@ -33,6 +33,8 @@ const typographyVariants = cva('break-words', {
       white: 'text-white',
       positive: 'text-positive',
       destructive: 'text-destructive',
+      forceTextPrimary: 'text-text-primary',
+      forceTextSecondary: 'text-text-secondary',
     },
     font: {
       mono: 'font-mono',
