@@ -107,6 +107,7 @@ const ToggleGroupItem = React.forwardRef<
 
     return (
       <ToggleGroupPrimitive.Item
+        data-testId={`toggle-group-item:${props.value}`}
         ref={ref}
         className={cn(
           toggleVariants({
