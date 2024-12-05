@@ -35,7 +35,6 @@ import {
 import { useHealthServiceHealthCheck } from '@letta-web/letta-agents-api';
 import { useWelcomeText } from '$letta/client/hooks/useWelcomeText/useWelcomeText';
 import { cn } from '@letta-web/core-style-config';
-import './page.scss';
 
 import AdBannerTwo from './ad_banner_two.webp';
 import Image from 'next/image';
