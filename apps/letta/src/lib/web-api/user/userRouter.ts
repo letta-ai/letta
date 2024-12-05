@@ -16,7 +16,8 @@ import { and, eq, inArray, isNull } from 'drizzle-orm';
 import { cookies } from 'next/headers';
 import { CookieNames } from '$letta/server/cookies/types';
 import { AdminService } from '@letta-web/letta-agents-api';
-
+import { createOrUpdateCRMContact } from '@letta-web/crm';
+import * as Sentry from '@sentry/node';
 type ResponseShapes = ServerInferResponses<typeof userContract>;
 
 async function getCurrentUser(): Promise<ResponseShapes['getCurrentUser']> {
@@ -255,6 +256,22 @@ async function setUserAsOnboarded(
   // check if marketing details already exist
   const marketingDetails = await db.query.userMarketingDetails.findFirst({
     where: eq(userMarketingDetails.userId, user.id),
+  });
+
+  void (async () => {
+    setTimeout(() => {
+      createOrUpdateCRMContact({
+        email: user.email,
+        firstName: user.name.split(' ')[0],
+        lastName: user.name.split(' ')[1],
+        consentedToEmailMarketing: emailConsent,
+        reasonsForUsingLetta: reasons,
+        usesLettaFor: useCases,
+      }).catch((e) => {
+        console.error('Error updating CRM contact', e);
+        Sentry.captureException(e);
+      });
+    }, 0);
   });
 
   await db

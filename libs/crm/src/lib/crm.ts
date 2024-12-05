@@ -1,1 +1,2 @@
-export * from './getUserByEmail/getUserByEmail';
+export * from './getCRMContactByEmail/getCRMContactByEmail';
+export * from './createOrUpdateCRMContact/createOrUpdateCRMContact';

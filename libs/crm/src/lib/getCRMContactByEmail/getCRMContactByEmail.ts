@@ -1,4 +1,5 @@
 import { hubspotRequest } from '../hubspotRequest/hubspotRequest';
+import type { HubspotContactProperties } from '../constants';
 
 export interface GetUserByEmailQuery {
   email: string;
@@ -6,14 +7,7 @@ export interface GetUserByEmailQuery {
 
 interface GetUserByEmailResult {
   id: string;
-  properties: {
-    createdate: string;
-    email: string;
-    firstname: string;
-    hs_object_id: string;
-    lastmodifieddate: string;
-    lastname: string;
-  };
+  properties: HubspotContactProperties;
   createdAt: string;
   updatedAt: string;
   archived: boolean;
@@ -24,7 +18,7 @@ interface GetUserByEmailResponse {
   results: GetUserByEmailResult[];
 }
 
-export async function getUserByEmail(
+export async function getCRMContactByEmail(
   query: GetUserByEmailQuery
 ): Promise<GetUserByEmailResult | undefined> {
   const res = await hubspotRequest.post<GetUserByEmailResponse>(
