@@ -911,7 +911,7 @@
     },
     "UpgradeBanner": {
       "title": "Deploy, monitor and scale your agents in seconds",
-      "description": "Letta Cloud is the easiest way to scale with zero infrastructure. Get early access to Letta Cloud below.",
+      "description": "Letta Cloud is the easiest way to scale with zero infrastructure.",
       "cta": "Get early access",
       "dismiss": "Close"
     },
@@ -919,6 +919,7 @@
     "title": "Self-Hosted Agents",
     "gettingStarted": {
       "title": "Quick Actions",
+      "description": "Get started with these quick actions",
       "actions": {
         "cloudSignup": {
           "title": "Sign up for Letta Cloud",
@@ -1026,9 +1027,9 @@
     }
   },
   "client/hooks/useWelcomeText": {
-    "goodMorning": "☀\uFE0F Good morning, {firstName}",
-    "goodAfternoon": "☀\uFE0F Good afternoon, {firstName}",
-    "goodEvening": "\uD83C\uDF15 Good evening, {firstName}"
+    "goodMorning": "Good morning, {firstName} ☀\uFE0F",
+    "goodAfternoon": "Good afternoon, {firstName} ☀\uFE0F",
+    "goodEvening": "Good evening, {firstName} \uD83C\uDF15"
   },
   "component-library/hooks/useCopyToClipboard": {
     "copied": "Copied to clipboard"
