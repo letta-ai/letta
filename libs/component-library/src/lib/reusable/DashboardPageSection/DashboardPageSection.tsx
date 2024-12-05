@@ -69,21 +69,23 @@ export function DashboardPageSection(props: DashboardPageSectionProps) {
       fullWidth
       borderBottom={borderBottom}
     >
-      {title && (
-        <HStack align="center" justify="spaceBetween">
-          <Typography align="left" noWrap bold variant="heading5">
-            {title}
+      <VStack gap={false}>
+        {title && (
+          <HStack align="center" justify="spaceBetween">
+            <Typography align="left" noWrap bold variant="heading4">
+              {title}
+            </Typography>
+            <HiddenOnMobile>
+              <HStack>{actions}</HStack>
+            </HiddenOnMobile>
+          </HStack>
+        )}
+        {description && (
+          <Typography align="left" variant="body">
+            {description}
           </Typography>
-          <HiddenOnMobile>
-            <HStack>{actions}</HStack>
-          </HiddenOnMobile>
-        </HStack>
-      )}
-      {description && (
-        <Typography align="left" variant="body">
-          {description}
-        </Typography>
-      )}
+        )}
+      </VStack>
       {onSearch && (
         <Frame paddingTop>
           <DashboardSearchBar

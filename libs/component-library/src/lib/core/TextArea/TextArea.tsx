@@ -13,7 +13,7 @@ import { cva } from 'class-variance-authority';
 import { forwardRef } from 'react';
 
 const defaultClass =
-  'text-base flex min-h-[40px] w-full border border-input bg-background px-3 py-2 pr-[10px] ring-offset-background placeholder:text-muted-foreground  disabled:cursor-not-allowed disabled:opacity-50';
+  'text-base text-text-secondary flex min-h-[40px] w-full border border-input bg-background px-3 py-2 pr-[10px] ring-offset-background placeholder:text-muted-foreground  disabled:cursor-not-allowed disabled:opacity-50';
 
 const textareaVariants = cva(defaultClass, {
   variants: {

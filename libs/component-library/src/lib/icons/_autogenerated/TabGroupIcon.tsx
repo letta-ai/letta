@@ -2,7 +2,7 @@ import * as React from 'react';
 import type { IconWrappedProps } from '../IconWrapper';
 import { IconWrapper } from '../IconWrapper';
 
-export function SpaceDashboardIcon(props: IconWrappedProps) {
+export function TabGroupIcon(props: IconWrappedProps) {
   return (
     <IconWrapper {...props}>
       <svg
@@ -13,7 +13,7 @@ export function SpaceDashboardIcon(props: IconWrappedProps) {
         xmlns="http://www.w3.org/2000/svg"
       >
         <path
-          d="M3 17.1667V3H17.1667V17.1667H3ZM4.25 15.9167H9.45833V4.25H4.25V15.9167ZM10.7083 15.9167H15.9167V10.0833H10.7083V15.9167ZM10.7083 8.83333H15.9167V4.25H10.7083V8.83333Z"
+          d="M4.91667 14.5V2H17.4167V14.5H4.91667ZM6.16667 13.25H16.1667V6.18271H10.654V3.25H6.16667V13.25ZM2 17.4167V5.17313H3.25V16.1667H14.2435V17.4167H2Z"
           fill="currentColor"
         />
       </svg>
