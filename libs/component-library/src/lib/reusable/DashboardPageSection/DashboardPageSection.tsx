@@ -71,7 +71,7 @@ export function DashboardPageSection(props: DashboardPageSectionProps) {
     >
       {title && (
         <HStack align="center" justify="spaceBetween">
-          <Typography align="left" noWrap bold variant="heading3">
+          <Typography align="left" noWrap bold variant="heading5">
             {title}
           </Typography>
           <HiddenOnMobile>

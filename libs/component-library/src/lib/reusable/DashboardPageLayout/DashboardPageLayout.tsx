@@ -22,7 +22,7 @@ function Title({ title }: TitleProps) {
 
   if (typeof title === 'string') {
     return (
-      <Typography align="left" variant="heading1">
+      <Typography align="left" variant="heading3" overrideEl="h1">
         {title}
       </Typography>
     );
@@ -108,7 +108,7 @@ export function DashboardPageLayout(props: DashboardPageLayoutProps) {
           </VStack>
           {subtitle && (
             <VStack>
-              <Typography variant="heading5">{subtitle}</Typography>
+              <Typography variant="heading6">{subtitle}</Typography>
             </VStack>
           )}
           <VisibleOnMobile>

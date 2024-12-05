@@ -14,7 +14,7 @@ export function Tutorials() {
   const t = useTranslations('components/tutorials');
 
   return (
-    <DashboardPageSection title={t('title')}>
+    <DashboardPageSection description={t('description')} title={t('title')}>
       <NiceGridDisplay>
         <ImageCard
           imageUrl={memory}

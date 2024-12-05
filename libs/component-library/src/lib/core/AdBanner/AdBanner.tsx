@@ -11,9 +11,9 @@ interface AdBannerProps {
   onClose?: {
     operation: () => void;
     text: string;
+    icon?: React.ReactNode;
   };
   className?: string;
-  height?: string;
   textContentClassName?: string;
   title: string;
   description: string;
@@ -34,7 +34,7 @@ export function AdBanner(props: AdBannerProps) {
     darkModeImage,
   } = props;
   return (
-    <HStack className={cn('w-full', className)} position="relative">
+    <HStack className={cn('w-full h-full', className)} position="relative">
       <VStack
         gap="large"
         className={textContentClassName}
@@ -45,7 +45,7 @@ export function AdBanner(props: AdBannerProps) {
         {onClose ? (
           <div className="absolute right-5 top-5 text-white">
             <button onClick={onClose.operation}>
-              <CloseIcon size="large" />
+              {onClose.icon || <CloseIcon size="large" />}
               <div className="sr-only">{onClose.text}</div>
             </button>
           </div>
