@@ -18,6 +18,7 @@ import { CookieNames } from '$letta/server/cookies/types';
 import { AdminService } from '@letta-web/letta-agents-api';
 import { createOrUpdateCRMContact } from '@letta-web/crm';
 import * as Sentry from '@sentry/node';
+import { environment } from '@letta-web/environmental-variables';
 type ResponseShapes = ServerInferResponses<typeof userContract>;
 
 async function getCurrentUser(): Promise<ResponseShapes['getCurrentUser']> {
@@ -283,24 +284,26 @@ async function setUserAsOnboarded(
       .where(eq(userMarketingDetails.userId, user.id));
   }
 
-  void createOrUpdateCRMContact({
-    email: user.email,
-    firstName: user.name.split(' ')[0],
-    lastName: user.name.split(' ')[1],
-    consentedToEmailMarketing: emailConsent,
-    reasonsForUsingLetta: reasons,
-    usesLettaFor: useCases,
-  })
-    .then(async (res) => {
-      await db
-        .update(userMarketingDetails)
-        .set({ hubSpotContactId: res.id })
-        .where(eq(userMarketingDetails.userId, user.id));
+  if (environment.HUBSPOT_API_KEY) {
+    void createOrUpdateCRMContact({
+      email: user.email,
+      firstName: user.name.split(' ')[0],
+      lastName: user.name.split(' ')[1],
+      consentedToEmailMarketing: emailConsent,
+      reasonsForUsingLetta: reasons,
+      usesLettaFor: useCases,
     })
-    .catch((e) => {
-      console.error('Error updating CRM contact', e);
-      Sentry.captureException(e);
-    });
+      .then(async (res) => {
+        await db
+          .update(userMarketingDetails)
+          .set({ hubSpotContactId: res.id })
+          .where(eq(userMarketingDetails.userId, user.id));
+      })
+      .catch((e) => {
+        console.error('Error updating CRM contact', e);
+        Sentry.captureException(e);
+      });
+  }
 
   return {
     status: 200,
