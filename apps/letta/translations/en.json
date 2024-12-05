@@ -907,7 +907,7 @@
   "development-servers/dashboard/page": {
     "versionCompatibilityBanner": {
       "title": "You are using a possibly incompatible version of the Letta server, please set your version to {version} for maximum compatibility",
-      "description": "You can set your version by running the command below:"
+      "description": "Configure your version by running the command below:"
     },
     "UpgradeBanner": {
       "title": "Deploy, monitor and scale your agents in seconds",
@@ -918,12 +918,12 @@
     "description": "Manage and monitor your agents on self-hosted Letta servers",
     "title": "Self-Hosted Agents",
     "gettingStarted": {
-      "title": "Quick Actions",
+      "title": "Quick actions",
       "actions": {
         "cloudSignup": {
           "title": "Sign up for Letta Cloud",
-          "details": "Deploy agents at scale with zero infrastructure\nSign up for early access below",
-          "cta": "Sign up"
+          "details": "Deploy agents at scale with zero infrastructure. \nSign up for early access.",
+          "cta": "Get early access"
         },
         "createAgent": {
           "title": "New Agent",
