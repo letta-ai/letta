@@ -11,6 +11,7 @@ export const PublicUserSchema = z.object({
   theme: z.string(),
   locale: z.string(),
   activeOrganizationId: z.string(),
+  hasOnboarded: z.boolean(),
   hasCloudAccess: z.boolean(),
   id: z.string(),
 });
@@ -100,12 +101,31 @@ export const deleteCurrentUserCurrent = c.mutation({
   body: z.undefined(),
 });
 
+/* Set user as onboarded */
+const OnboardingPayloadSchema = z.object({
+  reasons: z.string().array(),
+  useCases: z.string().array(),
+  emailConsent: z.boolean(),
+});
+
+export const setUserAsOnboardedContract = c.mutation({
+  method: 'POST',
+  path: '/user/self/onboarded',
+  body: OnboardingPayloadSchema,
+  responses: {
+    200: z.object({
+      success: z.boolean(),
+    }),
+  },
+});
+
 export const userContract = c.router({
   getCurrentUser: getUserContract,
   updateCurrentUser: updateCurrentUserContract,
   listUserOrganizations: listUserOrganizationsContract,
   updateActiveOrganization: updateActiveOrganizationContract,
   deleteCurrentUser: deleteCurrentUserCurrent,
+  setUserAsOnboarded: setUserAsOnboardedContract,
 });
 
 export const userQueryClientKeys = {

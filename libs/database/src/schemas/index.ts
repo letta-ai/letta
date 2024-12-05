@@ -94,6 +94,7 @@ export const users = pgTable('users', {
   lettaAgentsId: text('letta_agents_id').notNull().unique(),
   theme: text('theme').default('light'),
   locale: text('locale').default('en'),
+  submittedOnboardingAt: timestamp('submitted_onboarding_at'),
   deletedAt: timestamp('deleted_at'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at')
@@ -107,7 +108,35 @@ export const userRelations = relations(users, ({ many, one }) => ({
     fields: [users.activeOrganizationId],
     references: [organizations.id],
   }),
+  userMarketingDetails: one(userMarketingDetails, {
+    fields: [users.id],
+    references: [userMarketingDetails.userId],
+  }),
 }));
+
+export const userMarketingDetails = pgTable('user_marketing_details', {
+  userId: text('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' })
+    .primaryKey(),
+  useCases: json('use_cases').$type<string[]>(),
+  reasons: json('reasons').$type<string[]>(),
+  consentedToEmailsAt: timestamp('consented_to_emails_at'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at')
+    .notNull()
+    .$onUpdate(() => new Date()),
+});
+
+export const userMarketingDetailsRelations = relations(
+  userMarketingDetails,
+  ({ one }) => ({
+    user: one(users, {
+      fields: [userMarketingDetails.userId],
+      references: [users.id],
+    }),
+  })
+);
 
 export interface OrganizationPermissionType {
   isOrganizationAdmin?: boolean;

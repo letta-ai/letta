@@ -586,6 +586,7 @@ export interface GetUserDataResponse {
   imageUrl: string;
   theme: string;
   locale: string;
+  hasOnboarded: boolean;
   name: string;
 }
 
@@ -610,6 +611,7 @@ export async function getUser(): Promise<GetUserDataResponse | null> {
       lettaAgentsId: true,
       email: true,
       theme: true,
+      submittedOnboardingAt: true,
       imageUrl: true,
       locale: true,
       name: true,
@@ -648,6 +650,7 @@ export async function getUser(): Promise<GetUserDataResponse | null> {
     activeOrganizationId: userFromDb.activeOrganizationId || null,
     hasCloudAccess: !!userFromDb.activeOrganization?.enabledCloudAt,
     id: userFromDb.id,
+    hasOnboarded: !!userFromDb.submittedOnboardingAt,
     locale: userFromDb.locale || 'en',
     lettaAgentsId: userFromDb.lettaAgentsId,
     email: userFromDb.email,

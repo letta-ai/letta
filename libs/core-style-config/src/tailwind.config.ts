@@ -70,6 +70,7 @@ export function buildConfig(appDir: string): Config {
           border: 'hsl(var(--border))',
           input: 'hsl(var(--input))',
           ring: 'hsl(var(--ring))',
+          steel: 'hsl(var(--steel))',
           'background-violet': {
             DEFAULT: 'hsl(var(--background-violet))',
             content: 'hsl(var(--background-violet-content))',
