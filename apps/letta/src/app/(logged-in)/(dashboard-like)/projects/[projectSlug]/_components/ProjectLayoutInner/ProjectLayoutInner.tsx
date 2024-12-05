@@ -4,7 +4,7 @@ import {
   DashboardWithSidebarWrapper,
   LettaInvaderOutlineIcon,
   SpaceDashboardIcon,
-  TabGroupHardIcon,
+  TabGroupIcon,
   InstantMixIcon,
 } from '@letta-web/component-library';
 import { useTranslations } from 'next-intl';
@@ -37,7 +37,7 @@ export function ProjectLayoutInner(props: ProjectLayoutInnerProps) {
         },
         {
           id: 'templates',
-          icon: <TabGroupHardIcon />,
+          icon: <TabGroupIcon />,
           label: t('nav.templates'),
           href: `/projects/${projectSlug}/templates`,
         },
