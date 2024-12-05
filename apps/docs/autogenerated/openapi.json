@@ -2468,7 +2468,9 @@
                 "schema": {}
               },
               "text/event-stream": {
-                "description": "Server-Sent Events stream"
+                "schema": {
+                  "description": "Server-Sent Events stream"
+                }
               }
             }
           },
