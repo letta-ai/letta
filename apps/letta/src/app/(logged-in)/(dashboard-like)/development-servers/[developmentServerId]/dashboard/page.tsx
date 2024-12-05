@@ -178,7 +178,7 @@ function DevelopmentServersDashboardPage() {
           paddingX="large"
           /* eslint-disable-next-line react/forbid-component-props */
           className={cn(
-            isDismissed || isLoadingDismissed ? 'h-0' : 'h-[350px]',
+            isDismissed || isLoadingDismissed ? 'h-0 pt-0' : 'h-[350px]',
             'overflow-hidden transition-all duration-300'
           )}
           overflow="hidden"
