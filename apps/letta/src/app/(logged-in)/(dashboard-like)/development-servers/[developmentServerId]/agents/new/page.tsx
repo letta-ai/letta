@@ -215,7 +215,10 @@ function NewAgentPage() {
         text: t('back'),
       }}
     >
-      <DashboardPageSection>
+      <DashboardPageSection
+        title={t('starterKits.title')}
+        description={t('starterKits.description')}
+      >
         {isSuccess || isPending ? (
           <LoadingEmptyStatusComponent
             emptyMessage=""
@@ -251,12 +254,6 @@ function NewAgentPage() {
               </Alert>
             )}
             <VStack>
-              <VStack gap={false}>
-                <Typography>{t('starterKits.title')}</Typography>
-                <Typography color="muted">
-                  {t('starterKits.description')}
-                </Typography>
-              </VStack>
               {!isHealthy && !isFetchingStatus ? (
                 <Alert title={t('serverOffline')} variant="destructive">
                   <VStack paddingTop="small">
