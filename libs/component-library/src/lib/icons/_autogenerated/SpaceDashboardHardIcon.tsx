@@ -2,7 +2,7 @@ import * as React from 'react';
 import type { IconWrappedProps } from '../IconWrapper';
 import { IconWrapper } from '../IconWrapper';
 
-export function LaptopIcon(props: IconWrappedProps) {
+export function SpaceDashboardHardIcon(props: IconWrappedProps) {
   return (
     <IconWrapper {...props}>
       <svg
@@ -13,7 +13,7 @@ export function LaptopIcon(props: IconWrappedProps) {
         xmlns="http://www.w3.org/2000/svg"
       >
         <path
-          d="M1 16.75V15.5H18.6921V16.75H1ZM1.92938 14.6667V3H17.7627V14.6667H1.92938ZM3.17938 13.4167H16.5127V4.25H3.17938V13.4167Z"
+          d="M3 17.1667V3H17.1667V17.1667H3ZM4.25 15.9167H9.45833V4.25H4.25V15.9167ZM10.7083 15.9167H15.9167V10.0833H10.7083V15.9167ZM10.7083 8.83333H15.9167V4.25H10.7083V8.83333Z"
           fill="currentColor"
         />
       </svg>

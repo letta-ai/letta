@@ -2,7 +2,7 @@ import * as React from 'react';
 import type { IconWrappedProps } from '../IconWrapper';
 import { IconWrapper } from '../IconWrapper';
 
-export function DatabaseIcon(props: IconWrappedProps) {
+export function DatabaseHardIcon(props: IconWrappedProps) {
   return (
     <IconWrapper {...props}>
       <svg

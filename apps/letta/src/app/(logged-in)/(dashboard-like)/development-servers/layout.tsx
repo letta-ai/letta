@@ -4,9 +4,9 @@ import {
   DashboardWithSidebarWrapper,
   PlusIcon,
   LettaInvaderOutlineIcon,
-  ControllerIcon,
   HStack,
   Typography,
+  SpaceDashboardHardIcon,
   StatusIndicator,
   Button,
   DotsHorizontalIcon,
@@ -264,7 +264,7 @@ function LocalProjectLayout(props: LocalProjectLayoutProps) {
           items: [
             {
               id: 'dashboard',
-              icon: <ControllerIcon />,
+              icon: <SpaceDashboardHardIcon />,
               label: t('nav.dashboard'),
               href: `/development-servers/local/dashboard`,
             },

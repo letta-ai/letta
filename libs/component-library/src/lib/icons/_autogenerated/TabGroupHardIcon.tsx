@@ -2,7 +2,7 @@ import * as React from 'react';
 import type { IconWrappedProps } from '../IconWrapper';
 import { IconWrapper } from '../IconWrapper';
 
-export function LaptopIcon(props: IconWrappedProps) {
+export function TabGroupHardIcon(props: IconWrappedProps) {
   return (
     <IconWrapper {...props}>
       <svg
@@ -13,7 +13,7 @@ export function LaptopIcon(props: IconWrappedProps) {
         xmlns="http://www.w3.org/2000/svg"
       >
         <path
-          d="M1 16.75V15.5H18.6921V16.75H1ZM1.92938 14.6667V3H17.7627V14.6667H1.92938ZM3.17938 13.4167H16.5127V4.25H3.17938V13.4167Z"
+          d="M4.91667 14.5V2H17.4167V14.5H4.91667ZM6.16667 13.25H16.1667V6.18271H10.654V3.25H6.16667V13.25ZM2 17.4167V5.17313H3.25V16.1667H14.2435V17.4167H2Z"
           fill="currentColor"
         />
       </svg>
