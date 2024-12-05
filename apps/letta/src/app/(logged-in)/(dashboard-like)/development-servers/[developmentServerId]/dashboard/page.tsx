@@ -12,7 +12,7 @@ import {
   LettaLoader,
   Logo,
   NiceGridDisplay,
-  Robot2Icon,
+  LettaInvaderOutlineIcon,
   SearchIcon,
   Typography,
   VStack,
@@ -199,7 +199,7 @@ function DevelopmentServersDashboardPage() {
                   color="secondary"
                 />
               }
-              icon={<Robot2Icon />}
+              icon={<LettaInvaderOutlineIcon />}
               title={t('gettingStarted.actions.createAgent.title')}
               subtitle={t('gettingStarted.actions.createAgent.description')}
             />

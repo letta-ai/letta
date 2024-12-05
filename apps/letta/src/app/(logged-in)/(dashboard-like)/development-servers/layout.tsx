@@ -3,7 +3,7 @@
 import {
   DashboardWithSidebarWrapper,
   PlusIcon,
-  Robot2Icon,
+  LettaInvaderOutlineIcon,
   ControllerIcon,
   HStack,
   Typography,
@@ -235,7 +235,7 @@ function LocalProjectLayout(props: LocalProjectLayoutProps) {
       items: [
         {
           id: server.id,
-          icon: <Robot2Icon />,
+          icon: <LettaInvaderOutlineIcon />,
           label: t('nav.agents'),
           href: `/development-servers/${server.id}/agents`,
         },
@@ -270,7 +270,7 @@ function LocalProjectLayout(props: LocalProjectLayoutProps) {
             },
             {
               id: 'agents',
-              icon: <Robot2Icon />,
+              icon: <LettaInvaderOutlineIcon />,
               label: t('nav.agents'),
               href: `/development-servers/local/agents`,
             },
