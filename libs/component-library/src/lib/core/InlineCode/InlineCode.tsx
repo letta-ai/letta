@@ -16,6 +16,7 @@ const inlineCodeVariants = cva(
       color: {
         default: 'border',
         warning: 'border-warning-content',
+        destructive: 'border-destructive',
       },
     },
     defaultVariants: {
@@ -24,7 +25,8 @@ const inlineCodeVariants = cva(
   }
 );
 
-interface InlineCodeProps extends VariantProps<typeof inlineCodeVariants> {
+export interface InlineCodeProps
+  extends VariantProps<typeof inlineCodeVariants> {
   code: string;
   hideCopyButton?: boolean;
 }

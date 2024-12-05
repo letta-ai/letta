@@ -19,6 +19,7 @@ export function Tutorials() {
         <ImageCard
           imageUrl={memory}
           altText=""
+          variant="inline"
           title={t('createChatBotWithMemory.title')}
           description={t('createChatBotWithMemory.description')}
           badge={<Badge size="small" content={t('comingSoon')} />}
@@ -26,6 +27,7 @@ export function Tutorials() {
         <ImageCard
           imageUrl={multiagent}
           altText=""
+          variant="inline"
           title={t('buildMultiAgentSystems.title')}
           description={t('buildMultiAgentSystems.description')}
           badge={<Badge size="small" content={t('comingSoon')} />}
@@ -33,6 +35,7 @@ export function Tutorials() {
         <ImageCard
           imageUrl={discord}
           altText=""
+          variant="inline"
           title={t('discord.title')}
           description={t('discord.description')}
           badge={<Badge size="small" content={t('comingSoon')} />}
@@ -40,6 +43,7 @@ export function Tutorials() {
         <ImageCard
           imageUrl={voice}
           altText=""
+          variant="inline"
           title={t('voice.title')}
           description={t('voice.description')}
           badge={<Badge size="small" content={t('comingSoon')} />}

@@ -979,6 +979,7 @@
   "development-servers/agents/new/page": {
     "tools": "<strong>Tools included:</strong> {toolsList}",
     "serverOffline": "Your server is offline, please start it to create a new agent.",
+    "serverOfflineConnect": "Turn on your server with the command below:",
     "isFetchingStatus": "Sorry, we are still attempting to connect to your server. Please wait a moment.",
     "title": "Create a new agent",
     "error": "There was an error creating the agent, below is the error message, please try again or contact support.",
