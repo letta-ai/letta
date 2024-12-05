@@ -18,7 +18,7 @@ const typographyVariants = cva('break-words', {
       heading1: 'text-[1.8rem] font-semibold',
       heading2: 'text-[1.725rem] font-semibold',
       heading3: 'text-[1.5rem] font-semibold',
-      heading4: 'text-xl',
+      heading4: 'text-xl font-semibold',
       heading5: 'text-lg font-semibold',
       heading6: 'text-lg',
       panelInfo: 'text-lg',

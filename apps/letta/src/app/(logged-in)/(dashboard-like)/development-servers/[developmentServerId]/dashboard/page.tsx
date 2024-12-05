@@ -154,6 +154,7 @@ function DevelopmentServersDashboardPage() {
     <DashboardPageLayout title={title} subtitle={t('description')}>
       {!user?.hasCloudAccess && (
         <VStack
+          paddingX="large"
           /* eslint-disable-next-line react/forbid-component-props */
           className={cn(
             isDismissed || isLoadingDismissed ? 'h-0' : 'h-[350px]',
@@ -162,7 +163,7 @@ function DevelopmentServersDashboardPage() {
           overflow="hidden"
           paddingTop="medium"
         >
-          <div className="max-w-[1085px] h-full">
+          <div className="max-w-[1020px] h-full">
             <UpgradeBanner
               isDismissed={isDismissed}
               setIsDismissed={setIsDismissed}
@@ -171,7 +172,10 @@ function DevelopmentServersDashboardPage() {
         </VStack>
       )}
 
-      <DashboardPageSection title={t('gettingStarted.title')}>
+      <DashboardPageSection
+        title={t('gettingStarted.title')}
+        description={t('gettingStarted.description')}
+      >
         {showVersionCompatibilityBanner && (
           <Alert
             title={t('versionCompatibilityBanner.title', {
@@ -215,7 +219,7 @@ function DevelopmentServersDashboardPage() {
               title={t('gettingStarted.actions.viewAgents.title')}
               subtitle={t('gettingStarted.actions.viewAgents.description')}
             />
-            {isDismissed && !isLoadingDismissed && (
+            {isDismissed && !isLoadingDismissed && !user?.hasCloudAccess && (
               <VStack
                 justify="spaceBetween"
                 padding
