@@ -151,31 +151,8 @@ function DevelopmentServersDashboardPage() {
     );
 
   return (
-    <DashboardPageLayout title={title} subtitle={t('description')}>
-      {!user?.hasCloudAccess && (
-        <VStack
-          paddingX="large"
-          /* eslint-disable-next-line react/forbid-component-props */
-          className={cn(
-            isDismissed || isLoadingDismissed ? 'h-0' : 'h-[350px]',
-            'overflow-hidden transition-all duration-300'
-          )}
-          overflow="hidden"
-          paddingTop="medium"
-        >
-          <div className="max-w-[1020px] h-full">
-            <UpgradeBanner
-              isDismissed={isDismissed}
-              setIsDismissed={setIsDismissed}
-            />
-          </div>
-        </VStack>
-      )}
-
-      <DashboardPageSection
-        title={t('gettingStarted.title')}
-        description={t('gettingStarted.description')}
-      >
+    <DashboardPageLayout cappedWidth title={title} subtitle={t('description')}>
+      <VStack paddingX="large">
         {showVersionCompatibilityBanner && (
           <Alert
             title={t('versionCompatibilityBanner.title', {
@@ -193,6 +170,31 @@ function DevelopmentServersDashboardPage() {
             </VStack>
           </Alert>
         )}
+      </VStack>
+      {!user?.hasCloudAccess && (
+        <VStack
+          paddingX="large"
+          /* eslint-disable-next-line react/forbid-component-props */
+          className={cn(
+            isDismissed || isLoadingDismissed ? 'h-0' : 'h-[350px]',
+            'overflow-hidden transition-all duration-300'
+          )}
+          overflow="hidden"
+          paddingTop="medium"
+        >
+          <div className="h-full">
+            <UpgradeBanner
+              isDismissed={isDismissed}
+              setIsDismissed={setIsDismissed}
+            />
+          </div>
+        </VStack>
+      )}
+
+      <DashboardPageSection
+        title={t('gettingStarted.title')}
+        description={t('gettingStarted.description')}
+      >
         {isLocalServiceOnline ? (
           <NiceGridDisplay itemWidth="252px" itemHeight="252px">
             <CTACard
