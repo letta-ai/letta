@@ -437,6 +437,7 @@ function SimulatedMemory() {
           fullHeight
           resize="none"
           fullWidth
+          data-testid={`simulated-memory:${block.label}`}
           disabled
           label={block.label || ''}
           value={block.value}

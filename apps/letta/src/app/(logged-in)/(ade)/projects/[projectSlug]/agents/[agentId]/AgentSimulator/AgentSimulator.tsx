@@ -13,7 +13,6 @@ import {
   HStack,
   LoadingEmptyStatusComponent,
   PersonIcon,
-  ProgressBar,
   RawToggleGroup,
   SystemIcon,
   Table,
@@ -29,7 +28,7 @@ import {
 import type { PanelTemplate } from '@letta-web/component-library';
 import { PanelBar } from '@letta-web/component-library';
 import { VStack } from '@letta-web/component-library';
-import type { Dispatch, SetStateAction } from 'react';
+import type { Dispatch, FormEvent, SetStateAction } from 'react';
 import { useEffect } from 'react';
 import { useMemo } from 'react';
 import React, { useCallback, useRef, useState } from 'react';
@@ -306,6 +305,7 @@ function ControlChatroomRenderMode() {
   return (
     <RawToggleGroup
       border
+      size="small"
       onValueChange={(value) => {
         if (value) {
           setRenderMode(value as MessagesDisplayMode);
@@ -374,74 +374,64 @@ function DialogSessionSheet(props: DialogSessionDialogProps) {
       },
     });
 
-  useEffect(() => {
-    if (!isEqual(existingVariables, variableData)) {
-      setVariableData(existingVariables);
-    }
-  }, [existingVariables, variableData]);
-
   const handleUpdateSession = useCallback(
-    (nextVariables: Record<string, string>) => {
-      mutate({
-        params: {
-          agentTemplateId,
-          projectId,
-        },
-        body: {
-          variables: nextVariables,
-        },
-      });
-    },
-    [agentTemplateId, mutate, projectId]
-  );
+    (e: FormEvent<HTMLFormElement>) => {
+      e.preventDefault();
 
-  const debouncedUpdateSession = useDebouncedCallback(
-    handleUpdateSession,
-    1000
-  );
-
-  const handleChange = useCallback(
-    (name: string, value: string) => {
-      setVariableData((prev) => {
-        const next = {
-          ...prev,
-          [name]: value,
-        };
-
-        queryClient.setQueriesData<
-          GetAgentTemplateSimulatorSessionResponseBody | undefined
-        >(
-          {
-            queryKey: webApiQueryKeys.agentTemplates.getAgentTemplateSession({
-              agentTemplateId,
-              projectId,
-            }),
+      mutate(
+        {
+          params: {
+            agentTemplateId,
+            projectId,
           },
-          (oldData) => {
-            if (!oldData) {
-              return oldData;
-            }
-
-            return {
-              status: 200,
-              body: {
-                ...oldData?.body,
-                variables: {
-                  ...oldData?.body.variables,
-                  ...next,
-                },
+          body: {
+            variables: variableData,
+          },
+        },
+        {
+          onSuccess: () => {
+            queryClient.setQueriesData<
+              GetAgentTemplateSimulatorSessionResponseBody | undefined
+            >(
+              {
+                queryKey:
+                  webApiQueryKeys.agentTemplates.getAgentTemplateSession({
+                    agentTemplateId,
+                    projectId,
+                  }),
               },
-            };
-          }
-        );
+              (oldData) => {
+                if (!oldData) {
+                  return oldData;
+                }
 
-        debouncedUpdateSession(next);
-
-        return next;
-      });
+                return {
+                  status: 200,
+                  body: {
+                    ...oldData?.body,
+                    variables: {
+                      ...oldData?.body.variables,
+                      ...variableData,
+                    },
+                  },
+                };
+              }
+            );
+          },
+        }
+      );
     },
-    [agentTemplateId, debouncedUpdateSession, projectId, queryClient]
+    [agentTemplateId, mutate, projectId, queryClient, variableData]
   );
+
+  const handleChange = useCallback((name: string, value: string) => {
+    setVariableData((prev) => {
+      return {
+        ...prev,
+        [name]: value,
+      };
+    });
+  }, []);
 
   if (!variables.length) {
     return (
@@ -457,33 +447,49 @@ function DialogSessionSheet(props: DialogSessionDialogProps) {
   }
 
   return (
-    <VStack position="relative" borderBottom padding="small">
-      <HStack fullWidth position="absolute">
-        {isPending && <ProgressBar indeterminate />}
-      </HStack>
-      <VStack border gap={false} borderBottom>
-        <Table>
-          <TableBody>
-            {variables.map((variable) => (
-              <TableRow key={variable}>
-                <TableCell>
-                  <Typography>{variable}</Typography>
-                </TableCell>
-                <TableCellInput
-                  testId={`variable-input-${variable}`}
-                  value={variableData[variable] || ''}
-                  label={t('DialogSessionSheet.label')}
-                  placeholder={t('DialogSessionSheet.placeholder')}
-                  onChange={(e) => {
-                    handleChange(variable, e.target.value);
-                  }}
-                />
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+    <form onSubmit={handleUpdateSession}>
+      <VStack
+        color="background-grey"
+        position="relative"
+        borderBottom
+        paddingTop
+        borderTop
+        padding="small"
+      >
+        <VStack color="background" border gap={false} borderBottom>
+          <Table>
+            <TableBody>
+              {variables.map((variable) => (
+                <TableRow key={variable}>
+                  <TableCell>
+                    <Typography variant="body2">{variable}</Typography>
+                  </TableCell>
+                  <TableCellInput
+                    testId={`variable-input-${variable}`}
+                    value={variableData[variable] || ''}
+                    label={t('DialogSessionSheet.label')}
+                    placeholder={t('DialogSessionSheet.placeholder')}
+                    onChange={(e) => {
+                      handleChange(variable, e.target.value);
+                    }}
+                  />
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </VStack>
+        <HStack justify="end">
+          <Button
+            data-testid="save-variables-button"
+            label={t('DialogSessionSheet.save')}
+            size="small"
+            busy={isPending}
+            type="submit"
+            color="secondary"
+          />
+        </HStack>
       </VStack>
-    </VStack>
+    </form>
   );
 }
 
@@ -625,6 +631,7 @@ function AgentSimulatorOptionsMenu() {
         align="end"
         trigger={
           <Button
+            size="small"
             color="tertiary"
             preIcon={<DotsHorizontalIcon />}
             hideLabel
@@ -805,6 +812,7 @@ function Chatroom() {
                   ? t('hideVariables')
                   : t('showVariables')
               }
+              size="small"
             />
           </VStack>
         </PanelBar>
