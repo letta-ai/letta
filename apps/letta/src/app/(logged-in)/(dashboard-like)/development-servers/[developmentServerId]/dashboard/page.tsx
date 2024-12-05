@@ -151,7 +151,28 @@ function DevelopmentServersDashboardPage() {
     );
 
   return (
-    <DashboardPageLayout title={title} subtitle={t('description')}>
+    <DashboardPageLayout cappedWidth title={title} subtitle={t('description')}>
+      <VStack paddingX="large">
+        {showVersionCompatibilityBanner && (
+          <Alert
+            title={t('versionCompatibilityBanner.title', {
+              version: MOST_RECENT_LETTA_AGENT_VERSION,
+            })}
+            variant="warning"
+          >
+            <VStack>
+              {t('versionCompatibilityBanner.description')}
+              <div>
+                <InlineCode
+                  size="medium"
+                  color="warning"
+                  code={`pip install letta==${MOST_RECENT_LETTA_AGENT_VERSION}`}
+                />
+              </div>
+            </VStack>
+          </Alert>
+        )}
+      </VStack>
       {!user?.hasCloudAccess && (
         <VStack
           paddingX="large"
@@ -163,7 +184,7 @@ function DevelopmentServersDashboardPage() {
           overflow="hidden"
           paddingTop="medium"
         >
-          <div className="max-w-[1020px] h-full">
+          <div className="h-full">
             <UpgradeBanner
               isDismissed={isDismissed}
               setIsDismissed={setIsDismissed}
@@ -176,23 +197,6 @@ function DevelopmentServersDashboardPage() {
         title={t('gettingStarted.title')}
         description={t('gettingStarted.description')}
       >
-        {showVersionCompatibilityBanner && (
-          <Alert
-            title={t('versionCompatibilityBanner.title', {
-              version: MOST_RECENT_LETTA_AGENT_VERSION,
-            })}
-            variant="warning"
-          >
-            <VStack>
-              {t('versionCompatibilityBanner.description')}
-              <div>
-                <InlineCode
-                  code={`pip install letta==${MOST_RECENT_LETTA_AGENT_VERSION}`}
-                />
-              </div>
-            </VStack>
-          </Alert>
-        )}
         {isLocalServiceOnline ? (
           <NiceGridDisplay itemWidth="252px" itemHeight="252px">
             <CTACard
