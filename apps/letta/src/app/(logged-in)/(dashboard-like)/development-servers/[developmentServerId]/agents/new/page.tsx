@@ -4,6 +4,7 @@ import {
   Alert,
   DashboardPageLayout,
   DashboardPageSection,
+  Frame,
   ImageCard,
   LoadingEmptyStatusComponent,
   NiceGridDisplay,
@@ -30,6 +31,7 @@ import { useRouter } from 'next/navigation';
 import { trackClientSideEvent } from '@letta-web/analytics/client';
 import { AnalyticsEvent } from '@letta-web/analytics';
 import { useCurrentUser } from '$letta/client/hooks';
+import { ConnectToLocalServerCommand } from '$letta/client/components';
 
 interface StarterKitItemProps {
   starterKit: StarterKit;
@@ -213,7 +215,10 @@ function NewAgentPage() {
         text: t('back'),
       }}
     >
-      <DashboardPageSection>
+      <DashboardPageSection
+        title={t('starterKits.title')}
+        description={t('starterKits.description')}
+      >
         {isSuccess || isPending ? (
           <LoadingEmptyStatusComponent
             emptyMessage=""
@@ -249,14 +254,15 @@ function NewAgentPage() {
               </Alert>
             )}
             <VStack>
-              <VStack gap={false}>
-                <Typography>{t('starterKits.title')}</Typography>
-                <Typography color="muted">
-                  {t('starterKits.description')}
-                </Typography>
-              </VStack>
               {!isHealthy && !isFetchingStatus ? (
-                <Alert title={t('serverOffline')} variant="destructive" />
+                <Alert title={t('serverOffline')} variant="destructive">
+                  <VStack paddingTop="small">
+                    <Typography>{t('serverOfflineConnect')}</Typography>
+                    <Frame>
+                      <ConnectToLocalServerCommand color="destructive" />
+                    </Frame>
+                  </VStack>
+                </Alert>
               ) : (
                 <NiceGridDisplay itemWidth="250px" itemHeight="260px">
                   {starterKits.map(([id, starterKit]) => (

@@ -22,7 +22,7 @@ function Title({ title }: TitleProps) {
 
   if (typeof title === 'string') {
     return (
-      <Typography align="left" variant="heading1">
+      <Typography align="left" variant="heading3" overrideEl="h1">
         {title}
       </Typography>
     );
@@ -35,6 +35,8 @@ interface DashboardPageLayoutProps {
   icon?: React.ReactNode;
   /** Makes the page full height in the sense that it will take up the full height of the screen, and the content will scroll within that space */
   encapsulatedFullHeight?: boolean;
+  /* Fixes the page to a capped width */
+  cappedWidth?: boolean;
   title?: TitleProps['title'];
   subtitle?: React.ReactNode;
   actions?: React.ReactNode;
@@ -51,6 +53,7 @@ export function DashboardPageLayout(props: DashboardPageLayoutProps) {
     title,
     returnButton,
     subtitle,
+    cappedWidth,
     encapsulatedFullHeight,
     actions,
   } = props;
@@ -66,60 +69,66 @@ export function DashboardPageLayout(props: DashboardPageLayoutProps) {
         fullWidth
       >
         <VStack
+          fullWidth
           gap={false}
-          paddingX="large"
-          paddingTop="xxlarge"
-          paddingBottom="small"
+          className={cn(cappedWidth ? 'max-w-[1248px]' : '')}
+          flex
         >
-          <VStack gap={false}>
-            {returnButton && (
-              <div className="flex mb-2">
-                <HStack
-                  paddingY="xxsmall"
-                  paddingX="small"
-                  gap={false}
-                  className="ml-[-10px] hover:bg-tertiary-hover"
-                  align="center"
-                >
-                  <Link className="contents" href={returnButton.href}>
-                    <ChevronLeftIcon size="small" />
-                    <Typography bold variant="body3">
-                      {returnButton.text}
-                    </Typography>
-                  </Link>
+          <VStack
+            gap={false}
+            paddingX="large"
+            paddingTop="xxlarge"
+            paddingBottom="small"
+          >
+            <VStack gap={false}>
+              {returnButton && (
+                <div className="flex mb-2">
+                  <HStack
+                    paddingY="xxsmall"
+                    paddingX="small"
+                    gap={false}
+                    className="ml-[-10px] hover:bg-tertiary-hover"
+                    align="center"
+                  >
+                    <Link className="contents" href={returnButton.href}>
+                      <ChevronLeftIcon size="small" />
+                      <Typography bold variant="body3">
+                        {returnButton.text}
+                      </Typography>
+                    </Link>
+                  </HStack>
+                </div>
+              )}
+              <HStack
+                align="center"
+                as="header"
+                wrap
+                justify="spaceBetween"
+                fullWidth
+              >
+                <HStack align="center">
+                  {icon}
+                  <Title title={title} />
                 </HStack>
-              </div>
-            )}
-            <HStack
-              align="center"
-              as="header"
-              wrap
-              justify="spaceBetween"
-              fullWidth
-            >
-              <HStack align="center">
-                {icon}
-                <Title title={title} />
+                <HiddenOnMobile>
+                  <HStack align="center">{actions}</HStack>
+                </HiddenOnMobile>
               </HStack>
-              <HiddenOnMobile>
-                <HStack align="center">{actions}</HStack>
-              </HiddenOnMobile>
-            </HStack>
-          </VStack>
-          {subtitle && (
-            <VStack>
-              <Typography variant="heading5">{subtitle}</Typography>
             </VStack>
-          )}
-          <VisibleOnMobile>
-            <HStack paddingTop="medium" fullWidth>
-              {actions}
-            </HStack>
-          </VisibleOnMobile>
-        </VStack>
-
-        <VStack fullWidth collapseHeight>
-          {props.children}
+            {subtitle && (
+              <VStack>
+                <Typography variant="heading6">{subtitle}</Typography>
+              </VStack>
+            )}
+            <VisibleOnMobile>
+              <HStack paddingTop="medium" fullWidth>
+                {actions}
+              </HStack>
+            </VisibleOnMobile>
+          </VStack>
+          <VStack fullWidth flex>
+            {props.children}
+          </VStack>
         </VStack>
       </VStack>
     </>

@@ -21,6 +21,11 @@ export const SystemMessageSchema = z.object({
   id: z.string(),
 });
 
+export const SystemAlertSchema = z.object({
+  type: z.literal('system_alert'),
+  message: z.string(),
+});
+
 // this is the message schema if you parse `message` from UseMessageSchema
 export const UserMessageMessageSchema = z.object({
   type: z.literal('user_message'),

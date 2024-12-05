@@ -64,13 +64,13 @@ export function LocaleSelector() {
       }
     >
       <DropdownMenuItem
-        label={t('options.en')}
+        label="English"
         onClick={() => {
           handleLocaleChange('en');
         }}
       />
       <DropdownMenuItem
-        label={t('options.fr')}
+        label="Français (BETA)"
         onClick={() => {
           handleLocaleChange('fr');
         }}

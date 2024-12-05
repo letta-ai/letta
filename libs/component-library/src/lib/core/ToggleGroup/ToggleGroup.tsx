@@ -11,7 +11,7 @@ import { MaybeTooltip } from '../Tooltip/Tooltip';
 import './ToggleGroup.scss';
 
 const toggleVariants = cva(
-  'inline-flex items-center justify-center text-sm font-medium ring-offset-background transition-colors hover:bg-tertiary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=on]:bg-tertiary-active ',
+  'inline-flex items-center justify-center text-sm font-medium ring-offset-background transition-colors hover:bg-tertiary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=on]:border data-[state=on]:bg-tertiary-active ',
   {
     variants: {
       hideLabel: {
@@ -107,6 +107,7 @@ const ToggleGroupItem = React.forwardRef<
 
     return (
       <ToggleGroupPrimitive.Item
+        data-testid={`toggle-group-item:${props.value}`}
         ref={ref}
         className={cn(
           toggleVariants({

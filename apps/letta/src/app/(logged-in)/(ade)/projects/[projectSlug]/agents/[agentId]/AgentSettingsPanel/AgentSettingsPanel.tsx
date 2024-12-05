@@ -16,7 +16,7 @@ import {
   RawInput,
   RawSelect,
   RawTextArea,
-  Robot2Icon,
+  LettaInvaderOutlineIcon,
   Typography,
   VStack,
 } from '@letta-web/component-library';
@@ -405,6 +405,6 @@ export const agentSettingsPanel = {
 
     return t('title', { baseName });
   },
-  icon: <Robot2Icon />,
+  icon: <LettaInvaderOutlineIcon />,
   data: z.undefined(),
 } satisfies PanelTemplate<'agent-settings'>;

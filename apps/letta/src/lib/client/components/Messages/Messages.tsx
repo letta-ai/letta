@@ -8,15 +8,17 @@ import {
   FunctionCall,
   HStack,
   IconAvatar,
+  LaptopIcon,
   LettaLoaderPanel,
   Markdown,
   PersonIcon,
-  Robot2Icon,
+  LettaInvaderOutlineIcon,
   ThoughtsIcon,
   Typography,
   VStack,
 } from '@letta-web/component-library';
 import type { AgentMessage } from '@letta-web/letta-agents-api';
+import { SystemAlertSchema } from '@letta-web/letta-agents-api';
 import { SendMessageFunctionCallSchema } from '@letta-web/letta-agents-api';
 import {
   AgentsService,
@@ -121,20 +123,52 @@ function MessageGroup({ group }: MessageGroupType) {
     (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
   );
 
+  const textColor = useMemo(() => {
+    if (name === 'Agent') {
+      return 'hsl(var(--primary-light-content))';
+    }
+
+    if (name === 'User') {
+      return 'hsl(var(--user-color-content))';
+    }
+
+    return 'hsl(var(--background-black-content))';
+  }, [name]);
+
+  const backgroundColor = useMemo(() => {
+    if (name === 'Agent') {
+      return 'hsl(var(--primary-light))';
+    }
+
+    if (name === 'User') {
+      return 'hsl(var(--user-color))';
+    }
+
+    return 'hsl(var(--background-black))';
+  }, [name]);
+
+  const icon = useMemo(() => {
+    if (name === 'Agent') {
+      return <LettaInvaderOutlineIcon />;
+    }
+
+    if (name === 'User') {
+      return <PersonIcon />;
+    }
+
+    if (name === 'System') {
+      return <LaptopIcon />;
+    }
+
+    return null;
+  }, [name]);
+
   return (
     <HStack>
       <IconAvatar
-        textColor={
-          name === 'Agent'
-            ? 'hsl(var(--primary-light-content))'
-            : 'hsl(var(--user-color-content))'
-        }
-        backgroundColor={
-          name === 'Agent'
-            ? 'hsl(var(--primary-light))'
-            : 'hsl(var(--user-color))'
-        }
-        icon={name === 'Agent' ? <Robot2Icon /> : <PersonIcon />}
+        textColor={textColor}
+        backgroundColor={backgroundColor}
+        icon={icon}
       />
       <VStack collapseWidth flex gap="small">
         <Typography bold>{name}</Typography>
@@ -460,8 +494,32 @@ export function Messages(props: MessagesProps) {
           };
         }
 
-        case 'system_message':
+        case 'system_message': {
+          if (mode === 'simple') {
+            return null;
+          }
+
+          console.log(agentMessage);
+
+          try {
+            const tryParseResp = SystemAlertSchema.safeParse(
+              JSON.parse(agentMessage.message)
+            );
+
+            if (tryParseResp.success) {
+              return {
+                id: `${agentMessage.id}-${agentMessage.message_type}`,
+                content: tryParseResp.data.message,
+                timestamp: new Date(agentMessage.date).toISOString(),
+                name: 'System',
+              };
+            }
+          } catch (_e) {
+            return null;
+          }
+
           return null;
+        }
       }
     },
     [t]

@@ -3,6 +3,38 @@
     "emptyMessage": "This is not the page you're looking for",
     "emptyAction": "Go home"
   },
+  "WelcomeOverlay": {
+    "welcomeMessage": "Welcome to Letta",
+    "question": "Thank you for trying us out, we have a few questions to help us understand your needs better.",
+    "useCases": {
+      "label": "What use-cases are you building agents for?",
+      "options": {
+        "customerService": "Customer service",
+        "personalAssistant": "Personal assistant",
+        "entertainment": "Entertainment",
+        "chatbots": "Chatbots",
+        "taskOrchestration": "Task orchestration",
+        "experimentation": "Experimentation"
+      }
+    },
+    "reasons": {
+      "label": "What makes you interested in Letta?",
+      "options": {
+        "restAPI": "Agents as a REST API",
+        "memory": "Memory",
+        "toolExecution": "Tool execution",
+        "userPersonalization": "User personalization",
+        "openModelSupport": "Open model support",
+        "chainOfThoughtReasoning": "Chain of thought reasoning",
+        "deployingAgentsAtScale": "Deploying agents at scale"
+      }
+    },
+    "emailConsent": {
+      "label": "Sign up for emails for major releases and updates"
+    },
+    "skip": "Skip",
+    "submit": "Start using Letta"
+  },
   "components/DashboardLikeLayout/DashboardNavigation": {
     "back": "Back",
     "nav": {
@@ -665,6 +697,7 @@
     "DialogSessionSheet": {
       "updating": "Updating variables...",
       "placeholder": "Variable Value",
+      "save": "Update Variables",
       "label": "Variable Name",
       "editLabel": "Edit {variableName}",
       "noVariablesDefined": "You have no variables set yet, to define a variable, write a alphanumeric name wrapped in handlebars in Memory Blocks, e.g. {variableName}"
@@ -841,8 +874,9 @@
     "disabledTooltip": "This field cannot be edited"
   },
   "development-servers/components/UserIsNotConnectedComponent": {
-    "notConnected": "Please connect to your local server to view quick actions and information.",
-    "start": "You can connect to your local server by running the command below:"
+    "notConnected": "You are not connected to a local server",
+    "connecting": "Attempting to connect to your local server...",
+    "start": "Enter the command below to start your local server"
   },
   "development-servers/layout": {
     "title": "Local Project",
@@ -873,26 +907,34 @@
   "development-servers/dashboard/page": {
     "versionCompatibilityBanner": {
       "title": "You are using a possibly incompatible version of the Letta server, please set your version to {version} for maximum compatibility",
-      "description": "You can set your version by running the command below:"
+      "description": "Configure your version by running the command below:"
     },
     "UpgradeBanner": {
       "title": "Deploy, monitor and scale your agents in seconds",
-      "description": "Letta Cloud is the easiest way to scale with zero infrastructure. Get early access to Letta Cloud below.",
+      "description": "Letta Cloud is the easiest way to scale with zero infrastructure",
       "cta": "Get early access",
       "dismiss": "Close"
     },
-    "description": "Letta allows you to create, deploy, and monitor stateful LLM agents",
-    "title": "Welcome to the Letta developer platform!",
+    "description": "Manage and monitor your agents on self-hosted Letta servers",
+    "title": "Self-Hosted Agents",
     "gettingStarted": {
-      "title": "Getting started",
+      "title": "Quick actions",
+      "description": "Get started with these quick actions",
       "actions": {
+        "cloudSignup": {
+          "title": "Sign up for Letta Cloud",
+          "details": "Deploy agents at scale with zero infrastructure",
+          "cta": "Early access"
+        },
         "createAgent": {
-          "title": "Create an agent",
+          "title": "New Agent",
+          "cta": "Create agent",
           "description": "Create an agent to deploy to your local server"
         },
         "viewAgents": {
-          "title": "View local agents",
-          "description": "View all of your agents on the local server"
+          "title": "Local agents",
+          "description": "View all of your agents on the local server",
+          "cta": "View agents"
         }
       }
     }
@@ -937,6 +979,7 @@
   "development-servers/agents/new/page": {
     "tools": "<strong>Tools included:</strong> {toolsList}",
     "serverOffline": "Your server is offline, please start it to create a new agent.",
+    "serverOfflineConnect": "Turn on your server with the command below:",
     "isFetchingStatus": "Sorry, we are still attempting to connect to your server. Please wait a moment.",
     "title": "Create a new agent",
     "error": "There was an error creating the agent, below is the error message, please try again or contact support.",
@@ -955,6 +998,7 @@
   },
   "components/tutorials": {
     "title": "Tutorials",
+    "description": "Not sure where to start? Check out some of our tutorials ",
     "comingSoon": "Coming soon",
     "createChatBotWithMemory": {
       "title": "Create a chatbot with memory",
@@ -982,6 +1026,11 @@
       "label": "Agent name",
       "placeholder": "my-agent-name"
     }
+  },
+  "client/hooks/useWelcomeText": {
+    "goodMorning": "Good morning, {firstName} ☀\uFE0F",
+    "goodAfternoon": "Good afternoon, {firstName} ☀\uFE0F",
+    "goodEvening": "Good evening, {firstName} \uD83C\uDF15"
   },
   "component-library/hooks/useCopyToClipboard": {
     "copied": "Copied to clipboard"
