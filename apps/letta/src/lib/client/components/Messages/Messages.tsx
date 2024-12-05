@@ -132,7 +132,7 @@ function MessageGroup({ group }: MessageGroupType) {
       return 'hsl(var(--user-color-content))';
     }
 
-    return 'hsl(var(--background-black-content))';
+    return 'hsl(var(--background-gray-content))';
   }, [name]);
 
   const backgroundColor = useMemo(() => {
@@ -144,7 +144,7 @@ function MessageGroup({ group }: MessageGroupType) {
       return 'hsl(var(--user-color))';
     }
 
-    return 'hsl(var(--background-black))';
+    return 'hsl(var(--background-gray))';
   }, [name]);
 
   const icon = useMemo(() => {
