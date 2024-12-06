@@ -7,7 +7,8 @@
   content: "";
   position: absolute;
   right: 10%;
-  height: 83%;
+  height: 100%;
+  top: 0;
   width: 100%;
   background: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, hsl(var(--background)) 10%, hsl(var(--background)) 100%);
   z-index: -1;
