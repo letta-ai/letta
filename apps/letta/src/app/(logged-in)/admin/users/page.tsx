@@ -10,17 +10,17 @@ import {
   DataTable,
 } from '@letta-web/component-library';
 import type { ColumnDef } from '@tanstack/react-table';
-import type { PublicOrganizationType } from '$letta/web-api/admin/organizations/adminOrganizationsContracts';
 import { useDateFormatter } from '@letta-web/helpful-client-utils';
+import type { AdminPublicUserType } from '$letta/web-api/admin/users/adminUsersContracts';
 
-function AdminOrganizationsPage() {
+function AdminUsersPage() {
   const [offset, setOffset] = useState(0);
   const [limit, setLimit] = useState(10);
   const [search, setSearch] = useState('');
 
   const { data, isFetching, isError } =
-    webApi.admin.organizations.getOrganizations.useQuery({
-      queryKey: queryClientKeys.admin.organizations.getOrganizationsWithSearch({
+    webApi.admin.users.adminGetUsers.useQuery({
+      queryKey: queryClientKeys.admin.users.adminGetUsersWithSearch({
         offset,
         limit,
         search,
@@ -36,11 +36,15 @@ function AdminOrganizationsPage() {
 
   const { formatDateAndTime } = useDateFormatter();
 
-  const organizationColumns: Array<ColumnDef<PublicOrganizationType>> = useMemo(
+  const organizationColumns: Array<ColumnDef<AdminPublicUserType>> = useMemo(
     () => [
       {
         header: 'Name',
         accessorKey: 'name',
+      },
+      {
+        header: 'Email',
+        accessorKey: 'email',
       },
       {
         header: 'Created at',
@@ -58,7 +62,7 @@ function AdminOrganizationsPage() {
         cell: ({ row }) => (
           <Button
             size="small"
-            href={`/admin/organizations/${row.original.id}`}
+            href={`/admin/users/${row.original.id}`}
             color="secondary"
             label="View"
           />
@@ -68,12 +72,12 @@ function AdminOrganizationsPage() {
     [formatDateAndTime]
   );
 
-  const organizations = useMemo(() => {
+  const users = useMemo(() => {
     return data?.body;
   }, [data]);
 
   return (
-    <DashboardPageLayout encapsulatedFullHeight title="Organizations">
+    <DashboardPageLayout encapsulatedFullHeight title="Users">
       <DashboardPageSection fullHeight>
         <DataTable
           onLimitChange={setLimit}
@@ -81,18 +85,18 @@ function AdminOrganizationsPage() {
           autofitHeight
           onSearch={setSearch}
           isLoading={isFetching}
-          errorMessage={isError ? 'Error fetching organizations' : undefined}
+          errorMessage={isError ? 'Error fetching users' : undefined}
           limit={limit}
           offset={offset}
           onSetOffset={setOffset}
           showPagination
           columns={organizationColumns}
-          data={organizations?.organizations || []}
-          hasNextPage={organizations?.hasNextPage}
+          data={users?.users || []}
+          hasNextPage={users?.hasNextPage}
         />
       </DashboardPageSection>
     </DashboardPageLayout>
   );
 }
 
-export default AdminOrganizationsPage;
+export default AdminUsersPage;

@@ -1,16 +1,36 @@
 'use client';
 import { useCurrentAdminOrganization } from './hooks/useCurrentAdminOrganization/useCurrentAdminOrganization';
 import {
+  AsyncSelect,
+  Badge,
   Button,
+  CompanyIcon,
   DashboardPageLayout,
   DashboardPageSection,
+  DataTable,
   Dialog,
-  RawInput,
+  DotsHorizontalIcon,
+  DropdownMenu,
+  DropdownMenuItem,
+  FormField,
+  FormProvider,
+  HStack,
+  OptionTypeSchemaSingle,
   Typography,
+  useForm,
   VStack,
 } from '@letta-web/component-library';
-import { webApi } from '$letta/client';
-import { useCallback } from 'react';
+import { webApi, webApiQueryKeys } from '$letta/client';
+import { useCallback, useMemo, useState } from 'react';
+import { useDateFormatter } from '@letta-web/helpful-client-utils';
+import type { ColumnDef } from '@tanstack/react-table';
+import type { AdminOrganizationUserType } from '$letta/web-api/admin/organizations/adminOrganizationsContracts';
+import { useQueryClient } from '@tanstack/react-query';
+import type { contracts } from '$letta/web-api/contracts';
+import type { ServerInferResponses } from '@ts-rest/core';
+import { useDebouncedValue } from '@mantine/hooks';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
 
 function EnableCloudAccess() {
   const organization = useCurrentAdminOrganization();
@@ -75,14 +95,402 @@ function DisableCloudAccess() {
   );
 }
 
-function OrganizationPage() {
+const AddUserToOrganizationSchema = z.object({
+  email: OptionTypeSchemaSingle.optional(),
+});
+
+function AddUserToOrganizationDialog() {
   const organization = useCurrentAdminOrganization();
 
+  const form = useForm<z.infer<typeof AddUserToOrganizationSchema>>({
+    resolver: zodResolver(AddUserToOrganizationSchema),
+    defaultValues: {
+      email: undefined,
+    },
+  });
+
+  const { mutate, isPending, isSuccess, isError } =
+    webApi.admin.organizations.adminAddUserToOrganization.useMutation();
+
+  const handleAddUser = useCallback(
+    async (values: z.infer<typeof AddUserToOrganizationSchema>) => {
+      if (!organization) {
+        return;
+      }
+
+      mutate(
+        {
+          params: {
+            organizationId: organization.id,
+          },
+          body: {
+            userId: values.email?.value || '',
+          },
+        },
+        {
+          onSuccess: () => {
+            window.location.reload();
+          },
+        }
+      );
+    },
+    [organization, mutate]
+  );
+
+  const loadOptions = useCallback(async (inputValue: string) => {
+    const response = await webApi.admin.users.adminGetUsers.query({
+      query: {
+        search: inputValue,
+      },
+    });
+
+    if (response.status !== 200) {
+      return [];
+    }
+
+    return response.body.users.map((user) => ({
+      label: user.email,
+      value: user.id,
+      description: user.name,
+    }));
+  }, []);
+
   return (
-    <DashboardPageLayout title={organization?.name}>
-      <DashboardPageSection title="Organization Details">
-        <RawInput disabled fullWidth label="Name" value={organization?.name} />
+    <FormProvider {...form}>
+      <Dialog
+        title="Add User"
+        trigger={<Button label="Add User" />}
+        isConfirmBusy={isPending && isSuccess}
+        errorMessage={isError ? 'Failed to add user' : undefined}
+        onSubmit={form.handleSubmit(handleAddUser)}
+      >
+        <Typography>
+          You can only add users that have already signed up for Letta. If you
+          want to add a user that has not signed up yet, please create an
+          organization on behalf of the user, and then invite them in the
+          organization settings.
+        </Typography>
+        <FormField
+          render={({ field }) => (
+            <AsyncSelect
+              {...field}
+              fullWidth
+              loadOptions={loadOptions}
+              onSelect={(value) => {
+                field.onChange(value);
+              }}
+              value={field.value}
+              label="Email"
+              placeholder="Start typing an email..."
+            />
+          )}
+          name="email"
+        />
+      </Dialog>
+    </FormProvider>
+  );
+}
+
+interface RemoveUserFromOrganizationDialogProps {
+  userId: string;
+}
+
+function RemoveUserFromOrganizationDialog(
+  props: RemoveUserFromOrganizationDialogProps
+) {
+  const { userId } = props;
+  const { mutate, isPending, isError } =
+    webApi.admin.organizations.adminRemoveUserFromOrganization.useMutation();
+  const queryClient = useQueryClient();
+  const organization = useCurrentAdminOrganization();
+
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const handleRemoveUser = useCallback(() => {
+    if (!organization) {
+      return;
+    }
+
+    mutate(
+      {
+        params: {
+          organizationId: organization.id,
+        },
+        body: {
+          userId,
+        },
+      },
+      {
+        onSuccess: () => {
+          queryClient.setQueriesData<
+            | ServerInferResponses<
+                typeof contracts.admin.organizations.adminListOrganizationUsers,
+                200
+              >
+            | undefined
+          >(
+            {
+              queryKey:
+                webApiQueryKeys.admin.organizations.adminListOrganizationUsers(
+                  organization.id
+                ),
+              exact: false,
+            },
+            (oldData) => {
+              if (!oldData) {
+                return;
+              }
+              return {
+                ...oldData,
+                body: {
+                  ...oldData.body,
+                  users: oldData.body.users.filter(
+                    (user) => user.id !== userId
+                  ),
+                },
+              };
+            }
+          );
+
+          setIsDialogOpen(false);
+        },
+      }
+    );
+  }, [organization, mutate, userId, queryClient]);
+
+  return (
+    <Dialog
+      title="Remove User"
+      onOpenChange={setIsDialogOpen}
+      isOpen={isDialogOpen}
+      trigger={<DropdownMenuItem doNotCloseOnSelect label="Remove User" />}
+      isConfirmBusy={isPending}
+      errorMessage={isError ? 'Failed to remove user' : undefined}
+      onConfirm={handleRemoveUser}
+    >
+      <p>Are you sure you want to remove this user from the organization?</p>
+    </Dialog>
+  );
+}
+
+const LIMIT = 5;
+function OrganizationMembers() {
+  const [search, setSearch] = useState('');
+  const [offset, setOffset] = useState(0);
+
+  const [debouncedSearch] = useDebouncedValue(search, 500);
+  const organization = useCurrentAdminOrganization();
+
+  const organizationId = organization?.id || '';
+
+  const { data, isLoading } =
+    webApi.admin.organizations.adminListOrganizationUsers.useQuery({
+      queryKey:
+        webApiQueryKeys.admin.organizations.adminListOrganizationUsersWithSearch(
+          organizationId,
+          {
+            search: debouncedSearch,
+            offset,
+            limit: LIMIT,
+          }
+        ),
+      queryData: {
+        params: {
+          organizationId,
+        },
+        query: {
+          offset,
+          search: debouncedSearch,
+          limit: LIMIT,
+        },
+      },
+      enabled: !!organizationId,
+    });
+
+  const columns: Array<ColumnDef<AdminOrganizationUserType>> = useMemo(
+    () => [
+      {
+        Header: 'Name',
+        accessorKey: 'name',
+      },
+      {
+        Header: 'Email',
+        accessorKey: 'email',
+      },
+      {
+        Header: 'Actions',
+        accessorKey: 'actions',
+        meta: {
+          style: {
+            columnAlign: 'right',
+          },
+        },
+        id: 'actions',
+        cell: ({ row }) => (
+          <DropdownMenu
+            trigger={
+              <Button
+                label="Actions"
+                hideLabel
+                color="tertiary-transparent"
+                preIcon={<DotsHorizontalIcon />}
+              />
+            }
+          >
+            <DropdownMenuItem
+              label="View User"
+              href={`/admin/users/${row.original.id}`}
+            />
+            <RemoveUserFromOrganizationDialog userId={row.original.id} />
+          </DropdownMenu>
+        ),
+      },
+    ],
+    []
+  );
+
+  return (
+    <DashboardPageSection
+      title="Members"
+      actions={<AddUserToOrganizationDialog />}
+    >
+      <DataTable
+        offset={offset}
+        onSetOffset={setOffset}
+        onSearch={setSearch}
+        searchValue={search}
+        isLoading={isLoading}
+        columns={columns}
+        data={data?.body.users || []}
+      />
+    </DashboardPageSection>
+  );
+}
+
+function BanOrganizationDialog() {
+  const organization = useCurrentAdminOrganization();
+
+  const { mutate, isPending, isError } =
+    webApi.admin.organizations.adminBanOrganization.useMutation();
+
+  const handleBanOrganization = useCallback(() => {
+    if (!organization) {
+      return;
+    }
+
+    mutate(
+      {
+        params: {
+          organizationId: organization.id,
+        },
+      },
+      {
+        onSuccess: () => {
+          window.location.reload();
+        },
+      }
+    );
+  }, [organization, mutate]);
+
+  return (
+    <Dialog
+      title="Ban Organization"
+      trigger={<Button color="destructive" label="Ban Organization" />}
+      isConfirmBusy={isPending}
+      errorMessage={isError ? 'Failed to ban organization' : undefined}
+      onConfirm={handleBanOrganization}
+    >
+      <p>Are you sure you want to ban this organization?</p>
+    </Dialog>
+  );
+}
+
+function UnBanOrganizationDialog() {
+  const organization = useCurrentAdminOrganization();
+
+  const { mutate, isPending, isError } =
+    webApi.admin.organizations.adminUnbanOrganization.useMutation();
+
+  const handleUnbanOrganization = useCallback(() => {
+    if (!organization) {
+      return;
+    }
+
+    mutate(
+      {
+        params: {
+          organizationId: organization.id,
+        },
+      },
+      {
+        onSuccess: () => {
+          window.location.reload();
+        },
+      }
+    );
+  }, [organization, mutate]);
+
+  return (
+    <Dialog
+      title="Unban Organization"
+      trigger={<Button color="destructive" label="Unban Organization" />}
+      isConfirmBusy={isPending}
+      errorMessage={isError ? 'Failed to unban organization' : undefined}
+      onConfirm={handleUnbanOrganization}
+    >
+      <p>Are you sure you want to unban this organization?</p>
+    </Dialog>
+  );
+}
+
+function BanSection() {
+  const organization = useCurrentAdminOrganization();
+
+  if (!organization) {
+    return null;
+  }
+
+  if (organization.bannedAt) {
+    return <UnBanOrganizationDialog />;
+  }
+
+  return <BanOrganizationDialog />;
+}
+
+function OrganizationPage() {
+  const organization = useCurrentAdminOrganization();
+  const { formatDate } = useDateFormatter();
+
+  return (
+    <DashboardPageLayout
+      returnButton={{
+        href: '/admin/organizations',
+        text: 'All Organizations',
+      }}
+    >
+      <DashboardPageSection>
+        <HStack borderBottom paddingBottom gap="large" align="center">
+          <CompanyIcon size="large" />
+          <VStack gap={false}>
+            <HStack align="center">
+              <Typography align="left" variant="heading3">
+                {organization?.name}
+              </Typography>
+              {organization?.bannedAt && (
+                <Badge content="Banned" color="destructive" />
+              )}
+            </HStack>
+            <HStack>
+              <Typography variant="body">
+                Created at{' '}
+                {organization?.createdAt
+                  ? formatDate(organization.createdAt)
+                  : ''}
+              </Typography>
+            </HStack>
+          </VStack>
+        </HStack>
       </DashboardPageSection>
+      <OrganizationMembers />
       <DashboardPageSection title="Cloud Access">
         <VStack>
           <Typography>
@@ -98,6 +506,15 @@ function OrganizationPage() {
             )}
           </div>
         </VStack>
+      </DashboardPageSection>
+      <DashboardPageSection title="Ban Organization">
+        <Typography>
+          Banning an organization will ban all users in the organization and
+          delete all api keys, all other data will be kept.
+        </Typography>
+        <HStack>
+          <BanSection />
+        </HStack>
       </DashboardPageSection>
     </DashboardPageLayout>
   );

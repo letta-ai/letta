@@ -19,7 +19,7 @@ export function AgentTemplateCard(props: AgentTemplateCardProps) {
   // const [openVersions, setOpenVersions] = React.useState(false);
   const { agent } = props;
   const { name, updatedAt } = agent;
-  const { formatDate } = useDateFormatter();
+  const { formatDateAndTime } = useDateFormatter();
   const { slug: projectSlug } = useCurrentProject();
 
   return (
@@ -27,7 +27,7 @@ export function AgentTemplateCard(props: AgentTemplateCardProps) {
       icon={<Avatar size="small" name={name} />}
       title={name}
       subtitle={t('subtitle', {
-        date: formatDate(updatedAt),
+        date: formatDateAndTime(updatedAt),
       })}
       mainAction={
         <HStack>

@@ -252,7 +252,7 @@ function SystemPromptEditor() {
     [syncUpdateCurrentAgent]
   );
 
-  const { formatDate } = useDateFormatter();
+  const { formatDateAndTime } = useDateFormatter();
 
   return (
     <>
@@ -293,7 +293,7 @@ function SystemPromptEditor() {
           {lastUpdatedAt && (
             <Typography>
               {t('SystemPromptEditor.updatedAt', {
-                date: formatDate(lastUpdatedAt),
+                date: formatDateAndTime(lastUpdatedAt),
               })}
             </Typography>
           )}

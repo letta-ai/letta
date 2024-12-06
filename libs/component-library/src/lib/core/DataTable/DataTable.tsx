@@ -170,6 +170,7 @@ export function DataTable<TData, TValue>(props: DataTableProps<TData, TValue>) {
     className,
     noResultsText,
     showPagination,
+    onSearch,
     fullHeight,
     onLimitChange,
   } = props;
@@ -268,7 +269,20 @@ export function DataTable<TData, TValue>(props: DataTableProps<TData, TValue>) {
           placeholder="Search"
           label="Search"
           hideLabel
-          onChange={(e) => props.onSearch?.(e.target.value)}
+          onChange={(e) => {
+            if (onSearch) {
+              onSearch(e.target.value);
+
+              if (onSetCursor) {
+                lastCursor.current = undefined;
+                onSetCursor(lastCursor.current);
+              }
+
+              if (onSetOffset) {
+                onSetOffset(0);
+              }
+            }
+          }}
           value={props.searchValue}
         />
       )}
