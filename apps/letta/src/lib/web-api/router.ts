@@ -8,9 +8,10 @@ import { adePreferencesRouter } from './ade-preferences/adePreferencesRouter';
 import { agentTemplateRoutes } from './agent-templates/agentTemplateRoutes';
 import { flushLayoutsRouter } from './admin/flush-layouts/flushLayoutsRouter';
 import { developmentServersRouter } from './development-servers/developmentServersRouter';
-import { adminOrganizationsRouter } from '$letta/web-api/admin/admin-organizations/adminOrganizationsRouter';
+import { adminOrganizationsRouter } from '$letta/web-api/admin/organizations/adminOrganizationsRouter';
 import { adminModelsRouter } from '$letta/web-api/admin/models/adminModelsRouter';
 import { environmentVariablesRouter } from '$letta/web-api/environment-variables/environmentVariablesRouter';
+import { adminUsersRouter } from '$letta/web-api/admin/users/adminUsersRouter';
 
 export const router = {
   user: userRouter,
@@ -23,6 +24,7 @@ export const router = {
   developmentServers: developmentServersRouter,
   environmentVariables: environmentVariablesRouter,
   admin: {
+    users: adminUsersRouter,
     models: adminModelsRouter,
     flushLayouts: flushLayoutsRouter,
     whitelistedEmails: adminWhitelistedEmailsRouter,

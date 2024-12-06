@@ -118,7 +118,7 @@ interface ProjectCardProps {
 function ProjectCard(props: ProjectCardProps) {
   const { projectName, lastUpdatedAt, url } = props;
   const t = useTranslations('projects/page');
-  const { formatDate } = useDateFormatter();
+  const { formatDateAndTime } = useDateFormatter();
 
   return (
     <Link href={url}>
@@ -145,7 +145,7 @@ function ProjectCard(props: ProjectCardProps) {
                   <Typography variant="body" color="muted">
                     {lastUpdatedAt
                       ? t('projectsList.projectItem.lastUpdatedAt', {
-                          date: formatDate(lastUpdatedAt),
+                          date: formatDateAndTime(lastUpdatedAt),
                         })
                       : t('projectsList.projectItem.noLastUpdatedAt')}
                   </Typography>

@@ -143,7 +143,7 @@ function LocalProjectPage() {
     return data.length > offset + LIMIT;
   }, [data, offset]);
 
-  const { formatDate } = useDateFormatter();
+  const { formatDateAndTime } = useDateFormatter();
   const user = useCurrentUser();
 
   const columns: Array<ColumnDef<AgentState>> = useMemo(
@@ -160,7 +160,7 @@ function LocalProjectPage() {
         header: t('table.columns.createdAt'),
         accessorKey: 'created_at',
         cell: ({ row }) => {
-          return formatDate(row.original?.created_at || '');
+          return formatDateAndTime(row.original?.created_at || '');
         },
       },
       {
@@ -188,7 +188,7 @@ function LocalProjectPage() {
         ),
       },
     ],
-    [t, formatDate, currentDevelopmentServerConfig?.id, user?.id]
+    [t, formatDateAndTime, currentDevelopmentServerConfig?.id, user?.id]
   );
 
   return (

@@ -194,6 +194,8 @@
     --background-grey2: 0, 0%, 50%;
     --backbround-grey2-content: 0, 0, 100%;
 
+    --text-secondary: 0, 0%, 100%;
+
     --border : 0, 0%, 100%;
 
     --content: 0 0% 98%;
@@ -210,6 +212,11 @@
     --tertiary-content: 0, 0, 100%;
     --tertiary-active: 180 100% 33%;
     --tertiary-hover: 180 100% 33%;
+
+    --popover: 0, 0%, 0%;
+    --popover-content: 0, 0%, 100%;
+    --accent: 240 4.8% 95.9%;
+    --accent-content: 240 5.9% 10%;
 
 
   }

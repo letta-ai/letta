@@ -97,7 +97,7 @@ function MemoryItem(props: MemoryItemProps) {
 
   const t = useTranslations('ADE/ArchivalMemories');
 
-  const { formatDate } = useDateFormatter();
+  const { formatDateAndTime } = useDateFormatter();
 
   const { mutate: deleteMemory, isPending: isDeletingMemory } =
     useAgentsServiceDeleteAgentArchivalMemory({
@@ -137,7 +137,7 @@ function MemoryItem(props: MemoryItemProps) {
     <ActionCard
       key={memory.id}
       title={t('MemoryItem.memoryText', {
-        date: formatDate(memory?.created_at || ''),
+        date: formatDateAndTime(memory?.created_at || ''),
       })}
       mainAction={
         <HStack gap="small">

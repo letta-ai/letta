@@ -227,7 +227,7 @@ function AdminInferenceModelsPage() {
       },
     });
 
-  const { formatDate } = useDateFormatter();
+  const { formatDateAndTime } = useDateFormatter();
 
   const inferenceModelsColumns: Array<ColumnDef<AdminInferenceModelType>> =
     useMemo(
@@ -257,7 +257,7 @@ function AdminInferenceModelsPage() {
         {
           header: 'Created at',
           accessorKey: 'createdAt',
-          cell: ({ row }) => formatDate(row.original.updatedAt),
+          cell: ({ row }) => formatDateAndTime(row.original.updatedAt),
         },
         {
           header: 'Visible to users',
@@ -278,7 +278,7 @@ function AdminInferenceModelsPage() {
           ),
         },
       ],
-      [formatDate]
+      [formatDateAndTime]
     );
 
   const inferenceModels = useMemo(() => {

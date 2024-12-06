@@ -37,6 +37,7 @@ export const organizations = pgTable('organizations', {
   enabledCloudAt: timestamp('enabled_cloud_at'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   deletedAt: timestamp('deleted_at'),
+  bannedAt: timestamp('banned_at'),
   updatedAt: timestamp('updated_at')
     .notNull()
     .$onUpdate(() => new Date()),
@@ -96,6 +97,7 @@ export const users = pgTable('users', {
   locale: text('locale').default('en'),
   submittedOnboardingAt: timestamp('submitted_onboarding_at'),
   deletedAt: timestamp('deleted_at'),
+  bannedAt: timestamp('banned_at'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at')
     .notNull()

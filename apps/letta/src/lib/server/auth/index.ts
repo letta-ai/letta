@@ -374,6 +374,10 @@ async function findExistingUser(
     where: eq(users.providerId, userData.uniqueId),
   });
 
+  if (user?.bannedAt) {
+    throw new Error(LoginErrorsEnum.BANNED);
+  }
+
   if (!user) {
     return null;
   }
@@ -617,6 +621,7 @@ export async function getUser(): Promise<GetUserDataResponse | null> {
       imageUrl: true,
       locale: true,
       name: true,
+      bannedAt: true,
     },
     with: {
       activeOrganization: {
@@ -626,6 +631,10 @@ export async function getUser(): Promise<GetUserDataResponse | null> {
       },
     },
   });
+
+  if (userFromDb?.bannedAt) {
+    return null;
+  }
 
   if (!userFromDb) {
     return null;
