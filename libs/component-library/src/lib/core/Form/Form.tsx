@@ -172,7 +172,7 @@ function InputContainerHeader(props: InputContainerHeaderProps) {
   const { preLabelIcon, label, infoTooltip, variant = 'default' } = props;
   return (
     <HStack>
-      <HStack gap="text">
+      <HStack gap="small" align="center">
         {preLabelIcon && <Slot className="h-3">{preLabelIcon}</Slot>}
         <Typography
           variant={variant === 'default' ? 'body2' : 'body'}
