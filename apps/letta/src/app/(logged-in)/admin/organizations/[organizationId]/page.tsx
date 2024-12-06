@@ -15,6 +15,7 @@ import {
   FormField,
   FormProvider,
   HStack,
+  LoadedTypography,
   OptionTypeSchemaSingle,
   Typography,
   useForm,
@@ -39,20 +40,27 @@ function EnableCloudAccess() {
     webApi.admin.organizations.toggleCloudOrganization.useMutation();
 
   const handleEnableCloudAccess = useCallback(() => {
-    mutate({
-      params: {
-        organizationId: organization?.id || '',
+    mutate(
+      {
+        params: {
+          organizationId: organization?.id || '',
+        },
+        body: {
+          enabledCloud: true,
+        },
       },
-      body: {
-        enabledCloud: true,
-      },
-    });
+      {
+        onSuccess: () => {
+          window.location.reload();
+        },
+      }
+    );
   }, [organization, mutate]);
 
   return (
     <Dialog
       title="Enable Cloud Access"
-      trigger={<Button label="Enable Cloud Access" />}
+      trigger={<Button label="Enable Cloud Access" size="small" />}
       isConfirmBusy={isPending}
       errorMessage={isError ? 'Failed to enable cloud access' : undefined}
       onConfirm={handleEnableCloudAccess}
@@ -69,20 +77,27 @@ function DisableCloudAccess() {
     webApi.admin.organizations.toggleCloudOrganization.useMutation();
 
   const handleDisableCloudAccess = useCallback(() => {
-    mutate({
-      params: {
-        organizationId: organization?.id || '',
+    mutate(
+      {
+        params: {
+          organizationId: organization?.id || '',
+        },
+        body: {
+          enabledCloud: false,
+        },
       },
-      body: {
-        enabledCloud: false,
-      },
-    });
+      {
+        onSuccess: () => {
+          window.location.reload();
+        },
+      }
+    );
   }, [organization, mutate]);
 
   return (
     <Dialog
       title="Disable Cloud Access"
-      trigger={<Button label="Disable Cloud Access" />}
+      trigger={<Button size="small" label="Disable Cloud Access" />}
       isConfirmBusy={isPending}
       errorMessage={isError ? 'Failed to disable cloud access' : undefined}
       onConfirm={handleDisableCloudAccess}
@@ -357,12 +372,157 @@ function OrganizationMembers() {
         offset={offset}
         onSetOffset={setOffset}
         onSearch={setSearch}
+        limit={LIMIT}
         searchValue={search}
         isLoading={isLoading}
         columns={columns}
         data={data?.body.users || []}
       />
     </DashboardPageSection>
+  );
+}
+
+interface MaybeValueProps {
+  value?: number;
+  isLoading?: boolean;
+}
+function MaybeValue(props: MaybeValueProps) {
+  const { value, isLoading } = props;
+
+  if (isLoading) {
+    return <LoadedTypography fillerText="TEST" />;
+  }
+
+  return <Typography>{value || '0'}</Typography>;
+}
+
+function OrganizationProperties() {
+  const organization = useCurrentAdminOrganization();
+
+  const { data, isLoading } =
+    webApi.admin.organizations.adminGetOrganizationStatistics.useQuery({
+      queryKey:
+        webApiQueryKeys.admin.organizations.adminGetOrganizationStatistics(
+          organization?.id || ''
+        ),
+      queryData: {
+        params: {
+          organizationId: organization?.id || '',
+        },
+      },
+      enabled: !!organization,
+    });
+
+  const properties = useMemo(() => {
+    if (!organization) {
+      return [];
+    }
+
+    return [
+      {
+        name: 'Cloud Access',
+        value: (
+          <HStack fullWidth justify="end" align="center">
+            {organization.enabledCloudAt ? 'Enabled' : 'Disabled'}
+            {organization.enabledCloudAt ? (
+              <DisableCloudAccess />
+            ) : (
+              <EnableCloudAccess />
+            )}
+          </HStack>
+        ),
+      },
+      {
+        name: 'Total Members',
+        value: (
+          <MaybeValue value={data?.body.totalMembers} isLoading={isLoading} />
+        ),
+      },
+      {
+        name: 'Total Templates',
+        value: (
+          <MaybeValue value={data?.body.totalTemplates} isLoading={isLoading} />
+        ),
+      },
+      {
+        name: 'Total Deployed Agents',
+        value: (
+          <MaybeValue
+            value={data?.body.totalDeployedAgents}
+            isLoading={isLoading}
+          />
+        ),
+      },
+      {
+        name: 'Letta Agents Organization ID',
+        value: organization.lettaAgentsId || 'None (Bugged Org)',
+      },
+    ];
+  }, [data?.body, isLoading, organization]);
+
+  return (
+    <DashboardPageSection title="Organization Properties">
+      <DataTable
+        columns={[
+          {
+            header: 'Name',
+            accessorKey: 'name',
+          },
+          {
+            header: 'Value',
+            meta: {
+              style: {
+                columnAlign: 'right',
+              },
+            },
+            cell: ({ row }) => row.original.value,
+          },
+        ]}
+        data={properties}
+      />
+    </DashboardPageSection>
+  );
+}
+
+function DeleteOrganizationDialog() {
+  const organization = useCurrentAdminOrganization();
+
+  const { mutate, isPending, isError } =
+    webApi.admin.organizations.adminDeleteOrganization.useMutation();
+
+  const handleDeleteOrganization = useCallback(() => {
+    if (!organization) {
+      return;
+    }
+
+    mutate(
+      {
+        params: {
+          organizationId: organization.id,
+        },
+      },
+      {
+        onSuccess: () => {
+          window.location.href = '/admin/organizations';
+        },
+      }
+    );
+  }, [organization, mutate]);
+
+  return (
+    <Dialog
+      title="Delete Organization"
+      trigger={<Button color="destructive" label="Delete Organization" />}
+      isConfirmBusy={isPending}
+      errorMessage={isError ? 'Failed to delete organization' : undefined}
+      onConfirm={handleDeleteOrganization}
+    >
+      <p>
+        Are you sure you want to delete this organization? This will delete all
+        the organization{"'"}s data. This is a hard deletion, please use this as
+        a last resort.
+      </p>
+    </Dialog>
   );
 }
 
@@ -490,23 +650,9 @@ function OrganizationPage() {
           </VStack>
         </HStack>
       </DashboardPageSection>
+      <OrganizationProperties />
       <OrganizationMembers />
-      <DashboardPageSection title="Cloud Access">
-        <VStack>
-          <Typography>
-            Currently cloud access is{' '}
-            {organization?.enabledCloudAt ? 'enabled' : 'disabled'} for this
-            organization.
-          </Typography>
-          <div>
-            {organization?.enabledCloudAt ? (
-              <DisableCloudAccess />
-            ) : (
-              <EnableCloudAccess />
-            )}
-          </div>
-        </VStack>
-      </DashboardPageSection>
+
       <DashboardPageSection title="Ban Organization">
         <Typography>
           Banning an organization will ban all users in the organization and
@@ -514,6 +660,16 @@ function OrganizationPage() {
         </Typography>
         <HStack>
           <BanSection />
+        </HStack>
+      </DashboardPageSection>
+      <DashboardPageSection title="Delete Organization">
+        <Typography>
+          Deleting an organization will delete all data associated with the the
+          organization. This is a hard deletion, please use this as a last
+          resort. Please on Charles you know what you are doing.
+        </Typography>
+        <HStack>
+          <DeleteOrganizationDialog />
         </HStack>
       </DashboardPageSection>
     </DashboardPageLayout>

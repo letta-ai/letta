@@ -1,13 +1,16 @@
 import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
 import type { contracts } from '$letta/web-api/contracts';
 import {
+  agentTemplates,
   db,
+  deployedAgents,
   lettaAPIKeys,
   organizations,
   organizationUsers,
   users,
 } from '@letta-web/database';
-import { and, eq, inArray, like } from 'drizzle-orm';
+import { and, count, eq, inArray, like } from 'drizzle-orm';
+import { AdminService } from '@letta-web/letta-agents-api';
 
 /* Get Organizations */
 type GetOrganizationsResponse = ServerInferResponses<
@@ -476,6 +479,101 @@ async function adminListOrganizationUsers(
   };
 }
 
+type AdminGetOrganizationStatisticsRequest = ServerInferRequest<
+  typeof contracts.admin.organizations.adminGetOrganizationStatistics
+>;
+
+type AdminGetOrganizationStatisticsResponse = ServerInferResponses<
+  typeof contracts.admin.organizations.adminGetOrganizationStatistics
+>;
+
+async function adminGetOrganizationStatistics(
+  req: AdminGetOrganizationStatisticsRequest
+): Promise<AdminGetOrganizationStatisticsResponse> {
+  const { organizationId } = req.params;
+
+  const organization = await db.query.organizations.findFirst({
+    where: eq(organizations.id, organizationId),
+  });
+
+  if (!organization) {
+    return {
+      status: 404,
+      body: {
+        message: 'Organization not found',
+      },
+    };
+  }
+
+  const [
+    [{ count: totalMembers }],
+    [{ count: totalTemplates }],
+    [{ count: totalDeployedAgents }],
+  ] = await Promise.all([
+    db
+      .select({ count: count() })
+      .from(organizationUsers)
+      .where(eq(organizationUsers.organizationId, organizationId)),
+    db
+      .select({ count: count() })
+      .from(agentTemplates)
+      .where(eq(agentTemplates.organizationId, organizationId)),
+    db
+      .select({ count: count() })
+      .from(deployedAgents)
+      .where(eq(deployedAgents.organizationId, organizationId)),
+  ]);
+
+  return {
+    status: 200,
+    body: {
+      totalMembers,
+      totalTemplates,
+      totalDeployedAgents,
+    },
+  };
+}
+
+type AdminDeleteOrganizationRequest = ServerInferRequest<
+  typeof contracts.admin.organizations.adminDeleteOrganization
+>;
+
+type AdminDeleteOrganizationResponse = ServerInferResponses<
+  typeof contracts.admin.organizations.adminDeleteOrganization
+>;
+
+async function adminDeleteOrganization(
+  req: AdminDeleteOrganizationRequest
+): Promise<AdminDeleteOrganizationResponse> {
+  const { organizationId } = req.params;
+
+  const organization = await db.query.organizations.findFirst({
+    where: eq(organizations.id, organizationId),
+  });
+
+  if (!organization) {
+    return {
+      status: 404,
+      body: {
+        message: 'Organization not found',
+      },
+    };
+  }
+
+  await db.delete(organizations).where(eq(organizations.id, organizationId));
+
+  await AdminService.deleteOrganizationById({
+    orgId: organization.lettaAgentsId,
+  });
+
+  return {
+    status: 200,
+    body: {
+      success: true,
+    },
+  };
+}
+
 export const adminOrganizationsRouter = {
   getOrganizations,
   getOrganization,
@@ -484,5 +582,7 @@ export const adminOrganizationsRouter = {
   adminUnbanOrganization,
   adminAddUserToOrganization,
   adminRemoveUserFromOrganization,
+  adminGetOrganizationStatistics,
   adminListOrganizationUsers,
+  adminDeleteOrganization,
 };

@@ -165,6 +165,37 @@ const adminListOrganizationUsersContract = c.query({
   },
 });
 
+const AdminOrganizationStatisticsSchema = z.object({
+  totalTemplates: z.number(),
+  totalDeployedAgents: z.number(),
+  totalMembers: z.number(),
+});
+
+const adminGetOrganizationStatisticsContract = c.query({
+  method: 'GET',
+  pathParams: z.object({
+    organizationId: z.string(),
+  }),
+  path: '/admin/organizations/:organizationId/statistics',
+  responses: {
+    200: AdminOrganizationStatisticsSchema,
+  },
+});
+
+const adminDeleteOrganizationContract = c.mutation({
+  method: 'DELETE',
+  pathParams: z.object({
+    organizationId: z.string(),
+  }),
+  path: '/admin/organizations/:organizationId',
+  responses: {
+    200: z.object({
+      success: z.boolean(),
+    }),
+  },
+  body: z.undefined(),
+});
+
 export const adminOrganizationsContracts = {
   getOrganizations: getOrganizationsContract,
   getOrganization: getOrganizationContract,
@@ -174,6 +205,8 @@ export const adminOrganizationsContracts = {
   adminAddUserToOrganization: adminAddUserToOrganizationContract,
   adminRemoveUserFromOrganization: adminRemoveUserFromOrganizationContract,
   adminListOrganizationUsers: adminListOrganizationUsersContract,
+  adminGetOrganizationStatistics: adminGetOrganizationStatisticsContract,
+  adminDeleteOrganization: adminDeleteOrganizationContract,
 };
 
 export const adminOrganizationsQueryClientKeys = {
@@ -198,5 +231,9 @@ export const adminOrganizationsQueryClientKeys = {
       organizationId
     ),
     search,
+  ],
+  adminGetOrganizationStatistics: (organizationId: string) => [
+    ...adminOrganizationsQueryClientKeys.getOrganization(organizationId),
+    'statistics',
   ],
 };
