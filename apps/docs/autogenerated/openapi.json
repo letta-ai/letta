@@ -371,6 +371,157 @@
         }
       }
     },
+    "/v1/tools/run": {
+      "post": {
+        "tags": ["tools"],
+        "summary": "Run Tool From Source",
+        "description": "Attempt to build a tool from source, then run it on the provided arguments",
+        "operationId": "run_tool_from_source",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ToolRunFromSource"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FunctionReturn"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/tools/composio/apps": {
+      "get": {
+        "tags": ["tools"],
+        "summary": "List Composio Apps",
+        "description": "Get a list of all Composio apps",
+        "operationId": "list_composio_apps",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/AppModel"
+                  },
+                  "type": "array",
+                  "title": "Response List Composio Apps"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/tools/composio/apps/{composio_app_name}/actions": {
+      "get": {
+        "tags": ["tools"],
+        "summary": "List Composio Actions By App",
+        "description": "Get a list of all Composio actions for a specific app",
+        "operationId": "list_composio_actions_by_app",
+        "parameters": [
+          {
+            "name": "composio_app_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Composio App Name"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ActionModel"
+                  },
+                  "title": "Response List Composio Actions By App"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/tools/composio/{composio_action_name}": {
+      "post": {
+        "tags": ["tools"],
+        "summary": "Add Composio Tool",
+        "description": "Add a new Composio tool by action name (Composio refers to each tool as an `Action`)",
+        "operationId": "add_composio_tool",
+        "parameters": [
+          {
+            "name": "composio_action_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Composio Action Name"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/letta__schemas__tool__Tool"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/sources/{source_id}": {
       "get": {
         "tags": ["sources"],
@@ -1488,166 +1639,62 @@
             }
           }
         }
-      },
-      "patch": {
-        "tags": ["agents"],
-        "summary": "Update Agent Memory",
-        "description": "Update the core memory of a specific agent.\n    This endpoint accepts new memory contents (labels as keys, and values as values) and updates the core memory of the agent identified by the user ID and agent ID.\nThis endpoint accepts new memory contents to update the core memory of the agent.\nThis endpoint only supports modifying existing blocks; it does not support deleting/unlinking or creating/linking blocks.",
-        "operationId": "update_agent_memory",
-        "parameters": [
-          {
-            "name": "agent_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Agent Id"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "title": "Request"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Memory"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/agents/{agent_id}/memory/label": {
-      "patch": {
-        "tags": ["agents"],
-        "summary": "Update Agent Memory Label",
-        "description": "Update the label of a block in an agent's memory.",
-        "operationId": "update_agent_memory_label",
-        "parameters": [
-          {
-            "name": "agent_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Agent Id"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/BlockLabelUpdate"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Memory"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/agents/{agent_id}/memory/block": {
-      "post": {
-        "tags": ["agents"],
-        "summary": "Add Agent Memory Block",
-        "description": "Creates a memory block and links it to the agent.",
-        "operationId": "add_agent_memory_block",
-        "parameters": [
-          {
-            "name": "agent_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Agent Id"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/BlockCreate"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Memory"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
       }
     },
     "/v1/agents/{agent_id}/memory/block/{block_label}": {
+      "get": {
+        "tags": ["agents"],
+        "summary": "Get Agent Memory Block",
+        "description": "Retrieve a memory block from an agent.",
+        "operationId": "get_agent_memory_block",
+        "parameters": [
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Agent Id"
+            }
+          },
+          {
+            "name": "block_label",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Block Label"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Block"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
       "delete": {
         "tags": ["agents"],
         "summary": "Remove Agent Memory Block",
         "description": "Removes a memory block from an agent by unlnking it. If the block is not linked to any other agent, it is deleted.",
-        "operationId": "remove_agent_memory_block",
+        "operationId": "remove_agent_memory_block_by_label",
         "parameters": [
           {
             "name": "agent_id",
@@ -1690,14 +1737,115 @@
             }
           }
         }
-      }
-    },
-    "/v1/agents/{agent_id}/memory/limit": {
+      },
       "patch": {
         "tags": ["agents"],
-        "summary": "Update Agent Memory Limit",
-        "description": "Update the limit of a block in an agent's memory.",
-        "operationId": "update_agent_memory_limit",
+        "summary": "Update Agent Memory Block",
+        "description": "Removes a memory block from an agent by unlnking it. If the block is not linked to any other agent, it is deleted.",
+        "operationId": "update_agent_memory_block_by_label",
+        "parameters": [
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Agent Id"
+            }
+          },
+          {
+            "name": "block_label",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Block Label"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BlockUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Block"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/agents/{agent_id}/memory/block": {
+      "get": {
+        "tags": ["agents"],
+        "summary": "Get Agent Memory Blocks",
+        "description": "Retrieve the memory blocks of a specific agent.",
+        "operationId": "get_agent_memory_blocks",
+        "parameters": [
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Agent Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Block"
+                  },
+                  "title": "Response Get Agent Memory Blocks"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["agents"],
+        "summary": "Add Agent Memory Block",
+        "description": "Creates a memory block and links it to the agent.",
+        "operationId": "add_agent_memory_block",
         "parameters": [
           {
             "name": "agent_id",
@@ -1714,7 +1862,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/BlockLimitUpdate"
+                "$ref": "#/components/schemas/CreateBlock"
               }
             }
           }
@@ -2316,6 +2464,9 @@
           "200": {
             "description": "Successful response",
             "content": {
+              "application/json": {
+                "schema": {}
+              },
               "text/event-stream": {
                 "schema": {
                   "description": "Server-Sent Events stream"
@@ -2474,7 +2625,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/BlockCreate"
+                "$ref": "#/components/schemas/CreateBlock"
               }
             }
           }
@@ -2612,6 +2763,110 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Block"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/blocks/{block_id}/attach": {
+      "patch": {
+        "tags": ["blocks"],
+        "summary": "Link Agent Memory Block",
+        "description": "Link a memory block to an agent.",
+        "operationId": "update_agent_memory_block",
+        "parameters": [
+          {
+            "name": "block_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Block Id"
+            }
+          },
+          {
+            "name": "agent_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "The unique identifier of the agent to attach the source to.",
+              "title": "Agent Id"
+            },
+            "description": "The unique identifier of the agent to attach the source to."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Block"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/blocks/{block_id}/detach": {
+      "patch": {
+        "tags": ["blocks"],
+        "summary": "Unlink Agent Memory Block",
+        "description": "Unlink a memory block from an agent",
+        "operationId": "update_agent_memory_block1",
+        "parameters": [
+          {
+            "name": "block_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Block Id"
+            }
+          },
+          {
+            "name": "agent_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "The unique identifier of the agent to attach the source to.",
+              "title": "Agent Id"
+            },
+            "description": "The unique identifier of the agent to attach the source to."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Memory"
                 }
               }
             }
@@ -3090,6 +3345,152 @@
         "required": ["user_id"],
         "title": "APIKeyCreate"
       },
+      "ActionModel": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "display_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display Name"
+          },
+          "parameters": {
+            "$ref": "#/components/schemas/ActionParametersModel"
+          },
+          "response": {
+            "$ref": "#/components/schemas/ActionResponseModel"
+          },
+          "appName": {
+            "type": "string",
+            "title": "Appname"
+          },
+          "appId": {
+            "type": "string",
+            "title": "Appid"
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tags"
+          },
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled",
+            "default": false
+          },
+          "logo": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Logo"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "parameters",
+          "response",
+          "appName",
+          "appId",
+          "tags"
+        ],
+        "title": "ActionModel",
+        "description": "Action data model."
+      },
+      "ActionParametersModel": {
+        "properties": {
+          "properties": {
+            "type": "object",
+            "title": "Properties"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "type": {
+            "type": "string",
+            "title": "Type"
+          },
+          "required": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Required"
+          }
+        },
+        "type": "object",
+        "required": ["properties", "title", "type"],
+        "title": "ActionParametersModel",
+        "description": "Action parameter data models."
+      },
+      "ActionResponseModel": {
+        "properties": {
+          "properties": {
+            "type": "object",
+            "title": "Properties"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "type": {
+            "type": "string",
+            "title": "Type"
+          },
+          "required": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Required"
+          }
+        },
+        "type": "object",
+        "required": ["properties", "title", "type"],
+        "title": "ActionResponseModel",
+        "description": "Action response data model."
+      },
       "AgentState": {
         "properties": {
           "description": {
@@ -3161,22 +3562,29 @@
             "title": "Message Ids",
             "description": "The ids of the messages in the agent's in-context memory."
           },
-          "memory": {
-            "$ref": "#/components/schemas/Memory"
-          },
-          "tools": {
+          "tool_names": {
             "items": {
               "type": "string"
             },
             "type": "array",
-            "title": "Tools",
+            "title": "Tool Names",
             "description": "The tools used by the agent."
           },
           "tool_rules": {
             "anyOf": [
               {
                 "items": {
-                  "$ref": "#/components/schemas/BaseToolRule"
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ChildToolRule"
+                    },
+                    {
+                      "$ref": "#/components/schemas/InitToolRule"
+                    },
+                    {
+                      "$ref": "#/components/schemas/TerminalToolRule"
+                    }
+                  ]
                 },
                 "type": "array"
               },
@@ -3186,21 +3594,6 @@
             ],
             "title": "Tool Rules",
             "description": "The list of tool rules."
-          },
-          "tags": {
-            "anyOf": [
-              {
-                "items": {
-                  "type": "string"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Tags",
-            "description": "The tags associated with the agent."
           },
           "system": {
             "type": "string",
@@ -3218,17 +3611,49 @@
           "embedding_config": {
             "$ref": "#/components/schemas/EmbeddingConfig",
             "description": "The embedding configuration used by the agent."
+          },
+          "memory": {
+            "$ref": "#/components/schemas/Memory",
+            "description": "The in-context memory of the agent."
+          },
+          "tools": {
+            "items": {
+              "$ref": "#/components/schemas/letta__schemas__tool__Tool"
+            },
+            "type": "array",
+            "title": "Tools",
+            "description": "The tools used by the agent."
+          },
+          "sources": {
+            "items": {
+              "$ref": "#/components/schemas/Source"
+            },
+            "type": "array",
+            "title": "Sources",
+            "description": "The sources used by the agent."
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tags",
+            "description": "The tags associated with the agent."
           }
         },
         "additionalProperties": false,
         "type": "object",
         "required": [
           "name",
-          "tools",
+          "tool_names",
           "system",
           "agent_type",
           "llm_config",
-          "embedding_config"
+          "embedding_config",
+          "memory",
+          "tools",
+          "sources",
+          "tags"
         ],
         "title": "AgentState",
         "description": "Representation of an agent's state. This is the state of the agent at a given time, and is persisted in the DB backend. The state has all the information needed to recreate a persisted agent.\n\nParameters:\n    id (str): The unique identifier of the agent.\n    name (str): The name of the agent (must be unique to the user).\n    created_at (datetime): The datetime the agent was created.\n    message_ids (List[str]): The ids of the messages in the agent's in-context memory.\n    memory (Memory): The in-context memory of the agent.\n    tools (List[str]): The tools used by the agent. This includes any memory editing functions specified in `memory`.\n    system (str): The system prompt used by the agent.\n    llm_config (LLMConfig): The LLM configuration used by the agent.\n    embedding_config (EmbeddingConfig): The embedding configuration used by the agent."
@@ -3238,6 +3663,262 @@
         "enum": ["memgpt_agent", "split_thread_agent", "o1_agent"],
         "title": "AgentType",
         "description": "Enum to represent the type of agent."
+      },
+      "AppAuthScheme": {
+        "properties": {
+          "scheme_name": {
+            "type": "string",
+            "title": "Scheme Name"
+          },
+          "auth_mode": {
+            "type": "string",
+            "enum": [
+              "OAUTH2",
+              "OAUTH1",
+              "API_KEY",
+              "BASIC",
+              "BEARER_TOKEN",
+              "BASIC_WITH_JWT"
+            ],
+            "title": "Auth Mode"
+          },
+          "fields": {
+            "items": {
+              "$ref": "#/components/schemas/AuthSchemeField"
+            },
+            "type": "array",
+            "title": "Fields"
+          },
+          "proxy": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Proxy"
+          },
+          "authorization_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Authorization Url"
+          },
+          "token_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Token Url"
+          },
+          "default_scopes": {
+            "anyOf": [
+              {
+                "items": {},
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Default Scopes"
+          },
+          "token_response_metadata": {
+            "anyOf": [
+              {
+                "items": {},
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Token Response Metadata"
+          },
+          "client_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Client Id"
+          },
+          "client_secret": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Client Secret"
+          }
+        },
+        "type": "object",
+        "required": ["scheme_name", "auth_mode", "fields"],
+        "title": "AppAuthScheme",
+        "description": "App authenticatio scheme."
+      },
+      "AppModel": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "appId": {
+            "type": "string",
+            "title": "Appid"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "categories": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Categories"
+          },
+          "meta": {
+            "type": "object",
+            "title": "Meta"
+          },
+          "logo": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Logo"
+          },
+          "docs": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Docs"
+          },
+          "group": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Group"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          },
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled",
+            "default": false
+          },
+          "no_auth": {
+            "type": "boolean",
+            "title": "No Auth",
+            "default": false
+          },
+          "auth_schemes": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/AppAuthScheme"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Auth Schemes"
+          },
+          "testConnectors": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Testconnectors"
+          },
+          "documentation_doc_text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Documentation Doc Text"
+          },
+          "configuration_docs_text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Configuration Docs Text"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "key",
+          "appId",
+          "description",
+          "categories",
+          "meta"
+        ],
+        "title": "AppModel",
+        "description": "App data model."
       },
       "ArchivalMemorySummary": {
         "properties": {
@@ -3388,18 +4069,68 @@
         "required": ["uuid"],
         "title": "AuthResponse"
       },
-      "BaseToolRule": {
+      "AuthSchemeField": {
         "properties": {
-          "tool_name": {
+          "name": {
             "type": "string",
-            "title": "Tool Name",
-            "description": "The name of the tool. Must exist in the database for the user's organization."
+            "title": "Name"
+          },
+          "display_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display Name"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "type": {
+            "type": "string",
+            "title": "Type"
+          },
+          "default": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Default"
+          },
+          "required": {
+            "type": "boolean",
+            "title": "Required",
+            "default": false
+          },
+          "expected_from_customer": {
+            "type": "boolean",
+            "title": "Expected From Customer",
+            "default": true
+          },
+          "get_current_user_endpoint": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Get Current User Endpoint"
           }
         },
-        "additionalProperties": false,
         "type": "object",
-        "required": ["tool_name"],
-        "title": "BaseToolRule"
+        "required": ["name", "description", "type"],
+        "title": "AuthSchemeField",
+        "description": "Auth scheme field."
       },
       "Block": {
         "properties": {
@@ -3412,7 +4143,7 @@
             "type": "integer",
             "title": "Limit",
             "description": "Character limit of the block.",
-            "default": 2000
+            "default": 5000
           },
           "name": {
             "anyOf": [
@@ -3518,108 +4249,6 @@
         "title": "Block",
         "description": "A Block represents a reserved section of the LLM's context window which is editable. `Block` objects contained in the `Memory` object, which is able to edit the Block values.\n\nParameters:\n    label (str): The label of the block (e.g. 'human', 'persona'). This defines a category for the block.\n    value (str): The value of the block. This is the string that is represented in the context window.\n    limit (int): The character limit of the block.\n    is_template (bool): Whether the block is a template (e.g. saved human/persona options). Non-template blocks are not stored in the database and are ephemeral, while templated blocks are stored in the database.\n    label (str): The label of the block (e.g. 'human', 'persona'). This defines a category for the block.\n    template_name (str): The name of the block template (if it is a template).\n    description (str): Description of the block.\n    metadata_ (Dict): Metadata of the block.\n    user_id (str): The unique identifier of the user associated with the block."
       },
-      "BlockCreate": {
-        "properties": {
-          "value": {
-            "type": "string",
-            "title": "Value",
-            "description": "Value of the block."
-          },
-          "limit": {
-            "type": "integer",
-            "title": "Limit",
-            "description": "Character limit of the block.",
-            "default": 2000
-          },
-          "name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Name",
-            "description": "Name of the block if it is a template."
-          },
-          "is_template": {
-            "type": "boolean",
-            "title": "Is Template",
-            "default": true
-          },
-          "label": {
-            "type": "string",
-            "title": "Label",
-            "description": "Label of the block."
-          },
-          "description": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Description",
-            "description": "Description of the block."
-          },
-          "metadata_": {
-            "anyOf": [
-              {
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Metadata ",
-            "description": "Metadata of the block.",
-            "default": {}
-          }
-        },
-        "type": "object",
-        "required": ["value", "label"],
-        "title": "BlockCreate",
-        "description": "Create a block"
-      },
-      "BlockLabelUpdate": {
-        "properties": {
-          "current_label": {
-            "type": "string",
-            "title": "Current Label",
-            "description": "Current label of the block."
-          },
-          "new_label": {
-            "type": "string",
-            "title": "New Label",
-            "description": "New label of the block."
-          }
-        },
-        "type": "object",
-        "required": ["current_label", "new_label"],
-        "title": "BlockLabelUpdate",
-        "description": "Update the label of a block"
-      },
-      "BlockLimitUpdate": {
-        "properties": {
-          "label": {
-            "type": "string",
-            "title": "Label",
-            "description": "Label of the block."
-          },
-          "limit": {
-            "type": "integer",
-            "title": "Limit",
-            "description": "New limit of the block."
-          }
-        },
-        "type": "object",
-        "required": ["label", "limit"],
-        "title": "BlockLimitUpdate",
-        "description": "Update the limit of a block"
-      },
       "BlockUpdate": {
         "properties": {
           "value": {
@@ -3645,7 +4274,7 @@
             ],
             "title": "Limit",
             "description": "Character limit of the block.",
-            "default": 2000
+            "default": 5000
           },
           "name": {
             "anyOf": [
@@ -4034,6 +4663,32 @@
         "title": "ChatCompletionResponse",
         "description": "https://platform.openai.com/docs/api-reference/chat/object"
       },
+      "ChildToolRule": {
+        "properties": {
+          "tool_name": {
+            "type": "string",
+            "title": "Tool Name",
+            "description": "The name of the tool. Must exist in the database for the user's organization."
+          },
+          "type": {
+            "$ref": "#/components/schemas/ToolRuleType",
+            "default": "ToolRule"
+          },
+          "children": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Children",
+            "description": "The children tools that can be invoked."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["tool_name", "children"],
+        "title": "ChildToolRule",
+        "description": "A ToolRule represents a tool that can be invoked by the agent."
+      },
       "Choice": {
         "properties": {
           "finish_reason": {
@@ -4276,16 +4931,13 @@
             "title": "Message Ids",
             "description": "The ids of the messages in the agent's in-context memory."
           },
-          "memory": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/Memory"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "The in-context memory of the agent."
+          "memory_blocks": {
+            "items": {
+              "$ref": "#/components/schemas/CreateBlock"
+            },
+            "type": "array",
+            "title": "Memory Blocks",
+            "description": "The blocks to create in the agent's in-context memory."
           },
           "tools": {
             "anyOf": [
@@ -4306,7 +4958,17 @@
             "anyOf": [
               {
                 "items": {
-                  "$ref": "#/components/schemas/BaseToolRule"
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ChildToolRule"
+                    },
+                    {
+                      "$ref": "#/components/schemas/InitToolRule"
+                    },
+                    {
+                      "$ref": "#/components/schemas/TerminalToolRule"
+                    }
+                  ]
                 },
                 "type": "array"
               },
@@ -4395,6 +5057,7 @@
         },
         "additionalProperties": false,
         "type": "object",
+        "required": ["memory_blocks"],
         "title": "CreateAgent"
       },
       "CreateArchivalMemory": {
@@ -4473,6 +5136,72 @@
         "type": "object",
         "required": ["model", "name", "instructions"],
         "title": "CreateAssistantRequest"
+      },
+      "CreateBlock": {
+        "properties": {
+          "value": {
+            "type": "string",
+            "title": "Value",
+            "description": "Value of the block."
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit",
+            "description": "Character limit of the block.",
+            "default": 5000
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name",
+            "description": "Name of the block if it is a template."
+          },
+          "is_template": {
+            "type": "boolean",
+            "title": "Is Template",
+            "default": false
+          },
+          "label": {
+            "type": "string",
+            "title": "Label",
+            "description": "Label of the block."
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description",
+            "description": "Description of the block."
+          },
+          "metadata_": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata ",
+            "description": "Metadata of the block.",
+            "default": {}
+          }
+        },
+        "type": "object",
+        "required": ["value", "label"],
+        "title": "CreateBlock",
+        "description": "Create a block"
       },
       "CreateMessageRequest": {
         "properties": {
@@ -5238,6 +5967,24 @@
         "required": ["file_id"],
         "title": "ImageFile"
       },
+      "InitToolRule": {
+        "properties": {
+          "tool_name": {
+            "type": "string",
+            "title": "Tool Name",
+            "description": "The name of the tool. Must exist in the database for the user's organization."
+          },
+          "type": {
+            "$ref": "#/components/schemas/ToolRuleType",
+            "default": "InitToolRule"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["tool_name"],
+        "title": "InitToolRule",
+        "description": "Represents the initial tool rule configuration."
+      },
       "InternalMonologue": {
         "properties": {
           "id": {
@@ -5860,24 +6607,25 @@
       },
       "Memory": {
         "properties": {
-          "memory": {
-            "additionalProperties": {
+          "blocks": {
+            "items": {
               "$ref": "#/components/schemas/Block"
             },
-            "type": "object",
-            "title": "Memory",
-            "description": "Mapping from memory block section to memory block."
+            "type": "array",
+            "title": "Blocks",
+            "description": "Memory blocks contained in the agent's in-context memory"
           },
           "prompt_template": {
             "type": "string",
             "title": "Prompt Template",
             "description": "Jinja2 template for compiling memory blocks into a prompt string",
-            "default": "{% for block in memory.values() %}<{{ block.label }} characters=\"{{ block.value|length }}/{{ block.limit }}\">\n{{ block.value }}\n</{{ block.label }}>{% if not loop.last %}\n{% endif %}{% endfor %}"
+            "default": "{% for block in blocks %}<{{ block.label }} characters=\"{{ block.value|length }}/{{ block.limit }}\">\n{{ block.value }}\n</{{ block.label }}>{% if not loop.last %}\n{% endif %}{% endfor %}"
           }
         },
         "type": "object",
+        "required": ["blocks"],
         "title": "Memory",
-        "description": "Represents the in-context memory of the agent. This includes both the `Block` objects (labelled by sections), as well as tools to edit the blocks.\n\nAttributes:\n    memory (Dict[str, Block]): Mapping from memory block section to memory block."
+        "description": "Represents the in-context memory (i.e. Core memory) of the agent. This includes both the `Block` objects (labelled by sections), as well as tools to edit the blocks."
       },
       "Message-Input": {
         "properties": {
@@ -6742,7 +7490,7 @@
             "type": "string",
             "title": "Name",
             "description": "The name of the organization.",
-            "default": "LovableButterfly"
+            "default": "GregariousHippopotamus"
           },
           "created_at": {
             "anyOf": [
@@ -7531,6 +8279,24 @@
         "title": "SystemMessage",
         "description": "A message generated by the system. Never streamed back on a response, only used for cursor pagination.\n\nAttributes:\n    message (str): The message sent by the system\n    id (str): The ID of the message\n    date (datetime): The date the message was created in ISO format"
       },
+      "TerminalToolRule": {
+        "properties": {
+          "tool_name": {
+            "type": "string",
+            "title": "Tool Name",
+            "description": "The name of the tool. Must exist in the database for the user's organization."
+          },
+          "type": {
+            "$ref": "#/components/schemas/ToolRuleType",
+            "default": "TerminalToolRule"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["tool_name"],
+        "title": "TerminalToolRule",
+        "description": "Represents a terminal tool rule configuration where if this tool gets called, it must end the agent loop."
+      },
       "Text": {
         "properties": {
           "object": {
@@ -7712,6 +8478,60 @@
         "required": ["content", "tool_call_id"],
         "title": "ToolMessage"
       },
+      "ToolRuleType": {
+        "type": "string",
+        "enum": [
+          "InitToolRule",
+          "TerminalToolRule",
+          "continue_loop",
+          "ToolRule",
+          "require_parent_tools"
+        ],
+        "title": "ToolRuleType",
+        "description": "Type of tool rule."
+      },
+      "ToolRunFromSource": {
+        "properties": {
+          "source_code": {
+            "type": "string",
+            "title": "Source Code",
+            "description": "The source code of the function."
+          },
+          "args": {
+            "type": "string",
+            "title": "Args",
+            "description": "The arguments to pass to the tool (as stringified JSON)."
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name",
+            "description": "The name of the tool to run."
+          },
+          "source_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Type",
+            "description": "The type of the source code."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["source_code", "args"],
+        "title": "ToolRunFromSource"
+      },
       "ToolUpdate": {
         "properties": {
           "description": {
@@ -7860,7 +8680,7 @@
             "title": "Name",
             "description": "The name of the agent."
           },
-          "tools": {
+          "tool_names": {
             "anyOf": [
               {
                 "items": {
@@ -7872,7 +8692,7 @@
                 "type": "null"
               }
             ],
-            "title": "Tools",
+            "title": "Tool Names",
             "description": "The tools used by the agent."
           },
           "tags": {
@@ -7938,17 +8758,6 @@
             ],
             "title": "Message Ids",
             "description": "The ids of the messages in the agent's in-context memory."
-          },
-          "memory": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/Memory"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "The in-context memory of the agent."
           }
         },
         "additionalProperties": false,

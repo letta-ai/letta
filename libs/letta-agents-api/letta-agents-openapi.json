@@ -5373,6 +5373,14 @@
           },
           "auth_mode": {
             "type": "string",
+            "enum": [
+              "OAUTH2",
+              "OAUTH1",
+              "API_KEY",
+              "BASIC",
+              "BEARER_TOKEN",
+              "BASIC_WITH_JWT"
+            ],
             "title": "Auth Mode"
           },
           "fields": {
@@ -5836,7 +5844,7 @@
             "type": "integer",
             "title": "Limit",
             "description": "Character limit of the block.",
-            "default": 2000
+            "default": 5000
           },
           "name": {
             "anyOf": [
@@ -5967,7 +5975,7 @@
             ],
             "title": "Limit",
             "description": "Character limit of the block.",
-            "default": 2000
+            "default": 5000
           },
           "name": {
             "anyOf": [
@@ -6841,7 +6849,7 @@
             "type": "integer",
             "title": "Limit",
             "description": "Character limit of the block.",
-            "default": 2000
+            "default": 5000
           },
           "name": {
             "anyOf": [
@@ -9183,7 +9191,7 @@
             "type": "string",
             "title": "Name",
             "description": "The name of the organization.",
-            "default": "OpenmindedGoblin"
+            "default": "GregariousHippopotamus"
           },
           "created_at": {
             "anyOf": [
@@ -10185,6 +10193,11 @@
       },
       "ToolRunFromSource": {
         "properties": {
+          "source_code": {
+            "type": "string",
+            "title": "Source Code",
+            "description": "The source code of the function."
+          },
           "args": {
             "type": "string",
             "title": "Args",
@@ -10202,11 +10215,6 @@
             "title": "Name",
             "description": "The name of the tool to run."
           },
-          "source_code": {
-            "type": "string",
-            "title": "Source Code",
-            "description": "The source code of the function."
-          },
           "source_type": {
             "anyOf": [
               {
@@ -10222,7 +10230,7 @@
         },
         "additionalProperties": false,
         "type": "object",
-        "required": ["args", "name"],
+        "required": ["source_code", "args"],
         "title": "ToolRunFromSource"
       },
       "ToolUpdate": {
