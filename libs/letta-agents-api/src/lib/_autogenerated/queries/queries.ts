@@ -769,15 +769,17 @@ export const useJobsServiceGetJob = <
 >(
   {
     jobId,
+    userId,
   }: {
     jobId: string;
+    userId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
 ) =>
   useQuery<TData, TError>({
-    queryKey: Common.UseJobsServiceGetJobKeyFn({ jobId }, queryKey),
-    queryFn: () => JobsService.getJob({ jobId }) as TData,
+    queryKey: Common.UseJobsServiceGetJobKeyFn({ jobId, userId }, queryKey),
+    queryFn: () => JobsService.getJob({ jobId, userId }) as TData,
     ...options,
   });
 export const useHealthServiceHealthCheck = <
@@ -2602,6 +2604,7 @@ export const useJobsServiceDeleteJob = <
       TError,
       {
         jobId: string;
+        userId?: string;
       },
       TContext
     >,
@@ -2613,11 +2616,12 @@ export const useJobsServiceDeleteJob = <
     TError,
     {
       jobId: string;
+      userId?: string;
     },
     TContext
   >({
-    mutationFn: ({ jobId }) =>
-      JobsService.deleteJob({ jobId }) as unknown as Promise<TData>,
+    mutationFn: ({ jobId, userId }) =>
+      JobsService.deleteJob({ jobId, userId }) as unknown as Promise<TData>,
     ...options,
   });
 export const useSandboxConfigServiceDeleteSandboxConfigV1SandboxConfigSandboxConfigIdDelete =

@@ -499,13 +499,15 @@ export const prefetchUseJobsServiceGetJob = (
   queryClient: QueryClient,
   {
     jobId,
+    userId,
   }: {
     jobId: string;
+    userId?: string;
   }
 ) =>
   queryClient.prefetchQuery({
-    queryKey: Common.UseJobsServiceGetJobKeyFn({ jobId }),
-    queryFn: () => JobsService.getJob({ jobId }),
+    queryKey: Common.UseJobsServiceGetJobKeyFn({ jobId, userId }),
+    queryFn: () => JobsService.getJob({ jobId, userId }),
   });
 export const prefetchUseHealthServiceHealthCheck = (queryClient: QueryClient) =>
   queryClient.prefetchQuery({

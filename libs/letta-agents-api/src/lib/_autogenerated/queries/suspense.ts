@@ -738,15 +738,17 @@ export const useJobsServiceGetJobSuspense = <
 >(
   {
     jobId,
+    userId,
   }: {
     jobId: string;
+    userId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
 ) =>
   useSuspenseQuery<TData, TError>({
-    queryKey: Common.UseJobsServiceGetJobKeyFn({ jobId }, queryKey),
-    queryFn: () => JobsService.getJob({ jobId }) as TData,
+    queryKey: Common.UseJobsServiceGetJobKeyFn({ jobId, userId }, queryKey),
+    queryFn: () => JobsService.getJob({ jobId, userId }) as TData,
     ...options,
   });
 export const useHealthServiceHealthCheckSuspense = <

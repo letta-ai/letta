@@ -382,7 +382,13 @@ Parameters:
 
 export const $AgentType = {
   type: 'string',
-  enum: ['memgpt_agent', 'split_thread_agent', 'o1_agent'],
+  enum: [
+    'memgpt_agent',
+    'split_thread_agent',
+    'o1_agent',
+    'offline_memory_agent',
+    'chat_only_agent',
+  ],
   title: 'AgentType',
   description: 'Enum to represent the type of agent.',
 } as const;
@@ -1795,7 +1801,7 @@ export const $CreateAgent = {
       anyOf: [
         {
           items: {
-            $ref: '#/components/schemas/Message-Input',
+            $ref: '#/components/schemas/MessageCreate',
           },
           type: 'array',
         },
@@ -2814,6 +2820,74 @@ Attributes:
 
 export const $Job = {
   properties: {
+    created_by_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Created By Id',
+      description: 'The id of the user that made this object.',
+    },
+    last_updated_by_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Last Updated By Id',
+      description: 'The id of the user that made this object.',
+    },
+    created_at: {
+      anyOf: [
+        {
+          type: 'string',
+          format: 'date-time',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Created At',
+      description: 'The timestamp when the object was created.',
+    },
+    updated_at: {
+      anyOf: [
+        {
+          type: 'string',
+          format: 'date-time',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Updated At',
+      description: 'The timestamp when the object was last updated.',
+    },
+    status: {
+      $ref: '#/components/schemas/JobStatus',
+      description: 'The status of the job.',
+      default: 'created',
+    },
+    completed_at: {
+      anyOf: [
+        {
+          type: 'string',
+          format: 'date-time',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Completed At',
+      description: 'The unix timestamp of when the job was completed.',
+    },
     metadata_: {
       anyOf: [
         {
@@ -2833,39 +2907,21 @@ export const $Job = {
       description: 'The human-friendly ID of the Job',
       examples: ['job-123e4567-e89b-12d3-a456-426614174000'],
     },
-    status: {
-      $ref: '#/components/schemas/JobStatus',
-      description: 'The status of the job.',
-      default: 'created',
-    },
-    created_at: {
-      type: 'string',
-      format: 'date-time',
-      title: 'Created At',
-      description: 'The unix timestamp of when the job was created.',
-    },
-    completed_at: {
+    user_id: {
       anyOf: [
         {
           type: 'string',
-          format: 'date-time',
         },
         {
           type: 'null',
         },
       ],
-      title: 'Completed At',
-      description: 'The unix timestamp of when the job was completed.',
-    },
-    user_id: {
-      type: 'string',
       title: 'User Id',
       description: 'The unique identifier of the user associated with the job.',
     },
   },
   additionalProperties: false,
   type: 'object',
-  required: ['user_id'],
   title: 'Job',
   description: `Representation of offline jobs, used for tracking status of data loading tasks (involving parsing and embedding files).
 
@@ -3429,6 +3485,20 @@ export const $LocalSandboxConfig = {
       type: 'string',
       title: 'Sandbox Dir',
       description: 'Directory for the sandbox environment.',
+    },
+    use_venv: {
+      type: 'boolean',
+      title: 'Use Venv',
+      description:
+        'Whether or not to use the venv, or run directly in the same run loop.',
+      default: false,
+    },
+    venv_name: {
+      type: 'string',
+      title: 'Venv Name',
+      description:
+        'The name for the venv in the sandbox directory. We first search for an existing venv with this name, otherwise, we make it from the requirements.txt.',
+      default: 'venv',
     },
   },
   type: 'object',
@@ -4386,7 +4456,7 @@ export const $Organization = {
       type: 'string',
       title: 'Name',
       description: 'The name of the organization.',
-      default: 'GregariousHippopotamus',
+      default: 'HumbleEyeglasses',
     },
     created_at: {
       anyOf: [
