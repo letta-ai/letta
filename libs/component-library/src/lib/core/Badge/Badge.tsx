@@ -7,7 +7,7 @@ import { cn } from '@letta-web/core-style-config';
 import { Slot } from '@radix-ui/react-slot';
 import { Typography } from '../Typography/Typography';
 
-const badgeVariants = cva('items-center flex uppercase', {
+const badgeVariants = cva('items-center flex', {
   variants: {
     size: {
       default: 'text-xs px-2 py-1',
