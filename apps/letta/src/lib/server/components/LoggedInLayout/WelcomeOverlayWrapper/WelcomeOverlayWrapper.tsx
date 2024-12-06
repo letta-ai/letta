@@ -227,7 +227,7 @@ export function WelcomeOverlayWrapper(props: WelcomeOverlayWrapperProps) {
                               label: t('reasons.options.restAPI'),
                             },
                             {
-                              value: 'personalAssistant',
+                              value: 'memory',
                               label: t('reasons.options.memory'),
                             },
                             {
