@@ -448,8 +448,10 @@ async function findOrCreateUserAndOrganizationFromProviderLogin(
 ): Promise<FindOrCreateUserAndOrganizationFromProviderLoginResponse> {
   let newUserDetails: NewUserDetails | undefined;
   let user = await findExistingUser(userData);
+  let isNewUser = false;
 
   if (!user) {
+    isNewUser = true;
     const flags = await getDefaultFlags();
 
     const isWhitelisted = await isUserInWhitelist(userData.email);
@@ -495,7 +497,7 @@ async function findOrCreateUserAndOrganizationFromProviderLogin(
     email: user.email,
   });
 
-  if (newUserDetails) {
+  if (isNewUser) {
     trackServerSideEvent(AnalyticsEvent.USER_CREATED, {
       userId: user.id,
     });
