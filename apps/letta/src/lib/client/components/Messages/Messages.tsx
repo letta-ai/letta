@@ -8,7 +8,7 @@ import {
   FunctionCall,
   HStack,
   IconAvatar,
-  LaptopIcon,
+  SystemIcon,
   LettaLoaderPanel,
   Markdown,
   PersonIcon,
@@ -132,7 +132,7 @@ function MessageGroup({ group }: MessageGroupType) {
       return 'hsl(var(--user-color-content))';
     }
 
-    return 'hsl(var(--background-black-content))';
+    return 'hsl(var(--background-grey2-content))';
   }, [name]);
 
   const backgroundColor = useMemo(() => {
@@ -144,7 +144,7 @@ function MessageGroup({ group }: MessageGroupType) {
       return 'hsl(var(--user-color))';
     }
 
-    return 'hsl(var(--background-black))';
+    return 'hsl(var(--background-grey2))';
   }, [name]);
 
   const icon = useMemo(() => {
@@ -157,7 +157,7 @@ function MessageGroup({ group }: MessageGroupType) {
     }
 
     if (name === 'System') {
-      return <LaptopIcon />;
+      return <SystemIcon />;
     }
 
     return null;
