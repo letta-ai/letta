@@ -645,11 +645,13 @@ export const useJobsServiceGetJobKey = 'JobsServiceGetJob';
 export const UseJobsServiceGetJobKeyFn = (
   {
     jobId,
+    userId,
   }: {
     jobId: string;
+    userId?: string;
   },
   queryKey?: Array<unknown>
-) => [useJobsServiceGetJobKey, ...(queryKey ?? [{ jobId }])];
+) => [useJobsServiceGetJobKey, ...(queryKey ?? [{ jobId, userId }])];
 export type HealthServiceHealthCheckDefaultResponse = Awaited<
   ReturnType<typeof HealthService.healthCheck>
 >;

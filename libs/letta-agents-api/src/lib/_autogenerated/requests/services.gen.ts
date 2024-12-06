@@ -1848,6 +1848,7 @@ export class JobsService {
    * Get the status of a job.
    * @param data The data for the request.
    * @param data.jobId
+   * @param data.userId
    * @returns Job Successful Response
    * @throws ApiError
    */
@@ -1873,6 +1874,7 @@ export class JobsService {
    * Delete a job by its job_id.
    * @param data The data for the request.
    * @param data.jobId
+   * @param data.userId
    * @returns Job Successful Response
    * @throws ApiError
    */

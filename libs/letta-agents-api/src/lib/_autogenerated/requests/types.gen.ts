@@ -160,7 +160,12 @@ export type AgentState = {
 /**
  * Enum to represent the type of agent.
  */
-export type AgentType = 'memgpt_agent' | 'split_thread_agent' | 'o1_agent';
+export type AgentType =
+  | 'memgpt_agent'
+  | 'split_thread_agent'
+  | 'o1_agent'
+  | 'offline_memory_agent'
+  | 'chat_only_agent';
 
 /**
  * App authenticatio scheme.
@@ -592,7 +597,7 @@ export type CreateAgent = {
   /**
    * The initial set of messages to put in the agent's in-context memory.
    */
-  initial_message_sequence?: Array<Message_Input> | null;
+  initial_message_sequence?: Array<MessageCreate> | null;
 };
 
 export type CreateArchivalMemory = {
@@ -1056,6 +1061,30 @@ export type message_type4 = 'internal_monologue';
  */
 export type Job = {
   /**
+   * The id of the user that made this object.
+   */
+  created_by_id?: string | null;
+  /**
+   * The id of the user that made this object.
+   */
+  last_updated_by_id?: string | null;
+  /**
+   * The timestamp when the object was created.
+   */
+  created_at?: string | null;
+  /**
+   * The timestamp when the object was last updated.
+   */
+  updated_at?: string | null;
+  /**
+   * The status of the job.
+   */
+  status?: JobStatus;
+  /**
+   * The unix timestamp of when the job was completed.
+   */
+  completed_at?: string | null;
+  /**
    * The metadata of the job.
    */
   metadata_?: {
@@ -1066,21 +1095,9 @@ export type Job = {
    */
   id?: string;
   /**
-   * The status of the job.
-   */
-  status?: JobStatus;
-  /**
-   * The unix timestamp of when the job was created.
-   */
-  created_at?: string;
-  /**
-   * The unix timestamp of when the job was completed.
-   */
-  completed_at?: string | null;
-  /**
    * The unique identifier of the user associated with the job.
    */
-  user_id: string;
+  user_id?: string | null;
 };
 
 /**
@@ -1366,6 +1383,14 @@ export type LocalSandboxConfig = {
    * Directory for the sandbox environment.
    */
   sandbox_dir: string;
+  /**
+   * Whether or not to use the venv, or run directly in the same run loop.
+   */
+  use_venv?: boolean;
+  /**
+   * The name for the venv in the sandbox directory. We first search for an existing venv with this name, otherwise, we make it from the requirements.txt.
+   */
+  venv_name?: string;
 };
 
 export type LogProbToken = {
@@ -3213,12 +3238,14 @@ export type ListActiveJobsResponse = Array<Job>;
 
 export type GetJobData = {
   jobId: string;
+  userId?: string | null;
 };
 
 export type GetJobResponse = Job;
 
 export type DeleteJobData = {
   jobId: string;
+  userId?: string | null;
 };
 
 export type DeleteJobResponse = Job;
