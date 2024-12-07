@@ -99,11 +99,13 @@ export function DashboardTransition({
           paddingTop="xxsmall"
           paddingRight="xxsmall"
           color="background"
-          position="absolute"
+          position="fixed"
+          gap={false}
         >
           {isTransitioning && <TransitionLoader />}
           <VStack fullWidth fullHeight border></VStack>
         </VStack>
+        <div className="w-full bottom-0 z-[99] h-[4px] fixed bg-background"></div>
         <HStack fullWidth id="main">
           {children}
         </HStack>
