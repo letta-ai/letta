@@ -22,6 +22,7 @@ import type {
   AddBaseToolsResponse,
   RunToolFromSourceData,
   RunToolFromSourceResponse,
+  ListComposioAppsData,
   ListComposioAppsResponse,
   ListComposioActionsByAppData,
   ListComposioActionsByAppResponse,
@@ -101,8 +102,8 @@ import type {
   CreateAgentMessageResponse,
   UpdateAgentMessageData,
   UpdateAgentMessageResponse,
-  CreateAgentMessage1Data,
-  CreateAgentMessage1Response,
+  CreateAgentMessageStreamData,
+  CreateAgentMessageStreamResponse,
   ListModelsResponse,
   ListEmbeddingModelsResponse,
   ListMemoryBlocksData,
@@ -115,10 +116,10 @@ import type {
   DeleteMemoryBlockResponse,
   GetMemoryBlockData,
   GetMemoryBlockResponse,
-  UpdateAgentMemoryBlockData,
-  UpdateAgentMemoryBlockResponse,
-  UpdateAgentMemoryBlock1Data,
-  UpdateAgentMemoryBlock1Response,
+  LinkAgentMemoryBlockData,
+  LinkAgentMemoryBlockResponse,
+  UnlinkAgentMemoryBlockData,
+  UnlinkAgentMemoryBlockResponse,
   ListJobsData,
   ListJobsResponse,
   ListActiveJobsData,
@@ -408,15 +409,21 @@ export class ToolsService {
   /**
    * List Composio Apps
    * Get a list of all Composio apps
+   * @param data The data for the request.
+   * @param data.userId
    * @returns AppModel Successful Response
    * @throws ApiError
    */
-  public static listComposioApps(headers?: {
-    user_id: string;
-  }): CancelablePromise<ListComposioAppsResponse> {
+  public static listComposioApps(
+    data: ListComposioAppsData = {},
+    headers?: { user_id: string }
+  ): CancelablePromise<ListComposioAppsResponse> {
     return __request(OpenAPI, {
       method: 'GET',
       url: '/v1/tools/composio/apps',
+      errors: {
+        422: 'Validation Error',
+      },
       headers,
     });
   }
@@ -426,6 +433,7 @@ export class ToolsService {
    * Get a list of all Composio actions for a specific app
    * @param data The data for the request.
    * @param data.composioAppName
+   * @param data.userId
    * @returns ActionModel Successful Response
    * @throws ApiError
    */
@@ -1517,10 +1525,10 @@ export class AgentsService {
    * @returns unknown Successful response
    * @throws ApiError
    */
-  public static createAgentMessage1(
-    data: CreateAgentMessage1Data,
+  public static createAgentMessageStream(
+    data: CreateAgentMessageStreamData,
     headers?: { user_id: string }
-  ): CancelablePromise<CreateAgentMessage1Response> {
+  ): CancelablePromise<CreateAgentMessageStreamResponse> {
     return __request(OpenAPI, {
       method: 'POST',
       url: '/v1/agents/{agent_id}/messages/stream',
@@ -1743,10 +1751,10 @@ export class BlocksService {
    * @returns Block Successful Response
    * @throws ApiError
    */
-  public static updateAgentMemoryBlock(
-    data: UpdateAgentMemoryBlockData,
+  public static linkAgentMemoryBlock(
+    data: LinkAgentMemoryBlockData,
     headers?: { user_id: string }
-  ): CancelablePromise<UpdateAgentMemoryBlockResponse> {
+  ): CancelablePromise<LinkAgentMemoryBlockResponse> {
     return __request(OpenAPI, {
       method: 'PATCH',
       url: '/v1/blocks/{block_id}/attach',
@@ -1773,10 +1781,10 @@ export class BlocksService {
    * @returns Memory Successful Response
    * @throws ApiError
    */
-  public static updateAgentMemoryBlock1(
-    data: UpdateAgentMemoryBlock1Data,
+  public static unlinkAgentMemoryBlock(
+    data: UnlinkAgentMemoryBlockData,
     headers?: { user_id: string }
-  ): CancelablePromise<UpdateAgentMemoryBlock1Response> {
+  ): CancelablePromise<UnlinkAgentMemoryBlockResponse> {
     return __request(OpenAPI, {
       method: 'PATCH',
       url: '/v1/blocks/{block_id}/detach',
