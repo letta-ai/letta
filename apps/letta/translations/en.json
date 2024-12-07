@@ -916,7 +916,7 @@
       "dismiss": "Close"
     },
     "description": "Manage and monitor your agents on self-hosted Letta servers",
-    "title": "Self-Hosted Agents",
+    "title": "Self-hosted agents",
     "gettingStarted": {
       "title": "Quick actions",
       "description": "Get started with these quick actions",
