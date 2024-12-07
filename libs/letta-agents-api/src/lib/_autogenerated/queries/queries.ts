@@ -31,6 +31,7 @@ import {
   CreateBlock,
   LettaRequest,
   LettaStreamingRequest,
+  MessageUpdate,
   OrganizationCreate,
   SandboxConfigCreate,
   SandboxConfigUpdate,
@@ -42,7 +43,6 @@ import {
   ToolRunFromSource,
   ToolUpdate,
   UpdateAgentState,
-  UpdateMessage,
   UserCreate,
   UserUpdate,
 } from '../requests/types.gen';
@@ -2151,7 +2151,7 @@ export const useAgentsServiceUpdateAgentMessage = <
       {
         agentId: string;
         messageId: string;
-        requestBody: UpdateMessage;
+        requestBody: MessageUpdate;
       },
       TContext
     >,
@@ -2164,7 +2164,7 @@ export const useAgentsServiceUpdateAgentMessage = <
     {
       agentId: string;
       messageId: string;
-      requestBody: UpdateMessage;
+      requestBody: MessageUpdate;
     },
     TContext
   >({

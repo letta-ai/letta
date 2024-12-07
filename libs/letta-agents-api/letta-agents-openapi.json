@@ -3097,7 +3097,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpdateMessage"
+                "$ref": "#/components/schemas/MessageUpdate"
               }
             }
           }
@@ -8474,6 +8474,49 @@
       },
       "Message-Input": {
         "properties": {
+          "created_by_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created By Id",
+            "description": "The id of the user that made this object."
+          },
+          "last_updated_by_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Updated By Id",
+            "description": "The id of the user that made this object."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "The timestamp when the object was created."
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At",
+            "description": "The timestamp when the object was last updated."
+          },
           "id": {
             "type": "string",
             "pattern": "^message-[a-fA-F0-9]{8}",
@@ -8544,12 +8587,6 @@
             ],
             "title": "Name",
             "description": "The name of the participant."
-          },
-          "created_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Created At",
-            "description": "The time the message was created."
           },
           "tool_calls": {
             "anyOf": [
@@ -8630,6 +8667,56 @@
       },
       "MessageCreate": {
         "properties": {
+          "created_by_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created By Id",
+            "description": "The id of the user that made this object."
+          },
+          "last_updated_by_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Updated By Id",
+            "description": "The id of the user that made this object."
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At",
+            "description": "The timestamp when the object was created."
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At",
+            "description": "The timestamp when the object was last updated."
+          },
           "role": {
             "type": "string",
             "enum": ["user", "system"],
@@ -8691,6 +8778,126 @@
         "type": "string",
         "enum": ["assistant", "user", "tool", "function", "system"],
         "title": "MessageRole"
+      },
+      "MessageUpdate": {
+        "properties": {
+          "created_by_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created By Id",
+            "description": "The id of the user that made this object."
+          },
+          "last_updated_by_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Updated By Id",
+            "description": "The id of the user that made this object."
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At",
+            "description": "The timestamp when the object was created."
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At",
+            "description": "The timestamp when the object was last updated."
+          },
+          "role": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MessageRole"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The role of the participant."
+          },
+          "text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Text",
+            "description": "The text of the message."
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name",
+            "description": "The name of the participant."
+          },
+          "tool_calls": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/letta__schemas__openai__chat_completions__ToolCall-Input"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tool Calls",
+            "description": "The list of tool calls requested."
+          },
+          "tool_call_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tool Call Id",
+            "description": "The id of the tool call."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "MessageUpdate",
+        "description": "Request to update a message"
       },
       "ModifyMessageRequest": {
         "properties": {
@@ -9335,7 +9542,7 @@
             "type": "string",
             "title": "Name",
             "description": "The name of the organization.",
-            "default": "ModestXylophone"
+            "default": "PoliteElephant"
           },
           "created_at": {
             "anyOf": [
@@ -10610,82 +10817,6 @@
         "required": ["id"],
         "title": "UpdateAgentState"
       },
-      "UpdateMessage": {
-        "properties": {
-          "id": {
-            "type": "string",
-            "title": "Id",
-            "description": "The id of the message."
-          },
-          "role": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/MessageRole"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "The role of the participant."
-          },
-          "text": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Text",
-            "description": "The text of the message."
-          },
-          "name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Name",
-            "description": "The name of the participant."
-          },
-          "tool_calls": {
-            "anyOf": [
-              {
-                "items": {
-                  "$ref": "#/components/schemas/letta__schemas__openai__chat_completions__ToolCall-Input"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Tool Calls",
-            "description": "The list of tool calls requested."
-          },
-          "tool_call_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Tool Call Id",
-            "description": "The id of the tool call."
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": ["id"],
-        "title": "UpdateMessage",
-        "description": "Request to update a message"
-      },
       "UsageStatistics": {
         "properties": {
           "completion_tokens": {
@@ -10943,6 +11074,49 @@
       },
       "letta__schemas__message__Message-Output": {
         "properties": {
+          "created_by_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created By Id",
+            "description": "The id of the user that made this object."
+          },
+          "last_updated_by_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Updated By Id",
+            "description": "The id of the user that made this object."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "The timestamp when the object was created."
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At",
+            "description": "The timestamp when the object was last updated."
+          },
           "id": {
             "type": "string",
             "pattern": "^message-[a-fA-F0-9]{8}",
@@ -11013,12 +11187,6 @@
             ],
             "title": "Name",
             "description": "The name of the participant."
-          },
-          "created_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Created At",
-            "description": "The time the message was created."
           },
           "tool_calls": {
             "anyOf": [
