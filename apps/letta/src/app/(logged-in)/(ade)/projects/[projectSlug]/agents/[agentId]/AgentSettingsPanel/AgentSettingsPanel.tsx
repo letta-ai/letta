@@ -19,16 +19,23 @@ import {
   LettaInvaderOutlineIcon,
   Typography,
   VStack,
+  useForm,
+  FormProvider,
+  FormField,
+  TextArea,
 } from '@letta-web/component-library';
 import { useCurrentAgent, useSyncUpdateCurrentAgent } from '../hooks';
 import { z } from 'zod';
 import type { AgentState } from '@letta-web/letta-agents-api';
+import {
+  UseAgentsServiceGetAgentKeyFn,
+  useAgentsServiceUpdateAgent,
+} from '@letta-web/letta-agents-api';
 import { useModelsServiceListModels } from '@letta-web/letta-agents-api';
 import { useTranslations } from 'next-intl';
-import { useDebouncedValue } from '@mantine/hooks';
+import { useDebouncedCallback, useDebouncedValue } from '@mantine/hooks';
 import { UpdateNameDialog } from '../shared/UpdateAgentNameDialog/UpdateAgentNameDialog';
 import { useAgentBaseTypeName } from '../hooks/useAgentBaseNameType/useAgentBaseNameType';
-import { useDateFormatter } from '@letta-web/helpful-client-utils';
 import { useCurrentAgentMetaData } from '../hooks/useCurrentAgentMetaData/useCurrentAgentMetaData';
 import { webOriginSDKApi, webOriginSDKQueryKeys } from '$letta/client';
 import { ExtendedLLMSchema } from '$letta/sdk/models/modelsContracts';
@@ -36,6 +43,8 @@ import { getBrandFromModelName } from '$letta/utils';
 import { useCurrentUser } from '$letta/client/hooks';
 import { trackClientSideEvent } from '@letta-web/analytics/client';
 import { AnalyticsEvent } from '@letta-web/analytics';
+import { useQueryClient } from '@tanstack/react-query';
+import { zodResolver } from '@hookform/resolvers/zod';
 
 interface SelectedModelType {
   icon: React.ReactNode;
@@ -236,79 +245,197 @@ function ModelSelector(props: ModelSelectorProps) {
   );
 }
 
-function SystemPromptEditor() {
-  const t = useTranslations('ADE/AgentSettingsPanel');
-  const [isExpanded, setIsExpanded] = useState(false);
-  const { syncUpdateCurrentAgent, error, lastUpdatedAt } =
-    useSyncUpdateCurrentAgent();
-  const { system = '' } = useCurrentAgent();
+const systemPromptEditorForm = z.object({
+  system: z.string(),
+});
 
-  const handleChange = useCallback(
-    (value: string) => {
-      syncUpdateCurrentAgent(() => ({
-        system: value,
-      }));
+type SystemPromptEditorFormType = z.infer<typeof systemPromptEditorForm>;
+
+interface SystemPromptEditorDialogProps {
+  isExpanded: boolean;
+  setIsExpanded: (value: boolean) => void;
+  system: string;
+}
+
+function SystemPromptEditorDialog(props: SystemPromptEditorDialogProps) {
+  const { isExpanded, setIsExpanded, system } = props;
+  const { mutate, isPending, isError } = useAgentsServiceUpdateAgent();
+  const queryClient = useQueryClient();
+  const currentAgent = useCurrentAgent();
+  const t = useTranslations('ADE/AgentSettingsPanel');
+  const form = useForm<SystemPromptEditorFormType>({
+    resolver: zodResolver(systemPromptEditorForm),
+    defaultValues: {
+      system,
     },
-    [syncUpdateCurrentAgent]
+  });
+
+  const handleSubmit = useCallback(
+    (data: SystemPromptEditorFormType) => {
+      mutate(
+        {
+          agentId: currentAgent.id,
+          requestBody: {
+            id: currentAgent.id,
+            system: data.system,
+          },
+        },
+        {
+          onSuccess: (_r) => {
+            queryClient.setQueriesData<AgentState | undefined>(
+              {
+                queryKey: UseAgentsServiceGetAgentKeyFn({
+                  agentId: currentAgent.id,
+                }),
+              },
+              (oldData) => {
+                if (!oldData) {
+                  return oldData;
+                }
+
+                return {
+                  ...oldData,
+                  system: data.system,
+                };
+              }
+            );
+            setIsExpanded(false);
+          },
+        }
+      );
+    },
+    [currentAgent.id, mutate, queryClient, setIsExpanded]
   );
 
-  const { formatDateAndTime } = useDateFormatter();
-
   return (
-    <>
+    <FormProvider {...form}>
       <Dialog
         size="full"
         isOpen={isExpanded}
+        isConfirmBusy={isPending}
+        confirmText={t('SystemPromptEditor.dialog.save')}
+        onSubmit={form.handleSubmit(handleSubmit)}
         onOpenChange={setIsExpanded}
-        errorMessage={error ? t('SystemPromptEditor.error') : ''}
+        errorMessage={isError ? t('SystemPromptEditor.error') : ''}
         title={t('SystemPromptEditor.dialog.title')}
-        hideConfirm
       >
         <VStack collapseHeight flex gap="form">
-          <HStack gap="xlarge" align="center" justify="spaceBetween">
-            <div>
-              <Alert
-                title={t('SystemPromptEditor.dialog.info')}
-                variant="info"
-              />
-            </div>
-            <Typography noWrap font="mono" color="muted" variant="body2">
-              {t('SystemPromptEditor.dialog.characterCount', {
-                count: system.length,
-              })}
-            </Typography>
-          </HStack>
-          <RawTextArea
-            fullWidth
-            flex
-            fullHeight
-            autosize={false}
-            hideLabel
-            label={t('SystemPromptEditor.label')}
-            onChange={(e) => {
-              handleChange(e.target.value);
+          <FormField
+            render={({ field }) => {
+              return (
+                <VStack fullHeight>
+                  <HStack gap="xlarge" align="center" justify="spaceBetween">
+                    <div>
+                      <Alert
+                        title={t('SystemPromptEditor.dialog.info')}
+                        variant="info"
+                      />
+                    </div>
+                    <Typography
+                      noWrap
+                      font="mono"
+                      color="muted"
+                      variant="body2"
+                    >
+                      {t('SystemPromptEditor.dialog.characterCount', {
+                        count: field.value.length,
+                      })}
+                    </Typography>
+                  </HStack>
+                  <TextArea
+                    fullWidth
+                    flex
+                    fullHeight
+                    autosize={false}
+                    hideLabel
+                    label={t('SystemPromptEditor.label')}
+                    onChange={(e) => {
+                      field.onChange(e.target.value);
+                    }}
+                    value={field.value}
+                  />
+                </VStack>
+              );
             }}
-            value={system}
+            name="system"
           />
-          {lastUpdatedAt && (
-            <Typography>
-              {t('SystemPromptEditor.updatedAt', {
-                date: formatDateAndTime(lastUpdatedAt),
-              })}
-            </Typography>
-          )}
         </VStack>
       </Dialog>
+    </FormProvider>
+  );
+}
+
+function SystemPromptEditor() {
+  const t = useTranslations('ADE/AgentSettingsPanel');
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  const currentAgent = useCurrentAgent();
+
+  const { mutate } = useAgentsServiceUpdateAgent();
+  const queryClient = useQueryClient();
+
+  const debouncedMutation = useDebouncedCallback(mutate, 500);
+  const [localValue, setLocalValue] = useState(currentAgent.system || '');
+
+  const handleChange = useCallback(
+    (value: string) => {
+      setLocalValue(value);
+
+      queryClient.setQueriesData<AgentState | undefined>(
+        {
+          queryKey: UseAgentsServiceGetAgentKeyFn({
+            agentId: currentAgent.id,
+          }),
+        },
+        (oldData) => {
+          if (!oldData) {
+            return oldData;
+          }
+
+          return {
+            ...oldData,
+            system: value,
+          };
+        }
+      );
+
+      debouncedMutation({
+        agentId: currentAgent.id,
+        requestBody: {
+          id: currentAgent.id,
+          system: value,
+        },
+      });
+    },
+    [currentAgent.id, debouncedMutation, queryClient]
+  );
+
+  useEffect(() => {
+    if (currentAgent.system !== localValue) {
+      setLocalValue(currentAgent.system || '');
+    }
+  }, [localValue, currentAgent.system]);
+
+  return (
+    <>
+      {isExpanded && (
+        <SystemPromptEditorDialog
+          system={currentAgent.system || ''}
+          isExpanded={isExpanded}
+          setIsExpanded={setIsExpanded}
+        />
+      )}
       <VStack fullHeight gap="small">
         <RawTextArea
           fullWidth
+          key="system"
           infoTooltip={{
             text: t('SystemPromptEditor.tooltip'),
           }}
           rightOfLabelContent={
             <Typography variant="body2" color="muted">
               {t('SystemPromptEditor.characterCount', {
-                count: system.length,
+                count: (currentAgent?.system || '').length,
               })}
             </Typography>
           }
@@ -319,7 +446,7 @@ function SystemPromptEditor() {
           onChange={(e) => {
             handleChange(e.target.value);
           }}
-          value={system}
+          value={localValue}
           expandable={{
             expandText: t('SystemPromptEditor.expand'),
             onExpand: () => {
