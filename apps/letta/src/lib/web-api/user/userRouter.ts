@@ -1,10 +1,10 @@
 import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
 import type {
+  contracts,
   updateActiveOrganizationContract,
   userContract,
 } from '$letta/web-api/contracts';
 import { deleteUser, getUser } from '$letta/server/auth';
-import type { contracts } from '$letta/web-api/contracts';
 import {
   db,
   organizations,
@@ -19,6 +19,9 @@ import { AdminService } from '@letta-web/letta-agents-api';
 import { createOrUpdateCRMContact } from '@letta-web/crm';
 import * as Sentry from '@sentry/node';
 import { environment } from '@letta-web/environmental-variables';
+import { trackServerSideEvent } from '@letta-web/analytics/server';
+import { AnalyticsEvent } from '@letta-web/analytics';
+
 type ResponseShapes = ServerInferResponses<typeof userContract>;
 
 async function getCurrentUser(): Promise<ResponseShapes['getCurrentUser']> {
@@ -298,6 +301,13 @@ async function setUserAsOnboarded(
           .update(userMarketingDetails)
           .set({ hubSpotContactId: res.id })
           .where(eq(userMarketingDetails.userId, user.id));
+
+        trackServerSideEvent(AnalyticsEvent.ANSWERED_ONBOARDING_SURVEY, {
+          consentedToEmailMarketing: !!emailConsent,
+          reasonsForUsingLetta: reasons,
+          usecasesForUsingLetta: useCases,
+          userId: user.id,
+        });
       })
       .catch((e) => {
         console.error('Error updating CRM contact', e);
