@@ -552,17 +552,45 @@
         "summary": "List Composio Apps",
         "description": "Get a list of all Composio apps",
         "operationId": "list_composio_apps",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "User Id"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
+                  "type": "array",
                   "items": {
                     "$ref": "#/components/schemas/AppModel"
                   },
-                  "type": "array",
                   "title": "Response List Composio Apps"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -584,6 +612,22 @@
             "schema": {
               "type": "string",
               "title": "Composio App Name"
+            }
+          },
+          {
+            "name": "user_id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "User Id"
             }
           }
         ],
@@ -3087,7 +3131,7 @@
         "tags": ["agents"],
         "summary": "Send Message Streaming",
         "description": "Process a user message and return the agent's response.\nThis endpoint accepts a message from a user and processes it through the agent.\nIt will stream the steps of the response always, and stream the tokens if 'stream_tokens' is set to True.",
-        "operationId": "create_agent_message",
+        "operationId": "create_agent_message_stream",
         "parameters": [
           {
             "name": "agent_id",
@@ -3529,7 +3573,7 @@
         "tags": ["blocks"],
         "summary": "Link Agent Memory Block",
         "description": "Link a memory block to an agent.",
-        "operationId": "update_agent_memory_block",
+        "operationId": "link_agent_memory_block",
         "parameters": [
           {
             "name": "block_id",
@@ -3597,7 +3641,7 @@
         "tags": ["blocks"],
         "summary": "Unlink Agent Memory Block",
         "description": "Unlink a memory block from an agent",
-        "operationId": "update_agent_memory_block",
+        "operationId": "unlink_agent_memory_block",
         "parameters": [
           {
             "name": "block_id",
@@ -8453,7 +8497,7 @@
             "title": "Text",
             "description": "The text of the message."
           },
-          "user_id": {
+          "organization_id": {
             "anyOf": [
               {
                 "type": "string"
@@ -8462,8 +8506,8 @@
                 "type": "null"
               }
             ],
-            "title": "User Id",
-            "description": "The unique identifier of the user."
+            "title": "Organization Id",
+            "description": "The unique identifier of the organization."
           },
           "agent_id": {
             "anyOf": [
@@ -9291,7 +9335,7 @@
             "type": "string",
             "title": "Name",
             "description": "The name of the organization.",
-            "default": "HumbleEyeglasses"
+            "default": "ModestXylophone"
           },
           "created_at": {
             "anyOf": [
@@ -10922,7 +10966,7 @@
             "title": "Text",
             "description": "The text of the message."
           },
-          "user_id": {
+          "organization_id": {
             "anyOf": [
               {
                 "type": "string"
@@ -10931,8 +10975,8 @@
                 "type": "null"
               }
             ],
-            "title": "User Id",
-            "description": "The unique identifier of the user."
+            "title": "Organization Id",
+            "description": "The unique identifier of the organization."
           },
           "agent_id": {
             "anyOf": [
@@ -11365,6 +11409,9 @@
     },
     {
       "url": "http://localhost:3000"
+    },
+    {
+      "url": "https://app.letta.com"
     }
   ]
 }

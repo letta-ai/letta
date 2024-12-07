@@ -1442,9 +1442,9 @@ export type Message_Input = {
    */
   text?: string | null;
   /**
-   * The unique identifier of the user.
+   * The unique identifier of the organization.
    */
-  user_id?: string | null;
+  organization_id?: string | null;
   /**
    * The unique identifier of the agent.
    */
@@ -2556,9 +2556,9 @@ export type letta__schemas__message__Message_Output = {
    */
   text?: string | null;
   /**
-   * The unique identifier of the user.
+   * The unique identifier of the organization.
    */
-  user_id?: string | null;
+  organization_id?: string | null;
   /**
    * The unique identifier of the agent.
    */
@@ -2790,10 +2790,15 @@ export type RunToolFromSourceData = {
 
 export type RunToolFromSourceResponse = FunctionReturn;
 
+export type ListComposioAppsData = {
+  userId?: string | null;
+};
+
 export type ListComposioAppsResponse = Array<AppModel>;
 
 export type ListComposioActionsByAppData = {
   composioAppName: string;
+  userId?: string | null;
 };
 
 export type ListComposioActionsByAppResponse = Array<ActionModel>;
@@ -3139,13 +3144,13 @@ export type UpdateAgentMessageData = {
 export type UpdateAgentMessageResponse =
   letta__schemas__message__Message_Output;
 
-export type CreateAgentMessage1Data = {
+export type CreateAgentMessageStreamData = {
   agentId: string;
   requestBody: LettaStreamingRequest;
   userId?: string | null;
 };
 
-export type CreateAgentMessage1Response = unknown;
+export type CreateAgentMessageStreamResponse = unknown;
 
 export type ListModelsResponse = Array<LLMConfig>;
 
@@ -3198,7 +3203,7 @@ export type GetMemoryBlockData = {
 
 export type GetMemoryBlockResponse = Block;
 
-export type UpdateAgentMemoryBlockData = {
+export type LinkAgentMemoryBlockData = {
   /**
    * The unique identifier of the agent to attach the source to.
    */
@@ -3207,9 +3212,9 @@ export type UpdateAgentMemoryBlockData = {
   userId?: string | null;
 };
 
-export type UpdateAgentMemoryBlockResponse = Block;
+export type LinkAgentMemoryBlockResponse = Block;
 
-export type UpdateAgentMemoryBlock1Data = {
+export type UnlinkAgentMemoryBlockData = {
   /**
    * The unique identifier of the agent to attach the source to.
    */
@@ -3218,7 +3223,7 @@ export type UpdateAgentMemoryBlock1Data = {
   userId?: string | null;
 };
 
-export type UpdateAgentMemoryBlock1Response = Memory;
+export type UnlinkAgentMemoryBlockResponse = Memory;
 
 export type ListJobsData = {
   /**
@@ -3561,11 +3566,16 @@ export type $OpenApiTs = {
   };
   '/v1/tools/composio/apps': {
     get: {
+      req: ListComposioAppsData;
       res: {
         /**
          * Successful Response
          */
         200: Array<AppModel>;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
       };
     };
   };
@@ -4143,7 +4153,7 @@ export type $OpenApiTs = {
   };
   '/v1/agents/{agent_id}/messages/stream': {
     post: {
-      req: CreateAgentMessage1Data;
+      req: CreateAgentMessageStreamData;
       res: {
         /**
          * Successful response
@@ -4247,7 +4257,7 @@ export type $OpenApiTs = {
   };
   '/v1/blocks/{block_id}/attach': {
     patch: {
-      req: UpdateAgentMemoryBlockData;
+      req: LinkAgentMemoryBlockData;
       res: {
         /**
          * Successful Response
@@ -4262,7 +4272,7 @@ export type $OpenApiTs = {
   };
   '/v1/blocks/{block_id}/detach': {
     patch: {
-      req: UpdateAgentMemoryBlock1Data;
+      req: UnlinkAgentMemoryBlockData;
       res: {
         /**
          * Successful Response

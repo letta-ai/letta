@@ -3589,7 +3589,7 @@ export const $Message_Input = {
       title: 'Text',
       description: 'The text of the message.',
     },
-    user_id: {
+    organization_id: {
       anyOf: [
         {
           type: 'string',
@@ -3598,8 +3598,8 @@ export const $Message_Input = {
           type: 'null',
         },
       ],
-      title: 'User Id',
-      description: 'The unique identifier of the user.',
+      title: 'Organization Id',
+      description: 'The unique identifier of the organization.',
     },
     agent_id: {
       anyOf: [
@@ -4456,7 +4456,7 @@ export const $Organization = {
       type: 'string',
       title: 'Name',
       description: 'The name of the organization.',
-      default: 'HumbleEyeglasses',
+      default: 'ModestXylophone',
     },
     created_at: {
       anyOf: [
@@ -6171,7 +6171,7 @@ export const $letta__schemas__message__Message_Output = {
       title: 'Text',
       description: 'The text of the message.',
     },
-    user_id: {
+    organization_id: {
       anyOf: [
         {
           type: 'string',
@@ -6180,8 +6180,8 @@ export const $letta__schemas__message__Message_Output = {
           type: 'null',
         },
       ],
-      title: 'User Id',
-      description: 'The unique identifier of the user.',
+      title: 'Organization Id',
+      description: 'The unique identifier of the organization.',
     },
     agent_id: {
       anyOf: [
