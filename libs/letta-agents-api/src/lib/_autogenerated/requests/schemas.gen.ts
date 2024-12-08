@@ -3566,6 +3566,49 @@ export const $Memory = {
 
 export const $Message_Input = {
   properties: {
+    created_by_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Created By Id',
+      description: 'The id of the user that made this object.',
+    },
+    last_updated_by_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Last Updated By Id',
+      description: 'The id of the user that made this object.',
+    },
+    created_at: {
+      type: 'string',
+      format: 'date-time',
+      title: 'Created At',
+      description: 'The timestamp when the object was created.',
+    },
+    updated_at: {
+      anyOf: [
+        {
+          type: 'string',
+          format: 'date-time',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Updated At',
+      description: 'The timestamp when the object was last updated.',
+    },
     id: {
       type: 'string',
       pattern: '^message-[a-fA-F0-9]{8}',
@@ -3636,12 +3679,6 @@ export const $Message_Input = {
       ],
       title: 'Name',
       description: 'The name of the participant.',
-    },
-    created_at: {
-      type: 'string',
-      format: 'date-time',
-      title: 'Created At',
-      description: 'The time the message was created.',
     },
     tool_calls: {
       anyOf: [
@@ -3736,6 +3773,56 @@ export const $MessageContentLogProb = {
 
 export const $MessageCreate = {
   properties: {
+    created_by_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Created By Id',
+      description: 'The id of the user that made this object.',
+    },
+    last_updated_by_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Last Updated By Id',
+      description: 'The id of the user that made this object.',
+    },
+    created_at: {
+      anyOf: [
+        {
+          type: 'string',
+          format: 'date-time',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Created At',
+      description: 'The timestamp when the object was created.',
+    },
+    updated_at: {
+      anyOf: [
+        {
+          type: 'string',
+          format: 'date-time',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Updated At',
+      description: 'The timestamp when the object was last updated.',
+    },
     role: {
       type: 'string',
       enum: ['user', 'system'],
@@ -3799,6 +3886,127 @@ export const $MessageRole = {
   type: 'string',
   enum: ['assistant', 'user', 'tool', 'function', 'system'],
   title: 'MessageRole',
+} as const;
+
+export const $MessageUpdate = {
+  properties: {
+    created_by_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Created By Id',
+      description: 'The id of the user that made this object.',
+    },
+    last_updated_by_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Last Updated By Id',
+      description: 'The id of the user that made this object.',
+    },
+    created_at: {
+      anyOf: [
+        {
+          type: 'string',
+          format: 'date-time',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Created At',
+      description: 'The timestamp when the object was created.',
+    },
+    updated_at: {
+      anyOf: [
+        {
+          type: 'string',
+          format: 'date-time',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Updated At',
+      description: 'The timestamp when the object was last updated.',
+    },
+    role: {
+      anyOf: [
+        {
+          $ref: '#/components/schemas/MessageRole',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      description: 'The role of the participant.',
+    },
+    text: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Text',
+      description: 'The text of the message.',
+    },
+    name: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Name',
+      description: 'The name of the participant.',
+    },
+    tool_calls: {
+      anyOf: [
+        {
+          items: {
+            $ref: '#/components/schemas/letta__schemas__openai__chat_completions__ToolCall-Input',
+          },
+          type: 'array',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Tool Calls',
+      description: 'The list of tool calls requested.',
+    },
+    tool_call_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Tool Call Id',
+      description: 'The id of the tool call.',
+    },
+  },
+  additionalProperties: false,
+  type: 'object',
+  title: 'MessageUpdate',
+  description: 'Request to update a message',
 } as const;
 
 export const $ModifyMessageRequest = {
@@ -4456,7 +4664,7 @@ export const $Organization = {
       type: 'string',
       title: 'Name',
       description: 'The name of the organization.',
-      default: 'ModestXylophone',
+      default: 'PoliteElephant',
     },
     created_at: {
       anyOf: [
@@ -5796,83 +6004,6 @@ export const $UpdateAgentState = {
   title: 'UpdateAgentState',
 } as const;
 
-export const $UpdateMessage = {
-  properties: {
-    id: {
-      type: 'string',
-      title: 'Id',
-      description: 'The id of the message.',
-    },
-    role: {
-      anyOf: [
-        {
-          $ref: '#/components/schemas/MessageRole',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      description: 'The role of the participant.',
-    },
-    text: {
-      anyOf: [
-        {
-          type: 'string',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Text',
-      description: 'The text of the message.',
-    },
-    name: {
-      anyOf: [
-        {
-          type: 'string',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Name',
-      description: 'The name of the participant.',
-    },
-    tool_calls: {
-      anyOf: [
-        {
-          items: {
-            $ref: '#/components/schemas/letta__schemas__openai__chat_completions__ToolCall-Input',
-          },
-          type: 'array',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Tool Calls',
-      description: 'The list of tool calls requested.',
-    },
-    tool_call_id: {
-      anyOf: [
-        {
-          type: 'string',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Tool Call Id',
-      description: 'The id of the tool call.',
-    },
-  },
-  additionalProperties: false,
-  type: 'object',
-  required: ['id'],
-  title: 'UpdateMessage',
-  description: 'Request to update a message',
-} as const;
-
 export const $UsageStatistics = {
   properties: {
     completion_tokens: {
@@ -6148,6 +6279,49 @@ export const $letta__schemas__letta_message__FunctionCall = {
 
 export const $letta__schemas__message__Message_Output = {
   properties: {
+    created_by_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Created By Id',
+      description: 'The id of the user that made this object.',
+    },
+    last_updated_by_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Last Updated By Id',
+      description: 'The id of the user that made this object.',
+    },
+    created_at: {
+      type: 'string',
+      format: 'date-time',
+      title: 'Created At',
+      description: 'The timestamp when the object was created.',
+    },
+    updated_at: {
+      anyOf: [
+        {
+          type: 'string',
+          format: 'date-time',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Updated At',
+      description: 'The timestamp when the object was last updated.',
+    },
     id: {
       type: 'string',
       pattern: '^message-[a-fA-F0-9]{8}',
@@ -6218,12 +6392,6 @@ export const $letta__schemas__message__Message_Output = {
       ],
       title: 'Name',
       description: 'The name of the participant.',
-    },
-    created_at: {
-      type: 'string',
-      format: 'date-time',
-      title: 'Created At',
-      description: 'The time the message was created.',
     },
     tool_calls: {
       anyOf: [
