@@ -4,6 +4,7 @@ import type {
   FileTreeContentsType,
   PanelTemplate,
 } from '@letta-web/component-library';
+import { LoadingEmptyStatusComponent } from '@letta-web/component-library';
 import {
   Alert,
   Code,
@@ -50,7 +51,6 @@ import {
   RawInput,
   useForm,
   VStack,
-  LettaLoaderPanel,
   HStack,
 } from '@letta-web/component-library';
 import { useCurrentAgent } from '../hooks';
@@ -92,7 +92,7 @@ function AllToolsView(props: AllToolsViewProps) {
 
   const t = useTranslations('ADE/Tools');
 
-  const { data: _allTools } = useToolsServiceListTools();
+  const { data: _allTools, isLoading } = useToolsServiceListTools();
 
   const allTools = useMemo(() => {
     // deduplicate tools on name
@@ -168,33 +168,37 @@ function AllToolsView(props: AllToolsViewProps) {
           />
         </HStack>
         <VStack fullHeight fullWidth overflowY="auto">
-          <NiceGridDisplay>
-            {toolsList.map((tool) => (
-              <ActionCard
-                hideClickArrow
-                noMobileViewChange
-                smallImage={
-                  <HStack
-                    align="center"
-                    justify="center"
-                    border
-                    // eslint-disable-next-line react/forbid-component-props
-                    className="w-10 h-10"
-                  >
-                    {tool.icon}
-                  </HStack>
-                }
-                title={tool.name}
-                onClick={() => {
-                  setSelectedToolId(tool.id);
-                }}
-                subtitle={t('AddToolDialog.creator', {
-                  creator: tool.creator,
-                })}
-                key={tool.id}
-              ></ActionCard>
-            ))}
-          </NiceGridDisplay>
+          {isLoading ? (
+            <LoadingEmptyStatusComponent emptyMessage="" isLoading />
+          ) : (
+            <NiceGridDisplay>
+              {toolsList.map((tool) => (
+                <ActionCard
+                  hideClickArrow
+                  noMobileViewChange
+                  smallImage={
+                    <HStack
+                      align="center"
+                      justify="center"
+                      border
+                      // eslint-disable-next-line react/forbid-component-props
+                      className="w-10 h-10"
+                    >
+                      {tool.icon}
+                    </HStack>
+                  }
+                  title={tool.name}
+                  onClick={() => {
+                    setSelectedToolId(tool.id);
+                  }}
+                  subtitle={t('AddToolDialog.creator', {
+                    creator: tool.creator,
+                  })}
+                  key={tool.id}
+                ></ActionCard>
+              ))}
+            </NiceGridDisplay>
+          )}
         </VStack>
       </VStack>
     </HStack>
@@ -576,6 +580,16 @@ function AddToolDialog() {
     [reset]
   );
 
+  const { data: currentToolToAdd } = useToolsServiceGetTool(
+    {
+      toolId: toolIdToView || '',
+    },
+    undefined,
+    {
+      enabled: !!toolIdToView,
+    }
+  );
+
   const handleAddTool = useCallback(
     (toolId: string) => {
       mutate(
@@ -598,7 +612,16 @@ function AddToolDialog() {
 
                 return {
                   ...oldData,
-                  tools: nextAgentState.tools,
+                  tool_names: nextAgentState.tool_names,
+                  tools: [
+                    {
+                      id: toolId,
+                      name: currentToolToAdd?.name || '',
+                      description: currentToolToAdd?.description || '',
+                      source_code: currentToolToAdd?.source_code || '',
+                    },
+                    ...oldData.tools,
+                  ],
                 };
               }
             );
@@ -608,7 +631,7 @@ function AddToolDialog() {
         }
       );
     },
-    [agentId, handleOpenChange, mutate, queryClient]
+    [agentId, currentToolToAdd, handleOpenChange, mutate, queryClient]
   );
 
   const component = useMemo(() => {
@@ -730,7 +753,8 @@ function RemoveToolDialog(props: RemoveToolFromAgentDialogProps) {
 
           return {
             ...oldData,
-            tools: nextAgentState.tools,
+            tool_names: nextAgentState.tool_names,
+            tools: nextAgentState.tools.filter((tool) => tool.id !== toolId),
           };
         }
       );
@@ -808,38 +832,16 @@ interface ToolsProps {
 
 function ToolsList(props: ToolsProps) {
   const { search } = props;
-  const { tools: curentTools } = useCurrentAgent();
-  const { data: _allTools, isLoading } = useToolsServiceListTools();
+  const { tools: currentTools } = useCurrentAgent();
   const [toolIdToView, setToolIdToView] = useState<string | null>(null);
-
-  const allTools = useMemo(() => {
-    // deuplicate tools on name
-    const tools = _allTools || [];
-
-    const toolsMap = new Map<string, letta__schemas__tool__Tool>();
-
-    tools.forEach((tool) => {
-      toolsMap.set(tool.name || '', tool);
-    });
-
-    return Array.from(toolsMap.values());
-  }, [_allTools]);
 
   const t = useTranslations('ADE/Tools');
 
   const [removeToolPayload, setRemoveToolPayload] =
     useState<RemoveToolPayload | null>(null);
 
-  const currentToolIdSet = useMemo(() => {
-    return new Set((curentTools || []).map(({ id }) => id));
-  }, [curentTools]);
-
-  const currentUserTools = useMemo(() => {
-    return allTools?.filter((tool) => currentToolIdSet.has(tool.id));
-  }, [allTools, currentToolIdSet]);
-
   const toolsList: FileTreeContentsType = useMemo(() => {
-    if (!currentUserTools) {
+    if (!currentTools) {
       return [];
     }
 
@@ -860,7 +862,7 @@ function ToolsList(props: ToolsProps) {
       },
     ];
 
-    currentUserTools.forEach((tool) => {
+    currentTools.forEach((tool) => {
       if (!tool.name?.toLowerCase().includes(search.toLowerCase())) {
         return;
       }
@@ -920,7 +922,7 @@ function ToolsList(props: ToolsProps) {
     });
 
     return fileTreeTools;
-  }, [currentUserTools, search, t]);
+  }, [currentTools, search, t]);
 
   return (
     <PanelMainContent>
@@ -941,7 +943,7 @@ function ToolsList(props: ToolsProps) {
           }}
         />
       )}
-      {isLoading ? <LettaLoaderPanel /> : <FileTree root={toolsList} />}
+      <FileTree root={toolsList} />
     </PanelMainContent>
   );
 }
