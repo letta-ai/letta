@@ -5,7 +5,7 @@ import type { GenericSearch } from '$letta/web-api/shared/sharedContracts';
 
 const c = initContract();
 
-export const COMPOSE_IO_KEY_NAME = 'COMPOSE_IO_KEY';
+export const COMPOSIO_KEY_NAME = 'COMPOSIO_API_KEY';
 
 export const PublicEnvironmentVariableSchema = z.object({
   id: z.string(),

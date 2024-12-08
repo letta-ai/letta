@@ -30,7 +30,7 @@ import type {
   GetEnvironmentVariables200Response,
   PublicEnvironmentVariable,
 } from '$letta/web-api/environment-variables/environmentVariablesContracts';
-import { COMPOSE_IO_KEY_NAME } from '$letta/web-api/environment-variables/environmentVariablesContracts';
+import { COMPOSIO_KEY_NAME } from '$letta/web-api/environment-variables/environmentVariablesContracts';
 import { z } from 'zod';
 import { useQueryClient } from '@tanstack/react-query';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -400,7 +400,7 @@ function ManagedEnvironmentIndicator(props: ManagedEnvironmentIndicatorProps) {
   const message = useMemo(
     () =>
       ({
-        [COMPOSE_IO_KEY_NAME]: t(
+        [COMPOSIO_KEY_NAME]: t(
           'ManagedEnvironmentIndicator.integrations.composio'
         ),
       }[keyName]),
@@ -410,7 +410,7 @@ function ManagedEnvironmentIndicator(props: ManagedEnvironmentIndicatorProps) {
   const link = useMemo(
     () =>
       ({
-        [COMPOSE_IO_KEY_NAME]: '/settings/organization/integrations/composio',
+        [COMPOSIO_KEY_NAME]: '/settings/organization/integrations/composio',
       }[keyName]),
     [keyName]
   );

@@ -20,7 +20,7 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { webApi, webApiQueryKeys } from '$letta/client';
 import type { GetEnvironmentVariableByKey200Response } from '$letta/web-api/environment-variables/environmentVariablesContracts';
-import { COMPOSE_IO_KEY_NAME } from '$letta/web-api/environment-variables/environmentVariablesContracts';
+import { COMPOSIO_KEY_NAME } from '$letta/web-api/environment-variables/environmentVariablesContracts';
 import { useQueryClient } from '@tanstack/react-query';
 
 function useIsComposioConnected() {
@@ -28,7 +28,7 @@ function useIsComposioConnected() {
     webApi.environmentVariables.getEnvironmentVariableByKey.useQuery({
       queryData: {
         params: {
-          key: COMPOSE_IO_KEY_NAME,
+          key: COMPOSIO_KEY_NAME,
         },
       },
       retry: false,
@@ -37,7 +37,7 @@ function useIsComposioConnected() {
       refetchOnWindowFocus: false,
       queryKey:
         webApiQueryKeys.environmentVariables.getEnvironmentVariableByKey(
-          COMPOSE_IO_KEY_NAME
+          COMPOSIO_KEY_NAME
         ),
     });
 
@@ -68,7 +68,7 @@ function DisconnectIntegrationDialog() {
             {
               queryKey:
                 webApiQueryKeys.environmentVariables.getEnvironmentVariableByKey(
-                  COMPOSE_IO_KEY_NAME
+                  COMPOSIO_KEY_NAME
                 ),
             },
             () => {
@@ -132,7 +132,7 @@ function SetApiKeyDialog() {
         {
           body: {
             value: values.apiKey,
-            key: COMPOSE_IO_KEY_NAME,
+            key: COMPOSIO_KEY_NAME,
           },
         },
         {
@@ -143,7 +143,7 @@ function SetApiKeyDialog() {
               {
                 queryKey:
                   webApiQueryKeys.environmentVariables.getEnvironmentVariableByKey(
-                    COMPOSE_IO_KEY_NAME
+                    COMPOSIO_KEY_NAME
                   ),
               },
               () => {
