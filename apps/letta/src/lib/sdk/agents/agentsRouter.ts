@@ -303,7 +303,7 @@ export async function createAgent(
           requestBody: {
             ...premadeAgentTemplate,
             llm_config: {
-              model: 'gpt-4',
+              model: 'gpt-4o-mini',
               model_endpoint_type: 'openai',
               model_endpoint: 'https://api.openai.com/v1',
               model_wrapper: null,
