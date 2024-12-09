@@ -382,6 +382,102 @@ function OrganizationMembers() {
   );
 }
 
+function UsageDetails() {
+  const startOfThisMonth = useMemo(() => {
+    const date = new Date();
+    date.setDate(1);
+    date.setHours(0, 0, 0, 0);
+    return date;
+  }, []);
+
+  const endOfThisMonth = useMemo(() => {
+    const date = new Date();
+    date.setMonth(date.getMonth() + 1);
+    date.setDate(0);
+    date.setHours(23, 59, 59, 999);
+    return date;
+  }, []);
+
+  const organization = useCurrentAdminOrganization();
+
+  const { data, isLoading } =
+    webApi.admin.organizations.adminGetOrganizationInferenceUsage.useQuery({
+      queryKey:
+        webApiQueryKeys.admin.organizations.adminGetOrganizationInferenceUsage(
+          'organizationId',
+          {
+            startDate: startOfThisMonth.getTime(),
+            endDate: endOfThisMonth.getTime(),
+          }
+        ),
+      queryData: {
+        params: {
+          organizationId: organization?.id || '',
+        },
+        query: {
+          startDate: startOfThisMonth.getTime(),
+          endDate: endOfThisMonth.getTime(),
+        },
+      },
+      enabled: !!organization,
+    });
+
+  const columns = useMemo(() => {
+    return [
+      {
+        header: 'Model Name',
+        accessorKey: 'modelName',
+      },
+      {
+        header: 'Total Tokens',
+        accessorKey: 'totalTokens',
+      },
+      {
+        header: 'Total Cost',
+        accessorKey: 'totalCost',
+      },
+      {
+        header: 'Total Requests',
+        accessorKey: 'totalRequests',
+      },
+    ];
+  }, []);
+
+  const [search, setSearch] = useState('');
+  const limit = 5;
+  const [offset, setOffset] = useState(0);
+
+  const usage = useMemo(() => {
+    if (!data?.body) {
+      return [];
+    }
+
+    return data.body
+      .filter((item) => {
+        return item.modelName.toLowerCase().includes(search.toLowerCase());
+      })
+      .slice(offset, offset + limit);
+  }, [data?.body, limit, offset, search]);
+
+  return (
+    <DashboardPageSection
+      title={`Usage Details (${startOfThisMonth.toLocaleDateString()} - ${endOfThisMonth.toLocaleDateString()})`}
+    >
+      <DataTable
+        columns={columns}
+        data={usage}
+        searchValue={search}
+        onSearch={setSearch}
+        limit={limit}
+        offset={offset}
+        onSetOffset={setOffset}
+        isLoading={isLoading}
+        hasNextPage={usage.length === limit}
+      />
+    </DashboardPageSection>
+  );
+}
+
 interface MaybeValueProps {
   value?: number;
   isLoading?: boolean;
@@ -652,7 +748,7 @@ function OrganizationPage() {
       </DashboardPageSection>
       <OrganizationProperties />
       <OrganizationMembers />
-
+      <UsageDetails />
       <DashboardPageSection title="Ban Organization">
         <Typography>
           Banning an organization will ban all users in the organization and

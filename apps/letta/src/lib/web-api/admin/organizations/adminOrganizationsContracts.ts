@@ -196,6 +196,38 @@ const adminDeleteOrganizationContract = c.mutation({
   body: z.undefined(),
 });
 
+const AdminOrganizationInferenceUsageQuerySchema = z.object({
+  startDate: z.number(),
+  endDate: z.number(),
+});
+
+type AdminOrganizationInferenceUsageQuery = z.infer<
+  typeof AdminOrganizationInferenceUsageQuerySchema
+>;
+
+const AdminOrganizationInferenceUsageResponseSchema = z.array(
+  z.object({
+    modelKey: z.string(),
+    modelName: z.string(),
+    totalTokens: z.number(),
+    totalCost: z.number(),
+    brand: z.string(),
+    totalRequests: z.number(),
+  })
+);
+
+const adminGetOrganizationInferenceUsageByModelContract = c.query({
+  method: 'GET',
+  pathParams: z.object({
+    organizationId: z.string(),
+  }),
+  query: AdminOrganizationInferenceUsageQuerySchema,
+  path: '/admin/organizations/:organizationId/inference-usage-by-model',
+  responses: {
+    200: AdminOrganizationInferenceUsageResponseSchema,
+  },
+});
+
 export const adminOrganizationsContracts = {
   getOrganizations: getOrganizationsContract,
   getOrganization: getOrganizationContract,
@@ -207,6 +239,8 @@ export const adminOrganizationsContracts = {
   adminListOrganizationUsers: adminListOrganizationUsersContract,
   adminGetOrganizationStatistics: adminGetOrganizationStatisticsContract,
   adminDeleteOrganization: adminDeleteOrganizationContract,
+  adminGetOrganizationInferenceUsage:
+    adminGetOrganizationInferenceUsageByModelContract,
 };
 
 export const adminOrganizationsQueryClientKeys = {
@@ -235,5 +269,13 @@ export const adminOrganizationsQueryClientKeys = {
   adminGetOrganizationStatistics: (organizationId: string) => [
     ...adminOrganizationsQueryClientKeys.getOrganization(organizationId),
     'statistics',
+  ],
+  adminGetOrganizationInferenceUsage: (
+    organizationId: string,
+    query: AdminOrganizationInferenceUsageQuery
+  ) => [
+    ...adminOrganizationsQueryClientKeys.getOrganization(organizationId),
+    'inference-usage',
+    query,
   ],
 };

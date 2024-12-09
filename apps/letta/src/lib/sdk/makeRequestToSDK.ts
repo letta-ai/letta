@@ -201,9 +201,16 @@ async function handleMultipartFileUpload(options: RequestOptions) {
 
 function isCreateMessageRequest(options: RequestOptions) {
   // pathname must conform with /v1/agents/{agent-id}/messages
-  const regex = /\/v1\/agents\/[a-zA-Z0-9-]+\/messages\/?$/;
+  const regex = /\/v1\/agents\/[a-zA-Z0-9-]+\/messages\/?/;
+  // or /v1/agents/{agent-id}/messages/{message-id}/messages/stream
+  const regex2 =
+    /\/v1\/agents\/[a-zA-Z0-9-]+\/messages\/[a-zA-Z0-9-]+\/messages\/stream\/?/;
 
-  return regex.exec(options.pathname) && options.method === 'POST';
+  if (options.method !== 'POST') {
+    return false;
+  }
+
+  return regex.test(options.pathname) || regex2.test(options.pathname);
 }
 
 export async function makeRequestToSDK(

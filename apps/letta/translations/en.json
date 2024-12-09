@@ -295,7 +295,17 @@
   },
   "organization/billing": {
     "title": "Usage and billing",
-    "description": "You are currently using a managed enterprise plan. If you have any questions or need help, please contact support."
+    "description": "You are currently using a managed enterprise plan. If you have any questions or need help, please contact support.",
+    "UsageTable": {
+      "title": "Usage for {startDate} - {endDate}",
+      "model": "Model",
+      "totalRequests": "Requests made",
+      "totalTokens": "Tokens expended",
+      "totalCost": "Total cost",
+      "previousMonth": "Previous month",
+      "nextMonth": "Next month",
+      "error": "There was an error loading usage data, please try again or contact support."
+    }
   },
   "organization/settings": {
     "title": "Organization settings",
