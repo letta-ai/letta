@@ -1002,15 +1002,15 @@
     "comingSoon": "Coming soon",
     "createChatBotWithMemory": {
       "title": "Create a chatbot with memory",
-      "description": "Learn how to create a chatbot that can remember information from previous conversations"
+      "description": "Build a chatbot that can adapt over time using long-term memory"
     },
     "buildMultiAgentSystems": {
       "title": "Built a multi-agent system",
-      "description": "Learn how to create a multi-agent system where an orchestrator agent controls multiple (stateful) worker agents"
+      "description": "Create a multi-agent system with an orchestrator and multiple workers"
     },
     "discord": {
       "title": "Create a Discord bot",
-      "description": "Learn how to connect Letta agents to Discord to create Discord bots that have long-term memory and access to powerful tools"
+      "description": "Connect Letta agents to Discord to create Discord bots"
     },
     "voice": {
       "title": "Activate voice mode",
