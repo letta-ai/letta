@@ -12,6 +12,7 @@ import { adminOrganizationsRouter } from '$letta/web-api/admin/organizations/adm
 import { adminModelsRouter } from '$letta/web-api/admin/models/adminModelsRouter';
 import { environmentVariablesRouter } from '$letta/web-api/environment-variables/environmentVariablesRouter';
 import { adminUsersRouter } from '$letta/web-api/admin/users/adminUsersRouter';
+import { usageRouter } from '$letta/web-api/usage/usageRouter';
 
 export const router = {
   user: userRouter,
@@ -23,6 +24,7 @@ export const router = {
   adePreferences: adePreferencesRouter,
   developmentServers: developmentServersRouter,
   environmentVariables: environmentVariablesRouter,
+  usage: usageRouter,
   admin: {
     users: adminUsersRouter,
     models: adminModelsRouter,

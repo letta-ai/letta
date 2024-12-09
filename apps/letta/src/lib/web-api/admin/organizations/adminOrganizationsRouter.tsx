@@ -11,6 +11,7 @@ import {
 } from '@letta-web/database';
 import { and, count, eq, inArray, like } from 'drizzle-orm';
 import { AdminService } from '@letta-web/letta-agents-api';
+import { getUsageByModelSummaryAndOrganizationId } from '$letta/web-api/usage/usageRouter';
 
 /* Get Organizations */
 type GetOrganizationsResponse = ServerInferResponses<
@@ -468,12 +469,14 @@ async function adminListOrganizationUsers(
   return {
     status: 200,
     body: {
-      users: usersList.map((user) => ({
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        addedAt: organizationUsersMap[user.id].createdAt.toISOString(),
-      })),
+      users: usersList
+        .map((user) => ({
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          addedAt: organizationUsersMap[user.id].createdAt.toISOString(),
+        }))
+        .slice(0, limit),
       hasNextPage: organizationUsersList.length > limit,
     },
   };
@@ -574,6 +577,30 @@ async function adminDeleteOrganization(
   };
 }
 
+type AdminGetOrganizationInferenceUsageRequest = ServerInferRequest<
+  typeof contracts.admin.organizations.adminGetOrganizationInferenceUsage
+>;
+
+type AdminGetOrganizationInferenceUsageResponse = ServerInferResponses<
+  typeof contracts.admin.organizations.adminGetOrganizationInferenceUsage
+>;
+
+async function adminGetOrganizationInferenceUsage(
+  req: AdminGetOrganizationInferenceUsageRequest
+): Promise<AdminGetOrganizationInferenceUsageResponse> {
+  const { organizationId } = req.params;
+  const { startDate, endDate } = req.query;
+
+  return {
+    status: 200,
+    body: await getUsageByModelSummaryAndOrganizationId({
+      organizationId,
+      startDate,
+      endDate,
+    }),
+  };
+}
+
 export const adminOrganizationsRouter = {
   getOrganizations,
   getOrganization,
@@ -585,4 +612,5 @@ export const adminOrganizationsRouter = {
   adminGetOrganizationStatistics,
   adminListOrganizationUsers,
   adminDeleteOrganization,
+  adminGetOrganizationInferenceUsage,
 };
