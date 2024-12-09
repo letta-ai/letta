@@ -1015,7 +1015,7 @@
     },
     "voice": {
       "title": "Activate voice mode",
-      "description": "Learn how to connect Letta agents to a voice service to allow users to chat with agents over speech-to-text and text-to-speech"
+      "description": "Chat with your Letta agents using voice using our native integration"
     }
   },
   "development-servers/shared/CreateLocalAgentDialog": {
