@@ -244,6 +244,9 @@ async function setEnvironmentVariable(
           key,
           value,
         },
+      },
+      {
+        user_id: user.lettaAgentsId,
       }
     );
 

@@ -1430,6 +1430,22 @@ export type Memory = {
  */
 export type Message_Input = {
   /**
+   * The id of the user that made this object.
+   */
+  created_by_id?: string | null;
+  /**
+   * The id of the user that made this object.
+   */
+  last_updated_by_id?: string | null;
+  /**
+   * The timestamp when the object was created.
+   */
+  created_at?: string;
+  /**
+   * The timestamp when the object was last updated.
+   */
+  updated_at?: string | null;
+  /**
    * The human-friendly ID of the Message
    */
   id?: string;
@@ -1442,9 +1458,9 @@ export type Message_Input = {
    */
   text?: string | null;
   /**
-   * The unique identifier of the user.
+   * The unique identifier of the organization.
    */
-  user_id?: string | null;
+  organization_id?: string | null;
   /**
    * The unique identifier of the agent.
    */
@@ -1457,10 +1473,6 @@ export type Message_Input = {
    * The name of the participant.
    */
   name?: string | null;
-  /**
-   * The time the message was created.
-   */
-  created_at?: string;
   /**
    * The list of tool calls requested.
    */
@@ -1482,6 +1494,22 @@ export type MessageContentLogProb = {
  * Request to create a message
  */
 export type MessageCreate = {
+  /**
+   * The id of the user that made this object.
+   */
+  created_by_id?: string | null;
+  /**
+   * The id of the user that made this object.
+   */
+  last_updated_by_id?: string | null;
+  /**
+   * The timestamp when the object was created.
+   */
+  created_at?: string | null;
+  /**
+   * The timestamp when the object was last updated.
+   */
+  updated_at?: string | null;
   /**
    * The role of the participant.
    */
@@ -1518,6 +1546,48 @@ export type MessageFile = {
 };
 
 export type MessageRole = 'assistant' | 'user' | 'tool' | 'function' | 'system';
+
+/**
+ * Request to update a message
+ */
+export type MessageUpdate = {
+  /**
+   * The id of the user that made this object.
+   */
+  created_by_id?: string | null;
+  /**
+   * The id of the user that made this object.
+   */
+  last_updated_by_id?: string | null;
+  /**
+   * The timestamp when the object was created.
+   */
+  created_at?: string | null;
+  /**
+   * The timestamp when the object was last updated.
+   */
+  updated_at?: string | null;
+  /**
+   * The role of the participant.
+   */
+  role?: MessageRole | null;
+  /**
+   * The text of the message.
+   */
+  text?: string | null;
+  /**
+   * The name of the participant.
+   */
+  name?: string | null;
+  /**
+   * The list of tool calls requested.
+   */
+  tool_calls?: Array<letta__schemas__openai__chat_completions__ToolCall_Input> | null;
+  /**
+   * The id of the tool call.
+   */
+  tool_call_id?: string | null;
+};
 
 export type ModifyMessageRequest = {
   /**
@@ -2395,36 +2465,6 @@ export type UpdateAgentState = {
   message_ids?: Array<string> | null;
 };
 
-/**
- * Request to update a message
- */
-export type UpdateMessage = {
-  /**
-   * The id of the message.
-   */
-  id: string;
-  /**
-   * The role of the participant.
-   */
-  role?: MessageRole | null;
-  /**
-   * The text of the message.
-   */
-  text?: string | null;
-  /**
-   * The name of the participant.
-   */
-  name?: string | null;
-  /**
-   * The list of tool calls requested.
-   */
-  tool_calls?: Array<letta__schemas__openai__chat_completions__ToolCall_Input> | null;
-  /**
-   * The id of the tool call.
-   */
-  tool_call_id?: string | null;
-};
-
 export type UsageStatistics = {
   completion_tokens?: number;
   prompt_tokens?: number;
@@ -2544,6 +2584,22 @@ export type letta__schemas__letta_message__FunctionCall = {
  */
 export type letta__schemas__message__Message_Output = {
   /**
+   * The id of the user that made this object.
+   */
+  created_by_id?: string | null;
+  /**
+   * The id of the user that made this object.
+   */
+  last_updated_by_id?: string | null;
+  /**
+   * The timestamp when the object was created.
+   */
+  created_at?: string;
+  /**
+   * The timestamp when the object was last updated.
+   */
+  updated_at?: string | null;
+  /**
    * The human-friendly ID of the Message
    */
   id?: string;
@@ -2556,9 +2612,9 @@ export type letta__schemas__message__Message_Output = {
    */
   text?: string | null;
   /**
-   * The unique identifier of the user.
+   * The unique identifier of the organization.
    */
-  user_id?: string | null;
+  organization_id?: string | null;
   /**
    * The unique identifier of the agent.
    */
@@ -2571,10 +2627,6 @@ export type letta__schemas__message__Message_Output = {
    * The name of the participant.
    */
   name?: string | null;
-  /**
-   * The time the message was created.
-   */
-  created_at?: string;
   /**
    * The list of tool calls requested.
    */
@@ -2790,10 +2842,15 @@ export type RunToolFromSourceData = {
 
 export type RunToolFromSourceResponse = FunctionReturn;
 
+export type ListComposioAppsData = {
+  userId?: string | null;
+};
+
 export type ListComposioAppsResponse = Array<AppModel>;
 
 export type ListComposioActionsByAppData = {
   composioAppName: string;
+  userId?: string | null;
 };
 
 export type ListComposioActionsByAppResponse = Array<ActionModel>;
@@ -3133,19 +3190,19 @@ export type CreateAgentMessageResponse = LettaResponse;
 export type UpdateAgentMessageData = {
   agentId: string;
   messageId: string;
-  requestBody: UpdateMessage;
+  requestBody: MessageUpdate;
 };
 
 export type UpdateAgentMessageResponse =
   letta__schemas__message__Message_Output;
 
-export type CreateAgentMessage1Data = {
+export type CreateAgentMessageStreamData = {
   agentId: string;
   requestBody: LettaStreamingRequest;
   userId?: string | null;
 };
 
-export type CreateAgentMessage1Response = unknown;
+export type CreateAgentMessageStreamResponse = unknown;
 
 export type ListModelsResponse = Array<LLMConfig>;
 
@@ -3198,7 +3255,7 @@ export type GetMemoryBlockData = {
 
 export type GetMemoryBlockResponse = Block;
 
-export type UpdateAgentMemoryBlockData = {
+export type LinkAgentMemoryBlockData = {
   /**
    * The unique identifier of the agent to attach the source to.
    */
@@ -3207,9 +3264,9 @@ export type UpdateAgentMemoryBlockData = {
   userId?: string | null;
 };
 
-export type UpdateAgentMemoryBlockResponse = Block;
+export type LinkAgentMemoryBlockResponse = Block;
 
-export type UpdateAgentMemoryBlock1Data = {
+export type UnlinkAgentMemoryBlockData = {
   /**
    * The unique identifier of the agent to attach the source to.
    */
@@ -3218,7 +3275,7 @@ export type UpdateAgentMemoryBlock1Data = {
   userId?: string | null;
 };
 
-export type UpdateAgentMemoryBlock1Response = Memory;
+export type UnlinkAgentMemoryBlockResponse = Memory;
 
 export type ListJobsData = {
   /**
@@ -3561,11 +3618,16 @@ export type $OpenApiTs = {
   };
   '/v1/tools/composio/apps': {
     get: {
+      req: ListComposioAppsData;
       res: {
         /**
          * Successful Response
          */
         200: Array<AppModel>;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
       };
     };
   };
@@ -4143,7 +4205,7 @@ export type $OpenApiTs = {
   };
   '/v1/agents/{agent_id}/messages/stream': {
     post: {
-      req: CreateAgentMessage1Data;
+      req: CreateAgentMessageStreamData;
       res: {
         /**
          * Successful response
@@ -4247,7 +4309,7 @@ export type $OpenApiTs = {
   };
   '/v1/blocks/{block_id}/attach': {
     patch: {
-      req: UpdateAgentMemoryBlockData;
+      req: LinkAgentMemoryBlockData;
       res: {
         /**
          * Successful Response
@@ -4262,7 +4324,7 @@ export type $OpenApiTs = {
   };
   '/v1/blocks/{block_id}/detach': {
     patch: {
-      req: UpdateAgentMemoryBlock1Data;
+      req: UnlinkAgentMemoryBlockData;
       res: {
         /**
          * Successful Response

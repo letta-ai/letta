@@ -19,6 +19,7 @@ export enum AnalyticsEvent {
   AGENT_STAGED = 'Agent Staged',
   AGENT_DEPLOYED = 'Agent Deployed',
   APP_ERROR = 'App Error',
+  ANSWERED_ONBOARDING_SURVEY = 'Answered Onboarding Survey',
 }
 
 export interface BaseProperty {
@@ -31,6 +32,12 @@ interface LocalAgentCreatedProperty extends BaseProperty {
 
 interface LocalAgentModelChangedProperty extends BaseProperty {
   model: string;
+}
+
+interface AnsweredOnboardingSurveyProperty extends BaseProperty {
+  consentedToEmailMarketing: boolean;
+  reasonsForUsingLetta: string[];
+  usecasesForUsingLetta: string[];
 }
 
 export interface AnalyticsEventProperties {
@@ -54,4 +61,5 @@ export interface AnalyticsEventProperties {
   [AnalyticsEvent.CLOUD_AGENT_MODEL_CHANGED]: LocalAgentModelChangedProperty;
   [AnalyticsEvent.CLOUD_AGENT_DELETED]: BaseProperty;
   [AnalyticsEvent.APP_ERROR]: BaseProperty;
+  [AnalyticsEvent.ANSWERED_ONBOARDING_SURVEY]: AnsweredOnboardingSurveyProperty;
 }

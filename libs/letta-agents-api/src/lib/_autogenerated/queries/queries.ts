@@ -31,6 +31,7 @@ import {
   CreateBlock,
   LettaRequest,
   LettaStreamingRequest,
+  MessageUpdate,
   OrganizationCreate,
   SandboxConfigCreate,
   SandboxConfigUpdate,
@@ -42,7 +43,6 @@ import {
   ToolRunFromSource,
   ToolUpdate,
   UpdateAgentState,
-  UpdateMessage,
   UserCreate,
   UserUpdate,
 } from '../requests/types.gen';
@@ -120,12 +120,17 @@ export const useToolsServiceListComposioApps = <
   TError = unknown,
   TQueryKey extends Array<unknown> = unknown[]
 >(
+  {
+    userId,
+  }: {
+    userId?: string;
+  } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
 ) =>
   useQuery<TData, TError>({
-    queryKey: Common.UseToolsServiceListComposioAppsKeyFn(queryKey),
-    queryFn: () => ToolsService.listComposioApps() as TData,
+    queryKey: Common.UseToolsServiceListComposioAppsKeyFn({ userId }, queryKey),
+    queryFn: () => ToolsService.listComposioApps({ userId }) as TData,
     ...options,
   });
 export const useToolsServiceListComposioActionsByApp = <
@@ -135,19 +140,24 @@ export const useToolsServiceListComposioActionsByApp = <
 >(
   {
     composioAppName,
+    userId,
   }: {
     composioAppName: string;
+    userId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseToolsServiceListComposioActionsByAppKeyFn(
-      { composioAppName },
+      { composioAppName, userId },
       queryKey
     ),
     queryFn: () =>
-      ToolsService.listComposioActionsByApp({ composioAppName }) as TData,
+      ToolsService.listComposioActionsByApp({
+        composioAppName,
+        userId,
+      }) as TData,
     ...options,
   });
 export const useSourcesServiceGetSource = <
@@ -1398,8 +1408,8 @@ export const useAgentsServiceCreateAgentMessage = <
       }) as unknown as Promise<TData>,
     ...options,
   });
-export const useAgentsServiceCreateAgentMessage1 = <
-  TData = Common.AgentsServiceCreateAgentMessage1MutationResult,
+export const useAgentsServiceCreateAgentMessageStream = <
+  TData = Common.AgentsServiceCreateAgentMessageStreamMutationResult,
   TError = unknown,
   TContext = unknown
 >(
@@ -1428,7 +1438,7 @@ export const useAgentsServiceCreateAgentMessage1 = <
     TContext
   >({
     mutationFn: ({ agentId, requestBody, userId }) =>
-      AgentsService.createAgentMessage1({
+      AgentsService.createAgentMessageStream({
         agentId,
         requestBody,
         userId,
@@ -2141,7 +2151,7 @@ export const useAgentsServiceUpdateAgentMessage = <
       {
         agentId: string;
         messageId: string;
-        requestBody: UpdateMessage;
+        requestBody: MessageUpdate;
       },
       TContext
     >,
@@ -2154,7 +2164,7 @@ export const useAgentsServiceUpdateAgentMessage = <
     {
       agentId: string;
       messageId: string;
-      requestBody: UpdateMessage;
+      requestBody: MessageUpdate;
     },
     TContext
   >({
@@ -2203,8 +2213,8 @@ export const useBlocksServiceUpdateMemoryBlock = <
       }) as unknown as Promise<TData>,
     ...options,
   });
-export const useBlocksServiceUpdateAgentMemoryBlock = <
-  TData = Common.BlocksServiceUpdateAgentMemoryBlockMutationResult,
+export const useBlocksServiceLinkAgentMemoryBlock = <
+  TData = Common.BlocksServiceLinkAgentMemoryBlockMutationResult,
   TError = unknown,
   TContext = unknown
 >(
@@ -2233,15 +2243,15 @@ export const useBlocksServiceUpdateAgentMemoryBlock = <
     TContext
   >({
     mutationFn: ({ agentId, blockId, userId }) =>
-      BlocksService.updateAgentMemoryBlock({
+      BlocksService.linkAgentMemoryBlock({
         agentId,
         blockId,
         userId,
       }) as unknown as Promise<TData>,
     ...options,
   });
-export const useBlocksServiceUpdateAgentMemoryBlock1 = <
-  TData = Common.BlocksServiceUpdateAgentMemoryBlock1MutationResult,
+export const useBlocksServiceUnlinkAgentMemoryBlock = <
+  TData = Common.BlocksServiceUnlinkAgentMemoryBlockMutationResult,
   TError = unknown,
   TContext = unknown
 >(
@@ -2270,7 +2280,7 @@ export const useBlocksServiceUpdateAgentMemoryBlock1 = <
     TContext
   >({
     mutationFn: ({ agentId, blockId, userId }) =>
-      BlocksService.updateAgentMemoryBlock1({
+      BlocksService.unlinkAgentMemoryBlock({
         agentId,
         blockId,
         userId,

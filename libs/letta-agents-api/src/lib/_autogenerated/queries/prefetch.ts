@@ -61,25 +61,34 @@ export const prefetchUseToolsServiceListTools = (
     queryFn: () => ToolsService.listTools({ cursor, limit, userId }),
   });
 export const prefetchUseToolsServiceListComposioApps = (
-  queryClient: QueryClient
+  queryClient: QueryClient,
+  {
+    userId,
+  }: {
+    userId?: string;
+  } = {}
 ) =>
   queryClient.prefetchQuery({
-    queryKey: Common.UseToolsServiceListComposioAppsKeyFn(),
-    queryFn: () => ToolsService.listComposioApps(),
+    queryKey: Common.UseToolsServiceListComposioAppsKeyFn({ userId }),
+    queryFn: () => ToolsService.listComposioApps({ userId }),
   });
 export const prefetchUseToolsServiceListComposioActionsByApp = (
   queryClient: QueryClient,
   {
     composioAppName,
+    userId,
   }: {
     composioAppName: string;
+    userId?: string;
   }
 ) =>
   queryClient.prefetchQuery({
     queryKey: Common.UseToolsServiceListComposioActionsByAppKeyFn({
       composioAppName,
+      userId,
     }),
-    queryFn: () => ToolsService.listComposioActionsByApp({ composioAppName }),
+    queryFn: () =>
+      ToolsService.listComposioActionsByApp({ composioAppName, userId }),
   });
 export const prefetchUseSourcesServiceGetSource = (
   queryClient: QueryClient,

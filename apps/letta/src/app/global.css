@@ -13,3 +13,7 @@ html {
   tab-size: 4;
   scroll-behavior: smooth;
 }
+
+body {
+  container-type: inline-size;
+}

@@ -300,7 +300,9 @@ export function DataTable<TData, TValue>(props: DataTableProps<TData, TValue>) {
         )}
         style={{
           height:
-            !autofitHeight && limit ? `${limit * TABLE_ROW_HEIGHT}px` : '',
+            !autofitHeight && limit
+              ? `${(limit + 1) * TABLE_ROW_HEIGHT}px`
+              : '',
         }}
       >
         <Table>

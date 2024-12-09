@@ -626,6 +626,7 @@
       "dialog": {
         "title": "Update System Prompt",
         "label": "System Prompt",
+        "save": "Update",
         "info": "The system instructions are not editable by the agent itself (unlike core memory).",
         "characterCount": "{count} characters"
       }

@@ -499,8 +499,6 @@ export function Messages(props: MessagesProps) {
             return null;
           }
 
-          console.log(agentMessage);
-
           try {
             const tryParseResp = SystemAlertSchema.safeParse(
               JSON.parse(agentMessage.message)
