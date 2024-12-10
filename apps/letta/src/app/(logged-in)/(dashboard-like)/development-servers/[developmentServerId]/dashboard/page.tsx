@@ -137,7 +137,7 @@ function DevelopmentServersDashboardPage() {
       return false;
     }
 
-    return semver.satisfies(
+    return !semver.satisfies(
       isLocalServiceOnline.version,
       SUPPORTED_LETTA_AGENTS_VERSIONS
     );
