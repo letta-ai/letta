@@ -11,6 +11,8 @@ import {
   getOrganizationFromOrganizationId,
   getUserActiveOrganizationIdOrThrow,
 } from '$letta/server/auth';
+import { TsRestHttpError } from '@ts-rest/serverless/next.cjs';
+import * as Sentry from '@sentry/node';
 
 const nonCloudWhitelist = [
   new RegExp('/api/organizations/self$'),
@@ -69,6 +71,33 @@ const handler = createNextHandler(contracts, router, {
       }
     }),
   ],
+  errorHandler: async (error) => {
+    if (error instanceof TsRestHttpError) {
+      if (error.statusCode === 500) {
+        Sentry.captureException(error);
+      }
+
+      return TsRestResponse.fromJson(
+        {
+          message: error.message,
+        },
+        { status: error.statusCode }
+      );
+    }
+
+    const errorId = Sentry.captureException(error);
+    console.error(error);
+
+    console.error('Unhandled error', error);
+
+    return TsRestResponse.fromJson(
+      {
+        message: 'An unhandled error has happened, feel free to report.',
+        errorId,
+      },
+      { status: 500 }
+    );
+  },
 });
 
 export {
