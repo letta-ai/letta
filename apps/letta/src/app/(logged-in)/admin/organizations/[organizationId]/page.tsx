@@ -404,7 +404,7 @@ function UsageDetails() {
     webApi.admin.organizations.adminGetOrganizationInferenceUsage.useQuery({
       queryKey:
         webApiQueryKeys.admin.organizations.adminGetOrganizationInferenceUsage(
-          'organizationId',
+          organization?.id || '',
           {
             startDate: startOfThisMonth.getTime(),
             endDate: endOfThisMonth.getTime(),
