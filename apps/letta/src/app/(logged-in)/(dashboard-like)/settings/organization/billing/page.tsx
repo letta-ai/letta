@@ -10,10 +10,11 @@ import {
   HStack,
   isBrandKey,
 } from '@letta-web/component-library';
-import React, { useCallback, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { webApi, webApiQueryKeys } from '$letta/client';
 import type { ColumnDef } from '@tanstack/react-table';
 import type { GetUsageByModelItem } from '$letta/web-api/usage/usageContract';
+import { useMonthCursor } from '@letta-web/helpful-client-utils';
 
 function getStartOfMonth(date: Date) {
   return new Date(date.getFullYear(), date.getMonth(), 1);
@@ -24,32 +25,14 @@ function getEndOfMonth(date: Date) {
 }
 
 function UsageTable() {
-  const [monthCursor, setMonthCursor] = React.useState(new Date());
+  const {
+    startOfMonth,
+    cursor: monthCursor,
+    moveToNextMonth,
+    moveToPrevMonth,
+    endOfMonth,
+  } = useMonthCursor();
 
-  const setPreviousMonth = useCallback(() => {
-    setMonthCursor((prev) => {
-      const newDate = new Date(prev);
-      newDate.setMonth(newDate.getMonth() - 1);
-      return newDate;
-    });
-  }, []);
-
-  const setNextMonth = useCallback(() => {
-    setMonthCursor((prev) => {
-      const newDate = new Date(prev);
-      newDate.setMonth(newDate.getMonth() + 1);
-      return newDate;
-    });
-  }, []);
-
-  const startDate = useMemo(
-    () => getStartOfMonth(monthCursor).getTime(),
-    [monthCursor]
-  );
-  const endDate = useMemo(
-    () => getEndOfMonth(monthCursor).getTime(),
-    [monthCursor]
-  );
   const t = useTranslations('organization/billing');
 
   const {
@@ -58,13 +41,13 @@ function UsageTable() {
     isError,
   } = webApi.usage.getUsageByModelSummary.useQuery({
     queryKey: webApiQueryKeys.usage.getUsageByModelSummary({
-      startDate,
-      endDate,
+      startDate: startOfMonth.getTime(),
+      endDate: endOfMonth.getTime(),
     }),
     queryData: {
       query: {
-        startDate,
-        endDate,
+        startDate: startOfMonth.getTime(),
+        endDate: endOfMonth.getTime(),
       },
     },
   });
@@ -155,12 +138,12 @@ function UsageTable() {
           <Button
             color="tertiary"
             label={t('UsageTable.previousMonth')}
-            onClick={setPreviousMonth}
+            onClick={moveToPrevMonth}
           />
           <Button
             color="tertiary"
             label={t('UsageTable.nextMonth')}
-            onClick={setNextMonth}
+            onClick={moveToNextMonth}
             disabled={isAtCurrentMonth}
           />
         </HStack>
