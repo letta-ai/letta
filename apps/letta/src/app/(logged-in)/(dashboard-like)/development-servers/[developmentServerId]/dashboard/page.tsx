@@ -8,7 +8,6 @@ import {
   DashboardPageSection,
   Frame,
   HStack,
-  InlineCode,
   LettaLoader,
   Logo,
   NiceGridDisplay,
@@ -29,7 +28,6 @@ import { useCurrentUser } from '$letta/client/hooks';
 import { useLocalStorageWithLoadingState } from '@letta-web/helpful-client-utils';
 import {
   CLOUD_UPSELL_URL,
-  MOST_RECENT_LETTA_AGENT_VERSION,
   SUPPORTED_LETTA_AGENTS_VERSIONS,
 } from '$letta/constants';
 import { useHealthServiceHealthCheck } from '@letta-web/letta-agents-api';
@@ -38,17 +36,13 @@ import { cn } from '@letta-web/core-style-config';
 
 import AdBannerTwo from './ad_banner_two.webp';
 import Image from 'next/image';
+import semver from 'semver/preload';
+import Link from 'next/link';
 
-interface UserIsNotConnectedComponentProps {
-  isAttemptingToConnect?: boolean;
-}
-
-function UserIsNotConnectedComponent(props: UserIsNotConnectedComponentProps) {
+function UserIsNotConnectedComponent() {
   const t = useTranslations(
     'development-servers/components/UserIsNotConnectedComponent'
   );
-
-  const { isAttemptingToConnect } = props;
 
   return (
     <VStack
@@ -59,15 +53,29 @@ function UserIsNotConnectedComponent(props: UserIsNotConnectedComponentProps) {
       fullHeight
       fullWidth
     >
-      <LettaLoader stopAnimation={!isAttemptingToConnect} size="large" />
+      <LettaLoader size="large" />
       <VStack gap="small" paddingTop>
-        <Typography variant="heading5">
-          {!isAttemptingToConnect ? t('notConnected') : t('connecting')}
-        </Typography>
+        <Typography variant="heading5">{t('connecting')}</Typography>
         <VStack align="center">
           <Typography variant="heading6">{t('start')}</Typography>
           <HStack>
             <ConnectToLocalServerCommand />
+          </HStack>
+          <HStack paddingTop>
+            <Typography variant="body">
+              {t.rich('trouble', {
+                link: (chunks) => (
+                  <Typography overrideEl="span" underline>
+                    <Link
+                      target="_blank"
+                      href="https://docs.letta.com/agent-development-environment/troubleshooting"
+                    >
+                      {chunks}
+                    </Link>
+                  </Typography>
+                ),
+              })}
+            </Typography>
           </HStack>
         </VStack>
       </VStack>
@@ -115,7 +123,7 @@ function UpgradeBanner(props: UpgradeBannerProps) {
 
 function DevelopmentServersDashboardPage() {
   const t = useTranslations('development-servers/dashboard/page');
-  const { data: isLocalServiceOnline, isLoading } = useHealthServiceHealthCheck(
+  const { data: isLocalServiceOnline } = useHealthServiceHealthCheck(
     undefined,
     {
       retry: 1,
@@ -129,8 +137,9 @@ function DevelopmentServersDashboardPage() {
       return false;
     }
 
-    return !SUPPORTED_LETTA_AGENTS_VERSIONS.includes(
-      isLocalServiceOnline.version
+    return semver.satisfies(
+      isLocalServiceOnline.version,
+      SUPPORTED_LETTA_AGENTS_VERSIONS
     );
   }, [isLocalServiceOnline]);
 
@@ -156,21 +165,10 @@ function DevelopmentServersDashboardPage() {
         {showVersionCompatibilityBanner && (
           <Alert
             title={t('versionCompatibilityBanner.title', {
-              version: MOST_RECENT_LETTA_AGENT_VERSION,
+              version: SUPPORTED_LETTA_AGENTS_VERSIONS,
             })}
             variant="warning"
-          >
-            <VStack>
-              {t('versionCompatibilityBanner.description')}
-              <div>
-                <InlineCode
-                  size="medium"
-                  color="warning"
-                  code={`pip install letta==${MOST_RECENT_LETTA_AGENT_VERSION}`}
-                />
-              </div>
-            </VStack>
-          </Alert>
+          ></Alert>
         )}
       </VStack>
       {!user?.hasCloudAccess && (
@@ -267,7 +265,7 @@ function DevelopmentServersDashboardPage() {
         ) : (
           <NiceGridDisplay>
             <div className="col-span-4">
-              <UserIsNotConnectedComponent isAttemptingToConnect={isLoading} />
+              <UserIsNotConnectedComponent />
             </div>
           </NiceGridDisplay>
         )}

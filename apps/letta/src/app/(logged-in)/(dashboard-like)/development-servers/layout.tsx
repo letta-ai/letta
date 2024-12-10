@@ -21,7 +21,6 @@ import { useTranslations } from 'next-intl';
 import { webApi, webApiQueryKeys } from '$letta/client';
 import {
   LOCAL_PROJECT_SERVER_URL,
-  MOST_RECENT_LETTA_AGENT_VERSION,
   SUPPORTED_LETTA_AGENTS_VERSIONS,
 } from '$letta/constants';
 import { UpdateDevelopmentServerDetailsDialog } from './shared/UpdateDevelopmentServerDetailsDialog/UpdateDevelopmentServerDetailsDialog';
@@ -31,6 +30,7 @@ import type { ServerInferResponses } from '@ts-rest/core';
 import type { developmentServersContracts } from '$letta/web-api/development-servers/developmentServersContracts';
 import { useDevelopmentServerStatus } from './hooks/useDevelopmentServerStatus/useDevelopmentServerStatus';
 import type { DevelopmentServerConfig } from './[developmentServerId]/hooks/useCurrentDevelopmentServerConfig/useCurrentDevelopmentServerConfig';
+import semver from 'semver/preload';
 
 interface DeleteDevelopmentServerDialogProps {
   trigger: React.ReactNode;
@@ -123,14 +123,18 @@ function ServerStatusTitle(props: ServerStatusTitleProps) {
   const { config, title } = props;
   const t = useTranslations('development-servers/layout');
 
-  const { isHealthy, version, isFetching } = useDevelopmentServerStatus(config);
+  const { isHealthy, version } = useDevelopmentServerStatus(config);
 
   const isNotCompatible = useMemo(() => {
-    return !SUPPORTED_LETTA_AGENTS_VERSIONS.includes(version || '');
+    if (!version) {
+      return false;
+    }
+
+    return !semver.satisfies(version, SUPPORTED_LETTA_AGENTS_VERSIONS);
   }, [version]);
 
   const status = useMemo(() => {
-    if (isFetching) {
+    if (!isHealthy) {
       return 'processing';
     }
 
@@ -138,24 +142,21 @@ function ServerStatusTitle(props: ServerStatusTitleProps) {
       return 'warning';
     }
 
-    return isHealthy ? 'active' : 'inactive';
-  }, [isFetching, isHealthy, isNotCompatible]);
+    return 'active';
+  }, [isHealthy, isNotCompatible]);
 
   const statusText = useMemo(() => {
-    if (isFetching) {
-      return t('ServerStatusTitle.checking');
-    }
-
     if (isNotCompatible) {
       return t('ServerStatusTitle.incompatible', {
-        version: MOST_RECENT_LETTA_AGENT_VERSION,
+        version: SUPPORTED_LETTA_AGENTS_VERSIONS,
+        currentVersion: version,
       });
     }
 
     return isHealthy
       ? t('ServerStatusTitle.isHealthy')
-      : t('ServerStatusTitle.isUnhealthy');
-  }, [isFetching, isHealthy, isNotCompatible, t]);
+      : t('ServerStatusTitle.connecting');
+  }, [isHealthy, isNotCompatible, t, version]);
 
   return (
     <HStack align="center">

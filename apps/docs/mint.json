@@ -89,6 +89,10 @@
       "pages": ["concepts", "letta_memgpt"]
     },
     {
+      "group": "Agent Development Environment",
+      "pages": ["agent-development-environment/troubleshooting"]
+    },
+    {
       "group": "Agents",
       "pages": [
         "agents/overview",

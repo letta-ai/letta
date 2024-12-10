@@ -885,9 +885,9 @@
     "disabledTooltip": "This field cannot be edited"
   },
   "development-servers/components/UserIsNotConnectedComponent": {
-    "notConnected": "You are not connected to a local server",
     "connecting": "Attempting to connect to your local server...",
-    "start": "Enter the command below to start your local server"
+    "start": "Enter the command below to start your local server",
+    "trouble": "Still trouble connecting or using Safari? Follow our <link>troubleshooting guide</link>."
   },
   "development-servers/layout": {
     "title": "Local Project",
@@ -899,10 +899,9 @@
       "create": "Add remote server"
     },
     "ServerStatusTitle": {
-      "checking": "Checking server status...",
       "isHealthy": "Connected",
-      "incompatible": "You are using a possibly incompatible version of the Letta server, please set your version to {version}",
-      "isUnhealthy": "Not connected"
+      "incompatible": "You are using a possibly incompatible version of the Letta server, please set your version to {version}. Your current version: {currentVersion}",
+      "connecting": "Attempting to make a connection..."
     },
     "settings": "Settings",
     "delete": "Delete",
@@ -917,8 +916,7 @@
   },
   "development-servers/dashboard/page": {
     "versionCompatibilityBanner": {
-      "title": "You are using a possibly incompatible version of the Letta server, please set your version to {version} for maximum compatibility",
-      "description": "Configure your version by running the command below:"
+      "title": "You are using a possibly incompatible version of the Letta server, please set your version to {version} for maximum compatibility"
     },
     "UpgradeBanner": {
       "title": "Deploy, monitor and scale your agents in seconds",

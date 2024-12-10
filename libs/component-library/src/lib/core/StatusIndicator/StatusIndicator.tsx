@@ -28,9 +28,14 @@ export function StatusIndicator(props: StatusIndicatorProps) {
 
   if (rest.status === 'warning') {
     return (
-      <MaybeTooltip content={tooltipContent}>
-        <WarningIcon size="small" className="text-warning mt-[-2px]" />
-      </MaybeTooltip>
+      <div className="w-2 relative">
+        <MaybeTooltip content={tooltipContent}>
+          <WarningIcon
+            size="small"
+            className="text-warning w-2 left-[-4px] absolute top-[4px] "
+          />
+        </MaybeTooltip>
+      </div>
     );
   }
 

@@ -101,6 +101,7 @@
     "react-simple-code-editor": "^0.14.1",
     "react-textarea-autosize": "^8.5.3",
     "remark-gfm": "^4.0.0",
+    "semver": "^7.6.3",
     "tailwind-merge": "^2.3.0",
     "tailwindcss-animate": "^1.0.7",
     "tiktoken": "^1.0.17",
