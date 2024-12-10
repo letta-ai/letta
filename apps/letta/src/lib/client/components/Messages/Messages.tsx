@@ -558,7 +558,7 @@ export function Messages(props: MessagesProps) {
             if (tryParseResp.success) {
               return {
                 id: `${agentMessage.id}-${agentMessage.message_type}`,
-                content: tryParseResp.data.message,
+                content: <Typography>{tryParseResp.data.message}</Typography>,
                 timestamp: new Date(agentMessage.date).toISOString(),
                 name: 'System',
               };

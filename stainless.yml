@@ -69,6 +69,7 @@ resources:
 settings:
   license: Apache-2.0
 
+
 # `readme` is used to configure the code snippets that will be rendered in the
 # README.md of various SDKs. In particular, you can change the `headline`
 # snippet's endpoint and the arguments to call it with.
