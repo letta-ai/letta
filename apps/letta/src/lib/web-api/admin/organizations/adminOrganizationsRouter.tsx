@@ -26,7 +26,7 @@ async function getOrganizations(
   req: GetOrganizationsQuery
 ): Promise<GetOrganizationsResponse> {
   const { offset, limit = 10, search } = req.query;
-  const where = search ? like(organizations.name, search) : undefined;
+  const where = search ? like(organizations.name, `%${search}%`) : undefined;
 
   const response = await db.query.organizations.findMany({
     offset,

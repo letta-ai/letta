@@ -22,8 +22,11 @@ import {
   VStack,
 } from '@letta-web/component-library';
 import { webApi, webApiQueryKeys } from '$letta/client';
-import { useCallback, useMemo, useState } from 'react';
-import { useDateFormatter } from '@letta-web/helpful-client-utils';
+import React, { useCallback, useMemo, useState } from 'react';
+import {
+  useDateFormatter,
+  useMonthCursor,
+} from '@letta-web/helpful-client-utils';
 import type { ColumnDef } from '@tanstack/react-table';
 import type { AdminOrganizationUserType } from '$letta/web-api/admin/organizations/adminOrganizationsContracts';
 import { useQueryClient } from '@tanstack/react-query';
@@ -383,20 +386,8 @@ function OrganizationMembers() {
 }
 
 function UsageDetails() {
-  const startOfThisMonth = useMemo(() => {
-    const date = new Date();
-    date.setDate(1);
-    date.setHours(0, 0, 0, 0);
-    return date;
-  }, []);
-
-  const endOfThisMonth = useMemo(() => {
-    const date = new Date();
-    date.setMonth(date.getMonth() + 1);
-    date.setDate(0);
-    date.setHours(23, 59, 59, 999);
-    return date;
-  }, []);
+  const { startOfMonth, moveToNextMonth, moveToPrevMonth, endOfMonth } =
+    useMonthCursor();
 
   const organization = useCurrentAdminOrganization();
 
@@ -404,10 +395,10 @@ function UsageDetails() {
     webApi.admin.organizations.adminGetOrganizationInferenceUsage.useQuery({
       queryKey:
         webApiQueryKeys.admin.organizations.adminGetOrganizationInferenceUsage(
-          'organizationId',
+          organization?.id || '',
           {
-            startDate: startOfThisMonth.getTime(),
-            endDate: endOfThisMonth.getTime(),
+            startDate: startOfMonth.getTime(),
+            endDate: endOfMonth.getTime(),
           }
         ),
       queryData: {
@@ -415,8 +406,8 @@ function UsageDetails() {
           organizationId: organization?.id || '',
         },
         query: {
-          startDate: startOfThisMonth.getTime(),
-          endDate: endOfThisMonth.getTime(),
+          startDate: startOfMonth.getTime(),
+          endDate: endOfMonth.getTime(),
         },
       },
       enabled: !!organization,
@@ -461,7 +452,13 @@ function UsageDetails() {
 
   return (
     <DashboardPageSection
-      title={`Usage Details (${startOfThisMonth.toLocaleDateString()} - ${endOfThisMonth.toLocaleDateString()})`}
+      title={`Usage Details for ${startOfMonth.toLocaleDateString()} - ${endOfMonth.toLocaleDateString()}`}
+      actions={
+        <HStack>
+          <Button label="Previous Month" onClick={moveToPrevMonth} />
+          <Button label="Next Month" onClick={moveToNextMonth} />
+        </HStack>
+      }
     >
       <DataTable
         columns={columns}
