@@ -819,18 +819,28 @@ export async function updateAgentFromAgentId(options: UpdateAgentFromAgentId) {
   await Promise.all([
     Promise.all(
       datasourceToAttach.map(async (datasource) => {
-        return SourcesService.attachAgentToSource({
-          agentId: agentToUpdateId,
-          sourceId: datasource.id || '',
-        });
+        return SourcesService.attachAgentToSource(
+          {
+            agentId: agentToUpdateId,
+            sourceId: datasource.id || '',
+          },
+          {
+            user_id: lettaAgentsUserId,
+          }
+        );
       })
     ),
     Promise.all(
       datasourcesToDetach.map(async (datasource) => {
-        return SourcesService.detachAgentFromSource({
-          agentId: agentToUpdateId,
-          sourceId: datasource.id || '',
-        });
+        return SourcesService.detachAgentFromSource(
+          {
+            agentId: agentToUpdateId,
+            sourceId: datasource.id || '',
+          },
+          {
+            user_id: lettaAgentsUserId,
+          }
+        );
       })
     ),
   ]);
