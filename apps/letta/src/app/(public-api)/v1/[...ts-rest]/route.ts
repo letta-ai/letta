@@ -110,6 +110,10 @@ const handler = createNextHandler(sdkContracts, sdkRouter, {
   errorHandler: async (error, req) => {
     if (error instanceof TsRestHttpError) {
       if (error.statusCode !== 404) {
+        if (error.statusCode >= 500) {
+          Sentry.captureException(error);
+        }
+
         return TsRestResponse.fromJson(
           {
             message: error.message,
@@ -142,7 +146,13 @@ const handler = createNextHandler(sdkContracts, sdkRouter, {
     }
 
     if (isErrorResponse(error)) {
-      return TsRestResponse.fromJson(error, { status: error.status || 500 });
+      const statusCode = error.status || 500;
+
+      if ([500, 502].includes(statusCode)) {
+        Sentry.captureException(error);
+      }
+
+      return TsRestResponse.fromJson(error, { status: statusCode });
     }
 
     const errorId = Sentry.captureException(error);
