@@ -24,6 +24,7 @@ import {
   VStack,
 } from '@letta-web/component-library';
 import type { AgentMessage } from '@letta-web/letta-agents-api';
+import { useAgentsServiceGetAgent } from '@letta-web/letta-agents-api';
 import { SystemAlertSchema } from '@letta-web/letta-agents-api';
 import { SendMessageFunctionCallSchema } from '@letta-web/letta-agents-api';
 import {
@@ -45,6 +46,7 @@ import type { VariantProps } from 'class-variance-authority';
 import { cva } from 'class-variance-authority';
 import { cn } from '@letta-web/core-style-config';
 import { get } from 'lodash-es';
+import { useCurrentAgentMetaData } from '../../../../app/(logged-in)/(ade)/projects/[projectSlug]/agents/[agentId]/hooks/useCurrentAgentMetaData/useCurrentAgentMetaData';
 
 const messageWrapperVariants = cva('', {
   variants: {
@@ -188,7 +190,7 @@ function MessageGroup({ group }: MessageGroupType) {
   );
 }
 
-const MESSAGE_LIMIT = 20;
+const MESSAGE_LIMIT = 50;
 
 export type MessagesDisplayMode = 'debug' | 'interactive' | 'simple';
 
@@ -211,6 +213,16 @@ export function Messages(props: MessagesProps) {
   const t = useTranslations('components/Messages');
   const [lastMessageReceived, setLastMessageReceived] =
     useState<LastMessageReceived | null>(null);
+
+  const { refetch: refetchAgentState } = useAgentsServiceGetAgent(
+    {
+      agentId,
+    },
+    undefined,
+    {
+      enabled: false,
+    }
+  );
 
   const refetchInterval = useMemo(() => {
     if (isSendingMessage) {
@@ -258,6 +270,8 @@ export function Messages(props: MessagesProps) {
     initialPageParam: { before: '' },
   });
 
+  const { isLocal } = useCurrentAgentMetaData();
+
   useEffect(() => {
     if (!data?.pages) {
       return;
@@ -274,12 +288,17 @@ export function Messages(props: MessagesProps) {
       mostRecentMessage.id !== lastMessageReceived?.id &&
       'date' in mostRecentMessage
     ) {
+      if (isLocal) {
+        // on new message set the last message received
+        void refetchAgentState();
+      }
+
       setLastMessageReceived({
         id: mostRecentMessage.id,
         date: new Date(mostRecentMessage.date).getTime(),
       });
     }
-  }, [data?.pages, lastMessageReceived?.id]);
+  }, [data?.pages, isLocal, lastMessageReceived?.id, refetchAgentState]);
 
   const extractMessage = useCallback(
     function extractMessage(
@@ -558,7 +577,7 @@ export function Messages(props: MessagesProps) {
             if (tryParseResp.success) {
               return {
                 id: `${agentMessage.id}-${agentMessage.message_type}`,
-                content: tryParseResp.data.message,
+                content: <Typography>{tryParseResp.data.message}</Typography>,
                 timestamp: new Date(agentMessage.date).toISOString(),
                 name: 'System',
               };
