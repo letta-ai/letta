@@ -1,5 +1,11 @@
 'use client';
-import React, { useCallback, useEffect, useMemo, useRef } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import {
   Alert,
   Badge,
@@ -193,11 +199,32 @@ interface MessagesProps {
   isPanelActive?: boolean;
 }
 
+interface LastMessageReceived {
+  id: string;
+  date: number;
+}
+
 export function Messages(props: MessagesProps) {
   const { isSendingMessage, mode, isPanelActive, agentId } = props;
   const ref = useRef<HTMLDivElement>(null);
   const hasScrolledInitially = useRef(false);
   const t = useTranslations('components/Messages');
+  const [lastMessageReceived, setLastMessageReceived] =
+    useState<LastMessageReceived | null>(null);
+
+  const refetchInterval = useMemo(() => {
+    if (isSendingMessage) {
+      return false;
+    }
+
+    // last sent message was less than 10 seconds ago refetch every 500ms;
+
+    if (lastMessageReceived && Date.now() - lastMessageReceived.date < 10000) {
+      return 500;
+    }
+
+    return 5000;
+  }, [isSendingMessage, lastMessageReceived]);
 
   const { data, hasNextPage, fetchNextPage, isFetching } = useInfiniteQuery<
     AgentMessage[],
@@ -206,6 +233,7 @@ export function Messages(props: MessagesProps) {
     unknown[],
     { before?: string }
   >({
+    refetchInterval,
     queryKey: UseAgentsServiceListAgentMessagesKeyFn({ agentId }),
     queryFn: async (query) => {
       const res = AgentsService.listAgentMessages({
@@ -229,6 +257,29 @@ export function Messages(props: MessagesProps) {
     },
     initialPageParam: { before: '' },
   });
+
+  useEffect(() => {
+    if (!data?.pages) {
+      return;
+    }
+
+    if (data.pages.length === 0) {
+      return;
+    }
+
+    // most recent message is the first message in the first page
+    const mostRecentMessage = data.pages[0][0];
+
+    if (
+      mostRecentMessage.id !== lastMessageReceived?.id &&
+      'date' in mostRecentMessage
+    ) {
+      setLastMessageReceived({
+        id: mostRecentMessage.id,
+        date: new Date(mostRecentMessage.date).getTime(),
+      });
+    }
+  }, [data?.pages, lastMessageReceived?.id]);
 
   const extractMessage = useCallback(
     function extractMessage(
