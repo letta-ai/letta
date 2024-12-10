@@ -188,7 +188,7 @@ function MessageGroup({ group }: MessageGroupType) {
   );
 }
 
-const MESSAGE_LIMIT = 20;
+const MESSAGE_LIMIT = 50;
 
 export type MessagesDisplayMode = 'debug' | 'interactive' | 'simple';
 
