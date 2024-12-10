@@ -11,7 +11,7 @@ import {
   getOrganizationFromOrganizationId,
   getUserActiveOrganizationIdOrThrow,
 } from '$letta/server/auth';
-import { TsRestHttpError } from '@ts-rest/serverless/next.cjs';
+import { TsRestHttpError } from '@ts-rest/serverless/next';
 import * as Sentry from '@sentry/node';
 
 const nonCloudWhitelist = [
