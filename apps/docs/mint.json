@@ -90,7 +90,12 @@
     },
     {
       "group": "Agent Development Environment",
-      "pages": ["agent-development-environment/troubleshooting"]
+      "pages": [
+        "agent-development-environment/ade",
+        "agent-development-environment/connect",
+        "agent-development-environment/agent_create",
+        "agent-development-environment/troubleshooting"
+      ]
     },
     {
       "group": "Agents",
