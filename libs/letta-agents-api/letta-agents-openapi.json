@@ -8620,56 +8620,6 @@
       },
       "MessageCreate": {
         "properties": {
-          "created_by_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Created By Id",
-            "description": "The id of the user that made this object."
-          },
-          "last_updated_by_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Last Updated By Id",
-            "description": "The id of the user that made this object."
-          },
-          "created_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Created At",
-            "description": "The timestamp when the object was created."
-          },
-          "updated_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Updated At",
-            "description": "The timestamp when the object was last updated."
-          },
           "role": {
             "type": "string",
             "enum": ["user", "system"],
@@ -8694,7 +8644,6 @@
             "description": "The name of the participant."
           }
         },
-        "additionalProperties": false,
         "type": "object",
         "required": ["role", "text"],
         "title": "MessageCreate",
@@ -8734,56 +8683,6 @@
       },
       "MessageUpdate": {
         "properties": {
-          "created_by_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Created By Id",
-            "description": "The id of the user that made this object."
-          },
-          "last_updated_by_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Last Updated By Id",
-            "description": "The id of the user that made this object."
-          },
-          "created_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Created At",
-            "description": "The timestamp when the object was created."
-          },
-          "updated_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Updated At",
-            "description": "The timestamp when the object was last updated."
-          },
           "role": {
             "anyOf": [
               {
@@ -8847,7 +8746,6 @@
             "description": "The id of the tool call."
           }
         },
-        "additionalProperties": false,
         "type": "object",
         "title": "MessageUpdate",
         "description": "Request to update a message"
@@ -9495,7 +9393,7 @@
             "type": "string",
             "title": "Name",
             "description": "The name of the organization.",
-            "default": "DazzlingEspresso"
+            "default": "VersatileFireplace"
           },
           "created_at": {
             "anyOf": [
