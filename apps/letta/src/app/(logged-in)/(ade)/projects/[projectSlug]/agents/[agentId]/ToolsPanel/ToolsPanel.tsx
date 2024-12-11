@@ -1,10 +1,15 @@
 'use client';
 import React, { useCallback, useMemo, useState } from 'react';
-import type {
-  FileTreeContentsType,
-  PanelTemplate,
+import {
+  ComposioLockup,
+  ComposioLogoMark, DashboardPageSection,
+  DataTable, ExploreIcon,
+  FileTreeContentsType, IconWrapper, InlineCode, LoadingEmptyStatusComponent, NiceGridDisplay,
+  PanelTemplate, toast
 } from '@letta-web/component-library';
-import { LoadingEmptyStatusComponent } from '@letta-web/component-library';
+import {
+  CloseIcon, MiniApp
+} from '@letta-web/component-library';
 import {
   Alert,
   Code,
@@ -29,7 +34,6 @@ import {
   brandKeyToLogo,
   brandKeyToName,
   isBrandKey,
-  NiceGridDisplay,
   SearchIcon,
 } from '@letta-web/component-library';
 import { getIsGenericFolder } from '@letta-web/component-library';
@@ -54,10 +58,10 @@ import {
   HStack,
 } from '@letta-web/component-library';
 import { useCurrentAgent } from '../hooks';
-import type {
+import {
   AgentState,
   GetToolResponse,
-  letta__schemas__tool__Tool,
+  letta__schemas__tool__Tool, useToolsServiceListComposioApps
 } from '@letta-web/letta-agents-api';
 import { useToolsServiceRunToolFromSource } from '@letta-web/letta-agents-api';
 import { useAgentsServiceAddToolToAgent } from '@letta-web/letta-agents-api';
@@ -81,142 +85,607 @@ import { useTranslations } from 'next-intl';
 import { isAxiosError } from 'axios';
 import { useCurrentAgentMetaData } from '../hooks/useCurrentAgentMetaData/useCurrentAgentMetaData';
 import { isAPIError } from '@letta-web/letta-agents-api';
+import { webApi, webApiQueryKeys } from '$letta/client';
+import Image from 'next/image';
+import { ToolMetadataPreviewType } from '$letta/web-api/tool-metadata/toolMetadataContract';
+import { COMPOSIO_KEY_NAME } from '$letta/web-api/environment-variables/environmentVariablesContracts';
 
 interface AllToolsViewProps {
   setSelectedToolId: (toolId: string) => void;
   startCreateNewTool: VoidFunction;
 }
 
-function AllToolsView(props: AllToolsViewProps) {
-  const { setSelectedToolId, startCreateNewTool } = props;
+interface ToolCategoryButtonProps {
+  category: ToolViewerCategory;
+  label: string;
+  image?: string;
+  selectedCategory: ToolViewerCategory;
+  setSelectedCategory: (category: ToolViewerCategory) => void;
+}
+
+function ToolCategoryButton(props: ToolCategoryButtonProps) {
+  const { category, image, label, selectedCategory, setSelectedCategory } = props;
+
+
+  return (
+    <Button
+      label={label}
+      preIcon={image ? <img src={image} alt="" /> : <ToolsIcon />}
+      color="tertiary-transparent"
+      active={selectedCategory === category}
+      onClick={() => {
+        setSelectedCategory(category)
+      }}
+    />
+  );
+}
+
+
+// eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
+type ToolViewerCategory = string | 'all' | 'custom';
+
+interface ViewCategoryToolsProps {
+  category: ToolViewerCategory;
+  onSelectTool: (tool: ToolMetadataPreviewType | null) => void;
+}
+
+
+const PAGE_SIZE = 100;
+
+
+function ViewCategoryTools(props: ViewCategoryToolsProps) {
+  const { category, onSelectTool } = props;
+
+  const [search, setSearch] = useState<string>('')
+
+  const query = useMemo(() => ({
+    brand: ['all', 'custom'].includes(category) ? undefined : category,
+    search,
+  }), [category, search]);
+
+  const { data: toolMetaData, isLoading: isLoadingToolMetaData, fetchNextPage, hasNextPage: hasNextToolMetaData } = webApi.toolMetadata.listToolMetadata.useInfiniteQuery({
+    queryKey: webApiQueryKeys.toolMetadata.listToolMetadataWithSearch(query),
+    queryData: ({ pageParam }) => ({
+      query: {
+        ...query,
+        offset: pageParam.offset,
+        limit: pageParam.limit,
+      },
+    }),
+    initialPageParam: { offset: 0, limit: PAGE_SIZE },
+    getNextPageParam: (lastPage, allPages) => {
+      return lastPage.body.hasNextPage
+        ? { limit: PAGE_SIZE, offset: allPages.length * PAGE_SIZE }
+        : undefined;
+    },
+    enabled: category !== 'custom',
+  });
+
+  const { data: customTools, isLoading: isLoadingCustomTools } = useToolsServiceListTools({
+    limit: 100,
+  }, undefined, {
+    enabled: category === 'custom',
+  });
+
+
+  const hasNextPage = useMemo(() => {
+    return category === 'custom' ? false : hasNextToolMetaData;
+  }, [category, hasNextToolMetaData]);
+
+  const isLoading = useMemo(() => {
+    return isLoadingToolMetaData || isLoadingCustomTools;
+  }, [isLoadingToolMetaData, isLoadingCustomTools]);
+
+  const tools: ToolMetadataPreviewType[] = useMemo(() => {
+    if (category === 'custom') {
+      if (!customTools) {
+        return [];
+      }
+
+      return customTools
+        .filter(tool => {
+          if (!tool.tags) {
+            return false;
+          }
+
+          return !(tool.tags.includes('letta-base') || tool.tags.includes('memgpt-base'))
+        })
+        .map((tool) => ({
+        name: tool.name || '',
+        description: tool.description || '',
+        id: tool.id || '',
+        brand: 'custom',
+        provider: 'custom',
+        imageUrl: null,
+      }));
+    }
+
+    return toolMetaData?.pages.flatMap((page) => page.body.toolMetadata) || [];
+  }, [category, customTools, toolMetaData?.pages]);
 
   const t = useTranslations('ADE/Tools');
 
-  const { data: _allTools, isLoading } = useToolsServiceListTools();
+  return (
+    <VStack overflow="hidden" gap="large" fullHeight fullWidth>
+      <HStack paddingX align="center" justify="spaceBetween">
+        <VStack>
+          <RawInput
+            hideLabel
+            preIcon={<SearchIcon />}
+            placeholder={t('ViewCategoryTools.search.placeholder')}
+            label={t('ViewCategoryTools.search.label')} fullWidth value={search} onChange={(e) => {
+            setSearch(e.target.value);
+          }}
+          />
+        </VStack>
+        <Button
+          label={t('ViewCategoryTools.create')}
+          color="secondary"
+          onClick={() => {
+            onSelectTool(null);
+          }}
+        />
+      </HStack>
+      <VStack paddingX overflowY="auto">
 
-  const allTools = useMemo(() => {
-    // deduplicate tools on name
-    const tools = _allTools || [];
+        {!isLoading ? (
+          <VStack>
+            <NiceGridDisplay>
+              {tools
+                .map((tool) => (
+                  <ActionCard
+                    key={tool.id}
+                    title={tool.name}
+                    subtitle={isBrandKey(tool.brand) ? brandKeyToName(tool.brand) : tool.brand}
+                    icon={tool.imageUrl ? (
+                      <img src={tool.imageUrl} alt="" />
+                    ) : <ToolsIcon />}
 
-    const toolsMap = new Map<string, letta__schemas__tool__Tool>();
+                    mainAction={(
+                      <Button
+                        color="tertiary"
+                        label={t('ViewCategoryTools.view')}
+                        onClick={() => {
+                          onSelectTool(tool);
+                        }}
+                      />
+                    )}
+                  >
+                    {/* eslint-disable-next-line react/forbid-component-props */}
+                    <Typography className="line-clamp-3">
+                      {tool.description}
+                    </Typography>
+                  </ActionCard>
+                ))}
+            </NiceGridDisplay>
+            {hasNextPage && <Button fullWidth color="tertiary" label={t('ViewCategoryTools.loadMore')} onClick={() => {
+              void fetchNextPage();
+            }} />}
+          </VStack>
 
-    tools.forEach((tool) => {
-      toolsMap.set(tool.name || '', tool);
-    });
+        ) : (
+          <LoadingEmptyStatusComponent emptyMessage="" isLoading />
+        )}
+      </VStack>
+    </VStack>
+  )
+}
 
-    return Array.from(toolsMap.values());
-  }, [_allTools]);
+function filterOutBaseTools(tools: letta__schemas__tool__Tool[]) {
+  return tools.filter(tool => !tool.tags?.includes('letta-base') && !tool.tags?.includes('memgpt-base'));
+}
 
-  const { tools } = useCurrentAgent();
 
-  const toolIdSet = useMemo(() => {
-    return new Set((tools || []).map((tool) => tool.id));
-  }, [tools]);
+function AllToolsView() {
+  const [toolToView, setToolToView] = useState<ToolMetadataPreviewType | null>(null);
 
-  const [search, setSearch] = useState('');
+  const { data: summary } = webApi.toolMetadata.getToolMetadataSummary.useQuery({
+    queryKey: webApiQueryKeys.toolMetadata.getToolMetadataSummary,
+  });
 
-  const toolsList: AddToolsListItem[] = useMemo(() => {
-    return (allTools || [])
-      .filter(
-        (tool) =>
-          !tool.tags?.includes('letta-base') &&
-          !tool.tags?.includes('memgpt-base')
-      )
-      .map((tool) => {
-        const creator = tool.tags?.find((tag) => isBrandKey(tag)) || '';
+  const { data: groupMetaData } = webApi.toolMetadata.listToolGroupMetadata.useQuery({
+    queryKey: webApiQueryKeys.toolMetadata.listToolMetadataWithSearch({
+      limit: 200,
+    }),
+    queryData: {
+      query: {
+        limit: 200,
+      }
+    }
+  });
 
+  const [category, setCategory] = useState<ToolViewerCategory>('all');
+
+  const t = useTranslations('ADE/Tools');
+
+  const [categorySearch, setCategorySearch] = useState('');
+
+  const content = useMemo(() => {
+    if (toolToView) {
+      return <ViewTool showAddToolToAgent tool={toolToView} />;
+    }
+
+
+    return <ViewCategoryTools onSelectTool={setToolToView} category={category} />
+  }, [category, toolToView]);
+
+
+  const brandIntegrations = useMemo(() => {
+    return (groupMetaData?.body.toolGroups || [])
+      .filter(({ brand, toolCount }) => toolCount > 0 && isBrandKey(brand))
+      .map(({ brand, toolCount, imageUrl }) => {
         return {
-          name: tool.name || '',
-          id: tool.id || '',
-          creator: creator ? brandKeyToName(creator) : 'Custom',
-          description: tool.description || '',
-          alreadyAdded: toolIdSet.has(tool.id),
-          icon: isBrandKey(creator) ? brandKeyToLogo(creator) : <ToolsIcon />,
+          name: isBrandKey(brand) ? brandKeyToName(brand) : 'Unknown',
+          description: '',
+          imageUrl,
+          category: brand,
+          toolCount,
         };
       })
-      .filter((tool) => tool.name.toLowerCase().includes(search.toLowerCase()));
-  }, [allTools, toolIdSet, search]);
+  }, [groupMetaData?.body.toolGroups]);
+
+  const title = useMemo(() => {
+    if (category === 'all') {
+      return t('AllToolsView.titles.allTools');
+    }
+
+    if (category === 'custom') {
+      return t('AllToolsView.titles.customTools');
+    }
+
+    if (isBrandKey(category)) {
+      return t('AllToolsView.titles.brandTools', {
+        brand: brandKeyToName(category),
+      });
+    }
+
+    return '';
+  }, [category, t]);
+
+  const handleSelectCategory = useCallback((category: ToolViewerCategory) => {
+    setCategory(category);
+    setToolToView(null);
+  }, []);
+
+  const { data: customTools, isLoading: isLoadingCustomTools } = useToolsServiceListTools({
+    limit: 100,
+  });
+
+  const customToolCount = useMemo(() => {
+    if (isLoadingCustomTools) {
+      return '-';
+    }
+
+    if (!customTools) {
+      return 0;
+    }
+
+    return filterOutBaseTools(customTools).length;
+  }, [customTools, isLoadingCustomTools]);
 
   return (
-    <HStack padding fullHeight>
-      <VStack gap="large" fullHeight fullWidth>
-        <HStack align="center" fullWidth justify="spaceBetween">
-          <Typography variant="heading4" bold>
-            All tools
-          </Typography>
-          <Button
-            preIcon={<PlusIcon />}
-            type="button"
-            label={t('AddToolDialog.createTool')}
-            color="secondary"
-            onClick={() => {
-              startCreateNewTool();
-            }}
-          />
-        </HStack>
-        <HStack fullWidth>
-          <RawInput
-            fullWidth
-            preIcon={<SearchIcon />}
-            hideLabel
-            placeholder={t('AddToolDialog.search.placeholder')}
-            label={t('AddToolDialog.search.label')}
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-            }}
-          />
-        </HStack>
-        <VStack fullHeight fullWidth overflowY="auto">
-          {isLoading ? (
-            <LoadingEmptyStatusComponent emptyMessage="" isLoading />
-          ) : (
-            <NiceGridDisplay>
-              {toolsList.map((tool) => (
-                <ActionCard
-                  hideClickArrow
-                  noMobileViewChange
-                  smallImage={
-                    <HStack
-                      align="center"
-                      justify="center"
-                      border
-                      // eslint-disable-next-line react/forbid-component-props
-                      className="w-10 h-10"
-                    >
-                      {tool.icon}
-                    </HStack>
-                  }
-                  title={tool.name}
-                  onClick={() => {
-                    setSelectedToolId(tool.id);
-                  }}
-                  subtitle={t('AddToolDialog.creator', {
-                    creator: tool.creator,
+    <HStack fullHeight gap={false}>
+      {/* eslint-disable-next-line react/forbid-component-props */}
+      <VStack className="min-w-[350px] visibleSidebar:flex hidden" borderRight>
+        <VStack gap="large" justify="center" padding paddingBottom="small" borderBottom fullWidth>
+          <HStack align="center" gap="medium">
+            <ExploreIcon size="large" />
+            <Typography align="left" variant="heading4">
+              {t('AllToolsView.title')}
+            </Typography>
+          </HStack>
+          <HStack paddingBottom="small">
+            <RawInput
+              fullWidth
+              preIcon={<SearchIcon />}
+              hideLabel
+              placeholder={t('AllToolsView.searchCategories.placeholder')}
+              label={t('AllToolsView.searchCategories.label')}
+              value={categorySearch}
+              onChange={(e) => {
+                setCategorySearch(e.target.value);
+              }}
+            />
+          </HStack>
+        </VStack>
+
+        <VStack overflowY="auto" paddingX="small" gap="small">
+
+          {summary?.body ? (
+            <>
+              <ToolCategoryButton
+                category="all"
+                label={t('AllToolsView.categories.allTools', {
+                  count: summary?.body.allToolsCount || 0,
+                })}
+                selectedCategory={category}
+                setSelectedCategory={handleSelectCategory}
+              />
+              <ToolCategoryButton
+                category="custom"
+                selectedCategory={category}
+                label={t('AllToolsView.categories.customTools', {
+                  count: customToolCount,
+                })}
+                setSelectedCategory={handleSelectCategory}
+              />
+              {brandIntegrations
+                .filter(brandIntegration => brandIntegration.name.toLowerCase().includes(categorySearch.toLowerCase()))
+                .map((brandIntegration) => (
+                <ToolCategoryButton
+                  image={brandIntegration.imageUrl || ''}
+                  key={brandIntegration.category}
+                  category={brandIntegration.category}
+                  selectedCategory={category}
+                  label={t('AllToolsView.categories.brandTools', {
+                    count: brandIntegration.toolCount,
+                    brand: brandIntegration.name,
                   })}
-                  key={tool.id}
-                ></ActionCard>
+                  setSelectedCategory={handleSelectCategory}
+                />
               ))}
-            </NiceGridDisplay>
+            </>
+          ) : (
+            <LoadingEmptyStatusComponent emptyMessage="" isLoading />
           )}
         </VStack>
+      </VStack>
+      <VStack gap={false} fullHeight fullWidth>
+        <HStack height="header" align="center" justify="spaceBetween" paddingX fullWidth>
+          {toolToView ? (
+            <Button
+              label={t('AllToolsView.back')}
+              color="tertiary-transparent"
+              size="small"
+              preIcon={<ChevronLeftIcon />}
+              onClick={() => {
+                setToolToView(null);
+              }}
+            />
+          ) : (
+            <Typography bold>
+              {title}
+            </Typography>
+          )}
+          <CloseIcon />
+        </HStack>
+        {content}
       </VStack>
     </HStack>
   );
 }
 
-type ViewMode = 'code' | 'schema';
-
-interface ViewToolProps {
-  tool?: letta__schemas__tool__Tool;
+interface ViewToolCodePreviewProps {
+  toolId: string;
+  provider: string;
 }
 
-function ViewTool(props: ViewToolProps) {
-  const { tool } = props;
+function ViewToolCodePreview(props: ViewToolCodePreviewProps) {
+  const { toolId, provider } = props;
+  const [viewMode, setViewMode] = useState<ViewMode>('code');
+  const t = useTranslations('ADE/Tools');
+  const { data: tool } = useToolsServiceGetTool({
+    toolId
+  }, undefined, {
+    enabled: ['letta', 'custom'].includes(provider),
+  });
+
+  if (provider === 'composio') {
+    return null;
+  }
+
+  return (
+    <VStack flex collapseHeight>
+      <RawToggleGroup
+        hideLabel
+        border
+        value={viewMode}
+        onValueChange={(mode) => {
+          if (mode) {
+            setViewMode(mode as ViewMode);
+          }
+        }}
+        label={t('ViewToolCodePreview.viewToggle.label')}
+        items={[
+          {
+            label: t('ViewToolCodePreview.viewToggle.options.code'),
+            value: 'code',
+            icon: <CodeIcon />,
+          },
+          {
+            label: t('ViewToolCodePreview.viewToggle.options.schema'),
+            value: 'schema',
+            icon: <ListIcon />,
+          },
+        ]}
+      />
+      <VStack collapseHeight flex>
+        {viewMode === 'code' ? (
+          <RawCodeEditor
+            color="background-grey"
+            toolbarPosition="bottom"
+            flex
+            fullWidth
+            collapseHeight
+            label=""
+            language="python"
+            code={tool?.source_code || ''}
+          />
+        ) : (
+          <RawCodeEditor
+            color="background-grey"
+            toolbarPosition="bottom"
+            flex
+            fullWidth
+            collapseHeight
+            label=""
+            language="javascript"
+            code={
+              tool?.json_schema
+                ? JSON.stringify(tool.json_schema, null, 2)
+                : ''
+            }
+          />
+        )}
+      </VStack>
+    </VStack>
+  )
+}
+
+
+function useIsComposioConnected() {
+  const { isLocal } = useCurrentAgentMetaData();
+
+
+  const { data: keyExistence } = webApi.environmentVariables.getEnvironmentVariableByKey.useQuery({
+    queryKey: webApiQueryKeys.environmentVariables.getEnvironmentVariableByKey(COMPOSIO_KEY_NAME),
+    queryData: {
+      params: {
+        key: COMPOSIO_KEY_NAME,
+      }
+    },
+    enabled: !isLocal,
+  });
+
+  const { data: isLocalComposioConnected } = useToolsServiceListComposioApps({ }, undefined, {
+    enabled: isLocal ,
+  })
+
+  return  useMemo(() => {
+    return isLocal ? isLocalComposioConnected : keyExistence?.status === 200;
+  }, [isLocal, isLocalComposioConnected, keyExistence?.status])
+}
+
+type ViewMode = 'code' | 'schema';
+
+interface AddToolToAgentButtonProps {
+  toolId: string;
+  provider: string;
+}
+
+function AddToolToAgentButton(props: AddToolToAgentButtonProps) {
+  const { toolId, provider } = props;
 
   const t = useTranslations('ADE/Tools');
 
-  const [viewMode, setViewMode] = useState<ViewMode>('code');
+  const isComposioTool = useMemo(() => {
+    return provider === 'composio';
+  }, [provider]);
+
+  const isComposioConnected = useIsComposioConnected();
+  const { id: agentId } = useCurrentAgent();
+
+  const { mutate, isPending } =
+    useAgentsServiceAddToolToAgent({
+      onError: () => {
+        toast.error(t('AddToolToAgentButton.error'));
+      }
+    });
+
+  const queryClient = useQueryClient();
+
+  const { data: currentToolToAdd } = useToolsServiceGetTool(
+    {
+      toolId,
+    },
+    undefined,
+    {
+      enabled: !!toolId,
+    }
+  );
+
+  const handleAddTool = useCallback(
+    () => {
+      mutate(
+        {
+          agentId,
+          toolId,
+        },
+        {
+          onSuccess: (nextAgentState) => {
+            queryClient.setQueriesData<AgentState | undefined>(
+              {
+                queryKey: UseAgentsServiceGetAgentKeyFn({
+                  agentId: agentId,
+                }),
+              },
+              (oldData) => {
+                if (!oldData) {
+                  return oldData;
+                }
+
+                return {
+                  ...oldData,
+                  tool_names: nextAgentState.tool_names,
+                  tools: [
+                    {
+                      id: toolId,
+                      name: currentToolToAdd?.name || '',
+                      description: currentToolToAdd?.description || '',
+                      source_code: currentToolToAdd?.source_code || '',
+                    },
+                    ...oldData.tools,
+                  ],
+                };
+              }
+            );
+          },
+        }
+      );
+    },
+    [agentId, toolId, currentToolToAdd, mutate, queryClient]
+  );
+
+
+  const { tools } = useCurrentAgent();
+
+  const isToolInAgent = useMemo(() => {
+    return (tools || []).some(aTool => aTool.id === toolId);
+  }, [toolId, tools]);
+
+  const disableAttach = useMemo(() => {
+    if (isComposioTool) {
+      return !isComposioConnected;
+    }
+
+    return isToolInAgent;
+  }, [isComposioConnected, isComposioTool, isToolInAgent]);
+
+  if (isToolInAgent) {
+    return (
+      <Button
+        size="small"
+        label={t('AddToolToAgentButton.alreadyAdded')}
+        color="tertiary"
+        disabled
+      />
+    )
+  }
+
+  return (
+    <Button
+      size="small"
+      preIcon={<PlusIcon />}
+      busy={isPending}
+      label={t('AddToolToAgentButton.attach')}
+      color={disableAttach ? 'tertiary' : 'secondary'}
+      onClick={handleAddTool}
+      disabled={!!disableAttach}
+    />
+  )
+}
+
+interface ViewToolProps {
+  tool: ToolMetadataPreviewType;
+  showAddToolToAgent?: boolean
+}
+
+
+function ViewTool(props: ViewToolProps) {
+  const { tool, showAddToolToAgent } = props;
+
+  const t = useTranslations('ADE/Tools');
+
 
   const toolDescription = useMemo(() => {
     if (!tool) {
@@ -226,79 +695,105 @@ function ViewTool(props: ViewToolProps) {
     return tool.description || t('SpecificToolComponent.noDescription');
   }, [t, tool]);
 
+  const isComposioTool = useMemo(() => {
+    return tool.provider === 'composio';
+  }, [tool]);
+
+  const isComposioConnected = useIsComposioConnected();
+  const { isLocal } = useCurrentAgentMetaData();
+
   return (
-    <VStack fullHeight flex>
-      <VStack borderBottom paddingBottom fullWidth>
-        <HStack fullWidth>
-          <HStack align="center">
-            <LoadedTypography
-              text={tool?.name}
-              font="mono"
-              variant="heading2"
-              fillerText="SUPERLONGTOOLNAMESOCOOL"
+    <VStack overflowY="auto" paddingX paddingBottom fullHeight flex>
+      {!isComposioConnected && isComposioTool && (
+        <Alert
+          variant="warning"
+          action={!isLocal && (
+            <Button
+              target="_blank"
+              href="/settings/organization/integrations/composio"
+              label={t('ViewTool.connectComposio.connect')}
+              color="secondary"
             />
-          </HStack>
+          )}
+          title={t('ViewTool.connectComposio.title')}>
+          {isLocal ? (
+            <Typography>
+              {t.rich('ViewTool.connectComposio.descriptionLocal', {
+                code: (chunks) => <InlineCode code={`${chunks}`} />,
+              })}
+            </Typography>
+          ) : (
+            <Typography>
+              {t('ViewTool.connectComposio.descriptionRemote')}
+            </Typography>
+          )}
+
+        </Alert>
+      )}
+      <VStack gap="large" paddingBottom fullWidth>
+        <HStack fullWidth align="center">
+          <div className="w-[100px] p-5">
+            {tool.imageUrl ? (
+              <IconWrapper
+                /* eslint-disable-next-line react/forbid-component-props */
+                className="w-full"
+              >
+                <img src={tool.imageUrl} alt="" />
+              </IconWrapper>
+            ) : (
+              <ToolsIcon
+                /* eslint-disable-next-line react/forbid-component-props */
+                className="w-full"
+              />
+            )}
+          </div>
+
+          <VStack fullWidth gap={false}>
+            <HStack align="center">
+              <Typography
+                align="left"
+                variant="heading2">
+                {tool.name}
+              </Typography>
+
+            </HStack>
+            <HStack align="center" gap="small">
+              <Typography overrideEl="span" align="left" italic>{
+                isBrandKey(tool.brand) ? brandKeyToName(tool.brand) : tool.brand
+              }{' '}</Typography>
+              {isComposioTool && (
+                <Typography
+                  noWrap
+                  inline
+                  overrideEl="span">
+                  {t('ViewTool.viaComposioTool')}
+                </Typography>
+              )}
+              <div className="mt-[2px]">
+                <ComposioLockup height={20} />
+              </div>
+            </HStack>
+            {showAddToolToAgent && (
+              <HStack paddingTop="small">
+                <AddToolToAgentButton toolId={tool.id} provider={tool.provider} />
+              </HStack>
+            )}
+          </VStack>
         </HStack>
-        <HStack fullWidth>
+        <VStack width="largeContained" fullWidth>
+
+          <Typography
+            bold
+            variant="heading6"
+          >{t('SpecificToolComponent.description')}</Typography>
           <Typography fullWidth variant="body" italic={!tool?.description}>
             {toolDescription?.replace(/\n|\t/g, ' ').trim()}
           </Typography>
-        </HStack>
-      </VStack>
-      <VStack flex collapseHeight>
-        <RawToggleGroup
-          hideLabel
-          border
-          value={viewMode}
-          onValueChange={(mode) => {
-            if (mode) {
-              setViewMode(mode as ViewMode);
-            }
-          }}
-          label={t('SpecificToolComponent.viewToggle.label')}
-          items={[
-            {
-              label: t('SpecificToolComponent.viewToggle.options.code'),
-              value: 'code',
-              icon: <CodeIcon />,
-            },
-            {
-              label: t('SpecificToolComponent.viewToggle.options.schema'),
-              value: 'schema',
-              icon: <ListIcon />,
-            },
-          ]}
-        />
-        <VStack collapseHeight flex>
-          {viewMode === 'code' ? (
-            <RawCodeEditor
-              color="background-grey"
-              toolbarPosition="bottom"
-              flex
-              fullWidth
-              collapseHeight
-              label=""
-              language="python"
-              code={tool?.source_code || ''}
-            />
-          ) : (
-            <RawCodeEditor
-              color="background-grey"
-              toolbarPosition="bottom"
-              flex
-              fullWidth
-              collapseHeight
-              label=""
-              language="javascript"
-              code={
-                tool?.json_schema
-                  ? JSON.stringify(tool.json_schema, null, 2)
-                  : ''
-              }
-            />
-          )}
         </VStack>
       </VStack>
+      <div className="min-h-[400px] w-full flex-1 flex flex-col">
+        <ViewToolCodePreview toolId={tool.id} provider={tool.provider} />
+      </div>
     </VStack>
   );
 }
@@ -539,20 +1034,18 @@ function SpecificToolComponent(props: SpecificToolComponentProps) {
           )}
         </>
       ) : (
-        <ViewTool tool={tool} />
+        <ViewTool tool={{
+          name: tool.name,
+          description: tool.description,
+          id: tool.id,
+          brand: tool.brand,
+          provider: 'custom',
+        }} />
       )}
     </VStack>
   );
 }
 
-interface AddToolsListItem {
-  name: string;
-  description: string;
-  id: string;
-  alreadyAdded: boolean;
-  creator: string;
-  icon: React.ReactNode;
-}
 
 function AddToolDialog() {
   const [open, setOpen] = useState(false);
@@ -665,12 +1158,7 @@ function AddToolDialog() {
     }
 
     return (
-      <AllToolsView
-        startCreateNewTool={() => {
-          setIsCreatingNewTool(true);
-        }}
-        setSelectedToolId={setToolIdToView}
-      />
+      <AllToolsView />
     );
   }, [
     handleAddTool,
@@ -682,26 +1170,10 @@ function AddToolDialog() {
     toolIdToView,
   ]);
 
-  const title = useMemo(() => {
-    if (isCreatingNewTool) {
-      return t('AddToolDialog.title.create');
-    }
-
-    if (toolIdToView) {
-      return t('AddToolDialog.title.view');
-    }
-
-    return t('AddToolDialog.title.add');
-  }, [isCreatingNewTool, t, toolIdToView]);
-
   return (
-    <Dialog
-      disableForm
-      noContentPadding
+    <MiniApp
       isOpen={open}
-      color="background"
-      errorMessage={isError ? t('AddToolDialog.error') : undefined}
-      hideFooter
+      defaultOpen
       trigger={
         <Button
           label={t('AddToolDialog.trigger')}
@@ -710,12 +1182,10 @@ function AddToolDialog() {
           preIcon={<PlusIcon />}
         />
       }
-      title={title}
       onOpenChange={handleOpenChange}
-      size="full"
     >
       {component}
-    </Dialog>
+    </MiniApp>
   );
 }
 
@@ -785,36 +1255,6 @@ function RemoveToolDialog(props: RemoveToolFromAgentDialogProps) {
       isConfirmBusy={isUpdatingTools}
     >
       {t('RemoveToolDialog.confirmation')}
-    </Dialog>
-  );
-}
-
-interface ViewToolDialogProps {
-  toolId: string;
-  onClose: VoidFunction;
-}
-
-function ViewToolDialog(props: ViewToolDialogProps) {
-  const { toolId, onClose } = props;
-
-  const t = useTranslations('ADE/Tools');
-
-  return (
-    <Dialog
-      size="full"
-      color="background"
-      disableForm
-      noContentPadding
-      hideFooter
-      isOpen
-      onOpenChange={(state) => {
-        if (!state) {
-          onClose();
-        }
-      }}
-      title={t('ViewToolDialog.title')}
-    >
-      <SpecificToolComponent toolId={toolId} />
     </Dialog>
   );
 }
@@ -927,12 +1367,7 @@ function ToolsList(props: ToolsProps) {
   return (
     <PanelMainContent>
       {toolIdToView && (
-        <ViewToolDialog
-          toolId={toolIdToView}
-          onClose={() => {
-            setToolIdToView(null);
-          }}
-        />
+        <div />
       )}
       {removeToolPayload && (
         <RemoveToolDialog

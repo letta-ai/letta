@@ -25,10 +25,11 @@ export function buildConfig(appDir: string): Config {
           sidebarNavOverlay: '6',
           sidebarNav: '7',
           header: '8',
-          dialog: '9',
-          dropdown: '10',
-          tooltip: '10',
-          draggedItem: '11',
+          miniapp: '9',
+          dialog: '10',
+          dropdown: '11',
+          tooltip: '12',
+          draggedItem: '13',
         },
         gap: {
           2: 'var(--default-gap)',
@@ -46,6 +47,10 @@ export function buildConfig(appDir: string): Config {
         },
         minHeight: {
           header: 'var(--header-height)',
+          'header-sm': 'var(--header-height-sm)',
+          biHeight: 'var(--button-input-height)',
+          'biHeight-sm': 'var(--button-input-height-sm)',
+          'biHeight-lg': 'var(--button-input-height-lg)',
         },
         width: {
           biWidth: 'var(--button-input-height)',

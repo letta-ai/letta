@@ -1128,6 +1128,42 @@
     "error": "There was an error fetching the simulated agent, please try again or contact support."
   },
   "ADE/Tools": {
+    "ViewCategoryTools": {
+      "view": "View",
+      "showing": "Showing {count} tools",
+      "next": "Next",
+      "previous": "Previous",
+      "loadMore": "Load more",
+      "create": "Create new tool",
+      "search": {
+        "label": "Search tools",
+        "placeholder": "Search tools"
+      }
+    },
+    "AllToolsView": {
+      "title": "Tool Explorer",
+      "back": "Back",
+      "searchCategories": {
+        "placeholder": "Filter by category",
+        "label": "Search categories"
+      },
+      "titles": {
+        "allTools": "All tools",
+        "customTools": "Custom tools",
+        "brandTools": "{brand} tools"
+      },
+      "categories": {
+        "allTools": "All tools ({count})",
+        "customTools": "Custom tools ({count})",
+        "brandTools": "{brand} ({count})"
+      }
+    },
+    "ComposioBanner": {
+      "title": "Connect 300+ tools to your agent with our partner Composio",
+      "descriptionLocal": "To add composio tools to your server, add the <code>COMPOSIO_API_KEY</code> to your server environment variables",
+      "descriptionHosted": "To add composio tools to your server, press the \"Setup Composio\" button",
+      "cta": "Setup Composio"
+    },
     "ErrorMessageAlert": {
       "title": "There was an error, see below for details:",
       "dismiss": "Dismiss"
@@ -1144,13 +1180,21 @@
     "ViewToolDialog": {
       "title": "Viewing tool"
     },
-    "SpecificToolComponent": {
-      "back": "Back",
-      "noDescription": "No description provided",
-      "add": "Add tool to Agent",
-      "edit": "Edit tool",
-      "cancel": "Cancel",
-      "alreadyAdded": "This tool is already added",
+    "ViewTool": {
+      "viaComposioTool": "via",
+      "connectComposio": {
+        "title": "To attach this tool and 4000+ other tools to your agent, connect to Composio",
+        "descriptionLocal": "To enable Composio tools to your agent, add the <code>COMPOSIO_API_KEY</code> to your server environment variables",
+        "descriptionRemote": "To enable Composio tools to your agent, visit the Composio integration page",
+        "connect": "Setup Composio"
+      }
+    },
+    "AddToolToAgentButton": {
+      "error": "There was an error adding this tool, please try again or contact support.",
+      "alreadyAdded": "Attached",
+      "attach": "Attach tool"
+    },
+    "ViewToolCodePreview": {
       "viewToggle": {
         "label": "View Mode",
         "options": {
@@ -1158,6 +1202,15 @@
           "code": "Code"
         }
       }
+    },
+    "SpecificToolComponent": {
+      "back": "Back",
+      "description": "Description",
+      "noDescription": "No description provided",
+      "add": "Add tool to Agent",
+      "edit": "Edit tool",
+      "cancel": "Cancel",
+      "alreadyAdded": "This tool is already added"
     },
     "EditTool": {
       "error": "There was an error updating your tool, see above for details.",
@@ -1213,7 +1266,7 @@
       "added": "Added",
       "creator": "{creator}",
       "search": {
-        "placeholder": "Tool name",
+        "placeholder": "Search for a tool",
         "label": "Search tools"
       },
       "trigger": "Add tool",
