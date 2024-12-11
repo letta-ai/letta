@@ -870,6 +870,9 @@ export type AgentsServiceCreateAgentMessageMutationResult = Awaited<
 export type AgentsServiceCreateAgentMessageStreamMutationResult = Awaited<
   ReturnType<typeof AgentsService.createAgentMessageStream>
 >;
+export type AgentsServiceCreateAgentMessageAsyncMutationResult = Awaited<
+  ReturnType<typeof AgentsService.createAgentMessageAsync>
+>;
 export type BlocksServiceCreateMemoryBlockMutationResult = Awaited<
   ReturnType<typeof BlocksService.createMemoryBlock>
 >;

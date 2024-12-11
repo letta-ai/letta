@@ -104,6 +104,8 @@ import type {
   UpdateAgentMessageResponse,
   CreateAgentMessageStreamData,
   CreateAgentMessageStreamResponse,
+  CreateAgentMessageAsyncData,
+  CreateAgentMessageAsyncResponse,
   ListModelsResponse,
   ListEmbeddingModelsResponse,
   ListMemoryBlocksData,
@@ -954,7 +956,7 @@ export class AgentsService {
    * @param data The data for the request.
    * @param data.agentId
    * @param data.userId
-   * @returns unknown Successful Response
+   * @returns AgentState Successful Response
    * @throws ApiError
    */
   public static deleteAgent(
@@ -1086,7 +1088,7 @@ export class AgentsService {
    * Retrieve the messages in the context of a specific agent.
    * @param data The data for the request.
    * @param data.agentId
-   * @returns letta__schemas__message__Message_Output Successful Response
+   * @returns letta__schemas__message__Message Successful Response
    * @throws ApiError
    */
   public static listAgentInContextMessages(
@@ -1490,7 +1492,7 @@ export class AgentsService {
    * @param data.agentId
    * @param data.messageId
    * @param data.requestBody
-   * @returns letta__schemas__message__Message_Output Successful Response
+   * @returns letta__schemas__message__Message Successful Response
    * @throws ApiError
    */
   public static updateAgentMessage(
@@ -1532,6 +1534,36 @@ export class AgentsService {
     return __request(OpenAPI, {
       method: 'POST',
       url: '/v1/agents/{agent_id}/messages/stream',
+      path: {
+        agent_id: data.agentId,
+      },
+      body: data.requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Send Message Async
+   * Asynchronously process a user message and return a job ID.
+   * The actual processing happens in the background, and the status can be checked using the job ID.
+   * @param data The data for the request.
+   * @param data.agentId
+   * @param data.requestBody
+   * @param data.userId
+   * @returns Job Successful Response
+   * @throws ApiError
+   */
+  public static createAgentMessageAsync(
+    data: CreateAgentMessageAsyncData,
+    headers?: { user_id: string }
+  ): CancelablePromise<CreateAgentMessageAsyncResponse> {
+    return __request(OpenAPI, {
+      method: 'POST',
+      url: '/v1/agents/{agent_id}/messages/async',
       path: {
         agent_id: data.agentId,
       },

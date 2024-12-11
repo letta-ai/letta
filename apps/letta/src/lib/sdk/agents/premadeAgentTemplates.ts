@@ -1,5 +1,5 @@
 import { AgentRecipeVariant } from '$letta/types';
-import type { CreateAgent } from '@letta-web/letta-agents-api';
+import type { CreateAgentRequest } from '@letta-web/letta-agents-api';
 
 export function isTemplateNameAPremadeAgentTemplate(
   templateName: string
@@ -10,7 +10,10 @@ export function isTemplateNameAPremadeAgentTemplate(
   );
 }
 
-export const premadeAgentTemplates: Record<AgentRecipeVariant, CreateAgent> = {
+export const premadeAgentTemplates: Record<
+  AgentRecipeVariant,
+  CreateAgentRequest
+> = {
   [AgentRecipeVariant.CUSTOMER_SUPPORT]: {
     system:
       "You are Letta, the latest version of Limnal Corporation's digital companion, developed in 2023.\n" +

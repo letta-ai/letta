@@ -26,7 +26,7 @@ import {
   AuthRequest,
   BlockUpdate,
   Body_upload_file_to_source,
-  CreateAgent,
+  CreateAgentRequest,
   CreateArchivalMemory,
   CreateBlock,
   LettaRequest,
@@ -1273,7 +1273,7 @@ export const useAgentsServiceCreateAgent = <
       TData,
       TError,
       {
-        requestBody: CreateAgent;
+        requestBody: CreateAgentRequest;
         userId?: string;
       },
       TContext
@@ -1285,7 +1285,7 @@ export const useAgentsServiceCreateAgent = <
     TData,
     TError,
     {
-      requestBody: CreateAgent;
+      requestBody: CreateAgentRequest;
       userId?: string;
     },
     TContext
@@ -1439,6 +1439,43 @@ export const useAgentsServiceCreateAgentMessageStream = <
   >({
     mutationFn: ({ agentId, requestBody, userId }) =>
       AgentsService.createAgentMessageStream({
+        agentId,
+        requestBody,
+        userId,
+      }) as unknown as Promise<TData>,
+    ...options,
+  });
+export const useAgentsServiceCreateAgentMessageAsync = <
+  TData = Common.AgentsServiceCreateAgentMessageAsyncMutationResult,
+  TError = unknown,
+  TContext = unknown
+>(
+  options?: Omit<
+    UseMutationOptions<
+      TData,
+      TError,
+      {
+        agentId: string;
+        requestBody: LettaRequest;
+        userId?: string;
+      },
+      TContext
+    >,
+    'mutationFn'
+  >
+) =>
+  useMutation<
+    TData,
+    TError,
+    {
+      agentId: string;
+      requestBody: LettaRequest;
+      userId?: string;
+    },
+    TContext
+  >({
+    mutationFn: ({ agentId, requestBody, userId }) =>
+      AgentsService.createAgentMessageAsync({
         agentId,
         requestBody,
         userId,
