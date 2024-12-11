@@ -1594,7 +1594,7 @@ export const $ContextWindowOverview = {
     },
     messages: {
       items: {
-        $ref: '#/components/schemas/letta__schemas__message__Message-Output',
+        $ref: '#/components/schemas/letta__schemas__message__Message',
       },
       type: 'array',
       title: 'Messages',
@@ -1624,7 +1624,7 @@ export const $ContextWindowOverview = {
     'Overview of the context window, including the number of messages and tokens.',
 } as const;
 
-export const $CreateAgent = {
+export const $CreateAgentRequest = {
   properties: {
     description: {
       anyOf: [
@@ -1660,7 +1660,6 @@ export const $CreateAgent = {
         },
       ],
       title: 'User Id',
-      description: 'The user id of the agent.',
     },
     name: {
       anyOf: [
@@ -1698,19 +1697,21 @@ export const $CreateAgent = {
       description: "The blocks to create in the agent's in-context memory.",
     },
     tools: {
-      anyOf: [
-        {
-          items: {
-            type: 'string',
-          },
-          type: 'array',
-        },
-        {
-          type: 'null',
-        },
-      ],
+      items: {
+        type: 'string',
+      },
+      type: 'array',
       title: 'Tools',
       description: 'The tools used by the agent.',
+      default: [
+        'send_message',
+        'conversation_search',
+        'conversation_search_date',
+        'archival_memory_insert',
+        'archival_memory_search',
+        'core_memory_append',
+        'core_memory_replace',
+      ],
     },
     tool_rules: {
       anyOf: [
@@ -1765,15 +1766,9 @@ export const $CreateAgent = {
       description: 'The system prompt used by the agent.',
     },
     agent_type: {
-      anyOf: [
-        {
-          $ref: '#/components/schemas/AgentType',
-        },
-        {
-          type: 'null',
-        },
-      ],
+      $ref: '#/components/schemas/AgentType',
       description: 'The type of agent.',
+      default: 'memgpt_agent',
     },
     llm_config: {
       anyOf: [
@@ -1817,7 +1812,9 @@ export const $CreateAgent = {
   additionalProperties: false,
   type: 'object',
   required: ['memory_blocks'],
-  title: 'CreateAgent',
+  title: 'CreateAgentRequest',
+  description:
+    'CreateAgent model specifically for POST request body, excluding user_id which comes from headers',
 } as const;
 
 export const $CreateArchivalMemory = {
@@ -2668,6 +2665,34 @@ export const $FunctionReturn = {
       type: 'string',
       title: 'Function Call Id',
     },
+    stdout: {
+      anyOf: [
+        {
+          items: {
+            type: 'string',
+          },
+          type: 'array',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Stdout',
+    },
+    stderr: {
+      anyOf: [
+        {
+          items: {
+            type: 'string',
+          },
+          type: 'array',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Stderr',
+    },
   },
   type: 'object',
   required: ['id', 'date', 'function_return', 'status', 'function_call_id'],
@@ -2679,7 +2704,9 @@ Attributes:
     status (Literal["success", "error"]): The status of the function call
     id (str): The ID of the message
     date (datetime): The date the message was created in ISO format
-    function_call_id (str): A unique identifier for the function call that generated this message`,
+    function_call_id (str): A unique identifier for the function call that generated this message
+    stdout (Optional[List(str)]): Captured stdout (e.g. prints, logs) from the function invocation
+    stderr (Optional[List(str)]): Captured stderr from the function invocation`,
 } as const;
 
 export const $FunctionSchema = {
@@ -3032,20 +3059,10 @@ Attributes:
 export const $LettaRequest = {
   properties: {
     messages: {
-      anyOf: [
-        {
-          items: {
-            $ref: '#/components/schemas/MessageCreate',
-          },
-          type: 'array',
-        },
-        {
-          items: {
-            $ref: '#/components/schemas/Message-Input',
-          },
-          type: 'array',
-        },
-      ],
+      items: {
+        $ref: '#/components/schemas/MessageCreate',
+      },
+      type: 'array',
       title: 'Messages',
       description: 'The messages to be sent to the agent.',
     },
@@ -3204,7 +3221,9 @@ Attributes:
     status (Literal["success", "error"]): The status of the function call
     id (str): The ID of the message
     date (datetime): The date the message was created in ISO format
-    function_call_id (str): A unique identifier for the function call that generated this message`,
+    function_call_id (str): A unique identifier for the function call that generated this message
+    stdout (Optional[List(str)]): Captured stdout (e.g. prints, logs) from the function invocation
+    stderr (Optional[List(str)]): Captured stderr from the function invocation`,
       properties: {
         id: {
           title: 'Id',
@@ -3234,6 +3253,36 @@ Attributes:
         function_call_id: {
           title: 'Function Call Id',
           type: 'string',
+        },
+        stdout: {
+          anyOf: [
+            {
+              items: {
+                type: 'string',
+              },
+              type: 'array',
+            },
+            {
+              type: 'null',
+            },
+          ],
+          default: null,
+          title: 'Stdout',
+        },
+        stderr: {
+          anyOf: [
+            {
+              items: {
+                type: 'string',
+              },
+              type: 'array',
+            },
+            {
+              type: 'null',
+            },
+          ],
+          default: null,
+          title: 'Stderr',
         },
       },
       required: ['id', 'date', 'function_return', 'status', 'function_call_id'],
@@ -3382,20 +3431,10 @@ Attributes:
 export const $LettaStreamingRequest = {
   properties: {
     messages: {
-      anyOf: [
-        {
-          items: {
-            $ref: '#/components/schemas/MessageCreate',
-          },
-          type: 'array',
-        },
-        {
-          items: {
-            $ref: '#/components/schemas/Message-Input',
-          },
-          type: 'array',
-        },
-      ],
+      items: {
+        $ref: '#/components/schemas/MessageCreate',
+      },
+      type: 'array',
       title: 'Messages',
       description: 'The messages to be sent to the agent.',
     },
@@ -3562,169 +3601,6 @@ export const $Memory = {
   title: 'Memory',
   description:
     'Represents the in-context memory (i.e. Core memory) of the agent. This includes both the `Block` objects (labelled by sections), as well as tools to edit the blocks.',
-} as const;
-
-export const $Message_Input = {
-  properties: {
-    created_by_id: {
-      anyOf: [
-        {
-          type: 'string',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Created By Id',
-      description: 'The id of the user that made this object.',
-    },
-    last_updated_by_id: {
-      anyOf: [
-        {
-          type: 'string',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Last Updated By Id',
-      description: 'The id of the user that made this object.',
-    },
-    created_at: {
-      type: 'string',
-      format: 'date-time',
-      title: 'Created At',
-      description: 'The timestamp when the object was created.',
-    },
-    updated_at: {
-      anyOf: [
-        {
-          type: 'string',
-          format: 'date-time',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Updated At',
-      description: 'The timestamp when the object was last updated.',
-    },
-    id: {
-      type: 'string',
-      pattern: '^message-[a-fA-F0-9]{8}',
-      title: 'Id',
-      description: 'The human-friendly ID of the Message',
-      examples: ['message-123e4567-e89b-12d3-a456-426614174000'],
-    },
-    role: {
-      $ref: '#/components/schemas/MessageRole',
-      description: 'The role of the participant.',
-    },
-    text: {
-      anyOf: [
-        {
-          type: 'string',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Text',
-      description: 'The text of the message.',
-    },
-    organization_id: {
-      anyOf: [
-        {
-          type: 'string',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Organization Id',
-      description: 'The unique identifier of the organization.',
-    },
-    agent_id: {
-      anyOf: [
-        {
-          type: 'string',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Agent Id',
-      description: 'The unique identifier of the agent.',
-    },
-    model: {
-      anyOf: [
-        {
-          type: 'string',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Model',
-      description: 'The model used to make the function call.',
-    },
-    name: {
-      anyOf: [
-        {
-          type: 'string',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Name',
-      description: 'The name of the participant.',
-    },
-    tool_calls: {
-      anyOf: [
-        {
-          items: {
-            $ref: '#/components/schemas/letta__schemas__openai__chat_completions__ToolCall-Input',
-          },
-          type: 'array',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Tool Calls',
-      description: 'The list of tool calls requested.',
-    },
-    tool_call_id: {
-      anyOf: [
-        {
-          type: 'string',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Tool Call Id',
-      description: 'The id of the tool call.',
-    },
-  },
-  additionalProperties: false,
-  type: 'object',
-  required: ['role'],
-  title: 'Message',
-  description: `Letta's internal representation of a message. Includes methods to convert to/from LLM provider formats.
-
-Attributes:
-    id (str): The unique identifier of the message.
-    role (MessageRole): The role of the participant.
-    text (str): The text of the message.
-    user_id (str): The unique identifier of the user.
-    agent_id (str): The unique identifier of the agent.
-    model (str): The model used to make the function call.
-    name (str): The name of the participant.
-    created_at (datetime): The time the message was created.
-    tool_calls (List[ToolCall]): The list of tool calls requested.
-    tool_call_id (str): The id of the tool call.`,
 } as const;
 
 export const $MessageContentLogProb = {
@@ -4664,7 +4540,7 @@ export const $Organization = {
       type: 'string',
       title: 'Name',
       description: 'The name of the organization.',
-      default: 'PoliteElephant',
+      default: 'DazzlingEspresso',
     },
     created_at: {
       anyOf: [
@@ -5666,6 +5542,12 @@ export const $ToolCreate = {
       description:
         'The JSON schema of the function (auto-generated from source_code if not provided)',
     },
+    return_char_limit: {
+      type: 'integer',
+      title: 'Return Char Limit',
+      description: 'The maximum number of characters in the response.',
+      default: 6000,
+    },
   },
   additionalProperties: false,
   type: 'object',
@@ -6277,7 +6159,7 @@ export const $letta__schemas__letta_message__FunctionCall = {
   title: 'FunctionCall',
 } as const;
 
-export const $letta__schemas__message__Message_Output = {
+export const $letta__schemas__message__Message = {
   properties: {
     created_by_id: {
       anyOf: [
@@ -6761,6 +6643,12 @@ export const $letta__schemas__tool__Tool = {
       ],
       title: 'Json Schema',
       description: 'The JSON schema of the function.',
+    },
+    return_char_limit: {
+      type: 'integer',
+      title: 'Return Char Limit',
+      description: 'The maximum number of characters in the response.',
+      default: 6000,
     },
     created_by_id: {
       anyOf: [

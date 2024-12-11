@@ -463,6 +463,7 @@ export async function createAgent(
     {
       requestBody: {
         ...agent,
+        tools: agent.tools || undefined,
         memory_blocks: agent.memory_blocks || [],
         name: crypto.randomUUID(),
       },

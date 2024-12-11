@@ -536,10 +536,13 @@ export type ContextWindowOverview = {
   /**
    * The messages in the context window.
    */
-  messages: Array<letta__schemas__message__Message_Output>;
+  messages: Array<letta__schemas__message__Message>;
 };
 
-export type CreateAgent = {
+/**
+ * CreateAgent model specifically for POST request body, excluding user_id which comes from headers
+ */
+export type CreateAgentRequest = {
   /**
    * The description of the agent.
    */
@@ -550,9 +553,6 @@ export type CreateAgent = {
   metadata_?: {
     [key: string]: unknown;
   } | null;
-  /**
-   * The user id of the agent.
-   */
   user_id?: string | null;
   /**
    * The name of the agent.
@@ -569,7 +569,7 @@ export type CreateAgent = {
   /**
    * The tools used by the agent.
    */
-  tools?: Array<string> | null;
+  tools?: Array<string>;
   /**
    * The tool rules governing the agent.
    */
@@ -585,7 +585,7 @@ export type CreateAgent = {
   /**
    * The type of agent.
    */
-  agent_type?: AgentType | null;
+  agent_type?: AgentType;
   /**
    * The LLM configuration used by the agent.
    */
@@ -982,6 +982,8 @@ export type message_type2 = 'function_call';
  * id (str): The ID of the message
  * date (datetime): The date the message was created in ISO format
  * function_call_id (str): A unique identifier for the function call that generated this message
+ * stdout (Optional[List(str)]): Captured stdout (e.g. prints, logs) from the function invocation
+ * stderr (Optional[List(str)]): Captured stderr from the function invocation
  */
 export type FunctionReturn = {
   id: string;
@@ -990,6 +992,8 @@ export type FunctionReturn = {
   function_return: string;
   status: 'success' | 'error';
   function_call_id: string;
+  stdout?: Array<string> | null;
+  stderr?: Array<string> | null;
 };
 
 export type message_type3 = 'function_return';
@@ -1191,7 +1195,7 @@ export type LettaRequest = {
   /**
    * The messages to be sent to the agent.
    */
-  messages: Array<MessageCreate> | Array<Message_Input>;
+  messages: Array<MessageCreate>;
   /**
    * The name of the designated message tool.
    */
@@ -1244,6 +1248,8 @@ export type LettaResponse = {
    * id (str): The ID of the message
    * date (datetime): The date the message was created in ISO format
    * function_call_id (str): A unique identifier for the function call that generated this message
+   * stdout (Optional[List(str)]): Captured stdout (e.g. prints, logs) from the function invocation
+   * stderr (Optional[List(str)]): Captured stderr from the function invocation
    */
   FunctionReturn?: {
     id: string;
@@ -1252,6 +1258,8 @@ export type LettaResponse = {
     function_return: string;
     status: 'success' | 'error';
     function_call_id: string;
+    stdout?: Array<string> | null;
+    stderr?: Array<string> | null;
   };
   /**
    * Representation of an agent's internal monologue.
@@ -1328,7 +1336,7 @@ export type LettaStreamingRequest = {
   /**
    * The messages to be sent to the agent.
    */
-  messages: Array<MessageCreate> | Array<Message_Input>;
+  messages: Array<MessageCreate>;
   /**
    * The name of the designated message tool.
    */
@@ -1411,76 +1419,6 @@ export type Memory = {
    * Jinja2 template for compiling memory blocks into a prompt string
    */
   prompt_template?: string;
-};
-
-/**
- * Letta's internal representation of a message. Includes methods to convert to/from LLM provider formats.
- *
- * Attributes:
- * id (str): The unique identifier of the message.
- * role (MessageRole): The role of the participant.
- * text (str): The text of the message.
- * user_id (str): The unique identifier of the user.
- * agent_id (str): The unique identifier of the agent.
- * model (str): The model used to make the function call.
- * name (str): The name of the participant.
- * created_at (datetime): The time the message was created.
- * tool_calls (List[ToolCall]): The list of tool calls requested.
- * tool_call_id (str): The id of the tool call.
- */
-export type Message_Input = {
-  /**
-   * The id of the user that made this object.
-   */
-  created_by_id?: string | null;
-  /**
-   * The id of the user that made this object.
-   */
-  last_updated_by_id?: string | null;
-  /**
-   * The timestamp when the object was created.
-   */
-  created_at?: string;
-  /**
-   * The timestamp when the object was last updated.
-   */
-  updated_at?: string | null;
-  /**
-   * The human-friendly ID of the Message
-   */
-  id?: string;
-  /**
-   * The role of the participant.
-   */
-  role: MessageRole;
-  /**
-   * The text of the message.
-   */
-  text?: string | null;
-  /**
-   * The unique identifier of the organization.
-   */
-  organization_id?: string | null;
-  /**
-   * The unique identifier of the agent.
-   */
-  agent_id?: string | null;
-  /**
-   * The model used to make the function call.
-   */
-  model?: string | null;
-  /**
-   * The name of the participant.
-   */
-  name?: string | null;
-  /**
-   * The list of tool calls requested.
-   */
-  tool_calls?: Array<letta__schemas__openai__chat_completions__ToolCall_Input> | null;
-  /**
-   * The id of the tool call.
-   */
-  tool_call_id?: string | null;
 };
 
 export type MessageContentLogProb = {
@@ -2341,6 +2279,10 @@ export type ToolCreate = {
   json_schema?: {
     [key: string]: unknown;
   } | null;
+  /**
+   * The maximum number of characters in the response.
+   */
+  return_char_limit?: number;
 };
 
 export type ToolFunctionChoice = {
@@ -2582,7 +2524,7 @@ export type letta__schemas__letta_message__FunctionCall = {
  * tool_calls (List[ToolCall]): The list of tool calls requested.
  * tool_call_id (str): The id of the tool call.
  */
-export type letta__schemas__message__Message_Output = {
+export type letta__schemas__message__Message = {
   /**
    * The id of the user that made this object.
    */
@@ -2768,6 +2710,10 @@ export type letta__schemas__tool__Tool = {
   json_schema?: {
     [key: string]: unknown;
   } | null;
+  /**
+   * The maximum number of characters in the response.
+   */
+  return_char_limit?: number;
   /**
    * The id of the user that made this Tool.
    */
@@ -2979,7 +2925,7 @@ export type ListAgentsData = {
 export type ListAgentsResponse = Array<AgentState>;
 
 export type CreateAgentData = {
-  requestBody: CreateAgent;
+  requestBody: CreateAgentRequest;
   userId?: string | null;
 };
 
@@ -3012,7 +2958,7 @@ export type DeleteAgentData = {
   userId?: string | null;
 };
 
-export type DeleteAgentResponse = unknown;
+export type DeleteAgentResponse = AgentState;
 
 export type GetToolsFromAgentData = {
   agentId: string;
@@ -3048,7 +2994,7 @@ export type ListAgentInContextMessagesData = {
 };
 
 export type ListAgentInContextMessagesResponse =
-  Array<letta__schemas__message__Message_Output>;
+  Array<letta__schemas__message__Message>;
 
 export type GetAgentMemoryData = {
   agentId: string;
@@ -3169,7 +3115,7 @@ export type ListAgentMessagesData = {
 };
 
 export type ListAgentMessagesResponse =
-  | Array<letta__schemas__message__Message_Output>
+  | Array<letta__schemas__message__Message>
   | Array<
       | SystemMessage_Output
       | UserMessage_Output
@@ -3193,8 +3139,7 @@ export type UpdateAgentMessageData = {
   requestBody: MessageUpdate;
 };
 
-export type UpdateAgentMessageResponse =
-  letta__schemas__message__Message_Output;
+export type UpdateAgentMessageResponse = letta__schemas__message__Message;
 
 export type CreateAgentMessageStreamData = {
   agentId: string;
@@ -3203,6 +3148,14 @@ export type CreateAgentMessageStreamData = {
 };
 
 export type CreateAgentMessageStreamResponse = unknown;
+
+export type CreateAgentMessageAsyncData = {
+  agentId: string;
+  requestBody: LettaRequest;
+  userId?: string | null;
+};
+
+export type CreateAgentMessageAsyncResponse = Job;
 
 export type ListModelsResponse = Array<LLMConfig>;
 
@@ -3911,7 +3864,7 @@ export type $OpenApiTs = {
         /**
          * Successful Response
          */
-        200: unknown;
+        200: AgentState;
         /**
          * Validation Error
          */
@@ -3986,7 +3939,7 @@ export type $OpenApiTs = {
         /**
          * Successful Response
          */
-        200: Array<letta__schemas__message__Message_Output>;
+        200: Array<letta__schemas__message__Message>;
         /**
          * Validation Error
          */
@@ -4159,7 +4112,7 @@ export type $OpenApiTs = {
          * Successful Response
          */
         200:
-          | Array<letta__schemas__message__Message_Output>
+          | Array<letta__schemas__message__Message>
           | Array<
               | SystemMessage_Output
               | UserMessage_Output
@@ -4195,7 +4148,7 @@ export type $OpenApiTs = {
         /**
          * Successful Response
          */
-        200: letta__schemas__message__Message_Output;
+        200: letta__schemas__message__Message;
         /**
          * Validation Error
          */
@@ -4211,6 +4164,21 @@ export type $OpenApiTs = {
          * Successful response
          */
         200: unknown;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/agents/{agent_id}/messages/async': {
+    post: {
+      req: CreateAgentMessageAsyncData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: Job;
         /**
          * Validation Error
          */

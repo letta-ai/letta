@@ -1,7 +1,7 @@
 import { initContract } from '@ts-rest/core';
 import type {
   AgentState,
-  CreateAgent,
+  CreateAgentRequest,
   HTTPValidationError,
   UpdateAgentState,
 } from '@letta-web/letta-agents-api';
@@ -18,7 +18,7 @@ extendZodWithOpenApi(z);
 const c = initContract();
 
 /* Create Agent */
-export interface CreateAgentBody extends CreateAgent {
+export interface CreateAgentBody extends CreateAgentRequest {
   /**
    * Make this Agent a template
    */

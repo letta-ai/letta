@@ -5,7 +5,7 @@ import personalAssistant from './personal_assistant.webp';
 import scratch from './scratch.webp';
 import customerSupport from './customer_support.webp';
 import { useTranslations } from 'next-intl';
-import type { CreateAgent } from '@letta-web/letta-agents-api';
+import type { CreateAgentRequest } from '@letta-web/letta-agents-api';
 import type { StaticImport } from 'next/dist/shared/lib/get-img-props';
 
 interface StarterKitTool {
@@ -18,7 +18,7 @@ export interface StarterKit {
   id: string;
   useGetTitle: () => string;
   useGetDescription: () => string;
-  agentState: Partial<CreateAgent>;
+  agentState: Partial<CreateAgentRequest>;
   tools?: StarterKitTool[];
 }
 
