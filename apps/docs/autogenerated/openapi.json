@@ -2,9 +2,23 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Letta API",
-    "summary": "Create LLM agents with long-term memory and custom tools \ud83d\udcda\ud83e\udd99",
     "version": "1.0.0"
   },
+  "servers": [
+    {
+      "url": "https://app.letta.com",
+      "description": "Letta Hosted"
+    },
+    {
+      "url": "http://localhost:8283",
+      "description": "Self Hosted"
+    }
+  ],
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
   "paths": {
     "/v1/tools/{tool_id}": {
       "delete": {
@@ -20,22 +34,6 @@
             "schema": {
               "type": "string",
               "title": "Tool Id"
-            }
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
             }
           }
         ],
@@ -73,22 +71,6 @@
             "schema": {
               "type": "string",
               "title": "Tool Id"
-            }
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
             }
           }
         ],
@@ -128,22 +110,6 @@
             "schema": {
               "type": "string",
               "title": "Tool Id"
-            }
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
             }
           }
         ],
@@ -195,22 +161,6 @@
             "schema": {
               "type": "string",
               "title": "Tool Name"
-            }
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
             }
           }
         ],
@@ -278,22 +228,6 @@
               "default": 50,
               "title": "Limit"
             }
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
           }
         ],
         "responses": {
@@ -328,24 +262,7 @@
         "summary": "Create Tool",
         "description": "Create a new tool",
         "operationId": "create_tool",
-        "parameters": [
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
-          }
-        ],
+        "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
@@ -384,24 +301,7 @@
         "summary": "Upsert Tool",
         "description": "Create or update a tool",
         "operationId": "upsert_tool",
-        "parameters": [
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
-          }
-        ],
+        "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
@@ -442,24 +342,7 @@
         "summary": "Add Base Tools",
         "description": "Add base tools",
         "operationId": "add_base_tools",
-        "parameters": [
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
-          }
-        ],
+        "parameters": [],
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -494,24 +377,7 @@
         "summary": "Run Tool From Source",
         "description": "Attempt to build a tool from source, then run it on the provided arguments",
         "operationId": "run_tool_from_source",
-        "parameters": [
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
-          }
-        ],
+        "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
@@ -552,24 +418,7 @@
         "summary": "List Composio Apps",
         "description": "Get a list of all Composio apps",
         "operationId": "list_composio_apps",
-        "parameters": [
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
-          }
-        ],
+        "parameters": [],
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -612,22 +461,6 @@
             "schema": {
               "type": "string",
               "title": "Composio App Name"
-            }
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
             }
           }
         ],
@@ -674,22 +507,6 @@
               "type": "string",
               "title": "Composio Action Name"
             }
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
           }
         ],
         "responses": {
@@ -731,22 +548,6 @@
               "type": "string",
               "title": "Source Id"
             }
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
           }
         ],
         "responses": {
@@ -785,22 +586,6 @@
             "schema": {
               "type": "string",
               "title": "Source Id"
-            }
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
             }
           }
         ],
@@ -851,22 +636,6 @@
               "type": "string",
               "title": "Source Id"
             }
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
           }
         ],
         "responses": {
@@ -906,22 +675,6 @@
               "type": "string",
               "title": "Source Name"
             }
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
           }
         ],
         "responses": {
@@ -955,24 +708,7 @@
         "summary": "List Sources",
         "description": "List all data sources created by a user.",
         "operationId": "list_sources",
-        "parameters": [
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
-          }
-        ],
+        "parameters": [],
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -1005,24 +741,7 @@
         "summary": "Create Source",
         "description": "Create a new data source.",
         "operationId": "create_source",
-        "parameters": [
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
-          }
-        ],
+        "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
@@ -1083,22 +802,6 @@
               "title": "Agent Id"
             },
             "description": "The unique identifier of the agent to attach the source to."
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
           }
         ],
         "responses": {
@@ -1151,22 +854,6 @@
               "title": "Agent Id"
             },
             "description": "The unique identifier of the agent to detach the source from."
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
           }
         ],
         "responses": {
@@ -1207,22 +894,6 @@
             "schema": {
               "type": "string",
               "title": "Source Id"
-            }
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
             }
           }
         ],
@@ -1274,22 +945,6 @@
             "schema": {
               "type": "string",
               "title": "Source Id"
-            }
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
             }
           }
         ],
@@ -1366,22 +1021,6 @@
               "title": "Cursor"
             },
             "description": "Pagination cursor to fetch the next set of results"
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
           }
         ],
         "responses": {
@@ -1435,22 +1074,6 @@
             "schema": {
               "type": "string",
               "title": "File Id"
-            }
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
             }
           }
         ],
@@ -1516,22 +1139,6 @@
               "title": "Tags"
             },
             "description": "List of tags to filter agents by"
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
           }
         ],
         "responses": {
@@ -1566,24 +1173,7 @@
         "summary": "Create Agent",
         "description": "Create a new agent with the specified configuration.",
         "operationId": "create_agent",
-        "parameters": [
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
-          }
-        ],
+        "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
@@ -1633,22 +1223,6 @@
               "type": "string",
               "title": "Agent Id"
             }
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
           }
         ],
         "responses": {
@@ -1689,22 +1263,6 @@
             "schema": {
               "type": "string",
               "title": "Agent Id"
-            }
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
             }
           }
         ],
@@ -1755,22 +1313,6 @@
               "type": "string",
               "title": "Agent Id"
             }
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
           }
         ],
         "responses": {
@@ -1809,22 +1351,6 @@
             "schema": {
               "type": "string",
               "title": "Agent Id"
-            }
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
             }
           }
         ],
@@ -1866,22 +1392,6 @@
             "schema": {
               "type": "string",
               "title": "Agent Id"
-            }
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
             }
           }
         ],
@@ -1937,22 +1447,6 @@
               "type": "string",
               "title": "Tool Id"
             }
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
           }
         ],
         "responses": {
@@ -2002,22 +1496,6 @@
             "schema": {
               "type": "string",
               "title": "Tool Id"
-            }
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
             }
           }
         ],
@@ -2200,22 +1678,6 @@
               "type": "string",
               "title": "Block Label"
             }
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
           }
         ],
         "responses": {
@@ -2264,22 +1726,6 @@
               "type": "string",
               "title": "Block Label"
             }
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
           }
         ],
         "responses": {
@@ -2327,22 +1773,6 @@
             "schema": {
               "type": "string",
               "title": "Block Label"
-            }
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
             }
           }
         ],
@@ -2395,22 +1825,6 @@
               "type": "string",
               "title": "Agent Id"
             }
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
           }
         ],
         "responses": {
@@ -2453,22 +1867,6 @@
             "schema": {
               "type": "string",
               "title": "Agent Id"
-            }
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
             }
           }
         ],
@@ -2657,22 +2055,6 @@
               "title": "Limit"
             },
             "description": "How many results to include in the response."
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
           }
         ],
         "responses": {
@@ -2715,22 +2097,6 @@
             "schema": {
               "type": "string",
               "title": "Agent Id"
-            }
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
             }
           }
         ],
@@ -2795,22 +2161,6 @@
             "schema": {
               "type": "string",
               "title": "Memory Id"
-            }
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
             }
           }
         ],
@@ -2917,22 +2267,6 @@
               "title": "Assistant Message Tool Kwarg"
             },
             "description": "The name of the message argument in the designated message tool."
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
           }
         ],
         "responses": {
@@ -3015,22 +2349,6 @@
             "schema": {
               "type": "string",
               "title": "Agent Id"
-            }
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
             }
           }
         ],
@@ -3143,22 +2461,6 @@
               "type": "string",
               "title": "Agent Id"
             }
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
           }
         ],
         "requestBody": {
@@ -3212,22 +2514,6 @@
             "schema": {
               "type": "string",
               "title": "Agent Id"
-            }
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
             }
           }
         ],
@@ -3364,22 +2650,6 @@
               "title": "Name"
             },
             "description": "Name of the block"
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
           }
         ],
         "responses": {
@@ -3413,24 +2683,7 @@
         "tags": ["blocks"],
         "summary": "Create Block",
         "operationId": "create_memory_block",
-        "parameters": [
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
-          }
-        ],
+        "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
@@ -3478,22 +2731,6 @@
             "schema": {
               "type": "string",
               "title": "Block Id"
-            }
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
             }
           }
         ],
@@ -3543,22 +2780,6 @@
               "type": "string",
               "title": "Block Id"
             }
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
           }
         ],
         "responses": {
@@ -3596,22 +2817,6 @@
             "schema": {
               "type": "string",
               "title": "Block Id"
-            }
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
             }
           }
         ],
@@ -3665,22 +2870,6 @@
               "title": "Agent Id"
             },
             "description": "The unique identifier of the agent to attach the source to."
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
           }
         ],
         "responses": {
@@ -3733,22 +2922,6 @@
               "title": "Agent Id"
             },
             "description": "The unique identifier of the agent to attach the source to."
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
           }
         ],
         "responses": {
@@ -3799,22 +2972,6 @@
               "title": "Source Id"
             },
             "description": "Only list jobs associated with the source."
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
           }
         ],
         "responses": {
@@ -3851,24 +3008,7 @@
         "summary": "List Active Jobs",
         "description": "List all active jobs.",
         "operationId": "list_active_jobs",
-        "parameters": [
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
-          }
-        ],
+        "parameters": [],
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -3912,22 +3052,6 @@
               "type": "string",
               "title": "Job Id"
             }
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
           }
         ],
         "responses": {
@@ -3966,22 +3090,6 @@
             "schema": {
               "type": "string",
               "title": "Job Id"
-            }
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
             }
           }
         ],
@@ -4028,496 +3136,95 @@
         }
       }
     },
-    "/v1/sandbox-config/": {
+    "/v1/agents/{agent_id}/version-template": {
       "post": {
-        "tags": ["sandbox-config"],
-        "summary": "Create Sandbox Config",
-        "operationId": "create_sandbox_config_v1_sandbox_config__post",
+        "description": "Creates a versioned version of an agent",
+        "summary": "Version Agent Template",
+        "tags": ["agents"],
         "parameters": [
           {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
             "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
+              "type": "string"
+            },
+            "description": "The agent ID of the agent to migrate, if this agent is not a template, it will create a agent template from the agent provided as well"
+          },
+          {
+            "name": "returnAgentId",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
             }
           }
         ],
+        "operationId": "agents.versionAgentTemplate",
         "requestBody": {
-          "required": true,
+          "description": "Body",
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/SandboxConfigCreate"
+                "type": "object",
+                "properties": {
+                  "migrate_deployed_agents": {
+                    "type": "boolean"
+                  }
+                }
               }
             }
           }
         },
         "responses": {
-          "200": {
-            "description": "Successful Response",
+          "201": {
+            "description": "201",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SandboxConfig"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "get": {
-        "tags": ["sandbox-config"],
-        "summary": "List Sandbox Configs",
-        "operationId": "list_sandbox_configs_v1_sandbox_config__get",
-        "parameters": [
-          {
-            "name": "limit",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "description": "Number of results to return",
-              "default": 1000,
-              "title": "Limit"
-            },
-            "description": "Number of results to return"
-          },
-          {
-            "name": "cursor",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "Pagination cursor to fetch the next set of results",
-              "title": "Cursor"
-            },
-            "description": "Pagination cursor to fetch the next set of results"
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/SandboxConfig"
+                  "type": "object",
+                  "properties": {
+                    "version": {
+                      "type": "string"
+                    },
+                    "agentId": {
+                      "type": "string"
+                    }
                   },
-                  "title": "Response List Sandbox Configs V1 Sandbox Config  Get"
+                  "required": ["version"]
                 }
               }
             }
           },
-          "422": {
-            "description": "Validation Error",
+          "404": {
+            "description": "404",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/sandbox-config/e2b/default": {
-      "post": {
-        "tags": ["sandbox-config"],
-        "summary": "Create Default E2B Sandbox Config",
-        "operationId": "create_default_e2b_sandbox_config_v1_sandbox_config_e2b_default_post",
-        "parameters": [
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SandboxConfig"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/sandbox-config/local/default": {
-      "post": {
-        "tags": ["sandbox-config"],
-        "summary": "Create Default Local Sandbox Config",
-        "operationId": "create_default_local_sandbox_config_v1_sandbox_config_local_default_post",
-        "parameters": [
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SandboxConfig"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/sandbox-config/{sandbox_config_id}": {
-      "patch": {
-        "tags": ["sandbox-config"],
-        "summary": "Update Sandbox Config",
-        "operationId": "update_sandbox_config_v1_sandbox_config__sandbox_config_id__patch",
-        "parameters": [
-          {
-            "name": "sandbox_config_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Sandbox Config Id"
-            }
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/SandboxConfigUpdate"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SandboxConfig"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "delete": {
-        "tags": ["sandbox-config"],
-        "summary": "Delete Sandbox Config",
-        "operationId": "delete_sandbox_config_v1_sandbox_config__sandbox_config_id__delete",
-        "parameters": [
-          {
-            "name": "sandbox_config_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Sandbox Config Id"
-            }
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "Successful Response"
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/sandbox-config/{sandbox_config_id}/environment-variable": {
-      "post": {
-        "tags": ["sandbox-config"],
-        "summary": "Create Sandbox Env Var",
-        "operationId": "create_sandbox_env_var_v1_sandbox_config__sandbox_config_id__environment_variable_post",
-        "parameters": [
-          {
-            "name": "sandbox_config_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Sandbox Config Id"
-            }
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/SandboxEnvironmentVariableCreate"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SandboxEnvironmentVariable"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "get": {
-        "tags": ["sandbox-config"],
-        "summary": "List Sandbox Env Vars",
-        "operationId": "list_sandbox_env_vars_v1_sandbox_config__sandbox_config_id__environment_variable_get",
-        "parameters": [
-          {
-            "name": "sandbox_config_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Sandbox Config Id"
-            }
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "description": "Number of results to return",
-              "default": 1000,
-              "title": "Limit"
-            },
-            "description": "Number of results to return"
-          },
-          {
-            "name": "cursor",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "Pagination cursor to fetch the next set of results",
-              "title": "Cursor"
-            },
-            "description": "Pagination cursor to fetch the next set of results"
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/SandboxEnvironmentVariable"
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "enum": ["Agent not found"]
+                    }
                   },
-                  "title": "Response List Sandbox Env Vars V1 Sandbox Config  Sandbox Config Id  Environment Variable Get"
+                  "required": ["message"]
                 }
               }
             }
           },
-          "422": {
-            "description": "Validation Error",
+          "500": {
+            "description": "500",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "enum": ["Failed to version agent template"]
+                    }
+                  },
+                  "required": ["message"]
                 }
               }
             }
@@ -4525,609 +3232,118 @@
         }
       }
     },
-    "/v1/sandbox-config/environment-variable/{env_var_id}": {
-      "patch": {
-        "tags": ["sandbox-config"],
-        "summary": "Update Sandbox Env Var",
-        "operationId": "update_sandbox_env_var_v1_sandbox_config_environment_variable__env_var_id__patch",
+    "/v1/agents/{agent_id}/migrate": {
+      "post": {
+        "description": "Migrate an agent to a new versioned agent template",
+        "summary": "Migrate Agent",
+        "tags": ["agents"],
         "parameters": [
           {
-            "name": "env_var_id",
+            "name": "agent_id",
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string",
-              "title": "Env Var Id"
-            }
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
+              "type": "string"
             }
           }
         ],
+        "operationId": "agents.migrateAgent",
         "requestBody": {
-          "required": true,
+          "description": "Body",
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/SandboxEnvironmentVariableUpdate"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SandboxEnvironmentVariable"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "delete": {
-        "tags": ["sandbox-config"],
-        "summary": "Delete Sandbox Env Var",
-        "operationId": "delete_sandbox_env_var_v1_sandbox_config_environment_variable__env_var_id__delete",
-        "parameters": [
-          {
-            "name": "env_var_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Env Var Id"
-            }
-          },
-          {
-            "name": "user_id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "Successful Response"
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/admin/users/": {
-      "get": {
-        "tags": ["users", "admin", "admin"],
-        "summary": "List Users",
-        "description": "Get a list of all users in the database",
-        "operationId": "list_users",
-        "parameters": [
-          {
-            "name": "cursor",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Cursor"
-            }
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "integer"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "default": 50,
-              "title": "Limit"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/User"
+                "type": "object",
+                "properties": {
+                  "to_template": {
+                    "type": "string"
                   },
-                  "title": "Response List Users"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "tags": ["users", "admin", "admin"],
-        "summary": "Create User",
-        "description": "Create a new user in the database",
-        "operationId": "create_user",
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UserCreate"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/User"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "put": {
-        "tags": ["users", "admin", "admin"],
-        "summary": "Update User",
-        "description": "Update a user in the database",
-        "operationId": "update_user",
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UserUpdate"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/User"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "delete": {
-        "tags": ["users", "admin", "admin"],
-        "summary": "Delete User",
-        "operationId": "delete_user",
-        "parameters": [
-          {
-            "name": "user_id",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "description": "The user_id key to be deleted.",
-              "title": "User Id"
-            },
-            "description": "The user_id key to be deleted."
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/User"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/admin/users/keys": {
-      "post": {
-        "tags": ["users", "admin"],
-        "summary": "Create New Api Key",
-        "description": "Create a new API key for a user",
-        "operationId": "create_api_key",
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/APIKeyCreate"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/APIKey"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "get": {
-        "tags": ["users", "admin"],
-        "summary": "Get Api Keys",
-        "description": "Get a list of all API keys for a user",
-        "operationId": "list_api_keys",
-        "parameters": [
-          {
-            "name": "user_id",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "description": "The unique identifier of the user.",
-              "title": "User Id"
-            },
-            "description": "The unique identifier of the user."
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/APIKey"
+                  "variables": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "string"
+                    },
+                    "description": "If you chose to not preserve core memories, you should provide the new variables for the core memories"
                   },
-                  "title": "Response List Api Keys"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
+                  "preserve_core_memories": {
+                    "type": "boolean"
+                  }
+                },
+                "required": ["to_template", "preserve_core_memories"]
               }
             }
           }
-        }
-      },
-      "delete": {
-        "tags": ["users", "admin"],
-        "summary": "Delete Api Key",
-        "operationId": "delete_api_key",
-        "parameters": [
-          {
-            "name": "api_key",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "description": "The API key to be deleted.",
-              "title": "Api Key"
-            },
-            "description": "The API key to be deleted."
-          }
-        ],
+        },
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "200",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/APIKey"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/admin/orgs/": {
-      "get": {
-        "tags": ["organization", "admin", "admin"],
-        "summary": "Get All Orgs",
-        "description": "Get a list of all orgs in the database",
-        "operationId": "list_orgs",
-        "parameters": [
-          {
-            "name": "cursor",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Cursor"
-            }
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "integer"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "default": 50,
-              "title": "Limit"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/Organization"
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [true]
+                    }
                   },
-                  "title": "Response List Orgs"
+                  "required": ["success"]
                 }
               }
             }
           },
-          "422": {
-            "description": "Validation Error",
+          "404": {
+            "description": "404",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "tags": ["organization", "admin", "admin"],
-        "summary": "Create Org",
-        "description": "Create a new org in the database",
-        "operationId": "create_organization",
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/OrganizationCreate"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Organization"
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "enum": [
+                        "Agent provided is a template or not found, you can only migrate deployed agents",
+                        "Template version provided does not exist"
+                      ]
+                    }
+                  },
+                  "required": ["message"]
                 }
               }
             }
           },
-          "422": {
-            "description": "Validation Error",
+          "409": {
+            "description": "409",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "delete": {
-        "tags": ["organization", "admin", "admin"],
-        "summary": "Delete Org",
-        "operationId": "delete_organization_by_id",
-        "parameters": [
-          {
-            "name": "org_id",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "description": "The org_id key to be deleted.",
-              "title": "Org Id"
-            },
-            "description": "The org_id key to be deleted."
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Organization"
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "enum": [
+                        "You can only migrate agents to a new versioned agent template that belongs to the same project"
+                      ]
+                    }
+                  },
+                  "required": ["message"]
                 }
               }
             }
           },
-          "422": {
-            "description": "Validation Error",
+          "500": {
+            "description": "500",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/auth": {
-      "post": {
-        "tags": ["auth"],
-        "summary": "Authenticate User",
-        "description": "Authenticates the user and sends response with User related data.\n\nCurrently, this is a placeholder that simply returns a UUID placeholder",
-        "operationId": "authenticate_user_v1_auth_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AuthRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AuthResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "enum": ["Migration failed"]
+                    }
+                  },
+                  "required": ["message"]
                 }
               }
             }
@@ -11428,23 +9644,12 @@
         "title": "Tool",
         "description": "Representation of a tool, which is a function that can be called by the agent.\n\nParameters:\n    id (str): The unique identifier of the tool.\n    name (str): The name of the function.\n    tags (List[str]): Metadata tags.\n    source_code (str): The source code of the function.\n    json_schema (Dict): The JSON schema of the function."
       }
+    },
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer"
+      }
     }
-  },
-  "servers": [
-    {
-      "url": "http://letta.localhost"
-    },
-    {
-      "url": "http://localhost:8283"
-    },
-    {
-      "url": "http://localhost:8083"
-    },
-    {
-      "url": "http://localhost:3000"
-    },
-    {
-      "url": "https://app.letta.com"
-    }
-  ]
+  }
 }
