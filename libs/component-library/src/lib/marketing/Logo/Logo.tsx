@@ -10,6 +10,7 @@ const color = {
   error: 'text-destructive',
   muted: 'text-muted',
   steel: 'text-steel',
+  primary: 'text-primary',
 };
 
 const logoVariants = cva('', {
