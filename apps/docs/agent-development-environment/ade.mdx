@@ -21,43 +21,53 @@ You can use the ADE to chat with agents you've already created, or to design new
 ## Agent simulator
 The agent simulator visualizes the event/conversation history of your agent.
 The agent's event history is comprised of *messages*, which can be:
-<CardGroup cols={1}>
-  <Card title="User messages" icon="user">
+
+<AccordionGroup>
+  <Accordion title="User messages" icon="user">
     Chat messages from the user to the agent.
-  </Card>
-  <Card title="System messages" icon="window">
+  </Accordion>
+  
+  <Accordion title="System messages" icon="window">
     Non-user messages, for example, event notices like `[Alert] The user just logged on`.
-  </Card>
-  <Card title="Agent messages" icon="alien-8bit">
+  </Accordion>
+  
+  <Accordion title="Agent messages" icon="alien-8bit">
     Assistant messages are messages sent by the agent to the user.
-  </Card>
-  <Card title="Function (tool) messages" icon="rectangle-terminal">
+  </Accordion>
+  
+  <Accordion title="Function (tool) messages" icon="rectangle-terminal">
     Tools that the agent has attempted to execute, and the result of their execution.
-  </Card>
-</CardGroup>
+  </Accordion>
+</AccordionGroup>
 
 ## Context window viewer
 The context window viewer visualizes the current status of the agent's context window, which includes:
-<CardGroup cols={1}>
-  <Card title="System instructions">
+
+<AccordionGroup>
+  <Accordion title="System instructions">
     The top-level system prompt which guides the behavior of the agent (this can often be left unchanged).
-  </Card>
-  <Card title="Function (tool) definitions">
+  </Accordion>
+  
+  <Accordion title="Function (tool) definitions">
     The JSON schema definitions of the tools available to the agent, which describe to the agent how to use them.
-  </Card>
-  <Card title="Core (in-context) memory blocks">
+  </Accordion>
+  
+  <Accordion title="Core (in-context) memory blocks">
     The long-term memory of the agent, for example the long-term memory about the user ("human") and agent's own "persona".
-  </Card>
-   <Card title="External (out-of-context) memory statistics">
+  </Accordion>
+  
+  <Accordion title="External (out-of-context) memory statistics">
     Statistics about the archival memory (out-of-context) of the agent, such as the total number of memories available.
-  </Card> 
-  <Card title="Recursive summary">
+  </Accordion>
+  
+  <Accordion title="Recursive summary">
     A recursive (rolling) summary of the event history, which is updated when the context window is truncated.
-  </Card> 
-  <Card title="Event (message) queue">
+  </Accordion>
+  
+  <Accordion title="Event (message) queue">
     The current event queue, which stores a chronological list of events (messages) that the agent has processed.
-  </Card> 
-</CardGroup>
+  </Accordion>
+</AccordionGroup>
 
 ### Configuring the max context length
 <Tip>Letta allows you to artificially limit the maximum context window length of your agent's underlying LLM. Even though some LLM API providers support large context windows (e.g. 200k+), artifically constraining the LLM context window can improve your agent's performance / stability and decrease overall cost / latency.</Tip>
@@ -135,4 +145,3 @@ No, the data in your Letta server database stays on your machine. The Letta ADE 
 > _"Do I have to use your ADE? Can I build my own?"_
 
 The ADE is built on top of the (fully open source) Letta server and Letta Agents API. You can build your own application like the ADE on top of the REST API (view the documention [here](https://docs.letta.com/api-reference)).
-

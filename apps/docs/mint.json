@@ -64,7 +64,7 @@
           "group": "Letta server",
           "icon": "server",
           "iconType": "solid",
-          "pages": ["server/pip", "server/docker"]
+          "pages": ["server/docker", "server/pip"]
         },
         {
           "group": "LLM configuration",
@@ -94,6 +94,12 @@
         "agent-development-environment/ade",
         "agent-development-environment/connect",
         "agent-development-environment/troubleshooting"
+      ]
+    },
+    {
+      "group": "Deploying Letta server",
+      "pages": [
+        "deployment/railway"
       ]
     },
     {
