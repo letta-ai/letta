@@ -1,9 +1,12 @@
 import * as React from 'react';
 import { Slot } from '@radix-ui/react-slot';
-import { ChevronRightIcon, DotsHorizontalIcon } from '../../icons';
+import { DotsHorizontalIcon } from '../../icons';
 import { cn } from '@letta-web/core-style-config';
+import type { TypographyProps } from '../Typography/Typography';
 import { Typography } from '../Typography/Typography';
 import Link from 'next/link';
+import { useMemo } from 'react';
+import { HStack } from '../../framing/HStack/HStack';
 
 const BreadcrumbPrimitive = React.forwardRef<
   HTMLElement,
@@ -85,7 +88,7 @@ function BreadcrumbSeparator({
       className={cn('[&>svg]:size-3.5', className)}
       {...props}
     >
-      {children ?? <ChevronRightIcon />}
+      {children ?? '/'}
     </li>
   );
 }
@@ -110,13 +113,51 @@ function BreadcrumbEllipsis({
 BreadcrumbEllipsis.displayName = 'BreadcrumbElipssis';
 
 export interface BreadcrumbItemType {
-  href: string;
+  href?: string;
+  onClick?: () => void;
   label: string;
+  preIcon?: React.ReactNode;
+}
+
+interface BreadcrumbItemWrapperProps {
+  item: BreadcrumbItemType;
+  variant: TypographyProps['variant'];
+}
+
+function BreadcrumbItemWrapper(props: BreadcrumbItemWrapperProps) {
+  const { item, variant } = props;
+
+  const { href, preIcon, label, onClick } = item;
+
+  const content = useMemo(() => {
+    return (
+      <HStack gap="small">
+        {preIcon && <Slot className="w-4 h-4">{preIcon}</Slot>}
+        <Typography className="hover:underline" bold variant={variant}>
+          {label}
+        </Typography>
+      </HStack>
+    );
+  }, [label, preIcon, variant]);
+
+  if (href) {
+    return (
+      <BreadcrumbItem>
+        <Link href={href}>{content}</Link>
+      </BreadcrumbItem>
+    );
+  }
+
+  return (
+    <BreadcrumbItem>
+      <button onClick={onClick}>{content}</button>
+    </BreadcrumbItem>
+  );
 }
 
 export interface BreadcrumbProps {
   items: BreadcrumbItemType[];
-  variant?: 'heading1';
+  variant?: TypographyProps['variant'];
 }
 
 export function Breadcrumb({ items, variant = 'heading1' }: BreadcrumbProps) {
@@ -124,14 +165,10 @@ export function Breadcrumb({ items, variant = 'heading1' }: BreadcrumbProps) {
     <BreadcrumbPrimitive>
       <BreadcrumbList>
         {items.map((item, index) => (
-          <BreadcrumbItem key={item.href}>
-            <Link href={item.href}>
-              <Typography className="hover:underline" bold variant={variant}>
-                {item.label}
-              </Typography>
-            </Link>
-            {index < items.length - 1 && <BreadcrumbSeparator />}
-          </BreadcrumbItem>
+          <>
+            <BreadcrumbItemWrapper key={index} item={item} variant={variant} />
+            {index !== items.length - 1 && <BreadcrumbSeparator />}
+          </>
         ))}
       </BreadcrumbList>
     </BreadcrumbPrimitive>
