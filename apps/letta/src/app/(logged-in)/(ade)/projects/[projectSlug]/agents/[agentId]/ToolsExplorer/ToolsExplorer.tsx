@@ -540,39 +540,47 @@ function ViewTool(props: ViewToolProps) {
             )}
           </div>
 
-          <VStack fullWidth gap={false}>
-            <HStack align="center">
-              <LoadedTypography
-                text={tool.name}
-                fillerText="This is a placeholder"
-                align="left"
-                variant="heading2"
-              />
-            </HStack>
-            <HStack align="center" gap="small">
-              <Typography overrideEl="span" align="left" italic>
-                {isBrandKey(tool.brand)
-                  ? brandKeyToName(tool.brand)
-                  : tool.brand}{' '}
-              </Typography>
+          <VStack fullWidth gap="medium">
+            <VStack gap={false}>
+              <HStack align="center">
+                <LoadedTypography
+                  text={tool.name}
+                  fillerText="This is a placeholder"
+                  align="left"
+                  variant="heading2"
+                />
+              </HStack>
+              <HStack align="center" gap="small">
+                <Typography overrideEl="span" align="left" italic>
+                  {isBrandKey(tool.brand)
+                    ? brandKeyToName(tool.brand)
+                    : tool.brand}{' '}
+                </Typography>
+                {isComposioTool && (
+                  <>
+                    <Typography noWrap inline overrideEl="span">
+                      {t('ViewTool.viaComposioTool')}
+                    </Typography>
+                    <div className="mt-[2px]">
+                      <ComposioLockup height={20} />
+                    </div>
+                  </>
+                )}
+              </HStack>
+            </VStack>
+            <HStack>
+              {showAddToolToAgent && <AddToolToAgentButton tool={tool} />}
+              {isEditable && <EditToolButton />}
               {isComposioTool && (
-                <>
-                  <Typography noWrap inline overrideEl="span">
-                    {t('ViewTool.viaComposioTool')}
-                  </Typography>
-                  <div className="mt-[2px]">
-                    <ComposioLockup height={20} />
-                  </div>
-                </>
+                <Button
+                  target="_blank"
+                  size="small"
+                  href={`https://app.composio.dev/app/${tool.brand}`}
+                  label={t('ViewTool.viewOnComposio')}
+                  color="tertiary"
+                />
               )}
             </HStack>
-
-            {showAddToolToAgent || isEditable ? (
-              <HStack paddingTop="small">
-                {showAddToolToAgent && <AddToolToAgentButton tool={tool} />}
-                {isEditable && <EditToolButton />}
-              </HStack>
-            ) : null}
           </VStack>
         </HStack>
         {showComposioSetupBanner && (
@@ -1417,6 +1425,7 @@ function ToolCreator() {
               <FormActions>
                 <CloseMiniApp>
                   <Button
+                    type="button"
                     color="tertiary"
                     label={t('SpecificToolComponent.back')}
                   />
