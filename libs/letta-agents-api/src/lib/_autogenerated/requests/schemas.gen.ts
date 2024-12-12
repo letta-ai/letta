@@ -3649,56 +3649,6 @@ export const $MessageContentLogProb = {
 
 export const $MessageCreate = {
   properties: {
-    created_by_id: {
-      anyOf: [
-        {
-          type: 'string',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Created By Id',
-      description: 'The id of the user that made this object.',
-    },
-    last_updated_by_id: {
-      anyOf: [
-        {
-          type: 'string',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Last Updated By Id',
-      description: 'The id of the user that made this object.',
-    },
-    created_at: {
-      anyOf: [
-        {
-          type: 'string',
-          format: 'date-time',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Created At',
-      description: 'The timestamp when the object was created.',
-    },
-    updated_at: {
-      anyOf: [
-        {
-          type: 'string',
-          format: 'date-time',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Updated At',
-      description: 'The timestamp when the object was last updated.',
-    },
     role: {
       type: 'string',
       enum: ['user', 'system'],
@@ -3723,7 +3673,6 @@ export const $MessageCreate = {
       description: 'The name of the participant.',
     },
   },
-  additionalProperties: false,
   type: 'object',
   required: ['role', 'text'],
   title: 'MessageCreate',
@@ -3766,56 +3715,6 @@ export const $MessageRole = {
 
 export const $MessageUpdate = {
   properties: {
-    created_by_id: {
-      anyOf: [
-        {
-          type: 'string',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Created By Id',
-      description: 'The id of the user that made this object.',
-    },
-    last_updated_by_id: {
-      anyOf: [
-        {
-          type: 'string',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Last Updated By Id',
-      description: 'The id of the user that made this object.',
-    },
-    created_at: {
-      anyOf: [
-        {
-          type: 'string',
-          format: 'date-time',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Created At',
-      description: 'The timestamp when the object was created.',
-    },
-    updated_at: {
-      anyOf: [
-        {
-          type: 'string',
-          format: 'date-time',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Updated At',
-      description: 'The timestamp when the object was last updated.',
-    },
     role: {
       anyOf: [
         {
@@ -3879,7 +3778,6 @@ export const $MessageUpdate = {
       description: 'The id of the tool call.',
     },
   },
-  additionalProperties: false,
   type: 'object',
   title: 'MessageUpdate',
   description: 'Request to update a message',
@@ -4540,7 +4438,7 @@ export const $Organization = {
       type: 'string',
       title: 'Name',
       description: 'The name of the organization.',
-      default: 'DazzlingEspresso',
+      default: 'XenialPapaya',
     },
     created_at: {
       anyOf: [
@@ -4583,7 +4481,7 @@ export const $OrganizationCreate = {
 
 export const $Passage = {
   properties: {
-    user_id: {
+    created_by_id: {
       anyOf: [
         {
           type: 'string',
@@ -4592,7 +4490,56 @@ export const $Passage = {
           type: 'null',
         },
       ],
-      title: 'User Id',
+      title: 'Created By Id',
+      description: 'The id of the user that made this object.',
+    },
+    last_updated_by_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Last Updated By Id',
+      description: 'The id of the user that made this object.',
+    },
+    created_at: {
+      type: 'string',
+      format: 'date-time',
+      title: 'Created At',
+      description: 'The creation date of the passage.',
+    },
+    updated_at: {
+      anyOf: [
+        {
+          type: 'string',
+          format: 'date-time',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Updated At',
+      description: 'The timestamp when the object was last updated.',
+    },
+    is_deleted: {
+      type: 'boolean',
+      title: 'Is Deleted',
+      description: 'Whether this passage is deleted or not.',
+      default: false,
+    },
+    organization_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Organization Id',
       description:
         'The unique identifier of the user associated with the passage.',
     },
@@ -4649,10 +4596,10 @@ export const $Passage = {
     },
     id: {
       type: 'string',
-      pattern: '^passage-[a-fA-F0-9]{8}',
+      pattern: '^passage_legacy-[a-fA-F0-9]{8}',
       title: 'Id',
-      description: 'The human-friendly ID of the Passage',
-      examples: ['passage-123e4567-e89b-12d3-a456-426614174000'],
+      description: 'The human-friendly ID of the Passage_legacy',
+      examples: ['passage_legacy-123e4567-e89b-12d3-a456-426614174000'],
     },
     text: {
       type: 'string',
@@ -4684,12 +4631,6 @@ export const $Passage = {
         },
       ],
       description: 'The embedding configuration used by the passage.',
-    },
-    created_at: {
-      type: 'string',
-      format: 'date-time',
-      title: 'Created At',
-      description: 'The creation date of the passage.',
     },
   },
   additionalProperties: false,

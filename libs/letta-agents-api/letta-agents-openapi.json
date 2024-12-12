@@ -9393,7 +9393,7 @@
             "type": "string",
             "title": "Name",
             "description": "The name of the organization.",
-            "default": "VersatileFireplace"
+            "default": "XenialPapaya"
           },
           "created_at": {
             "anyOf": [
@@ -9434,7 +9434,7 @@
       },
       "Passage": {
         "properties": {
-          "user_id": {
+          "created_by_id": {
             "anyOf": [
               {
                 "type": "string"
@@ -9443,7 +9443,56 @@
                 "type": "null"
               }
             ],
-            "title": "User Id",
+            "title": "Created By Id",
+            "description": "The id of the user that made this object."
+          },
+          "last_updated_by_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Updated By Id",
+            "description": "The id of the user that made this object."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "The creation date of the passage."
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At",
+            "description": "The timestamp when the object was last updated."
+          },
+          "is_deleted": {
+            "type": "boolean",
+            "title": "Is Deleted",
+            "description": "Whether this passage is deleted or not.",
+            "default": false
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
             "description": "The unique identifier of the user associated with the passage."
           },
           "agent_id": {
@@ -9497,10 +9546,10 @@
           },
           "id": {
             "type": "string",
-            "pattern": "^passage-[a-fA-F0-9]{8}",
+            "pattern": "^passage_legacy-[a-fA-F0-9]{8}",
             "title": "Id",
-            "description": "The human-friendly ID of the Passage",
-            "examples": ["passage-123e4567-e89b-12d3-a456-426614174000"]
+            "description": "The human-friendly ID of the Passage_legacy",
+            "examples": ["passage_legacy-123e4567-e89b-12d3-a456-426614174000"]
           },
           "text": {
             "type": "string",
@@ -9532,12 +9581,6 @@
               }
             ],
             "description": "The embedding configuration used by the passage."
-          },
-          "created_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Created At",
-            "description": "The creation date of the passage."
           }
         },
         "additionalProperties": false,
