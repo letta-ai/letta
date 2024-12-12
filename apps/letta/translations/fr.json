@@ -114,7 +114,7 @@
     "ManagedEnvironmentIndicator": {
       "label": "Géré",
       "integrations": {
-        "composio": "Cette variable d'environnement est liée à l'intégration Composeio, pour plus d'informations cliquez sur ce badge"
+        "composio": "Cette variable d'environnement est liée à l'intégration Composio, pour plus d'informations cliquez sur ce badge"
       }
     },
     "errorMessage": "Une erreur s'est produite lors du chargement des variables d'environnement. Veuillez réessayer ou contacter l'assistance.",
@@ -167,11 +167,11 @@
   },
   "organization/integrations/composio": {
     "DisconnectIntegrationDialog": {
-      "title": "Supprimer l'intégration Composeio",
-      "description": "Êtes-vous sûr de vouloir supprimer l'intégration Composeio ? ",
+      "title": "Supprimer l'intégration Composio",
+      "description": "Êtes-vous sûr de vouloir supprimer l'intégration Composio ? ",
       "trigger": "Supprimer l'intégration",
       "confirm": "Supprimer l'intégration",
-      "error": "Une erreur s'est produite lors de la suppression de l'intégration Composeio, veuillez réessayer ou contacter l'assistance."
+      "error": "Une erreur s'est produite lors de la suppression de l'intégration Composio, veuillez réessayer ou contacter l'assistance."
     },
     "SetApiKeyDialog": {
       "alert": "Cela écrasera votre clé API actuelle, ce qui pourrait empêcher certains agents d'utiliser les outils Composio. ",
@@ -194,8 +194,8 @@
         "update": "Définir la clé API"
       }
     },
-    "title": "composeio",
-    "description": "Composeio permet à votre équipe de connecter vos agents à des services et API externes sans écrire de code. "
+    "title": "composio",
+    "description": "Composio permet à votre équipe de connecter vos agents à des services et API externes sans écrire de code. "
   },
   "organization/integrations/IntegrationPageLayout": {
     "return": "Toutes les intégrations",
@@ -213,8 +213,8 @@
     "description": "Connectez et gérez les intégrations pour votre organisation",
     "integrations": {
       "composio": {
-        "title": "Composeio",
-        "description": "Composeio permet à votre équipe de connecter vos agents à des services et API externes sans écrire de code. "
+        "title": "Composio",
+        "description": "Composio permet à votre équipe de connecter vos agents à des services et API externes sans écrire de code. "
       }
     },
     "IntegrationItem": {

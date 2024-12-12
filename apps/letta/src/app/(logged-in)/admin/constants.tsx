@@ -5,7 +5,7 @@ import {
   CompanyIcon,
   InferenceModelsIcon,
   EmbeddingModelsIcon,
-  UserFaceIcon,
+  UserFaceIcon, ToolsIcon
 } from '@letta-web/component-library';
 import React from 'react';
 
@@ -52,4 +52,11 @@ export const NavigationItems: AdminNavigationItemProps[] = [
     href: '/admin/models/embedding',
     description: 'Manage embedding models',
   },
+  {
+    id: 'tools-metadata',
+    label: 'Tool Metadata',
+    icon: <ToolsIcon />,
+    href: '/admin/tools',
+    description: 'Manage tools',
+  }
 ];

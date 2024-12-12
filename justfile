@@ -73,6 +73,7 @@ deploy: push
         --set env.NEXT_PUBLIC_CURRENT_HOST="${NEXT_PUBLIC_CURRENT_HOST}" \
         --set env.REDIS_HOST="${REDIS_HOST}" \
         --set env.HUBSPOT_API_KEY="${HUBSPOT_API_KEY}" \
+        --set env.COMPOSIO_API_KEY="${COMPOSIO_API_KEY}" \
         --set env.E2B_API_KEY="${E2B_API_KEY}" \
         --set env.E2B_SANDBOX_TEMPLATE_ID="${E2B_SANDBOX_TEMPLATE_ID}"
     npm run slack-bot-says "Successfully deployed web service Helm chart with tag: {{TAG}}."
