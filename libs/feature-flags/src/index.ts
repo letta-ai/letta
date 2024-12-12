@@ -50,28 +50,39 @@ async function getLaunchDarklyClient() {
   return launchDarklySingleton;
 }
 
-interface UserFlagsPayload {
-  userId: string;
+interface UserDetails {
+  id: string;
+  name: string;
+  email: string;
 }
 
-export async function getUserFlags(user: UserFlagsPayload) {
+export async function getUserFlags(user: UserDetails) {
   if (!environment.LAUNCH_DARKLY_SDK_KEY) {
     return {};
   }
 
   const ldClient = await getLaunchDarklyClient();
 
-  const response = await ldClient.allFlagsState({
-    key: user.userId,
+  const [firstName, lastName] = user.name.split(' ');
+
+  const context: ld.LDContext = {
     kind: 'user',
-  });
+    key: user.id,
+    firstName,
+    lastName,
+    email: user.email,
+  };
+
+  ldClient.identify(context);
+
+  const response = await ldClient.allFlagsState(context);
 
   return response.toJSON();
 }
 
 export async function getSingleFlag<SingleFlag extends Flag>(
   flag: SingleFlag,
-  user: UserFlagsPayload
+  user: UserDetails
 ): Promise<FlagValue<SingleFlag> | undefined> {
   if (!environment.LAUNCH_DARKLY_SDK_KEY) {
     return undefined;
@@ -83,7 +94,7 @@ export async function getSingleFlag<SingleFlag extends Flag>(
     return ldClient.variation(
       flag,
       {
-        key: user.userId,
+        key: user.id,
         kind: 'user',
       },
       false,

@@ -7,7 +7,7 @@ type FeatureFlagsResponse = ServerInferResponses<
   typeof contracts.featureFlags.getFeatureFlags
 >;
 
-export async function getFeatureFlags(): Promise<FeatureFlagsResponse> {
+async function getFeatureFlags(): Promise<FeatureFlagsResponse> {
   const user = await getUser();
 
   let flags: Record<string, any>;
@@ -15,9 +15,7 @@ export async function getFeatureFlags(): Promise<FeatureFlagsResponse> {
   if (!user) {
     flags = await getDefaultFlags();
   } else {
-    flags = await getUserFlags({
-      userId: user.id,
-    });
+    flags = await getUserFlags(user);
   }
 
   return {
@@ -25,3 +23,7 @@ export async function getFeatureFlags(): Promise<FeatureFlagsResponse> {
     body: flags,
   };
 }
+
+export const featureFlagsRouter = {
+  getFeatureFlags,
+};
