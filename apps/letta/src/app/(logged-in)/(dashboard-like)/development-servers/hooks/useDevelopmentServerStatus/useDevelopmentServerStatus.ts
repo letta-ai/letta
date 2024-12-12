@@ -37,7 +37,6 @@ export function useDevelopmentServerStatus(
 
         const data: HealthCheckResponse = await response.json();
 
-        console.log(data);
         setDevelopmentServerStatus((old) => ({
           ...old,
           [config.url]: {
