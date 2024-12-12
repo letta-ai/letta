@@ -1,21 +1,22 @@
 ---
 title: Troubleshooting
 description: 'A guide on common pitfalls and how to resolve them in the ADE'
-icon: "question"
+icon: "square-question"
 iconType: "solid"
 ---
 
-## Issues connecting to the ADE
-### Safari
-Safari has specific restrictions to accessing localhost, and must always serve content via https. Follow the steps below to be able to access the ADE on Safari
+# Issues connecting to the ADE
 
-1. Install `mkcert` - [[Installation Instructions]](https://github.com/FiloSottile/mkcert?tab=readme-ov-file#installation)
-1. Run `mkcert -install`
-1. Update to Letta 0.6.3 or greater
-1. Add `LOCAL_HTTPS=true` to your Letta environment variables
-1. Restart your Letta Docker Container
-1. Access the ADE at [https://app.letta.com/development-servers/local/dashboard](https://app.letta.com/development-servers/local/dashboard)
-1. Click "Add remote server" and enter `https://localhost:8283` as the URL, leave password blank unless you have secured your ADE with a password.
+## <Icon icon="safari" iconType="solid" /> Safari
+Safari has specific restrictions to accessing `localhost`, and must always serve content via `https`.
+Follow the steps below to be able to access the ADE on Safari:
+1. Install `mkcert` ([installation instructions](https://github.com/FiloSottile/mkcert?tab=readme-ov-file#installation))
+2. Run `mkcert -install`
+3. Update to Letta version `0.6.3` or greater
+4. Add `LOCAL_HTTPS=true` to your Letta environment variables
+5. Restart your Letta Docker container
+6. Access the ADE at [https://app.letta.com/development-servers/local/dashboard](https://app.letta.com/development-servers/local/dashboard)
+7. Click "Add remote server" and enter `https://localhost:8283` as the URL, leave password blank unless you have secured your ADE with a password.
 
-### Brave
-Please disable Brave Shields to access your ADE
+## <Icon icon="brave" iconType="solid" /> Brave
+Please disable Brave Shields to access your ADE.
