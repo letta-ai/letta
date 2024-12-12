@@ -88,8 +88,6 @@ export * from './lib/ade/utils/createPanelManager/createPanelManager';
 
 export * from './lib/ade/ADEDropdownMenu/ADEDropdownMenu';
 
-export * from './lib/ade/ADESidebarButton/ADESidebarButton';
-
 export * from './lib/reusable/ChatInput/ChatInput';
 
 export * from './lib/core/Markdown/Markdown';
@@ -97,9 +95,6 @@ export * from './lib/core/Markdown/Markdown';
 export * from './lib/core/InlineCode/InlineCode';
 
 export * from './lib/reusable/NiceGridDisplay/NiceGridDisplay';
-export * from './lib/ade/ADEInput/ADEInput';
-
-export * from './lib/ade/ADETextArea/ADETextArea';
 
 export * from './lib/core/Chart/Chart';
 
