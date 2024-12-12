@@ -288,7 +288,6 @@ export async function makeRequestToSDK(
         path: pathname,
       });
     }
-
     if (typeof data !== 'string') {
       data = JSON.stringify(data);
     }
@@ -301,6 +300,11 @@ export async function makeRequestToSDK(
     });
   } catch (e) {
     if (isAxiosError(e)) {
+      if (e.response?.status && e.response.status >= 500) {
+        console.error(e);
+        Sentry.captureException(e);
+      }
+
       return new Response(JSON.stringify(e.response?.data), {
         status: e.response?.status || 500,
         headers: {

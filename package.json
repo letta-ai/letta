@@ -36,7 +36,8 @@
     "check-github-status": "node ./scripts/check-github-status/check-github-status.js",
     "agents-api:generate": "nx run letta-agents-api:generate && nx run letta-agents-api:monkeypatch",
     "build-storybook": "nx run component-library:build-storybook",
-    "chromatic": "npx chromatic --project-token=chpt_163d302713dd4f3"
+    "chromatic": "npx chromatic --project-token=chpt_163d302713dd4f3",
+    "stress": "nx run stress:test --skip-nx-cache"
   },
   "private": true,
   "dependencies": {
@@ -68,6 +69,7 @@
     "@ts-rest/core": "^3.51.0",
     "@ts-rest/react-query": "^3.51.0",
     "@ts-rest/serverless": "^3.51.0",
+    "@types/k6": "^0.54.2",
     "@types/libsodium-wrappers": "^0.7.14",
     "axios": "^1.7.5",
     "bcrypt": "^5.1.1",
@@ -112,6 +114,7 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@types/k6": "^0.54.2",
     "@7nohe/openapi-react-query-codegen": "^1.6.0",
     "@babel/core": "^7.14.5",
     "@babel/preset-react": "^7.14.5",
@@ -122,6 +125,7 @@
     "@nx-extend/shadcn-ui": "^3.1.0",
     "@nx/cypress": "19.6.3",
     "@nx/devkit": "19.6.3",
+    "@nx/esbuild": "19.6.3",
     "@nx/eslint": "19.6.3",
     "@nx/eslint-plugin": "19.6.3",
     "@nx/jest": "19.6.3",
@@ -176,6 +180,7 @@
     "cypress-dotenv": "^2.0.0",
     "dotenv": "^16.4.5",
     "drizzle-kit": "^0.24.2",
+    "esbuild": "^0.19.2",
     "eslint": "~8.57.0",
     "eslint-config-next": "14.2.3",
     "eslint-config-prettier": "^9.0.0",
@@ -191,6 +196,7 @@
     "jest-environment-jsdom": "^29.7.0",
     "jest-environment-node": "^29.7.0",
     "jest-mock-extended": "^4.0.0-beta1",
+    "k6": "^0.0.0",
     "lodash-es": "^4.17.21",
     "mintlify": "^4.0.267",
     "next-intl-split": "^1.1.4",
