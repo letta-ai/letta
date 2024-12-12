@@ -3,7 +3,7 @@ import { projectsRouter } from './projects/projectsRouter';
 import * as apiKeysRouter from './api-keys/apiKeysRouter';
 import { organizationsRouter } from './organizations/organizationsRouter';
 import * as adminWhitelistedEmailsRouter from './admin/whitelisted-emails/whitelistedEmailsRouter';
-import * as featureFlagsRouter from './feature-flags/featureFlagsRouter';
+import { featureFlagsRouter } from './feature-flags/featureFlagsRouter';
 import { adePreferencesRouter } from './ade-preferences/adePreferencesRouter';
 import { agentTemplateRoutes } from './agent-templates/agentTemplateRoutes';
 import { flushLayoutsRouter } from './admin/flush-layouts/flushLayoutsRouter';
