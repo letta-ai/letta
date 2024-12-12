@@ -1,32 +1,29 @@
 ---
-title: 'Run Letta server with pip'
+title: 'Run Letta with pip'
 sidebarTitle: 'Run with pip'
-description: 'Install and setup Letta to run the server & ADE'
 icon: "python"
 iconType: "solid"
 ---
 
-<iframe
-  width="560"
-  height="315"
-  src="https://www.youtube.com/embed/EOkpFDBNyEw"
-  title="Install Letta with pip"
-  frameborder="0"
-  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-  allowfullscreen
-></iframe>
+<Warning>
+**Warning: database migrations are not officially support with `SQLite`!**
+
+When you install Letta with `pip`, the default database backend is `SQLite` (you can still use an external `postgres` service with your `pip` install of Letta by setting `LETTA_PG_URI`).
+
+We do not officially support migrations between Letta versions with `SQLite` backends, only `postgres`.
+If you would like to keep your agent data across multiple Letta versions we highly recommend using the [Docker install method](/server/docker) which is the easiest way to use `postgres` with Letta.
+</Warning>
 
 <Steps>
-  <Step title="Install using PIP">
-    To install Letta, run:
+  <Step title="Install using pip">
+    To install Letta using `pip`, run:
     ```
-    pip install letta
+    pip install -U letta
     ```
   </Step>
   <Step title="Configure model providers">
     Set environment variables to enable model providers, e.g. OpenAI: 
     ```bash 
-
     # To use OpenAI
     export OPENAI_API_KEY=...
 
@@ -46,12 +43,17 @@ iconType: "solid"
     # To use with vLLM 
     export VLLM_API_BASE=...
     ```
+
+    If you have a PostgreSQL instance running, you can set the `LETTA_PG_URI` environment variable to connect to it:
+    ```bash
+    export LETTA_PG_URI=...
+    ```
   </Step>
   <Step title="Run the Letta server">
     To run the Letta server, run:
     ```sh
     letta server [--debug]
     ```
-    You can now access the ADE (in your browser) and REST API server at `http://localhost:8283`.
+    You can now access the Letta server at `http://localhost:8283`.
   </Step>
 </Steps>

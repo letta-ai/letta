@@ -1,71 +1,87 @@
 ---
-title: 'Run Letta server with Docker'
+title: 'Run Letta with Docker'
 sidebarTitle: 'Run with Docker'
-description: 'Install and setup Letta to run the server & ADE'
 icon: "docker"
 iconType: "solid"
 ---
 
-<Steps>
-  <Step title="Download the docker container">
-    To run the docker container, first clone the reposity for pull the contianer. 
-    ```sh
-    git clone https://github.com/letta-ai/letta
-    ```
-  </Step>
-  <Step title="Set environment variables">
-    Either set the environment variables in your shell on in a `.env` file. 
-  <CodeGroup>
-    ```bash .env file
-    # To use OpenAI
-    OPENAI_API_KEY=...
+<Note>
+The recommended way to use Letta is to run use Docker.
+To install Docker, see [Docker's installation guide](https://docs.docker.com/get-docker/).
+For issues with installing Docker, see [Docker's troubleshooting guide](https://docs.docker.com/desktop/troubleshoot-and-support/troubleshoot/).
+You can also install Letta using `pip` (see instructions [here](/server/pip)).
+</Note>
 
-    # To use Anthropic 
-    ANTHROPIC_API_KEY=...
+# Running the Letta server
 
-    # To use with Ollama
-    OLLAMA_BASE_URL=...
+The Letta server can be connected to various LLM API backends ([OpenAI](https://docs.letta.com/models/openai), [Anthropic](https://docs.letta.com/models/anthropic), [vLLM](https://docs.letta.com/models/vllm), [Ollama](https://docs.letta.com/models/ollama), etc.). To enable access to these LLM API providers, set the appropriate environment variables when you use `docker run`:
+```sh
+# replace `~/.letta/.persist/pgdata` with wherever you want to store your agent data
+docker run \
+  -v ~/.letta/.persist/pgdata:/var/lib/postgresql/data \
+  -p 8283:8283 \
+  -e OPENAI_API_KEY="your_openai_api_key" \
+  letta/letta:latest
+```
 
-    # To use with Google AI
-    GEMINI_API_KEY=...
+If you have many different LLM API keys, you can also set up a `.env` file instead and pass that to `docker run`:
+```sh
+# using a .env file instead of passing environment variables
+docker run \
+  -v ~/.letta/.persist/pgdata:/var/lib/postgresql/data \
+  -p 8283:8283 \
+  --env-file .env \
+  letta/letta:latest
+```
 
-    # To use with Azure
-    AZURE_API_KEY=...
-    AZURE_BASE_URL=...
+Once the Letta server is running, you can access it via port `8283` (e.g. sending REST API requests to `http://localhost:8283/v1`). You can also connect your server to the Letta ADE to access and manage your agents in a web interface.
 
-    # To use with vLLM 
-    VLLM_API_BASE=...
-    ```
-    ```bash shell
-    # To use OpenAI
-    export OPENAI_API_KEY=...
+## Setting environment variables
+Environment variables will determine which LLM and embedding providers are enabled on your Letta server.
+For example, if you set `OPENAI_API_KEY`, then your Letta server will attempt to connect to OpenAI as a model provider.
+Similarly, if you set `OLLAMA_BASE_URL`, then your Letta server will attempt to connect to an Ollama server to provide local models as LLM options on the server.
 
-    # To use Anthropic 
-    export ANTHROPIC_API_KEY=...
+You can either set the environment variables in your shell on in a `.env` file:
+<CodeGroup>
+  ```bash .env file
+  # To use OpenAI
+  OPENAI_API_KEY=...
 
-    # To use with Ollama
-    export OLLAMA_BASE_URL=...
+  # To use Anthropic 
+  ANTHROPIC_API_KEY=...
 
-    # To use with Google AI
-    export GEMINI_API_KEY=...
+  # To use with Ollama
+  OLLAMA_BASE_URL=...
 
-    # To use with Azure
-    export AZURE_API_KEY=...
-    export AZURE_BASE_URL=...
+  # To use with Google AI
+  GEMINI_API_KEY=...
 
-    # To use with vLLM 
-    export VLLM_API_BASE=...
-    ```
-  </CodeGroup>
-  </Step>
-  <Step title="(Optional) View and modify the compose YAML file">
-    You can view and modify the `compose.yaml` file, for example, if you would like to change the default ports or `pgvector` version.
-  </Step>
-  <Step title="Run Docker Compose">
-    To start the Letta server, we use [Docker Compose](https://docs.docker.com/compose/), which runs both the Letta container and the database container:
-    ```sh
-    docker compose up 
-    ```
-    You can now access the ADE (in your browser) and REST API server at `http://localhost:8083`.
-  </Step>
-</Steps>
+  # To use with Azure
+  AZURE_API_KEY=...
+  AZURE_BASE_URL=...
+
+  # To use with vLLM 
+  VLLM_API_BASE=...
+  ```
+  ```bash shell
+  # To use OpenAI
+  export OPENAI_API_KEY=...
+
+  # To use Anthropic 
+  export ANTHROPIC_API_KEY=...
+
+  # To use with Ollama
+  export OLLAMA_BASE_URL=...
+
+  # To use with Google AI
+  export GEMINI_API_KEY=...
+
+  # To use with Azure
+  export AZURE_API_KEY=...
+  export AZURE_BASE_URL=...
+
+  # To use with vLLM 
+  export VLLM_API_BASE=...
+  ```
+</CodeGroup>
+
