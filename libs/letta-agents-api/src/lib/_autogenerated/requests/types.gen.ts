@@ -1433,22 +1433,6 @@ export type MessageContentLogProb = {
  */
 export type MessageCreate = {
   /**
-   * The id of the user that made this object.
-   */
-  created_by_id?: string | null;
-  /**
-   * The id of the user that made this object.
-   */
-  last_updated_by_id?: string | null;
-  /**
-   * The timestamp when the object was created.
-   */
-  created_at?: string | null;
-  /**
-   * The timestamp when the object was last updated.
-   */
-  updated_at?: string | null;
-  /**
    * The role of the participant.
    */
   role: 'user' | 'system';
@@ -1489,22 +1473,6 @@ export type MessageRole = 'assistant' | 'user' | 'tool' | 'function' | 'system';
  * Request to update a message
  */
 export type MessageUpdate = {
-  /**
-   * The id of the user that made this object.
-   */
-  created_by_id?: string | null;
-  /**
-   * The id of the user that made this object.
-   */
-  last_updated_by_id?: string | null;
-  /**
-   * The timestamp when the object was created.
-   */
-  created_at?: string | null;
-  /**
-   * The timestamp when the object was last updated.
-   */
-  updated_at?: string | null;
   /**
    * The role of the participant.
    */
@@ -1875,9 +1843,29 @@ export type OrganizationCreate = {
  */
 export type Passage = {
   /**
+   * The id of the user that made this object.
+   */
+  created_by_id?: string | null;
+  /**
+   * The id of the user that made this object.
+   */
+  last_updated_by_id?: string | null;
+  /**
+   * The creation date of the passage.
+   */
+  created_at?: string;
+  /**
+   * The timestamp when the object was last updated.
+   */
+  updated_at?: string | null;
+  /**
+   * Whether this passage is deleted or not.
+   */
+  is_deleted?: boolean;
+  /**
    * The unique identifier of the user associated with the passage.
    */
-  user_id?: string | null;
+  organization_id?: string | null;
   /**
    * The unique identifier of the agent associated with the passage.
    */
@@ -1897,7 +1885,7 @@ export type Passage = {
     [key: string]: unknown;
   } | null;
   /**
-   * The human-friendly ID of the Passage
+   * The human-friendly ID of the Passage_legacy
    */
   id?: string;
   /**
@@ -1912,10 +1900,6 @@ export type Passage = {
    * The embedding configuration used by the passage.
    */
   embedding_config: EmbeddingConfig | null;
-  /**
-   * The creation date of the passage.
-   */
-  created_at?: string;
 };
 
 export type RecallMemorySummary = {
