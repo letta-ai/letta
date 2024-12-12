@@ -65,7 +65,7 @@ import {
   useForm,
   VStack,
 } from '@letta-web/component-library';
-import { webApi, webApiQueryKeys } from '$letta/client';
+import { useFeatureFlag, webApi, webApiQueryKeys } from '$letta/client';
 import { useCurrentAgentMetaData } from '../hooks/useCurrentAgentMetaData/useCurrentAgentMetaData';
 import { COMPOSIO_KEY_NAME } from '$letta/web-api/environment-variables/environmentVariablesContracts';
 import { atom, useAtom } from 'jotai';
@@ -649,6 +649,15 @@ function ViewCategoryTools(props: ViewCategoryToolsProps) {
   );
 
   const {
+    isLoading: isLoadingShowComposioTools,
+    data: isShowComposioToolsEnabled,
+  } = useFeatureFlag('SHOW_COMPOSIO_TOOLS');
+
+  const shouldShowComposioTools = useMemo(() => {
+    return !isLoadingShowComposioTools && isShowComposioToolsEnabled;
+  }, [isLoadingShowComposioTools, isShowComposioToolsEnabled]);
+
+  const {
     data: toolMetaData,
     isLoading: isLoadingToolMetaData,
     fetchNextPage,
@@ -668,7 +677,7 @@ function ViewCategoryTools(props: ViewCategoryToolsProps) {
         ? { limit: PAGE_SIZE, offset: allPages.length * PAGE_SIZE }
         : undefined;
     },
-    enabled: category !== 'custom',
+    enabled: shouldShowComposioTools && category !== 'custom',
   });
 
   const { data: customTools, isLoading: isLoadingCustomTools } =
@@ -678,7 +687,7 @@ function ViewCategoryTools(props: ViewCategoryToolsProps) {
       },
       undefined,
       {
-        enabled: category === 'custom',
+        enabled: ['all', 'custom'].includes(category),
       }
     );
 
@@ -690,30 +699,48 @@ function ViewCategoryTools(props: ViewCategoryToolsProps) {
     return isLoadingToolMetaData || isLoadingCustomTools;
   }, [isLoadingToolMetaData, isLoadingCustomTools]);
 
-  const tools: ToolMetadataPreviewType[] = useMemo(() => {
-    if (category === 'custom') {
-      if (!customTools) {
-        return [];
-      }
-
-      return customTools
-        .filter((tool) => {
-          const provider = findProviderFromTags(tool);
-
-          return provider === 'custom';
-        })
-        .map((tool) => ({
-          name: tool.name || '',
-          description: tool.description || '',
-          id: tool.id || '',
-          brand: 'custom',
-          provider: 'custom',
-          imageUrl: null,
-        }));
+  const customToolsList = useMemo(() => {
+    if (!customTools) {
+      return [];
     }
 
-    return toolMetaData?.pages.flatMap((page) => page.body.toolMetadata) || [];
-  }, [category, customTools, toolMetaData?.pages]);
+    return customTools
+      .filter((tool) => {
+        const provider = findProviderFromTags(tool);
+
+        return provider === 'custom';
+      })
+      .filter((tool) => {
+        if (!search) {
+          return true;
+        }
+
+        return tool.name?.toLowerCase().includes(search.toLowerCase());
+      })
+      .map((tool) => ({
+        name: tool.name || '',
+        description: tool.description || '',
+        id: tool.id || '',
+        brand: 'custom',
+        provider: 'custom',
+        imageUrl: null,
+      }));
+  }, [customTools, search]);
+
+  const tools: ToolMetadataPreviewType[] = useMemo(() => {
+    if (category === 'custom') {
+      return customToolsList;
+    }
+
+    const categoryTools =
+      toolMetaData?.pages.flatMap((page) => page.body.toolMetadata) || [];
+
+    if (category === 'all') {
+      return [...customToolsList, ...categoryTools];
+    }
+
+    return categoryTools;
+  }, [category, customToolsList, toolMetaData?.pages]);
 
   const t = useTranslations('ADE/Tools');
 
@@ -832,9 +859,19 @@ function getCustomTools(tools: letta__schemas__tool__Tool[]) {
 function AllToolsView() {
   const { currentTool, clearCurrentTool } = useToolsExplorerState();
 
+  const {
+    isLoading: isLoadingShowComposioTools,
+    data: isShowComposioToolsEnabled,
+  } = useFeatureFlag('SHOW_COMPOSIO_TOOLS');
+
+  const shouldShowComposioTools = useMemo(() => {
+    return !isLoadingShowComposioTools && isShowComposioToolsEnabled;
+  }, [isLoadingShowComposioTools, isShowComposioToolsEnabled]);
+
   const { data: summary } = webApi.toolMetadata.getToolMetadataSummary.useQuery(
     {
       queryKey: webApiQueryKeys.toolMetadata.getToolMetadataSummary,
+      enabled: shouldShowComposioTools,
     }
   );
 
@@ -848,6 +885,7 @@ function AllToolsView() {
           limit: 200,
         },
       },
+      enabled: shouldShowComposioTools,
     });
 
   const [category, setCategory] = useState<ToolViewerCategory>('all');
@@ -921,6 +959,22 @@ function AllToolsView() {
     return getCustomTools(customTools).length;
   }, [customTools, isLoadingCustomTools]);
 
+  const allToolsCount = useMemo(() => {
+    let count = '-';
+
+    if (shouldShowComposioTools) {
+      if (typeof customToolCount === 'number' && summary?.body) {
+        count = `${customToolCount + summary.body.allToolsCount}`;
+      }
+    } else {
+      if (customTools) {
+        count = `${customToolCount}`;
+      }
+    }
+
+    return count;
+  }, [customToolCount, customTools, shouldShowComposioTools, summary?.body]);
+
   return (
     <HStack fullHeight gap={false}>
       {/* eslint-disable-next-line react/forbid-component-props */}
@@ -955,12 +1009,13 @@ function AllToolsView() {
         </VStack>
 
         <VStack overflowY="auto" paddingX="small" gap="small">
-          {summary?.body ? (
+          {(shouldShowComposioTools && summary?.body) ||
+          !shouldShowComposioTools ? (
             <>
               <ToolCategoryButton
                 category="all"
                 label={t('AllToolsView.categories.allTools', {
-                  count: summary?.body.allToolsCount || 0,
+                  count: allToolsCount,
                 })}
                 selectedCategory={category}
                 setSelectedCategory={handleSelectCategory}
