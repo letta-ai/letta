@@ -127,7 +127,6 @@ async function handleEventStreamRequest(options: RequestOptions) {
             referenceId = message.id;
           }
         } catch (_e) {
-          console.error(_e);
           // do nothing
         }
 
