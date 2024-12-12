@@ -114,7 +114,7 @@
     "ManagedEnvironmentIndicator": {
       "label": "Managed",
       "integrations": {
-        "composio": "This environment variable is tied to the Composeio integration, for more information click this badge"
+        "composio": "This environment variable is tied to the Composio integration, for more information click this badge"
       }
     },
     "errorMessage": "There was an error loading environment variables, please try again or contact support.",
@@ -167,11 +167,11 @@
   },
   "organization/integrations/composio": {
     "DisconnectIntegrationDialog": {
-      "title": "Remove Composeio integration",
-      "description": "Are you sure you want to remove the Composeio integration? This will remove your API key from our system, but it will not remove any tools you have added to your agents, this may break some agent's ability to function properly.",
+      "title": "Remove Composio integration",
+      "description": "Are you sure you want to remove the Composio integration? This will remove your API key from our system, but it will not remove any tools you have added to your agents, this may break some agent's ability to function properly.",
       "trigger": "Remove integration",
       "confirm": "Remove integration",
-      "error": "There was an error removing the Composeio integration, please try again or contact support."
+      "error": "There was an error removing the Composio integration, please try again or contact support."
     },
     "SetApiKeyDialog": {
       "alert": "This will overwrite your current API key, which could break some agent's ability to use Composio tools. Are you sure you want to continue?",
@@ -194,8 +194,8 @@
         "update": "Set API key"
       }
     },
-    "title": "composeio",
-    "description": "Composeio allows your team to connect your agents to external services and APIs without writing any code. You can use ComposeIO to create custom integrations, automate workflows, and more."
+    "title": "composio",
+    "description": "Composio allows your team to connect your agents to external services and APIs without writing any code. You can use Composio to create custom integrations, automate workflows, and more."
   },
   "organization/integrations/IntegrationPageLayout": {
     "return": "All integrations",
@@ -213,8 +213,8 @@
     "description": "Connect and manage integrations for your organization",
     "integrations": {
       "composio": {
-        "title": "Composeio",
-        "description": "Composeio allows your team to connect your agents to external services and APIs without writing any code. You can use ComposeIO to create custom integrations, automate workflows, and more."
+        "title": "Composio",
+        "description": "Composio allows your team to connect your agents to external services and APIs without writing any code. You can use Composio to create custom integrations, automate workflows, and more."
       }
     },
     "IntegrationItem": {
@@ -1141,6 +1141,8 @@
       }
     },
     "AllToolsView": {
+      "backToAllTools": "All tools",
+      "backToCategory": "All {category}",
       "title": "Tool Explorer",
       "back": "Back",
       "searchCategories": {
@@ -1157,12 +1159,6 @@
         "customTools": "Custom tools ({count})",
         "brandTools": "{brand} ({count})"
       }
-    },
-    "ComposioBanner": {
-      "title": "Connect 300+ tools to your agent with our partner Composio",
-      "descriptionLocal": "To add composio tools to your server, add the <code>COMPOSIO_API_KEY</code> to your server environment variables",
-      "descriptionHosted": "To add composio tools to your server, press the \"Setup Composio\" button",
-      "cta": "Setup Composio"
     },
     "ErrorMessageAlert": {
       "title": "There was an error, see below for details:",
@@ -1194,6 +1190,13 @@
       "alreadyAdded": "Attached",
       "attach": "Attach tool"
     },
+    "EditToolWrapper": {
+      "root": "All tools",
+      "edit": "Tool Editor"
+    },
+    "EditToolButton": {
+      "title": "Edit tool"
+    },
     "ViewToolCodePreview": {
       "viewToggle": {
         "label": "View Mode",
@@ -1214,9 +1217,15 @@
     },
     "EditTool": {
       "error": "There was an error updating your tool, see above for details.",
-      "cancel": "Cancel",
+      "close": "Close",
       "name": {
         "label": "Name"
+      },
+      "updateDialog": {
+        "title": "Update tool",
+        "description": "Are you sure you want to update this tool, it will update all agents that use this tool.",
+        "confirm": "Update",
+        "error": "There was an error updating your tool, see below for details."
       },
       "description": {
         "label": "Description"
@@ -1233,6 +1242,7 @@
       "outputLabel": "Tool output"
     },
     "ToolCreator": {
+      "new": "New tool",
       "errorResponse": "There was an error creating your tool, see below for details.",
       "error": "There was an error creating your tool, see above for details.",
       "cancel": "Cancel",
@@ -1269,12 +1279,20 @@
         "placeholder": "Search for a tool",
         "label": "Search tools"
       },
-      "trigger": "Add tool",
       "noDescription": "This tool does not have a description",
       "noToolSelected": {
         "title": "No tool selected",
         "description": "Select a tool from the list to view more details and add to your agent."
       }
+    },
+    "ToolsExplorer": {
+      "confirmLeave": {
+        "title": "Are you sure you want to leave?",
+        "description": "You are about to leave the tool editor, any unsaved changes will be lost."
+      }
+    },
+    "ToolsListPage": {
+      "openExplorer": "Open tools explorer"
     },
     "ToolsList": {
       "removeTool": "Remove tool",

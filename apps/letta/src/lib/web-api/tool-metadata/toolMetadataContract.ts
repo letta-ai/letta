@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { initContract } from '@ts-rest/core';
-import type { GenericSearch} from '$letta/web-api/shared/sharedContracts';
+import type { GenericSearch } from '$letta/web-api/shared/sharedContracts';
 import { GenericSearchSchema } from '$letta/web-api/shared/sharedContracts';
 import { ProviderSchemaConfiguration } from '@letta-web/types';
 
@@ -19,8 +19,9 @@ export const ToolMetadataPreview = z.object({
   id: z.string(),
   brand: z.string(),
   provider: z.string(),
+  providerId: z.string().optional(),
   imageUrl: z.string().nullable(),
-})
+});
 
 export type ToolMetadataPreviewType = z.infer<typeof ToolMetadataPreview>;
 
@@ -32,18 +33,17 @@ export const ToolMetadata = z.object({
   configuration: ProviderSchemaConfiguration.nullable(),
   provider: z.string(),
   providerId: z.string(),
-})
+});
 
 export const ListToolsResponse = z.object({
   toolMetadata: z.array(ToolMetadataPreview),
   hasNextPage: z.boolean(),
-})
+});
 
 export const ToolMetadataSummary = z.object({
   toolCountByBrand: z.record(z.string(), z.number()),
   allToolsCount: z.number(),
 });
-
 
 const c = initContract();
 
@@ -55,11 +55,10 @@ const getToolMetadataSummaryContract = c.query({
   },
 });
 
-
 const ListToolGroupsResponse = z.object({
   toolGroups: z.array(ToolGroup),
   hasNextPage: z.boolean(),
-})
+});
 
 const listToolGroupMetadataContract = c.query({
   method: 'GET',
@@ -76,8 +75,9 @@ const ListToolMetaDataQuery = z.object({
   limit: z.number().optional(),
   offset: z.number().optional(),
   brand: z.string().optional(),
+  providerId: z.string().optional(),
   tags: z.array(z.string()).optional(),
-})
+});
 
 type ListToolMetaDataQueryType = z.infer<typeof ListToolMetaDataQuery>;
 
@@ -111,8 +111,14 @@ export const toolMetadataContracts = c.router({
 export const toolMetadataQueryClientKeys = {
   getToolMetadataSummary: ['getToolMetadataSummaryContract'],
   listToolGroupMetadata: ['listToolGroupMetadata'],
-  listToolGroupMetadataWithSearch: (search: GenericSearch) => ['listToolGroupMetadata', search],
+  listToolGroupMetadataWithSearch: (search: GenericSearch) => [
+    'listToolGroupMetadata',
+    search,
+  ],
   listToolMetadata: ['listToolMetadata'],
-  listToolMetadataWithSearch: (search: ListToolMetaDataQueryType) => ['listToolMetadata', search],
+  listToolMetadataWithSearch: (search: ListToolMetaDataQueryType) => [
+    'listToolMetadata',
+    search,
+  ],
   getSingleToolMetadata: (id: string) => ['getSingleToolMetadata', { id }],
-}
+};
