@@ -19,6 +19,7 @@ export const environment = createEnv({
     MIXPANEL_TOKEN: z.string().optional(),
     LAUNCH_DARKLY_SDK_KEY: z.string().optional(),
     HUBSPOT_API_KEY: z.string().optional(),
+    COMPOSIO_API_KEY: z.string().optional(),
   },
   client: {
     NEXT_PUBLIC_CURRENT_HOST: z.string().optional(),
@@ -37,5 +38,6 @@ export const environment = createEnv({
     NEXT_PUBLIC_MIXPANEL_TOKEN: process.env.NEXT_PUBLIC_MIXPANEL_TOKEN,
     LAUNCH_DARKLY_SDK_KEY: process.env.LAUNCH_DARKLY_SDK_KEY,
     HUBSPOT_API_KEY: process.env.HUBSPOT_API_KEY,
+    COMPOSIO_API_KEY: process.env.COMPOSIO_API_KEY
   },
 });

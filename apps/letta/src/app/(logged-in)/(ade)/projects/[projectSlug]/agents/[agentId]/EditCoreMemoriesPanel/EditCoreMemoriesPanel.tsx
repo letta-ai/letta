@@ -263,7 +263,6 @@ function AdvancedEditMemory(props: AdvancedEditMemoryProps) {
   return (
     <Dialog
       isOpen
-      noContentPadding
       disableForm
       preventCloseFromOutside
       size="full"

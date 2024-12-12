@@ -145,3 +145,5 @@ export * from './lib/core/ChipSelect/ChipSelect';
 export * from './lib/reusable/FadeInImage/FadeInImage';
 
 export * from './lib/reusable/CTACard/CTACard';
+
+export * from './lib/ade/MiniApp/MiniApp';

@@ -2,10 +2,13 @@ import React from 'react';
 import Image from 'next/image';
 import image from './<%= logoMarkFilePath %>';
 
+interface <%= name %>LogoMarkProps {
+  width?: number;
+  height?: number;
+}
 
-
-export function <%= name %>LogoMark() {
+export function <%= name %>LogoMark(props: <%= name %>LogoMarkProps) {
   return (
-    <Image src={image} alt="<%= name %> LogoMark" />
+    <Image src={image} alt="<%= name %> LogoMark" {...props} />
   );
 }

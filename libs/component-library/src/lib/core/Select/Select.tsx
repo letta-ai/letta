@@ -175,7 +175,7 @@ const classNames = {
 function useStyles(args: UseStylesArgs) {
   const { menuWidth } = args;
   return {
-    menuPortal: (base: any) => ({ ...base, zIndex: 10 }),
+    menuPortal: (base: any) => ({ ...base, zIndex: 11 }),
     control: (base: any) => ({ ...base, height: 'auto', minHeight: '36px' }),
     option: () => ({ fontSize: 'var(--font-size-base)' }),
     noOptionsMessage: () => ({ fontSize: 'var(--font-size-base)' }),

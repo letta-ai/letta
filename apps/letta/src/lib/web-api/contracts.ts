@@ -49,6 +49,8 @@ import {
   usageContracts,
   usageQueryKeys,
 } from '$letta/web-api/usage/usageContract';
+import { adminToolMetadataContracts } from '$letta/web-api/admin/tool-metadata/adminToolMetadataContracts';
+import { toolMetadataContracts, toolMetadataQueryClientKeys } from '$letta/web-api/tool-metadata/toolMetadataContract';
 
 export const contracts = {
   user: userContract,
@@ -61,7 +63,9 @@ export const contracts = {
   developmentServers: developmentServersContracts,
   environmentVariables: environmentVariablesContracts,
   usage: usageContracts,
+  toolMetadata: toolMetadataContracts,
   admin: {
+    toolMetadata: adminToolMetadataContracts,
     users: adminUsersContracts,
     models: adminModelsContracts,
     flushLayouts: flushLayoutsContract,
@@ -81,6 +85,7 @@ export const queryClientKeys = {
   developmentServers: developmentServerQueryClientKeys,
   environmentVariables: environmentVariablesQueryKeys,
   usage: usageQueryKeys,
+  toolMetadata: toolMetadataQueryClientKeys,
   admin: {
     users: adminUsersQueryClientKeys,
     models: adminModelsQueryClientKeys,

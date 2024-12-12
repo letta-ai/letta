@@ -776,8 +776,6 @@ export async function updateAgentFromAgentId(options: UpdateAgentFromAgentId) {
       ...rest,
     };
 
-    console.log(JSON.stringify(memory, null, 2));
-
     if (memory) {
       await Promise.all(
         memory.blocks.map(async (block) => {
@@ -801,8 +799,6 @@ export async function updateAgentFromAgentId(options: UpdateAgentFromAgentId) {
         })
       );
     }
-
-    console.log('b');
   }
 
   const agent = await AgentsService.updateAgent(
@@ -814,8 +810,6 @@ export async function updateAgentFromAgentId(options: UpdateAgentFromAgentId) {
       user_id: lettaAgentsUserId,
     }
   );
-
-  console.log('m');
 
   await Promise.all([
     Promise.all(
