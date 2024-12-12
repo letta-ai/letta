@@ -4,6 +4,7 @@
 import * as mixpanel from 'mixpanel';
 import { environment } from '@letta-web/environmental-variables';
 import type { AnalyticsEvent, AnalyticsEventProperties } from '../events';
+import * as Sentry from '@sentry/nextjs';
 
 let mixpanelSingleton: mixpanel.Mixpanel | null = null;
 
@@ -42,19 +43,23 @@ export function trackServerSideEvent<Event extends AnalyticsEvent>(
   eventName: Event,
   properties: AnalyticsEventProperties[Event]
 ) {
-  const mixpanel = getMixpanel();
+  try {
+    const mixpanel = getMixpanel();
 
-  if (!mixpanel) {
-    return;
+    if (!mixpanel) {
+      return;
+    }
+
+    if (properties) {
+      mixpanel.track(eventName, {
+        ...('userId' in properties ? { distinct_id: properties.userId } : {}),
+        ...properties,
+      });
+      return;
+    }
+
+    mixpanel.track(eventName);
+  } catch (error) {
+    Sentry.captureException(error);
   }
-
-  if (properties) {
-    mixpanel.track(eventName, {
-      distinct_id: properties.userId,
-      ...properties,
-    });
-    return;
-  }
-
-  mixpanel.track(eventName);
 }

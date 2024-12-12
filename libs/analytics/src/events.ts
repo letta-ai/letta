@@ -20,6 +20,7 @@ export enum AnalyticsEvent {
   AGENT_DEPLOYED = 'Agent Deployed',
   APP_ERROR = 'App Error',
   ANSWERED_ONBOARDING_SURVEY = 'Answered Onboarding Survey',
+  INFERENCE_TRANSACTION_COMPLETED = 'Inference Transaction Completed',
 }
 
 export interface BaseProperty {
@@ -38,6 +39,14 @@ interface AnsweredOnboardingSurveyProperty extends BaseProperty {
   consentedToEmailMarketing: boolean;
   reasonsForUsingLetta: string[];
   usecasesForUsingLetta: string[];
+}
+
+interface InferenceTransactionCompletedProperty {
+  model: string;
+  route: string;
+  inferenceTime: number;
+  organizationId: string;
+  totalTokens: number;
 }
 
 export interface AnalyticsEventProperties {
@@ -62,4 +71,5 @@ export interface AnalyticsEventProperties {
   [AnalyticsEvent.CLOUD_AGENT_DELETED]: BaseProperty;
   [AnalyticsEvent.APP_ERROR]: BaseProperty;
   [AnalyticsEvent.ANSWERED_ONBOARDING_SURVEY]: AnsweredOnboardingSurveyProperty;
+  [AnalyticsEvent.INFERENCE_TRANSACTION_COMPLETED]: InferenceTransactionCompletedProperty;
 }

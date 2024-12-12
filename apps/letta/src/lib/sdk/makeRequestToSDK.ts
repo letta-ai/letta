@@ -72,6 +72,7 @@ async function handleEventStreamRequest(options: RequestOptions) {
         inputTokens: usageDetails?.prompt_tokens || 0,
         stepCount: usageDetails?.step_count || 0,
         totalTokens: usageDetails?.total_tokens || 0,
+        path: pathname,
       });
     }
   }
@@ -285,6 +286,7 @@ export async function makeRequestToSDK(
         inputTokens: data.usage.prompt_tokens,
         stepCount: data.usage.step_count,
         totalTokens: data.usage.total_tokens,
+        path: pathname,
       });
     }
 
