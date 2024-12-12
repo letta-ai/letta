@@ -108,6 +108,18 @@ const handler = createNextHandler(sdkContracts, sdkRouter, {
   ],
   // @ts-expect-error - this is a middleware
   errorHandler: async (error, req) => {
+    if (error instanceof Error) {
+      if (error.message === 'Unexpected end of JSON input') {
+        return TsRestResponse.fromJson(
+          {
+            message:
+              'Invalid JSON body, please fix your body payload or change content type to something other than application/json',
+          },
+          { status: 400 }
+        );
+      }
+    }
+
     if (error instanceof TsRestHttpError) {
       if (error.statusCode !== 404) {
         if (error.statusCode >= 500) {
