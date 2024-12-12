@@ -78,6 +78,7 @@ export async function generateIconsGenerator(
       tree.write(
         path.join(outputPath, brandKey, `${componentName}LogoMarkDynamic.tsx`),
         generateComponentFiles(`${componentName}LogoMarkDynamic`,dynamicFileCode)
+          .replace(/[A-z](-[A-z]+)=/g, x=>x.replace(/-./, y => y[1].toUpperCase()))
       )
 
       files.forEach(file => {

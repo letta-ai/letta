@@ -3,6 +3,38 @@
     "emptyMessage": "This is not the page you're looking for",
     "emptyAction": "Go home"
   },
+  "WelcomeOverlay": {
+    "welcomeMessage": "Welcome to Letta",
+    "question": "Thank you for trying us out, we have a few questions to help us understand your needs better.",
+    "useCases": {
+      "label": "What use-cases are you building agents for?",
+      "options": {
+        "customerService": "Customer service",
+        "personalAssistant": "Personal assistant",
+        "entertainment": "Entertainment",
+        "chatbots": "Chatbots",
+        "taskOrchestration": "Task orchestration",
+        "experimentation": "Experimentation"
+      }
+    },
+    "reasons": {
+      "label": "What makes you interested in Letta?",
+      "options": {
+        "restAPI": "Agents as a REST API",
+        "memory": "Memory",
+        "toolExecution": "Tool execution",
+        "userPersonalization": "User personalization",
+        "openModelSupport": "Open model support",
+        "chainOfThoughtReasoning": "Chain of thought reasoning",
+        "deployingAgentsAtScale": "Deploying agents at scale"
+      }
+    },
+    "emailConsent": {
+      "label": "Sign up for emails for major releases and updates"
+    },
+    "skip": "Skip",
+    "submit": "Start using Letta"
+  },
   "components/DashboardLikeLayout/DashboardNavigation": {
     "back": "Back",
     "nav": {
@@ -63,6 +95,14 @@
       }
     }
   },
+  "component-library/Debugger": {
+    "invalidJSON": "Invalid JSON",
+    "run": "Run",
+    "success": "Succeeded",
+    "error": "Failed to execute",
+    "output": "Output",
+    "inputPlaceholder": ""
+  },
   "organization/environment-variables": {
     "title": "Environment variables",
     "description": "Manage environment variables for your organization. All environment variables are scoped to the organization and are available to all agents in the organization via tools. Keys cannot be read after being set.",
@@ -74,7 +114,7 @@
     "ManagedEnvironmentIndicator": {
       "label": "Managed",
       "integrations": {
-        "composio": "This environment variable is tied to the Composeio integration, for more information click this badge"
+        "composio": "This environment variable is tied to the Composio integration, for more information click this badge"
       }
     },
     "errorMessage": "There was an error loading environment variables, please try again or contact support.",
@@ -127,11 +167,11 @@
   },
   "organization/integrations/composio": {
     "DisconnectIntegrationDialog": {
-      "title": "Remove Composeio integration",
-      "description": "Are you sure you want to remove the Composeio integration? This will remove your API key from our system, but it will not remove any tools you have added to your agents, this may break some agent's ability to function properly.",
+      "title": "Remove Composio integration",
+      "description": "Are you sure you want to remove the Composio integration? This will remove your API key from our system, but it will not remove any tools you have added to your agents, this may break some agent's ability to function properly.",
       "trigger": "Remove integration",
       "confirm": "Remove integration",
-      "error": "There was an error removing the Composeio integration, please try again or contact support."
+      "error": "There was an error removing the Composio integration, please try again or contact support."
     },
     "SetApiKeyDialog": {
       "alert": "This will overwrite your current API key, which could break some agent's ability to use Composio tools. Are you sure you want to continue?",
@@ -154,8 +194,8 @@
         "update": "Set API key"
       }
     },
-    "title": "composeio",
-    "description": "Composeio allows your team to connect your agents to external services and APIs without writing any code. You can use ComposeIO to create custom integrations, automate workflows, and more."
+    "title": "composio",
+    "description": "Composio allows your team to connect your agents to external services and APIs without writing any code. You can use Composio to create custom integrations, automate workflows, and more."
   },
   "organization/integrations/IntegrationPageLayout": {
     "return": "All integrations",
@@ -173,8 +213,8 @@
     "description": "Connect and manage integrations for your organization",
     "integrations": {
       "composio": {
-        "title": "Composeio",
-        "description": "Composeio allows your team to connect your agents to external services and APIs without writing any code. You can use ComposeIO to create custom integrations, automate workflows, and more."
+        "title": "Composio",
+        "description": "Composio allows your team to connect your agents to external services and APIs without writing any code. You can use Composio to create custom integrations, automate workflows, and more."
       }
     },
     "IntegrationItem": {
@@ -255,7 +295,17 @@
   },
   "organization/billing": {
     "title": "Usage and billing",
-    "description": "You are currently using a managed enterprise plan. If you have any questions or need help, please contact support."
+    "description": "You are currently using a managed enterprise plan. If you have any questions or need help, please contact support.",
+    "UsageTable": {
+      "title": "Usage for {startDate} - {endDate}",
+      "model": "Model",
+      "totalRequests": "Requests made",
+      "totalTokens": "Tokens expended",
+      "totalCost": "Total cost",
+      "previousMonth": "Previous month",
+      "nextMonth": "Next month",
+      "error": "There was an error loading usage data, please try again or contact support."
+    }
   },
   "organization/settings": {
     "title": "Organization settings",
@@ -586,6 +636,7 @@
       "dialog": {
         "title": "Update System Prompt",
         "label": "System Prompt",
+        "save": "Update",
         "info": "The system instructions are not editable by the agent itself (unlike core memory).",
         "characterCount": "{count} characters"
       }
@@ -657,6 +708,7 @@
     "DialogSessionSheet": {
       "updating": "Updating variables...",
       "placeholder": "Variable Value",
+      "save": "Update Variables",
       "label": "Variable Name",
       "editLabel": "Edit {variableName}",
       "noVariablesDefined": "You have no variables set yet, to define a variable, write a alphanumeric name wrapped in handlebars in Memory Blocks, e.g. {variableName}"
@@ -833,8 +885,9 @@
     "disabledTooltip": "This field cannot be edited"
   },
   "development-servers/components/UserIsNotConnectedComponent": {
-    "notConnected": "Please connect to your local server to view quick actions and information.",
-    "start": "You can connect to your local server by running the command below:"
+    "connecting": "Attempting to connect to your local server...",
+    "start": "Enter the command below to start your local server",
+    "trouble": "Still trouble connecting or using Safari? Follow our <link>troubleshooting guide</link>."
   },
   "development-servers/layout": {
     "title": "Local Project",
@@ -846,10 +899,9 @@
       "create": "Add remote server"
     },
     "ServerStatusTitle": {
-      "checking": "Checking server status...",
       "isHealthy": "Connected",
-      "incompatible": "You are using a possibly incompatible version of the Letta server, please set your version to {version}",
-      "isUnhealthy": "Not connected"
+      "incompatible": "You are using a possibly incompatible version of the Letta server, please set your version to {version}. Your current version: {currentVersion}",
+      "connecting": "Attempting to make a connection..."
     },
     "settings": "Settings",
     "delete": "Delete",
@@ -864,27 +916,34 @@
   },
   "development-servers/dashboard/page": {
     "versionCompatibilityBanner": {
-      "title": "You are using a possibly incompatible version of the Letta server, please set your version to {version} for maximum compatibility",
-      "description": "You can set your version by running the command below:"
+      "title": "You are using a possibly incompatible version of the Letta server, please set your version to {version} for maximum compatibility"
     },
     "UpgradeBanner": {
       "title": "Deploy, monitor and scale your agents in seconds",
-      "description": "Letta Cloud is the easiest way to scale with zero infrastructure. Get early access to Letta Cloud below.",
+      "description": "Letta Cloud is the easiest way to scale with zero infrastructure",
       "cta": "Get early access",
       "dismiss": "Close"
     },
-    "description": "Letta allows you to create, deploy, and monitor stateful LLM agents",
-    "title": "Welcome to the Letta developer platform!",
+    "description": "Manage and monitor your agents on self-hosted Letta servers",
+    "title": "Self-hosted agents",
     "gettingStarted": {
-      "title": "Getting started",
+      "title": "Quick actions",
+      "description": "Get started with these quick actions",
       "actions": {
+        "cloudSignup": {
+          "title": "Sign up for Letta Cloud",
+          "details": "Deploy agents at scale with zero infrastructure",
+          "cta": "Early access"
+        },
         "createAgent": {
-          "title": "Create an agent",
+          "title": "New Agent",
+          "cta": "Create agent",
           "description": "Create an agent to deploy to your local server"
         },
         "viewAgents": {
-          "title": "View local agents",
-          "description": "View all of your agents on the local server"
+          "title": "Local agents",
+          "description": "View all of your agents on the local server",
+          "cta": "View agents"
         }
       }
     }
@@ -929,6 +988,7 @@
   "development-servers/agents/new/page": {
     "tools": "<strong>Tools included:</strong> {toolsList}",
     "serverOffline": "Your server is offline, please start it to create a new agent.",
+    "serverOfflineConnect": "Turn on your server with the command below:",
     "isFetchingStatus": "Sorry, we are still attempting to connect to your server. Please wait a moment.",
     "title": "Create a new agent",
     "error": "There was an error creating the agent, below is the error message, please try again or contact support.",
@@ -947,22 +1007,23 @@
   },
   "components/tutorials": {
     "title": "Tutorials",
+    "description": "Not sure where to start? Check out some of our tutorials ",
     "comingSoon": "Coming soon",
     "createChatBotWithMemory": {
       "title": "Create a chatbot with memory",
-      "description": "Learn how to create a chatbot that can remember information from previous conversations"
+      "description": "Build a chatbot that can adapt over time using long-term memory"
     },
     "buildMultiAgentSystems": {
       "title": "Built a multi-agent system",
-      "description": "Learn how to create a multi-agent system where an orchestrator agent controls multiple (stateful) worker agents"
+      "description": "Create a multi-agent system with an orchestrator and multiple workers"
     },
     "discord": {
       "title": "Create a Discord bot",
-      "description": "Learn how to connect Letta agents to Discord to create Discord bots that have long-term memory and access to powerful tools"
+      "description": "Connect Letta agents to Discord to create Discord bots"
     },
     "voice": {
       "title": "Activate voice mode",
-      "description": "Learn how to connect Letta agents to a voice service to allow users to chat with agents over speech-to-text and text-to-speech"
+      "description": "Chat with your Letta agents using voice using our native integration"
     }
   },
   "development-servers/shared/CreateLocalAgentDialog": {
@@ -974,6 +1035,11 @@
       "label": "Agent name",
       "placeholder": "my-agent-name"
     }
+  },
+  "client/hooks/useWelcomeText": {
+    "goodMorning": "Good morning, {firstName} ☀\uFE0F",
+    "goodAfternoon": "Good afternoon, {firstName} ☀\uFE0F",
+    "goodEvening": "Good evening, {firstName} \uD83C\uDF15"
   },
   "component-library/hooks/useCopyToClipboard": {
     "copied": "Copied to clipboard"
@@ -1062,6 +1128,42 @@
     "error": "There was an error fetching the simulated agent, please try again or contact support."
   },
   "ADE/Tools": {
+    "ViewCategoryTools": {
+      "view": "View",
+      "showing": "Showing {count} tools",
+      "next": "Next",
+      "previous": "Previous",
+      "loadMore": "Load more",
+      "create": "Create new tool",
+      "search": {
+        "label": "Search tools",
+        "placeholder": "Search tools"
+      }
+    },
+    "AllToolsView": {
+      "backToAllTools": "All tools",
+      "backToCategory": "All {category}",
+      "title": "Tool Explorer",
+      "back": "Back",
+      "searchCategories": {
+        "placeholder": "Filter by category",
+        "label": "Search categories"
+      },
+      "titles": {
+        "allTools": "All tools",
+        "customTools": "Custom tools",
+        "brandTools": "{brand} tools"
+      },
+      "categories": {
+        "allTools": "All tools ({count})",
+        "customTools": "Custom tools ({count})",
+        "brandTools": "{brand} ({count})"
+      }
+    },
+    "ErrorMessageAlert": {
+      "title": "There was an error, see below for details:",
+      "dismiss": "Dismiss"
+    },
     "infoTooltip": "Connect tools to your agent to allow them to take custom actions",
     "mobileTitle": "Tools",
     "title": "Tools ({toolCount})",
@@ -1074,13 +1176,29 @@
     "ViewToolDialog": {
       "title": "Viewing tool"
     },
-    "SpecificToolComponent": {
-      "back": "Back",
-      "noDescription": "No description provided",
-      "add": "Add tool to Agent",
-      "edit": "Edit tool",
-      "cancel": "Cancel",
-      "alreadyAdded": "This tool is already added",
+    "ViewTool": {
+      "viewOnComposio": "View on Composio",
+      "viaComposioTool": "via",
+      "connectComposio": {
+        "title": "To attach this tool and 4000+ other tools to your agent, connect to Composio",
+        "descriptionLocal": "To enable Composio tools to your agent, add the <code>COMPOSIO_API_KEY</code> to your server environment variables",
+        "descriptionRemote": "To enable Composio tools to your agent, visit the Composio integration page",
+        "connect": "Setup Composio"
+      }
+    },
+    "AddToolToAgentButton": {
+      "error": "There was an error adding this tool, please try again or contact support.",
+      "alreadyAdded": "Attached",
+      "attach": "Attach tool"
+    },
+    "EditToolWrapper": {
+      "root": "All tools",
+      "edit": "Tool Editor"
+    },
+    "EditToolButton": {
+      "title": "Edit tool"
+    },
+    "ViewToolCodePreview": {
       "viewToggle": {
         "label": "View Mode",
         "options": {
@@ -1089,11 +1207,26 @@
         }
       }
     },
+    "SpecificToolComponent": {
+      "back": "Back",
+      "description": "Description",
+      "noDescription": "No description provided",
+      "add": "Add tool to Agent",
+      "edit": "Edit tool",
+      "cancel": "Cancel",
+      "alreadyAdded": "This tool is already added"
+    },
     "EditTool": {
       "error": "There was an error updating your tool, see above for details.",
-      "cancel": "Cancel",
+      "close": "Close",
       "name": {
         "label": "Name"
+      },
+      "updateDialog": {
+        "title": "Update tool",
+        "description": "Are you sure you want to update this tool, it will update all agents that use this tool.",
+        "confirm": "Update",
+        "error": "There was an error updating your tool, see below for details."
       },
       "description": {
         "label": "Description"
@@ -1104,7 +1237,13 @@
       },
       "update": "Update tool"
     },
+    "ToolEditor": {
+      "label": "Debugger",
+      "inputLabel": "Tool input",
+      "outputLabel": "Tool output"
+    },
     "ToolCreator": {
+      "new": "New tool",
       "errorResponse": "There was an error creating your tool, see below for details.",
       "error": "There was an error creating your tool, see above for details.",
       "cancel": "Cancel",
@@ -1138,15 +1277,23 @@
       "added": "Added",
       "creator": "{creator}",
       "search": {
-        "placeholder": "Tool name",
+        "placeholder": "Search for a tool",
         "label": "Search tools"
       },
-      "trigger": "Add tool",
       "noDescription": "This tool does not have a description",
       "noToolSelected": {
         "title": "No tool selected",
         "description": "Select a tool from the list to view more details and add to your agent."
       }
+    },
+    "ToolsExplorer": {
+      "confirmLeave": {
+        "title": "Are you sure you want to leave?",
+        "description": "You are about to leave the tool editor, any unsaved changes will be lost."
+      }
+    },
+    "ToolsListPage": {
+      "openExplorer": "Open tools explorer"
     },
     "ToolsList": {
       "removeTool": "Remove tool",

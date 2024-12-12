@@ -72,6 +72,7 @@ async function handleEventStreamRequest(options: RequestOptions) {
         inputTokens: usageDetails?.prompt_tokens || 0,
         stepCount: usageDetails?.step_count || 0,
         totalTokens: usageDetails?.total_tokens || 0,
+        path: pathname,
       });
     }
   }
@@ -127,7 +128,6 @@ async function handleEventStreamRequest(options: RequestOptions) {
             referenceId = message.id;
           }
         } catch (_e) {
-          console.error(_e);
           // do nothing
         }
 
@@ -201,9 +201,16 @@ async function handleMultipartFileUpload(options: RequestOptions) {
 
 function isCreateMessageRequest(options: RequestOptions) {
   // pathname must conform with /v1/agents/{agent-id}/messages
-  const regex = /\/v1\/agents\/[a-zA-Z0-9-]+\/messages\/?$/;
+  const regex = /\/v1\/agents\/[a-zA-Z0-9-]+\/messages\/?/;
+  // or /v1/agents/{agent-id}/messages/{message-id}/messages/stream
+  const regex2 =
+    /\/v1\/agents\/[a-zA-Z0-9-]+\/messages\/[a-zA-Z0-9-]+\/messages\/stream\/?/;
 
-  return regex.exec(options.pathname) && options.method === 'POST';
+  if (options.method !== 'POST') {
+    return false;
+  }
+
+  return regex.test(options.pathname) || regex2.test(options.pathname);
 }
 
 export async function makeRequestToSDK(
@@ -278,6 +285,7 @@ export async function makeRequestToSDK(
         inputTokens: data.usage.prompt_tokens,
         stepCount: data.usage.step_count,
         totalTokens: data.usage.total_tokens,
+        path: pathname,
       });
     }
 

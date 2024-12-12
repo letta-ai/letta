@@ -1,5 +1,11 @@
 'use client';
-import React, { useCallback, useEffect, useMemo, useRef } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import {
   Alert,
   Badge,
@@ -8,15 +14,17 @@ import {
   FunctionCall,
   HStack,
   IconAvatar,
+  SystemIcon,
   LettaLoaderPanel,
   Markdown,
   PersonIcon,
-  Robot2Icon,
+  LettaInvaderOutlineIcon,
   ThoughtsIcon,
   Typography,
   VStack,
 } from '@letta-web/component-library';
 import type { AgentMessage } from '@letta-web/letta-agents-api';
+import { SystemAlertSchema } from '@letta-web/letta-agents-api';
 import { SendMessageFunctionCallSchema } from '@letta-web/letta-agents-api';
 import {
   AgentsService,
@@ -121,20 +129,52 @@ function MessageGroup({ group }: MessageGroupType) {
     (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
   );
 
+  const textColor = useMemo(() => {
+    if (name === 'Agent') {
+      return 'hsl(var(--primary-light-content))';
+    }
+
+    if (name === 'User') {
+      return 'hsl(var(--user-color-content))';
+    }
+
+    return 'hsl(var(--background-grey2-content))';
+  }, [name]);
+
+  const backgroundColor = useMemo(() => {
+    if (name === 'Agent') {
+      return 'hsl(var(--primary-light))';
+    }
+
+    if (name === 'User') {
+      return 'hsl(var(--user-color))';
+    }
+
+    return 'hsl(var(--background-grey2))';
+  }, [name]);
+
+  const icon = useMemo(() => {
+    if (name === 'Agent') {
+      return <LettaInvaderOutlineIcon />;
+    }
+
+    if (name === 'User') {
+      return <PersonIcon />;
+    }
+
+    if (name === 'System') {
+      return <SystemIcon />;
+    }
+
+    return null;
+  }, [name]);
+
   return (
     <HStack>
       <IconAvatar
-        textColor={
-          name === 'Agent'
-            ? 'hsl(var(--primary-light-content))'
-            : 'hsl(var(--user-color-content))'
-        }
-        backgroundColor={
-          name === 'Agent'
-            ? 'hsl(var(--primary-light))'
-            : 'hsl(var(--user-color))'
-        }
-        icon={name === 'Agent' ? <Robot2Icon /> : <PersonIcon />}
+        textColor={textColor}
+        backgroundColor={backgroundColor}
+        icon={icon}
       />
       <VStack collapseWidth flex gap="small">
         <Typography bold>{name}</Typography>
@@ -148,7 +188,7 @@ function MessageGroup({ group }: MessageGroupType) {
   );
 }
 
-const MESSAGE_LIMIT = 20;
+const MESSAGE_LIMIT = 50;
 
 export type MessagesDisplayMode = 'debug' | 'interactive' | 'simple';
 
@@ -159,11 +199,32 @@ interface MessagesProps {
   isPanelActive?: boolean;
 }
 
+interface LastMessageReceived {
+  id: string;
+  date: number;
+}
+
 export function Messages(props: MessagesProps) {
   const { isSendingMessage, mode, isPanelActive, agentId } = props;
   const ref = useRef<HTMLDivElement>(null);
   const hasScrolledInitially = useRef(false);
   const t = useTranslations('components/Messages');
+  const [lastMessageReceived, setLastMessageReceived] =
+    useState<LastMessageReceived | null>(null);
+
+  const refetchInterval = useMemo(() => {
+    if (isSendingMessage) {
+      return false;
+    }
+
+    // last sent message was less than 10 seconds ago refetch every 500ms;
+
+    if (lastMessageReceived && Date.now() - lastMessageReceived.date < 10000) {
+      return 500;
+    }
+
+    return 5000;
+  }, [isSendingMessage, lastMessageReceived]);
 
   const { data, hasNextPage, fetchNextPage, isFetching } = useInfiniteQuery<
     AgentMessage[],
@@ -172,6 +233,7 @@ export function Messages(props: MessagesProps) {
     unknown[],
     { before?: string }
   >({
+    refetchInterval,
     queryKey: UseAgentsServiceListAgentMessagesKeyFn({ agentId }),
     queryFn: async (query) => {
       const res = AgentsService.listAgentMessages({
@@ -195,6 +257,29 @@ export function Messages(props: MessagesProps) {
     },
     initialPageParam: { before: '' },
   });
+
+  useEffect(() => {
+    if (!data?.pages) {
+      return;
+    }
+
+    if (data.pages.length === 0) {
+      return;
+    }
+
+    // most recent message is the first message in the first page
+    const mostRecentMessage = data.pages[0][0];
+
+    if (
+      mostRecentMessage.id !== lastMessageReceived?.id &&
+      'date' in mostRecentMessage
+    ) {
+      setLastMessageReceived({
+        id: mostRecentMessage.id,
+        date: new Date(mostRecentMessage.date).getTime(),
+      });
+    }
+  }, [data?.pages, lastMessageReceived?.id]);
 
   const extractMessage = useCallback(
     function extractMessage(
@@ -460,8 +545,30 @@ export function Messages(props: MessagesProps) {
           };
         }
 
-        case 'system_message':
+        case 'system_message': {
+          if (mode === 'simple') {
+            return null;
+          }
+
+          try {
+            const tryParseResp = SystemAlertSchema.safeParse(
+              JSON.parse(agentMessage.message)
+            );
+
+            if (tryParseResp.success) {
+              return {
+                id: `${agentMessage.id}-${agentMessage.message_type}`,
+                content: <Typography>{tryParseResp.data.message}</Typography>,
+                timestamp: new Date(agentMessage.date).toISOString(),
+                name: 'System',
+              };
+            }
+          } catch (_e) {
+            return null;
+          }
+
           return null;
+        }
       }
     },
     [t]

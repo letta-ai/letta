@@ -26,11 +26,12 @@ import {
   AuthRequest,
   BlockUpdate,
   Body_upload_file_to_source,
-  CreateAgent,
+  CreateAgentRequest,
   CreateArchivalMemory,
   CreateBlock,
   LettaRequest,
   LettaStreamingRequest,
+  MessageUpdate,
   OrganizationCreate,
   SandboxConfigCreate,
   SandboxConfigUpdate,
@@ -39,9 +40,9 @@ import {
   SourceCreate,
   SourceUpdate,
   ToolCreate,
+  ToolRunFromSource,
   ToolUpdate,
   UpdateAgentState,
-  UpdateMessage,
   UserCreate,
   UserUpdate,
 } from '../requests/types.gen';
@@ -112,6 +113,51 @@ export const useToolsServiceListTools = <
       queryKey
     ),
     queryFn: () => ToolsService.listTools({ cursor, limit, userId }) as TData,
+    ...options,
+  });
+export const useToolsServiceListComposioApps = <
+  TData = Common.ToolsServiceListComposioAppsDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[]
+>(
+  {
+    userId,
+  }: {
+    userId?: string;
+  } = {},
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
+) =>
+  useQuery<TData, TError>({
+    queryKey: Common.UseToolsServiceListComposioAppsKeyFn({ userId }, queryKey),
+    queryFn: () => ToolsService.listComposioApps({ userId }) as TData,
+    ...options,
+  });
+export const useToolsServiceListComposioActionsByApp = <
+  TData = Common.ToolsServiceListComposioActionsByAppDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[]
+>(
+  {
+    composioAppName,
+    userId,
+  }: {
+    composioAppName: string;
+    userId?: string;
+  },
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
+) =>
+  useQuery<TData, TError>({
+    queryKey: Common.UseToolsServiceListComposioActionsByAppKeyFn(
+      { composioAppName, userId },
+      queryKey
+    ),
+    queryFn: () =>
+      ToolsService.listComposioActionsByApp({
+        composioAppName,
+        userId,
+      }) as TData,
     ...options,
   });
 export const useSourcesServiceGetSource = <
@@ -733,15 +779,17 @@ export const useJobsServiceGetJob = <
 >(
   {
     jobId,
+    userId,
   }: {
     jobId: string;
+    userId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
 ) =>
   useQuery<TData, TError>({
-    queryKey: Common.UseJobsServiceGetJobKeyFn({ jobId }, queryKey),
-    queryFn: () => JobsService.getJob({ jobId }) as TData,
+    queryKey: Common.UseJobsServiceGetJobKeyFn({ jobId, userId }, queryKey),
+    queryFn: () => JobsService.getJob({ jobId, userId }) as TData,
     ...options,
   });
 export const useHealthServiceHealthCheck = <
@@ -1002,6 +1050,74 @@ export const useToolsServiceAddBaseTools = <
       ToolsService.addBaseTools({ userId }) as unknown as Promise<TData>,
     ...options,
   });
+export const useToolsServiceRunToolFromSource = <
+  TData = Common.ToolsServiceRunToolFromSourceMutationResult,
+  TError = unknown,
+  TContext = unknown
+>(
+  options?: Omit<
+    UseMutationOptions<
+      TData,
+      TError,
+      {
+        requestBody: ToolRunFromSource;
+        userId?: string;
+      },
+      TContext
+    >,
+    'mutationFn'
+  >
+) =>
+  useMutation<
+    TData,
+    TError,
+    {
+      requestBody: ToolRunFromSource;
+      userId?: string;
+    },
+    TContext
+  >({
+    mutationFn: ({ requestBody, userId }) =>
+      ToolsService.runToolFromSource({
+        requestBody,
+        userId,
+      }) as unknown as Promise<TData>,
+    ...options,
+  });
+export const useToolsServiceAddComposioTool = <
+  TData = Common.ToolsServiceAddComposioToolMutationResult,
+  TError = unknown,
+  TContext = unknown
+>(
+  options?: Omit<
+    UseMutationOptions<
+      TData,
+      TError,
+      {
+        composioActionName: string;
+        userId?: string;
+      },
+      TContext
+    >,
+    'mutationFn'
+  >
+) =>
+  useMutation<
+    TData,
+    TError,
+    {
+      composioActionName: string;
+      userId?: string;
+    },
+    TContext
+  >({
+    mutationFn: ({ composioActionName, userId }) =>
+      ToolsService.addComposioTool({
+        composioActionName,
+        userId,
+      }) as unknown as Promise<TData>,
+    ...options,
+  });
 export const useSourcesServiceCreateSource = <
   TData = Common.SourcesServiceCreateSourceMutationResult,
   TError = unknown,
@@ -1157,7 +1273,7 @@ export const useAgentsServiceCreateAgent = <
       TData,
       TError,
       {
-        requestBody: CreateAgent;
+        requestBody: CreateAgentRequest;
         userId?: string;
       },
       TContext
@@ -1169,7 +1285,7 @@ export const useAgentsServiceCreateAgent = <
     TData,
     TError,
     {
-      requestBody: CreateAgent;
+      requestBody: CreateAgentRequest;
       userId?: string;
     },
     TContext
@@ -1292,8 +1408,8 @@ export const useAgentsServiceCreateAgentMessage = <
       }) as unknown as Promise<TData>,
     ...options,
   });
-export const useAgentsServiceCreateAgentMessage1 = <
-  TData = Common.AgentsServiceCreateAgentMessage1MutationResult,
+export const useAgentsServiceCreateAgentMessageStream = <
+  TData = Common.AgentsServiceCreateAgentMessageStreamMutationResult,
   TError = unknown,
   TContext = unknown
 >(
@@ -1322,7 +1438,44 @@ export const useAgentsServiceCreateAgentMessage1 = <
     TContext
   >({
     mutationFn: ({ agentId, requestBody, userId }) =>
-      AgentsService.createAgentMessage1({
+      AgentsService.createAgentMessageStream({
+        agentId,
+        requestBody,
+        userId,
+      }) as unknown as Promise<TData>,
+    ...options,
+  });
+export const useAgentsServiceCreateAgentMessageAsync = <
+  TData = Common.AgentsServiceCreateAgentMessageAsyncMutationResult,
+  TError = unknown,
+  TContext = unknown
+>(
+  options?: Omit<
+    UseMutationOptions<
+      TData,
+      TError,
+      {
+        agentId: string;
+        requestBody: LettaRequest;
+        userId?: string;
+      },
+      TContext
+    >,
+    'mutationFn'
+  >
+) =>
+  useMutation<
+    TData,
+    TError,
+    {
+      agentId: string;
+      requestBody: LettaRequest;
+      userId?: string;
+    },
+    TContext
+  >({
+    mutationFn: ({ agentId, requestBody, userId }) =>
+      AgentsService.createAgentMessageAsync({
         agentId,
         requestBody,
         userId,
@@ -2035,7 +2188,7 @@ export const useAgentsServiceUpdateAgentMessage = <
       {
         agentId: string;
         messageId: string;
-        requestBody: UpdateMessage;
+        requestBody: MessageUpdate;
       },
       TContext
     >,
@@ -2048,7 +2201,7 @@ export const useAgentsServiceUpdateAgentMessage = <
     {
       agentId: string;
       messageId: string;
-      requestBody: UpdateMessage;
+      requestBody: MessageUpdate;
     },
     TContext
   >({
@@ -2097,8 +2250,8 @@ export const useBlocksServiceUpdateMemoryBlock = <
       }) as unknown as Promise<TData>,
     ...options,
   });
-export const useBlocksServiceUpdateAgentMemoryBlock = <
-  TData = Common.BlocksServiceUpdateAgentMemoryBlockMutationResult,
+export const useBlocksServiceLinkAgentMemoryBlock = <
+  TData = Common.BlocksServiceLinkAgentMemoryBlockMutationResult,
   TError = unknown,
   TContext = unknown
 >(
@@ -2127,15 +2280,15 @@ export const useBlocksServiceUpdateAgentMemoryBlock = <
     TContext
   >({
     mutationFn: ({ agentId, blockId, userId }) =>
-      BlocksService.updateAgentMemoryBlock({
+      BlocksService.linkAgentMemoryBlock({
         agentId,
         blockId,
         userId,
       }) as unknown as Promise<TData>,
     ...options,
   });
-export const useBlocksServiceUpdateAgentMemoryBlock1 = <
-  TData = Common.BlocksServiceUpdateAgentMemoryBlock1MutationResult,
+export const useBlocksServiceUnlinkAgentMemoryBlock = <
+  TData = Common.BlocksServiceUnlinkAgentMemoryBlockMutationResult,
   TError = unknown,
   TContext = unknown
 >(
@@ -2164,7 +2317,7 @@ export const useBlocksServiceUpdateAgentMemoryBlock1 = <
     TContext
   >({
     mutationFn: ({ agentId, blockId, userId }) =>
-      BlocksService.updateAgentMemoryBlock1({
+      BlocksService.unlinkAgentMemoryBlock({
         agentId,
         blockId,
         userId,
@@ -2498,6 +2651,7 @@ export const useJobsServiceDeleteJob = <
       TError,
       {
         jobId: string;
+        userId?: string;
       },
       TContext
     >,
@@ -2509,11 +2663,12 @@ export const useJobsServiceDeleteJob = <
     TError,
     {
       jobId: string;
+      userId?: string;
     },
     TContext
   >({
-    mutationFn: ({ jobId }) =>
-      JobsService.deleteJob({ jobId }) as unknown as Promise<TData>,
+    mutationFn: ({ jobId, userId }) =>
+      JobsService.deleteJob({ jobId, userId }) as unknown as Promise<TData>,
     ...options,
   });
 export const useSandboxConfigServiceDeleteSandboxConfigV1SandboxConfigSandboxConfigIdDelete =

@@ -374,6 +374,10 @@ async function findExistingUser(
     where: eq(users.providerId, userData.uniqueId),
   });
 
+  if (user?.bannedAt) {
+    throw new Error(LoginErrorsEnum.BANNED);
+  }
+
   if (!user) {
     return null;
   }
@@ -448,8 +452,10 @@ async function findOrCreateUserAndOrganizationFromProviderLogin(
 ): Promise<FindOrCreateUserAndOrganizationFromProviderLoginResponse> {
   let newUserDetails: NewUserDetails | undefined;
   let user = await findExistingUser(userData);
+  let isNewUser = false;
 
   if (!user) {
+    isNewUser = true;
     const flags = await getDefaultFlags();
 
     const isWhitelisted = await isUserInWhitelist(userData.email);
@@ -495,7 +501,7 @@ async function findOrCreateUserAndOrganizationFromProviderLogin(
     email: user.email,
   });
 
-  if (newUserDetails) {
+  if (isNewUser) {
     trackServerSideEvent(AnalyticsEvent.USER_CREATED, {
       userId: user.id,
     });
@@ -586,6 +592,7 @@ export interface GetUserDataResponse {
   imageUrl: string;
   theme: string;
   locale: string;
+  hasOnboarded: boolean;
   name: string;
 }
 
@@ -610,9 +617,11 @@ export async function getUser(): Promise<GetUserDataResponse | null> {
       lettaAgentsId: true,
       email: true,
       theme: true,
+      submittedOnboardingAt: true,
       imageUrl: true,
       locale: true,
       name: true,
+      bannedAt: true,
     },
     with: {
       activeOrganization: {
@@ -622,6 +631,10 @@ export async function getUser(): Promise<GetUserDataResponse | null> {
       },
     },
   });
+
+  if (userFromDb?.bannedAt) {
+    return null;
+  }
 
   if (!userFromDb) {
     return null;
@@ -648,6 +661,7 @@ export async function getUser(): Promise<GetUserDataResponse | null> {
     activeOrganizationId: userFromDb.activeOrganizationId || null,
     hasCloudAccess: !!userFromDb.activeOrganization?.enabledCloudAt,
     id: userFromDb.id,
+    hasOnboarded: !!userFromDb.submittedOnboardingAt,
     locale: userFromDb.locale || 'en',
     lettaAgentsId: userFromDb.lettaAgentsId,
     email: userFromDb.email,

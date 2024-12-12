@@ -26,6 +26,7 @@ const frameVariants = cva('', {
       sidebarNavOverlay: 'z-sidebarNavOverlay',
       sidebarNav: 'z-sidebarNav',
       header: 'z-header',
+      miniApp: 'z-miniapp',
       dialog: 'z-dialog',
       tooltip: 'z-tooltip',
       draggedItem: 'z-draggedItem',
@@ -57,7 +58,7 @@ const frameVariants = cva('', {
       sidebar: 'w-sidebar',
     },
     height: {
-      header: 'h-header',
+      header: 'h-header min-h-header',
       'header-sm': 'h-header-sm',
     },
     borderColor: {
@@ -123,6 +124,8 @@ const frameVariants = cva('', {
       xxlarge: 'pt-8',
     },
     paddingBottom: {
+      xxsmall: 'pb-1',
+      xsmall: 'pb-2',
       small: 'pb-2.5',
       medium: 'pb-3',
       large: 'pb-4',
@@ -133,6 +136,7 @@ const frameVariants = cva('', {
       medium: 'pl-3',
       large: 'pl-4',
       true: 'pl-5',
+      xlarge: 'pl-6',
     },
     paddingRight: {
       xxsmall: 'pr-1',
@@ -203,6 +207,7 @@ export const Frame = forwardRef<HTMLElement, PropsWithChildren<FrameProps>>(
       overflow,
       overflowY,
       overflowX,
+      height,
       ...rest
     } = props;
 
@@ -214,6 +219,7 @@ export const Frame = forwardRef<HTMLElement, PropsWithChildren<FrameProps>>(
       border,
       borderY,
       zIndex,
+      height,
       borderX,
       borderRight,
       collapseWidth,

@@ -1,13 +1,19 @@
 .transition-box {
   height: calc(100dvh - var(--header-height) - 8px);
-  width: calc(100dvw - var(--sidebar-width));
+  width: calc(100cqw - var(--sidebar-width));
   position: fixed;
   z-index: -1;
 }
 
 @media (max-width: 840px) {
   .transition-box {
-    width: 100dvw;
+    width: 100cqw;
     padding-left: 4px;
   }
+}
+
+
+.always-fullscreen-transition-box {
+  width: 100dvw;
+  padding-left: 4px;
 }

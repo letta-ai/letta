@@ -11,6 +11,7 @@ import { queryClientKeys } from '$letta/web-api/contracts';
 import { Frame, HStack, Logo, VStack } from '@letta-web/component-library';
 import Link from 'next/link';
 import { AdminNavigation } from './_components/AdminNavigation/AdminNavigation';
+import { DashboardTransition } from '$letta/client/components/DashboardLikeLayout/DashboardTransition/DashboardTransition';
 
 interface InAppProps {
   children: ReactNode;
@@ -85,8 +86,8 @@ export default async function LoggedInLayout(props: InAppProps) {
       <AdminDashboardNavigation />
       <HStack gap={false} fullWidth>
         <AdminNavigation />
-        <Frame position="relative" fullWidth>
-          {children}
+        <Frame position="relative" overflow="hidden" fullWidth>
+          <DashboardTransition>{children}</DashboardTransition>
         </Frame>
       </HStack>
     </VStack>

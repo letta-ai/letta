@@ -5,6 +5,7 @@ import ReactSelect, { components } from 'react-select';
 import AsyncReactSelect from 'react-select/async';
 import { cn } from '@letta-web/core-style-config';
 import type { ReactNode } from 'react';
+import { useEffect } from 'react';
 import { CaretDownIcon, CloseIcon } from '../../icons';
 import { makeInput, makeRawInput } from '../Form/Form';
 import { z } from 'zod';
@@ -174,7 +175,7 @@ const classNames = {
 function useStyles(args: UseStylesArgs) {
   const { menuWidth } = args;
   return {
-    menuPortal: (base: any) => ({ ...base, zIndex: 10 }),
+    menuPortal: (base: any) => ({ ...base, zIndex: 11 }),
     control: (base: any) => ({ ...base, height: 'auto', minHeight: '36px' }),
     option: () => ({ fontSize: 'var(--font-size-base)' }),
     noOptionsMessage: () => ({ fontSize: 'var(--font-size-base)' }),
@@ -197,6 +198,23 @@ function AsyncSelectPrimitive(_props: AsyncSelectProps) {
   const [open, setOpen] = React.useState(false);
   const { isInDialog } = useDialogContext();
 
+  const [menuPortalTarget, setMenuPortalTarget] =
+    React.useState<HTMLElement | null>(null);
+
+  useEffect(() => {
+    if (typeof document === 'undefined') {
+      return;
+    }
+
+    if (isInDialog) {
+      if (document.getElementById('dialog-dropdown-content')) {
+        setMenuPortalTarget(document.getElementById('dialog-dropdown-content'));
+      }
+    } else {
+      setMenuPortalTarget(document.body);
+    }
+  }, [isInDialog]);
+
   return (
     <SelectOptionsProvider value={{ hideIconsOnOptions }}>
       {props['data-testid'] && (
@@ -217,9 +235,7 @@ function AsyncSelectPrimitive(_props: AsyncSelectProps) {
           setOpen(false);
         }}
         menuIsOpen={open}
-        menuPortalTarget={
-          !isInDialog && typeof document !== 'undefined' ? document.body : null
-        }
+        menuPortalTarget={menuPortalTarget}
         onChange={(value) => {
           props.onSelect?.(value);
         }}
@@ -245,6 +261,23 @@ function SelectPrimitive(_props: SelectProps) {
   const { isInDialog } = useDialogContext();
   const [open, setOpen] = React.useState(false);
 
+  const [menuPortalTarget, setMenuPortalTarget] =
+    React.useState<HTMLElement | null>(null);
+
+  useEffect(() => {
+    if (typeof document === 'undefined') {
+      return;
+    }
+
+    if (isInDialog) {
+      if (document.getElementById('dialog-dropdown-content')) {
+        setMenuPortalTarget(document.getElementById('dialog-dropdown-content'));
+      }
+    } else {
+      setMenuPortalTarget(document.body);
+    }
+  }, [isInDialog]);
+
   return (
     <SelectOptionsProvider value={{ hideIconsOnOptions }}>
       {props['data-testid'] && (
@@ -259,9 +292,7 @@ function SelectPrimitive(_props: SelectProps) {
       <ReactSelect
         unstyled
         // menuIsOpen
-        menuPortalTarget={
-          !isInDialog && typeof document !== 'undefined' ? document.body : null
-        }
+        menuPortalTarget={menuPortalTarget}
         onChange={(value) => {
           props.onSelect?.(value);
         }}

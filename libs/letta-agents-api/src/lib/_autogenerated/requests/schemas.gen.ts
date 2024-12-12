@@ -59,6 +59,148 @@ export const $APIKeyCreate = {
   title: 'APIKeyCreate',
 } as const;
 
+export const $ActionModel = {
+  properties: {
+    name: {
+      type: 'string',
+      title: 'Name',
+    },
+    display_name: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Display Name',
+    },
+    parameters: {
+      $ref: '#/components/schemas/ActionParametersModel',
+    },
+    response: {
+      $ref: '#/components/schemas/ActionResponseModel',
+    },
+    appName: {
+      type: 'string',
+      title: 'Appname',
+    },
+    appId: {
+      type: 'string',
+      title: 'Appid',
+    },
+    tags: {
+      items: {
+        type: 'string',
+      },
+      type: 'array',
+      title: 'Tags',
+    },
+    enabled: {
+      type: 'boolean',
+      title: 'Enabled',
+      default: false,
+    },
+    logo: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Logo',
+    },
+    description: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Description',
+    },
+  },
+  type: 'object',
+  required: ['name', 'parameters', 'response', 'appName', 'appId', 'tags'],
+  title: 'ActionModel',
+  description: 'Action data model.',
+} as const;
+
+export const $ActionParametersModel = {
+  properties: {
+    properties: {
+      type: 'object',
+      title: 'Properties',
+    },
+    title: {
+      type: 'string',
+      title: 'Title',
+    },
+    type: {
+      type: 'string',
+      title: 'Type',
+    },
+    required: {
+      anyOf: [
+        {
+          items: {
+            type: 'string',
+          },
+          type: 'array',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Required',
+    },
+  },
+  type: 'object',
+  required: ['properties', 'title', 'type'],
+  title: 'ActionParametersModel',
+  description: 'Action parameter data models.',
+} as const;
+
+export const $ActionResponseModel = {
+  properties: {
+    properties: {
+      type: 'object',
+      title: 'Properties',
+    },
+    title: {
+      type: 'string',
+      title: 'Title',
+    },
+    type: {
+      type: 'string',
+      title: 'Type',
+    },
+    required: {
+      anyOf: [
+        {
+          items: {
+            type: 'string',
+          },
+          type: 'array',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Required',
+    },
+  },
+  type: 'object',
+  required: ['properties', 'title', 'type'],
+  title: 'ActionResponseModel',
+  description: 'Action response data model.',
+} as const;
+
 export const $AgentState = {
   properties: {
     description: {
@@ -240,9 +382,266 @@ Parameters:
 
 export const $AgentType = {
   type: 'string',
-  enum: ['memgpt_agent', 'split_thread_agent', 'o1_agent'],
+  enum: [
+    'memgpt_agent',
+    'split_thread_agent',
+    'o1_agent',
+    'offline_memory_agent',
+    'chat_only_agent',
+  ],
   title: 'AgentType',
   description: 'Enum to represent the type of agent.',
+} as const;
+
+export const $AppAuthScheme = {
+  properties: {
+    scheme_name: {
+      type: 'string',
+      title: 'Scheme Name',
+    },
+    auth_mode: {
+      type: 'string',
+      enum: [
+        'OAUTH2',
+        'OAUTH1',
+        'API_KEY',
+        'BASIC',
+        'BEARER_TOKEN',
+        'BASIC_WITH_JWT',
+      ],
+      title: 'Auth Mode',
+    },
+    fields: {
+      items: {
+        $ref: '#/components/schemas/AuthSchemeField',
+      },
+      type: 'array',
+      title: 'Fields',
+    },
+    proxy: {
+      anyOf: [
+        {
+          type: 'object',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Proxy',
+    },
+    authorization_url: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Authorization Url',
+    },
+    token_url: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Token Url',
+    },
+    default_scopes: {
+      anyOf: [
+        {
+          items: {},
+          type: 'array',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Default Scopes',
+    },
+    token_response_metadata: {
+      anyOf: [
+        {
+          items: {},
+          type: 'array',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Token Response Metadata',
+    },
+    client_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Client Id',
+    },
+    client_secret: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Client Secret',
+    },
+  },
+  type: 'object',
+  required: ['scheme_name', 'auth_mode', 'fields'],
+  title: 'AppAuthScheme',
+  description: 'App authenticatio scheme.',
+} as const;
+
+export const $AppModel = {
+  properties: {
+    name: {
+      type: 'string',
+      title: 'Name',
+    },
+    key: {
+      type: 'string',
+      title: 'Key',
+    },
+    appId: {
+      type: 'string',
+      title: 'Appid',
+    },
+    description: {
+      type: 'string',
+      title: 'Description',
+    },
+    categories: {
+      items: {
+        type: 'string',
+      },
+      type: 'array',
+      title: 'Categories',
+    },
+    meta: {
+      type: 'object',
+      title: 'Meta',
+    },
+    logo: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Logo',
+    },
+    docs: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Docs',
+    },
+    group: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Group',
+    },
+    status: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Status',
+    },
+    enabled: {
+      type: 'boolean',
+      title: 'Enabled',
+      default: false,
+    },
+    no_auth: {
+      type: 'boolean',
+      title: 'No Auth',
+      default: false,
+    },
+    auth_schemes: {
+      anyOf: [
+        {
+          items: {
+            $ref: '#/components/schemas/AppAuthScheme',
+          },
+          type: 'array',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Auth Schemes',
+    },
+    testConnectors: {
+      anyOf: [
+        {
+          items: {
+            type: 'object',
+          },
+          type: 'array',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Testconnectors',
+    },
+    documentation_doc_text: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Documentation Doc Text',
+    },
+    configuration_docs_text: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Configuration Docs Text',
+    },
+  },
+  type: 'object',
+  required: ['name', 'key', 'appId', 'description', 'categories', 'meta'],
+  title: 'AppModel',
+  description: 'App data model.',
 } as const;
 
 export const $ArchivalMemorySummary = {
@@ -400,6 +799,70 @@ export const $AuthResponse = {
   title: 'AuthResponse',
 } as const;
 
+export const $AuthSchemeField = {
+  properties: {
+    name: {
+      type: 'string',
+      title: 'Name',
+    },
+    display_name: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Display Name',
+    },
+    description: {
+      type: 'string',
+      title: 'Description',
+    },
+    type: {
+      type: 'string',
+      title: 'Type',
+    },
+    default: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Default',
+    },
+    required: {
+      type: 'boolean',
+      title: 'Required',
+      default: false,
+    },
+    expected_from_customer: {
+      type: 'boolean',
+      title: 'Expected From Customer',
+      default: true,
+    },
+    get_current_user_endpoint: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Get Current User Endpoint',
+    },
+  },
+  type: 'object',
+  required: ['name', 'description', 'type'],
+  title: 'AuthSchemeField',
+  description: 'Auth scheme field.',
+} as const;
+
 export const $Block = {
   properties: {
     value: {
@@ -411,7 +874,7 @@ export const $Block = {
       type: 'integer',
       title: 'Limit',
       description: 'Character limit of the block.',
-      default: 2000,
+      default: 5000,
     },
     name: {
       anyOf: [
@@ -557,7 +1020,7 @@ export const $BlockUpdate = {
       ],
       title: 'Limit',
       description: 'Character limit of the block.',
-      default: 2000,
+      default: 5000,
     },
     name: {
       anyOf: [
@@ -1131,7 +1594,7 @@ export const $ContextWindowOverview = {
     },
     messages: {
       items: {
-        $ref: '#/components/schemas/letta__schemas__message__Message-Output',
+        $ref: '#/components/schemas/letta__schemas__message__Message',
       },
       type: 'array',
       title: 'Messages',
@@ -1161,7 +1624,7 @@ export const $ContextWindowOverview = {
     'Overview of the context window, including the number of messages and tokens.',
 } as const;
 
-export const $CreateAgent = {
+export const $CreateAgentRequest = {
   properties: {
     description: {
       anyOf: [
@@ -1197,7 +1660,6 @@ export const $CreateAgent = {
         },
       ],
       title: 'User Id',
-      description: 'The user id of the agent.',
     },
     name: {
       anyOf: [
@@ -1235,19 +1697,21 @@ export const $CreateAgent = {
       description: "The blocks to create in the agent's in-context memory.",
     },
     tools: {
-      anyOf: [
-        {
-          items: {
-            type: 'string',
-          },
-          type: 'array',
-        },
-        {
-          type: 'null',
-        },
-      ],
+      items: {
+        type: 'string',
+      },
+      type: 'array',
       title: 'Tools',
       description: 'The tools used by the agent.',
+      default: [
+        'send_message',
+        'conversation_search',
+        'conversation_search_date',
+        'archival_memory_insert',
+        'archival_memory_search',
+        'core_memory_append',
+        'core_memory_replace',
+      ],
     },
     tool_rules: {
       anyOf: [
@@ -1302,15 +1766,9 @@ export const $CreateAgent = {
       description: 'The system prompt used by the agent.',
     },
     agent_type: {
-      anyOf: [
-        {
-          $ref: '#/components/schemas/AgentType',
-        },
-        {
-          type: 'null',
-        },
-      ],
+      $ref: '#/components/schemas/AgentType',
       description: 'The type of agent.',
+      default: 'memgpt_agent',
     },
     llm_config: {
       anyOf: [
@@ -1338,7 +1796,7 @@ export const $CreateAgent = {
       anyOf: [
         {
           items: {
-            $ref: '#/components/schemas/Message-Input',
+            $ref: '#/components/schemas/MessageCreate',
           },
           type: 'array',
         },
@@ -1354,7 +1812,9 @@ export const $CreateAgent = {
   additionalProperties: false,
   type: 'object',
   required: ['memory_blocks'],
-  title: 'CreateAgent',
+  title: 'CreateAgentRequest',
+  description:
+    'CreateAgent model specifically for POST request body, excluding user_id which comes from headers',
 } as const;
 
 export const $CreateArchivalMemory = {
@@ -1448,7 +1908,7 @@ export const $CreateBlock = {
       type: 'integer',
       title: 'Limit',
       description: 'Character limit of the block.',
-      default: 2000,
+      default: 5000,
     },
     name: {
       anyOf: [
@@ -2205,6 +2665,34 @@ export const $FunctionReturn = {
       type: 'string',
       title: 'Function Call Id',
     },
+    stdout: {
+      anyOf: [
+        {
+          items: {
+            type: 'string',
+          },
+          type: 'array',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Stdout',
+    },
+    stderr: {
+      anyOf: [
+        {
+          items: {
+            type: 'string',
+          },
+          type: 'array',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Stderr',
+    },
   },
   type: 'object',
   required: ['id', 'date', 'function_return', 'status', 'function_call_id'],
@@ -2216,7 +2704,9 @@ Attributes:
     status (Literal["success", "error"]): The status of the function call
     id (str): The ID of the message
     date (datetime): The date the message was created in ISO format
-    function_call_id (str): A unique identifier for the function call that generated this message`,
+    function_call_id (str): A unique identifier for the function call that generated this message
+    stdout (Optional[List(str)]): Captured stdout (e.g. prints, logs) from the function invocation
+    stderr (Optional[List(str)]): Captured stderr from the function invocation`,
 } as const;
 
 export const $FunctionSchema = {
@@ -2357,6 +2847,74 @@ Attributes:
 
 export const $Job = {
   properties: {
+    created_by_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Created By Id',
+      description: 'The id of the user that made this object.',
+    },
+    last_updated_by_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Last Updated By Id',
+      description: 'The id of the user that made this object.',
+    },
+    created_at: {
+      anyOf: [
+        {
+          type: 'string',
+          format: 'date-time',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Created At',
+      description: 'The timestamp when the object was created.',
+    },
+    updated_at: {
+      anyOf: [
+        {
+          type: 'string',
+          format: 'date-time',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Updated At',
+      description: 'The timestamp when the object was last updated.',
+    },
+    status: {
+      $ref: '#/components/schemas/JobStatus',
+      description: 'The status of the job.',
+      default: 'created',
+    },
+    completed_at: {
+      anyOf: [
+        {
+          type: 'string',
+          format: 'date-time',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Completed At',
+      description: 'The unix timestamp of when the job was completed.',
+    },
     metadata_: {
       anyOf: [
         {
@@ -2376,39 +2934,21 @@ export const $Job = {
       description: 'The human-friendly ID of the Job',
       examples: ['job-123e4567-e89b-12d3-a456-426614174000'],
     },
-    status: {
-      $ref: '#/components/schemas/JobStatus',
-      description: 'The status of the job.',
-      default: 'created',
-    },
-    created_at: {
-      type: 'string',
-      format: 'date-time',
-      title: 'Created At',
-      description: 'The unix timestamp of when the job was created.',
-    },
-    completed_at: {
+    user_id: {
       anyOf: [
         {
           type: 'string',
-          format: 'date-time',
         },
         {
           type: 'null',
         },
       ],
-      title: 'Completed At',
-      description: 'The unix timestamp of when the job was completed.',
-    },
-    user_id: {
-      type: 'string',
       title: 'User Id',
       description: 'The unique identifier of the user associated with the job.',
     },
   },
   additionalProperties: false,
   type: 'object',
-  required: ['user_id'],
   title: 'Job',
   description: `Representation of offline jobs, used for tracking status of data loading tasks (involving parsing and embedding files).
 
@@ -2519,20 +3059,10 @@ Attributes:
 export const $LettaRequest = {
   properties: {
     messages: {
-      anyOf: [
-        {
-          items: {
-            $ref: '#/components/schemas/MessageCreate',
-          },
-          type: 'array',
-        },
-        {
-          items: {
-            $ref: '#/components/schemas/Message-Input',
-          },
-          type: 'array',
-        },
-      ],
+      items: {
+        $ref: '#/components/schemas/MessageCreate',
+      },
+      type: 'array',
       title: 'Messages',
       description: 'The messages to be sent to the agent.',
     },
@@ -2691,7 +3221,9 @@ Attributes:
     status (Literal["success", "error"]): The status of the function call
     id (str): The ID of the message
     date (datetime): The date the message was created in ISO format
-    function_call_id (str): A unique identifier for the function call that generated this message`,
+    function_call_id (str): A unique identifier for the function call that generated this message
+    stdout (Optional[List(str)]): Captured stdout (e.g. prints, logs) from the function invocation
+    stderr (Optional[List(str)]): Captured stderr from the function invocation`,
       properties: {
         id: {
           title: 'Id',
@@ -2721,6 +3253,36 @@ Attributes:
         function_call_id: {
           title: 'Function Call Id',
           type: 'string',
+        },
+        stdout: {
+          anyOf: [
+            {
+              items: {
+                type: 'string',
+              },
+              type: 'array',
+            },
+            {
+              type: 'null',
+            },
+          ],
+          default: null,
+          title: 'Stdout',
+        },
+        stderr: {
+          anyOf: [
+            {
+              items: {
+                type: 'string',
+              },
+              type: 'array',
+            },
+            {
+              type: 'null',
+            },
+          ],
+          default: null,
+          title: 'Stderr',
         },
       },
       required: ['id', 'date', 'function_return', 'status', 'function_call_id'],
@@ -2869,20 +3431,10 @@ Attributes:
 export const $LettaStreamingRequest = {
   properties: {
     messages: {
-      anyOf: [
-        {
-          items: {
-            $ref: '#/components/schemas/MessageCreate',
-          },
-          type: 'array',
-        },
-        {
-          items: {
-            $ref: '#/components/schemas/Message-Input',
-          },
-          type: 'array',
-        },
-      ],
+      items: {
+        $ref: '#/components/schemas/MessageCreate',
+      },
+      type: 'array',
       title: 'Messages',
       description: 'The messages to be sent to the agent.',
     },
@@ -2973,6 +3525,20 @@ export const $LocalSandboxConfig = {
       title: 'Sandbox Dir',
       description: 'Directory for the sandbox environment.',
     },
+    use_venv: {
+      type: 'boolean',
+      title: 'Use Venv',
+      description:
+        'Whether or not to use the venv, or run directly in the same run loop.',
+      default: false,
+    },
+    venv_name: {
+      type: 'string',
+      title: 'Venv Name',
+      description:
+        'The name for the venv in the sandbox directory. We first search for an existing venv with this name, otherwise, we make it from the requirements.txt.',
+      default: 'venv',
+    },
   },
   type: 'object',
   required: ['sandbox_dir'],
@@ -3035,132 +3601,6 @@ export const $Memory = {
   title: 'Memory',
   description:
     'Represents the in-context memory (i.e. Core memory) of the agent. This includes both the `Block` objects (labelled by sections), as well as tools to edit the blocks.',
-} as const;
-
-export const $Message_Input = {
-  properties: {
-    id: {
-      type: 'string',
-      pattern: '^message-[a-fA-F0-9]{8}',
-      title: 'Id',
-      description: 'The human-friendly ID of the Message',
-      examples: ['message-123e4567-e89b-12d3-a456-426614174000'],
-    },
-    role: {
-      $ref: '#/components/schemas/MessageRole',
-      description: 'The role of the participant.',
-    },
-    text: {
-      anyOf: [
-        {
-          type: 'string',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Text',
-      description: 'The text of the message.',
-    },
-    user_id: {
-      anyOf: [
-        {
-          type: 'string',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'User Id',
-      description: 'The unique identifier of the user.',
-    },
-    agent_id: {
-      anyOf: [
-        {
-          type: 'string',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Agent Id',
-      description: 'The unique identifier of the agent.',
-    },
-    model: {
-      anyOf: [
-        {
-          type: 'string',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Model',
-      description: 'The model used to make the function call.',
-    },
-    name: {
-      anyOf: [
-        {
-          type: 'string',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Name',
-      description: 'The name of the participant.',
-    },
-    created_at: {
-      type: 'string',
-      format: 'date-time',
-      title: 'Created At',
-      description: 'The time the message was created.',
-    },
-    tool_calls: {
-      anyOf: [
-        {
-          items: {
-            $ref: '#/components/schemas/letta__schemas__openai__chat_completions__ToolCall-Input',
-          },
-          type: 'array',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Tool Calls',
-      description: 'The list of tool calls requested.',
-    },
-    tool_call_id: {
-      anyOf: [
-        {
-          type: 'string',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Tool Call Id',
-      description: 'The id of the tool call.',
-    },
-  },
-  additionalProperties: false,
-  type: 'object',
-  required: ['role'],
-  title: 'Message',
-  description: `Letta's internal representation of a message. Includes methods to convert to/from LLM provider formats.
-
-Attributes:
-    id (str): The unique identifier of the message.
-    role (MessageRole): The role of the participant.
-    text (str): The text of the message.
-    user_id (str): The unique identifier of the user.
-    agent_id (str): The unique identifier of the agent.
-    model (str): The model used to make the function call.
-    name (str): The name of the participant.
-    created_at (datetime): The time the message was created.
-    tool_calls (List[ToolCall]): The list of tool calls requested.
-    tool_call_id (str): The id of the tool call.`,
 } as const;
 
 export const $MessageContentLogProb = {
@@ -3233,7 +3673,6 @@ export const $MessageCreate = {
       description: 'The name of the participant.',
     },
   },
-  additionalProperties: false,
   type: 'object',
   required: ['role', 'text'],
   title: 'MessageCreate',
@@ -3272,6 +3711,76 @@ export const $MessageRole = {
   type: 'string',
   enum: ['assistant', 'user', 'tool', 'function', 'system'],
   title: 'MessageRole',
+} as const;
+
+export const $MessageUpdate = {
+  properties: {
+    role: {
+      anyOf: [
+        {
+          $ref: '#/components/schemas/MessageRole',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      description: 'The role of the participant.',
+    },
+    text: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Text',
+      description: 'The text of the message.',
+    },
+    name: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Name',
+      description: 'The name of the participant.',
+    },
+    tool_calls: {
+      anyOf: [
+        {
+          items: {
+            $ref: '#/components/schemas/letta__schemas__openai__chat_completions__ToolCall-Input',
+          },
+          type: 'array',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Tool Calls',
+      description: 'The list of tool calls requested.',
+    },
+    tool_call_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Tool Call Id',
+      description: 'The id of the tool call.',
+    },
+  },
+  type: 'object',
+  title: 'MessageUpdate',
+  description: 'Request to update a message',
 } as const;
 
 export const $ModifyMessageRequest = {
@@ -3929,7 +4438,7 @@ export const $Organization = {
       type: 'string',
       title: 'Name',
       description: 'The name of the organization.',
-      default: 'MagnificentJellyfish',
+      default: 'XenialPapaya',
     },
     created_at: {
       anyOf: [
@@ -3972,7 +4481,7 @@ export const $OrganizationCreate = {
 
 export const $Passage = {
   properties: {
-    user_id: {
+    created_by_id: {
       anyOf: [
         {
           type: 'string',
@@ -3981,7 +4490,56 @@ export const $Passage = {
           type: 'null',
         },
       ],
-      title: 'User Id',
+      title: 'Created By Id',
+      description: 'The id of the user that made this object.',
+    },
+    last_updated_by_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Last Updated By Id',
+      description: 'The id of the user that made this object.',
+    },
+    created_at: {
+      type: 'string',
+      format: 'date-time',
+      title: 'Created At',
+      description: 'The creation date of the passage.',
+    },
+    updated_at: {
+      anyOf: [
+        {
+          type: 'string',
+          format: 'date-time',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Updated At',
+      description: 'The timestamp when the object was last updated.',
+    },
+    is_deleted: {
+      type: 'boolean',
+      title: 'Is Deleted',
+      description: 'Whether this passage is deleted or not.',
+      default: false,
+    },
+    organization_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Organization Id',
       description:
         'The unique identifier of the user associated with the passage.',
     },
@@ -4038,10 +4596,10 @@ export const $Passage = {
     },
     id: {
       type: 'string',
-      pattern: '^passage-[a-fA-F0-9]{8}',
+      pattern: '^passage_legacy-[a-fA-F0-9]{8}',
       title: 'Id',
-      description: 'The human-friendly ID of the Passage',
-      examples: ['passage-123e4567-e89b-12d3-a456-426614174000'],
+      description: 'The human-friendly ID of the Passage_legacy',
+      examples: ['passage_legacy-123e4567-e89b-12d3-a456-426614174000'],
     },
     text: {
       type: 'string',
@@ -4073,12 +4631,6 @@ export const $Passage = {
         },
       ],
       description: 'The embedding configuration used by the passage.',
-    },
-    created_at: {
-      type: 'string',
-      format: 'date-time',
-      title: 'Created At',
-      description: 'The creation date of the passage.',
     },
   },
   additionalProperties: false,
@@ -4931,6 +5483,12 @@ export const $ToolCreate = {
       description:
         'The JSON schema of the function (auto-generated from source_code if not provided)',
     },
+    return_char_limit: {
+      type: 'integer',
+      title: 'Return Char Limit',
+      description: 'The maximum number of characters in the response.',
+      default: 6000,
+    },
   },
   additionalProperties: false,
   type: 'object',
@@ -4988,6 +5546,49 @@ export const $ToolRuleType = {
   ],
   title: 'ToolRuleType',
   description: 'Type of tool rule.',
+} as const;
+
+export const $ToolRunFromSource = {
+  properties: {
+    source_code: {
+      type: 'string',
+      title: 'Source Code',
+      description: 'The source code of the function.',
+    },
+    args: {
+      type: 'string',
+      title: 'Args',
+      description: 'The arguments to pass to the tool (as stringified JSON).',
+    },
+    name: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Name',
+      description: 'The name of the tool to run.',
+    },
+    source_type: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Source Type',
+      description: 'The type of the source code.',
+    },
+  },
+  additionalProperties: false,
+  type: 'object',
+  required: ['source_code', 'args'],
+  title: 'ToolRunFromSource',
 } as const;
 
 export const $ToolUpdate = {
@@ -5224,83 +5825,6 @@ export const $UpdateAgentState = {
   type: 'object',
   required: ['id'],
   title: 'UpdateAgentState',
-} as const;
-
-export const $UpdateMessage = {
-  properties: {
-    id: {
-      type: 'string',
-      title: 'Id',
-      description: 'The id of the message.',
-    },
-    role: {
-      anyOf: [
-        {
-          $ref: '#/components/schemas/MessageRole',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      description: 'The role of the participant.',
-    },
-    text: {
-      anyOf: [
-        {
-          type: 'string',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Text',
-      description: 'The text of the message.',
-    },
-    name: {
-      anyOf: [
-        {
-          type: 'string',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Name',
-      description: 'The name of the participant.',
-    },
-    tool_calls: {
-      anyOf: [
-        {
-          items: {
-            $ref: '#/components/schemas/letta__schemas__openai__chat_completions__ToolCall-Input',
-          },
-          type: 'array',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Tool Calls',
-      description: 'The list of tool calls requested.',
-    },
-    tool_call_id: {
-      anyOf: [
-        {
-          type: 'string',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Tool Call Id',
-      description: 'The id of the tool call.',
-    },
-  },
-  additionalProperties: false,
-  type: 'object',
-  required: ['id'],
-  title: 'UpdateMessage',
-  description: 'Request to update a message',
 } as const;
 
 export const $UsageStatistics = {
@@ -5576,8 +6100,51 @@ export const $letta__schemas__letta_message__FunctionCall = {
   title: 'FunctionCall',
 } as const;
 
-export const $letta__schemas__message__Message_Output = {
+export const $letta__schemas__message__Message = {
   properties: {
+    created_by_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Created By Id',
+      description: 'The id of the user that made this object.',
+    },
+    last_updated_by_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Last Updated By Id',
+      description: 'The id of the user that made this object.',
+    },
+    created_at: {
+      type: 'string',
+      format: 'date-time',
+      title: 'Created At',
+      description: 'The timestamp when the object was created.',
+    },
+    updated_at: {
+      anyOf: [
+        {
+          type: 'string',
+          format: 'date-time',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Updated At',
+      description: 'The timestamp when the object was last updated.',
+    },
     id: {
       type: 'string',
       pattern: '^message-[a-fA-F0-9]{8}',
@@ -5601,7 +6168,7 @@ export const $letta__schemas__message__Message_Output = {
       title: 'Text',
       description: 'The text of the message.',
     },
-    user_id: {
+    organization_id: {
       anyOf: [
         {
           type: 'string',
@@ -5610,8 +6177,8 @@ export const $letta__schemas__message__Message_Output = {
           type: 'null',
         },
       ],
-      title: 'User Id',
-      description: 'The unique identifier of the user.',
+      title: 'Organization Id',
+      description: 'The unique identifier of the organization.',
     },
     agent_id: {
       anyOf: [
@@ -5648,12 +6215,6 @@ export const $letta__schemas__message__Message_Output = {
       ],
       title: 'Name',
       description: 'The name of the participant.',
-    },
-    created_at: {
-      type: 'string',
-      format: 'date-time',
-      title: 'Created At',
-      description: 'The time the message was created.',
     },
     tool_calls: {
       anyOf: [
@@ -6023,6 +6584,12 @@ export const $letta__schemas__tool__Tool = {
       ],
       title: 'Json Schema',
       description: 'The JSON schema of the function.',
+    },
+    return_char_limit: {
+      type: 'integer',
+      title: 'Return Char Limit',
+      description: 'The maximum number of characters in the response.',
+      default: 6000,
     },
     created_by_id: {
       anyOf: [

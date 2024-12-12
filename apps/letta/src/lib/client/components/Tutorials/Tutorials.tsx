@@ -14,35 +14,39 @@ export function Tutorials() {
   const t = useTranslations('components/tutorials');
 
   return (
-    <DashboardPageSection title={t('title')}>
-      <NiceGridDisplay>
+    <DashboardPageSection description={t('description')} title={t('title')}>
+      <NiceGridDisplay itemWidth="318px" itemHeight="112px">
         <ImageCard
           imageUrl={memory}
           altText=""
+          variant="inline"
           title={t('createChatBotWithMemory.title')}
           description={t('createChatBotWithMemory.description')}
-          badge={<Badge content={t('comingSoon')} />}
+          badge={<Badge size="small" content={t('comingSoon')} />}
         />
         <ImageCard
           imageUrl={multiagent}
           altText=""
+          variant="inline"
           title={t('buildMultiAgentSystems.title')}
           description={t('buildMultiAgentSystems.description')}
-          badge={<Badge content={t('comingSoon')} />}
+          badge={<Badge size="small" content={t('comingSoon')} />}
         />
         <ImageCard
           imageUrl={discord}
           altText=""
+          variant="inline"
           title={t('discord.title')}
           description={t('discord.description')}
-          badge={<Badge content={t('comingSoon')} />}
+          badge={<Badge size="small" content={t('comingSoon')} />}
         />
         <ImageCard
           imageUrl={voice}
           altText=""
+          variant="inline"
           title={t('voice.title')}
           description={t('voice.description')}
-          badge={<Badge content={t('comingSoon')} />}
+          badge={<Badge size="small" content={t('comingSoon')} />}
         />
       </NiceGridDisplay>
     </DashboardPageSection>

@@ -10,7 +10,7 @@ import {
   DataTable,
 } from '@letta-web/component-library';
 import type { ColumnDef } from '@tanstack/react-table';
-import type { PublicOrganizationType } from '$letta/web-api/admin/admin-organizations/adminOrganizationsContracts';
+import type { PublicOrganizationType } from '$letta/web-api/admin/organizations/adminOrganizationsContracts';
 import { useDateFormatter } from '@letta-web/helpful-client-utils';
 
 function AdminOrganizationsPage() {
@@ -34,7 +34,7 @@ function AdminOrganizationsPage() {
       },
     });
 
-  const { formatDate } = useDateFormatter();
+  const { formatDateAndTime } = useDateFormatter();
 
   const organizationColumns: Array<ColumnDef<PublicOrganizationType>> = useMemo(
     () => [
@@ -45,12 +45,12 @@ function AdminOrganizationsPage() {
       {
         header: 'Created at',
         accessorKey: 'createdAt',
-        cell: ({ row }) => formatDate(row.original.updatedAt),
+        cell: ({ row }) => formatDateAndTime(row.original.updatedAt),
       },
       {
         header: 'Updated at',
         accessorKey: 'updatedAt',
-        cell: ({ row }) => formatDate(row.original.updatedAt),
+        cell: ({ row }) => formatDateAndTime(row.original.updatedAt),
       },
       {
         header: 'Actions',
@@ -65,7 +65,7 @@ function AdminOrganizationsPage() {
         ),
       },
     ],
-    [formatDate]
+    [formatDateAndTime]
   );
 
   const organizations = useMemo(() => {

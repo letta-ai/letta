@@ -19,7 +19,9 @@ function LoadMixpanelAnalyticsInner() {
     }
 
     mounted.current = true;
-    mixpanel.init(environment.NEXT_PUBLIC_MIXPANEL_TOKEN);
+    mixpanel.init(environment.NEXT_PUBLIC_MIXPANEL_TOKEN, {
+      api_host: 'https://robots.letta.com',
+    });
   }, []);
 
   return null;

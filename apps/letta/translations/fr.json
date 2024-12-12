@@ -3,35 +3,236 @@
     "emptyMessage": "Ce n'est pas la page que vous recherchez",
     "emptyAction": "Rentre chez toi"
   },
+  "WelcomeOverlay": {
+    "welcomeMessage": "Bienvenue à Letta",
+    "question": "Merci de nous avoir testé, nous avons quelques questions pour nous aider à mieux comprendre vos besoins.",
+    "useCases": {
+      "label": "Pour quels cas d’utilisation créez-vous des agents ?",
+      "options": {
+        "customerService": "Service client",
+        "personalAssistant": "Assistant personnel",
+        "entertainment": "Divertissement",
+        "chatbots": "Chatbots",
+        "taskOrchestration": "Orchestration des tâches",
+        "experimentation": "Expérimentation"
+      }
+    },
+    "reasons": {
+      "label": "Qu’est-ce qui vous intéresse chez Letta ?",
+      "options": {
+        "restAPI": "Agents en tant qu'API REST",
+        "memory": "Mémoire",
+        "toolExecution": "Exécution de l'outil",
+        "userPersonalization": "Personnalisation de l'utilisateur",
+        "openModelSupport": "Prise en charge du modèle ouvert",
+        "chainOfThoughtReasoning": "Raisonnement en chaîne de pensée",
+        "deployingAgentsAtScale": "Déployer des agents à grande échelle"
+      }
+    },
+    "emailConsent": {
+      "label": "Inscrivez-vous pour recevoir des e-mails concernant les versions."
+    },
+    "skip": "Sauter",
+    "submit": "Commencez à utiliser Letta"
+  },
   "components/DashboardLikeLayout/DashboardNavigation": {
+    "back": "Dos",
     "nav": {
       "projects": "Projets",
       "apiKeys": "Clés API",
-      "team": "Membres",
-      "billing": "Utilisation et facturation",
       "dataSources": "Sources de données",
       "admin": "Administrateur",
-      "localDev": "Développement à distance",
+      "localDev": "Auto-hébergé",
       "settings": "Paramètres"
     },
+    "rootTitle": "Tableau de bord",
     "secondaryNav": {
       "settings": "Paramètres",
       "signOut": "se déconnecter",
       "organization": "Organisation",
-      "switchOrganizations": "Changer d’organisation"
+      "switchOrganizations": "Changer d'organisation"
     },
     "header": {
-      "Documentation": "Documentation"
+      "Documentation": "Documents"
+    },
+    "ReportAnIssueForm": {
+      "yourMessage": "Votre message",
+      "submit": "Soumettre le rapport",
+      "submitted": "Votre problème a été soumis, nous vous répondrons dans les plus brefs délais."
+    },
+    "DashboardHeaderNavigation": {
+      "documentation": "Documents",
+      "apiReference": "Référence API",
+      "support": "Soutien",
+      "supportPopover": {
+        "bugReport": {
+          "title": "Signaler un problème",
+          "description": "Remplissez le formulaire ci-dessous :"
+        },
+        "discord": {
+          "title": "Obtenez de l'aide via Discord",
+          "description": "Rejoignez notre serveur Discord pour obtenir l'aide de la communauté et des développeurs Letta :",
+          "joinUs": "Rejoignez-nous sur Discord"
+        }
+      }
+    }
+  },
+  "settings/account/page": {
+    "title": "Paramètres du compte",
+    "DeleteAccountSection": {
+      "title": "Supprimer le compte",
+      "description": "La suppression de votre compte est définitive et irréversible. "
+    },
+    "DeleteAccountDialog": {
+      "title": "Supprimer le compte",
+      "trigger": "Supprimer le compte",
+      "confirm": "Supprimer le compte",
+      "error": "Une erreur s'est produite lors de la suppression de votre compte, veuillez réessayer ou contacter l'assistance.",
+      "description": "Êtes-vous sûr de vouloir supprimer votre compte ? ",
+      "confirmCheckbox": {
+        "label": "Je comprends les conséquences de la suppression de ce compte",
+        "error": "Vous devez confirmer que vous comprenez les conséquences de la suppression de votre compte"
+      }
+    }
+  },
+  "component-library/Debugger": {
+    "invalidJSON": "JSON invalide",
+    "run": "Courir",
+    "success": "Réussi",
+    "error": "Échec de l'exécution",
+    "output": "Sortir",
+    "inputPlaceholder": ""
+  },
+  "organization/environment-variables": {
+    "title": "Variables d'environnement",
+    "description": "Gérez les variables d'environnement pour votre organisation. ",
+    "environmentVariablesColumns": {
+      "key": "Clé",
+      "lastUpdated": "Dernière mise à jour",
+      "actions": "Actes"
+    },
+    "ManagedEnvironmentIndicator": {
+      "label": "Géré",
+      "integrations": {
+        "composio": "Cette variable d'environnement est liée à l'intégration Composio, pour plus d'informations cliquez sur ce badge"
+      }
+    },
+    "errorMessage": "Une erreur s'est produite lors du chargement des variables d'environnement. Veuillez réessayer ou contacter l'assistance.",
+    "loadingMessage": "Chargement des variables d'environnement...",
+    "DeleteEnvironmentVariableDialog": {
+      "title": "Supprimer la variable d'environnement",
+      "trigger": "Supprimer la variable d'environnement",
+      "confirm": "Supprimer",
+      "cancel": "Annuler",
+      "error": "Une erreur s'est produite lors de la suppression de la variable d'environnement, veuillez réessayer ou contacter l'assistance.",
+      "description": "Êtes-vous sûr de vouloir supprimer la variable d'environnement {key} ? "
+    },
+    "UpdateEnvironmentVariableDialog": {
+      "title": "Mettre à jour la variable d'environnement",
+      "trigger": "Mettre à jour la variable d'environnement",
+      "confirm": "Mise à jour",
+      "cancel": "Annuler",
+      "key": {
+        "label": "Clé",
+        "placeholder": "MY_ENV_VAR",
+        "error": "Les clés doivent être alphanumériques et soulignées uniquement"
+      },
+      "value": {
+        "label": "Valeur",
+        "placeholder": "ma-valeur"
+      },
+      "updateButton": "Mettre à jour la variable d'environnement",
+      "error": "Une erreur s'est produite lors de la mise à jour de la variable d'environnement. Veuillez réessayer ou contacter l'assistance."
+    },
+    "CreateEnvironmentVariableDialog": {
+      "title": "Créer une variable d'environnement",
+      "trigger": "Créer une variable",
+      "confirm": "Créer",
+      "cancel": "Annuler",
+      "key": {
+        "label": "Clé",
+        "placeholder": "MY_ENV_VAR",
+        "error": "Les clés doivent être alphanumériques et soulignées uniquement"
+      },
+      "value": {
+        "label": "Valeur",
+        "placeholder": "ma-valeur"
+      },
+      "createButton": "Créer une variable d'environnement",
+      "errors": {
+        "default": "Une erreur s'est produite lors de la création de la variable d'environnement. Veuillez réessayer ou contacter l'assistance.",
+        "keyAlreadyExists": "Une clé portant ce nom existe déjà, veuillez en choisir une autre ou mettre à jour celle existante"
+      }
+    }
+  },
+  "organization/integrations/composio": {
+    "DisconnectIntegrationDialog": {
+      "title": "Supprimer l'intégration Composio",
+      "description": "Êtes-vous sûr de vouloir supprimer l'intégration Composio ? ",
+      "trigger": "Supprimer l'intégration",
+      "confirm": "Supprimer l'intégration",
+      "error": "Une erreur s'est produite lors de la suppression de l'intégration Composio, veuillez réessayer ou contacter l'assistance."
+    },
+    "SetApiKeyDialog": {
+      "alert": "Cela écrasera votre clé API actuelle, ce qui pourrait empêcher certains agents d'utiliser les outils Composio. ",
+      "label": "Clé API",
+      "title": "Définir la clé API",
+      "trigger": "Définir la clé API",
+      "confirm": "Définir la clé API",
+      "error": "Une erreur s'est produite lors de la définition de la clé API. Veuillez réessayer ou contacter l'assistance."
+    },
+    "usage": {
+      "description": "Pour utiliser Composio dans vos agents, visitez n'importe quel modèle d'agent, appuyez sur l'icône + dans la section outils et vous verrez tous les outils Composio disponibles dans l'explorateur d'outils."
+    },
+    "configuration": {
+      "description": "Composio nécessite une clé API pour ajouter des outils à vos agents. ",
+      "create": "Pour créer une clé API, <link>visitez cette page</link>.",
+      "noApiKey": "Aucune clé API définie",
+      "hidden": "Vous ne pouvez pas voir la clé API une fois définie",
+      "apiKey": {
+        "label": "Clé API",
+        "update": "Définir la clé API"
+      }
+    },
+    "title": "composio",
+    "description": "Composio permet à votre équipe de connecter vos agents à des services et API externes sans écrire de code. "
+  },
+  "organization/integrations/IntegrationPageLayout": {
+    "return": "Toutes les intégrations",
+    "visitWebsite": "Visitez le site Web",
+    "configuration": "Configuration",
+    "usage": "Usage",
+    "about": "À propos",
+    "disconnect": {
+      "title": "Supprimer l'intégration",
+      "description": "Êtes-vous sûr de vouloir supprimer cette intégration ? "
+    }
+  },
+  "organization/integrations": {
+    "title": "Intégrations",
+    "description": "Connectez et gérez les intégrations pour votre organisation",
+    "integrations": {
+      "composio": {
+        "title": "Composio",
+        "description": "Composio permet à votre équipe de connecter vos agents à des services et API externes sans écrire de code. "
+      }
+    },
+    "IntegrationItem": {
+      "setup": "Installation",
+      "configure": "Configurer"
     }
   },
   "settings/layout": {
     "personal": "Personnel",
     "profile": "Profil",
+    "account": "Compte",
     "organization": {
       "general": "Général",
       "members": "Membres",
       "root": "Organisation",
-      "billing": "Utilisation et facturation"
+      "billing": "Utilisation et facturation",
+      "integrations": "Intégrations",
+      "environmentVariables": "Variables d'environnement"
     }
   },
   "data-sources/page": {
@@ -68,7 +269,7 @@
         "label": "Nom du projet"
       },
       "slug": {
-        "label": "Projet Slug",
+        "label": "Limace de projet",
         "placeholder": "mon-projet-slug"
       },
       "errors": {
@@ -87,6 +288,8 @@
     "OrganizationRow": {
       "select": "Sélectionner"
     },
+    "errorSelectingOrganization": "Une erreur s'est produite lors de la sélection de l'organisation, veuillez recharger cette page ou contacter l'assistance.",
+    "selectingOrganization": "Changer d'organisation...",
     "createNewOrganization": "Créer une nouvelle organisation",
     "missingOrg": "Si vous ne voyez pas votre organisation, vous n'avez peut-être pas encore été invité. "
   },
@@ -174,6 +377,13 @@
       "description": "Êtes-vous sûr de vouloir supprimer {name} ({email}) de cette organisation ? "
     }
   },
+  "component-library/FunctionCall": {
+    "isExecuting": "Exécution",
+    "error": "Erreur",
+    "success": "Succès",
+    "request": "Demande",
+    "response": "Réponse"
+  },
   "settings/profile/page": {
     "title": "Paramètres du profil",
     "form": {
@@ -187,19 +397,28 @@
     }
   },
   "ADE/ContextEditorPanel": {
+    "infoTooltip": "État actuel de la fenêtre contextuelle LLM (Letta se compressera automatiquement en cas de débordement)",
+    "title": "Fenêtre contextuelle",
+    "mobileTitle": "Fenêtre contextuelle",
     "ContextWindowPreview": {
-      "popover": {
-        "title": "Fenêtre contextuelle",
-        "usage": "{utilisé} sur {total} jetons utilisés"
-      },
-      "usage": "{utilisé}/{total}",
-      "systemPrompt": "Invite système",
-      "memoryBlocks": "Blocs de mémoire",
+      "usage": "{utilisé}/{total} JETONS",
+      "systemPrompt": "Instructions système",
+      "toolPrompt": "Descriptions des outils",
+      "memoryBlocks": "Mémoire de base",
+      "externalSummaryLength": "Résumé externe",
+      "totalOverage": "Dépassement total",
       "remaining": "Restant",
-      "messagesTokens": "Jetons de messages",
-      "summaryMemory": "Mémoire récapitulative",
+      "messagesTokens": "Messages",
+      "summaryMemory": "Mémoire récursive",
       "recallMemory": "Mémoire de rappel",
       "archivalMemory": "Mémoire d'archives"
+    }
+  },
+  "components/LocaleSelector": {
+    "changeLocale": "Changer de langue",
+    "options": {
+      "en": "Anglais",
+      "fr": "Français"
     }
   },
   "components/ProjectSelector": {
@@ -229,7 +448,7 @@
       "projectItem": {
         "lastUpdatedAt": "Mis à jour le {date}",
         "agents": "Agents",
-        "totalMessages": "Nombre total de messages",
+        "totalMessages": "Total des messages",
         "viewButton": "Voir le projet",
         "noLastUpdatedAt": "Locale"
       }
@@ -239,7 +458,7 @@
     }
   },
   "projects/(projectSlug)/page": {
-    "title": "Accueil du projet",
+    "title": "Tableau de bord du projet",
     "agentTemplatesList": {
       "emptyMessage": "Vous avez des modèles dans ce projet",
       "createAgentTemplate": "Nouveau modèle d'agent"
@@ -251,7 +470,8 @@
   },
   "projects/(projectSlug)/layout": {
     "nav": {
-      "home": "Accueil du projet",
+      "return": "Voir tous les projets",
+      "home": "Tableau de bord",
       "templates": "Modèles",
       "agents": "Agents",
       "settings": "Paramètres"
@@ -295,6 +515,8 @@
     }
   },
   "ADE/EditDataSourcesPanel": {
+    "mobileTitle": "Sources",
+    "infoTooltip": "Fichiers externes chargés dans la mémoire d'archives de l'agent pour RAG",
     "AttachDataSourceView": {
       "notCompatible": {
         "title": "Non compatible",
@@ -324,6 +546,28 @@
       "confirm": "Détacher",
       "error": "Une erreur s'est produite lors du détachement de cette source de données. Veuillez réessayer ou contacter l'assistance."
     },
+    "RenameDataSourceDialog": {
+      "title": "Renommer la source",
+      "trigger": "Renommer la source",
+      "confirm": "Rebaptiser",
+      "error": "Une erreur s'est produite lors du changement de nom de cette source de données. Veuillez réessayer ou contacter l'assistance.",
+      "name": {
+        "label": "Nom de la source",
+        "placeholder": "mon-nom-source"
+      }
+    },
+    "DeleteDataSourceDialog": {
+      "title": "Supprimer la source",
+      "trigger": "Supprimer la source",
+      "confirm": "Supprimer",
+      "error": "Une erreur s'est produite lors de la suppression de cette source, veuillez réessayer ou contacter l'assistance.",
+      "description": "Sachez que vous supprimez cette source de tous les agents, et non que vous la détachez. ",
+      "confirmName": {
+        "label": "Tapez le nom de la source pour confirmer",
+        "placeholder": "mon-nom-de-source-de-données",
+        "error": "Le nom que vous avez entré ne correspond pas au nom de la source"
+      }
+    },
     "EditDataSourcesContent": {
       "notCompatible": {
         "details": "La configuration d'intégration de cette source de données ne correspond pas à la configuration de l'agent. Cela peut empêcher l'agent de mémoriser correctement les données.",
@@ -349,6 +593,7 @@
     "edit": "Modifier",
     "detach": "Détacher la source de données",
     "loading": "Chargement des sources de données...",
+    "error": "Une erreur s'est produite lors du chargement des sources de données. Veuillez réessayer ou contacter l'assistance.",
     "noDataSources": "Vous n'avez pas encore de sources de données attachées à cet agent. ",
     "CreateDataSourceDialog": {
       "titles": "Ajouter une nouvelle source de données",
@@ -370,9 +615,11 @@
     }
   },
   "ADE/AgentSettingsPanel": {
-    "mobileTitle": "{baseName}",
+    "mobileTitle": "{nom de base}",
     "SystemPromptEditor": {
+      "characterCount": "{count} CARACTÈRES",
       "updatedAt": "Dernière mise à jour le {date}",
+      "tooltip": "Configure le comportement de l'agent, et placé dans la fenêtre contextuelle",
       "label": "Instructions système",
       "error": "Une erreur s'est produite lors de la mise à jour de l'invite système, veuillez réessayer ou contacter l'assistance.",
       "expand": "Afficher l'éditeur d'invite système complet",
@@ -393,6 +640,9 @@
     "copyAgentId": "Copier l'ID {baseName}",
     "title": "Paramètres {baseName}",
     "modelInput": {
+      "tooltip": "Le backend LLM pour le {baseName}",
+      "recommended": "Modèles recommandés",
+      "others": "Tous les modèles disponibles",
       "label": "Modèle"
     },
     "updateModel": "Mise à jour",
@@ -411,6 +661,10 @@
     }
   },
   "ADE/AgentSimulator": {
+    "role": {
+      "user": "Utilisateur",
+      "system": "Système"
+    },
     "FlushSimulationSessionDialog": {
       "title": "Simulation de chasse d'eau",
       "description": "Êtes-vous sûr de vouloir vider la simulation ? ",
@@ -477,11 +731,56 @@
     "localProject": "Projet local"
   },
   "ADE/EditCoreMemoriesPanel": {
+    "SimulatedMemory": {
+      "error": "Une erreur s'est produite lors de la lecture du bloc de mémoire simulé, veuillez réessayer ou contacter l'assistance."
+    },
+    "toggleMemoryType": {
+      "label": "Basculer le type de mémoire",
+      "templated": {
+        "label": "Modèle",
+        "tooltip": "La mémoire du modèle est l'état de mémoire initial de tout nouvel agent déployé qui utilise ce modèle."
+      },
+      "simulated": {
+        "label": "Simulé",
+        "tooltip": "L'état de la mémoire de l'agent simulé (réinitialisé lorsque vous videz le simulateur)"
+      }
+    },
+    "mobileTitle": "Mémoires fondamentales",
     "EditMemoryForm": {
-      "characterLimit": "{count}/{limit} caractères"
+      "characterLimit": "{count}/{limit} CARACTÈRES"
+    },
+    "MemoryWarning": {
+      "title": "Vous devrez peut-être mettre à jour les instructions de votre système",
+      "message": "L'ajustement de l'étiquette de mémoire peut nécessiter la mise à jour des instructions de votre système pour refléter la nouvelle étiquette de mémoire."
+    },
+    "CharacterCounter": {
+      "count": "{count} CARACTÈRES"
+    },
+    "AdvancedMemoryEditorForm": {
+      "error": "Une erreur s'est produite lors de la mise à jour de votre mémoire, veuillez réessayer ou contacter l'assistance.",
+      "label": {
+        "label": "Étiquette",
+        "placeholder": "mon-étiquette",
+        "error": "Les étiquettes doivent être alphanumériques et soulignées uniquement, et ne peuvent pas commencer par un chiffre."
+      },
+      "maxCharacters": {
+        "label": "Limite de caractères",
+        "placeholder": "100",
+        "error": "La valeur minimale est de 100"
+      },
+      "value": {
+        "label": "Valeur",
+        "placeholder": "ma-valeur"
+      },
+      "update": "Mettre à jour la mémoire",
+      "delete": {
+        "title": "Supprimer la mémoire",
+        "confirm": "Êtes-vous sûr de vouloir supprimer cette mémoire ?"
+      }
     },
     "AdvancedEditMemory": {
-      "title": "Mettre à jour les mémoires principales"
+      "title": "Mettre à jour les mémoires principales",
+      "newMemory": "Ajouter un bloc de mémoire"
     },
     "systemPrompt": "Invite système",
     "EditSystemPrompt": {
@@ -497,7 +796,8 @@
       },
       "title": "Paramètres {étiquette}"
     },
-    "title": "Mémoire ({count})",
+    "title": "Mémoire principale ({count})",
+    "infoTooltip": "Mémoire modifiable et contextuelle de l'agent pouvant être modélisée avec des variables",
     "content": "Contenu",
     "error": "Une erreur s'est produite lors de la mise à jour du bloc de mémoire, veuillez réessayer ou contacter l'assistance.",
     "lastUpdated": "Dernière mise à jour le {date}",
@@ -571,46 +871,137 @@
   "ComponentLibrary/ADEInput": {
     "disabledTooltip": "Ce champ ne peut pas être modifié"
   },
+  "development-servers/components/UserIsNotConnectedComponent": {
+    "notConnected": "Veuillez vous connecter à votre serveur local pour afficher des actions et des informations rapides.",
+    "start": "Vous pouvez vous connecter à votre serveur local en exécutant la commande ci-dessous :"
+  },
   "development-servers/layout": {
     "title": "Projet local",
     "nav": {
       "dashboard": "Tableau de bord",
-      "local": "Agents locaux",
+      "agents": "Agents",
+      "local": "Serveur local",
       "remote": "Télécommande",
       "create": "Ajouter un serveur distant"
     },
     "ServerStatusTitle": {
-      "checking": "Vérification de l'état du serveur..."
-    }
+      "checking": "Vérification de l'état du serveur...",
+      "isHealthy": "Connecté",
+      "incompatible": "Vous utilisez une version éventuellement incompatible du serveur Letta, veuillez définir votre version sur {version}",
+      "isUnhealthy": "Non connecté"
+    },
+    "settings": "Paramètres",
+    "delete": "Supprimer",
+    "DeleteDevelopmentServerDialog": {
+      "error": "Une erreur s'est produite lors de la suppression du serveur distant. Veuillez réessayer ou contacter l'assistance.",
+      "title": "Supprimer la connexion au serveur distant",
+      "trigger": "Supprimer la connexion au serveur distant",
+      "confirm": "Supprimer",
+      "description": "Êtes-vous sûr de vouloir supprimer cette connexion au serveur distant ? "
+    },
+    "updateDetails": "Mettre à jour la configuration"
   },
   "development-servers/dashboard/page": {
-    "description": "Bienvenue sur le tableau de bord de développement à distance ! ",
-    "title": "Tableau de bord",
-    "notConnected": "Veuillez vous connecter à votre serveur local pour afficher des actions et des informations rapides.",
-    "start": "Vous pouvez vous connecter à votre serveur local en exécutant la commande ci-dessous :",
+    "versionCompatibilityBanner": {
+      "title": "Vous utilisez une version éventuellement incompatible du serveur Letta, veuillez définir votre version sur {version} pour une compatibilité maximale",
+      "description": "Vous pouvez définir votre version en exécutant la commande ci-dessous :"
+    },
+    "UpgradeBanner": {
+      "title": "Déployez, surveillez et faites évoluer vos agents en quelques secondes",
+      "description": "Letta Cloud est le moyen le plus simple d'évoluer sans infrastructure. ",
+      "cta": "Obtenez un accès anticipé",
+      "dismiss": "Fermer"
+    },
+    "description": "Letta vous permet de créer, déployer et surveiller des agents LLM avec état",
+    "title": "Bienvenue sur la plateforme de développement Letta !",
     "gettingStarted": {
       "title": "Commencer",
       "actions": {
         "createAgent": {
           "title": "Créer un agent",
-          "description": "Créez un agent à déployer sur votre serveur local."
+          "description": "Créez un agent à déployer sur votre serveur local"
+        },
+        "viewAgents": {
+          "title": "Voir les agents locaux",
+          "description": "Afficher tous vos agents sur le serveur local"
         }
       }
     }
   },
+  "starter-kits": {
+    "internetChatbot": {
+      "title": "Chatbot Internet",
+      "description": "Un chatbot à usage général conçu pour répondre aux requêtes via Internet"
+    },
+    "characterRoleplay": {
+      "title": "Jeu de rôle de personnage",
+      "description": "Créez un agent pour jouer le rôle d'un personnage d'un monde fantastique"
+    },
+    "personalAssistant": {
+      "title": "Assistant personnel",
+      "description": "Chat entre un utilisateur et un assistant personnel conçu pour améliorer la productivité de l'utilisateur"
+    },
+    "scratch": {
+      "title": "Repartir de zéro",
+      "description": "Commencez avec un agent vide avec un minimum d'outils par défaut et un état de mémoire initial vide"
+    },
+    "customerSupport": {
+      "title": "Assistance client",
+      "description": "Un agent conçu pour répondre aux demandes de support client"
+    },
+    "companion": {
+      "title": "Compagnon",
+      "description": "Discutez entre un utilisateur et un compagnon IA nommé Sam, conçu pour apprendre et s'adapter au fil du temps"
+    }
+  },
+  "component-library/reusable/ChatInput": {
+    "placeholder": "Tapez un message...",
+    "send": "Envoyer",
+    "role": {
+      "label": "Cliquez ici pour changer de rôle, le rôle actuel est {role}"
+    }
+  },
+  "component-library/core/Code": {
+    "errorResponse": "Réponse à l'erreur",
+    "dismiss": "Rejeter"
+  },
+  "development-servers/agents/new/page": {
+    "tools": "<strong>Outils inclus :</strong> {Liste d'outils}",
+    "serverOffline": "Votre serveur est hors ligne, veuillez le démarrer pour créer un nouvel agent.",
+    "isFetchingStatus": "Désolé, nous essayons toujours de nous connecter à votre serveur. ",
+    "title": "Créer un nouvel agent",
+    "error": "Une erreur s'est produite lors de la création de l'agent. Vous trouverez ci-dessous le message d'erreur. Veuillez réessayer ou contacter l'assistance.",
+    "alert": {
+      "local": "votre serveur local (localhost)",
+      "title": "Vous créez un agent sur {serverName}",
+      "descriptionLocal": "Cela créera un agent localement sur votre machine. ",
+      "descriptionRemote": "Cela créera un agent sur le serveur distant. "
+    },
+    "loading": "Agent de création...",
+    "starterKits": {
+      "title": "Kits de démarrage",
+      "description": "Choisissez parmi un pack de démarrage et personnalisez-le dans l'ADE, ou repartez de zéro"
+    },
+    "back": "Tous les agents"
+  },
   "components/tutorials": {
     "title": "Tutoriels",
+    "comingSoon": "À venir",
     "createChatBotWithMemory": {
       "title": "Créer un chatbot avec mémoire",
-      "description": "Apprenez à créer un chatbot capable de mémoriser les informations des conversations précédentes."
+      "description": "Apprenez à créer un chatbot capable de mémoriser les informations des conversations précédentes"
     },
     "buildMultiAgentSystems": {
-      "title": "Construire des systèmes multi-agents",
-      "description": "Découvrez comment créer un système multi-agents pouvant interagir avec plusieurs agents."
+      "title": "Construction d'un système multi-agents",
+      "description": "Découvrez comment créer un système multi-agents dans lequel un agent orchestrateur contrôle plusieurs agents de travail (avec état)"
     },
-    "characterAIApp": {
-      "title": "Applications d'IA de personnages",
-      "description": "Apprenez à créer une IA de personnage capable d'interagir avec les utilisateurs de manière conversationnelle."
+    "discord": {
+      "title": "Créer un robot Discord",
+      "description": "Découvrez comment connecter les agents Letta à Discord pour créer des robots Discord dotés d'une mémoire à long terme et d'un accès à des outils puissants."
+    },
+    "voice": {
+      "title": "Activer le mode vocal",
+      "description": "Découvrez comment connecter les agents Letta à un service vocal pour permettre aux utilisateurs de discuter avec les agents par synthèse vocale et synthèse vocale."
     }
   },
   "development-servers/shared/CreateLocalAgentDialog": {
@@ -623,8 +1014,11 @@
       "placeholder": "mon-nom-d'agent"
     }
   },
+  "component-library/hooks/useCopyToClipboard": {
+    "copied": "Copié dans le presse-papiers"
+  },
   "projects/hooks": {
-    "remoteDevelopment": "Développement à distance"
+    "remoteDevelopment": "Auto-hébergé"
   },
   "development-servers/add": {
     "title": "Ajouter un serveur distant",
@@ -636,11 +1030,11 @@
     },
     "url": {
       "label": "URL du serveur",
-      "placeholder": "http://my-server-url.com",
+      "placeholder": "http://mon-serveur-url.com",
       "description": "Doit être au format suivant http://my-server-url.com ou http://my-server-url.com:8000"
     },
     "password": {
-      "label": "Mot de passe",
+      "label": "Mot de passe du serveur",
       "placeholder": "mon-serveur",
       "description": "Il doit s'agir du mot de passe généré aléatoirement lorsque vous avez démarré le serveur avec --secure"
     },
@@ -650,16 +1044,6 @@
     "localAgents": "Agents locaux"
   },
   "development-servers/page": {
-    "delete": "Supprimer",
-    "DeleteDevelopmentServerDialog": {
-      "error": "Une erreur s'est produite lors de la suppression du serveur distant. Veuillez réessayer ou contacter l'assistance.",
-      "title": "Supprimer la connexion au serveur distant",
-      "trigger": "Supprimer la connexion au serveur distant",
-      "confirm": "Supprimer",
-      "description": "Êtes-vous sûr de vouloir supprimer cette connexion au serveur distant ? "
-    },
-    "settings": "Paramètres",
-    "updateDetails": "Mettre à jour la configuration",
     "UpdateDevelopmentServerDetailsDialog": {
       "title": "Mettre à jour la connexion au serveur distant",
       "trigger": "Mettre à jour la connexion au serveur distant",
@@ -673,11 +1057,11 @@
         "error": "Ceci n'est pas une URL valide, veuillez vous assurer qu'elle est au format http://my-server-url.com"
       },
       "password": {
-        "label": "Mot de passe"
+        "label": "Mot de passe du serveur"
       }
     },
     "title": "Agents locaux",
-    "description": "Affichez vos agents disponibles exécutés sur le serveur Letta.",
+    "description": "Affichez vos agents disponibles exécutés sur le serveur Letta",
     "createAgent": "Créer un nouvel agent",
     "searchInput": {
       "placeholder": "Agents de recherche"
@@ -717,6 +1101,12 @@
     "error": "Une erreur s'est produite lors de la récupération de l'agent simulé. Veuillez réessayer ou contacter l'assistance."
   },
   "ADE/Tools": {
+    "ErrorMessageAlert": {
+      "title": "Une erreur s'est produite, voir ci-dessous pour plus de détails :",
+      "dismiss": "Rejeter"
+    },
+    "infoTooltip": "Connectez des outils à votre agent pour lui permettre d'effectuer des actions personnalisées",
+    "mobileTitle": "Outils",
     "title": "Outils ({toolCount})",
     "AddToolDialogDetailActions": {
       "addToAgent": "Ajouter à l'agent",
@@ -743,6 +1133,7 @@
       }
     },
     "EditTool": {
+      "error": "Une erreur s'est produite lors de la mise à jour de votre outil, voir ci-dessus pour plus de détails.",
       "cancel": "Annuler",
       "name": {
         "label": "Nom"
@@ -751,13 +1142,20 @@
         "label": "Description"
       },
       "sourceCode": {
-        "label": "Code source"
+        "label": "Code source",
+        "error": "Une erreur s'est produite lors de la mise à jour de votre outil, voir ci-dessous pour plus de détails."
       },
       "update": "Outil de mise à jour"
     },
+    "ToolEditor": {
+      "label": "Débogueur",
+      "inputLabel": "Entrée d'outil",
+      "outputLabel": "Sortie de l'outil"
+    },
     "ToolCreator": {
+      "errorResponse": "Une erreur s'est produite lors de la création de votre outil, voir ci-dessous pour plus de détails.",
+      "error": "Une erreur s'est produite lors de la création de votre outil, voir ci-dessus pour plus de détails.",
       "cancel": "Annuler",
-      "error": "Une erreur s'est produite lors de la création de cet outil, veuillez réessayer ou contacter l'assistance.",
       "name": {
         "label": "Nom",
         "placeholder": "mon-nom-outil",
@@ -765,7 +1163,8 @@
       },
       "description": {
         "label": "Description",
-        "placeholder": "description-de-mon-outil"
+        "placeholder": "description-de-mon-outil",
+        "validation": "Veuillez fournir une description de cet outil"
       },
       "sourceCode": {
         "label": "Code source",
@@ -799,7 +1198,8 @@
     },
     "ToolsList": {
       "removeTool": "Supprimer l'outil",
-      "lettaCoreTools": "Outils de base Letta ({toolCount})",
+      "lettaCoreTools": "Outils de base de Letta ({toolCount})",
+      "lettaCoreToolsInfo": "Outils par défaut ajoutés aux agents pour activer la gestion de la mémoire",
       "otherTools": "Autres outils ({toolCount})",
       "addNewTool": "Ajouter un nouvel outil"
     },
@@ -812,8 +1212,17 @@
     }
   },
   "ADE/ArchivalMemories": {
-    "title": "Souvenirs d'archives",
+    "infoTooltip": "Mémoires stockées dans une base de données externe (lecture-écriture)",
+    "ViewArchivalMemoryDialog": {
+      "trigger": "...voir tout",
+      "copyText": "Copier le texte de la mémoire",
+      "title": "Afficher la mémoire",
+      "label": "Texte de mémoire"
+    },
+    "title": "Souvenirs d'archives ({count})",
+    "mobileTitle": "Souvenirs d'archives",
     "MemoryItem": {
+      "copyText": "Copier le texte de la mémoire",
       "removeMemory": "Supprimer la mémoire",
       "deleteMemory": "Supprimer la mémoire",
       "deleteConfirm": "Supprimer la mémoire",
@@ -829,16 +1238,13 @@
     }
   },
   "projects/(projectSlug)/agents/(agentId)/AgentPage": {
+    "error": "Une erreur grave s'est produite dans cette application, veuillez actualiser cette page. ",
     "Navigation": {
-      "dashboard": "Tableau de bord",
-      "documentation": "Documentation",
-      "apiReference": "Référence API",
-      "support": "Soutien",
-      "supportPopover": {
-        "title": "Obtenez de l'aide via Discord",
-        "description": "Rejoignez notre serveur Discord pour obtenir l'aide de la communauté et de l'équipe Letta.",
-        "joinUs": "Rejoignez-nous sur Discord"
-      }
+      "dashboard": "Tableau de bord du projet"
+    },
+    "AgentMobileNavigation": {
+      "more": "Plus de panneaux",
+      "less": "Moins de panneaux"
     },
     "UpdateNameDialog": {
       "title": "Renommer {agentBaseType}",
@@ -870,15 +1276,20 @@
       "migrate": "Migrer tous les agents déployés vers cette version",
       "migrateDescription": "La sélection de cette option migrera tous les agents déployés vers cette version. Pour migrer les agents par programme, visitez le <link>Documentation API</link>."
     },
+    "CloudUpsellDeploy": {
+      "title": "Déployez, gérez et surveillez vos agents sur Letta Cloud",
+      "description": "Déployez votre agent sur Letta Cloud pour gérer et surveiller vos agents, obtenir des informations et bien plus encore. ",
+      "cta": "Demander un accès anticipé"
+    },
     "DeploymentButton": {
       "version": "VERSION {version}",
       "readyToDeploy": {
-        "trigger": "Déployer des agents",
+        "trigger": "Déployer",
         "heading": "Votre modèle est prêt à partir !",
         "copy": "Ce modèle n'a subi aucune modification depuis la dernière version. "
       },
       "updateAvailable": {
-        "trigger": "Déployer des agents",
+        "trigger": "Déployer",
         "heading": "Vous souhaiterez peut-être versionner votre modèle",
         "copy": "Ce modèle a subi des modifications depuis la dernière version. "
       }
@@ -916,6 +1327,7 @@
   "ADE/AdvancedSettings": {
     "title": "Avancé",
     "model": "Modèle",
+    "mobileTitle": "Avancé",
     "modelParameters": "Paramètres du modèle",
     "modelEndpoint": "Point de terminaison du modèle",
     "endpointType": "Type de point de terminaison",
@@ -928,7 +1340,7 @@
         "label": "Dimensions d'intégration"
       },
       "embeddingChunkSize": {
-        "label": "Taille du bloc d'intégration"
+        "label": "Taille du morceau d'intégration"
       }
     }
   },
@@ -965,8 +1377,8 @@
       "generatedCopy": "Nous vous avons généré une clé API, veuillez vous assurer de la stocker en toute sécurité.",
       "downloadText": "Télécharger la clé API",
       "copyToClipboard": "Copier la clé API dans le presse-papiers",
-      "description": "Fournir un nom descriptif pour identifier pour une utilisation ultérieure",
-      "label": "Nom"
+      "description": "Fournissez un nom descriptif pour identifier cette clé API",
+      "label": "Nom de la clé API"
     }
   },
   "ADE/DeploymentAgentMangerPanel": {

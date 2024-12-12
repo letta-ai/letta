@@ -12,6 +12,7 @@ interface ImageCardProps {
   altText: string;
   title: string;
   description: string;
+  variant?: 'default' | 'inline';
   className?: string;
   href?: string;
   onClick?: () => void;
@@ -25,6 +26,7 @@ export function ImageCard(props: ImageCardProps) {
     imageUrl,
     className,
     altText,
+    variant,
     title,
     description,
     href,
@@ -35,6 +37,44 @@ export function ImageCard(props: ImageCardProps) {
   } = props;
 
   const Component = href ? 'a' : 'button';
+
+  if (variant === 'inline') {
+    return (
+      <Component
+        className="contents"
+        href={href}
+        onClick={onClick}
+        target={target}
+      >
+        <Card
+          className={cn(
+            'h-full flex flex-row gap-2 hover:bg-tertiary-hover',
+            className
+          )}
+        >
+          <Image
+            className="max-h-[72px] max-w-[72px] object-cover bg-background-grey"
+            src={imageUrl}
+            alt={altText}
+          />
+          <VStack>
+            <VStack gap={false} fullHeight flex align="start">
+              <Typography bold align="left">
+                {title}
+              </Typography>
+              <Typography className="line-clamp-2" align="left">
+                {description}
+              </Typography>
+            </VStack>
+            <VStack align="start" justify="start" fullWidth>
+              {children}
+            </VStack>
+            {badge && <HStack justify="end">{badge}</HStack>}
+          </VStack>
+        </Card>
+      </Component>
+    );
+  }
 
   return (
     <Component

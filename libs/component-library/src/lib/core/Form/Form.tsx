@@ -157,9 +157,42 @@ function FormItem({ children }: FormItemProps) {
   );
 }
 
+type LabelVariant = 'default' | 'simple';
+
+interface InputContainerHeaderProps {
+  preLabelIcon?: React.ReactNode;
+  infoTooltip?: {
+    text: string;
+  };
+  label: string;
+  variant?: LabelVariant;
+}
+
+function InputContainerHeader(props: InputContainerHeaderProps) {
+  const { preLabelIcon, label, infoTooltip, variant = 'default' } = props;
+  return (
+    <HStack>
+      <HStack gap="small" align="center">
+        {preLabelIcon && <Slot className="h-3">{preLabelIcon}</Slot>}
+        <Typography
+          variant={variant === 'default' ? 'body2' : 'body'}
+          color={
+            variant === 'default' ? 'forceTextSecondary' : 'forceTextPrimary'
+          }
+          uppercase={variant === 'default'}
+        >
+          {label}
+        </Typography>
+      </HStack>
+      {infoTooltip && <InfoTooltip text={infoTooltip.text} />}
+    </HStack>
+  );
+}
+
 export interface InputContainerProps {
   label: string;
   preLabelIcon?: React.ReactNode;
+  labelVariant?: LabelVariant;
   hideLabel?: boolean;
   description?: React.ReactNode | string;
   inline?: boolean | 'reverse';
@@ -181,6 +214,7 @@ export function InputContainer(props: InputContainerProps) {
     preLabelIcon,
     fullWidth,
     fullHeight,
+    labelVariant,
     flex,
     description,
     inline,
@@ -204,15 +238,12 @@ export function InputContainer(props: InputContainerProps) {
               justify="spaceBetween"
             >
               <FormLabel>
-                <HStack>
-                  <HStack gap="text">
-                    {preLabelIcon && (
-                      <Slot className="h-3">{preLabelIcon}</Slot>
-                    )}
-                    {label}
-                  </HStack>
-                  {infoTooltip && <InfoTooltip text={infoTooltip.text} />}
-                </HStack>
+                <InputContainerHeader
+                  variant={labelVariant}
+                  preLabelIcon={preLabelIcon}
+                  label={label}
+                  infoTooltip={infoTooltip}
+                />
               </FormLabel>
               {rightOfLabelContent}
             </HStack>
@@ -270,13 +301,11 @@ export function RawInputContainer(props: RawInputContainerProps) {
               htmlFor={id}
               className="flex flex-row gap-1 items-center"
             >
-              <HStack align="center" gap="small">
-                <HStack align="center" gap="text">
-                  {preLabelIcon && <Slot className="h-3">{preLabelIcon}</Slot>}
-                  {label}
-                </HStack>
-                {infoTooltip && <InfoTooltip text={infoTooltip.text} />}
-              </HStack>
+              <InputContainerHeader
+                preLabelIcon={preLabelIcon}
+                label={label}
+                infoTooltip={infoTooltip}
+              />
             </LabelPrimitive>
             {rightOfLabelContent}
           </HStack>
@@ -306,7 +335,7 @@ interface MakeInputOptions {
   container?: MakeInputOptionsContainerType;
 }
 
-const omitProps = ['rightOfLabelContent', 'infoTooltip'];
+const omitProps = ['rightOfLabelContent', 'infoTooltip', 'labelVariant'];
 
 export function makeInput<T>(
   Input: React.ComponentType<T>,

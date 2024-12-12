@@ -140,9 +140,7 @@ function ContextWindowPanel() {
     postMessage({
       templateString: memory.prompt_template || '',
       context: {
-        memory: Object.fromEntries(
-          memory.blocks.map((block) => [block.label, block])
-        ),
+        memory: memory.blocks,
       },
     });
   }, [memory, postMessage]);

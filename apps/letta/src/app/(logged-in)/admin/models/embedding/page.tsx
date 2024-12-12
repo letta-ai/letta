@@ -227,7 +227,7 @@ function AdminEmbeddingModelsPage() {
       },
     });
 
-  const { formatDate } = useDateFormatter();
+  const { formatDateAndTime } = useDateFormatter();
 
   const embeddingModelsColumns: Array<ColumnDef<AdminEmbeddingModelType>> =
     useMemo(
@@ -257,7 +257,7 @@ function AdminEmbeddingModelsPage() {
         {
           header: 'Created at',
           accessorKey: 'createdAt',
-          cell: ({ row }) => formatDate(row.original.updatedAt),
+          cell: ({ row }) => formatDateAndTime(row.original.updatedAt),
         },
         {
           header: 'Visible to users',
@@ -278,7 +278,7 @@ function AdminEmbeddingModelsPage() {
           ),
         },
       ],
-      [formatDate]
+      [formatDateAndTime]
     );
 
   const embeddingModels = useMemo(() => {

@@ -8,6 +8,35 @@ iconType: "solid"
 
 We recommend running the Letta service using the docker container. 
 
+_The recommended way to use Letta is to run use Docker. To install Docker, see [Docker's installation guide](https://docs.docker.com/get-docker/). For issues with installing Docker, see [Docker's troubleshooting guide](https://docs.docker.com/desktop/troubleshoot-and-support/troubleshoot/). You can also install Letta using `pip` (see instructions [below](#-quickstart-pip))._
+
+### 🌖 Run the Letta server
+
+> [!NOTE]
+> Letta agents live inside the Letta server, which persists them to a database. You can interact with the Letta agents inside your Letta server via the [REST API](https://docs.letta.com/api-reference) + Python / Typescript SDKs, and the [Agent Development Environment](https://app.letta.com) (a graphical interface).
+
+The Letta server can be connected to various LLM API backends ([OpenAI](https://docs.letta.com/models/openai), [Anthropic](https://docs.letta.com/models/anthropic), [vLLM](https://docs.letta.com/models/vllm), [Ollama](https://docs.letta.com/models/ollama), etc.). To enable access to these LLM API providers, set the appropriate environment variables when you use `docker run`:
+```sh
+# replace `~/.letta/.persist/pgdata` with wherever you want to store your agent data
+docker run \
+  -v ~/.letta/.persist/pgdata:/var/lib/postgresql/data \
+  -p 8283:8283 \
+  -e OPENAI_API_KEY="your_openai_api_key" \
+  letta/letta:latest
+```
+
+If you have many different LLM API keys, you can also set up a `.env` file instead and pass that to `docker run`:
+```sh
+# using a .env file instead of passing environment variables
+docker run \
+  -v ~/.letta/.persist/pgdata:/var/lib/postgresql/data \
+  -p 8283:8283 \
+  --env-file .env \
+  letta/letta:latest
+```
+
+Once the Letta server is running, you can access it via port `8283` (e.g. sending REST API requests to `http://localhost:8283/v1`). You can also connect your server to the Letta ADE to access and manage your agents in a web interface.
+
 ## Running with Docker
 <Steps>
   <Step title="Download the docker container">

@@ -2,10 +2,10 @@
 
 import {
   DashboardWithSidebarWrapper,
-  Robot2Icon,
-  ControllerIcon,
-  FactoryIcon,
-  FolderManagedIcon,
+  LettaInvaderOutlineIcon,
+  SpaceDashboardIcon,
+  TabGroupIcon,
+  InstantMixIcon,
 } from '@letta-web/component-library';
 import { useTranslations } from 'next-intl';
 import type { PropsWithChildren } from 'react';
@@ -25,25 +25,25 @@ export function ProjectLayoutInner(props: ProjectLayoutInnerProps) {
       navigationItems={[
         {
           id: 'home',
-          icon: <ControllerIcon />,
+          icon: <SpaceDashboardIcon />,
           label: t('nav.home'),
           href: `/projects/${projectSlug}`,
         },
         {
-          icon: <Robot2Icon />,
+          icon: <LettaInvaderOutlineIcon />,
           id: 'agents',
           label: t('nav.agents'),
           href: `/projects/${projectSlug}/agents`,
         },
         {
           id: 'templates',
-          icon: <FactoryIcon />,
+          icon: <TabGroupIcon />,
           label: t('nav.templates'),
           href: `/projects/${projectSlug}/templates`,
         },
         {
           id: 'settings',
-          icon: <FolderManagedIcon />,
+          icon: <InstantMixIcon />,
           label: t('nav.settings'),
           href: `/projects/${projectSlug}/settings`,
         },

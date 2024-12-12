@@ -3,6 +3,7 @@ import { VStack } from '../../framing/VStack/VStack';
 import { LettaLoader } from '../../core/LettaLoader/LettaLoader';
 import { useMemo } from 'react';
 import type { LogoBaseProps } from '../../marketing/Logo/Logo';
+import { cn } from '@letta-web/core-style-config';
 
 interface DashboardStatusComponentProps {
   loadingMessage?: string;
@@ -10,6 +11,8 @@ interface DashboardStatusComponentProps {
   emptyAction?: React.ReactNode;
   errorMessage?: string;
   errorAction?: React.ReactNode;
+  noMinHeight?: boolean;
+  className?: string;
   isLoading?: boolean;
   isError?: boolean;
 }
@@ -21,9 +24,11 @@ export function LoadingEmptyStatusComponent(
     emptyMessage,
     isError,
     errorMessage,
+    noMinHeight,
     errorAction,
     loadingMessage,
     isLoading,
+    className,
     emptyAction,
   } = props;
 
@@ -67,7 +72,7 @@ export function LoadingEmptyStatusComponent(
     <VStack
       fullHeight
       fullWidth
-      className="min-h-[400px]"
+      className={cn(noMinHeight ? '' : 'min-h-[400px]', className)}
       align="center"
       justify="center"
     >

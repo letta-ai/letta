@@ -12,7 +12,7 @@ export function Body(props: BodyProps) {
 
   return (
     <body className={theme?.value} data-mode={theme?.value}>
-      {children}
+      <div className="min-h-[100dvh]">{children}</div>
     </body>
   );
 }

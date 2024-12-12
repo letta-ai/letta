@@ -15,6 +15,7 @@ import type {
   GenericPanelTemplateId,
   PanelItemPositionsMatrix,
 } from '@letta-web/component-library';
+import type { ProviderConfiguration } from '@letta-web/types';
 
 export const emailWhitelist = pgTable('email_whitelist', {
   id: text('id')
@@ -37,6 +38,7 @@ export const organizations = pgTable('organizations', {
   enabledCloudAt: timestamp('enabled_cloud_at'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   deletedAt: timestamp('deleted_at'),
+  bannedAt: timestamp('banned_at'),
   updatedAt: timestamp('updated_at')
     .notNull()
     .$onUpdate(() => new Date()),
@@ -94,7 +96,9 @@ export const users = pgTable('users', {
   lettaAgentsId: text('letta_agents_id').notNull().unique(),
   theme: text('theme').default('light'),
   locale: text('locale').default('en'),
+  submittedOnboardingAt: timestamp('submitted_onboarding_at'),
   deletedAt: timestamp('deleted_at'),
+  bannedAt: timestamp('banned_at'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at')
     .notNull()
@@ -107,7 +111,36 @@ export const userRelations = relations(users, ({ many, one }) => ({
     fields: [users.activeOrganizationId],
     references: [organizations.id],
   }),
+  userMarketingDetails: one(userMarketingDetails, {
+    fields: [users.id],
+    references: [userMarketingDetails.userId],
+  }),
 }));
+
+export const userMarketingDetails = pgTable('user_marketing_details', {
+  userId: text('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' })
+    .primaryKey(),
+  useCases: json('use_cases').$type<string[]>(),
+  reasons: json('reasons').$type<string[]>(),
+  hubSpotContactId: text('hubspot_contact_id'),
+  consentedToEmailsAt: timestamp('consented_to_emails_at'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at')
+    .notNull()
+    .$onUpdate(() => new Date()),
+});
+
+export const userMarketingDetailsRelations = relations(
+  userMarketingDetails,
+  ({ one }) => ({
+    user: one(users, {
+      fields: [userMarketingDetails.userId],
+      references: [users.id],
+    }),
+  })
+);
 
 export interface OrganizationPermissionType {
   isOrganizationAdmin?: boolean;
@@ -640,3 +673,45 @@ export const embeddingModelsMetadata = pgTable(
     },
   })
 );
+
+export const toolMetadataProviderEnum = pgEnum('provider_enum', [
+  'composio',
+  'generic',
+]);
+
+export const toolMetadata = pgTable(
+  'tool_metadata',
+  {
+    id: text('id')
+      .notNull()
+      .unique()
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    name: text('name').notNull(),
+    description: text('description').notNull(),
+    brand: text('brand').notNull(),
+    provider: toolMetadataProviderEnum('provider').notNull(),
+    providerId: text('provider_id').notNull(),
+    configuration: json('configuration').$type<ProviderConfiguration>(),
+    tags: text('tags').notNull(),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    disabledAt: timestamp('disabled_at'),
+    updatedAt: timestamp('updated_at')
+      .notNull()
+      .$onUpdate(() => new Date()),
+  },
+  (self) => ({
+    unique: {
+      uniqueProviderId: uniqueIndex('unique_provider_id').on(
+        self.provider,
+        self.providerId
+      ),
+    },
+  })
+);
+
+export const toolGroupMetadata = pgTable('tool_group_metadata', {
+  brand: text('brand').notNull().unique().primaryKey(),
+  imageUrl: text('image_url'),
+  description: text('description').notNull(),
+});

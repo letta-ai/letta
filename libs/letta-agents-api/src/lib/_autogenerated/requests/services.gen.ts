@@ -20,6 +20,14 @@ import type {
   UpsertToolResponse,
   AddBaseToolsData,
   AddBaseToolsResponse,
+  RunToolFromSourceData,
+  RunToolFromSourceResponse,
+  ListComposioAppsData,
+  ListComposioAppsResponse,
+  ListComposioActionsByAppData,
+  ListComposioActionsByAppResponse,
+  AddComposioToolData,
+  AddComposioToolResponse,
   GetSourceData,
   GetSourceResponse,
   UpdateSourceData,
@@ -94,8 +102,10 @@ import type {
   CreateAgentMessageResponse,
   UpdateAgentMessageData,
   UpdateAgentMessageResponse,
-  CreateAgentMessage1Data,
-  CreateAgentMessage1Response,
+  CreateAgentMessageStreamData,
+  CreateAgentMessageStreamResponse,
+  CreateAgentMessageAsyncData,
+  CreateAgentMessageAsyncResponse,
   ListModelsResponse,
   ListEmbeddingModelsResponse,
   ListMemoryBlocksData,
@@ -108,10 +118,10 @@ import type {
   DeleteMemoryBlockResponse,
   GetMemoryBlockData,
   GetMemoryBlockResponse,
-  UpdateAgentMemoryBlockData,
-  UpdateAgentMemoryBlockResponse,
-  UpdateAgentMemoryBlock1Data,
-  UpdateAgentMemoryBlock1Response,
+  LinkAgentMemoryBlockData,
+  LinkAgentMemoryBlockResponse,
+  UnlinkAgentMemoryBlockData,
+  UnlinkAgentMemoryBlockResponse,
   ListJobsData,
   ListJobsResponse,
   ListActiveJobsData,
@@ -366,6 +376,105 @@ export class ToolsService {
     return __request(OpenAPI, {
       method: 'POST',
       url: '/v1/tools/add-base-tools',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Run Tool From Source
+   * Attempt to build a tool from source, then run it on the provided arguments
+   * @param data The data for the request.
+   * @param data.requestBody
+   * @param data.userId
+   * @returns FunctionReturn Successful Response
+   * @throws ApiError
+   */
+  public static runToolFromSource(
+    data: RunToolFromSourceData,
+    headers?: { user_id: string }
+  ): CancelablePromise<RunToolFromSourceResponse> {
+    return __request(OpenAPI, {
+      method: 'POST',
+      url: '/v1/tools/run',
+      body: data.requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * List Composio Apps
+   * Get a list of all Composio apps
+   * @param data The data for the request.
+   * @param data.userId
+   * @returns AppModel Successful Response
+   * @throws ApiError
+   */
+  public static listComposioApps(
+    data: ListComposioAppsData = {},
+    headers?: { user_id: string }
+  ): CancelablePromise<ListComposioAppsResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/tools/composio/apps',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * List Composio Actions By App
+   * Get a list of all Composio actions for a specific app
+   * @param data The data for the request.
+   * @param data.composioAppName
+   * @param data.userId
+   * @returns ActionModel Successful Response
+   * @throws ApiError
+   */
+  public static listComposioActionsByApp(
+    data: ListComposioActionsByAppData,
+    headers?: { user_id: string }
+  ): CancelablePromise<ListComposioActionsByAppResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/tools/composio/apps/{composio_app_name}/actions',
+      path: {
+        composio_app_name: data.composioAppName,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Add Composio Tool
+   * Add a new Composio tool by action name (Composio refers to each tool as an `Action`)
+   * @param data The data for the request.
+   * @param data.composioActionName
+   * @param data.userId
+   * @returns letta__schemas__tool__Tool Successful Response
+   * @throws ApiError
+   */
+  public static addComposioTool(
+    data: AddComposioToolData,
+    headers?: { user_id: string }
+  ): CancelablePromise<AddComposioToolResponse> {
+    return __request(OpenAPI, {
+      method: 'POST',
+      url: '/v1/tools/composio/{composio_action_name}',
+      path: {
+        composio_action_name: data.composioActionName,
+      },
       errors: {
         422: 'Validation Error',
       },
@@ -847,7 +956,7 @@ export class AgentsService {
    * @param data The data for the request.
    * @param data.agentId
    * @param data.userId
-   * @returns unknown Successful Response
+   * @returns AgentState Successful Response
    * @throws ApiError
    */
   public static deleteAgent(
@@ -979,7 +1088,7 @@ export class AgentsService {
    * Retrieve the messages in the context of a specific agent.
    * @param data The data for the request.
    * @param data.agentId
-   * @returns letta__schemas__message__Message_Output Successful Response
+   * @returns letta__schemas__message__Message Successful Response
    * @throws ApiError
    */
   public static listAgentInContextMessages(
@@ -1383,7 +1492,7 @@ export class AgentsService {
    * @param data.agentId
    * @param data.messageId
    * @param data.requestBody
-   * @returns letta__schemas__message__Message_Output Successful Response
+   * @returns letta__schemas__message__Message Successful Response
    * @throws ApiError
    */
   public static updateAgentMessage(
@@ -1418,13 +1527,43 @@ export class AgentsService {
    * @returns unknown Successful response
    * @throws ApiError
    */
-  public static createAgentMessage1(
-    data: CreateAgentMessage1Data,
+  public static createAgentMessageStream(
+    data: CreateAgentMessageStreamData,
     headers?: { user_id: string }
-  ): CancelablePromise<CreateAgentMessage1Response> {
+  ): CancelablePromise<CreateAgentMessageStreamResponse> {
     return __request(OpenAPI, {
       method: 'POST',
       url: '/v1/agents/{agent_id}/messages/stream',
+      path: {
+        agent_id: data.agentId,
+      },
+      body: data.requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Send Message Async
+   * Asynchronously process a user message and return a job ID.
+   * The actual processing happens in the background, and the status can be checked using the job ID.
+   * @param data The data for the request.
+   * @param data.agentId
+   * @param data.requestBody
+   * @param data.userId
+   * @returns Job Successful Response
+   * @throws ApiError
+   */
+  public static createAgentMessageAsync(
+    data: CreateAgentMessageAsyncData,
+    headers?: { user_id: string }
+  ): CancelablePromise<CreateAgentMessageAsyncResponse> {
+    return __request(OpenAPI, {
+      method: 'POST',
+      url: '/v1/agents/{agent_id}/messages/async',
       path: {
         agent_id: data.agentId,
       },
@@ -1644,10 +1783,10 @@ export class BlocksService {
    * @returns Block Successful Response
    * @throws ApiError
    */
-  public static updateAgentMemoryBlock(
-    data: UpdateAgentMemoryBlockData,
+  public static linkAgentMemoryBlock(
+    data: LinkAgentMemoryBlockData,
     headers?: { user_id: string }
-  ): CancelablePromise<UpdateAgentMemoryBlockResponse> {
+  ): CancelablePromise<LinkAgentMemoryBlockResponse> {
     return __request(OpenAPI, {
       method: 'PATCH',
       url: '/v1/blocks/{block_id}/attach',
@@ -1674,10 +1813,10 @@ export class BlocksService {
    * @returns Memory Successful Response
    * @throws ApiError
    */
-  public static updateAgentMemoryBlock1(
-    data: UpdateAgentMemoryBlock1Data,
+  public static unlinkAgentMemoryBlock(
+    data: UnlinkAgentMemoryBlockData,
     headers?: { user_id: string }
-  ): CancelablePromise<UpdateAgentMemoryBlock1Response> {
+  ): CancelablePromise<UnlinkAgentMemoryBlockResponse> {
     return __request(OpenAPI, {
       method: 'PATCH',
       url: '/v1/blocks/{block_id}/detach',
@@ -1749,6 +1888,7 @@ export class JobsService {
    * Get the status of a job.
    * @param data The data for the request.
    * @param data.jobId
+   * @param data.userId
    * @returns Job Successful Response
    * @throws ApiError
    */
@@ -1774,6 +1914,7 @@ export class JobsService {
    * Delete a job by its job_id.
    * @param data The data for the request.
    * @param data.jobId
+   * @param data.userId
    * @returns Job Successful Response
    * @throws ApiError
    */

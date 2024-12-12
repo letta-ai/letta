@@ -45,61 +45,37 @@
                     "nullable": true,
                     "description": "A list of message IDs associated with the agent"
                   },
-                  "memory": {
-                    "type": "object",
-                    "properties": {
-                      "memory": {
-                        "type": "object",
-                        "additionalProperties": {
+                  "memory_blocks": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "value": {
+                          "type": "string"
+                        },
+                        "limit": {
+                          "type": "number"
+                        },
+                        "name": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "label": {
+                          "type": "string"
+                        },
+                        "description": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "metadata_": {
                           "type": "object",
-                          "properties": {
-                            "value": {
-                              "type": "string"
-                            },
-                            "limit": {
-                              "type": "number"
-                            },
-                            "name": {
-                              "type": "string",
-                              "nullable": true
-                            },
-                            "label": {
-                              "type": "string",
-                              "nullable": true
-                            },
-                            "description": {
-                              "type": "string",
-                              "nullable": true
-                            },
-                            "metadata_": {
-                              "type": "object",
-                              "additionalProperties": {}
-                            },
-                            "id": {
-                              "type": "string"
-                            },
-                            "organization_id": {
-                              "type": "string",
-                              "nullable": true
-                            },
-                            "created_by_id": {
-                              "type": "string",
-                              "nullable": true
-                            },
-                            "last_updated_by_id": {
-                              "type": "string",
-                              "nullable": true
-                            },
-                            "is_template": {
-                              "type": "boolean"
-                            }
-                          },
-                          "required": ["value"]
+                          "additionalProperties": {}
+                        },
+                        "is_template": {
+                          "type": "boolean"
                         }
                       },
-                      "prompt_template": {
-                        "type": "string"
-                      }
+                      "required": ["value", "label"]
                     },
                     "nullable": true
                   },

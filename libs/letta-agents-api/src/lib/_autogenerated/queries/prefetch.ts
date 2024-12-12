@@ -60,6 +60,36 @@ export const prefetchUseToolsServiceListTools = (
     queryKey: Common.UseToolsServiceListToolsKeyFn({ cursor, limit, userId }),
     queryFn: () => ToolsService.listTools({ cursor, limit, userId }),
   });
+export const prefetchUseToolsServiceListComposioApps = (
+  queryClient: QueryClient,
+  {
+    userId,
+  }: {
+    userId?: string;
+  } = {}
+) =>
+  queryClient.prefetchQuery({
+    queryKey: Common.UseToolsServiceListComposioAppsKeyFn({ userId }),
+    queryFn: () => ToolsService.listComposioApps({ userId }),
+  });
+export const prefetchUseToolsServiceListComposioActionsByApp = (
+  queryClient: QueryClient,
+  {
+    composioAppName,
+    userId,
+  }: {
+    composioAppName: string;
+    userId?: string;
+  }
+) =>
+  queryClient.prefetchQuery({
+    queryKey: Common.UseToolsServiceListComposioActionsByAppKeyFn({
+      composioAppName,
+      userId,
+    }),
+    queryFn: () =>
+      ToolsService.listComposioActionsByApp({ composioAppName, userId }),
+  });
 export const prefetchUseSourcesServiceGetSource = (
   queryClient: QueryClient,
   {
@@ -478,13 +508,15 @@ export const prefetchUseJobsServiceGetJob = (
   queryClient: QueryClient,
   {
     jobId,
+    userId,
   }: {
     jobId: string;
+    userId?: string;
   }
 ) =>
   queryClient.prefetchQuery({
-    queryKey: Common.UseJobsServiceGetJobKeyFn({ jobId }),
-    queryFn: () => JobsService.getJob({ jobId }),
+    queryKey: Common.UseJobsServiceGetJobKeyFn({ jobId, userId }),
+    queryFn: () => JobsService.getJob({ jobId, userId }),
   });
 export const prefetchUseHealthServiceHealthCheck = (queryClient: QueryClient) =>
   queryClient.prefetchQuery({

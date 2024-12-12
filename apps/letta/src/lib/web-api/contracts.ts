@@ -32,7 +32,7 @@ import {
 import {
   adminOrganizationsContracts,
   adminOrganizationsQueryClientKeys,
-} from '$letta/web-api/admin/admin-organizations/adminOrganizationsContracts';
+} from '$letta/web-api/admin/organizations/adminOrganizationsContracts';
 import {
   adminModelsContracts,
   adminModelsQueryClientKeys,
@@ -41,6 +41,16 @@ import {
   environmentVariablesContracts,
   environmentVariablesQueryKeys,
 } from '$letta/web-api/environment-variables/environmentVariablesContracts';
+import {
+  adminUsersContracts,
+  adminUsersQueryClientKeys,
+} from '$letta/web-api/admin/users/adminUsersContracts';
+import {
+  usageContracts,
+  usageQueryKeys,
+} from '$letta/web-api/usage/usageContract';
+import { adminToolMetadataContracts } from '$letta/web-api/admin/tool-metadata/adminToolMetadataContracts';
+import { toolMetadataContracts, toolMetadataQueryClientKeys } from '$letta/web-api/tool-metadata/toolMetadataContract';
 
 export const contracts = {
   user: userContract,
@@ -52,7 +62,11 @@ export const contracts = {
   agentTemplates: agentTemplatesContracts,
   developmentServers: developmentServersContracts,
   environmentVariables: environmentVariablesContracts,
+  usage: usageContracts,
+  toolMetadata: toolMetadataContracts,
   admin: {
+    toolMetadata: adminToolMetadataContracts,
+    users: adminUsersContracts,
     models: adminModelsContracts,
     flushLayouts: flushLayoutsContract,
     whitelistedEmails: adminWhitelistedEmailsContract,
@@ -70,8 +84,10 @@ export const queryClientKeys = {
   adePreferences: adePreferencesQueryClientKeys,
   developmentServers: developmentServerQueryClientKeys,
   environmentVariables: environmentVariablesQueryKeys,
-
+  usage: usageQueryKeys,
+  toolMetadata: toolMetadataQueryClientKeys,
   admin: {
+    users: adminUsersQueryClientKeys,
     models: adminModelsQueryClientKeys,
     whitelistedEmails: adminWhitelistedEmailsQueryKeys,
     organizations: adminOrganizationsQueryClientKeys,

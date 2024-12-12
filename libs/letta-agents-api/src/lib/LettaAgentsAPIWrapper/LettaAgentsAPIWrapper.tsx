@@ -56,6 +56,13 @@ export function LettaAgentsAPIWrapper({
 
       return config;
     });
+
+    return () => {
+      OpenAPI.interceptors.request.use((config) => {
+        config.baseURL = '';
+        return config;
+      });
+    };
   }, [baseUrl, password]);
 
   return React.createElement(

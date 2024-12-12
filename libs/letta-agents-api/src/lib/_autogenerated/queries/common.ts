@@ -78,6 +78,45 @@ export const UseToolsServiceListToolsKeyFn = (
   useToolsServiceListToolsKey,
   ...(queryKey ?? [{ cursor, limit, userId }]),
 ];
+export type ToolsServiceListComposioAppsDefaultResponse = Awaited<
+  ReturnType<typeof ToolsService.listComposioApps>
+>;
+export type ToolsServiceListComposioAppsQueryResult<
+  TData = ToolsServiceListComposioAppsDefaultResponse,
+  TError = unknown
+> = UseQueryResult<TData, TError>;
+export const useToolsServiceListComposioAppsKey =
+  'ToolsServiceListComposioApps';
+export const UseToolsServiceListComposioAppsKeyFn = (
+  {
+    userId,
+  }: {
+    userId?: string;
+  } = {},
+  queryKey?: Array<unknown>
+) => [useToolsServiceListComposioAppsKey, ...(queryKey ?? [{ userId }])];
+export type ToolsServiceListComposioActionsByAppDefaultResponse = Awaited<
+  ReturnType<typeof ToolsService.listComposioActionsByApp>
+>;
+export type ToolsServiceListComposioActionsByAppQueryResult<
+  TData = ToolsServiceListComposioActionsByAppDefaultResponse,
+  TError = unknown
+> = UseQueryResult<TData, TError>;
+export const useToolsServiceListComposioActionsByAppKey =
+  'ToolsServiceListComposioActionsByApp';
+export const UseToolsServiceListComposioActionsByAppKeyFn = (
+  {
+    composioAppName,
+    userId,
+  }: {
+    composioAppName: string;
+    userId?: string;
+  },
+  queryKey?: Array<unknown>
+) => [
+  useToolsServiceListComposioActionsByAppKey,
+  ...(queryKey ?? [{ composioAppName, userId }]),
+];
 export type SourcesServiceGetSourceDefaultResponse = Awaited<
   ReturnType<typeof SourcesService.getSource>
 >;
@@ -613,11 +652,13 @@ export const useJobsServiceGetJobKey = 'JobsServiceGetJob';
 export const UseJobsServiceGetJobKeyFn = (
   {
     jobId,
+    userId,
   }: {
     jobId: string;
+    userId?: string;
   },
   queryKey?: Array<unknown>
-) => [useJobsServiceGetJobKey, ...(queryKey ?? [{ jobId }])];
+) => [useJobsServiceGetJobKey, ...(queryKey ?? [{ jobId, userId }])];
 export type HealthServiceHealthCheckDefaultResponse = Awaited<
   ReturnType<typeof HealthService.healthCheck>
 >;
@@ -796,6 +837,12 @@ export type ToolsServiceCreateToolMutationResult = Awaited<
 export type ToolsServiceAddBaseToolsMutationResult = Awaited<
   ReturnType<typeof ToolsService.addBaseTools>
 >;
+export type ToolsServiceRunToolFromSourceMutationResult = Awaited<
+  ReturnType<typeof ToolsService.runToolFromSource>
+>;
+export type ToolsServiceAddComposioToolMutationResult = Awaited<
+  ReturnType<typeof ToolsService.addComposioTool>
+>;
 export type SourcesServiceCreateSourceMutationResult = Awaited<
   ReturnType<typeof SourcesService.createSource>
 >;
@@ -820,8 +867,11 @@ export type AgentsServiceCreateAgentArchivalMemoryMutationResult = Awaited<
 export type AgentsServiceCreateAgentMessageMutationResult = Awaited<
   ReturnType<typeof AgentsService.createAgentMessage>
 >;
-export type AgentsServiceCreateAgentMessage1MutationResult = Awaited<
-  ReturnType<typeof AgentsService.createAgentMessage1>
+export type AgentsServiceCreateAgentMessageStreamMutationResult = Awaited<
+  ReturnType<typeof AgentsService.createAgentMessageStream>
+>;
+export type AgentsServiceCreateAgentMessageAsyncMutationResult = Awaited<
+  ReturnType<typeof AgentsService.createAgentMessageAsync>
 >;
 export type BlocksServiceCreateMemoryBlockMutationResult = Awaited<
   ReturnType<typeof BlocksService.createMemoryBlock>
@@ -904,11 +954,11 @@ export type AgentsServiceUpdateAgentMessageMutationResult = Awaited<
 export type BlocksServiceUpdateMemoryBlockMutationResult = Awaited<
   ReturnType<typeof BlocksService.updateMemoryBlock>
 >;
-export type BlocksServiceUpdateAgentMemoryBlockMutationResult = Awaited<
-  ReturnType<typeof BlocksService.updateAgentMemoryBlock>
+export type BlocksServiceLinkAgentMemoryBlockMutationResult = Awaited<
+  ReturnType<typeof BlocksService.linkAgentMemoryBlock>
 >;
-export type BlocksServiceUpdateAgentMemoryBlock1MutationResult = Awaited<
-  ReturnType<typeof BlocksService.updateAgentMemoryBlock1>
+export type BlocksServiceUnlinkAgentMemoryBlockMutationResult = Awaited<
+  ReturnType<typeof BlocksService.unlinkAgentMemoryBlock>
 >;
 export type SandboxConfigServiceUpdateSandboxConfigV1SandboxConfigSandboxConfigIdPatchMutationResult =
   Awaited<

@@ -263,7 +263,6 @@ function AdvancedEditMemory(props: AdvancedEditMemoryProps) {
   return (
     <Dialog
       isOpen
-      noContentPadding
       disableForm
       preventCloseFromOutside
       size="full"
@@ -305,7 +304,7 @@ interface EditMemoryFormProps extends AdvancedEditorPayload {
 function EditMemoryForm(props: EditMemoryFormProps) {
   const { label, memory, isModelView } = props;
 
-  const { formatDate } = useDateFormatter();
+  const { formatDateAndTime } = useDateFormatter();
 
   const t = useTranslations('ADE/EditCoreMemoriesPanel');
 
@@ -375,7 +374,7 @@ function EditMemoryForm(props: EditMemoryFormProps) {
                 {!isUpdating &&
                   lastUpdatedAt &&
                   t('lastUpdated', {
-                    date: formatDate(lastUpdatedAt),
+                    date: formatDateAndTime(lastUpdatedAt),
                   })}
               </Typography>
             )}
@@ -437,6 +436,7 @@ function SimulatedMemory() {
           fullHeight
           resize="none"
           fullWidth
+          data-testid={`simulated-memory:${block.label}`}
           disabled
           label={block.label || ''}
           value={block.value}

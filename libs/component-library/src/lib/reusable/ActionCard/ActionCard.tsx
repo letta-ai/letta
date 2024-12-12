@@ -110,7 +110,7 @@ export const ActionCard = forwardRef<HTMLElement, ToggleCardProps>(
                 )}
                 align="center"
               >
-                {icon && <Slot className="w-5 h-5">{icon}</Slot>}
+                {icon && <Slot className="min-w-5 h-5">{icon}</Slot>}
                 {smallImage}
                 <VStack gap={false} align="start">
                   <HStack paddingRight fullWidth overflow="hidden">

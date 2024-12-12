@@ -84,6 +84,51 @@ export const useToolsServiceListToolsSuspense = <
     queryFn: () => ToolsService.listTools({ cursor, limit, userId }) as TData,
     ...options,
   });
+export const useToolsServiceListComposioAppsSuspense = <
+  TData = Common.ToolsServiceListComposioAppsDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[]
+>(
+  {
+    userId,
+  }: {
+    userId?: string;
+  } = {},
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
+) =>
+  useSuspenseQuery<TData, TError>({
+    queryKey: Common.UseToolsServiceListComposioAppsKeyFn({ userId }, queryKey),
+    queryFn: () => ToolsService.listComposioApps({ userId }) as TData,
+    ...options,
+  });
+export const useToolsServiceListComposioActionsByAppSuspense = <
+  TData = Common.ToolsServiceListComposioActionsByAppDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[]
+>(
+  {
+    composioAppName,
+    userId,
+  }: {
+    composioAppName: string;
+    userId?: string;
+  },
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
+) =>
+  useSuspenseQuery<TData, TError>({
+    queryKey: Common.UseToolsServiceListComposioActionsByAppKeyFn(
+      { composioAppName, userId },
+      queryKey
+    ),
+    queryFn: () =>
+      ToolsService.listComposioActionsByApp({
+        composioAppName,
+        userId,
+      }) as TData,
+    ...options,
+  });
 export const useSourcesServiceGetSourceSuspense = <
   TData = Common.SourcesServiceGetSourceDefaultResponse,
   TError = unknown,
@@ -703,15 +748,17 @@ export const useJobsServiceGetJobSuspense = <
 >(
   {
     jobId,
+    userId,
   }: {
     jobId: string;
+    userId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
 ) =>
   useSuspenseQuery<TData, TError>({
-    queryKey: Common.UseJobsServiceGetJobKeyFn({ jobId }, queryKey),
-    queryFn: () => JobsService.getJob({ jobId }) as TData,
+    queryKey: Common.UseJobsServiceGetJobKeyFn({ jobId, userId }, queryKey),
+    queryFn: () => JobsService.getJob({ jobId, userId }) as TData,
     ...options,
   });
 export const useHealthServiceHealthCheckSuspense = <

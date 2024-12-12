@@ -17,9 +17,10 @@ const typographyVariants = cva('break-words', {
     variant: {
       heading1: 'text-[1.8rem] font-semibold',
       heading2: 'text-[1.725rem] font-semibold',
-      heading3: 'text-[1.5rem]',
-      heading4: 'text-xl',
-      heading5: 'text-lg',
+      heading3: 'text-[1.5rem] font-semibold',
+      heading4: 'text-xl font-semibold',
+      heading5: 'text-lg font-semibold',
+      heading6: 'text-lg',
       panelInfo: 'text-lg',
       body: 'text-base',
       body2: 'text-sm',
@@ -33,6 +34,8 @@ const typographyVariants = cva('break-words', {
       white: 'text-white',
       positive: 'text-positive',
       destructive: 'text-destructive',
+      forceTextPrimary: 'text-text-primary',
+      forceTextSecondary: 'text-text-secondary',
     },
     font: {
       mono: 'font-mono',
@@ -71,7 +74,7 @@ const typographyVariants = cva('break-words', {
   },
 });
 
-type TypographyProps = HTMLProps<HTMLElement> &
+export type TypographyProps = HTMLProps<HTMLElement> &
   VariantProps<typeof typographyVariants> & {
     overrideEl?: 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6' | 'p' | 'span';
   };
@@ -82,6 +85,7 @@ const variantToElement = {
   heading3: 'h3',
   heading4: 'h4',
   heading5: 'h5',
+  heading6: 'h6',
   panelInfo: 'p',
   body: 'p',
   body2: 'p',
@@ -97,6 +101,7 @@ export const Typography = forwardRef<HTMLElement, TypographyProps>(
       underline,
       inline,
       italic,
+      uppercase,
       noWrap,
       variant,
       semibold,
@@ -115,6 +120,7 @@ export const Typography = forwardRef<HTMLElement, TypographyProps>(
           italic,
           noWrap,
           bold,
+          uppercase,
           semibold,
           inline,
           fullWidth,
@@ -141,22 +147,22 @@ export function LoadedTypography(props: LoadedTypographyProps) {
 
   return (
     <div className="relative w-fit">
-      {doesTextExist && (
-        <Typography {...rest} className="absolute left-0 text-right">
+      {doesTextExist ? (
+        <Typography {...rest} className="">
           {text}
         </Typography>
+      ) : (
+        <Typography
+          {...rest}
+          role="presentation"
+          tabIndex={-1}
+          className={cn(
+            'pointer-events-none bg-gray-200 select-none  text-transparent animate-pulse'
+          )}
+        >
+          {fillerText}
+        </Typography>
       )}
-      <Typography
-        {...rest}
-        role="presentation"
-        tabIndex={-1}
-        className={cn(
-          'pointer-events-none bg-gray-200 select-none  text-transparent ',
-          doesTextExist ? 'opacity-0 ' : 'animate-pulse'
-        )}
-      >
-        {fillerText}
-      </Typography>
     </div>
   );
 }

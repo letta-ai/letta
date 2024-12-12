@@ -1,0 +1,51 @@
+'use server';
+import React from 'react';
+import {
+  dehydrate,
+  HydrationBoundary,
+  QueryClient,
+} from '@tanstack/react-query';
+import { router } from '$letta/web-api/router';
+import { webApiQueryKeys } from '$letta/client';
+import { redirect } from 'next/navigation';
+
+interface UserLayoutProps {
+  children: React.ReactNode;
+  params: {
+    userId: string;
+  };
+}
+
+async function UserLayout(props: UserLayoutProps) {
+  const {
+    children,
+    params: { userId },
+  } = props;
+  const queryClient = new QueryClient();
+
+  const user = await router.admin.users.adminGetUser({
+    params: {
+      userId,
+    },
+  });
+
+  if (user.status !== 200 || !user.body) {
+    redirect('/admin/users');
+    return null;
+  }
+
+  await queryClient.prefetchQuery({
+    queryKey: webApiQueryKeys.admin.users.adminGetUser(userId),
+    queryFn: () => ({
+      body: user.body,
+    }),
+  });
+
+  return (
+    <HydrationBoundary state={dehydrate(queryClient)}>
+      {children}
+    </HydrationBoundary>
+  );
+}
+
+export default UserLayout;

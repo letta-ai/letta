@@ -1,7 +1,7 @@
 const defaultLocal = 'en-US';
 
 export function useDateFormatter() {
-  function formatDate(
+  function formatDateAndTime(
     date: Date | string,
     options?: Intl.DateTimeFormatOptions
   ) {
@@ -14,5 +14,17 @@ export function useDateFormatter() {
     ).format(new Date(date));
   }
 
-  return { formatDate };
+  function formatDate(
+    date: Date | string,
+    options?: Intl.DateTimeFormatOptions
+  ) {
+    return new Intl.DateTimeFormat(
+      defaultLocal,
+      options || {
+        dateStyle: 'medium',
+      }
+    ).format(new Date(date));
+  }
+
+  return { formatDateAndTime, formatDate };
 }

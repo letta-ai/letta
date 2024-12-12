@@ -6,7 +6,7 @@ const Table = React.forwardRef<
   HTMLTableElement,
   React.HTMLAttributes<HTMLTableElement>
 >(({ className, ...props }, ref) => (
-  <div className="relative w-full overflow-auto">
+  <div className="w-full overflow-auto">
     <table
       ref={ref}
       className={cn('w-full caption-bottom text-sm', className)}
@@ -131,6 +131,7 @@ const TableCellInput = React.forwardRef<
     <TableCell className="focus-within:outline-1 " ref={ref}>
       <div className="sr-only">{label}</div>
       <input
+        autoComplete="off"
         data-testid={testId}
         className="px-2 w-full h-full bg-transparent border-0 focus:ring-0"
         value={value}

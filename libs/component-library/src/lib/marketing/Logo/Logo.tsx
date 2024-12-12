@@ -9,6 +9,8 @@ const color = {
   inherit: 'text-inherit',
   error: 'text-destructive',
   muted: 'text-muted',
+  steel: 'text-steel',
+  primary: 'text-primary',
 };
 
 const logoVariants = cva('', {
@@ -18,7 +20,8 @@ const logoVariants = cva('', {
       small: 'h-[16px] w-[16px]',
       medium: 'h-[20px] w-[20px]',
       default: 'h-[24px] w-[24px]',
-      large: 'h-[64px] w-[64px]',
+      large: 'h-[56px] w-[56px]',
+      xlarge: 'h-[64px] w-[64px]',
     },
   },
   defaultVariants: {
@@ -80,6 +83,7 @@ const logoWithTextVariants = cva('w-auto', {
       medium: 'h-[20px]',
       default: 'h-[24px]',
       large: 'h-[64px]',
+      xlarge: 'h-[72px]',
     },
   },
   defaultVariants: {

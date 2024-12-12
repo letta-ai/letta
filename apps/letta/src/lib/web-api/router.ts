@@ -8,9 +8,13 @@ import { adePreferencesRouter } from './ade-preferences/adePreferencesRouter';
 import { agentTemplateRoutes } from './agent-templates/agentTemplateRoutes';
 import { flushLayoutsRouter } from './admin/flush-layouts/flushLayoutsRouter';
 import { developmentServersRouter } from './development-servers/developmentServersRouter';
-import { adminOrganizationsRouter } from '$letta/web-api/admin/admin-organizations/adminOrganizationsRouter';
+import { adminOrganizationsRouter } from '$letta/web-api/admin/organizations/adminOrganizationsRouter';
 import { adminModelsRouter } from '$letta/web-api/admin/models/adminModelsRouter';
 import { environmentVariablesRouter } from '$letta/web-api/environment-variables/environmentVariablesRouter';
+import { adminUsersRouter } from '$letta/web-api/admin/users/adminUsersRouter';
+import { usageRouter } from '$letta/web-api/usage/usageRouter';
+import { adminToolMetadataRouter } from '$letta/web-api/admin/tool-metadata/adminToolMetadataRouter';
+import { toolMetadataRouter } from '$letta/web-api/tool-metadata/toolMetadataRouter';
 
 export const router = {
   user: userRouter,
@@ -22,7 +26,11 @@ export const router = {
   adePreferences: adePreferencesRouter,
   developmentServers: developmentServersRouter,
   environmentVariables: environmentVariablesRouter,
+  usage: usageRouter,
+  toolMetadata: toolMetadataRouter,
   admin: {
+    toolMetadata: adminToolMetadataRouter,
+    users: adminUsersRouter,
     models: adminModelsRouter,
     flushLayouts: flushLayoutsRouter,
     whitelistedEmails: adminWhitelistedEmailsRouter,

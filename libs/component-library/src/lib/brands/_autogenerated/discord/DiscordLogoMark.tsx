@@ -2,6 +2,11 @@ import React from 'react';
 import Image from 'next/image';
 import image from './logomark.svg';
 
-export function DiscordLogoMark() {
-  return <Image src={image} alt="Discord LogoMark" />;
+interface DiscordLogoMarkProps {
+  width?: number;
+  height?: number;
+}
+
+export function DiscordLogoMark(props: DiscordLogoMarkProps) {
+  return <Image src={image} alt="Discord LogoMark" {...props} />;
 }

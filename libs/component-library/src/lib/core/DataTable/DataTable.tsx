@@ -60,6 +60,8 @@ function TableBodyContent<Data>(props: TableBodyContentProps<Data>) {
               loadingMessage={loadingText}
               emptyAction={noResultsAction}
               isError={!!errorMessage}
+              noMinHeight
+              className="min-h-[100%] absolute pt-[100px] top-0 left-0"
               errorMessage={errorMessage}
               emptyMessage={noResultsText || 'No results found'}
               isLoading={isLoading}
@@ -170,6 +172,7 @@ export function DataTable<TData, TValue>(props: DataTableProps<TData, TValue>) {
     className,
     noResultsText,
     showPagination,
+    onSearch,
     fullHeight,
     onLimitChange,
   } = props;
@@ -199,7 +202,7 @@ export function DataTable<TData, TValue>(props: DataTableProps<TData, TValue>) {
 
       onLimitChange?.(Math.max(rows, 1));
     }
-  }, [autofitHeight, minHeight, onLimitChange]);
+  }, [autofitHeight, limit, minHeight, onLimitChange]);
 
   const handleNextPage = useCallback(() => {
     if (isLoading) {
@@ -268,7 +271,20 @@ export function DataTable<TData, TValue>(props: DataTableProps<TData, TValue>) {
           placeholder="Search"
           label="Search"
           hideLabel
-          onChange={(e) => props.onSearch?.(e.target.value)}
+          onChange={(e) => {
+            if (onSearch) {
+              onSearch(e.target.value);
+
+              if (onSetCursor) {
+                lastCursor.current = undefined;
+                onSetCursor(lastCursor.current);
+              }
+
+              if (onSetOffset) {
+                onSetOffset(0);
+              }
+            }
+          }}
           value={props.searchValue}
         />
       )}
@@ -279,8 +295,15 @@ export function DataTable<TData, TValue>(props: DataTableProps<TData, TValue>) {
             variant,
             fullHeight: fullHeight || autofitHeight,
             className,
-          })
+          }),
+          'relative'
         )}
+        style={{
+          height:
+            !autofitHeight && limit
+              ? `${(limit + 1) * TABLE_ROW_HEIGHT}px`
+              : '',
+        }}
       >
         <Table>
           <TableHeader>
