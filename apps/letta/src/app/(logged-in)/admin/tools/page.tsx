@@ -7,10 +7,14 @@ import {
   Button,
   DashboardPageLayout,
   DashboardPageSection,
-  DataTable, HStack
+  DataTable,
+  HStack,
 } from '@letta-web/component-library';
 import type { ColumnDef } from '@tanstack/react-table';
-import type { ToolGroupType, ToolMetadataPreviewType } from '$letta/web-api/tool-metadata/toolMetadataContract';
+import type {
+  ToolGroupType,
+  ToolMetadataPreviewType,
+} from '$letta/web-api/tool-metadata/toolMetadataContract';
 
 function ToolMetaDataTable() {
   const [offset, setOffset] = useState(0);
@@ -51,7 +55,6 @@ function ToolMetaDataTable() {
     []
   );
 
-
   return (
     <DataTable
       searchValue={search}
@@ -66,7 +69,7 @@ function ToolMetaDataTable() {
       data={data?.body.toolMetadata || []}
       hasNextPage={data?.body.hasNextPage}
     />
-  )
+  );
 }
 
 function ToolGroupDataTable() {
@@ -88,8 +91,6 @@ function ToolGroupDataTable() {
         },
       },
     });
-
-  console.log(data)
 
   const columns: Array<ColumnDef<ToolGroupType>> = useMemo(
     () => [
@@ -123,34 +124,43 @@ function ToolGroupDataTable() {
       onSetOffset={setOffset}
       showPagination
     />
-  )
+  );
 }
 
 function AdminToolsPage() {
-  const { mutate, isPending } = webApi.admin.toolMetadata.syncToolsWithComposio.useMutation()
-
+  const { mutate, isPending } =
+    webApi.admin.toolMetadata.syncToolsWithComposio.useMutation();
 
   return (
     <DashboardPageLayout encapsulatedFullHeight title="Tools">
-      <DashboardPageSection
-        title="Actions"
-      >
+      <DashboardPageSection title="Actions">
         <HStack>
-          <Button onClick={() => {
-            mutate({}, {
-              onSuccess: () => {
-                window.location.reload();
-              }
-            })
-          }} label="Sync with Composio" busy={isPending} />
+          <Button
+            onClick={() => {
+              mutate(
+                {},
+                {
+                  onSuccess: () => {
+                    window.location.reload();
+                  },
+                }
+              );
+            }}
+            label="Sync with Composio"
+            busy={isPending}
+          />
         </HStack>
       </DashboardPageSection>
-      <DashboardPageSection title="Tool Metadata"
-      description="Search and identify tool metadata">
+      <DashboardPageSection
+        title="Tool Metadata"
+        description="Search and identify tool metadata"
+      >
         <ToolMetaDataTable />
       </DashboardPageSection>
-      <DashboardPageSection title="Tool Brands"
-      description="All the brands that have tools">
+      <DashboardPageSection
+        title="Tool Brands"
+        description="All the brands that have tools"
+      >
         <ToolGroupDataTable />
       </DashboardPageSection>
     </DashboardPageLayout>
