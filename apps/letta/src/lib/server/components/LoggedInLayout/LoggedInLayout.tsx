@@ -46,9 +46,7 @@ export async function LoggedInLayout(props: InAppProps) {
   }
 
   const featureFlags = await Promise.race([
-    getUserFlags({
-      userId: user?.id,
-    }),
+    getUserFlags(user),
     new Promise((resolve) => setTimeout(resolve, 150)),
   ]);
 
