@@ -1240,33 +1240,30 @@ function ToolEditor(props: ToolEditorProps) {
     [code, extractedFunctionName, inputConfig, mutate, reset]
   );
 
-  const outputValue = useMemo(() => {
-    if (error) {
-      return JSON.stringify(error, null, 2);
-    }
-
-    if (data) {
-      return JSON.stringify(data, null, 2);
-    }
-
-    return null;
-  }, [data, error]);
-
-  const outputStatus = useMemo(() => {
-    if (error) {
-      return 'error';
-    }
-
-    if (data) {
-      if (data.status === 'error') {
-        return 'error';
+  const { outputValue, outputStdout, outputStderr, outputStatus } =
+    useMemo(() => {
+      if (data) {
+        const hiddenValues = ['stdout', 'stderr'];
+        return {
+          outputValue: JSON.stringify(
+            data,
+            (k, v) => (hiddenValues.includes(k) ? undefined : v),
+            2
+          ),
+          outputStdout: data.stdout?.join('\n') ?? '',
+          outputStderr: data.stderr?.join('\n') ?? '',
+          outputStatus:
+            data.status === 'error' ? ('error' as const) : ('success' as const),
+        };
       }
 
-      return 'success';
-    }
-
-    return undefined;
-  }, [data, error]);
+      return {
+        outputValue: error ? JSON.stringify(error, null, 2) : null,
+        outputStdout: '',
+        outputStderr: '',
+        outputStatus: error ? ('error' as const) : undefined,
+      };
+    }, [data, error]);
 
   return (
     <HStack flex overflow="hidden" fullWidth>
@@ -1303,6 +1300,8 @@ function ToolEditor(props: ToolEditorProps) {
                   value: outputValue,
                   duration: completedAt ? completedAt - submittedAt : 0,
                   status: outputStatus,
+                  stdout: outputStdout,
+                  stderr: outputStderr,
                 }
               : undefined
           }

@@ -4,12 +4,13 @@ import { HStack } from '../../framing/HStack/HStack';
 import { RawInputContainer } from '../Form/Form';
 import type { z } from 'zod';
 import { useTranslations } from 'next-intl';
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { VStack } from '../../framing/VStack/VStack';
 import { Code } from '../Code/Code';
 import { Button } from '../Button/Button';
 import { CheckIcon, PlayIcon, WarningIcon } from '../../icons';
 import { Typography } from '../Typography/Typography';
+import { TabGroup } from '../TabGroup/TabGroup';
 
 interface HeaderProps {
   label: string;
@@ -140,7 +141,7 @@ function DebuggerOutput(props: DebuggerOutputProps) {
       if (output.status === 'error') {
         return (
           <Typography
-            className="animate-in fade-in"
+            className="animate-in fade-in whitespace-nowrap flex items-center gap-1"
             variant="body2"
             color="destructive"
           >
@@ -153,7 +154,7 @@ function DebuggerOutput(props: DebuggerOutputProps) {
       if (output.status === 'success') {
         return (
           <Typography
-            className="animate-in fade-in"
+            className="animate-in fade-in whitespace-nowrap flex items-center gap-1"
             variant="body2"
             color="positive"
           >
@@ -167,9 +168,59 @@ function DebuggerOutput(props: DebuggerOutputProps) {
     return null;
   }, [output, t]);
 
+  type TabKey = 'stderr' | 'stdout' | 'tool-output';
+
+  const tabConfig = useMemo(
+    () =>
+      ({
+        stderr: {
+          label: 'stderr',
+          content: output?.stderr,
+        },
+        stdout: {
+          label: 'stdout',
+          content: output?.stdout,
+        },
+        'tool-output': {
+          label: outputConfig.label,
+          content: output?.value,
+        },
+      } as const),
+    [output, outputConfig.label]
+  );
+
+  const [activeTab, setActiveTab] = useState<TabKey>('tool-output');
+
+  const getTabItems = useCallback(() => {
+    return (
+      Object.entries(tabConfig) as Array<
+        [TabKey, { label: string; content?: string }]
+      >
+    ).map(([value, { label }]) => ({
+      label,
+      value,
+    }));
+  }, [tabConfig]);
+
   return (
     <VStack collapseHeight gap={false} flex fullWidth>
-      <Header label={outputConfig.label || t('output')} actions={statusBadge} />
+      <HStack
+        borderX
+        className="h-[38px]"
+        fullWidth
+        justify="spaceBetween"
+        gap={false}
+      >
+        <TabGroup
+          fullWidth
+          value={activeTab}
+          onValueChange={(value) => {
+            setActiveTab(value as TabKey);
+          }}
+          items={getTabItems()}
+        />
+        <div className="pr-2 flex items-center h-full">{statusBadge}</div>
+      </HStack>
       <VStack overflowY="auto" flex fullWidth>
         <Code
           color="background-grey"
@@ -177,7 +228,7 @@ function DebuggerOutput(props: DebuggerOutputProps) {
           flex
           fontSize="small"
           language="javascript"
-          code={output?.value || ''}
+          code={tabConfig[activeTab].content || ''}
           showLineNumbers={false}
         />
       </VStack>
@@ -193,6 +244,8 @@ interface Output {
   status: 'error' | 'success' | undefined;
   duration: number;
   value: string;
+  stdout: string;
+  stderr: string;
 }
 
 interface DebuggerProps<InputSchema extends GenericSchema> {
