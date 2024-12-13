@@ -22,6 +22,7 @@ import {
   ThoughtsIcon,
   Typography,
   VStack,
+  MessageWrapper,
 } from '@letta-web/component-library';
 import type { AgentMessage } from '@letta-web/letta-agents-api';
 import { SystemAlertSchema } from '@letta-web/letta-agents-api';
@@ -41,58 +42,7 @@ import { useInfiniteQuery } from '@tanstack/react-query';
 import type { InfiniteData } from '@tanstack/query-core';
 import { jsonrepair } from 'jsonrepair';
 import { useTranslations } from 'next-intl';
-import type { VariantProps } from 'class-variance-authority';
-import { cva } from 'class-variance-authority';
-import { cn } from '@letta-web/core-style-config';
 import { get } from 'lodash-es';
-
-const messageWrapperVariants = cva('', {
-  variants: {
-    type: {
-      code: 'bg-background-grey',
-      internalMonologue: 'bg-background-violet text-background-violet-content',
-      default: 'bg-background',
-    },
-  },
-  defaultVariants: {
-    type: 'default',
-  },
-});
-
-interface MessageWrapperProps
-  extends VariantProps<typeof messageWrapperVariants> {
-  header: React.ReactNode;
-  children: React.ReactNode;
-}
-
-function MessageWrapper({ header, type, children }: MessageWrapperProps) {
-  return (
-    <VStack fullWidth gap={false}>
-      <HStack>
-        <HStack
-          paddingX="small"
-          paddingY="xxsmall"
-          /* eslint-disable-next-line react/forbid-component-props */
-          className={cn(messageWrapperVariants({ type }))}
-          align="center"
-        >
-          {header}
-        </HStack>
-      </HStack>
-      <VStack
-        /* eslint-disable-next-line react/forbid-component-props */
-        className={cn(
-          messageWrapperVariants({ type }),
-          type === 'code' ? 'bg-background border' : ''
-        )}
-        paddingY="small"
-        paddingX="small"
-      >
-        {children}
-      </VStack>
-    </VStack>
-  );
-}
 
 // tryFallbackParseJson will attempt to parse a string as JSON, if it fails, it will trim the last character and try again
 // until it succeeds or the string is empty
@@ -302,10 +252,12 @@ export function Messages(props: MessagesProps) {
             content: (
               <MessageWrapper
                 type="code"
-                header={
-                  <>
-                    <Typography bold>Function response</Typography>
+                header={{
+                  title: t('functionReturn'),
+
+                  badge: (
                     <Badge
+                      size="small"
                       content={agentMessage.status}
                       color={
                         agentMessage.status === 'success'
@@ -313,8 +265,8 @@ export function Messages(props: MessagesProps) {
                           : 'destructive'
                       }
                     ></Badge>
-                  </>
-                }
+                  ),
+                }}
               >
                 <Code
                   fontSize="small"
@@ -411,14 +363,10 @@ export function Messages(props: MessagesProps) {
             content: (
               <MessageWrapper
                 type="code"
-                header={
-                  <>
-                    <FunctionIcon />
-                    <Typography bold>
-                      {agentMessage.function_call.name}
-                    </Typography>
-                  </>
-                }
+                header={{
+                  title: agentMessage.function_call.name || '',
+                  preIcon: <FunctionIcon />,
+                }}
               >
                 <Code
                   fontSize="small"
@@ -465,12 +413,10 @@ export function Messages(props: MessagesProps) {
             content: (
               <MessageWrapper
                 type="internalMonologue"
-                header={
-                  <>
-                    <ThoughtsIcon />
-                    <Typography bold>Internal monologue</Typography>
-                  </>
-                }
+                header={{
+                  preIcon: <ThoughtsIcon />,
+                  title: t('internalMonologue'),
+                }}
               >
                 <Typography>{agentMessage.internal_monologue}</Typography>
               </MessageWrapper>
@@ -509,11 +455,9 @@ export function Messages(props: MessagesProps) {
                 content: (
                   <MessageWrapper
                     type="code"
-                    header={
-                      <>
-                        <Typography bold>{t('hiddenUserMessage')}</Typography>
-                      </>
-                    }
+                    header={{
+                      title: t('hiddenUserMessage'),
+                    }}
                   >
                     <Code
                       fontSize="small"
