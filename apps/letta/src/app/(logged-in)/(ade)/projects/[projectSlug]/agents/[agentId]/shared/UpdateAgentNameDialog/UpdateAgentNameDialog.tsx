@@ -70,7 +70,6 @@ export function UpdateNameDialog(props: UpdateNameDialogProps) {
           {
             agentId: agentTemplateId,
             requestBody: {
-              id: agentTemplateId,
               name: values.name,
             },
           },
@@ -86,7 +85,7 @@ export function UpdateNameDialog(props: UpdateNameDialogProps) {
 
       mutate(
         {
-          body: { name: values.name, id: agentTemplateId },
+          body: { name: values.name },
           params: {
             agent_id: agentTemplateId,
           },

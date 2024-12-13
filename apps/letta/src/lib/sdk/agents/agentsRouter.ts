@@ -12,7 +12,7 @@ import { ToolsService } from '@letta-web/letta-agents-api';
 import {
   AgentsService,
   SourcesService,
-  type UpdateAgentState,
+  type UpdateAgent,
 } from '@letta-web/letta-agents-api';
 import {
   agentTemplates,
@@ -52,7 +52,7 @@ export function attachVariablesToTemplates(
 
   return {
     system: nextAgent.system,
-    tool_names: nextAgent.tool_names,
+    tool_ids: nextAgent.tools.map((tool) => tool.id || '').filter(Boolean),
     name: `name-${crypto.randomUUID()}`,
     embedding_config: nextAgent.embedding_config,
     memory: nextAgent.memory,
@@ -92,7 +92,7 @@ export async function copyAgentById(
         llm_config: agentBody.llm_config,
         embedding_config: agentBody.embedding_config,
         system: agentBody.system,
-        tools: agentBody.tool_names,
+        tool_ids: agentBody.tool_ids,
         name: agentBody.name,
         memory_blocks: agentBody.memory.blocks.map((block) => {
           return {
@@ -794,9 +794,10 @@ export async function updateAgentFromAgentId(options: UpdateAgentFromAgentId) {
       !oldDatasources.some((oldDatasource) => oldDatasource.id === source.id)
   );
 
-  let requestBody: UpdateAgentState = {
-    id: agentToUpdateId,
-    tool_names: agentTemplateData.tool_names,
+  let requestBody: UpdateAgent = {
+    tool_ids: agentTemplateData.tools
+      .map((tool) => tool.id || '')
+      .filter(Boolean),
   };
 
   if (!preserveCoreMemories) {

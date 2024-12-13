@@ -203,6 +203,56 @@ export const $ActionResponseModel = {
 
 export const $AgentState = {
   properties: {
+    created_by_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Created By Id',
+      description: 'The id of the user that made this object.',
+    },
+    last_updated_by_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Last Updated By Id',
+      description: 'The id of the user that made this object.',
+    },
+    created_at: {
+      anyOf: [
+        {
+          type: 'string',
+          format: 'date-time',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Created At',
+      description: 'The timestamp when the object was created.',
+    },
+    updated_at: {
+      anyOf: [
+        {
+          type: 'string',
+          format: 'date-time',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Updated At',
+      description: 'The timestamp when the object was last updated.',
+    },
     description: {
       anyOf: [
         {
@@ -227,18 +277,6 @@ export const $AgentState = {
       title: 'Metadata ',
       description: 'The metadata of the agent.',
     },
-    user_id: {
-      anyOf: [
-        {
-          type: 'string',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'User Id',
-      description: 'The user id of the agent.',
-    },
     id: {
       type: 'string',
       pattern: '^agent-[a-fA-F0-9]{8}',
@@ -250,35 +288,6 @@ export const $AgentState = {
       type: 'string',
       title: 'Name',
       description: 'The name of the agent.',
-    },
-    created_at: {
-      type: 'string',
-      format: 'date-time',
-      title: 'Created At',
-      description: 'The datetime the agent was created.',
-    },
-    message_ids: {
-      anyOf: [
-        {
-          items: {
-            type: 'string',
-          },
-          type: 'array',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Message Ids',
-      description: "The ids of the messages in the agent's in-context memory.",
-    },
-    tool_names: {
-      items: {
-        type: 'string',
-      },
-      type: 'array',
-      title: 'Tool Names',
-      description: 'The tools used by the agent.',
     },
     tool_rules: {
       anyOf: [
@@ -305,6 +314,21 @@ export const $AgentState = {
       title: 'Tool Rules',
       description: 'The list of tool rules.',
     },
+    message_ids: {
+      anyOf: [
+        {
+          items: {
+            type: 'string',
+          },
+          type: 'array',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Message Ids',
+      description: "The ids of the messages in the agent's in-context memory.",
+    },
     system: {
       type: 'string',
       title: 'System',
@@ -321,6 +345,19 @@ export const $AgentState = {
     embedding_config: {
       $ref: '#/components/schemas/EmbeddingConfig',
       description: 'The embedding configuration used by the agent.',
+    },
+    organization_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Organization Id',
+      description:
+        'The unique identifier of the organization associated with the agent.',
     },
     memory: {
       $ref: '#/components/schemas/Memory',
@@ -355,7 +392,6 @@ export const $AgentState = {
   type: 'object',
   required: [
     'name',
-    'tool_names',
     'system',
     'agent_type',
     'llm_config',
@@ -1626,6 +1662,56 @@ export const $ContextWindowOverview = {
 
 export const $CreateAgentRequest = {
   properties: {
+    created_by_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Created By Id',
+      description: 'The id of the user that made this object.',
+    },
+    last_updated_by_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Last Updated By Id',
+      description: 'The id of the user that made this object.',
+    },
+    created_at: {
+      anyOf: [
+        {
+          type: 'string',
+          format: 'date-time',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Created At',
+      description: 'The timestamp when the object was created.',
+    },
+    updated_at: {
+      anyOf: [
+        {
+          type: 'string',
+          format: 'date-time',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Updated At',
+      description: 'The timestamp when the object was last updated.',
+    },
     description: {
       anyOf: [
         {
@@ -1650,30 +1736,20 @@ export const $CreateAgentRequest = {
       title: 'Metadata ',
       description: 'The metadata of the agent.',
     },
-    user_id: {
-      anyOf: [
-        {
-          type: 'string',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'User Id',
-    },
     name: {
-      anyOf: [
-        {
-          type: 'string',
-        },
-        {
-          type: 'null',
-        },
-      ],
+      type: 'string',
       title: 'Name',
       description: 'The name of the agent.',
     },
-    message_ids: {
+    memory_blocks: {
+      items: {
+        $ref: '#/components/schemas/CreateBlock',
+      },
+      type: 'array',
+      title: 'Memory Blocks',
+      description: "The blocks to create in the agent's in-context memory.",
+    },
+    tools: {
       anyOf: [
         {
           items: {
@@ -1685,33 +1761,53 @@ export const $CreateAgentRequest = {
           type: 'null',
         },
       ],
-      title: 'Message Ids',
-      description: "The ids of the messages in the agent's in-context memory.",
-    },
-    memory_blocks: {
-      items: {
-        $ref: '#/components/schemas/CreateBlock',
-      },
-      type: 'array',
-      title: 'Memory Blocks',
-      description: "The blocks to create in the agent's in-context memory.",
-    },
-    tools: {
-      items: {
-        type: 'string',
-      },
-      type: 'array',
       title: 'Tools',
       description: 'The tools used by the agent.',
-      default: [
-        'send_message',
-        'conversation_search',
-        'conversation_search_date',
-        'archival_memory_insert',
-        'archival_memory_search',
-        'core_memory_append',
-        'core_memory_replace',
+    },
+    tool_ids: {
+      anyOf: [
+        {
+          items: {
+            type: 'string',
+          },
+          type: 'array',
+        },
+        {
+          type: 'null',
+        },
       ],
+      title: 'Tool Ids',
+      description: 'The ids of the tools used by the agent.',
+    },
+    source_ids: {
+      anyOf: [
+        {
+          items: {
+            type: 'string',
+          },
+          type: 'array',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Source Ids',
+      description: 'The ids of the sources used by the agent.',
+    },
+    block_ids: {
+      anyOf: [
+        {
+          items: {
+            type: 'string',
+          },
+          type: 'array',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Block Ids',
+      description: 'The ids of the blocks used by the agent.',
     },
     tool_rules: {
       anyOf: [
@@ -1768,7 +1864,6 @@ export const $CreateAgentRequest = {
     agent_type: {
       $ref: '#/components/schemas/AgentType',
       description: 'The type of agent.',
-      default: 'memgpt_agent',
     },
     llm_config: {
       anyOf: [
@@ -1807,6 +1902,23 @@ export const $CreateAgentRequest = {
       title: 'Initial Message Sequence',
       description:
         "The initial set of messages to put in the agent's in-context memory.",
+    },
+    include_base_tools: {
+      type: 'boolean',
+      title: 'Include Base Tools',
+      description: 'The LLM configuration used by the agent.',
+      default: true,
+    },
+    user_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'User Id',
     },
   },
   additionalProperties: false,
@@ -1964,220 +2076,6 @@ export const $CreateBlock = {
   description: 'Create a block',
 } as const;
 
-export const $CreateMessageRequest = {
-  properties: {
-    role: {
-      type: 'string',
-      title: 'Role',
-      description: "Role of the message sender (either 'user' or 'system')",
-    },
-    content: {
-      type: 'string',
-      title: 'Content',
-      description: 'The message content to be processed by the agent.',
-    },
-    file_ids: {
-      anyOf: [
-        {
-          items: {
-            type: 'string',
-          },
-          type: 'array',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'File Ids',
-      description: 'List of file IDs associated with the message.',
-    },
-    metadata: {
-      anyOf: [
-        {
-          type: 'object',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Metadata',
-      description: 'Metadata associated with the message.',
-    },
-  },
-  type: 'object',
-  required: ['role', 'content'],
-  title: 'CreateMessageRequest',
-} as const;
-
-export const $CreateRunRequest = {
-  properties: {
-    assistant_id: {
-      type: 'string',
-      title: 'Assistant Id',
-      description: 'The unique identifier of the assistant.',
-    },
-    model: {
-      anyOf: [
-        {
-          type: 'string',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Model',
-      description: 'The model used by the run.',
-    },
-    instructions: {
-      type: 'string',
-      title: 'Instructions',
-      description: 'The instructions for the run.',
-    },
-    additional_instructions: {
-      anyOf: [
-        {
-          type: 'string',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Additional Instructions',
-      description: 'Additional instructions for the run.',
-    },
-    tools: {
-      anyOf: [
-        {
-          items: {
-            $ref: '#/components/schemas/letta__schemas__openai__openai__ToolCall',
-          },
-          type: 'array',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Tools',
-      description: 'The tools used by the run (overrides assistant).',
-    },
-    metadata: {
-      anyOf: [
-        {
-          type: 'object',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Metadata',
-      description: 'Metadata associated with the run.',
-    },
-  },
-  type: 'object',
-  required: ['assistant_id', 'instructions'],
-  title: 'CreateRunRequest',
-} as const;
-
-export const $CreateThreadRequest = {
-  properties: {
-    messages: {
-      anyOf: [
-        {
-          items: {
-            type: 'string',
-          },
-          type: 'array',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Messages',
-      description: 'List of message IDs associated with the thread.',
-    },
-    metadata: {
-      anyOf: [
-        {
-          type: 'object',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Metadata',
-      description: 'Metadata associated with the thread.',
-    },
-    assistant_name: {
-      anyOf: [
-        {
-          type: 'string',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Assistant Name',
-      description: 'The name of the assistant (i.e. Letta preset)',
-    },
-  },
-  type: 'object',
-  title: 'CreateThreadRequest',
-} as const;
-
-export const $CreateThreadRunRequest = {
-  properties: {
-    assistant_id: {
-      type: 'string',
-      title: 'Assistant Id',
-      description: 'The unique identifier of the assistant.',
-    },
-    thread: {
-      $ref: '#/components/schemas/OpenAIThread',
-      description: 'The thread to run.',
-    },
-    model: {
-      type: 'string',
-      title: 'Model',
-      description: 'The model used by the run.',
-    },
-    instructions: {
-      type: 'string',
-      title: 'Instructions',
-      description: 'The instructions for the run.',
-    },
-    tools: {
-      anyOf: [
-        {
-          items: {
-            $ref: '#/components/schemas/letta__schemas__openai__openai__ToolCall',
-          },
-          type: 'array',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Tools',
-      description: 'The tools used by the run (overrides assistant).',
-    },
-    metadata: {
-      anyOf: [
-        {
-          type: 'object',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Metadata',
-      description: 'Metadata associated with the run.',
-    },
-  },
-  type: 'object',
-  required: ['assistant_id', 'thread', 'model', 'instructions'],
-  title: 'CreateThreadRunRequest',
-} as const;
-
 export const $DeleteAssistantFileResponse = {
   properties: {
     id: {
@@ -2222,29 +2120,6 @@ export const $DeleteAssistantResponse = {
   type: 'object',
   required: ['id', 'deleted'],
   title: 'DeleteAssistantResponse',
-} as const;
-
-export const $DeleteThreadResponse = {
-  properties: {
-    id: {
-      type: 'string',
-      title: 'Id',
-      description: 'The unique identifier of the agent.',
-    },
-    object: {
-      type: 'string',
-      title: 'Object',
-      default: 'thread.deleted',
-    },
-    deleted: {
-      type: 'boolean',
-      title: 'Deleted',
-      description: 'Whether the agent was deleted.',
-    },
-  },
-  type: 'object',
-  required: ['id', 'deleted'],
-  title: 'DeleteThreadResponse',
 } as const;
 
 export const $E2BSandboxConfig = {
@@ -2522,24 +2397,6 @@ export const $FileMetadata = {
   description: 'Representation of a single FileMetadata',
 } as const;
 
-export const $Function = {
-  properties: {
-    name: {
-      type: 'string',
-      title: 'Name',
-      description: 'The name of the function.',
-    },
-    arguments: {
-      type: 'string',
-      title: 'Arguments',
-      description: 'The arguments of the function.',
-    },
-  },
-  type: 'object',
-  required: ['name', 'arguments'],
-  title: 'Function',
-} as const;
-
 export const $FunctionCall_Input = {
   properties: {
     name: {
@@ -2772,23 +2629,6 @@ export const $Health = {
   required: ['version', 'status'],
   title: 'Health',
   description: 'Health check response body',
-} as const;
-
-export const $ImageFile = {
-  properties: {
-    type: {
-      type: 'string',
-      title: 'Type',
-      default: 'image_file',
-    },
-    file_id: {
-      type: 'string',
-      title: 'File Id',
-    },
-  },
-  type: 'object',
-  required: ['file_id'],
-  title: 'ImageFile',
 } as const;
 
 export const $InitToolRule = {
@@ -3502,22 +3342,6 @@ Attributes:
     step_count (int): The number of steps taken by the agent.`,
 } as const;
 
-export const $ListMessagesResponse = {
-  properties: {
-    messages: {
-      items: {
-        $ref: '#/components/schemas/OpenAIMessage',
-      },
-      type: 'array',
-      title: 'Messages',
-      description: 'List of message objects.',
-    },
-  },
-  type: 'object',
-  required: ['messages'],
-  title: 'ListMessagesResponse',
-} as const;
-
 export const $LocalSandboxConfig = {
   properties: {
     sandbox_dir: {
@@ -3679,34 +3503,6 @@ export const $MessageCreate = {
   description: 'Request to create a message',
 } as const;
 
-export const $MessageFile = {
-  properties: {
-    id: {
-      type: 'string',
-      title: 'Id',
-      description: 'The unique identifier of the file.',
-    },
-    object: {
-      type: 'string',
-      title: 'Object',
-      default: 'thread.message.file',
-    },
-    created_at: {
-      type: 'integer',
-      title: 'Created At',
-      description: 'The unix timestamp of when the file was created.',
-    },
-    message_id: {
-      type: 'string',
-      title: 'Message Id',
-      description: 'The unique identifier of the message.',
-    },
-  },
-  type: 'object',
-  required: ['id', 'created_at', 'message_id'],
-  title: 'MessageFile',
-} as const;
-
 export const $MessageRole = {
   type: 'string',
   enum: ['assistant', 'user', 'tool', 'function', 'system'],
@@ -3781,42 +3577,6 @@ export const $MessageUpdate = {
   type: 'object',
   title: 'MessageUpdate',
   description: 'Request to update a message',
-} as const;
-
-export const $ModifyMessageRequest = {
-  properties: {
-    metadata: {
-      type: 'object',
-      title: 'Metadata',
-      description: 'Metadata associated with the message.',
-    },
-  },
-  type: 'object',
-  title: 'ModifyMessageRequest',
-} as const;
-
-export const $ModifyRunRequest = {
-  properties: {
-    metadata: {
-      type: 'object',
-      title: 'Metadata',
-      description: 'Metadata associated with the run.',
-    },
-  },
-  type: 'object',
-  title: 'ModifyRunRequest',
-} as const;
-
-export const $ModifyThreadRequest = {
-  properties: {
-    metadata: {
-      type: 'object',
-      title: 'Metadata',
-      description: 'Metadata associated with the thread.',
-    },
-  },
-  type: 'object',
-  title: 'ModifyThreadRequest',
 } as const;
 
 export const $OpenAIAssistant = {
@@ -3912,519 +3672,6 @@ export const $OpenAIAssistant = {
   description: 'Represents an OpenAI assistant (equivalent to Letta preset)',
 } as const;
 
-export const $OpenAIError = {
-  properties: {
-    code: {
-      type: 'string',
-      title: 'Code',
-      description: 'The error code.',
-    },
-    message: {
-      type: 'string',
-      title: 'Message',
-      description: 'The error message.',
-    },
-  },
-  type: 'object',
-  required: ['code', 'message'],
-  title: 'OpenAIError',
-} as const;
-
-export const $OpenAIMessage = {
-  properties: {
-    id: {
-      type: 'string',
-      title: 'Id',
-      description: 'The unique identifier of the message.',
-    },
-    object: {
-      type: 'string',
-      title: 'Object',
-      default: 'thread.message',
-    },
-    created_at: {
-      type: 'integer',
-      title: 'Created At',
-      description: 'The unix timestamp of when the message was created.',
-    },
-    thread_id: {
-      type: 'string',
-      title: 'Thread Id',
-      description: 'The unique identifier of the thread.',
-    },
-    role: {
-      type: 'string',
-      title: 'Role',
-      description: "Role of the message sender (either 'user' or 'system')",
-    },
-    content: {
-      items: {
-        anyOf: [
-          {
-            $ref: '#/components/schemas/Text',
-          },
-          {
-            $ref: '#/components/schemas/ImageFile',
-          },
-        ],
-      },
-      type: 'array',
-      title: 'Content',
-      description: 'The message content to be processed by the agent.',
-    },
-    assistant_id: {
-      type: 'string',
-      title: 'Assistant Id',
-      description: 'The unique identifier of the assistant.',
-    },
-    run_id: {
-      anyOf: [
-        {
-          type: 'string',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Run Id',
-      description: 'The unique identifier of the run.',
-    },
-    file_ids: {
-      anyOf: [
-        {
-          items: {
-            type: 'string',
-          },
-          type: 'array',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'File Ids',
-      description: 'List of file IDs associated with the message.',
-    },
-    metadata: {
-      anyOf: [
-        {
-          type: 'object',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Metadata',
-      description: 'Metadata associated with the message.',
-    },
-  },
-  type: 'object',
-  required: ['id', 'created_at', 'thread_id', 'role', 'assistant_id'],
-  title: 'OpenAIMessage',
-} as const;
-
-export const $OpenAIMessageCreationStep = {
-  properties: {
-    type: {
-      type: 'string',
-      title: 'Type',
-      default: 'message_creation',
-    },
-    message_id: {
-      type: 'string',
-      title: 'Message Id',
-      description: 'The unique identifier of the message.',
-    },
-  },
-  type: 'object',
-  required: ['message_id'],
-  title: 'OpenAIMessageCreationStep',
-} as const;
-
-export const $OpenAIRun = {
-  properties: {
-    id: {
-      type: 'string',
-      title: 'Id',
-      description: 'The unique identifier of the run.',
-    },
-    object: {
-      type: 'string',
-      title: 'Object',
-      default: 'thread.run',
-    },
-    created_at: {
-      type: 'integer',
-      title: 'Created At',
-      description: 'The unix timestamp of when the run was created.',
-    },
-    thread_id: {
-      type: 'string',
-      title: 'Thread Id',
-      description: 'The unique identifier of the thread.',
-    },
-    assistant_id: {
-      type: 'string',
-      title: 'Assistant Id',
-      description: 'The unique identifier of the assistant.',
-    },
-    status: {
-      type: 'string',
-      title: 'Status',
-      description: 'The status of the run.',
-    },
-    required_action: {
-      anyOf: [
-        {
-          $ref: '#/components/schemas/RequiredAction',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      description: 'The required action of the run.',
-    },
-    last_error: {
-      anyOf: [
-        {
-          $ref: '#/components/schemas/OpenAIError',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      description: 'The last error of the run.',
-    },
-    expires_at: {
-      type: 'integer',
-      title: 'Expires At',
-      description: 'The unix timestamp of when the run expires.',
-    },
-    started_at: {
-      anyOf: [
-        {
-          type: 'integer',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Started At',
-      description: 'The unix timestamp of when the run started.',
-    },
-    cancelled_at: {
-      anyOf: [
-        {
-          type: 'integer',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Cancelled At',
-      description: 'The unix timestamp of when the run was cancelled.',
-    },
-    failed_at: {
-      anyOf: [
-        {
-          type: 'integer',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Failed At',
-      description: 'The unix timestamp of when the run failed.',
-    },
-    completed_at: {
-      anyOf: [
-        {
-          type: 'integer',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Completed At',
-      description: 'The unix timestamp of when the run completed.',
-    },
-    model: {
-      type: 'string',
-      title: 'Model',
-      description: 'The model used by the run.',
-    },
-    instructions: {
-      type: 'string',
-      title: 'Instructions',
-      description: 'The instructions for the run.',
-    },
-    tools: {
-      anyOf: [
-        {
-          items: {
-            $ref: '#/components/schemas/letta__schemas__openai__openai__ToolCall',
-          },
-          type: 'array',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Tools',
-      description: 'The tools used by the run.',
-    },
-    file_ids: {
-      anyOf: [
-        {
-          items: {
-            type: 'string',
-          },
-          type: 'array',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'File Ids',
-      description: 'List of file IDs associated with the run.',
-    },
-    metadata: {
-      anyOf: [
-        {
-          type: 'object',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Metadata',
-      description: 'Metadata associated with the run.',
-    },
-    usage: {
-      anyOf: [
-        {
-          $ref: '#/components/schemas/OpenAIUsage',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      description: 'The usage of the run.',
-    },
-  },
-  type: 'object',
-  required: [
-    'id',
-    'created_at',
-    'thread_id',
-    'assistant_id',
-    'status',
-    'expires_at',
-    'model',
-    'instructions',
-  ],
-  title: 'OpenAIRun',
-} as const;
-
-export const $OpenAIRunStep = {
-  properties: {
-    id: {
-      type: 'string',
-      title: 'Id',
-      description: 'The unique identifier of the run step.',
-    },
-    object: {
-      type: 'string',
-      title: 'Object',
-      default: 'thread.run.step',
-    },
-    created_at: {
-      type: 'integer',
-      title: 'Created At',
-      description: 'The unix timestamp of when the run step was created.',
-    },
-    assistant_id: {
-      type: 'string',
-      title: 'Assistant Id',
-      description: 'The unique identifier of the assistant.',
-    },
-    thread_id: {
-      type: 'string',
-      title: 'Thread Id',
-      description: 'The unique identifier of the thread.',
-    },
-    run_id: {
-      type: 'string',
-      title: 'Run Id',
-      description: 'The unique identifier of the run.',
-    },
-    type: {
-      type: 'string',
-      title: 'Type',
-      description: 'The type of the run step.',
-    },
-    status: {
-      type: 'string',
-      title: 'Status',
-      description: 'The status of the run step.',
-    },
-    step_defaults: {
-      anyOf: [
-        {
-          $ref: '#/components/schemas/OpenAIToolCallsStep',
-        },
-        {
-          $ref: '#/components/schemas/OpenAIMessageCreationStep',
-        },
-      ],
-      title: 'Step Defaults',
-      description: 'The step defaults.',
-    },
-    last_error: {
-      anyOf: [
-        {
-          $ref: '#/components/schemas/OpenAIError',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      description: 'The last error of the run step.',
-    },
-    expired_at: {
-      anyOf: [
-        {
-          type: 'integer',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Expired At',
-      description: 'The unix timestamp of when the run step expired.',
-    },
-    failed_at: {
-      anyOf: [
-        {
-          type: 'integer',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Failed At',
-      description: 'The unix timestamp of when the run failed.',
-    },
-    completed_at: {
-      anyOf: [
-        {
-          type: 'integer',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Completed At',
-      description: 'The unix timestamp of when the run completed.',
-    },
-    usage: {
-      anyOf: [
-        {
-          $ref: '#/components/schemas/OpenAIUsage',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      description: 'The usage of the run.',
-    },
-  },
-  type: 'object',
-  required: [
-    'id',
-    'created_at',
-    'assistant_id',
-    'thread_id',
-    'run_id',
-    'type',
-    'status',
-    'step_defaults',
-  ],
-  title: 'OpenAIRunStep',
-} as const;
-
-export const $OpenAIThread = {
-  properties: {
-    id: {
-      type: 'string',
-      title: 'Id',
-      description: 'The unique identifier of the thread.',
-    },
-    object: {
-      type: 'string',
-      title: 'Object',
-      default: 'thread',
-    },
-    created_at: {
-      type: 'integer',
-      title: 'Created At',
-      description: 'The unix timestamp of when the thread was created.',
-    },
-    metadata: {
-      type: 'object',
-      title: 'Metadata',
-      description: 'Metadata associated with the thread.',
-    },
-  },
-  type: 'object',
-  required: ['id', 'created_at'],
-  title: 'OpenAIThread',
-  description: 'Represents an OpenAI thread (equivalent to Letta agent)',
-} as const;
-
-export const $OpenAIToolCallsStep = {
-  properties: {
-    type: {
-      type: 'string',
-      title: 'Type',
-      default: 'tool_calls',
-    },
-    tool_calls: {
-      items: {
-        $ref: '#/components/schemas/letta__schemas__openai__openai__ToolCall',
-      },
-      type: 'array',
-      title: 'Tool Calls',
-      description: 'The tool calls.',
-    },
-  },
-  type: 'object',
-  required: ['tool_calls'],
-  title: 'OpenAIToolCallsStep',
-} as const;
-
-export const $OpenAIUsage = {
-  properties: {
-    completion_tokens: {
-      type: 'integer',
-      title: 'Completion Tokens',
-      description: 'The number of tokens used for the run.',
-    },
-    prompt_tokens: {
-      type: 'integer',
-      title: 'Prompt Tokens',
-      description: 'The number of tokens used for the prompt.',
-    },
-    total_tokens: {
-      type: 'integer',
-      title: 'Total Tokens',
-      description: 'The total number of tokens used for the run.',
-    },
-  },
-  type: 'object',
-  required: ['completion_tokens', 'prompt_tokens', 'total_tokens'],
-  title: 'OpenAIUsage',
-} as const;
-
 export const $Organization = {
   properties: {
     id: {
@@ -4438,7 +3685,7 @@ export const $Organization = {
       type: 'string',
       title: 'Name',
       description: 'The name of the organization.',
-      default: 'XenialPapaya',
+      default: 'LuminousDolphin',
     },
     created_at: {
       anyOf: [
@@ -4661,26 +3908,6 @@ export const $RecallMemorySummary = {
   type: 'object',
   required: ['size'],
   title: 'RecallMemorySummary',
-} as const;
-
-export const $RequiredAction = {
-  properties: {
-    type: {
-      type: 'string',
-      title: 'Type',
-      default: 'submit_tool_outputs',
-    },
-    submit_tool_outputs: {
-      items: {
-        $ref: '#/components/schemas/letta__schemas__openai__openai__ToolCall',
-      },
-      type: 'array',
-      title: 'Submit Tool Outputs',
-    },
-  },
-  type: 'object',
-  required: ['submit_tool_outputs'],
-  title: 'RequiredAction',
 } as const;
 
 export const $ResponseFormat = {
@@ -5240,22 +4467,6 @@ export const $SourceUpdate = {
   description: 'Schema for updating an existing Source.',
 } as const;
 
-export const $SubmitToolOutputsToRunRequest = {
-  properties: {
-    tools_outputs: {
-      items: {
-        $ref: '#/components/schemas/ToolCallOutput',
-      },
-      type: 'array',
-      title: 'Tools Outputs',
-      description: 'The tool outputs to submit.',
-    },
-  },
-  type: 'object',
-  required: ['tools_outputs'],
-  title: 'SubmitToolOutputsToRunRequest',
-} as const;
-
 export const $SystemMessage_Input = {
   properties: {
     content: {
@@ -5339,24 +4550,6 @@ export const $TerminalToolRule = {
     'Represents a terminal tool rule configuration where if this tool gets called, it must end the agent loop.',
 } as const;
 
-export const $Text = {
-  properties: {
-    object: {
-      type: 'string',
-      title: 'Object',
-      default: 'text',
-    },
-    text: {
-      type: 'string',
-      title: 'Text',
-      description: 'The text content to be processed by the agent.',
-    },
-  },
-  type: 'object',
-  required: ['text'],
-  title: 'Text',
-} as const;
-
 export const $Tool_Input = {
   properties: {
     type: {
@@ -5391,24 +4584,6 @@ export const $ToolCallFunction_Output = {
   type: 'object',
   required: ['name', 'arguments'],
   title: 'ToolCallFunction',
-} as const;
-
-export const $ToolCallOutput = {
-  properties: {
-    tool_call_id: {
-      type: 'string',
-      title: 'Tool Call Id',
-      description: 'The unique identifier of the tool call.',
-    },
-    output: {
-      type: 'string',
-      title: 'Output',
-      description: 'The output of the tool call.',
-    },
-  },
-  type: 'object',
-  required: ['tool_call_id', 'output'],
-  title: 'ToolCallOutput',
 } as const;
 
 export const $ToolCreate = {
@@ -5686,8 +4861,58 @@ export const $ToolUpdate = {
   title: 'ToolUpdate',
 } as const;
 
-export const $UpdateAgentState = {
+export const $UpdateAgent = {
   properties: {
+    created_by_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Created By Id',
+      description: 'The id of the user that made this object.',
+    },
+    last_updated_by_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Last Updated By Id',
+      description: 'The id of the user that made this object.',
+    },
+    created_at: {
+      anyOf: [
+        {
+          type: 'string',
+          format: 'date-time',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Created At',
+      description: 'The timestamp when the object was created.',
+    },
+    updated_at: {
+      anyOf: [
+        {
+          type: 'string',
+          format: 'date-time',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Updated At',
+      description: 'The timestamp when the object was last updated.',
+    },
     description: {
       anyOf: [
         {
@@ -5712,23 +4937,6 @@ export const $UpdateAgentState = {
       title: 'Metadata ',
       description: 'The metadata of the agent.',
     },
-    user_id: {
-      anyOf: [
-        {
-          type: 'string',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'User Id',
-      description: 'The user id of the agent.',
-    },
-    id: {
-      type: 'string',
-      title: 'Id',
-      description: 'The id of the agent.',
-    },
     name: {
       anyOf: [
         {
@@ -5741,7 +4949,7 @@ export const $UpdateAgentState = {
       title: 'Name',
       description: 'The name of the agent.',
     },
-    tool_names: {
+    tool_ids: {
       anyOf: [
         {
           items: {
@@ -5753,8 +4961,38 @@ export const $UpdateAgentState = {
           type: 'null',
         },
       ],
-      title: 'Tool Names',
-      description: 'The tools used by the agent.',
+      title: 'Tool Ids',
+      description: 'The ids of the tools used by the agent.',
+    },
+    source_ids: {
+      anyOf: [
+        {
+          items: {
+            type: 'string',
+          },
+          type: 'array',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Source Ids',
+      description: 'The ids of the sources used by the agent.',
+    },
+    block_ids: {
+      anyOf: [
+        {
+          items: {
+            type: 'string',
+          },
+          type: 'array',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Block Ids',
+      description: 'The ids of the blocks used by the agent.',
     },
     tags: {
       anyOf: [
@@ -5782,6 +5020,31 @@ export const $UpdateAgentState = {
       ],
       title: 'System',
       description: 'The system prompt used by the agent.',
+    },
+    tool_rules: {
+      anyOf: [
+        {
+          items: {
+            anyOf: [
+              {
+                $ref: '#/components/schemas/ChildToolRule',
+              },
+              {
+                $ref: '#/components/schemas/InitToolRule',
+              },
+              {
+                $ref: '#/components/schemas/TerminalToolRule',
+              },
+            ],
+          },
+          type: 'array',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Tool Rules',
+      description: 'The tool rules governing the agent.',
     },
     llm_config: {
       anyOf: [
@@ -5821,10 +5084,8 @@ export const $UpdateAgentState = {
       description: "The ids of the messages in the agent's in-context memory.",
     },
   },
-  additionalProperties: false,
   type: 'object',
-  required: ['id'],
-  title: 'UpdateAgentState',
+  title: 'UpdateAgent',
 } as const;
 
 export const $UsageStatistics = {
@@ -6465,28 +5726,6 @@ export const $letta__schemas__openai__chat_completions__ToolCallFunction = {
   type: 'object',
   required: ['name', 'arguments'],
   title: 'ToolCallFunction',
-} as const;
-
-export const $letta__schemas__openai__openai__ToolCall = {
-  properties: {
-    id: {
-      type: 'string',
-      title: 'Id',
-      description: 'The unique identifier of the tool call.',
-    },
-    type: {
-      type: 'string',
-      title: 'Type',
-      default: 'function',
-    },
-    function: {
-      $ref: '#/components/schemas/Function',
-      description: 'The function call.',
-    },
-  },
-  type: 'object',
-  required: ['id', 'function'],
-  title: 'ToolCall',
 } as const;
 
 export const $letta__schemas__tool__Tool = {

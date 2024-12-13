@@ -3,7 +3,7 @@ import type {
   AgentState,
   CreateAgentRequest,
   HTTPValidationError,
-  UpdateAgentState,
+  UpdateAgent,
 } from '@letta-web/letta-agents-api';
 import {
   EmbeddingConfigSchema,
@@ -263,7 +263,7 @@ const deleteAgentContract = c.mutation({
 });
 
 /* Update Agent */
-const UpdateAgentBodySchema = c.type<UpdateAgentState>();
+const UpdateAgentBodySchema = c.type<UpdateAgent>();
 
 const UpdateAgentResponseSchema = c.type<AgentState>();
 

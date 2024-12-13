@@ -822,6 +822,7 @@ export class AgentsService {
    * @param data The data for the request.
    * @param data.name Name of the agent
    * @param data.tags List of tags to filter agents by
+   * @param data.matchAllTags If True, only returns agents that match ALL given tags. Otherwise, return agents that have ANY of the passed in tags.
    * @param data.userId
    * @returns AgentState Successful Response
    * @throws ApiError
@@ -836,6 +837,7 @@ export class AgentsService {
       query: {
         name: data.name,
         tags: data.tags,
+        match_all_tags: data.matchAllTags,
       },
       errors: {
         422: 'Validation Error',
@@ -1063,6 +1065,7 @@ export class AgentsService {
    * Get the sources associated with an agent.
    * @param data The data for the request.
    * @param data.agentId
+   * @param data.userId
    * @returns Source Successful Response
    * @throws ApiError
    */
@@ -1088,6 +1091,7 @@ export class AgentsService {
    * Retrieve the messages in the context of a specific agent.
    * @param data The data for the request.
    * @param data.agentId
+   * @param data.userId
    * @returns letta__schemas__message__Message Successful Response
    * @throws ApiError
    */
@@ -1114,6 +1118,7 @@ export class AgentsService {
    * This endpoint fetches the current memory state of the agent identified by the user ID and agent ID.
    * @param data The data for the request.
    * @param data.agentId
+   * @param data.userId
    * @returns Memory Successful Response
    * @throws ApiError
    */
@@ -1281,6 +1286,7 @@ export class AgentsService {
    * Retrieve the summary of the recall memory of a specific agent.
    * @param data The data for the request.
    * @param data.agentId
+   * @param data.userId
    * @returns RecallMemorySummary Successful Response
    * @throws ApiError
    */
@@ -1306,6 +1312,7 @@ export class AgentsService {
    * Retrieve the summary of the archival memory of a specific agent.
    * @param data The data for the request.
    * @param data.agentId
+   * @param data.userId
    * @returns ArchivalMemorySummary Successful Response
    * @throws ApiError
    */
@@ -1492,6 +1499,7 @@ export class AgentsService {
    * @param data.agentId
    * @param data.messageId
    * @param data.requestBody
+   * @param data.userId
    * @returns letta__schemas__message__Message Successful Response
    * @throws ApiError
    */
@@ -1780,7 +1788,7 @@ export class BlocksService {
    * @param data.blockId
    * @param data.agentId The unique identifier of the agent to attach the source to.
    * @param data.userId
-   * @returns Block Successful Response
+   * @returns void Successful Response
    * @throws ApiError
    */
   public static linkAgentMemoryBlock(
@@ -1810,7 +1818,7 @@ export class BlocksService {
    * @param data.blockId
    * @param data.agentId The unique identifier of the agent to attach the source to.
    * @param data.userId
-   * @returns Memory Successful Response
+   * @returns void Successful Response
    * @throws ApiError
    */
   public static unlinkAgentMemoryBlock(
