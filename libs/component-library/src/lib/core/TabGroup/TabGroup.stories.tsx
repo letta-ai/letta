@@ -23,12 +23,10 @@ export const Primary: Story = {
       {
         label: 'Option 1',
         value: 'option1',
-        content: 'This is option 1',
       },
       {
         label: 'Option 2',
         value: 'option2',
-        content: 'This is option 2',
       },
     ],
     defaultValue: 'option1',
