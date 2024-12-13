@@ -48,8 +48,8 @@ const CreateAgentBodySchema = z.object({
   memory_blocks: MemoryBlocksSchema.nullable().optional(),
   tools: z.string().array().nullable().optional(),
   system: z.string().nullable().optional(),
-  llm_config: LLMConfigSchema.nullable().optional(),
-  embedding_config: EmbeddingConfigSchema.nullable().optional(),
+  llm_config: LLMConfigSchema.nullable()?.optional(),
+  embedding_config: EmbeddingConfigSchema.nullable()?.optional(),
 
   // letta specific fields
   template: z.boolean().optional(),

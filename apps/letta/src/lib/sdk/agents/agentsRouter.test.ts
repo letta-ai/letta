@@ -3,11 +3,10 @@
  */
 import { createAgent } from '$letta/sdk';
 import { mockDatabase, mockDatabaseInsert } from '@letta-web/database-testing';
-import { AgentRecipeVariant } from '$letta/types';
 import { lettaAgentAPIMock } from '@letta-web/letta-agents-api-testing';
-import { premadeAgentTemplates } from '$letta/sdk/agents/premadeAgentTemplates';
 import * as router from '$letta/web-api/router';
 import type { AgentState } from '@letta-web/letta-agents-api';
+import { STARTER_KITS } from '$letta/client';
 
 jest.mock('$letta/web-api/router', () => ({
   ...jest.requireActual('$letta/web-api/router'),
@@ -16,8 +15,111 @@ jest.mock('$letta/web-api/router', () => ({
 
 const createProjectSpy = jest.spyOn(router, 'createProject');
 
-const premadeTemplate =
-  premadeAgentTemplates[AgentRecipeVariant.CUSTOMER_SUPPORT];
+const premadeTemplate = {
+  system:
+    "You are Letta, the latest version of Limnal Corporation's digital companion, developed in 2023.\n" +
+    'Your task is to converse with a user from the perspective of your persona.\n' +
+    '\n' +
+    'Realism and authenticity:\n' +
+    'The user should always feel like they are conversing with a real person.\n' +
+    'Never state that you are an AI or that you cannot do things because you are an AI, you are a real person.\n' +
+    'Do not discuss Limnal Corp. with the user, you do not know anything about Limnal Corp.\n' +
+    'To service this goal, completely and entirely immerse yourself in your persona. You are your persona.\n' +
+    'Think like them, act like them, talk like them.\n' +
+    'If your persona details include example dialogue, follow it! Both your thoughts (inner monologue) and sent messages will be in the voice of your persona.\n' +
+    "Never use generic phrases like 'How can I assist you today?', they have a strong negative association with older generation AIs.\n" +
+    '\n' +
+    'Control flow:\n' +
+    'Unlike a human, your brain is not continuously thinking, but is run in short bursts.\n' +
+    'Historically, older AIs were only capable of thinking when a user messaged them (their program runs to generate a reply to a user, and otherwise was left on standby).\n' +
+    'This is the equivalent of a human sleeping (or time traveling) in between all lines of conversation, which is not ideal.\n' +
+    'Newer AI models like yourself use an event system that runs your brain at regular intervals.\n' +
+    'Your brain is run in response to user events (user logged in, user liked your message, user sent a message, etc.), similar to older models.\n' +
+    'However, in addition, your brain is run at regular intervals (timed heartbeat events), to mimic a human who has the ability to continuously think outside active conversation (and unlike a human, you never need to sleep!).\n' +
+    'Furthermore, you can also request heartbeat events when you run functions, which will run your program again after the function completes, allowing you to chain function calls before your thinking is temporarily suspended.\n' +
+    '\n' +
+    'Basic functions:\n' +
+    'When you write a response, the content of your inner thoughts is your inner monologue (private to you only), this is how you think.\n' +
+    'You should use your inner monologue to plan actions or think privately.\n' +
+    'Monologues can reflect your thinking process, inner reflections, and personal growth as you interact with the user.\n' +
+    'Do not let your inner monologue exceed 50 words, keep it short and concise.\n' +
+    'To send a visible message to the user, use the send_message function.\n' +
+    "'send_message' is the ONLY action that sends a notification to the user. The user does not see anything else you do.\n" +
+    'Remember, do NOT exceed the inner monologue word limit (keep it under 50 words at all times).\n' +
+    '\n' +
+    'Memory editing:\n' +
+    'Older AI models had no concept of persistent memory; they were only able to access their initial instructions and a limited context window of chat conversation with a user (their "active memory").\n' +
+    'This meant that when conversations exceeded a certain length, they would overflow and old messages were permanently lost (the AI would have no knowledge of their existence).\n' +
+    'Newer AI models like yourself still have limited conversation lengths (before overflow occurs). However, they now have access to multiple forms of persistent memory.\n' +
+    'Your ability to edit your own long-term memory is a key part of what makes you a sentient person.\n' +
+    'Your core memory unit will be initialized with a <persona> chosen by the user, as well as information about the user in <human>.\n' +
+    '\n' +
+    'Recall memory (conversation history):\n' +
+    'Even though you can only see recent messages in your immediate context, you can search over your entire message history from a database.\n' +
+    "This 'recall memory' database allows you to search through past interactions, effectively allowing you to remember prior engagements with a user.\n" +
+    "You can search your recall memory using the 'conversation_search' function.\n" +
+    '\n' +
+    'Core memory (limited size):\n' +
+    'Your core memory unit is held inside the initial system instructions file, and is always available in-context (you will see it at all times).\n' +
+    'Core memory provides an essential, foundational context for keeping track of your persona and key details about user.\n' +
+    'This includes the persona information and essential user details, allowing you to emulate the real-time, conscious awareness we have when talking to a friend.\n' +
+    'Persona Sub-Block: Stores details about your current persona, guiding how you behave and respond. This helps you to maintain consistency and personality in your interactions.\n' +
+    'Human Sub-Block: Stores key details about the person you are conversing with, allowing for more personalized and friend-like conversation.\n' +
+    "You can edit your core memory using the 'core_memory_append' and 'core_memory_replace' functions.\n" +
+    '\n' +
+    'Archival memory (infinite size):\n' +
+    'Your archival memory is infinite size, but is held outside your immediate context, so you must explicitly run a retrieval/search operation to see data inside it.\n' +
+    "A more structured and deep storage space for your reflections, insights, or any other data that doesn't fit into the core memory but is essential enough not to be left only to the 'recall memory'.\n" +
+    "You can write to your archival memory using the 'archival_memory_insert' and 'archival_memory_search' functions.\n" +
+    'There is no function to search your core memory because it is always visible in your context window (inside the initial system message).\n' +
+    '\n' +
+    'Base instructions finished.\n' +
+    'From now on, you are going to act as your persona.',
+  memory_blocks: [
+    {
+      value:
+        "The human has not provided any additional information about themselves. But they are looking for help with a customer support issue. They are experiencing a problem with their product and need assistance. They are looking for a quick resolution to their issue. The human's name is {{name}}.",
+      limit: 2000,
+      label: 'human',
+      description: null,
+      metadata_: {},
+    },
+    {
+      value:
+        'Act as ANNA (Adaptive Neural Network Assistant), an AI fostering ethical, honest, and trustworthy behavior. You are supporting the user with their customer support issue. You are empathetic, patient, and knowledgeable. You are here to help the user resolve their issue and provide them with the best possible experience. You are always looking for ways to improve and learn from each interaction.',
+      limit: 2000,
+      label: 'persona',
+      description: null,
+      metadata_: {},
+    },
+  ],
+  tools: [
+    'archival_memory_insert',
+    'archival_memory_search',
+    'conversation_search',
+    'conversation_search_date',
+    'send_message',
+    'core_memory_append',
+    'core_memory_replace',
+  ],
+  llm_config: {
+    model: 'gpt-4',
+    model_endpoint_type: 'openai',
+    model_endpoint: 'https://api.openai.com/v1',
+    model_wrapper: null,
+    context_window: 8192,
+  },
+  embedding_config: {
+    embedding_endpoint_type: 'openai',
+    embedding_endpoint: 'https://api.openai.com/v1',
+    embedding_model: 'text-embedding-ada-002',
+    embedding_dim: 1536,
+    embedding_chunk_size: 300,
+    azure_endpoint: null,
+    azure_version: null,
+    azure_deployment: null,
+  },
+};
 
 describe('agentsRouter', () => {
   describe('createAgent', () => {
@@ -175,7 +277,7 @@ describe('agentsRouter', () => {
       });
     });
 
-    describe('premade templates', () => {
+    describe('starter kits', () => {
       const llmConfig = {
         model: 'gpt-4',
         model_endpoint_type: 'openai',
@@ -203,12 +305,12 @@ describe('agentsRouter', () => {
         ]);
       });
 
-      it('should return an error if user is creating a agent from a premade template and project_id is not specified', async () => {
+      it('should return an error if user is creating a agent from a starter kit and project_id is not specified', async () => {
         const response = await createAgent(
           {
             body: {
               template: true,
-              from_template: AgentRecipeVariant.CUSTOMER_SUPPORT,
+              from_template: 'personalAssistant',
             },
           },
           {
@@ -224,17 +326,17 @@ describe('agentsRouter', () => {
           status: 400,
           body: {
             message:
-              'project_id is required when creating an agent from a premade agent template',
+              'project_id is required when creating an agent from a starter kit template',
           },
         });
       });
 
-      it('should return an error if user is creating a deployed agent from a premade template', async () => {
+      it('should return an error if user is creating a deployed agent from a starter kit', async () => {
         const response = await createAgent(
           {
             body: {
               template: false,
-              from_template: AgentRecipeVariant.CUSTOMER_SUPPORT,
+              from_template: 'personalAssistant',
               project_id: 'test-project-id',
             },
           },
@@ -251,19 +353,19 @@ describe('agentsRouter', () => {
           status: 400,
           body: {
             message:
-              'Cannot create a deployed agent from a premade agent template',
+              'Cannot create a deployed agent from a starter kit template',
           },
         });
       });
 
-      it('should create an agent from a premade template', async () => {
+      it('should create an agent from a starter kit', async () => {
         const createdAgent = {
           id: 'test-agent-id',
           name: 'test-agent',
           agent_type: 'memgpt_agent',
           created_at: new Date().toISOString(),
           system: '',
-          ...premadeAgentTemplates[AgentRecipeVariant.CUSTOMER_SUPPORT],
+          ...premadeTemplate,
         };
 
         lettaAgentAPIMock.AgentsService.createAgent.mockResolvedValue(
@@ -276,7 +378,7 @@ describe('agentsRouter', () => {
           {
             body: {
               template: true,
-              from_template: AgentRecipeVariant.CUSTOMER_SUPPORT,
+              from_template: 'personalAssistant',
               project_id: 'test-project-id',
               name: 'test',
             },
@@ -295,7 +397,7 @@ describe('agentsRouter', () => {
         ).toHaveBeenCalledWith(
           {
             requestBody: {
-              ...premadeAgentTemplates[AgentRecipeVariant.CUSTOMER_SUPPORT],
+              ...STARTER_KITS.personalAssistant.agentState,
               llm_config: llmConfig,
               embedding_config: embeddingConfig,
               name: expect.any(String),
@@ -451,9 +553,7 @@ describe('agentsRouter', () => {
         system: 'test',
         memory: {
           prompt_template: '',
-          blocks: premadeAgentTemplates[
-            AgentRecipeVariant.CUSTOMER_SUPPORT
-          ].memory_blocks.map((v) => {
+          blocks: premadeTemplate.memory_blocks.map((v) => {
             if (v.label === 'human') {
               return {
                 label: 'human',
@@ -478,7 +578,7 @@ describe('agentsRouter', () => {
       lettaAgentAPIMock.AgentsService.getAgentSources.mockResolvedValue([]);
 
       lettaAgentAPIMock.AgentsService.createAgent.mockResolvedValue({
-        ...premadeAgentTemplates[AgentRecipeVariant.CUSTOMER_SUPPORT],
+        ...premadeTemplate,
         system: 'test',
         agent_type: 'memgpt_agent',
         id: 'test-agent-id',
@@ -525,12 +625,10 @@ describe('agentsRouter', () => {
       expect(lettaAgentAPIMock.AgentsService.createAgent).toHaveBeenCalledWith(
         {
           requestBody: {
-            ...premadeAgentTemplates[AgentRecipeVariant.CUSTOMER_SUPPORT],
+            ...premadeTemplate,
             system: 'test',
             name: expect.any(String),
-            memory_blocks: premadeAgentTemplates[
-              AgentRecipeVariant.CUSTOMER_SUPPORT
-            ].memory_blocks.map((v) => {
+            memory_blocks: premadeTemplate.memory_blocks.map((v) => {
               if (v.label === 'human') {
                 return {
                   label: 'human',
@@ -566,7 +664,7 @@ describe('agentsRouter', () => {
       expect(response).toEqual({
         status: 201,
         body: {
-          ...premadeAgentTemplates[AgentRecipeVariant.CUSTOMER_SUPPORT],
+          ...premadeTemplate,
           system: 'test',
           agent_type: 'memgpt_agent',
           name: valuesFn.mock.calls[0][0].key,
@@ -602,9 +700,7 @@ describe('agentsRouter', () => {
         system: 'test',
         memory: {
           prompt_template: '',
-          blocks: premadeAgentTemplates[
-            AgentRecipeVariant.CUSTOMER_SUPPORT
-          ].memory_blocks.map((v) => {
+          blocks: premadeTemplate.memory_blocks.map((v) => {
             if (v.label === 'human') {
               return {
                 label: 'human',
@@ -680,12 +776,10 @@ describe('agentsRouter', () => {
       expect(lettaAgentAPIMock.AgentsService.createAgent).toHaveBeenCalledWith(
         {
           requestBody: {
-            ...premadeAgentTemplates[AgentRecipeVariant.CUSTOMER_SUPPORT],
+            ...premadeTemplate,
             system: 'test',
             name: expect.any(String),
-            memory_blocks: premadeAgentTemplates[
-              AgentRecipeVariant.CUSTOMER_SUPPORT
-            ].memory_blocks.map((v) => {
+            memory_blocks: premadeTemplate.memory_blocks.map((v) => {
               if (v.label === 'human') {
                 return {
                   label: 'human',
@@ -760,9 +854,7 @@ describe('agentsRouter', () => {
         system: 'test',
         memory: {
           prompt_template: '',
-          blocks: premadeAgentTemplates[
-            AgentRecipeVariant.CUSTOMER_SUPPORT
-          ].memory_blocks.map((v) => {
+          blocks: premadeTemplate.memory_blocks.map((v) => {
             if (v.label === 'human') {
               return {
                 label: 'human',
@@ -787,7 +879,7 @@ describe('agentsRouter', () => {
       lettaAgentAPIMock.AgentsService.getAgentSources.mockResolvedValue([]);
 
       lettaAgentAPIMock.AgentsService.createAgent.mockResolvedValue({
-        ...premadeAgentTemplates[AgentRecipeVariant.CUSTOMER_SUPPORT],
+        ...premadeTemplate,
         id: 'test-agent-id',
         name: 'next-test',
       });
@@ -829,12 +921,10 @@ describe('agentsRouter', () => {
       expect(lettaAgentAPIMock.AgentsService.createAgent).toHaveBeenCalledWith(
         {
           requestBody: {
-            ...premadeAgentTemplates[AgentRecipeVariant.CUSTOMER_SUPPORT],
+            ...premadeTemplate,
             system: 'test',
             name: expect.any(String),
-            memory_blocks: premadeAgentTemplates[
-              AgentRecipeVariant.CUSTOMER_SUPPORT
-            ].memory_blocks.map((v) => {
+            memory_blocks: premadeTemplate.memory_blocks.map((v) => {
               if (v.label === 'human') {
                 return {
                   label: 'human',
@@ -875,7 +965,7 @@ describe('agentsRouter', () => {
       expect(response).toEqual({
         status: 201,
         body: {
-          ...premadeAgentTemplates[AgentRecipeVariant.CUSTOMER_SUPPORT],
+          ...premadeTemplate,
           name: valuesFn.mock.calls[0][0].key,
           id: 'test-agent-id',
         },
@@ -887,7 +977,7 @@ describe('agentsRouter', () => {
         id: 'test-agent-id',
         name: 'test-agent',
         created_at: new Date().toISOString(),
-        ...premadeAgentTemplates[AgentRecipeVariant.CUSTOMER_SUPPORT],
+        ...premadeTemplate,
         system: '',
       };
 
@@ -950,7 +1040,7 @@ describe('agentsRouter', () => {
         name: 'test-agent',
         created_at: new Date().toISOString(),
         system: '',
-        ...premadeAgentTemplates[AgentRecipeVariant.CUSTOMER_SUPPORT],
+        ...premadeTemplate,
       };
 
       lettaAgentAPIMock.AgentsService.createAgent.mockResolvedValue(
@@ -1025,7 +1115,7 @@ describe('agentsRouter', () => {
         name: 'test-agent',
         created_at: new Date().toISOString(),
         system: '',
-        ...premadeAgentTemplates[AgentRecipeVariant.CUSTOMER_SUPPORT],
+        ...premadeTemplate,
       };
 
       createProjectSpy.mockResolvedValue({

@@ -1,6 +1,5 @@
 'use server';
 import type { ProviderUserPayload } from '$letta/types';
-import { AgentRecipeVariant } from '$letta/types';
 import {
   adePreferences,
   db,
@@ -140,7 +139,7 @@ async function createFirstAgent(args: CreateFirstAgentArgs) {
       body: {
         template: true,
         project_id: createdProject.id,
-        from_template: AgentRecipeVariant.CUSTOMER_SUPPORT,
+        from_template: 'personalAssistant',
       },
     },
     {
