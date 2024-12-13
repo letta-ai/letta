@@ -15,6 +15,8 @@ function toProperSentenceCase(str: string) {
 function mapAppIdToBrand(appId: string) {
   const overwriteMap: Record<string, string> = {
     discordbot: 'discord',
+    twitter_media: 'twitter',
+    gmail_beta: 'gmail',
   };
 
   return overwriteMap[appId] || appId;
@@ -49,8 +51,10 @@ async function syncToolsWithComposio(): Promise<SyncToolsWithComposioContractRes
         return;
       }
 
-      uniqueBrands.add(composioTool.appId);
-      uniqueBrandsToImage.set(composioTool.appId, composioTool.logo);
+      const brand = mapAppIdToBrand(composioTool.appId);
+
+      uniqueBrands.add(brand);
+      uniqueBrandsToImage.set(brand, composioTool.logo);
 
       return db
         .update(toolMetadata)
@@ -58,7 +62,7 @@ async function syncToolsWithComposio(): Promise<SyncToolsWithComposioContractRes
           name: composioTool.displayName,
           description: toProperSentenceCase(composioTool.description),
           tags: composioTool.tags.join(','),
-          brand: mapAppIdToBrand(composioTool.appId),
+          brand,
           configuration: {
             type: 'composio',
             name: composioTool.name,
@@ -78,12 +82,13 @@ async function syncToolsWithComposio(): Promise<SyncToolsWithComposioContractRes
   await Promise.all(
     newTools.map((t) => {
       uniqueBrands.add(t.appId);
+      const brand = mapAppIdToBrand(t.appId);
 
       return db.insert(toolMetadata).values({
         name: t.displayName,
         description: toProperSentenceCase(t.description),
         tags: t.tags.join(','),
-        brand: mapAppIdToBrand(t.appId),
+        brand,
         configuration: {
           type: 'composio',
           name: t.name,
