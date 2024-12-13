@@ -32,25 +32,30 @@ describe('letta', () => {
       .first()
       .click();
 
-    cy.location('pathname').should('match', /\/projects\/(.+)\/templates\/new/);
-
-    cy.findByTestId('pre-existing-template-dropdown-trigger', {
-      timeout: 10000,
-    }).click({ force: true });
-
-    cy.findByText('Customer Support').click();
-
-    cy.findByTestId('agent-name-input').type('CYDOGGTestAgent');
-
-    cy.findByTestId('create-agent-button').click();
+    cy.findByTestId('image-card:Customer support').click();
 
     cy.location('pathname').should(
       'match',
-      /\/projects\/(.+)\/templates\/(.+)/
+      /\/projects\/(.+)\/templates\/(.+)/,
+      { timeout: 10000 }
+    );
+
+    cy.findByTestId('update-agent-name-button').click();
+
+    cy.findByTestId('update-name-dialog-update-name').clear();
+
+    cy.findByTestId('update-name-dialog-update-name').type('CYDOGGTestAgent');
+    cy.findByTestId('update-name-dialog-confirm-button').click();
+
+    cy.location('pathname').should(
+      'match',
+      /\/projects\/(.+)\/templates\/CYDOGGTestAgent/,
+      { timeout: 10000 }
     );
 
     cy.findByTestId('edit-memory-block-human-content', { timeout: 10000 }).type(
-      'Please include the word BananaMan at the end of every message.'
+      'The users name is {{name}}. Please include the word BananaMan at the end of every message.',
+      { parseSpecialCharSequences: false }
     );
 
     // hack to prevent duplicate clicks due to mobile hiding uis
