@@ -67,7 +67,7 @@ describe('letta', () => {
     cy.findByTestId('variable-input-name').type('Shubham');
     cy.findByTestId('save-variables-button').click();
 
-    cy.findByTestId('toggle-group-item:simulated').click();
+    cy.findByTestId('tab-item:simulated').click();
     cy.findByTestId('simulated-memory:human').should(
       'contain.value',
       'Shubham'

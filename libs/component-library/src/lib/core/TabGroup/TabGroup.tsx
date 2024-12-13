@@ -36,6 +36,7 @@ export function TabGroup(props: TabGroupProps) {
             )}
             key={item.value}
             value={item.value}
+            data-testid={`tab-item:${item.value}`}
           >
             <Slot className="w-4 h-4">{item.icon}</Slot>
             <Typography bold variant="body2">
