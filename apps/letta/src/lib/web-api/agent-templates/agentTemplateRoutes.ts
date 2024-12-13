@@ -231,9 +231,14 @@ async function getAgentTemplateSimulatorSession(
     id = simulatorSession.id;
   }
 
-  const agent = await AgentsService.getAgent({
-    agentId,
-  });
+  const agent = await AgentsService.getAgent(
+    {
+      agentId,
+    },
+    {
+      user_id: lettaAgentsId,
+    }
+  );
 
   return {
     status: 200,
