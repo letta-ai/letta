@@ -52,7 +52,7 @@ export function GenericTab(props: GenericTabProps) {
         as="button"
         fullWidth
         data-testid={`tab:${panelId || title}`}
-        paddingLeft="large"
+        paddingLeft="small"
         align="center"
         paddingY="xsmall"
         className="h-full"
