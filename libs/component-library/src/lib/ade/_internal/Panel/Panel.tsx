@@ -62,11 +62,7 @@ export function GenericTab(props: GenericTabProps) {
         <Typography bold variant="body3" className="uppercase" noWrap>
           {title}
         </Typography>
-        {infoTooltipText && (
-          <span className="mt-[-3px]">
-            <InfoTooltip text={infoTooltipText} />
-          </span>
-        )}
+        {infoTooltipText && <InfoTooltip text={infoTooltipText} />}
       </HStack>
       <HStack className="mt-[-4px]" align="center" gap="small">
         {/*<ADEDropdownMenu*/}

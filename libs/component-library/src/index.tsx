@@ -149,3 +149,5 @@ export * from './lib/reusable/CTACard/CTACard';
 export * from './lib/ade/MiniApp/MiniApp';
 
 export * from './lib/core/TabGroup/TabGroup';
+
+export * from './lib/reusable/MessageWrapper/MessageWrapper';

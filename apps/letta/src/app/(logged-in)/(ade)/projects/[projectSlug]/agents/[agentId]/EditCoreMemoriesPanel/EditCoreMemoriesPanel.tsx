@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { PanelTemplate } from '@letta-web/component-library';
+import { TabGroup } from '@letta-web/component-library';
 import { InfoTooltip } from '@letta-web/component-library';
 import {
   Alert,
@@ -8,7 +9,6 @@ import {
   FormActions,
   FormField,
   LettaLoaderPanel,
-  RawToggleGroup,
   FormProvider,
   Input,
   TextArea,
@@ -406,6 +406,7 @@ function DefaultMemory() {
 
 function SimulatedMemory() {
   const { agentSession } = useCurrentSimulatedAgent();
+  const t = useTranslations('ADE/EditCoreMemoriesPanel');
   const agent = useMemo(() => {
     return agentSession?.body.agent;
   }, [agentSession]);
@@ -438,6 +439,13 @@ function SimulatedMemory() {
           fullWidth
           data-testid={`simulated-memory:${block.label}`}
           disabled
+          rightOfLabelContent={
+            <Typography variant="body2" color="muted">
+              {t('SimulatedMemory.characterCount', {
+                count: block.value.length,
+              })}
+            </Typography>
+          }
           label={block.label || ''}
           value={block.value}
         />
@@ -459,11 +467,9 @@ function EditMemory() {
       <VStack fullHeight gap={false}>
         <VStack paddingX="small">
           {isTemplate && (
-            <RawToggleGroup
-              border
+            <TabGroup
               fullWidth
               value={memoryType}
-              hideLabel
               onValueChange={(value) => {
                 if (!value) {
                   return;
@@ -471,7 +477,6 @@ function EditMemory() {
 
                 setMemoryType(value as MemoryType);
               }}
-              label={t('toggleMemoryType.label')}
               items={[
                 {
                   label: t('toggleMemoryType.templated.label'),

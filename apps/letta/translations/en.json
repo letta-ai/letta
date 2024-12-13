@@ -661,6 +661,8 @@
     "error": "There was an error while updating the model, please try again or contact support."
   },
   "components/Messages": {
+    "functionReturn": "Function response",
+    "internalMonologue": "Internal monologue",
     "hiddenUserMessage": "Internal user message",
     "noParsableMessages": "There are no messages available in this view, usually this is caused by a lack of triggered send_message actions in your agent, check the debug more to verify."
   },
@@ -745,7 +747,8 @@
   },
   "ADE/EditCoreMemoriesPanel": {
     "SimulatedMemory": {
-      "error": "There was an error while reading the simulated memory block, please try again or contact support."
+      "error": "There was an error while reading the simulated memory block, please try again or contact support.",
+      "characterCount": "{count} CHARS"
     },
     "toggleMemoryType": {
       "label": "Toggle Memory Type",
