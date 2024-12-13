@@ -55,7 +55,7 @@ export function MessageWrapper({
           </Slot>
           <HStack gap="medium" align="center">
             <Typography
-              color={type === 'code' ? 'forceTextSecondary' : 'default'}
+              color={type === 'code' ? 'lighter' : 'default'}
               variant="body3"
               bold
             >
