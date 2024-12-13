@@ -26,10 +26,3 @@ export interface AgentTemplate {
   llm_config: AgentState['llm_config'];
   embedding_config: AgentState['embedding_config'];
 }
-
-export enum AgentRecipeVariant {
-  CUSTOMER_SUPPORT = 'letta_customer_support',
-  FANTASY_ROLEPLAY = 'letta_fantasy_roleplay',
-  DATA_COLLECTOR = 'letta_data_collector',
-  NO_TEMPLATE = 'none',
-}

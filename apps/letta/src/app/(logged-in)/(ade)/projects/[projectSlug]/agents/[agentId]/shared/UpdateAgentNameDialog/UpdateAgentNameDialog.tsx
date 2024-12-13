@@ -126,6 +126,7 @@ export function UpdateNameDialog(props: UpdateNameDialogProps) {
   return (
     <FormProvider {...form}>
       <Dialog
+        testId="update-name-dialog"
         isOpen={open}
         onOpenChange={setOpen}
         title={t('UpdateNameDialog.title', {
@@ -144,6 +145,7 @@ export function UpdateNameDialog(props: UpdateNameDialogProps) {
           render={({ field }) => (
             <Input
               fullWidth
+              data-testid="update-name-dialog-update-name"
               description={t('UpdateNameDialog.name.description', {
                 agentBaseType: agentBaseType.base,
               })}

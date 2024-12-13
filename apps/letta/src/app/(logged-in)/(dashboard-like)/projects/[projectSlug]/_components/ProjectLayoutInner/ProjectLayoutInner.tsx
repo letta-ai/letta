@@ -6,6 +6,8 @@ import {
   SpaceDashboardIcon,
   TabGroupIcon,
   InstantMixIcon,
+  SidebarTitle,
+  HStack,
 } from '@letta-web/component-library';
 import { useTranslations } from 'next-intl';
 import type { PropsWithChildren } from 'react';
@@ -16,12 +18,22 @@ type ProjectLayoutInnerProps = PropsWithChildren;
 
 export function ProjectLayoutInner(props: ProjectLayoutInnerProps) {
   const t = useTranslations('projects/(projectSlug)/layout');
-  const { slug: projectSlug } = useCurrentProject();
+  const { slug: projectSlug, name } = useCurrentProject();
 
   return (
     <DashboardWithSidebarWrapper
       baseUrl="/projects"
       returnText={t('nav.return')}
+      projectTitle={
+        <HStack
+          fullWidth
+          overflow="hidden"
+          paddingBottom="small"
+          paddingTop="small"
+        >
+          <SidebarTitle avatarSize="small" variant="inline" name={name} />
+        </HStack>
+      }
       navigationItems={[
         {
           id: 'home',

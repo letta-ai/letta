@@ -65,7 +65,7 @@ const AvatarFallback = React.forwardRef<
 ));
 AvatarFallback.displayName = AvatarPrimitive.Fallback.displayName;
 
-interface AvatarProps extends AvatarVariantProps {
+export interface AvatarProps extends AvatarVariantProps {
   imageSrc?: string;
   name: string;
 }

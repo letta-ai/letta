@@ -41,9 +41,10 @@ export function ImageCard(props: ImageCardProps) {
   if (variant === 'inline') {
     return (
       <Component
-        className="contents"
         href={href}
+        data-testid={`image-card:${title}`}
         onClick={onClick}
+        type="button"
         target={target}
       >
         <Card
@@ -78,9 +79,10 @@ export function ImageCard(props: ImageCardProps) {
 
   return (
     <Component
-      className="contents"
       href={href}
+      data-testid={`image-card:${title}`}
       onClick={onClick}
+      type="button"
       target={target}
     >
       <Card

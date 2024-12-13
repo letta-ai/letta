@@ -467,10 +467,34 @@
       "placeholder": "Search projects"
     }
   },
+  "projects/(projectSlug)/components/CreateNewTemplateDialog": {
+    "title": "Create a template",
+    "back": "All templates",
+    "error": "An error occurred while creating the template. Please try again or contact support.",
+    "loading": "Creating template...",
+    "starterKits": {
+      "title": "Starter kits",
+      "description": "Get started with these pre-made templates"
+    }
+  },
   "projects/(projectSlug)/page": {
-    "title": "Project dashboard",
+    "subtitle": "Create, manage and monitor agents in this project",
+    "QuickActions": {
+      "subtitle": "Get started with these quick actions",
+      "title": "Quick Actions",
+      "createTemplate": {
+        "title": "New template",
+        "description": "Create a new agent template to define the structure of agents you deploy in your project.",
+        "cta": "Create template"
+      },
+      "monitorAgents": {
+        "title": "Monitor agents",
+        "description": "View and manage all agents deployed in your project.",
+        "cta": "View agents"
+      }
+    },
     "agentTemplatesList": {
-      "emptyMessage": "You have templates in this project",
+      "emptyMessage": "You have no templates in this project",
       "createAgentTemplate": "New agent template"
     },
     "agentTemplatesSection": {
@@ -480,7 +504,7 @@
   },
   "projects/(projectSlug)/layout": {
     "nav": {
-      "return": "View all projects",
+      "return": "All projects",
       "home": "Dashboard",
       "templates": "Templates",
       "agents": "Agents",
@@ -665,6 +689,9 @@
     "internalMonologue": "Internal monologue",
     "hiddenUserMessage": "Internal user message",
     "noParsableMessages": "There are no messages available in this view, usually this is caused by a lack of triggered send_message actions in your agent, check the debug more to verify."
+  },
+  "components/StarterKitItems": {
+    "tools": "<strong>Tools included:</strong> {toolsList}"
   },
   "components/ThemeSelector": {
     "label": "Choose Theme",
@@ -989,18 +1016,17 @@
     "dismiss": "Dismiss"
   },
   "development-servers/agents/new/page": {
-    "tools": "<strong>Tools included:</strong> {toolsList}",
     "serverOffline": "Your server is offline, please start it to create a new agent.",
     "serverOfflineConnect": "Turn on your server with the command below:",
     "isFetchingStatus": "Sorry, we are still attempting to connect to your server. Please wait a moment.",
     "title": "Create a new agent",
-    "error": "There was an error creating the agent, below is the error message, please try again or contact support.",
     "alert": {
       "local": "your local server (localhost)",
       "title": "You are creating an agent on {serverName}",
       "descriptionLocal": "This will create an agent locally on your machine. This will not deploy the agent to Letta Cloud.",
       "descriptionRemote": "This will create an agent on the remote server. This will not deploy the agent to Letta Cloud."
     },
+    "error": "There was an error creating the agent, below is the error message, please try again or contact support.",
     "loading": "Creating agent...",
     "starterKits": {
       "title": "Starter kits",

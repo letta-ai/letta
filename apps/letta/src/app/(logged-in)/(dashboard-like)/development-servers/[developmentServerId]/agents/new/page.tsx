@@ -5,7 +5,6 @@ import {
   DashboardPageLayout,
   DashboardPageSection,
   Frame,
-  ImageCard,
   LoadingEmptyStatusComponent,
   NiceGridDisplay,
   RawCodeEditor,
@@ -32,49 +31,7 @@ import { trackClientSideEvent } from '@letta-web/analytics/client';
 import { AnalyticsEvent } from '@letta-web/analytics';
 import { useCurrentUser } from '$letta/client/hooks';
 import { ConnectToLocalServerCommand } from '$letta/client/components';
-
-interface StarterKitItemProps {
-  starterKit: StarterKit;
-  onCreateAgent: (title: string, starterKit: StarterKit) => void;
-}
-
-function StarterKitItem(props: StarterKitItemProps) {
-  const { starterKit, onCreateAgent } = props;
-  const t = useTranslations('development-servers/agents/new/page');
-  const { useGetTitle, useGetDescription, image } = starterKit;
-
-  const title = useGetTitle();
-  const description = useGetDescription();
-
-  return (
-    <ImageCard
-      /* eslint-disable-next-line react/forbid-component-props */
-      className="h-[270px]"
-      onClick={() => {
-        onCreateAgent(title, starterKit);
-      }}
-      imageUrl={image}
-      altText=""
-      title={title}
-      description={description}
-    >
-      <VStack paddingTop>
-        {starterKit.tools && (
-          <Typography variant="body2" align="left">
-            {t.rich('tools', {
-              strong: (v) => (
-                <Typography variant="body2" overrideEl="span" bold>
-                  {v}
-                </Typography>
-              ),
-              toolsList: starterKit.tools.map((v) => v.name).join(', '),
-            })}
-          </Typography>
-        )}
-      </VStack>
-    </ImageCard>
-  );
-}
+import { StarterKitItems } from '$letta/client/components';
 
 function NewAgentPage() {
   const t = useTranslations('development-servers/agents/new/page');
@@ -266,8 +223,8 @@ function NewAgentPage() {
               ) : (
                 <NiceGridDisplay itemWidth="250px" itemHeight="260px">
                   {starterKits.map(([id, starterKit]) => (
-                    <StarterKitItem
-                      onCreateAgent={handleCreateAgent}
+                    <StarterKitItems
+                      onSelectStarterKit={handleCreateAgent}
                       key={id}
                       starterKit={starterKit}
                     />

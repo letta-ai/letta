@@ -484,6 +484,7 @@ export function AgentSettingsPanel() {
             trigger={
               <Button
                 hideLabel
+                data-testid="update-agent-name-button"
                 preIcon={<CogIcon />}
                 color="tertiary"
                 label={t('agentName.edit', { baseName })}
