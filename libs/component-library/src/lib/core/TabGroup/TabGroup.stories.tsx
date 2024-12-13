@@ -23,14 +23,40 @@ export const Primary: Story = {
       {
         label: 'Option 1',
         value: 'option1',
-        content: 'This is option 1',
       },
       {
         label: 'Option 2',
         value: 'option2',
-        content: 'This is option 2',
       },
     ],
     defaultValue: 'option1',
+  },
+};
+
+export const FullWidth: Story = {
+  argTypes: {
+    items: {
+      control: 'object',
+    },
+    defaultValue: {
+      control: 'text',
+    },
+  },
+  args: {
+    fullWidth: true,
+    items: [
+      {
+        label: 'Option 1',
+        value: 'option1',
+      },
+      {
+        label: 'Option 2',
+        value: 'option2',
+      },
+    ],
+    defaultValue: 'option1',
+  },
+  parameters: {
+    layout: 'fullscreen',
   },
 };

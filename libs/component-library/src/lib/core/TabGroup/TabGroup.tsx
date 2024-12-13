@@ -9,6 +9,7 @@ interface TabItemType {
   label: string;
   value: string;
   icon?: React.ReactNode;
+  postIcon?: React.ReactNode;
 }
 
 interface TabGroupProps extends Tabs.TabsProps {
@@ -26,19 +27,22 @@ export function TabGroup(props: TabGroupProps) {
       defaultValue={defaultValue}
       onValueChange={onValueChange}
     >
-      <Tabs.List>
+      <Tabs.List className="flex flex-row">
         {items.map((item) => (
           <Tabs.Trigger
             className={cn(
-              'px-4 py-2 border-b-2 data-[state=active]:font-medium data-[state=active]:border-content'
+              'px-4 h-[28px] flex items-center gap-2 flex-row border-b-2 data-[state=active]:font-medium data-[state=active]:border-content',
+              fullWidth ? 'flex-1 justify-center' : ''
             )}
             key={item.value}
             value={item.value}
+            data-testid={`tab-item:${item.value}`}
           >
             <Slot className="w-4 h-4">{item.icon}</Slot>
-            <Typography bold uppercase variant="body2">
+            <Typography bold variant="body2">
               {item.label}
             </Typography>
+            <Slot className="w-4 h-4">{item.postIcon}</Slot>
           </Tabs.Trigger>
         ))}
       </Tabs.List>
