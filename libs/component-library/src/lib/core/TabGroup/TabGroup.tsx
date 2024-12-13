@@ -5,15 +5,14 @@ import { cn } from '@letta-web/core-style-config';
 import { Slot } from '@radix-ui/react-slot';
 import { Typography } from '../../core/Typography/Typography';
 
-interface TabGroupItemType {
+interface TabItemType {
   label: string;
   value: string;
-  content: React.ReactNode;
   icon?: React.ReactNode;
 }
 
 interface TabGroupProps extends Tabs.TabsProps {
-  items: TabGroupItemType[];
+  items: TabItemType[];
   fullWidth?: boolean;
 }
 
@@ -22,7 +21,7 @@ export function TabGroup(props: TabGroupProps) {
 
   return (
     <Tabs.Root
-      className={cn('flex flex-col gap-2', fullWidth ? 'w-full' : '')}
+      className={cn(fullWidth ? 'w-full' : '')}
       value={value}
       defaultValue={defaultValue}
       onValueChange={onValueChange}
@@ -37,16 +36,12 @@ export function TabGroup(props: TabGroupProps) {
             value={item.value}
           >
             <Slot className="w-4 h-4">{item.icon}</Slot>
-            <Typography variant="body2">{item.label}</Typography>
+            <Typography bold uppercase variant="body2">
+              {item.label}
+            </Typography>
           </Tabs.Trigger>
         ))}
       </Tabs.List>
-
-      {items.map((item) => (
-        <Tabs.Content key={item.value} value={item.value}>
-          {item.content}
-        </Tabs.Content>
-      ))}
     </Tabs.Root>
   );
 }
