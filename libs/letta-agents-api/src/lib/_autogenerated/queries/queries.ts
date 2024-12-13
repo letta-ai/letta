@@ -42,7 +42,7 @@ import {
   ToolCreate,
   ToolRunFromSource,
   ToolUpdate,
-  UpdateAgentState,
+  UpdateAgent,
   UserCreate,
   UserUpdate,
 } from '../requests/types.gen';
@@ -288,10 +288,12 @@ export const useAgentsServiceListAgents = <
   TQueryKey extends Array<unknown> = unknown[]
 >(
   {
+    matchAllTags,
     name,
     tags,
     userId,
   }: {
+    matchAllTags?: boolean;
     name?: string;
     tags?: string[];
     userId?: string;
@@ -301,10 +303,11 @@ export const useAgentsServiceListAgents = <
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseAgentsServiceListAgentsKeyFn(
-      { name, tags, userId },
+      { matchAllTags, name, tags, userId },
       queryKey
     ),
-    queryFn: () => AgentsService.listAgents({ name, tags, userId }) as TData,
+    queryFn: () =>
+      AgentsService.listAgents({ matchAllTags, name, tags, userId }) as TData,
     ...options,
   });
 export const useAgentsServiceGetAgentContextWindow = <
@@ -385,18 +388,20 @@ export const useAgentsServiceGetAgentSources = <
 >(
   {
     agentId,
+    userId,
   }: {
     agentId: string;
+    userId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseAgentsServiceGetAgentSourcesKeyFn(
-      { agentId },
+      { agentId, userId },
       queryKey
     ),
-    queryFn: () => AgentsService.getAgentSources({ agentId }) as TData,
+    queryFn: () => AgentsService.getAgentSources({ agentId, userId }) as TData,
     ...options,
   });
 export const useAgentsServiceListAgentInContextMessages = <
@@ -406,19 +411,21 @@ export const useAgentsServiceListAgentInContextMessages = <
 >(
   {
     agentId,
+    userId,
   }: {
     agentId: string;
+    userId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseAgentsServiceListAgentInContextMessagesKeyFn(
-      { agentId },
+      { agentId, userId },
       queryKey
     ),
     queryFn: () =>
-      AgentsService.listAgentInContextMessages({ agentId }) as TData,
+      AgentsService.listAgentInContextMessages({ agentId, userId }) as TData,
     ...options,
   });
 export const useAgentsServiceGetAgentMemory = <
@@ -428,15 +435,20 @@ export const useAgentsServiceGetAgentMemory = <
 >(
   {
     agentId,
+    userId,
   }: {
     agentId: string;
+    userId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
 ) =>
   useQuery<TData, TError>({
-    queryKey: Common.UseAgentsServiceGetAgentMemoryKeyFn({ agentId }, queryKey),
-    queryFn: () => AgentsService.getAgentMemory({ agentId }) as TData,
+    queryKey: Common.UseAgentsServiceGetAgentMemoryKeyFn(
+      { agentId, userId },
+      queryKey
+    ),
+    queryFn: () => AgentsService.getAgentMemory({ agentId, userId }) as TData,
     ...options,
   });
 export const useAgentsServiceGetAgentMemoryBlock = <
@@ -500,19 +512,21 @@ export const useAgentsServiceGetAgentRecallMemorySummary = <
 >(
   {
     agentId,
+    userId,
   }: {
     agentId: string;
+    userId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseAgentsServiceGetAgentRecallMemorySummaryKeyFn(
-      { agentId },
+      { agentId, userId },
       queryKey
     ),
     queryFn: () =>
-      AgentsService.getAgentRecallMemorySummary({ agentId }) as TData,
+      AgentsService.getAgentRecallMemorySummary({ agentId, userId }) as TData,
     ...options,
   });
 export const useAgentsServiceGetAgentArchivalMemorySummary = <
@@ -522,19 +536,21 @@ export const useAgentsServiceGetAgentArchivalMemorySummary = <
 >(
   {
     agentId,
+    userId,
   }: {
     agentId: string;
+    userId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseAgentsServiceGetAgentArchivalMemorySummaryKeyFn(
-      { agentId },
+      { agentId, userId },
       queryKey
     ),
     queryFn: () =>
-      AgentsService.getAgentArchivalMemorySummary({ agentId }) as TData,
+      AgentsService.getAgentArchivalMemorySummary({ agentId, userId }) as TData,
     ...options,
   });
 export const useAgentsServiceListAgentArchivalMemory = <
@@ -2036,7 +2052,7 @@ export const useAgentsServiceUpdateAgent = <
       TError,
       {
         agentId: string;
-        requestBody: UpdateAgentState;
+        requestBody: UpdateAgent;
         userId?: string;
       },
       TContext
@@ -2049,7 +2065,7 @@ export const useAgentsServiceUpdateAgent = <
     TError,
     {
       agentId: string;
-      requestBody: UpdateAgentState;
+      requestBody: UpdateAgent;
       userId?: string;
     },
     TContext
@@ -2189,6 +2205,7 @@ export const useAgentsServiceUpdateAgentMessage = <
         agentId: string;
         messageId: string;
         requestBody: MessageUpdate;
+        userId?: string;
       },
       TContext
     >,
@@ -2202,14 +2219,16 @@ export const useAgentsServiceUpdateAgentMessage = <
       agentId: string;
       messageId: string;
       requestBody: MessageUpdate;
+      userId?: string;
     },
     TContext
   >({
-    mutationFn: ({ agentId, messageId, requestBody }) =>
+    mutationFn: ({ agentId, messageId, requestBody, userId }) =>
       AgentsService.updateAgentMessage({
         agentId,
         messageId,
         requestBody,
+        userId,
       }) as unknown as Promise<TData>,
     ...options,
   });

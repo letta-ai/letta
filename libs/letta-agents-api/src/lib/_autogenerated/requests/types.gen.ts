@@ -86,6 +86,22 @@ export type ActionResponseModel = {
  */
 export type AgentState = {
   /**
+   * The id of the user that made this object.
+   */
+  created_by_id?: string | null;
+  /**
+   * The id of the user that made this object.
+   */
+  last_updated_by_id?: string | null;
+  /**
+   * The timestamp when the object was created.
+   */
+  created_at?: string | null;
+  /**
+   * The timestamp when the object was last updated.
+   */
+  updated_at?: string | null;
+  /**
    * The description of the agent.
    */
   description?: string | null;
@@ -96,10 +112,6 @@ export type AgentState = {
     [key: string]: unknown;
   } | null;
   /**
-   * The user id of the agent.
-   */
-  user_id?: string | null;
-  /**
    * The human-friendly ID of the Agent
    */
   id?: string;
@@ -108,21 +120,13 @@ export type AgentState = {
    */
   name: string;
   /**
-   * The datetime the agent was created.
+   * The list of tool rules.
    */
-  created_at?: string;
+  tool_rules?: Array<ChildToolRule | InitToolRule | TerminalToolRule> | null;
   /**
    * The ids of the messages in the agent's in-context memory.
    */
   message_ids?: Array<string> | null;
-  /**
-   * The tools used by the agent.
-   */
-  tool_names: Array<string>;
-  /**
-   * The list of tool rules.
-   */
-  tool_rules?: Array<ChildToolRule | InitToolRule | TerminalToolRule> | null;
   /**
    * The system prompt used by the agent.
    */
@@ -139,6 +143,10 @@ export type AgentState = {
    * The embedding configuration used by the agent.
    */
   embedding_config: EmbeddingConfig;
+  /**
+   * The unique identifier of the organization associated with the agent.
+   */
+  organization_id?: string | null;
   /**
    * The in-context memory of the agent.
    */
@@ -544,6 +552,22 @@ export type ContextWindowOverview = {
  */
 export type CreateAgentRequest = {
   /**
+   * The id of the user that made this object.
+   */
+  created_by_id?: string | null;
+  /**
+   * The id of the user that made this object.
+   */
+  last_updated_by_id?: string | null;
+  /**
+   * The timestamp when the object was created.
+   */
+  created_at?: string | null;
+  /**
+   * The timestamp when the object was last updated.
+   */
+  updated_at?: string | null;
+  /**
    * The description of the agent.
    */
   description?: string | null;
@@ -553,15 +577,10 @@ export type CreateAgentRequest = {
   metadata_?: {
     [key: string]: unknown;
   } | null;
-  user_id?: string | null;
   /**
    * The name of the agent.
    */
-  name?: string | null;
-  /**
-   * The ids of the messages in the agent's in-context memory.
-   */
-  message_ids?: Array<string> | null;
+  name?: string;
   /**
    * The blocks to create in the agent's in-context memory.
    */
@@ -569,7 +588,19 @@ export type CreateAgentRequest = {
   /**
    * The tools used by the agent.
    */
-  tools?: Array<string>;
+  tools?: Array<string> | null;
+  /**
+   * The ids of the tools used by the agent.
+   */
+  tool_ids?: Array<string> | null;
+  /**
+   * The ids of the sources used by the agent.
+   */
+  source_ids?: Array<string> | null;
+  /**
+   * The ids of the blocks used by the agent.
+   */
+  block_ids?: Array<string> | null;
   /**
    * The tool rules governing the agent.
    */
@@ -598,6 +629,11 @@ export type CreateAgentRequest = {
    * The initial set of messages to put in the agent's in-context memory.
    */
   initial_message_sequence?: Array<MessageCreate> | null;
+  /**
+   * The LLM configuration used by the agent.
+   */
+  include_base_tools?: boolean;
+  user_id?: string | null;
 };
 
 export type CreateArchivalMemory = {
@@ -684,102 +720,6 @@ export type CreateBlock = {
   } | null;
 };
 
-export type CreateMessageRequest = {
-  /**
-   * Role of the message sender (either 'user' or 'system')
-   */
-  role: string;
-  /**
-   * The message content to be processed by the agent.
-   */
-  content: string;
-  /**
-   * List of file IDs associated with the message.
-   */
-  file_ids?: Array<string> | null;
-  /**
-   * Metadata associated with the message.
-   */
-  metadata?: {
-    [key: string]: unknown;
-  } | null;
-};
-
-export type CreateRunRequest = {
-  /**
-   * The unique identifier of the assistant.
-   */
-  assistant_id: string;
-  /**
-   * The model used by the run.
-   */
-  model?: string | null;
-  /**
-   * The instructions for the run.
-   */
-  instructions: string;
-  /**
-   * Additional instructions for the run.
-   */
-  additional_instructions?: string | null;
-  /**
-   * The tools used by the run (overrides assistant).
-   */
-  tools?: Array<letta__schemas__openai__openai__ToolCall> | null;
-  /**
-   * Metadata associated with the run.
-   */
-  metadata?: {
-    [key: string]: unknown;
-  } | null;
-};
-
-export type CreateThreadRequest = {
-  /**
-   * List of message IDs associated with the thread.
-   */
-  messages?: Array<string> | null;
-  /**
-   * Metadata associated with the thread.
-   */
-  metadata?: {
-    [key: string]: unknown;
-  } | null;
-  /**
-   * The name of the assistant (i.e. Letta preset)
-   */
-  assistant_name?: string | null;
-};
-
-export type CreateThreadRunRequest = {
-  /**
-   * The unique identifier of the assistant.
-   */
-  assistant_id: string;
-  /**
-   * The thread to run.
-   */
-  thread: OpenAIThread;
-  /**
-   * The model used by the run.
-   */
-  model: string;
-  /**
-   * The instructions for the run.
-   */
-  instructions: string;
-  /**
-   * The tools used by the run (overrides assistant).
-   */
-  tools?: Array<letta__schemas__openai__openai__ToolCall> | null;
-  /**
-   * Metadata associated with the run.
-   */
-  metadata?: {
-    [key: string]: unknown;
-  } | null;
-};
-
 export type DeleteAssistantFileResponse = {
   /**
    * The unique identifier of the file.
@@ -793,18 +733,6 @@ export type DeleteAssistantFileResponse = {
 };
 
 export type DeleteAssistantResponse = {
-  /**
-   * The unique identifier of the agent.
-   */
-  id: string;
-  object?: string;
-  /**
-   * Whether the agent was deleted.
-   */
-  deleted: boolean;
-};
-
-export type DeleteThreadResponse = {
   /**
    * The unique identifier of the agent.
    */
@@ -933,17 +861,6 @@ export type FileMetadata = {
   is_deleted?: boolean;
 };
 
-export type Function = {
-  /**
-   * The name of the function.
-   */
-  name: string;
-  /**
-   * The arguments of the function.
-   */
-  arguments: string;
-};
-
 export type FunctionCall_Input = {
   name: string;
 };
@@ -1018,11 +935,6 @@ export type HTTPValidationError = {
 export type Health = {
   version: string;
   status: string;
-};
-
-export type ImageFile = {
-  type?: string;
-  file_id: string;
 };
 
 /**
@@ -1379,13 +1291,6 @@ export type LettaUsageStatistics = {
   step_count?: number;
 };
 
-export type ListMessagesResponse = {
-  /**
-   * List of message objects.
-   */
-  messages: Array<OpenAIMessage>;
-};
-
 export type LocalSandboxConfig = {
   /**
    * Directory for the sandbox environment.
@@ -1451,22 +1356,6 @@ export type MessageCreate = {
  */
 export type role = 'user' | 'system';
 
-export type MessageFile = {
-  /**
-   * The unique identifier of the file.
-   */
-  id: string;
-  object?: string;
-  /**
-   * The unix timestamp of when the file was created.
-   */
-  created_at: number;
-  /**
-   * The unique identifier of the message.
-   */
-  message_id: string;
-};
-
 export type MessageRole = 'assistant' | 'user' | 'tool' | 'function' | 'system';
 
 /**
@@ -1493,33 +1382,6 @@ export type MessageUpdate = {
    * The id of the tool call.
    */
   tool_call_id?: string | null;
-};
-
-export type ModifyMessageRequest = {
-  /**
-   * Metadata associated with the message.
-   */
-  metadata?: {
-    [key: string]: unknown;
-  };
-};
-
-export type ModifyRunRequest = {
-  /**
-   * Metadata associated with the run.
-   */
-  metadata?: {
-    [key: string]: unknown;
-  };
-};
-
-export type ModifyThreadRequest = {
-  /**
-   * Metadata associated with the thread.
-   */
-  metadata?: {
-    [key: string]: unknown;
-  };
 };
 
 /**
@@ -1565,245 +1427,6 @@ export type OpenAIAssistant = {
   metadata?: {
     [key: string]: unknown;
   } | null;
-};
-
-export type OpenAIError = {
-  /**
-   * The error code.
-   */
-  code: string;
-  /**
-   * The error message.
-   */
-  message: string;
-};
-
-export type OpenAIMessage = {
-  /**
-   * The unique identifier of the message.
-   */
-  id: string;
-  object?: string;
-  /**
-   * The unix timestamp of when the message was created.
-   */
-  created_at: number;
-  /**
-   * The unique identifier of the thread.
-   */
-  thread_id: string;
-  /**
-   * Role of the message sender (either 'user' or 'system')
-   */
-  role: string;
-  /**
-   * The message content to be processed by the agent.
-   */
-  content?: Array<Text | ImageFile>;
-  /**
-   * The unique identifier of the assistant.
-   */
-  assistant_id: string;
-  /**
-   * The unique identifier of the run.
-   */
-  run_id?: string | null;
-  /**
-   * List of file IDs associated with the message.
-   */
-  file_ids?: Array<string> | null;
-  /**
-   * Metadata associated with the message.
-   */
-  metadata?: {
-    [key: string]: unknown;
-  } | null;
-};
-
-export type OpenAIMessageCreationStep = {
-  type?: string;
-  /**
-   * The unique identifier of the message.
-   */
-  message_id: string;
-};
-
-export type OpenAIRun = {
-  /**
-   * The unique identifier of the run.
-   */
-  id: string;
-  object?: string;
-  /**
-   * The unix timestamp of when the run was created.
-   */
-  created_at: number;
-  /**
-   * The unique identifier of the thread.
-   */
-  thread_id: string;
-  /**
-   * The unique identifier of the assistant.
-   */
-  assistant_id: string;
-  /**
-   * The status of the run.
-   */
-  status: string;
-  /**
-   * The required action of the run.
-   */
-  required_action?: RequiredAction | null;
-  /**
-   * The last error of the run.
-   */
-  last_error?: OpenAIError | null;
-  /**
-   * The unix timestamp of when the run expires.
-   */
-  expires_at: number;
-  /**
-   * The unix timestamp of when the run started.
-   */
-  started_at?: number | null;
-  /**
-   * The unix timestamp of when the run was cancelled.
-   */
-  cancelled_at?: number | null;
-  /**
-   * The unix timestamp of when the run failed.
-   */
-  failed_at?: number | null;
-  /**
-   * The unix timestamp of when the run completed.
-   */
-  completed_at?: number | null;
-  /**
-   * The model used by the run.
-   */
-  model: string;
-  /**
-   * The instructions for the run.
-   */
-  instructions: string;
-  /**
-   * The tools used by the run.
-   */
-  tools?: Array<letta__schemas__openai__openai__ToolCall> | null;
-  /**
-   * List of file IDs associated with the run.
-   */
-  file_ids?: Array<string> | null;
-  /**
-   * Metadata associated with the run.
-   */
-  metadata?: {
-    [key: string]: unknown;
-  } | null;
-  /**
-   * The usage of the run.
-   */
-  usage?: OpenAIUsage | null;
-};
-
-export type OpenAIRunStep = {
-  /**
-   * The unique identifier of the run step.
-   */
-  id: string;
-  object?: string;
-  /**
-   * The unix timestamp of when the run step was created.
-   */
-  created_at: number;
-  /**
-   * The unique identifier of the assistant.
-   */
-  assistant_id: string;
-  /**
-   * The unique identifier of the thread.
-   */
-  thread_id: string;
-  /**
-   * The unique identifier of the run.
-   */
-  run_id: string;
-  /**
-   * The type of the run step.
-   */
-  type: string;
-  /**
-   * The status of the run step.
-   */
-  status: string;
-  /**
-   * The step defaults.
-   */
-  step_defaults: OpenAIToolCallsStep | OpenAIMessageCreationStep;
-  /**
-   * The last error of the run step.
-   */
-  last_error?: OpenAIError | null;
-  /**
-   * The unix timestamp of when the run step expired.
-   */
-  expired_at?: number | null;
-  /**
-   * The unix timestamp of when the run failed.
-   */
-  failed_at?: number | null;
-  /**
-   * The unix timestamp of when the run completed.
-   */
-  completed_at?: number | null;
-  /**
-   * The usage of the run.
-   */
-  usage?: OpenAIUsage | null;
-};
-
-/**
- * Represents an OpenAI thread (equivalent to Letta agent)
- */
-export type OpenAIThread = {
-  /**
-   * The unique identifier of the thread.
-   */
-  id: string;
-  object?: string;
-  /**
-   * The unix timestamp of when the thread was created.
-   */
-  created_at: number;
-  /**
-   * Metadata associated with the thread.
-   */
-  metadata?: {
-    [key: string]: unknown;
-  };
-};
-
-export type OpenAIToolCallsStep = {
-  type?: string;
-  /**
-   * The tool calls.
-   */
-  tool_calls: Array<letta__schemas__openai__openai__ToolCall>;
-};
-
-export type OpenAIUsage = {
-  /**
-   * The number of tokens used for the run.
-   */
-  completion_tokens: number;
-  /**
-   * The number of tokens used for the prompt.
-   */
-  prompt_tokens: number;
-  /**
-   * The total number of tokens used for the run.
-   */
-  total_tokens: number;
 };
 
 export type Organization = {
@@ -1907,11 +1530,6 @@ export type RecallMemorySummary = {
    * Number of rows in recall memory
    */
   size: number;
-};
-
-export type RequiredAction = {
-  type?: string;
-  submit_tool_outputs: Array<letta__schemas__openai__openai__ToolCall>;
 };
 
 export type ResponseFormat = {
@@ -2154,13 +1772,6 @@ export type SourceUpdate = {
   embedding_config?: EmbeddingConfig | null;
 };
 
-export type SubmitToolOutputsToRunRequest = {
-  /**
-   * The tool outputs to submit.
-   */
-  tools_outputs: Array<ToolCallOutput>;
-};
-
 export type SystemMessage_Input = {
   content: string;
   role?: string;
@@ -2195,14 +1806,6 @@ export type TerminalToolRule = {
   type?: ToolRuleType;
 };
 
-export type Text = {
-  object?: string;
-  /**
-   * The text content to be processed by the agent.
-   */
-  text: string;
-};
-
 export type Tool_Input = {
   type?: 'function';
   function: FunctionSchema;
@@ -2219,17 +1822,6 @@ export type ToolCallFunction_Output = {
    * The arguments to pass to the function (JSON dump)
    */
   arguments: string;
-};
-
-export type ToolCallOutput = {
-  /**
-   * The unique identifier of the tool call.
-   */
-  tool_call_id: string;
-  /**
-   * The output of the tool call.
-   */
-  output: string;
 };
 
 export type ToolCreate = {
@@ -2342,7 +1934,23 @@ export type ToolUpdate = {
   } | null;
 };
 
-export type UpdateAgentState = {
+export type UpdateAgent = {
+  /**
+   * The id of the user that made this object.
+   */
+  created_by_id?: string | null;
+  /**
+   * The id of the user that made this object.
+   */
+  last_updated_by_id?: string | null;
+  /**
+   * The timestamp when the object was created.
+   */
+  created_at?: string | null;
+  /**
+   * The timestamp when the object was last updated.
+   */
+  updated_at?: string | null;
   /**
    * The description of the agent.
    */
@@ -2354,21 +1962,21 @@ export type UpdateAgentState = {
     [key: string]: unknown;
   } | null;
   /**
-   * The user id of the agent.
-   */
-  user_id?: string | null;
-  /**
-   * The id of the agent.
-   */
-  id: string;
-  /**
    * The name of the agent.
    */
   name?: string | null;
   /**
-   * The tools used by the agent.
+   * The ids of the tools used by the agent.
    */
-  tool_names?: Array<string> | null;
+  tool_ids?: Array<string> | null;
+  /**
+   * The ids of the sources used by the agent.
+   */
+  source_ids?: Array<string> | null;
+  /**
+   * The ids of the blocks used by the agent.
+   */
+  block_ids?: Array<string> | null;
   /**
    * The tags associated with the agent.
    */
@@ -2377,6 +1985,10 @@ export type UpdateAgentState = {
    * The system prompt used by the agent.
    */
   system?: string | null;
+  /**
+   * The tool rules governing the agent.
+   */
+  tool_rules?: Array<ChildToolRule | InitToolRule | TerminalToolRule> | null;
   /**
    * The LLM configuration used by the agent.
    */
@@ -2633,18 +2245,6 @@ export type letta__schemas__openai__chat_completions__ToolCallFunction = {
   arguments: string;
 };
 
-export type letta__schemas__openai__openai__ToolCall = {
-  /**
-   * The unique identifier of the tool call.
-   */
-  id: string;
-  type?: string;
-  /**
-   * The function call.
-   */
-  function: Function;
-};
-
 /**
  * Representation of a tool, which is a function that can be called by the agent.
  *
@@ -2896,6 +2496,10 @@ export type DeleteFileFromSourceResponse = void;
 
 export type ListAgentsData = {
   /**
+   * If True, only returns agents that match ALL given tags. Otherwise, return agents that have ANY of the passed in tags.
+   */
+  matchAllTags?: boolean;
+  /**
    * Name of the agent
    */
   name?: string | null;
@@ -2924,7 +2528,7 @@ export type GetAgentContextWindowResponse = ContextWindowOverview;
 
 export type UpdateAgentData = {
   agentId: string;
-  requestBody: UpdateAgentState;
+  requestBody: UpdateAgent;
   userId?: string | null;
 };
 
@@ -2969,12 +2573,14 @@ export type RemoveToolFromAgentResponse = AgentState;
 
 export type GetAgentSourcesData = {
   agentId: string;
+  userId?: string | null;
 };
 
 export type GetAgentSourcesResponse = Array<Source>;
 
 export type ListAgentInContextMessagesData = {
   agentId: string;
+  userId?: string | null;
 };
 
 export type ListAgentInContextMessagesResponse =
@@ -2982,6 +2588,7 @@ export type ListAgentInContextMessagesResponse =
 
 export type GetAgentMemoryData = {
   agentId: string;
+  userId?: string | null;
 };
 
 export type GetAgentMemoryResponse = Memory;
@@ -3028,12 +2635,14 @@ export type AddAgentMemoryBlockResponse = Memory;
 
 export type GetAgentRecallMemorySummaryData = {
   agentId: string;
+  userId?: string | null;
 };
 
 export type GetAgentRecallMemorySummaryResponse = RecallMemorySummary;
 
 export type GetAgentArchivalMemorySummaryData = {
   agentId: string;
+  userId?: string | null;
 };
 
 export type GetAgentArchivalMemorySummaryResponse = ArchivalMemorySummary;
@@ -3121,6 +2730,7 @@ export type UpdateAgentMessageData = {
   agentId: string;
   messageId: string;
   requestBody: MessageUpdate;
+  userId?: string | null;
 };
 
 export type UpdateAgentMessageResponse = letta__schemas__message__Message;
@@ -3201,7 +2811,7 @@ export type LinkAgentMemoryBlockData = {
   userId?: string | null;
 };
 
-export type LinkAgentMemoryBlockResponse = Block;
+export type LinkAgentMemoryBlockResponse = void;
 
 export type UnlinkAgentMemoryBlockData = {
   /**
@@ -3212,7 +2822,7 @@ export type UnlinkAgentMemoryBlockData = {
   userId?: string | null;
 };
 
-export type UnlinkAgentMemoryBlockResponse = Memory;
+export type UnlinkAgentMemoryBlockResponse = void;
 
 export type ListJobsData = {
   /**
@@ -4266,7 +3876,7 @@ export type $OpenApiTs = {
         /**
          * Successful Response
          */
-        200: Block;
+        204: void;
         /**
          * Validation Error
          */
@@ -4281,7 +3891,7 @@ export type $OpenApiTs = {
         /**
          * Successful Response
          */
-        200: Memory;
+        204: void;
         /**
          * Validation Error
          */

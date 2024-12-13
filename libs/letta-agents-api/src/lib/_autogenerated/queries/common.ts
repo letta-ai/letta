@@ -231,16 +231,21 @@ export type AgentsServiceListAgentsQueryResult<
 export const useAgentsServiceListAgentsKey = 'AgentsServiceListAgents';
 export const UseAgentsServiceListAgentsKeyFn = (
   {
+    matchAllTags,
     name,
     tags,
     userId,
   }: {
+    matchAllTags?: boolean;
     name?: string;
     tags?: string[];
     userId?: string;
   } = {},
   queryKey?: Array<unknown>
-) => [useAgentsServiceListAgentsKey, ...(queryKey ?? [{ name, tags, userId }])];
+) => [
+  useAgentsServiceListAgentsKey,
+  ...(queryKey ?? [{ matchAllTags, name, tags, userId }]),
+];
 export type AgentsServiceGetAgentContextWindowDefaultResponse = Awaited<
   ReturnType<typeof AgentsService.getAgentContextWindow>
 >;
@@ -315,11 +320,16 @@ export const useAgentsServiceGetAgentSourcesKey =
 export const UseAgentsServiceGetAgentSourcesKeyFn = (
   {
     agentId,
+    userId,
   }: {
     agentId: string;
+    userId?: string;
   },
   queryKey?: Array<unknown>
-) => [useAgentsServiceGetAgentSourcesKey, ...(queryKey ?? [{ agentId }])];
+) => [
+  useAgentsServiceGetAgentSourcesKey,
+  ...(queryKey ?? [{ agentId, userId }]),
+];
 export type AgentsServiceListAgentInContextMessagesDefaultResponse = Awaited<
   ReturnType<typeof AgentsService.listAgentInContextMessages>
 >;
@@ -332,13 +342,15 @@ export const useAgentsServiceListAgentInContextMessagesKey =
 export const UseAgentsServiceListAgentInContextMessagesKeyFn = (
   {
     agentId,
+    userId,
   }: {
     agentId: string;
+    userId?: string;
   },
   queryKey?: Array<unknown>
 ) => [
   useAgentsServiceListAgentInContextMessagesKey,
-  ...(queryKey ?? [{ agentId }]),
+  ...(queryKey ?? [{ agentId, userId }]),
 ];
 export type AgentsServiceGetAgentMemoryDefaultResponse = Awaited<
   ReturnType<typeof AgentsService.getAgentMemory>
@@ -351,11 +363,16 @@ export const useAgentsServiceGetAgentMemoryKey = 'AgentsServiceGetAgentMemory';
 export const UseAgentsServiceGetAgentMemoryKeyFn = (
   {
     agentId,
+    userId,
   }: {
     agentId: string;
+    userId?: string;
   },
   queryKey?: Array<unknown>
-) => [useAgentsServiceGetAgentMemoryKey, ...(queryKey ?? [{ agentId }])];
+) => [
+  useAgentsServiceGetAgentMemoryKey,
+  ...(queryKey ?? [{ agentId, userId }]),
+];
 export type AgentsServiceGetAgentMemoryBlockDefaultResponse = Awaited<
   ReturnType<typeof AgentsService.getAgentMemoryBlock>
 >;
@@ -414,13 +431,15 @@ export const useAgentsServiceGetAgentRecallMemorySummaryKey =
 export const UseAgentsServiceGetAgentRecallMemorySummaryKeyFn = (
   {
     agentId,
+    userId,
   }: {
     agentId: string;
+    userId?: string;
   },
   queryKey?: Array<unknown>
 ) => [
   useAgentsServiceGetAgentRecallMemorySummaryKey,
-  ...(queryKey ?? [{ agentId }]),
+  ...(queryKey ?? [{ agentId, userId }]),
 ];
 export type AgentsServiceGetAgentArchivalMemorySummaryDefaultResponse = Awaited<
   ReturnType<typeof AgentsService.getAgentArchivalMemorySummary>
@@ -434,13 +453,15 @@ export const useAgentsServiceGetAgentArchivalMemorySummaryKey =
 export const UseAgentsServiceGetAgentArchivalMemorySummaryKeyFn = (
   {
     agentId,
+    userId,
   }: {
     agentId: string;
+    userId?: string;
   },
   queryKey?: Array<unknown>
 ) => [
   useAgentsServiceGetAgentArchivalMemorySummaryKey,
-  ...(queryKey ?? [{ agentId }]),
+  ...(queryKey ?? [{ agentId, userId }]),
 ];
 export type AgentsServiceListAgentArchivalMemoryDefaultResponse = Awaited<
   ReturnType<typeof AgentsService.listAgentArchivalMemory>

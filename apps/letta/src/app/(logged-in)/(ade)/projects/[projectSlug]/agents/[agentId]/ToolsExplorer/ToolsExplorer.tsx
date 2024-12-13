@@ -332,7 +332,6 @@ function AddToolToAgentButton(props: AddToolToAgentButtonProps) {
 
           return {
             ...oldData,
-            tool_names: nextAgentState.tool_names,
             tools: [
               {
                 id: toolIdToAdd,

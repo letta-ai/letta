@@ -66,7 +66,6 @@ function RemoveToolDialog(props: RemoveToolFromAgentDialogProps) {
 
           return {
             ...oldData,
-            tool_names: nextAgentState.tool_names,
             tools: nextAgentState.tools.filter((tool) => tool.id !== toolId),
           };
         }

@@ -276,7 +276,6 @@ function SystemPromptEditorDialog(props: SystemPromptEditorDialogProps) {
         {
           agentId: currentAgent.id,
           requestBody: {
-            id: currentAgent.id,
             system: data.system,
           },
         },
@@ -402,7 +401,6 @@ function SystemPromptEditor() {
       debouncedMutation({
         agentId: currentAgent.id,
         requestBody: {
-          id: currentAgent.id,
           system: value,
         },
       });

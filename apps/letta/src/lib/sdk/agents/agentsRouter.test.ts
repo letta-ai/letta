@@ -94,13 +94,9 @@ const premadeTemplate = {
     },
   ],
   tools: [
-    'archival_memory_insert',
-    'archival_memory_search',
-    'conversation_search',
-    'conversation_search_date',
-    'send_message',
-    'core_memory_append',
-    'core_memory_replace',
+    {
+      id: 'tool-name',
+    },
   ],
   llm_config: {
     model: 'gpt-4',
@@ -547,7 +543,7 @@ describe('agentsRouter', () => {
       });
 
       lettaAgentAPIMock.AgentsService.getAgent.mockResolvedValue({
-        tool_names: premadeTemplate.tools || [],
+        tools: premadeTemplate.tools || [],
         embedding_config: premadeTemplate.embedding_config,
         llm_config: premadeTemplate.llm_config,
         system: 'test',
@@ -622,10 +618,12 @@ describe('agentsRouter', () => {
         }
       );
 
+      const { tools, ...rest } = premadeTemplate;
       expect(lettaAgentAPIMock.AgentsService.createAgent).toHaveBeenCalledWith(
         {
           requestBody: {
-            ...premadeTemplate,
+            ...rest,
+            tool_ids: ['tool-name'],
             system: 'test',
             name: expect.any(String),
             memory_blocks: premadeTemplate.memory_blocks.map((v) => {
@@ -694,7 +692,7 @@ describe('agentsRouter', () => {
       });
 
       const GetAgentResolvedValue = {
-        tool_names: premadeTemplate.tools || [],
+        tools: premadeTemplate.tools || [],
         embedding_config: premadeTemplate.embedding_config,
         llm_config: premadeTemplate.llm_config,
         system: 'test',
@@ -773,10 +771,13 @@ describe('agentsRouter', () => {
         }
       );
 
+      const { tools, ...rest } = premadeTemplate;
+
       expect(lettaAgentAPIMock.AgentsService.createAgent).toHaveBeenCalledWith(
         {
           requestBody: {
-            ...premadeTemplate,
+            ...rest,
+            tool_ids: ['tool-name'],
             system: 'test',
             name: expect.any(String),
             memory_blocks: premadeTemplate.memory_blocks.map((v) => {
@@ -848,7 +849,7 @@ describe('agentsRouter', () => {
       });
 
       lettaAgentAPIMock.AgentsService.getAgent.mockResolvedValue({
-        tool_names: premadeTemplate.tools || [],
+        tools: premadeTemplate.tools || [],
         embedding_config: premadeTemplate.embedding_config,
         llm_config: premadeTemplate.llm_config,
         system: 'test',
@@ -918,10 +919,13 @@ describe('agentsRouter', () => {
         }
       );
 
+      const { tools, ...rest } = premadeTemplate;
+
       expect(lettaAgentAPIMock.AgentsService.createAgent).toHaveBeenCalledWith(
         {
           requestBody: {
-            ...premadeTemplate,
+            ...rest,
+            tool_ids: ['tool-name'],
             system: 'test',
             name: expect.any(String),
             memory_blocks: premadeTemplate.memory_blocks.map((v) => {
