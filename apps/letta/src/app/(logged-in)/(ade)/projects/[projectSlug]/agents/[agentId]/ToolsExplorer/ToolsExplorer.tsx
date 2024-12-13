@@ -1289,22 +1289,29 @@ function ToolEditor(props: ToolEditorProps) {
       <HiddenOnMobile>
         <Debugger
           preLabelIcon={<TerminalIcon />}
-          outputConfig={{
-            label: t('ToolEditor.outputLabel'),
-          }}
           isRunning={isPending}
           onRun={handleRun}
-          output={
-            outputValue
-              ? {
-                  value: outputValue,
-                  duration: completedAt ? completedAt - submittedAt : 0,
-                  status: outputStatus,
-                  stdout: outputStdout,
-                  stderr: outputStderr,
-                }
-              : undefined
-          }
+          output={{
+            status: outputStatus,
+            duration: completedAt ? completedAt - submittedAt : 0,
+            responses: [
+              {
+                label: t('ToolEditor.outputLabel'),
+                value: 'tool-output',
+                content: outputValue ?? '',
+              },
+              {
+                label: 'stdout',
+                value: 'stdout',
+                content: outputStdout,
+              },
+              {
+                label: 'stderr',
+                value: 'stderr',
+                content: outputStderr,
+              },
+            ],
+          }}
           inputConfig={inputConfig}
           label={t('ToolEditor.label')}
         />

@@ -128,12 +128,11 @@ function DebuggerInput<InputSchema extends GenericSchema>(
 }
 
 interface DebuggerOutputProps {
-  outputConfig: OutputConfig;
   output?: Output;
 }
 
 function DebuggerOutput(props: DebuggerOutputProps) {
-  const { outputConfig, output } = props;
+  const { output } = props;
   const t = useTranslations('component-library/Debugger');
 
   const statusBadge = useMemo(() => {
@@ -168,39 +167,7 @@ function DebuggerOutput(props: DebuggerOutputProps) {
     return null;
   }, [output, t]);
 
-  type TabKey = 'stderr' | 'stdout' | 'tool-output';
-
-  const tabConfig = useMemo(
-    () =>
-      ({
-        stderr: {
-          label: 'stderr',
-          content: output?.stderr,
-        },
-        stdout: {
-          label: 'stdout',
-          content: output?.stdout,
-        },
-        'tool-output': {
-          label: outputConfig.label,
-          content: output?.value,
-        },
-      } as const),
-    [output, outputConfig.label]
-  );
-
-  const [activeTab, setActiveTab] = useState<TabKey>('tool-output');
-
-  const getTabItems = useCallback(() => {
-    return (
-      Object.entries(tabConfig) as Array<
-        [TabKey, { label: string; content?: string }]
-      >
-    ).map(([value, { label }]) => ({
-      label,
-      value,
-    }));
-  }, [tabConfig]);
+  const [activeTab, setActiveTab] = useState(output?.responses[0]?.value);
 
   return (
     <VStack collapseHeight gap={false} flex fullWidth>
@@ -211,14 +178,22 @@ function DebuggerOutput(props: DebuggerOutputProps) {
         justify="spaceBetween"
         gap={false}
       >
-        <TabGroup
-          fullWidth
-          value={activeTab}
-          onValueChange={(value) => {
-            setActiveTab(value as TabKey);
-          }}
-          items={getTabItems()}
-        />
+        <VStack fullHeight justify="end">
+          <TabGroup
+            fullWidth
+            value={activeTab}
+            onValueChange={(value) => {
+              setActiveTab(value);
+            }}
+            items={
+              output?.responses?.map((response) => ({
+                label: response.label,
+                value: response.value,
+                icon: response.icon,
+              })) || []
+            }
+          />
+        </VStack>
         <div className="pr-2 flex items-center h-full">{statusBadge}</div>
       </HStack>
       <VStack overflowY="auto" flex fullWidth>
@@ -228,7 +203,9 @@ function DebuggerOutput(props: DebuggerOutputProps) {
           flex
           fontSize="small"
           language="javascript"
-          code={tabConfig[activeTab].content || ''}
+          code={
+            output?.responses.find((r) => r.value === activeTab)?.content || ''
+          }
           showLineNumbers={false}
         />
       </VStack>
@@ -236,24 +213,22 @@ function DebuggerOutput(props: DebuggerOutputProps) {
   );
 }
 
-interface OutputConfig {
-  label: string;
-}
-
 interface Output {
-  status: 'error' | 'success' | undefined;
-  duration: number;
-  value: string;
-  stdout: string;
-  stderr: string;
+  status?: 'error' | 'success' | undefined;
+  duration?: number | undefined;
+  responses: Array<{
+    label: string;
+    value: string;
+    icon?: React.ReactNode;
+    content?: string | undefined;
+  }>;
 }
 
 interface DebuggerProps<InputSchema extends GenericSchema> {
   onRun: (input: z.infer<InputSchema>) => void;
   inputConfig: InputConfig<InputSchema>;
-  outputConfig: OutputConfig;
   isRunning?: boolean;
-  output?: Output | undefined;
+  output: Output;
   label: string;
   preLabelIcon?: React.ReactNode;
 }
@@ -261,15 +236,7 @@ interface DebuggerProps<InputSchema extends GenericSchema> {
 export function Debugger<InputSchema extends GenericSchema>(
   props: DebuggerProps<InputSchema>
 ) {
-  const {
-    inputConfig,
-    isRunning,
-    outputConfig,
-    output,
-    onRun,
-    preLabelIcon,
-    label,
-  } = props;
+  const { inputConfig, isRunning, output, onRun, preLabelIcon, label } = props;
 
   return (
     <HStack className="min-h-[300px]" flex fullWidth>
@@ -292,7 +259,7 @@ export function Debugger<InputSchema extends GenericSchema>(
             onRun={onRun}
             inputConfig={inputConfig}
           />
-          <DebuggerOutput output={output} outputConfig={outputConfig} />
+          <DebuggerOutput output={output} />
         </VStack>
       </RawInputContainer>
     </HStack>
