@@ -745,7 +745,8 @@
   },
   "ADE/EditCoreMemoriesPanel": {
     "SimulatedMemory": {
-      "error": "There was an error while reading the simulated memory block, please try again or contact support."
+      "error": "There was an error while reading the simulated memory block, please try again or contact support.",
+      "characterCount": "{count} CHARS"
     },
     "toggleMemoryType": {
       "label": "Toggle Memory Type",
