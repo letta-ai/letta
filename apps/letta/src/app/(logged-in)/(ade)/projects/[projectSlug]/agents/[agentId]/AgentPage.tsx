@@ -55,6 +55,7 @@ import './AgentPage.scss';
 import { useCurrentAgentMetaData } from './hooks/useCurrentAgentMetaData/useCurrentAgentMetaData';
 import { useCurrentAgent } from './hooks';
 import {
+  useAgentsServiceDeleteAgent,
   useAgentsServiceGetAgent,
   UseAgentsServiceGetAgentKeyFn,
 } from '@letta-web/letta-agents-api';
@@ -134,30 +135,31 @@ function DeleteAgentDialog(props: DeleteAgentDialogProps) {
     },
   });
 
-  const { mutate, isPending, isSuccess, isError } =
-    webOriginSDKApi.agents.deleteAgent.useMutation({
+  const { mutate, isPending, isSuccess, isError } = useAgentsServiceDeleteAgent(
+    {
       onSuccess: () => {
         if (isLocal) {
           trackClientSideEvent(AnalyticsEvent.LOCAL_AGENT_DELETED, {
             userId: user?.id || '',
           });
+
+          window.location.href = `/development-servers/local/dashboard`;
         } else {
           trackClientSideEvent(AnalyticsEvent.CLOUD_AGENT_DELETED, {
             userId: user?.id || '',
           });
-        }
 
-        window.location.href = `/projects/${projectSlug}`;
+          window.location.href = `/projects/${projectSlug}`;
+        }
       },
-    });
+    }
+  );
 
   const agentBaseType = useAgentBaseTypeName();
 
   const handleSubmit = useCallback(() => {
     mutate({
-      params: {
-        agent_id: agentTemplateId,
-      },
+      agentId: agentTemplateId,
     });
   }, [mutate, agentTemplateId]);
 
