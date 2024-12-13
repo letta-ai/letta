@@ -30,7 +30,7 @@ jobs:
           files: |
             .github/workflows/cypress.yml
             apps/letta/**
-            libs/component-library/**
+            libs/**
             package.json
             package-lock.json
             tsconfig.json
@@ -40,7 +40,7 @@ jobs:
       actions: read
       contents: read
       id-token: write
-    #if: ${{ needs.changed-files.outputs.any_changed == 'true' }}
+    if: ${{ needs.changed-files.outputs.any_changed == 'true' }}
     runs-on: ubuntu-latest
     environment: Deployment
     # Runs tests in parallel with matrix strategy https://docs.cypress.io/guides/guides/parallelization
