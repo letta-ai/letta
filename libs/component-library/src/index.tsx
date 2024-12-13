@@ -147,3 +147,5 @@ export * from './lib/reusable/FadeInImage/FadeInImage';
 export * from './lib/reusable/CTACard/CTACard';
 
 export * from './lib/ade/MiniApp/MiniApp';
+
+export * from './lib/core/TabGroup/TabGroup';
