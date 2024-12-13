@@ -176,9 +176,7 @@ function InputContainerHeader(props: InputContainerHeaderProps) {
         {preLabelIcon && <Slot className="h-3">{preLabelIcon}</Slot>}
         <Typography
           variant={variant === 'default' ? 'body2' : 'body'}
-          color={
-            variant === 'default' ? 'forceTextSecondary' : 'forceTextPrimary'
-          }
+          color={variant === 'default' ? 'lighter' : 'default'}
           uppercase={variant === 'default'}
         >
           {label}

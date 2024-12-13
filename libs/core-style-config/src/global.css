@@ -28,8 +28,8 @@
 
     --steel: 210, 8%, 80%;
 
-    --text-primary: 0, 0%, 9%;
-    --text-secondary: 210, 3%, 28%;
+    --text-default: 0, 0%, 9%;
+    --text-lighter: 210, 3%, 28%;
     --text-disabled: 210, 3%, 66%;
     --text-negative: 210, 10%, 96%;
 
@@ -69,7 +69,7 @@
     /* backgrounds */
     --background: 0 0% 100%;
     --background-hover: 0 0% 98%;
-    --content: var(--text-primary);
+    --content: var(--text-default);
 
     --background-warning: 39, 100%, 94%;
     --background-warning-content: 39, 100%, 10%;
@@ -77,12 +77,12 @@
     --background-destructive: 0, 100%, 90%;
     --background-destructive-content: 0, 100%, 10%;
 
-    --background-grey-content: var(--text-primary);
+    --background-grey-content: var(--text-default);
     --background-grey: 210,16.7%,97.6%;
     --background-grey-hover: 210, 10%, 80%;
 
     --background-grey2: 210, 10%, 96%;
-    --background-grey2-content: var(--text-primary);
+    --background-grey2-content: var(--text-default);
 
     --background-black: 0, 0%, 0%;
     --background-black-content: 0, 0%, 100%;
@@ -126,8 +126,8 @@
 
 
   .dark {
-    --text-primary: 210, 7%, 84%;
-    --text-secondary: 210, 2%, 48%;
+    --text-default: 210, 7%, 84%;
+    --text-lighter: 210, 2%, 48%;
     --text-disabled: 200, 3%, 17%;
     --text-negative: 0, 0%, 9%;
     --border: 200, 3%, 17%;
@@ -142,13 +142,13 @@
 
     --background: 0 0% 0%;
     --background-hover: 240 10% 3.9%;
-    --content: var(--text-primary);
+    --content: var(--text-default);
 
     --background-grey: 0, 0%, 9%;
-    --background-grey-content: var(--text-primary);
+    --background-grey-content: var(--text-default);
 
     --background-grey2: 0, 0%, 13%;
-    --background-grey2-content: var(--text-primary);
+    --background-grey2-content: var(--text-default);
 
     --card: 240 10% 3.9%;
     --card-content: 0 0% 98%;
@@ -196,7 +196,7 @@
     --background-grey2: 0, 0%, 50%;
     --backbround-grey2-content: 0, 0, 100%;
 
-    --text-secondary: 0, 0%, 100%;
+    --text-lighter: 0, 0%, 100%;
 
     --border : 0, 0%, 100%;
 

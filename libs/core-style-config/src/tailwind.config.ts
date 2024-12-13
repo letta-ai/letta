@@ -77,8 +77,8 @@ export function buildConfig(appDir: string): Config {
           ring: 'hsl(var(--ring))',
           steel: 'hsl(var(--steel))',
           text: {
-            DEFAULT: 'hsl(var(--text-primary))',
-            secondary: 'hsl(var(--text-secondary))',
+            DEFAULT: 'hsl(var(--text-default))',
+            lighter: 'hsl(var(--text-lighter))',
           },
           'background-violet': {
             DEFAULT: 'hsl(var(--background-violet))',
