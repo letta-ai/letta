@@ -52,7 +52,8 @@ export function attachVariablesToTemplates(
 
   return {
     system: nextAgent.system,
-    tool_ids: nextAgent.tools.map((tool) => tool.id || '').filter(Boolean),
+    tool_ids:
+      nextAgent.tools?.map((tool) => tool.id || '').filter(Boolean) || [],
     name: `name-${crypto.randomUUID()}`,
     embedding_config: nextAgent.embedding_config,
     memory: nextAgent.memory,
