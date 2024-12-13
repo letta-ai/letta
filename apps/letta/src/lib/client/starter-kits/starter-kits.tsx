@@ -22,7 +22,13 @@ export interface StarterKit {
   tools?: StarterKitTool[];
 }
 
-export const STARTER_KITS: Record<string, StarterKit> = {
+export function isTemplateNameAStarterKitId(
+  templateName: string
+): templateName is keyof typeof STARTER_KITS {
+  return Object.keys(STARTER_KITS).includes(templateName);
+}
+
+export const STARTER_KITS = {
   scratch: {
     id: 'scratch',
     useGetTitle: () => {
@@ -295,4 +301,4 @@ export const STARTER_KITS: Record<string, StarterKit> = {
       ],
     },
   },
-};
+} satisfies Record<string, StarterKit>;

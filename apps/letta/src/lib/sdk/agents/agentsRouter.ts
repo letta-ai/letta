@@ -8,6 +8,7 @@ import * as Sentry from '@sentry/node';
 
 import type { SDKContext } from '$letta/sdk/shared';
 import type { AgentState } from '@letta-web/letta-agents-api';
+import { ToolsService } from '@letta-web/letta-agents-api';
 import {
   AgentsService,
   SourcesService,
@@ -24,10 +25,7 @@ import {
 import { createProject } from '$letta/web-api/router';
 import { and, desc, eq, isNull, like } from 'drizzle-orm';
 import { findUniqueAgentTemplateName } from '$letta/server';
-import {
-  isTemplateNameAPremadeAgentTemplate,
-  premadeAgentTemplates,
-} from '$letta/sdk/agents/premadeAgentTemplates';
+import { isTemplateNameAStarterKitId, STARTER_KITS } from '$letta/client';
 
 export function attachVariablesToTemplates(
   agentTemplate: AgentState,
@@ -271,11 +269,11 @@ export async function createAgent(
   if (from_template) {
     const [templateName, version] = from_template.split(':');
 
-    if (isTemplateNameAPremadeAgentTemplate(templateName)) {
-      const premadeAgentTemplate = premadeAgentTemplates[templateName];
+    if (isTemplateNameAStarterKitId(templateName)) {
+      const starterKit = STARTER_KITS[templateName];
 
-      if (!premadeAgentTemplate) {
-        throw new Error('Premade agent template not found');
+      if (!starterKit) {
+        throw new Error('Starter kit not found');
       }
 
       if (!project_id) {
@@ -283,7 +281,7 @@ export async function createAgent(
           status: 400,
           body: {
             message:
-              'project_id is required when creating an agent from a premade agent template',
+              'project_id is required when creating an agent from a starter kit template',
           },
         };
       }
@@ -293,15 +291,51 @@ export async function createAgent(
           status: 400,
           body: {
             message:
-              'Cannot create a deployed agent from a premade agent template',
+              'Cannot create a deployed agent from a starter kit template',
           },
         };
+      }
+
+      if ('tools' in starterKit) {
+        const existingTools = await ToolsService.listTools(
+          {},
+          {
+            user_id: lettaAgentsUserId,
+          }
+        );
+
+        const toolNameMap = (existingTools || []).reduce((acc, tool) => {
+          acc.add(tool.name || '');
+
+          return acc;
+        }, new Set<string>());
+
+        const toolsToCreate = starterKit.tools.filter((tool) => {
+          return !toolNameMap.has(tool.name);
+        });
+
+        await Promise.all(
+          toolsToCreate.map((tool) => {
+            return ToolsService.createTool(
+              {
+                requestBody: {
+                  source_code: tool.code,
+                  description: 'A custom tool',
+                  name: tool.name,
+                },
+              },
+              {
+                user_id: lettaAgentsUserId,
+              }
+            );
+          })
+        );
       }
 
       const response = await AgentsService.createAgent(
         {
           requestBody: {
-            ...premadeAgentTemplate,
+            ...starterKit.agentState,
             llm_config: {
               model: 'gpt-4',
               model_endpoint_type: 'openai',

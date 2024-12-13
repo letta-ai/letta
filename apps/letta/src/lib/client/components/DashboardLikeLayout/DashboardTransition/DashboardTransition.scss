@@ -2,7 +2,10 @@
   height: calc(100dvh - var(--header-height) - 8px);
   width: calc(100cqw - var(--sidebar-width));
   position: fixed;
-  z-index: -1;
+  z-index: 0;
+  background: transparent;
+  pointer-events: none;
+  user-select: none;
 }
 
 @media (max-width: 840px) {

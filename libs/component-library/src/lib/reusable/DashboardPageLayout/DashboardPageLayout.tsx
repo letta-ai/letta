@@ -71,7 +71,7 @@ export function DashboardPageLayout(props: DashboardPageLayoutProps) {
         <VStack
           fullWidth
           gap={false}
-          className={cn(cappedWidth ? 'max-w-[1248px]' : '')}
+          className={cn(cappedWidth ? 'max-w-[1248px] mx-auto' : '')}
           flex
         >
           <VStack

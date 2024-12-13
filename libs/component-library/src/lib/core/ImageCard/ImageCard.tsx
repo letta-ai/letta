@@ -44,6 +44,7 @@ export function ImageCard(props: ImageCardProps) {
         className="contents"
         href={href}
         onClick={onClick}
+        type="button"
         target={target}
       >
         <Card

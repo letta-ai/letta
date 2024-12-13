@@ -209,6 +209,7 @@ const dialogVariants = cva('', {
       medium: 'max-w-md',
       large: 'max-w-[600px]',
       xlarge: 'max-w-[800px]',
+      xxlarge: 'max-w-[1024px]',
       full: 'max-w-[85vw] h-full max-h-[85dvh]',
     },
   },
