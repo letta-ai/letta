@@ -243,6 +243,9 @@ function useIsComposioConnected() {
         },
       },
       retry: false,
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: false,
+      refetchOnMount: false,
       enabled: !isLocal,
     });
 
@@ -250,6 +253,9 @@ function useIsComposioConnected() {
     useToolsServiceListComposioApps({}, undefined, {
       enabled: isLocal,
       retry: false,
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: false,
+      refetchOnMount: false,
     });
 
   const isConnected = useMemo(() => {
@@ -1641,6 +1647,8 @@ export function ToolsExplorer() {
   webApi.toolMetadata.getToolMetadataSummary.useQuery({
     queryKey: webApiQueryKeys.toolMetadata.getToolMetadataSummary,
     enabled: shouldShowComposioTools,
+    refetchOnReconnect: false,
+    refetchOnMount: false,
   });
 
   const {
