@@ -1239,33 +1239,26 @@ function ToolEditor(props: ToolEditorProps) {
     [code, extractedFunctionName, inputConfig, mutate, reset]
   );
 
-  const outputValue = useMemo(() => {
-    if (error) {
-      return JSON.stringify(error, null, 2);
-    }
-
-    if (data) {
-      return JSON.stringify(data, null, 2);
-    }
-
-    return null;
-  }, [data, error]);
-
-  const outputStatus = useMemo(() => {
-    if (error) {
-      return 'error';
-    }
-
-    if (data) {
-      if (data.status === 'error') {
-        return 'error';
+  const { outputValue, outputStdout, outputStderr, outputStatus } =
+    useMemo(() => {
+      if (data) {
+        const { stdout, stderr, ...outputValue } = data;
+        return {
+          outputValue: JSON.stringify(outputValue, null, 2),
+          outputStdout: stdout?.join('\n') ?? '',
+          outputStderr: stderr?.join('\n') ?? '',
+          outputStatus:
+            data.status === 'error' ? ('error' as const) : ('success' as const),
+        };
       }
 
-      return 'success';
-    }
-
-    return undefined;
-  }, [data, error]);
+      return {
+        outputValue: error ? JSON.stringify(error, null, 2) : null,
+        outputStdout: '',
+        outputStderr: '',
+        outputStatus: error ? ('error' as const) : undefined,
+      };
+    }, [data, error]);
 
   return (
     <HStack flex overflow="hidden" fullWidth>
@@ -1291,20 +1284,29 @@ function ToolEditor(props: ToolEditorProps) {
       <HiddenOnMobile>
         <Debugger
           preLabelIcon={<TerminalIcon />}
-          outputConfig={{
-            label: t('ToolEditor.outputLabel'),
-          }}
           isRunning={isPending}
           onRun={handleRun}
-          output={
-            outputValue
-              ? {
-                  value: outputValue,
-                  duration: completedAt ? completedAt - submittedAt : 0,
-                  status: outputStatus,
-                }
-              : undefined
-          }
+          output={{
+            status: outputStatus,
+            duration: completedAt ? completedAt - submittedAt : undefined,
+            responses: [
+              {
+                label: t('ToolEditor.outputLabel'),
+                value: 'tool-output',
+                content: outputValue ?? '',
+              },
+              {
+                label: 'stdout',
+                value: 'stdout',
+                content: outputStdout,
+              },
+              {
+                label: 'stderr',
+                value: 'stderr',
+                content: outputStderr,
+              },
+            ],
+          }}
           inputConfig={inputConfig}
           label={t('ToolEditor.label')}
         />
