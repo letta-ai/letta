@@ -332,16 +332,7 @@ function AddToolToAgentButton(props: AddToolToAgentButtonProps) {
 
           return {
             ...oldData,
-            tools: [
-              {
-                id: toolIdToAdd,
-                name: tool.providerId?.toLowerCase() || tool.name || '',
-                description: tool.description || '',
-                source_code: '',
-                tags: [tool.provider],
-              },
-              ...nextAgentState.tools,
-            ],
+            tools: [...nextAgentState.tools],
           };
         }
       );
@@ -357,10 +348,7 @@ function AddToolToAgentButton(props: AddToolToAgentButtonProps) {
     isComposioTool,
     queryClient,
     t,
-    tool.description,
     tool.id,
-    tool.name,
-    tool.provider,
     tool.providerId,
   ]);
 
