@@ -205,6 +205,7 @@ export function Messages(props: MessagesProps) {
         )[0].id,
       };
     },
+    enabled: !isSendingMessage,
     initialPageParam: { before: '' },
   });
 
