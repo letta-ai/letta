@@ -1,0 +1,50 @@
+
+$loadingTime: 2.5s;
+$color: hsl(var(--muted));
+
+
+@keyframes loading {
+  0% {
+    width: 0;
+  } 100% {
+      width: 100%;
+    }
+}
+
+@keyframes percentage {
+  @for $i from 1 through 100 {
+    $percentage: $i + "%";
+    #{$percentage} {
+      content: "Loading...";
+    }
+  }
+}
+
+.letta-loader-grow-wrapper {
+  width: 80px;
+  display: flex;
+  height: 20px;
+}
+
+
+.letta-loader-grow-wrapper-bg {
+  background-color: $color;
+  animation: loading $loadingTime linear infinite;
+}
+
+.letta-loader-grow-wrapper-el{
+  color: $color;
+  border: 1px solid $color;
+
+  &:after {
+    padding: 0 10px;
+    content: "";
+    display: block;
+    text-align: center;
+    font-size: 12px;
+    color: $color;
+    mix-blend-mode: difference;
+    letter-spacing: 1px;
+    animation: percentage $loadingTime linear infinite;
+  }
+}

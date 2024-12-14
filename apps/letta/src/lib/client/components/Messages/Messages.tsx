@@ -15,7 +15,6 @@ import {
   HStack,
   IconAvatar,
   SystemIcon,
-  LettaLoaderPanel,
   Markdown,
   PersonIcon,
   LettaInvaderOutlineIcon,
@@ -23,6 +22,7 @@ import {
   Typography,
   VStack,
   MessageWrapper,
+  LoadingEmptyStatusComponent,
 } from '@letta-web/component-library';
 import type { AgentMessage } from '@letta-web/letta-agents-api';
 import { SystemAlertSchema } from '@letta-web/letta-agents-api';
@@ -611,7 +611,13 @@ export function Messages(props: MessagesProps) {
       {hasNextPage && messageGroups.length === 0 && mode === 'simple' && (
         <Alert variant="info" title={t('noParsableMessages')} />
       )}
-      {!data && <LettaLoaderPanel />}
+      {!data && (
+        <LoadingEmptyStatusComponent
+          loadingMessage={t('loadingMessages')}
+          hideText
+          loaderVariant="spinner"
+        />
+      )}
     </VStack>
   );
 }
