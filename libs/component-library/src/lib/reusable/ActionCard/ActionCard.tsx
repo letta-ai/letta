@@ -11,6 +11,7 @@ import { ChevronRightIcon } from '../../icons';
 import { Slot } from '@radix-ui/react-slot';
 import { forwardRef } from 'react';
 import { Skeleton } from '../../core/Skeleton/Skeleton';
+import { Tooltip } from '../../core/Tooltip/Tooltip';
 
 const actionCardVariants = cva('', {
   variants: {
@@ -95,7 +96,7 @@ export const ActionCard = forwardRef<HTMLElement, ToggleCardProps>(
             <div className="bg-background w-full h-full z-0 absolute" />
           </>
         )}
-        <VStack justify="start" fullHeight fullWidth>
+        <VStack justify="start" overflowX="hidden" fullHeight fullWidth>
           <HStack
             className="action-card-header"
             justify="spaceBetween"
@@ -109,20 +110,23 @@ export const ActionCard = forwardRef<HTMLElement, ToggleCardProps>(
                   noMobileViewChange ? '' : 'action-card-titlearea'
                 )}
                 align="center"
+                overflowX="hidden"
               >
                 {icon && <Slot className="min-w-5 h-5">{icon}</Slot>}
                 {smallImage}
                 <VStack gap={false} align="start">
-                  <HStack paddingRight fullWidth overflow="hidden">
-                    <Typography
-                      align="left"
-                      noWrap
-                      fullWidth
-                      overflow="ellipsis"
-                      bold
-                    >
-                      {title}
-                    </Typography>
+                  <HStack paddingRight fullWidth overflowX="hidden">
+                    <Tooltip content={title} asChild>
+                      <Typography
+                        align="left"
+                        noWrap
+                        fullWidth
+                        overflow="ellipsis"
+                        bold
+                      >
+                        {title}
+                      </Typography>
+                    </Tooltip>
                   </HStack>
                   {props.subtitle && (
                     <Typography
