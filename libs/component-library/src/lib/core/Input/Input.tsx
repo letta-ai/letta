@@ -38,6 +38,10 @@ const inputVariants = cva(
         true: 'w-full',
         false: 'w-auto',
       },
+      width: {
+        medium: 'w-full max-w-[400px]',
+        large: 'w-full max-w-[600px]',
+      },
     },
     compoundVariants: [
       {
@@ -123,6 +127,7 @@ const InputPrimitive = React.forwardRef<HTMLInputElement, InputPrimitiveProps>(
       hideLabel,
       fullWidth,
       disabled,
+      width,
       warned,
       allowCopy,
       postIcon,
@@ -183,7 +188,14 @@ const InputPrimitive = React.forwardRef<HTMLInputElement, InputPrimitiveProps>(
         gap={false}
         fullWidth={fullWidth}
         className={cn(
-          inputVariants({ disabled, warned, fullWidth, color, className })
+          inputVariants({
+            disabled,
+            width,
+            warned,
+            fullWidth,
+            color,
+            className,
+          })
         )}
       >
         <HStack

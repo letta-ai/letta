@@ -1,7 +1,7 @@
 import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
 import type { contracts } from '$letta/web-api/contracts';
 import { db, toolMetadata } from '@letta-web/database';
-import { and, count, eq, like, sql } from 'drizzle-orm';
+import { and, count, eq, like, or, sql } from 'drizzle-orm';
 
 type ListToolMetadataRequest = ServerInferRequest<
   typeof contracts.toolMetadata.listToolMetadata
@@ -18,7 +18,12 @@ async function listToolMetadata(
   const where = [];
 
   if (search) {
-    where.push(like(toolMetadata.name, `%${search}%`));
+    where.push(
+      or(
+        like(toolMetadata.name, `%${search}%`),
+        like(toolMetadata.brand, `%${search}%`)
+      )
+    );
   }
 
   if (tags) {

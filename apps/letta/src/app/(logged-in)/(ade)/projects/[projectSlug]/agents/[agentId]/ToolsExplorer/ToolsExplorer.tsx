@@ -36,6 +36,7 @@ import {
   Code,
   CodeIcon,
   ComposioLockup,
+  DashboardPageSection,
   Debugger,
   Dialog,
   ExploreIcon,
@@ -72,6 +73,7 @@ import { atom, useAtom } from 'jotai';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { isAxiosError } from 'axios';
+import { useDebouncedValue } from '@mantine/hooks';
 
 type ToolViewerState = 'edit' | 'view';
 
@@ -240,12 +242,14 @@ function useIsComposioConnected() {
           key: COMPOSIO_KEY_NAME,
         },
       },
+      retry: false,
       enabled: !isLocal,
     });
 
   const { data: isLocalComposioConnected, isLoading: isLoadingLocal } =
     useToolsServiceListComposioApps({}, undefined, {
       enabled: isLocal,
+      retry: false,
     });
 
   const isConnected = useMemo(() => {
@@ -598,12 +602,11 @@ function ViewTool(props: ViewToolProps) {
           </Alert>
         )}
         <VStack width="largeContained" fullWidth>
-          <Typography bold variant="heading6">
-            {t('SpecificToolComponent.description')}
-          </Typography>
-          <Typography fullWidth variant="body" italic={!tool?.description}>
-            {toolDescription?.replace(/\n|\t/g, ' ').trim()}
-          </Typography>
+          <DashboardPageSection title={t('SpecificToolComponent.description')}>
+            <Typography fullWidth variant="body" italic={!tool?.description}>
+              {toolDescription?.replace(/\n|\t/g, ' ').trim()}
+            </Typography>
+          </DashboardPageSection>
         </VStack>
       </VStack>
 
@@ -621,28 +624,33 @@ interface ViewCategoryToolsProps {
 
 const PAGE_SIZE = 100;
 
+function useShowComposioTools() {
+  const {
+    isLoading: isLoadingShowComposioTools,
+    data: isShowComposioToolsEnabled,
+  } = useFeatureFlag('SHOW_COMPOSIO_TOOLS');
+
+  return useMemo(() => {
+    return !isLoadingShowComposioTools && isShowComposioToolsEnabled;
+  }, [isLoadingShowComposioTools, isShowComposioToolsEnabled]);
+}
+
 function ViewCategoryTools(props: ViewCategoryToolsProps) {
   const { category } = props;
 
   const { setCurrentTool, startCreateTool } = useToolsExplorerState();
   const [search, setSearch] = useState<string>('');
 
+  const [debouncedSearch] = useDebouncedValue(search, 200);
   const query = useMemo(
     () => ({
       brand: ['all', 'custom'].includes(category) ? undefined : category,
-      search,
+      search: debouncedSearch,
     }),
-    [category, search]
+    [category, debouncedSearch]
   );
 
-  const {
-    isLoading: isLoadingShowComposioTools,
-    data: isShowComposioToolsEnabled,
-  } = useFeatureFlag('SHOW_COMPOSIO_TOOLS');
-
-  const shouldShowComposioTools = useMemo(() => {
-    return !isLoadingShowComposioTools && isShowComposioToolsEnabled;
-  }, [isLoadingShowComposioTools, isShowComposioToolsEnabled]);
+  const shouldShowComposioTools = useShowComposioTools();
 
   const {
     data: toolMetaData,
@@ -733,9 +741,15 @@ function ViewCategoryTools(props: ViewCategoryToolsProps) {
 
   return (
     <VStack overflow="hidden" gap="large" fullHeight fullWidth>
-      <HStack paddingX align="center" justify="spaceBetween">
-        <VStack>
+      <HStack
+        paddingTop="xxsmall"
+        paddingX
+        align="center"
+        justify="spaceBetween"
+      >
+        <VStack fullWidth>
           <RawInput
+            width="large"
             hideLabel
             preIcon={<SearchIcon />}
             placeholder={t('ViewCategoryTools.search.placeholder')}
@@ -775,18 +789,13 @@ function ViewCategoryTools(props: ViewCategoryToolsProps) {
                       <ToolsIcon />
                     )
                   }
-                  mainAction={
-                    <Button
-                      color="tertiary"
-                      label={t('ViewCategoryTools.view')}
-                      onClick={() => {
-                        setCurrentTool(tool);
-                      }}
-                    />
-                  }
+                  hideClickArrow
+                  onClick={() => {
+                    setCurrentTool(tool);
+                  }}
                 >
                   {/* eslint-disable-next-line react/forbid-component-props */}
-                  <Typography className="line-clamp-3">
+                  <Typography align="left" className="line-clamp-3">
                     {tool.description}
                   </Typography>
                 </ActionCard>
@@ -802,6 +811,7 @@ function ViewCategoryTools(props: ViewCategoryToolsProps) {
                 }}
               />
             )}
+            <VStack paddingBottom fullWidth />
           </VStack>
         ) : (
           <LoadingEmptyStatusComponent emptyMessage="" isLoading />
@@ -829,7 +839,9 @@ function ToolAppHeader(props: ToolAppHeaderProps) {
     >
       <HStack gap={false}>{children}</HStack>
       <CloseMiniApp>
-        <CloseIcon />
+        <HStack>
+          <CloseIcon />
+        </HStack>
       </CloseMiniApp>
     </HStack>
   );
@@ -846,14 +858,7 @@ function getCustomTools(tools: letta__schemas__tool__Tool[]) {
 function AllToolsView() {
   const { currentTool, clearCurrentTool } = useToolsExplorerState();
 
-  const {
-    isLoading: isLoadingShowComposioTools,
-    data: isShowComposioToolsEnabled,
-  } = useFeatureFlag('SHOW_COMPOSIO_TOOLS');
-
-  const shouldShowComposioTools = useMemo(() => {
-    return !isLoadingShowComposioTools && isShowComposioToolsEnabled;
-  }, [isLoadingShowComposioTools, isShowComposioToolsEnabled]);
+  const shouldShowComposioTools = useShowComposioTools();
 
   const { data: summary } = webApi.toolMetadata.getToolMetadataSummary.useQuery(
     {
@@ -878,8 +883,6 @@ function AllToolsView() {
   const [category, setCategory] = useState<ToolViewerCategory>('all');
 
   const t = useTranslations('ADE/Tools');
-
-  const [categorySearch, setCategorySearch] = useState('');
 
   const content = useMemo(() => {
     if (isCurrentToolInViewOrEdit(currentTool) && currentTool?.data) {
@@ -971,7 +974,6 @@ function AllToolsView() {
           justify="center"
           padding
           paddingBottom="small"
-          borderBottom
           fullWidth
         >
           <HStack align="center" gap="medium">
@@ -979,19 +981,6 @@ function AllToolsView() {
             <Typography align="left" variant="heading4">
               {t('AllToolsView.title')}
             </Typography>
-          </HStack>
-          <HStack paddingBottom="small">
-            <RawInput
-              fullWidth
-              preIcon={<SearchIcon />}
-              hideLabel
-              placeholder={t('AllToolsView.searchCategories.placeholder')}
-              label={t('AllToolsView.searchCategories.label')}
-              value={categorySearch}
-              onChange={(e) => {
-                setCategorySearch(e.target.value);
-              }}
-            />
           </HStack>
         </VStack>
 
@@ -1015,25 +1004,19 @@ function AllToolsView() {
                 })}
                 setSelectedCategory={handleSelectCategory}
               />
-              {brandIntegrations
-                .filter((brandIntegration) =>
-                  brandIntegration.name
-                    .toLowerCase()
-                    .includes(categorySearch.toLowerCase())
-                )
-                .map((brandIntegration) => (
-                  <ToolCategoryButton
-                    image={brandIntegration.imageUrl || ''}
-                    key={brandIntegration.category}
-                    category={brandIntegration.category}
-                    selectedCategory={category}
-                    label={t('AllToolsView.categories.brandTools', {
-                      count: brandIntegration.toolCount,
-                      brand: brandIntegration.name,
-                    })}
-                    setSelectedCategory={handleSelectCategory}
-                  />
-                ))}
+              {brandIntegrations.map((brandIntegration) => (
+                <ToolCategoryButton
+                  image={brandIntegration.imageUrl || ''}
+                  key={brandIntegration.category}
+                  category={brandIntegration.category}
+                  selectedCategory={category}
+                  label={t('AllToolsView.categories.brandTools', {
+                    count: brandIntegration.toolCount,
+                    brand: brandIntegration.name,
+                  })}
+                  setSelectedCategory={handleSelectCategory}
+                />
+              ))}
             </>
           ) : (
             <LoadingEmptyStatusComponent emptyMessage="" isLoading />
@@ -1650,6 +1633,16 @@ function EditToolWrapper() {
 
 export function ToolsExplorer() {
   const t = useTranslations('ADE/Tools');
+
+  const shouldShowComposioTools = useShowComposioTools();
+
+  // preload
+  useIsComposioConnected();
+  webApi.toolMetadata.getToolMetadataSummary.useQuery({
+    queryKey: webApiQueryKeys.toolMetadata.getToolMetadataSummary,
+    enabled: shouldShowComposioTools,
+  });
+
   const {
     isToolExplorerOpen,
     currentTool,
