@@ -1243,15 +1243,11 @@ function ToolEditor(props: ToolEditorProps) {
   const { outputValue, outputStdout, outputStderr, outputStatus } =
     useMemo(() => {
       if (data) {
-        const hiddenValues = ['stdout', 'stderr'];
+        const { stdout, stderr, ...outputValue } = data;
         return {
-          outputValue: JSON.stringify(
-            data,
-            (k, v) => (hiddenValues.includes(k) ? undefined : v),
-            2
-          ),
-          outputStdout: data.stdout?.join('\n') ?? '',
-          outputStderr: data.stderr?.join('\n') ?? '',
+          outputValue: JSON.stringify(outputValue, null, 2),
+          outputStdout: stdout?.join('\n') ?? '',
+          outputStderr: stderr?.join('\n') ?? '',
           outputStatus:
             data.status === 'error' ? ('error' as const) : ('success' as const),
         };
@@ -1293,7 +1289,7 @@ function ToolEditor(props: ToolEditorProps) {
           onRun={handleRun}
           output={{
             status: outputStatus,
-            duration: completedAt ? completedAt - submittedAt : 0,
+            duration: completedAt ? completedAt - submittedAt : undefined,
             responses: [
               {
                 label: t('ToolEditor.outputLabel'),
