@@ -45,7 +45,7 @@ export function TabGroup(props: TabGroupProps) {
               bold
               variant="body2"
               uppercase={upperCase}
-              whitespace-nowrap
+              className="whitespace-nowrap"
             >
               {item.label}
             </Typography>
