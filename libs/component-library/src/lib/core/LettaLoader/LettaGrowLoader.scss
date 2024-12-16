@@ -1,6 +1,6 @@
 
 $loadingTime: 2.5s;
-$color: hsl(var(--muted));
+$color: hsl(var(--border));
 
 
 @keyframes loading {
@@ -42,7 +42,7 @@ $color: hsl(var(--muted));
     display: block;
     text-align: center;
     font-size: 12px;
-    color: $color;
+    color: hsl(0deg 0% 50%);
     mix-blend-mode: difference;
     letter-spacing: 1px;
     animation: percentage $loadingTime linear infinite;

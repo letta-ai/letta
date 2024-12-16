@@ -1010,7 +1010,7 @@ export function AgentPage() {
     'projects/(projectSlug)/agents/(agentId)/AgentPage'
   );
 
-  const { data: agent } = useAgentsServiceGetAgent({
+  useAgentsServiceGetAgent({
     agentId,
   });
 
@@ -1025,10 +1025,6 @@ export function AgentPage() {
 
     return null;
   }, [isLocal, isTemplate, t]);
-
-  if (!agent) {
-    return <LoaderContent />;
-  }
 
   return (
     <PanelManagerProvider
