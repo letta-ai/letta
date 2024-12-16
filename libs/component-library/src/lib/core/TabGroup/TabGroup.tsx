@@ -15,10 +15,12 @@ interface TabItemType {
 interface TabGroupProps extends Tabs.TabsProps {
   items: TabItemType[];
   fullWidth?: boolean;
+  upperCase?: boolean;
 }
 
 export function TabGroup(props: TabGroupProps) {
-  const { items, fullWidth, value, defaultValue, onValueChange } = props;
+  const { items, fullWidth, upperCase, value, defaultValue, onValueChange } =
+    props;
 
   return (
     <Tabs.Root
@@ -39,7 +41,12 @@ export function TabGroup(props: TabGroupProps) {
             data-testid={`tab-item:${item.value}`}
           >
             <Slot className="w-4 h-4">{item.icon}</Slot>
-            <Typography bold variant="body2">
+            <Typography
+              bold
+              variant="body2"
+              uppercase={upperCase}
+              className="whitespace-nowrap"
+            >
               {item.label}
             </Typography>
             <Slot className="w-4 h-4">{item.postIcon}</Slot>
