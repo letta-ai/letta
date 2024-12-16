@@ -67,9 +67,14 @@ async function AgentsAgentPage(context: AgentsAgentPageProps) {
     return;
   }
 
-  const agent = await AgentsService.getAgent({
-    agentId,
-  });
+  const agent = await AgentsService.getAgent(
+    {
+      agentId,
+    },
+    {
+      user_id: user.lettaAgentsId,
+    }
+  );
 
   const queries = [
     queryClient.prefetchQuery({
