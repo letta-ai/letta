@@ -181,6 +181,7 @@ function DebuggerOutput(props: DebuggerOutputProps) {
         <VStack fullHeight justify="end">
           <TabGroup
             fullWidth
+            upperCase
             value={activeTab}
             onValueChange={(value) => {
               setActiveTab(value);
