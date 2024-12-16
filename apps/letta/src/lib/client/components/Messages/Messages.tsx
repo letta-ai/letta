@@ -162,6 +162,11 @@ export function Messages(props: MessagesProps) {
   const [lastMessageReceived, setLastMessageReceived] =
     useState<LastMessageReceived | null>(null);
 
+  const messageCache = useRef<AgentMessage[]>([]);
+  const isMessageUpdateLock = useMemo(() => {
+    return isSendingMessage;
+  }, [isSendingMessage]);
+
   const refetchInterval = useMemo(() => {
     if (isSendingMessage) {
       return false;
@@ -191,6 +196,12 @@ export function Messages(props: MessagesProps) {
         limit: MESSAGE_LIMIT,
         ...(query.pageParam.before ? { before: query.pageParam.before } : {}),
       });
+
+      if (isMessageUpdateLock) {
+        return messageCache.current;
+      }
+
+      messageCache.current = res as unknown as AgentMessage[];
 
       return res as unknown as AgentMessage[];
     },
