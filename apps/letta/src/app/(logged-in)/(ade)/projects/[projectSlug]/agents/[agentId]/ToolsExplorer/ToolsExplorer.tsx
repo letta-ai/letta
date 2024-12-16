@@ -324,7 +324,7 @@ function AddToolToAgentButton(props: AddToolToAgentButtonProps) {
         toolIdToAdd = tool.id;
       }
 
-      const nextAgentState = await attachToolToAgent({
+      await attachToolToAgent({
         agentId,
         toolId: toolIdToAdd,
       });
@@ -342,7 +342,15 @@ function AddToolToAgentButton(props: AddToolToAgentButtonProps) {
 
           return {
             ...oldData,
-            tools: [...nextAgentState.tools],
+            tools: [
+              {
+                id: toolIdToAdd,
+                name: tool.name,
+                description: tool.description,
+                source_code: '',
+              },
+              ...oldData.tools,
+            ],
           };
         }
       );
@@ -352,6 +360,8 @@ function AddToolToAgentButton(props: AddToolToAgentButtonProps) {
       setIsPending(false);
     }
   }, [
+    tool.description,
+    tool.name,
     addComposioTool,
     agentId,
     attachToolToAgent,
