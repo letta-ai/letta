@@ -26,14 +26,9 @@ Cypress.Commands.add('googleLogin', () => {
 });
 
 Cypress.Commands.add('clearPointerEventLock', () => {
-  cy.findByTestId('dialog-overlay').click();
-
-  cy.get('body').then(($body) => {
-    // remove user-select: auto; cursor: auto; pointer-events: none; from body
-    $body[0].style.removeProperty('user-select');
-    $body[0].style.removeProperty('cursor');
-    $body[0].style.removeProperty('pointer-events');
-  });
+  cy.get('body').invoke('css', 'user-select', 'auto');
+  cy.get('body').invoke('css', 'cursor', 'auto');
+  cy.get('body').invoke('css', 'pointer-events', 'auto');
 });
 
 Cypress.Commands.add('deleteProjectsWithName', (name: string) => {
