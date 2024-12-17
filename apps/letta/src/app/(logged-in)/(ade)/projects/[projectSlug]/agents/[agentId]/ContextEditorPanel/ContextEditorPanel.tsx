@@ -8,6 +8,7 @@ import {
   Chart,
   ContextWindowIcon,
   HStack,
+  makeFormattedTooltip,
   type PanelTemplate,
   Typography,
   VStack,
@@ -19,6 +20,7 @@ import { z } from 'zod';
 import type { TiktokenModel } from 'js-tiktoken';
 import { encodingForModel } from 'js-tiktoken';
 import { useCurrentUser } from '$letta/client/hooks';
+import './ContextEditorPanel.scss';
 
 const computedMemoryStringAtom = atom<string | null>(null);
 
@@ -250,7 +252,13 @@ function ContextWindowPanel() {
             show: false,
           },
           tooltip: {
-            formatter: (e) => `${e.seriesName}: ${systemPromptLength}`,
+            formatter: (e) => {
+              return makeFormattedTooltip({
+                color: `${e.color}`,
+                label: e.seriesName || '',
+                value: `${systemPromptLength}`,
+              });
+            },
           },
           data: [systemPromptLength / totalLengthForChart],
           color: '#3758F9',
@@ -265,7 +273,13 @@ function ContextWindowPanel() {
             show: false,
           },
           tooltip: {
-            formatter: (e) => `${e.seriesName}: ${toolLength}`,
+            formatter: (e) => {
+              return makeFormattedTooltip({
+                color: `${e.color}`,
+                label: e.seriesName || '',
+                value: `${toolLength}`,
+              });
+            },
           },
           data: [toolLength / totalLengthForChart],
           color: '#37e2f9',
@@ -280,7 +294,13 @@ function ContextWindowPanel() {
             show: false,
           },
           tooltip: {
-            formatter: (e) => `${e.seriesName}: ${externalSummaryLength}`,
+            formatter: (e) => {
+              return makeFormattedTooltip({
+                color: `${e.color}`,
+                label: e.seriesName || '',
+                value: `${externalSummaryLength}`,
+              });
+            },
           },
           data: [externalSummaryLength / totalLengthForChart],
           color: '#37f9a2',
@@ -295,7 +315,13 @@ function ContextWindowPanel() {
             show: false,
           },
           tooltip: {
-            formatter: (e) => `${e.seriesName}: ${coreMemoryLength}`,
+            formatter: (e) => {
+              return makeFormattedTooltip({
+                color: `${e.color}`,
+                label: e.seriesName || '',
+                value: `${coreMemoryLength}`,
+              });
+            },
           },
           data: [coreMemoryLength / totalLengthForChart],
           color: '#76e76e',
@@ -307,7 +333,13 @@ function ContextWindowPanel() {
             show: false,
           },
           tooltip: {
-            formatter: (e) => `${e.seriesName}: ${recursiveMemoryLength}`,
+            formatter: (e) => {
+              return makeFormattedTooltip({
+                color: `${e.color}`,
+                label: e.seriesName || '',
+                value: `${recursiveMemoryLength}`,
+              });
+            },
           },
           data: [recursiveMemoryLength / totalLengthForChart],
           color: 'green',
@@ -319,7 +351,13 @@ function ContextWindowPanel() {
             show: false,
           },
           tooltip: {
-            formatter: (e) => `${e.seriesName}: ${messagesTokensLength}`,
+            formatter: (e) => {
+              return makeFormattedTooltip({
+                color: `${e.color}`,
+                label: e.seriesName || '',
+                value: `${messagesTokensLength}`,
+              });
+            },
           },
           data: [messagesTokensLength / totalLengthForChart],
           color: 'orange',
@@ -332,7 +370,11 @@ function ContextWindowPanel() {
           },
           tooltip: {
             formatter: (e) => {
-              return `${e.seriesName}: ${remainingLength}`;
+              return makeFormattedTooltip({
+                color: `${e.color}`,
+                label: e.seriesName || '',
+                value: `${remainingLength}`,
+              });
             },
           },
           data: [remainingLength / totalLengthForChart],
