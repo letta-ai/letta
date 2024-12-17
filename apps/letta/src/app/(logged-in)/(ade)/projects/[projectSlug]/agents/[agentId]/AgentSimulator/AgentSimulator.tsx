@@ -187,7 +187,7 @@ function useSendMessage(agentId: string, options: UseSendMessageOptions = {}) {
           options?.onFailedToSendMessage?.(message);
           return;
         } catch (_e) {
-          return;
+          // ignore
         }
 
         try {
