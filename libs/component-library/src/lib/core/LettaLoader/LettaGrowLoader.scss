@@ -1,50 +1,26 @@
 
-$loadingTime: 2.5s;
-$color: hsl(var(--border));
-
+$item: 14px;
 
 @keyframes loading {
   0% {
-    width: 0;
+    margin-left: calc(-1*$item);
   } 100% {
-      width: 100%;
+    margin-left: 100%;
     }
-}
-
-@keyframes percentage {
-  @for $i from 1 through 100 {
-    $percentage: $i + "%";
-    #{$percentage} {
-      content: "Loading...";
-    }
-  }
 }
 
 .letta-loader-grow-wrapper {
-  width: 80px;
+  width: 58px;
   display: flex;
-  height: 20px;
+  overflow: hidden;
+
+  height: 4px;
+  border: 1px solid hsl(var(--border));
 }
 
-
-.letta-loader-grow-wrapper-bg {
-  background-color: $color;
-  animation: loading $loadingTime linear infinite;
-}
-
-.letta-loader-grow-wrapper-el{
-  color: $color;
-  border: 1px solid $color;
-
-  &:after {
-    padding: 0 10px;
-    content: "";
-    display: block;
-    text-align: center;
-    font-size: 12px;
-    color: hsl(0deg 0% 50%);
-    mix-blend-mode: difference;
-    letter-spacing: 1px;
-    animation: percentage $loadingTime linear infinite;
-  }
+.letta-loader-grow-wrapper-item {
+  animation: loading 1.5s infinite linear;
+  background-color: hsl(var(--border));
+  width: $item;
+  height: 100%;
 }

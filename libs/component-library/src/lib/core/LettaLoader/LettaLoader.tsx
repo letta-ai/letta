@@ -59,9 +59,7 @@ function LettaLoaderGrow(props: LettaLoaderBaseProps) {
 
   return (
     <div className="letta-loader-grow-wrapper" id={id}>
-      <div className="letta-loader-grow-wrapper-bg">
-        <div className="letta-loader-grow-wrapper-el"></div>
-      </div>
+      <div className="letta-loader-grow-wrapper-item"></div>
     </div>
   );
 }
