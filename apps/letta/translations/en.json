@@ -746,7 +746,11 @@
     },
     "showVariables": "Variables",
     "hideVariables": "Hide variables",
-    "updateVariables": "Update variables"
+    "updateVariables": "Update variables",
+    "hasFailedToSendMessageText": {
+      "local": "Failed to send message, please try again or check your server logs",
+      "cloud": "Failed to send message, please try again or contact support"
+    }
   },
   "ADE/ADESidebar": {
     "nav": {
