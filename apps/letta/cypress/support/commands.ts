@@ -26,6 +26,8 @@ Cypress.Commands.add('googleLogin', () => {
 });
 
 Cypress.Commands.add('clearPointerEventLock', () => {
+  cy.get('body').click();
+
   cy.get('body').then(($body) => {
     // remove user-select: auto; cursor: auto; pointer-events: none; from body
     $body[0].style.removeProperty('user-select');
