@@ -704,7 +704,7 @@
     }
   },
   "ADE/AgentSimulator": {
-    "loadingMessages": "Preparing agent...",
+    "loadingMessages": "Preparing agent",
     "role": {
       "user": "User",
       "system": "System"
@@ -1374,6 +1374,7 @@
     }
   },
   "projects/(projectSlug)/agents/(agentId)/AgentPage": {
+    "preparingAgent": "Preparing agent",
     "error": "There was a severe error in this application, please refresh this page. If the error persists, please contact support in the top right corner.",
     "Navigation": {
       "dashboard": "Project dashboard"

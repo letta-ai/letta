@@ -11,7 +11,6 @@ import {
   DropdownMenu,
   DropdownMenuItem,
   HStack,
-  LoadingEmptyStatusComponent,
   PersonIcon,
   RawToggleGroup,
   SystemIcon,
@@ -881,22 +880,12 @@ function Chatroom() {
         <VStack collapseHeight gap={false} fullWidth>
           <VStack gap="large" collapseHeight>
             <VStack collapseHeight position="relative">
-              {!agentIdToUse ? (
-                <LoadingEmptyStatusComponent
-                  loadingMessage={t('loadingMessages')}
-                  noMinHeight
-                  loaderVariant="spinner"
-                  emptyMessage=""
-                  isLoading
-                />
-              ) : (
-                <Messages
-                  mode={renderMode}
-                  isPanelActive
-                  isSendingMessage={isPending}
-                  agentId={agentIdToUse || ''}
-                />
-              )}
+              <Messages
+                mode={renderMode}
+                isPanelActive
+                isSendingMessage={isPending}
+                agentId={agentIdToUse || ''}
+              />
             </VStack>
             <ChatInput
               disabled={!agentIdToUse}

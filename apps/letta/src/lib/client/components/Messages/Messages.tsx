@@ -626,7 +626,7 @@ export function Messages(props: MessagesProps) {
         <LoadingEmptyStatusComponent
           loadingMessage={t('loadingMessages')}
           hideText
-          loaderVariant="spinner"
+          loaderVariant="grower"
         />
       )}
     </VStack>
