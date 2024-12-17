@@ -26,7 +26,7 @@ Cypress.Commands.add('googleLogin', () => {
 });
 
 Cypress.Commands.add('clearPointerEventLock', () => {
-  cy.get('body').click();
+  cy.findByTestId('dialog-overlay').click();
 
   cy.get('body').then(($body) => {
     // remove user-select: auto; cursor: auto; pointer-events: none; from body
