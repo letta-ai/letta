@@ -394,6 +394,7 @@ describe('agentsRouter', () => {
           {
             requestBody: {
               ...STARTER_KITS.personalAssistant.agentState,
+              tool_ids: [],
               llm_config: llmConfig,
               embedding_config: embeddingConfig,
               name: expect.any(String),
