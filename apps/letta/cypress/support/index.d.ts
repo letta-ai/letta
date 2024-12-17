@@ -6,6 +6,7 @@ declare namespace Cypress {
   interface Chainable<Subject> {
     googleLogin(): void;
     deleteProjectsWithName(name: string): void;
+    clearPointerEventLock(): void;
     deleteApiKeyWithName(name: string): void;
   }
 }
