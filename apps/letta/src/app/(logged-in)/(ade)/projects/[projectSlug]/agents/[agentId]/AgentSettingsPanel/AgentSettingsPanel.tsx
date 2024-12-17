@@ -457,6 +457,45 @@ function SystemPromptEditor() {
   );
 }
 
+function AgentIdentifierToCopy() {
+  const currentAgent = useCurrentAgent();
+  const { isTemplate } = useCurrentAgentMetaData();
+
+  const t = useTranslations('ADE/AgentSettingsPanel');
+
+  const { capitalized: baseName } = useAgentBaseTypeName();
+
+  const identifier = useMemo(() => {
+    if (!isTemplate) {
+      return currentAgent.id;
+    }
+
+    return `${currentAgent.name}:latest`;
+  }, [currentAgent.id, currentAgent.name, isTemplate]);
+
+  return (
+    <HStack fullWidth align="center">
+      <Typography
+        noWrap
+        overflow="ellipsis"
+        align="left"
+        font="mono"
+        color="muted"
+        variant="body2"
+      >
+        {identifier}
+      </Typography>
+      <CopyButton
+        copyButtonText={t('AgentIdentifierToCopy.copyAgentId', { baseName })}
+        color="tertiary-transparent"
+        size="small"
+        textToCopy={identifier}
+        hideLabel
+      />
+    </HStack>
+  );
+}
+
 export function AgentSettingsPanel() {
   const currentAgent = useCurrentAgent();
 
@@ -490,25 +529,7 @@ export function AgentSettingsPanel() {
             }
           />
         </HStack>
-        <HStack fullWidth align="center">
-          <Typography
-            noWrap
-            overflow="ellipsis"
-            align="left"
-            font="mono"
-            color="muted"
-            variant="body2"
-          >
-            {currentAgent.id}
-          </Typography>
-          <CopyButton
-            copyButtonText={t('copyAgentId', { baseName })}
-            color="tertiary-transparent"
-            size="small"
-            textToCopy={currentAgent.id}
-            hideLabel
-          />
-        </HStack>
+        <AgentIdentifierToCopy />
       </VStack>
       <ModelSelector llmConfig={currentAgent.llm_config} />
       <SystemPromptEditor />
