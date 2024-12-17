@@ -285,6 +285,24 @@ body {
   display: none;
 }
 
+.dark .opacity-0-on-dark {
+  opacity: 0;
+}
+
+.dark .opacity-100-on-dark {
+  opacity: 1;
+}
+
+.opacity-0-on-dark {
+  opacity: 1;
+}
+
+.opacity-100-on-dark {
+  opacity: 0;
+}
+
+
+
 .invisible-on-dark {
   display: inherit;
 }
