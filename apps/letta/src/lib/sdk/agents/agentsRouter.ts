@@ -297,6 +297,8 @@ export async function createAgent(
         };
       }
 
+      let toolIdsToAttach: string[] = [];
+
       if ('tools' in starterKit) {
         const existingTools = await ToolsService.listTools(
           {},
@@ -315,7 +317,7 @@ export async function createAgent(
           return !toolNameMap.has(tool.name);
         });
 
-        await Promise.all(
+        const toolResponse = await Promise.all(
           toolsToCreate.map((tool) => {
             return ToolsService.createTool(
               {
@@ -331,12 +333,26 @@ export async function createAgent(
             );
           })
         );
+
+        toolIdsToAttach = toolResponse.map((tool) => tool.id || '');
+
+        toolIdsToAttach = [
+          ...toolIdsToAttach,
+          ...(starterKit.tools || []).map((tool) => {
+            const existingTool = existingTools?.find(
+              (existingTool) => existingTool.name === tool.name
+            );
+
+            return existingTool?.id || '';
+          }),
+        ].filter(Boolean);
       }
 
       const response = await AgentsService.createAgent(
         {
           requestBody: {
             ...starterKit.agentState,
+            tool_ids: toolIdsToAttach,
             llm_config: {
               model: 'gpt-4',
               model_endpoint_type: 'openai',
@@ -770,14 +786,6 @@ export async function updateAgentFromAgentId(options: UpdateAgentFromAgentId) {
       AgentsService.getAgentSources(
         {
           agentId: baseAgentId,
-        },
-        {
-          user_id: lettaAgentsUserId,
-        }
-      ),
-      AgentsService.getAgentMemory(
-        {
-          agentId: agentToUpdateId,
         },
         {
           user_id: lettaAgentsUserId,

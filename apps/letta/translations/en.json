@@ -672,7 +672,9 @@
       "label": "{baseName} name",
       "edit": "Edit {baseName} name"
     },
-    "copyAgentId": "Copy {baseName} ID",
+    "AgentIdentifierToCopy": {
+      "copyAgentId": "Copy {baseName} ID"
+    },
     "title": "{baseName} Settings",
     "modelInput": {
       "tooltip": "The LLM backend for the {baseName}",
@@ -685,6 +687,7 @@
     "error": "There was an error while updating the model, please try again or contact support."
   },
   "components/Messages": {
+    "loadingMessages": "Fetching messages...",
     "functionReturn": "Function response",
     "internalMonologue": "Internal monologue",
     "hiddenUserMessage": "Internal user message",
@@ -701,6 +704,7 @@
     }
   },
   "ADE/AgentSimulator": {
+    "loadingMessages": "Preparing agent...",
     "role": {
       "user": "User",
       "system": "System"

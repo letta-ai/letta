@@ -977,7 +977,9 @@ function AgentMobileContent() {
 
   return (
     <VStack collapseHeight flex fullWidth>
-      <RenderSinglePanel panelId={activePanel} />
+      <VisibleOnMobile checkWithJs>
+        <RenderSinglePanel panelId={activePanel} />
+      </VisibleOnMobile>
     </VStack>
   );
 }
@@ -1010,7 +1012,7 @@ export function AgentPage() {
     'projects/(projectSlug)/agents/(agentId)/AgentPage'
   );
 
-  const { data: agent } = useAgentsServiceGetAgent({
+  useAgentsServiceGetAgent({
     agentId,
   });
 
@@ -1025,10 +1027,6 @@ export function AgentPage() {
 
     return null;
   }, [isLocal, isTemplate, t]);
-
-  if (!agent) {
-    return <LoaderContent />;
-  }
 
   return (
     <PanelManagerProvider
@@ -1069,7 +1067,9 @@ export function AgentPage() {
                 <Alert variant="warning" title={fullPageWarning} />
               )}
               <Frame overflow="hidden" position="relative" fullWidth fullHeight>
-                <PanelRenderer />
+                <HiddenOnMobile checkWithJs>
+                  <PanelRenderer />
+                </HiddenOnMobile>
               </Frame>
             </VStack>
           </ErrorBoundary>

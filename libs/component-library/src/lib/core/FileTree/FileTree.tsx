@@ -263,15 +263,17 @@ export function FolderComponent(props: FolderComponentProps) {
       <HStack as="summary" className="w-full cursor-pointer" align="center">
         <RowItem index={index} badge={badge} actions={actions} depth={depth}>
           {isOpen ? openIcon : icon}
-          <Typography overflow="ellipsis" fullWidth noWrap align="left">
-            {name}
+          <HStack align="center">
+            <Typography overflow="ellipsis" fullWidth noWrap align="left">
+              {name}
+            </Typography>
             {infoTooltip && (
               <>
                 {' '}
                 <InfoTooltip text={infoTooltip.text} />
               </>
             )}
-          </Typography>
+          </HStack>
         </RowItem>
       </HStack>
       {'contents' in folder ? (

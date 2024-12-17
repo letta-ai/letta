@@ -187,7 +187,7 @@ function useSendMessage(agentId: string, options: UseSendMessageOptions = {}) {
           options?.onFailedToSendMessage?.(message);
           return;
         } catch (_e) {
-          return;
+          // ignore
         }
 
         try {
@@ -882,7 +882,13 @@ function Chatroom() {
           <VStack gap="large" collapseHeight>
             <VStack collapseHeight position="relative">
               {!agentIdToUse ? (
-                <LoadingEmptyStatusComponent emptyMessage="" isLoading />
+                <LoadingEmptyStatusComponent
+                  loadingMessage={t('loadingMessages')}
+                  noMinHeight
+                  loaderVariant="spinner"
+                  emptyMessage=""
+                  isLoading
+                />
               ) : (
                 <Messages
                   mode={renderMode}
