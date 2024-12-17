@@ -136,7 +136,7 @@ export const LLMConfigSchema = z.object({
 });
 
 export const EmbeddingConfigSchema = z.object({
-  embedding_endpoint_type: z.string(),
+  embedding_endpoint_type: modelEndpointTypesSchema,
   embedding_endpoint: z.string().optional().nullable(),
   embedding_model: z.string(),
   embedding_dim: z.number(),

@@ -22,7 +22,6 @@ import {
   UsersService,
 } from '../requests/services.gen';
 import {
-  APIKeyCreate,
   AuthRequest,
   BlockUpdate,
   Body_upload_file_to_source,
@@ -904,24 +903,6 @@ export const useUsersServiceListUsers = <
     queryFn: () => UsersService.listUsers({ cursor, limit }) as TData,
     ...options,
   });
-export const useUsersServiceListApiKeys = <
-  TData = Common.UsersServiceListApiKeysDefaultResponse,
-  TError = unknown,
-  TQueryKey extends Array<unknown> = unknown[]
->(
-  {
-    userId,
-  }: {
-    userId: string;
-  },
-  queryKey?: TQueryKey,
-  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
-) =>
-  useQuery<TData, TError>({
-    queryKey: Common.UseUsersServiceListApiKeysKeyFn({ userId }, queryKey),
-    queryFn: () => UsersService.listApiKeys({ userId }) as TData,
-    ...options,
-  });
 export const useAdminServiceListUsers = <
   TData = Common.AdminServiceListUsersDefaultResponse,
   TError = unknown,
@@ -940,24 +921,6 @@ export const useAdminServiceListUsers = <
   useQuery<TData, TError>({
     queryKey: Common.UseAdminServiceListUsersKeyFn({ cursor, limit }, queryKey),
     queryFn: () => AdminService.listUsers({ cursor, limit }) as TData,
-    ...options,
-  });
-export const useAdminServiceListApiKeys = <
-  TData = Common.AdminServiceListApiKeysDefaultResponse,
-  TError = unknown,
-  TQueryKey extends Array<unknown> = unknown[]
->(
-  {
-    userId,
-  }: {
-    userId: string;
-  },
-  queryKey?: TQueryKey,
-  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
-) =>
-  useQuery<TData, TError>({
-    queryKey: Common.UseAdminServiceListApiKeysKeyFn({ userId }, queryKey),
-    queryFn: () => AdminService.listApiKeys({ userId }) as TData,
     ...options,
   });
 export const useAdminServiceListOrgs = <
@@ -1695,35 +1658,6 @@ export const useUsersServiceCreateUser = <
       UsersService.createUser({ requestBody }) as unknown as Promise<TData>,
     ...options,
   });
-export const useUsersServiceCreateApiKey = <
-  TData = Common.UsersServiceCreateApiKeyMutationResult,
-  TError = unknown,
-  TContext = unknown
->(
-  options?: Omit<
-    UseMutationOptions<
-      TData,
-      TError,
-      {
-        requestBody: APIKeyCreate;
-      },
-      TContext
-    >,
-    'mutationFn'
-  >
-) =>
-  useMutation<
-    TData,
-    TError,
-    {
-      requestBody: APIKeyCreate;
-    },
-    TContext
-  >({
-    mutationFn: ({ requestBody }) =>
-      UsersService.createApiKey({ requestBody }) as unknown as Promise<TData>,
-    ...options,
-  });
 export const useAdminServiceCreateUser = <
   TData = Common.AdminServiceCreateUserMutationResult,
   TError = unknown,
@@ -1751,35 +1685,6 @@ export const useAdminServiceCreateUser = <
   >({
     mutationFn: ({ requestBody }) =>
       AdminService.createUser({ requestBody }) as unknown as Promise<TData>,
-    ...options,
-  });
-export const useAdminServiceCreateApiKey = <
-  TData = Common.AdminServiceCreateApiKeyMutationResult,
-  TError = unknown,
-  TContext = unknown
->(
-  options?: Omit<
-    UseMutationOptions<
-      TData,
-      TError,
-      {
-        requestBody: APIKeyCreate;
-      },
-      TContext
-    >,
-    'mutationFn'
-  >
-) =>
-  useMutation<
-    TData,
-    TError,
-    {
-      requestBody: APIKeyCreate;
-    },
-    TContext
-  >({
-    mutationFn: ({ requestBody }) =>
-      AdminService.createApiKey({ requestBody }) as unknown as Promise<TData>,
     ...options,
   });
 export const useAdminServiceCreateOrganization = <
@@ -2787,35 +2692,6 @@ export const useUsersServiceDeleteUser = <
       UsersService.deleteUser({ userId }) as unknown as Promise<TData>,
     ...options,
   });
-export const useUsersServiceDeleteApiKey = <
-  TData = Common.UsersServiceDeleteApiKeyMutationResult,
-  TError = unknown,
-  TContext = unknown
->(
-  options?: Omit<
-    UseMutationOptions<
-      TData,
-      TError,
-      {
-        apiKey: string;
-      },
-      TContext
-    >,
-    'mutationFn'
-  >
-) =>
-  useMutation<
-    TData,
-    TError,
-    {
-      apiKey: string;
-    },
-    TContext
-  >({
-    mutationFn: ({ apiKey }) =>
-      UsersService.deleteApiKey({ apiKey }) as unknown as Promise<TData>,
-    ...options,
-  });
 export const useAdminServiceDeleteUser = <
   TData = Common.AdminServiceDeleteUserMutationResult,
   TError = unknown,
@@ -2843,35 +2719,6 @@ export const useAdminServiceDeleteUser = <
   >({
     mutationFn: ({ userId }) =>
       AdminService.deleteUser({ userId }) as unknown as Promise<TData>,
-    ...options,
-  });
-export const useAdminServiceDeleteApiKey = <
-  TData = Common.AdminServiceDeleteApiKeyMutationResult,
-  TError = unknown,
-  TContext = unknown
->(
-  options?: Omit<
-    UseMutationOptions<
-      TData,
-      TError,
-      {
-        apiKey: string;
-      },
-      TContext
-    >,
-    'mutationFn'
-  >
-) =>
-  useMutation<
-    TData,
-    TError,
-    {
-      apiKey: string;
-    },
-    TContext
-  >({
-    mutationFn: ({ apiKey }) =>
-      AdminService.deleteApiKey({ apiKey }) as unknown as Promise<TData>,
     ...options,
   });
 export const useAdminServiceDeleteOrganizationById = <

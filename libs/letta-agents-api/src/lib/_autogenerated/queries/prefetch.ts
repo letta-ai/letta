@@ -611,18 +611,6 @@ export const prefetchUseUsersServiceListUsers = (
     queryKey: Common.UseUsersServiceListUsersKeyFn({ cursor, limit }),
     queryFn: () => UsersService.listUsers({ cursor, limit }),
   });
-export const prefetchUseUsersServiceListApiKeys = (
-  queryClient: QueryClient,
-  {
-    userId,
-  }: {
-    userId: string;
-  }
-) =>
-  queryClient.prefetchQuery({
-    queryKey: Common.UseUsersServiceListApiKeysKeyFn({ userId }),
-    queryFn: () => UsersService.listApiKeys({ userId }),
-  });
 export const prefetchUseAdminServiceListUsers = (
   queryClient: QueryClient,
   {
@@ -636,18 +624,6 @@ export const prefetchUseAdminServiceListUsers = (
   queryClient.prefetchQuery({
     queryKey: Common.UseAdminServiceListUsersKeyFn({ cursor, limit }),
     queryFn: () => AdminService.listUsers({ cursor, limit }),
-  });
-export const prefetchUseAdminServiceListApiKeys = (
-  queryClient: QueryClient,
-  {
-    userId,
-  }: {
-    userId: string;
-  }
-) =>
-  queryClient.prefetchQuery({
-    queryKey: Common.UseAdminServiceListApiKeysKeyFn({ userId }),
-    queryFn: () => AdminService.listApiKeys({ userId }),
   });
 export const prefetchUseAdminServiceListOrgs = (
   queryClient: QueryClient,
