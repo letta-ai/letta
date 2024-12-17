@@ -874,24 +874,6 @@ export const useUsersServiceListUsersSuspense = <
     queryFn: () => UsersService.listUsers({ cursor, limit }) as TData,
     ...options,
   });
-export const useUsersServiceListApiKeysSuspense = <
-  TData = Common.UsersServiceListApiKeysDefaultResponse,
-  TError = unknown,
-  TQueryKey extends Array<unknown> = unknown[]
->(
-  {
-    userId,
-  }: {
-    userId: string;
-  },
-  queryKey?: TQueryKey,
-  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
-) =>
-  useSuspenseQuery<TData, TError>({
-    queryKey: Common.UseUsersServiceListApiKeysKeyFn({ userId }, queryKey),
-    queryFn: () => UsersService.listApiKeys({ userId }) as TData,
-    ...options,
-  });
 export const useAdminServiceListUsersSuspense = <
   TData = Common.AdminServiceListUsersDefaultResponse,
   TError = unknown,
@@ -910,24 +892,6 @@ export const useAdminServiceListUsersSuspense = <
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseAdminServiceListUsersKeyFn({ cursor, limit }, queryKey),
     queryFn: () => AdminService.listUsers({ cursor, limit }) as TData,
-    ...options,
-  });
-export const useAdminServiceListApiKeysSuspense = <
-  TData = Common.AdminServiceListApiKeysDefaultResponse,
-  TError = unknown,
-  TQueryKey extends Array<unknown> = unknown[]
->(
-  {
-    userId,
-  }: {
-    userId: string;
-  },
-  queryKey?: TQueryKey,
-  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
-) =>
-  useSuspenseQuery<TData, TError>({
-    queryKey: Common.UseAdminServiceListApiKeysKeyFn({ userId }, queryKey),
-    queryFn: () => AdminService.listApiKeys({ userId }) as TData,
     ...options,
   });
 export const useAdminServiceListOrgsSuspense = <

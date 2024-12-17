@@ -159,12 +159,6 @@ import type {
   UpdateUserResponse,
   DeleteUserData,
   DeleteUserResponse,
-  CreateApiKeyData,
-  CreateApiKeyResponse,
-  ListApiKeysData,
-  ListApiKeysResponse,
-  DeleteApiKeyData,
-  DeleteApiKeyResponse,
   ListOrgsData,
   ListOrgsResponse,
   CreateOrganizationData,
@@ -2320,79 +2314,6 @@ export class UsersService {
       headers,
     });
   }
-
-  /**
-   * Create New Api Key
-   * Create a new API key for a user
-   * @param data The data for the request.
-   * @param data.requestBody
-   * @returns APIKey Successful Response
-   * @throws ApiError
-   */
-  public static createApiKey(
-    data: CreateApiKeyData,
-    headers?: { user_id: string }
-  ): CancelablePromise<CreateApiKeyResponse> {
-    return __request(OpenAPI, {
-      method: 'POST',
-      url: '/v1/admin/users/keys',
-      body: data.requestBody,
-      mediaType: 'application/json',
-      errors: {
-        422: 'Validation Error',
-      },
-      headers,
-    });
-  }
-
-  /**
-   * Get Api Keys
-   * Get a list of all API keys for a user
-   * @param data The data for the request.
-   * @param data.userId The unique identifier of the user.
-   * @returns APIKey Successful Response
-   * @throws ApiError
-   */
-  public static listApiKeys(
-    data: ListApiKeysData,
-    headers?: { user_id: string }
-  ): CancelablePromise<ListApiKeysResponse> {
-    return __request(OpenAPI, {
-      method: 'GET',
-      url: '/v1/admin/users/keys',
-      query: {
-        user_id: data.userId,
-      },
-      errors: {
-        422: 'Validation Error',
-      },
-      headers,
-    });
-  }
-
-  /**
-   * Delete Api Key
-   * @param data The data for the request.
-   * @param data.apiKey The API key to be deleted.
-   * @returns APIKey Successful Response
-   * @throws ApiError
-   */
-  public static deleteApiKey(
-    data: DeleteApiKeyData,
-    headers?: { user_id: string }
-  ): CancelablePromise<DeleteApiKeyResponse> {
-    return __request(OpenAPI, {
-      method: 'DELETE',
-      url: '/v1/admin/users/keys',
-      query: {
-        api_key: data.apiKey,
-      },
-      errors: {
-        422: 'Validation Error',
-      },
-      headers,
-    });
-  }
 }
 
 export class AdminService {
@@ -2487,79 +2408,6 @@ export class AdminService {
       url: '/v1/admin/users/',
       query: {
         user_id: data.userId,
-      },
-      errors: {
-        422: 'Validation Error',
-      },
-      headers,
-    });
-  }
-
-  /**
-   * Create New Api Key
-   * Create a new API key for a user
-   * @param data The data for the request.
-   * @param data.requestBody
-   * @returns APIKey Successful Response
-   * @throws ApiError
-   */
-  public static createApiKey(
-    data: CreateApiKeyData,
-    headers?: { user_id: string }
-  ): CancelablePromise<CreateApiKeyResponse> {
-    return __request(OpenAPI, {
-      method: 'POST',
-      url: '/v1/admin/users/keys',
-      body: data.requestBody,
-      mediaType: 'application/json',
-      errors: {
-        422: 'Validation Error',
-      },
-      headers,
-    });
-  }
-
-  /**
-   * Get Api Keys
-   * Get a list of all API keys for a user
-   * @param data The data for the request.
-   * @param data.userId The unique identifier of the user.
-   * @returns APIKey Successful Response
-   * @throws ApiError
-   */
-  public static listApiKeys(
-    data: ListApiKeysData,
-    headers?: { user_id: string }
-  ): CancelablePromise<ListApiKeysResponse> {
-    return __request(OpenAPI, {
-      method: 'GET',
-      url: '/v1/admin/users/keys',
-      query: {
-        user_id: data.userId,
-      },
-      errors: {
-        422: 'Validation Error',
-      },
-      headers,
-    });
-  }
-
-  /**
-   * Delete Api Key
-   * @param data The data for the request.
-   * @param data.apiKey The API key to be deleted.
-   * @returns APIKey Successful Response
-   * @throws ApiError
-   */
-  public static deleteApiKey(
-    data: DeleteApiKeyData,
-    headers?: { user_id: string }
-  ): CancelablePromise<DeleteApiKeyResponse> {
-    return __request(OpenAPI, {
-      method: 'DELETE',
-      url: '/v1/admin/users/keys',
-      query: {
-        api_key: data.apiKey,
       },
       errors: {
         422: 'Validation Error',
