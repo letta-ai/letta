@@ -119,7 +119,8 @@ describe('letta', () => {
     cy.findByTestId('messages-list').contains('Shubham', { timeout: 10000 });
     cy.findByTestId('messages-list').contains('BananaMan', { timeout: 10000 });
 
-    cy.findByTestId('tab:tools-panel').click();
+    cy.clearPointerEventLock();
+    cy.findByTestId('tab:tools-panel').click({ force: true });
 
     /* tools */
     cy.findByTestId('open-tool-explorer').click();
