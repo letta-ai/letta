@@ -151,7 +151,8 @@ export const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(
               }}
               value={text}
               onKeyDown={handleKeyPress}
-              className="w-full bg-transparent text-base font-inherit resize-none	focus:outline-none"
+              /* To prevent layout shift due to js load lag we explicitly set minrow height */
+              className="w-full min-h-[84px] bg-transparent text-base font-inherit resize-none	focus:outline-none"
               maxRows={10}
               minRows={4}
               placeholder={t('placeholder')}
