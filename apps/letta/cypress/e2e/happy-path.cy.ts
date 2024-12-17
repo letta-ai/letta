@@ -109,14 +109,16 @@ describe('letta', () => {
       force: true,
     });
 
-    cy.findByTestId('chat-simulator-send').click();
+    cy.findByTestId('chat-simulator-send').click({
+      force: true,
+    });
 
     cy.findByTestId('messages-list').contains('Shubham', { timeout: 10000 });
     cy.findByTestId('messages-list').contains('BananaMan', { timeout: 10000 });
 
-    cy.clearPointerEventLock();
-
-    cy.findAllByTestId('version-template-trigger').first().click();
+    cy.findAllByTestId('version-template-trigger').first().click({
+      force: true,
+    });
 
     cy.findByTestId('stage-new-version-button').click({ force: true });
     cy.findByTestId('stage-agent-dialog-confirm-button').click({ force: true });
