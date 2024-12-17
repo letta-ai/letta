@@ -25,6 +25,15 @@ Cypress.Commands.add('googleLogin', () => {
   });
 });
 
+Cypress.Commands.add('clearPointerEventLock', () => {
+  cy.get('body').then(($body) => {
+    // remove user-select: auto; cursor: auto; pointer-events: none; from body
+    $body[0].style.removeProperty('user-select');
+    $body[0].style.removeProperty('cursor');
+    $body[0].style.removeProperty('pointer-events');
+  });
+});
+
 Cypress.Commands.add('deleteProjectsWithName', (name: string) => {
   cy.request({
     method: 'POST',
