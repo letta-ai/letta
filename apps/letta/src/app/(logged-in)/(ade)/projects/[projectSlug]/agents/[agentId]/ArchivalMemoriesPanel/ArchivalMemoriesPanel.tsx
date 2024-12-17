@@ -1,6 +1,7 @@
 'use client';
 import React, { useCallback, useMemo, useState } from 'react';
 import type { PanelTemplate } from '@letta-web/component-library';
+import { LoadingEmptyStatusComponent } from '@letta-web/component-library';
 import {
   CopyButton,
   HStack,
@@ -16,7 +17,6 @@ import {
   Dialog,
   FormField,
   FormProvider,
-  LettaLoaderPanel,
   PanelBar,
   PanelMainContent,
   TextArea,
@@ -203,8 +203,15 @@ function MemoriesList() {
     return data || [];
   }, [data]);
 
-  if (isLoading) {
-    return <LettaLoaderPanel />;
+  if (isLoading || !currentAgentId) {
+    return (
+      <LoadingEmptyStatusComponent
+        noMinHeight
+        hideText
+        loaderVariant="grower"
+        isLoading
+      />
+    );
   }
 
   return (

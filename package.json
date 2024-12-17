@@ -44,6 +44,7 @@
     "@floating-ui/react": "^0.26.24",
     "@hookform/resolvers": "^3.9.0",
     "@launchdarkly/node-server-sdk": "^9.5.4",
+    "@lottiefiles/dotlottie-react": "^0.11.1",
     "@mantine/hooks": "^7.12.2",
     "@radix-ui/react-accordion": "^1.2.1",
     "@radix-ui/react-avatar": "^1.1.0",
@@ -114,7 +115,6 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
-    "@types/k6": "^0.54.2",
     "@7nohe/openapi-react-query-codegen": "^1.6.0",
     "@babel/core": "^7.14.5",
     "@babel/preset-react": "^7.14.5",
@@ -162,6 +162,7 @@
     "@types/bcrypt": "^5.0.2",
     "@types/eventsource": "^1.1.15",
     "@types/jest": "^29.5.12",
+    "@types/k6": "^0.54.2",
     "@types/lodash-es": "^4.17.12",
     "@types/mixpanel-browser": "^2.50.0",
     "@types/prismjs": "^1.26.4",
