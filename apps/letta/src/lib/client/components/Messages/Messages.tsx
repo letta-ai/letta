@@ -17,7 +17,7 @@ import {
   SystemIcon,
   Markdown,
   PersonIcon,
-  LettaInvaderOutlineIcon,
+  LettaInvaderIcon,
   ThoughtsIcon,
   Typography,
   VStack,
@@ -105,7 +105,7 @@ function MessageGroup({ group }: MessageGroupType) {
 
   const icon = useMemo(() => {
     if (name === 'Agent') {
-      return <LettaInvaderOutlineIcon />;
+      return <LettaInvaderIcon />;
     }
 
     if (name === 'User') {
