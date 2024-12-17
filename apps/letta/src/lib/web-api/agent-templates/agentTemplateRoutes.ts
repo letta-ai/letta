@@ -422,6 +422,8 @@ async function refreshAgentTemplateSimulatorSession(
     };
   }
 
+  console.log('a', simulatorSession.agentId);
+
   const agent = await updateAgentFromAgentId({
     variables: (simulatorSession.variables as Record<string, string>) || {},
     baseAgentId: agentTemplate.id,

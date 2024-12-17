@@ -415,6 +415,7 @@ function AddToolToAgentButton(props: AddToolToAgentButtonProps) {
       size="small"
       preIcon={<PlusIcon />}
       busy={isPending}
+      data-testid="attach-tool-to-agent"
       label={t('AddToolToAgentButton.attach')}
       color={disableAttach ? 'tertiary' : 'secondary'}
       onClick={handleAddTool}
@@ -780,6 +781,7 @@ function ViewCategoryTools(props: ViewCategoryToolsProps) {
         <Button
           label={t('ViewCategoryTools.create')}
           color="secondary"
+          data-testid="start-create-tool"
           onClick={() => {
             startCreateTool();
           }}
@@ -854,7 +856,7 @@ function ToolAppHeader(props: ToolAppHeaderProps) {
       fullWidth
     >
       <HStack gap={false}>{children}</HStack>
-      <CloseMiniApp>
+      <CloseMiniApp data-testid="close-tool-explorer">
         <HStack>
           <CloseIcon />
         </HStack>
@@ -1370,11 +1372,7 @@ function ToolCreator() {
     reset,
     isSuccess,
   } = useToolsServiceCreateTool({
-    onSuccess: async (data) => {
-      await queryClient.invalidateQueries({
-        queryKey: UseToolsServiceListToolsKeyFn(),
-      });
-
+    onSuccess: (data) => {
       setCurrentTool(
         {
           id: data.id || '',
@@ -1387,6 +1385,10 @@ function ToolCreator() {
         },
         'view'
       );
+
+      void queryClient.invalidateQueries({
+        queryKey: UseToolsServiceListToolsKeyFn(),
+      });
     },
   });
 
@@ -1476,6 +1478,7 @@ function ToolCreator() {
                 <Button
                   type="submit"
                   label="Create"
+                  data-testid="submit-create-tool"
                   color="secondary"
                   busy={isCreatingTool || isSuccess}
                 />
