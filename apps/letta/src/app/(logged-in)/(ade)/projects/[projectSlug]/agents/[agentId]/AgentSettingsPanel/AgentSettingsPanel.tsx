@@ -4,9 +4,9 @@ import {
   Badge,
   brandKeyToLogo,
   Button,
-  CogIcon,
   CopyButton,
   Dialog,
+  EditIcon,
   HStack,
   isBrandKey,
   isMultiValue,
@@ -522,7 +522,7 @@ export function AgentSettingsPanel() {
               <Button
                 hideLabel
                 data-testid="update-agent-name-button"
-                preIcon={<CogIcon />}
+                preIcon={<EditIcon />}
                 color="tertiary"
                 label={t('agentName.edit', { baseName })}
               />
