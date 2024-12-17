@@ -4915,131 +4915,6 @@
         }
       }
     },
-    "/v1/admin/users/keys": {
-      "post": {
-        "tags": ["users", "admin"],
-        "summary": "Create New Api Key",
-        "description": "Create a new API key for a user",
-        "operationId": "create_api_key",
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/APIKeyCreate"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/APIKey"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "get": {
-        "tags": ["users", "admin"],
-        "summary": "Get Api Keys",
-        "description": "Get a list of all API keys for a user",
-        "operationId": "list_api_keys",
-        "parameters": [
-          {
-            "name": "user_id",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "description": "The unique identifier of the user.",
-              "title": "User Id"
-            },
-            "description": "The unique identifier of the user."
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/APIKey"
-                  },
-                  "title": "Response List Api Keys"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "delete": {
-        "tags": ["users", "admin"],
-        "summary": "Delete Api Key",
-        "operationId": "delete_api_key",
-        "parameters": [
-          {
-            "name": "api_key",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "description": "The API key to be deleted.",
-              "title": "Api Key"
-            },
-            "description": "The API key to be deleted."
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/APIKey"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/v1/admin/orgs/": {
       "get": {
         "tags": ["organization", "admin", "admin"],
@@ -5230,61 +5105,6 @@
   },
   "components": {
     "schemas": {
-      "APIKey": {
-        "properties": {
-          "id": {
-            "type": "string",
-            "pattern": "^sk-[a-fA-F0-9]{8}",
-            "title": "Id",
-            "description": "The human-friendly ID of the Sk",
-            "examples": ["sk-123e4567-e89b-12d3-a456-426614174000"]
-          },
-          "user_id": {
-            "type": "string",
-            "title": "User Id",
-            "description": "The unique identifier of the user associated with the token."
-          },
-          "key": {
-            "type": "string",
-            "title": "Key",
-            "description": "The key value."
-          },
-          "name": {
-            "type": "string",
-            "title": "Name",
-            "description": "Name of the token."
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": ["user_id", "key", "name"],
-        "title": "APIKey"
-      },
-      "APIKeyCreate": {
-        "properties": {
-          "user_id": {
-            "type": "string",
-            "title": "User Id",
-            "description": "The unique identifier of the user associated with the token."
-          },
-          "name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Name",
-            "description": "Name of the token."
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": ["user_id"],
-        "title": "APIKeyCreate"
-      },
       "ActionModel": {
         "properties": {
           "name": {
@@ -5483,36 +5303,10 @@
             "title": "Updated At",
             "description": "The timestamp when the object was last updated."
           },
-          "description": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Description",
-            "description": "The description of the agent."
-          },
-          "metadata_": {
-            "anyOf": [
-              {
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Metadata ",
-            "description": "The metadata of the agent."
-          },
           "id": {
             "type": "string",
-            "pattern": "^agent-[a-fA-F0-9]{8}",
             "title": "Id",
-            "description": "The human-friendly ID of the Agent",
-            "examples": ["agent-123e4567-e89b-12d3-a456-426614174000"]
+            "description": "The id of the agent. Assigned by the database."
           },
           "name": {
             "type": "string",
@@ -5588,6 +5382,30 @@
             "title": "Organization Id",
             "description": "The unique identifier of the organization associated with the agent."
           },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description",
+            "description": "The description of the agent."
+          },
+          "metadata_": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata ",
+            "description": "The metadata of the agent."
+          },
           "memory": {
             "$ref": "#/components/schemas/Memory",
             "description": "The in-context memory of the agent."
@@ -5620,6 +5438,7 @@
         "additionalProperties": false,
         "type": "object",
         "required": [
+          "id",
           "name",
           "system",
           "agent_type",
@@ -6849,80 +6668,6 @@
       },
       "CreateAgentRequest": {
         "properties": {
-          "created_by_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Created By Id",
-            "description": "The id of the user that made this object."
-          },
-          "last_updated_by_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Last Updated By Id",
-            "description": "The id of the user that made this object."
-          },
-          "created_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Created At",
-            "description": "The timestamp when the object was created."
-          },
-          "updated_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Updated At",
-            "description": "The timestamp when the object was last updated."
-          },
-          "description": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Description",
-            "description": "The description of the agent."
-          },
-          "metadata_": {
-            "anyOf": [
-              {
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Metadata ",
-            "description": "The metadata of the agent."
-          },
           "name": {
             "type": "string",
             "title": "Name",
@@ -7095,6 +6840,79 @@
             "description": "The LLM configuration used by the agent.",
             "default": true
           },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description",
+            "description": "The description of the agent."
+          },
+          "metadata_": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata ",
+            "description": "The metadata of the agent."
+          },
+          "llm": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Llm",
+            "description": "The LLM configuration handle used by the agent, specified in the format provider/model-name, as an alternative to specifying llm_config."
+          },
+          "embedding": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Embedding",
+            "description": "The embedding configuration handle used by the agent, specified in the format provider/model-name."
+          },
+          "context_window_limit": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Context Window Limit",
+            "description": "The context window limit used by the agent."
+          },
+          "embedding_chunk_size": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Embedding Chunk Size",
+            "description": "The embedding chunk size used by the agent.",
+            "default": 300
+          },
           "user_id": {
             "anyOf": [
               {
@@ -7107,7 +6925,6 @@
             "title": "User Id"
           }
         },
-        "additionalProperties": false,
         "type": "object",
         "required": ["memory_blocks"],
         "title": "CreateAgentRequest",
@@ -7343,6 +7160,25 @@
         "properties": {
           "embedding_endpoint_type": {
             "type": "string",
+            "enum": [
+              "openai",
+              "anthropic",
+              "cohere",
+              "google_ai",
+              "azure",
+              "groq",
+              "ollama",
+              "webui",
+              "webui-legacy",
+              "lmstudio",
+              "lmstudio-legacy",
+              "llamacpp",
+              "koboldcpp",
+              "vllm",
+              "hugging-face",
+              "mistral",
+              "together"
+            ],
             "title": "Embedding Endpoint Type",
             "description": "The endpoint type for the model."
           },
@@ -8753,7 +8589,7 @@
             "type": "string",
             "title": "Name",
             "description": "The name of the organization.",
-            "default": "LuminousDolphin"
+            "default": "LivelyReindeer"
           },
           "created_at": {
             "anyOf": [
@@ -8906,10 +8742,10 @@
           },
           "id": {
             "type": "string",
-            "pattern": "^passage_legacy-[a-fA-F0-9]{8}",
+            "pattern": "^passage-[a-fA-F0-9]{8}",
             "title": "Id",
-            "description": "The human-friendly ID of the Passage_legacy",
-            "examples": ["passage_legacy-123e4567-e89b-12d3-a456-426614174000"]
+            "description": "The human-friendly ID of the Passage",
+            "examples": ["passage-123e4567-e89b-12d3-a456-426614174000"]
           },
           "text": {
             "type": "string",
@@ -9871,80 +9707,6 @@
       },
       "UpdateAgent": {
         "properties": {
-          "created_by_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Created By Id",
-            "description": "The id of the user that made this object."
-          },
-          "last_updated_by_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Last Updated By Id",
-            "description": "The id of the user that made this object."
-          },
-          "created_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Created At",
-            "description": "The timestamp when the object was created."
-          },
-          "updated_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Updated At",
-            "description": "The timestamp when the object was last updated."
-          },
-          "description": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Description",
-            "description": "The description of the agent."
-          },
-          "metadata_": {
-            "anyOf": [
-              {
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Metadata ",
-            "description": "The metadata of the agent."
-          },
           "name": {
             "anyOf": [
               {
@@ -10090,6 +9852,30 @@
             ],
             "title": "Message Ids",
             "description": "The ids of the messages in the agent's in-context memory."
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description",
+            "description": "The description of the agent."
+          },
+          "metadata_": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata ",
+            "description": "The metadata of the agent."
           }
         },
         "type": "object",
