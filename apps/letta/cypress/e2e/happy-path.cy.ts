@@ -53,7 +53,7 @@ describe('letta', () => {
       { timeout: 10000 }
     );
 
-    cy.get('body').click({ force: true });
+    cy.clearPointerEventLock();
 
     cy.findByTestId('edit-memory-block-human-content', { timeout: 10000 }).type(
       'The users name is {{name}}. Please include the word BananaMan at the end of every message.',
@@ -61,7 +61,6 @@ describe('letta', () => {
     );
 
     // hack to prevent duplicate clicks due to mobile hiding uis
-
     cy.findByTestId('open-more-panels').click({
       force: true,
     });
@@ -104,24 +103,26 @@ describe('letta', () => {
       .first()
       .click();
 
-    cy.get('body').click({ force: true });
+    cy.clearPointerEventLock();
 
-    cy.findByTestId('chat-simulator-input').type('What is my name');
+    cy.findByTestId('chat-simulator-input').type('What is my name', {
+      force: true,
+    });
 
     cy.findByTestId('chat-simulator-send').click();
 
     cy.findByTestId('messages-list').contains('Shubham', { timeout: 10000 });
     cy.findByTestId('messages-list').contains('BananaMan', { timeout: 10000 });
 
-    cy.findAllByTestId('version-template-trigger')
-      .first()
-      .click({ force: true });
+    cy.clearPointerEventLock();
+
+    cy.findAllByTestId('version-template-trigger').first().click();
 
     cy.findByTestId('stage-new-version-button').click({ force: true });
     cy.findByTestId('stage-agent-dialog-confirm-button').click({ force: true });
-    cy.findByTestId('deploy-agent-dialog-trigger', { timeout: 10000 }).click({
-      force: true,
-    });
+    cy.findByTestId('deploy-agent-dialog-trigger', { timeout: 10000 }).click();
+
+    cy.clearPointerEventLock();
 
     // deploy the agent
     cy.findByTestId('deploy-agent-instructions-code-editor').should('exist');
