@@ -53,6 +53,8 @@ describe('letta', () => {
       { timeout: 10000 }
     );
 
+    cy.get('body').click({ force: true });
+
     cy.findByTestId('edit-memory-block-human-content', { timeout: 10000 }).type(
       'The users name is {{name}}. Please include the word BananaMan at the end of every message.',
       { parseSpecialCharSequences: false }
