@@ -68,6 +68,8 @@ describe('letta', () => {
       force: true,
     });
 
+    cy.get('body').click({ force: true });
+
     cy.findByTestId('toggle-variables-button').first().click();
 
     cy.findByTestId('variable-input-name').type('Shubham');
@@ -104,6 +106,7 @@ describe('letta', () => {
       .click();
 
     cy.clearPointerEventLock();
+    cy.get('body').click({ force: true });
 
     cy.findByTestId('chat-simulator-input').type('What is my name', {
       force: true,
@@ -116,9 +119,27 @@ describe('letta', () => {
     cy.findByTestId('messages-list').contains('Shubham', { timeout: 10000 });
     cy.findByTestId('messages-list').contains('BananaMan', { timeout: 10000 });
 
-    cy.findAllByTestId('version-template-trigger').first().click({
-      force: true,
-    });
+    cy.clearPointerEventLock();
+    cy.findByTestId('tab:tools-panel').click({ force: true });
+
+    /* tools */
+    cy.findByTestId('open-tool-explorer').click();
+
+    cy.findByTestId('start-create-tool').click();
+
+    cy.findByTestId('submit-create-tool').click();
+
+    cy.findByTestId('attach-tool-to-agent', { timeout: 10000 }).click();
+
+    cy.findByTestId('close-tool-explorer').click();
+
+    cy.findByText('roll_d20', { timeout: 10000 }).should('exist');
+
+    cy.get('body').click({ force: true });
+
+    cy.findAllByTestId('version-template-trigger')
+      .first()
+      .click({ force: true });
 
     cy.findByTestId('stage-new-version-button').click({ force: true });
     cy.findByTestId('stage-agent-dialog-confirm-button').click({ force: true });

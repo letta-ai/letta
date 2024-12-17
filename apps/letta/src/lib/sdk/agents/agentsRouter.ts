@@ -791,14 +791,6 @@ export async function updateAgentFromAgentId(options: UpdateAgentFromAgentId) {
           user_id: lettaAgentsUserId,
         }
       ),
-      AgentsService.getAgentMemory(
-        {
-          agentId: agentToUpdateId,
-        },
-        {
-          user_id: lettaAgentsUserId,
-        }
-      ),
     ]
   );
 

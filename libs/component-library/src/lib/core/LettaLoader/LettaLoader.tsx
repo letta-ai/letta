@@ -7,6 +7,7 @@ import { DotLottieReact } from '@lottiefiles/dotlottie-react';
 import type { VariantProps } from 'class-variance-authority';
 import { cva } from 'class-variance-authority';
 import { cn } from '@letta-web/core-style-config';
+import { ErrorBoundary } from 'react-error-boundary';
 
 const loaderVariants = cva('', {
   variants: {
@@ -34,22 +35,24 @@ function LettaSpinLoader(props: LettaLoaderBaseProps) {
 
   return (
     <div className={cn('relative', loaderVariants({ size }))} id={id}>
-      <div className="absolute top-0 opacity-100-on-dark w-full">
-        <DotLottieReact
-          width={256}
-          src="/animations/loader-dark.lottie"
-          loop={!stopAnimation}
-          autoplay
-        />
-      </div>
-      <div className="opacity-0-on-dark w-full">
-        <DotLottieReact
-          width={256}
-          src="/animations/loader.lottie"
-          loop={!stopAnimation}
-          autoplay
-        />
-      </div>
+      <ErrorBoundary fallback={<LettaLoaderGrow {...props} />}>
+        <div className="absolute top-0 opacity-100-on-dark w-full">
+          <DotLottieReact
+            width={256}
+            src="/animations/loader-dark.lottie"
+            loop={!stopAnimation}
+            autoplay
+          />
+        </div>
+        <div className="opacity-0-on-dark w-full">
+          <DotLottieReact
+            width={256}
+            src="/animations/loader.lottie"
+            loop={!stopAnimation}
+            autoplay
+          />
+        </div>
+      </ErrorBoundary>
     </div>
   );
 }

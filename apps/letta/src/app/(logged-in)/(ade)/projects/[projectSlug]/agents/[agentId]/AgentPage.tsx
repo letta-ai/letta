@@ -977,7 +977,9 @@ function AgentMobileContent() {
 
   return (
     <VStack collapseHeight flex fullWidth>
-      <RenderSinglePanel panelId={activePanel} />
+      <VisibleOnMobile checkWithJs>
+        <RenderSinglePanel panelId={activePanel} />
+      </VisibleOnMobile>
     </VStack>
   );
 }
@@ -1065,7 +1067,9 @@ export function AgentPage() {
                 <Alert variant="warning" title={fullPageWarning} />
               )}
               <Frame overflow="hidden" position="relative" fullWidth fullHeight>
-                <PanelRenderer />
+                <HiddenOnMobile checkWithJs>
+                  <PanelRenderer />
+                </HiddenOnMobile>
               </Frame>
             </VStack>
           </ErrorBoundary>
