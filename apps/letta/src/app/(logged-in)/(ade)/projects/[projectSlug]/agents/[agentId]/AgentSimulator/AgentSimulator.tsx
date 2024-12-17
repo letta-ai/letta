@@ -882,7 +882,13 @@ function Chatroom() {
           <VStack gap="large" collapseHeight>
             <VStack collapseHeight position="relative">
               {!agentIdToUse ? (
-                <LoadingEmptyStatusComponent emptyMessage="" isLoading />
+                <LoadingEmptyStatusComponent
+                  loadingMessage={t('loadingMessages')}
+                  noMinHeight
+                  loaderVariant="spinner"
+                  emptyMessage=""
+                  isLoading
+                />
               ) : (
                 <Messages
                   mode={renderMode}

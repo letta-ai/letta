@@ -830,7 +830,12 @@ function ViewCategoryTools(props: ViewCategoryToolsProps) {
             <VStack paddingBottom fullWidth />
           </VStack>
         ) : (
-          <LoadingEmptyStatusComponent emptyMessage="" isLoading />
+          <LoadingEmptyStatusComponent
+            hideText
+            loaderVariant="grower"
+            emptyMessage=""
+            isLoading
+          />
         )}
       </VStack>
     </VStack>
@@ -1035,7 +1040,12 @@ function AllToolsView() {
               ))}
             </>
           ) : (
-            <LoadingEmptyStatusComponent emptyMessage="" isLoading />
+            <LoadingEmptyStatusComponent
+              hideText
+              loaderVariant="grower"
+              emptyMessage=""
+              isLoading
+            />
           )}
         </VStack>
       </VStack>
@@ -1639,7 +1649,12 @@ function EditToolWrapper() {
         </HStack>
       </ToolAppHeader>
       {!tool ? (
-        <LoadingEmptyStatusComponent emptyMessage="" isLoading />
+        <LoadingEmptyStatusComponent
+          hideText
+          loaderVariant="grower"
+          emptyMessage=""
+          isLoading
+        />
       ) : (
         <EditTool tool={tool} />
       )}
