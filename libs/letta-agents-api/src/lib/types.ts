@@ -84,6 +84,10 @@ export const AgentMessageSchema = z.discriminatedUnion('message_type', [
   SystemMessageSchema,
 ]);
 
+export const ErrorMessageSchema = z.object({
+  error: z.string(),
+});
+
 export const AgentMessageTypeSchema = z.enum([
   'function_return',
   'function_call',
