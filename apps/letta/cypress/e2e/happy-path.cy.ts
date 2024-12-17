@@ -61,10 +61,6 @@ describe('letta', () => {
     );
 
     // hack to prevent duplicate clicks due to mobile hiding uis
-
-    cy.findByTestId('open-more-panels').click();
-    cy.findByTestId('mobile-navigation-button:advanced-settings').click();
-
     cy.findByTestId('toggle-variables-button').first().click();
 
     cy.findByTestId('variable-input-name').type('Shubham');
