@@ -672,7 +672,9 @@
       "label": "{baseName} name",
       "edit": "Edit {baseName} name"
     },
-    "copyAgentId": "Copy {baseName} ID",
+    "AgentIdentifierToCopy": {
+      "copyAgentId": "Copy {baseName} ID"
+    },
     "title": "{baseName} Settings",
     "modelInput": {
       "tooltip": "The LLM backend for the {baseName}",
@@ -746,7 +748,11 @@
     },
     "showVariables": "Variables",
     "hideVariables": "Hide variables",
-    "updateVariables": "Update variables"
+    "updateVariables": "Update variables",
+    "hasFailedToSendMessageText": {
+      "local": "Failed to send message, please try again or check your server logs",
+      "cloud": "Failed to send message, please try again or contact support"
+    }
   },
   "ADE/ADESidebar": {
     "nav": {

@@ -274,19 +274,27 @@ export async function makeRequestToSDK(
 
     if (isCreateMessageRequest(options)) {
       const agentId = pathname.split('/')[3];
-      await createInferenceTransaction({
-        agentId,
-        startedAt: startTime,
-        endedAt: new Date(),
-        source,
-        organizationId,
-        referenceId: '',
-        outputTokens: data.usage.completion_tokens,
-        inputTokens: data.usage.prompt_tokens,
-        stepCount: data.usage.step_count,
-        totalTokens: data.usage.total_tokens,
-        path: pathname,
-      });
+      try {
+        if (!data.usage) {
+          Sentry.captureException('Usage details not captured', data);
+        } else {
+          await createInferenceTransaction({
+            agentId,
+            startedAt: startTime,
+            endedAt: new Date(),
+            source,
+            organizationId,
+            referenceId: '',
+            outputTokens: data.usage.completion_tokens,
+            inputTokens: data.usage.prompt_tokens,
+            stepCount: data.usage.step_count,
+            totalTokens: data.usage.total_tokens,
+            path: pathname,
+          });
+        }
+      } catch (e) {
+        Sentry.captureException(e);
+      }
     }
     if (typeof data !== 'string') {
       data = JSON.stringify(data);

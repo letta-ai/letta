@@ -28,15 +28,21 @@ COPY . .
 ENV NEXT_PUBLIC_CURRENT_HOST="https://app.letta.com"
 ENV NEXT_PUBLIC_MIXPANEL_TOKEN="0790fe817b0407efb691ea896533d3ae"
 ENV NODE_ENV=production
-ARG SENTRY_AUTH_TOKEN
-RUN echo "SENTRY_AUTH_TOKEN=${SENTRY_AUTH_TOKEN}" >> .env
 
 
 # Disable telemetry during build time
 ENV NEXT_TELEMETRY_DISABLED 1
 
-# Build the application
-RUN npm run build
+RUN --mount=type=secret,id=SENTRY_AUTH_TOKEN \
+    SENTRY_AUTH_TOKEN=$(cat /run/secrets/SENTRY_AUTH_TOKEN) npm run build
+
+# Create a new release
+RUN --mount=type=secret,id=SENTRY_AUTH_TOKEN \
+        SENTRY_AUTH_TOKEN=$(cat /run/secrets/SENTRY_AUTH_TOKEN) npx sentry-cli releases new -p letta-web $(npx sentry-cli releases propose-version)
+
+# Upload source maps
+RUN --mount=type=secret,id=SENTRY_AUTH_TOKEN \
+        SENTRY_AUTH_TOKEN=$(cat /run/secrets/SENTRY_AUTH_TOKEN) npx sentry-cli releases files --project letta-web -t upload-sourcemaps ./apps/letta/.next/static ./apps/letta/.next/static
 
 # Next.js collects completely anonymous telemetry data about general usage.
 # Learn more here: https://nextjs.org/telemetry

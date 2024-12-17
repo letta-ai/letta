@@ -25,7 +25,7 @@ import {
   VariableIcon,
   WarningIcon,
 } from '@letta-web/component-library';
-import type { PanelTemplate } from '@letta-web/component-library';
+import type { PanelTemplate, ChatInputRef } from '@letta-web/component-library';
 import { PanelBar } from '@letta-web/component-library';
 import { VStack } from '@letta-web/component-library';
 import type { Dispatch, FormEvent, SetStateAction } from 'react';
@@ -37,6 +37,7 @@ import type {
   AgentState,
   Source,
 } from '@letta-web/letta-agents-api';
+import { ErrorMessageSchema } from '@letta-web/letta-agents-api';
 import { useLettaAgentsAPI } from '@letta-web/letta-agents-api';
 import { getIsAgentState } from '@letta-web/letta-agents-api';
 import { AgentsService } from '@letta-web/letta-agents-api';
@@ -70,18 +71,23 @@ import { useCurrentUser } from '$letta/client/hooks';
 const isSendingMessageAtom = atom(false);
 
 interface SendMessagePayload {
-  role: 'system' | 'user';
+  role: string;
   text: string;
 }
 
 export type SendMessageType = (payload: SendMessagePayload) => void;
 
-function useSendMessage(agentId: string) {
+interface UseSendMessageOptions {
+  onFailedToSendMessage?: (existingMessage: string) => void;
+}
+
+function useSendMessage(agentId: string, options: UseSendMessageOptions = {}) {
   const [isPending, setIsPending] = useAtom(isSendingMessageAtom);
   const abortController = useRef<AbortController>();
   const queryClient = useQueryClient();
   const { isLocal } = useCurrentAgentMetaData();
   const user = useCurrentUser();
+  const [failedToSendMessage, setFailedToSendMessage] = useState(false);
 
   const { baseUrl, password } = useLettaAgentsAPI();
 
@@ -97,6 +103,7 @@ function useSendMessage(agentId: string) {
     (payload: SendMessagePayload) => {
       const { text: message, role } = payload;
       setIsPending(true);
+      setFailedToSendMessage(false);
 
       queryClient.setQueriesData<InfiniteData<AgentMessage[]> | undefined>(
         {
@@ -171,6 +178,16 @@ function useSendMessage(agentId: string) {
 
         if (['DONE_GEN', 'DONE_STEP', 'DONE'].includes(e.data)) {
           return;
+        }
+
+        try {
+          const errorMessage = ErrorMessageSchema.parse(JSON.parse(e.data));
+          setIsPending(false);
+          setFailedToSendMessage(!!errorMessage.error);
+          options?.onFailedToSendMessage?.(message);
+          return;
+        } catch (_e) {
+          // ignore
         }
 
         try {
@@ -280,10 +297,19 @@ function useSendMessage(agentId: string) {
         setIsPending(false);
       };
     },
-    [agentId, baseUrl, isLocal, password, queryClient, setIsPending, user?.id]
+    [
+      agentId,
+      baseUrl,
+      isLocal,
+      options,
+      password,
+      queryClient,
+      setIsPending,
+      user?.id,
+    ]
   );
 
-  return { isPending, sendMessage };
+  return { isPending, isError: failedToSendMessage, sendMessage };
 }
 
 interface ChatroomContextType {
@@ -775,11 +801,33 @@ function Chatroom() {
     sourceList,
   ]);
 
-  const { sendMessage, isPending } = useSendMessage(agentIdToUse || '');
+  const ref = useRef<ChatInputRef | null>(null);
+
+  const {
+    sendMessage,
+    isError: hasFailedToSendMessage,
+    isPending,
+  } = useSendMessage(agentIdToUse || '', {
+    onFailedToSendMessage: (message) => {
+      ref.current?.setChatMessage(message);
+    },
+  });
 
   const hasVariableIssue = useMemo(() => {
     return hasVariableMismatch;
   }, [hasVariableMismatch]);
+
+  const hasFailedToSendMessageText = useMemo(() => {
+    if (!hasFailedToSendMessage) {
+      return;
+    }
+
+    if (isLocal) {
+      return t('hasFailedToSendMessageText.local');
+    }
+
+    return t('hasFailedToSendMessageText.cloud');
+  }, [hasFailedToSendMessage, isLocal, t]);
 
   return (
     <ChatroomContext.Provider value={{ renderMode, setRenderMode }}>
@@ -850,7 +898,7 @@ function Chatroom() {
                 />
               )}
             </VStack>
-            <ChatInput<SendMessagePayload['role']>
+            <ChatInput
               disabled={!agentIdToUse}
               defaultRole="user"
               roles={[
@@ -869,8 +917,10 @@ function Chatroom() {
                   icon: <SystemIcon />,
                 },
               ]}
+              ref={ref}
+              hasFailedToSendMessageText={hasFailedToSendMessageText}
               sendingMessageText={t('sendingMessage')}
-              onSendMessage={(role, text) => {
+              onSendMessage={(role: string, text: string) => {
                 sendMessage({ role, text });
               }}
               isSendingMessage={isPending}

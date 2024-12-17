@@ -33,7 +33,7 @@ configure-kubectl:
 build-web:
     npm run slack-bot-says "Building web Docker image with tag: {{TAG}}..."
     @echo "🚧 Building web Docker image with tag: {{TAG}}..."
-    docker buildx build --platform linux/amd64 --target web -t {{DOCKER_REGISTRY}}/web:{{TAG}} . --load
+    SENTRY_AUTH_TOKEN=$SENTRY_AUTH_TOKEN docker buildx build --platform linux/amd64 --target web -t {{DOCKER_REGISTRY}}/web:{{TAG}} . --load --secret id=SENTRY_AUTH_TOKEN
 
 # Build the migrations Docker image
 build-migrations:
@@ -128,7 +128,7 @@ build-gh-actions:
     docker buildx build --platform linux/amd64 --target web \
         --cache-from type=local,src=/tmp/.buildx-cache \
         --cache-to type=local,dest=/tmp/.buildx-cache-new,mode=max \
-        -t {{DOCKER_REGISTRY}}/web:{{TAG}} . --load
+        -t {{DOCKER_REGISTRY}}/web:{{TAG}} . --load --secret id=SENTRY_AUTH_TOKEN
 
     @echo "🚧 Building migrations Docker image with tag: {{TAG}}..."
     docker buildx build --platform linux/amd64 --target migrations \
