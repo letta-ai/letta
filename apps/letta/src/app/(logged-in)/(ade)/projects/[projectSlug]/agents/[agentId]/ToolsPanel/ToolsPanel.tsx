@@ -249,6 +249,7 @@ function ToolsListPage() {
           <Button
             label={t('ToolsListPage.openExplorer')}
             color="tertiary"
+            data-testid="open-tool-explorer"
             hideLabel
             onClick={() => {
               openToolExplorer();
