@@ -115,7 +115,7 @@ export const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(
           )}
         >
           <div>
-            <LettaLoader size="small" color="muted" />
+            <LettaLoader variant="flipper" size="small" color="muted" />
           </div>
           <Typography color="muted" bold>
             {sendingMessageText}
