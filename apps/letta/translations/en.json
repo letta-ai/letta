@@ -854,38 +854,6 @@
     "lastUpdated": "Last updated on {date}",
     "updating": "Updating..."
   },
-  "projects/(projectSlug)/templates/new/page": {
-    "pageTitle": "new",
-    "error": "An error occurred while creating the agent. Please try again or contact support.",
-    "title": "Create an agent template",
-    "description": "An agent template is used to define the structure of agents you deploy in your project. You can create an agent from scratch or reference a pre-existing agent template.",
-    "backToProject": "Back to project",
-    "createButton": "Create template",
-    "PreExistingTemplateDropdown": {
-      "placeholder": "Select a pre-existing template",
-      "label": "Create from existing template",
-      "error": "An error occurred while fetching existing agent templates"
-    },
-    "nameInput": {
-      "label": "Template name",
-      "placeholder": "my-agent-name"
-    },
-    "useDefaultAgentTemplate": {
-      "label": "No Template",
-      "description": "Start from scratch"
-    },
-    "usePreMadeAgentTemplates": {
-      "customerSupport": {
-        "label": "Customer Support",
-        "description": "A template containing all you need to create personalized customer support agents for your customersagent"
-      },
-      "fantasyRoleplay": {
-        "label": "Fantasy Roleplay",
-        "description": "A template containing all you need to create personalized bots that recreate a fantasy roleplay experience"
-      }
-    },
-    "FromLettaBadge": "From Letta"
-  },
   "projects/(projectSlug)/agents/page": {
     "table": {
       "columns": {
