@@ -130,7 +130,9 @@ function MessageGroup({ group }: MessageGroupType) {
         size={"xsmall"}
       />
       <VStack collapseWidth flex gap="small">
-        <Typography bold>{name}</Typography>
+        <Typography variant="body2" color="muted">
+          {name.toUpperCase()}
+        </Typography>
         <VStack gap="large">
           {sortedMessages.map((message, index) => (
             <Message key={`${message.id}_${index}`} message={message} />
