@@ -127,6 +127,7 @@ function MessageGroup({ group }: MessageGroupType) {
         textColor={textColor}
         backgroundColor={backgroundColor}
         icon={icon}
+        size={"xsmall"}
       />
       <VStack collapseWidth flex gap="small">
         <Typography bold>{name}</Typography>
