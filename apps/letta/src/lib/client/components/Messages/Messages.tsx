@@ -132,8 +132,8 @@ function MessageGroup({ group }: MessageGroupType) {
         size={"xsmall"}
       />
       <VStack collapseWidth flex gap="small">
-        <Typography variant="body2" color="lighter">
-          {name.toUpperCase()}
+        <Typography variant="body2" color="lighter" uppercase={true}>
+          {name}
         </Typography>
         <VStack gap="large">
           {sortedMessages.map((message, index) => (
