@@ -687,6 +687,7 @@
     "error": "There was an error while updating the model, please try again or contact support."
   },
   "components/Messages": {
+    "thoughts": "Thoughts",
     "loadingMessages": "Fetching messages...",
     "functionReturn": "Function response",
     "internalMonologue": "Internal monologue",

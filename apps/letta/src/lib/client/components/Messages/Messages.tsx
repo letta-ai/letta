@@ -23,6 +23,8 @@ import {
   VStack,
   MessageWrapper,
   LoadingEmptyStatusComponent,
+  BlockQuote,
+  InnerMonologueIcon,
 } from '@letta-web/component-library';
 import type { AgentMessage } from '@letta-web/letta-agents-api';
 import { SystemAlertSchema } from '@letta-web/letta-agents-api';
@@ -411,9 +413,17 @@ export function Messages(props: MessagesProps) {
             return {
               id: `${agentMessage.id}-${agentMessage.message_type}`,
               content: (
-                <Typography italic>
-                  {agentMessage.internal_monologue}
-                </Typography>
+                <BlockQuote>
+                  <VStack gap="small">
+                    <HStack align="center" gap="small">
+                      <InnerMonologueIcon color="violet" size="small" />
+                      <Typography bold color="violet" variant="body2">
+                        {t('thoughts')}
+                      </Typography>
+                    </HStack>
+                    <Typography>{agentMessage.internal_monologue}</Typography>
+                  </VStack>
+                </BlockQuote>
               ),
               timestamp: new Date(agentMessage.date).toISOString(),
               name: 'Agent',

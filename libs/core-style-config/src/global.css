@@ -97,6 +97,7 @@
     --input: 240 5.9% 90%;
     --ring: var(--primary);
     --radius: 0.375rem;
+    --violet: 278, 44%, 49%;
 
     --button-input-height: 36px;
     --button-input-height-sm: 28px;
@@ -138,6 +139,8 @@
     --primary-content:  0 0% 98%;
     --primary-hover: 10, 100%, 67%;
 
+
+    --violet:  278 72%, 69%;;
     --on-transparent: 100, 100%, 100%;
 
     --background: 0 0% 0%;
