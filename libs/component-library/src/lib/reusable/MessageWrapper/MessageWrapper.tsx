@@ -48,7 +48,7 @@ export function MessageWrapper({
           <Slot
             className={cn(
               'w-3 h-3',
-              type === 'code' ? 'text-text-secondary' : ''
+              type === 'code' ? 'text-text-lighter' : ''
             )}
           >
             {header.preIcon}
