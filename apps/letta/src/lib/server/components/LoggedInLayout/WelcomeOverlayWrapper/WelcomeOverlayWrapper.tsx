@@ -287,7 +287,7 @@ export function WelcomeOverlayWrapper(props: WelcomeOverlayWrapperProps) {
           </VStack>
           <div className="image-render-container absolute z-[-1px] flex items-end bg-[#0707ab] w-full h-full">
             <div className="loader opacity-0 w-full flex h-full items-center absolute justify-center">
-              <LettaLoader color="steel" size="large" />
+              <LettaLoader variant="flipper" color="steel" size="large" />
             </div>
             <FadeInImage src={WelcomeImage} alt="" />
           </div>
