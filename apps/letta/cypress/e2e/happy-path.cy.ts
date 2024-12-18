@@ -42,9 +42,11 @@ describe('letta', () => {
 
     cy.findByTestId('update-agent-name-button').click();
 
-    cy.findByTestId('update-name-dialog-update-name').clear();
+    cy.findByTestId('update-name-dialog-update-name').invoke(
+      'val',
+      'CYDOGGTestAgent'
+    );
 
-    cy.findByTestId('update-name-dialog-update-name').type('CYDOGGTestAgent');
     cy.findByTestId('update-name-dialog-confirm-button').click();
 
     cy.location('pathname').should(
