@@ -39,6 +39,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslations } from 'next-intl';
 import { useCurrentSimulatedAgent } from '../hooks/useCurrentSimulatedAgent/useCurrentSimulatedAgent';
 import { useDateFormatter } from '@letta-web/helpful-client-utils';
+import { useCurrentAgentMetaData } from '../hooks/useCurrentAgentMetaData/useCurrentAgentMetaData';
 
 interface ViewArchivalMemoryDialogProps {
   memory: Passage;
@@ -253,6 +254,7 @@ function CreateMemoryDialog() {
   const queryClient = useQueryClient();
   const t = useTranslations('ADE/ArchivalMemories');
   const [open, setOpen] = useState(false);
+  const { isTemplate } = useCurrentAgentMetaData();
 
   const { mutate, isPending } = useAgentsServiceCreateAgentArchivalMemory({
     onSuccess: async () => {
@@ -302,7 +304,9 @@ function CreateMemoryDialog() {
         title={t('CreateMemoryDialog.title')}
         onSubmit={form.handleSubmit(handleSubmit)}
       >
-        <Alert variant="info" title={t('CreateMemoryDialog.info')} />
+        {isTemplate && (
+          <Alert variant="info" title={t('CreateMemoryDialog.info')} />
+        )}
         <FormField
           control={form.control}
           name="text"
