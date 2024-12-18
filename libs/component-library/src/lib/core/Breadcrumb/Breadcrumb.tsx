@@ -138,14 +138,18 @@ function BreadcrumbItemWrapper(props: BreadcrumbItemWrapperProps) {
         {preIcon && <Slot className="w-4 h-4">{preIcon}</Slot>}
         <Typography
           color={isLast ? 'default' : 'lighter'}
-          className="hover:underline"
+          className={cn(
+            onClick || href
+              ? 'cursor-pointer hover:underline'
+              : 'cursor-default'
+          )}
           variant={variant === 'default' ? 'body' : 'body2'}
         >
           {label}
         </Typography>
       </HStack>
     );
-  }, [isLast, label, preIcon, variant]);
+  }, [href, isLast, label, onClick, preIcon, variant]);
 
   if (contentOverride) {
     return contentOverride;
