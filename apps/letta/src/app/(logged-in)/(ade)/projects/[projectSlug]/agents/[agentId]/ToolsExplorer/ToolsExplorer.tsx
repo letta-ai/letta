@@ -31,6 +31,7 @@ import {
   Breadcrumb,
   Button,
   ChevronLeftIcon,
+  CodeBlocksIcon,
   CloseIcon,
   CloseMiniApp,
   Code,
@@ -113,13 +114,14 @@ interface ToolCategoryButtonProps {
 }
 
 function ToolCategoryButton(props: ToolCategoryButtonProps) {
+  const t = useTranslations('ADE/Tools');
   const { category, image, label, selectedCategory, setSelectedCategory } =
     props;
 
   return (
     <Button
       label={label}
-      preIcon={image ? <img src={image} alt="" /> : <ToolsIcon />}
+      preIcon={image ? <img src={image} alt="" /> : label.includes(t('AllToolsView.titles.customTools')) ? <CodeBlocksIcon /> : <ToolsIcon />}
       color="tertiary-transparent"
       active={selectedCategory === category}
       onClick={() => {
