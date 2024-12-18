@@ -81,7 +81,11 @@ export const organizationPreferencesRelations = relations(
   })
 );
 
-export const signupMethodsEnum = pgEnum('signup_methods', ['google', 'email']);
+export const signupMethodsEnum = pgEnum('signup_methods', [
+  'google',
+  'email',
+  'github',
+]);
 
 export const users = pgTable('users', {
   id: text('id')

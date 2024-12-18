@@ -4,9 +4,9 @@ import {
   MarketingButton,
   VStack,
   Logo,
+  GithubLogoMarkDynamic,
+  GoogleLogoMarkDynamic,
 } from '@letta-web/component-library';
-import GoogleLogo from './google-logo.png';
-import Image from 'next/image';
 import type { ElementRef } from 'react';
 import { Suspense } from 'react';
 import { useMemo } from 'react';
@@ -134,18 +134,24 @@ export function LoginComponent() {
             {t('title')}
           </Typography>
         </VStack>
-        <MarketingButton
-          onClick={spinOnClick}
-          ref={marketingButtonRef}
-          href="/auth/google/init"
-          variant="secondary"
-          preIcon={
-            <div>
-              <Image width={16} height={16} src={GoogleLogo} alt="" />
-            </div>
-          }
-          label={t('google')}
-        />
+        <VStack>
+          <MarketingButton
+            onClick={spinOnClick}
+            ref={marketingButtonRef}
+            href="/auth/google/init"
+            variant="secondary"
+            preIcon={<GoogleLogoMarkDynamic />}
+            label={t('google')}
+          />
+          <MarketingButton
+            onClick={spinOnClick}
+            ref={marketingButtonRef}
+            href="/auth/github/init"
+            variant="secondary"
+            preIcon={<GithubLogoMarkDynamic />}
+            label={t('github')}
+          />
+        </VStack>
         <Typography>
           {t.rich('terms', {
             terms: (chunks) => (

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-export const supportedProvidersSchema = z.enum(['google']);
+export const supportedProvidersSchema = z.enum(['google', 'github']);
 
 export type SupportedProviders = z.infer<typeof supportedProvidersSchema>;
 
