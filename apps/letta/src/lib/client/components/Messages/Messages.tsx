@@ -43,6 +43,8 @@ import type { InfiniteData } from '@tanstack/query-core';
 import { jsonrepair } from 'jsonrepair';
 import { useTranslations } from 'next-intl';
 import { get } from 'lodash-es';
+import { useAtom } from 'jotai';
+import { firstPageMessagesCache } from '$letta/client/components/Messages/firstPageMessagesCache';
 
 // tryFallbackParseJson will attempt to parse a string as JSON, if it fails, it will trim the last character and try again
 // until it succeeds or the string is empty
@@ -162,7 +164,7 @@ export function Messages(props: MessagesProps) {
   const [lastMessageReceived, setLastMessageReceived] =
     useState<LastMessageReceived | null>(null);
 
-  const messageCache = useRef<AgentMessage[]>([]);
+  const [messageCache, setMessageCache] = useAtom(firstPageMessagesCache);
   const isMessageUpdateLock = useMemo(() => {
     return isSendingMessage;
   }, [isSendingMessage]);
@@ -195,15 +197,15 @@ export function Messages(props: MessagesProps) {
         agentId,
         limit: MESSAGE_LIMIT,
         ...(query.pageParam.before ? { before: query.pageParam.before } : {}),
-      });
+      }) as unknown as AgentMessage[];
 
       if (isMessageUpdateLock) {
-        return messageCache.current;
+        return messageCache;
       }
 
-      messageCache.current = res as unknown as AgentMessage[];
+      setMessageCache(res);
 
-      return res as unknown as AgentMessage[];
+      return res;
     },
     getNextPageParam: (lastPage) => {
       if (lastPage.length < MESSAGE_LIMIT) {
@@ -216,7 +218,7 @@ export function Messages(props: MessagesProps) {
         )[0].id,
       };
     },
-    enabled: !isSendingMessage,
+    enabled: !isSendingMessage && !!agentId,
     initialPageParam: { before: '' },
   });
 
