@@ -151,3 +151,5 @@ export * from './lib/ade/MiniApp/MiniApp';
 export * from './lib/core/TabGroup/TabGroup';
 
 export * from './lib/reusable/MessageWrapper/MessageWrapper';
+
+export * from './lib/core/BlockQuote/BlockQuote';
