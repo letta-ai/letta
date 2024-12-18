@@ -98,9 +98,7 @@
     },
     {
       "group": "Deploying Letta server",
-      "pages": [
-        "deployment/railway"
-      ]
+      "pages": ["deployment/railway"]
     },
     {
       "group": "Agents",
