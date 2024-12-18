@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
-import { CloseIcon } from '../../icons';
+import { CloseIcon, PlusIcon } from '../../icons';
 import { cn } from '@letta-web/core-style-config';
 import type { ButtonProps } from '../Button/Button';
 import { Button } from '../Button/Button';
@@ -11,6 +11,11 @@ import type { VariantProps } from 'class-variance-authority';
 import { cva } from 'class-variance-authority';
 import { Alert } from '../Alert/Alert';
 import { VStack } from '../../framing/VStack/VStack';
+import { HStack } from '../../framing/HStack/HStack';
+import { Typography } from '../Typography/Typography';
+import { Slot } from '@radix-ui/react-slot';
+import './Dialog.scss';
+import { HiddenOnMobile } from '../../framing/HiddenOnMobile/HiddenOnMobile';
 
 const DialogRoot = DialogPrimitive.Root;
 
@@ -19,6 +24,18 @@ const DialogTrigger = DialogPrimitive.Trigger;
 const DialogPortal = DialogPrimitive.Portal;
 
 const DialogClose = DialogPrimitive.Close;
+
+interface DialogContextState {
+  isInDialog: boolean;
+}
+
+const DialogContext = React.createContext<DialogContextState>({
+  isInDialog: false,
+});
+
+export function useDialogContext() {
+  return React.useContext(DialogContext);
+}
 
 type DialogOverlayProps = React.ComponentPropsWithoutRef<
   typeof DialogPrimitive.Overlay
@@ -30,8 +47,9 @@ const DialogOverlay = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <DialogPrimitive.Overlay
     ref={ref}
+    data-testid="dialog-overlay"
     className={cn(
-      'fixed inset-0 z-dialog bg-black/80  data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
+      'fixed inset-0 z-dialog bg-black/30  data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
       className
     )}
     {...props}
@@ -69,34 +87,48 @@ const DialogContent = React.forwardRef<
     const contents = (
       <>
         <DialogOverlay />
-        <DialogPrimitive.Content
-          ref={ref}
-          className={cn(
-            'fixed flex flex-col max-h-[95vh] overflow-y-auto overflow-x-hidden text-base left-[50%] top-[50%] z-dialog w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-2 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%]',
-            color === 'background' ? 'bg-background' : 'bg-background-grey',
-            className
-          )}
-          {...props}
-        >
-          <VStack gap={false} fullHeight={isFull}>
-            {errorMessage && (
-              <Alert
-                fullWidth
-                title={errorMessage}
-                children={errorAdditionalMessage}
-                variant="destructive"
-                className="mb-4"
-              />
+        <DialogPrimitive.Content ref={ref} {...props}>
+          <div id="dialog-dropdown-content" className="z-dropdown" />
+          <div
+            className={cn(
+              'fixed flex flex-col max-h-[95dvh] text-base left-[50%] top-[50%] z-dialog w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-2 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%]',
+              color === 'background' ? 'bg-background' : 'bg-background-grey',
+              className
             )}
+          >
+            <VStack
+              className="max-h-[100%]"
+              overflow="hidden"
+              flex
+              gap={false}
+              fullHeight={isFull}
+            >
+              {errorMessage && (
+                <Alert
+                  fullWidth
+                  title={errorMessage}
+                  children={errorAdditionalMessage}
+                  variant="destructive"
+                  className="mb-4"
+                />
+              )}
 
-            <VStack padding gap="form" position="relative" fullHeight={isFull}>
-              {children}
-              <DialogPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
-                <CloseIcon className="h-4 w-4" />
-                <span className="sr-only">Close</span>
-              </DialogPrimitive.Close>
+              <VStack
+                flex
+                className="max-h-[100%]"
+                overflow="hidden"
+                gap={false}
+                position="relative"
+                fullHeight={isFull}
+              >
+                {children}
+                <DialogPrimitive.Close className="absolute right-4 top-[13px] opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
+                  <CloseIcon className="h-5 w-5" />
+                  <span className="sr-only">Close</span>
+                </DialogPrimitive.Close>
+              </VStack>
             </VStack>
-          </VStack>
+          </div>
         </DialogPrimitive.Content>
       </>
     );
@@ -111,12 +143,15 @@ function DialogHeader({
   ...props
 }: React.HTMLAttributes<HTMLDivElement>) {
   return (
-    <div
+    <HStack
+      paddingX="xlarge"
+      borderBottom
       className={cn(
         'flex flex-col space-y-1.5 text-center sm:text-left',
         className
       )}
       {...props}
+      color="background-grey2"
     />
   );
 }
@@ -127,12 +162,15 @@ function DialogFooter({
   ...props
 }: React.HTMLAttributes<HTMLDivElement>) {
   return (
-    <div
+    <HStack
+      paddingY
+      paddingX="xlarge"
       className={cn(
         'flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:space-x-2',
         className
       )}
       {...props}
+      color={undefined}
     />
   );
 }
@@ -145,7 +183,7 @@ const DialogTitle = React.forwardRef<
   <DialogPrimitive.Title
     ref={ref}
     className={cn(
-      'text-xl font-semibold leading-none tracking-tight',
+      'text-base font-bold h-[48px] flex items-center justify-start leading-none tracking-tight',
       className
     )}
     {...props}
@@ -172,13 +210,131 @@ const dialogVariants = cva('', {
       medium: 'max-w-md',
       large: 'max-w-[600px]',
       xlarge: 'max-w-[800px]',
-      full: 'max-w-[95vw] h-full max-h-[95vh]',
+      xxlarge: 'max-w-[1024px]',
+      full: 'max-w-[85vw] h-full max-h-[85dvh]',
     },
   },
   defaultVariants: {
     size: 'medium',
   },
 });
+
+interface ContentCategory {
+  id: string;
+  icon?: React.ReactNode;
+  title: string;
+  subtitle?: string;
+  children: React.ReactNode;
+}
+
+interface DialogCategoryProps {
+  icon?: React.ReactNode;
+  title: string;
+  subtitle?: string;
+  isActive?: boolean;
+  onClick?: () => void;
+}
+
+export function DialogCategory(props: DialogCategoryProps) {
+  const { icon, title, subtitle, isActive, onClick } = props;
+
+  return (
+    <HStack
+      type="button"
+      color={isActive ? 'background' : undefined}
+      as="button"
+      borderBottom
+      align="center"
+      className={cn(
+        'relative h-[58px]',
+        isActive ? 'active-dialog-category' : ''
+      )}
+      onClick={onClick}
+      fullWidth
+    >
+      <HStack align="center" fullWidth>
+        {isActive && <div className="w-[2px] absolute h-full bg-primary" />}
+        <HStack paddingY="small" paddingX="xlarge" align="center" gap="large">
+          {icon && <Slot className="w-4 h-4">{icon}</Slot>}
+          <VStack gap="text">
+            <Typography variant="body2" align="left">
+              {title}
+            </Typography>
+            {subtitle && (
+              <Typography variant="body2" align="left" color="muted">
+                {subtitle}
+              </Typography>
+            )}
+          </VStack>
+        </HStack>
+      </HStack>
+    </HStack>
+  );
+}
+
+export interface DialogContentWithCategoriesProps {
+  categories: ContentCategory[];
+  category?: string;
+  defaultCategory?: string;
+  onSetCategory?: (category: string) => void;
+  onCreateNewCategory?: {
+    operation: () => string;
+    title: string;
+  };
+}
+
+export function DialogContentWithCategories(
+  props: DialogContentWithCategoriesProps
+) {
+  const { categories, onCreateNewCategory, defaultCategory } = props;
+  const [selectedCategory, setSelectedCategory] = React.useState(
+    defaultCategory || categories[0].id
+  );
+
+  const handleCategoryClick = useCallback((categoryId: string) => {
+    setSelectedCategory(categoryId);
+  }, []);
+
+  return (
+    <HStack borderTop gap={false} fullWidth fullHeight>
+      <HiddenOnMobile>
+        <VStack borderRight gap={false} fullHeight width="sidebar">
+          {categories.map((category) => {
+            const isActive = selectedCategory === category.id;
+
+            return (
+              <DialogCategory
+                key={category.id}
+                icon={category.icon}
+                title={category.title}
+                subtitle={category.subtitle}
+                isActive={isActive}
+                onClick={() => {
+                  handleCategoryClick(category.id);
+                }}
+              />
+            );
+          })}
+          {onCreateNewCategory && (
+            <DialogCategory
+              title={onCreateNewCategory.title}
+              icon={<PlusIcon />}
+              onClick={async () => {
+                setSelectedCategory(onCreateNewCategory.operation());
+              }}
+            />
+          )}
+        </VStack>
+      </HiddenOnMobile>
+      <VStack fullHeight flex overflowY="auto" fullWidth color="background">
+        {
+          categories.find((category) => category.id === selectedCategory)
+            ?.children
+        }
+      </VStack>
+    </HStack>
+  );
+}
 
 interface DialogProps extends VariantProps<typeof dialogVariants> {
   isOpen?: boolean;
@@ -198,8 +354,10 @@ interface DialogProps extends VariantProps<typeof dialogVariants> {
   cancelText?: string;
   onConfirm?: () => void;
   onSubmit?: (e: React.FormEvent<HTMLFormElement>) => void;
+  disableForm?: boolean;
   hideCancel?: boolean;
   hideConfirm?: boolean;
+  hideFooter?: boolean;
   color?: 'background-grey' | 'background';
   reverseButtons?: boolean;
 }
@@ -214,9 +372,11 @@ export function Dialog(props: DialogProps) {
     onOpenChange,
     title,
     testId,
+    hideFooter,
     children,
     reverseButtons,
     isConfirmBusy,
+    disableForm,
     trigger,
     confirmColor = 'secondary',
     preventCloseFromOutside,
@@ -249,6 +409,8 @@ export function Dialog(props: DialogProps) {
     [onConfirm, onSubmit]
   );
 
+  const Element = disableForm ? 'div' : 'form';
+
   return (
     <DialogRoot
       defaultOpen={defaultOpen}
@@ -273,36 +435,56 @@ export function Dialog(props: DialogProps) {
         }}
         aria-describedby=""
       >
-        <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className="contents">
-          {children}
-          <DialogFooter
-            className={
-              reverseButtons ? 'sm:flex-row-reverse sm:justify-start' : ''
-            }
+        <DialogContext.Provider value={{ isInDialog: true }}>
+          <DialogHeader>
+            <DialogTitle>{title}</DialogTitle>
+          </DialogHeader>
+          <Element
+            className={cn(
+              'overflow-y-auto overflow-x-hidden flex flex-col flex-1',
+              'pt-4',
+              size === 'full' ? 'h-full' : ''
+            )}
+            /* @ts-expect-error - element */
+            onSubmit={handleSubmit}
           >
-            {!hideCancel && (
-              <DialogClose asChild>
-                <Button
-                  data-testid={`${testId}-cancel-button`}
-                  label={cancelText}
-                  color="tertiary"
-                />
-              </DialogClose>
+            <VStack
+              className={cn(
+                'flex-1',
+                'px-[24px]',
+                size === 'full' ? 'h-full flex flex-col' : ''
+              )}
+            >
+              {children}
+            </VStack>
+            {!hideFooter && (
+              <DialogFooter
+                className={
+                  reverseButtons ? 'sm:flex-row-reverse sm:justify-start' : ''
+                }
+              >
+                {!hideCancel && (
+                  <DialogClose asChild>
+                    <Button
+                      data-testid={`${testId}-cancel-button`}
+                      label={cancelText}
+                      color="tertiary"
+                    />
+                  </DialogClose>
+                )}
+                {!hideConfirm && (
+                  <Button
+                    data-testid={`${testId}-confirm-button`}
+                    color={confirmColor}
+                    type="submit"
+                    busy={isConfirmBusy}
+                    label={confirmText}
+                  />
+                )}
+              </DialogFooter>
             )}
-            {!hideConfirm && (
-              <Button
-                data-testid={`${testId}-confirm-button`}
-                color={confirmColor}
-                type="submit"
-                busy={isConfirmBusy}
-                label={confirmText}
-              />
-            )}
-          </DialogFooter>
-        </form>
+          </Element>
+        </DialogContext.Provider>
       </DialogContent>
     </DialogRoot>
   );

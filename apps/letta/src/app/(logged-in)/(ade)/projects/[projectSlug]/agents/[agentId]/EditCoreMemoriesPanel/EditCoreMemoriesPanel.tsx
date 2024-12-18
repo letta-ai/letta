@@ -1,340 +1,367 @@
 import { z } from 'zod';
 import type { PanelTemplate } from '@letta-web/component-library';
+import { TabGroup } from '@letta-web/component-library';
+import { InfoTooltip } from '@letta-web/component-library';
 import {
-  CogIcon,
+  Alert,
+  Button,
+  Form,
+  FormActions,
   FormField,
+  LettaLoaderPanel,
   FormProvider,
   Input,
+  TextArea,
   useForm,
 } from '@letta-web/component-library';
-import {
-  DropdownMenu,
-  DropdownMenuItem,
-  SwapIcon,
-} from '@letta-web/component-library';
-import {
-  Button,
-  Dialog,
-  ExpandContentIcon,
-} from '@letta-web/component-library';
-import {
-  Accordion,
-  Badge,
-  HStack,
-  RawTextArea,
-  Typography,
-} from '@letta-web/component-library';
+import { CodeIcon } from '@letta-web/component-library';
+import { DialogContentWithCategories } from '@letta-web/component-library';
+
+import { Dialog } from '@letta-web/component-library';
+import { HStack, RawTextArea, Typography } from '@letta-web/component-library';
 import { VStack } from '@letta-web/component-library';
 import { PanelMainContent } from '@letta-web/component-library';
 import { useTranslations } from 'next-intl';
-import { useCurrentAgent, useSyncUpdateCurrentAgent } from '../hooks';
-import { useEffect, useState } from 'react';
-import React, { useCallback, useMemo } from 'react';
-import { nicelyFormattedDateAndTime } from '@letta-web/helpful-client-utils';
+import { useCurrentAgent } from '../hooks';
+import { useCallback, useState } from 'react';
+import React, { useMemo } from 'react';
+import { useDateFormatter } from '@letta-web/helpful-client-utils';
+import { useUpdateMemory } from '../hooks/useUpdateMemory/useUpdateMemory';
+import { useCurrentAgentMetaData } from '../hooks/useCurrentAgentMetaData/useCurrentAgentMetaData';
+import { useCurrentSimulatedAgent } from '../hooks/useCurrentSimulatedAgent/useCurrentSimulatedAgent';
+import type { Block, AgentState } from '@letta-web/letta-agents-api';
+import { useAgentsServiceUpdateAgentMemoryBlockByLabel } from '@letta-web/letta-agents-api';
+import { UseAgentsServiceGetAgentKeyFn } from '@letta-web/letta-agents-api';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useFormContext } from 'react-hook-form';
+import { useQueryClient } from '@tanstack/react-query';
 
-function useUpdateMemory(payload: AdvancedEditorPayload) {
-  const { type, label } = payload;
-  const { memory, system } = useCurrentAgent();
-  const { syncUpdateCurrentAgent, error, lastUpdatedAt, isUpdating } =
-    useSyncUpdateCurrentAgent();
-
-  const value = useMemo(() => {
-    if (type === 'system') {
-      return system;
-    }
-
-    return memory?.memory?.[label || '']?.value;
-  }, [type, memory?.memory, label, system]);
-
-  const [localValue, setLocalValue] = useState(value || '');
-
-  const handleChange = useCallback(
-    (nextValue: string) => {
-      setLocalValue(nextValue);
-
-      if (type === 'system') {
-        syncUpdateCurrentAgent(() => ({
-          system: nextValue,
-        }));
-
-        return;
-      }
-
-      syncUpdateCurrentAgent((prev) => ({
-        memory: {
-          ...prev.memory,
-          memory: {
-            ...prev.memory?.memory,
-            [label || '']: {
-              ...prev.memory?.memory?.[label || ''],
-              value: nextValue,
-            },
-          },
-        },
-      }));
-    },
-    [label, syncUpdateCurrentAgent, type]
-  );
-
-  useEffect(() => {
-    if (value !== localValue) {
-      setLocalValue(value || '');
-    }
-  }, [localValue, value]);
-
-  return {
-    value: localValue,
-    onChange: handleChange,
-    error,
-    lastUpdatedAt,
-    isUpdating,
-  };
+interface MemoryWarningProps {
+  rootLabel: string;
 }
-
-interface AdvancedCoreMemoryEditorProps extends AdvancedEditorPayload {
-  onClose: () => void;
-  onChangeMemory: (payload: AdvancedEditorPayload) => void;
-}
-
-function AdvancedCoreMemoryEditor(props: AdvancedCoreMemoryEditorProps) {
-  const { name, type, onChangeMemory, label, onClose } = props;
+function MemoryWarning(props: MemoryWarningProps) {
+  const { getValues } = useFormContext();
+  const { rootLabel } = props;
   const t = useTranslations('ADE/EditCoreMemoriesPanel');
-  const { value, onChange, error, lastUpdatedAt, isUpdating } =
-    useUpdateMemory(props);
+
+  const { label } = getValues();
+
+  if (label === rootLabel) {
+    return null;
+  }
+
+  return (
+    <Alert title={t('MemoryWarning.title')} variant="warning">
+      {t('MemoryWarning.message')}
+    </Alert>
+  );
+}
+
+interface CharacterCounterProps {
+  value: string;
+}
+
+function CharacterCounter(props: CharacterCounterProps) {
+  const { value } = props;
+  const t = useTranslations('ADE/EditCoreMemoriesPanel');
+  const { getValues } = useFormContext();
+
+  const { maxCharacters } = getValues();
+
+  return (
+    <Typography
+      variant="body2"
+      color={value.length > maxCharacters ? 'destructive' : 'muted'}
+    >
+      {t('CharacterCounter.count', {
+        count: value.length,
+      })}
+    </Typography>
+  );
+}
+
+interface AdvancedMemoryEditorProps {
+  memory: Block;
+  onClose: () => void;
+}
+
+function AdvancedMemoryEditorForm(props: AdvancedMemoryEditorProps) {
+  const { memory } = props;
+  const t = useTranslations('ADE/EditCoreMemoriesPanel');
 
   const agent = useCurrentAgent();
 
-  const memories = useMemo(() => {
-    return Object.values(agent.memory?.memory || {});
-  }, [agent.memory?.memory]);
+  const memoryUpdateSchema = useMemo(() => {
+    return z.object({
+      label: z
+        .string()
+        .regex(
+          /^[a-zA-Z_][a-zA-Z0-9_]*$/,
+          t('AdvancedMemoryEditorForm.label.error')
+        ),
+      maxCharacters: z.coerce
+        .number()
+        .min(100, t('AdvancedMemoryEditorForm.maxCharacters.error')),
+      value: z.string(),
+    });
+  }, [t]);
+
+  type MemoryUpdatePayload = z.infer<typeof memoryUpdateSchema>;
+
+  const form = useForm<MemoryUpdatePayload>({
+    resolver: zodResolver(memoryUpdateSchema),
+    defaultValues: {
+      label: memory.label || '',
+      maxCharacters: memory.limit,
+      value: memory.value,
+    },
+  });
+
+  const queryClient = useQueryClient();
+
+  const { mutateAsync: updateAgentMemoryByLabel } =
+    useAgentsServiceUpdateAgentMemoryBlockByLabel();
+  const [isPending, setIsPending] = useState(false);
+  const [isError, setIsError] = useState(false);
+
+  const handleUpdate = useCallback(
+    async (values: MemoryUpdatePayload) => {
+      try {
+        setIsPending(true);
+        setIsError(false);
+
+        if (isPending) {
+          return;
+        }
+
+        if (!memory.label) {
+          return;
+        }
+
+        await updateAgentMemoryByLabel({
+          agentId: agent.id,
+          blockLabel: memory.label,
+          requestBody: {
+            limit: values.maxCharacters,
+            value: values.value,
+          },
+        });
+
+        queryClient.setQueriesData<AgentState | undefined>(
+          {
+            queryKey: UseAgentsServiceGetAgentKeyFn({
+              agentId: agent.id,
+            }),
+          },
+          (oldData) => {
+            if (!oldData) {
+              return oldData;
+            }
+
+            return {
+              ...oldData,
+              memory: {
+                ...oldData.memory,
+                blocks: oldData.memory.blocks.map((block) => {
+                  if (block.label === memory.label) {
+                    return {
+                      ...block,
+                      limit: values.maxCharacters,
+                      value: values.value,
+                    };
+                  }
+
+                  return block;
+                }),
+              },
+            };
+          }
+        );
+      } catch (_e) {
+        console.log(_e);
+        setIsError(true);
+      } finally {
+        setIsPending(false);
+      }
+    },
+    [agent.id, isPending, memory.label, queryClient, updateAgentMemoryByLabel]
+  );
+
+  return (
+    <FormProvider {...form}>
+      <Form onSubmit={form.handleSubmit(handleUpdate)}>
+        <VStack fullHeight fullWidth padding gap="form">
+          <MemoryWarning rootLabel={memory.label || ''} />
+          <FormField
+            name="label"
+            render={({ field }) => (
+              <Input
+                fullWidth
+                disabled
+                warned={field.value !== memory.label}
+                label={t('AdvancedMemoryEditorForm.label.label')}
+                {...field}
+              />
+            )}
+          />
+
+          <FormField
+            name="maxCharacters"
+            render={({ field }) => (
+              <Input
+                fullWidth
+                type="number"
+                label={t('AdvancedMemoryEditorForm.maxCharacters.label')}
+                {...field}
+              />
+            )}
+          />
+          <FormField
+            name="value"
+            render={({ field }) => (
+              <TextArea
+                rightOfLabelContent={<CharacterCounter value={field.value} />}
+                autosize={false}
+                fullHeight
+                fullWidth
+                label={t('AdvancedMemoryEditorForm.value.label')}
+                {...field}
+              />
+            )}
+          />
+
+          <FormActions
+            errorMessage={
+              isError ? t('AdvancedMemoryEditorForm.error') : undefined
+            }
+          >
+            <Button
+              label={t('AdvancedMemoryEditorForm.update')}
+              busy={isPending}
+            />
+          </FormActions>
+        </VStack>
+      </Form>
+    </FormProvider>
+  );
+}
+
+interface AdvancedEditMemoryProps {
+  defaultLabel: string;
+  onClose: () => void;
+}
+
+function AdvancedEditMemory(props: AdvancedEditMemoryProps) {
+  const { defaultLabel, onClose } = props;
+  const agent = useCurrentAgent();
+  const t = useTranslations('ADE/EditCoreMemoriesPanel');
+
+  const memories = useSortedMemories(agent);
 
   return (
     <Dialog
-      color="background"
-      title={t('AdvancedCoreMemoryEditor.title', {
-        name,
-      })}
+      isOpen
+      disableForm
+      preventCloseFromOutside
+      size="full"
+      hideFooter
+      title={t('AdvancedEditMemory.title')}
       onOpenChange={(state) => {
         if (!state) {
           onClose();
         }
       }}
-      size="full"
-      hideConfirm
-      isOpen
     >
-      <VStack fullHeight gap={false}>
-        <HStack
-          padding="small"
-          height="header-sm"
-          align="center"
-          justify="spaceBetween"
-          fullWidth
-          borderTop
-          borderLeft
-          borderRight
-        >
-          <HStack align="center">
-            <DropdownMenu
-              align="start"
-              trigger={
-                <Button
-                  size="small"
-                  color="tertiary"
-                  preIcon={<SwapIcon />}
-                  label={t('AdvancedCoreMemoryEditor.switchView')}
-                />
-              }
-            >
-              <DropdownMenuItem
-                label={t('systemPrompt')}
-                onClick={() => {
-                  onChangeMemory({
-                    label: 'system',
-                    name: t('systemPrompt'),
-                    type: 'system',
-                  });
-                }}
-              />
-              {memories.map((block) => (
-                <DropdownMenuItem
-                  key={block.label || ''}
-                  label={block.label || ''}
-                  onClick={() => {
-                    onChangeMemory({
-                      label: block.label || '',
-                      name: block.label || '',
-                      type: 'memory',
-                    });
-                  }}
-                />
-              ))}
-            </DropdownMenu>
-            {type !== 'system' && (
-              <Badge color="primary-light" content={label} />
-            )}
-            <Typography bold variant="body">
-              {name}
-            </Typography>
-          </HStack>
-          <HStack justify="start">
-            {error ? (
-              <Typography variant="body2" color="destructive">
-                {t('error')}
-              </Typography>
-            ) : (
-              <Typography variant="body2" color="muted">
-                {isUpdating && t('updating')}
-                {!isUpdating &&
-                  lastUpdatedAt &&
-                  t('lastUpdated', {
-                    date: nicelyFormattedDateAndTime(lastUpdatedAt),
-                  })}
-              </Typography>
-            )}
-          </HStack>
-        </HStack>
-        <RawTextArea
-          hideLabel
-          hideFocus
-          label={t('AdvancedCoreMemoryEditor.label')}
-          value={value}
-          onChange={(e) => {
-            onChange(e.target.value);
-          }}
-          fullWidth
-          autosize={false}
-          fullHeight
-        />
-      </VStack>
-    </Dialog>
-  );
-}
-
-interface MemorySettingsDialogProps {
-  label: string;
-  name: string;
-}
-
-const memorySettingsFormSchema = z.object({
-  name: z.string(),
-});
-
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-function MemorySettingsDialog(props: MemorySettingsDialogProps) {
-  const { label, name } = props;
-
-  const form = useForm<z.infer<typeof memorySettingsFormSchema>>({
-    resolver: zodResolver(memorySettingsFormSchema),
-    defaultValues: {
-      name,
-    },
-  });
-
-  const t = useTranslations('ADE/EditCoreMemoriesPanel');
-
-  const { syncUpdateCurrentAgent, isDebouncing, isUpdating } =
-    useSyncUpdateCurrentAgent();
-
-  const handleSubmit = useCallback(
-    (values: z.infer<typeof memorySettingsFormSchema>) => {
-      syncUpdateCurrentAgent((prev) => ({
-        memory: {
-          ...prev.memory,
-          memory: {
-            ...prev.memory?.memory,
-            [label || '']: {
-              ...prev.memory?.memory?.[label || ''],
-              value: prev.memory?.memory?.[label || '']?.value || '',
-              name: values.name,
-            },
-          },
-        },
-      }));
-    },
-    [label, syncUpdateCurrentAgent]
-  );
-
-  return (
-    <FormProvider {...form}>
-      <Dialog
-        title={t('MemorySettingsDialog.title', {
-          label,
-        })}
-        onSubmit={form.handleSubmit(handleSubmit)}
-        isConfirmBusy={isUpdating || isDebouncing}
-        trigger={
-          <Button
-            preIcon={<CogIcon />}
-            label={t('MemorySettingsDialog.trigger')}
-            color="tertiary"
-            type="button"
-            size="small"
-          />
-        }
-      >
-        <FormField
-          render={({ field }) => (
-            <Input
-              fullWidth
-              {...field}
-              label={t('MemorySettingsDialog.name.label')}
-              placeholder={t('MemorySettingsDialog.name.placeholder')}
-              type="text"
+      <DialogContentWithCategories
+        defaultCategory={defaultLabel}
+        categories={memories.map((block) => ({
+          id: block.label || '',
+          title: block.label || '',
+          children: (
+            <AdvancedMemoryEditorForm
+              key={block.label}
+              memory={block}
+              onClose={onClose}
             />
-          )}
-          name="name"
-        />
-      </Dialog>
-    </FormProvider>
+          ),
+        }))}
+      />
+    </Dialog>
   );
 }
 
 interface AdvancedEditorPayload {
   label: string;
-  name: string;
-  type: 'memory' | 'system';
+  memory: Block;
 }
 
 interface EditMemoryFormProps extends AdvancedEditorPayload {
-  onAdvancedEdit: () => void;
+  isModelView?: boolean;
 }
 
 function EditMemoryForm(props: EditMemoryFormProps) {
-  const { type, label, name, onAdvancedEdit } = props;
+  const { label, memory, isModelView } = props;
+
+  const { formatDateAndTime } = useDateFormatter();
 
   const t = useTranslations('ADE/EditCoreMemoriesPanel');
 
-  const { value, onChange, error, lastUpdatedAt, isUpdating } =
-    useUpdateMemory(props);
+  const [isAdvancedEditOpen, setIsAdvancedEditOpen] = useState(false);
+
+  const { value, onChange, error, lastUpdatedAt, isUpdating } = useUpdateMemory(
+    {
+      label,
+    }
+  );
 
   return (
-    <Accordion
-      id="system-prompt"
-      trigger={
-        <HStack data-testid={`edit-memory-block:${label}`} align="center">
-          <Typography bold>{name}</Typography>
-          {type === 'memory' && <Badge color="primary-light" content={label} />}
-        </HStack>
-      }
-    >
-      <VStack paddingX="small" paddingTop="small">
-        <VStack>
+    <>
+      {isAdvancedEditOpen && (
+        <AdvancedEditMemory
+          onClose={() => {
+            setIsAdvancedEditOpen(false);
+          }}
+          defaultLabel={label}
+        />
+      )}
+      <VStack flex fullHeight>
+        <VStack fullWidth fullHeight>
           <RawTextArea
-            hideLabel
-            data-testid="edit-memory-block-content"
+            rightOfLabelContent={
+              <Typography variant="body2" color="muted">
+                {t('EditMemoryForm.characterLimit', {
+                  count: value.length,
+                  limit: memory.limit,
+                })}
+              </Typography>
+            }
+            autosize={false}
+            flex
+            fullHeight
+            data-testid={`edit-memory-block-${label}-content`}
             fullWidth
-            maxRows={5}
-            label={t('content')}
+            label={label}
             onChange={(e) => {
               onChange(e.target.value);
             }}
+            expandable={
+              !isModelView
+                ? {
+                    expandText: t('expandContent'),
+                    onExpand: () => {
+                      setIsAdvancedEditOpen(true);
+                    },
+                  }
+                : undefined
+            }
             value={value}
           />
         </VStack>
         <HStack align="center" justify="spaceBetween">
-          <HStack justify="start">
+          <HStack
+            paddingBottom={isModelView ? 'small' : undefined}
+            justify="start"
+          >
             {error ? (
               <Typography variant="body2" color="destructive">
                 {t('error')}
@@ -345,77 +372,136 @@ function EditMemoryForm(props: EditMemoryFormProps) {
                 {!isUpdating &&
                   lastUpdatedAt &&
                   t('lastUpdated', {
-                    date: nicelyFormattedDateAndTime(lastUpdatedAt),
+                    date: formatDateAndTime(lastUpdatedAt),
                   })}
               </Typography>
             )}
           </HStack>
         </HStack>
-        <HStack justify="spaceBetween">
-          {/*<MemorySettingsDialog name={name} label={label} />*/}
-          <Button
-            preIcon={<ExpandContentIcon />}
-            label={t('expandContent')}
-            color="tertiary"
-            onClick={onAdvancedEdit}
-            type="button"
-            size="small"
-          />
-        </HStack>
       </VStack>
-    </Accordion>
+    </>
   );
 }
 
-function EditMemory() {
-  const agent = useCurrentAgent();
-  const t = useTranslations('ADE/EditCoreMemoriesPanel');
-  const [labelToEdit, setLabelToEdit] = useState<AdvancedEditorPayload | null>(
-    null
-  );
+function useSortedMemories(agentState?: Partial<AgentState>): Block[] {
+  return useMemo(() => {
+    return (agentState?.memory?.blocks || []).toSorted((a, b) => {
+      return a.label?.localeCompare(b.label || '') || 0;
+    });
+  }, [agentState?.memory?.blocks]);
+}
 
-  const memories = useMemo(() => {
-    return Object.values(agent.memory?.memory || {});
-  }, [agent.memory?.memory]);
+function DefaultMemory() {
+  const agent = useCurrentAgent();
+
+  const memories = useSortedMemories(agent);
+
+  return memories.map((block, index) => (
+    <VStack
+      paddingTop="small"
+      fullHeight
+      borderBottom={index !== memories.length - 1}
+      key={block.label || ''}
+    >
+      <EditMemoryForm memory={block} label={block.label || ''} />
+    </VStack>
+  ));
+}
+
+function SimulatedMemory() {
+  const { agentSession } = useCurrentSimulatedAgent();
+  const t = useTranslations('ADE/EditCoreMemoriesPanel');
+  const agent = useMemo(() => {
+    return agentSession?.body.agent;
+  }, [agentSession]);
+
+  const memories = useSortedMemories(agent);
+
+  if (!agent) {
+    return <LettaLoaderPanel />;
+  }
+
+  return memories.map((block, index) => (
+    <VStack
+      paddingTop="small"
+      fullHeight
+      borderBottom={index !== memories.length - 1}
+      key={block.label || ''}
+    >
+      <VStack fullHeight flex paddingBottom="small">
+        <RawTextArea
+          autosize={false}
+          flex
+          fullHeight
+          resize="none"
+          fullWidth
+          data-testid={`simulated-memory:${block.label}`}
+          disabled
+          rightOfLabelContent={
+            <Typography variant="body2" color="muted">
+              {t('SimulatedMemory.characterCount', {
+                count: block.value.length,
+              })}
+            </Typography>
+          }
+          label={block.label || ''}
+          value={block.value}
+        />
+      </VStack>
+    </VStack>
+  ));
+}
+
+type MemoryType = 'simulated' | 'templated';
+
+function EditMemory() {
+  const { isTemplate } = useCurrentAgentMetaData();
+  const [memoryType, setMemoryType] = useState<MemoryType>('templated');
+
+  const t = useTranslations('ADE/EditCoreMemoriesPanel');
 
   return (
     <PanelMainContent variant="noPadding">
-      <EditMemoryForm
-        onAdvancedEdit={() => {
-          setLabelToEdit({
-            label: 'system',
-            name: t('systemPrompt'),
-            type: 'system',
-          });
-        }}
-        label="system"
-        name={t('systemPrompt')}
-        type="system"
-      />
-      {memories.map((block) => (
-        <EditMemoryForm
-          onAdvancedEdit={() => {
-            setLabelToEdit({
-              label: block.label || '',
-              name: block.label || '',
-              type: 'memory',
-            });
-          }}
-          label={block.label || ''}
-          name={block.label || ''}
-          type="memory"
-          key={block.label || ''}
-        />
-      ))}
-      {labelToEdit && (
-        <AdvancedCoreMemoryEditor
-          {...labelToEdit}
-          onChangeMemory={setLabelToEdit}
-          onClose={() => {
-            setLabelToEdit(null);
-          }}
-        />
-      )}
+      <VStack fullHeight gap={false}>
+        <VStack paddingX="small">
+          {isTemplate && (
+            <TabGroup
+              fullWidth
+              value={memoryType}
+              onValueChange={(value) => {
+                if (!value) {
+                  return;
+                }
+
+                setMemoryType(value as MemoryType);
+              }}
+              items={[
+                {
+                  label: t('toggleMemoryType.templated.label'),
+                  value: 'templated',
+                  postIcon: (
+                    <InfoTooltip
+                      text={t('toggleMemoryType.templated.tooltip')}
+                    />
+                  ),
+                },
+                {
+                  label: t('toggleMemoryType.simulated.label'),
+                  value: 'simulated',
+                  postIcon: (
+                    <InfoTooltip
+                      text={t('toggleMemoryType.simulated.tooltip')}
+                    />
+                  ),
+                },
+              ]}
+            />
+          )}
+        </VStack>
+        <VStack fullHeight gap="small" paddingX="large" paddingBottom="small">
+          {memoryType === 'templated' ? <DefaultMemory /> : <SimulatedMemory />}
+        </VStack>
+      </VStack>
     </PanelMainContent>
   );
 }
@@ -423,11 +509,22 @@ function EditMemory() {
 export const editCoreMemories = {
   templateId: 'edit-core-memories',
   content: EditMemory,
+  icon: <CodeIcon />,
+  useGetMobileTitle: () => {
+    const t = useTranslations('ADE/EditCoreMemoriesPanel');
+
+    return t('mobileTitle');
+  },
+  useGetInfoTooltipText: () => {
+    const t = useTranslations('ADE/EditCoreMemoriesPanel');
+
+    return t('infoTooltip');
+  },
   useGetTitle: () => {
     const t = useTranslations('ADE/EditCoreMemoriesPanel');
     const { memory } = useCurrentAgent();
 
-    const memoryCount = Object.keys(memory?.memory || {}).length;
+    const memoryCount = (memory?.blocks || []).length;
 
     return t('title', { count: memoryCount || '-' });
   },

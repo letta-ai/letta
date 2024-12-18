@@ -14,17 +14,20 @@ import {
   EyeClosedIcon,
   LockClosedIcon,
 } from '../../icons';
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import { SpinnerPrimitive } from '../../../primitives';
 import { HStack } from '../../framing/HStack/HStack';
 import { VStack } from '../../framing/VStack/VStack';
 
 const inputVariants = cva(
-  'flex  items-center w-full overflow-hidden border border-input text-base transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-content focus-visible:outline-none focus-within:ring-1 focus-within:ring-ring',
+  'flex  items-center overflow-hidden border border-input text-base transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-content focus-visible:outline-none focus-within:ring-1 focus-within:ring-ring',
   {
     variants: {
       disabled: {
         true: '',
+      },
+      warned: {
+        true: 'border-warning',
       },
       color: {
         transparent: 'bg-transparent text-content border-transparent',
@@ -34,6 +37,10 @@ const inputVariants = cva(
       fullWidth: {
         true: 'w-full',
         false: 'w-auto',
+      },
+      width: {
+        medium: 'w-full max-w-[400px]',
+        large: 'w-full max-w-[600px]',
       },
     },
     compoundVariants: [
@@ -86,6 +93,7 @@ type InputPrimitiveProps = Omit<
     bottomContent?: React.ReactNode;
     hideLabel?: boolean;
     allowCopy?: boolean;
+    onNumericValueChange?: (value: number | undefined) => void;
     showVisibilityControls?: boolean;
     isUpdating?: boolean;
   };
@@ -119,6 +127,8 @@ const InputPrimitive = React.forwardRef<HTMLInputElement, InputPrimitiveProps>(
       hideLabel,
       fullWidth,
       disabled,
+      width,
+      warned,
       allowCopy,
       postIcon,
       isUpdating,
@@ -126,12 +136,36 @@ const InputPrimitive = React.forwardRef<HTMLInputElement, InputPrimitiveProps>(
       type,
       showVisibilityControls,
       size,
+      onNumericValueChange,
+      onChange,
       color,
       ...props
     },
     ref
   ) => {
     const [visibility, setVisibility] = React.useState(false);
+
+    const handleOnChange = useCallback(
+      (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (type === 'number') {
+          if (e.target.value === '') {
+            onNumericValueChange?.(undefined);
+            return;
+          }
+
+          const value = parseFloat(e.target.value);
+
+          if (Number.isNaN(value)) {
+            return;
+          }
+
+          onNumericValueChange?.(value);
+        }
+
+        onChange?.(e);
+      },
+      [onChange, onNumericValueChange, type]
+    );
 
     const typeOverride = useMemo(() => {
       if (showVisibilityControls) {
@@ -153,7 +187,16 @@ const InputPrimitive = React.forwardRef<HTMLInputElement, InputPrimitiveProps>(
       <VStack
         gap={false}
         fullWidth={fullWidth}
-        className={cn(inputVariants({ disabled, fullWidth, color, className }))}
+        className={cn(
+          inputVariants({
+            disabled,
+            width,
+            warned,
+            fullWidth,
+            color,
+            className,
+          })
+        )}
       >
         <HStack
           align="center"
@@ -167,9 +210,10 @@ const InputPrimitive = React.forwardRef<HTMLInputElement, InputPrimitiveProps>(
             data-lpignore="true"
             data-form-type="other"
             {...props}
+            onChange={handleOnChange}
             disabled={disabled}
             type={typeOverride}
-            className="w-full h-full focus:outline-none bg-transparent"
+            className="w-full h-full text-base focus:outline-none bg-transparent"
             ref={ref}
           />
           {showVisibilityControls && (

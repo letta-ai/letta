@@ -8,7 +8,8 @@
   "ts-node": {
     "require": ["tsconfig-paths/register"],
     "compilerOptions": {
-      "module": "commonjs"
+      "module": "commonjs",
+      "types": ["node"]
     }
   },
   "references": [

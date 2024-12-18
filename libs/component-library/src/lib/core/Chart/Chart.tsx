@@ -6,6 +6,8 @@ import * as echarts from 'echarts';
 import { HStack } from '../../framing/HStack/HStack';
 import { Typography } from '../Typography/Typography';
 import { VStack } from '../../framing/VStack/VStack';
+import { useDebouncedCallback } from '@mantine/hooks';
+import './Chart.css';
 
 interface ChartOptions {
   options: EChartsOption;
@@ -20,11 +22,46 @@ const defaultOptions: EChartsOption = {
   },
 };
 
+interface MakeFormattedTooltipOptions {
+  value: string;
+  label: string;
+  color: string;
+}
+
+export function makeFormattedTooltip(options: MakeFormattedTooltipOptions) {
+  const { value, label, color } = options;
+  return `<div class="tooltip-format-container">
+    <div class="tooltip-color" style="background-color: ${color}"></div>
+    <div class="tooltip-value">${value}</div>
+        <div class="tooltip-label">${label}</div>
+</div>`;
+}
+
 export function Chart(props: ChartOptions) {
   const { options, width, height, showLegend } = props;
   const mounted = useRef(false);
   const chartRef = React.useRef<HTMLDivElement>(null);
   const chart = useRef<echarts.ECharts | null>(null);
+  const chartContainer = useRef<HTMLDivElement | null>(null);
+
+  const resizeDebounce = useDebouncedCallback(() => {
+    if (chart.current) {
+      chart.current.resize();
+    }
+  }, 100);
+
+  // re-render chart on resize of the parent container
+  useEffect(() => {
+    if (chartContainer.current) {
+      const resizeObserver = new ResizeObserver(resizeDebounce);
+
+      resizeObserver.observe(chartContainer.current);
+
+      return () => {
+        resizeObserver.disconnect();
+      };
+    }
+  }, [resizeDebounce]);
 
   useEffect(() => {
     if (mounted.current) {
@@ -55,6 +92,16 @@ export function Chart(props: ChartOptions) {
       currentChart.setOption({
         ...defaultOptions,
         ...options,
+        tooltip: {
+          borderWidth: 0,
+          height: 28,
+          padding: 0,
+          trigger: 'item',
+          position: 'top',
+          backgroundColor: 'hsl(var(--background-grey2))',
+          ...options.tooltip,
+          className: 'chart-tooltip',
+        },
         legend: {
           show: false,
         },
@@ -67,7 +114,7 @@ export function Chart(props: ChartOptions) {
   }, [options]);
 
   return (
-    <VStack fullHeight fullWidth>
+    <VStack ref={chartContainer} fullHeight fullWidth>
       <div
         ref={chartRef}
         className="w-full h-full"
@@ -78,7 +125,7 @@ export function Chart(props: ChartOptions) {
           {options?.series?.map((series) => (
             <HStack align="center" key={series.name}>
               <div
-                className="min-w-2 min-h-2 rounded-full"
+                className="min-w-2 min-h-2"
                 style={{
                   backgroundColor:
                     typeof series.color === 'string'

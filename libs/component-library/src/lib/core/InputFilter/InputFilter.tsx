@@ -13,7 +13,6 @@ export function InputFilter({ children }: InputFilterProps) {
       <HStack
         align="start"
         border
-        rounded
         paddingX="small"
         paddingY="xxsmall"
         color="background-grey"

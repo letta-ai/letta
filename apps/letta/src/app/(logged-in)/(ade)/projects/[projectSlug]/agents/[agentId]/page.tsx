@@ -33,7 +33,7 @@ async function AgentsAgentPage(context: AgentsAgentPageProps) {
 
   const { agentId, projectSlug } = context.params;
 
-  if (projectSlug === 'local-project') {
+  if (projectSlug === 'development-servers') {
     redirect('/projects');
     return;
   }
@@ -67,9 +67,14 @@ async function AgentsAgentPage(context: AgentsAgentPageProps) {
     return;
   }
 
-  const agent = await AgentsService.getAgent({
-    agentId,
-  });
+  const agent = await AgentsService.getAgent(
+    {
+      agentId,
+    },
+    {
+      user_id: user.lettaAgentsId,
+    }
+  );
 
   const queries = [
     queryClient.prefetchQuery({

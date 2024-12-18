@@ -9,11 +9,12 @@ import {
   QueryClient,
 } from '@tanstack/react-query';
 import { GlobalSessionSettingsProvider } from '$letta/client/hooks/session';
-import { getUserFlags } from '@letta-web/feature-flags';
+import { getOrganizationFeatureFlags } from '@letta-web/feature-flags';
 import { queryClientKeys } from '$letta/web-api/contracts';
 import { IdentifyUserForMixpanel } from '@letta-web/analytics/client';
 import { webApiQueryKeys } from '$letta/client';
 import { LoggedInClientSideProviders } from './LoggedInClientSideProviders/LoggedInClientSideProviders';
+import { WelcomeOverlayWrapper } from './WelcomeOverlayWrapper/WelcomeOverlayWrapper';
 
 interface InAppProps {
   children: ReactNode;
@@ -45,9 +46,7 @@ export async function LoggedInLayout(props: InAppProps) {
   }
 
   const featureFlags = await Promise.race([
-    getUserFlags({
-      userId: user?.id,
-    }),
+    getOrganizationFeatureFlags(user),
     new Promise((resolve) => setTimeout(resolve, 150)),
   ]);
 
@@ -64,7 +63,9 @@ export async function LoggedInLayout(props: InAppProps) {
     <GlobalSessionSettingsProvider>
       <IdentifyUserForMixpanel userId={user.id} />
       <HydrationBoundary state={dehydrate(queryClient)}>
-        <LoggedInClientSideProviders>{children}</LoggedInClientSideProviders>
+        <LoggedInClientSideProviders>
+          <WelcomeOverlayWrapper>{children}</WelcomeOverlayWrapper>
+        </LoggedInClientSideProviders>
       </HydrationBoundary>
     </GlobalSessionSettingsProvider>
   );

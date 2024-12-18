@@ -19,7 +19,7 @@ export function useCurrentAgentMetaData(): UseCurrentAgentMetaDataResponse {
 
   let agentId = preAgentId;
 
-  const startsWithLocalProject = pathname.startsWith('/local-project');
+  const startsWithLocalProject = pathname.startsWith('/development-servers');
 
   const localAgent = useAgentsServiceGetAgent(
     {
@@ -31,7 +31,7 @@ export function useCurrentAgentMetaData(): UseCurrentAgentMetaDataResponse {
     }
   );
 
-  if (pathname.startsWith('/local-project')) {
+  if (pathname.startsWith('/development-servers')) {
     return {
       agentId: agentId,
       agentName: localAgent?.data?.name || '',

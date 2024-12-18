@@ -1,26 +1,35 @@
 'use client';
-import React, { useCallback, useEffect, useMemo, useRef } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import {
-  Accordion,
   Alert,
   Badge,
   Button,
   Code,
+  FunctionCall,
   HStack,
   IconAvatar,
-  InlineCode,
-  LettaLoaderPanel,
+  SystemIcon,
   Markdown,
   PersonIcon,
-  RobotIcon,
+  LettaInvaderIcon,
   ThoughtsIcon,
   Typography,
   VStack,
+  MessageWrapper,
+  LoadingEmptyStatusComponent,
+  BlockQuote,
+  InnerMonologueIcon,
 } from '@letta-web/component-library';
 import type { AgentMessage } from '@letta-web/letta-agents-api';
+import { SystemAlertSchema } from '@letta-web/letta-agents-api';
 import { SendMessageFunctionCallSchema } from '@letta-web/letta-agents-api';
 import {
-  AgentsService,
   type ListAgentMessagesResponse,
   UseAgentsServiceListAgentMessagesKeyFn,
   UserMessageMessageSchema,
@@ -30,61 +39,12 @@ import type {
   AgentSimulatorMessageType,
 } from '../../../../app/(logged-in)/(ade)/projects/[projectSlug]/agents/[agentId]/AgentSimulator/types';
 import { FunctionIcon } from '@letta-web/component-library';
-import { useInfiniteQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import type { InfiniteData } from '@tanstack/query-core';
 import { jsonrepair } from 'jsonrepair';
 import { useTranslations } from 'next-intl';
-import type { VariantProps } from 'class-variance-authority';
-import { cva } from 'class-variance-authority';
-import { cn } from '@letta-web/core-style-config';
-
-const messageWrapperVariants = cva('', {
-  variants: {
-    type: {
-      code: 'bg-background-grey',
-      internalMonologue: 'bg-background-violet text-background-violet-content',
-      default: 'bg-background',
-    },
-  },
-  defaultVariants: {
-    type: 'default',
-  },
-});
-
-interface MessageWrapperProps
-  extends VariantProps<typeof messageWrapperVariants> {
-  header: React.ReactNode;
-  children: React.ReactNode;
-}
-
-function MessageWrapper({ header, type, children }: MessageWrapperProps) {
-  return (
-    <VStack fullWidth rounded gap={false}>
-      <HStack>
-        <HStack
-          paddingX="small"
-          paddingY="xxsmall"
-          /* eslint-disable-next-line react/forbid-component-props */
-          className={cn(messageWrapperVariants({ type }))}
-          align="center"
-        >
-          {header}
-        </HStack>
-      </HStack>
-      <VStack
-        /* eslint-disable-next-line react/forbid-component-props */
-        className={cn(
-          messageWrapperVariants({ type }),
-          type === 'code' ? 'bg-background border' : ''
-        )}
-        paddingY="small"
-        paddingX="small"
-      >
-        {children}
-      </VStack>
-    </VStack>
-  );
-}
+import { get } from 'lodash-es';
+import { useGetMessagesWorker } from '$letta/client/components/Messages/useGetMessagesWorker/useGetMessagesWorker';
 
 // tryFallbackParseJson will attempt to parse a string as JSON, if it fails, it will trim the last character and try again
 // until it succeeds or the string is empty
@@ -121,23 +81,58 @@ function MessageGroup({ group }: MessageGroupType) {
     (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
   );
 
+  const textColor = useMemo(() => {
+    if (name === 'Agent') {
+      return 'hsl(var(--primary-light-content))';
+    }
+
+    if (name === 'User') {
+      return 'hsl(var(--user-color-content))';
+    }
+
+    return 'hsl(var(--background-grey2-content))';
+  }, [name]);
+
+  const backgroundColor = useMemo(() => {
+    if (name === 'Agent') {
+      return 'hsl(var(--primary-light))';
+    }
+
+    if (name === 'User') {
+      return 'hsl(var(--user-color))';
+    }
+
+    return 'hsl(var(--background-grey2))';
+  }, [name]);
+
+  const icon = useMemo(() => {
+    if (name === 'Agent') {
+      return <LettaInvaderIcon />;
+    }
+
+    if (name === 'User') {
+      return <PersonIcon />;
+    }
+
+    if (name === 'System') {
+      return <SystemIcon />;
+    }
+
+    return null;
+  }, [name]);
+
   return (
     <HStack>
       <IconAvatar
-        textColor={
-          name === 'Agent'
-            ? 'hsl(var(--primary-light-content))'
-            : 'hsl(var(--background-grey-content))'
-        }
-        backgroundColor={
-          name === 'Agent'
-            ? 'hsl(var(--primary-light))'
-            : 'hsl(var(--background-grey))'
-        }
-        icon={name === 'Agent' ? <RobotIcon /> : <PersonIcon />}
+        textColor={textColor}
+        backgroundColor={backgroundColor}
+        icon={icon}
+        size={'xsmall'}
       />
-      <VStack fullWidth gap="small">
-        <Typography bold>{name}</Typography>
+      <VStack collapseWidth flex gap="small">
+        <Typography variant="body2" color="lighter" uppercase={true}>
+          {name}
+        </Typography>
         <VStack gap="large">
           {sortedMessages.map((message, index) => (
             <Message key={`${message.id}_${index}`} message={message} />
@@ -148,7 +143,7 @@ function MessageGroup({ group }: MessageGroupType) {
   );
 }
 
-const MESSAGE_LIMIT = 20;
+const MESSAGE_LIMIT = 50;
 
 export type MessagesDisplayMode = 'debug' | 'interactive' | 'simple';
 
@@ -159,11 +154,40 @@ interface MessagesProps {
   isPanelActive?: boolean;
 }
 
+interface LastMessageReceived {
+  id: string;
+  date: number;
+}
+
 export function Messages(props: MessagesProps) {
   const { isSendingMessage, mode, isPanelActive, agentId } = props;
   const ref = useRef<HTMLDivElement>(null);
   const hasScrolledInitially = useRef(false);
   const t = useTranslations('components/Messages');
+  const [lastMessageReceived, setLastMessageReceived] =
+    useState<LastMessageReceived | null>(null);
+
+  const queryClient = useQueryClient();
+
+  const { getMessages } = useGetMessagesWorker();
+
+  const isMessageUpdateLock = useMemo(() => {
+    return isSendingMessage;
+  }, [isSendingMessage]);
+
+  const refetchInterval = useMemo(() => {
+    if (isSendingMessage) {
+      return false;
+    }
+
+    // last sent message was less than 10 seconds ago refetch every 500ms;
+
+    if (lastMessageReceived && Date.now() - lastMessageReceived.date < 10000) {
+      return 500;
+    }
+
+    return 5000;
+  }, [isSendingMessage, lastMessageReceived]);
 
   const { data, hasNextPage, fetchNextPage, isFetching } = useInfiniteQuery<
     AgentMessage[],
@@ -172,15 +196,23 @@ export function Messages(props: MessagesProps) {
     unknown[],
     { before?: string }
   >({
+    refetchInterval,
     queryKey: UseAgentsServiceListAgentMessagesKeyFn({ agentId }),
     queryFn: async (query) => {
-      const res = AgentsService.listAgentMessages({
+      const res = (await getMessages({
         agentId,
         limit: MESSAGE_LIMIT,
-        ...(query.pageParam.before ? { before: query.pageParam.before } : {}),
-      });
+        ...(query.pageParam.before ? { cursor: query.pageParam.before } : {}),
+      })) as unknown as AgentMessage[];
 
-      return res as unknown as AgentMessage[];
+      if (isMessageUpdateLock) {
+        return (queryClient.getQueryData<
+          InfiniteData<ListAgentMessagesResponse>
+        >(UseAgentsServiceListAgentMessagesKeyFn({ agentId }))?.pages?.[0] ||
+          []) as AgentMessage[];
+      }
+
+      return res;
     },
     getNextPageParam: (lastPage) => {
       if (lastPage.length < MESSAGE_LIMIT) {
@@ -193,13 +225,38 @@ export function Messages(props: MessagesProps) {
         )[0].id,
       };
     },
+    enabled: !isSendingMessage && !!agentId,
     initialPageParam: { before: '' },
   });
+
+  useEffect(() => {
+    if (!data?.pages) {
+      return;
+    }
+
+    if (data.pages.length === 0) {
+      return;
+    }
+
+    // most recent message is the first message in the first page
+    const mostRecentMessage = data.pages[0][0];
+
+    if (
+      mostRecentMessage.id !== lastMessageReceived?.id &&
+      'date' in mostRecentMessage
+    ) {
+      setLastMessageReceived({
+        id: mostRecentMessage.id,
+        date: new Date(mostRecentMessage.date).getTime(),
+      });
+    }
+  }, [data?.pages, lastMessageReceived?.id]);
 
   const extractMessage = useCallback(
     function extractMessage(
       agentMessage: AgentMessage,
-      mode: MessagesDisplayMode
+      mode: MessagesDisplayMode,
+      allMessages: AgentMessage[]
     ): AgentSimulatorMessageType | null {
       switch (agentMessage.message_type) {
         case 'function_return':
@@ -208,35 +265,7 @@ export function Messages(props: MessagesProps) {
           }
 
           if (mode === 'interactive') {
-            if (agentMessage.function_return.includes('"message": "None",')) {
-              return null;
-            }
-
-            return {
-              id: agentMessage.id,
-              content: (
-                <HStack border fullWidth>
-                  <Accordion
-                    id={agentMessage.id}
-                    trigger={
-                      <HStack>
-                        <Typography>Function Result</Typography>
-                      </HStack>
-                    }
-                  >
-                    <Code
-                      fontSize="small"
-                      variant="minimal"
-                      showLineNumbers={false}
-                      code={agentMessage.function_return}
-                      language="javascript"
-                    ></Code>
-                  </Accordion>
-                </HStack>
-              ),
-              timestamp: new Date(agentMessage.date).toISOString(),
-              name: 'Agent',
-            };
+            return null;
           }
 
           return {
@@ -244,10 +273,12 @@ export function Messages(props: MessagesProps) {
             content: (
               <MessageWrapper
                 type="code"
-                header={
-                  <>
-                    <Typography bold>Function Response</Typography>
+                header={{
+                  title: t('functionReturn'),
+
+                  badge: (
                     <Badge
+                      size="small"
                       content={agentMessage.status}
                       color={
                         agentMessage.status === 'success'
@@ -255,14 +286,23 @@ export function Messages(props: MessagesProps) {
                           : 'destructive'
                       }
                     ></Badge>
-                  </>
-                }
+                  ),
+                }}
               >
                 <Code
                   fontSize="small"
                   variant="minimal"
                   showLineNumbers={false}
-                  code={agentMessage.function_return}
+                  code={JSON.stringify(
+                    {
+                      ...agentMessage,
+                      function_return: tryFallbackParseJson(
+                        agentMessage.function_return
+                      ),
+                    },
+                    null,
+                    2
+                  )}
                   language="javascript"
                 ></Code>
               </MessageWrapper>
@@ -312,14 +352,23 @@ export function Messages(props: MessagesProps) {
             }
 
             if (mode === 'interactive') {
+              const functionResponse = allMessages.find(
+                (message) =>
+                  message.message_type === 'function_return' &&
+                  // eslint-disable-next-line @typescript-eslint/no-confusing-void-expression
+                  get(message, 'function_call_id') ===
+                    // eslint-disable-next-line @typescript-eslint/no-confusing-void-expression
+                    agentMessage.function_call.function_call_id
+              );
+
               return {
                 id: `${agentMessage.id}-${agentMessage.message_type}`,
                 content: (
-                  <InlineCode
-                    code={`${
-                      agentMessage.function_call.name || 'Unknown Function'
-                    }()`}
-                    hideCopyButton
+                  <FunctionCall
+                    name={agentMessage.function_call.name || ''}
+                    inputs={agentMessage.function_call.arguments || ''}
+                    response={get(functionResponse, 'function_return')}
+                    status={get(functionResponse, 'status')}
                   />
                 ),
                 timestamp: new Date(agentMessage.date).toISOString(),
@@ -335,14 +384,10 @@ export function Messages(props: MessagesProps) {
             content: (
               <MessageWrapper
                 type="code"
-                header={
-                  <>
-                    <FunctionIcon />
-                    <Typography bold>
-                      {agentMessage.function_call.name}
-                    </Typography>
-                  </>
-                }
+                header={{
+                  title: agentMessage.function_call.name || '',
+                  preIcon: <FunctionIcon />,
+                }}
               >
                 <Code
                   fontSize="small"
@@ -375,9 +420,17 @@ export function Messages(props: MessagesProps) {
             return {
               id: `${agentMessage.id}-${agentMessage.message_type}`,
               content: (
-                <Typography italic>
-                  {agentMessage.internal_monologue}
-                </Typography>
+                <BlockQuote>
+                  <VStack gap="small">
+                    <HStack align="center" gap="small">
+                      <InnerMonologueIcon color="violet" size="small" />
+                      <Typography bold color="violet" variant="body2">
+                        {t('thoughts')}
+                      </Typography>
+                    </HStack>
+                    <Typography>{agentMessage.internal_monologue}</Typography>
+                  </VStack>
+                </BlockQuote>
               ),
               timestamp: new Date(agentMessage.date).toISOString(),
               name: 'Agent',
@@ -389,12 +442,10 @@ export function Messages(props: MessagesProps) {
             content: (
               <MessageWrapper
                 type="internalMonologue"
-                header={
-                  <>
-                    <ThoughtsIcon />
-                    <Typography bold>Internal Monologue</Typography>
-                  </>
-                }
+                header={{
+                  preIcon: <ThoughtsIcon />,
+                  title: t('internalMonologue'),
+                }}
               >
                 <Typography>{agentMessage.internal_monologue}</Typography>
               </MessageWrapper>
@@ -433,11 +484,9 @@ export function Messages(props: MessagesProps) {
                 content: (
                   <MessageWrapper
                     type="code"
-                    header={
-                      <>
-                        <Typography bold>{t('hiddenUserMessage')}</Typography>
-                      </>
-                    }
+                    header={{
+                      title: t('hiddenUserMessage'),
+                    }}
                   >
                     <Code
                       fontSize="small"
@@ -469,8 +518,30 @@ export function Messages(props: MessagesProps) {
           };
         }
 
-        case 'system_message':
+        case 'system_message': {
+          if (mode === 'simple') {
+            return null;
+          }
+
+          try {
+            const tryParseResp = SystemAlertSchema.safeParse(
+              JSON.parse(agentMessage.message)
+            );
+
+            if (tryParseResp.success) {
+              return {
+                id: `${agentMessage.id}-${agentMessage.message_type}`,
+                content: <Typography>{tryParseResp.data.message}</Typography>,
+                timestamp: new Date(agentMessage.date).toISOString(),
+                name: 'System',
+              };
+            }
+          } catch (_e) {
+            return null;
+          }
+
           return null;
+        }
       }
     },
     [t]
@@ -483,8 +554,10 @@ export function Messages(props: MessagesProps) {
 
     const preMessages = data.pages
       .flat()
-      // @ts-expect-error - the typing is wrong
-      .map((message) => extractMessage(message, mode))
+      .map((message, _, allMessages) =>
+        // @ts-expect-error - the typing is wrong
+        extractMessage(message, mode, allMessages)
+      )
       .filter((message) => !!message)
       .sort(
         (a, b) =>
@@ -566,7 +639,13 @@ export function Messages(props: MessagesProps) {
       {hasNextPage && messageGroups.length === 0 && mode === 'simple' && (
         <Alert variant="info" title={t('noParsableMessages')} />
       )}
-      {!data && <LettaLoaderPanel />}
+      {!data && (
+        <LoadingEmptyStatusComponent
+          loadingMessage={t('loadingMessages')}
+          hideText
+          loaderVariant="grower"
+        />
+      )}
     </VStack>
   );
 }

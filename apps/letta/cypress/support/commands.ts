@@ -15,7 +15,20 @@ Cypress.Commands.add('googleLogin', () => {
     const { id_token } = body;
 
     cy.visit(`/auth/google/atl?id_token=${id_token}`);
+
+    // complete onboarding if needed
+    cy.get('body').then(($btn) => {
+      if ($btn.find('[data-testid=complete-onboarding]').length) {
+        cy.get('[data-testid=complete-onboarding]').click({ force: true });
+      }
+    });
   });
+});
+
+Cypress.Commands.add('clearPointerEventLock', () => {
+  cy.get('body').invoke('css', 'user-select', 'auto');
+  cy.get('body').invoke('css', 'cursor', 'auto');
+  cy.get('body').invoke('css', 'pointer-events', 'auto');
 });
 
 Cypress.Commands.add('deleteProjectsWithName', (name: string) => {

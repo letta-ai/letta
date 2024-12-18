@@ -11,14 +11,13 @@ describe('Allow users to create and manage API keys', () => {
   });
 
   it('should create an api key', () => {
-    cy.visit('/');
-    cy.findByTestId('nav-button-api-keys').as('apiKeysButton').click();
+    cy.visit('/api-keys');
 
-    cy.get('h1').contains(/API Keys/);
+    cy.get('h1').contains(/API keys/);
 
     cy.location('pathname').should('match', /\/api-keys/);
 
-    cy.findByTestId('create-api-key-button').click();
+    cy.findAllByTestId('create-api-key-button').first().click();
 
     cy.findByTestId('api-key-name-input').type(API_KEY_NAME);
 

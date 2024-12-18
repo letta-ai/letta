@@ -1,6 +1,5 @@
 'use server';
 import type { ProviderUserPayload } from '$letta/types';
-import { AgentRecipeVariant } from '$letta/types';
 import {
   adePreferences,
   db,
@@ -28,9 +27,9 @@ import { AnalyticsEvent } from '@letta-web/analytics';
 import { jwtDecode } from 'jwt-decode';
 import { AdminService, ToolsService } from '@letta-web/letta-agents-api';
 import { createAgent, versionAgentTemplate } from '$letta/sdk';
-import { generateSlug } from '$letta/server';
 import { generateDefaultADELayout } from '$letta/utils';
 import { cookies } from 'next/headers';
+import { getDefaultFlags } from '@letta-web/feature-flags';
 
 function isLettaEmail(email: string) {
   return email.endsWith('@letta.com') || email.endsWith('@memgpt.ai');
@@ -39,10 +38,11 @@ function isLettaEmail(email: string) {
 interface CreateOrganizationArgs {
   name: string;
   isAdmin?: boolean;
+  enableCloud?: boolean;
 }
 
 export async function createOrganization(args: CreateOrganizationArgs) {
-  const { name } = args;
+  const { name, enableCloud } = args;
 
   const lettaAgentsOrganization = await AdminService.createOrganization({
     requestBody: {
@@ -81,11 +81,24 @@ export async function createOrganization(args: CreateOrganizationArgs) {
     .values({
       name,
       lettaAgentsId: lettaAgentsOrganization.id,
+      enabledCloudAt: enableCloud ? new Date() : null,
     })
     .returning({ organizationId: organizations.id });
 
+  const [createdProject] = await await db
+    .insert(projects)
+    .values({
+      slug: 'default-project',
+      name: 'Default Project',
+      organizationId: createdOrg.organizationId,
+    })
+    .returning({
+      id: projects.id,
+    });
+
   await db.insert(organizationPreferences).values({
     organizationId: createdOrg.organizationId,
+    catchAllAgentsProjectId: createdProject.id,
   });
 
   return {
@@ -94,14 +107,122 @@ export async function createOrganization(args: CreateOrganizationArgs) {
   };
 }
 
+interface CreateFirstAgentArgs {
+  organizationId: string;
+  lettaAgentsUserId: string;
+  userId: string;
+}
+
+async function createFirstAgent(args: CreateFirstAgentArgs) {
+  const { organizationId, lettaAgentsUserId, userId } = args;
+
+  const catchAllProject = await db.query.organizationPreferences.findFirst({
+    where: eq(organizationPreferences.organizationId, organizationId),
+  });
+
+  if (!catchAllProject?.catchAllAgentsProjectId) {
+    throw new Error('Organization preferences not found');
+  }
+
+  const createdProject = await db.query.projects.findFirst({
+    where: eq(projects.id, catchAllProject.catchAllAgentsProjectId),
+  });
+
+  if (!createdProject) {
+    throw new Error('Project not found');
+  }
+
+  const firstProjectSlug = createdProject.slug;
+
+  const createdAgentTemplate = await createAgent(
+    {
+      body: {
+        template: true,
+        project_id: createdProject.id,
+        from_template: 'personalAssistant',
+      },
+    },
+    {
+      request: {
+        source: 'web',
+        lettaAgentsUserId: lettaAgentsUserId,
+        userId: userId,
+        organizationId,
+      },
+    }
+  );
+
+  if (createdAgentTemplate.status !== 201 || !createdAgentTemplate.body.id) {
+    throw new Error(JSON.stringify(createdAgentTemplate.body, null, 2));
+  }
+
+  const [versionedAgentTemplate] = await Promise.all([
+    await versionAgentTemplate(
+      {
+        params: {
+          agent_id: createdAgentTemplate.body.id,
+        },
+        body: {},
+        query: {},
+      },
+      {
+        request: {
+          source: 'web',
+          userId,
+          organizationId,
+          lettaAgentsUserId,
+        },
+      }
+    ),
+    db.insert(adePreferences).values({
+      userId: userId,
+      displayConfig: generateDefaultADELayout().displayConfig,
+      agentId: createdAgentTemplate.body.id,
+    }),
+  ]);
+
+  if (versionedAgentTemplate.status !== 201) {
+    throw new Error('Failed to create source agent');
+  }
+
+  await createAgent(
+    {
+      body: {
+        from_template: versionedAgentTemplate.body.version,
+        name: `${createdAgentTemplate.body.name}-deployed-1`,
+      },
+    },
+    {
+      request: {
+        organizationId,
+        userId,
+        source: 'web',
+        lettaAgentsUserId,
+      },
+    }
+  );
+
+  return {
+    firstProjectSlug,
+    firstCreatedAgentName: createdAgentTemplate.body.name,
+  };
+}
+
 interface CreateUserAndOrganizationResponse {
   user: UserSession;
-  firstProjectSlug: string;
-  firstCreatedAgentName: string;
+  newProjectPayload?: {
+    firstProjectSlug: string;
+    firstCreatedAgentName: string;
+  };
+}
+
+interface CreateUserAndOrganizationOptions {
+  enableCloud?: boolean;
 }
 
 async function createUserAndOrganization(
-  userData: ProviderUserPayload
+  userData: ProviderUserPayload,
+  options: CreateUserAndOrganizationOptions = {}
 ): Promise<CreateUserAndOrganizationResponse> {
   let organizationId = '';
   let lettaOrganizationId = '';
@@ -141,6 +262,7 @@ async function createUserAndOrganization(
 
     const createdOrg = await createOrganization({
       name: organizationName,
+      enableCloud: options.enableCloud,
     });
 
     lettaOrganizationId = createdOrg.lettaOrganizationId;
@@ -183,22 +305,16 @@ async function createUserAndOrganization(
       .returning({ userId: users.id }),
   ]);
 
+  await AdminService.updateUser({
+    requestBody: {
+      id: lettaAgentsUser.id,
+      name: userData.name,
+    },
+  });
+
   const userFullName = userData.name;
 
-  const projectName = `${userFullName}'s Project`;
-
-  const [project] = await Promise.all([
-    db
-      .insert(projects)
-      .values({
-        slug: generateSlug(projectName),
-        organizationId,
-        name: projectName,
-      })
-      .returning({
-        projectId: projects.id,
-        slug: projects.slug,
-      }),
+  await Promise.all([
     db.insert(lettaAPIKeys).values({
       name: `${userFullName}'s API Key`,
       organizationId,
@@ -218,72 +334,19 @@ async function createUserAndOrganization(
     }),
   ]);
 
-  const firstProjectSlug = project[0].slug;
+  let firstCreatedAgentName = '';
+  let firstProjectSlug = '';
 
-  const createdAgentTemplate = await createAgent(
-    {
-      body: {
-        template: true,
-        project_id: project[0].projectId,
-        from_template: AgentRecipeVariant.CUSTOMER_SUPPORT,
-      },
-    },
-    {
-      request: {
-        lettaAgentsUserId: lettaAgentsUser.id,
-        userId: createdUser.userId,
-        organizationId,
-      },
-    }
-  );
-
-  if (createdAgentTemplate.status !== 201 || !createdAgentTemplate.body.id) {
-    throw new Error(JSON.stringify(createdAgentTemplate.body, null, 2));
-  }
-
-  const [versionedAgentTemplate] = await Promise.all([
-    await versionAgentTemplate(
-      {
-        params: {
-          agent_id: createdAgentTemplate.body.id,
-        },
-        body: {},
-        query: {},
-      },
-      {
-        request: {
-          userId: createdUser.userId,
-          organizationId,
-          lettaAgentsUserId: lettaAgentsUser.id,
-        },
-      }
-    ),
-    db.insert(adePreferences).values({
+  if (isNewOrganization) {
+    const res = await createFirstAgent({
+      organizationId,
+      lettaAgentsUserId: lettaAgentsUser.id,
       userId: createdUser.userId,
-      displayConfig: generateDefaultADELayout().displayConfig,
-      agentId: createdAgentTemplate.body.id,
-    }),
-  ]);
+    });
 
-  if (versionedAgentTemplate.status !== 201) {
-    throw new Error('Failed to create source agent');
+    firstProjectSlug = res.firstProjectSlug;
+    firstCreatedAgentName = res.firstCreatedAgentName;
   }
-
-  await createAgent(
-    {
-      body: {
-        from_template: versionedAgentTemplate.body.version,
-        name: `${createdAgentTemplate.body.name}-deployed-1`,
-      },
-    },
-    {
-      request: {
-        organizationId,
-        userId: createdUser.userId,
-        lettaAgentsUserId: lettaAgentsUser.id,
-      },
-    }
-  );
 
   return {
     user: {
@@ -294,8 +357,12 @@ async function createUserAndOrganization(
       id: createdUser.userId,
       activeOrganizationId: organizationId,
     },
-    firstCreatedAgentName: createdAgentTemplate.body.name,
-    firstProjectSlug: firstProjectSlug,
+    newProjectPayload: firstCreatedAgentName
+      ? {
+          firstCreatedAgentName,
+          firstProjectSlug,
+        }
+      : undefined,
   };
 }
 
@@ -305,6 +372,10 @@ async function findExistingUser(
   const user = await db.query.users.findFirst({
     where: eq(users.providerId, userData.uniqueId),
   });
+
+  if (user?.bannedAt) {
+    throw new Error(LoginErrorsEnum.BANNED);
+  }
 
   if (!user) {
     return null;
@@ -335,12 +406,39 @@ async function isUserInWhitelist(email: string) {
     }),
   ]);
 
-  return a || b;
+  return !!(a || b);
 }
 
 interface NewUserDetails {
   firstProjectSlug: string;
   firstCreatedAgentName: string;
+}
+
+interface UpdateExistingUserArgs {
+  name?: string;
+  imageUrl?: string;
+  email?: string;
+  id: string;
+}
+
+async function updateExistingUser(args: UpdateExistingUserArgs) {
+  const { name, imageUrl, email, id } = args;
+
+  const set: Partial<UpdateExistingUserArgs> = {};
+
+  if (name) {
+    set.name = name;
+  }
+
+  if (imageUrl) {
+    set.imageUrl = imageUrl;
+  }
+
+  if (email) {
+    set.email = email;
+  }
+
+  await db.update(users).set(set).where(eq(users.id, id));
 }
 
 interface FindOrCreateUserAndOrganizationFromProviderLoginResponse {
@@ -351,21 +449,49 @@ interface FindOrCreateUserAndOrganizationFromProviderLoginResponse {
 async function findOrCreateUserAndOrganizationFromProviderLogin(
   userData: ProviderUserPayload
 ): Promise<FindOrCreateUserAndOrganizationFromProviderLoginResponse> {
-  if (!(await isUserInWhitelist(userData.email))) {
-    throw new Error(LoginErrorsEnum.USER_NOT_IN_WHITELIST);
-  }
-
   let newUserDetails: NewUserDetails | undefined;
   let user = await findExistingUser(userData);
+  let isNewUser = false;
 
   if (!user) {
-    const res = await createUserAndOrganization(userData);
+    isNewUser = true;
+    const flags = await getDefaultFlags();
 
-    newUserDetails = {
-      firstProjectSlug: res.firstProjectSlug,
-      firstCreatedAgentName: res.firstCreatedAgentName,
-    };
+    const isWhitelisted = await isUserInWhitelist(userData.email);
+
+    if (!flags.GA_ADE && !isWhitelisted) {
+      throw new Error(LoginErrorsEnum.USER_NOT_IN_WHITELIST);
+    }
+
+    const isCloudEnabled = isWhitelisted;
+
+    const res = await createUserAndOrganization(userData, {
+      enableCloud: isCloudEnabled,
+    });
+
+    if (res.newProjectPayload && isCloudEnabled) {
+      newUserDetails = {
+        firstProjectSlug: res.newProjectPayload.firstProjectSlug,
+        firstCreatedAgentName: res.newProjectPayload.firstCreatedAgentName,
+      };
+    }
+
     user = res.user;
+  } else {
+    try {
+      await updateExistingUser({
+        name: userData.name,
+        imageUrl: userData.imageUrl,
+        email: userData.email,
+        id: user.id,
+      });
+
+      user.email = userData.email;
+      user.imageUrl = userData.imageUrl;
+      user.name = userData.name;
+    } catch (e) {
+      console.error('Failed to update user', e);
+    }
   }
 
   trackUserOnServer({
@@ -374,7 +500,7 @@ async function findOrCreateUserAndOrganizationFromProviderLogin(
     email: user.email,
   });
 
-  if (newUserDetails) {
+  if (isNewUser) {
     trackServerSideEvent(AnalyticsEvent.USER_CREATED, {
       userId: user.id,
     });
@@ -458,11 +584,14 @@ export async function getOrganizationFromOrganizationId(
 
 export interface GetUserDataResponse {
   activeOrganizationId: string | null;
+  hasCloudAccess: boolean;
   id: string;
   lettaAgentsId: string;
   email: string;
   imageUrl: string;
   theme: string;
+  locale: string;
+  hasOnboarded: boolean;
   name: string;
 }
 
@@ -487,10 +616,24 @@ export async function getUser(): Promise<GetUserDataResponse | null> {
       lettaAgentsId: true,
       email: true,
       theme: true,
+      submittedOnboardingAt: true,
       imageUrl: true,
+      locale: true,
       name: true,
+      bannedAt: true,
+    },
+    with: {
+      activeOrganization: {
+        columns: {
+          enabledCloudAt: true,
+        },
+      },
     },
   });
+
+  if (userFromDb?.bannedAt) {
+    return null;
+  }
 
   if (!userFromDb) {
     return null;
@@ -514,7 +657,15 @@ export async function getUser(): Promise<GetUserDataResponse | null> {
   }
 
   return {
-    ...userFromDb,
+    activeOrganizationId: userFromDb.activeOrganizationId || null,
+    hasCloudAccess: !!userFromDb.activeOrganization?.enabledCloudAt,
+    id: userFromDb.id,
+    hasOnboarded: !!userFromDb.submittedOnboardingAt,
+    locale: userFromDb.locale || 'en',
+    lettaAgentsId: userFromDb.lettaAgentsId,
+    email: userFromDb.email,
+    imageUrl: userFromDb.imageUrl,
+    name: userFromDb.name,
     theme: userFromDb.theme || 'light',
   };
 }
@@ -690,3 +841,7 @@ export async function generateRedirectSignatureForLoggedInUser(
     },
   });
 }
+
+import { deleteUser } from './lib/deleteUser/deleteUser';
+
+export { deleteUser };

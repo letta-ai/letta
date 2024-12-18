@@ -1,0 +1,33 @@
+.chart-tooltip {
+  background: hsl(var(--background-grey2)) !important;
+  border-radius: 0 !important;
+  border: 0;
+  box-shadow: none !important;;
+  font-family: var(--font-sans) !important;
+  color: hsl(var(--background-grey2-content)) !important;
+  position: relative;
+}
+
+
+.tooltip-format-container {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--font-size-xs);
+  padding: 0.25rem 0.5rem;
+}
+
+.tooltip-color {
+  width: 8px;
+  height: 8px;
+  border: 1px solid hsl(var(--background));
+}
+
+.tooltip-label {
+  color: hsl(var(--text-lighter));
+}
+
+.tooltip-value {
+  font-weight: 500;
+  color: hsl(var(--text-default));
+}

@@ -1,4 +1,4 @@
-import type { WorkerPayload } from '../../types';
+import type { ComputeCoreMemoryWorkerPayload } from '../../types';
 import { isArray, isObject } from 'lodash-es';
 
 declare global {
@@ -10,7 +10,11 @@ declare global {
   var loadPyodide: any;
 }
 
-importScripts('https://cdn.jsdelivr.net/pyodide/v0.26.2/full/pyodide.js');
+try {
+  importScripts('https://cdn.jsdelivr.net/pyodide/dev/full/pyodide.js');
+} catch (_e) {
+  console.warn('Failed to import pyodide.js');
+}
 
 async function loadPyodideAndPackages() {
   self.pyodide = await loadPyodide();
@@ -54,7 +58,9 @@ function createDict(object: Record<string, unknown>) {
   return `{${obj}}`;
 }
 
-self.onmessage = async (event: MessageEvent<WorkerPayload>) => {
+self.onmessage = async (
+  event: MessageEvent<ComputeCoreMemoryWorkerPayload>
+) => {
   // make sure loading is done
   await pyodideReadyPromise;
 
@@ -66,9 +72,9 @@ template = Template('${templateString.replace(/(\r\n|\n|\r)/gm, '')}')
 
 # generate memories dict from context
 
-memory = ${createDict(context.memory)}
+memory = [${context.memory.map((m) => createDict(m)).join(',')}]
 
-template.render(memory=memory)
+template.render(blocks=memory)
 `;
 
   const results = await self.pyodide.runPythonAsync(python);

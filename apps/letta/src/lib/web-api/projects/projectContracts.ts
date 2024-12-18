@@ -54,7 +54,15 @@ const createProjectContract = c.mutation({
 /* Update Project */
 export const UpdateProjectPayloadSchema = z.object({
   name: z.string().optional(),
+  slug: z
+    .string()
+    .regex(/^[a-zA-Z0-9_-]+$/)
+    .optional(),
 });
+
+export type UpdateProjectPayloadType = z.infer<
+  typeof UpdateProjectPayloadSchema
+>;
 
 const updateProjectContract = c.mutation({
   method: 'PATCH',
@@ -65,6 +73,9 @@ const updateProjectContract = c.mutation({
   body: UpdateProjectPayloadSchema,
   responses: {
     200: PartialProjectSchema,
+    400: z.object({
+      errorCode: z.enum(['atLeastOneFieldRequired', 'slugAlreadyTaken']),
+    }),
   },
 });
 

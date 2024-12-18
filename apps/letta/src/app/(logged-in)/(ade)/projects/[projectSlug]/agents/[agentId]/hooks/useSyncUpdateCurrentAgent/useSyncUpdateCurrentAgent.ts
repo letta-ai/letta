@@ -44,12 +44,14 @@ export function useSyncUpdateCurrentAgent() {
             setIsUpdating(true);
             setIsDebouncing(false);
 
+            const { memory: _memory, ...updateAgentData } = newAgentData;
+
             updateAgent(
               {
                 agentId: currentAgent.id,
                 requestBody: {
                   id: currentAgent.id,
-                  ...newAgentData,
+                  ...updateAgentData,
                 },
               },
               {

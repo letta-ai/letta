@@ -12,7 +12,7 @@ export function ADEPage(props: ADEPageProps) {
     <VStack
       overflow="hidden"
       color="background"
-      className="w-[100vw] p-[8px] h-[100vh]"
+      className="w-[100vw] p-[8px] h-[100dvh]"
       fullHeight
       fullWidth
       gap

@@ -24,11 +24,43 @@ function mockDatabaseInsert() {
 
   mockDatabase.insert.mockReturnValue({
     values: values,
-  });
+  } as any);
 
   return {
     valuesFn: values,
     returningFn: returning,
+  };
+}
+
+export function mockDatabaseUpdate() {
+  const returning = jest.fn(() => []);
+  const where = jest.fn();
+
+  const set = jest.fn(() => ({
+    returning,
+    where,
+  }));
+
+  mockDatabase.update.mockReturnValue({
+    set,
+  } as any);
+
+  return {
+    setFn: set,
+    returningFn: returning,
+    whereFn: where,
+  };
+}
+
+export function mockDatabaseDelete() {
+  const where = jest.fn();
+
+  mockDatabase.delete.mockReturnValue({
+    where,
+  } as any);
+
+  return {
+    whereFn: where,
   };
 }
 

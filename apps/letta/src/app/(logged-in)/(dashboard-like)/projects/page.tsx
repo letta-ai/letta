@@ -1,5 +1,5 @@
 'use client';
-import React, { useCallback, useEffect, useRef } from 'react';
+import React, { useCallback } from 'react';
 import {
   Avatar,
   Button,
@@ -15,11 +15,9 @@ import {
   Input,
   FormProvider,
   DashboardPageSection,
-  RawCodeEditor,
   NiceGridDisplay,
   Card,
   Tooltip,
-  HiddenOnMobile,
 } from '@letta-web/component-library';
 import { webApi, webApiQueryKeys } from '$letta/client';
 import { useDebouncedValue } from '@mantine/hooks';
@@ -28,89 +26,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
-import { ComputerIcon } from '@letta-web/component-library';
-import { getIsLocalServiceOnline } from '$letta/client/local-project-manager/getIsLocalServerOnline/getIsLocalServerOnline';
-import { LOCAL_PROJECT_SERVER_PORT } from '$letta/constants';
-import { nicelyFormattedDateAndTime } from '@letta-web/helpful-client-utils';
+import { useDateFormatter } from '@letta-web/helpful-client-utils';
 import Link from 'next/link';
-
-function useIsLocalServiceOnline() {
-  const [isLocalServiceOnline, setIsOnline] = React.useState(false);
-  const interval = useRef<ReturnType<typeof setTimeout>>();
-
-  const mounted = useRef(false);
-
-  useEffect(() => {
-    if (mounted.current) {
-      return;
-    }
-
-    mounted.current = true;
-
-    void getIsLocalServiceOnline().then(setIsOnline);
-  }, []);
-
-  useEffect(() => {
-    interval.current = setInterval(async () => {
-      void getIsLocalServiceOnline().then(setIsOnline);
-    }, 3000);
-
-    return () => {
-      clearInterval(interval.current);
-    };
-  }, []);
-
-  return { isLocalServiceOnline };
-}
-
-function ConnectToLocalProjectDialog() {
-  const t = useTranslations('projects/page');
-  const { push } = useRouter();
-  const [open, setOpen] = React.useState(false);
-  const [pending, setPending] = React.useState(false);
-
-  const handleFirstConnect = useCallback(async () => {
-    setPending(true);
-
-    const isOnline = await getIsLocalServiceOnline();
-
-    if (isOnline) {
-      push('/local-project/agents');
-    } else {
-      setOpen(true);
-    }
-
-    setPending(false);
-  }, [push]);
-
-  return (
-    <>
-      <Button
-        onClick={handleFirstConnect}
-        preIcon={<ComputerIcon />}
-        busy={pending}
-        color="tertiary"
-        label={t('connectToLocalProject.triggerButton')}
-      />
-      <Dialog
-        isOpen={open}
-        onOpenChange={setOpen}
-        title={t('connectToLocalProject.title')}
-        hideConfirm
-      >
-        <Typography>{t('connectToLocalProject.instructions')}</Typography>
-        <RawCodeEditor
-          fullWidth
-          toolbarPosition="bottom"
-          label="Command to connect"
-          hideLabel
-          language="bash"
-          code={`letta server --ade --port=${LOCAL_PROJECT_SERVER_PORT}`}
-        />
-      </Dialog>
-    </>
-  );
-}
 
 interface ProjectsListProps {
   search: string;
@@ -201,6 +118,7 @@ interface ProjectCardProps {
 function ProjectCard(props: ProjectCardProps) {
   const { projectName, lastUpdatedAt, url } = props;
   const t = useTranslations('projects/page');
+  const { formatDateAndTime } = useDateFormatter();
 
   return (
     <Link href={url}>
@@ -227,7 +145,7 @@ function ProjectCard(props: ProjectCardProps) {
                   <Typography variant="body" color="muted">
                     {lastUpdatedAt
                       ? t('projectsList.projectItem.lastUpdatedAt', {
-                          date: nicelyFormattedDateAndTime(lastUpdatedAt),
+                          date: formatDateAndTime(lastUpdatedAt),
                         })
                       : t('projectsList.projectItem.noLastUpdatedAt')}
                   </Typography>
@@ -255,8 +173,6 @@ function ProjectsList(props: ProjectsListProps) {
     },
   });
 
-  const { isLocalServiceOnline } = useIsLocalServiceOnline();
-
   if (!data || isError || data.body.projects.length === 0) {
     return (
       <LoadingEmptyStatusComponent
@@ -276,14 +192,6 @@ function ProjectsList(props: ProjectsListProps) {
   return (
     <>
       <NiceGridDisplay>
-        {isLocalServiceOnline && (
-          <ProjectCard
-            projectId="local"
-            projectName={t('projectsList.localProjectName')}
-            lastUpdatedAt=""
-            url="/local-project/agents"
-          />
-        )}
         {data.body.projects.map((project) => (
           <ProjectCard
             key={project.id}
@@ -303,17 +211,7 @@ function ProjectsPage() {
   const t = useTranslations('projects/page');
 
   return (
-    <DashboardPageLayout
-      title={t('title')}
-      actions={
-        <>
-          <HiddenOnMobile>
-            <ConnectToLocalProjectDialog />
-          </HiddenOnMobile>
-          <CreateProjectDialog />
-        </>
-      }
-    >
+    <DashboardPageLayout title={t('title')} actions={<CreateProjectDialog />}>
       <DashboardPageSection
         searchPlaceholder={t('searchInput.placeholder')}
         searchValue={search}

@@ -2,13 +2,15 @@ import * as React from 'react';
 import type { VariantProps } from 'class-variance-authority';
 import { cva } from 'class-variance-authority';
 import { MaybeTooltip } from '../Tooltip/Tooltip';
+import { WarningIcon } from '../../icons';
 
 const statusIndicatorVariants = cva('relative w-2 h-2 rounded-full', {
   variants: {
     status: {
-      active: 'bg-green',
-      processing: 'bg-warning',
+      active: 'bg-green-500',
+      processing: 'bg-warning animate-pulse',
       inactive: 'bg-destructive',
+      warning: 'bg-warning',
     },
   },
 });
@@ -23,6 +25,19 @@ interface StatusIndicatorProps extends StatusIndicatorVariantProps {
 
 export function StatusIndicator(props: StatusIndicatorProps) {
   const { tooltipContent, ...rest } = props;
+
+  if (rest.status === 'warning') {
+    return (
+      <div className="w-2 relative">
+        <MaybeTooltip content={tooltipContent}>
+          <WarningIcon
+            size="small"
+            className="text-warning w-2 left-[-4px] absolute top-[4px] "
+          />
+        </MaybeTooltip>
+      </div>
+    );
+  }
 
   return (
     <MaybeTooltip content={tooltipContent}>

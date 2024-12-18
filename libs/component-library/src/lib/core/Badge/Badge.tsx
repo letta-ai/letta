@@ -10,7 +10,7 @@ const badgeVariants = cva('items-center flex', {
   variants: {
     size: {
       default: 'text-xs px-2 py-1',
-      small: 'text-[10px]  px-2 font-semibold',
+      small: 'text-[10px]   px-1 font-semibold',
     },
   },
   defaultVariants: {
@@ -21,19 +21,21 @@ const badgeVariants = cva('items-center flex', {
 interface BadgeProps extends VariantProps<typeof badgeVariants> {
   content: string;
   preIcon?: React.ReactNode;
+  className?: string;
   color?: FrameProps['color'];
 }
 
 export function Badge(props: BadgeProps) {
-  const { size, preIcon, content } = props;
+  const { size, className, preIcon, content } = props;
 
   return (
     <HStack
-      className={cn(badgeVariants({ size }))}
+      className={cn(badgeVariants({ size }), className)}
       color={props.color || 'background-grey'}
+      gap="small"
     >
-      {preIcon && <Slot className="w-4 h-4">{preIcon}</Slot>}
-      {content}
+      {preIcon && <Slot className="w-3 h-3">{preIcon}</Slot>}
+      <span className="bold">{content}</span>
     </HStack>
   );
 }

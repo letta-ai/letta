@@ -106,6 +106,104 @@
       "when": 1730831535915,
       "tag": "0014_complete_the_watchers",
       "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1731447651415,
+      "tag": "0015_lovely_dark_beast",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1731456471650,
+      "tag": "0016_redundant_lorna_dane",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1731627517039,
+      "tag": "0017_nifty_kate_bishop",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1731706898745,
+      "tag": "0018_loving_tusk",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1731714692471,
+      "tag": "0019_daily_fantastic_four",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1731958370579,
+      "tag": "0020_known_spacker_dave",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1732062609693,
+      "tag": "0021_gifted_bushwacker",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1732258482601,
+      "tag": "0022_mean_gertrude_yorkes",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1733351034302,
+      "tag": "0023_woozy_black_tom",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1733363984761,
+      "tag": "0024_shocking_matthew_murdock",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1733511974469,
+      "tag": "0025_mute_tenebrous",
+      "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1733519390033,
+      "tag": "0026_robust_blob",
+      "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1733882667903,
+      "tag": "0027_salty_wallflower",
+      "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1733890534021,
+      "tag": "0028_motionless_chronomancer",
+      "breakpoints": true
     }
   ]
 }

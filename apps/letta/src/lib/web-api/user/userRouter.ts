@@ -1,20 +1,26 @@
 import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
 import type {
+  contracts,
   updateActiveOrganizationContract,
   userContract,
 } from '$letta/web-api/contracts';
-import { getUser } from '$letta/server/auth';
-import type { contracts } from '$letta/web-api/contracts';
+import { deleteUser, getUser } from '$letta/server/auth';
 import {
   db,
   organizations,
   organizationUsers,
+  userMarketingDetails,
   users,
 } from '@letta-web/database';
 import { and, eq, inArray, isNull } from 'drizzle-orm';
 import { cookies } from 'next/headers';
 import { CookieNames } from '$letta/server/cookies/types';
 import { AdminService } from '@letta-web/letta-agents-api';
+import { createOrUpdateCRMContact } from '@letta-web/crm';
+import * as Sentry from '@sentry/node';
+import { environment } from '@letta-web/environmental-variables';
+import { trackServerSideEvent } from '@letta-web/analytics/server';
+import { AnalyticsEvent } from '@letta-web/analytics';
 
 type ResponseShapes = ServerInferResponses<typeof userContract>;
 
@@ -36,7 +42,10 @@ async function getCurrentUser(): Promise<ResponseShapes['getCurrentUser']> {
       theme: user.theme,
       name: user.name,
       email: user.email,
+      locale: user.locale,
       imageUrl: user.imageUrl,
+      hasCloudAccess: user.hasCloudAccess,
+      hasOnboarded: user.hasOnboarded,
       activeOrganizationId: user.activeOrganizationId || '',
       id: user.id,
     },
@@ -68,6 +77,10 @@ async function updateCurrentUser(
     cookies().set(CookieNames.THEME, payload.body.theme);
   }
 
+  if (payload.body.locale) {
+    cookies().set(CookieNames.LOCALE, payload.body.locale);
+  }
+
   const updatedUser = {
     ...user,
     ...payload.body,
@@ -78,6 +91,7 @@ async function updateCurrentUser(
     .set({
       name: updatedUser.name,
       theme: updatedUser.theme,
+      locale: updatedUser.locale,
     })
     .where(eq(users.id, user.id));
 
@@ -86,7 +100,10 @@ async function updateCurrentUser(
     body: {
       theme: updatedUser.theme,
       name: updatedUser.name,
+      hasOnboarded: updatedUser.hasOnboarded,
+      locale: updatedUser.locale,
       email: updatedUser.email,
+      hasCloudAccess: user.hasCloudAccess,
       imageUrl: updatedUser.imageUrl,
       activeOrganizationId: updatedUser.activeOrganizationId || '',
       id: updatedUser.id,
@@ -159,15 +176,144 @@ async function updateActiveOrganization(
 
   const { activeOrganizationId } = request.body;
 
+  const organization = await db.query.organizations.findFirst({
+    where: eq(organizations.id, activeOrganizationId),
+  });
+
+  if (!organization) {
+    return {
+      status: 404,
+      body: {
+        message: 'Organization not found',
+      },
+    };
+  }
+
   await Promise.all([
     db.update(users).set({ activeOrganizationId }).where(eq(users.id, user.id)),
     AdminService.updateUser({
       requestBody: {
         id: user.lettaAgentsId,
-        organization_id: activeOrganizationId,
+        organization_id: organization.lettaAgentsId,
       },
     }),
   ]);
+
+  return {
+    status: 200,
+    body: {
+      success: true,
+    },
+  };
+}
+
+type DeleteUserResponse = ServerInferResponses<
+  typeof userContract.deleteCurrentUser
+>;
+
+async function deleteCurrentUser(): Promise<DeleteUserResponse> {
+  const user = await getUser();
+
+  if (!user) {
+    return {
+      status: 401,
+      body: {
+        message: 'User not found',
+      },
+    };
+  }
+
+  await deleteUser(user.id);
+
+  return {
+    status: 200,
+    body: {
+      success: true,
+    },
+  };
+}
+
+type SetUserAsOnboardedResponse = ServerInferResponses<
+  typeof contracts.user.setUserAsOnboarded
+>;
+
+type SetUserAsOnboardedRequest = ServerInferRequest<
+  typeof contracts.user.setUserAsOnboarded
+>;
+
+async function setUserAsOnboarded(
+  req: SetUserAsOnboardedRequest
+): Promise<SetUserAsOnboardedResponse> {
+  const user = await getUser();
+
+  const { emailConsent, useCases, reasons } = req.body;
+
+  if (!user) {
+    return {
+      status: 401,
+      body: {
+        message: 'User not found',
+      },
+    };
+  }
+
+  // check if marketing details already exist
+  const marketingDetails = await db.query.userMarketingDetails.findFirst({
+    where: eq(userMarketingDetails.userId, user.id),
+  });
+
+  await db
+    .update(users)
+    .set({ submittedOnboardingAt: new Date() })
+    .where(eq(users.id, user.id));
+
+  if (!marketingDetails) {
+    const userMarketingDetailsPayload = {
+      userId: user.id,
+      consentedToEmailsAt: emailConsent ? new Date() : null,
+      useCases,
+      reasons,
+    };
+
+    await db.insert(userMarketingDetails).values(userMarketingDetailsPayload);
+  } else {
+    await db
+      .update(userMarketingDetails)
+      .set({
+        consentedToEmailsAt: emailConsent ? new Date() : null,
+        useCases,
+        reasons,
+      })
+      .where(eq(userMarketingDetails.userId, user.id));
+  }
+
+  if (environment.HUBSPOT_API_KEY) {
+    void createOrUpdateCRMContact({
+      email: user.email,
+      firstName: user.name.split(' ')[0],
+      lastName: user.name.split(' ')[1],
+      consentedToEmailMarketing: emailConsent,
+      reasonsForUsingLetta: reasons,
+      usesLettaFor: useCases,
+    })
+      .then(async (res) => {
+        await db
+          .update(userMarketingDetails)
+          .set({ hubSpotContactId: res.id })
+          .where(eq(userMarketingDetails.userId, user.id));
+
+        trackServerSideEvent(AnalyticsEvent.ANSWERED_ONBOARDING_SURVEY, {
+          consentedToEmailMarketing: !!emailConsent,
+          reasonsForUsingLetta: reasons,
+          usecasesForUsingLetta: useCases,
+          userId: user.id,
+        });
+      })
+      .catch((e) => {
+        console.error('Error updating CRM contact', e);
+        Sentry.captureException(e);
+      });
+  }
 
   return {
     status: 200,
@@ -182,4 +328,6 @@ export const userRouter = {
   updateCurrentUser,
   listUserOrganizations,
   updateActiveOrganization,
+  setUserAsOnboarded,
+  deleteCurrentUser,
 };

@@ -5,17 +5,30 @@ import { createContext, useContext, useState } from 'react';
 
 type BaseRoute = string;
 
-export interface SubNavigationItem {
+interface SubNavigationItem {
   label: string;
   href: string;
   id: string;
   icon?: React.ReactNode;
 }
 
-interface SubnavigationData {
+interface SubNavigationGroup {
+  title: string;
+  titleOverride?: React.ReactNode;
   items: SubNavigationItem[];
+}
+
+export function isSubNavigationGroup(
+  item: SubNavigationGroup | SubNavigationItem
+): item is SubNavigationGroup {
+  return Object.prototype.hasOwnProperty.call(item, 'title');
+}
+
+export interface SubnavigationData {
+  items: Array<SubNavigationGroup | SubNavigationItem>;
   title: React.ReactNode;
   returnPath: string;
+  returnText?: string;
 }
 
 interface UseSubNavigationItemsContextData {

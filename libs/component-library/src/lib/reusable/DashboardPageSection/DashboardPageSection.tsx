@@ -6,6 +6,8 @@ import { Typography } from '../../core/Typography/Typography';
 import { RawInput } from '../../core/Input/Input';
 import { SearchIcon } from '../../icons';
 import { Frame } from '../../framing/Frame/Frame';
+import { HiddenOnMobile } from '../../framing/HiddenOnMobile/HiddenOnMobile';
+import { VisibleOnMobile } from '../../framing/VisibleOnMobile/VisibleOnMobile';
 
 interface DashboardSearchBarProps {
   onSearch: (searchTerm: string) => void;
@@ -40,6 +42,7 @@ type DashboardPageSectionProps = PropsWithChildren<
     fullHeight?: boolean;
     borderBottom?: boolean;
     title?: string;
+    description?: string;
   }
 >;
 
@@ -49,6 +52,7 @@ export function DashboardPageSection(props: DashboardPageSectionProps) {
     actions,
     fullHeight,
     title,
+    description,
     borderBottom,
     searchPlaceholder,
     searchValue,
@@ -61,17 +65,27 @@ export function DashboardPageSection(props: DashboardPageSectionProps) {
       paddingTop="medium"
       paddingBottom="small"
       fullHeight={fullHeight}
+      flex={fullHeight}
       fullWidth
       borderBottom={borderBottom}
     >
-      {title && (
-        <HStack align="center" justify="spaceBetween">
-          <Typography noWrap bold variant="heading3">
-            {title}
+      <VStack gap={false}>
+        {title && (
+          <HStack align="center" justify="spaceBetween">
+            <Typography align="left" noWrap bold variant="heading4">
+              {title}
+            </Typography>
+            <HiddenOnMobile>
+              <HStack>{actions}</HStack>
+            </HiddenOnMobile>
+          </HStack>
+        )}
+        {description && (
+          <Typography align="left" variant="body">
+            {description}
           </Typography>
-          <HStack>{actions}</HStack>
-        </HStack>
-      )}
+        )}
+      </VStack>
       {onSearch && (
         <Frame paddingTop>
           <DashboardSearchBar
@@ -81,7 +95,11 @@ export function DashboardPageSection(props: DashboardPageSectionProps) {
           />
         </Frame>
       )}
-
+      {actions && (
+        <VisibleOnMobile>
+          <HStack>{actions}</HStack>
+        </VisibleOnMobile>
+      )}
       {children}
     </VStack>
   );

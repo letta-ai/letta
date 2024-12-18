@@ -9,7 +9,10 @@ export const PublicUserSchema = z.object({
   email: z.string(),
   imageUrl: z.string(),
   theme: z.string(),
+  locale: z.string(),
   activeOrganizationId: z.string(),
+  hasOnboarded: z.boolean(),
+  hasCloudAccess: z.boolean(),
   id: z.string(),
 });
 
@@ -32,6 +35,7 @@ const getUserContract = c.query({
 export const UpdateUserPayloadSchema = z.object({
   name: z.string().optional(),
   theme: z.string().optional(),
+  locale: z.string().optional(),
 });
 
 const updateCurrentUserContract = c.mutation({
@@ -85,11 +89,43 @@ export const updateActiveOrganizationContract = c.mutation({
   },
 });
 
+/* Delete user */
+export const deleteCurrentUserCurrent = c.mutation({
+  method: 'DELETE',
+  path: '/user/self',
+  responses: {
+    200: z.object({
+      success: z.boolean(),
+    }),
+  },
+  body: z.undefined(),
+});
+
+/* Set user as onboarded */
+const OnboardingPayloadSchema = z.object({
+  reasons: z.string().array(),
+  useCases: z.string().array(),
+  emailConsent: z.boolean(),
+});
+
+export const setUserAsOnboardedContract = c.mutation({
+  method: 'POST',
+  path: '/user/self/onboarded',
+  body: OnboardingPayloadSchema,
+  responses: {
+    200: z.object({
+      success: z.boolean(),
+    }),
+  },
+});
+
 export const userContract = c.router({
   getCurrentUser: getUserContract,
   updateCurrentUser: updateCurrentUserContract,
   listUserOrganizations: listUserOrganizationsContract,
   updateActiveOrganization: updateActiveOrganizationContract,
+  deleteCurrentUser: deleteCurrentUserCurrent,
+  setUserAsOnboarded: setUserAsOnboardedContract,
 });
 
 export const userQueryClientKeys = {

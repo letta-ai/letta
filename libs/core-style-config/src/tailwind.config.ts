@@ -25,9 +25,11 @@ export function buildConfig(appDir: string): Config {
           sidebarNavOverlay: '6',
           sidebarNav: '7',
           header: '8',
-          dialog: '9',
-          tooltip: '10',
-          draggedItem: '11',
+          miniapp: '9',
+          dialog: '10',
+          dropdown: '11',
+          tooltip: '12',
+          draggedItem: '13',
         },
         gap: {
           2: 'var(--default-gap)',
@@ -45,6 +47,10 @@ export function buildConfig(appDir: string): Config {
         },
         minHeight: {
           header: 'var(--header-height)',
+          'header-sm': 'var(--header-height-sm)',
+          biHeight: 'var(--button-input-height)',
+          'biHeight-sm': 'var(--button-input-height-sm)',
+          'biHeight-lg': 'var(--button-input-height-lg)',
         },
         width: {
           biWidth: 'var(--button-input-height)',
@@ -69,6 +75,12 @@ export function buildConfig(appDir: string): Config {
           border: 'hsl(var(--border))',
           input: 'hsl(var(--input))',
           ring: 'hsl(var(--ring))',
+          steel: 'hsl(var(--steel))',
+          violet: 'hsl(var(--violet))',
+          text: {
+            DEFAULT: 'hsl(var(--text-default))',
+            lighter: 'hsl(var(--text-lighter))',
+          },
           'background-violet': {
             DEFAULT: 'hsl(var(--background-violet))',
             content: 'hsl(var(--background-violet-content))',
@@ -90,9 +102,9 @@ export function buildConfig(appDir: string): Config {
             content: 'hsl(var(--background-grey-content))',
             hover: 'hsl(var(--background-grey-hover))',
           },
-          'background-greyer': {
-            DEFAULT: 'hsl(var(--background-greyer))',
-            content: 'hsl(var(--background-greyer-content))',
+          'background-grey2': {
+            DEFAULT: 'hsl(var(--background-grey2))',
+            content: 'hsl(var(--background-grey2-content))',
           },
           'background-black': {
             DEFAULT: 'hsl(var(--background-black))',

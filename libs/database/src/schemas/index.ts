@@ -11,6 +11,7 @@ import {
   primaryKey,
 } from 'drizzle-orm/pg-core';
 import { sql, relations } from 'drizzle-orm';
+import type { ProviderConfiguration } from '@letta-web/types';
 
 export const emailWhitelist = pgTable('email_whitelist', {
   id: text('id')
@@ -30,8 +31,10 @@ export const organizations = pgTable('organizations', {
   name: text('name').notNull(),
   lettaAgentsId: text('letta_agents_id').notNull().unique(),
   isAdmin: boolean('is_admin').notNull().default(false),
+  enabledCloudAt: timestamp('enabled_cloud_at'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   deletedAt: timestamp('deleted_at'),
+  bannedAt: timestamp('banned_at'),
   updatedAt: timestamp('updated_at')
     .notNull()
     .$onUpdate(() => new Date()),
@@ -46,6 +49,7 @@ export const orgRelationsTable = relations(organizations, ({ many }) => ({
   organizationUsers: many(organizationUsers),
   organizationPreferences: many(organizationPreferences),
   organizationInvitedUsers: many(organizationInvitedUsers),
+  organizationDevelopmentServers: many(developmentServers),
 }));
 
 export const organizationPreferences = pgTable('organization_preferences', {
@@ -87,16 +91,52 @@ export const users = pgTable('users', {
   activeOrganizationId: text('active_organization_id'),
   lettaAgentsId: text('letta_agents_id').notNull().unique(),
   theme: text('theme').default('light'),
+  locale: text('locale').default('en'),
+  submittedOnboardingAt: timestamp('submitted_onboarding_at'),
   deletedAt: timestamp('deleted_at'),
+  bannedAt: timestamp('banned_at'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at')
     .notNull()
     .$onUpdate(() => new Date()),
 });
 
-export const userRelations = relations(users, ({ many }) => ({
+export const userRelations = relations(users, ({ many, one }) => ({
   organizationUsers: many(organizationUsers),
+  activeOrganization: one(organizations, {
+    fields: [users.activeOrganizationId],
+    references: [organizations.id],
+  }),
+  userMarketingDetails: one(userMarketingDetails, {
+    fields: [users.id],
+    references: [userMarketingDetails.userId],
+  }),
 }));
+
+export const userMarketingDetails = pgTable('user_marketing_details', {
+  userId: text('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' })
+    .primaryKey(),
+  useCases: json('use_cases').$type<string[]>(),
+  reasons: json('reasons').$type<string[]>(),
+  hubSpotContactId: text('hubspot_contact_id'),
+  consentedToEmailsAt: timestamp('consented_to_emails_at'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at')
+    .notNull()
+    .$onUpdate(() => new Date()),
+});
+
+export const userMarketingDetailsRelations = relations(
+  userMarketingDetails,
+  ({ one }) => ({
+    user: one(users, {
+      fields: [userMarketingDetails.userId],
+      references: [users.id],
+    }),
+  })
+);
 
 export interface OrganizationPermissionType {
   isOrganizationAdmin?: boolean;
@@ -462,6 +502,7 @@ export const inferenceTransactions = pgTable('inference_transactions', {
   organizationId: text('organization_id').notNull(),
   inputTokens: numeric('input_tokens').notNull(),
   outputTokens: numeric('output_tokens').notNull(),
+  projectId: text('project_id'),
   totalTokens: numeric('total_tokens').notNull(),
   stepCount: numeric('step_count').notNull(),
   providerType: text('providerType').notNull(),
@@ -469,6 +510,7 @@ export const inferenceTransactions = pgTable('inference_transactions', {
   providerModel: text('providerModel').notNull(),
   startedAt: timestamp('started_at').notNull(),
   endedAt: timestamp('ended_at').notNull(),
+  source: text('source').notNull(),
 });
 
 export const inferenceTransactionRelations = relations(
@@ -506,3 +548,164 @@ export const organizationInvitedUsersRelations = relations(
     }),
   })
 );
+
+export const developmentServers = pgTable('development_servers', {
+  id: text('id')
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  organizationId: text('organization_id')
+    .notNull()
+    .references(() => organizations.id, { onDelete: 'cascade' })
+    .notNull(),
+  name: text('name').notNull(),
+  url: text('url').notNull(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at')
+    .notNull()
+    .$onUpdate(() => new Date()),
+});
+
+export const developmentServerRelations = relations(
+  developmentServers,
+  ({ one }) => ({
+    organization: one(organizations, {
+      fields: [developmentServers.organizationId],
+      references: [organizations.id],
+    }),
+    developmentServerPasswords: one(developmentServerPasswords, {
+      fields: [developmentServers.id],
+      references: [developmentServerPasswords.developmentServerId],
+    }),
+  })
+);
+
+export const developmentServerPasswords = pgTable(
+  'development_server_passwords',
+  {
+    developmentServerId: text('development_server_id')
+      .references(() => developmentServers.id, { onDelete: 'cascade' })
+      .notNull(),
+    organizationId: text('organization_id')
+      .references(() => organizations.id, { onDelete: 'cascade' })
+      .notNull(),
+    password: text('password').notNull(),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at')
+      .notNull()
+      .$onUpdate(() => new Date()),
+  }
+);
+
+export const developmentServerPasswordRelations = relations(
+  developmentServerPasswords,
+  ({ one }) => ({
+    developmentServer: one(developmentServers, {
+      fields: [developmentServerPasswords.developmentServerId],
+      references: [developmentServers.id],
+    }),
+    organization: one(organizations, {
+      fields: [developmentServerPasswords.organizationId],
+      references: [organizations.id],
+    }),
+  })
+);
+
+export const inferenceModelsMetadata = pgTable(
+  'inference_models_metadata',
+  {
+    id: text('id')
+      .notNull()
+      .unique()
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    name: text('name').notNull(),
+    brand: text('brand').notNull(),
+    isRecommended: boolean('is_recommended').notNull().default(false),
+    tag: text('tag'),
+    modelName: text('model_name').notNull(),
+    modelEndpoint: text('model_endpoint').notNull(),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    disabledAt: timestamp('disabled_at'),
+    updatedAt: timestamp('updated_at')
+      .notNull()
+      .$onUpdate(() => new Date()),
+  },
+  (self) => ({
+    unique: {
+      uniqueModelName: uniqueIndex('unique_model_name').on(
+        self.modelName,
+        self.modelEndpoint
+      ),
+    },
+  })
+);
+
+export const embeddingModelsMetadata = pgTable(
+  'embedding_models_metadata',
+  {
+    id: text('id')
+      .notNull()
+      .unique()
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    name: text('name').notNull(),
+    brand: text('brand').notNull(),
+    modelName: text('model_name').notNull(),
+    modelEndpoint: text('model_endpoint').notNull(),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    disabledAt: timestamp('disabled_at'),
+    updatedAt: timestamp('updated_at')
+      .notNull()
+      .$onUpdate(() => new Date()),
+  },
+  (self) => ({
+    unique: {
+      uniqueModelName: uniqueIndex('unique_model_name').on(
+        self.modelName,
+        self.modelEndpoint
+      ),
+    },
+  })
+);
+
+export const toolMetadataProviderEnum = pgEnum('provider_enum', [
+  'composio',
+  'generic',
+]);
+
+export const toolMetadata = pgTable(
+  'tool_metadata',
+  {
+    id: text('id')
+      .notNull()
+      .unique()
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    name: text('name').notNull(),
+    description: text('description').notNull(),
+    brand: text('brand').notNull(),
+    provider: toolMetadataProviderEnum('provider').notNull(),
+    providerId: text('provider_id').notNull(),
+    configuration: json('configuration').$type<ProviderConfiguration>(),
+    tags: text('tags').notNull(),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    disabledAt: timestamp('disabled_at'),
+    updatedAt: timestamp('updated_at')
+      .notNull()
+      .$onUpdate(() => new Date()),
+  },
+  (self) => ({
+    unique: {
+      uniqueProviderId: uniqueIndex('unique_provider_id').on(
+        self.provider,
+        self.providerId
+      ),
+    },
+  })
+);
+
+export const toolGroupMetadata = pgTable('tool_group_metadata', {
+  brand: text('brand').notNull().unique().primaryKey(),
+  imageUrl: text('image_url'),
+  description: text('description').notNull(),
+});

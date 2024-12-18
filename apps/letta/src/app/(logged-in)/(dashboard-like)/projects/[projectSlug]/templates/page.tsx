@@ -16,6 +16,7 @@ import { useDebouncedValue } from '@mantine/hooks';
 import { SearchIcon } from '@letta-web/component-library';
 import { useTranslations } from 'next-intl';
 import { AgentTemplateCard } from '$letta/client/components';
+import { CreateNewTemplateDialog } from '../_components/CreateNewTemplateDialog/CreateNewTemplateDialog';
 
 const PAGE_SIZE = 20;
 
@@ -25,7 +26,7 @@ interface ProjectStagingListProps {
 }
 
 function AgentTemplateList(props: ProjectStagingListProps) {
-  const { id: currentProjectId, slug: projectSlug } = useCurrentProject();
+  const { id: currentProjectId } = useCurrentProject();
   const t = useTranslations('projects/(projectSlug)/templates/page');
   const { search } = props;
 
@@ -60,10 +61,10 @@ function AgentTemplateList(props: ProjectStagingListProps) {
       <LoadingEmptyStatusComponent
         emptyMessage={!search ? t('noTemplates') : t('noTemplatesFound')}
         emptyAction={
-          <Button
-            preIcon={<PlusIcon />}
-            href={`/projects/${projectSlug}/templates/new`}
-            label={t('createTemplate')}
+          <CreateNewTemplateDialog
+            trigger={
+              <Button preIcon={<PlusIcon />} label={t('createTemplate')} />
+            }
           />
         }
         isLoading={isLoading}
@@ -93,7 +94,6 @@ function AgentTemplateList(props: ProjectStagingListProps) {
 function TemplatesPage() {
   const [search, setSearch] = useState<string>('');
   const t = useTranslations('projects/(projectSlug)/templates/page');
-  const { slug: projectSlug } = useCurrentProject();
 
   const [debouncedSearch] = useDebouncedValue(search, 500);
 
@@ -101,11 +101,14 @@ function TemplatesPage() {
     <DashboardPageLayout
       title={t('title')}
       actions={
-        <Button
-          color="secondary"
-          href={`/projects/${projectSlug}/templates/new`}
-          preIcon={<PlusIcon />}
-          label={t('createTemplate')}
+        <CreateNewTemplateDialog
+          trigger={
+            <Button
+              color="secondary"
+              preIcon={<PlusIcon />}
+              label={t('createTemplate')}
+            />
+          }
         />
       }
     >

@@ -6,7 +6,7 @@ const Table = React.forwardRef<
   HTMLTableElement,
   React.HTMLAttributes<HTMLTableElement>
 >(({ className, ...props }, ref) => (
-  <div className="relative w-full overflow-auto">
+  <div className="w-full overflow-auto">
     <table
       ref={ref}
       className={cn('w-full caption-bottom text-sm', className)}
@@ -20,7 +20,11 @@ const TableHeader = React.forwardRef<
   HTMLTableSectionElement,
   React.HTMLAttributes<HTMLTableSectionElement>
 >(({ className, ...props }, ref) => (
-  <thead ref={ref} className={cn('[&_tr]:border-b', className)} {...props} />
+  <thead
+    ref={ref}
+    className={cn('[&_tr]:border-b bg-background-grey', className)}
+    {...props}
+  />
 ));
 TableHeader.displayName = 'TableHeader';
 
@@ -73,7 +77,7 @@ const TableHead = React.forwardRef<
   <th
     ref={ref}
     className={cn(
-      'h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0',
+      'h-12 px-4 text-left align-middle uppercase font-medium bg-background-grey text-muted-foreground [&:has([role=checkbox])]:pr-0',
       className
     )}
     {...props}
@@ -112,6 +116,7 @@ TableCaption.displayName = 'TableCaption';
 interface TableCellInputProps {
   label: string;
   value: string;
+  testId?: string;
   placeholder: string;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }
@@ -120,12 +125,14 @@ const TableCellInput = React.forwardRef<
   HTMLTableCellElement,
   TableCellInputProps
 >((props, ref) => {
-  const { label, value, placeholder, onChange } = props;
+  const { label, testId, value, placeholder, onChange } = props;
 
   return (
     <TableCell className="focus-within:outline-1 " ref={ref}>
       <div className="sr-only">{label}</div>
       <input
+        autoComplete="off"
+        data-testid={testId}
         className="px-2 w-full h-full bg-transparent border-0 focus:ring-0"
         value={value}
         placeholder={placeholder}

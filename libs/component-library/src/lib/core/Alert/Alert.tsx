@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { CheckIcon, InfoIcon, WarningIcon } from '../../icons';
+import { CheckIcon, CloseIcon, InfoIcon, WarningIcon } from '../../icons';
 import { useMemo } from 'react';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@letta-web/core-style-config';
@@ -33,6 +33,7 @@ export type AlertVariants = 'destructive' | 'info' | 'success' | 'warning';
 interface AlertProps extends VariantProps<typeof alertVariants> {
   children?: React.ReactNode;
   className?: string;
+  onDismiss?: () => void;
   title: React.ReactNode;
   icon?: React.ReactNode;
   action?: React.ReactNode;
@@ -54,8 +55,16 @@ function isInIconMap(icon: unknown): icon is keyof typeof iconMap {
 }
 
 export function Alert(props: AlertProps) {
-  const { children, fullWidth, action, className, title, icon, variant } =
-    props;
+  const {
+    children,
+    fullWidth,
+    onDismiss,
+    action,
+    className,
+    title,
+    icon,
+    variant,
+  } = props;
 
   const defaultIcon = useMemo(() => {
     if (isInIconMap(variant)) {
@@ -75,6 +84,16 @@ export function Alert(props: AlertProps) {
         <HStack fullWidth gap="small" justify="spaceBetween" align="start">
           <h5 className="font-medium">{title}</h5>
           {action}
+          {onDismiss && (
+            <button
+              className="mt-[3px]"
+              onClick={() => {
+                onDismiss();
+              }}
+            >
+              <CloseIcon size="medium" />
+            </button>
+          )}
         </HStack>
         {children && <p>{children}</p>}
       </div>

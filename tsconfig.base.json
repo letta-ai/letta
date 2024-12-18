@@ -3,6 +3,7 @@
   "compilerOptions": {
     "rootDir": ".",
     "sourceMap": true,
+    "types": ["jest"],
     "declaration": false,
     "moduleResolution": "node",
     "emitDecoratorMetadata": true,
@@ -10,7 +11,7 @@
     "importHelpers": true,
     "target": "es2015",
     "module": "esnext",
-    "lib": ["es2020", "dom"],
+    "lib": ["ES2023.Array", "es2020", "dom"],
     "skipLibCheck": true,
     "skipDefaultLibCheck": true,
     "baseUrl": ".",
@@ -22,9 +23,11 @@
       "@letta-web/analytics/server": ["libs/analytics/src/server/index.ts"],
       "@letta-web/component-library": ["libs/component-library/src/index.tsx"],
       "@letta-web/component-library/*": ["component-library/src/*"],
+      "@letta-web/composio": ["libs/composio/src/index.ts"],
       "@letta-web/configure": ["scripts/configure/src/index.ts"],
       "@letta-web/core-style-config": ["libs/core-style-config/src/index.ts"],
       "@letta-web/core-style-config/*": ["utils/src/*"],
+      "@letta-web/crm": ["libs/crm/src/index.ts"],
       "@letta-web/database": ["libs/database/src/index.ts"],
       "@letta-web/database-testing": ["libs/database-testing/src/index.ts"],
       "@letta-web/environmental-variables": [
@@ -38,7 +41,8 @@
       "@letta-web/letta-agents-api-testing": [
         "libs/letta-agents-api-testing/src/index.ts"
       ],
-      "@letta-web/redis": ["libs/redis/src/index.ts"]
+      "@letta-web/redis": ["libs/redis/src/index.ts"],
+      "@letta-web/types": ["libs/types/src/index.ts"]
     },
     "jsx": "react"
   },

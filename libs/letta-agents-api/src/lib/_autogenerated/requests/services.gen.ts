@@ -16,8 +16,18 @@ import type {
   ListToolsResponse,
   CreateToolData,
   CreateToolResponse,
+  UpsertToolData,
+  UpsertToolResponse,
   AddBaseToolsData,
   AddBaseToolsResponse,
+  RunToolFromSourceData,
+  RunToolFromSourceResponse,
+  ListComposioAppsData,
+  ListComposioAppsResponse,
+  ListComposioActionsByAppData,
+  ListComposioActionsByAppResponse,
+  AddComposioToolData,
+  AddComposioToolResponse,
   GetSourceData,
   GetSourceResponse,
   UpdateSourceData,
@@ -66,8 +76,16 @@ import type {
   ListAgentInContextMessagesResponse,
   GetAgentMemoryData,
   GetAgentMemoryResponse,
-  UpdateAgentMemoryData,
-  UpdateAgentMemoryResponse,
+  GetAgentMemoryBlockData,
+  GetAgentMemoryBlockResponse,
+  RemoveAgentMemoryBlockByLabelData,
+  RemoveAgentMemoryBlockByLabelResponse,
+  UpdateAgentMemoryBlockByLabelData,
+  UpdateAgentMemoryBlockByLabelResponse,
+  GetAgentMemoryBlocksData,
+  GetAgentMemoryBlocksResponse,
+  AddAgentMemoryBlockData,
+  AddAgentMemoryBlockResponse,
   GetAgentRecallMemorySummaryData,
   GetAgentRecallMemorySummaryResponse,
   GetAgentArchivalMemorySummaryData,
@@ -84,6 +102,10 @@ import type {
   CreateAgentMessageResponse,
   UpdateAgentMessageData,
   UpdateAgentMessageResponse,
+  CreateAgentMessageStreamData,
+  CreateAgentMessageStreamResponse,
+  CreateAgentMessageAsyncData,
+  CreateAgentMessageAsyncResponse,
   ListModelsResponse,
   ListEmbeddingModelsResponse,
   ListMemoryBlocksData,
@@ -96,6 +118,10 @@ import type {
   DeleteMemoryBlockResponse,
   GetMemoryBlockData,
   GetMemoryBlockResponse,
+  LinkAgentMemoryBlockData,
+  LinkAgentMemoryBlockResponse,
+  UnlinkAgentMemoryBlockData,
+  UnlinkAgentMemoryBlockResponse,
   ListJobsData,
   ListJobsResponse,
   ListActiveJobsData,
@@ -105,6 +131,26 @@ import type {
   DeleteJobData,
   DeleteJobResponse,
   HealthCheckResponse,
+  CreateSandboxConfigV1SandboxConfigPostData,
+  CreateSandboxConfigV1SandboxConfigPostResponse,
+  ListSandboxConfigsV1SandboxConfigGetData,
+  ListSandboxConfigsV1SandboxConfigGetResponse,
+  CreateDefaultE2bSandboxConfigV1SandboxConfigE2bDefaultPostData,
+  CreateDefaultE2bSandboxConfigV1SandboxConfigE2bDefaultPostResponse,
+  CreateDefaultLocalSandboxConfigV1SandboxConfigLocalDefaultPostData,
+  CreateDefaultLocalSandboxConfigV1SandboxConfigLocalDefaultPostResponse,
+  UpdateSandboxConfigV1SandboxConfigSandboxConfigIdPatchData,
+  UpdateSandboxConfigV1SandboxConfigSandboxConfigIdPatchResponse,
+  DeleteSandboxConfigV1SandboxConfigSandboxConfigIdDeleteData,
+  DeleteSandboxConfigV1SandboxConfigSandboxConfigIdDeleteResponse,
+  CreateSandboxEnvVarV1SandboxConfigSandboxConfigIdEnvironmentVariablePostData,
+  CreateSandboxEnvVarV1SandboxConfigSandboxConfigIdEnvironmentVariablePostResponse,
+  ListSandboxEnvVarsV1SandboxConfigSandboxConfigIdEnvironmentVariableGetData,
+  ListSandboxEnvVarsV1SandboxConfigSandboxConfigIdEnvironmentVariableGetResponse,
+  UpdateSandboxEnvVarV1SandboxConfigEnvironmentVariableEnvVarIdPatchData,
+  UpdateSandboxEnvVarV1SandboxConfigEnvironmentVariableEnvVarIdPatchResponse,
+  DeleteSandboxEnvVarV1SandboxConfigEnvironmentVariableEnvVarIdDeleteData,
+  DeleteSandboxEnvVarV1SandboxConfigEnvironmentVariableEnvVarIdDeleteResponse,
   ListUsersData,
   ListUsersResponse,
   CreateUserData,
@@ -113,12 +159,6 @@ import type {
   UpdateUserResponse,
   DeleteUserData,
   DeleteUserResponse,
-  CreateApiKeyData,
-  CreateApiKeyResponse,
-  ListApiKeysData,
-  ListApiKeysResponse,
-  DeleteApiKeyData,
-  DeleteApiKeyResponse,
   ListOrgsData,
   ListOrgsResponse,
   CreateOrganizationData,
@@ -135,6 +175,7 @@ export class ToolsService {
    * Delete a tool by name
    * @param data The data for the request.
    * @param data.toolId
+   * @param data.userId
    * @returns unknown Successful Response
    * @throws ApiError
    */
@@ -290,6 +331,31 @@ export class ToolsService {
   }
 
   /**
+   * Upsert Tool
+   * Create or update a tool
+   * @param data The data for the request.
+   * @param data.requestBody
+   * @param data.userId
+   * @returns letta__schemas__tool__Tool Successful Response
+   * @throws ApiError
+   */
+  public static upsertTool(
+    data: UpsertToolData,
+    headers?: { user_id: string }
+  ): CancelablePromise<UpsertToolResponse> {
+    return __request(OpenAPI, {
+      method: 'PUT',
+      url: '/v1/tools/',
+      body: data.requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
    * Add Base Tools
    * Add base tools
    * @param data The data for the request.
@@ -304,6 +370,105 @@ export class ToolsService {
     return __request(OpenAPI, {
       method: 'POST',
       url: '/v1/tools/add-base-tools',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Run Tool From Source
+   * Attempt to build a tool from source, then run it on the provided arguments
+   * @param data The data for the request.
+   * @param data.requestBody
+   * @param data.userId
+   * @returns FunctionReturn Successful Response
+   * @throws ApiError
+   */
+  public static runToolFromSource(
+    data: RunToolFromSourceData,
+    headers?: { user_id: string }
+  ): CancelablePromise<RunToolFromSourceResponse> {
+    return __request(OpenAPI, {
+      method: 'POST',
+      url: '/v1/tools/run',
+      body: data.requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * List Composio Apps
+   * Get a list of all Composio apps
+   * @param data The data for the request.
+   * @param data.userId
+   * @returns AppModel Successful Response
+   * @throws ApiError
+   */
+  public static listComposioApps(
+    data: ListComposioAppsData = {},
+    headers?: { user_id: string }
+  ): CancelablePromise<ListComposioAppsResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/tools/composio/apps',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * List Composio Actions By App
+   * Get a list of all Composio actions for a specific app
+   * @param data The data for the request.
+   * @param data.composioAppName
+   * @param data.userId
+   * @returns ActionModel Successful Response
+   * @throws ApiError
+   */
+  public static listComposioActionsByApp(
+    data: ListComposioActionsByAppData,
+    headers?: { user_id: string }
+  ): CancelablePromise<ListComposioActionsByAppResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/tools/composio/apps/{composio_app_name}/actions',
+      path: {
+        composio_app_name: data.composioAppName,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Add Composio Tool
+   * Add a new Composio tool by action name (Composio refers to each tool as an `Action`)
+   * @param data The data for the request.
+   * @param data.composioActionName
+   * @param data.userId
+   * @returns letta__schemas__tool__Tool Successful Response
+   * @throws ApiError
+   */
+  public static addComposioTool(
+    data: AddComposioToolData,
+    headers?: { user_id: string }
+  ): CancelablePromise<AddComposioToolResponse> {
+    return __request(OpenAPI, {
+      method: 'POST',
+      url: '/v1/tools/composio/{composio_action_name}',
+      path: {
+        composio_action_name: data.composioActionName,
+      },
       errors: {
         422: 'Validation Error',
       },
@@ -589,6 +754,7 @@ export class SourcesService {
    * @param data.sourceId
    * @param data.limit Number of files to return
    * @param data.cursor Pagination cursor to fetch the next set of results
+   * @param data.userId
    * @returns FileMetadata Successful Response
    * @throws ApiError
    */
@@ -650,6 +816,7 @@ export class AgentsService {
    * @param data The data for the request.
    * @param data.name Name of the agent
    * @param data.tags List of tags to filter agents by
+   * @param data.matchAllTags If True, only returns agents that match ALL given tags. Otherwise, return agents that have ANY of the passed in tags.
    * @param data.userId
    * @returns AgentState Successful Response
    * @throws ApiError
@@ -664,6 +831,7 @@ export class AgentsService {
       query: {
         name: data.name,
         tags: data.tags,
+        match_all_tags: data.matchAllTags,
       },
       errors: {
         422: 'Validation Error',
@@ -784,7 +952,7 @@ export class AgentsService {
    * @param data The data for the request.
    * @param data.agentId
    * @param data.userId
-   * @returns unknown Successful Response
+   * @returns AgentState Successful Response
    * @throws ApiError
    */
   public static deleteAgent(
@@ -891,6 +1059,7 @@ export class AgentsService {
    * Get the sources associated with an agent.
    * @param data The data for the request.
    * @param data.agentId
+   * @param data.userId
    * @returns Source Successful Response
    * @throws ApiError
    */
@@ -916,7 +1085,8 @@ export class AgentsService {
    * Retrieve the messages in the context of a specific agent.
    * @param data The data for the request.
    * @param data.agentId
-   * @returns letta__schemas__message__Message_Output Successful Response
+   * @param data.userId
+   * @returns letta__schemas__message__Message Successful Response
    * @throws ApiError
    */
   public static listAgentInContextMessages(
@@ -942,6 +1112,7 @@ export class AgentsService {
    * This endpoint fetches the current memory state of the agent identified by the user ID and agent ID.
    * @param data The data for the request.
    * @param data.agentId
+   * @param data.userId
    * @returns Memory Successful Response
    * @throws ApiError
    */
@@ -963,9 +1134,121 @@ export class AgentsService {
   }
 
   /**
-   * Update Agent Memory
-   * Update the core memory of a specific agent.
-   * This endpoint accepts new memory contents (human and persona) and updates the core memory of the agent identified by the user ID and agent ID.
+   * Get Agent Memory Block
+   * Retrieve a memory block from an agent.
+   * @param data The data for the request.
+   * @param data.agentId
+   * @param data.blockLabel
+   * @param data.userId
+   * @returns Block Successful Response
+   * @throws ApiError
+   */
+  public static getAgentMemoryBlock(
+    data: GetAgentMemoryBlockData,
+    headers?: { user_id: string }
+  ): CancelablePromise<GetAgentMemoryBlockResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/agents/{agent_id}/memory/block/{block_label}',
+      path: {
+        agent_id: data.agentId,
+        block_label: data.blockLabel,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Remove Agent Memory Block
+   * Removes a memory block from an agent by unlnking it. If the block is not linked to any other agent, it is deleted.
+   * @param data The data for the request.
+   * @param data.agentId
+   * @param data.blockLabel
+   * @param data.userId
+   * @returns Memory Successful Response
+   * @throws ApiError
+   */
+  public static removeAgentMemoryBlockByLabel(
+    data: RemoveAgentMemoryBlockByLabelData,
+    headers?: { user_id: string }
+  ): CancelablePromise<RemoveAgentMemoryBlockByLabelResponse> {
+    return __request(OpenAPI, {
+      method: 'DELETE',
+      url: '/v1/agents/{agent_id}/memory/block/{block_label}',
+      path: {
+        agent_id: data.agentId,
+        block_label: data.blockLabel,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Update Agent Memory Block
+   * Removes a memory block from an agent by unlnking it. If the block is not linked to any other agent, it is deleted.
+   * @param data The data for the request.
+   * @param data.agentId
+   * @param data.blockLabel
+   * @param data.requestBody
+   * @param data.userId
+   * @returns Block Successful Response
+   * @throws ApiError
+   */
+  public static updateAgentMemoryBlockByLabel(
+    data: UpdateAgentMemoryBlockByLabelData,
+    headers?: { user_id: string }
+  ): CancelablePromise<UpdateAgentMemoryBlockByLabelResponse> {
+    return __request(OpenAPI, {
+      method: 'PATCH',
+      url: '/v1/agents/{agent_id}/memory/block/{block_label}',
+      path: {
+        agent_id: data.agentId,
+        block_label: data.blockLabel,
+      },
+      body: data.requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Get Agent Memory Blocks
+   * Retrieve the memory blocks of a specific agent.
+   * @param data The data for the request.
+   * @param data.agentId
+   * @param data.userId
+   * @returns Block Successful Response
+   * @throws ApiError
+   */
+  public static getAgentMemoryBlocks(
+    data: GetAgentMemoryBlocksData,
+    headers?: { user_id: string }
+  ): CancelablePromise<GetAgentMemoryBlocksResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/agents/{agent_id}/memory/block',
+      path: {
+        agent_id: data.agentId,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Add Agent Memory Block
+   * Creates a memory block and links it to the agent.
    * @param data The data for the request.
    * @param data.agentId
    * @param data.requestBody
@@ -973,13 +1256,13 @@ export class AgentsService {
    * @returns Memory Successful Response
    * @throws ApiError
    */
-  public static updateAgentMemory(
-    data: UpdateAgentMemoryData,
+  public static addAgentMemoryBlock(
+    data: AddAgentMemoryBlockData,
     headers?: { user_id: string }
-  ): CancelablePromise<UpdateAgentMemoryResponse> {
+  ): CancelablePromise<AddAgentMemoryBlockResponse> {
     return __request(OpenAPI, {
-      method: 'PATCH',
-      url: '/v1/agents/{agent_id}/memory',
+      method: 'POST',
+      url: '/v1/agents/{agent_id}/memory/block',
       path: {
         agent_id: data.agentId,
       },
@@ -997,6 +1280,7 @@ export class AgentsService {
    * Retrieve the summary of the recall memory of a specific agent.
    * @param data The data for the request.
    * @param data.agentId
+   * @param data.userId
    * @returns RecallMemorySummary Successful Response
    * @throws ApiError
    */
@@ -1022,6 +1306,7 @@ export class AgentsService {
    * Retrieve the summary of the archival memory of a specific agent.
    * @param data The data for the request.
    * @param data.agentId
+   * @param data.userId
    * @returns ArchivalMemorySummary Successful Response
    * @throws ApiError
    */
@@ -1141,9 +1426,8 @@ export class AgentsService {
    * @param data.before Message before which to retrieve the returned messages.
    * @param data.limit Maximum number of messages to retrieve.
    * @param data.msgObject If true, returns Message objects. If false, return LettaMessage objects.
-   * @param data.useAssistantMessage [Only applicable if msg_object is False] If true, returns AssistantMessage objects when the agent calls a designated message tool. If false, return FunctionCallMessage objects for all tool calls.
-   * @param data.assistantMessageFunctionName [Only applicable if use_assistant_message is True] The name of the designated message tool.
-   * @param data.assistantMessageFunctionKwarg [Only applicable if use_assistant_message is True] The name of the message argument in the designated message tool.
+   * @param data.assistantMessageToolName The name of the designated message tool.
+   * @param data.assistantMessageToolKwarg The name of the message argument in the designated message tool.
    * @param data.userId
    * @returns unknown Successful Response
    * @throws ApiError
@@ -1162,9 +1446,8 @@ export class AgentsService {
         before: data.before,
         limit: data.limit,
         msg_object: data.msgObject,
-        use_assistant_message: data.useAssistantMessage,
-        assistant_message_function_name: data.assistantMessageFunctionName,
-        assistant_message_function_kwarg: data.assistantMessageFunctionKwarg,
+        assistant_message_tool_name: data.assistantMessageToolName,
+        assistant_message_tool_kwarg: data.assistantMessageToolKwarg,
       },
       errors: {
         422: 'Validation Error',
@@ -1177,12 +1460,11 @@ export class AgentsService {
    * Send Message
    * Process a user message and return the agent's response.
    * This endpoint accepts a message from a user and processes it through the agent.
-   * It can optionally stream the response if 'stream_steps' or 'stream_tokens' is set to True.
    * @param data The data for the request.
    * @param data.agentId
    * @param data.requestBody
    * @param data.userId
-   * @returns unknown Successful response
+   * @returns LettaResponse Successful Response
    * @throws ApiError
    */
   public static createAgentMessage(
@@ -1211,7 +1493,8 @@ export class AgentsService {
    * @param data.agentId
    * @param data.messageId
    * @param data.requestBody
-   * @returns letta__schemas__message__Message_Output Successful Response
+   * @param data.userId
+   * @returns letta__schemas__message__Message Successful Response
    * @throws ApiError
    */
   public static updateAgentMessage(
@@ -1224,6 +1507,67 @@ export class AgentsService {
       path: {
         agent_id: data.agentId,
         message_id: data.messageId,
+      },
+      body: data.requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Send Message Streaming
+   * Process a user message and return the agent's response.
+   * This endpoint accepts a message from a user and processes it through the agent.
+   * It will stream the steps of the response always, and stream the tokens if 'stream_tokens' is set to True.
+   * @param data The data for the request.
+   * @param data.agentId
+   * @param data.requestBody
+   * @param data.userId
+   * @returns unknown Successful response
+   * @throws ApiError
+   */
+  public static createAgentMessageStream(
+    data: CreateAgentMessageStreamData,
+    headers?: { user_id: string }
+  ): CancelablePromise<CreateAgentMessageStreamResponse> {
+    return __request(OpenAPI, {
+      method: 'POST',
+      url: '/v1/agents/{agent_id}/messages/stream',
+      path: {
+        agent_id: data.agentId,
+      },
+      body: data.requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Send Message Async
+   * Asynchronously process a user message and return a job ID.
+   * The actual processing happens in the background, and the status can be checked using the job ID.
+   * @param data The data for the request.
+   * @param data.agentId
+   * @param data.requestBody
+   * @param data.userId
+   * @returns Job Successful Response
+   * @throws ApiError
+   */
+  public static createAgentMessageAsync(
+    data: CreateAgentMessageAsyncData,
+    headers?: { user_id: string }
+  ): CancelablePromise<CreateAgentMessageAsyncResponse> {
+    return __request(OpenAPI, {
+      method: 'POST',
+      url: '/v1/agents/{agent_id}/messages/async',
+      path: {
+        agent_id: data.agentId,
       },
       body: data.requestBody,
       mediaType: 'application/json',
@@ -1358,6 +1702,7 @@ export class BlocksService {
    * @param data The data for the request.
    * @param data.blockId
    * @param data.requestBody
+   * @param data.userId
    * @returns Block Successful Response
    * @throws ApiError
    */
@@ -1384,6 +1729,7 @@ export class BlocksService {
    * Delete Block
    * @param data The data for the request.
    * @param data.blockId
+   * @param data.userId
    * @returns Block Successful Response
    * @throws ApiError
    */
@@ -1408,6 +1754,7 @@ export class BlocksService {
    * Get Block
    * @param data The data for the request.
    * @param data.blockId
+   * @param data.userId
    * @returns Block Successful Response
    * @throws ApiError
    */
@@ -1420,6 +1767,66 @@ export class BlocksService {
       url: '/v1/blocks/{block_id}',
       path: {
         block_id: data.blockId,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Link Agent Memory Block
+   * Link a memory block to an agent.
+   * @param data The data for the request.
+   * @param data.blockId
+   * @param data.agentId The unique identifier of the agent to attach the source to.
+   * @param data.userId
+   * @returns void Successful Response
+   * @throws ApiError
+   */
+  public static linkAgentMemoryBlock(
+    data: LinkAgentMemoryBlockData,
+    headers?: { user_id: string }
+  ): CancelablePromise<LinkAgentMemoryBlockResponse> {
+    return __request(OpenAPI, {
+      method: 'PATCH',
+      url: '/v1/blocks/{block_id}/attach',
+      path: {
+        block_id: data.blockId,
+      },
+      query: {
+        agent_id: data.agentId,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Unlink Agent Memory Block
+   * Unlink a memory block from an agent
+   * @param data The data for the request.
+   * @param data.blockId
+   * @param data.agentId The unique identifier of the agent to attach the source to.
+   * @param data.userId
+   * @returns void Successful Response
+   * @throws ApiError
+   */
+  public static unlinkAgentMemoryBlock(
+    data: UnlinkAgentMemoryBlockData,
+    headers?: { user_id: string }
+  ): CancelablePromise<UnlinkAgentMemoryBlockResponse> {
+    return __request(OpenAPI, {
+      method: 'PATCH',
+      url: '/v1/blocks/{block_id}/detach',
+      path: {
+        block_id: data.blockId,
+      },
+      query: {
+        agent_id: data.agentId,
       },
       errors: {
         422: 'Validation Error',
@@ -1483,6 +1890,7 @@ export class JobsService {
    * Get the status of a job.
    * @param data The data for the request.
    * @param data.jobId
+   * @param data.userId
    * @returns Job Successful Response
    * @throws ApiError
    */
@@ -1508,6 +1916,7 @@ export class JobsService {
    * Delete a job by its job_id.
    * @param data The data for the request.
    * @param data.jobId
+   * @param data.userId
    * @returns Job Successful Response
    * @throws ApiError
    */
@@ -1541,6 +1950,266 @@ export class HealthService {
     return __request(OpenAPI, {
       method: 'GET',
       url: '/v1/health/',
+      headers,
+    });
+  }
+}
+
+export class SandboxConfigService {
+  /**
+   * Create Sandbox Config
+   * @param data The data for the request.
+   * @param data.requestBody
+   * @param data.userId
+   * @returns SandboxConfig Successful Response
+   * @throws ApiError
+   */
+  public static createSandboxConfigV1SandboxConfigPost(
+    data: CreateSandboxConfigV1SandboxConfigPostData,
+    headers?: { user_id: string }
+  ): CancelablePromise<CreateSandboxConfigV1SandboxConfigPostResponse> {
+    return __request(OpenAPI, {
+      method: 'POST',
+      url: '/v1/sandbox-config/',
+      body: data.requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * List Sandbox Configs
+   * @param data The data for the request.
+   * @param data.limit Number of results to return
+   * @param data.cursor Pagination cursor to fetch the next set of results
+   * @param data.userId
+   * @returns SandboxConfig Successful Response
+   * @throws ApiError
+   */
+  public static listSandboxConfigsV1SandboxConfigGet(
+    data: ListSandboxConfigsV1SandboxConfigGetData = {},
+    headers?: { user_id: string }
+  ): CancelablePromise<ListSandboxConfigsV1SandboxConfigGetResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/sandbox-config/',
+      query: {
+        limit: data.limit,
+        cursor: data.cursor,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Create Default E2B Sandbox Config
+   * @param data The data for the request.
+   * @param data.userId
+   * @returns SandboxConfig Successful Response
+   * @throws ApiError
+   */
+  public static createDefaultE2bSandboxConfigV1SandboxConfigE2bDefaultPost(
+    data: CreateDefaultE2bSandboxConfigV1SandboxConfigE2bDefaultPostData = {},
+    headers?: { user_id: string }
+  ): CancelablePromise<CreateDefaultE2bSandboxConfigV1SandboxConfigE2bDefaultPostResponse> {
+    return __request(OpenAPI, {
+      method: 'POST',
+      url: '/v1/sandbox-config/e2b/default',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Create Default Local Sandbox Config
+   * @param data The data for the request.
+   * @param data.userId
+   * @returns SandboxConfig Successful Response
+   * @throws ApiError
+   */
+  public static createDefaultLocalSandboxConfigV1SandboxConfigLocalDefaultPost(
+    data: CreateDefaultLocalSandboxConfigV1SandboxConfigLocalDefaultPostData = {},
+    headers?: { user_id: string }
+  ): CancelablePromise<CreateDefaultLocalSandboxConfigV1SandboxConfigLocalDefaultPostResponse> {
+    return __request(OpenAPI, {
+      method: 'POST',
+      url: '/v1/sandbox-config/local/default',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Update Sandbox Config
+   * @param data The data for the request.
+   * @param data.sandboxConfigId
+   * @param data.requestBody
+   * @param data.userId
+   * @returns SandboxConfig Successful Response
+   * @throws ApiError
+   */
+  public static updateSandboxConfigV1SandboxConfigSandboxConfigIdPatch(
+    data: UpdateSandboxConfigV1SandboxConfigSandboxConfigIdPatchData,
+    headers?: { user_id: string }
+  ): CancelablePromise<UpdateSandboxConfigV1SandboxConfigSandboxConfigIdPatchResponse> {
+    return __request(OpenAPI, {
+      method: 'PATCH',
+      url: '/v1/sandbox-config/{sandbox_config_id}',
+      path: {
+        sandbox_config_id: data.sandboxConfigId,
+      },
+      body: data.requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Delete Sandbox Config
+   * @param data The data for the request.
+   * @param data.sandboxConfigId
+   * @param data.userId
+   * @returns void Successful Response
+   * @throws ApiError
+   */
+  public static deleteSandboxConfigV1SandboxConfigSandboxConfigIdDelete(
+    data: DeleteSandboxConfigV1SandboxConfigSandboxConfigIdDeleteData,
+    headers?: { user_id: string }
+  ): CancelablePromise<DeleteSandboxConfigV1SandboxConfigSandboxConfigIdDeleteResponse> {
+    return __request(OpenAPI, {
+      method: 'DELETE',
+      url: '/v1/sandbox-config/{sandbox_config_id}',
+      path: {
+        sandbox_config_id: data.sandboxConfigId,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Create Sandbox Env Var
+   * @param data The data for the request.
+   * @param data.sandboxConfigId
+   * @param data.requestBody
+   * @param data.userId
+   * @returns SandboxEnvironmentVariable Successful Response
+   * @throws ApiError
+   */
+  public static createSandboxEnvVarV1SandboxConfigSandboxConfigIdEnvironmentVariablePost(
+    data: CreateSandboxEnvVarV1SandboxConfigSandboxConfigIdEnvironmentVariablePostData,
+    headers?: { user_id: string }
+  ): CancelablePromise<CreateSandboxEnvVarV1SandboxConfigSandboxConfigIdEnvironmentVariablePostResponse> {
+    return __request(OpenAPI, {
+      method: 'POST',
+      url: '/v1/sandbox-config/{sandbox_config_id}/environment-variable',
+      path: {
+        sandbox_config_id: data.sandboxConfigId,
+      },
+      body: data.requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * List Sandbox Env Vars
+   * @param data The data for the request.
+   * @param data.sandboxConfigId
+   * @param data.limit Number of results to return
+   * @param data.cursor Pagination cursor to fetch the next set of results
+   * @param data.userId
+   * @returns SandboxEnvironmentVariable Successful Response
+   * @throws ApiError
+   */
+  public static listSandboxEnvVarsV1SandboxConfigSandboxConfigIdEnvironmentVariableGet(
+    data: ListSandboxEnvVarsV1SandboxConfigSandboxConfigIdEnvironmentVariableGetData,
+    headers?: { user_id: string }
+  ): CancelablePromise<ListSandboxEnvVarsV1SandboxConfigSandboxConfigIdEnvironmentVariableGetResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/sandbox-config/{sandbox_config_id}/environment-variable',
+      path: {
+        sandbox_config_id: data.sandboxConfigId,
+      },
+      query: {
+        limit: data.limit,
+        cursor: data.cursor,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Update Sandbox Env Var
+   * @param data The data for the request.
+   * @param data.envVarId
+   * @param data.requestBody
+   * @param data.userId
+   * @returns SandboxEnvironmentVariable Successful Response
+   * @throws ApiError
+   */
+  public static updateSandboxEnvVarV1SandboxConfigEnvironmentVariableEnvVarIdPatch(
+    data: UpdateSandboxEnvVarV1SandboxConfigEnvironmentVariableEnvVarIdPatchData,
+    headers?: { user_id: string }
+  ): CancelablePromise<UpdateSandboxEnvVarV1SandboxConfigEnvironmentVariableEnvVarIdPatchResponse> {
+    return __request(OpenAPI, {
+      method: 'PATCH',
+      url: '/v1/sandbox-config/environment-variable/{env_var_id}',
+      path: {
+        env_var_id: data.envVarId,
+      },
+      body: data.requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Delete Sandbox Env Var
+   * @param data The data for the request.
+   * @param data.envVarId
+   * @param data.userId
+   * @returns void Successful Response
+   * @throws ApiError
+   */
+  public static deleteSandboxEnvVarV1SandboxConfigEnvironmentVariableEnvVarIdDelete(
+    data: DeleteSandboxEnvVarV1SandboxConfigEnvironmentVariableEnvVarIdDeleteData,
+    headers?: { user_id: string }
+  ): CancelablePromise<DeleteSandboxEnvVarV1SandboxConfigEnvironmentVariableEnvVarIdDeleteResponse> {
+    return __request(OpenAPI, {
+      method: 'DELETE',
+      url: '/v1/sandbox-config/environment-variable/{env_var_id}',
+      path: {
+        env_var_id: data.envVarId,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
       headers,
     });
   }
@@ -1645,79 +2314,6 @@ export class UsersService {
       headers,
     });
   }
-
-  /**
-   * Create New Api Key
-   * Create a new API key for a user
-   * @param data The data for the request.
-   * @param data.requestBody
-   * @returns APIKey Successful Response
-   * @throws ApiError
-   */
-  public static createApiKey(
-    data: CreateApiKeyData,
-    headers?: { user_id: string }
-  ): CancelablePromise<CreateApiKeyResponse> {
-    return __request(OpenAPI, {
-      method: 'POST',
-      url: '/v1/admin/users/keys',
-      body: data.requestBody,
-      mediaType: 'application/json',
-      errors: {
-        422: 'Validation Error',
-      },
-      headers,
-    });
-  }
-
-  /**
-   * Get Api Keys
-   * Get a list of all API keys for a user
-   * @param data The data for the request.
-   * @param data.userId The unique identifier of the user.
-   * @returns APIKey Successful Response
-   * @throws ApiError
-   */
-  public static listApiKeys(
-    data: ListApiKeysData,
-    headers?: { user_id: string }
-  ): CancelablePromise<ListApiKeysResponse> {
-    return __request(OpenAPI, {
-      method: 'GET',
-      url: '/v1/admin/users/keys',
-      query: {
-        user_id: data.userId,
-      },
-      errors: {
-        422: 'Validation Error',
-      },
-      headers,
-    });
-  }
-
-  /**
-   * Delete Api Key
-   * @param data The data for the request.
-   * @param data.apiKey The API key to be deleted.
-   * @returns APIKey Successful Response
-   * @throws ApiError
-   */
-  public static deleteApiKey(
-    data: DeleteApiKeyData,
-    headers?: { user_id: string }
-  ): CancelablePromise<DeleteApiKeyResponse> {
-    return __request(OpenAPI, {
-      method: 'DELETE',
-      url: '/v1/admin/users/keys',
-      query: {
-        api_key: data.apiKey,
-      },
-      errors: {
-        422: 'Validation Error',
-      },
-      headers,
-    });
-  }
 }
 
 export class AdminService {
@@ -1812,79 +2408,6 @@ export class AdminService {
       url: '/v1/admin/users/',
       query: {
         user_id: data.userId,
-      },
-      errors: {
-        422: 'Validation Error',
-      },
-      headers,
-    });
-  }
-
-  /**
-   * Create New Api Key
-   * Create a new API key for a user
-   * @param data The data for the request.
-   * @param data.requestBody
-   * @returns APIKey Successful Response
-   * @throws ApiError
-   */
-  public static createApiKey(
-    data: CreateApiKeyData,
-    headers?: { user_id: string }
-  ): CancelablePromise<CreateApiKeyResponse> {
-    return __request(OpenAPI, {
-      method: 'POST',
-      url: '/v1/admin/users/keys',
-      body: data.requestBody,
-      mediaType: 'application/json',
-      errors: {
-        422: 'Validation Error',
-      },
-      headers,
-    });
-  }
-
-  /**
-   * Get Api Keys
-   * Get a list of all API keys for a user
-   * @param data The data for the request.
-   * @param data.userId The unique identifier of the user.
-   * @returns APIKey Successful Response
-   * @throws ApiError
-   */
-  public static listApiKeys(
-    data: ListApiKeysData,
-    headers?: { user_id: string }
-  ): CancelablePromise<ListApiKeysResponse> {
-    return __request(OpenAPI, {
-      method: 'GET',
-      url: '/v1/admin/users/keys',
-      query: {
-        user_id: data.userId,
-      },
-      errors: {
-        422: 'Validation Error',
-      },
-      headers,
-    });
-  }
-
-  /**
-   * Delete Api Key
-   * @param data The data for the request.
-   * @param data.apiKey The API key to be deleted.
-   * @returns APIKey Successful Response
-   * @throws ApiError
-   */
-  public static deleteApiKey(
-    data: DeleteApiKeyData,
-    headers?: { user_id: string }
-  ): CancelablePromise<DeleteApiKeyResponse> {
-    return __request(OpenAPI, {
-      method: 'DELETE',
-      url: '/v1/admin/users/keys',
-      query: {
-        api_key: data.apiKey,
       },
       errors: {
         422: 'Validation Error',

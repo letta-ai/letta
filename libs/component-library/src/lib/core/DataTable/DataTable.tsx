@@ -26,6 +26,7 @@ import { useCallback, useEffect, useMemo } from 'react';
 import { LoadingEmptyStatusComponent } from '../../reusable/LoadingEmptyStatusComponent/LoadingEmptyStatusComponent';
 import { TABLE_ROW_HEIGHT } from '../../../constants';
 import { SearchIcon } from '../../icons';
+import './DataTable.scss';
 
 interface TableBodyContentProps<Data> {
   table: UseReactTableType<Data>;
@@ -59,6 +60,8 @@ function TableBodyContent<Data>(props: TableBodyContentProps<Data>) {
               loadingMessage={loadingText}
               emptyAction={noResultsAction}
               isError={!!errorMessage}
+              noMinHeight
+              className="min-h-[100%] absolute pt-[100px] top-0 left-0"
               errorMessage={errorMessage}
               emptyMessage={noResultsText || 'No results found'}
               isLoading={isLoading}
@@ -86,6 +89,14 @@ function TableBodyContent<Data>(props: TableBodyContentProps<Data>) {
             {row.getVisibleCells().map((cell) => (
               <TableCell
                 align={cell.column.columnDef.meta?.style.columnAlign}
+                className={cn(
+                  cell.column.columnDef.meta?.style.sticky === 'left' &&
+                    'sticky left-0',
+                  cell.column.columnDef.meta?.style.sticky === 'right' &&
+                    'sticky right-0',
+                  cell.column.columnDef.meta?.style.sticky &&
+                    'linear-gradient-background'
+                )}
                 key={cell.id}
               >
                 {flexRender(cell.column.columnDef.cell, cell.getContext())}
@@ -107,7 +118,7 @@ const dataTableVariants = cva('h-full', {
       minimal: 'border-none',
     },
     fullHeight: {
-      true: 'h-full',
+      true: 'h-full flex-1',
     },
   },
   defaultVariants: {
@@ -161,6 +172,7 @@ export function DataTable<TData, TValue>(props: DataTableProps<TData, TValue>) {
     className,
     noResultsText,
     showPagination,
+    onSearch,
     fullHeight,
     onLimitChange,
   } = props;
@@ -177,16 +189,7 @@ export function DataTable<TData, TValue>(props: DataTableProps<TData, TValue>) {
       }
 
       // get the top position of the table
-      const { top, bottom } = tableContainerRef.current.getBoundingClientRect();
-
-      // get the height of the window
-      const windowHeight = window.innerHeight;
-
-      // calculate the distance from the bottom of the window
-      const distanceFromBottom = windowHeight - bottom;
-
-      // calculate the maximum height of the table
-      let height = windowHeight - top - distanceFromBottom;
+      let { height } = tableContainerRef.current.getBoundingClientRect();
 
       if (typeof minHeight === 'number') {
         height = Math.max(height, minHeight);
@@ -195,20 +198,11 @@ export function DataTable<TData, TValue>(props: DataTableProps<TData, TValue>) {
       // calculate the number of rows that can fit in the table
       const rows = Math.floor(height / TABLE_ROW_HEIGHT) - 1;
 
-      const rowsForHeight = Math.max(2, rows + 1);
-
-      tableContainerRef.current.style.minHeight = `${
-        rowsForHeight * TABLE_ROW_HEIGHT
-      }px`;
-      tableContainerRef.current.style.height = `${
-        rowsForHeight * TABLE_ROW_HEIGHT
-      }px`;
-
       mounted.current = true;
 
       onLimitChange?.(Math.max(rows, 1));
     }
-  }, [autofitHeight, minHeight, onLimitChange]);
+  }, [autofitHeight, limit, minHeight, onLimitChange]);
 
   const handleNextPage = useCallback(() => {
     if (isLoading) {
@@ -267,7 +261,7 @@ export function DataTable<TData, TValue>(props: DataTableProps<TData, TValue>) {
       ref={tableParentRef}
       className={cn(
         'flex flex-col gap-2 w-full',
-        fullHeight || autofitHeight ? 'h-full' : ''
+        fullHeight || autofitHeight ? 'h-full flex-1' : ''
       )}
     >
       {props.onSearch && (
@@ -277,14 +271,39 @@ export function DataTable<TData, TValue>(props: DataTableProps<TData, TValue>) {
           placeholder="Search"
           label="Search"
           hideLabel
-          onChange={(e) => props.onSearch?.(e.target.value)}
+          onChange={(e) => {
+            if (onSearch) {
+              onSearch(e.target.value);
+
+              if (onSetCursor) {
+                lastCursor.current = undefined;
+                onSetCursor(lastCursor.current);
+              }
+
+              if (onSetOffset) {
+                onSetOffset(0);
+              }
+            }
+          }}
           value={props.searchValue}
         />
       )}
       <div
-        style={{ minHeight: minHeight }}
         ref={tableContainerRef}
-        className={cn(dataTableVariants({ variant, fullHeight, className }))}
+        className={cn(
+          dataTableVariants({
+            variant,
+            fullHeight: fullHeight || autofitHeight,
+            className,
+          }),
+          'relative'
+        )}
+        style={{
+          height:
+            !autofitHeight && limit
+              ? `${(limit + 1) * TABLE_ROW_HEIGHT}px`
+              : '',
+        }}
       >
         <Table>
           <TableHeader>

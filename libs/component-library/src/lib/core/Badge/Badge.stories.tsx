@@ -18,7 +18,7 @@ export const Primary: Story = {
     color: {
       options: [
         'background-grey',
-        'background-greyer',
+        'background-grey2',
         'background-black',
         'transparent',
         'tertiary',

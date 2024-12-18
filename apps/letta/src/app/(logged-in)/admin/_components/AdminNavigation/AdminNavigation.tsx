@@ -1,73 +1,69 @@
 'use client';
-import type { ReactNode } from 'react';
-import { useMemo } from 'react';
-import {
-  Frame,
-  HomeIcon,
-  HStack,
-  Typography,
-  ListIcon,
-  LayoutIcon,
-} from '@letta-web/component-library';
-import Link from 'next/link';
-import { cn } from '@letta-web/core-style-config';
+import React, { useEffect } from 'react';
+import { HomeIcon, HStack, VStack, Button } from '@letta-web/component-library';
 import { usePathname } from 'next/navigation';
-import { Slot } from '@radix-ui/react-slot';
+import type { AdminNavigationItemProps } from '../../types';
+import { NavigationItems } from '../../constants';
 
-interface NavigationItemProps {
-  href: string;
-  icon?: ReactNode;
-  label: string;
-}
-
-function NavigationItem(props: NavigationItemProps) {
-  const { href, icon, label } = props;
+function NavigationItem(props: AdminNavigationItemProps) {
+  const { href, preload, active, hideLabel, label, id, icon } = props;
   const pathname = usePathname();
 
-  const isActive = useMemo(() => {
-    return pathname === href;
-  }, [href, pathname]);
-
   return (
-    <Frame as="li" fullWidth>
-      <Link href={href}>
-        <HStack
-          as="button"
-          color="tertiary"
-          aria-current={isActive}
-          /* eslint-disable-next-line react/forbid-component-props */
-          className={cn(
-            'hover:bg-tertiary-hover',
-            isActive && 'bg-tertiary-active'
-          )}
-          padding="medium"
-          paddingY="small"
-          fullWidth
-          align="center"
-        >
-          {/* eslint-disable-next-line react/forbid-component-props */}
-          <Slot className="w-4">{icon}</Slot>
-          <Typography>{label}</Typography>
-        </HStack>
-      </Link>
-    </Frame>
+    <Button
+      animate
+      data-testid={`nav-button-${id}`}
+      preload={preload}
+      active={active || pathname === href}
+      href={href}
+      hideLabel={hideLabel}
+      fullWidth
+      color="tertiary-transparent"
+      align="left"
+      label={label}
+      preIcon={icon}
+    />
   );
 }
 
 export function AdminNavigation() {
+  useEffect(() => {
+    document.body.className = 'hacker' || '';
+    document.body.dataset['mode'] = 'hacker' || '';
+  }, []);
+
   return (
-    <Frame as="ul" fullWidth fullHeight>
-      <NavigationItem href="/admin" label="Home" icon={<HomeIcon />} />
-      <NavigationItem
-        href="/admin/whitelist"
-        label="Manage Whitelist"
-        icon={<ListIcon />}
-      />
-      <NavigationItem
-        href="/admin/flush-layouts"
-        label="Flush Layouts"
-        icon={<LayoutIcon />}
-      />
-    </Frame>
+    <>
+      {/* eslint-disable-next-line react/forbid-component-props */}
+      <VStack className="min-w-sidebar max-w-sidebar hidden visibleSidebar:block" />
+      <VStack
+        overflowY="auto"
+        position="fixed"
+        justify="spaceBetween"
+        color="background"
+        fullHeight
+        zIndex="rightAboveZero"
+        /* eslint-disable-next-line react/forbid-component-props */
+        className="top-0 min-w-sidebar h-full max-w-sidebar invisible visibleSidebar:visible"
+      >
+        <VStack fullHeight gap="small" padding="xxsmall">
+          {/* eslint-disable-next-line react/forbid-component-props */}
+          <HStack className="h-header min-h-header" />
+          <VStack fullHeight border>
+            <VStack padding="small">
+              <NavigationItem
+                id="home"
+                href="/admin"
+                label="Home"
+                icon={<HomeIcon />}
+              />
+              {NavigationItems.map((item) => (
+                <NavigationItem key={item.id} {...item} />
+              ))}
+            </VStack>
+          </VStack>
+        </VStack>
+      </VStack>
+    </>
   );
 }

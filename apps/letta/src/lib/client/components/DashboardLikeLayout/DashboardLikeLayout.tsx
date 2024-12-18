@@ -1,4 +1,3 @@
-'y';
 import type { ReactNode } from 'react';
 import React from 'react';
 import {
@@ -13,6 +12,7 @@ import {
   NavigationSidebar,
   SIDEBAR_OVERLAY_MOUNT_POINT_ID,
 } from './DashboardNavigation/DashboardNavigation';
+import { DashboardTransition } from './DashboardTransition/DashboardTransition';
 
 interface DashboardLikeLayoutProps {
   children: ReactNode;
@@ -24,13 +24,16 @@ export async function DashboardLikeLayout(props: DashboardLikeLayoutProps) {
 
   return (
     <UseDashboardNavigationItemsProvider>
-      <div className="pageFadeIn">
+      <div className="pageFadeIn overflow-x-hidden">
         <VStack gap="small" fullHeight fullWidth>
           <DashboardHeader />
           <HStack gap={false} fullWidth>
             {!hideSidebar && <NavigationSidebar />}
-            <Frame position="relative" fullWidth>
-              {children}
+
+            <Frame position="relative" overflow="hidden" fullWidth>
+              <DashboardTransition alwaysFullscreenBox={hideSidebar}>
+                {children}
+              </DashboardTransition>
             </Frame>
           </HStack>
           <div id={SIDEBAR_OVERLAY_MOUNT_POINT_ID} />

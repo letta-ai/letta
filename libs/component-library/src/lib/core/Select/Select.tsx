@@ -5,12 +5,14 @@ import ReactSelect, { components } from 'react-select';
 import AsyncReactSelect from 'react-select/async';
 import { cn } from '@letta-web/core-style-config';
 import type { ReactNode } from 'react';
+import { useEffect } from 'react';
 import { CaretDownIcon, CloseIcon } from '../../icons';
 import { makeInput, makeRawInput } from '../Form/Form';
 import { z } from 'zod';
 import { HStack } from '../../framing/HStack/HStack';
 import { Slot } from '@radix-ui/react-slot';
 import { Typography } from '../Typography/Typography';
+import { useDialogContext } from '../Dialog/Dialog';
 
 interface SelectOptionsContextProps {
   hideIconsOnOptions?: boolean;
@@ -91,10 +93,15 @@ const overridenComponents = {
     // @ts-expect-error yest
     <components.SingleValue {...props}>
       <HStack align="center" gap="medium">
-        {props.data.icon && (
-          <Slot className="max-h-3 w-3">{props.data.icon}</Slot>
-        )}
-        <Typography>{children}</Typography>
+        <HStack align="center" gap="small" fullWidth>
+          {props.data.icon && (
+            <Slot className="max-h-3 w-3">{props.data.icon}</Slot>
+          )}
+          <Typography align="left" noWrap overflow="ellipsis">
+            {children}
+          </Typography>
+        </HStack>
+        {props.data.badge}
       </HStack>
     </components.SingleValue>
   ),
@@ -128,10 +135,14 @@ const overridenComponents = {
           align="center"
           data-testid={`select-box-option-${props.data.value}`}
         >
-          {props.data.icon && !hideIconsOnOptions && (
-            <Slot className="max-h-3  w-3">{props.data.icon}</Slot>
-          )}
-          {children}
+          <HStack align="center" fullWidth>
+            {props.data.icon && !hideIconsOnOptions && (
+              <Slot className="max-h-3  w-3">{props.data.icon}</Slot>
+            )}
+            <Typography align="left" noWrap overflow="ellipsis">
+              {children}
+            </Typography>
+          </HStack>
           {props.data.badge}
         </HStack>
         {props.data.description && (
@@ -164,6 +175,7 @@ const classNames = {
 function useStyles(args: UseStylesArgs) {
   const { menuWidth } = args;
   return {
+    menuPortal: (base: any) => ({ ...base, zIndex: 11 }),
     control: (base: any) => ({ ...base, height: 'auto', minHeight: '36px' }),
     option: () => ({ fontSize: 'var(--font-size-base)' }),
     noOptionsMessage: () => ({ fontSize: 'var(--font-size-base)' }),
@@ -184,6 +196,24 @@ function AsyncSelectPrimitive(_props: AsyncSelectProps) {
   const { hideIconsOnOptions, ...props } = _props;
   const styles = useStyles(props.styleConfig || {});
   const [open, setOpen] = React.useState(false);
+  const { isInDialog } = useDialogContext();
+
+  const [menuPortalTarget, setMenuPortalTarget] =
+    React.useState<HTMLElement | null>(null);
+
+  useEffect(() => {
+    if (typeof document === 'undefined') {
+      return;
+    }
+
+    if (isInDialog) {
+      if (document.getElementById('dialog-dropdown-content')) {
+        setMenuPortalTarget(document.getElementById('dialog-dropdown-content'));
+      }
+    } else {
+      setMenuPortalTarget(document.body);
+    }
+  }, [isInDialog]);
 
   return (
     <SelectOptionsProvider value={{ hideIconsOnOptions }}>
@@ -205,9 +235,7 @@ function AsyncSelectPrimitive(_props: AsyncSelectProps) {
           setOpen(false);
         }}
         menuIsOpen={open}
-        menuPortalTarget={
-          typeof document !== 'undefined' ? document.body : null
-        }
+        menuPortalTarget={menuPortalTarget}
         onChange={(value) => {
           props.onSelect?.(value);
         }}
@@ -230,17 +258,51 @@ export interface SelectProps extends BaseSelectProps {
 function SelectPrimitive(_props: SelectProps) {
   const { hideIconsOnOptions, ...props } = _props;
   const styles = useStyles(props.styleConfig || {});
+  const { isInDialog } = useDialogContext();
+  const [open, setOpen] = React.useState(false);
+
+  const [menuPortalTarget, setMenuPortalTarget] =
+    React.useState<HTMLElement | null>(null);
+
+  useEffect(() => {
+    if (typeof document === 'undefined') {
+      return;
+    }
+
+    if (isInDialog) {
+      if (document.getElementById('dialog-dropdown-content')) {
+        setMenuPortalTarget(document.getElementById('dialog-dropdown-content'));
+      }
+    } else {
+      setMenuPortalTarget(document.body);
+    }
+  }, [isInDialog]);
 
   return (
     <SelectOptionsProvider value={{ hideIconsOnOptions }}>
+      {props['data-testid'] && (
+        <div
+          className="absolute"
+          onClick={() => {
+            setOpen(true);
+          }}
+          data-testid={`${props['data-testid']}-trigger`}
+        />
+      )}
       <ReactSelect
         unstyled
-        menuPortalTarget={
-          typeof document !== 'undefined' ? document.body : null
-        }
+        // menuIsOpen
+        menuPortalTarget={menuPortalTarget}
         onChange={(value) => {
           props.onSelect?.(value);
         }}
+        onMenuOpen={() => {
+          setOpen(true);
+        }}
+        onMenuClose={() => {
+          setOpen(false);
+        }}
+        menuIsOpen={open}
         value={props.value}
         // @ts-expect-error yest
         components={overridenComponents}

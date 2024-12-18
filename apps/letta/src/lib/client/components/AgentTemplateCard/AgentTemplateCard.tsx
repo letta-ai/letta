@@ -7,7 +7,7 @@ import {
   Button,
   HStack,
 } from '@letta-web/component-library';
-import { nicelyFormattedDateAndTime } from '@letta-web/helpful-client-utils';
+import { useDateFormatter } from '@letta-web/helpful-client-utils';
 import type { AgentTemplateType } from '$letta/web-api/agent-templates/agentTemplatesContracts';
 
 interface AgentTemplateCardProps {
@@ -19,6 +19,7 @@ export function AgentTemplateCard(props: AgentTemplateCardProps) {
   // const [openVersions, setOpenVersions] = React.useState(false);
   const { agent } = props;
   const { name, updatedAt } = agent;
+  const { formatDateAndTime } = useDateFormatter();
   const { slug: projectSlug } = useCurrentProject();
 
   return (
@@ -26,7 +27,7 @@ export function AgentTemplateCard(props: AgentTemplateCardProps) {
       icon={<Avatar size="small" name={name} />}
       title={name}
       subtitle={t('subtitle', {
-        date: nicelyFormattedDateAndTime(updatedAt),
+        date: formatDateAndTime(updatedAt),
       })}
       mainAction={
         <HStack>

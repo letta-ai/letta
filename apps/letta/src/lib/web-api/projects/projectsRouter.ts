@@ -24,12 +24,17 @@ export async function getProjects(
 
   const organizationId = await getUserActiveOrganizationIdOrThrow();
 
+  const where = [
+    isNull(projects.deletedAt),
+    eq(projects.organizationId, organizationId),
+  ];
+
+  if (search) {
+    where.push(like(projects.name, `%${search}%`));
+  }
+
   const projectsList = await db.query.projects.findMany({
-    where: and(
-      isNull(projects.deletedAt),
-      eq(projects.organizationId, organizationId),
-      like(projects.name, `%${search}%`)
-    ),
+    where: and(...where),
     columns: {
       name: true,
       id: true,
@@ -306,7 +311,16 @@ export async function updateProject(
 ): Promise<UpdateProjectResponse> {
   const { projectId } = req.params;
   const organizationId = await getUserActiveOrganizationIdOrThrow();
-  const { name } = req.body;
+  const { name, slug } = req.body;
+
+  if (Object.values(req.body).filter(Boolean).length === 0) {
+    return {
+      status: 400,
+      body: {
+        errorCode: 'atLeastOneFieldRequired',
+      },
+    };
+  }
 
   const project = await db.query.projects.findFirst({
     where: and(
@@ -323,10 +337,30 @@ export async function updateProject(
     };
   }
 
+  if (slug) {
+    // check if slug is already taken
+    const existingProject = await db.query.projects.findFirst({
+      where: and(
+        eq(projects.organizationId, organizationId),
+        eq(projects.slug, slug)
+      ),
+    });
+
+    if (existingProject) {
+      return {
+        status: 400,
+        body: {
+          errorCode: 'slugAlreadyTaken',
+        },
+      };
+    }
+  }
+
   await db
     .update(projects)
     .set({
       name,
+      slug,
     })
     .where(eq(projects.id, projectId));
 
@@ -336,7 +370,7 @@ export async function updateProject(
       updatedAt: project.updatedAt.toISOString(),
       name: name || project.name,
       id: project.id,
-      slug: project.slug,
+      slug: slug || project.slug,
     },
   };
 }

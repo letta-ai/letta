@@ -49,7 +49,6 @@ function SingleFileUploadPrimitive(props: SingleFileUploadProps) {
       fullWidth
       color="background-grey"
       className="w-full h-[250px] relative"
-      rounded
       onDrop={handleDropFile}
       align="center"
       justify="center"
@@ -81,7 +80,6 @@ function SingleFileUploadPrimitive(props: SingleFileUploadProps) {
             padding="small"
             fullWidth
             justify="center"
-            rounded
           >
             <FileIcon />
             <Typography variant="body" className="text-center">

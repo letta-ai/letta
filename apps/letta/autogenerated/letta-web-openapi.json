@@ -45,52 +45,37 @@
                     "nullable": true,
                     "description": "A list of message IDs associated with the agent"
                   },
-                  "memory": {
-                    "type": "object",
-                    "properties": {
-                      "memory": {
-                        "type": "object",
-                        "additionalProperties": {
+                  "memory_blocks": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "value": {
+                          "type": "string"
+                        },
+                        "limit": {
+                          "type": "number"
+                        },
+                        "name": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "label": {
+                          "type": "string"
+                        },
+                        "description": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "metadata_": {
                           "type": "object",
-                          "properties": {
-                            "value": {
-                              "type": "string"
-                            },
-                            "limit": {
-                              "type": "number"
-                            },
-                            "template_name": {
-                              "type": "string",
-                              "nullable": true
-                            },
-                            "template": {
-                              "type": "boolean"
-                            },
-                            "label": {
-                              "type": "string"
-                            },
-                            "description": {
-                              "type": "string",
-                              "nullable": true
-                            },
-                            "metadata_": {
-                              "type": "object",
-                              "additionalProperties": {}
-                            },
-                            "user_id": {
-                              "type": "string",
-                              "nullable": true
-                            },
-                            "id": {
-                              "type": "string"
-                            }
-                          },
-                          "required": ["value"]
+                          "additionalProperties": {}
+                        },
+                        "is_template": {
+                          "type": "boolean"
                         }
                       },
-                      "prompt_template": {
-                        "type": "string"
-                      }
+                      "required": ["value", "label"]
                     },
                     "nullable": true
                   },
@@ -128,7 +113,9 @@
                           "llamacpp",
                           "koboldcpp",
                           "vllm",
-                          "hugging-face"
+                          "hugging-face",
+                          "mistral",
+                          "together"
                         ]
                       },
                       "model_endpoint": {
@@ -255,10 +242,7 @@
                   "properties": {
                     "message": {
                       "type": "string",
-                      "enum": [
-                        "An agent with the same name already exists",
-                        "project_id is required when providing a name"
-                      ]
+                      "enum": ["An agent with the same name already exists"]
                     }
                   },
                   "required": ["message"]
@@ -781,6 +765,160 @@
                     }
                   },
                   "required": ["message"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/models/": {
+      "get": {
+        "tags": ["models"],
+        "parameters": [
+          {
+            "name": "extended",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "operationId": "models.listLLMBackends",
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "model": {
+                        "type": "string"
+                      },
+                      "model_endpoint_type": {
+                        "type": "string",
+                        "enum": [
+                          "openai",
+                          "anthropic",
+                          "cohere",
+                          "google_ai",
+                          "azure",
+                          "groq",
+                          "ollama",
+                          "webui",
+                          "webui-legacy",
+                          "lmstudio",
+                          "lmstudio-legacy",
+                          "llamacpp",
+                          "koboldcpp",
+                          "vllm",
+                          "hugging-face",
+                          "mistral",
+                          "together"
+                        ]
+                      },
+                      "model_endpoint": {
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "model_wrapper": {
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "context_window": {
+                        "type": "number"
+                      },
+                      "brand": {
+                        "type": "string"
+                      },
+                      "isRecommended": {
+                        "type": "boolean"
+                      },
+                      "tag": {
+                        "type": "string"
+                      },
+                      "displayName": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "model",
+                      "model_endpoint_type",
+                      "context_window"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/models/embedding/": {
+      "get": {
+        "tags": ["models"],
+        "parameters": [
+          {
+            "name": "extended",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "operationId": "models.listEmbeddingBackends",
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "embedding_endpoint_type": {
+                        "type": "string"
+                      },
+                      "embedding_endpoint": {
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "embedding_model": {
+                        "type": "string"
+                      },
+                      "embedding_dim": {
+                        "type": "number"
+                      },
+                      "embedding_chunk_size": {
+                        "type": "number",
+                        "nullable": true
+                      },
+                      "azure_endpoint": {
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "azure_version": {
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "azure_deployment": {
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "brand": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "embedding_endpoint_type",
+                      "embedding_model",
+                      "embedding_dim"
+                    ]
+                  }
                 }
               }
             }

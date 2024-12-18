@@ -42,7 +42,6 @@ export function DialogTable(props: DialogTableProps) {
       overflowY={showStatusComponent ? 'hidden' : 'auto'}
       className="h-[400px]"
       border
-      rounded
     >
       {showStatusComponent ? (
         <LoadingEmptyStatusComponent
@@ -63,11 +62,7 @@ export function DialogTable(props: DialogTableProps) {
             paddingX="medium"
           >
             <HStack fullWidth justify="start">
-              {item.icon && (
-                <Typography variant="body2">
-                  <Slot className="w-3">{item.icon}</Slot>
-                </Typography>
-              )}
+              {item.icon && <Slot className="w-3">{item.icon}</Slot>}
               <Typography align="left" fullWidth overflow="ellipsis">
                 {item.label}
               </Typography>

@@ -64,7 +64,7 @@ function LoginErrorBanner() {
   }
 
   return (
-    <div className="fade-in-0 absolute top-[-90px] slide-in-from-bottom-2 text-mono mt-4 bg-white text-black animate-in  p-1 px-4 rounded">
+    <div className="fade-in-0 absolute top-[-90px] slide-in-from-bottom-2 text-mono mt-4 bg-white text-black animate-in  p-1 px-4">
       {errorMessage}
     </div>
   );
@@ -128,7 +128,7 @@ export function LoginComponent() {
       <VStack className="w-[300px] gap-[36px]" align="center">
         <VStack align="center" gap="large">
           <div className="relative" ref={logoRef}>
-            <Logo size="large" />
+            <Logo size="xlarge" />
           </div>
           <Typography bold variant="heading5">
             {t('title')}

@@ -10,13 +10,16 @@ import {
   agentTemplates,
   db,
 } from '@letta-web/database';
-import {
-  attachVariablesToTemplates,
-  copyAgentById,
-  updateAgentFromAgentId,
-} from '$letta/sdk';
-import { capitalize } from 'lodash';
+import { copyAgentById, updateAgentFromAgentId } from '$letta/sdk';
 import { AgentsService } from '@letta-web/letta-agents-api';
+
+function randomThreeDigitNumber() {
+  return Math.floor(Math.random() * 1000);
+}
+
+function getDateAsAlphanumericString(date: Date): string {
+  return date.valueOf().toString(36) + randomThreeDigitNumber().toString(36);
+}
 
 type ListAgentTemplatesQueryRequest = ServerInferRequest<
   typeof contracts.agentTemplates.listAgentTemplates
@@ -119,7 +122,21 @@ export async function forkAgentTemplate(
     };
   }
 
-  const name = capitalize(`Forked ${testingAgent.name}`);
+  let name = `forked-${testingAgent.name}`;
+
+  // check if name already exists
+  const existingAgent = await db.query.agentTemplates.findFirst({
+    where: and(
+      isNull(agentTemplates.deletedAt),
+      eq(agentTemplates.organizationId, activeOrganizationId),
+      eq(agentTemplates.projectId, projectId),
+      eq(agentTemplates.name, name)
+    ),
+  });
+
+  if (existingAgent) {
+    name = `${name}-${getDateAsAlphanumericString(new Date())}`;
+  }
 
   const [agent] = await db
     .insert(agentTemplates)
@@ -177,6 +194,9 @@ async function getAgentTemplateSimulatorSession(
     where: eq(agentSimulatorSessions.agentTemplateId, agentTemplateId),
   });
 
+  let agentId = '';
+  let id = '';
+
   if (!simulatorSession) {
     // create new simulator session
     const newAgent = await copyAgentById(agentTemplate.id, lettaAgentsId);
@@ -204,22 +224,29 @@ async function getAgentTemplateSimulatorSession(
         id: agentSimulatorSessions.id,
       });
 
-    return {
-      status: 200,
-      body: {
-        agentId: newAgentId,
-        id: simulatorSession.id,
-        variables: {},
-      },
-    };
+    agentId = newAgentId;
+    id = simulatorSession.id;
+  } else {
+    agentId = simulatorSession.agentId;
+    id = simulatorSession.id;
   }
+
+  const agent = await AgentsService.getAgent(
+    {
+      agentId,
+    },
+    {
+      user_id: lettaAgentsId,
+    }
+  );
 
   return {
     status: 200,
     body: {
-      agentId: simulatorSession.agentId,
-      id: simulatorSession.id,
-      variables: simulatorSession.variables as Record<string, string>,
+      agent,
+      agentId,
+      id,
+      variables: (simulatorSession?.variables as Record<string, string>) || {},
     },
   };
 }
@@ -274,7 +301,7 @@ async function createAgentTemplateSimulatorSession(
       }
     );
 
-    if (!existingTemplate) {
+    if (!existingTemplate?.id) {
       return {
         status: 500,
         body: {
@@ -283,12 +310,12 @@ async function createAgentTemplateSimulatorSession(
       };
     }
 
-    await AgentsService.updateAgent({
-      agentId: existingSimulatorSession.agentId,
-      requestBody: {
-        id: existingSimulatorSession.agentId,
-        ...attachVariablesToTemplates(existingTemplate, variables),
-      },
+    const agentState = await updateAgentFromAgentId({
+      agentToUpdateId: existingSimulatorSession.agentId,
+      baseAgentId: existingTemplate.id,
+      preserveCoreMemories: false,
+      variables,
+      lettaAgentsUserId: lettaAgentsId,
     });
 
     await db
@@ -302,6 +329,7 @@ async function createAgentTemplateSimulatorSession(
     return {
       status: 200,
       body: {
+        agent: agentState,
         agentId: existingSimulatorSession.agentId,
         id: existingSimulatorSession.id,
         variables,
@@ -341,6 +369,7 @@ async function createAgentTemplateSimulatorSession(
   return {
     status: 201,
     body: {
+      agent: newAgent,
       id: simulatorSession.id,
       agentId: newAgentId,
       variables,
@@ -393,10 +422,10 @@ async function refreshAgentTemplateSimulatorSession(
     };
   }
 
-  await updateAgentFromAgentId({
+  const agent = await updateAgentFromAgentId({
     variables: (simulatorSession.variables as Record<string, string>) || {},
-    fromAgent: agentTemplate.id,
-    toAgent: simulatorSession.agentId,
+    baseAgentId: agentTemplate.id,
+    agentToUpdateId: simulatorSession.agentId,
     lettaAgentsUserId: lettaAgentsId,
     preserveCoreMemories: false,
   });
@@ -404,6 +433,7 @@ async function refreshAgentTemplateSimulatorSession(
   return {
     status: 200,
     body: {
+      agent,
       agentId: simulatorSession.agentId,
       id: simulatorSession.id,
       variables: simulatorSession.variables as Record<string, string>,

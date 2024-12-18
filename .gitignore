@@ -61,3 +61,6 @@ data/
 
 external-services/*
 !external-services/.gitkeep
+
+
+.swc

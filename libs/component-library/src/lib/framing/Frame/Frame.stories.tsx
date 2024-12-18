@@ -20,7 +20,7 @@ export const Primary: Story = {
       options: [
         'background',
         'background-grey',
-        'background-greyer',
+        'background-grey2',
         'background-black',
       ],
       control: { type: 'radio' },

@@ -11,42 +11,45 @@ import { queryClientKeys } from '$letta/web-api/contracts';
 import { Frame, HStack, Logo, VStack } from '@letta-web/component-library';
 import Link from 'next/link';
 import { AdminNavigation } from './_components/AdminNavigation/AdminNavigation';
-const SIDEBAR_WIDTH = 'w-[250px] min-w-[250px]';
+import { DashboardTransition } from '$letta/client/components/DashboardLikeLayout/DashboardTransition/DashboardTransition';
 
 interface InAppProps {
   children: ReactNode;
 }
 
-function Sidebar() {
+function AdminDashboardNavigation() {
   return (
-    <VStack
-      align="center"
-      gap={false}
-      fullHeight
-      borderRight
-      /* eslint-disable-next-line react/forbid-component-props */
-      className={SIDEBAR_WIDTH}
-    >
+    <>
+      {/* eslint-disable-next-line react/forbid-component-props */}
+      <HStack className="h-header min-h-header" fullWidth></HStack>
       <HStack
-        align="center"
-        paddingX="large"
+        as="header"
+        padding="xxsmall"
+        position="fixed"
+        zIndex="header"
         fullWidth
-        borderBottom
-        color="background-black"
-        justify="spaceBetween"
         /* eslint-disable-next-line react/forbid-component-props */
-        className="min-h-header h-header"
+        className="top-0"
       >
-        <Link href="/">
-          <HStack fullWidth align="center">
-            <Logo /> Letta Admin
-          </HStack>
-        </Link>
+        <HStack
+          border
+          color="background"
+          fullWidth
+          justify="spaceBetween"
+          align="center"
+          paddingX="large"
+          /* eslint-disable-next-line react/forbid-component-props */
+          className="h-header min-h-header"
+        >
+          <Link href="/">
+            <HStack fullWidth align="center">
+              <Logo />
+              Letta Admin
+            </HStack>
+          </Link>
+        </HStack>
       </HStack>
-      <VStack gap={false} as="nav" fullWidth fullHeight>
-        <AdminNavigation />
-      </VStack>
-    </VStack>
+    </>
   );
 }
 
@@ -79,13 +82,14 @@ export default async function LoggedInLayout(props: InAppProps) {
   });
 
   return (
-    <div className="pageFadeIn w-[100vw] h-[100vh]">
-      <HStack gap={false} fullHeight fullWidth>
-        <Sidebar />
-        <Frame overflow="auto" fullHeight fullWidth>
-          {children}
+    <VStack gap="small" fullHeight fullWidth>
+      <AdminDashboardNavigation />
+      <HStack gap={false} fullWidth>
+        <AdminNavigation />
+        <Frame position="relative" overflow="hidden" fullWidth>
+          <DashboardTransition>{children}</DashboardTransition>
         </Frame>
       </HStack>
-    </div>
+    </VStack>
   );
 }

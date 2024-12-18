@@ -1,10 +1,12 @@
 import { EventSource } from 'extended-eventsource';
 import { environment } from '@letta-web/environmental-variables';
 import axios, { isAxiosError } from 'axios';
-import type { LettaRequest, LettaResponse } from '@letta-web/letta-agents-api';
+import type { LettaResponse } from '@letta-web/letta-agents-api';
 import { RESTRICTED_ROUTE_BASE_PATHS } from '@letta-web/letta-agents-api';
 import { createInferenceTransaction } from '$letta/server/inferenceTransactions/inferenceTransactions';
 import * as Sentry from '@sentry/nextjs';
+import { z } from 'zod';
+import type { ToZod } from '@letta-web/helpful-client-utils';
 
 interface RequestOptions {
   pathname: string;
@@ -15,57 +17,74 @@ interface RequestOptions {
   formData?: FormData;
   signal: AbortSignal;
   lettaAgentsUserId: string;
+  source: 'api' | 'web';
   organizationId: string;
 }
 
+const usageDetails: ToZod<LettaResponse['LettaUsageStatistics']> = z
+  .object({
+    completion_tokens: z.number().optional(),
+    prompt_tokens: z.number().optional(),
+    total_tokens: z.number().optional(),
+    step_count: z.number().optional(),
+  })
+  .optional();
+
+const usageMessageSchema = z.object({
+  usage: usageDetails,
+});
+
+interface OnCompletionOptions {
+  usageDetails: LettaResponse['LettaUsageStatistics'];
+}
+
 async function handleEventStreamRequest(options: RequestOptions) {
-  const { pathname, method, body, signal, lettaAgentsUserId, organizationId } =
-    options;
+  const {
+    pathname,
+    source,
+    method,
+    signal,
+    body,
+    lettaAgentsUserId,
+    organizationId,
+  } = options;
   const responseStream = new TransformStream();
   const writer = responseStream.writable.getWriter();
 
   const startTime = new Date();
-  let stepCount = 0;
-  let outputTokens = 0;
   let referenceId = '';
   let closed = false;
 
-  async function onCompletion() {
+  async function recordUsageDetails(opts: OnCompletionOptions) {
+    const { usageDetails } = opts;
+
     if (isCreateMessageRequest(options)) {
       const agentId = pathname.split('/')[3];
-      const input = body as LettaRequest;
-
-      if (!input.messages) {
-        return;
-      }
-
-      const inputTokens = input.messages.reduce(
-        (acc, message) => acc + (message.text?.split(' ').length || 0),
-        0
-      );
 
       await createInferenceTransaction({
         agentId,
         startedAt: startTime,
+        source,
         endedAt: new Date(),
         organizationId,
         referenceId,
-        outputTokens: outputTokens,
-        inputTokens: inputTokens,
-        stepCount: Math.min(1, stepCount),
-        totalTokens: inputTokens + outputTokens,
+        outputTokens: usageDetails?.completion_tokens || 0,
+        inputTokens: usageDetails?.prompt_tokens || 0,
+        stepCount: usageDetails?.step_count || 0,
+        totalTokens: usageDetails?.total_tokens || 0,
+        path: pathname,
       });
     }
   }
 
-  // Close if client disconnects
   signal.onabort = async () => {
     if (closed) {
       return;
     }
 
-    await onCompletion();
-    void writer.close();
+    closed = true;
+    await writer.ready;
+    await writer.close();
   };
 
   setImmediate(async () => {
@@ -86,69 +105,60 @@ async function handleEventStreamRequest(options: RequestOptions) {
       );
 
       eventsource.onmessage = async (e: MessageEvent) => {
+        if (typeof e.data !== 'string') {
+          return;
+        }
+
+        if (e.data.includes('DONE_GEN')) {
+          return;
+        }
+
+        if (e.data.includes('DONE_STEP')) {
+          return;
+        }
+
+        try {
+          const message = JSON.parse(e.data);
+
+          if (usageMessageSchema.safeParse(message).success && message.usage) {
+            void recordUsageDetails({ usageDetails: message.usage });
+          }
+
+          if (Object.prototype.hasOwnProperty.call(message, 'id')) {
+            referenceId = message.id;
+          }
+        } catch (_e) {
+          // do nothing
+        }
+
         if (closed) {
           return;
         }
 
-        if (typeof e.data === 'string') {
-          if (e.data === '[DONE]') {
-            await onCompletion();
-            await writer.close();
-            return;
-          }
-
-          if (e.data.includes('DONE_GEN')) {
-            stepCount += 1;
-            return;
-          }
-
-          if (e.data.includes('DONE_STEP')) {
-            stepCount += 1;
-            return;
-          }
-
-          try {
-            const message = JSON.parse(e.data) as LettaResponse['Message'];
-            referenceId = message?.id || '';
-          } catch (_e) {
-            console.error(_e);
-            // do nothing
-          }
-        }
-
-        if (e.eventPhase === eventsource.CLOSED) {
-          await onCompletion();
-
-          closed = true;
+        if (e.data === '[DONE]') {
+          await writer.write('data: [DONE]\n\n');
           await writer.close();
+          closed = true;
+
           return;
         }
 
-        outputTokens += 1;
-        void writer.write(`data: ${e.data}\n\n`);
-      };
-
-      eventsource.onerror = async () => {
-        try {
-          await onCompletion();
-
-          if (closed) {
-            return;
-          }
+        if (e.eventPhase === eventsource.CLOSED) {
           await writer.close();
-        } catch (_e) {
-          // do nothing
+          closed = true;
+          return;
         }
+
+        await writer.write(`data: ${e.data}\n\n`);
       };
     } catch (e) {
-      console.error(e);
       if (isAxiosError(e)) {
         await writer.write(`data: ${JSON.stringify(e.response?.data)}\n\n`);
       } else {
         await writer.write('data: Unhandled error\n\n');
       }
 
-      await onCompletion();
+      closed = true;
       await writer.close();
     }
   });
@@ -191,9 +201,16 @@ async function handleMultipartFileUpload(options: RequestOptions) {
 
 function isCreateMessageRequest(options: RequestOptions) {
   // pathname must conform with /v1/agents/{agent-id}/messages
-  const regex = /\/v1\/agents\/[a-zA-Z0-9-]+\/messages\/?$/;
+  const regex = /\/v1\/agents\/[a-zA-Z0-9-]+\/messages\/?/;
+  // or /v1/agents/{agent-id}/messages/{message-id}/messages/stream
+  const regex2 =
+    /\/v1\/agents\/[a-zA-Z0-9-]+\/messages\/[a-zA-Z0-9-]+\/messages\/stream\/?/;
 
-  return regex.exec(options.pathname) && options.method === 'POST';
+  if (options.method !== 'POST') {
+    return false;
+  }
+
+  return regex.test(options.pathname) || regex2.test(options.pathname);
 }
 
 export async function makeRequestToSDK(
@@ -205,6 +222,7 @@ export async function makeRequestToSDK(
     headers,
     method,
     body,
+    source,
     lettaAgentsUserId,
     organizationId,
   } = options;
@@ -256,19 +274,28 @@ export async function makeRequestToSDK(
 
     if (isCreateMessageRequest(options)) {
       const agentId = pathname.split('/')[3];
-      await createInferenceTransaction({
-        agentId,
-        startedAt: startTime,
-        endedAt: new Date(),
-        organizationId,
-        referenceId: '',
-        outputTokens: data.usage.completion_tokens,
-        inputTokens: data.usage.prompt_tokens,
-        stepCount: data.usage.step_count,
-        totalTokens: data.usage.total_tokens,
-      });
+      try {
+        if (!data.usage) {
+          Sentry.captureException('Usage details not captured', data);
+        } else {
+          await createInferenceTransaction({
+            agentId,
+            startedAt: startTime,
+            endedAt: new Date(),
+            source,
+            organizationId,
+            referenceId: '',
+            outputTokens: data.usage.completion_tokens,
+            inputTokens: data.usage.prompt_tokens,
+            stepCount: data.usage.step_count,
+            totalTokens: data.usage.total_tokens,
+            path: pathname,
+          });
+        }
+      } catch (e) {
+        Sentry.captureException(e);
+      }
     }
-
     if (typeof data !== 'string') {
       data = JSON.stringify(data);
     }
@@ -281,6 +308,11 @@ export async function makeRequestToSDK(
     });
   } catch (e) {
     if (isAxiosError(e)) {
+      if (e.response?.status && e.response.status >= 500) {
+        console.error(e);
+        Sentry.captureException(e);
+      }
+
       return new Response(JSON.stringify(e.response?.data), {
         status: e.response?.status || 500,
         headers: {

@@ -1,5 +1,5 @@
 'use client';
-import React from 'react';
+import React, { useCallback } from 'react';
 import {
   Alert,
   Avatar,
@@ -15,22 +15,17 @@ import { webApi } from '$letta/client';
 import type { ListUserOrganizationsItemSchemaType } from '$letta/web-api/contracts';
 import { queryClientKeys } from '$letta/web-api/contracts';
 import { CenteredPageCard } from '$letta/client/components';
+import { useCurrentUser } from '$letta/client/hooks';
 
 interface OrganizationRowProps {
   name: string;
   id: string;
+  onSelect: () => void;
 }
 
 function OrganizationRow(props: OrganizationRowProps) {
-  const { name, id } = props;
+  const { name, onSelect } = props;
   const t = useTranslations('select-organization');
-
-  const { mutate, isPending } =
-    webApi.user.updateActiveOrganization.useMutation({
-      onSuccess: () => {
-        window.location.href = '/';
-      },
-    });
 
   return (
     <HStack borderBottom padding="small" fullWidth align="center">
@@ -39,12 +34,9 @@ function OrganizationRow(props: OrganizationRowProps) {
         <Typography align="left">{name}</Typography>
       </HStack>
       <Button
-        busy={isPending}
         color="tertiary"
         type="button"
-        onClick={() => {
-          mutate({ body: { activeOrganizationId: id } });
-        }}
+        onClick={onSelect}
         label={t('OrganizationRow.select')}
       />
     </HStack>
@@ -53,23 +45,68 @@ function OrganizationRow(props: OrganizationRowProps) {
 
 interface OrganizationsListProps {
   organizations: ListUserOrganizationsItemSchemaType[];
+  onSelect: (organizationId: string) => void;
 }
 
 function OrganizationsList(props: OrganizationsListProps) {
-  const { organizations } = props;
+  const { organizations, onSelect } = props;
 
   return organizations.map(({ id, name }) => {
-    return <OrganizationRow id={id} name={name} key={id} />;
+    return (
+      <OrganizationRow
+        onSelect={() => {
+          onSelect(id);
+        }}
+        id={id}
+        name={name}
+        key={id}
+      />
+    );
   });
 }
 
 function SelectOrganizationPage() {
   const t = useTranslations('select-organization');
+  const currentUser = useCurrentUser();
 
   const { data: organizations, isError } =
     webApi.user.listUserOrganizations.useQuery({
       queryKey: queryClientKeys.user.listUserOrganizations,
     });
+
+  const {
+    mutate,
+    isPending,
+    isSuccess,
+    isError: updateError,
+  } = webApi.user.updateActiveOrganization.useMutation({
+    onSuccess: () => {
+      window.location.href = '/';
+    },
+  });
+
+  const handleOrganizationSelect = useCallback(
+    (organizationId: string) => {
+      mutate({
+        body: {
+          activeOrganizationId: organizationId,
+        },
+      });
+    },
+    [mutate]
+  );
+
+  if (isPending || isSuccess || updateError) {
+    return (
+      <LoadingEmptyStatusComponent
+        emptyMessage=""
+        loadingMessage={t('selectingOrganization')}
+        isError={updateError}
+        isLoading={isPending || isSuccess}
+        errorMessage={t('errorSelectingOrganization')}
+      />
+    );
+  }
 
   return (
     <CenteredPageCard title={t('title')}>
@@ -84,16 +121,21 @@ function SelectOrganizationPage() {
             isLoading={!organizations}
           />
         ) : (
-          <OrganizationsList organizations={organizations.body.organizations} />
+          <OrganizationsList
+            onSelect={handleOrganizationSelect}
+            organizations={organizations.body.organizations}
+          />
         )}
       </VStack>
-      <Frame borderTop padding>
-        <Button
-          href="/create-organization"
-          fullWidth
-          label={t('createNewOrganization')}
-        />
-      </Frame>
+      {currentUser?.hasCloudAccess && (
+        <Frame borderTop padding>
+          <Button
+            href="/create-organization"
+            fullWidth
+            label={t('createNewOrganization')}
+          />
+        </Frame>
+      )}
     </CenteredPageCard>
   );
 }

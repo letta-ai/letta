@@ -1,6 +1,14 @@
 'use client';
 import React, { useCallback, useMemo, useState } from 'react';
 import type { PanelTemplate } from '@letta-web/component-library';
+import { LoadingEmptyStatusComponent } from '@letta-web/component-library';
+import {
+  CopyButton,
+  HStack,
+  RawTextArea,
+  Typography,
+} from '@letta-web/component-library';
+import { ThoughtsIcon } from '@letta-web/component-library';
 import { PlusIcon } from '@letta-web/component-library';
 import {
   ActionCard,
@@ -9,7 +17,6 @@ import {
   Dialog,
   FormField,
   FormProvider,
-  LettaLoaderPanel,
   PanelBar,
   PanelMainContent,
   TextArea,
@@ -31,10 +38,55 @@ import { useQueryClient } from '@tanstack/react-query';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslations } from 'next-intl';
 import { useCurrentSimulatedAgent } from '../hooks/useCurrentSimulatedAgent/useCurrentSimulatedAgent';
+import { useDateFormatter } from '@letta-web/helpful-client-utils';
+import { useCurrentAgentMetaData } from '../hooks/useCurrentAgentMetaData/useCurrentAgentMetaData';
+
+interface ViewArchivalMemoryDialogProps {
+  memory: Passage;
+}
+
+function ViewArchivalMemoryDialog(props: ViewArchivalMemoryDialogProps) {
+  const { memory } = props;
+  const t = useTranslations('ADE/ArchivalMemories');
+
+  return (
+    <Dialog
+      disableForm
+      hideConfirm
+      trigger={
+        <button>
+          <Typography color="primary" underline overrideEl="span">
+            {t('ViewArchivalMemoryDialog.trigger')}
+          </Typography>
+        </button>
+      }
+      title={t('ViewArchivalMemoryDialog.title')}
+    >
+      <RawTextArea
+        resize="none"
+        fullHeight
+        fullWidth
+        disabled
+        hideLabel
+        label={t('ViewArchivalMemoryDialog.label')}
+        value={memory.text}
+        readOnly
+      />
+      <HStack>
+        <CopyButton
+          copyButtonText={t('ViewArchivalMemoryDialog.copyText')}
+          textToCopy={memory.text}
+        />
+      </HStack>
+    </Dialog>
+  );
+}
 
 interface MemoryItemProps {
   memory: Passage;
 }
+
+const MAX_MEMORY_LENGTH = 180;
 
 function MemoryItem(props: MemoryItemProps) {
   const { id: currentAgentId } = useCurrentSimulatedAgent();
@@ -45,6 +97,8 @@ function MemoryItem(props: MemoryItemProps) {
   const queryClient = useQueryClient();
 
   const t = useTranslations('ADE/ArchivalMemories');
+
+  const { formatDateAndTime } = useDateFormatter();
 
   const { mutate: deleteMemory, isPending: isDeletingMemory } =
     useAgentsServiceDeleteAgentArchivalMemory({
@@ -83,36 +137,52 @@ function MemoryItem(props: MemoryItemProps) {
   return (
     <ActionCard
       key={memory.id}
-      title={`Memory at ${memory.created_at}`}
-      description={`${memory.text.slice(0, 180)}${
-        memory.text.length > 180 ? '...' : ''
-      }`}
+      title={t('MemoryItem.memoryText', {
+        date: formatDateAndTime(memory?.created_at || ''),
+      })}
       mainAction={
-        <Dialog
-          onOpenChange={setOpen}
-          isOpen={open}
-          trigger={
-            <Button
-              label={t('MemoryItem.deleteMemory')}
-              color="tertiary"
-              preIcon={<TrashIcon />}
-              hideLabel
-              type="button"
-              size="small"
-            />
-          }
-          isConfirmBusy={isDeletingMemory}
-          onConfirm={() => {
-            handleRemoveMemory(memory.id || '');
-          }}
-          confirmText={t('MemoryItem.deleteConfirm')}
-          cancelText="Cancel"
-          title="Delete Memory"
-        >
-          {t('MemoryItem.deleteConfirmation')}
-        </Dialog>
+        <HStack gap="small">
+          <CopyButton
+            size="small"
+            hideLabel
+            copyButtonText={t('MemoryItem.copyText')}
+            textToCopy={memory.text}
+          />
+          <Dialog
+            onOpenChange={setOpen}
+            isOpen={open}
+            trigger={
+              <Button
+                label={t('MemoryItem.deleteMemory')}
+                color="tertiary"
+                preIcon={<TrashIcon />}
+                hideLabel
+                type="button"
+                size="small"
+              />
+            }
+            isConfirmBusy={isDeletingMemory}
+            onConfirm={() => {
+              handleRemoveMemory(memory.id || '');
+            }}
+            confirmText={t('MemoryItem.deleteConfirm')}
+            cancelText="Cancel"
+            title="Delete Memory"
+          >
+            {t('MemoryItem.deleteConfirmation')}
+          </Dialog>
+        </HStack>
       }
-    />
+    >
+      <Typography variant="body">
+        {memory.text.slice(0, MAX_MEMORY_LENGTH)}
+        {memory.text.length > MAX_MEMORY_LENGTH ? (
+          <ViewArchivalMemoryDialog memory={memory} />
+        ) : (
+          ''
+        )}
+      </Typography>
+    </ActionCard>
   );
 }
 
@@ -134,8 +204,15 @@ function MemoriesList() {
     return data || [];
   }, [data]);
 
-  if (isLoading) {
-    return <LettaLoaderPanel />;
+  if (isLoading || !currentAgentId) {
+    return (
+      <LoadingEmptyStatusComponent
+        noMinHeight
+        hideText
+        loaderVariant="grower"
+        isLoading
+      />
+    );
   }
 
   return (
@@ -177,6 +254,7 @@ function CreateMemoryDialog() {
   const queryClient = useQueryClient();
   const t = useTranslations('ADE/ArchivalMemories');
   const [open, setOpen] = useState(false);
+  const { isTemplate } = useCurrentAgentMetaData();
 
   const { mutate, isPending } = useAgentsServiceCreateAgentArchivalMemory({
     onSuccess: async () => {
@@ -226,7 +304,9 @@ function CreateMemoryDialog() {
         title={t('CreateMemoryDialog.title')}
         onSubmit={form.handleSubmit(handleSubmit)}
       >
-        <Alert variant="info" title={t('CreateMemoryDialog.info')} />
+        {isTemplate && (
+          <Alert variant="info" title={t('CreateMemoryDialog.info')} />
+        )}
         <FormField
           control={form.control}
           name="text"
@@ -246,10 +326,40 @@ function CreateMemoryDialog() {
 
 export const archivalMemoriesPanelTemplate = {
   templateId: 'archival-memories',
+  icon: <ThoughtsIcon />,
   useGetTitle: () => {
     const t = useTranslations('ADE/ArchivalMemories');
+    const { id: currentAgentId } = useCurrentSimulatedAgent();
 
-    return t('title');
+    const { data, isLoading } = useAgentsServiceListAgentArchivalMemory(
+      {
+        agentId: currentAgentId,
+      },
+      undefined,
+      {
+        enabled: !!currentAgentId,
+      }
+    );
+
+    const count = useMemo(() => {
+      if (!data || isLoading) {
+        return '-';
+      }
+
+      return data.length;
+    }, [data, isLoading]);
+
+    return t('title', { count });
+  },
+  useGetInfoTooltipText: () => {
+    const t = useTranslations('ADE/ArchivalMemories');
+
+    return t('infoTooltip');
+  },
+  useGetMobileTitle: () => {
+    const t = useTranslations('ADE/ArchivalMemories');
+
+    return t('mobileTitle');
   },
   content: MemoryRootPage,
   data: z.object({}),

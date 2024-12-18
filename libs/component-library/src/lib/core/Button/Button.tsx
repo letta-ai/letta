@@ -47,8 +47,12 @@ const buttonVariants = cva(
           'bg-background-black text-background-black-content hover:bg-background-black-hover border-transparent',
       },
       size: {
-        default: 'px-4 py-1 h-biHeight text-base font-medium gap-2',
-        small: 'px-3 py-1 h-biHeight-sm text-sm font-medium gap-2',
+        large:
+          'px-6 py-2 h-biHeight-lg min-h-biHeight-lg text-lg font-medium gap-2',
+        default:
+          'px-4 py-1 h-biHeight min-h-biHeight text-base font-medium gap-2',
+        small:
+          'px-3 py-1 h-biHeight-sm min-h-biHeight-sm text-sm font-medium gap-2',
       },
       active: {
         true: '',
@@ -112,6 +116,7 @@ export type ButtonProps = Omit<
       hideLabel?: boolean;
       target?: string;
       type?: 'button' | 'reset' | 'submit';
+      _use_rarely_className?: string;
     },
   'children' | 'className'
 >;
@@ -135,6 +140,7 @@ export const Button = forwardRef<
     fullHeight,
     size,
     hideLabel,
+    _use_rarely_className,
     ...rest
   } = props;
 
@@ -171,7 +177,8 @@ export const Button = forwardRef<
             disabled: rest.disabled,
             fullHeight,
             active,
-          })
+          }),
+          _use_rarely_className
         )}
         {...rest}
         disabled={rest.disabled || busy}

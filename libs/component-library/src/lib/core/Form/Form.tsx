@@ -14,6 +14,8 @@ import { useId, useMemo } from 'react';
 import { HStack } from '../../framing/HStack/HStack';
 import { Typography } from '../Typography/Typography';
 import type { ArgTypes } from '@storybook/csf';
+import { omit } from 'lodash-es';
+import { InfoTooltip } from '../../reusable/InfoTooltip/InfoTooltip';
 
 export { useForm } from 'react-hook-form';
 
@@ -92,13 +94,17 @@ interface InputWrapperProps {
   inline?: boolean | 'reverse';
   fullWidth?: boolean;
   fullHeight?: boolean;
+  flex?: boolean;
   inputAndLabel: React.ReactNode;
+  collapseHeight?: boolean;
   otherContent: React.ReactNode;
 }
 
 function InputWrapper({
   inline,
   fullWidth,
+  collapseHeight,
+  flex,
   fullHeight,
   inputAndLabel,
   otherContent,
@@ -106,10 +112,12 @@ function InputWrapper({
   const className = useMemo(() => {
     return cn(
       'flex flex-col gap-[6px]',
+      collapseHeight ? 'h-0' : '',
       fullWidth ? 'w-full' : 'w-fit',
-      fullHeight ? 'h-full' : ''
+      fullHeight ? 'h-full' : '',
+      flex ? 'flex-1' : ''
     );
-  }, [fullHeight, fullWidth]);
+  }, [collapseHeight, flex, fullHeight, fullWidth]);
 
   if (inline) {
     return (
@@ -149,14 +157,51 @@ function FormItem({ children }: FormItemProps) {
   );
 }
 
+type LabelVariant = 'default' | 'simple';
+
+interface InputContainerHeaderProps {
+  preLabelIcon?: React.ReactNode;
+  infoTooltip?: {
+    text: string;
+  };
+  label: string;
+  variant?: LabelVariant;
+}
+
+function InputContainerHeader(props: InputContainerHeaderProps) {
+  const { preLabelIcon, label, infoTooltip, variant = 'default' } = props;
+  return (
+    <HStack>
+      <HStack gap="small" align="center">
+        {preLabelIcon && <Slot className="h-3">{preLabelIcon}</Slot>}
+        <Typography
+          variant={variant === 'default' ? 'body2' : 'body'}
+          color={variant === 'default' ? 'lighter' : 'default'}
+          uppercase={variant === 'default'}
+        >
+          {label}
+        </Typography>
+      </HStack>
+      {infoTooltip && <InfoTooltip text={infoTooltip.text} />}
+    </HStack>
+  );
+}
+
 export interface InputContainerProps {
   label: string;
   preLabelIcon?: React.ReactNode;
+  labelVariant?: LabelVariant;
   hideLabel?: boolean;
   description?: React.ReactNode | string;
   inline?: boolean | 'reverse';
   fullWidth?: boolean;
   fullHeight?: boolean;
+  collapseHeight?: boolean;
+  rightOfLabelContent?: React.ReactNode;
+  infoTooltip?: {
+    text: string;
+  };
+  flex?: boolean;
   children?: React.ReactNode;
 }
 
@@ -167,8 +212,12 @@ export function InputContainer(props: InputContainerProps) {
     preLabelIcon,
     fullWidth,
     fullHeight,
+    labelVariant,
+    flex,
     description,
     inline,
+    rightOfLabelContent,
+    infoTooltip,
     children,
   } = props;
   return (
@@ -177,16 +226,25 @@ export function InputContainer(props: InputContainerProps) {
         fullWidth={fullWidth}
         fullHeight={fullHeight}
         inline={inline}
+        flex={flex}
         inputAndLabel={
           <>
-            <FormLabel
-              className={
-                hideLabel ? 'sr-only' : 'flex flex-row gap-1 items-center'
-              }
+            <HStack
+              className={hideLabel ? 'sr-only' : ''}
+              fullWidth
+              gap="text"
+              justify="spaceBetween"
             >
-              {preLabelIcon && <Slot className="h-3">{preLabelIcon}</Slot>}
-              {label}
-            </FormLabel>
+              <FormLabel>
+                <InputContainerHeader
+                  variant={labelVariant}
+                  preLabelIcon={preLabelIcon}
+                  label={label}
+                  infoTooltip={infoTooltip}
+                />
+              </FormLabel>
+              {rightOfLabelContent}
+            </HStack>
             <FormControl>{children}</FormControl>
           </>
         }
@@ -203,6 +261,7 @@ export function InputContainer(props: InputContainerProps) {
 
 export interface RawInputContainerProps extends InputContainerProps {
   id?: string;
+  errorMessage?: string;
 }
 
 export function RawInputContainer(props: RawInputContainerProps) {
@@ -211,28 +270,43 @@ export function RawInputContainer(props: RawInputContainerProps) {
     id,
     hideLabel,
     fullHeight,
+    flex,
     inline,
     fullWidth,
     preLabelIcon,
+    collapseHeight,
     description,
     children,
+    infoTooltip,
+    rightOfLabelContent,
   } = props;
 
   return (
     <InputWrapper
       fullWidth={fullWidth}
       fullHeight={fullHeight}
+      collapseHeight={collapseHeight}
+      flex={flex}
       inputAndLabel={
         <>
-          <LabelPrimitive
-            htmlFor={id}
-            className={
-              hideLabel ? 'sr-only' : 'flex flex-row gap-1 items-center'
-            }
+          <HStack
+            fullWidth
+            className={hideLabel ? 'sr-only' : ''}
+            gap="text"
+            justify="spaceBetween"
           >
-            {preLabelIcon && <Slot className="h-3">{preLabelIcon}</Slot>}
-            {label}
-          </LabelPrimitive>
+            <LabelPrimitive
+              htmlFor={id}
+              className="flex flex-row gap-1 items-center"
+            >
+              <InputContainerHeader
+                preLabelIcon={preLabelIcon}
+                label={label}
+                infoTooltip={infoTooltip}
+              />
+            </LabelPrimitive>
+            {rightOfLabelContent}
+          </HStack>
           {children}
         </>
       }
@@ -259,6 +333,8 @@ interface MakeInputOptions {
   container?: MakeInputOptionsContainerType;
 }
 
+const omitProps = ['rightOfLabelContent', 'infoTooltip', 'labelVariant'];
+
 export function makeInput<T>(
   Input: React.ComponentType<T>,
   componentName: string,
@@ -271,7 +347,7 @@ export function makeInput<T>(
         inline={options?.inline}
         fullWidth={props.fullWidth || options?.fullWidth}
       >
-        <Input ref={ref} {...props} />
+        <Input ref={ref} {...(omit(props, omitProps) as typeof props)} />
       </InputContainer>
     );
 
@@ -297,13 +373,14 @@ export const inputStorybookArgs = {
   hideLabel: false,
   description: '',
   fullWidth: false,
+  collapseHeight: false,
   fullHeight: false,
 };
 
 export function extractAndRemoveInputProps<T>(
-  props: T & { label?: string; hideLabel?: boolean }
+  props: T & { label?: string; hideLabel?: boolean; infoTooltipText?: string }
 ) {
-  const { label, hideLabel, ...rest } = props;
+  const { label, hideLabel, infoTooltipText, ...rest } = props;
   return rest;
 }
 
@@ -320,9 +397,10 @@ export function makeRawInput<T>(
         {...props}
         id={baseId || props.id}
         inline={options?.inline || props.inline}
+        collapseHeight={props.collapseHeight}
         fullWidth={props.fullWidth || options?.fullWidth}
       >
-        <Input {...props} />
+        <Input {...(omit(props, omitProps) as typeof props)} />
       </RawInputContainer>
     );
 
@@ -446,9 +524,12 @@ export function FormActions({
       )}
     >
       {startAction ? startAction : <div />}
-      <HStack align="center">
+      <HStack align="center" reverse={align === 'start'}>
         {errorMessage && (
-          <Typography align="right" color="destructive">
+          <Typography
+            align={align === 'start' ? 'left' : 'right'}
+            color="destructive"
+          >
             {errorMessage}
           </Typography>
         )}

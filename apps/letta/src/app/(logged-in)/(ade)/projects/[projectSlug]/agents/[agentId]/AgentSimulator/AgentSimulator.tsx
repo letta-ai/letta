@@ -1,19 +1,19 @@
-'use client';
 import {
   Alert,
-  BirdIcon,
   Button,
   ChatBubbleIcon,
   ChatInput,
+  ChatIcon,
   CodeIcon,
+  ComputerIcon,
   Dialog,
   DotsHorizontalIcon,
   DropdownMenu,
   DropdownMenuItem,
   HStack,
-  LoadingEmptyStatusComponent,
-  ProgressBar,
+  PersonIcon,
   RawToggleGroup,
+  SystemIcon,
   Table,
   TableBody,
   TableCell,
@@ -24,10 +24,10 @@ import {
   VariableIcon,
   WarningIcon,
 } from '@letta-web/component-library';
-import type { PanelTemplate } from '@letta-web/component-library';
+import type { PanelTemplate, ChatInputRef } from '@letta-web/component-library';
 import { PanelBar } from '@letta-web/component-library';
 import { VStack } from '@letta-web/component-library';
-import type { Dispatch, SetStateAction } from 'react';
+import type { Dispatch, FormEvent, SetStateAction } from 'react';
 import { useEffect } from 'react';
 import { useMemo } from 'react';
 import React, { useCallback, useRef, useState } from 'react';
@@ -36,6 +36,8 @@ import type {
   AgentState,
   Source,
 } from '@letta-web/letta-agents-api';
+import { ErrorMessageSchema } from '@letta-web/letta-agents-api';
+import { useLettaAgentsAPI } from '@letta-web/letta-agents-api';
 import { getIsAgentState } from '@letta-web/letta-agents-api';
 import { AgentsService } from '@letta-web/letta-agents-api';
 import { useAgentsServiceGetAgentSources } from '@letta-web/letta-agents-api';
@@ -60,12 +62,33 @@ import type { GetAgentTemplateSimulatorSessionResponseBody } from '$letta/web-ap
 import { isEqual } from 'lodash-es';
 import { useCurrentSimulatedAgent } from '../hooks/useCurrentSimulatedAgent/useCurrentSimulatedAgent';
 import { useCurrentAgentMetaData } from '../hooks/useCurrentAgentMetaData/useCurrentAgentMetaData';
+import { atom, useAtom } from 'jotai';
+import { trackClientSideEvent } from '@letta-web/analytics/client';
+import { AnalyticsEvent } from '@letta-web/analytics';
+import { useCurrentUser } from '$letta/client/hooks';
 
-function useSendMessage(agentId: string) {
-  const [isPending, setIsPending] = useState(false);
+const isSendingMessageAtom = atom(false);
+
+interface SendMessagePayload {
+  role: string;
+  text: string;
+}
+
+export type SendMessageType = (payload: SendMessagePayload) => void;
+
+interface UseSendMessageOptions {
+  onFailedToSendMessage?: (existingMessage: string) => void;
+}
+
+function useSendMessage(agentId: string, options: UseSendMessageOptions = {}) {
+  const [isPending, setIsPending] = useAtom(isSendingMessageAtom);
   const abortController = useRef<AbortController>();
   const queryClient = useQueryClient();
   const { isLocal } = useCurrentAgentMetaData();
+  const user = useCurrentUser();
+  const [failedToSendMessage, setFailedToSendMessage] = useState(false);
+
+  const { baseUrl, password } = useLettaAgentsAPI();
 
   useEffect(() => {
     return () => {
@@ -75,9 +98,11 @@ function useSendMessage(agentId: string) {
     };
   }, []);
 
-  const sendMessage = useCallback(
-    (message: string) => {
+  const sendMessage: SendMessageType = useCallback(
+    (payload: SendMessagePayload) => {
+      const { text: message, role } = payload;
       setIsPending(true);
+      setFailedToSendMessage(false);
 
       queryClient.setQueriesData<InfiniteData<AgentMessage[]> | undefined>(
         {
@@ -91,9 +116,9 @@ function useSendMessage(agentId: string) {
           const [firstPage, ...rest] = [...oldData.pages];
 
           const newMessage: AgentMessage = {
-            message_type: 'user_message',
+            message_type: role === 'user' ? 'user_message' : 'system_message',
             message: JSON.stringify({
-              type: 'user_message',
+              type: role === 'user' ? 'user_message' : 'system_alert',
               message: message,
               time: new Date().toISOString(),
             }),
@@ -101,19 +126,29 @@ function useSendMessage(agentId: string) {
             id: `${new Date().getTime()}-user_message`,
           };
 
+          const firstPageWithNewMessage = [newMessage, ...firstPage];
+
           return {
             pageParams: oldData.pageParams,
-            pages: [[newMessage, ...firstPage], ...rest],
+            pages: [firstPageWithNewMessage, ...rest],
           };
         }
       );
 
+      if (isLocal) {
+        trackClientSideEvent(AnalyticsEvent.LOCAL_AGENT_MESSAGE_CREATED, {
+          userId: user?.id || '',
+        });
+      } else {
+        trackClientSideEvent(AnalyticsEvent.CLOUD_AGENT_MESSAGE_CREATED, {
+          userId: user?.id || '',
+        });
+      }
+
       abortController.current = new AbortController();
 
-      const baseUrl = isLocal ? 'http://localhost:8283/' : '/';
-
       const eventsource = new EventSource(
-        `${baseUrl}v1/agents/${agentId}/messages`,
+        `${baseUrl}/v1/agents/${agentId}/messages/stream`,
         {
           withCredentials: true,
           method: 'POST',
@@ -122,13 +157,14 @@ function useSendMessage(agentId: string) {
           headers: {
             'Content-Type': 'application/json',
             Accept: 'text/event-stream',
+            ...(password ? { 'X-BARE-PASSWORD': `password ${password}` } : {}),
           },
           body: JSON.stringify({
             stream_steps: true,
             stream_tokens: true,
             messages: [
               {
-                role: 'user',
+                role,
                 text: message,
               },
             ],
@@ -143,6 +179,16 @@ function useSendMessage(agentId: string) {
 
         if (['DONE_GEN', 'DONE_STEP', 'DONE'].includes(e.data)) {
           return;
+        }
+
+        try {
+          const errorMessage = ErrorMessageSchema.parse(JSON.parse(e.data));
+          setIsPending(false);
+          setFailedToSendMessage(!!errorMessage.error);
+          options?.onFailedToSendMessage?.(message);
+          return;
+        } catch (_e) {
+          // ignore
         }
 
         try {
@@ -183,6 +229,9 @@ function useSendMessage(agentId: string) {
                       );
 
                       newMessage.function_call = {
+                        function_call_id:
+                          newMessage.function_call.function_call_id ||
+                          extracted.function_call.function_call_id,
                         message_type:
                           newMessage.function_call.message_type ||
                           extracted.function_call.message_type,
@@ -249,10 +298,19 @@ function useSendMessage(agentId: string) {
         setIsPending(false);
       };
     },
-    [agentId, isLocal, queryClient]
+    [
+      agentId,
+      baseUrl,
+      isLocal,
+      options,
+      password,
+      queryClient,
+      setIsPending,
+      user?.id,
+    ]
   );
 
-  return { isPending, sendMessage };
+  return { isPending, isError: failedToSendMessage, sendMessage };
 }
 
 interface ChatroomContextType {
@@ -261,7 +319,7 @@ interface ChatroomContextType {
 }
 
 const ChatroomContext = React.createContext<ChatroomContextType>({
-  renderMode: 'debug',
+  renderMode: 'interactive',
   setRenderMode: () => {
     return;
   },
@@ -274,6 +332,7 @@ function ControlChatroomRenderMode() {
   return (
     <RawToggleGroup
       border
+      size="small"
       onValueChange={(value) => {
         if (value) {
           setRenderMode(value as MessagesDisplayMode);
@@ -290,7 +349,7 @@ function ControlChatroomRenderMode() {
           hideLabel: true,
         },
         {
-          icon: <BirdIcon />,
+          icon: <ChatIcon />,
           label: t('setChatroomRenderMode.options.interactive'),
           value: 'interactive',
           hideLabel: true,
@@ -342,74 +401,64 @@ function DialogSessionSheet(props: DialogSessionDialogProps) {
       },
     });
 
-  useEffect(() => {
-    if (!isEqual(existingVariables, variableData)) {
-      setVariableData(existingVariables);
-    }
-  }, [existingVariables, variableData]);
-
   const handleUpdateSession = useCallback(
-    (nextVariables: Record<string, string>) => {
-      mutate({
-        params: {
-          agentTemplateId,
-          projectId,
-        },
-        body: {
-          variables: nextVariables,
-        },
-      });
-    },
-    [agentTemplateId, mutate, projectId]
-  );
+    (e: FormEvent<HTMLFormElement>) => {
+      e.preventDefault();
 
-  const debouncedUpdateSession = useDebouncedCallback(
-    handleUpdateSession,
-    1000
-  );
-
-  const handleChange = useCallback(
-    (name: string, value: string) => {
-      setVariableData((prev) => {
-        const next = {
-          ...prev,
-          [name]: value,
-        };
-
-        queryClient.setQueriesData<
-          GetAgentTemplateSimulatorSessionResponseBody | undefined
-        >(
-          {
-            queryKey: webApiQueryKeys.agentTemplates.getAgentTemplateSession({
-              agentTemplateId,
-              projectId,
-            }),
+      mutate(
+        {
+          params: {
+            agentTemplateId,
+            projectId,
           },
-          (oldData) => {
-            if (!oldData) {
-              return oldData;
-            }
-
-            return {
-              status: 200,
-              body: {
-                ...oldData?.body,
-                variables: {
-                  ...oldData?.body.variables,
-                  ...next,
-                },
+          body: {
+            variables: variableData,
+          },
+        },
+        {
+          onSuccess: () => {
+            queryClient.setQueriesData<
+              GetAgentTemplateSimulatorSessionResponseBody | undefined
+            >(
+              {
+                queryKey:
+                  webApiQueryKeys.agentTemplates.getAgentTemplateSession({
+                    agentTemplateId,
+                    projectId,
+                  }),
               },
-            };
-          }
-        );
+              (oldData) => {
+                if (!oldData) {
+                  return oldData;
+                }
 
-        debouncedUpdateSession(next);
-
-        return next;
-      });
+                return {
+                  status: 200,
+                  body: {
+                    ...oldData?.body,
+                    variables: {
+                      ...oldData?.body.variables,
+                      ...variableData,
+                    },
+                  },
+                };
+              }
+            );
+          },
+        }
+      );
     },
-    [agentTemplateId, debouncedUpdateSession, projectId, queryClient]
+    [agentTemplateId, mutate, projectId, queryClient, variableData]
   );
+
+  const handleChange = useCallback((name: string, value: string) => {
+    setVariableData((prev) => {
+      return {
+        ...prev,
+        [name]: value,
+      };
+    });
+  }, []);
 
   if (!variables.length) {
     return (
@@ -425,32 +474,49 @@ function DialogSessionSheet(props: DialogSessionDialogProps) {
   }
 
   return (
-    <VStack position="relative" borderBottom padding="small">
-      <HStack fullWidth position="absolute">
-        {isPending && <ProgressBar indeterminate />}
-      </HStack>
-      <VStack border gap={false} borderBottom>
-        <Table>
-          <TableBody>
-            {variables.map((variable) => (
-              <TableRow key={variable}>
-                <TableCell>
-                  <Typography>{variable}</Typography>
-                </TableCell>
-                <TableCellInput
-                  value={variableData[variable] || ''}
-                  label={t('DialogSessionSheet.label')}
-                  placeholder={t('DialogSessionSheet.placeholder')}
-                  onChange={(e) => {
-                    handleChange(variable, e.target.value);
-                  }}
-                />
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+    <form onSubmit={handleUpdateSession}>
+      <VStack
+        color="background-grey"
+        position="relative"
+        borderBottom
+        paddingTop
+        borderTop
+        padding="small"
+      >
+        <VStack color="background" border gap={false} borderBottom>
+          <Table>
+            <TableBody>
+              {variables.map((variable) => (
+                <TableRow key={variable}>
+                  <TableCell>
+                    <Typography variant="body2">{variable}</Typography>
+                  </TableCell>
+                  <TableCellInput
+                    testId={`variable-input-${variable}`}
+                    value={variableData[variable] || ''}
+                    label={t('DialogSessionSheet.label')}
+                    placeholder={t('DialogSessionSheet.placeholder')}
+                    onChange={(e) => {
+                      handleChange(variable, e.target.value);
+                    }}
+                  />
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </VStack>
+        <HStack justify="end">
+          <Button
+            data-testid="save-variables-button"
+            label={t('DialogSessionSheet.save')}
+            size="small"
+            busy={isPending}
+            type="submit"
+            color="secondary"
+          />
+        </HStack>
       </VStack>
-    </VStack>
+    </form>
   );
 }
 
@@ -592,6 +658,7 @@ function AgentSimulatorOptionsMenu() {
         align="end"
         trigger={
           <Button
+            size="small"
             color="tertiary"
             preIcon={<DotsHorizontalIcon />}
             hideLabel
@@ -626,10 +693,12 @@ export function generateAgentStateHash(
 ): GenerateAgentStateHashResponse {
   const agentStateCopy = { ...agentState };
 
-  if (agentStateCopy.memory?.memory) {
-    for (const memory in agentStateCopy.memory.memory) {
-      agentStateCopy.memory.memory[memory].id = '';
-    }
+  if (agentStateCopy.memory?.blocks) {
+    Object.keys(agentStateCopy.memory.blocks).forEach((_, index) => {
+      if (agentStateCopy.memory) {
+        agentStateCopy.memory.blocks[index].id = '';
+      }
+    });
   }
 
   return {
@@ -644,7 +713,7 @@ function Chatroom() {
   const [showVariablesMenu, setShowVariablesMenu] = useState(false);
   const { id: agentId } = agentState;
   const [renderMode, setRenderMode] = useLocalStorage<MessagesDisplayMode>({
-    defaultValue: 'debug',
+    defaultValue: 'interactive',
     key: 'chatroom-render-mode',
   });
 
@@ -733,11 +802,33 @@ function Chatroom() {
     sourceList,
   ]);
 
-  const { sendMessage, isPending } = useSendMessage(agentIdToUse || '');
+  const ref = useRef<ChatInputRef | null>(null);
+
+  const {
+    sendMessage,
+    isError: hasFailedToSendMessage,
+    isPending,
+  } = useSendMessage(agentIdToUse || '', {
+    onFailedToSendMessage: (message) => {
+      ref.current?.setChatMessage(message);
+    },
+  });
 
   const hasVariableIssue = useMemo(() => {
     return hasVariableMismatch;
   }, [hasVariableMismatch]);
+
+  const hasFailedToSendMessageText = useMemo(() => {
+    if (!hasFailedToSendMessage) {
+      return;
+    }
+
+    if (isLocal) {
+      return t('hasFailedToSendMessageText.local');
+    }
+
+    return t('hasFailedToSendMessageText.cloud');
+  }, [hasFailedToSendMessage, isLocal, t]);
 
   return (
     <ChatroomContext.Provider value={{ renderMode, setRenderMode }}>
@@ -755,6 +846,7 @@ function Chatroom() {
               onClick={() => {
                 setShowVariablesMenu((v) => !v);
               }}
+              data-testid="toggle-variables-button"
               active={showVariablesMenu}
               preIcon={
                 hasVariableIssue ? (
@@ -769,6 +861,7 @@ function Chatroom() {
                   ? t('hideVariables')
                   : t('showVariables')
               }
+              size="small"
             />
           </VStack>
         </PanelBar>
@@ -789,21 +882,38 @@ function Chatroom() {
         <VStack collapseHeight gap={false} fullWidth>
           <VStack gap="large" collapseHeight>
             <VStack collapseHeight position="relative">
-              {!agentIdToUse ? (
-                <LoadingEmptyStatusComponent emptyMessage="" isLoading />
-              ) : (
-                <Messages
-                  mode={renderMode}
-                  isPanelActive
-                  isSendingMessage={isPending}
-                  agentId={agentIdToUse || ''}
-                />
-              )}
+              <Messages
+                mode={renderMode}
+                isPanelActive
+                isSendingMessage={isPending}
+                agentId={agentIdToUse || ''}
+              />
             </VStack>
             <ChatInput
               disabled={!agentIdToUse}
+              defaultRole="user"
+              roles={[
+                {
+                  value: 'user',
+                  label: t('role.user'),
+                  icon: <PersonIcon />,
+                  color: {
+                    background: 'hsl(var(--user-color))',
+                    text: 'hsl(var(--user-color-content))',
+                  },
+                },
+                {
+                  value: 'system',
+                  label: t('role.system'),
+                  icon: <SystemIcon />,
+                },
+              ]}
+              ref={ref}
+              hasFailedToSendMessageText={hasFailedToSendMessageText}
               sendingMessageText={t('sendingMessage')}
-              onSendMessage={sendMessage}
+              onSendMessage={(role: string, text: string) => {
+                sendMessage({ role, text });
+              }}
               isSendingMessage={isPending}
             />
           </VStack>
@@ -817,5 +927,7 @@ export const agentSimulatorTemplate = {
   templateId: 'agent-simulator',
   useGetTitle: () => 'Agent Simulator',
   content: Chatroom,
+  useGetMobileTitle: () => 'Simulator',
+  icon: <ComputerIcon />,
   data: z.undefined(),
 } satisfies PanelTemplate<'agent-simulator'>;

@@ -11,7 +11,7 @@ import { MaybeTooltip } from '../Tooltip/Tooltip';
 import './ToggleGroup.scss';
 
 const toggleVariants = cva(
-  'inline-flex items-center justify-center text-sm font-medium ring-offset-background transition-colors hover:bg-tertiary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=on]:bg-tertiary-active ',
+  'inline-flex items-center justify-center text-sm font-medium ring-offset-background transition-colors hover:bg-tertiary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=on]:border data-[state=on]:bg-tertiary-active ',
   {
     variants: {
       hideLabel: {
@@ -20,11 +20,14 @@ const toggleVariants = cva(
       variant: {
         default: 'bg-transparent',
         outline:
-          'border border-input bg-transparent hover:bg-accent hover:text-accent-foreground',
+          'border border-input bg-transparent hover:bg-accent hover:text-accent-content',
       },
       size: {
         default: 'h-biHeight px-3',
         small: 'h-biHeight-sm px-2.5',
+      },
+      fullWidth: {
+        true: 'w-full',
       },
     },
     defaultVariants: {
@@ -68,6 +71,7 @@ const ToggleGroupContext = React.createContext<
 >({
   size: 'default',
   variant: 'default',
+  fullWidth: false,
 });
 
 const ToggleGroupRoot = React.forwardRef<
@@ -75,13 +79,13 @@ const ToggleGroupRoot = React.forwardRef<
   // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
   React.ComponentPropsWithoutRef<typeof ToggleGroupPrimitive.Root> &
     VariantProps<typeof toggleVariants>
->(({ className, variant, size, children, ...props }, ref) => (
+>(({ className, variant, size, children, fullWidth, ...props }, ref) => (
   <ToggleGroupPrimitive.Root
     ref={ref}
     className={cn('flex items-center justify-start gap-0', className)}
     {...props}
   >
-    <ToggleGroupContext.Provider value={{ variant, size }}>
+    <ToggleGroupContext.Provider value={{ fullWidth, variant, size }}>
       {children}
     </ToggleGroupContext.Provider>
   </ToggleGroupPrimitive.Root>
@@ -94,25 +98,32 @@ const ToggleGroupItem = React.forwardRef<
   // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
   React.ComponentPropsWithoutRef<typeof ToggleGroupPrimitive.Item> &
     VariantProps<typeof toggleVariants>
->(({ className, hideLabel: _, children, variant, size, ...props }, ref) => {
-  const context = React.useContext(ToggleGroupContext);
+>(
+  (
+    { className, hideLabel: _, children, variant, fullWidth, size, ...props },
+    ref
+  ) => {
+    const context = React.useContext(ToggleGroupContext);
 
-  return (
-    <ToggleGroupPrimitive.Item
-      ref={ref}
-      className={cn(
-        toggleVariants({
-          variant: context.variant || variant,
-          size: context.size || size,
-        }),
-        className
-      )}
-      {...props}
-    >
-      {children}
-    </ToggleGroupPrimitive.Item>
-  );
-});
+    return (
+      <ToggleGroupPrimitive.Item
+        data-testid={`toggle-group-item:${props.value}`}
+        ref={ref}
+        className={cn(
+          toggleVariants({
+            variant: context.variant || variant,
+            size: context.size || size,
+            fullWidth: context.fullWidth || fullWidth,
+          }),
+          className
+        )}
+        {...props}
+      >
+        <div className="flex gap-2 items-center">{children}</div>
+      </ToggleGroupPrimitive.Item>
+    );
+  }
+);
 
 ToggleGroupItem.displayName = ToggleGroupPrimitive.Item.displayName;
 
@@ -120,20 +131,27 @@ interface ToggleGroupItemType {
   label: string;
   value: string;
   icon?: React.ReactNode;
+  postIcon?: React.ReactNode;
   hideLabel?: boolean;
 }
 
 interface ToggleGroupProps extends Omit<ToggleGroupSingleProps, 'type'> {
   items: ToggleGroupItemType[];
   border?: boolean;
+  fullWidth?: boolean;
   size?: VariantProps<typeof toggleVariants>['size'];
 }
 
 function ToggleGroupWrapper(props: ToggleGroupProps) {
-  const { items, border, size, value, onValueChange } = props;
+  const { items, border, fullWidth, size, value, onValueChange } = props;
 
   return (
-    <Frame className={cn(border ? 'frame-border-hack' : '')}>
+    <Frame
+      className={cn(
+        border ? 'frame-border-hack' : '',
+        fullWidth ? 'w-full' : ''
+      )}
+    >
       <ToggleGroupRoot
         type="single"
         value={value}
@@ -149,6 +167,7 @@ function ToggleGroupWrapper(props: ToggleGroupProps) {
             <ToggleGroupItem
               hideLabel={item.hideLabel}
               size={size}
+              fullWidth={fullWidth}
               key={item.value}
               value={item.value}
             >
@@ -156,6 +175,7 @@ function ToggleGroupWrapper(props: ToggleGroupProps) {
               <span className={item.hideLabel ? 'sr-only' : ''}>
                 {item.label}
               </span>
+              {item.postIcon}
             </ToggleGroupItem>
           </MaybeTooltip>
         ))}

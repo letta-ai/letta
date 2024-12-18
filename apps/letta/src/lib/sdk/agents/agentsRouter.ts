@@ -8,11 +8,11 @@ import * as Sentry from '@sentry/node';
 
 import type { SDKContext } from '$letta/sdk/shared';
 import type { AgentState } from '@letta-web/letta-agents-api';
-import { LlmsService } from '@letta-web/letta-agents-api';
+import { ToolsService } from '@letta-web/letta-agents-api';
 import {
   AgentsService,
   SourcesService,
-  type UpdateAgentState,
+  type UpdateAgent,
 } from '@letta-web/letta-agents-api';
 import {
   agentTemplates,
@@ -25,11 +25,9 @@ import {
 import { createProject } from '$letta/web-api/router';
 import { and, asc, desc, eq, isNull, like, ne } from 'drizzle-orm';
 import { findUniqueAgentTemplateName } from '$letta/server';
-import {
-  isTemplateNameAPremadeAgentTemplate,
-  premadeAgentTemplates,
-} from '$letta/sdk/agents/premadeAgentTemplates';
+
 import type { OrderByValuesEnumType } from '$letta/sdk/agents/agentsContract';
+import { isTemplateNameAStarterKitId, STARTER_KITS } from '$letta/client';
 
 export function attachVariablesToTemplates(
   agentTemplate: AgentState,
@@ -39,13 +37,14 @@ export function attachVariablesToTemplates(
     ...agentTemplate,
   };
 
-  Object.keys(nextAgent.memory?.memory || {}).forEach((key) => {
-    if (typeof nextAgent.memory?.memory?.[key]?.value === 'string') {
+  nextAgent.memory.blocks.forEach((_, index) => {
+    if (typeof nextAgent.memory.blocks[index]?.value === 'string') {
       // needs to be done or memory will rely on the existing block id
-      nextAgent.memory.memory[key].id = undefined;
+      const { id: _id, ...rest } = nextAgent.memory.blocks[index];
+      nextAgent.memory.blocks[index] = rest;
       if (variables) {
-        nextAgent.memory.memory[key].value = nextAgent.memory.memory[
-          key
+        nextAgent.memory.blocks[index].value = nextAgent.memory.blocks[
+          index
         ].value.replace(/{{(.*?)}}/g, (_m, p1) => {
           return variables?.[p1] || '';
         });
@@ -53,10 +52,10 @@ export function attachVariablesToTemplates(
     }
   });
 
-  console.log('x', JSON.stringify(nextAgent.memory, null, 2));
-
   return {
-    tools: nextAgent.tools,
+    system: nextAgent.system,
+    tool_ids:
+      nextAgent.tools?.map((tool) => tool.id || '').filter(Boolean) || [],
     name: `name-${crypto.randomUUID()}`,
     embedding_config: nextAgent.embedding_config,
     memory: nextAgent.memory,
@@ -93,7 +92,18 @@ export async function copyAgentById(
   const nextAgent = await AgentsService.createAgent(
     {
       requestBody: {
-        ...agentBody,
+        llm_config: agentBody.llm_config,
+        embedding_config: agentBody.embedding_config,
+        system: agentBody.system,
+        tool_ids: agentBody.tool_ids,
+        name: agentBody.name,
+        memory_blocks: agentBody.memory.blocks.map((block) => {
+          return {
+            limit: block.limit,
+            label: block.label || '',
+            value: block.value,
+          };
+        }),
       },
     },
     {
@@ -150,6 +160,54 @@ export function prepareAgentForUser(
   };
 }
 
+interface GetCatchAllProjectId {
+  organizationId: string;
+}
+
+async function getCatchAllProjectId(args: GetCatchAllProjectId) {
+  const { organizationId } = args;
+
+  const orgPrefResponse = await db.query.organizationPreferences.findFirst({
+    where: eq(organizationPreferences.organizationId, organizationId),
+    columns: {
+      catchAllAgentsProjectId: true,
+    },
+  });
+
+  if (!orgPrefResponse) {
+    Sentry.captureMessage(
+      `Organization preferences not found for organization ${organizationId}`
+    );
+
+    throw new Error('Organization preferences not found');
+  }
+
+  let projectId = orgPrefResponse.catchAllAgentsProjectId || '';
+
+  const randomThreeDigitNumber = Math.floor(100 + Math.random() * 900);
+
+  if (!projectId) {
+    // create a catch-all project
+    const catchAllRes = await createProject({
+      body: {
+        name: `Catch-all agents project ${randomThreeDigitNumber}`,
+      },
+    });
+
+    if (catchAllRes.status !== 201) {
+      Sentry.captureMessage(
+        `Failed to make catch all project for - ${organizationId}`
+      );
+
+      throw new Error('Failed to create catch all project');
+    }
+
+    projectId = catchAllRes.body.id;
+  }
+
+  return projectId;
+}
+
 export async function createAgent(
   req: CreateAgentRequest,
   context: SDKContext
@@ -167,20 +225,14 @@ export async function createAgent(
   let name = preName;
 
   if (name) {
-    if (!project_id) {
-      return {
-        status: 400,
-        body: {
-          message: 'project_id is required when providing a name',
-        },
-      };
-    }
+    const projectId =
+      project_id || (await getCatchAllProjectId({ organizationId }));
 
     if (template) {
       const exists = await db.query.agentTemplates.findFirst({
         where: and(
           eq(agentTemplates.organizationId, organizationId),
-          eq(agentTemplates.projectId, project_id),
+          eq(agentTemplates.projectId, projectId),
           eq(agentTemplates.name, name),
           isNull(agentTemplates.deletedAt)
         ),
@@ -198,7 +250,7 @@ export async function createAgent(
       const exists = await db.query.deployedAgents.findFirst({
         where: and(
           eq(deployedAgents.organizationId, organizationId),
-          eq(deployedAgents.projectId, project_id),
+          eq(deployedAgents.projectId, projectId),
           eq(deployedAgents.key, name),
           isNull(agentTemplates.deletedAt)
         ),
@@ -220,32 +272,11 @@ export async function createAgent(
   if (from_template) {
     const [templateName, version] = from_template.split(':');
 
-    if (isTemplateNameAPremadeAgentTemplate(templateName)) {
-      const premadeAgentTemplate = premadeAgentTemplates[templateName];
+    if (isTemplateNameAStarterKitId(templateName)) {
+      const starterKit = STARTER_KITS[templateName];
 
-      const [listModels, listEmbeddingModels] = await Promise.all([
-        LlmsService.listModels({
-          user_id: lettaAgentsUserId,
-        }),
-        LlmsService.listEmbeddingModels({
-          user_id: lettaAgentsUserId,
-        }),
-      ]);
-
-      const [availableModel] = listModels;
-      const [availableEmbeddingModel] = listEmbeddingModels;
-
-      if (!availableModel || !availableEmbeddingModel) {
-        return {
-          status: 418,
-          body: {
-            message: 'No LLM models available',
-          },
-        };
-      }
-
-      if (!premadeAgentTemplate) {
-        throw new Error('Premade agent template not found');
+      if (!starterKit) {
+        throw new Error('Starter kit not found');
       }
 
       if (!project_id) {
@@ -253,7 +284,7 @@ export async function createAgent(
           status: 400,
           body: {
             message:
-              'project_id is required when creating an agent from a premade agent template',
+              'project_id is required when creating an agent from a starter kit template',
           },
         };
       }
@@ -263,17 +294,84 @@ export async function createAgent(
           status: 400,
           body: {
             message:
-              'Cannot create a deployed agent from a premade agent template',
+              'Cannot create a deployed agent from a starter kit template',
           },
         };
+      }
+
+      let toolIdsToAttach: string[] = [];
+
+      if ('tools' in starterKit) {
+        const existingTools = await ToolsService.listTools(
+          {},
+          {
+            user_id: lettaAgentsUserId,
+          }
+        );
+
+        const toolNameMap = (existingTools || []).reduce((acc, tool) => {
+          acc.add(tool.name || '');
+
+          return acc;
+        }, new Set<string>());
+
+        const toolsToCreate = starterKit.tools.filter((tool) => {
+          return !toolNameMap.has(tool.name);
+        });
+
+        const toolResponse = await Promise.all(
+          toolsToCreate.map((tool) => {
+            return ToolsService.createTool(
+              {
+                requestBody: {
+                  source_code: tool.code,
+                  description: 'A custom tool',
+                  name: tool.name,
+                },
+              },
+              {
+                user_id: lettaAgentsUserId,
+              }
+            );
+          })
+        );
+
+        toolIdsToAttach = toolResponse.map((tool) => tool.id || '');
+
+        toolIdsToAttach = [
+          ...toolIdsToAttach,
+          ...(starterKit.tools || []).map((tool) => {
+            const existingTool = existingTools?.find(
+              (existingTool) => existingTool.name === tool.name
+            );
+
+            return existingTool?.id || '';
+          }),
+        ].filter(Boolean);
       }
 
       const response = await AgentsService.createAgent(
         {
           requestBody: {
-            ...premadeAgentTemplate,
-            llm_config: availableModel,
-            embedding_config: availableEmbeddingModel,
+            ...starterKit.agentState,
+            tool_ids: toolIdsToAttach,
+            llm_config: {
+              model: 'gpt-4',
+              model_endpoint_type: 'openai',
+              model_endpoint: 'https://api.openai.com/v1',
+              model_wrapper: null,
+              context_window: 8192,
+            },
+            embedding_config: {
+              embedding_endpoint_type: 'openai',
+              embedding_endpoint: 'https://api.openai.com/v1',
+              embedding_model: 'text-embedding-ada-002',
+              embedding_dim: 1536,
+              embedding_chunk_size: 300,
+              azure_endpoint: null,
+              azure_version: null,
+              azure_deployment: null,
+            },
             name: crypto.randomUUID(),
           },
         },
@@ -418,6 +516,8 @@ export async function createAgent(
     {
       requestBody: {
         ...agent,
+        tools: agent.tools || undefined,
+        memory_blocks: agent.memory_blocks || [],
         name: crypto.randomUUID(),
       },
     },
@@ -435,57 +535,8 @@ export async function createAgent(
     };
   }
 
-  let projectId = project_id;
-
-  if (!projectId) {
-    const orgPrefResponse = await db.query.organizationPreferences.findFirst({
-      where: eq(organizationPreferences.organizationId, organizationId),
-      columns: {
-        catchAllAgentsProjectId: true,
-      },
-    });
-
-    if (!orgPrefResponse) {
-      Sentry.captureMessage(
-        `Organization preferences not found for organization ${organizationId}`
-      );
-
-      return {
-        status: 500,
-        body: {
-          message: 'Failed to create agent',
-        },
-      };
-    }
-
-    projectId = orgPrefResponse.catchAllAgentsProjectId || '';
-
-    const randomThreeDigitNumber = Math.floor(100 + Math.random() * 900);
-
-    if (!projectId) {
-      // create a catch-all project
-      const catchAllRes = await createProject({
-        body: {
-          name: `Catch-all agents project ${randomThreeDigitNumber}`,
-        },
-      });
-
-      if (catchAllRes.status !== 201) {
-        Sentry.captureMessage(
-          `Failed to make catch all project for - ${organizationId}`
-        );
-
-        return {
-          status: 500,
-          body: {
-            message: 'Failed to create agent',
-          },
-        };
-      }
-
-      projectId = catchAllRes.body.id;
-    }
-  }
+  const projectId =
+    project_id || (await getCatchAllProjectId({ organizationId }));
 
   if (template) {
     await db.insert(agentTemplates).values({
@@ -631,9 +682,9 @@ export async function versionAgentTemplate(
     context.request.lettaAgentsUserId
   );
 
-  const createdAgentId = createdAgent?.id;
+  const deployedAgentTemplateId = createdAgent?.id;
 
-  if (!createdAgentId) {
+  if (!deployedAgentTemplateId) {
     return {
       status: 500,
       body: {
@@ -643,7 +694,7 @@ export async function versionAgentTemplate(
   }
 
   await db.insert(deployedAgentTemplates).values({
-    id: createdAgentId,
+    id: deployedAgentTemplateId,
     projectId,
     organizationId: context.request.organizationId,
     agentTemplateId,
@@ -680,8 +731,8 @@ export async function versionAgentTemplate(
 
         await updateAgentFromAgentId({
           variables: deployedAgentVariablesItem?.value || {},
-          fromAgent: deployedAgent.id,
-          toAgent: createdAgentId,
+          baseAgentId: deployedAgentTemplateId,
+          agentToUpdateId: deployedAgent.id,
           lettaAgentsUserId: context.request.lettaAgentsUserId,
           preserveCoreMemories: false,
         });
@@ -690,7 +741,7 @@ export async function versionAgentTemplate(
         await db
           .update(deployedAgents)
           .set({
-            deployedAgentTemplateId: createdAgentId,
+            deployedAgentTemplateId,
           })
           .where(eq(deployedAgents.id, deployedAgent.id));
       })
@@ -710,8 +761,8 @@ export async function versionAgentTemplate(
 interface UpdateAgentFromAgentId {
   preserveCoreMemories?: boolean;
   variables: Record<string, string>;
-  fromAgent: string;
-  toAgent: string;
+  baseAgentId: string;
+  agentToUpdateId: string;
   lettaAgentsUserId: string;
 }
 
@@ -719,8 +770,8 @@ export async function updateAgentFromAgentId(options: UpdateAgentFromAgentId) {
   const {
     preserveCoreMemories = false,
     variables,
-    fromAgent,
-    toAgent,
+    baseAgentId,
+    agentToUpdateId,
     lettaAgentsUserId,
   } = options;
 
@@ -728,7 +779,7 @@ export async function updateAgentFromAgentId(options: UpdateAgentFromAgentId) {
     [
       AgentsService.getAgent(
         {
-          agentId: fromAgent,
+          agentId: baseAgentId,
         },
         {
           user_id: lettaAgentsUserId,
@@ -736,7 +787,7 @@ export async function updateAgentFromAgentId(options: UpdateAgentFromAgentId) {
       ),
       AgentsService.getAgentSources(
         {
-          agentId: toAgent,
+          agentId: agentToUpdateId,
         },
         {
           user_id: lettaAgentsUserId,
@@ -744,7 +795,7 @@ export async function updateAgentFromAgentId(options: UpdateAgentFromAgentId) {
       ),
       AgentsService.getAgentSources(
         {
-          agentId: fromAgent,
+          agentId: baseAgentId,
         },
         {
           user_id: lettaAgentsUserId,
@@ -762,19 +813,52 @@ export async function updateAgentFromAgentId(options: UpdateAgentFromAgentId) {
       !oldDatasources.some((oldDatasource) => oldDatasource.id === source.id)
   );
 
-  const requestBody: UpdateAgentState = {
-    id: toAgent,
-    tools: agentTemplateData.tools,
+  let requestBody: UpdateAgent = {
+    tool_ids: agentTemplateData.tools
+      .map((tool) => tool.id || '')
+      .filter(Boolean),
   };
 
   if (!preserveCoreMemories) {
-    attachVariablesToTemplates(agentTemplateData, variables);
+    const { memory, ...rest } = attachVariablesToTemplates(
+      agentTemplateData,
+      variables
+    );
+
+    requestBody = {
+      ...requestBody,
+      ...rest,
+    };
+
+    if (memory) {
+      await Promise.all(
+        memory.blocks.map(async (block) => {
+          if (!block.label) {
+            return;
+          }
+
+          return AgentsService.updateAgentMemoryBlockByLabel(
+            {
+              agentId: agentToUpdateId,
+              blockLabel: block.label,
+              requestBody: {
+                value: block.value,
+                limit: block.limit,
+              },
+            },
+            {
+              user_id: lettaAgentsUserId,
+            }
+          );
+        })
+      );
+    }
   }
 
-  await AgentsService.updateAgent(
+  const agent = await AgentsService.updateAgent(
     {
-      agentId: toAgent,
-      requestBody: requestBody,
+      agentId: agentToUpdateId,
+      requestBody,
     },
     {
       user_id: lettaAgentsUserId,
@@ -784,21 +868,33 @@ export async function updateAgentFromAgentId(options: UpdateAgentFromAgentId) {
   await Promise.all([
     Promise.all(
       datasourceToAttach.map(async (datasource) => {
-        return SourcesService.attachAgentToSource({
-          agentId: toAgent,
-          sourceId: datasource.id || '',
-        });
+        return SourcesService.attachAgentToSource(
+          {
+            agentId: agentToUpdateId,
+            sourceId: datasource.id || '',
+          },
+          {
+            user_id: lettaAgentsUserId,
+          }
+        );
       })
     ),
     Promise.all(
       datasourcesToDetach.map(async (datasource) => {
-        return SourcesService.detachAgentFromSource({
-          agentId: toAgent,
-          sourceId: datasource.id || '',
-        });
+        return SourcesService.detachAgentFromSource(
+          {
+            agentId: agentToUpdateId,
+            sourceId: datasource.id || '',
+          },
+          {
+            user_id: lettaAgentsUserId,
+          }
+        );
       })
     ),
   ]);
+
+  return agent;
 }
 
 type MigrateAgentRequest = ServerInferRequest<
@@ -815,7 +911,7 @@ export async function migrateAgent(
 ): Promise<MigrateAgentResponse> {
   const { to_template, preserve_core_memories } = req.body;
   let { variables } = req.body;
-  const { agent_id: agentId } = req.params;
+  const { agent_id: agentIdToMigrate } = req.params;
   const { lettaAgentsUserId } = context.request;
 
   const split = to_template.split(':');
@@ -886,7 +982,7 @@ export async function migrateAgent(
   if (!variables) {
     const deployedAgentVariablesItem =
       await db.query.deployedAgentVariables.findFirst({
-        where: eq(deployedAgentVariables.deployedAgentId, agentId),
+        where: eq(deployedAgentVariables.deployedAgentId, agentIdToMigrate),
       });
 
     variables = deployedAgentVariablesItem?.value || {};
@@ -903,8 +999,8 @@ export async function migrateAgent(
 
   await updateAgentFromAgentId({
     variables: variables || {},
-    fromAgent: agentId,
-    toAgent: agentTemplate.id,
+    baseAgentId: agentTemplate.id,
+    agentToUpdateId: agentIdToMigrate,
     lettaAgentsUserId,
     preserveCoreMemories: preserve_core_memories,
   });
@@ -915,7 +1011,7 @@ export async function migrateAgent(
     .set({
       deployedAgentTemplateId: agentTemplate.id,
     })
-    .where(eq(deployedAgents.id, agentId));
+    .where(eq(deployedAgents.id, agentIdToMigrate));
 
   return {
     status: 200,

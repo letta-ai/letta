@@ -28,6 +28,7 @@ export function useCurrentSimulatedAgent() {
         },
       },
       enabled: isTemplate,
+      refetchInterval: 2500,
     });
 
   useEffect(() => {

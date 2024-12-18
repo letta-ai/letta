@@ -1,0 +1,6 @@
+{
+  "$schema": "https://json-schema.org/schema",
+  "$id": "GenerateIcons",
+  "title": "",
+  "type": "object"
+}

@@ -1,29 +1,39 @@
 import * as React from 'react';
 import { VStack } from '../../framing/VStack/VStack';
+import type { LettaLoaderProps } from '../../core/LettaLoader/LettaLoader';
 import { LettaLoader } from '../../core/LettaLoader/LettaLoader';
 import { useMemo } from 'react';
 import type { LogoBaseProps } from '../../marketing/Logo/Logo';
+import { cn } from '@letta-web/core-style-config';
 
-interface DashboardStatusComponentProps {
+interface LoadingEmptyStatusComponentProps {
   loadingMessage?: string;
-  emptyMessage: string;
+  emptyMessage?: string;
   emptyAction?: React.ReactNode;
   errorMessage?: string;
   errorAction?: React.ReactNode;
+  loaderVariant?: LettaLoaderProps['variant'];
+  noMinHeight?: boolean;
+  className?: string;
+  hideText?: boolean;
   isLoading?: boolean;
   isError?: boolean;
 }
 
 export function LoadingEmptyStatusComponent(
-  props: DashboardStatusComponentProps
+  props: LoadingEmptyStatusComponentProps
 ) {
   const {
     emptyMessage,
     isError,
     errorMessage,
+    noMinHeight,
     errorAction,
+    loaderVariant,
+    hideText,
     loadingMessage,
     isLoading,
+    className,
     emptyAction,
   } = props;
 
@@ -36,7 +46,11 @@ export function LoadingEmptyStatusComponent(
       return errorMessage || 'An error occurred, please contact support.';
     }
 
-    return emptyMessage;
+    if (emptyMessage) {
+      return emptyMessage;
+    }
+
+    return;
   }, [isLoading, isError, emptyMessage, loadingMessage, errorMessage]);
 
   const action = useMemo(() => {
@@ -48,7 +62,11 @@ export function LoadingEmptyStatusComponent(
       return errorAction;
     }
 
-    return emptyAction;
+    if (emptyAction) {
+      return emptyAction;
+    }
+
+    return;
   }, [emptyAction, errorAction, isError, isLoading]);
 
   const stateColor: LogoBaseProps['color'] = useMemo(() => {
@@ -67,7 +85,7 @@ export function LoadingEmptyStatusComponent(
     <VStack
       fullHeight
       fullWidth
-      className="min-h-[400px]"
+      className={cn(noMinHeight ? '' : 'min-h-[400px]', className)}
       align="center"
       justify="center"
     >
@@ -78,13 +96,16 @@ export function LoadingEmptyStatusComponent(
         justify="center"
       >
         <LettaLoader
+          variant={loaderVariant}
           stopAnimation={!isLoading}
           color={stateColor}
           size="large"
         />
-        <div className="max-w-[400px] text-center">
-          {message || 'Reticulating splines...'}
-        </div>
+        {!hideText && (
+          <div className="max-w-[400px] text-sm text-muted	 text-center">
+            {message || 'Reticulating splines...'}
+          </div>
+        )}
         <div className="absolute top-[100%] mt-4">{action}</div>
       </VStack>
     </VStack>

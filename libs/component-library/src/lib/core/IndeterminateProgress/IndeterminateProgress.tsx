@@ -17,7 +17,6 @@ export function IndeterminateProgress(props: IndeterminateProgressProps) {
       className="relative h-[16px] border-primary overflow-hidden rounded-full"
       align="center"
       border
-      rounded
     >
       <HStack
         className="px-2 text-xs font-medium h-[16px] rounded-full absolute z-[1] bg-primary text-primary-content"

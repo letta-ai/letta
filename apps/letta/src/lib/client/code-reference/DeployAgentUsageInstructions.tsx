@@ -143,13 +143,7 @@ function DeployAgentInstructionsCurl(props: DeployAgentInstructionsCurlProps) {
           </Frame>
         </>
       ) : (
-        <HStack
-          rounded
-          align="center"
-          border
-          color="background-greyer"
-          padding="small"
-        >
+        <HStack align="center" border color="background-grey2" padding="small">
           <div>
             <LettaLoader size="small" />
           </div>

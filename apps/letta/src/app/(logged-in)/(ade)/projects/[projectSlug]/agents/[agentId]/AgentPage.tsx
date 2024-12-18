@@ -1,8 +1,18 @@
 'use client';
-import type { panelRegistry } from './panelRegistry';
-import { usePanelManager } from './panelRegistry';
+import {
+  panelRegistry,
+  usePanelManager,
+  RenderSinglePanel,
+} from './panelRegistry';
 import { PanelManagerProvider, PanelRenderer } from './panelRegistry';
-import type { PanelItemPositionsMatrix } from '@letta-web/component-library';
+import {
+  ChevronDownIcon,
+  EditIcon,
+  HiddenOnMobile,
+  MobileFooterNavigation,
+  MobileFooterNavigationButton,
+  LoadingEmptyStatusComponent,
+} from '@letta-web/component-library';
 import { Card, Checkbox, ExternalLink } from '@letta-web/component-library';
 import { TrashIcon } from '@letta-web/component-library';
 import {
@@ -12,7 +22,6 @@ import {
   useForm,
 } from '@letta-web/component-library';
 import { Badge } from '@letta-web/component-library';
-import { UpdateAvailableIcon } from '@letta-web/component-library';
 import {
   CogIcon,
   DropdownMenu,
@@ -21,50 +30,55 @@ import {
 import { toast } from '@letta-web/component-library';
 import { LayoutIcon } from '@letta-web/component-library';
 import {
-  ADEHeader,
   ADEPage,
   Alert,
-  ArrowUpIcon,
-  Avatar,
   Button,
   Dialog,
   Frame,
   HStack,
-  KeyIcon,
   LettaLoader,
-  SupportIcon,
   Popover,
   Typography,
-  DatabaseIcon,
+  VisibleOnMobile,
+  RocketIcon,
+  ChevronUpIcon,
   ForkIcon,
   VStack,
 } from '@letta-web/component-library';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { useCurrentProject } from '../../../../../(dashboard-like)/projects/[projectSlug]/hooks';
-import { useDebouncedValue } from '@mantine/hooks';
 import { webApi, webApiQueryKeys, webOriginSDKApi } from '$letta/client';
 import { useRouter } from 'next/navigation';
 import { useCurrentUser } from '$letta/client/hooks';
-import { CurrentUserDetailsBlock } from '$letta/client/components';
+import { ADEHeader } from '$letta/client/components';
 import './AgentPage.scss';
 import { useCurrentAgentMetaData } from './hooks/useCurrentAgentMetaData/useCurrentAgentMetaData';
 import { useCurrentAgent } from './hooks';
 import {
+  useAgentsServiceDeleteAgent,
   useAgentsServiceGetAgent,
   UseAgentsServiceGetAgentKeyFn,
 } from '@letta-web/letta-agents-api';
 import { useTranslations } from 'next-intl';
-import { ContextWindowPreview } from './ContextEditorPanel/ContextEditorPanel';
 import { generateDefaultADELayout } from '$letta/utils';
-import { RocketIcon } from '@radix-ui/react-icons';
 import { isEqual } from 'lodash-es';
 import { generateAgentStateHash } from './AgentSimulator/AgentSimulator';
 import { DeployAgentUsageInstructions } from '$letta/client/code-reference/DeployAgentUsageInstructions';
 import { useQueryClient } from '@tanstack/react-query';
 import type { InfiniteGetProjectDeployedAgentTemplates200Response } from '$letta/web-api/projects/projectContracts';
-import { ThemeSelector } from '$letta/client/components/ThemeSelector/ThemeSelector';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { UpdateNameDialog } from './shared/UpdateAgentNameDialog/UpdateAgentNameDialog';
+import { useAgentBaseTypeName } from './hooks/useAgentBaseNameType/useAgentBaseNameType';
+import { useLocalStorage } from '@mantine/hooks';
+import { ErrorBoundary } from 'react-error-boundary';
+import {
+  DashboardHeaderNavigation,
+  ProfilePopover,
+} from '$letta/client/components/DashboardLikeLayout/DashboardNavigation/DashboardNavigation';
+import { CLOUD_UPSELL_URL } from '$letta/constants';
+import { trackClientSideEvent } from '@letta-web/analytics/client';
+import { AnalyticsEvent } from '@letta-web/analytics';
 
 function RestoreLayoutButton() {
   const t = useTranslations(
@@ -87,55 +101,6 @@ function RestoreLayoutButton() {
   );
 }
 
-export function NavOverlay() {
-  const { slug: projectSlug } = useCurrentProject();
-  const user = useCurrentUser();
-
-  return (
-    <Popover
-      trigger={
-        <HStack align="center">
-          <Avatar size="small" name={user?.name || ''} />
-        </HStack>
-      }
-      align="start"
-    >
-      <CurrentUserDetailsBlock />
-      <Frame borderTop color="background-greyer" as="nav">
-        <VStack as="ul" paddingY="small" paddingX="xsmall">
-          <Button
-            href={`/projects/${projectSlug}`}
-            color="tertiary-transparent"
-            preIcon={<ArrowUpIcon />}
-            label="Return to Project"
-          />
-          <Button
-            href="/data-sources"
-            target="_blank"
-            color="tertiary-transparent"
-            label="Data Sources"
-            preIcon={<DatabaseIcon />}
-          />
-          <Button
-            target="_blank"
-            href="/api-keys"
-            color="tertiary-transparent"
-            label="API Keys"
-            preIcon={<KeyIcon />}
-          />
-          <Button
-            target="_blank"
-            href="/support"
-            color="tertiary-transparent"
-            label="Support"
-            preIcon={<SupportIcon />}
-          />
-        </VStack>
-      </Frame>
-    </Popover>
-  );
-}
-
 interface DeleteAgentDialogProps {
   onClose: () => void;
 }
@@ -146,6 +111,8 @@ function DeleteAgentDialog(props: DeleteAgentDialogProps) {
 
   const { slug: projectSlug } = useCurrentProject();
   const { id: agentTemplateId } = useCurrentAgent();
+  const { isLocal } = useCurrentAgentMetaData();
+  const user = useCurrentUser();
 
   const DeleteAgentDialogFormSchema = useMemo(
     () =>
@@ -168,18 +135,31 @@ function DeleteAgentDialog(props: DeleteAgentDialogProps) {
     },
   });
 
-  const { mutate, isPending, isSuccess, isError } =
-    webOriginSDKApi.agents.deleteAgent.useMutation({
+  const { mutate, isPending, isSuccess, isError } = useAgentsServiceDeleteAgent(
+    {
       onSuccess: () => {
-        window.location.href = `/projects/${projectSlug}`;
+        if (isLocal) {
+          trackClientSideEvent(AnalyticsEvent.LOCAL_AGENT_DELETED, {
+            userId: user?.id || '',
+          });
+
+          window.location.href = `/development-servers/local/dashboard`;
+        } else {
+          trackClientSideEvent(AnalyticsEvent.CLOUD_AGENT_DELETED, {
+            userId: user?.id || '',
+          });
+
+          window.location.href = `/projects/${projectSlug}`;
+        }
       },
-    });
+    }
+  );
+
+  const agentBaseType = useAgentBaseTypeName();
 
   const handleSubmit = useCallback(() => {
     mutate({
-      params: {
-        agent_id: agentTemplateId,
-      },
+      agentId: agentTemplateId,
     });
   }, [mutate, agentTemplateId]);
 
@@ -192,17 +172,32 @@ function DeleteAgentDialog(props: DeleteAgentDialogProps) {
             onClose();
           }
         }}
-        errorMessage={isError ? t('DeleteAgentDialog.error') : undefined}
+        errorMessage={
+          isError
+            ? t('DeleteAgentDialog.error', {
+                agentBaseType: agentBaseType.base,
+              })
+            : undefined
+        }
         confirmColor="destructive"
-        confirmText={t('DeleteAgentDialog.confirm')}
-        title={t('DeleteAgentDialog.title')}
+        confirmText={t('DeleteAgentDialog.confirm', {
+          agentBaseType: agentBaseType.capitalized,
+        })}
+        title={t('DeleteAgentDialog.title', {
+          agentBaseType: agentBaseType.capitalized,
+        })}
         onSubmit={form.handleSubmit(handleSubmit)}
         isConfirmBusy={isPending || isSuccess}
       >
-        <Typography>{t('DeleteAgentDialog.description')}</Typography>
+        <Typography>
+          {t('DeleteAgentDialog.description', {
+            agentBaseType: agentBaseType.base,
+          })}
+        </Typography>
         <Typography>
           {t.rich('DeleteAgentDialog.confirmText', {
             templateName: name,
+            agentBaseType: agentBaseType.base,
             strong: (chunks) => <Typography bold>{chunks}</Typography>,
           })}
         </Typography>
@@ -211,7 +206,9 @@ function DeleteAgentDialog(props: DeleteAgentDialogProps) {
           render={({ field }) => (
             <Input
               fullWidth
-              label={t('DeleteAgentDialog.confirmTextLabel')}
+              label={t('DeleteAgentDialog.confirmTextLabel', {
+                agentBaseType: agentBaseType.capitalized,
+              })}
               {...field}
             />
           )}
@@ -230,13 +227,19 @@ function ForkAgentDialog(props: ForkAgentDialogProps) {
     'projects/(projectSlug)/agents/(agentId)/AgentPage'
   );
 
+  const agentBaseType = useAgentBaseTypeName();
+
   const { id: agentTemplateId } = useCurrentAgent();
   const { push } = useRouter();
   const { id: projectId, slug: projectSlug } = useCurrentProject();
-  const { mutate, isPending } =
+  const { mutate, isPending, isSuccess } =
     webApi.agentTemplates.forkAgentTemplate.useMutation();
 
   const handleForkAgent = useCallback(() => {
+    if (isPending || isSuccess) {
+      return;
+    }
+
     mutate(
       {
         params: {
@@ -246,11 +249,19 @@ function ForkAgentDialog(props: ForkAgentDialogProps) {
       },
       {
         onSuccess: (response) => {
-          push(`/projects/${projectSlug}/agents/${response.body.name}`);
+          push(`/projects/${projectSlug}/templates/${response.body.name}`);
         },
       }
     );
-  }, [agentTemplateId, mutate, projectId, projectSlug, push]);
+  }, [
+    agentTemplateId,
+    isPending,
+    isSuccess,
+    mutate,
+    projectId,
+    projectSlug,
+    push,
+  ]);
 
   return (
     <Dialog
@@ -260,12 +271,18 @@ function ForkAgentDialog(props: ForkAgentDialogProps) {
           onClose();
         }
       }}
-      title={t('ForkAgentDialog.title')}
-      confirmText={t('ForkAgentDialog.confirm')}
+      title={t('ForkAgentDialog.title', {
+        agentBaseType: agentBaseType.capitalized,
+      })}
+      confirmText={t('ForkAgentDialog.confirm', {
+        agentBaseType: agentBaseType.capitalized,
+      })}
       onConfirm={handleForkAgent}
-      isConfirmBusy={isPending}
+      isConfirmBusy={isPending || isSuccess}
     >
-      {t('ForkAgentDialog.description')}
+      {t('ForkAgentDialog.description', {
+        agentBaseType: agentBaseType.base,
+      })}
     </Dialog>
   );
 }
@@ -280,7 +297,7 @@ function LoaderContent(props: LoaderContentProps) {
   return (
     <VStack
       /* eslint-disable-next-line react/forbid-component-props */
-      className="fixed z-draggedItem top-0 left-0 w-[100vw] h-[100vh]"
+      className="fixed z-draggedItem top-0 left-0 w-[100vw] h-[100dvh]"
       fullHeight
       fullWidth
       align="center"
@@ -318,10 +335,11 @@ function DeployAgentDialog(props: DeployAgentDialogProps) {
   return (
     <Dialog
       title={t('DeployAgentDialog.title')}
-      size="large"
+      size="xlarge"
       trigger={
         <Button
           fullWidth
+          data-testid="deploy-agent-dialog-trigger"
           color={!isAtLatestVersion ? 'tertiary-transparent' : 'secondary'}
           label={t('DeployAgentDialog.trigger')}
           target="_blank"
@@ -485,6 +503,44 @@ function VersionAgentDialog() {
   );
 }
 
+function CloudUpsellDeploy() {
+  const t = useTranslations(
+    'projects/(projectSlug)/agents/(agentId)/AgentPage'
+  );
+
+  return (
+    <Popover
+      triggerAsChild
+      trigger={
+        <Button
+          size="small"
+          color="secondary"
+          preIcon={<RocketIcon size="small" />}
+          data-testid="trigger-cloud-upsell"
+          label={t('DeploymentButton.readyToDeploy.trigger')}
+        />
+      }
+      align="end"
+    >
+      <VStack padding="medium" gap="large">
+        <VStack>
+          <Typography variant="heading5" bold>
+            {t('CloudUpsellDeploy.title')}
+          </Typography>
+          <Typography>{t('CloudUpsellDeploy.description')}</Typography>
+          <Button
+            fullWidth
+            label={t('CloudUpsellDeploy.cta')}
+            href={CLOUD_UPSELL_URL}
+            target="_blank"
+            color="secondary"
+          />
+        </VStack>
+      </VStack>
+    </Popover>
+  );
+}
+
 function TemplateVersionDisplay() {
   // get latest template version
   const { id: agentTemplateId } = useCurrentAgent();
@@ -608,13 +664,11 @@ function TemplateVersionDisplay() {
       triggerAsChild
       trigger={
         <Button
+          size="small"
           color="secondary"
-          label={
-            isAtLatestVersion
-              ? t('DeploymentButton.readyToDeploy.trigger')
-              : t('DeploymentButton.updateAvailable.trigger')
-          }
-          preIcon={isAtLatestVersion ? <RocketIcon /> : <UpdateAvailableIcon />}
+          data-testid="version-template-trigger"
+          label={t('DeploymentButton.readyToDeploy.trigger')}
+          preIcon={!isAtLatestVersion ? <RocketIcon size="small" /> : undefined}
         />
       }
       align="end"
@@ -649,6 +703,7 @@ function TemplateVersionDisplay() {
             deployedAgents.body.agents.length > 0 && (
               <Button
                 fullWidth
+                data-testid="view-deployed-agents"
                 target="_blank"
                 color="tertiary-transparent"
                 label={t('VersionAgentDialog.deployedAgents')}
@@ -661,7 +716,7 @@ function TemplateVersionDisplay() {
   );
 }
 
-type Dialogs = 'deleteAgent' | 'forkAgent';
+type Dialogs = 'deleteAgent' | 'forkAgent' | 'renameAgent';
 
 function AgentSettingsDropdown() {
   const t = useTranslations(
@@ -669,9 +724,12 @@ function AgentSettingsDropdown() {
   );
   const [openDialog, setOpenDialog] = useState<Dialogs | null>(null);
 
+  const { isTemplate } = useCurrentAgentMetaData();
   const handleCloseDialog = useCallback(() => {
     setOpenDialog(null);
   }, []);
+
+  const agentBaseType = useAgentBaseTypeName();
 
   return (
     <>
@@ -681,25 +739,43 @@ function AgentSettingsDropdown() {
       {openDialog == 'deleteAgent' && (
         <DeleteAgentDialog onClose={handleCloseDialog} />
       )}
+
       <DropdownMenu
         align="end"
         triggerAsChild
         trigger={
           <Button
             preIcon={<CogIcon />}
-            label={t('AgentSettingsDropdown.trigger')}
+            label={t('AgentSettingsDropdown.trigger', {
+              agentBaseType: agentBaseType.capitalized,
+            })}
             hideLabel
             size="small"
             color="tertiary-transparent"
           />
         }
       >
-        <DropdownMenuItem
-          onClick={() => {
-            setOpenDialog('forkAgent');
-          }}
-          preIcon={<ForkIcon />}
-          label={t('ForkAgentDialog.trigger')}
+        {isTemplate && (
+          <DropdownMenuItem
+            onClick={() => {
+              setOpenDialog('forkAgent');
+            }}
+            preIcon={<ForkIcon />}
+            label={t('ForkAgentDialog.trigger', {
+              agentBaseType: agentBaseType.capitalized,
+            })}
+          />
+        )}
+        <UpdateNameDialog
+          trigger={
+            <DropdownMenuItem
+              doNotCloseOnSelect
+              preIcon={<EditIcon />}
+              label={t('UpdateNameDialog.trigger', {
+                agentBaseType: agentBaseType.capitalized,
+              })}
+            />
+          }
         />
 
         <RestoreLayoutButton />
@@ -708,56 +784,237 @@ function AgentSettingsDropdown() {
             setOpenDialog('deleteAgent');
           }}
           preIcon={<TrashIcon />}
-          label={t('DeleteAgentDialog.trigger')}
+          label={t('DeleteAgentDialog.trigger', {
+            agentBaseType: agentBaseType.capitalized,
+          })}
         />
-        <HStack padding="small" justify="end" borderTop fullWidth>
-          <ThemeSelector />
-        </HStack>
       </DropdownMenu>
     </>
   );
 }
 
-export function AgentPage() {
-  const { name: projectName, slug: projectSlug } = useCurrentProject();
-  const { agentName, agentId, isTemplate, isLocal } = useCurrentAgentMetaData();
-  const { data, isError } = webApi.adePreferences.getADEPreferences.useQuery({
-    queryKey: webApiQueryKeys.adePreferences.getADEPreferences(agentId),
-    queryData: {
-      params: {
-        agentId,
-      },
+function Navigation() {
+  const { isLocal } = useCurrentAgentMetaData();
+  const t = useTranslations(
+    'projects/(projectSlug)/agents/(agentId)/AgentPage'
+  );
+
+  return (
+    <DashboardHeaderNavigation
+      preItems={
+        <Button
+          size="small"
+          color="tertiary-transparent"
+          label={t('Navigation.dashboard')}
+          href={isLocal ? '/development-servers/local/dashboard' : '/projects'}
+        />
+      }
+    />
+  );
+}
+
+function RenderDeployButton() {
+  const { isLocal, isTemplate } = useCurrentAgentMetaData();
+  const user = useCurrentUser();
+
+  if (isLocal && !user?.hasCloudAccess) {
+    return <CloudUpsellDeploy />;
+  }
+
+  if (isTemplate) {
+    return <TemplateVersionDisplay />;
+  }
+
+  return null;
+}
+
+interface MobileNavigationContextData {
+  activePanel: string | null;
+  setActivePanelId: (panelId: string | null) => void;
+}
+
+const MobileNavigationContext =
+  React.createContext<MobileNavigationContextData>({
+    activePanel: null,
+    setActivePanelId: () => {
+      return;
     },
+  });
+
+interface MobileNavigationProviderProps {
+  children: React.ReactNode;
+}
+
+function MobileNavigationProvider(props: MobileNavigationProviderProps) {
+  const [activePanel, setActivePanelId] = useState<string | null>(
+    'agent-simulator'
+  );
+
+  const { children } = props;
+
+  return (
+    <MobileNavigationContext.Provider value={{ activePanel, setActivePanelId }}>
+      {children}
+    </MobileNavigationContext.Provider>
+  );
+}
+function useMobileNavigationContext() {
+  return React.useContext(MobileNavigationContext);
+}
+
+interface AgentMobileNavigationButtonType {
+  panelId: string;
+  onClick?: () => void;
+}
+
+function AgentMobileNavigationButton(props: AgentMobileNavigationButtonType) {
+  const { panelId, onClick } = props;
+  const { activePanel, setActivePanelId } = useMobileNavigationContext();
+  const panelTemplateId = panelId as keyof typeof panelRegistry;
+
+  const title = panelRegistry[panelTemplateId].useGetMobileTitle();
+  const icon = panelRegistry[panelTemplateId].icon;
+
+  const handleClick = useCallback(() => {
+    setActivePanelId(panelId);
+    onClick?.();
+  }, [setActivePanelId, panelId, onClick]);
+
+  return (
+    <MobileFooterNavigationButton
+      onClick={handleClick}
+      size="large"
+      preIcon={icon}
+      id={`mobile-navigation-button:${panelId}`}
+      color="tertiary-transparent"
+      label={title}
+      active={activePanel === panelId}
+    />
+  );
+}
+
+const MORE_PANELS = 'more-panels';
+
+function AgentMobileNavigation() {
+  const t = useTranslations(
+    'projects/(projectSlug)/agents/(agentId)/AgentPage'
+  );
+
+  const [expanded, setExpanded] = useState(false);
+  const { activePanel } = useMobileNavigationContext();
+
+  const panelToShowInMainNavigation = useMemo(() => {
+    const firstElements = ['agent-simulator', 'agent-settings'];
+
+    const activePanelIsFirstElement = firstElements.includes(activePanel || '');
+
+    const defaultPanelIdsToShow = [
+      ...firstElements,
+      !activePanelIsFirstElement ? activePanel : 'edit-core-memories',
+      MORE_PANELS,
+      'edit-core-memories',
+      'tools-panel',
+      'edit-data-sources',
+      'advanced-settings',
+    ];
+
+    const list = Array.from(new Set(defaultPanelIdsToShow));
+
+    if (expanded) {
+      return list;
+    }
+
+    return list.slice(0, 4);
+  }, [activePanel, expanded]);
+
+  return (
+    <MobileFooterNavigation>
+      {panelToShowInMainNavigation.map((panelId) => {
+        if (panelId === MORE_PANELS) {
+          return (
+            <MobileFooterNavigationButton
+              onClick={() => {
+                setExpanded((prev) => !prev);
+              }}
+              id="open-more-panels"
+              key={MORE_PANELS}
+              size="large"
+              preIcon={!expanded ? <ChevronUpIcon /> : <ChevronDownIcon />}
+              color="tertiary-transparent"
+              label={
+                !expanded
+                  ? t('AgentMobileNavigation.more')
+                  : t('AgentMobileNavigation.less')
+              }
+            />
+          );
+        }
+
+        if (!panelId) {
+          return null;
+        }
+
+        return (
+          <AgentMobileNavigationButton
+            onClick={() => {
+              setExpanded(false);
+            }}
+            key={panelId}
+            panelId={panelId}
+          />
+        );
+      })}
+    </MobileFooterNavigation>
+  );
+}
+
+function AgentMobileContent() {
+  const { activePanel } = useMobileNavigationContext();
+
+  if (!activePanel) {
+    return <LoaderContent />;
+  }
+
+  return (
+    <VStack collapseHeight flex fullWidth>
+      <VisibleOnMobile checkWithJs>
+        <RenderSinglePanel panelId={activePanel} />
+      </VisibleOnMobile>
+    </VStack>
+  );
+}
+
+function AgentPageError() {
+  const t = useTranslations(
+    'projects/(projectSlug)/agents/(agentId)/AgentPage'
+  );
+
+  return (
+    <VStack gap="large" padding border fullWidth fullHeight flex align="center">
+      <LoadingEmptyStatusComponent
+        emptyMessage=""
+        isError
+        errorMessage={t('error')}
+      />
+    </VStack>
+  );
+}
+
+export function AgentPage() {
+  const { agentName, agentId, isTemplate, isLocal } = useCurrentAgentMetaData();
+
+  const [adeLayout, setADELayout] = useLocalStorage({
+    key: `ade-layout-${agentId}-2`,
+    defaultValue: generateDefaultADELayout().displayConfig,
   });
 
   const t = useTranslations(
     'projects/(projectSlug)/agents/(agentId)/AgentPage'
   );
 
-  const { data: agent } = useAgentsServiceGetAgent({
+  useAgentsServiceGetAgent({
     agentId,
   });
-
-  const { mutate } = webApi.adePreferences.updateADEPreferences.useMutation();
-
-  const [updatedPositions, setUpdatedPositions] = useState<
-    PanelItemPositionsMatrix<keyof typeof panelRegistry>
-  >([]);
-
-  const [debouncedPositions] = useDebouncedValue(updatedPositions, 500);
-
-  useEffect(() => {
-    if (debouncedPositions.length) {
-      mutate({
-        params: {
-          agentId,
-        },
-        body: {
-          displayConfig: debouncedPositions,
-        },
-      });
-    }
-  }, [agentId, debouncedPositions, mutate]);
 
   const fullPageWarning = useMemo(() => {
     if (isLocal) {
@@ -771,56 +1028,73 @@ export function AgentPage() {
     return null;
   }, [isLocal, isTemplate, t]);
 
-  if (!data?.body?.displayConfig || !agent) {
-    return <LoaderContent isError={isError} />;
-  }
-
   return (
-    <>
+    <PanelManagerProvider
+      onPositionError={() => {
+        toast.error(t('positionError'));
+      }}
+      fallbackPositions={generateDefaultADELayout().displayConfig}
+      initialPositions={adeLayout}
+      onPositionChange={(positions) => {
+        setADELayout(positions);
+      }}
+    >
       <div className="agent-page-fade-out fixed pointer-events-none z-[-1]">
         <LoaderContent />
       </div>
-      <PanelManagerProvider
-        onPositionError={() => {
-          toast.error(t('positionError'));
-        }}
-        templateIdDenyList={!isTemplate ? ['deployment'] : []}
-        fallbackPositions={generateDefaultADELayout().displayConfig}
-        initialPositions={data.body.displayConfig}
-        onPositionChange={setUpdatedPositions}
-      >
+      <HiddenOnMobile>
         <ADEPage
           header={
             <ADEHeader
-              project={{
-                url: isLocal
-                  ? '/local-project/agents'
-                  : `/projects/${projectSlug}`,
-                name: isLocal ? 'Local Project' : projectName,
-              }}
               agent={{
                 name: agentName,
               }}
             >
-              <HStack align="center">
-                <ContextWindowPreview />
-                <AgentSettingsDropdown />
-                {/*<NavOverlay />*/}
-                {isTemplate && <TemplateVersionDisplay />}
+              <HStack gap={false} align="center">
+                <Navigation />
+                <HStack paddingRight="small" align="center" gap="small">
+                  <AgentSettingsDropdown />
+                  <RenderDeployButton />
+                  <ProfilePopover size="small" />
+                </HStack>
               </HStack>
             </ADEHeader>
           }
         >
-          <VStack overflow="hidden" position="relative" fullWidth fullHeight>
-            {fullPageWarning && (
-              <Alert variant="warning" title={fullPageWarning} />
-            )}
-            <Frame overflow="hidden" position="relative" fullWidth fullHeight>
-              <PanelRenderer />
-            </Frame>
-          </VStack>
+          <ErrorBoundary fallback={<AgentPageError />}>
+            <VStack overflow="hidden" position="relative" fullWidth fullHeight>
+              {fullPageWarning && (
+                <Alert variant="warning" title={fullPageWarning} />
+              )}
+              <Frame overflow="hidden" position="relative" fullWidth fullHeight>
+                <HiddenOnMobile checkWithJs>
+                  <PanelRenderer />
+                </HiddenOnMobile>
+              </Frame>
+            </VStack>
+          </ErrorBoundary>
         </ADEPage>
-      </PanelManagerProvider>
-    </>
+      </HiddenOnMobile>
+      <VisibleOnMobile>
+        <MobileNavigationProvider>
+          <ADEPage
+            header={
+              <ADEHeader
+                agent={{
+                  name: agentName,
+                }}
+              >
+                <AgentSettingsDropdown />
+              </ADEHeader>
+            }
+          >
+            <VStack fullHeight fullWidth flex>
+              <AgentMobileContent />
+              <AgentMobileNavigation />
+            </VStack>
+          </ADEPage>
+        </MobileNavigationProvider>
+      </VisibleOnMobile>
+    </PanelManagerProvider>
   );
 }

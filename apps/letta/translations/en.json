@@ -3,25 +3,255 @@
     "emptyMessage": "This is not the page you're looking for",
     "emptyAction": "Go home"
   },
+  "WelcomeOverlay": {
+    "welcomeMessage": "Welcome to Letta",
+    "question": "Thank you for trying us out, we have a few questions to help us understand your needs better.",
+    "useCases": {
+      "label": "What use-cases are you building agents for?",
+      "options": {
+        "customerService": "Customer service",
+        "personalAssistant": "Personal assistant",
+        "entertainment": "Entertainment",
+        "chatbots": "Chatbots",
+        "taskOrchestration": "Task orchestration",
+        "experimentation": "Experimentation"
+      }
+    },
+    "reasons": {
+      "label": "What makes you interested in Letta?",
+      "options": {
+        "restAPI": "Agents as a REST API",
+        "memory": "Memory",
+        "toolExecution": "Tool execution",
+        "userPersonalization": "User personalization",
+        "openModelSupport": "Open model support",
+        "chainOfThoughtReasoning": "Chain of thought reasoning",
+        "deployingAgentsAtScale": "Deploying agents at scale"
+      }
+    },
+    "emailConsent": {
+      "label": "Sign up for emails for major releases and updates"
+    },
+    "skip": "Skip",
+    "submit": "Start using Letta"
+  },
   "components/DashboardLikeLayout/DashboardNavigation": {
+    "back": "Back",
     "nav": {
       "projects": "Projects",
-      "apiKeys": "API Keys",
-      "dataSources": "Data Sources",
-      "admin": "Admin"
+      "apiKeys": "API keys",
+      "dataSources": "Data sources",
+      "admin": "Admin",
+      "localDev": "Self-hosted",
+      "settings": "Settings"
     },
+    "rootTitle": "Dashboard",
     "secondaryNav": {
       "settings": "Settings",
       "signOut": "Sign out",
       "organization": "Organization",
-      "switchOrganizations": "Switch Organizations"
+      "switchOrganizations": "Switch organizations"
     },
     "header": {
-      "Documentation": "Documentation"
+      "Documentation": "Docs"
+    },
+    "ReportAnIssueForm": {
+      "yourMessage": "Your message",
+      "submit": "Submit report",
+      "submitted": "Your issue has been submitted, we will get back to you as soon as possible."
+    },
+    "DashboardHeaderNavigation": {
+      "documentation": "Docs",
+      "apiReference": "API reference",
+      "support": "Support",
+      "supportPopover": {
+        "bugReport": {
+          "title": "Report an issue",
+          "description": "Fill out the form below:"
+        },
+        "discord": {
+          "title": "Get support via Discord",
+          "description": "Join our Discord server to get help from the community and Letta devs:",
+          "joinUs": "Join us on Discord"
+        }
+      }
+    }
+  },
+  "settings/account/page": {
+    "title": "Account settings",
+    "DeleteAccountSection": {
+      "title": "Delete account",
+      "description": "Deleting your account is permanent and cannot be undone. This will delete any organizations you are the sole member of. Those organizations will have all their projects, agents, data sources, and other data deleted as well."
+    },
+    "DeleteAccountDialog": {
+      "title": "Delete account",
+      "trigger": "Delete account",
+      "confirm": "Delete account",
+      "error": "There was an error deleting your account, please try again or contact support.",
+      "description": "Are you sure you want to delete your account? This is permanent and cannot be undone. If you are the sole member of any organizations, they will be deleted as well.",
+      "confirmCheckbox": {
+        "label": "I understand the consequences of deleting this account",
+        "error": "You must confirm that you understand the consequences of deleting your account"
+      }
+    }
+  },
+  "component-library/Debugger": {
+    "invalidJSON": "Invalid JSON",
+    "run": "Run",
+    "success": "Succeeded",
+    "error": "Failed to execute",
+    "output": "Output",
+    "inputPlaceholder": ""
+  },
+  "organization/environment-variables": {
+    "title": "Environment variables",
+    "description": "Manage environment variables for your organization. All environment variables are scoped to the organization and are available to all agents in the organization via tools. Keys cannot be read after being set.",
+    "environmentVariablesColumns": {
+      "key": "Key",
+      "lastUpdated": "Last Updated",
+      "actions": "Actions"
+    },
+    "ManagedEnvironmentIndicator": {
+      "label": "Managed",
+      "integrations": {
+        "composio": "This environment variable is tied to the Composio integration, for more information click this badge"
+      }
+    },
+    "errorMessage": "There was an error loading environment variables, please try again or contact support.",
+    "loadingMessage": "Loading environment variables...",
+    "DeleteEnvironmentVariableDialog": {
+      "title": "Delete environment variable",
+      "trigger": "Delete environment variable",
+      "confirm": "Delete",
+      "cancel": "Cancel",
+      "error": "There was an error deleting the environment variable, please try again or contact support.",
+      "description": "Are you sure you want to delete the environment variable {key}? This is permanent and cannot be undone."
+    },
+    "UpdateEnvironmentVariableDialog": {
+      "title": "Update environment variable",
+      "trigger": "Update environment variable",
+      "confirm": "Update",
+      "cancel": "Cancel",
+      "key": {
+        "label": "Key",
+        "placeholder": "MY_ENV_VAR",
+        "error": "Keys must be alphanumeric and underscores only"
+      },
+      "value": {
+        "label": "Value",
+        "placeholder": "my-value"
+      },
+      "updateButton": "Update environment variable",
+      "error": "There was an error updating the environment variable, please try again or contact support."
+    },
+    "CreateEnvironmentVariableDialog": {
+      "title": "Create environment variable",
+      "trigger": "Create variable",
+      "confirm": "Create",
+      "cancel": "Cancel",
+      "key": {
+        "label": "Key",
+        "placeholder": "MY_ENV_VAR",
+        "error": "Keys must be alphanumeric and underscores only"
+      },
+      "value": {
+        "label": "Value",
+        "placeholder": "my-value"
+      },
+      "createButton": "Create environment variable",
+      "errors": {
+        "default": "There was an error creating the environment variable, please try again or contact support.",
+        "keyAlreadyExists": "A key with this name already exists, please choose another or update the existing one"
+      }
+    }
+  },
+  "organization/integrations/composio": {
+    "DisconnectIntegrationDialog": {
+      "title": "Remove Composio integration",
+      "description": "Are you sure you want to remove the Composio integration? This will remove your API key from our system, but it will not remove any tools you have added to your agents, this may break some agent's ability to function properly.",
+      "trigger": "Remove integration",
+      "confirm": "Remove integration",
+      "error": "There was an error removing the Composio integration, please try again or contact support."
+    },
+    "SetApiKeyDialog": {
+      "alert": "This will overwrite your current API key, which could break some agent's ability to use Composio tools. Are you sure you want to continue?",
+      "label": "API key",
+      "title": "Set API key",
+      "trigger": "Set API key",
+      "confirm": "Set API key",
+      "error": "There was an error setting the API key, please try again or contact support."
+    },
+    "usage": {
+      "description": "To use composio in your agents, visit any agent template, press the + icon in the tools section, and you will see all available Composio tools in the tool explorer"
+    },
+    "configuration": {
+      "description": "Composio requires an API key to add tools to your agents. You can configure your API key below",
+      "create": "To create an API key, <link>visit this page</link>.",
+      "noApiKey": "No API key set",
+      "hidden": "You cannot see the api key once set",
+      "apiKey": {
+        "label": "API key",
+        "update": "Set API key"
+      }
+    },
+    "title": "composio",
+    "description": "Composio allows your team to connect your agents to external services and APIs without writing any code. You can use Composio to create custom integrations, automate workflows, and more."
+  },
+  "organization/integrations/IntegrationPageLayout": {
+    "return": "All integrations",
+    "visitWebsite": "Visit website",
+    "configuration": "Configuration",
+    "usage": "Usage",
+    "about": "About",
+    "disconnect": {
+      "title": "Remove integration",
+      "description": "Are you sure you want to remove this integration? This will remove all configuration and usage data for this integration."
+    }
+  },
+  "organization/integrations": {
+    "title": "Integrations",
+    "description": "Connect and manage integrations for your organization",
+    "integrations": {
+      "composio": {
+        "title": "Composio",
+        "description": "Composio allows your team to connect your agents to external services and APIs without writing any code. You can use Composio to create custom integrations, automate workflows, and more."
+      }
+    },
+    "IntegrationItem": {
+      "setup": "Setup",
+      "configure": "Configure"
     }
   },
   "settings/layout": {
-    "profile": "Profile"
+    "personal": "Personal",
+    "profile": "Profile",
+    "account": "Account",
+    "organization": {
+      "general": "General",
+      "members": "Members",
+      "root": "Organization",
+      "billing": "Usage and billing",
+      "integrations": "Integrations",
+      "environmentVariables": "Environment variables"
+    }
+  },
+  "data-sources/page": {
+    "CreateDataSourceDialog": {
+      "title": "Create a new data source",
+      "trigger": "Create data source",
+      "name": {
+        "label": "Data source name",
+        "placeholder": "my-data-source-name"
+      },
+      "embeddingModel": {
+        "label": "Embedding model"
+      },
+      "descriptionInput": {
+        "label": "Description",
+        "placeholder": "my-data-source-description"
+      },
+      "createButton": "Create data source"
+    }
   },
   "components/QueryBuilder": {
     "addCondition": "Add Condition",
@@ -37,6 +267,24 @@
     },
     "submit": "Create Organization"
   },
+  "project/[projectId]/settings": {
+    "title": "Project settings",
+    "EditProjectSettings": {
+      "name": {
+        "label": "Project name"
+      },
+      "slug": {
+        "label": "Project slug",
+        "placeholder": "my-project-slug"
+      },
+      "errors": {
+        "atLeastOneFieldRequired": "At least one field is required",
+        "default": "There was an error updating project settings, please try again or contact support.",
+        "slug": "Slugs can only contain lowercase letters, numbers, underscores, and hyphens",
+        "slugAlreadyTaken": "This slug is already taken by an existing or recently deleted project, please choose another"
+      }
+    }
+  },
   "select-organization": {
     "title": "Select an Organization",
     "loading": "Loading organizations...",
@@ -45,25 +293,41 @@
     "OrganizationRow": {
       "select": "Select"
     },
+    "errorSelectingOrganization": "There was an error selecting the organization, please reload this page or contact support.",
+    "selectingOrganization": "Switching organizations...",
     "createNewOrganization": "Create a new organization",
     "missingOrg": "If you do not see your organization, you may have not been invited yet. Please contact your organization's administrator."
   },
+  "organization/billing": {
+    "title": "Usage and billing",
+    "description": "You are currently using a managed enterprise plan. If you have any questions or need help, please contact support.",
+    "UsageTable": {
+      "title": "Usage for {startDate} - {endDate}",
+      "model": "Model",
+      "totalRequests": "Requests made",
+      "totalTokens": "Tokens expended",
+      "totalCost": "Total cost",
+      "previousMonth": "Previous month",
+      "nextMonth": "Next month",
+      "error": "There was an error loading usage data, please try again or contact support."
+    }
+  },
   "organization/settings": {
-    "title": "Organization Settings",
+    "title": "Organization settings",
     "EditOrganizationSettings": {
       "name": {
-        "label": "Organization Name"
+        "label": "Organization name"
       },
       "error": "There was an error updating organization settings, please try again or contact support."
     },
     "DeleteOrganizationSettings": {
-      "title": "Delete Organization",
-      "description": "Deleting an organization is permanent and cannot be undone. This will delete all projects, agents, and members in the organization.",
+      "title": "Delete organization",
+      "description": "Deleting an organization is permanent and cannot be undone. Please contact us to delete your organization.",
       "dialog": {
         "error": "There was an error deleting the organization, please try again or contact support.",
         "title": "Are you sure you want to delete this organization?",
-        "confirm": "Delete Organization",
-        "trigger": "Delete Organization",
+        "confirm": "Delete organization",
+        "trigger": "Delete organization",
         "description": "This is permanent and cannot be undone. This will not remove any projects or agents they have created.",
         "confirmName": {
           "label": "Type the name of the organization to confirm",
@@ -82,8 +346,8 @@
       "dismiss": "Dismiss invitation"
     },
     "InvitedMembersDialog": {
-      "title": "Invited Members",
-      "trigger": "View Invited Members",
+      "title": "Invited members",
+      "trigger": "View invited members",
       "table": {
         "error": "There was an error loading invited members, please try again or contact support.",
         "empty": "No invited members"
@@ -105,12 +369,12 @@
         "userAlreadyInOrganization": "This user is already in your organization",
         "default": "There was an error inviting this user, please try again or contact support"
       },
-      "trigger": "Invite Member",
+      "trigger": "Invite member",
       "confirm": "Invite",
-      "title": "Invite Member",
-      "description": "Invite a new member to your organization. Once invited, they can sign in via Google and will have access to all projects and agents in the organization. If they already have an account with us, they will automatically get added to your organization"
+      "title": "Invite member",
+      "description": "Invite a new member to your organization. Once invited, they can sign in via Google and will have access to all projects and agents in the organization. If they already have an account with us, they will automatically get added to your organization."
     },
-    "title": "Organization Members",
+    "title": "Organization members",
     "table": {
       "columns": {
         "name": "Name",
@@ -123,13 +387,20 @@
     },
     "DeleteMemberDialog": {
       "error": "There was an error removing this member, please try again or contact support.",
-      "title": "Remove Member",
-      "trigger": "Remove Member",
+      "title": "Remove member",
+      "trigger": "Remove member",
       "description": "Are you sure you want to remove {name} ({email}) from this organization? This will not remove any projects or agents they have created."
     }
   },
+  "component-library/FunctionCall": {
+    "isExecuting": "Executing",
+    "error": "Error",
+    "success": "Success",
+    "request": "Request",
+    "response": "Response"
+  },
   "settings/profile/page": {
-    "title": "Profile Settings",
+    "title": "Profile settings",
     "form": {
       "nameInput": {
         "label": "Name"
@@ -141,19 +412,38 @@
     }
   },
   "ADE/ContextEditorPanel": {
+    "infoTooltip": "Current status of the LLM context window (Letta will automatically compress on overflow)",
+    "title": "Context Window",
+    "mobileTitle": "Context Window",
     "ContextWindowPreview": {
-      "popover": {
-        "title": "Context Window",
-        "usage": "{used} of {total} tokens used"
-      },
-      "usage": "{used}/{total}",
-      "systemPrompt": "System Prompt",
-      "memoryBlocks": "Memory Blocks",
+      "usage": "{used}/{total} TOKENS",
+      "systemPrompt": "System instructions",
+      "toolPrompt": "Tools descriptions",
+      "memoryBlocks": "Core memory",
+      "externalSummaryLength": "External summary",
+      "totalOverage": "Total Overage",
       "remaining": "Remaining",
-      "messagesTokens": "Messages Tokens",
-      "summaryMemory": "Summary Memory",
+      "messagesTokens": "Messages",
+      "summaryMemory": "Recursive Memory",
       "recallMemory": "Recall Memory",
       "archivalMemory": "Archival Memory"
+    }
+  },
+  "components/LocaleSelector": {
+    "changeLocale": "Change language",
+    "options": {
+      "en": "English",
+      "fr": "Français"
+    }
+  },
+  "components/ProjectSelector": {
+    "selectAProject": "Select a Project",
+    "noProject": "No project",
+    "seeMore": "See all projects",
+    "projects": "Projects",
+    "search": {
+      "placeholder": "Search projects",
+      "label": "Search projects"
     }
   },
   "projects/page": {
@@ -161,18 +451,12 @@
     "createProjectDialog": {
       "title": "Create a new project",
       "nameInput": {
-        "label": "Project Name"
+        "label": "Project name"
       },
-      "createButton": "Create Project",
-      "triggerButton": "Create Project"
-    },
-    "connectToLocalProject": {
-      "triggerButton": "Connect to Local Project",
-      "title": "Connect to a Local Project",
-      "instructions": "To connect to a local project, you need to have the Letta CLI installed. Run the following command in your terminal to connect to a local project:"
+      "createButton": "Create project",
+      "triggerButton": "Create project"
     },
     "projectsList": {
-      "localProjectName": "Local Project",
       "loadingMessage": "Loading projects...",
       "noProjects": "You have no projects, create one below",
       "noSearchResults": "We couldn't find any projects matching your search",
@@ -188,20 +472,45 @@
       "placeholder": "Search projects"
     }
   },
+  "projects/(projectSlug)/components/CreateNewTemplateDialog": {
+    "title": "Create a template",
+    "back": "All templates",
+    "error": "An error occurred while creating the template. Please try again or contact support.",
+    "loading": "Creating template...",
+    "starterKits": {
+      "title": "Starter kits",
+      "description": "Get started with these pre-made templates"
+    }
+  },
   "projects/(projectSlug)/page": {
-    "title": "Project Home",
+    "subtitle": "Create, manage and monitor agents in this project",
+    "QuickActions": {
+      "subtitle": "Get started with these quick actions",
+      "title": "Quick Actions",
+      "createTemplate": {
+        "title": "New template",
+        "description": "Create a new agent template to define the structure of agents you deploy in your project.",
+        "cta": "Create template"
+      },
+      "monitorAgents": {
+        "title": "Monitor agents",
+        "description": "View and manage all agents deployed in your project.",
+        "cta": "View agents"
+      }
+    },
     "agentTemplatesList": {
-      "emptyMessage": "You have templates in this project",
-      "createAgentTemplate": "New Agent Template"
+      "emptyMessage": "You have no templates in this project",
+      "createAgentTemplate": "New agent template"
     },
     "agentTemplatesSection": {
-      "title": "Recent Templates",
-      "createAgentTemplate": "New Agent Template"
+      "title": "Recent templates",
+      "createAgentTemplate": "New agent template"
     }
   },
   "projects/(projectSlug)/layout": {
     "nav": {
-      "home": "Project Home",
+      "return": "All projects",
+      "home": "Dashboard",
       "templates": "Templates",
       "agents": "Agents",
       "settings": "Settings"
@@ -217,14 +526,14 @@
     }
   },
   "projects/(projectSlug)/templates/page": {
-    "title": "Agent Templates",
+    "title": "Agent templates",
     "searchInput": {
       "placeholder": "my-template-name-here",
       "label": "Search template by name"
     },
     "noTemplatesFound": "No templates found that match your search",
     "noTemplates": "You have no templates in this project, create one below",
-    "createTemplate": "New Template"
+    "createTemplate": "New template"
   },
   "ADE/DeployedAgentsPanel": {
     "title": "Deployed Agents",
@@ -245,6 +554,8 @@
     }
   },
   "ADE/EditDataSourcesPanel": {
+    "mobileTitle": "Sources",
+    "infoTooltip": "External files loaded into the agent’s archival memory for RAG",
     "AttachDataSourceView": {
       "notCompatible": {
         "title": "Not Compatible",
@@ -274,6 +585,28 @@
       "confirm": "Detach",
       "error": "There was an error detaching this data source, please try again or contact support."
     },
+    "RenameDataSourceDialog": {
+      "title": "Rename source",
+      "trigger": "Rename source",
+      "confirm": "Rename",
+      "error": "There was an error renaming this data source, please try again or contact support.",
+      "name": {
+        "label": "Source Name",
+        "placeholder": "my-source-name"
+      }
+    },
+    "DeleteDataSourceDialog": {
+      "title": "Delete source",
+      "trigger": "Delete source",
+      "confirm": "Delete",
+      "error": "There was an error deleting this source, please try again or contact support.",
+      "description": "Be aware you are deleting this source from all agents, not detaching it. If you want to detach it, click the detach button instead.",
+      "confirmName": {
+        "label": "Type the name of the source to confirm",
+        "placeholder": "my-data-source-name",
+        "error": "The name you entered does not match the source name"
+      }
+    },
     "EditDataSourcesContent": {
       "notCompatible": {
         "details": "This data source's embedding config does not match the agent config, this may lead to the agent not remembering data properly",
@@ -283,7 +616,7 @@
       "delete": "Delete file",
       "addFile": "Add file",
       "uploadFile": "Upload file",
-      "detachSource": "Detach Source",
+      "detachSource": "Detach source",
       "fileProcessing": "File is being processed"
     },
     "FileUploadDialog": {
@@ -293,17 +626,19 @@
     "title": "Sources ({count})",
     "errorDetaching": "There was an error detaching this data source, please try again or contact support.",
     "editName": {
-      "label": "Data Source Name",
+      "label": "Data source name",
       "placeholder": "my-data-source-name"
     },
     "edit": "Edit",
     "detach": "Detach Data Source",
     "loading": "Loading data sources...",
+    "error": "There was an error loading data sources, please try again or contact support.",
     "noDataSources": "You have no data sources attached to this agent yet. Click the button in the top right to attach a data source.",
     "CreateDataSourceDialog": {
       "titles": "Add New Data Source",
-      "trigger": "Create Source",
+      "trigger": "Create source",
       "goBack": "Go back",
+      "error": "There was an error creating the data source, please try again or contact support.",
       "creatingDataSource": "Creating data source...",
       "title": "Create a new data source",
       "options": {
@@ -318,11 +653,38 @@
       }
     }
   },
-  "ADE/ModelPanel": {
-    "embeddingInput": {
-      "label": "Embedding Model"
+  "ADE/AgentSettingsPanel": {
+    "mobileTitle": "{baseName}",
+    "SystemPromptEditor": {
+      "characterCount": "{count} CHARS",
+      "updatedAt": "Last updated on {date}",
+      "tooltip": "Configures the behavior of the agent, and placed in the context window",
+      "label": "System instructions",
+      "error": "There was an error while updating the system prompt, please try again or contact support.",
+      "expand": "Show full system prompt editor",
+      "dialog": {
+        "title": "Update System Prompt",
+        "label": "System Prompt",
+        "save": "Update",
+        "info": "The system instructions are not editable by the agent itself (unlike core memory).",
+        "characterCount": "{count} characters"
+      }
     },
+    "embeddingInput": {
+      "label": "Embedding model"
+    },
+    "agentName": {
+      "label": "{baseName} name",
+      "edit": "Edit {baseName} name"
+    },
+    "AgentIdentifierToCopy": {
+      "copyAgentId": "Copy {baseName} ID"
+    },
+    "title": "{baseName} Settings",
     "modelInput": {
+      "tooltip": "The LLM backend for the {baseName}",
+      "recommended": "Recommended models",
+      "others": "All available models",
       "label": "Model"
     },
     "updateModel": "Update",
@@ -330,8 +692,15 @@
     "error": "There was an error while updating the model, please try again or contact support."
   },
   "components/Messages": {
-    "hiddenUserMessage": "Internal User Message",
+    "thoughts": "Thoughts",
+    "loadingMessages": "Fetching messages...",
+    "functionReturn": "Function response",
+    "internalMonologue": "Internal monologue",
+    "hiddenUserMessage": "Internal user message",
     "noParsableMessages": "There are no messages available in this view, usually this is caused by a lack of triggered send_message actions in your agent, check the debug more to verify."
+  },
+  "components/StarterKitItems": {
+    "tools": "<strong>Tools included:</strong> {toolsList}"
   },
   "components/ThemeSelector": {
     "label": "Choose Theme",
@@ -341,6 +710,11 @@
     }
   },
   "ADE/AgentSimulator": {
+    "loadingMessages": "Preparing agent",
+    "role": {
+      "user": "User",
+      "system": "System"
+    },
     "FlushSimulationSessionDialog": {
       "title": "Flush Simulation",
       "description": "Are you sure you want to flush the simulation? This will reset the simulated agent's memory and state.",
@@ -351,9 +725,9 @@
     "AgentSimulatorOptionsMenu": {
       "trigger": "Options",
       "options": {
-        "flushSimulation": "Flush Simulation",
+        "flushSimulation": "Flush simulation",
         "printDebug": {
-          "title": "Print Simulated Agent Details",
+          "title": "Print simulated agent details",
           "notReady": "Simulated agent has not loaded yet, please try again soon",
           "success": "Simulated agent details have been printed to the console"
         }
@@ -373,13 +747,18 @@
     "DialogSessionSheet": {
       "updating": "Updating variables...",
       "placeholder": "Variable Value",
+      "save": "Update Variables",
       "label": "Variable Name",
       "editLabel": "Edit {variableName}",
       "noVariablesDefined": "You have no variables set yet, to define a variable, write a alphanumeric name wrapped in handlebars in Memory Blocks, e.g. {variableName}"
     },
     "showVariables": "Variables",
-    "hideVariables": "Hide Variables",
-    "updateVariables": "Update Variables"
+    "hideVariables": "Hide variables",
+    "updateVariables": "Update variables",
+    "hasFailedToSendMessageText": {
+      "local": "Failed to send message, please try again or check your server logs",
+      "cloud": "Failed to send message, please try again or contact support"
+    }
   },
   "ADE/ADESidebar": {
     "nav": {
@@ -387,13 +766,13 @@
       "config": "Config",
       "memoryBlocks": "Memory Blocks",
       "dataSources": {
-        "new": "New Data Source",
-        "main": "Data Sources"
+        "new": "New data source",
+        "main": "Data sources"
       },
 
       "tools": "Tools",
       "agentSimulator": "Simulator",
-      "archivalMemories": "Vector Database",
+      "archivalMemories": "Archival Memories",
       "templateVersionManager": "Template Version Manager",
       "deployedAgents": "Deployed Agents",
       "distribute": "Distribute",
@@ -408,10 +787,57 @@
     "localProject": "Local Project"
   },
   "ADE/EditCoreMemoriesPanel": {
-    "AdvancedCoreMemoryEditor": {
-      "title": "Edit {name}",
-      "label": "Edit Memory",
-      "switchView": "Switch"
+    "SimulatedMemory": {
+      "error": "There was an error while reading the simulated memory block, please try again or contact support.",
+      "characterCount": "{count} CHARS"
+    },
+    "toggleMemoryType": {
+      "label": "Toggle Memory Type",
+      "templated": {
+        "label": "Template",
+        "tooltip": "The template memory is the initial memory state for any new deployed agents that use this template"
+      },
+      "simulated": {
+        "label": "Simulated",
+        "tooltip": "The memory state of the simulated agent (reset when you flush the simulator)"
+      }
+    },
+    "mobileTitle": "Core Memories",
+    "EditMemoryForm": {
+      "characterLimit": "{count}/{limit} CHARS"
+    },
+    "MemoryWarning": {
+      "title": "You may need to update your system instructions",
+      "message": "Adjusting the memory label may require you to update your system instructions to reflect the new memory label."
+    },
+    "CharacterCounter": {
+      "count": "{count} CHARS"
+    },
+    "AdvancedMemoryEditorForm": {
+      "error": "There was an error updating your memory, please try again or contact support",
+      "label": {
+        "label": "Label",
+        "placeholder": "my-label",
+        "error": "Labels must be alphanumeric and underscores only, and cannot start with a number"
+      },
+      "maxCharacters": {
+        "label": "Character Limit",
+        "placeholder": "100",
+        "error": "Minimum value is 100"
+      },
+      "value": {
+        "label": "Value",
+        "placeholder": "my-value"
+      },
+      "update": "Update memory",
+      "delete": {
+        "title": "Delete Memory",
+        "confirm": "Are you sure you want to delete this memory?"
+      }
+    },
+    "AdvancedEditMemory": {
+      "title": "Update Core Memories",
+      "newMemory": "Add memory block"
     },
     "systemPrompt": "System Prompt",
     "EditSystemPrompt": {
@@ -427,43 +853,12 @@
       },
       "title": "{label} Settings"
     },
-    "title": "Memory ({count})",
+    "title": "Core Memory ({count})",
+    "infoTooltip": "Editable, in-context memory of the agent that can be templated with variables",
     "content": "Content",
     "error": "There was an error while updating the memory block, please try again or contact support.",
     "lastUpdated": "Last updated on {date}",
     "updating": "Updating..."
-  },
-  "projects/(projectSlug)/templates/new/page": {
-    "pageTitle": "new",
-    "error": "An error occurred while creating the agent. Please try again or contact support.",
-    "title": "Create an agent template",
-    "description": "An agent template is used to define the structure of agents you deploy in your project. You can create an agent from scratch or reference a pre-existing agent template.",
-    "backToProject": "Back to project",
-    "createButton": "Create Template",
-    "PreExistingTemplateDropdown": {
-      "placeholder": "Select a pre-existing template",
-      "label": "Create from existing template",
-      "error": "An error occurred while fetching existing agent templates"
-    },
-    "nameInput": {
-      "label": "Template Name",
-      "placeholder": "my-agent-name"
-    },
-    "useDefaultAgentTemplate": {
-      "label": "No Template",
-      "description": "Start from scratch"
-    },
-    "usePreMadeAgentTemplates": {
-      "customerSupport": {
-        "label": "Customer Support",
-        "description": "A template containing all you need to create personalized customer support agents for your customersagent"
-      },
-      "fantasyRoleplay": {
-        "label": "Fantasy Roleplay",
-        "description": "A template containing all you need to create personalized bots that recreate a fantasy roleplay experience"
-      }
-    },
-    "FromLettaBadge": "From Letta"
   },
   "projects/(projectSlug)/agents/page": {
     "table": {
@@ -501,32 +896,237 @@
   "ComponentLibrary/ADEInput": {
     "disabledTooltip": "This field cannot be edited"
   },
-  "local-project/layout": {
+  "development-servers/components/UserIsNotConnectedComponent": {
+    "connecting": "Attempting to connect to your local server...",
+    "start": "Enter the command below to start your local server",
+    "trouble": "Still trouble connecting or using Safari? Follow our <link>troubleshooting guide</link>."
+  },
+  "development-servers/layout": {
     "title": "Local Project",
     "nav": {
-      "agents": "Agents"
+      "dashboard": "Dashboard",
+      "agents": "Agents",
+      "local": "Local server",
+      "remote": "Remote",
+      "create": "Add remote server"
+    },
+    "ServerStatusTitle": {
+      "isHealthy": "Connected",
+      "incompatible": "You are using a possibly incompatible version of the Letta server, please set your version to {version}. Your current version: {currentVersion}",
+      "connecting": "Attempting to make a connection..."
+    },
+    "settings": "Settings",
+    "delete": "Delete",
+    "DeleteDevelopmentServerDialog": {
+      "error": "There was an error deleting the remote server, please try again or contact support.",
+      "title": "Delete Remote Server Connection",
+      "trigger": "Delete Remote Server Connection",
+      "confirm": "Delete",
+      "description": "Are you sure you want to delete this remote server connection? This will not delete any agents you have created."
+    },
+    "updateDetails": "Update configuration"
+  },
+  "development-servers/dashboard/page": {
+    "versionCompatibilityBanner": {
+      "title": "You are using a possibly incompatible version of the Letta server, please set your version to {version} for maximum compatibility"
+    },
+    "UpgradeBanner": {
+      "title": "Deploy, monitor and scale your agents in seconds",
+      "description": "Letta Cloud is the easiest way to scale with zero infrastructure",
+      "cta": "Get early access",
+      "dismiss": "Close"
+    },
+    "description": "Manage and monitor your agents on self-hosted Letta servers",
+    "title": "Self-hosted agents",
+    "gettingStarted": {
+      "title": "Quick actions",
+      "description": "Get started with these quick actions",
+      "actions": {
+        "cloudSignup": {
+          "title": "Sign up for Letta Cloud",
+          "details": "Deploy agents at scale with zero infrastructure",
+          "cta": "Early access"
+        },
+        "createAgent": {
+          "title": "New Agent",
+          "cta": "Create agent",
+          "description": "Create an agent to deploy to your local server"
+        },
+        "viewAgents": {
+          "title": "Local agents",
+          "description": "View all of your agents on the local server",
+          "cta": "View agents"
+        }
+      }
     }
   },
-  "local-project/page": {
-    "title": "Local Agents",
+  "starter-kits": {
+    "internetChatbot": {
+      "title": "Internet chatbot",
+      "description": "A general purpose chatbot designed to answer queries via the internet"
+    },
+    "characterRoleplay": {
+      "title": "Character roleplay",
+      "description": "Create an agent to roleplay as a character from a fantasy world"
+    },
+    "personalAssistant": {
+      "title": "Personal assistant",
+      "description": "Chat between a user and a personal assistant designed to enhance the user's productivity"
+    },
+    "scratch": {
+      "title": "Start from scratch",
+      "description": "Start with an empty agent with minimal default tools and a blank initial memory state"
+    },
+    "customerSupport": {
+      "title": "Customer support",
+      "description": "An agent designed to answer customer support requests"
+    },
+    "companion": {
+      "title": "Companion",
+      "description": "Chat between a user an an AI companion named Sam, designed to learn and adapt over time"
+    }
+  },
+  "component-library/reusable/ChatInput": {
+    "placeholder": "Type a message...",
+    "send": "Send",
+    "role": {
+      "label": "Click here to switch roles, the current role is {role}"
+    }
+  },
+  "component-library/core/Code": {
+    "errorResponse": "Error response",
+    "dismiss": "Dismiss"
+  },
+  "development-servers/agents/new/page": {
+    "serverOffline": "Your server is offline, please start it to create a new agent.",
+    "serverOfflineConnect": "Turn on your server with the command below:",
+    "isFetchingStatus": "Sorry, we are still attempting to connect to your server. Please wait a moment.",
+    "title": "Create a new agent",
+    "alert": {
+      "local": "your local server (localhost)",
+      "title": "You are creating an agent on {serverName}",
+      "descriptionLocal": "This will create an agent locally on your machine. This will not deploy the agent to Letta Cloud.",
+      "descriptionRemote": "This will create an agent on the remote server. This will not deploy the agent to Letta Cloud."
+    },
+    "error": "There was an error creating the agent, below is the error message, please try again or contact support.",
+    "loading": "Creating agent...",
+    "starterKits": {
+      "title": "Starter kits",
+      "description": "Choose from a starter pack and customize it in the ADE, or start from scratch"
+    },
+    "back": "All agents"
+  },
+  "components/tutorials": {
+    "title": "Tutorials",
+    "description": "Not sure where to start? Check out some of our tutorials ",
+    "comingSoon": "Coming soon",
+    "createChatBotWithMemory": {
+      "title": "Create a chatbot with memory",
+      "description": "Build a chatbot that can adapt over time using long-term memory"
+    },
+    "buildMultiAgentSystems": {
+      "title": "Built a multi-agent system",
+      "description": "Create a multi-agent system with an orchestrator and multiple workers"
+    },
+    "discord": {
+      "title": "Create a Discord bot",
+      "description": "Connect Letta agents to Discord to create Discord bots"
+    },
+    "voice": {
+      "title": "Activate voice mode",
+      "description": "Chat with your Letta agents using voice using our native integration"
+    }
+  },
+  "development-servers/shared/CreateLocalAgentDialog": {
+    "error": "Error creating agent",
+    "info": "This will create an agent locally on your machine. This does not deploy the agent to Letta Cloud.",
+    "title": "Create a new agent",
     "createAgent": "Create Agent",
-    "CreateAgentDialog": {
-      "error": "Error creating agent",
-      "info": "This will create an agent locally on your machine. This does not deploy the agent to Letta Cloud.",
-      "title": "Create a new agent",
-      "nameInput": {
-        "label": "Agent Name",
-        "placeholder": "my-agent-name"
+    "nameInput": {
+      "label": "Agent name",
+      "placeholder": "my-agent-name"
+    }
+  },
+  "client/hooks/useWelcomeText": {
+    "goodMorning": "Good morning, {firstName} ☀\uFE0F",
+    "goodAfternoon": "Good afternoon, {firstName} ☀\uFE0F",
+    "goodEvening": "Good evening, {firstName} \uD83C\uDF15"
+  },
+  "component-library/hooks/useCopyToClipboard": {
+    "copied": "Copied to clipboard"
+  },
+  "projects/hooks": {
+    "remoteDevelopment": "Self-hosted"
+  },
+  "development-servers/add": {
+    "title": "Add remote server",
+    "description": "To add a remote server, you need to enable your remote letta server to accept public connections and add the <code>--secure</code> and <code>--ade</code> flags.",
+    "error": "There was an error adding the remote server, please try again or contact support.",
+    "name": {
+      "label": "Server name",
+      "placeholder": "my-server-name"
+    },
+    "url": {
+      "label": "Server URL",
+      "placeholder": "http://my-server-url.com",
+      "description": "Must be in the format as follows http://my-server-url.com, or http://my-server-url.com:8000"
+    },
+    "password": {
+      "label": "Server password",
+      "placeholder": "my-server",
+      "description": "This should be the randomly generated password when you started the server with --secure"
+    },
+    "submit": "Add remote server"
+  },
+  "development-servers/hooks": {
+    "localAgents": "Local agents"
+  },
+  "development-servers/page": {
+    "UpdateDevelopmentServerDetailsDialog": {
+      "title": "Update remote server connection",
+      "trigger": "Update remote server connection",
+      "confirm": "Update",
+      "error": "There was an error updating the remote server, please try again or contact support.",
+      "name": {
+        "label": "Server name"
+      },
+      "url": {
+        "label": "Server URL",
+        "error": "This is not a valid URL, please make sure it is in the format http://my-server-url.com"
+      },
+      "password": {
+        "label": "Server password"
       }
     },
+    "title": "Local agents",
+    "description": "View your available agents running inside the Letta server",
+    "createAgent": "Create a new agent",
     "searchInput": {
       "placeholder": "Search agents"
+    },
+    "ErrorView": {
+      "title": "There has been an issue connecting to this server",
+      "description": "We were not able to connect to your development server, please make sure it is running and accessible from the internet.",
+      "localConnection": "Please make sure your local server is running and accessible from the internet.",
+      "runTheServer": "Run the following command to start the server:",
+      "connection": {
+        "title": "Below is your current connection configuration:",
+        "url": {
+          "label": "Server URL"
+        },
+        "password": {
+          "label": "Password"
+        }
+      },
+      "retry": "Retry",
+      "updateConnectionDetails": "Update Connection Details"
     },
     "table": {
       "columns": {
         "id": "ID",
         "name": "Name",
-        "actions": "Actions"
+        "actions": "Actions",
+        "createdAt": "Created At"
       },
       "openInADE": "Open in ADE",
       "emptyMessage": "No agents found",
@@ -539,6 +1139,44 @@
     "error": "There was an error fetching the simulated agent, please try again or contact support."
   },
   "ADE/Tools": {
+    "ViewCategoryTools": {
+      "view": "View",
+      "showing": "Showing {count} tools",
+      "next": "Next",
+      "previous": "Previous",
+      "loadMore": "Load more",
+      "create": "Create new tool",
+      "search": {
+        "label": "Search tools",
+        "placeholder": "Search tools"
+      }
+    },
+    "AllToolsView": {
+      "backToAllTools": "All tools",
+      "backToCategory": "All {category}",
+      "title": "Tool Explorer",
+      "back": "Back",
+      "searchCategories": {
+        "placeholder": "Filter by category",
+        "label": "Search categories"
+      },
+      "titles": {
+        "allTools": "All tools",
+        "customTools": "Custom tools",
+        "brandTools": "{brand} tools"
+      },
+      "categories": {
+        "allTools": "All tools ({count})",
+        "customTools": "Custom tools ({count})",
+        "brandTools": "{brand} ({count})"
+      }
+    },
+    "ErrorMessageAlert": {
+      "title": "There was an error, see below for details:",
+      "dismiss": "Dismiss"
+    },
+    "infoTooltip": "Connect tools to your agent to allow them to take custom actions",
+    "mobileTitle": "Tools",
     "title": "Tools ({toolCount})",
     "AddToolDialogDetailActions": {
       "addToAgent": "Add to Agent",
@@ -546,39 +1184,155 @@
       "removeError": "There was an error removing this tool, please try again or contact support.",
       "addError": "There was an error adding this tool, please try again or contact support."
     },
+    "ViewToolDialog": {
+      "title": "Viewing tool"
+    },
+    "ViewTool": {
+      "viewOnComposio": "View on Composio",
+      "viaComposioTool": "via",
+      "connectComposio": {
+        "title": "To attach this tool and 4000+ other tools to your agent, connect to Composio",
+        "descriptionLocal": "To enable Composio tools to your agent, add the <code>COMPOSIO_API_KEY</code> to your server environment variables",
+        "descriptionRemote": "To enable Composio tools to your agent, visit the Composio integration page",
+        "connect": "Setup Composio"
+      }
+    },
+    "AddToolToAgentButton": {
+      "error": "There was an error adding this tool, please try again or contact support.",
+      "alreadyAdded": "Attached",
+      "attach": "Attach tool"
+    },
+    "EditToolWrapper": {
+      "root": "All tools",
+      "edit": "Tool Editor"
+    },
+    "EditToolButton": {
+      "title": "Edit tool"
+    },
+    "ViewToolCodePreview": {
+      "viewToggle": {
+        "label": "View Mode",
+        "options": {
+          "schema": "JSON schema",
+          "code": "Code"
+        }
+      }
+    },
+    "SpecificToolComponent": {
+      "back": "Back",
+      "description": "Description",
+      "noDescription": "No description provided",
+      "add": "Add tool to Agent",
+      "edit": "Edit tool",
+      "cancel": "Cancel",
+      "alreadyAdded": "This tool is already added"
+    },
+    "EditTool": {
+      "error": "There was an error updating your tool, see above for details.",
+      "close": "Close",
+      "name": {
+        "label": "Name"
+      },
+      "updateDialog": {
+        "title": "Update tool",
+        "description": "Are you sure you want to update this tool, it will update all agents that use this tool.",
+        "confirm": "Update",
+        "error": "There was an error updating your tool, see below for details."
+      },
+      "description": {
+        "label": "Description"
+      },
+      "sourceCode": {
+        "label": "Source code",
+        "error": "There was an error updating your tool, see below for details."
+      },
+      "update": "Update tool"
+    },
+    "ToolEditor": {
+      "label": "Debugger",
+      "inputLabel": "Tool input",
+      "outputLabel": "Tool output"
+    },
+    "ToolCreator": {
+      "new": "New tool",
+      "errorResponse": "There was an error creating your tool, see below for details.",
+      "error": "There was an error creating your tool, see above for details.",
+      "cancel": "Cancel",
+      "name": {
+        "label": "Name",
+        "placeholder": "my-tool-name",
+        "validation": "'Name must be alphanumeric and underscores only"
+      },
+      "description": {
+        "label": "Description",
+        "placeholder": "my-tool-description",
+        "validation": "Please provide a description for this tool"
+      },
+      "sourceCode": {
+        "label": "Source code",
+        "placeholder": "my-tool-source-code"
+      }
+    },
     "AddToolDialog": {
+      "error": "There was an error adding this tool, please try again or contact support.",
+      "createTool": "Create new tool",
+      "title": {
+        "create": "Create a new tool",
+        "add": "Add tool to agent",
+        "view": "View and edit tool"
+      },
+      "categories": {
+        "allTools": "All tools"
+      },
       "description": "Description",
       "added": "Added",
-      "creator": "from {creator}",
+      "creator": "{creator}",
       "search": {
-        "placeholder": "Tool name",
+        "placeholder": "Search for a tool",
         "label": "Search tools"
       },
-      "title": "All Tools",
-      "trigger": "Add Tool",
       "noDescription": "This tool does not have a description",
       "noToolSelected": {
         "title": "No tool selected",
         "description": "Select a tool from the list to view more details and add to your agent."
       }
     },
+    "ToolsExplorer": {
+      "confirmLeave": {
+        "title": "Are you sure you want to leave?",
+        "description": "You are about to leave the tool editor, any unsaved changes will be lost."
+      }
+    },
+    "ToolsListPage": {
+      "openExplorer": "Open tools explorer"
+    },
     "ToolsList": {
-      "removeTool": "Remove Tool",
-      "lettaCoreTools": "Letta Core Tools ({toolCount})",
-      "otherTools": "Other Tools ({toolCount})",
-      "addNewTool": "Add New Tool"
+      "removeTool": "Remove tool",
+      "lettaCoreTools": "Letta core tools ({toolCount})",
+      "lettaCoreToolsInfo": "Default tools added to agents to enable memory management",
+      "otherTools": "Other tools ({toolCount})",
+      "addNewTool": "Add new tool"
     },
     "RemoveToolDialog": {
       "title": "Remove {toolName}",
-      "trigger": "Remove Tool",
+      "trigger": "Remove tool",
       "confirm": "Remove",
       "error": "There was an error removing this tool, please try again or contact support.",
       "confirmation": "Are you sure you want to remove this tool?"
     }
   },
   "ADE/ArchivalMemories": {
-    "title": "Vector Database",
+    "infoTooltip": "Memories stored in an external database (read-write)",
+    "ViewArchivalMemoryDialog": {
+      "trigger": "...see all",
+      "copyText": "Copy Memory Text",
+      "title": "View Memory",
+      "label": "Memory Text"
+    },
+    "title": "Archival Memories ({count})",
+    "mobileTitle": "Archival Memories",
     "MemoryItem": {
+      "copyText": "Copy Memory Text",
       "removeMemory": "Remove Memory",
       "deleteMemory": "Delete Memory",
       "deleteConfirm": "Delete Memory",
@@ -586,80 +1340,126 @@
       "memoryText": "Memory at {date}"
     },
     "CreateMemoryDialog": {
-      "trigger": "Create Memory",
+      "trigger": "Create memory",
       "title": "Create a new memory",
       "placeholder": "Enter memory text here",
-      "label": "Memory Text",
+      "label": "Memory text",
       "info": "This memory you create here is unique to the simulated agent. It will not be carried to agents created from this template."
     }
   },
   "projects/(projectSlug)/agents/(agentId)/AgentPage": {
+    "preparingAgent": "Preparing agent",
+    "error": "There was a severe error in this application, please refresh this page. If the error persists, please contact support in the top right corner.",
+    "Navigation": {
+      "dashboard": "Project dashboard"
+    },
+    "AgentMobileNavigation": {
+      "more": "More panels",
+      "less": "Less panels"
+    },
+    "UpdateNameDialog": {
+      "title": "Rename {agentBaseType}",
+      "trigger": "Rename {agentBaseType}",
+      "confirm": "Update",
+      "name": {
+        "label": "Name",
+        "description": "Updating the name will update all references to this {agentBaseType} in the project."
+      },
+      "error": {
+        "conflict": "This {agentBaseType} name is already in use, please choose another name",
+        "default": "There was an error updating the agent name, please try again or contact support."
+      }
+    },
     "AgentSettingsDropdown": {
-      "trigger": "Agent Settings",
-      "returnToProject": "Return to Project"
+      "trigger": "{agentBaseType} settings",
+      "returnToProject": "Return to project"
     },
     "DeployAgentDialog": {
-      "trigger": "Deployment Instructions",
-      "title": "Deploy Agent Instructions"
+      "trigger": "Deployment instructions",
+      "title": "Deploy agent instructions"
     },
     "VersionAgentDialog": {
-      "title": "Version Agent",
-      "trigger": "Version Agent",
-      "deployedAgents": "Deployed Agents",
-      "confirm": "Version Agent",
+      "title": "Version agent",
+      "trigger": "Version agent",
+      "deployedAgents": "Deployed agents",
+      "confirm": "Version agent",
       "description": "Versioning an agent creates a new version of the agent that is immutable and can be used to deploy agents. Are you sure you want to proceed?",
       "migrate": "Migrate all deployed agents to this version",
       "migrateDescription": "Selecting this option will migrate all deployed agents to this version, to programmatically migrate agents, visit the <link>API documentation</link>."
     },
+    "CloudUpsellDeploy": {
+      "title": "Deploy, Manage and Monitor your agents on Letta Cloud",
+      "description": "Deploy your agent to Letta Cloud to manage and monitor your agents, get insights and more. Apply for early access below.",
+      "cta": "Apply for early access"
+    },
     "DeploymentButton": {
       "version": "VERSION {version}",
       "readyToDeploy": {
-        "trigger": "Deploy Agent",
+        "trigger": "Deploy",
         "heading": "Your template is good to go!",
         "copy": "This template has not had any changes since the last version. You can deploy following the instructions below:"
       },
       "updateAvailable": {
-        "trigger": "Deploy Agent",
+        "trigger": "Deploy",
         "heading": "You may want to version your template",
         "copy": "This template has had changes since the last version. You can create a new version below or follow deployment instructions below:"
       }
     },
+    "agentBaseType": {
+      "base": {
+        "template": "template",
+        "agent": "agent"
+      },
+      "capitalized": {
+        "template": "Template",
+        "agent": "Agent"
+      }
+    },
     "DeleteAgentDialog": {
-      "trigger": "Delete Template",
-      "title": "Delete Template",
-      "error": "There was an error deleting this template, try again or contact support.",
-      "confirm": "Delete Template",
-      "confirmText": "Your template's name is <strong>{templateName}</strong>",
-      "confirmTextLabel": "Type the name of the agent name to confirm",
-      "description": "Are you sure you want to delete this template? This is permanent and cannot be undone."
+      "trigger": "Delete {agentBaseType}",
+      "title": "Delete {agentBaseType}",
+      "error": "There was an error deleting this {agentBaseType}, try again or contact support.",
+      "confirm": "Delete {agentBaseType}",
+      "confirmText": "Your {agentBaseType}'s name is <strong>{templateName}</strong>",
+      "confirmTextLabel": "Type the name of the {agentBaseType} name to confirm",
+      "description": "Are you sure you want to delete this {agentBaseType}? This is permanent and cannot be undone."
     },
     "ForkAgentDialog": {
-      "title": "Fork Agent",
-      "trigger": "Fork Agent",
-      "confirm": "Fork Agent",
-      "description": "Forking an template creates a new template with the same configuration as the original template."
+      "title": "Fork {agentBaseType}",
+      "trigger": "Fork {agentBaseType}",
+      "confirm": "Fork {agentBaseType}",
+      "description": "Forking an {agentBaseType} creates a new template with the same configuration as the original template."
     },
     "liveAgentWarning": "You are editing a live agent, be aware that editing this agent may impact live deployments",
     "localAgentDevelopment": "You are editing a local agent, changes made here will not effect your agents on Letta Cloud",
-    "restoreLayout": "Restore Layout",
+    "restoreLayout": "Restore layout",
     "positionError": "There was a unhandled error while positioning the window, will fallback to default position, we have notified our team about this issue."
   },
-  "ADE/ModelParameters": {
-    "title": "Model Parameters",
+  "ADE/AdvancedSettings": {
+    "title": "Advanced",
     "model": "Model",
-    "modelParameters": "Model Parameters",
-    "modelEndpoint": "Model Endpoint",
-    "endpointType": "Endpoint Type",
+    "mobileTitle": "Advanced",
+    "modelParameters": "Model parameters",
+    "modelEndpoint": "Model endpoint",
+    "endpointType": "Endpoint type",
     "errorLoadingModelParameters": "There has been an error loading model parameters, please refresh the page or contact support.",
     "contextWindowController": {
-      "label": "Context Window Size"
+      "label": "Context window size"
+    },
+    "AdvancedSettingsPanel": {
+      "embeddingDimensions": {
+        "label": "Embedding dimensions"
+      },
+      "embeddingChunkSize": {
+        "label": "Embedding chunk size"
+      }
     }
   },
   "ADE/TemplateVersionManager": {
     "title": "Template Version Manager"
   },
   "api-keys/page": {
-    "title": "API Keys",
+    "title": "API keys",
     "emptyMessage": "No API keys found",
     "errorMessage": "An error occurred while fetching your API keys. Please try again or contact support.",
     "loadingMessage": "Loading API keys...",
@@ -679,17 +1479,17 @@
       "actions": "Actions"
     },
     "createAPIKeyDialog": {
-      "title": "Create a new API Key",
-      "createdTitle": "API Key Created",
+      "title": "Create a new API key",
+      "createdTitle": "API key created",
       "cancel": "Cancel",
-      "alertTitle": "API Key Created",
+      "alertTitle": "API key created",
       "close": "Close",
-      "trigger": "Create API Key",
+      "trigger": "Create API key",
       "generatedCopy": "We have generated you an API Key, please make sure to store it safely.",
-      "downloadText": "Download API Key",
-      "copyToClipboard": "Copy API Key to Clipboard",
-      "description": "Provide a descriptive name for identifying for later use",
-      "label": "Name"
+      "downloadText": "Download API key",
+      "copyToClipboard": "Copy API key to clipboard",
+      "description": "Provide a descriptive name for identifying this API key",
+      "label": "API key name"
     }
   },
   "ADE/DeploymentAgentMangerPanel": {
@@ -720,7 +1520,7 @@
     "editDataSources": "Attach <editDataSourcesButton></editDataSourcesButton> to your template so your agent can look up information from external sources.",
     "simulate": "Use the <agentSimulatorButton></agentSimulatorButton> to test talking to a deployed agent",
     "agentSimulatorButton": "Simulator",
-    "archivalMemoriesButton": "Vector Database",
+    "archivalMemoriesButton": "Archival Memories",
     "exploreArchivalMemories": "Explore the <archivalMemoriesButton></archivalMemoriesButton> of your agents (see what your agents have learned).",
     "evenMore": "When you're ready to create agents from your template, you can visit the <templateVersionButton></templateVersionButton> and create a new version of your template, then follow the instructions on that page to deploy your agents."
   },

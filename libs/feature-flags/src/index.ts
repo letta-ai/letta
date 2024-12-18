@@ -3,7 +3,7 @@ import * as ld from '@launchdarkly/node-server-sdk';
 
 export * from './flags';
 import { environment } from '@letta-web/environmental-variables';
-import type { Flag, FlagValue } from './flags';
+import type { Flag, FlagMap, FlagValue } from './flags';
 
 // Client fixing issue for launchdarkly reconnecting spam
 // dev issue only
@@ -50,28 +50,34 @@ async function getLaunchDarklyClient() {
   return launchDarklySingleton;
 }
 
-interface UserFlagsPayload {
-  userId: string;
+interface OrgDetails {
+  id: string;
+  name: string;
 }
 
-export async function getUserFlags(user: UserFlagsPayload) {
+export async function getOrganizationFeatureFlags(org: OrgDetails) {
   if (!environment.LAUNCH_DARKLY_SDK_KEY) {
     return {};
   }
 
   const ldClient = await getLaunchDarklyClient();
 
-  const response = await ldClient.allFlagsState({
-    key: user.userId,
-    kind: 'user',
-  });
+  const context: ld.LDContext = {
+    kind: 'org',
+    key: org.id,
+    name: org.name,
+  };
+
+  ldClient.identify(context);
+
+  const response = await ldClient.allFlagsState(context);
 
   return response.toJSON();
 }
 
 export async function getSingleFlag<SingleFlag extends Flag>(
   flag: SingleFlag,
-  user: UserFlagsPayload
+  org: OrgDetails
 ): Promise<FlagValue<SingleFlag> | undefined> {
   if (!environment.LAUNCH_DARKLY_SDK_KEY) {
     return undefined;
@@ -83,8 +89,8 @@ export async function getSingleFlag<SingleFlag extends Flag>(
     return ldClient.variation(
       flag,
       {
-        key: user.userId,
-        kind: 'user',
+        key: org.id,
+        kind: 'org',
       },
       false,
       (err, res) => {
@@ -99,13 +105,18 @@ export async function getSingleFlag<SingleFlag extends Flag>(
   });
 }
 
-export async function getDefaultFlags() {
-  const ldClient = await getLaunchDarklyClient();
+export async function getDefaultFlags(): Promise<Partial<FlagMap>> {
+  try {
+    const ldClient = await getLaunchDarklyClient();
 
-  const response = await ldClient.allFlagsState({
-    key: 'default',
-    anonymous: true,
-  });
+    const response = await ldClient.allFlagsState({
+      key: 'default',
+      anonymous: true,
+    });
 
-  return response.toJSON();
+    return response.toJSON();
+  } catch (e) {
+    console.error('Error fetching default flags', e);
+    return {};
+  }
 }

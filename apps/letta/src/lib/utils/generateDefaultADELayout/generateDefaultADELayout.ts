@@ -13,35 +13,35 @@ export function generateDefaultADELayout(): AdePreferencesData {
         size: 30,
         positions: [
           {
-            size: 30,
+            size: 50,
             positions: [
               {
-                id: 'model-details',
+                id: 'agent-settings',
                 isActive: true,
-                templateId: 'model-details',
+                templateId: 'agent-settings',
                 data: undefined,
               },
               {
-                id: 'model-parameters',
+                id: 'advanced-settings',
                 isActive: false,
-                templateId: 'model-parameters',
+                templateId: 'advanced-settings',
                 data: undefined,
               },
             ],
           },
           {
-            size: 70,
+            size: 50,
             positions: [
               {
-                id: 'edit-core-memories',
-                templateId: 'edit-core-memories',
+                id: 'tools-panel',
                 isActive: true,
+                templateId: 'tools-panel',
                 data: undefined,
               },
               {
-                id: 'tools-panel',
+                id: 'edit-data-sources',
                 isActive: false,
-                templateId: 'tools-panel',
+                templateId: 'edit-data-sources',
                 data: undefined,
               },
             ],
@@ -76,12 +76,13 @@ export function generateDefaultADELayout(): AdePreferencesData {
         size: 30,
         positions: [
           {
-            size: 50,
+            size: 10,
+            overridesizeInPx: 85,
             positions: [
               {
-                id: 'archival-memories',
+                id: 'context-window',
                 isActive: true,
-                templateId: 'archival-memories',
+                templateId: 'context-window',
                 data: undefined,
               },
             ],
@@ -90,9 +91,20 @@ export function generateDefaultADELayout(): AdePreferencesData {
             size: 50,
             positions: [
               {
-                id: 'edit-data-sources',
+                id: 'edit-core-memories',
+                templateId: 'edit-core-memories',
                 isActive: true,
-                templateId: 'edit-data-sources',
+                data: undefined,
+              },
+            ],
+          },
+          {
+            size: 50,
+            positions: [
+              {
+                id: 'archival-memories',
+                isActive: true,
+                templateId: 'archival-memories',
                 data: undefined,
               },
             ],

@@ -79,16 +79,27 @@ pre[class*='language-'] {
   white-space: normal;
 }
 
+:root {
+  --comment-color: #878390;
+  --keyword-color: #9C5F2D;
+  --string-color: #49A549;
+  --base-code-color: #55585B;
+  --bool-color: #A260C9;
+  --property-color: #D85B42;
+  --operator-color: #5151A0;
+  --regex-color: #B7881A;
+}
+
 .token.comment,
 .token.prolog,
 .token.cdata {
-  color: hsl(230, 4%, 64%);
+  color: var(--comment-color);
 }
 
 .token.doctype,
 .token.punctuation,
 .token.entity {
-  color: hsl(230, 8%, 24%);
+  color: var(--base-code-color);
 }
 
 .token.attr-name,
@@ -97,11 +108,11 @@ pre[class*='language-'] {
 .token.constant,
 .token.number,
 .token.atrule {
-  color: hsl(35, 99%, 36%);
+  color: var(--bool-color);
 }
 
 .token.keyword {
-  color: hsl(301, 63%, 40%);
+  color: var(--keyword-color);
 }
 
 .token.property,
@@ -109,7 +120,7 @@ pre[class*='language-'] {
 .token.symbol,
 .token.deleted,
 .token.important {
-  color: hsl(336, 98%, 37%);
+  color: var(--property-color);
 }
 
 .token.selector,
@@ -120,17 +131,17 @@ pre[class*='language-'] {
 .token.regex,
 .token.attr-value,
 .token.attr-value > .token.punctuation {
-  color: hsl(120, 61%, 30%);
+  color: var(--string-color)
 }
 
 .token.variable,
 .token.operator,
 .token.function {
-  color: hsl(221, 87%, 60%);
+  color: var(--operator-color);
 }
 
 .token.url {
-  color: hsl(198, 99%, 37%);
+  color: var(--string-color)
 }
 
 /* HTML overrides */
@@ -432,6 +443,17 @@ pre > code.diff-highlight .token.token.inserted:not(.prefix) *::selection {
   font-size: var(--font-size-sm);
 }
 
+.line-number-wrapper {
+  position: absolute;
+  display: block;
+  padding-right: 10px;
+  width: 60px;
+  height: 100%;
+  border-right: 1px solid hsl(var(--border));
+  background-color: hsl(var(--background));
+  overflow: hidden;
+}
+
 .editor.line-numbers textarea {
   outline: none;
   padding-left: calc(var(--editor-lineNumber-gutter-width) + 20px) !important;
@@ -464,6 +486,6 @@ pre > code.diff-highlight .token.token.inserted:not(.prefix) *::selection {
   width: var(--editor-lineNumber-gutter-width);
   height: 100%;
   border-right: 1px solid hsl(var(--border));
-  background-color: hsl(var(--background-greyer));
+  background-color: hsl(var(--background));
   z-index: 1;
 }

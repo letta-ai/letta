@@ -1,6 +1,9 @@
 'use client';
 import { useCallback, useEffect } from 'react';
-import type { WorkerPayload, WorkerResponse } from '../../types';
+import type {
+  ComputeCoreMemoryWorkerPayload,
+  WorkerResponse,
+} from '../../types';
 
 interface WorkerOptions {
   onMessage: (message: MessageEvent<WorkerResponse>) => void;
@@ -33,7 +36,7 @@ export function useCoreMemorySummaryWorker(options: WorkerOptions) {
     };
   }, [onMessage]);
 
-  const postMessage = useCallback((message: WorkerPayload) => {
+  const postMessage = useCallback((message: ComputeCoreMemoryWorkerPayload) => {
     worker.postMessage(message);
   }, []);
 

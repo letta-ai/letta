@@ -47,6 +47,9 @@ export interface PanelTemplate<
   noTab?: boolean;
   templateId: TPanelTemplateId;
   useGetTitle: (data?: ZodSchema['_output']) => string;
+  useGetMobileTitle: (data?: ZodSchema['_output']) => string;
+  useGetInfoTooltipText?: (data?: ZodSchema['_output']) => string;
+  icon: React.ReactNode;
   data: ZodSchema;
   content: React.ComponentType<ZodSchema['_output']>;
 }
@@ -65,6 +68,7 @@ interface PanelPositionItem<TPanelTemplateId extends GenericPanelTemplateId> {
 
 export interface PanelDimensionType<TPositions> {
   size: number;
+  overridesizeInPx?: number;
   positions: TPositions;
 }
 
@@ -487,12 +491,13 @@ export function createPanelManager<
         // first convert the percentage to px
         const desiredHeightInPx = (size / 100) * totalWidthInPx;
 
-        if (desiredHeightInPx < 200 || neighbourPanelNewHeightInPx < 200) {
+        if (desiredHeightInPx < 100 || neighbourPanelNewHeightInPx < 100) {
           return prevState;
         }
 
         nextState.positions[x].positions[y + 1].size = neighbourPanelNewHeight;
         nextState.positions[x].positions[y].size = size;
+        nextState.positions[x].positions[y].overridesizeInPx = undefined;
 
         return nextState;
       });
@@ -1165,15 +1170,18 @@ export function createPanelManager<
     }, [tabId, movePanelToPosition, x, y]);
 
     const title = panelRegistry[tab.templateId].useGetTitle(tab.data);
+    const infoTooltipText = panelRegistry[
+      tab.templateId
+    ]?.useGetInfoTooltipText?.(tab.data);
 
     const dropdownItems = useMemo(
       () => [
         {
-          label: 'Split and move right',
+          label: 'Move right',
           onClick: handleMoveRight,
         },
         {
-          label: 'Split and move down',
+          label: 'Move down',
           onClick: handleMoveDown,
         },
       ],
@@ -1186,6 +1194,7 @@ export function createPanelManager<
         isActive={isActive}
         onClickTab={handleClickedTab}
         onCloseTab={handleCloseTab}
+        infoTooltipText={infoTooltipText}
         dropdownItems={dropdownItems}
         title={title}
       />
@@ -1332,11 +1341,15 @@ export function createPanelManager<
             >
               <VStack gap={false} fullWidth fullHeight key={x}>
                 {xElement.positions.map((yElement, y) => {
+                  const size = yElement.overridesizeInPx
+                    ? `${yElement.overridesizeInPx}px`
+                    : `${yElement.size}%`;
+
                   return (
                     <VStack
                       id={getDimensionId(x, y)}
                       position="relative"
-                      style={{ height: `${yElement.size}%` }}
+                      style={{ height: size }}
                       key={y}
                     >
                       <PanelTabRenderer
@@ -1424,7 +1437,39 @@ export function createPanelManager<
     );
   }
 
+  interface RenderSinglePanelProps {
+    panelId: PanelId;
+  }
+
+  function RenderSinglePanel({ panelId }: RenderSinglePanelProps) {
+    const { panelIdToPositionMap, positions } = usePanelManager();
+
+    const position = panelIdToPositionMap[panelId];
+
+    if (!position) {
+      return null;
+    }
+
+    const [x, y, tab] = position;
+
+    const panel = positions[x].positions[y].positions[tab];
+
+    return (
+      <PanelTabRenderer
+        x={x}
+        y={y}
+        tabs={[
+          {
+            ...panel,
+            isActive: true,
+          },
+        ]}
+      />
+    );
+  }
+
   return {
+    RenderSinglePanel,
     panelRegistry,
     PanelToggle,
     PanelRenderer,

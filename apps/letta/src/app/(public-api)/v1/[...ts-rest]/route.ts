@@ -27,6 +27,7 @@ const handler = createNextHandler(sdkContracts, sdkRouter, {
         userId: '',
         organizationId: '',
         lettaAgentsUserId: '',
+        source: 'api',
       };
 
       if (apiKey) {
@@ -43,13 +44,39 @@ const handler = createNextHandler(sdkContracts, sdkRouter, {
               activeOrganizationId: true,
               id: true,
             },
+            with: {
+              activeOrganization: {
+                columns: {
+                  enabledCloudAt: true,
+                },
+              },
+            },
           });
+
+          if (!response?.activeOrganization?.enabledCloudAt) {
+            return new Response(JSON.stringify({ message: 'Unauthorized' }), {
+              status: 401,
+              headers: {
+                'Content-Type': 'application/json',
+              },
+            });
+          }
 
           middlewareData.lettaAgentsUserId = response?.lettaAgentsId || '';
         }
       } else {
         const user = await getUser();
 
+        if (!user?.hasCloudAccess) {
+          return new Response(JSON.stringify({ message: 'Unauthorized' }), {
+            status: 401,
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          });
+        }
+
+        middlewareData.source = 'web';
         middlewareData.organizationId = user?.activeOrganizationId || '';
         middlewareData.userId = user?.id || '';
         middlewareData.lettaAgentsUserId = user?.lettaAgentsId || '';
@@ -64,6 +91,7 @@ const handler = createNextHandler(sdkContracts, sdkRouter, {
         });
       }
 
+      req.source = middlewareData.source;
       req.organizationId = middlewareData.organizationId;
       req.lettaAgentsUserId = middlewareData.lettaAgentsUserId;
       req.userId = middlewareData.userId;
@@ -80,8 +108,24 @@ const handler = createNextHandler(sdkContracts, sdkRouter, {
   ],
   // @ts-expect-error - this is a middleware
   errorHandler: async (error, req) => {
+    if (error instanceof Error) {
+      if (error.message === 'Unexpected end of JSON input') {
+        return TsRestResponse.fromJson(
+          {
+            message:
+              'Invalid JSON body, please fix your body payload or change content type to something other than application/json',
+          },
+          { status: 400 }
+        );
+      }
+    }
+
     if (error instanceof TsRestHttpError) {
       if (error.statusCode !== 404) {
+        if (error.statusCode >= 500) {
+          Sentry.captureException(error);
+        }
+
         return TsRestResponse.fromJson(
           {
             message: error.message,
@@ -94,6 +138,8 @@ const handler = createNextHandler(sdkContracts, sdkRouter, {
 
       const response = await makeRequestToSDK({
         method: req.method,
+        // @ts-expect-error - this is a middleware
+        source: req.source,
         body: req.content,
         formData: req.headers.get('Content-Type')?.includes('multipart')
           ? await req.formData()
@@ -112,7 +158,13 @@ const handler = createNextHandler(sdkContracts, sdkRouter, {
     }
 
     if (isErrorResponse(error)) {
-      return TsRestResponse.fromJson(error, { status: error.status || 500 });
+      const statusCode = error.status || 500;
+
+      if ([500, 502].includes(statusCode)) {
+        Sentry.captureException(error);
+      }
+
+      return TsRestResponse.fromJson(error, { status: statusCode });
     }
 
     const errorId = Sentry.captureException(error);

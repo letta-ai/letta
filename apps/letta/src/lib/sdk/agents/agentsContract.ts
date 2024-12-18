@@ -1,16 +1,16 @@
 import { initContract } from '@ts-rest/core';
 import type {
   AgentState,
-  CreateAgent,
+  CreateAgentRequest,
   HTTPValidationError,
-  UpdateAgentState,
+  UpdateAgent,
 } from '@letta-web/letta-agents-api';
-import { z } from 'zod';
 import {
   EmbeddingConfigSchema,
   LLMConfigSchema,
-  MemorySchema,
-} from '$letta/sdk/types';
+} from '@letta-web/letta-agents-api';
+import { z } from 'zod';
+import { MemoryBlocksSchema } from '$letta/sdk/types';
 import { extendZodWithOpenApi } from '@anatine/zod-openapi';
 
 extendZodWithOpenApi(z);
@@ -18,7 +18,7 @@ extendZodWithOpenApi(z);
 const c = initContract();
 
 /* Create Agent */
-export interface CreateAgentBody extends CreateAgent {
+export interface CreateAgentBody extends CreateAgentRequest {
   /**
    * Make this Agent a template
    */
@@ -45,11 +45,11 @@ const CreateAgentBodySchema = z.object({
   message_ids: z.array(z.string()).nullable().optional().openapi({
     description: 'A list of message IDs associated with the agent',
   }),
-  memory: MemorySchema.optional().nullable(),
+  memory_blocks: MemoryBlocksSchema.nullable().optional(),
   tools: z.string().array().nullable().optional(),
   system: z.string().nullable().optional(),
-  llm_config: LLMConfigSchema.nullable().optional(),
-  embedding_config: EmbeddingConfigSchema.nullable().optional(),
+  llm_config: LLMConfigSchema.nullable()?.optional(),
+  embedding_config: EmbeddingConfigSchema.nullable()?.optional(),
 
   // letta specific fields
   template: z.boolean().optional(),
@@ -75,9 +75,7 @@ const FailedToCreateAgentErrorSchema = z.object({
 });
 
 const UniqueIdentifierConflictResponseSchema = z.object({
-  message: z
-    .literal('An agent with the same name already exists')
-    .or(z.literal('project_id is required when providing a name')),
+  message: z.literal('An agent with the same name already exists'),
 });
 
 const createAgentContract = c.mutation({
@@ -265,7 +263,7 @@ const deleteAgentContract = c.mutation({
 });
 
 /* Update Agent */
-const UpdateAgentBodySchema = c.type<UpdateAgentState>();
+const UpdateAgentBodySchema = c.type<UpdateAgent>();
 
 const UpdateAgentResponseSchema = c.type<AgentState>();
 

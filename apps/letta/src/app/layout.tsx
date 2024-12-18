@@ -1,16 +1,22 @@
 import './global.css';
-import NextTopLoader from 'nextjs-toploader';
 import { ClientSideProviders } from './_components/ClientSideProviders/ClientSideProviders';
 import React from 'react';
 import { LoadMixpanelAnalytics } from '@letta-web/analytics/client';
 import { getLocale, getMessages } from 'next-intl/server';
 import { NextIntlClientProvider } from 'next-intl';
 import { Body } from './_components/ThemeProvider/Body';
+import { Manrope } from 'next/font/google';
+import { cn } from '@letta-web/core-style-config';
 
 export const metadata = {
   title: 'Letta',
-  description: 'Letta lets you build Agents',
+  description: 'Advancing the frontier of AI systems with memory',
 };
+
+const manrope = Manrope({
+  display: 'swap',
+  subsets: ['latin'],
+});
 
 export default async function RootLayout({
   children,
@@ -22,7 +28,7 @@ export default async function RootLayout({
   const messages = await getMessages();
 
   return (
-    <html lang={locale}>
+    <html lang={locale} className={cn(manrope.className, 'overflow-x-hidden')}>
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <link
@@ -94,8 +100,13 @@ export default async function RootLayout({
           sizes="16x16"
           href="/seo/favicon-16x16.png"
         />
-        <link rel="icon" type="image/x-icon" href="/seo/favicon.ico" />
-        <link rel="icon" type="image/x-icon" href="/seo/favicon.svg" />
+        <link
+          rel="icon"
+          id="favicon"
+          href="/icon?<generated>"
+          type="image/png"
+          sizes="32x32"
+        />
         <link rel="manifest" href="/seo/manifest.json" />
         <meta name="msapplication-TileColor" content="#ffffff" />
         <meta name="msapplication-TileImage" content="/ms-icon-144x144.png" />
@@ -104,11 +115,6 @@ export default async function RootLayout({
       </head>
       <Body>
         <LoadMixpanelAnalytics />
-        <NextTopLoader
-          showSpinner={false}
-          color="hsl(var(--primary))"
-          zIndex={9999}
-        />
         <NextIntlClientProvider messages={messages}>
           <ClientSideProviders>{children}</ClientSideProviders>
         </NextIntlClientProvider>

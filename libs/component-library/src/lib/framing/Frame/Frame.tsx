@@ -18,12 +18,15 @@ const frameVariants = cva('', {
     },
     fullHeight: {
       true: 'h-full',
+      withMinHeight: 'min-h-full',
     },
     zIndex: {
+      base: 'z-[0]',
       rightAboveZero: 'z-rightAboveZero',
       sidebarNavOverlay: 'z-sidebarNavOverlay',
       sidebarNav: 'z-sidebarNav',
       header: 'z-header',
+      miniApp: 'z-miniapp',
       dialog: 'z-dialog',
       tooltip: 'z-tooltip',
       draggedItem: 'z-draggedItem',
@@ -38,12 +41,12 @@ const frameVariants = cva('', {
       transparent: 'bg-transparent',
       background: 'bg-background text-background-content',
       'background-grey': 'bg-background-grey text-background-grey-content',
-      'background-greyer':
-        'bg-background-greyer text-background-greyer-content',
+      'background-grey2': 'bg-background-grey2 text-background-grey2-content',
       'background-black': 'bg-background-black text-background-black-content',
       tertiary: 'bg-tertiary text-tertiary-content',
       success: 'bg-background-success text-background-success-content',
-      destructive: 'bg-destructive bg-destructive-content',
+      destructive:
+        'bg-background-destructive text-background-destructive-content',
       primary: 'bg-primary text-primary-content',
       secondary: 'bg-secondary text-secondary-content',
       warning: 'bg-background-warning text-background-warning-content',
@@ -51,11 +54,12 @@ const frameVariants = cva('', {
     },
     width: {
       centered: 'max-w-[800px]',
+      largeContained: 'max-w-[1024px] w-full',
       contained: 'max-w-[610px] w-full',
       sidebar: 'w-sidebar',
     },
     height: {
-      header: 'h-header',
+      header: 'h-header min-h-header',
       'header-sm': 'h-header-sm',
     },
     borderColor: {
@@ -90,6 +94,7 @@ const frameVariants = cva('', {
       large: 'p-4',
       true: 'p-5',
       xlarge: 'p-5',
+      xxlarge: 'p-8',
     },
     paddingY: {
       xxsmall: 'py-1',
@@ -98,6 +103,8 @@ const frameVariants = cva('', {
       medium: 'py-3',
       large: 'py-4',
       true: 'py-5',
+      xlarge: 'py-6',
+      xxlarge: 'py-8',
     },
     paddingX: {
       xxsmall: 'px-1',
@@ -109,6 +116,7 @@ const frameVariants = cva('', {
       xlarge: 'px-6',
     },
     paddingTop: {
+      xxsmall: 'pt-1',
       small: 'pt-2.5',
       medium: 'pt-3',
       large: 'pt-4',
@@ -117,6 +125,8 @@ const frameVariants = cva('', {
       xxlarge: 'pt-8',
     },
     paddingBottom: {
+      xxsmall: 'pb-1',
+      xsmall: 'pb-2',
       small: 'pb-2.5',
       medium: 'pb-3',
       large: 'pb-4',
@@ -127,6 +137,7 @@ const frameVariants = cva('', {
       medium: 'pl-3',
       large: 'pl-4',
       true: 'pl-5',
+      xlarge: 'pl-6',
     },
     paddingRight: {
       xxsmall: 'pr-1',
@@ -134,9 +145,6 @@ const frameVariants = cva('', {
       medium: 'pr-3',
       large: 'pr-4',
       true: 'pr-5',
-    },
-    rounded: {
-      true: 'rounded',
     },
     overflow: {
       hidden: 'overflow-hidden',
@@ -165,6 +173,7 @@ const frameVariants = cva('', {
 export type FrameProps = React.HTMLAttributes<HTMLDivElement> &
   VariantProps<typeof frameVariants> & {
     as?: React.ElementType;
+    type?: string;
   };
 
 export const Frame = forwardRef<HTMLElement, PropsWithChildren<FrameProps>>(
@@ -178,7 +187,6 @@ export const Frame = forwardRef<HTMLElement, PropsWithChildren<FrameProps>>(
       borderY,
       transparent,
       borderX,
-      rounded,
       borderRight,
       flex,
       borderLeft,
@@ -200,6 +208,7 @@ export const Frame = forwardRef<HTMLElement, PropsWithChildren<FrameProps>>(
       overflow,
       overflowY,
       overflowX,
+      height,
       ...rest
     } = props;
 
@@ -211,13 +220,13 @@ export const Frame = forwardRef<HTMLElement, PropsWithChildren<FrameProps>>(
       border,
       borderY,
       zIndex,
+      height,
       borderX,
       borderRight,
       collapseWidth,
       position,
       animate,
       width,
-      rounded,
       borderLeft,
       borderTop,
       borderBottom,
