@@ -132,7 +132,7 @@ function MessageGroup({ group }: MessageGroupType) {
         size={"xsmall"}
       />
       <VStack collapseWidth flex gap="small">
-        <Typography variant="body2" color="muted">
+        <Typography variant="body2" color="lighter">
           {name.toUpperCase()}
         </Typography>
         <VStack gap="large">
