@@ -1,0 +1,35 @@
+api:
+  specs:
+    - openapi: openapi.json
+      overrides: openapi-overrides.yml
+      settings:
+        title-as-schema-name: false
+groups:
+  python-sdk:
+    generators:
+      - name: fernapi/fern-python-sdk
+        version: 4.3.9
+        output:
+          location: pypi
+          package-name: letta
+        github:
+          repository: fern-demo/letta-python-sdk
+        config:
+          client_class_name: Letta
+  ts-sdk:
+    generators:
+      - name: fernapi/fern-typescript-node-sdk
+        version: 0.44.0
+        output:
+          location: npm
+          package-name: "letta"
+          # token: ${NPM_TOKEN}
+        github:
+          repository: "fern-demo/letta-typescript-sdk"
+        config:
+          namespaceExport: Letta
+          allowCustomFetcher: true
+          skipResponseValidation: true
+          includeApiReference: true
+          noSerdeLayer: true
+        smart-casing: true

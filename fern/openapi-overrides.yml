@@ -1,0 +1,334 @@
+servers:
+  - url: https://app.letta.com
+    description: Letta Hosted
+    x-fern-server-name: Letta Hosted
+  - url: http://localhost:8283
+    description: Self Hosted
+    x-fern-server-name: Self Hosted
+
+paths:
+  /v1/tools/{tool_id}:
+    get:
+      x-fern-sdk-group-name:
+        - tools
+      x-fern-sdk-method-name: get
+    delete:
+      x-fern-sdk-group-name:
+        - tools
+      x-fern-sdk-method-name: delete
+    patch:
+      x-fern-sdk-group-name:
+        - tools
+      x-fern-sdk-method-name: update
+  /v1/tools/name/{tool_name}:
+    get:
+      x-fern-sdk-group-name:
+        - tools
+      x-fern-sdk-method-name: getByName
+  /v1/tools/:
+    get:
+      x-fern-sdk-group-name:
+        - tools
+      x-fern-sdk-method-name: list
+    post:
+      x-fern-sdk-group-name:
+        - tools
+      x-fern-sdk-method-name: create
+    put:
+      x-fern-sdk-group-name:
+        - tools
+      x-fern-sdk-method-name: upsert
+  /v1/tools/add-base-tools:
+    post:
+      x-fern-sdk-group-name:
+        - tools
+      x-fern-sdk-method-name: add_base_tool
+  /v1/sources/{source_id}:
+    get:
+      x-fern-sdk-group-name:
+        - sources
+      x-fern-sdk-method-name: get
+    delete:
+      x-fern-sdk-group-name:
+        - sources
+      x-fern-sdk-method-name: delete
+    patch:
+      x-fern-sdk-group-name:
+        - sources
+      x-fern-sdk-method-name: update
+  /v1/sources/name/{source_name}:
+    get:
+      x-fern-sdk-group-name:
+        - sources
+      x-fern-sdk-method-name: getByName
+  /v1/sources/:
+    get:
+      x-fern-sdk-group-name:
+        - sources
+      x-fern-sdk-method-name: list
+    post:
+      x-fern-sdk-group-name:
+        - sources
+      x-fern-sdk-method-name: create
+  /v1/sources/{source_id}/attach:
+    post:
+      x-fern-sdk-group-name:
+        - sources
+      x-fern-sdk-method-name: attach
+  /v1/sources/{source_id}/detach:
+    post:
+      x-fern-sdk-group-name:
+        - sources
+      x-fern-sdk-method-name: detach
+  /v1/sources/{source_id}/upload:
+    post:
+      x-fern-sdk-group-name:
+        - sources
+        - files
+      x-fern-sdk-method-name: upload
+  /v1/sources/{source_id}/passages:
+    get:
+      x-fern-sdk-group-name:
+        - sources
+        - passages
+      x-fern-sdk-method-name: list
+  /v1/sources/{source_id}/files:
+    get:
+      x-fern-sdk-group-name:
+        - sources
+        - files
+      x-fern-sdk-method-name: list
+  /v1/sources/{source_id}/{file_id}:
+    delete:
+      x-fern-sdk-group-name:
+        - sources
+        - files
+      x-fern-sdk-method-name: delete
+  /v1/agents/:
+    get:
+      x-fern-sdk-group-name:
+        - agents
+      x-fern-sdk-method-name: list
+    post:
+      x-fern-sdk-group-name:
+        - agents
+      x-fern-sdk-method-name: create
+  /v1/agents/{agent_id}/context:
+    get:
+      x-fern-sdk-group-name:
+        - agents
+        - context
+      x-fern-sdk-method-name: get
+  /v1/agents/{agent_id}:
+    get:
+      x-fern-sdk-group-name:
+        - agents
+      x-fern-sdk-method-name: get
+    delete:
+      x-fern-sdk-group-name:
+        - agents
+      x-fern-sdk-method-name: delete
+    patch:
+      x-fern-sdk-group-name:
+        - agents
+      x-fern-sdk-method-name: update
+  /v1/agents/{agent_id}/tools:
+    get:
+      x-fern-sdk-group-name:
+        - agents
+        - tools
+      x-fern-sdk-method-name: list
+  /v1/agents/{agent_id}/add-tool/{tool_id}:
+    patch:
+      x-fern-sdk-group-name:
+        - agents
+        - tools
+      x-fern-sdk-method-name: add
+  /v1/agents/{agent_id}/remove-tool/{tool_id}:
+    patch:
+      x-fern-sdk-group-name:
+        - agents
+        - tools
+      x-fern-sdk-method-name: remove
+  /v1/agents/{agent_id}/sources:
+    get:
+      x-fern-sdk-group-name:
+        - agents
+        - sources
+      x-fern-sdk-method-name: get
+  /v1/agents/{agent_id}/memory/messages:
+    get:
+      x-fern-sdk-group-name:
+        - agents
+        - memory
+        - messages
+      x-fern-sdk-method-name: listInContext
+  /v1/agents/{agent_id}/memory:
+    get:
+      x-fern-sdk-group-name:
+        - agents
+        - memory
+      x-fern-sdk-method-name: get
+    patch:
+      x-fern-sdk-group-name:
+        - agents
+        - memory
+      x-fern-sdk-method-name: update
+  /v1/agents/{agent_id}/memory/label:
+    patch:
+      x-fern-sdk-group-name:
+        - agents
+        - memory
+      x-fern-sdk-method-name: updateLabel
+  /v1/agents/{agent_id}/memory/block:
+    post:
+      x-fern-sdk-group-name:
+        - agents
+        - memory_blocks
+      x-fern-sdk-method-name: add
+  /v1/agents/{agent_id}/memory/block/{block_label}:
+    delete:
+      x-fern-sdk-group-name:
+        - agents
+        - memory_blocks
+      x-fern-sdk-method-name: remove
+  /v1/agents/{agent_id}/memory/limit:
+    patch:
+      x-fern-sdk-group-name:
+        - agents
+        - memory
+      x-fern-sdk-method-name: updateLimit
+  /v1/agents/{agent_id}/memory/recall:
+    get:
+      x-fern-sdk-group-name:
+        - agents
+        - recall_memory
+      x-fern-sdk-method-name: getSummary
+  /v1/agents/{agent_id}/memory/archival:
+    get:
+      x-fern-sdk-group-name:
+        - agents
+        - archival_memory
+      x-fern-sdk-method-name: getSummary
+  /v1/agents/{agent_id}/archival:
+    get:
+      x-fern-sdk-group-name:
+        - agents
+        - archival_memory
+      x-fern-sdk-method-name: list
+    post:
+      x-fern-sdk-group-name:
+        - agents
+        - archival_memory
+      x-fern-sdk-method-name: create
+  /v1/agents/{agent_id}/archival/{memory_id}:
+    delete:
+      x-fern-sdk-group-name:
+        - agents
+        - archival_memory
+      x-fern-sdk-method-name: delete
+  /v1/agents/{agent_id}/messages:
+    get:
+      x-fern-sdk-group-name:
+        - agents
+        - messages
+      x-fern-sdk-method-name: list
+    post:
+      x-fern-sdk-group-name:
+        - agents
+        - messages
+      x-fern-sdk-method-name: create
+  /v1/agents/{agent_id}/messages/{message_id}:
+    patch:
+      x-fern-sdk-group-name:
+        - agents
+        - messages
+      x-fern-sdk-method-name: update
+  /v1/agents/{agent_id}/messages/stream:
+    post:
+      x-fern-streaming: 
+        format: sse
+      x-fern-sdk-group-name:
+        - agents
+        - messages
+      x-fern-sdk-method-name: stream
+      responses: 
+          "200":
+            "content":
+              "text/event-stream":
+                schema: 
+                  x-fern-type-name: LettaStreamingResponse
+                  oneOf: 
+                    - "$ref": "#/components/schemas/SystemMessage-Output"
+                    - "$ref": "#/components/schemas/UserMessage-Output"
+                    - "$ref": "#/components/schemas/InternalMonologue"
+                    - "$ref": "#/components/schemas/FunctionCallMessage"
+                    - "$ref": "#/components/schemas/FunctionReturn"
+                    - "$ref": "#/components/schemas/AssistantMessage-Output"
+                    - "$ref": "#/components/schemas/LettaUsageStatistics"
+  /v1/models/:
+    get:
+      x-fern-sdk-group-name:
+        - models
+      x-fern-sdk-method-name: list_llms
+  /v1/models/embedding:
+    get:
+      x-fern-sdk-group-name:
+        - models
+      x-fern-sdk-method-name: list_embedding_models
+  /v1/blocks/:
+    get:
+      x-fern-sdk-group-name:
+        - blocks
+      x-fern-sdk-method-name: list
+    post:
+      x-fern-sdk-group-name:
+        - blocks
+      x-fern-sdk-method-name: create
+  /v1/blocks/{block_id}:
+    get:
+      x-fern-sdk-group-name:
+        - blocks
+      x-fern-sdk-method-name: get
+    delete:
+      x-fern-sdk-group-name:
+        - blocks
+      x-fern-sdk-method-name: delete
+    patch:
+      x-fern-sdk-group-name:
+        - blocks
+      x-fern-sdk-method-name: update
+  /v1/jobs/:
+    get:
+      x-fern-sdk-group-name:
+        - jobs
+      x-fern-sdk-method-name: list
+  /v1/jobs/active:
+    get:
+      x-fern-sdk-group-name:
+        - jobs
+      x-fern-sdk-method-name: listActive
+  /v1/jobs/{job_id}:
+    get:
+      x-fern-sdk-group-name:
+        - jobs
+      x-fern-sdk-method-name: get
+    delete:
+      x-fern-sdk-group-name:
+        - jobs
+      x-fern-sdk-method-name: delete
+  /v1/health/:
+    get:
+      x-fern-sdk-group-name:
+        - health
+      x-fern-sdk-method-name: check
+  /v1/agents/{agent_id}/version-template:
+    post:
+      x-fern-sdk-group-name:
+        - agents
+      x-fern-sdk-method-name: create_version
+  /v1/agents/{agent_id}/migrate:
+    post:
+      x-fern-sdk-group-name:
+        - agents
+      x-fern-sdk-method-name: migrate

@@ -1,0 +1,64 @@
+---
+title: Groq
+slug: models/groq
+---
+
+
+<Tip>To use Letta with Groq, set the environment variable `GROQ_API_KEY=...`</Tip>
+
+You can use Letta with Groq if you have a Groq account and API key. Once you have set your `GROQ_API_KEY` in your environment variables, you can select what model and configure the context window size.
+
+## Enabling Groq as a provider 
+To enable the Groq provider, you must set the `GROQ_API_KEY` environment variable. When this is set, Letta will use available LLM models running on Groq. 
+
+<Accordion icon="square-terminal" title="CLI (pypi only)">
+
+### Using `letta run` and `letta server` with Groq 
+To chat with an agent, run:
+```bash
+export GROQ_API_KEY="gsk-..."
+letta run
+```
+This will prompt you to select a model:
+```bash
+? Select LLM model: (Use arrow keys)
+ » letta-free [type=openai] [ip=https://inference.memgpt.ai]
+   llama-3.2-11b-text-preview [type=openai] [ip=https://api.groq.com/openai/v1]
+   gemma-7b-it [type=openai] [ip=https://api.groq.com/openai/v1]
+   llama-3.1-8b-instant [type=openai] [ip=https://api.groq.com/openai/v1]
+   llama-guard-3-8b [type=openai] [ip=https://api.groq.com/openai/v1]
+   whisper-large-v3-turbo [type=openai] [ip=https://api.groq.com/openai/v1]
+   llama3-70b-8192 [type=openai] [ip=https://api.groq.com/openai/v1]
+   gemma2-9b-it [type=openai] [ip=https://api.groq.com/openai/v1]
+   llama3-groq-8b-8192-tool-use-preview [type=openai] [ip=https://api.groq.com/openai/v1]
+   llama3-8b-8192 [type=openai] [ip=https://api.groq.com/openai/v1]
+   llama-3.2-1b-preview [type=openai] [ip=https://api.groq.com/openai/v1]
+   mixtral-8x7b-32768 [type=openai] [ip=https://api.groq.com/openai/v1]
+   llava-v1.5-7b-4096-preview [type=openai] [ip=https://api.groq.com/openai/v1]
+   llama-3.2-3b-preview [type=openai] [ip=https://api.groq.com/openai/v1]
+   distil-whisper-large-v3-en [type=openai] [ip=https://api.groq.com/openai/v1]
+   llama-3.2-90b-text-preview [type=openai] [ip=https://api.groq.com/openai/v1]
+   llama3-groq-70b-8192-tool-use-preview [type=openai] [ip=https://api.groq.com/openai/v1]
+   llama-3.1-70b-versatile [type=openai] [ip=https://api.groq.com/openai/v1]
+   llama-3.2-11b-vision-preview [type=openai] [ip=https://api.groq.com/openai/v1]
+   whisper-large-v3 [type=openai] [ip=https://api.groq.com/openai/v1]
+```
+To run the Letta server, run:
+```bash
+export GROQ_API_KEY="gsk-..."
+letta server
+```
+To select the model used by the server, use the dropdown in the ADE or specify a `LLMConfig` object in the Python SDK.
+</Accordion>
+<Accordion icon="docker" title="Docker Compose">
+### Using the `docker compose` server with Groq
+The `compose.yaml` file will read your local environment variables and pass them to the Letta server running in the container. To use Groq with the Letta server, set the `GROQ_API_KEY` environment variable and run the server with `docker compose up`:
+```bash
+export GROQ_API_KEY="gsk-..."
+docker compose up 
+```
+</Accordion>
+
+
+
+

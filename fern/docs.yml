@@ -1,0 +1,195 @@
+instances:
+  - url: https://letta-1412240455.docs.buildwithfern.com
+title: Letta | Documentation
+
+tabs:
+  home:
+    display-name: Home
+    icon: regular home 
+    skip-slug: true
+  docs: 
+    display-name: Documentation
+    icon: regular book-open
+    slug: documentation
+  ref:
+    display-name: API Reference
+    icon: regular rectangle-terminal
+    slug: api-reference
+  python: 
+    display-name: Python SDK
+    icon: brands python
+    slug: python-reference
+
+navigation:
+  - tab: home
+    layout: 
+      - page: Home
+        path: template-pages/home.mdx
+  - tab: docs
+    layout:
+      - section: Get Started
+        contents:
+          - page: Overview
+            path: introduction.mdx
+          - page: Quickstart
+            path: quickstart.mdx
+          - section: Letta server
+            contents:
+              - page: Run with Docker
+                path: server/docker.mdx
+              - page: Run with pip
+                path: server/pip.mdx
+          - section: LLM configuration
+            contents:
+              - page: OpenAI
+                path: models/openai.mdx
+              - page: OpenAI proxy
+                path: models/openai_proxy.mdx
+              - page: Anthropic
+                path: models/anthropic.mdx
+              - page: Groq
+                path: models/groq.mdx
+              - page: Together
+                path: models/together.mdx
+              - page: Google AI (Gemini)
+                path: models/google.mdx
+              - page: Ollama
+                path: models/ollama.mdx
+              - page: vLLM
+                path: models/vllm.mdx
+              - page: Azure OpenAI
+                path: models/azure.mdx
+      - section: Key concepts
+        contents:
+          - page: Letta concepts
+            path: concepts.mdx
+          - page: MemGPT concepts
+            path: letta_memgpt.mdx
+      - section: Agent Development Environment
+        contents:
+          - page: ADE overview
+            path: agent-development-environment/ade.mdx
+          - page: Connecting to the ADE
+            path: agent-development-environment/connect.mdx
+          - page: Troubleshooting
+            path: agent-development-environment/troubleshooting.mdx
+      - section: Deploying Letta server
+        contents:
+          - page: Deploy with Railway
+            path: deployment/railway.mdx
+      - section: Agents
+        contents:
+          - page: Agents overview
+            path: agents/overview.mdx
+          - page: Tools
+            path: agents/tools.mdx
+          - page: Memory
+            path: agents/memory.mdx
+          - page: Messaging agents
+            path: agents/messages.mdx
+          - page: Message streaming
+            path: agents/streaming.mdx
+      - section: Advanced
+        contents:
+          - page: Memory management
+            path: advanced/memory_management.mdx
+          - page: Custom memory
+            path: advanced/custom_memory.mdx
+  - tab: ref
+    layout: 
+      - api: API Reference
+        display-errors: true
+        paginated: true
+        flattened: true
+        snippets: 
+          typescript: letta
+          python: letta
+        layout: 
+          - agents
+  - tab: python
+    layout:
+      - section: Client
+        contents:
+          - page: LocalClient
+            path: python-reference/LocalClient.mdx
+          - page: RESTClient
+            path: python-reference/RESTClient.mdx
+      - section: Data Models
+        contents:
+          - page: AgentState
+            path: python-reference/AgentState.mdx
+          - page: Block
+            path: python-reference/Block.mdx
+          - page: Tool
+            path: python-reference/Tool.mdx
+          - page: Memory
+            path: python-reference/Memory.mdx
+          - page: Job
+            path: python-reference/Job.mdx
+          - page: Passage
+            path: python-reference/Passage.mdx
+          - page: Document
+            path: python-reference/Document.mdx
+          - page: LLMConfig
+            path: python-reference/LLMConfig.mdx
+          - page: EmbeddingConfig
+            path: python-reference/EmbeddingConfig.mdx
+          - page: User
+            path: python-reference/User.mdx
+      - section: Response Models
+        contents:
+          - page: Letta Response
+            path: python-reference/LettaResponse.mdx
+          - section: Message Types
+            contents:
+              - page: Message
+                path: python-reference/Message.mdx
+              - page: LettaMessage
+                path: python-reference/LettaMessage.mdx
+          - page: LettaUsageStatistics
+            path: python-reference/LettaUsageStatistics.mdx
+      - section: Connectors
+        contents:
+          - page: DataConnector
+            path: python-reference/DataConnector.mdx
+          - page: DirectoryConnector
+            path: python-reference/DirectoryConnector.mdx
+  
+colors:
+  accentPrimary: 
+    light: '#0707ac'
+    dark: '#FF5533'
+  background: 
+    light: '#c9cdd1'
+    dark: '#202020'
+  card-background:
+    light: '#c9cdd1'
+    dark: '#202020'
+  border: 
+    light: '#8e8e8e'
+    dark: '#8e8e8e'
+
+css: assets/styles.css
+
+favicon: assets/favicon.png
+
+logo: 
+  light: assets/logo-light.svg
+  dark: assets/logo-dark.svg
+  
+navbar-links: 
+  - type: github
+    value: https://github.com/letta-ai/letta
+  
+layout: 
+  page-width: full
+  tabs-placement: header
+  searchbar-placement: header
+
+typography: 
+  bodyFont: 
+    name: Roobert
+    path: assets/Roobert.woff2
+  headingsFont: 
+    name: RoobertMedium
+    path: assets/RoobertMedium.woff2
