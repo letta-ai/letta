@@ -72,6 +72,7 @@
     "@ts-rest/serverless": "^3.51.0",
     "@types/k6": "^0.54.2",
     "@types/libsodium-wrappers": "^0.7.14",
+    "array.prototype.tosorted": "^1.1.4",
     "axios": "^1.7.5",
     "bcrypt": "^5.1.1",
     "class-variance-authority": "^0.7.0",

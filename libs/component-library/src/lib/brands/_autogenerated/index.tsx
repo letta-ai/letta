@@ -2,6 +2,7 @@ export * from './anthropic';
 export * from './claude';
 export * from './composio';
 export * from './discord';
+export * from './github';
 export * from './google';
 export * from './letta';
 export * from './llama';

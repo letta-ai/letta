@@ -450,7 +450,20 @@ async function findOrCreateUserAndOrganizationFromProviderLogin(
   userData: ProviderUserPayload
 ): Promise<FindOrCreateUserAndOrganizationFromProviderLoginResponse> {
   let newUserDetails: NewUserDetails | undefined;
-  let user = await findExistingUser(userData);
+  const res = await Promise.all([
+    findExistingUser(userData),
+    db.query.users.findFirst({
+      where: eq(users.email, userData.email),
+    }),
+  ]);
+
+  let user = res[0];
+  const userWithSameEmail = res[1];
+
+  if (userWithSameEmail && userWithSameEmail.providerId !== userData.uniqueId) {
+    throw new Error(LoginErrorsEnum.EMAIL_ALREADY_EXISTS);
+  }
+
   let isNewUser = false;
 
   if (!user) {
@@ -843,5 +856,6 @@ export async function generateRedirectSignatureForLoggedInUser(
 }
 
 import { deleteUser } from './lib/deleteUser/deleteUser';
+import { getGithubUserDetails } from './lib/getGithubUserDetails/getGithubUserDetails';
 
-export { deleteUser };
+export { deleteUser, getGithubUserDetails };
