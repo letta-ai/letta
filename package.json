@@ -94,6 +94,7 @@
     "nextjs-toploader": "^3.6.15",
     "postgres": "^3.4.4",
     "prismjs": "^1.29.0",
+    "promise-worker": "^2.0.1",
     "pyodide": "^0.26.2",
     "react": "18.3.1",
     "react-dom": "18.3.1",
