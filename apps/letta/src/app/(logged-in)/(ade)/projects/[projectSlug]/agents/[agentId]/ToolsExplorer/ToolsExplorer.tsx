@@ -121,7 +121,15 @@ function ToolCategoryButton(props: ToolCategoryButtonProps) {
   return (
     <Button
       label={label}
-      preIcon={image ? <img src={image} alt="" /> : label.includes(t('AllToolsView.titles.customTools')) ? <CodeBlocksIcon /> : <ToolsIcon />}
+      preIcon={
+        image ? (
+          <img src={image} alt="" />
+        ) : label.includes(t('AllToolsView.titles.customTools')) ? (
+          <CodeBlocksIcon />
+        ) : (
+          <ToolsIcon />
+        )
+      }
       color="tertiary-transparent"
       active={selectedCategory === category}
       onClick={() => {
@@ -326,7 +334,7 @@ function AddToolToAgentButton(props: AddToolToAgentButtonProps) {
         toolIdToAdd = tool.id;
       }
 
-      await attachToolToAgent({
+      const response = await attachToolToAgent({
         agentId,
         toolId: toolIdToAdd,
       });
@@ -344,15 +352,7 @@ function AddToolToAgentButton(props: AddToolToAgentButtonProps) {
 
           return {
             ...oldData,
-            tools: [
-              {
-                id: toolIdToAdd,
-                name: tool.name,
-                description: tool.description,
-                source_code: '',
-              },
-              ...oldData.tools,
-            ],
+            tools: response.tools,
           };
         }
       );
@@ -362,8 +362,6 @@ function AddToolToAgentButton(props: AddToolToAgentButtonProps) {
       setIsPending(false);
     }
   }, [
-    tool.description,
-    tool.name,
     addComposioTool,
     agentId,
     attachToolToAgent,
