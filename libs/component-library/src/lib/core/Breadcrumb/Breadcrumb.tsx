@@ -2,10 +2,8 @@ import * as React from 'react';
 import { Slot } from '@radix-ui/react-slot';
 import { DotsHorizontalIcon } from '../../icons';
 import { cn } from '@letta-web/core-style-config';
-import { Typography } from '../Typography/Typography';
-import Link from 'next/link';
-import { useMemo } from 'react';
-import { HStack } from '../../framing/HStack/HStack';
+import { Button } from '../Button/Button';
+import { Fragment } from 'react';
 
 const BreadcrumbPrimitive = React.forwardRef<
   HTMLElement,
@@ -22,7 +20,7 @@ const BreadcrumbList = React.forwardRef<
   <ol
     ref={ref}
     className={cn(
-      'flex flex-wrap items-center gap-1.5 break-words text-sm text-muted-foreground sm:gap-2.5',
+      'flex flex-wrap items-center gap-0.5 break-words text-sm text-muted-foreground',
       className
     )}
     {...props}
@@ -128,44 +126,28 @@ interface BreadcrumbItemWrapperProps {
 }
 
 function BreadcrumbItemWrapper(props: BreadcrumbItemWrapperProps) {
-  const { item, variant, isLast } = props;
+  const { item, isLast } = props;
 
   const { href, preIcon, contentOverride, label, onClick } = item;
-
-  const content = useMemo(() => {
-    return (
-      <HStack gap="small">
-        {preIcon && <Slot className="w-4 h-4">{preIcon}</Slot>}
-        <Typography
-          color={isLast ? 'default' : 'lighter'}
-          className={cn(
-            onClick || href
-              ? 'cursor-pointer hover:underline'
-              : 'cursor-default'
-          )}
-          variant={variant === 'default' ? 'body' : 'body2'}
-        >
-          {label}
-        </Typography>
-      </HStack>
-    );
-  }, [href, isLast, label, onClick, preIcon, variant]);
 
   if (contentOverride) {
     return contentOverride;
   }
 
-  if (href) {
-    return (
-      <BreadcrumbItem>
-        <Link href={href}>{content}</Link>
-      </BreadcrumbItem>
-    );
-  }
-
   return (
     <BreadcrumbItem>
-      <button onClick={onClick}>{content}</button>
+      <Button
+        onClick={onClick}
+        {...(href ? { href } : {})}
+        color="tertiary-transparent"
+        preIcon={preIcon}
+        label={label}
+        size="small"
+        _use_rarely_className={cn(
+          !isLast ? 'text-text-lighter' : '',
+          !onClick && !href ? 'cursor-default hover:bg-transparent' : ''
+        )}
+      />
     </BreadcrumbItem>
   );
 }
@@ -180,15 +162,14 @@ export function Breadcrumb({ items, variant }: BreadcrumbProps) {
     <BreadcrumbPrimitive>
       <BreadcrumbList>
         {items.map((item, index) => (
-          <>
+          <Fragment key={index}>
             <BreadcrumbItemWrapper
               isLast={index === items.length - 1}
               variant={variant}
-              key={index}
               item={item}
             />
             {index !== items.length - 1 && <BreadcrumbSeparator />}
-          </>
+          </Fragment>
         ))}
       </BreadcrumbList>
     </BreadcrumbPrimitive>

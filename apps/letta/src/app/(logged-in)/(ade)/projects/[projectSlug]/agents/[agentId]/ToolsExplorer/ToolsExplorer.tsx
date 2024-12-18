@@ -31,6 +31,7 @@ import {
   Breadcrumb,
   Button,
   ChevronLeftIcon,
+  CodeBlocksIcon,
   CloseIcon,
   CloseMiniApp,
   Code,
@@ -113,13 +114,22 @@ interface ToolCategoryButtonProps {
 }
 
 function ToolCategoryButton(props: ToolCategoryButtonProps) {
+  const t = useTranslations('ADE/Tools');
   const { category, image, label, selectedCategory, setSelectedCategory } =
     props;
 
   return (
     <Button
       label={label}
-      preIcon={image ? <img src={image} alt="" /> : <ToolsIcon />}
+      preIcon={
+        image ? (
+          <img src={image} alt="" />
+        ) : label.includes(t('AllToolsView.titles.customTools')) ? (
+          <CodeBlocksIcon />
+        ) : (
+          <ToolsIcon />
+        )
+      }
       color="tertiary-transparent"
       active={selectedCategory === category}
       onClick={() => {
@@ -324,7 +334,7 @@ function AddToolToAgentButton(props: AddToolToAgentButtonProps) {
         toolIdToAdd = tool.id;
       }
 
-      await attachToolToAgent({
+      const response = await attachToolToAgent({
         agentId,
         toolId: toolIdToAdd,
       });
@@ -342,15 +352,7 @@ function AddToolToAgentButton(props: AddToolToAgentButtonProps) {
 
           return {
             ...oldData,
-            tools: [
-              {
-                id: toolIdToAdd,
-                name: tool.name,
-                description: tool.description,
-                source_code: '',
-              },
-              ...oldData.tools,
-            ],
+            tools: response.tools,
           };
         }
       );
@@ -360,8 +362,6 @@ function AddToolToAgentButton(props: AddToolToAgentButtonProps) {
       setIsPending(false);
     }
   }, [
-    tool.description,
-    tool.name,
     addComposioTool,
     agentId,
     attachToolToAgent,

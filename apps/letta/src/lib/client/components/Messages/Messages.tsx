@@ -17,12 +17,14 @@ import {
   SystemIcon,
   Markdown,
   PersonIcon,
-  LettaInvaderOutlineIcon,
+  LettaInvaderIcon,
   ThoughtsIcon,
   Typography,
   VStack,
   MessageWrapper,
   LoadingEmptyStatusComponent,
+  BlockQuote,
+  InnerMonologueIcon,
 } from '@letta-web/component-library';
 import type { AgentMessage } from '@letta-web/letta-agents-api';
 import { SystemAlertSchema } from '@letta-web/letta-agents-api';
@@ -43,6 +45,8 @@ import type { InfiniteData } from '@tanstack/query-core';
 import { jsonrepair } from 'jsonrepair';
 import { useTranslations } from 'next-intl';
 import { get } from 'lodash-es';
+import { useAtom } from 'jotai';
+import { firstPageMessagesCache } from '$letta/client/components/Messages/firstPageMessagesCache';
 
 // tryFallbackParseJson will attempt to parse a string as JSON, if it fails, it will trim the last character and try again
 // until it succeeds or the string is empty
@@ -105,7 +109,7 @@ function MessageGroup({ group }: MessageGroupType) {
 
   const icon = useMemo(() => {
     if (name === 'Agent') {
-      return <LettaInvaderOutlineIcon />;
+      return <LettaInvaderIcon />;
     }
 
     if (name === 'User') {
@@ -125,9 +129,12 @@ function MessageGroup({ group }: MessageGroupType) {
         textColor={textColor}
         backgroundColor={backgroundColor}
         icon={icon}
+        size={'xsmall'}
       />
       <VStack collapseWidth flex gap="small">
-        <Typography bold>{name}</Typography>
+        <Typography variant="body2" color="lighter" uppercase={true}>
+          {name}
+        </Typography>
         <VStack gap="large">
           {sortedMessages.map((message, index) => (
             <Message key={`${message.id}_${index}`} message={message} />
@@ -162,7 +169,7 @@ export function Messages(props: MessagesProps) {
   const [lastMessageReceived, setLastMessageReceived] =
     useState<LastMessageReceived | null>(null);
 
-  const messageCache = useRef<AgentMessage[]>([]);
+  const [messageCache, setMessageCache] = useAtom(firstPageMessagesCache);
   const isMessageUpdateLock = useMemo(() => {
     return isSendingMessage;
   }, [isSendingMessage]);
@@ -195,15 +202,15 @@ export function Messages(props: MessagesProps) {
         agentId,
         limit: MESSAGE_LIMIT,
         ...(query.pageParam.before ? { before: query.pageParam.before } : {}),
-      });
+      }) as unknown as AgentMessage[];
 
       if (isMessageUpdateLock) {
-        return messageCache.current;
+        return messageCache;
       }
 
-      messageCache.current = res as unknown as AgentMessage[];
+      setMessageCache(res);
 
-      return res as unknown as AgentMessage[];
+      return res;
     },
     getNextPageParam: (lastPage) => {
       if (lastPage.length < MESSAGE_LIMIT) {
@@ -216,7 +223,7 @@ export function Messages(props: MessagesProps) {
         )[0].id,
       };
     },
-    enabled: !isSendingMessage,
+    enabled: !isSendingMessage && !!agentId,
     initialPageParam: { before: '' },
   });
 
@@ -411,9 +418,17 @@ export function Messages(props: MessagesProps) {
             return {
               id: `${agentMessage.id}-${agentMessage.message_type}`,
               content: (
-                <Typography italic>
-                  {agentMessage.internal_monologue}
-                </Typography>
+                <BlockQuote>
+                  <VStack gap="small">
+                    <HStack align="center" gap="small">
+                      <InnerMonologueIcon color="violet" size="small" />
+                      <Typography bold color="violet" variant="body2">
+                        {t('thoughts')}
+                      </Typography>
+                    </HStack>
+                    <Typography>{agentMessage.internal_monologue}</Typography>
+                  </VStack>
+                </BlockQuote>
               ),
               timestamp: new Date(agentMessage.date).toISOString(),
               name: 'Agent',

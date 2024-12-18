@@ -151,3 +151,4 @@ export * from './lib/core/TabGroup/TabGroup';
 export * from './lib/reusable/MessageWrapper/MessageWrapper';
 
 export * from './lib/core/Link/Link';
+export * from './lib/core/BlockQuote/BlockQuote';

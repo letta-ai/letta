@@ -256,9 +256,7 @@ function AdvancedEditMemory(props: AdvancedEditMemoryProps) {
   const agent = useCurrentAgent();
   const t = useTranslations('ADE/EditCoreMemoriesPanel');
 
-  const memories = useMemo(() => {
-    return agent.memory?.blocks || [];
-  }, [agent.memory?.blocks]);
+  const memories = useSortedMemories(agent);
 
   return (
     <Dialog
@@ -385,12 +383,18 @@ function EditMemoryForm(props: EditMemoryFormProps) {
   );
 }
 
+function useSortedMemories(agentState?: Partial<AgentState>): Block[] {
+  return useMemo(() => {
+    return (agentState?.memory?.blocks || []).toSorted((a, b) => {
+      return a.label?.localeCompare(b.label || '') || 0;
+    });
+  }, [agentState?.memory?.blocks]);
+}
+
 function DefaultMemory() {
   const agent = useCurrentAgent();
 
-  const memories = useMemo(() => {
-    return agent.memory?.blocks || [];
-  }, [agent.memory?.blocks]);
+  const memories = useSortedMemories(agent);
 
   return memories.map((block, index) => (
     <VStack
@@ -411,13 +415,7 @@ function SimulatedMemory() {
     return agentSession?.body.agent;
   }, [agentSession]);
 
-  const memories = useMemo(() => {
-    if (!agent) {
-      return [];
-    }
-
-    return agent.memory?.blocks || [];
-  }, [agent]);
+  const memories = useSortedMemories(agent);
 
   if (!agent) {
     return <LettaLoaderPanel />;

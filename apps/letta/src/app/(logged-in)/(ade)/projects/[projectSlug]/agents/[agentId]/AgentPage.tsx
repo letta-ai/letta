@@ -121,31 +121,28 @@ function ADEHeader(props: ADEHeaderProps) {
     >
       <HiddenOnMobile>
         <HStack overflowX="hidden" align="center" fullHeight gap="small">
-          <Breadcrumb
-            variant="small"
-            items={[
-              {
-                label: 'root',
-                contentOverride: (
-                  <ProjectSelector
-                    trigger={
-                      <button className="h-full flex items-center justify-center">
-                        <LogoContainer />
-                      </button>
-                    }
-                  />
-                ),
-              },
-              {
-                label: projectName,
-                href: `/projects/${projectSlug}`,
-              },
-              {
-                label: agentName,
-              },
-            ]}
+          <ProjectSelector
+            trigger={
+              <button className="h-full flex items-center justify-center">
+                <LogoContainer />
+              </button>
+            }
           />
-          <AgentSettingsDropdown />
+          <HStack gap={false}>
+            <Breadcrumb
+              variant="small"
+              items={[
+                {
+                  label: projectName,
+                  href: `/projects/${projectSlug}`,
+                },
+                {
+                  label: agentName,
+                },
+              ]}
+            />
+            <AgentSettingsDropdown />
+          </HStack>
         </HStack>
         {props.children}
       </HiddenOnMobile>
