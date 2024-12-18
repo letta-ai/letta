@@ -7,11 +7,13 @@ import {
 import { PanelManagerProvider, PanelRenderer } from './panelRegistry';
 import {
   ChevronDownIcon,
-  EditIcon,
   HiddenOnMobile,
   MobileFooterNavigation,
   MobileFooterNavigationButton,
   LoadingEmptyStatusComponent,
+  Tooltip,
+  Logo,
+  Breadcrumb,
 } from '@letta-web/component-library';
 import { Card, Checkbox, ExternalLink } from '@letta-web/component-library';
 import { TrashIcon } from '@letta-web/component-library';
@@ -30,7 +32,6 @@ import {
 import { toast } from '@letta-web/component-library';
 import { LayoutIcon } from '@letta-web/component-library';
 import {
-  ADEPage,
   Alert,
   Button,
   Dialog,
@@ -50,7 +51,7 @@ import { useCurrentProject } from '../../../../../(dashboard-like)/projects/[pro
 import { webApi, webApiQueryKeys, webOriginSDKApi } from '$letta/client';
 import { useRouter } from 'next/navigation';
 import { useCurrentUser } from '$letta/client/hooks';
-import { ADEHeader } from '$letta/client/components';
+import { ProjectSelector } from '$letta/client/components';
 import './AgentPage.scss';
 import { useCurrentAgentMetaData } from './hooks/useCurrentAgentMetaData/useCurrentAgentMetaData';
 import { useCurrentAgent } from './hooks';
@@ -68,7 +69,6 @@ import { useQueryClient } from '@tanstack/react-query';
 import type { InfiniteGetProjectDeployedAgentTemplates200Response } from '$letta/web-api/projects/projectContracts';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { UpdateNameDialog } from './shared/UpdateAgentNameDialog/UpdateAgentNameDialog';
 import { useAgentBaseTypeName } from './hooks/useAgentBaseNameType/useAgentBaseNameType';
 import { useLocalStorage } from '@mantine/hooks';
 import { ErrorBoundary } from 'react-error-boundary';
@@ -79,6 +79,98 @@ import {
 import { CLOUD_UPSELL_URL } from '$letta/constants';
 import { trackClientSideEvent } from '@letta-web/analytics/client';
 import { AnalyticsEvent } from '@letta-web/analytics';
+import Link from 'next/link';
+
+interface ADEHeaderProps {
+  children?: React.ReactNode;
+  agent: {
+    name: string;
+  };
+}
+
+function LogoContainer() {
+  return (
+    <HStack
+      align="center"
+      justify="center"
+      color="primary"
+      /* eslint-disable-next-line react/forbid-component-props */
+      className="h-[38px] min-w-[40px]"
+      fullHeight
+    >
+      <Logo size="small" />
+    </HStack>
+  );
+}
+
+function ADEHeader(props: ADEHeaderProps) {
+  const { agent } = props;
+  const { name: agentName } = agent;
+  const { name: projectName, slug: projectSlug } = useCurrentProject();
+  const t = useTranslations('ADE/ADEHeader');
+
+  return (
+    <HStack
+      justify="spaceBetween"
+      align="center"
+      border
+      /* eslint-disable-next-line react/forbid-component-props */
+      className="h-[40px] min-h-[40px] largerThanMobile:pr-0 pr-3 relative"
+      fullWidth
+      color="background"
+    >
+      <HiddenOnMobile>
+        <HStack overflowX="hidden" align="center" fullHeight gap="small">
+          <Breadcrumb
+            variant="small"
+            items={[
+              {
+                label: 'root',
+                contentOverride: (
+                  <ProjectSelector
+                    trigger={
+                      <button className="h-full flex items-center justify-center">
+                        <LogoContainer />
+                      </button>
+                    }
+                  />
+                ),
+              },
+              {
+                label: projectName,
+                href: `/projects/${projectSlug}`,
+              },
+              {
+                label: agentName,
+              },
+            ]}
+          />
+          <AgentSettingsDropdown />
+        </HStack>
+        {props.children}
+      </HiddenOnMobile>
+      <VisibleOnMobile>
+        <HStack
+          position="relative"
+          align="center"
+          fullWidth
+          fullHeight
+          gap={false}
+        >
+          <Tooltip content={t('returnToHome')}>
+            <Link href="/">
+              <LogoContainer />
+            </Link>
+          </Tooltip>
+          <HStack justify="center" fullWidth align="center">
+            <Typography variant="body">{agentName}</Typography>
+          </HStack>
+        </HStack>
+        {props.children}
+      </VisibleOnMobile>
+    </HStack>
+  );
+}
 
 function RestoreLayoutButton() {
   const t = useTranslations(
@@ -741,7 +833,7 @@ function AgentSettingsDropdown() {
       )}
 
       <DropdownMenu
-        align="end"
+        align="center"
         triggerAsChild
         trigger={
           <Button
@@ -766,18 +858,6 @@ function AgentSettingsDropdown() {
             })}
           />
         )}
-        <UpdateNameDialog
-          trigger={
-            <DropdownMenuItem
-              doNotCloseOnSelect
-              preIcon={<EditIcon />}
-              label={t('UpdateNameDialog.trigger', {
-                agentBaseType: agentBaseType.capitalized,
-              })}
-            />
-          }
-        />
-
         <RestoreLayoutButton />
         <DropdownMenuItem
           onClick={() => {
@@ -794,23 +874,7 @@ function AgentSettingsDropdown() {
 }
 
 function Navigation() {
-  const { isLocal } = useCurrentAgentMetaData();
-  const t = useTranslations(
-    'projects/(projectSlug)/agents/(agentId)/AgentPage'
-  );
-
-  return (
-    <DashboardHeaderNavigation
-      preItems={
-        <Button
-          size="small"
-          color="tertiary-transparent"
-          label={t('Navigation.dashboard')}
-          href={isLocal ? '/development-servers/local/dashboard' : '/projects'}
-        />
-      }
-    />
-  );
+  return <DashboardHeaderNavigation />;
 }
 
 function RenderDeployButton() {
@@ -984,6 +1048,37 @@ function AgentMobileContent() {
   );
 }
 
+interface ADEPageProps {
+  children: React.ReactNode;
+  header: React.ReactNode;
+}
+
+function ADEPage(props: ADEPageProps) {
+  return (
+    <VStack
+      overflow="hidden"
+      color="background"
+      /* eslint-disable-next-line react/forbid-component-props */
+      className="w-[100vw] p-[8px] h-[100dvh]"
+      fullHeight
+      fullWidth
+      gap
+    >
+      {props.header}
+      <HStack
+        collapseHeight
+        overflowY="auto"
+        fullWidth
+        gap={false}
+        /* eslint-disable-next-line react/forbid-component-props */
+        className="flex-row-reverse"
+      >
+        {props.children}
+      </HStack>
+    </VStack>
+  );
+}
+
 function AgentPageError() {
   const t = useTranslations(
     'projects/(projectSlug)/agents/(agentId)/AgentPage'
@@ -1053,7 +1148,6 @@ export function AgentPage() {
               <HStack gap={false} align="center">
                 <Navigation />
                 <HStack paddingRight="small" align="center" gap="small">
-                  <AgentSettingsDropdown />
                   <RenderDeployButton />
                   <ProfilePopover size="small" />
                 </HStack>
