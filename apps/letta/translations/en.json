@@ -752,7 +752,9 @@
     "updateVariables": "Update variables",
     "hasFailedToSendMessageText": {
       "local": "Failed to send message, please try again or check your server logs",
-      "cloud": "Failed to send message, please try again or contact support"
+      "cloud": "Failed to send message, please try again or contact support",
+      "contextWindowExceeded": "Input exceeded context window limit and is at max compression, please increase limit and try again.",
+      "rateLimitExceeded": "Rate limit reached, please wait a few moments before trying again."
     }
   },
   "ADE/ADESidebar": {
