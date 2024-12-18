@@ -123,6 +123,8 @@ export * from './lib/core/Slider/Slider';
 
 export * from './lib/reusable/ExternalLink/ExternalLink';
 
+export * from './lib/core/QueryBuilder/QueryBuilder';
+
 export * from './lib/framing/VisibleOnMobile/VisibleOnMobile';
 
 export * from './lib/core/MobileFooterNavigation/MobileFooterNavigation';

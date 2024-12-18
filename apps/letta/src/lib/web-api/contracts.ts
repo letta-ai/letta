@@ -50,7 +50,10 @@ import {
   usageQueryKeys,
 } from '$letta/web-api/usage/usageContract';
 import { adminToolMetadataContracts } from '$letta/web-api/admin/tool-metadata/adminToolMetadataContracts';
-import { toolMetadataContracts, toolMetadataQueryClientKeys } from '$letta/web-api/tool-metadata/toolMetadataContract';
+import {
+  toolMetadataContracts,
+  toolMetadataQueryClientKeys,
+} from '$letta/web-api/tool-metadata/toolMetadataContract';
 
 export const contracts = {
   user: userContract,

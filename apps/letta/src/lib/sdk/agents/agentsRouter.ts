@@ -23,8 +23,10 @@ import {
   organizationPreferences,
 } from '@letta-web/database';
 import { createProject } from '$letta/web-api/router';
-import { and, desc, eq, isNull, like } from 'drizzle-orm';
+import { and, asc, desc, eq, isNull, like, ne } from 'drizzle-orm';
 import { findUniqueAgentTemplateName } from '$letta/server';
+
+import type { OrderByValuesEnumType } from '$letta/sdk/agents/agentsContract';
 import { isTemplateNameAStarterKitId, STARTER_KITS } from '$letta/client';
 
 export function attachVariablesToTemplates(
@@ -734,6 +736,14 @@ export async function versionAgentTemplate(
           lettaAgentsUserId: context.request.lettaAgentsUserId,
           preserveCoreMemories: false,
         });
+
+        // update deployedAgentTemplateId
+        await db
+          .update(deployedAgents)
+          .set({
+            deployedAgentTemplateId,
+          })
+          .where(eq(deployedAgents.id, deployedAgent.id));
       })
     );
   }
@@ -994,6 +1004,14 @@ export async function migrateAgent(
     lettaAgentsUserId,
     preserveCoreMemories: preserve_core_memories,
   });
+
+  // update deployedAgentTemplateId
+  await db
+    .update(deployedAgents)
+    .set({
+      deployedAgentTemplateId: agentTemplate.id,
+    })
+    .where(eq(deployedAgents.id, agentIdToMigrate));
 
   return {
     status: 200,
@@ -1448,6 +1466,142 @@ export async function updateAgent(
   };
 }
 
+type SearchDeployedAgentsRequest = ServerInferRequest<
+  typeof sdkContracts.agents.searchDeployedAgents
+>;
+
+type SearchDeployedAgentsResponse = ServerInferResponses<
+  typeof sdkContracts.agents.searchDeployedAgents
+>;
+
+async function searchDeployedAgents(
+  req: SearchDeployedAgentsRequest,
+  context: SDKContext
+): Promise<SearchDeployedAgentsResponse> {
+  const { search, limit = 5, offset } = req.body;
+
+  const where = [
+    eq(deployedAgents.organizationId, context.request.organizationId),
+  ];
+
+  let isDefaultOrderBy = true;
+  let orderBy = [desc(deployedAgents.createdAt)];
+
+  await Promise.all(
+    search.map(async (searchTerm) => {
+      if (searchTerm.field === 'order_by') {
+        if (isDefaultOrderBy) {
+          isDefaultOrderBy = false;
+          orderBy = [];
+        }
+
+        const order = searchTerm.direction === 'asc' ? asc : desc;
+
+        const orderByMap: Record<
+          OrderByValuesEnumType,
+          ReturnType<typeof desc>
+        > = {
+          created_at: order(deployedAgents.createdAt),
+          updated_at: order(deployedAgents.updatedAt),
+        };
+
+        if (orderByMap[searchTerm.value]) {
+          orderBy.push(orderByMap[searchTerm.value]);
+        }
+
+        return;
+      }
+
+      if (searchTerm.field === 'project_id') {
+        const operator = searchTerm.operator === 'eq' ? eq : ne;
+
+        where.push(operator(deployedAgents.projectId, searchTerm.value));
+      }
+
+      if (searchTerm.field === 'version') {
+        const [name, versionNumber] = searchTerm.value.split(':');
+
+        const agentTemplate = await db.query.agentTemplates.findFirst({
+          where: and(
+            eq(agentTemplates.organizationId, context.request.organizationId),
+            eq(agentTemplates.name, name),
+            isNull(agentTemplates.deletedAt)
+          ),
+        });
+
+        if (!agentTemplate) {
+          return;
+        }
+
+        const deployedAgentTemplate =
+          await db.query.deployedAgentTemplates.findFirst({
+            where: and(
+              eq(
+                deployedAgentTemplates.organizationId,
+                context.request.organizationId
+              ),
+              eq(deployedAgentTemplates.version, versionNumber),
+              eq(deployedAgentTemplates.agentTemplateId, agentTemplate.id),
+              isNull(deployedAgentTemplates.deletedAt)
+            ),
+          });
+
+        if (!deployedAgentTemplate) {
+          return;
+        }
+
+        where.push(
+          eq(
+            deployedAgents.deployedAgentTemplateId,
+            deployedAgentTemplate.version
+          )
+        );
+
+        return;
+      }
+    })
+  );
+
+  const query = await db.query.deployedAgents.findMany({
+    where: and(...where),
+    limit,
+    offset,
+    orderBy,
+    with: {
+      deployedAgentTemplate: {
+        columns: {
+          version: true,
+        },
+      },
+    },
+  });
+
+  const allAgentsDetails = await Promise.all(
+    query.map(async (agent) => {
+      return AgentsService.getAgent(
+        {
+          agentId: agent.id,
+        },
+        {
+          user_id: context.request.lettaAgentsUserId,
+        }
+      ).then((response) => {
+        return prepareAgentForUser(response, {
+          agentName: agent.key,
+          version: agent.deployedAgentTemplate?.version,
+        });
+      });
+    })
+  );
+
+  return {
+    status: 200,
+    body: {
+      agents: allAgentsDetails,
+    },
+  };
+}
+
 export const agentsRouter = {
   createAgent,
   versionAgentTemplate,
@@ -1456,4 +1610,5 @@ export const agentsRouter = {
   getAgentById,
   deleteAgent,
   updateAgent,
+  searchDeployedAgents,
 };
