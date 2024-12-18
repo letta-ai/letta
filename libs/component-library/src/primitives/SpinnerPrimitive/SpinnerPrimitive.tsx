@@ -16,23 +16,24 @@ export function SpinnerPrimitive(props: SpinnerPrimitiveProps) {
         fy=".3125"
         gradientTransform="scale(1.5)"
       >
-        <stop offset="0" stop-color="currentColor"></stop>
-        <stop offset=".3" stop-color="currentColor"></stop>
-        <stop offset=".6" stop-color="currentColor"></stop>
-        <stop offset=".8" stop-color="currentColor"></stop>
-        <stop offset="1" stop-color="currentColor"></stop>
+        <stop offset="0" stopColor="currentColor"></stop>
+        <stop offset=".3" stopColor="currentColor"></stop>
+        <stop offset=".6" stopColor="currentColor"></stop>
+        <stop offset=".8" stopColor="currentColor"></stop>
+        <stop offset="1" stopColor="currentColor"></stop>
       </radialGradient>
       <circle
-        transform-origin="center"
         fill="none"
         stroke="url(#a12)"
-        stroke-width="15"
-        stroke-linecap="round"
-        stroke-dasharray="200 1000"
-        stroke-dashoffset="0"
+        strokeWidth="15"
+        strokeLinecap="round"
+        strokeDasharray="200 1000"
+        strokeDashoffset="0"
         cx="100"
         cy="100"
         r="70"
+        // @ts-expect-error - this is a valid attribute
+        transformOrigin="center"
       >
         <animateTransform
           type="rotate"

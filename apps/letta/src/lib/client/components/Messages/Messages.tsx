@@ -30,7 +30,6 @@ import type { AgentMessage } from '@letta-web/letta-agents-api';
 import { SystemAlertSchema } from '@letta-web/letta-agents-api';
 import { SendMessageFunctionCallSchema } from '@letta-web/letta-agents-api';
 import {
-  AgentsService,
   type ListAgentMessagesResponse,
   UseAgentsServiceListAgentMessagesKeyFn,
   UserMessageMessageSchema,
@@ -40,13 +39,12 @@ import type {
   AgentSimulatorMessageType,
 } from '../../../../app/(logged-in)/(ade)/projects/[projectSlug]/agents/[agentId]/AgentSimulator/types';
 import { FunctionIcon } from '@letta-web/component-library';
-import { useInfiniteQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import type { InfiniteData } from '@tanstack/query-core';
 import { jsonrepair } from 'jsonrepair';
 import { useTranslations } from 'next-intl';
 import { get } from 'lodash-es';
-import { useAtom } from 'jotai';
-import { firstPageMessagesCache } from '$letta/client/components/Messages/firstPageMessagesCache';
+import { useGetMessagesWorker } from '$letta/client/components/Messages/useGetMessagesWorker/useGetMessagesWorker';
 
 // tryFallbackParseJson will attempt to parse a string as JSON, if it fails, it will trim the last character and try again
 // until it succeeds or the string is empty
@@ -129,7 +127,7 @@ function MessageGroup({ group }: MessageGroupType) {
         textColor={textColor}
         backgroundColor={backgroundColor}
         icon={icon}
-        size={"xsmall"}
+        size={'xsmall'}
       />
       <VStack collapseWidth flex gap="small">
         <Typography variant="body2" color="lighter" uppercase={true}>
@@ -169,7 +167,10 @@ export function Messages(props: MessagesProps) {
   const [lastMessageReceived, setLastMessageReceived] =
     useState<LastMessageReceived | null>(null);
 
-  const [messageCache, setMessageCache] = useAtom(firstPageMessagesCache);
+  const queryClient = useQueryClient();
+
+  const { getMessages } = useGetMessagesWorker();
+
   const isMessageUpdateLock = useMemo(() => {
     return isSendingMessage;
   }, [isSendingMessage]);
@@ -198,17 +199,18 @@ export function Messages(props: MessagesProps) {
     refetchInterval,
     queryKey: UseAgentsServiceListAgentMessagesKeyFn({ agentId }),
     queryFn: async (query) => {
-      const res = AgentsService.listAgentMessages({
+      const res = (await getMessages({
         agentId,
         limit: MESSAGE_LIMIT,
-        ...(query.pageParam.before ? { before: query.pageParam.before } : {}),
-      }) as unknown as AgentMessage[];
+        ...(query.pageParam.before ? { cursor: query.pageParam.before } : {}),
+      })) as unknown as AgentMessage[];
 
       if (isMessageUpdateLock) {
-        return messageCache;
+        return (queryClient.getQueryData<
+          InfiniteData<ListAgentMessagesResponse>
+        >(UseAgentsServiceListAgentMessagesKeyFn({ agentId }))?.pages?.[0] ||
+          []) as AgentMessage[];
       }
-
-      setMessageCache(res);
 
       return res;
     },
