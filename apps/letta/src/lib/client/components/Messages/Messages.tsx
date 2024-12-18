@@ -45,6 +45,7 @@ import { jsonrepair } from 'jsonrepair';
 import { useTranslations } from 'next-intl';
 import { get } from 'lodash-es';
 import { useGetMessagesWorker } from '$letta/client/components/Messages/useGetMessagesWorker/useGetMessagesWorker';
+import { useCurrentDevelopmentServerConfig } from '../../../../app/(logged-in)/(dashboard-like)/development-servers/[developmentServerId]/hooks/useCurrentDevelopmentServerConfig/useCurrentDevelopmentServerConfig';
 
 // tryFallbackParseJson will attempt to parse a string as JSON, if it fails, it will trim the last character and try again
 // until it succeeds or the string is empty
@@ -169,6 +170,7 @@ export function Messages(props: MessagesProps) {
 
   const queryClient = useQueryClient();
 
+  const developmentServerConfig = useCurrentDevelopmentServerConfig();
   const { getMessages } = useGetMessagesWorker();
 
   const isMessageUpdateLock = useMemo(() => {
@@ -200,6 +202,7 @@ export function Messages(props: MessagesProps) {
     queryKey: UseAgentsServiceListAgentMessagesKeyFn({ agentId }),
     queryFn: async (query) => {
       const res = (await getMessages({
+        url: developmentServerConfig?.url,
         agentId,
         limit: MESSAGE_LIMIT,
         ...(query.pageParam.before ? { cursor: query.pageParam.before } : {}),
