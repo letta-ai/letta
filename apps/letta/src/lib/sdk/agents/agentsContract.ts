@@ -12,6 +12,7 @@ import {
 import { z } from 'zod';
 import { MemoryBlocksSchema } from '$letta/sdk/types';
 import { extendZodWithOpenApi } from '@anatine/zod-openapi';
+import { VersionedTemplateType } from '$letta/types';
 
 extendZodWithOpenApi(z);
 
@@ -111,7 +112,7 @@ const versionAgentTemplateContract = c.mutation({
     migrate_deployed_agents: z.boolean().optional(),
   }),
   query: z.object({
-    returnAgentId: z.boolean().optional(),
+    returnAgentState: z.boolean().optional(),
   }),
   pathParams: z.object({
     agent_id: z.string().openapi({
@@ -120,10 +121,7 @@ const versionAgentTemplateContract = c.mutation({
     }),
   }),
   responses: {
-    201: z.object({
-      version: z.string(),
-      agentId: z.string().optional(),
-    }),
+    201: VersionedTemplateType,
     404: AgentNotFoundResponseSchema,
     500: FailedToDeployAgentTemplateErrorSchema,
   },

@@ -12,6 +12,7 @@ import {
 } from '@letta-web/database';
 import { copyAgentById, updateAgentFromAgentId } from '$letta/sdk';
 import { AgentsService } from '@letta-web/letta-agents-api';
+import { getDeployedTemplateByVersion } from '$letta/server/lib/getDeployedTemplateByVersion/getDeployedTemplateByVersion';
 
 function randomThreeDigitNumber() {
   return Math.floor(Math.random() * 1000);
@@ -484,8 +485,59 @@ async function deleteAgentTemplateSimulatorSession(
   };
 }
 
+type GetAgentTemplateByVersion = ServerInferRequest<
+  typeof contracts.agentTemplates.getAgentTemplateByVersion
+>;
+
+type GetAgentTemplateByVersionResponse = ServerInferResponses<
+  typeof contracts.agentTemplates.getAgentTemplateByVersion
+>;
+
+async function getAgentTemplateByVersion(
+  req: GetAgentTemplateByVersion
+): Promise<GetAgentTemplateByVersionResponse> {
+  const { slug } = req.params;
+  const { lettaAgentsId, activeOrganizationId } =
+    await getUserWithActiveOrganizationIdOrThrow();
+
+  const [versionName] = slug.split(':');
+  const deployedAgentTemplate = await getDeployedTemplateByVersion(
+    slug,
+    activeOrganizationId
+  );
+
+  if (!deployedAgentTemplate) {
+    return {
+      status: 404,
+      body: {
+        message: 'Template version provided does not exist',
+      },
+    };
+  }
+
+  const agent = await AgentsService.getAgent(
+    {
+      agentId: deployedAgentTemplate.id,
+    },
+    {
+      user_id: lettaAgentsId,
+    }
+  );
+
+  return {
+    status: 200,
+    body: {
+      fullVersion: `${versionName}:${deployedAgentTemplate.version}`,
+      version: deployedAgentTemplate.version,
+      id: deployedAgentTemplate.id,
+      state: agent,
+    },
+  };
+}
+
 export const agentTemplateRoutes = {
   listAgentTemplates,
+  getAgentTemplateByVersion,
   forkAgentTemplate,
   deleteAgentTemplateSimulatorSession,
   createAgentTemplateSimulatorSession,
