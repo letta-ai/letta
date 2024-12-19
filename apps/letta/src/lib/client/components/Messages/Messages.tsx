@@ -434,7 +434,7 @@ export function Messages(props: MessagesProps) {
                     <HStack align="center" gap="small">
                       <InnerMonologueIcon color="violet" size="small" />
                       <Typography bold color="violet" variant="body2">
-                        {t('thoughts')}
+                        {t('reasoning')}
                       </Typography>
                     </HStack>
                     <Typography>{agentMessage.reasoning}</Typography>

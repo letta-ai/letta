@@ -700,10 +700,10 @@
     "error": "There was an error while updating the model, please try again or contact support."
   },
   "components/Messages": {
-    "thoughts": "Thoughts",
+    "reasoning": "Reasoning",
     "loadingMessages": "Fetching messages...",
     "toolReturn": "Tool response",
-    "reasoningMessage": "Internal monologue",
+    "reasoningMessage": "Reasoning",
     "hiddenUserMessage": "Internal user message",
     "noParsableMessages": "There are no messages available in this view, usually this is caused by a lack of triggered send_message actions in your agent, check the debug more to verify."
   },
