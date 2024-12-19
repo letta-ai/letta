@@ -43,7 +43,10 @@ import {
   VStack,
 } from '@letta-web/component-library';
 import React, { useCallback, useMemo, useState } from 'react';
-import { useCurrentProject } from '../../../../../(dashboard-like)/projects/[projectSlug]/hooks';
+import {
+  REMOTE_DEVELOPMENT_ID,
+  useCurrentProject,
+} from '../../../../../(dashboard-like)/projects/[projectSlug]/hooks';
 import { webApi } from '$letta/client';
 import { useRouter } from 'next/navigation';
 import { useCurrentUser } from '$letta/client/hooks';
@@ -96,7 +99,7 @@ function LogoContainer() {
 function ADEHeader(props: ADEHeaderProps) {
   const { agent } = props;
   const { name: agentName } = agent;
-  const { name: projectName, slug: projectSlug } = useCurrentProject();
+  const { name: projectName, id, slug: projectSlug } = useCurrentProject();
   const t = useTranslations('ADE/ADEHeader');
 
   return (
@@ -124,7 +127,10 @@ function ADEHeader(props: ADEHeaderProps) {
               items={[
                 {
                   label: projectName,
-                  href: `/projects/${projectSlug}`,
+                  href:
+                    id === REMOTE_DEVELOPMENT_ID
+                      ? projectSlug
+                      : `/projects/${projectSlug}`,
                 },
                 {
                   label: agentName,
