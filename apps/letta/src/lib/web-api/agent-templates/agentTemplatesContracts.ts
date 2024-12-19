@@ -3,6 +3,7 @@ import { initContract } from '@ts-rest/core';
 import { z } from 'zod';
 import { ProjectAgentTemplateSchema } from '$letta/web-api/projects/projectContracts';
 import type { AgentState } from '@letta-web/letta-agents-api';
+import { VersionedTemplateType } from '$letta/types';
 
 const c = initContract();
 
@@ -154,6 +155,17 @@ const deleteAgentTemplateSimulatorSessionContract = c.mutation({
   },
 });
 
+const getAgentTemplateByVersionContract = c.query({
+  method: 'GET',
+  path: '/template-versions/:slug',
+  pathParams: z.object({
+    slug: z.string(),
+  }),
+  responses: {
+    200: VersionedTemplateType,
+  },
+});
+
 export const agentTemplatesContracts = c.router({
   listAgentTemplates: listAgentTemplatesContract,
   forkAgentTemplate: forkAgentTemplateContract,
@@ -164,6 +176,7 @@ export const agentTemplatesContracts = c.router({
     refreshAgentTemplateSimulatorSessionContract,
   deleteAgentTemplateSimulatorSession:
     deleteAgentTemplateSimulatorSessionContract,
+  getAgentTemplateByVersion: getAgentTemplateByVersionContract,
 });
 
 export const agentTemplatesQueryClientKeys = {
@@ -175,5 +188,9 @@ export const agentTemplatesQueryClientKeys = {
   getAgentTemplateSession: (params: GetAgentTemplateSessionParams) => [
     'getAgentTemplateSession',
     params,
+  ],
+  getAgentTemplateByVersion: (slug: string) => [
+    'getAgentTemplateByVersion',
+    { slug },
   ],
 };

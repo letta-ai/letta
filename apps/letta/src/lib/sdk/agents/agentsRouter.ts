@@ -24,6 +24,7 @@ import { findUniqueAgentTemplateName } from '$letta/server';
 
 import type { OrderByValuesEnumType } from '$letta/sdk/agents/agentsContract';
 import { isTemplateNameAStarterKitId, STARTER_KITS } from '$letta/client';
+import { getDeployedTemplateByVersion } from '$letta/server/lib/getDeployedTemplateByVersion/getDeployedTemplateByVersion';
 import { versionAgentTemplate } from './lib/versionAgentTemplate/versionAgentTemplate';
 
 export function attachVariablesToTemplates(
@@ -651,7 +652,6 @@ export async function createAgent(
     }),
   };
 }
-
 interface UpdateAgentFromAgentId {
   preserveCoreMemories?: boolean;
   variables: Record<string, string>;
@@ -810,7 +810,7 @@ export async function migrateAgent(
 
   const split = to_template.split(':');
   const templateName = split[0];
-  let version = split[1];
+  const version = split[1];
 
   if (!version) {
     return {
@@ -821,15 +821,12 @@ export async function migrateAgent(
     };
   }
 
-  const rootAgentTemplate = await db.query.agentTemplates.findFirst({
-    where: and(
-      eq(agentTemplates.organizationId, context.request.organizationId),
-      eq(agentTemplates.name, templateName),
-      isNull(agentTemplates.deletedAt)
-    ),
-  });
+  const deployedAgentTemplate = await getDeployedTemplateByVersion(
+    to_template,
+    context.request.organizationId
+  );
 
-  if (!rootAgentTemplate) {
+  if (!deployedAgentTemplate) {
     return {
       status: 404,
       body: {
@@ -837,41 +834,6 @@ export async function migrateAgent(
       },
     };
   }
-
-  if (version === 'latest') {
-    const latestDeployedTemplate =
-      await db.query.deployedAgentTemplates.findFirst({
-        where: and(
-          eq(
-            deployedAgentTemplates.organizationId,
-            context.request.organizationId
-          ),
-          eq(deployedAgentTemplates.agentTemplateId, rootAgentTemplate.id),
-          isNull(deployedAgentTemplates.deletedAt)
-        ),
-        orderBy: [desc(deployedAgentTemplates.createdAt)],
-      });
-
-    if (!latestDeployedTemplate) {
-      return {
-        status: 404,
-        body: {
-          message: 'Template version provided does not exist',
-        },
-      };
-    }
-
-    version = latestDeployedTemplate.version;
-  }
-
-  const agentTemplate = await db.query.deployedAgentTemplates.findFirst({
-    where: and(
-      eq(deployedAgentTemplates.organizationId, context.request.organizationId),
-      eq(deployedAgentTemplates.agentTemplateId, rootAgentTemplate.id),
-      eq(deployedAgentTemplates.version, version),
-      isNull(deployedAgentTemplates.deletedAt)
-    ),
-  });
 
   if (!variables) {
     const deployedAgentVariablesItem =
@@ -882,7 +844,7 @@ export async function migrateAgent(
     variables = deployedAgentVariablesItem?.value || {};
   }
 
-  if (!agentTemplate?.id) {
+  if (!deployedAgentTemplate?.id) {
     return {
       status: 404,
       body: {
@@ -893,7 +855,7 @@ export async function migrateAgent(
 
   await updateAgentFromAgentId({
     variables: variables || {},
-    baseAgentId: agentTemplate.id,
+    baseAgentId: deployedAgentTemplate.id,
     agentToUpdateId: agentIdToMigrate,
     lettaAgentsUserId,
     preserveCoreMemories: preserve_core_memories,
@@ -903,7 +865,7 @@ export async function migrateAgent(
   await db
     .update(deployedAgents)
     .set({
-      deployedAgentTemplateId: agentTemplate.id,
+      deployedAgentTemplateId: deployedAgentTemplate.id,
     })
     .where(eq(deployedAgents.id, agentIdToMigrate));
 

@@ -125,7 +125,7 @@ function MessageGroup({ group }: MessageGroupType) {
   }, [name]);
 
   return (
-    <HStack>
+    <HStack gap="medium">
       <IconAvatar
         textColor={textColor}
         backgroundColor={backgroundColor}
@@ -133,7 +133,7 @@ function MessageGroup({ group }: MessageGroupType) {
         size={'xsmall'}
       />
       <VStack collapseWidth flex gap="small">
-        <Typography variant="body2" color="lighter" uppercase={true}>
+        <Typography bold uppercase variant="body2" color="lighter">
           {name}
         </Typography>
         <VStack gap="large">

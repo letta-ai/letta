@@ -15,7 +15,6 @@ import {
   Logo,
   Breadcrumb,
 } from '@letta-web/component-library';
-import { Card, Checkbox, ExternalLink } from '@letta-web/component-library';
 import { TrashIcon } from '@letta-web/component-library';
 import {
   FormField,
@@ -23,7 +22,6 @@ import {
   Input,
   useForm,
 } from '@letta-web/component-library';
-import { Badge } from '@letta-web/component-library';
 import {
   CogIcon,
   DropdownMenu,
@@ -38,17 +36,15 @@ import {
   Frame,
   HStack,
   LettaLoader,
-  Popover,
   Typography,
   VisibleOnMobile,
-  RocketIcon,
   ChevronUpIcon,
   ForkIcon,
   VStack,
 } from '@letta-web/component-library';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useCurrentProject } from '../../../../../(dashboard-like)/projects/[projectSlug]/hooks';
-import { webApi, webApiQueryKeys, webOriginSDKApi } from '$letta/client';
+import { webApi } from '$letta/client';
 import { useRouter } from 'next/navigation';
 import { useCurrentUser } from '$letta/client/hooks';
 import { ProjectSelector } from '$letta/client/components';
@@ -58,15 +54,9 @@ import { useCurrentAgent } from './hooks';
 import {
   useAgentsServiceDeleteAgent,
   useAgentsServiceGetAgent,
-  UseAgentsServiceGetAgentKeyFn,
 } from '@letta-web/letta-agents-api';
 import { useTranslations } from 'next-intl';
 import { generateDefaultADELayout } from '$letta/utils';
-import { isEqual } from 'lodash-es';
-import { generateAgentStateHash } from './AgentSimulator/AgentSimulator';
-import { DeployAgentUsageInstructions } from '$letta/client/code-reference/DeployAgentUsageInstructions';
-import { useQueryClient } from '@tanstack/react-query';
-import type { InfiniteGetProjectDeployedAgentTemplates200Response } from '$letta/web-api/projects/projectContracts';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useAgentBaseTypeName } from './hooks/useAgentBaseNameType/useAgentBaseNameType';
@@ -76,9 +66,9 @@ import {
   DashboardHeaderNavigation,
   ProfilePopover,
 } from '$letta/client/components/DashboardLikeLayout/DashboardNavigation/DashboardNavigation';
-import { CLOUD_UPSELL_URL } from '$letta/constants';
 import { trackClientSideEvent } from '@letta-web/analytics/client';
 import { AnalyticsEvent } from '@letta-web/analytics';
+import { DeploymentButton } from './DeploymentButton/DeploymentButton';
 import Link from 'next/link';
 
 interface ADEHeaderProps {
@@ -407,404 +397,6 @@ function LoaderContent(props: LoaderContentProps) {
   );
 }
 
-const PAGE_SIZE = 10;
-
-interface DeployAgentDialogProps {
-  isAtLatestVersion: boolean;
-}
-
-function DeployAgentDialog(props: DeployAgentDialogProps) {
-  const { isAtLatestVersion } = props;
-  const { name } = useCurrentAgent();
-  const { id: projectId } = useCurrentProject();
-  const t = useTranslations(
-    'projects/(projectSlug)/agents/(agentId)/AgentPage'
-  );
-
-  return (
-    <Dialog
-      title={t('DeployAgentDialog.title')}
-      size="xlarge"
-      trigger={
-        <Button
-          fullWidth
-          data-testid="deploy-agent-dialog-trigger"
-          color={!isAtLatestVersion ? 'tertiary-transparent' : 'secondary'}
-          label={t('DeployAgentDialog.trigger')}
-          target="_blank"
-        />
-      }
-      hideConfirm
-    >
-      <DeployAgentUsageInstructions
-        versionKey={`${name}:latest`}
-        projectId={projectId}
-      />
-    </Dialog>
-  );
-}
-
-const versionAgentFormSchema = z.object({
-  migrate: z.boolean(),
-});
-
-type VersionAgentFormValues = z.infer<typeof versionAgentFormSchema>;
-
-function VersionAgentDialog() {
-  const { id: agentTemplateId } = useCurrentAgent();
-  const { id: projectId } = useCurrentProject();
-  const queryClient = useQueryClient();
-  const [open, setOpen] = useState(false);
-  const t = useTranslations(
-    'projects/(projectSlug)/agents/(agentId)/AgentPage'
-  );
-
-  const form = useForm<VersionAgentFormValues>({
-    resolver: zodResolver(versionAgentFormSchema),
-    defaultValues: {
-      migrate: true,
-    },
-  });
-
-  const { mutate, isPending } =
-    webOriginSDKApi.agents.versionAgentTemplate.useMutation({
-      onSuccess: (response) => {
-        void queryClient.setQueriesData<
-          InfiniteGetProjectDeployedAgentTemplates200Response | undefined
-        >(
-          {
-            queryKey:
-              webApiQueryKeys.projects.getProjectDeployedAgentTemplatesWithSearch(
-                projectId,
-                {
-                  agentTemplateId: agentTemplateId,
-                }
-              ),
-            exact: true,
-          },
-          (oldData) => {
-            if (!oldData) {
-              return oldData;
-            }
-
-            const [firstPage, ...restPages] = oldData.pages;
-
-            const [_, templateAgentVersion] = response.body.version.split(':');
-
-            return {
-              ...oldData,
-              pages: [
-                {
-                  ...firstPage,
-                  body: {
-                    ...firstPage.body,
-                    deployedAgentTemplates: [
-                      {
-                        id: response.body.agentId || '',
-                        version: templateAgentVersion,
-                        createdAt: new Date().toISOString(),
-                        updatedAt: new Date().toISOString(),
-                        agentTemplateId: agentTemplateId,
-                      },
-                      ...firstPage.body.deployedAgentTemplates,
-                    ],
-                  },
-                },
-                ...restPages,
-              ],
-            };
-          }
-        );
-
-        setOpen(false);
-      },
-    });
-
-  const handleVersionNewAgent = useCallback(
-    (values: VersionAgentFormValues) => {
-      mutate({
-        query: {
-          returnAgentId: true,
-        },
-        body: {
-          migrate_deployed_agents: values.migrate,
-        },
-        params: { agent_id: agentTemplateId },
-      });
-    },
-    [mutate, agentTemplateId]
-  );
-
-  return (
-    <FormProvider {...form}>
-      <Dialog
-        onOpenChange={setOpen}
-        isOpen={open}
-        testId="stage-agent-dialog"
-        title={t('VersionAgentDialog.title')}
-        onConfirm={form.handleSubmit(handleVersionNewAgent)}
-        isConfirmBusy={isPending}
-        trigger={
-          <Button
-            data-testid="stage-new-version-button"
-            color="secondary"
-            fullWidth
-            label={t('VersionAgentDialog.trigger')}
-          />
-        }
-      >
-        <VStack gap="form">
-          <Typography>{t('VersionAgentDialog.description')}</Typography>
-          <Card>
-            <FormField
-              render={({ field }) => {
-                return (
-                  <Checkbox
-                    checked={field.value}
-                    description={t.rich(
-                      'VersionAgentDialog.migrateDescription',
-                      {
-                        link: (chunks) => (
-                          <ExternalLink href="https://docs.letta.com/api-reference/agents/migrate-agent">
-                            {chunks}
-                          </ExternalLink>
-                        ),
-                      }
-                    )}
-                    label={t('VersionAgentDialog.migrate')}
-                    onCheckedChange={(value) => {
-                      field.onChange({
-                        target: {
-                          value: value,
-                          name: field.name,
-                        },
-                      });
-                    }}
-                  />
-                );
-              }}
-              name="migrate"
-            />
-          </Card>
-        </VStack>
-      </Dialog>
-    </FormProvider>
-  );
-}
-
-function CloudUpsellDeploy() {
-  const t = useTranslations(
-    'projects/(projectSlug)/agents/(agentId)/AgentPage'
-  );
-
-  return (
-    <Popover
-      triggerAsChild
-      trigger={
-        <Button
-          size="small"
-          color="secondary"
-          preIcon={<RocketIcon size="small" />}
-          data-testid="trigger-cloud-upsell"
-          label={t('DeploymentButton.readyToDeploy.trigger')}
-        />
-      }
-      align="end"
-    >
-      <VStack padding="medium" gap="large">
-        <VStack>
-          <Typography variant="heading5" bold>
-            {t('CloudUpsellDeploy.title')}
-          </Typography>
-          <Typography>{t('CloudUpsellDeploy.description')}</Typography>
-          <Button
-            fullWidth
-            label={t('CloudUpsellDeploy.cta')}
-            href={CLOUD_UPSELL_URL}
-            target="_blank"
-            color="secondary"
-          />
-        </VStack>
-      </VStack>
-    </Popover>
-  );
-}
-
-function TemplateVersionDisplay() {
-  // get latest template version
-  const { id: agentTemplateId } = useCurrentAgent();
-  const agentState = useCurrentAgent();
-  const { id: currentProjectId, slug: projectSlug } = useCurrentProject();
-  const t = useTranslations(
-    'projects/(projectSlug)/agents/(agentId)/AgentPage'
-  );
-
-  const { data: deployedAgentTemplates } =
-    webApi.projects.getProjectDeployedAgentTemplates.useInfiniteQuery({
-      queryKey:
-        webApiQueryKeys.projects.getProjectDeployedAgentTemplatesWithSearch(
-          currentProjectId,
-          {
-            agentTemplateId: agentTemplateId,
-          }
-        ),
-      queryData: ({ pageParam }) => ({
-        params: { projectId: currentProjectId },
-        query: {
-          agentTemplateId,
-          offset: pageParam.offset,
-          limit: pageParam.limit,
-        },
-      }),
-      initialPageParam: { offset: 0, limit: PAGE_SIZE },
-      getNextPageParam: (lastPage, allPages) => {
-        return lastPage.body.hasNextPage
-          ? { limit: PAGE_SIZE, offset: allPages.length * PAGE_SIZE }
-          : undefined;
-      },
-    });
-
-  const latestTemplateMetadata = useMemo(() => {
-    if (!deployedAgentTemplates) {
-      return null;
-    }
-
-    return deployedAgentTemplates.pages[0]?.body?.deployedAgentTemplates[0];
-  }, [deployedAgentTemplates]);
-
-  const { data: deployedAgents } = webApi.projects.getDeployedAgents.useQuery({
-    queryKey: webApiQueryKeys.projects.getDeployedAgentsWithSearch(
-      currentProjectId,
-      {
-        deployedAgentTemplateId: latestTemplateMetadata?.id,
-        limit: 1,
-      }
-    ),
-    queryData: {
-      params: {
-        projectId: currentProjectId,
-      },
-      query: {
-        deployedAgentTemplateId: latestTemplateMetadata?.id,
-        limit: 1,
-      },
-    },
-    refetchInterval: 5000,
-    enabled: !!latestTemplateMetadata?.id,
-  });
-
-  const versionNumber = useMemo(() => {
-    if (!latestTemplateMetadata) {
-      return '';
-    }
-
-    return latestTemplateMetadata.version;
-  }, [latestTemplateMetadata]);
-
-  const { data: latestTemplate } = webOriginSDKApi.agents.getAgentById.useQuery(
-    {
-      enabled: !!latestTemplateMetadata?.id,
-      queryData: {
-        params: {
-          agent_id: latestTemplateMetadata?.id || '',
-        },
-        query: {
-          all: true,
-        },
-      },
-      queryKey: UseAgentsServiceGetAgentKeyFn({
-        agentId: latestTemplateMetadata?.id || '',
-      }),
-    }
-  );
-
-  const isAtLatestVersion = useMemo(() => {
-    if (!latestTemplate?.body) {
-      return false;
-    }
-
-    const {
-      message_ids: _m,
-      created_at: _c,
-      metadata_: _meta,
-      name: _name,
-      id: _id,
-      ...rest
-    } = agentState;
-    const {
-      message_ids: _m2,
-      created_at: _m3,
-      metadata_: _meta2,
-      name: _name2,
-      id: _id2,
-      ...rest2
-    } = latestTemplate.body;
-
-    return isEqual(
-      generateAgentStateHash(rest, []),
-      generateAgentStateHash(rest2, [])
-    );
-  }, [agentState, latestTemplate]);
-
-  const { name } = useCurrentAgent();
-
-  return (
-    <Popover
-      triggerAsChild
-      trigger={
-        <Button
-          size="small"
-          color="secondary"
-          data-testid="version-template-trigger"
-          label={t('DeploymentButton.readyToDeploy.trigger')}
-          preIcon={!isAtLatestVersion ? <RocketIcon size="small" /> : undefined}
-        />
-      }
-      align="end"
-    >
-      <VStack padding="medium" gap="large">
-        <VStack>
-          {versionNumber && (
-            <HStack>
-              <Badge
-                color="background-grey"
-                content={t('DeploymentButton.version', {
-                  version: versionNumber,
-                })}
-              />
-            </HStack>
-          )}
-          <Typography variant="heading5" bold>
-            {isAtLatestVersion
-              ? t('DeploymentButton.readyToDeploy.heading')
-              : t('DeploymentButton.updateAvailable.heading')}
-          </Typography>
-          <Typography>
-            {isAtLatestVersion
-              ? t('DeploymentButton.readyToDeploy.copy')
-              : t('DeploymentButton.updateAvailable.copy')}
-          </Typography>
-        </VStack>
-        <VStack gap="small">
-          {!isAtLatestVersion && <VersionAgentDialog />}
-          <DeployAgentDialog isAtLatestVersion={isAtLatestVersion} />
-          {deployedAgents?.body.agents &&
-            deployedAgents.body.agents.length > 0 && (
-              <Button
-                fullWidth
-                data-testid="view-deployed-agents"
-                target="_blank"
-                color="tertiary-transparent"
-                label={t('VersionAgentDialog.deployedAgents')}
-                href={`/projects/${projectSlug}/agents?template=${name}:${versionNumber}`}
-              />
-            )}
-        </VStack>
-      </VStack>
-    </Popover>
-  );
-}
-
 type Dialogs = 'deleteAgent' | 'forkAgent' | 'renameAgent';
 
 function AgentSettingsDropdown() {
@@ -872,21 +464,6 @@ function AgentSettingsDropdown() {
 
 function Navigation() {
   return <DashboardHeaderNavigation />;
-}
-
-function RenderDeployButton() {
-  const { isLocal, isTemplate } = useCurrentAgentMetaData();
-  const user = useCurrentUser();
-
-  if (isLocal && !user?.hasCloudAccess) {
-    return <CloudUpsellDeploy />;
-  }
-
-  if (isTemplate) {
-    return <TemplateVersionDisplay />;
-  }
-
-  return null;
 }
 
 interface MobileNavigationContextData {
@@ -1143,9 +720,11 @@ export function AgentPage() {
               }}
             >
               <HStack gap={false} align="center">
-                <Navigation />
                 <HStack paddingRight="small" align="center" gap="small">
-                  <RenderDeployButton />
+                  <Navigation />
+                </HStack>
+                <HStack paddingRight="small" align="center" gap="small">
+                  <DeploymentButton />
                   <ProfilePopover size="small" />
                 </HStack>
               </HStack>

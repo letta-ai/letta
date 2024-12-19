@@ -1,8 +1,4 @@
-import type {
-  ServerInferRequest,
-  ServerInferResponseBody,
-  ServerInferResponses,
-} from '@ts-rest/core';
+import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
 import type { sdkContracts } from '$letta/sdk/contracts';
 import type { SDKContext } from '$letta/sdk/shared';
 import {
@@ -30,7 +26,7 @@ export async function versionAgentTemplate(
   context: SDKContext
 ): Promise<DeployAgentTemplateResponse> {
   const { agent_id: agentId } = req.params;
-  const { returnAgentId } = req.query;
+  const { returnAgentState } = req.query;
   const { migrate_deployed_agents } = req.body;
 
   const existingDeployedAgentTemplateCount =
@@ -131,13 +127,6 @@ export async function versionAgentTemplate(
     version,
   });
 
-  const response: ServerInferResponseBody<
-    typeof sdkContracts.agents.versionAgentTemplate,
-    201
-  > = {
-    version: `${agentTemplateName}:${version}`,
-  };
-
   if (migrate_deployed_agents) {
     if (!agentTemplate?.id) {
       return {
@@ -166,24 +155,17 @@ export async function versionAgentTemplate(
           lettaAgentsUserId: context.request.lettaAgentsUserId,
           preserveCoreMemories: false,
         });
-
-        // update deployedAgentTemplateId
-        await db
-          .update(deployedAgents)
-          .set({
-            deployedAgentTemplateId,
-          })
-          .where(eq(deployedAgents.id, deployedAgent.id));
       })
     );
   }
 
-  if (returnAgentId) {
-    response.agentId = createdAgent.id || '';
-  }
-
   return {
     status: 201,
-    body: response,
+    body: {
+      version,
+      fullVersion: `${agentTemplateName}:${version}`,
+      id: deployedAgentTemplateId,
+      ...(returnAgentState ? { state: createdAgent } : {}),
+    },
   };
 }
