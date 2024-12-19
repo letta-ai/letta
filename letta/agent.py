@@ -1,5 +1,6 @@
 import datetime
 import inspect
+import json
 import time
 import traceback
 import warnings
@@ -32,6 +33,7 @@ from letta.schemas.agent import AgentState, AgentStepResponse, UpdateAgent
 from letta.schemas.block import BlockUpdate
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import MessageRole
+from letta.schemas.letta_message import FunctionReturn
 from letta.schemas.memory import ContextWindowOverview, Memory
 from letta.schemas.message import Message, MessageUpdate
 from letta.schemas.openai.chat_completion_request import (
@@ -298,10 +300,6 @@ class Agent(BaseAgent):
 
         self.first_message_verify_mono = first_message_verify_mono
 
-        # State needed for conditional tool chaining
-        # TODO: when agent reloads, load this from past messages
-        self.last_function_response = None
-
         # Controls if the convo memory pressure warning is triggered
         # When an alert is sent in the message queue, set this to True (to avoid repeat alerts)
         # When the summarizer is run, set this back to False (to reset)
@@ -375,6 +373,9 @@ class Agent(BaseAgent):
             self._append_to_messages(added_messages=init_messages_objs)
             self._validate_message_buffer_is_utc()
 
+        # Load last function response from message history
+        self.last_function_response = self.load_last_function_response()
+
         # Keep track of the total number of messages throughout all time
         self.messages_total = messages_total if messages_total is not None else (len(self._messages) - 1)  # (-system)
         self.messages_total_init = len(self._messages) - 1
@@ -392,6 +393,19 @@ class Agent(BaseAgent):
             self.supports_structured_output = False
         else:
             self.supports_structured_output = True
+
+    def load_last_function_response(self):
+        """Load the last function response from message history"""
+        for i in range(len(self._messages) - 1, -1, -1):
+            msg = self._messages[i]
+            if msg.role == MessageRole.tool and msg.text:
+                try:
+                    response_json = json.loads(msg.text)
+                    if response_json.get("message"):
+                        return response_json["message"]
+                except (json.JSONDecodeError, KeyError):
+                    raise ValueError(f"Invalid JSON format in message: {msg.text}")
+        return None
 
     def update_memory_if_change(self, new_memory: Memory) -> bool:
         """
