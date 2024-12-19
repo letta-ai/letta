@@ -70,6 +70,8 @@ import { firstPageMessagesCache } from '$letta/client/components/Messages/firstP
 
 const isSendingMessageAtom = atom(false);
 
+type ErrorCode = z.infer<typeof ErrorMessageSchema>['code'];
+
 interface SendMessagePayload {
   role: string;
   text: string;
@@ -88,6 +90,7 @@ function useSendMessage(agentId: string, options: UseSendMessageOptions = {}) {
   const { isLocal } = useCurrentAgentMetaData();
   const user = useCurrentUser();
   const [failedToSendMessage, setFailedToSendMessage] = useState(false);
+  const [errorCode, setErrorCode] = useState<ErrorCode | undefined>(undefined);
 
   const { baseUrl, password } = useLettaAgentsAPI();
 
@@ -106,6 +109,7 @@ function useSendMessage(agentId: string, options: UseSendMessageOptions = {}) {
       const { text: message, role } = payload;
       setIsPending(true);
       setFailedToSendMessage(false);
+      setErrorCode(undefined);
 
       queryClient.setQueriesData<InfiniteData<AgentMessage[]> | undefined>(
         {
@@ -190,6 +194,7 @@ function useSendMessage(agentId: string, options: UseSendMessageOptions = {}) {
           const errorMessage = ErrorMessageSchema.parse(JSON.parse(e.data));
           setIsPending(false);
           setFailedToSendMessage(!!errorMessage.error);
+          setErrorCode(errorMessage.code);
           options?.onFailedToSendMessage?.(message);
           return;
         } catch (_e) {
@@ -316,7 +321,7 @@ function useSendMessage(agentId: string, options: UseSendMessageOptions = {}) {
     ]
   );
 
-  return { isPending, isError: failedToSendMessage, sendMessage };
+  return { isPending, isError: failedToSendMessage, sendMessage, errorCode };
 }
 
 interface ChatroomContextType {
@@ -814,6 +819,7 @@ function Chatroom() {
     sendMessage,
     isError: hasFailedToSendMessage,
     isPending,
+    errorCode,
   } = useSendMessage(agentIdToUse || '', {
     onFailedToSendMessage: (message) => {
       ref.current?.setChatMessage(message);
@@ -829,12 +835,19 @@ function Chatroom() {
       return;
     }
 
-    if (isLocal) {
-      return t('hasFailedToSendMessageText.local');
+    switch (errorCode) {
+      case 'CONTEXT_WINDOW_EXCEEDED':
+        return t('hasFailedToSendMessageText.contextWindowExceeded');
+      case 'RATE_LIMIT_EXCEEDED':
+        return t('hasFailedToSendMessageText.rateLimitExceeded');
+      case 'INTERNAL_SERVER_ERROR':
+      default:
+        if (isLocal) {
+          return t('hasFailedToSendMessageText.local');
+        }
+        return t('hasFailedToSendMessageText.cloud');
     }
-
-    return t('hasFailedToSendMessageText.cloud');
-  }, [hasFailedToSendMessage, isLocal, t]);
+  }, [hasFailedToSendMessage, isLocal, t, errorCode]);
 
   return (
     <ChatroomContext.Provider value={{ renderMode, setRenderMode }}>
