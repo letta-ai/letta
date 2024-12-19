@@ -774,7 +774,9 @@ export function DashboardHeader() {
                           {/* eslint-disable-next-line react/forbid-component-props */}
                           <Frame className="hidden visibleSidebar:contents">
                             <Link href="/">
-                              <Logo withText size="medium" />
+                              <HStack className="pr-4">
+                                <Logo withText size="medium" />
+                              </HStack>
                             </Link>
                           </Frame>
                         </>
