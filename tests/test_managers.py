@@ -1565,6 +1565,15 @@ def create_test_messages(server: SyncServer, base_message: PydanticMessage, defa
     return messages
 
 
+def test_get_messages_by_ids(server: SyncServer, hello_world_message_fixture, default_user, sarah_agent):
+    """Test basic message listing with limit"""
+    messages = create_test_messages(server, hello_world_message_fixture, default_user)
+    message_ids = [m.id for m in messages]
+
+    results = server.message_manager.get_messages_by_ids(message_ids=message_ids, actor=default_user)
+    assert sorted(message_ids) == sorted([r.id for r in results])
+
+
 def test_message_listing_basic(server: SyncServer, hello_world_message_fixture, default_user, sarah_agent):
     """Test basic message listing with limit"""
     create_test_messages(server, hello_world_message_fixture, default_user)
