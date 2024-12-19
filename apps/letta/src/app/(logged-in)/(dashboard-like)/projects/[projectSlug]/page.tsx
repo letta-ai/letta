@@ -149,6 +149,7 @@ function QuickActions() {
         <CreateNewTemplateDialog
           trigger={
             <DashboardCard
+              testId="create-agent-template-button"
               largeImage={
                 <VStack
                   fullHeight

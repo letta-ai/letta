@@ -8,12 +8,21 @@ interface DashboardCardProps {
   badge?: React.ReactNode;
   isSkeleton?: boolean;
   onClick?: () => void;
+  testId?: string;
   href?: string;
 }
 
 export function DashboardCard(props: DashboardCardProps) {
-  const { largeImage, title, isSkeleton, description, badge, onClick, href } =
-    props;
+  const {
+    largeImage,
+    testId,
+    title,
+    isSkeleton,
+    description,
+    badge,
+    onClick,
+    href,
+  } = props;
   return (
     <ActionCard
       title={title}
@@ -21,6 +30,7 @@ export function DashboardCard(props: DashboardCardProps) {
       isSkeleton={isSkeleton}
       href={href}
       hideClickArrow
+      testId={testId}
       badge={badge}
       onClick={onClick}
     >
