@@ -36,6 +36,7 @@ import type {
   AgentState,
   Source,
 } from '@letta-web/letta-agents-api';
+import { isAgentState } from '@letta-web/letta-agents-api';
 import { ErrorMessageSchema } from '@letta-web/letta-agents-api';
 import { useLettaAgentsAPI } from '@letta-web/letta-agents-api';
 import { getIsAgentState } from '@letta-web/letta-agents-api';
@@ -57,9 +58,8 @@ import { useTranslations } from 'next-intl';
 import { useDebouncedCallback, useLocalStorage } from '@mantine/hooks';
 import { webApi, webApiQueryKeys, webOriginSDKApi } from '$letta/client';
 import { useCurrentProject } from '../../../../../../(dashboard-like)/projects/[projectSlug]/hooks';
-import { findMemoryBlockVariables } from '$letta/utils';
+import { compareAgentStates, findMemoryBlockVariables } from '$letta/utils';
 import type { GetAgentTemplateSimulatorSessionResponseBody } from '$letta/web-api/agent-templates/agentTemplatesContracts';
-import { isEqual } from 'lodash-es';
 import { useCurrentSimulatedAgent } from '../hooks/useCurrentSimulatedAgent/useCurrentSimulatedAgent';
 import { useCurrentAgentMetaData } from '../hooks/useCurrentAgentMetaData/useCurrentAgentMetaData';
 import { atom, useAtom, useSetAtom } from 'jotai';
@@ -749,9 +749,7 @@ function Chatroom() {
     return variableList.some((variable) => !sessionVariables[variable]);
   }, [agentSession?.body.variables, variableList]);
 
-  const agentStateStore = useRef<GenerateAgentStateHashResponse>(
-    generateAgentStateHash(agentState, [])
-  );
+  const agentStateStore = useRef<AgentState>(agentState as AgentState);
 
   const { mutate: updateSession } =
     webApi.agentTemplates.refreshAgentTemplateSimulatorSession.useMutation({
@@ -789,14 +787,16 @@ function Chatroom() {
       return;
     }
 
-    const currentState = generateAgentStateHash(agentState, sourceList || []);
-
-    // check if the agent state has changed
-    if (isEqual(currentState, agentStateStore.current)) {
+    if (!isAgentState(agentState)) {
       return;
     }
 
-    agentStateStore.current = currentState;
+    // check if the agent state has changed
+    if (compareAgentStates(agentState, agentStateStore.current)) {
+      return;
+    }
+
+    agentStateStore.current = agentState;
 
     // update the existing session
     debounceUpdateSession({
