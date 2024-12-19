@@ -24,11 +24,15 @@ def evaluate(input_file: str):
                         arguments = json.loads(message['function_call']['arguments'])
                         final_answer = arguments['message']
 
+            # TODO: make sure this matches lm-evaluation-harness
             regex_str = "(-?[$0-9.,]{2,})|(-?[0-9]+)"
             matches = re.findall(regex_str, final_answer)
             final_num = "".join(matches[-1])
+            final_num = final_num.replace("$", "")
+            final_num = final_num.replace(",", "")
+            final_num = final_num.strip(".")
 
-            if float(final_num) == float(answer):
+            if final_num == answer: # TODO: should we convert to float
                 correct += 1
             total += 1
 
