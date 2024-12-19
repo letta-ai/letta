@@ -145,6 +145,7 @@ type CreateAgentResponse = ServerInferResponses<
 interface PrepareAgentForUserOptions {
   agentName: string;
   version?: string;
+  parentTemplate?: string;
 }
 
 export function prepareAgentForUser(
@@ -155,6 +156,12 @@ export function prepareAgentForUser(
     ...agent,
     name: options.agentName,
     ...(options.version ? { version: options.version } : {}),
+    metadata_: {
+      ...agent.metadata_,
+      ...(options.parentTemplate
+        ? { parentTemplate: options.parentTemplate }
+        : {}),
+    },
   };
 }
 
@@ -1103,6 +1110,7 @@ async function getAgentById(
     status: 200,
     body: prepareAgentForUser(agent, {
       agentName: deployedAgent?.key || agentTemplate?.name || '',
+      parentTemplate: deployedAgent?.deployedAgentTemplateId || '',
     }),
   };
 }
