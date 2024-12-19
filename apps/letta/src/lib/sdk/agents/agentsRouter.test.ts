@@ -7,11 +7,14 @@ import { lettaAgentAPIMock } from '@letta-web/letta-agents-api-testing';
 import * as router from '$letta/web-api/router';
 import type { AgentState } from '@letta-web/letta-agents-api';
 import { STARTER_KITS } from '$letta/client';
+import { versionAgentTemplate } from '$letta/sdk/agents/lib/versionAgentTemplate/versionAgentTemplate';
 
 jest.mock('$letta/web-api/router', () => ({
   ...jest.requireActual('$letta/web-api/router'),
   createProject: jest.fn(),
 }));
+
+jest.mock('./lib/versionAgentTemplate/versionAgentTemplate');
 
 const createProjectSpy = jest.spyOn(router, 'createProject');
 
@@ -118,6 +121,10 @@ const premadeTemplate = {
 };
 
 describe('agentsRouter', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
   describe('createAgent', () => {
     it('should create an agent with no project id with a name', async () => {
       mockDatabase.query.organizationPreferences.findFirst.mockResolvedValue({
@@ -200,6 +207,8 @@ describe('agentsRouter', () => {
         organizationId: 'test-org-id',
         projectId: 'new-project-id',
       });
+
+      expect(versionAgentTemplate).not.toHaveBeenCalled();
     });
 
     it('should throw an error if user is creating an agent template with a name that already exists in the project', async () => {
@@ -420,6 +429,8 @@ describe('agentsRouter', () => {
           },
         });
       });
+
+      expect(versionAgentTemplate).not.toHaveBeenCalled();
     });
 
     it('should throw an error if user is creating an agent from template and template does not exist', async () => {
@@ -670,6 +681,8 @@ describe('agentsRouter', () => {
           id: 'test-agent-id',
         },
       });
+
+      expect(versionAgentTemplate).not.toHaveBeenCalled();
     });
 
     it('should create an agent template from a template', async () => {
@@ -808,25 +821,19 @@ describe('agentsRouter', () => {
         organizationId: 'test-org-id',
         id: 'test-agent-id',
         projectId: 'test-project-id',
-        deployedAgentTemplateId: 'test-template-id',
-        key: expect.any(String),
-        internalAgentCountId: 1,
-        rootAgentTemplateId: 'test-template-id',
-      });
-
-      expect(valuesFn).toHaveBeenCalledWith({
-        deployedAgentId: 'deployed-test-template-id',
-        value: {},
+        name: expect.any(String),
       });
 
       expect(response).toEqual({
         status: 201,
         body: {
           ...createdAgent,
-          name: valuesFn.mock.calls[0][0].key,
+          name: valuesFn.mock.calls[0][0].name,
           id: 'test-agent-id',
         },
       });
+
+      expect(versionAgentTemplate).toHaveBeenCalled();
     });
 
     it('should create an agent template from a template with no version specified', async () => {
@@ -954,27 +961,28 @@ describe('agentsRouter', () => {
 
       expect(valuesFn).toHaveBeenCalledWith({
         organizationId: 'test-org-id',
-        id: 'test-agent-id',
         projectId: 'test-project-id',
-        deployedAgentTemplateId: 'test-template-id',
-        rootAgentTemplateId: 'test-template-id',
-        key: expect.any(String),
-        internalAgentCountId: 1,
+        name: expect.any(String),
+        id: 'test-agent-id',
       });
 
       expect(valuesFn).toHaveBeenCalledWith({
-        deployedAgentId: 'deployed-test-template-id',
-        value: {},
+        organizationId: 'test-org-id',
+        projectId: 'test-project-id',
+        name: expect.any(String),
+        id: 'test-agent-id',
       });
 
       expect(response).toEqual({
         status: 201,
         body: {
           ...premadeTemplate,
-          name: valuesFn.mock.calls[0][0].key,
+          name: valuesFn.mock.calls[0][0].name,
           id: 'test-agent-id',
         },
       });
+
+      expect(versionAgentTemplate).toHaveBeenCalled();
     });
 
     it('should create an agent template', async () => {
@@ -1106,6 +1114,8 @@ describe('agentsRouter', () => {
           name: 'test',
         },
       });
+
+      expect(versionAgentTemplate).not.toHaveBeenCalled();
     });
 
     it('should create an agent with no project id', async () => {
@@ -1189,6 +1199,8 @@ describe('agentsRouter', () => {
         projectId: 'new-project-id',
       });
     });
+
+    expect(versionAgentTemplate).not.toHaveBeenCalled();
   });
 
   it('should create an agent template with no project id', async () => {
@@ -1268,5 +1280,7 @@ describe('agentsRouter', () => {
       name: expect.any(String),
       id: 'test-agent-id',
     });
+
+    expect(versionAgentTemplate).toHaveBeenCalled();
   });
 });
