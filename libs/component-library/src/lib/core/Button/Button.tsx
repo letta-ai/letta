@@ -117,6 +117,7 @@ export type ButtonProps = Omit<
       target?: string;
       type?: 'button' | 'reset' | 'submit';
       _use_rarely_className?: string;
+      _use_rarely_disableTooltip?: boolean;
     },
   'children' | 'className'
 >;
@@ -141,6 +142,7 @@ export const Button = forwardRef<
     size,
     hideLabel,
     _use_rarely_className,
+    _use_rarely_disableTooltip,
     ...rest
   } = props;
 
@@ -160,7 +162,7 @@ export const Button = forwardRef<
     <MaybeTooltip
       asChild
       placement={tooltipPlacement}
-      renderTooltip={!!hideLabel}
+      renderTooltip={!!hideLabel && !_use_rarely_disableTooltip}
       content={label}
     >
       <ButtonPrimitive
