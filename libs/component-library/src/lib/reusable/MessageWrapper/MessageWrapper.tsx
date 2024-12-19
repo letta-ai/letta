@@ -11,7 +11,7 @@ const messageWrapperVariants = cva('', {
   variants: {
     type: {
       code: 'bg-background-grey2',
-      internalMonologue: 'bg-background-violet text-background-violet-content',
+      reasoningMessage: 'bg-background-violet text-background-violet-content',
       default: 'bg-background',
     },
   },

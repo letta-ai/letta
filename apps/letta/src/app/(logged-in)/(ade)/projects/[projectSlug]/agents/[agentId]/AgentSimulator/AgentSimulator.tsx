@@ -259,10 +259,9 @@ function useSendMessage(agentId: string, options: UseSendMessageOptions = {}) {
                       newMessage.tool_return = extracted.tool_return;
                       break;
                     }
-                    case 'internal_monologue': {
-                      newMessage.internal_monologue =
-                        (newMessage.internal_monologue || '') +
-                        extracted.internal_monologue;
+                    case 'reasoning_message': {
+                      newMessage.reasoning =
+                        (newMessage.reasoning || '') + extracted.reasoning;
                       break;
                     }
                     default: {

@@ -703,7 +703,7 @@
     "thoughts": "Thoughts",
     "loadingMessages": "Fetching messages...",
     "toolReturn": "Tool response",
-    "internalMonologue": "Internal monologue",
+    "reasoningMessage": "Internal monologue",
     "hiddenUserMessage": "Internal user message",
     "noParsableMessages": "There are no messages available in this view, usually this is caused by a lack of triggered send_message actions in your agent, check the debug more to verify."
   },

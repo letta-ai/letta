@@ -42,9 +42,9 @@ export const UserMessageSchema = z.object({
   id: z.string(),
 });
 
-export const InternalMonologueSchema = z.object({
-  message_type: z.literal('internal_monologue'),
-  internal_monologue: z.string(),
+export const ReasoningMessageSchema = z.object({
+  message_type: z.literal('reasoning_message'),
+  reasoning: z.string(),
   date: z.string(),
   id: z.string(),
 });
@@ -79,7 +79,7 @@ export const ToolReturnMessageSchema = z.object({
 export const AgentMessageSchema = z.discriminatedUnion('message_type', [
   ToolReturnMessageSchema,
   ToolCallMessageSchema,
-  InternalMonologueSchema,
+  ReasoningMessageSchema,
   UserMessageSchema,
   SystemMessageSchema,
 ]);
@@ -98,7 +98,7 @@ export const ErrorMessageSchema = z.object({
 export const AgentMessageTypeSchema = z.enum([
   'tool_return_message',
   'tool_call_message',
-  'internal_monologue',
+  'reasoning_message',
   'user_message',
   'system_message',
 ]);

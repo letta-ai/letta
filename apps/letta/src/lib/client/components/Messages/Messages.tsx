@@ -420,7 +420,7 @@ export function Messages(props: MessagesProps) {
             name: 'Agent',
           };
         }
-        case 'internal_monologue':
+        case 'reasoning_message':
           if (mode === 'simple') {
             return null;
           }
@@ -437,7 +437,7 @@ export function Messages(props: MessagesProps) {
                         {t('thoughts')}
                       </Typography>
                     </HStack>
-                    <Typography>{agentMessage.internal_monologue}</Typography>
+                    <Typography>{agentMessage.reasoning}</Typography>
                   </VStack>
                 </BlockQuote>
               ),
@@ -450,13 +450,13 @@ export function Messages(props: MessagesProps) {
             id: `${agentMessage.id}-${agentMessage.message_type}`,
             content: (
               <MessageWrapper
-                type="internalMonologue"
+                type="reasoningMessage"
                 header={{
                   preIcon: <ThoughtsIcon />,
-                  title: t('internalMonologue'),
+                  title: t('reasoningMessage'),
                 }}
               >
-                <Typography>{agentMessage.internal_monologue}</Typography>
+                <Typography>{agentMessage.reasoning}</Typography>
               </MessageWrapper>
             ),
             timestamp: new Date(agentMessage.date).toISOString(),

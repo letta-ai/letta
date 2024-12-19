@@ -2469,40 +2469,6 @@ export const $InitToolRule = {
   description: 'Represents the initial tool rule configuration.',
 } as const;
 
-export const $InternalMonologue = {
-  properties: {
-    id: {
-      type: 'string',
-      title: 'Id',
-    },
-    date: {
-      type: 'string',
-      format: 'date-time',
-      title: 'Date',
-    },
-    message_type: {
-      type: 'string',
-      enum: ['internal_monologue'],
-      const: 'internal_monologue',
-      title: 'Message Type',
-      default: 'internal_monologue',
-    },
-    internal_monologue: {
-      type: 'string',
-      title: 'Internal Monologue',
-    },
-  },
-  type: 'object',
-  required: ['id', 'date', 'internal_monologue'],
-  title: 'InternalMonologue',
-  description: `Representation of an agent's internal monologue.
-
-Attributes:
-    internal_monologue (str): The internal monologue of the agent
-    id (str): The ID of the message
-    date (datetime): The date the message was created in ISO format`,
-} as const;
-
 export const $Job = {
   properties: {
     created_by_id: {
@@ -2772,39 +2738,6 @@ export const $LettaResponse = {
       title: 'AssistantMessage',
       type: 'object',
     },
-    InternalMonologue: {
-      description: `Representation of an agent's internal monologue.
-
-Attributes:
-    internal_monologue (str): The internal monologue of the agent
-    id (str): The ID of the message
-    date (datetime): The date the message was created in ISO format`,
-      properties: {
-        id: {
-          title: 'Id',
-          type: 'string',
-        },
-        date: {
-          format: 'date-time',
-          title: 'Date',
-          type: 'string',
-        },
-        message_type: {
-          const: 'internal_monologue',
-          default: 'internal_monologue',
-          enum: ['internal_monologue'],
-          title: 'Message Type',
-          type: 'string',
-        },
-        internal_monologue: {
-          title: 'Internal Monologue',
-          type: 'string',
-        },
-      },
-      required: ['id', 'date', 'internal_monologue'],
-      title: 'InternalMonologue',
-      type: 'object',
-    },
     LettaUsageStatistics: {
       description: `Usage statistics for the agent interaction.
 
@@ -2840,6 +2773,39 @@ Attributes:
         },
       },
       title: 'LettaUsageStatistics',
+      type: 'object',
+    },
+    ReasoningMessage: {
+      description: `Representation of an agent's internal reasoning.
+
+Attributes:
+    reasoning (str): The internal reasoning of the agent
+    id (str): The ID of the message
+    date (datetime): The date the message was created in ISO format`,
+      properties: {
+        id: {
+          title: 'Id',
+          type: 'string',
+        },
+        date: {
+          format: 'date-time',
+          title: 'Date',
+          type: 'string',
+        },
+        message_type: {
+          const: 'reasoning_message',
+          default: 'reasoning_message',
+          enum: ['reasoning_message'],
+          title: 'Message Type',
+          type: 'string',
+        },
+        reasoning: {
+          title: 'Reasoning',
+          type: 'string',
+        },
+      },
+      required: ['id', 'date', 'reasoning'],
+      title: 'ReasoningMessage',
       type: 'object',
     },
     SystemMessage: {
@@ -3503,7 +3469,7 @@ export const $Organization = {
       type: 'string',
       title: 'Name',
       description: 'The name of the organization.',
-      default: 'ExcitingSnail',
+      default: 'CheerfulKitten',
     },
     created_at: {
       anyOf: [
@@ -3713,6 +3679,40 @@ Parameters:
     agent_id (str): The unique identifier of the agent associated with the passage.
     source_id (str): The data source of the passage.
     file_id (str): The unique identifier of the file associated with the passage.`,
+} as const;
+
+export const $ReasoningMessage = {
+  properties: {
+    id: {
+      type: 'string',
+      title: 'Id',
+    },
+    date: {
+      type: 'string',
+      format: 'date-time',
+      title: 'Date',
+    },
+    message_type: {
+      type: 'string',
+      enum: ['reasoning_message'],
+      const: 'reasoning_message',
+      title: 'Message Type',
+      default: 'reasoning_message',
+    },
+    reasoning: {
+      type: 'string',
+      title: 'Reasoning',
+    },
+  },
+  type: 'object',
+  required: ['id', 'date', 'reasoning'],
+  title: 'ReasoningMessage',
+  description: `Representation of an agent's internal reasoning.
+
+Attributes:
+    reasoning (str): The internal reasoning of the agent
+    id (str): The ID of the message
+    date (datetime): The date the message was created in ISO format`,
 } as const;
 
 export const $RecallMemorySummary = {
