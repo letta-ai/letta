@@ -43,7 +43,9 @@ interface ToggleCardProps extends VariantProps<typeof actionCardVariants> {
   subtitle?: string;
   isActive?: boolean;
   icon?: React.ReactNode;
+  href?: string;
   smallImage?: React.ReactNode;
+  largeImage?: React.ReactNode;
   badge?: React.ReactNode;
   mainAction?: React.ReactNode;
   isSkeleton?: boolean;
@@ -64,8 +66,10 @@ export const ActionCard = forwardRef<HTMLElement, ToggleCardProps>(
       icon,
       fullHeight,
       smallImage,
+      largeImage,
       badge,
       testId,
+      href,
       isActive,
       onClick,
       noMobileViewChange,
@@ -79,90 +83,111 @@ export const ActionCard = forwardRef<HTMLElement, ToggleCardProps>(
 
     return (
       <Card
+        href={href}
         testId={testId}
         ref={ref}
         onClick={!isSkeleton ? onClick : undefined}
         className={cn(
-          actionCardVariants({ ...props, clickable: !!onClick }),
+          actionCardVariants({ ...props, clickable: !!onClick || !!href }),
           fullHeight ? 'h-full' : '',
           isActive ? 'bg-background-grey' : 'bg-background',
           'action-card',
-          'relative'
+          'relative',
+          isSkeleton ? 'border-none' : ''
         )}
       >
         {isSkeleton && (
           <>
-            <Skeleton className="w-full h-full z-[1] top-0 left-0 absolute" />
-            <div className="bg-background w-full h-full z-0 absolute" />
+            <Skeleton className="w-full h-full z-[2] top-0 left-0 absolute" />
+            <div className="bg-background w-full h-full z-[1] absolute" />
           </>
         )}
-        <VStack justify="start" overflowX="hidden" fullHeight fullWidth>
-          <HStack
-            className="action-card-header"
-            justify="spaceBetween"
+        <HStack fullWidth fullHeight>
+          {largeImage && (
+            <VStack className="min-w-[72px] max-h-[72px] max-w-[72px] min-h-[72px] flex items-center justify-center">
+              {largeImage}
+            </VStack>
+          )}
+          <VStack
+            gap="small"
+            justify="start"
+            overflowX="hidden"
+            fullHeight
             fullWidth
-            align="center"
           >
-            <VStack overflow="hidden" gap="text" fullWidth>
-              <HStack
-                fullWidth
-                className={cn(
-                  noMobileViewChange ? '' : 'action-card-titlearea'
-                )}
-                align="center"
-                overflowX="hidden"
-              >
-                {icon && <Slot className="min-w-5 h-5">{icon}</Slot>}
-                {smallImage}
-                <VStack gap={false} align="start">
-                  <HStack paddingRight fullWidth overflowX="hidden">
-                    <Tooltip content={title} asChild>
-                      <Typography
-                        align="left"
-                        noWrap
-                        fullWidth
-                        overflow="ellipsis"
-                        bold
-                      >
-                        {title}
-                      </Typography>
-                    </Tooltip>
-                  </HStack>
-                  {props.subtitle && (
-                    <Typography
-                      fullWidth
-                      align="left"
-                      overflow="ellipsis"
-                      noWrap
-                      variant="body2"
-                      color="muted"
-                    >
-                      {props.subtitle}
-                    </Typography>
+            <HStack
+              className="action-card-header"
+              justify="spaceBetween"
+              fullWidth
+              align="center"
+            >
+              <VStack overflow="hidden" gap="text" fullWidth>
+                <HStack
+                  fullWidth
+                  className={cn(
+                    noMobileViewChange ? '' : 'action-card-titlearea'
                   )}
-                </VStack>
-                {badge}
-              </HStack>
-            </VStack>
-            {mainAction && <HStack align="center">{mainAction}</HStack>}
-            {onClick && !hideClickArrow && (
-              <ChevronRightIcon size="large" color="muted" />
-            )}
-          </HStack>
-          {description && (
-            <VStack fullHeight>
-              <Typography align="left" variant="body">
-                {description}
-              </Typography>
-            </VStack>
-          )}
-          {children}
-          {actions && (
-            <HStack justify="spaceBetween" paddingTop="large">
-              {actions}
+                  align="center"
+                  overflowX="hidden"
+                >
+                  {icon && <Slot className="min-w-5 h-5">{icon}</Slot>}
+                  {smallImage}
+                  <VStack gap={false} align="start">
+                    {badge ? (
+                      <HStack paddingBottom="xxsmall" align="center">
+                        {badge}
+                      </HStack>
+                    ) : (
+                      ''
+                    )}
+                    <HStack paddingRight fullWidth overflowX="hidden">
+                      <Tooltip content={title} asChild>
+                        <Typography
+                          align="left"
+                          noWrap
+                          fullWidth
+                          overflow="ellipsis"
+                          bold
+                        >
+                          {title}
+                        </Typography>
+                      </Tooltip>
+                    </HStack>
+                    {props.subtitle && (
+                      <Typography
+                        fullWidth
+                        align="left"
+                        overflow="ellipsis"
+                        noWrap
+                        variant="body2"
+                        color="muted"
+                      >
+                        {props.subtitle}
+                      </Typography>
+                    )}
+                  </VStack>
+                </HStack>
+              </VStack>
+              {mainAction && <HStack align="center">{mainAction}</HStack>}
+              {onClick && !hideClickArrow && (
+                <ChevronRightIcon size="large" color="muted" />
+              )}
             </HStack>
-          )}
-        </VStack>
+            {description && (
+              <VStack fullHeight>
+                <Typography align="left" variant="body">
+                  {description}
+                </Typography>
+              </VStack>
+            )}
+            {children}
+            {actions && (
+              <HStack justify="spaceBetween" paddingTop="large">
+                {actions}
+              </HStack>
+            )}
+          </VStack>
+        </HStack>
       </Card>
     );
   }

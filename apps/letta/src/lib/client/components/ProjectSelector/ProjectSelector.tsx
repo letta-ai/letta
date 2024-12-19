@@ -86,16 +86,6 @@ export function ProjectSelector(props: ProjectSelectorProps) {
     setOpen(false);
   }, []);
 
-  if (!currentUser?.hasCloudAccess) {
-    return (
-      <Button
-        color="tertiary-transparent"
-        size="small"
-        label={currentProject?.name || t('noProject')}
-      />
-    );
-  }
-
   return (
     <Popover
       open={open}

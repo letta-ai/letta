@@ -12,6 +12,9 @@ const badgeVariants = cva('items-center flex', {
       default: 'text-xs px-2 py-1',
       small: 'text-[10px]   px-1 font-semibold',
     },
+    uppercase: {
+      true: 'uppercase tracking-wide',
+    },
   },
   defaultVariants: {
     size: 'default',
@@ -23,14 +26,15 @@ interface BadgeProps extends VariantProps<typeof badgeVariants> {
   preIcon?: React.ReactNode;
   className?: string;
   color?: FrameProps['color'];
+  uppercase?: boolean;
 }
 
 export function Badge(props: BadgeProps) {
-  const { size, className, preIcon, content } = props;
+  const { size, className, preIcon, uppercase, content } = props;
 
   return (
     <HStack
-      className={cn(badgeVariants({ size }), className)}
+      className={cn(badgeVariants({ size, uppercase }), className)}
       color={props.color || 'background-grey'}
       gap="small"
     >

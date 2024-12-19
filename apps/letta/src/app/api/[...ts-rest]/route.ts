@@ -18,6 +18,10 @@ const nonCloudWhitelist = [
   new RegExp('/api/organizations/self$'),
   new RegExp('/api/user/self(.+)?'),
   new RegExp('/api/development-servers(.+)?'),
+  new RegExp('/api/tool-metadata-summary(.+)?'),
+  new RegExp('/api/tool-metadata(.+)?'),
+  new RegExp('/api/feature-flags(.+)?'),
+  new RegExp('/api/tool-group-metadata(.+)?'),
 ];
 
 const handler = createNextHandler(contracts, router, {
