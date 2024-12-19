@@ -3,6 +3,9 @@
     "emptyMessage": "This is not the page you're looking for",
     "emptyAction": "Go home"
   },
+  "component-library/CopyWithCodePreview": {
+    "description": "The code below will be copied to your clipboard:"
+  },
   "WelcomeOverlay": {
     "welcomeMessage": "Welcome to Letta",
     "question": "Thank you for trying us out, we have a few questions to help us understand your needs better.",
@@ -990,6 +993,9 @@
     }
   },
   "component-library/reusable/ChatInput": {
+    "CopySendMessageRequestButton": {
+      "label": " Copy curl request to clipboard"
+    },
     "placeholder": "Type a message...",
     "send": "Send",
     "role": {

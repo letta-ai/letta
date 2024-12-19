@@ -68,6 +68,8 @@ import { trackClientSideEvent } from '@letta-web/analytics/client';
 import { AnalyticsEvent } from '@letta-web/analytics';
 import { useCurrentUser } from '$letta/client/hooks';
 import { firstPageMessagesCache } from '$letta/client/components/Messages/firstPageMessagesCache/firstPageMessagesCache';
+import { useCurrentAPIHostConfig } from '$letta/client/hooks/useCurrentAPIHostConfig/useCurrentAPIHostConfig';
+import { jsonToCurl } from '@letta-web/generic-utils';
 
 const isSendingMessageAtom = atom(false);
 
@@ -842,6 +844,34 @@ function Chatroom() {
     }
   }, [hasFailedToSendMessage, isLocal, t, errorCode]);
 
+  const { isTemplate } = useCurrentAgentMetaData();
+  const hostConfig = useCurrentAPIHostConfig({
+    attachApiKey: false,
+  });
+  const getSendSnippet = useCallback(
+    (role: string, message: string) => {
+      if (isTemplate) {
+        return undefined;
+      }
+
+      return jsonToCurl({
+        url: `${hostConfig.url}/v1/agents/${agentIdToUse}/messages/stream`,
+        headers: {
+          ...hostConfig.headers,
+          'Content-Type': 'application/json',
+          Accept: 'text/event-stream',
+        },
+        body: {
+          messages: [{ role, text: message }],
+          stream_steps: true,
+          stream_tokens: true,
+        },
+        method: 'POST',
+      });
+    },
+    [agentIdToUse, hostConfig.headers, hostConfig.url, isTemplate]
+  );
+
   return (
     <ChatroomContext.Provider value={{ renderMode, setRenderMode }}>
       <VStack gap={false} fullHeight fullWidth>
@@ -922,6 +952,7 @@ function Chatroom() {
                 },
               ]}
               ref={ref}
+              getSendSnippet={getSendSnippet}
               hasFailedToSendMessageText={hasFailedToSendMessageText}
               sendingMessageText={t('sendingMessage')}
               onSendMessage={(role: string, text: string) => {
