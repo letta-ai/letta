@@ -19,10 +19,13 @@ import {
   organizationPreferences,
 } from '@letta-web/database';
 import { createProject } from '$letta/web-api/router';
-import { and, desc, eq, isNull, like } from 'drizzle-orm';
+import { and, asc, desc, eq, isNull, like, ne } from 'drizzle-orm';
 import { findUniqueAgentTemplateName } from '$letta/server';
+
+import type { OrderByValuesEnumType } from '$letta/sdk/agents/agentsContract';
 import { isTemplateNameAStarterKitId, STARTER_KITS } from '$letta/client';
 import { getDeployedTemplateByVersion } from '$letta/server/lib/getDeployedTemplateByVersion/getDeployedTemplateByVersion';
+import { versionAgentTemplate } from './lib/versionAgentTemplate/versionAgentTemplate';
 
 export function attachVariablesToTemplates(
   agentTemplate: AgentState,
@@ -391,6 +394,17 @@ export async function createAgent(
         projectId: project_id,
       });
 
+      await versionAgentTemplate(
+        {
+          params: {
+            agent_id: response.id,
+          },
+          body: {},
+          query: {},
+        },
+        context
+      );
+
       return {
         status: 201,
         body: prepareAgentForUser(response, { agentName: name }),
@@ -471,6 +485,52 @@ export async function createAgent(
       };
     }
 
+    if (template) {
+      if (!copiedAgent?.id) {
+        return {
+          status: 500,
+          body: {
+            message: 'Failed to create agent',
+          },
+        };
+      }
+
+      if (!project_id) {
+        return {
+          status: 400,
+          body: {
+            message:
+              'project_id is required when creating an agent from a template',
+          },
+        };
+      }
+
+      await db.insert(agentTemplates).values({
+        organizationId,
+        name: name,
+        id: copiedAgent.id,
+        projectId: project_id,
+      });
+
+      await versionAgentTemplate(
+        {
+          params: {
+            agent_id: copiedAgent.id,
+          },
+          body: {},
+          query: {},
+        },
+        context
+      );
+
+      return {
+        status: 201,
+        body: prepareAgentForUser(copiedAgent, {
+          agentName: name,
+        }),
+      };
+    }
+
     const lastDeployedAgent = await db.query.deployedAgents.findFirst({
       where: eq(deployedAgents.organizationId, organizationId),
       orderBy: [desc(deployedAgents.createdAt)],
@@ -540,6 +600,17 @@ export async function createAgent(
       id: response.id,
       projectId,
     });
+
+    await versionAgentTemplate(
+      {
+        params: {
+          agent_id: response.id,
+        },
+        body: {},
+        query: {},
+      },
+      context
+    );
   } else {
     let uniqueId = name;
     let nextInternalAgentCountId = 0;
@@ -581,164 +652,6 @@ export async function createAgent(
     }),
   };
 }
-
-type DeployAgentTemplateRequest = ServerInferRequest<
-  typeof sdkContracts.agents.versionAgentTemplate
->;
-
-type DeployAgentTemplateResponse = ServerInferResponses<
-  typeof sdkContracts.agents.versionAgentTemplate
->;
-
-export async function versionAgentTemplate(
-  req: DeployAgentTemplateRequest,
-  context: SDKContext
-): Promise<DeployAgentTemplateResponse> {
-  const { agent_id: agentId } = req.params;
-  const { returnAgentState } = req.query;
-  const { migrate_deployed_agents } = req.body;
-
-  const existingDeployedAgentTemplateCount =
-    await db.query.deployedAgentTemplates.findMany({
-      where: eq(deployedAgentTemplates.agentTemplateId, agentId),
-      columns: {
-        id: true,
-      },
-    });
-
-  const [agentTemplate, deployedAgent] = await Promise.all([
-    db.query.agentTemplates.findFirst({
-      where: eq(agentTemplates.id, agentId),
-    }),
-    db.query.deployedAgentTemplates.findFirst({
-      where: eq(deployedAgentTemplates.id, agentId),
-    }),
-  ]);
-
-  if (!agentTemplate && !deployedAgent) {
-    return {
-      status: 404,
-      body: {
-        message: 'Agent not found',
-      },
-    };
-  }
-
-  const projectId = agentTemplate?.projectId || deployedAgent?.projectId || '';
-
-  if (!projectId) {
-    Sentry.captureMessage('Project not found for agent template');
-
-    return {
-      status: 500,
-      body: {
-        message: 'Failed to version agent template',
-      },
-    };
-  }
-
-  let agentTemplateId = agentTemplate?.id;
-  let agentTemplateName = agentTemplate?.name;
-
-  // if agent is a deployed agent, create a new agent template
-  if (!agentTemplateId) {
-    const copiedAgent = await copyAgentById(
-      agentId,
-      context.request.lettaAgentsUserId
-    );
-
-    if (!copiedAgent?.id) {
-      return {
-        status: 500,
-        body: {
-          message: 'Failed to version agent template',
-        },
-      };
-    }
-
-    const name = await findUniqueAgentTemplateName();
-
-    agentTemplateName = name;
-
-    await db.insert(agentTemplates).values({
-      id: copiedAgent.id,
-      name,
-      organizationId: context.request.organizationId,
-      projectId,
-    });
-
-    agentTemplateId = copiedAgent.id;
-  }
-
-  const version = `${existingDeployedAgentTemplateCount.length + 1}`;
-
-  const createdAgent = await copyAgentById(
-    agentId,
-    context.request.lettaAgentsUserId
-  );
-
-  const deployedAgentTemplateId = createdAgent?.id;
-
-  if (!deployedAgentTemplateId) {
-    return {
-      status: 500,
-      body: {
-        message: 'Failed to version agent template',
-      },
-    };
-  }
-
-  await db.insert(deployedAgentTemplates).values({
-    id: deployedAgentTemplateId,
-    projectId,
-    organizationId: context.request.organizationId,
-    agentTemplateId,
-    version,
-  });
-
-  if (migrate_deployed_agents) {
-    if (!agentTemplate?.id) {
-      return {
-        status: 400,
-        body: {
-          message: 'Cannot migrate deployed agents from a deployed agent',
-        },
-      };
-    }
-
-    const deployedAgentsList = await db.query.deployedAgents.findMany({
-      where: eq(deployedAgents.rootAgentTemplateId, agentTemplate.id),
-    });
-
-    void Promise.all(
-      deployedAgentsList.map(async (deployedAgent) => {
-        const deployedAgentVariablesItem =
-          await db.query.deployedAgentVariables.findFirst({
-            where: eq(deployedAgentVariables.deployedAgentId, deployedAgent.id),
-          });
-
-        await updateAgentFromAgentId({
-          variables: deployedAgentVariablesItem?.value || {},
-          baseAgentId: deployedAgentTemplateId,
-          agentToUpdateId: deployedAgent.id,
-          lettaAgentsUserId: context.request.lettaAgentsUserId,
-          preserveCoreMemories: false,
-        });
-      })
-    );
-  }
-
-  return {
-    status: 201,
-    body: {
-      version,
-      fullVersion: `${agentTemplateName}:${version}`,
-      id: deployedAgentTemplateId,
-      ...(returnAgentState ? { state: createdAgent } : {}),
-    },
-  };
-}
-
 interface UpdateAgentFromAgentId {
   preserveCoreMemories?: boolean;
   variables: Record<string, string>;
@@ -947,6 +860,14 @@ export async function migrateAgent(
     lettaAgentsUserId,
     preserveCoreMemories: preserve_core_memories,
   });
+
+  // update deployedAgentTemplateId
+  await db
+    .update(deployedAgents)
+    .set({
+      deployedAgentTemplateId: deployedAgentTemplate.id,
+    })
+    .where(eq(deployedAgents.id, agentIdToMigrate));
 
   return {
     status: 200,
@@ -1401,6 +1322,142 @@ export async function updateAgent(
   };
 }
 
+type SearchDeployedAgentsRequest = ServerInferRequest<
+  typeof sdkContracts.agents.searchDeployedAgents
+>;
+
+type SearchDeployedAgentsResponse = ServerInferResponses<
+  typeof sdkContracts.agents.searchDeployedAgents
+>;
+
+async function searchDeployedAgents(
+  req: SearchDeployedAgentsRequest,
+  context: SDKContext
+): Promise<SearchDeployedAgentsResponse> {
+  const { search, limit = 5, offset } = req.body;
+
+  const where = [
+    eq(deployedAgents.organizationId, context.request.organizationId),
+  ];
+
+  let isDefaultOrderBy = true;
+  let orderBy = [desc(deployedAgents.createdAt)];
+
+  await Promise.all(
+    search.map(async (searchTerm) => {
+      if (searchTerm.field === 'order_by') {
+        if (isDefaultOrderBy) {
+          isDefaultOrderBy = false;
+          orderBy = [];
+        }
+
+        const order = searchTerm.direction === 'asc' ? asc : desc;
+
+        const orderByMap: Record<
+          OrderByValuesEnumType,
+          ReturnType<typeof desc>
+        > = {
+          created_at: order(deployedAgents.createdAt),
+          updated_at: order(deployedAgents.updatedAt),
+        };
+
+        if (orderByMap[searchTerm.value]) {
+          orderBy.push(orderByMap[searchTerm.value]);
+        }
+
+        return;
+      }
+
+      if (searchTerm.field === 'project_id') {
+        const operator = searchTerm.operator === 'eq' ? eq : ne;
+
+        where.push(operator(deployedAgents.projectId, searchTerm.value));
+      }
+
+      if (searchTerm.field === 'version') {
+        const [name, versionNumber] = searchTerm.value.split(':');
+
+        const agentTemplate = await db.query.agentTemplates.findFirst({
+          where: and(
+            eq(agentTemplates.organizationId, context.request.organizationId),
+            eq(agentTemplates.name, name),
+            isNull(agentTemplates.deletedAt)
+          ),
+        });
+
+        if (!agentTemplate) {
+          return;
+        }
+
+        const deployedAgentTemplate =
+          await db.query.deployedAgentTemplates.findFirst({
+            where: and(
+              eq(
+                deployedAgentTemplates.organizationId,
+                context.request.organizationId
+              ),
+              eq(deployedAgentTemplates.version, versionNumber),
+              eq(deployedAgentTemplates.agentTemplateId, agentTemplate.id),
+              isNull(deployedAgentTemplates.deletedAt)
+            ),
+          });
+
+        if (!deployedAgentTemplate) {
+          return;
+        }
+
+        where.push(
+          eq(
+            deployedAgents.deployedAgentTemplateId,
+            deployedAgentTemplate.version
+          )
+        );
+
+        return;
+      }
+    })
+  );
+
+  const query = await db.query.deployedAgents.findMany({
+    where: and(...where),
+    limit,
+    offset,
+    orderBy,
+    with: {
+      deployedAgentTemplate: {
+        columns: {
+          version: true,
+        },
+      },
+    },
+  });
+
+  const allAgentsDetails = await Promise.all(
+    query.map(async (agent) => {
+      return AgentsService.getAgent(
+        {
+          agentId: agent.id,
+        },
+        {
+          user_id: context.request.lettaAgentsUserId,
+        }
+      ).then((response) => {
+        return prepareAgentForUser(response, {
+          agentName: agent.key,
+          version: agent.deployedAgentTemplate?.version,
+        });
+      });
+    })
+  );
+
+  return {
+    status: 200,
+    body: {
+      agents: allAgentsDetails,
+    },
+  };
+}
+
 export const agentsRouter = {
   createAgent,
   versionAgentTemplate,
@@ -1409,4 +1466,5 @@ export const agentsRouter = {
   getAgentById,
   deleteAgent,
   updateAgent,
+  searchDeployedAgents,
 };

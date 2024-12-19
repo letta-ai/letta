@@ -26,7 +26,7 @@ import {
 import { AnalyticsEvent } from '@letta-web/analytics';
 import { jwtDecode } from 'jwt-decode';
 import { AdminService, ToolsService } from '@letta-web/letta-agents-api';
-import { createAgent, versionAgentTemplate } from '$letta/sdk';
+import { createAgent } from '$letta/sdk';
 import { generateDefaultADELayout } from '$letta/utils';
 import { cookies } from 'next/headers';
 import { getDefaultFlags } from '@letta-web/feature-flags';
@@ -857,5 +857,6 @@ export async function generateRedirectSignatureForLoggedInUser(
 
 import { deleteUser } from './lib/deleteUser/deleteUser';
 import { getGithubUserDetails } from './lib/getGithubUserDetails/getGithubUserDetails';
+import { versionAgentTemplate } from '$letta/sdk/agents/lib/versionAgentTemplate/versionAgentTemplate';
 
 export { deleteUser, getGithubUserDetails };

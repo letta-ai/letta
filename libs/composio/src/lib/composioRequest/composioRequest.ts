@@ -7,4 +7,4 @@ export const composioRequest = axios.create({
     'Content-Type': 'application/json',
     'x-api-key': `${environment.COMPOSIO_API_KEY}`,
   },
-})
+});

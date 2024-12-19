@@ -2,11 +2,8 @@ import * as React from 'react';
 import { Slot } from '@radix-ui/react-slot';
 import { DotsHorizontalIcon } from '../../icons';
 import { cn } from '@letta-web/core-style-config';
-import type { TypographyProps } from '../Typography/Typography';
-import { Typography } from '../Typography/Typography';
-import Link from 'next/link';
-import { useMemo } from 'react';
-import { HStack } from '../../framing/HStack/HStack';
+import { Button } from '../Button/Button';
+import { Fragment } from 'react';
 
 const BreadcrumbPrimitive = React.forwardRef<
   HTMLElement,
@@ -23,7 +20,7 @@ const BreadcrumbList = React.forwardRef<
   <ol
     ref={ref}
     className={cn(
-      'flex flex-wrap items-center gap-1.5 break-words text-sm text-muted-foreground sm:gap-2.5',
+      'flex flex-wrap items-center gap-0.5 break-words text-sm text-muted-foreground',
       className
     )}
     {...props}
@@ -85,7 +82,7 @@ function BreadcrumbSeparator({
     <li
       role="presentation"
       aria-hidden="true"
-      className={cn('[&>svg]:size-3.5', className)}
+      className={cn('text-base text-text-lighter', className)}
       {...props}
     >
       {children ?? '/'}
@@ -110,6 +107,8 @@ function BreadcrumbEllipsis({
     </span>
   );
 }
+
+type Variants = 'default' | 'small';
 BreadcrumbEllipsis.displayName = 'BreadcrumbElipssis';
 
 export interface BreadcrumbItemType {
@@ -117,58 +116,60 @@ export interface BreadcrumbItemType {
   onClick?: () => void;
   label: string;
   preIcon?: React.ReactNode;
+  contentOverride?: React.ReactNode;
 }
 
 interface BreadcrumbItemWrapperProps {
   item: BreadcrumbItemType;
-  variant: TypographyProps['variant'];
+  variant?: Variants;
+  isLast?: boolean;
 }
 
 function BreadcrumbItemWrapper(props: BreadcrumbItemWrapperProps) {
-  const { item, variant } = props;
+  const { item, isLast } = props;
 
-  const { href, preIcon, label, onClick } = item;
+  const { href, preIcon, contentOverride, label, onClick } = item;
 
-  const content = useMemo(() => {
-    return (
-      <HStack gap="small">
-        {preIcon && <Slot className="w-4 h-4">{preIcon}</Slot>}
-        <Typography className="hover:underline" bold variant={variant}>
-          {label}
-        </Typography>
-      </HStack>
-    );
-  }, [label, preIcon, variant]);
-
-  if (href) {
-    return (
-      <BreadcrumbItem>
-        <Link href={href}>{content}</Link>
-      </BreadcrumbItem>
-    );
+  if (contentOverride) {
+    return contentOverride;
   }
 
   return (
     <BreadcrumbItem>
-      <button onClick={onClick}>{content}</button>
+      <Button
+        onClick={onClick}
+        {...(href ? { href } : {})}
+        color="tertiary-transparent"
+        preIcon={preIcon}
+        label={label}
+        size="small"
+        _use_rarely_className={cn(
+          !isLast ? 'text-text-lighter' : '',
+          !onClick && !href ? 'cursor-default hover:bg-transparent' : ''
+        )}
+      />
     </BreadcrumbItem>
   );
 }
 
 export interface BreadcrumbProps {
   items: BreadcrumbItemType[];
-  variant?: TypographyProps['variant'];
+  variant?: Variants;
 }
 
-export function Breadcrumb({ items, variant = 'heading1' }: BreadcrumbProps) {
+export function Breadcrumb({ items, variant }: BreadcrumbProps) {
   return (
     <BreadcrumbPrimitive>
       <BreadcrumbList>
         {items.map((item, index) => (
-          <>
-            <BreadcrumbItemWrapper key={index} item={item} variant={variant} />
+          <Fragment key={index}>
+            <BreadcrumbItemWrapper
+              isLast={index === items.length - 1}
+              variant={variant}
+              item={item}
+            />
             {index !== items.length - 1 && <BreadcrumbSeparator />}
-          </>
+          </Fragment>
         ))}
       </BreadcrumbList>
     </BreadcrumbPrimitive>

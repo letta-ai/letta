@@ -8,13 +8,16 @@ export const ComposioProviderConfiguration = z.object({
   displayName: z.string(),
   appId: z.string(),
   tags: z.array(z.string()),
-})
+});
 
 export const GenericProviderConfiguration = z.object({
   type: z.literal('generic'),
   name: z.string(),
-})
+});
 
-export const ProviderSchemaConfiguration = z.union([ComposioProviderConfiguration, GenericProviderConfiguration])
+export const ProviderSchemaConfiguration = z.union([
+  ComposioProviderConfiguration,
+  GenericProviderConfiguration,
+]);
 
-export type ProviderConfiguration = z.infer<typeof ProviderSchemaConfiguration>
+export type ProviderConfiguration = z.infer<typeof ProviderSchemaConfiguration>;
