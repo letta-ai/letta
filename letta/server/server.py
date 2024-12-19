@@ -47,7 +47,7 @@ from letta.schemas.embedding_config import EmbeddingConfig
 # openai schemas
 from letta.schemas.enums import JobStatus
 from letta.schemas.job import Job, JobUpdate
-from letta.schemas.letta_message import FunctionReturn, LettaMessage
+from letta.schemas.letta_message import ToolReturnMessage, LettaMessage
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.memory import (
     ArchivalMemorySummary,
@@ -1373,7 +1373,7 @@ class SyncServer(Server):
         tool_source: str,
         tool_source_type: Optional[str] = None,
         tool_name: Optional[str] = None,
-    ) -> FunctionReturn:
+    ) -> ToolReturnMessage:
         """Run a tool from source code"""
 
         try:
@@ -1397,24 +1397,24 @@ class SyncServer(Server):
         # Next, attempt to run the tool with the sandbox
         try:
             sandbox_run_result = ToolExecutionSandbox(tool.name, tool_args_dict, actor, tool_object=tool).run(agent_state=agent_state)
-            return FunctionReturn(
+            return ToolReturnMessage(
                 id="null",
-                function_call_id="null",
+                tool_call_id="null",
                 date=get_utc_time(),
                 status=sandbox_run_result.status,
-                function_return=str(sandbox_run_result.func_return),
+                tool_return=str(sandbox_run_result.func_return),
                 stdout=sandbox_run_result.stdout,
                 stderr=sandbox_run_result.stderr,
             )
 
         except Exception as e:
             func_return = get_friendly_error_msg(function_name=tool.name, exception_name=type(e).__name__, exception_message=str(e))
-            return FunctionReturn(
+            return ToolReturnMessage(
                 id="null",
-                function_call_id="null",
+                tool_call_id="null",
                 date=get_utc_time(),
                 status="error",
-                function_return=func_return,
+                tool_return=func_return,
                 stdout=[],
                 stderr=[traceback.format_exc()],
             )
