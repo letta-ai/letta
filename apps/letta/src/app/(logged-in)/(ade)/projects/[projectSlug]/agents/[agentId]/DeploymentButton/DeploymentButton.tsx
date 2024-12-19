@@ -14,6 +14,7 @@ import {
   Popover,
   RocketIcon,
   Typography,
+  WarningIcon,
   useForm,
   VStack,
 } from '@letta-web/component-library';
@@ -299,7 +300,7 @@ function TemplateVersionDisplay() {
     deployedAgentTemplateId: deployedAgentTemplate?.id,
   });
 
-  // TODO how to get versionNumber? 
+  const versionNumber = deployedAgentTemplate?.version;
 
   return (
     <Popover
