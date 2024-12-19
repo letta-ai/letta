@@ -529,6 +529,7 @@ def test_sources(client: Union[LocalClient, RESTClient], agent: AgentState):
 
 def test_message_update(client: Union[LocalClient, RESTClient], agent: AgentState):
     """Test that we can update the details of a message"""
+    import json
 
     # create a message
     message_response = client.send_message(agent_id=agent.id, message="Test message", role="user")
@@ -537,7 +538,7 @@ def test_message_update(client: Union[LocalClient, RESTClient], agent: AgentStat
     assert isinstance(message_response.messages[-1], ToolReturnMessage)
     message = message_response.messages[-1]
 
-    new_text = "This exact string would never show up in the message???"
+    new_text = json.dumps({"message": "This exact string would never show up in the message???"})
     new_message = client.update_message(message_id=message.id, text=new_text, agent_id=agent.id)
     assert new_message.text == new_text
 
