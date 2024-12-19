@@ -154,3 +154,5 @@ export * from './lib/reusable/MessageWrapper/MessageWrapper';
 
 export * from './lib/core/Link/Link';
 export * from './lib/core/BlockQuote/BlockQuote';
+
+export * from './lib/reusable/CopyWithCodePreview/CopyWithCodePreview';

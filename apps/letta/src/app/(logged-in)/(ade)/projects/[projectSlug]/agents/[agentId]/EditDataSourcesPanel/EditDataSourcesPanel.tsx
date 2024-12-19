@@ -28,16 +28,11 @@ import { Button, HStack, PanelBar } from '@letta-web/component-library';
 import { VStack } from '@letta-web/component-library';
 import { useTranslations } from 'next-intl';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import type { Source } from '@letta-web/letta-agents-api';
+import type { AgentState, Source } from '@letta-web/letta-agents-api';
+import { UseAgentsServiceGetAgentKeyFn } from '@letta-web/letta-agents-api';
+import { useSourcesServiceUpdateSource } from '@letta-web/letta-agents-api';
 import {
-  type GetAgentSourcesResponse,
-  useSourcesServiceUpdateSource,
-} from '@letta-web/letta-agents-api';
-import {
-  type AgentsServiceGetAgentSourcesDefaultResponse,
   type ListFilesFromSourceResponse,
-  useAgentsServiceGetAgentSources,
-  UseAgentsServiceGetAgentSourcesKeyFn,
   useJobsServiceListActiveJobs,
   UseJobsServiceListActiveJobsKeyFn,
   useSourcesServiceAttachAgentToSource,
@@ -93,11 +88,9 @@ function AttachDataSourceAction(props: AttachDataSourceActionProps) {
         });
       }
 
-      queryClient.setQueriesData<
-        AgentsServiceGetAgentSourcesDefaultResponse | undefined
-      >(
+      queryClient.setQueriesData<AgentState | undefined>(
         {
-          queryKey: UseAgentsServiceGetAgentSourcesKeyFn({
+          queryKey: UseAgentsServiceGetAgentKeyFn({
             agentId: id,
           }),
         },
@@ -106,7 +99,15 @@ function AttachDataSourceAction(props: AttachDataSourceActionProps) {
             return oldData;
           }
 
-          return [response, ...oldData];
+          return {
+            ...oldData,
+            sources: [
+              response,
+              ...oldData.sources.filter(
+                (currentSource) => currentSource.id !== response.id
+              ),
+            ],
+          };
         }
       );
 
@@ -167,15 +168,11 @@ interface AttachDataSourceViewProps {
 }
 
 function AttachDataSourceView(props: AttachDataSourceViewProps) {
-  const { id } = useCurrentAgent();
+  const { sources: existingSources } = useCurrentAgent();
   const { onClose, setMode } = props;
   const { data: allSources } = useSourcesServiceListSources();
 
   const t = useTranslations('ADE/EditDataSourcesPanel');
-
-  const { data: existingSources } = useAgentsServiceGetAgentSources({
-    agentId: id,
-  });
 
   const existingSourcesIdSet = useMemo(() => {
     if (!existingSources) {
@@ -306,11 +303,9 @@ function CreateDataSourceDialogInner(props: CreateDataSourceDialogInnerProps) {
             },
             {
               onSuccess: () => {
-                queryClient.setQueriesData<
-                  AgentsServiceGetAgentSourcesDefaultResponse | undefined
-                >(
+                queryClient.setQueriesData<AgentState | undefined>(
                   {
-                    queryKey: UseAgentsServiceGetAgentSourcesKeyFn({
+                    queryKey: UseAgentsServiceGetAgentKeyFn({
                       agentId: id,
                     }),
                   },
@@ -319,7 +314,15 @@ function CreateDataSourceDialogInner(props: CreateDataSourceDialogInnerProps) {
                       return oldData;
                     }
 
-                    return [response, ...oldData];
+                    return {
+                      ...oldData,
+                      sources: [
+                        response,
+                        ...oldData.sources.filter(
+                          (currentSource) => currentSource.id !== response.id
+                        ),
+                      ],
+                    };
                   }
                 );
 
@@ -569,11 +572,9 @@ function DetachDataSourceConfirmDialog(
       }
 
       onClose();
-      queryClient.setQueriesData<
-        AgentsServiceGetAgentSourcesDefaultResponse | undefined
-      >(
+      queryClient.setQueriesData<AgentState | undefined>(
         {
-          queryKey: UseAgentsServiceGetAgentSourcesKeyFn({
+          queryKey: UseAgentsServiceGetAgentKeyFn({
             agentId,
           }),
         },
@@ -581,9 +582,12 @@ function DetachDataSourceConfirmDialog(
           if (!oldData) {
             return oldData;
           }
-          return oldData.filter(
-            (currentSource) => currentSource.id !== variables.sourceId
-          );
+          return {
+            ...oldData,
+            sources: oldData.sources.filter(
+              (currentSource) => currentSource.id !== variables.sourceId
+            ),
+          };
         }
       );
     },
@@ -715,9 +719,9 @@ function DeleteDataSourceDialog(props: DeleteDataSourceDialogProps) {
   const { mutate, isPending, isError } = useSourcesServiceDetachAgentFromSource(
     {
       onSuccess: () => {
-        queryClient.setQueriesData<GetAgentSourcesResponse | undefined>(
+        queryClient.setQueriesData<AgentState | undefined>(
           {
-            queryKey: UseAgentsServiceGetAgentSourcesKeyFn({
+            queryKey: UseAgentsServiceGetAgentKeyFn({
               agentId,
             }),
           },
@@ -725,9 +729,12 @@ function DeleteDataSourceDialog(props: DeleteDataSourceDialogProps) {
             if (!oldData) {
               return oldData;
             }
-            return oldData.filter(
-              (currentSource) => currentSource.id !== source.id
-            );
+            return {
+              ...oldData,
+              sources: oldData.sources.filter(
+                (currentSource) => currentSource.id !== source.id
+              ),
+            };
           }
         );
         onClose();
@@ -804,10 +811,10 @@ function RenameDataSourceDialog(props: RenameDataSourceDialogProps) {
   });
 
   const { mutate, isPending, isError } = useSourcesServiceUpdateSource({
-    onSuccess: (response, inputs) => {
-      queryClient.setQueriesData<GetAgentSourcesResponse | undefined>(
+    onSuccess: (response) => {
+      queryClient.setQueriesData<AgentState | undefined>(
         {
-          queryKey: UseAgentsServiceGetAgentSourcesKeyFn({
+          queryKey: UseAgentsServiceGetAgentKeyFn({
             agentId,
           }),
         },
@@ -816,16 +823,19 @@ function RenameDataSourceDialog(props: RenameDataSourceDialogProps) {
             return oldData;
           }
 
-          return oldData.map((source) => {
-            if (source.id === response.id) {
-              return {
-                ...source,
-                name: inputs.requestBody.name || '',
-              };
-            }
+          return {
+            ...oldData,
+            sources: oldData.sources.map((currentSource) => {
+              if (currentSource.id === source.id) {
+                return {
+                  ...currentSource,
+                  name: response.name,
+                };
+              }
 
-            return source;
-          });
+              return currentSource;
+            }),
+          };
         }
       );
 
@@ -882,8 +892,7 @@ interface EditDataSourcesContentProps {
 }
 
 function EditDataSourcesContent(props: EditDataSourcesContentProps) {
-  const { id: agentId, embedding_config: agentEmbeddingConfig } =
-    useCurrentAgent();
+  const { embedding_config: agentEmbeddingConfig } = useCurrentAgent();
   const t = useTranslations('ADE/EditDataSourcesPanel');
   const [sourceToDetach, setSourceToDetach] = useState<Source | null>(null);
   const [sourceToRename, setSourceToRename] = useState<Source | null>(null);
@@ -894,9 +903,7 @@ function EditDataSourcesContent(props: EditDataSourcesContentProps) {
   > | null>(null);
 
   const { search } = props;
-  const { data: sources, isError } = useAgentsServiceGetAgentSources({
-    agentId,
-  });
+  const { sources } = useCurrentAgent();
 
   const { data } = useJobsServiceListActiveJobs(undefined, undefined, {
     refetchInterval: 3000,
@@ -1055,14 +1062,6 @@ function EditDataSourcesContent(props: EditDataSourcesContentProps) {
     fileIdsBeingProcessedSet,
   ]);
 
-  if (isError) {
-    return (
-      <HStack fullWidth>
-        <Alert variant="destructive" title={t('error')} />
-      </HStack>
-    );
-  }
-
   if (!sources) {
     return (
       <HStack fullWidth align="center">
@@ -1157,17 +1156,15 @@ export const editDataSourcesPanel = {
   icon: <DatabaseIcon />,
   useGetTitle: () => {
     const t = useTranslations('ADE/EditDataSourcesPanel');
-    const { data: sources, isLoading } = useAgentsServiceGetAgentSources({
-      agentId: useCurrentAgent().id,
-    });
+    const { sources } = useCurrentAgent();
 
     const count = useMemo(() => {
-      if (isLoading || !sources) {
+      if (!sources) {
         return '-';
       }
 
       return sources.length || 0;
-    }, [sources, isLoading]);
+    }, [sources]);
 
     return t('title', { count });
   },

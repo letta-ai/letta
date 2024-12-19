@@ -2,10 +2,12 @@
 import { webOriginSDKApi, webOriginSDKQueryKeys } from '$letta/client';
 import { useParams, usePathname } from 'next/navigation';
 import { useAgentsServiceGetAgent } from '@letta-web/letta-agents-api';
+import { get } from 'lodash-es';
 
 interface UseCurrentAgentMetaDataResponse {
   agentId: string;
   agentName: string;
+  isFromTemplate: boolean;
   isTemplate: boolean;
   isLocal: boolean;
 }
@@ -37,11 +39,13 @@ export function useCurrentAgentMetaData(): UseCurrentAgentMetaDataResponse {
       agentName: localAgent?.data?.name || '',
       isTemplate: false,
       isLocal: true,
+      isFromTemplate: false,
     };
   }
 
   let agentName = '';
   let isTemplate = false;
+  let isFromTemplate = false;
 
   if (templateName) {
     isTemplate = true;
@@ -80,6 +84,7 @@ export function useCurrentAgentMetaData(): UseCurrentAgentMetaDataResponse {
 
     agentId = deployedAgent?.body.id || '';
     agentName = deployedAgent?.body.name || '';
+    isFromTemplate = !!get(deployedAgent?.body.metadata_, 'parentTemplate');
   }
 
   if (!agentId) {
@@ -92,6 +97,7 @@ export function useCurrentAgentMetaData(): UseCurrentAgentMetaDataResponse {
     agentId,
     agentName,
     isTemplate,
+    isFromTemplate,
     isLocal: false,
   };
 }
