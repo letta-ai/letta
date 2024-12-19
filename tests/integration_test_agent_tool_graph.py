@@ -3,6 +3,7 @@ import uuid
 
 import pytest
 from letta import create_client
+from letta.schemas.letta_message import ToolCallMessage
 from letta.schemas.tool_rule import (
     ChildToolRule,
     ConditionalToolRule,
@@ -331,19 +332,12 @@ def test_agent_no_structured_output_with_one_child_tool(mock_e2b_api_key_none):
                 assert_invoked_function_call(response.messages, "archival_memory_insert")
                 assert_invoked_function_call(response.messages, "send_message")
 
-        # Check ordering of tool calls
-        tool_names = [t.name for t in [archival_memory_search, archival_memory_insert, send_message]]
-        for m in response.messages:
-            if isinstance(m, ToolCallMessage):
-                # Check that it's equal to the first one
-                assert m.tool_call.name == tool_names[0]
-
                 # Check ordering of tool calls
                 tool_names = [t.name for t in [archival_memory_search, archival_memory_insert, send_message]]
                 for m in response.messages:
-                    if isinstance(m, FunctionCallMessage):
+                    if isinstance(m, ToolCallMessage):
                         # Check that it's equal to the first one
-                        assert m.function_call.name == tool_names[0]
+                        assert m.tool_call.name == tool_names[0]
 
                         # Pop out first one
                         tool_names = tool_names[1:]
@@ -415,13 +409,13 @@ def test_agent_conditional_tool_easy(mock_e2b_api_key_none):
     # Check ordering of tool calls
     found_secret_word = False
     for m in response.messages:
-        if isinstance(m, FunctionCallMessage):
-            if m.function_call.name == secret_word_tool:
+        if isinstance(m, ToolCallMessage):
+            if m.tool_call.name == secret_word_tool:
                 # Should be the last tool call
                 found_secret_word = True
             else:
                 # Before finding secret_word, only flip_coin should be called
-                assert m.function_call.name == coin_flip_name
+                assert m.tool_call.name == coin_flip_name
                 assert not found_secret_word
 
     # Ensure we found the secret word exactly once
@@ -502,8 +496,8 @@ def test_agent_conditional_tool_hard(mock_e2b_api_key_none):
     # Check ordering of tool calls
     found_words = []
     for m in response.messages:
-        if isinstance(m, FunctionCallMessage):
-            name = m.function_call.name
+        if isinstance(m, ToolCallMessage):
+            name = m.tool_call.name
             if name in [play_game, coin_flip_name]:
                 # Before finding secret_word, only can_play_game and flip_coin should be called
                 assert name in [play_game, coin_flip_name]
@@ -579,10 +573,10 @@ def test_agent_conditional_tool_without_default_child(mock_e2b_api_key_none):
     found_any_tool = False
     found_return_none = False
     for m in response.messages:
-        if isinstance(m, FunctionCallMessage):
-            if m.function_call.name == tool_name:
+        if isinstance(m, ToolCallMessage):
+            if m.tool_call.name == tool_name:
                 found_return_none = True
-            elif found_return_none and m.function_call.name:
+            elif found_return_none and m.tool_call.name:
                 found_any_tool = True
                 break
 
@@ -638,7 +632,7 @@ def test_agent_reload_remembers_function_response(mock_e2b_api_key_none):
     assert_invoked_function_call(response.messages, secret_word)
     found_fourth_secret = False
     for m in response.messages:
-        if isinstance(m, FunctionCallMessage) and m.function_call.name == secret_word:
+        if isinstance(m, ToolCallMessage) and m.tool_call.name == secret_word:
             found_fourth_secret = True
             break
 

@@ -1,7 +1,7 @@
 import json
 import logging
 import uuid
-from typing import Callable, List, Optional, Union
+from typing import Callable, List, Optional, Sequence, Union
 
 from letta.llm_api.helpers import unpack_inner_thoughts_from_kwargs
 from letta.schemas.tool_rule import BaseToolRule
@@ -373,7 +373,7 @@ def assert_sanity_checks(response: LettaResponse):
     assert len(response.messages) > 0, response
 
 
-def assert_invoked_send_message_with_keyword(messages: List[LettaMessage], keyword: str, case_sensitive: bool = False) -> None:
+def assert_invoked_send_message_with_keyword(messages: Sequence[LettaMessage], keyword: str, case_sensitive: bool = False) -> None:
     # Find first instance of send_message
     target_message = None
     for message in messages:
@@ -406,7 +406,7 @@ def assert_invoked_send_message_with_keyword(messages: List[LettaMessage], keywo
         raise InvalidToolCallError(messages=[target_message], explanation=f"Message argument did not contain keyword={keyword}")
 
 
-def assert_invoked_function_call(messages: List[LettaMessage], function_name: str) -> None:
+def assert_invoked_function_call(messages: Sequence[LettaMessage], function_name: str) -> None:
     for message in messages:
         if isinstance(message, ToolCallMessage) and message.tool_call.name == function_name:
             # Found it, do nothing
