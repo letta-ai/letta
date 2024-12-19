@@ -43,9 +43,15 @@ class LettaResponse(BaseModel):
             elif msg.message_type == "function_call":
                 args = format_json(msg.function_call.arguments)
                 return f'<div class="content"><span class="function-name">{html.escape(msg.function_call.name)}</span>({args})</div>'
+            elif msg.message_type == "tool_call_message":
+                args = format_json(msg.tool_call.arguments)
+                return f'<div class="content"><span class="function-name">{html.escape(msg.function_call.name)}</span>({args})</div>'
             elif msg.message_type == "function_return":
-
                 return_value = format_json(msg.function_return)
+                # return f'<div class="status-line">Status: {html.escape(msg.status)}</div><div class="content">{return_value}</div>'
+                return f'<div class="content">{return_value}</div>'
+            elif msg.message_type == "tool_return_message":
+                return_value = format_json(msg.tool_return)
                 # return f'<div class="status-line">Status: {html.escape(msg.status)}</div><div class="content">{return_value}</div>'
                 return f'<div class="content">{return_value}</div>'
             elif msg.message_type == "user_message":

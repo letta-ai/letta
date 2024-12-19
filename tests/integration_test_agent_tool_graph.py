@@ -3,7 +3,7 @@ import uuid
 
 import pytest
 from letta import create_client
-from letta.schemas.letta_message import FunctionCallMessage
+from letta.schemas.letta_message import ToolCallMessage
 from letta.schemas.tool_rule import ChildToolRule, InitToolRule, TerminalToolRule
 from tests.helpers.endpoints_helper import (
     assert_invoked_function_call,
@@ -115,9 +115,9 @@ def test_single_path_agent_tool_call_graph(mock_e2b_api_key_none):
     tool_names = [t.name for t in [t1, t2, t3, t4]]
     tool_names += ["send_message"]
     for m in response.messages:
-        if isinstance(m, FunctionCallMessage):
+        if isinstance(m, ToolCallMessage):
             # Check that it's equal to the first one
-            assert m.function_call.name == tool_names[0]
+            assert m.tool_call.name == tool_names[0]
 
             # Pop out first one
             tool_names = tool_names[1:]
@@ -220,9 +220,9 @@ def test_claude_initial_tool_rule_enforced(mock_e2b_api_key_none):
         tool_names = [t.name for t in [t1, t2]]
         tool_names += ["send_message"]
         for m in messages:
-            if isinstance(m, FunctionCallMessage):
+            if isinstance(m, ToolCallMessage):
                 # Check that it's equal to the first one
-                assert m.function_call.name == tool_names[0]
+                assert m.tool_call.name == tool_names[0]
 
                 # Pop out first one
                 tool_names = tool_names[1:]
@@ -273,9 +273,9 @@ def test_agent_no_structured_output_with_one_child_tool(mock_e2b_api_key_none):
         # Check ordering of tool calls
         tool_names = [t.name for t in [archival_memory_search, archival_memory_insert, send_message]]
         for m in response.messages:
-            if isinstance(m, FunctionCallMessage):
+            if isinstance(m, ToolCallMessage):
                 # Check that it's equal to the first one
-                assert m.function_call.name == tool_names[0]
+                assert m.tool_call.name == tool_names[0]
 
                 # Pop out first one
                 tool_names = tool_names[1:]

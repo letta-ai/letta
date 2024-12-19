@@ -16,9 +16,9 @@ from letta.schemas.enums import MessageRole
 from letta.schemas.letta_base import OrmMetadataBase
 from letta.schemas.letta_message import (
     AssistantMessage,
-    FunctionCall,
-    FunctionCallMessage,
-    FunctionReturn,
+    ToolCall as LettaToolCall,
+    ToolCallMessage,
+    ToolReturnMessage,
     InternalMonologue,
     LettaMessage,
     SystemMessage,
@@ -172,18 +172,18 @@ class Message(BaseMessage):
                         )
                     else:
                         messages.append(
-                            FunctionCallMessage(
+                            ToolCallMessage(
                                 id=self.id,
                                 date=self.created_at,
-                                function_call=FunctionCall(
+                                tool_call=LettaToolCall(
                                     name=tool_call.function.name,
                                     arguments=tool_call.function.arguments,
-                                    function_call_id=tool_call.id,
+                                    tool_call_id=tool_call.id,
                                 ),
                             )
                         )
         elif self.role == MessageRole.tool:
-            # This is type FunctionReturn
+            # This is type ToolReturnMessage
             # Try to interpret the function return, recall that this is how we packaged:
             # def package_function_response(was_success, response_string, timestamp=None):
             #     formatted_time = get_local_time() if timestamp is None else timestamp
@@ -208,12 +208,12 @@ class Message(BaseMessage):
             messages.append(
                 # TODO make sure this is what the API returns
                 # function_return may not match exactly...
-                FunctionReturn(
+                ToolReturnMessage(
                     id=self.id,
                     date=self.created_at,
-                    function_return=self.text,
+                    tool_return=self.text,
                     status=status_enum,
-                    function_call_id=self.tool_call_id,
+                    tool_call_id=self.tool_call_id,
                 )
             )
         elif self.role == MessageRole.user:

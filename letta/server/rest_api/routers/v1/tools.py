@@ -7,7 +7,7 @@ from fastapi import APIRouter, Body, Depends, Header, HTTPException
 
 from letta.errors import LettaToolCreateError
 from letta.orm.errors import UniqueConstraintViolationError
-from letta.schemas.letta_message import FunctionReturn
+from letta.schemas.letta_message import ToolReturnMessage
 from letta.schemas.tool import Tool, ToolCreate, ToolRunFromSource, ToolUpdate
 from letta.schemas.user import User
 from letta.server.rest_api.utils import get_letta_server
@@ -163,7 +163,7 @@ def upsert_base_tools(
     return server.tool_manager.upsert_base_tools(actor=actor)
 
 
-@router.post("/run", response_model=FunctionReturn, operation_id="run_tool_from_source")
+@router.post("/run", response_model=ToolReturnMessage, operation_id="run_tool_from_source")
 def run_tool_from_source(
     server: SyncServer = Depends(get_letta_server),
     request: ToolRunFromSource = Body(...),
