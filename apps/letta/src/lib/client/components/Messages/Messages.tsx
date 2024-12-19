@@ -205,6 +205,13 @@ export function Messages(props: MessagesProps) {
     queryFn: async (query) => {
       const res = (await getMessages({
         url: developmentServerConfig?.url,
+        headers: {
+          ...(developmentServerConfig?.password
+            ? {
+                'X-BARE-PASSWORD': `password ${developmentServerConfig.password}`,
+              }
+            : {}),
+        },
         agentId,
         limit: MESSAGE_LIMIT,
         ...(query.pageParam.before ? { cursor: query.pageParam.before } : {}),
