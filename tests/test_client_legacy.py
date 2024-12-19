@@ -20,7 +20,7 @@ from letta.schemas.letta_message import (
     AssistantMessage,
     ToolCallMessage,
     ToolReturnMessage,
-    InternalMonologue,
+    ReasoningMessage,
     LettaMessage,
     SystemMessage,
     UserMessage,
@@ -171,7 +171,7 @@ def test_agent_interactions(mock_e2b_api_key_none, client: Union[LocalClient, RE
         assert type(letta_message) in [
             SystemMessage,
             UserMessage,
-            InternalMonologue,
+            ReasoningMessage,
             ToolCallMessage,
             ToolReturnMessage,
             AssistantMessage,
@@ -255,7 +255,7 @@ def test_streaming_send_message(mock_e2b_api_key_none, client: RESTClient, agent
     assert response, "Sending message failed"
     for chunk in response:
         assert isinstance(chunk, LettaStreamingResponse)
-        if isinstance(chunk, InternalMonologue) and chunk.internal_monologue and chunk.internal_monologue != "":
+        if isinstance(chunk, ReasoningMessage) and chunk.reasoning and chunk.reasoning != "":
             inner_thoughts_exist = True
             inner_thoughts_count += 1
         if isinstance(chunk, ToolCallMessage) and chunk.tool_call and chunk.tool_call.name == "send_message":
