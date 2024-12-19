@@ -39,13 +39,15 @@ import type {
   AgentSimulatorMessageType,
 } from '../../../../app/(logged-in)/(ade)/projects/[projectSlug]/agents/[agentId]/AgentSimulator/types';
 import { FunctionIcon } from '@letta-web/component-library';
-import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
+import { useInfiniteQuery } from '@tanstack/react-query';
 import type { InfiniteData } from '@tanstack/query-core';
 import { jsonrepair } from 'jsonrepair';
 import { useTranslations } from 'next-intl';
 import { get } from 'lodash-es';
 import { useGetMessagesWorker } from '$letta/client/components/Messages/useGetMessagesWorker/useGetMessagesWorker';
 import { useCurrentDevelopmentServerConfig } from '../../../../app/(logged-in)/(dashboard-like)/development-servers/[developmentServerId]/hooks/useCurrentDevelopmentServerConfig/useCurrentDevelopmentServerConfig';
+import { useAtom } from 'jotai';
+import { firstPageMessagesCache } from '$letta/client/components/Messages/firstPageMessagesCache/firstPageMessagesCache';
 
 // tryFallbackParseJson will attempt to parse a string as JSON, if it fails, it will trim the last character and try again
 // until it succeeds or the string is empty
@@ -168,8 +170,6 @@ export function Messages(props: MessagesProps) {
   const [lastMessageReceived, setLastMessageReceived] =
     useState<LastMessageReceived | null>(null);
 
-  const queryClient = useQueryClient();
-
   const developmentServerConfig = useCurrentDevelopmentServerConfig();
   const { getMessages } = useGetMessagesWorker();
 
@@ -191,6 +191,8 @@ export function Messages(props: MessagesProps) {
     return 5000;
   }, [isSendingMessage, lastMessageReceived]);
 
+  const [messageCache, setMessageCache] = useAtom(firstPageMessagesCache);
+
   const { data, hasNextPage, fetchNextPage, isFetching } = useInfiniteQuery<
     AgentMessage[],
     Error,
@@ -209,11 +211,10 @@ export function Messages(props: MessagesProps) {
       })) as unknown as AgentMessage[];
 
       if (isMessageUpdateLock) {
-        return (queryClient.getQueryData<
-          InfiniteData<ListAgentMessagesResponse>
-        >(UseAgentsServiceListAgentMessagesKeyFn({ agentId }))?.pages?.[0] ||
-          []) as AgentMessage[];
+        return messageCache;
       }
+
+      setMessageCache(res);
 
       return res;
     },
