@@ -253,6 +253,11 @@
       "createButton": "Create data source"
     }
   },
+  "components/QueryBuilder": {
+    "addCondition": "Add Condition",
+    "removeCondition": "Remove Condition",
+    "addCombinator": "Add Combinator"
+  },
   "create-organization": {
     "error": "There was an error creating the organization, please try again or contact support.",
     "title": "Create a new Organization",
@@ -752,7 +757,9 @@
     "updateVariables": "Update variables",
     "hasFailedToSendMessageText": {
       "local": "Failed to send message, please try again or check your server logs",
-      "cloud": "Failed to send message, please try again or contact support"
+      "cloud": "Failed to send message, please try again or contact support",
+      "contextWindowExceeded": "Input exceeded context window limit and is at max compression, please increase limit and try again.",
+      "rateLimitExceeded": "Rate limit reached, please wait a few moments before trying again."
     }
   },
   "ADE/ADESidebar": {
@@ -1526,6 +1533,7 @@
   "login/LoginComponent": {
     "title": "Sign in to Letta Cloud",
     "google": "Continue with Google",
+    "github": "Continue with Github",
     "terms": "By clicking the button above, you agree to our <terms>Terms of Service</terms> and <privacy>Privacy Policy</privacy>."
   },
   "data-sources/layout": {
