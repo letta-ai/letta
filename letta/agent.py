@@ -33,7 +33,6 @@ from letta.schemas.agent import AgentState, AgentStepResponse, UpdateAgent
 from letta.schemas.block import BlockUpdate
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import MessageRole
-from letta.schemas.letta_message import FunctionReturn
 from letta.schemas.memory import ContextWindowOverview, Memory
 from letta.schemas.message import Message, MessageUpdate
 from letta.schemas.openai.chat_completion_request import (

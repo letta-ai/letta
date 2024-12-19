@@ -3,7 +3,6 @@ import uuid
 
 import pytest
 from letta import create_client
-from letta.schemas.letta_message import FunctionCallMessage
 from letta.schemas.tool_rule import (
     ChildToolRule,
     ConditionalToolRule,
