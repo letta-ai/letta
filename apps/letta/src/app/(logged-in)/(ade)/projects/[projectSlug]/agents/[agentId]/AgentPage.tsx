@@ -720,7 +720,9 @@ export function AgentPage() {
               }}
             >
               <HStack gap={false} align="center">
-                <Navigation />
+                <HStack paddingRight="small" align="center" gap="small">
+                  <Navigation />
+                </HStack>
                 <HStack paddingRight="small" align="center" gap="small">
                   <DeploymentButton />
                   <ProfilePopover size="small" />
