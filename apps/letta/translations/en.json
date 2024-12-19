@@ -488,22 +488,27 @@
       "subtitle": "Get started with these quick actions",
       "title": "Quick Actions",
       "createTemplate": {
-        "title": "New template",
-        "description": "Create a new agent template to define the structure of agents you deploy in your project.",
-        "cta": "Create template"
+        "title": "Create a new agent template",
+        "description": "Create a template from an existing template, or start from scratch"
+      },
+      "viewTemplates": {
+        "title": "View all agent templates",
+        "description": "Templates are used to define the structure of agents you deploy"
       },
       "monitorAgents": {
-        "title": "Monitor agents",
-        "description": "View and manage all agents deployed in your project.",
-        "cta": "View agents"
+        "title": "View deployed agents",
+        "description": "View and manage all agents deployed in your project."
       }
     },
     "agentTemplatesList": {
+      "updatedAt": "You last edited this template at {date}",
       "emptyMessage": "You have no templates in this project",
-      "createAgentTemplate": "New agent template"
+      "createAgentTemplate": "New agent template",
+      "badge": "Template"
     },
     "agentTemplatesSection": {
-      "title": "Recent templates",
+      "title": "Recent activity",
+      "subtitle": "Pick up where you left off",
       "createAgentTemplate": "New agent template"
     }
   },
