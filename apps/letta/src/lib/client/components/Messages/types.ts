@@ -3,4 +3,5 @@ export interface GetMessagesWorkerPayload {
   limit: number;
   agentId: string;
   url?: string;
+  headers?: Record<string, string>;
 }
