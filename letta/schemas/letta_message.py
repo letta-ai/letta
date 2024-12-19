@@ -70,7 +70,7 @@ class ReasoningMessage(LettaMessage):
         date (datetime): The date the message was created in ISO format
     """
 
-    message_type: Literal["internal_monologue"] = "internal_monologue"
+    message_type: Literal["reasoning_message"] = "reasoning_message"
     reasoning: str
 
 
