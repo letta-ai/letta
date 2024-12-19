@@ -1350,9 +1350,6 @@
   "projects/(projectSlug)/agents/(agentId)/AgentPage": {
     "preparingAgent": "Preparing agent",
     "error": "Fatal error occured, please refresh the page. If the error persists, please contact support in the top right corner.",
-    "Navigation": {
-      "dashboard": "Project dashboard"
-    },
     "AgentMobileNavigation": {
       "more": "More panels",
       "less": "Less panels"
