@@ -26,7 +26,7 @@ from letta.schemas.agent import AgentState
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.letta_message import (
     ToolCallMessage,
-    InternalMonologue,
+    ReasoningMessage,
     LettaMessage,
 )
 from letta.schemas.letta_response import LettaResponse
@@ -419,7 +419,7 @@ def assert_invoked_function_call(messages: List[LettaMessage], function_name: st
 
 def assert_inner_monologue_is_present_and_valid(messages: List[LettaMessage]) -> None:
     for message in messages:
-        if isinstance(message, InternalMonologue):
+        if isinstance(message, ReasoningMessage):
             # Found it, do nothing
             return
 

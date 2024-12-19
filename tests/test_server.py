@@ -12,7 +12,7 @@ from letta.schemas.enums import MessageRole
 from letta.schemas.letta_message import (
     ToolCallMessage,
     ToolReturnMessage,
-    InternalMonologue,
+    ReasoningMessage,
     LettaMessage,
     SystemMessage,
     UserMessage,
@@ -691,14 +691,14 @@ def _test_get_messages_letta_format(
                             letta_message = letta_messages[letta_message_index]
 
                     if message.text:
-                        assert isinstance(letta_message, InternalMonologue)
+                        assert isinstance(letta_message, ReasoningMessage)
                         letta_message_index += 1
                     else:
                         assert message.tool_calls is not None
 
                 else:  # Non-reverse handling
                     if message.text:
-                        assert isinstance(letta_message, InternalMonologue)
+                        assert isinstance(letta_message, ReasoningMessage)
                         letta_message_index += 1
                         if letta_message_index >= len(letta_messages):
                             break
