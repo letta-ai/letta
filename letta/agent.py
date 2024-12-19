@@ -10,6 +10,7 @@ from typing import List, Literal, Optional, Tuple, Union
 from letta.constants import (
     BASE_TOOLS,
     CLI_WARNING_PREFIX,
+    ERROR_MESSAGE_PREFIX,
     FIRST_MESSAGE_ATTEMPTS,
     FUNC_FAILED_HEARTBEAT_MESSAGE,
     IN_CONTEXT_MEMORY_KEYWORD,
@@ -863,7 +864,7 @@ class Agent(BaseAgent):
                 return messages, False, True  # force a heartbeat to allow agent to handle error
 
             # Step 4: check if function response is an error
-            if function_response_string.startswith("Error"):
+            if function_response_string.startswith(ERROR_MESSAGE_PREFIX):
                 function_response = package_function_response(False, function_response_string)
                 # TODO: truncate error message somehow
                 messages.append(
