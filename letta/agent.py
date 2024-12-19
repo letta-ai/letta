@@ -1,5 +1,6 @@
 import datetime
 import inspect
+import json
 import time
 import traceback
 import warnings
@@ -371,6 +372,9 @@ class Agent(BaseAgent):
             self._append_to_messages(added_messages=init_messages_objs)
             self._validate_message_buffer_is_utc()
 
+        # Load last function response from message history
+        self.last_function_response = self.load_last_function_response()
+
         # Keep track of the total number of messages throughout all time
         self.messages_total = messages_total if messages_total is not None else (len(self._messages) - 1)  # (-system)
         self.messages_total_init = len(self._messages) - 1
@@ -388,6 +392,19 @@ class Agent(BaseAgent):
             self.supports_structured_output = False
         else:
             self.supports_structured_output = True
+
+    def load_last_function_response(self):
+        """Load the last function response from message history"""
+        for i in range(len(self._messages) - 1, -1, -1):
+            msg = self._messages[i]
+            if msg.role == MessageRole.tool and msg.text:
+                try:
+                    response_json = json.loads(msg.text)
+                    if response_json.get("message"):
+                        return response_json["message"]
+                except (json.JSONDecodeError, KeyError):
+                    raise ValueError(f"Invalid JSON format in message: {msg.text}")
+        return None
 
     def update_memory_if_change(self, new_memory: Memory) -> bool:
         """
@@ -586,7 +603,7 @@ class Agent(BaseAgent):
     ) -> ChatCompletionResponse:
         """Get response from LLM API with robust retry mechanism."""
 
-        allowed_tool_names = self.tool_rules_solver.get_allowed_tool_names()
+        allowed_tool_names = self.tool_rules_solver.get_allowed_tool_names(last_function_response=self.last_function_response)
         agent_state_tool_jsons = [t.json_schema for t in self.agent_state.tools]
 
         allowed_functions = (
@@ -826,6 +843,7 @@ class Agent(BaseAgent):
                 error_msg_user = f"{error_msg}\n{traceback.format_exc()}"
                 printd(error_msg_user)
                 function_response = package_function_response(False, error_msg)
+                self.last_function_response = function_response
                 # TODO: truncate error message somehow
                 messages.append(
                     Message.dict_to_message(
@@ -861,6 +879,7 @@ class Agent(BaseAgent):
             )  # extend conversation with function response
             self.interface.function_message(f"Ran {function_name}({function_args})", msg_obj=messages[-1])
             self.interface.function_message(f"Success: {function_response_string}", msg_obj=messages[-1])
+            self.last_function_response = function_response
 
         else:
             # Standard non-function reply
