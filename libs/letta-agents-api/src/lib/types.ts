@@ -96,8 +96,8 @@ export const ErrorMessageSchema = z.object({
 });
 
 export const AgentMessageTypeSchema = z.enum([
-  'function_return',
-  'function_call',
+  'tool_return_message',
+  'tool_call_message',
   'internal_monologue',
   'user_message',
   'system_message',

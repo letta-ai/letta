@@ -285,7 +285,7 @@ export function Messages(props: MessagesProps) {
               <MessageWrapper
                 type="code"
                 header={{
-                  title: t('functionReturn'),
+                  title: t('toolReturn'),
 
                   badge: (
                     <Badge
