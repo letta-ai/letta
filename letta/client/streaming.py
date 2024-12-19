@@ -10,7 +10,7 @@ from letta.schemas.enums import MessageStreamStatus
 from letta.schemas.letta_message import (
     ToolCallMessage,
     ToolReturnMessage,
-    InternalMonologue,
+    ReasoningMessage,
 )
 from letta.schemas.letta_response import LettaStreamingResponse
 from letta.schemas.usage import LettaUsageStatistics
@@ -53,8 +53,8 @@ def _sse_post(url: str, data: dict, headers: dict) -> Generator[LettaStreamingRe
                         yield MessageStreamStatus(sse.data)
                     else:
                         chunk_data = json.loads(sse.data)
-                        if "internal_monologue" in chunk_data:
-                            yield InternalMonologue(**chunk_data)
+                        if "reasoning" in chunk_data:
+                            yield ReasoningMessage(**chunk_data)
                         elif "tool_call" in chunk_data:
                             yield ToolCallMessage(**chunk_data)
                         elif "tool_return" in chunk_data:

@@ -16,7 +16,7 @@ from letta.schemas.letta_message import (
     ToolCallDelta,
     ToolCallMessage,
     ToolReturnMessage,
-    InternalMonologue,
+    ReasoningMessage,
     LegacyFunctionCallMessage,
     LegacyLettaMessage,
     LettaMessage,
@@ -411,7 +411,7 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
 
     def _process_chunk_to_letta_style(
         self, chunk: ChatCompletionChunkResponse, message_id: str, message_date: datetime
-    ) -> Optional[Union[InternalMonologue, ToolCallMessage, AssistantMessage]]:
+    ) -> Optional[Union[ReasoningMessage, ToolCallMessage, AssistantMessage]]:
         """
         Example data from non-streaming response looks like:
 
@@ -426,10 +426,10 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
 
         # inner thoughts
         if message_delta.content is not None:
-            processed_chunk = InternalMonologue(
+            processed_chunk = ReasoningMessage(
                 id=message_id,
                 date=message_date,
-                internal_monologue=message_delta.content,
+                reasoning=message_delta.content,
             )
 
         # tool calls
@@ -518,10 +518,10 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
 
                     # If we have inner thoughts, we should output them as a chunk
                     if updates_inner_thoughts:
-                        processed_chunk = InternalMonologue(
+                        processed_chunk = ReasoningMessage(
                             id=message_id,
                             date=message_date,
-                            internal_monologue=updates_inner_thoughts,
+                            reasoning=updates_inner_thoughts,
                         )
                         # Additionally inner thoughts may stream back with a chunk of main JSON
                         # In that case, since we can only return a chunk at a time, we should buffer it
@@ -680,13 +680,13 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
             # Once we get a complete key, check if the key matches
 
             # If it does match, start processing the value (stringified-JSON string
-            # And with each new chunk, output it as a chunk of type InternalMonologue
+            # And with each new chunk, output it as a chunk of type ReasoningMessage
 
             # If the key doesn't match, then flush the buffer as a single ToolCallMessage chunk
 
             # If we're reading a value
 
-            # If we're reading the inner thoughts value, we output chunks of type InternalMonologue
+            # If we're reading the inner thoughts value, we output chunks of type ReasoningMessage
 
             # Otherwise, do simple chunks of ToolCallMessage
 
@@ -823,10 +823,10 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
             #     "id": str(msg_obj.id) if msg_obj is not None else None,
             # }
             assert msg_obj is not None, "Internal monologue requires msg_obj references for metadata"
-            processed_chunk = InternalMonologue(
+            processed_chunk = ReasoningMessage(
                 id=msg_obj.id,
                 date=msg_obj.created_at,
-                internal_monologue=msg,
+                reasoning=msg,
             )
 
             self._push_to_buffer(processed_chunk)
