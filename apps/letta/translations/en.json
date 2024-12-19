@@ -253,11 +253,6 @@
       "createButton": "Create data source"
     }
   },
-  "components/QueryBuilder": {
-    "addCondition": "Add Condition",
-    "removeCondition": "Remove Condition",
-    "addCombinator": "Add Combinator"
-  },
   "create-organization": {
     "error": "There was an error creating the organization, please try again or contact support.",
     "title": "Create a new Organization",
@@ -746,20 +741,18 @@
     },
     "DialogSessionSheet": {
       "updating": "Updating variables...",
-      "placeholder": "Variable value",
-      "save": "Update variables",
-      "label": "Variable name",
+      "placeholder": "Variable Value",
+      "save": "Update Variables",
+      "label": "Variable Name",
       "editLabel": "Edit {variableName}",
-      "noVariablesDefined": "You have no variables set yet, to define a variable, write a alphanumeric name wrapped in handlebars inside of core memory, e.g. {variableName}"
+      "noVariablesDefined": "You have no variables set yet, to define a variable, write a alphanumeric name wrapped in handlebars in Memory Blocks, e.g. {variableName}"
     },
     "showVariables": "Variables",
     "hideVariables": "Hide variables",
     "updateVariables": "Update variables",
     "hasFailedToSendMessageText": {
       "local": "Failed to send message, please try again or check your server logs",
-      "cloud": "Failed to send message, please try again or contact support",
-      "contextWindowExceeded": "Input exceeded context window limit and is at max compression, please increase limit and try again.",
-      "rateLimitExceeded": "Rate limit reached, please wait a few moments before trying again."
+      "cloud": "Failed to send message, please try again or contact support"
     }
   },
   "ADE/ADESidebar": {
@@ -1351,7 +1344,10 @@
   },
   "projects/(projectSlug)/agents/(agentId)/AgentPage": {
     "preparingAgent": "Preparing agent",
-    "error": "Fatal error occured, please refresh the page. If the error persists, please contact support in the top right corner.",
+    "error": "There was a severe error in this application, please refresh this page. If the error persists, please contact support in the top right corner.",
+    "Navigation": {
+      "dashboard": "Project dashboard"
+    },
     "AgentMobileNavigation": {
       "more": "More panels",
       "less": "Less panels"
@@ -1374,12 +1370,12 @@
       "returnToProject": "Return to project"
     },
     "DeployAgentDialog": {
-      "trigger": "Deployment instructions",
+      "trigger": "Create an agent from template",
       "title": "Deploy agent instructions"
     },
     "VersionAgentDialog": {
       "title": "Version agent",
-      "trigger": "Version agent",
+      "trigger": "Save new template version",
       "deployedAgents": "Deployed agents",
       "confirm": "Version agent",
       "description": "Versioning an agent creates a new version of the agent that is immutable and can be used to deploy agents. Are you sure you want to proceed?",
@@ -1387,21 +1383,25 @@
       "migrateDescription": "Selecting this option will migrate all deployed agents to this version, to programmatically migrate agents, visit the <link>API documentation</link>."
     },
     "CloudUpsellDeploy": {
-      "title": "Deploy, Manage and Monitor your agents on Letta Cloud",
-      "description": "Deploy your agent to Letta Cloud to manage and monitor your agents, get insights and more. Apply for early access below.",
-      "cta": "Apply for early access"
+      "trigger": "Deploy",
+      "title": "Deploy your agents on Letta Cloud",
+      "description": "Letta Cloud allows you to deploy agents at scale with zero infrastructure.",
+      "cta": "Get early access"
     },
     "DeploymentButton": {
       "version": "VERSION {version}",
       "readyToDeploy": {
-        "trigger": "Deploy",
-        "heading": "Your template is good to go!",
-        "copy": "This template has not had any changes since the last version. You can deploy following the instructions below:"
+        "trigger": "Template v{version}",
+        "triggerNoVersion": "Template",
+        "heading": "Your template is ready to use",
+        "copy": "You can create new agents from your agent template via the ADE and API."
       },
       "updateAvailable": {
-        "trigger": "Deploy",
-        "heading": "You may want to version your template",
-        "copy": "This template has had changes since the last version. You can create a new version below or follow deployment instructions below:"
+        "trigger": "Template v{version}",
+        "triggerNoVersion": "Template",
+        "heading": "Template has unsaved changes",
+        "copy": "Consider saving a new template version. Agents deployed using your template will use the latest version (v{version}).",
+        "copyNoVersion": "Consider saving a new template version. Agents deployed using your template will use the latest version."
       }
     },
     "agentBaseType": {
@@ -1526,7 +1526,6 @@
   "login/LoginComponent": {
     "title": "Sign in to Letta Cloud",
     "google": "Continue with Google",
-    "github": "Continue with Github",
     "terms": "By clicking the button above, you agree to our <terms>Terms of Service</terms> and <privacy>Privacy Policy</privacy>."
   },
   "data-sources/layout": {
