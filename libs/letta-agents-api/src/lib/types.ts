@@ -53,13 +53,13 @@ export const SendMessageFunctionCallSchema = z.object({
   message: z.string(),
 });
 
-export const FunctionCallSchema = z.object({
-  message_type: z.literal('function_call'),
-  function_call: z.object({
-    message_type: z.literal('function_call').optional(),
-    type: z.literal('function_call').optional(),
+export const ToolCallMessageSchema = z.object({
+  message_type: z.literal('tool_call_message'),
+  tool_call: z.object({
+    message_type: z.literal('tool_call_message').optional(),
+    type: z.literal('tool_call').optional(),
     name: z.string().optional(),
-    function_call_id: z.string().optional(),
+    tool_call_id: z.string().optional(),
     arguments: z.string().optional(),
     formattedArguments: z.record(z.unknown()).optional(),
   }),
@@ -67,18 +67,18 @@ export const FunctionCallSchema = z.object({
   id: z.string(),
 });
 
-export const FunctionReturnSchema = z.object({
-  message_type: z.literal('function_return'),
-  function_return: z.string(),
-  function_call_id: z.string(),
+export const ToolReturnMessageSchema = z.object({
+  message_type: z.literal('tool_return_message'),
+  tool_return: z.string(),
+  tool_call_id: z.string(),
   status: z.string(),
   date: z.string(),
   id: z.string(),
 });
 
 export const AgentMessageSchema = z.discriminatedUnion('message_type', [
-  FunctionReturnSchema,
-  FunctionCallSchema,
+  ToolReturnMessageSchema,
+  ToolCallMessageSchema,
   InternalMonologueSchema,
   UserMessageSchema,
   SystemMessageSchema,
