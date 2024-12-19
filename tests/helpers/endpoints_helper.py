@@ -15,9 +15,9 @@ from letta.config import LettaConfig
 from letta.constants import DEFAULT_HUMAN, DEFAULT_PERSONA
 from letta.embeddings import embedding_model
 from letta.errors import (
-    InvalidFunctionCallError,
+    InvalidToolCallError,
     InvalidInnerMonologueError,
-    MissingFunctionCallError,
+    MissingToolCallError,
     MissingInnerMonologueError,
 )
 from letta.llm_api.llm_api_tools import create
@@ -25,7 +25,7 @@ from letta.local_llm.constants import INNER_THOUGHTS_KWARG
 from letta.schemas.agent import AgentState
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.letta_message import (
-    FunctionCallMessage,
+    ToolCallMessage,
     InternalMonologue,
     LettaMessage,
 )
@@ -377,23 +377,23 @@ def assert_invoked_send_message_with_keyword(messages: List[LettaMessage], keywo
     # Find first instance of send_message
     target_message = None
     for message in messages:
-        if isinstance(message, FunctionCallMessage) and message.function_call.name == "send_message":
+        if isinstance(message, ToolCallMessage) and message.tool_call.name == "send_message":
             target_message = message
             break
 
     # No messages found with `send_messages`
     if target_message is None:
-        raise MissingFunctionCallError(messages=messages, explanation="Missing `send_message` function call")
+        raise MissingToolCallError(messages=messages, explanation="Missing `send_message` function call")
 
-    send_message_function_call = target_message.function_call
+    send_message_function_call = target_message.tool_call
     try:
         arguments = json.loads(send_message_function_call.arguments)
     except:
-        raise InvalidFunctionCallError(messages=[target_message], explanation="Function call arguments could not be loaded into JSON")
+        raise InvalidToolCallError(messages=[target_message], explanation="Function call arguments could not be loaded into JSON")
 
     # Message field not in send_message
     if "message" not in arguments:
-        raise InvalidFunctionCallError(
+        raise InvalidToolCallError(
             messages=[target_message], explanation=f"send_message function call does not have required field `message`"
         )
 
@@ -403,16 +403,16 @@ def assert_invoked_send_message_with_keyword(messages: List[LettaMessage], keywo
         arguments["message"] = arguments["message"].lower()
 
     if not keyword in arguments["message"]:
-        raise InvalidFunctionCallError(messages=[target_message], explanation=f"Message argument did not contain keyword={keyword}")
+        raise InvalidToolCallError(messages=[target_message], explanation=f"Message argument did not contain keyword={keyword}")
 
 
 def assert_invoked_function_call(messages: List[LettaMessage], function_name: str) -> None:
     for message in messages:
-        if isinstance(message, FunctionCallMessage) and message.function_call.name == function_name:
+        if isinstance(message, ToolCallMessage) and message.tool_call.name == function_name:
             # Found it, do nothing
             return
 
-    raise MissingFunctionCallError(
+    raise MissingToolCallError(
         messages=messages, explanation=f"No messages were found invoking function call with name: {function_name}"
     )
 
@@ -446,7 +446,7 @@ def assert_contains_valid_function_call(
     if (hasattr(message, "function_call") and message.function_call is not None) and (
         hasattr(message, "tool_calls") and message.tool_calls is not None
     ):
-        raise InvalidFunctionCallError(messages=[message], explanation="Both function_call and tool_calls is present in the message")
+        raise InvalidToolCallError(messages=[message], explanation="Both function_call and tool_calls is present in the message")
     elif hasattr(message, "function_call") and message.function_call is not None:
         function_call = message.function_call
     elif hasattr(message, "tool_calls") and message.tool_calls is not None:
@@ -455,10 +455,10 @@ def assert_contains_valid_function_call(
         function_call = message.tool_calls[0].function
     else:
         # Throw a missing function call error
-        raise MissingFunctionCallError(messages=[message])
+        raise MissingToolCallError(messages=[message])
 
     if function_call_validator and not function_call_validator(function_call):
-        raise InvalidFunctionCallError(messages=[message], explanation=validation_failure_summary)
+        raise InvalidToolCallError(messages=[message], explanation=validation_failure_summary)
 
 
 def assert_inner_monologue_is_valid(message: Message) -> None:

@@ -17,6 +17,7 @@ from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import Field
 
 from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG
+from letta.log import get_logger
 from letta.orm.errors import NoResultFound
 from letta.schemas.agent import AgentState, CreateAgent, UpdateAgent
 from letta.schemas.block import (  # , BlockLabelUpdate, BlockLimitUpdate
@@ -53,6 +54,8 @@ from letta.server.server import SyncServer
 
 
 router = APIRouter(prefix="/agents", tags=["agents"])
+
+logger = get_logger(__name__)
 
 
 # TODO: This should be paginated

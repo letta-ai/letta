@@ -171,9 +171,9 @@ def test_single_path_agent_tool_call_graph(mock_e2b_api_key_none):
     tool_names = [t.name for t in [t1, t2, t3, t4]]
     tool_names += ["send_message"]
     for m in response.messages:
-        if isinstance(m, FunctionCallMessage):
+        if isinstance(m, ToolCallMessage):
             # Check that it's equal to the first one
-            assert m.function_call.name == tool_names[0]
+            assert m.tool_call.name == tool_names[0]
 
             # Pop out first one
             tool_names = tool_names[1:]
@@ -277,9 +277,9 @@ def test_claude_initial_tool_rule_enforced(mock_e2b_api_key_none):
         tool_names = [t.name for t in [t1, t2]]
         tool_names += ["send_message"]
         for m in messages:
-            if isinstance(m, FunctionCallMessage):
+            if isinstance(m, ToolCallMessage):
                 # Check that it's equal to the first one
-                assert m.function_call.name == tool_names[0]
+                assert m.tool_call.name == tool_names[0]
 
                 # Pop out first one
                 tool_names = tool_names[1:]
@@ -331,6 +331,13 @@ def test_agent_no_structured_output_with_one_child_tool(mock_e2b_api_key_none):
                 assert_invoked_function_call(response.messages, "archival_memory_search")
                 assert_invoked_function_call(response.messages, "archival_memory_insert")
                 assert_invoked_function_call(response.messages, "send_message")
+
+        # Check ordering of tool calls
+        tool_names = [t.name for t in [archival_memory_search, archival_memory_insert, send_message]]
+        for m in response.messages:
+            if isinstance(m, ToolCallMessage):
+                # Check that it's equal to the first one
+                assert m.tool_call.name == tool_names[0]
 
                 # Check ordering of tool calls
                 tool_names = [t.name for t in [archival_memory_search, archival_memory_insert, send_message]]

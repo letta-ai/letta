@@ -8,8 +8,8 @@ from letta.constants import OPENAI_CONTEXT_WINDOW_ERROR_SUBSTRING
 from letta.errors import LLMError
 from letta.schemas.enums import MessageStreamStatus
 from letta.schemas.letta_message import (
-    FunctionCallMessage,
-    FunctionReturn,
+    ToolCallMessage,
+    ToolReturnMessage,
     InternalMonologue,
 )
 from letta.schemas.letta_response import LettaStreamingResponse
@@ -55,10 +55,10 @@ def _sse_post(url: str, data: dict, headers: dict) -> Generator[LettaStreamingRe
                         chunk_data = json.loads(sse.data)
                         if "internal_monologue" in chunk_data:
                             yield InternalMonologue(**chunk_data)
-                        elif "function_call" in chunk_data:
-                            yield FunctionCallMessage(**chunk_data)
-                        elif "function_return" in chunk_data:
-                            yield FunctionReturn(**chunk_data)
+                        elif "tool_call" in chunk_data:
+                            yield ToolCallMessage(**chunk_data)
+                        elif "tool_return" in chunk_data:
+                            yield ToolReturnMessage(**chunk_data)
                         elif "usage" in chunk_data:
                             yield LettaUsageStatistics(**chunk_data["usage"])
                         else:

@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Optional
 from fastapi import APIRouter, Body, Depends, Header, HTTPException
 
 from letta.schemas.enums import MessageRole
-from letta.schemas.letta_message import FunctionCall, LettaMessage
+from letta.schemas.letta_message import ToolCall, LettaMessage
 from letta.schemas.openai.chat_completion_request import ChatCompletionRequest
 from letta.schemas.openai.chat_completion_response import (
     ChatCompletionResponse,
@@ -94,7 +94,7 @@ async def create_chat_completion(
         created_at = None
         for letta_msg in response_messages.messages:
             assert isinstance(letta_msg, LettaMessage)
-            if isinstance(letta_msg, FunctionCall):
+            if isinstance(letta_msg, ToolCall):
                 if letta_msg.name and letta_msg.name == "send_message":
                     try:
                         letta_function_call_args = json.loads(letta_msg.arguments)

@@ -11,15 +11,15 @@ from sqlalchemy import delete
 
 from letta import create_client
 from letta.client.client import LocalClient, RESTClient
-from letta.constants import DEFAULT_PRESET
+from letta.constants import BASE_MEMORY_TOOLS, BASE_TOOLS, DEFAULT_PRESET
 from letta.orm import FileMetadata, Source
 from letta.schemas.agent import AgentState
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import MessageRole, MessageStreamStatus
 from letta.schemas.letta_message import (
     AssistantMessage,
-    FunctionCallMessage,
-    FunctionReturn,
+    ToolCallMessage,
+    ToolReturnMessage,
     InternalMonologue,
     LettaMessage,
     SystemMessage,
@@ -30,7 +30,6 @@ from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import MessageCreate
 from letta.schemas.usage import LettaUsageStatistics
 from letta.services.organization_manager import OrganizationManager
-from letta.services.tool_manager import ToolManager
 from letta.services.user_manager import UserManager
 from letta.settings import model_settings
 from tests.helpers.client_helper import upload_file_using_client
@@ -173,8 +172,8 @@ def test_agent_interactions(mock_e2b_api_key_none, client: Union[LocalClient, RE
             SystemMessage,
             UserMessage,
             InternalMonologue,
-            FunctionCallMessage,
-            FunctionReturn,
+            ToolCallMessage,
+            ToolReturnMessage,
             AssistantMessage,
         ], f"Unexpected message type: {type(letta_message)}"
 
@@ -259,7 +258,7 @@ def test_streaming_send_message(mock_e2b_api_key_none, client: RESTClient, agent
         if isinstance(chunk, InternalMonologue) and chunk.internal_monologue and chunk.internal_monologue != "":
             inner_thoughts_exist = True
             inner_thoughts_count += 1
-        if isinstance(chunk, FunctionCallMessage) and chunk.function_call and chunk.function_call.name == "send_message":
+        if isinstance(chunk, ToolCallMessage) and chunk.tool_call and chunk.tool_call.name == "send_message":
             send_message_ran = True
         if isinstance(chunk, MessageStreamStatus):
             if chunk == MessageStreamStatus.done:
@@ -336,9 +335,9 @@ def test_list_tools_pagination(client: Union[LocalClient, RESTClient]):
 
 
 def test_list_tools(client: Union[LocalClient, RESTClient]):
-    tools = client.add_base_tools()
+    tools = client.upsert_base_tools()
     tool_names = [t.name for t in tools]
-    expected = ToolManager.BASE_TOOL_NAMES + ToolManager.BASE_MEMORY_TOOL_NAMES
+    expected = BASE_TOOLS + BASE_MEMORY_TOOLS
     assert sorted(tool_names) == sorted(expected)
 
 
@@ -535,7 +534,7 @@ def test_message_update(client: Union[LocalClient, RESTClient], agent: AgentStat
     message_response = client.send_message(agent_id=agent.id, message="Test message", role="user")
     print("Messages=", message_response)
     assert isinstance(message_response, LettaResponse)
-    assert isinstance(message_response.messages[-1], FunctionReturn)
+    assert isinstance(message_response.messages[-1], ToolReturnMessage)
     message = message_response.messages[-1]
 
     new_text = "This exact string would never show up in the message???"
