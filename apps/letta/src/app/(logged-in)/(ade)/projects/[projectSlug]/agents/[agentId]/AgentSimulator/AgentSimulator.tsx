@@ -23,6 +23,7 @@ import {
   Typography,
   VariableIcon,
   WarningIcon,
+  FlushIcon,
 } from '@letta-web/component-library';
 import type { PanelTemplate, ChatInputRef } from '@letta-web/component-library';
 import { PanelBar } from '@letta-web/component-library';
@@ -531,14 +532,8 @@ function DialogSessionSheet(props: DialogSessionDialogProps) {
   );
 }
 
-interface FlushSimulationSessionDialogProps {
-  onClose: () => void;
-}
-
-function FlushSimulationSessionDialog(
-  props: FlushSimulationSessionDialogProps
-) {
-  const { onClose } = props;
+function FlushSimulationSessionDialog() {
+  const [isOpen, setIsOpen] = useState(false);
   const t = useTranslations('ADE/AgentSimulator');
   const queryClient = useQueryClient();
   const { id: projectId } = useCurrentProject();
@@ -565,7 +560,7 @@ function FlushSimulationSessionDialog(
           }
         );
 
-        onClose();
+        setIsOpen(false);
       },
     });
 
@@ -603,26 +598,41 @@ function FlushSimulationSessionDialog(
   return (
     <Dialog
       isConfirmBusy={isPending}
-      isOpen
+      isOpen={isOpen}
+      trigger={
+        <Button
+          size="small"
+          color="tertiary"
+          preIcon={<FlushIcon />}
+          hideLabel
+          label={t('FlushSimulationSessionDialog.trigger')}
+        />
+      }
       title={t('FlushSimulationSessionDialog.title')}
       confirmText={t('FlushSimulationSessionDialog.confirm')}
       onConfirm={handleFlushSession}
-      onOpenChange={(isOpen) => {
-        if (!isOpen && onClose) {
-          onClose();
-        }
-      }}
+      onOpenChange={setIsOpen}
     >
       <Typography>{t('FlushSimulationSessionDialog.description')}</Typography>
     </Dialog>
   );
 }
 
-function AgentSimulatorOptionsMenu() {
+function AgentFlushButton() {
   const { isTemplate } = useCurrentAgentMetaData();
+  const { agentSession } = useCurrentSimulatedAgent();
+
+  if (!(isTemplate && agentSession?.body.agentId)) {
+    return null;
+  }
+
+  return <FlushSimulationSessionDialog />;
+}
+
+function AgentSimulatorOptionsMenu() {
   const t = useTranslations('ADE/AgentSimulator');
 
-  const { agentSession, id: agentId } = useCurrentSimulatedAgent();
+  const { id: agentId } = useCurrentSimulatedAgent();
 
   const handlePrintDebug = useCallback(async () => {
     if (!agentId) {
@@ -653,17 +663,8 @@ function AgentSimulatorOptionsMenu() {
     toast.success(t('AgentSimulatorOptionsMenu.options.printDebug.success'));
   }, [agentId, t]);
 
-  const [isFlushDialogOpen, setIsFlushDialogOpen] = useState(false);
-
   return (
     <>
-      {isFlushDialogOpen && (
-        <FlushSimulationSessionDialog
-          onClose={() => {
-            setIsFlushDialogOpen(false);
-          }}
-        />
-      )}
       <DropdownMenu
         triggerAsChild
         align="end"
@@ -681,14 +682,6 @@ function AgentSimulatorOptionsMenu() {
           onClick={handlePrintDebug}
           label={t('AgentSimulatorOptionsMenu.options.printDebug.title')}
         />
-        {isTemplate && agentSession?.body.agentId && (
-          <DropdownMenuItem
-            onClick={() => {
-              setIsFlushDialogOpen(true);
-            }}
-            label={t('AgentSimulatorOptionsMenu.options.flushSimulation')}
-          />
-        )}
       </DropdownMenu>
     </>
   );
@@ -856,6 +849,7 @@ function Chatroom() {
           actions={
             <HStack>
               <ControlChatroomRenderMode />
+              <AgentFlushButton />
               <AgentSimulatorOptionsMenu />
             </HStack>
           }

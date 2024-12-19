@@ -717,6 +717,7 @@
     },
     "FlushSimulationSessionDialog": {
       "title": "Flush Simulation",
+      "trigger": "Flush agent simulation",
       "description": "Are you sure you want to flush the simulation? This will reset the simulated agent's memory and state.",
       "confirm": "Flush",
       "success": "Simulation has been flushed",
