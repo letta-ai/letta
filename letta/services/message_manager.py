@@ -29,6 +29,14 @@ class MessageManager:
                 return None
 
     @enforce_types
+    def get_messages_by_ids(self, message_ids: List[str], actor: PydanticUser) -> List[PydanticMessage]:
+        """Fetch a message by ID."""
+        with self.session_maker() as session:
+            results = MessageModel.list(db_session=session, id=message_ids, organization_id=actor.organization_id)
+
+            return [msg.to_pydantic() for msg in results]
+
+    @enforce_types
     def create_message(self, pydantic_msg: PydanticMessage, actor: PydanticUser) -> PydanticMessage:
         """Create a new message."""
         with self.session_maker() as session:
