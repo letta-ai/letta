@@ -746,11 +746,11 @@
     },
     "DialogSessionSheet": {
       "updating": "Updating variables...",
-      "placeholder": "Variable Value",
-      "save": "Update Variables",
-      "label": "Variable Name",
+      "placeholder": "Variable value",
+      "save": "Update variables",
+      "label": "Variable name",
       "editLabel": "Edit {variableName}",
-      "noVariablesDefined": "You have no variables set yet, to define a variable, write a alphanumeric name wrapped in handlebars in Memory Blocks, e.g. {variableName}"
+      "noVariablesDefined": "You have no variables set yet, to define a variable, write a alphanumeric name wrapped in handlebars inside of core memory, e.g. {variableName}"
     },
     "showVariables": "Variables",
     "hideVariables": "Hide variables",
@@ -1349,7 +1349,7 @@
   },
   "projects/(projectSlug)/agents/(agentId)/AgentPage": {
     "preparingAgent": "Preparing agent",
-    "error": "There was a severe error in this application, please refresh this page. If the error persists, please contact support in the top right corner.",
+    "error": "Fatal error occured, please refresh the page. If the error persists, please contact support in the top right corner.",
     "Navigation": {
       "dashboard": "Project dashboard"
     },
