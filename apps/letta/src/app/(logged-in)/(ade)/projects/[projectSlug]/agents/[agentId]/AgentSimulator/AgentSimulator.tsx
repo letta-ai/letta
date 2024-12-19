@@ -62,10 +62,11 @@ import type { GetAgentTemplateSimulatorSessionResponseBody } from '$letta/web-ap
 import { isEqual } from 'lodash-es';
 import { useCurrentSimulatedAgent } from '../hooks/useCurrentSimulatedAgent/useCurrentSimulatedAgent';
 import { useCurrentAgentMetaData } from '../hooks/useCurrentAgentMetaData/useCurrentAgentMetaData';
-import { atom, useAtom } from 'jotai';
+import { atom, useAtom, useSetAtom } from 'jotai';
 import { trackClientSideEvent } from '@letta-web/analytics/client';
 import { AnalyticsEvent } from '@letta-web/analytics';
 import { useCurrentUser } from '$letta/client/hooks';
+import { firstPageMessagesCache } from '$letta/client/components/Messages/firstPageMessagesCache/firstPageMessagesCache';
 
 const isSendingMessageAtom = atom(false);
 
@@ -98,6 +99,8 @@ function useSendMessage(agentId: string, options: UseSendMessageOptions = {}) {
     };
   }, []);
 
+  const setFirstPageMessagesCache = useSetAtom(firstPageMessagesCache);
+
   const sendMessage: SendMessageType = useCallback(
     (payload: SendMessagePayload) => {
       const { text: message, role } = payload;
@@ -127,6 +130,8 @@ function useSendMessage(agentId: string, options: UseSendMessageOptions = {}) {
           };
 
           const firstPageWithNewMessage = [newMessage, ...firstPage];
+
+          setFirstPageMessagesCache(firstPageWithNewMessage);
 
           return {
             pageParams: oldData.pageParams,
@@ -305,6 +310,7 @@ function useSendMessage(agentId: string, options: UseSendMessageOptions = {}) {
       options,
       password,
       queryClient,
+      setFirstPageMessagesCache,
       setIsPending,
       user?.id,
     ]
