@@ -38,8 +38,8 @@ The `response` object contains the following attributes:
 #### `LettaMessage`
 The `LettaMessage` object is a simplified version of the `Message` object. Since a `Message` can include multiple events like an inner monologue and function return, `LettaMessage` simplifies messages to have the following types: 
 * `inner_monologue`: The inner monologue of the agent
-* `function_call`: An agent function call 
-* `function_response`: The response to an agent function call
+* `tool_call_message`: An agent function call 
+* `tool_return_message`: The response to an agent function call
 * `system_message`: A system message
 * `user_message`: A user message
 

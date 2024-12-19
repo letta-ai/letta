@@ -234,30 +234,29 @@ function useSendMessage(agentId: string, options: UseSendMessageOptions = {}) {
 
                   // explicit handlers for each message type
                   switch (extracted.message_type) {
-                    case 'function_call': {
+                    case 'tool_call_message': {
                       const maybeArguments = get(
                         newMessage,
-                        'function_call.arguments',
+                        'tool_call.arguments',
                         ''
                       );
 
-                      newMessage.function_call = {
-                        function_call_id:
-                          newMessage.function_call.function_call_id ||
-                          extracted.function_call.function_call_id,
+                      newMessage.tool_call = {
+                        tool_call_id:
+                          newMessage.tool_call.tool_call_id ||
+                          extracted.tool_call.tool_call_id,
                         message_type:
-                          newMessage.function_call.message_type ||
-                          extracted.function_call.message_type,
+                          newMessage.tool_call.message_type ||
+                          extracted.tool_call.message_type,
                         name:
-                          newMessage.function_call.name ||
-                          extracted.function_call.name,
+                          newMessage.tool_call.name || extracted.tool_call.name,
                         arguments:
-                          maybeArguments + extracted.function_call.arguments,
+                          maybeArguments + extracted.tool_call.arguments,
                       };
                       break;
                     }
-                    case 'function_return': {
-                      newMessage.function_return = extracted.function_return;
+                    case 'tool_return_message': {
+                      newMessage.tool_return = extracted.tool_return;
                       break;
                     }
                     case 'internal_monologue': {
