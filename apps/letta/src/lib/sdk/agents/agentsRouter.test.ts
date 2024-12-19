@@ -135,6 +135,7 @@ describe('agentsRouter', () => {
 
       const createdAgent = {
         id: 'test-agent-id',
+        metadata_: {},
         name: 'test-agent',
         created_at: new Date().toISOString(),
         system: '',
@@ -367,6 +368,7 @@ describe('agentsRouter', () => {
         const createdAgent = {
           id: 'test-agent-id',
           name: 'test-agent',
+          metadata_: {},
           agent_type: 'memgpt_agent',
           created_at: new Date().toISOString(),
           system: '',
@@ -675,6 +677,7 @@ describe('agentsRouter', () => {
         status: 201,
         body: {
           ...premadeTemplate,
+          metadata_: {},
           system: 'test',
           agent_type: 'memgpt_agent',
           name: valuesFn.mock.calls[0][0].key,
@@ -743,6 +746,7 @@ describe('agentsRouter', () => {
       const createdAgent: AgentState = {
         id: 'test-agent-id',
         name: 'test',
+        metadata_: {},
         created_at: new Date().toISOString(),
         memory: GetAgentResolvedValue.memory,
       };
@@ -977,6 +981,7 @@ describe('agentsRouter', () => {
         status: 201,
         body: {
           ...premadeTemplate,
+          metadata_: {},
           name: valuesFn.mock.calls[0][0].name,
           id: 'test-agent-id',
         },
@@ -989,6 +994,7 @@ describe('agentsRouter', () => {
       const createdAgent = {
         id: 'test-agent-id',
         name: 'test-agent',
+        metadata_: {},
         created_at: new Date().toISOString(),
         ...premadeTemplate,
         system: '',
@@ -1051,6 +1057,7 @@ describe('agentsRouter', () => {
       const createdAgent = {
         id: 'test-agent-id',
         name: 'test-agent',
+        metadata_: {},
         created_at: new Date().toISOString(),
         system: '',
         ...premadeTemplate,
@@ -1128,6 +1135,7 @@ describe('agentsRouter', () => {
       const createdAgent = {
         id: 'test-agent-id',
         name: 'test-agent',
+        metadata_: {},
         created_at: new Date().toISOString(),
         system: '',
         ...premadeTemplate,
@@ -1213,6 +1221,7 @@ describe('agentsRouter', () => {
     const createdAgent = {
       id: 'test-agent-id',
       name: 'test-agent',
+      metadata_: {},
       created_at: new Date().toISOString(),
       system: '',
       memory: {
