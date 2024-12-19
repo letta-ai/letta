@@ -310,6 +310,10 @@ body {
   display: inherit;
 }
 
+.ignore-focus-on-buttons:has(button:focus) {
+  box-shadow: none;
+}
+
 
 /* hide arrows on summary elements */
 summary::-webkit-details-marker {
@@ -328,3 +332,4 @@ summary::-webkit-details-marker {
 
   }
 }
+

@@ -23,6 +23,7 @@ import {
   Typography,
   VariableIcon,
   WarningIcon,
+  FlushIcon,
 } from '@letta-web/component-library';
 import type { PanelTemplate, ChatInputRef } from '@letta-web/component-library';
 import { PanelBar } from '@letta-web/component-library';
@@ -67,6 +68,8 @@ import { trackClientSideEvent } from '@letta-web/analytics/client';
 import { AnalyticsEvent } from '@letta-web/analytics';
 import { useCurrentUser } from '$letta/client/hooks';
 import { firstPageMessagesCache } from '$letta/client/components/Messages/firstPageMessagesCache/firstPageMessagesCache';
+import { useCurrentAPIHostConfig } from '$letta/client/hooks/useCurrentAPIHostConfig/useCurrentAPIHostConfig';
+import { jsonToCurl } from '@letta-web/generic-utils';
 
 const isSendingMessageAtom = atom(false);
 
@@ -531,14 +534,8 @@ function DialogSessionSheet(props: DialogSessionDialogProps) {
   );
 }
 
-interface FlushSimulationSessionDialogProps {
-  onClose: () => void;
-}
-
-function FlushSimulationSessionDialog(
-  props: FlushSimulationSessionDialogProps
-) {
-  const { onClose } = props;
+function FlushSimulationSessionDialog() {
+  const [isOpen, setIsOpen] = useState(false);
   const t = useTranslations('ADE/AgentSimulator');
   const queryClient = useQueryClient();
   const { id: projectId } = useCurrentProject();
@@ -565,7 +562,7 @@ function FlushSimulationSessionDialog(
           }
         );
 
-        onClose();
+        setIsOpen(false);
       },
     });
 
@@ -603,26 +600,41 @@ function FlushSimulationSessionDialog(
   return (
     <Dialog
       isConfirmBusy={isPending}
-      isOpen
+      isOpen={isOpen}
+      trigger={
+        <Button
+          size="small"
+          color="tertiary"
+          preIcon={<FlushIcon />}
+          hideLabel
+          label={t('FlushSimulationSessionDialog.trigger')}
+        />
+      }
       title={t('FlushSimulationSessionDialog.title')}
       confirmText={t('FlushSimulationSessionDialog.confirm')}
       onConfirm={handleFlushSession}
-      onOpenChange={(isOpen) => {
-        if (!isOpen && onClose) {
-          onClose();
-        }
-      }}
+      onOpenChange={setIsOpen}
     >
       <Typography>{t('FlushSimulationSessionDialog.description')}</Typography>
     </Dialog>
   );
 }
 
-function AgentSimulatorOptionsMenu() {
+function AgentFlushButton() {
   const { isTemplate } = useCurrentAgentMetaData();
+  const { agentSession } = useCurrentSimulatedAgent();
+
+  if (!(isTemplate && agentSession?.body.agentId)) {
+    return null;
+  }
+
+  return <FlushSimulationSessionDialog />;
+}
+
+function AgentSimulatorOptionsMenu() {
   const t = useTranslations('ADE/AgentSimulator');
 
-  const { agentSession, id: agentId } = useCurrentSimulatedAgent();
+  const { id: agentId } = useCurrentSimulatedAgent();
 
   const handlePrintDebug = useCallback(async () => {
     if (!agentId) {
@@ -653,17 +665,8 @@ function AgentSimulatorOptionsMenu() {
     toast.success(t('AgentSimulatorOptionsMenu.options.printDebug.success'));
   }, [agentId, t]);
 
-  const [isFlushDialogOpen, setIsFlushDialogOpen] = useState(false);
-
   return (
     <>
-      {isFlushDialogOpen && (
-        <FlushSimulationSessionDialog
-          onClose={() => {
-            setIsFlushDialogOpen(false);
-          }}
-        />
-      )}
       <DropdownMenu
         triggerAsChild
         align="end"
@@ -681,14 +684,6 @@ function AgentSimulatorOptionsMenu() {
           onClick={handlePrintDebug}
           label={t('AgentSimulatorOptionsMenu.options.printDebug.title')}
         />
-        {isTemplate && agentSession?.body.agentId && (
-          <DropdownMenuItem
-            onClick={() => {
-              setIsFlushDialogOpen(true);
-            }}
-            label={t('AgentSimulatorOptionsMenu.options.flushSimulation')}
-          />
-        )}
       </DropdownMenu>
     </>
   );
@@ -849,6 +844,34 @@ function Chatroom() {
     }
   }, [hasFailedToSendMessage, isLocal, t, errorCode]);
 
+  const { isTemplate } = useCurrentAgentMetaData();
+  const hostConfig = useCurrentAPIHostConfig({
+    attachApiKey: false,
+  });
+  const getSendSnippet = useCallback(
+    (role: string, message: string) => {
+      if (isTemplate) {
+        return undefined;
+      }
+
+      return jsonToCurl({
+        url: `${hostConfig.url}/v1/agents/${agentIdToUse}/messages/stream`,
+        headers: {
+          ...hostConfig.headers,
+          'Content-Type': 'application/json',
+          Accept: 'text/event-stream',
+        },
+        body: {
+          messages: [{ role, text: message }],
+          stream_steps: true,
+          stream_tokens: true,
+        },
+        method: 'POST',
+      });
+    },
+    [agentIdToUse, hostConfig.headers, hostConfig.url, isTemplate]
+  );
+
   return (
     <ChatroomContext.Provider value={{ renderMode, setRenderMode }}>
       <VStack gap={false} fullHeight fullWidth>
@@ -856,6 +879,7 @@ function Chatroom() {
           actions={
             <HStack>
               <ControlChatroomRenderMode />
+              <AgentFlushButton />
               <AgentSimulatorOptionsMenu />
             </HStack>
           }
@@ -928,6 +952,7 @@ function Chatroom() {
                 },
               ]}
               ref={ref}
+              getSendSnippet={getSendSnippet}
               hasFailedToSendMessageText={hasFailedToSendMessageText}
               sendingMessageText={t('sendingMessage')}
               onSendMessage={(role: string, text: string) => {

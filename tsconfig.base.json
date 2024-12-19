@@ -34,6 +34,7 @@
         "libs/environmental-variables/src/index.ts"
       ],
       "@letta-web/feature-flags": ["libs/feature-flags/src/index.ts"],
+      "@letta-web/generic-utils": ["libs/generic-utils/src/index.ts"],
       "@letta-web/helpful-client-utils": [
         "libs/helpful-client-utils/src/index.ts"
       ],

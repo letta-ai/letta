@@ -59,6 +59,7 @@ async function AgentsAgentPage(context: AgentsAgentPageProps) {
     columns: {
       key: true,
       id: true,
+      deployedAgentTemplateId: true,
     },
   });
 
@@ -95,6 +96,9 @@ async function AgentsAgentPage(context: AgentsAgentPageProps) {
         body: {
           name: deployedAgent.key,
           id: deployedAgent.id,
+          metadata_: {
+            parentTemplate: deployedAgent.deployedAgentTemplateId,
+          },
         },
       }),
     }),
