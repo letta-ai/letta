@@ -374,7 +374,7 @@ class AgentManager:
     def trim_older_in_context_messages(self, num: int, agent_id: str, actor: PydanticUser) -> PydanticAgentState:
         message_ids = self.get_agent_by_id(agent_id=agent_id, actor=actor).message_ids
         new_messages = [message_ids[0]] + message_ids[num:]  # 0 is system message
-        return self.set_in_context_messages(agent_id=agent_id, message_ids=[m.id for m in new_messages], actor=actor)
+        return self.set_in_context_messages(agent_id=agent_id, message_ids=new_messages, actor=actor)
 
     @enforce_types
     def prepend_to_in_context_messages(self, messages: List[PydanticMessage], agent_id: str, actor: PydanticUser) -> PydanticAgentState:

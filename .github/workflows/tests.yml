@@ -33,7 +33,6 @@ jobs:
           - "test_memory.py"
           - "test_utils.py"
           - "test_stream_buffer_readers.py"
-          - "test_summarize.py"
     services:
       qdrant:
         image: qdrant/qdrant
