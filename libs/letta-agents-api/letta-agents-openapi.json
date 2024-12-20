@@ -3051,7 +3051,7 @@
                             "$ref": "#/components/schemas/UserMessage-Output"
                           },
                           {
-                            "$ref": "#/components/schemas/InternalMonologue"
+                            "$ref": "#/components/schemas/ReasoningMessage"
                           },
                           {
                             "$ref": "#/components/schemas/ToolCallMessage"
@@ -3068,7 +3068,7 @@
                           "mapping": {
                             "system_message": "#/components/schemas/SystemMessage-Output",
                             "user_message": "#/components/schemas/UserMessage-Output",
-                            "internal_monologue": "#/components/schemas/InternalMonologue",
+                            "reasoning_message": "#/components/schemas/ReasoningMessage",
                             "tool_call_message": "#/components/schemas/ToolCallMessage",
                             "tool_return_message": "#/components/schemas/ToolReturnMessage",
                             "assistant_message": "#/components/schemas/AssistantMessage-Output"
@@ -5326,6 +5326,9 @@
                     },
                     {
                       "$ref": "#/components/schemas/TerminalToolRule"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ConditionalToolRule"
                     }
                   ]
                 },
@@ -6542,6 +6545,50 @@
         "required": ["finish_reason", "index", "message"],
         "title": "Choice"
       },
+      "ConditionalToolRule": {
+        "properties": {
+          "tool_name": {
+            "type": "string",
+            "title": "Tool Name",
+            "description": "The name of the tool. Must exist in the database for the user's organization."
+          },
+          "type": {
+            "$ref": "#/components/schemas/ToolRuleType",
+            "default": "conditional"
+          },
+          "default_child": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Default Child",
+            "description": "The default child tool to be called. If None, any tool can be called."
+          },
+          "child_output_mapping": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Child Output Mapping",
+            "description": "The output case to check for mapping"
+          },
+          "require_output_mapping": {
+            "type": "boolean",
+            "title": "Require Output Mapping",
+            "description": "Whether to throw an error when output doesn't match any case",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["tool_name", "child_output_mapping"],
+        "title": "ConditionalToolRule",
+        "description": "A ToolRule that conditionally maps to different child tools based on the output."
+      },
       "ContextWindowOverview": {
         "properties": {
           "context_window_size_max": {
@@ -6754,6 +6801,9 @@
                     },
                     {
                       "$ref": "#/components/schemas/TerminalToolRule"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ConditionalToolRule"
                     }
                   ]
                 },
@@ -7506,34 +7556,6 @@
         "title": "InitToolRule",
         "description": "Represents the initial tool rule configuration."
       },
-      "InternalMonologue": {
-        "properties": {
-          "id": {
-            "type": "string",
-            "title": "Id"
-          },
-          "date": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Date"
-          },
-          "message_type": {
-            "type": "string",
-            "enum": ["internal_monologue"],
-            "const": "internal_monologue",
-            "title": "Message Type",
-            "default": "internal_monologue"
-          },
-          "internal_monologue": {
-            "type": "string",
-            "title": "Internal Monologue"
-          }
-        },
-        "type": "object",
-        "required": ["id", "date", "internal_monologue"],
-        "title": "InternalMonologue",
-        "description": "Representation of an agent's internal monologue.\n\nAttributes:\n    internal_monologue (str): The internal monologue of the agent\n    id (str): The ID of the message\n    date (datetime): The date the message was created in ISO format"
-      },
       "Job": {
         "properties": {
           "created_by_id": {
@@ -7782,34 +7804,6 @@
             "title": "AssistantMessage",
             "type": "object"
           },
-          "InternalMonologue": {
-            "description": "Representation of an agent's internal monologue.\n\nAttributes:\n    internal_monologue (str): The internal monologue of the agent\n    id (str): The ID of the message\n    date (datetime): The date the message was created in ISO format",
-            "properties": {
-              "id": {
-                "title": "Id",
-                "type": "string"
-              },
-              "date": {
-                "format": "date-time",
-                "title": "Date",
-                "type": "string"
-              },
-              "message_type": {
-                "const": "internal_monologue",
-                "default": "internal_monologue",
-                "enum": ["internal_monologue"],
-                "title": "Message Type",
-                "type": "string"
-              },
-              "internal_monologue": {
-                "title": "Internal Monologue",
-                "type": "string"
-              }
-            },
-            "required": ["id", "date", "internal_monologue"],
-            "title": "InternalMonologue",
-            "type": "object"
-          },
           "LettaUsageStatistics": {
             "description": "Usage statistics for the agent interaction.\n\nAttributes:\n    completion_tokens (int): The number of tokens generated by the agent.\n    prompt_tokens (int): The number of tokens in the prompt.\n    total_tokens (int): The total number of tokens processed by the agent.\n    step_count (int): The number of steps taken by the agent.",
             "properties": {
@@ -7839,6 +7833,34 @@
               }
             },
             "title": "LettaUsageStatistics",
+            "type": "object"
+          },
+          "ReasoningMessage": {
+            "description": "Representation of an agent's internal reasoning.\n\nAttributes:\n    reasoning (str): The internal reasoning of the agent\n    id (str): The ID of the message\n    date (datetime): The date the message was created in ISO format",
+            "properties": {
+              "id": {
+                "title": "Id",
+                "type": "string"
+              },
+              "date": {
+                "format": "date-time",
+                "title": "Date",
+                "type": "string"
+              },
+              "message_type": {
+                "const": "reasoning_message",
+                "default": "reasoning_message",
+                "enum": ["reasoning_message"],
+                "title": "Message Type",
+                "type": "string"
+              },
+              "reasoning": {
+                "title": "Reasoning",
+                "type": "string"
+              }
+            },
+            "required": ["id", "date", "reasoning"],
+            "title": "ReasoningMessage",
             "type": "object"
           },
           "SystemMessage": {
@@ -8452,7 +8474,7 @@
             "type": "string",
             "title": "Name",
             "description": "The name of the organization.",
-            "default": "ExcitingSnail"
+            "default": "HappyZeppelin"
           },
           "created_at": {
             "anyOf": [
@@ -8647,6 +8669,34 @@
         "required": ["text", "embedding", "embedding_config"],
         "title": "Passage",
         "description": "Representation of a passage, which is stored in archival memory.\n\nParameters:\n    text (str): The text of the passage.\n    embedding (List[float]): The embedding of the passage.\n    embedding_config (EmbeddingConfig): The embedding configuration used by the passage.\n    created_at (datetime): The creation date of the passage.\n    user_id (str): The unique identifier of the user associated with the passage.\n    agent_id (str): The unique identifier of the agent associated with the passage.\n    source_id (str): The data source of the passage.\n    file_id (str): The unique identifier of the file associated with the passage."
+      },
+      "ReasoningMessage": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "date": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Date"
+          },
+          "message_type": {
+            "type": "string",
+            "enum": ["reasoning_message"],
+            "const": "reasoning_message",
+            "title": "Message Type",
+            "default": "reasoning_message"
+          },
+          "reasoning": {
+            "type": "string",
+            "title": "Reasoning"
+          }
+        },
+        "type": "object",
+        "required": ["id", "date", "reasoning"],
+        "title": "ReasoningMessage",
+        "description": "Representation of an agent's internal reasoning.\n\nAttributes:\n    reasoning (str): The internal reasoning of the agent\n    id (str): The ID of the message\n    date (datetime): The date the message was created in ISO format"
       },
       "RecallMemorySummary": {
         "properties": {
@@ -9567,6 +9617,7 @@
           "InitToolRule",
           "TerminalToolRule",
           "continue_loop",
+          "conditional",
           "ToolRule",
           "require_parent_tools"
         ],
@@ -9807,6 +9858,9 @@
                     },
                     {
                       "$ref": "#/components/schemas/TerminalToolRule"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ConditionalToolRule"
                     }
                   ]
                 },
