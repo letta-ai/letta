@@ -14,7 +14,7 @@ tabs:
     slug: documentation
   ref:
     display-name: API Reference
-    icon: fa-solid rectangle-terminal
+    icon: fa-solid code 
     skip-slug: true
 
 navigation:
