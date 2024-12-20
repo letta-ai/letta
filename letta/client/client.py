@@ -2291,7 +2291,7 @@ class LocalClient(AbstractClient):
             agent_state (AgentState): State of the updated agent
         """
         self.interface.clear()
-        agent_state = self.server.agent_manager.remove_tool_from_agent(agent_id=agent_id, tool_id=tool_id, actor=self.user)
+        agent_state = self.server.agent_manager.detach_tool(agent_id=agent_id, tool_id=tool_id, actor=self.user)
         return agent_state
 
     def rename_agent(self, agent_id: str, new_name: str):
@@ -2426,7 +2426,7 @@ class LocalClient(AbstractClient):
         Returns:
             messages (List[Message]): List of in-context messages
         """
-        return self.server.get_in_context_messages(agent_id=agent_id, actor=self.user)
+        return self.server.agent_manager.get_in_context_messages(agent_id=agent_id, actor=self.user)
 
     # agent interactions
 
