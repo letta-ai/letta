@@ -18,7 +18,7 @@ groups:
           client_class_name: Letta
   ts-sdk:
     generators:
-      - name: letta-ai/letta-node
+      - name: fernapi/fern-typescript-node-sdk
         version: 0.44.0
         output:
           location: npm
