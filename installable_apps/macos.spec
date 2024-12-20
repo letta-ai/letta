@@ -1,5 +1,7 @@
 # -*- mode: python ; coding: utf-8 -*-
+import os
 import sys
+from pathlib import Path
 sys.setrecursionlimit(10000)
 
 a = Analysis(
@@ -16,9 +18,23 @@ a = Analysis(
         ('venv/lib/python3.12/site-packages/letta/functions/function_sets', 'letta/functions/function_sets'),
         ('assets','assets'),
         ('desktop_application/templates','templates'),
+        ('desktop_application', 'desktop_application'),
 
     ],
-    hiddenimports=[],
+    hiddenimports=[
+        'desktop_application',
+        'desktop_application.server',
+        'desktop_application.tray',
+        'desktop_application.logserver',
+        'desktop_application.installable_logger',
+        'desktop_application.installable_image',
+        'fastapi',
+        'uvicorn',
+        'jinja2',
+        'pystray',
+        'pillow',
+        'darkdetect',
+    ],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
