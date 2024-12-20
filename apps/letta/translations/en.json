@@ -492,15 +492,15 @@
       "title": "Quick Actions",
       "createTemplate": {
         "title": "Create a new agent template",
-        "description": "Create a template from an existing template, or start from scratch"
+        "description": "Create a new template from an existing template or start from scratch"
       },
       "viewTemplates": {
         "title": "View all agent templates",
-        "description": "Templates are used to define the structure of agents you deploy"
+        "description": "Templates allow you to create new agents from a shared initial state"
       },
       "monitorAgents": {
         "title": "View deployed agents",
-        "description": "View and manage all agents deployed in your project."
+        "description": "View and manage your deployed agents"
       }
     },
     "agentTemplatesList": {

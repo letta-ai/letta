@@ -158,7 +158,7 @@ function QuickActions() {
                   justify="center"
                   color="background-grey"
                 >
-                  <PlusIcon color="muted" size="xxlarge" />
+                  <PlusIcon color="primary" size="xxlarge" />
                 </VStack>
               }
               title={t('QuickActions.createTemplate.title')}
