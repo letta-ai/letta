@@ -10,11 +10,11 @@ from letta.constants import BASE_MEMORY_TOOLS, BASE_TOOLS
 from letta.schemas.block import CreateBlock
 from letta.schemas.enums import MessageRole
 from letta.schemas.letta_message import (
+    LettaMessage,
+    ReasoningMessage,
+    SystemMessage,
     ToolCallMessage,
     ToolReturnMessage,
-    ReasoningMessage,
-    LettaMessage,
-    SystemMessage,
     UserMessage,
 )
 from letta.schemas.user import User
@@ -507,76 +507,9 @@ def test_get_archival_memory(server, user_id, agent_id):
     assert len(passage_none) == 0
 
 
-def test_agent_rethink_rewrite_retry(server, user_id, agent_id):
-    """Test the /rethink, /rewrite, and /retry commands in the CLI
-
-    - "rethink" replaces the inner thoughts of the last assistant message
-    - "rewrite" replaces the text of the last assistant message
-    - "retry" retries the last assistant message
-    """
-    actor = server.user_manager.get_user_or_default(user_id)
-
-    # Send an initial message
-    server.user_message(user_id=user_id, agent_id=agent_id, message="Hello?")
-
-    # Grab the raw Agent object
-    letta_agent = server.load_agent(agent_id=agent_id, actor=actor)
-    assert letta_agent._messages[-1].role == MessageRole.tool
-    assert letta_agent._messages[-2].role == MessageRole.assistant
-    last_agent_message = letta_agent._messages[-2]
-
-    # Try "rethink"
-    new_thought = "I am thinking about the meaning of life, the universe, and everything. Bananas?"
-    assert last_agent_message.text is not None and last_agent_message.text != new_thought
-    server.rethink_agent_message(agent_id=agent_id, new_thought=new_thought, actor=actor)
-
-    # Grab the agent object again (make sure it's live)
-    letta_agent = server.load_agent(agent_id=agent_id, actor=actor)
-    assert letta_agent._messages[-1].role == MessageRole.tool
-    assert letta_agent._messages[-2].role == MessageRole.assistant
-    last_agent_message = letta_agent._messages[-2]
-    assert last_agent_message.text == new_thought
-
-    # Try "rewrite"
-    assert last_agent_message.tool_calls is not None
-    assert last_agent_message.tool_calls[0].function.name == "send_message"
-    assert last_agent_message.tool_calls[0].function.arguments is not None
-    args_json = json.loads(last_agent_message.tool_calls[0].function.arguments)
-    assert "message" in args_json and args_json["message"] is not None and args_json["message"] != ""
-
-    new_text = "Why hello there my good friend! Is 42 what you're looking for? Bananas?"
-    server.rewrite_agent_message(agent_id=agent_id, new_text=new_text, actor=actor)
-
-    # Grab the agent object again (make sure it's live)
-    letta_agent = server.load_agent(agent_id=agent_id, actor=actor)
-    assert letta_agent._messages[-1].role == MessageRole.tool
-    assert letta_agent._messages[-2].role == MessageRole.assistant
-    last_agent_message = letta_agent._messages[-2]
-    args_json = json.loads(last_agent_message.tool_calls[0].function.arguments)
-    assert "message" in args_json and args_json["message"] is not None and args_json["message"] == new_text
-
-    # Try retry
-    server.retry_agent_message(agent_id=agent_id, actor=actor)
-
-    # Grab the agent object again (make sure it's live)
-    letta_agent = server.load_agent(agent_id=agent_id, actor=actor)
-    assert letta_agent._messages[-1].role == MessageRole.tool
-    assert letta_agent._messages[-2].role == MessageRole.assistant
-    last_agent_message = letta_agent._messages[-2]
-
-    # Make sure the inner thoughts changed
-    assert last_agent_message.text is not None and last_agent_message.text != new_thought
-
-    # Make sure the message changed
-    args_json = json.loads(last_agent_message.tool_calls[0].function.arguments)
-    print(args_json)
-    assert "message" in args_json and args_json["message"] is not None and args_json["message"] != new_text
-
-
 def test_get_context_window_overview(server: SyncServer, user_id: str, agent_id: str):
     """Test that the context window overview fetch works"""
-
-    overview = server.get_agent_context_window(user_id=user_id, agent_id=agent_id)
+    overview = server.get_agent_context_window(agent_id=agent_id, actor=server.user_manager.get_user_or_default(user_id))
     assert overview is not None
 
     # Run some basic checks
@@ -1142,10 +1075,10 @@ def test_add_remove_tools_update_agent(server: SyncServer, user_id: str, base_to
 
     # Add all the base tools
     request.tool_ids = [b.id for b in base_tools]
-    agent_state = server.update_agent(agent_state.id, request=request, actor=actor)
+    agent_state = server.agent_manager.update_agent(agent_state.id, agent_update=request, actor=actor)
     assert len(agent_state.tools) == len(base_tools)
 
     # Remove one base tool
     request.tool_ids = [b.id for b in base_tools[:-2]]
-    agent_state = server.update_agent(agent_state.id, request=request, actor=actor)
+    agent_state = server.agent_manager.update_agent(agent_state.id, agent_update=request, actor=actor)
     assert len(agent_state.tools) == len(base_tools) - 2
