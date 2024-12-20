@@ -34,23 +34,22 @@ describe('letta', () => {
 
     cy.findByTestId('image-card:Customer support').click();
 
-    cy.location('pathname').should(
+    cy.location('pathname', { timeout: 10000 }).should(
       'match',
-      /\/projects\/(.+)\/templates\/(.+)/,
-      { timeout: 10000 }
+      /\/projects\/(.+)\/templates\/(.+)/
     );
 
     cy.findByTestId('update-agent-name-button').click();
 
-    cy.findByTestId('update-name-dialog-update-name').clear();
+    cy.findByTestId('update-name-dialog-update-name').invoke('val', '');
 
     cy.findByTestId('update-name-dialog-update-name').type('CYDOGGTestAgent');
+
     cy.findByTestId('update-name-dialog-confirm-button').click();
 
-    cy.location('pathname').should(
+    cy.location('pathname', { timeout: 10000 }).should(
       'match',
-      /\/projects\/(.+)\/templates\/CYDOGGTestAgent/,
-      { timeout: 10000 }
+      /\/projects\/(.+)\/templates\/CYDOGGTestAgent/
     );
 
     cy.clearPointerEventLock();
@@ -76,7 +75,7 @@ describe('letta', () => {
     cy.findByTestId('save-variables-button').click();
 
     cy.findByTestId('tab-item:simulated').click();
-    cy.findByTestId('simulated-memory:human').should(
+    cy.findByTestId('simulated-memory:human', { timeout: 10000 }).should(
       'contain.value',
       'Shubham'
     );
@@ -116,8 +115,8 @@ describe('letta', () => {
       force: true,
     });
 
-    cy.findByTestId('messages-list').contains('Shubham', { timeout: 10000 });
-    cy.findByTestId('messages-list').contains('BananaMan', { timeout: 10000 });
+    cy.findByTestId('messages-list', { timeout: 10000 }).contains('Shubham');
+    cy.findByTestId('messages-list', { timeout: 10000 }).contains('BananaMan');
 
     cy.clearPointerEventLock();
     cy.findByTestId('tab:tools-panel').click({ force: true });

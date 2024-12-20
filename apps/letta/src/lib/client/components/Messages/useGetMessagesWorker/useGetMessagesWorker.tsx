@@ -18,10 +18,7 @@ export function useGetMessagesWorker() {
     ): Promise<ListAgentMessagesResponse> => {
       const promiseWorker = new PromiseWorker(worker);
 
-      const res = await promiseWorker.postMessage(message);
-
-      console.log({ res });
-      return res;
+      return promiseWorker.postMessage(message);
     },
     []
   );

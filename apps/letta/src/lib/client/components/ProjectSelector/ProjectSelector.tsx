@@ -9,7 +9,6 @@ import {
   Popover,
   ProgressBar,
   Typography,
-  UnfoldIcon,
   VStack,
 } from '@letta-web/component-library';
 import { useTranslations } from 'next-intl';
@@ -48,7 +47,12 @@ function ProjectItem(props: ProjectItemProps) {
 }
 const LIMIT = 5;
 
-export function ProjectSelector() {
+interface ProjectSelectorProps {
+  trigger: React.ReactNode;
+}
+
+export function ProjectSelector(props: ProjectSelectorProps) {
+  const { trigger } = props;
   const [open, setOpen] = React.useState(false);
   const t = useTranslations('components/ProjectSelector');
 
@@ -82,30 +86,13 @@ export function ProjectSelector() {
     setOpen(false);
   }, []);
 
-  if (!currentUser?.hasCloudAccess) {
-    return (
-      <Button
-        color="tertiary-transparent"
-        size="small"
-        label={currentProject?.name || t('noProject')}
-      />
-    );
-  }
-
   return (
     <Popover
       open={open}
       align="start"
       onOpenChange={setOpen}
       triggerAsChild
-      trigger={
-        <Button
-          color="tertiary-transparent"
-          postIcon={<UnfoldIcon />}
-          size="small"
-          label={currentProject?.name || t('selectAProject')}
-        />
-      }
+      trigger={trigger}
     >
       <VStack padding="small">
         <Typography bold variant="body2">

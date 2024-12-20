@@ -5,6 +5,7 @@ import type { NextRequest } from 'next/server';
 import {
   extractGoogleIdTokenData,
   generateRedirectSignatureForLoggedInUser,
+  getGithubUserDetails,
   signInUserFromProviderLogin,
 } from '$letta/server/auth';
 import { LoginErrorsEnum } from '$letta/errors';
@@ -34,6 +35,28 @@ async function getAccessTokenFromGoogle(
   return extractGoogleIdTokenData(response.data.id_token);
 }
 
+async function getAccessTokenFromGithub(
+  code: string
+): Promise<ProviderUserPayload> {
+  const response = await axios.post<string>(
+    'https://github.com/login/oauth/access_token',
+    {
+      client_id: process.env.AUTH_GITHUB_CLIENT_ID,
+      client_secret: process.env.AUTH_GITHUB_CLIENT_SECRET,
+      code,
+      redirect_uri: process.env.AUTH_GITHUB_REDIRECT_URI,
+    }
+  );
+
+  const accessToken = new URLSearchParams(response.data).get('access_token');
+
+  if (!accessToken) {
+    throw new Error('Could not get access token from Github');
+  }
+
+  return getGithubUserDetails(accessToken);
+}
+
 async function getUserDetailsFromProvider(
   provider: SupportedProviders,
   code: string
@@ -41,6 +64,8 @@ async function getUserDetailsFromProvider(
   switch (provider) {
     case 'google':
       return getAccessTokenFromGoogle(code);
+    case 'github':
+      return getAccessTokenFromGithub(code);
     default:
       throw new Error('Unsupported provider');
   }

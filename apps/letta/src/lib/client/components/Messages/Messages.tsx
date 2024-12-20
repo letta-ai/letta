@@ -39,12 +39,15 @@ import type {
   AgentSimulatorMessageType,
 } from '../../../../app/(logged-in)/(ade)/projects/[projectSlug]/agents/[agentId]/AgentSimulator/types';
 import { FunctionIcon } from '@letta-web/component-library';
-import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
+import { useInfiniteQuery } from '@tanstack/react-query';
 import type { InfiniteData } from '@tanstack/query-core';
 import { jsonrepair } from 'jsonrepair';
 import { useTranslations } from 'next-intl';
 import { get } from 'lodash-es';
 import { useGetMessagesWorker } from '$letta/client/components/Messages/useGetMessagesWorker/useGetMessagesWorker';
+import { useCurrentDevelopmentServerConfig } from '../../../../app/(logged-in)/(dashboard-like)/development-servers/[developmentServerId]/hooks/useCurrentDevelopmentServerConfig/useCurrentDevelopmentServerConfig';
+import { useAtom } from 'jotai';
+import { firstPageMessagesCache } from '$letta/client/components/Messages/firstPageMessagesCache/firstPageMessagesCache';
 
 // tryFallbackParseJson will attempt to parse a string as JSON, if it fails, it will trim the last character and try again
 // until it succeeds or the string is empty
@@ -122,7 +125,7 @@ function MessageGroup({ group }: MessageGroupType) {
   }, [name]);
 
   return (
-    <HStack>
+    <HStack gap="medium">
       <IconAvatar
         textColor={textColor}
         backgroundColor={backgroundColor}
@@ -130,7 +133,7 @@ function MessageGroup({ group }: MessageGroupType) {
         size={'xsmall'}
       />
       <VStack collapseWidth flex gap="small">
-        <Typography variant="body2" color="lighter" uppercase={true}>
+        <Typography bold uppercase variant="body2" color="lighter">
           {name}
         </Typography>
         <VStack gap="large">
@@ -167,8 +170,7 @@ export function Messages(props: MessagesProps) {
   const [lastMessageReceived, setLastMessageReceived] =
     useState<LastMessageReceived | null>(null);
 
-  const queryClient = useQueryClient();
-
+  const developmentServerConfig = useCurrentDevelopmentServerConfig();
   const { getMessages } = useGetMessagesWorker();
 
   const isMessageUpdateLock = useMemo(() => {
@@ -189,6 +191,8 @@ export function Messages(props: MessagesProps) {
     return 5000;
   }, [isSendingMessage, lastMessageReceived]);
 
+  const [messageCache, setMessageCache] = useAtom(firstPageMessagesCache);
+
   const { data, hasNextPage, fetchNextPage, isFetching } = useInfiniteQuery<
     AgentMessage[],
     Error,
@@ -200,17 +204,24 @@ export function Messages(props: MessagesProps) {
     queryKey: UseAgentsServiceListAgentMessagesKeyFn({ agentId }),
     queryFn: async (query) => {
       const res = (await getMessages({
+        url: developmentServerConfig?.url,
+        headers: {
+          ...(developmentServerConfig?.password
+            ? {
+                'X-BARE-PASSWORD': `password ${developmentServerConfig.password}`,
+              }
+            : {}),
+        },
         agentId,
         limit: MESSAGE_LIMIT,
         ...(query.pageParam.before ? { cursor: query.pageParam.before } : {}),
       })) as unknown as AgentMessage[];
 
       if (isMessageUpdateLock) {
-        return (queryClient.getQueryData<
-          InfiniteData<ListAgentMessagesResponse>
-        >(UseAgentsServiceListAgentMessagesKeyFn({ agentId }))?.pages?.[0] ||
-          []) as AgentMessage[];
+        return messageCache;
       }
+
+      setMessageCache(res);
 
       return res;
     },
@@ -259,7 +270,7 @@ export function Messages(props: MessagesProps) {
       allMessages: AgentMessage[]
     ): AgentSimulatorMessageType | null {
       switch (agentMessage.message_type) {
-        case 'function_return':
+        case 'tool_return_message':
           if (mode === 'simple') {
             return null;
           }
@@ -274,7 +285,7 @@ export function Messages(props: MessagesProps) {
               <MessageWrapper
                 type="code"
                 header={{
-                  title: t('functionReturn'),
+                  title: t('toolReturn'),
 
                   badge: (
                     <Badge
@@ -297,7 +308,7 @@ export function Messages(props: MessagesProps) {
                     {
                       ...agentMessage,
                       function_return: tryFallbackParseJson(
-                        agentMessage.function_return
+                        agentMessage.tool_return
                       ),
                     },
                     null,
@@ -310,21 +321,19 @@ export function Messages(props: MessagesProps) {
             timestamp: new Date(agentMessage.date).toISOString(),
             name: 'Agent',
           };
-        case 'function_call': {
+        case 'tool_call_message': {
           const parsedFunctionCallArguments = tryFallbackParseJson(
-            agentMessage.function_call.arguments || ''
+            agentMessage.tool_call.arguments || ''
           );
 
           if (mode === 'simple' || mode === 'interactive') {
             if (
-              agentMessage.function_call.name === 'send_message' &&
-              agentMessage.function_call.arguments
+              agentMessage.tool_call.name === 'send_message' &&
+              agentMessage.tool_call.arguments
             ) {
               try {
                 const out = SendMessageFunctionCallSchema.safeParse(
-                  tryFallbackParseJson(
-                    agentMessage.function_call.arguments || ''
-                  )
+                  tryFallbackParseJson(agentMessage.tool_call.arguments || '')
                 );
 
                 if (!out.success) {
@@ -354,20 +363,20 @@ export function Messages(props: MessagesProps) {
             if (mode === 'interactive') {
               const functionResponse = allMessages.find(
                 (message) =>
-                  message.message_type === 'function_return' &&
+                  message.message_type === 'tool_return_message' &&
                   // eslint-disable-next-line @typescript-eslint/no-confusing-void-expression
-                  get(message, 'function_call_id') ===
+                  get(message, 'tool_call_id') ===
                     // eslint-disable-next-line @typescript-eslint/no-confusing-void-expression
-                    agentMessage.function_call.function_call_id
+                    agentMessage.tool_call.tool_call_id
               );
 
               return {
                 id: `${agentMessage.id}-${agentMessage.message_type}`,
                 content: (
                   <FunctionCall
-                    name={agentMessage.function_call.name || ''}
-                    inputs={agentMessage.function_call.arguments || ''}
-                    response={get(functionResponse, 'function_return')}
+                    name={agentMessage.tool_call.name || ''}
+                    inputs={agentMessage.tool_call.arguments || ''}
+                    response={get(functionResponse, 'tool_return')}
                     status={get(functionResponse, 'status')}
                   />
                 ),
@@ -385,7 +394,7 @@ export function Messages(props: MessagesProps) {
               <MessageWrapper
                 type="code"
                 header={{
-                  title: agentMessage.function_call.name || '',
+                  title: agentMessage.tool_call.name || '',
                   preIcon: <FunctionIcon />,
                 }}
               >
@@ -395,10 +404,10 @@ export function Messages(props: MessagesProps) {
                   showLineNumbers={false}
                   code={JSON.stringify(
                     {
-                      ...agentMessage.function_call,
+                      ...agentMessage.tool_call,
                       arguments:
                         parsedFunctionCallArguments ||
-                        agentMessage.function_call.arguments,
+                        agentMessage.tool_call.arguments,
                     },
                     null,
                     2
@@ -411,7 +420,7 @@ export function Messages(props: MessagesProps) {
             name: 'Agent',
           };
         }
-        case 'internal_monologue':
+        case 'reasoning_message':
           if (mode === 'simple') {
             return null;
           }
@@ -425,10 +434,10 @@ export function Messages(props: MessagesProps) {
                     <HStack align="center" gap="small">
                       <InnerMonologueIcon color="violet" size="small" />
                       <Typography bold color="violet" variant="body2">
-                        {t('thoughts')}
+                        {t('reasoning')}
                       </Typography>
                     </HStack>
-                    <Typography>{agentMessage.internal_monologue}</Typography>
+                    <Typography>{agentMessage.reasoning}</Typography>
                   </VStack>
                 </BlockQuote>
               ),
@@ -441,13 +450,13 @@ export function Messages(props: MessagesProps) {
             id: `${agentMessage.id}-${agentMessage.message_type}`,
             content: (
               <MessageWrapper
-                type="internalMonologue"
+                type="reasoningMessage"
                 header={{
                   preIcon: <ThoughtsIcon />,
-                  title: t('internalMonologue'),
+                  title: t('reasoningMessage'),
                 }}
               >
-                <Typography>{agentMessage.internal_monologue}</Typography>
+                <Typography>{agentMessage.reasoning}</Typography>
               </MessageWrapper>
             ),
             timestamp: new Date(agentMessage.date).toISOString(),

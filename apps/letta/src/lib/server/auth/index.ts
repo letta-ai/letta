@@ -26,7 +26,7 @@ import {
 import { AnalyticsEvent } from '@letta-web/analytics';
 import { jwtDecode } from 'jwt-decode';
 import { AdminService, ToolsService } from '@letta-web/letta-agents-api';
-import { createAgent, versionAgentTemplate } from '$letta/sdk';
+import { createAgent } from '$letta/sdk';
 import { generateDefaultADELayout } from '$letta/utils';
 import { cookies } from 'next/headers';
 import { getDefaultFlags } from '@letta-web/feature-flags';
@@ -450,7 +450,20 @@ async function findOrCreateUserAndOrganizationFromProviderLogin(
   userData: ProviderUserPayload
 ): Promise<FindOrCreateUserAndOrganizationFromProviderLoginResponse> {
   let newUserDetails: NewUserDetails | undefined;
-  let user = await findExistingUser(userData);
+  const res = await Promise.all([
+    findExistingUser(userData),
+    db.query.users.findFirst({
+      where: eq(users.email, userData.email),
+    }),
+  ]);
+
+  let user = res[0];
+  const userWithSameEmail = res[1];
+
+  if (userWithSameEmail && userWithSameEmail.providerId !== userData.uniqueId) {
+    throw new Error(LoginErrorsEnum.EMAIL_ALREADY_EXISTS);
+  }
+
   let isNewUser = false;
 
   if (!user) {
@@ -843,5 +856,7 @@ export async function generateRedirectSignatureForLoggedInUser(
 }
 
 import { deleteUser } from './lib/deleteUser/deleteUser';
+import { getGithubUserDetails } from './lib/getGithubUserDetails/getGithubUserDetails';
+import { versionAgentTemplate } from '$letta/sdk/agents/lib/versionAgentTemplate/versionAgentTemplate';
 
-export { deleteUser };
+export { deleteUser, getGithubUserDetails };

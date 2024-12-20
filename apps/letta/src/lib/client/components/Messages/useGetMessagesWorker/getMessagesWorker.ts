@@ -2,7 +2,7 @@ import type { GetMessagesWorkerPayload } from '$letta/client/components/Messages
 import registerPromiseWorker from 'promise-worker/register';
 
 registerPromiseWorker(async (message: GetMessagesWorkerPayload) => {
-  const { cursor, agentId, limit } = message;
+  const { cursor, agentId, limit, headers, url = '' } = message;
 
   const queryparams = new URLSearchParams();
 
@@ -12,7 +12,10 @@ registerPromiseWorker(async (message: GetMessagesWorkerPayload) => {
 
   queryparams.append('limit', limit.toString());
 
-  return fetch(`/v1/agents/${agentId}/messages?${queryparams.toString()}`).then(
-    (res) => res.json()
-  );
+  return fetch(
+    `${url}/v1/agents/${agentId}/messages?${queryparams.toString()}`,
+    {
+      headers,
+    }
+  ).then((res) => res.json());
 });

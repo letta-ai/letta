@@ -18,6 +18,7 @@ import { SendIcon } from '../../icons';
 import { Popover } from '../../core/Popover/Popover';
 import { useTranslations } from 'next-intl';
 import { Slot } from '@radix-ui/react-slot';
+import { CopyWithCodePreview } from '../CopyWithCodePreview/CopyWithCodePreview';
 
 interface RoleOption {
   value: string;
@@ -36,11 +37,33 @@ interface ChatInputProps {
   defaultRole: string;
   hasFailedToSendMessageText?: string | undefined;
   roles: RoleOption[];
+  getSendSnippet?: (role: string, message: string) => string | undefined;
   sendingMessageText?: string;
 }
 
 export interface ChatInputRef {
   setChatMessage: (message: string) => void;
+}
+
+interface CopySendMessageRequestButtonProps {
+  code: string;
+}
+
+function CopySendMessageRequestButton(
+  props: CopySendMessageRequestButtonProps
+) {
+  const { code } = props;
+  const t = useTranslations('component-library/reusable/ChatInput');
+
+  return (
+    <CopyWithCodePreview
+      copyTextLabel={t('CopySendMessageRequestButton.label')}
+      code={code}
+      language="bash"
+      align="center"
+      side="top"
+    />
+  );
 }
 
 export const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(
@@ -49,6 +72,7 @@ export const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(
       onSendMessage,
       disabled,
       roles,
+      getSendSnippet,
       defaultRole,
       sendingMessageText,
       isSendingMessage,
@@ -103,6 +127,14 @@ export const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(
       [role, roles]
     );
 
+    const sendSnippet = useMemo(() => {
+      if (getSendSnippet) {
+        return getSendSnippet(role, text);
+      }
+
+      return undefined;
+    }, [getSendSnippet, role, text]);
+
     return (
       <Frame position="relative" paddingX="medium" paddingBottom>
         <HStack
@@ -126,7 +158,7 @@ export const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(
           color="background"
           onSubmit={handleSubmit}
           as="form"
-          className="z-[1] relative focus-within:ring-ring focus-within:ring-1"
+          className="z-[1] relative focus-within:ring-ring focus-within:ring-1 ignore-focus-on-buttons"
           border
           fullWidth
           borderTop
@@ -202,14 +234,19 @@ export const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(
                   </Popover>
                 )}
               </HStack>
-              <Button
-                data-testid="chat-simulator-send"
-                type="submit"
-                color="secondary"
-                preIcon={<SendIcon />}
-                disabled={isSendingMessage || disabled}
-                label={t('send')}
-              />
+              <HStack>
+                {sendSnippet && (
+                  <CopySendMessageRequestButton code={sendSnippet} />
+                )}
+                <Button
+                  data-testid="chat-simulator-send"
+                  type="submit"
+                  color="secondary"
+                  preIcon={<SendIcon />}
+                  disabled={isSendingMessage || disabled}
+                  label={t('send')}
+                />
+              </HStack>
             </HStack>
           </VStack>
         </VStack>

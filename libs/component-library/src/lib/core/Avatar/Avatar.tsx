@@ -15,6 +15,7 @@ const avatarVariants = cva('relative flex shrink-0 overflow-hidden text-sm', {
       medium: 'h-[36px] w-[36px]',
       large: 'h-[40px] w-[40px] text-base',
       xlarge: 'h-[48px] w-[48px] text-base',
+      xxlarge: 'h-[72px] w-[72px] text-[28px]',
     },
   },
   defaultVariants: {

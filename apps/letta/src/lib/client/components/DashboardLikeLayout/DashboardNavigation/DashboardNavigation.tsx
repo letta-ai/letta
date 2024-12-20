@@ -12,6 +12,7 @@ import {
   isSubNavigationGroup,
   TextArea,
   useForm,
+  Breadcrumb,
 } from '@letta-web/component-library';
 import { HiddenOnMobile } from '@letta-web/component-library';
 import {
@@ -38,10 +39,7 @@ import {
 import { useCurrentUser } from '$letta/client/hooks';
 import { usePathname } from 'next/navigation';
 import { webApi, webApiQueryKeys } from '$letta/client';
-import {
-  CurrentUserDetailsBlock,
-  ProjectSelector,
-} from '$letta/client/components';
+import { CurrentUserDetailsBlock } from '$letta/client/components';
 import { cn } from '@letta-web/core-style-config';
 import { useTranslations } from 'next-intl';
 import { ThemeSelector } from '$letta/client/components/ThemeSelector/ThemeSelector';
@@ -763,27 +761,37 @@ export function DashboardHeader() {
           <HStack gap="large" align="center">
             <HStack fullWidth align="center">
               <HStack justify="start" align="center">
-                <>
-                  {/* eslint-disable-next-line react/forbid-component-props */}
-                  <Frame className="contents visibleSidebar:hidden">
-                    <NavigationOverlay />
-                  </Frame>
-                  {/* eslint-disable-next-line react/forbid-component-props */}
-                  <Frame className="hidden visibleSidebar:contents">
-                    <Link href="/">
-                      <Logo withText size="medium" />
-                    </Link>
-                  </Frame>
-
-                  <HiddenOnMobile>
-                    {currentProject.id && (
-                      <>
-                        <HStack paddingLeft="small">/</HStack>
-                        <ProjectSelector />
-                      </>
-                    )}
-                  </HiddenOnMobile>
-                </>
+                <Breadcrumb
+                  items={[
+                    {
+                      label: 'root',
+                      contentOverride: (
+                        <>
+                          {/* eslint-disable-next-line react/forbid-component-props */}
+                          <Frame className="contents visibleSidebar:hidden">
+                            <NavigationOverlay />
+                          </Frame>
+                          {/* eslint-disable-next-line react/forbid-component-props */}
+                          <Frame className="hidden visibleSidebar:contents">
+                            <Link href="/">
+                              <HStack paddingRight="large">
+                                <Logo withText size="medium" />
+                              </HStack>
+                            </Link>
+                          </Frame>
+                        </>
+                      ),
+                    },
+                    ...(currentProject.name
+                      ? [
+                          {
+                            label: currentProject.name,
+                            href: `/projects/${currentProject.slug}`,
+                          },
+                        ]
+                      : []),
+                  ]}
+                />
               </HStack>
             </HStack>
           </HStack>

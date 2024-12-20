@@ -75,7 +75,11 @@ deploy: push
         --set env.HUBSPOT_API_KEY="${HUBSPOT_API_KEY}" \
         --set env.COMPOSIO_API_KEY="${COMPOSIO_API_KEY}" \
         --set env.E2B_API_KEY="${E2B_API_KEY}" \
-        --set env.E2B_SANDBOX_TEMPLATE_ID="${E2B_SANDBOX_TEMPLATE_ID}"
+        --set env.E2B_SANDBOX_TEMPLATE_ID="${E2B_SANDBOX_TEMPLATE_ID}" \
+        --set env.AUTH_GITHUB_CLIENT_ID="${AUTH_GITHUB_CLIENT_ID}" \
+        --set env.AUTH_GITHUB_CLIENT_SECRET="${AUTH_GITHUB_CLIENT_SECRET}" \
+        --set env.AUTH_GITHUB_REDIRECT_URI="${AUTH_GITHUB_REDIRECT_URI}"
+
     npm run slack-bot-says "Successfully deployed web service Helm chart with tag: {{TAG}}."
 
 # Destroy the Helm chart

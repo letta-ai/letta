@@ -21,7 +21,7 @@ export const Primary: Story = {
   },
   argTypes: {
     type: {
-      options: ['code', 'internalMonologue', 'default'],
+      options: ['code', 'reasoningMessage', 'default'],
       control: {
         type: 'radio',
       },

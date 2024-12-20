@@ -7,6 +7,7 @@ import { NextIntlClientProvider } from 'next-intl';
 import { Body } from './_components/ThemeProvider/Body';
 import { Manrope } from 'next/font/google';
 import { cn } from '@letta-web/core-style-config';
+import 'array.prototype.tosorted';
 
 export const metadata = {
   title: 'Letta',

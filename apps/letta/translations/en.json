@@ -3,6 +3,9 @@
     "emptyMessage": "This is not the page you're looking for",
     "emptyAction": "Go home"
   },
+  "component-library/CopyWithCodePreview": {
+    "description": "The code below will be copied to your clipboard:"
+  },
   "WelcomeOverlay": {
     "welcomeMessage": "Welcome to Letta",
     "question": "Thank you for trying us out, we have a few questions to help us understand your needs better.",
@@ -253,6 +256,11 @@
       "createButton": "Create data source"
     }
   },
+  "components/QueryBuilder": {
+    "addCondition": "Add Condition",
+    "removeCondition": "Remove Condition",
+    "addCombinator": "Add Combinator"
+  },
   "create-organization": {
     "error": "There was an error creating the organization, please try again or contact support.",
     "title": "Create a new Organization",
@@ -483,22 +491,27 @@
       "subtitle": "Get started with these quick actions",
       "title": "Quick Actions",
       "createTemplate": {
-        "title": "New template",
-        "description": "Create a new agent template to define the structure of agents you deploy in your project.",
-        "cta": "Create template"
+        "title": "Create a new agent template",
+        "description": "Create a template from an existing template, or start from scratch"
+      },
+      "viewTemplates": {
+        "title": "View all agent templates",
+        "description": "Templates are used to define the structure of agents you deploy"
       },
       "monitorAgents": {
-        "title": "Monitor agents",
-        "description": "View and manage all agents deployed in your project.",
-        "cta": "View agents"
+        "title": "View deployed agents",
+        "description": "View and manage all agents deployed in your project."
       }
     },
     "agentTemplatesList": {
+      "updatedAt": "You last edited this template at {date}",
       "emptyMessage": "You have no templates in this project",
-      "createAgentTemplate": "New agent template"
+      "createAgentTemplate": "New agent template",
+      "badge": "Template"
     },
     "agentTemplatesSection": {
-      "title": "Recent templates",
+      "title": "Recent activity",
+      "subtitle": "Pick up where you left off",
       "createAgentTemplate": "New agent template"
     }
   },
@@ -687,10 +700,10 @@
     "error": "There was an error while updating the model, please try again or contact support."
   },
   "components/Messages": {
-    "thoughts": "Thoughts",
+    "reasoning": "Reasoning",
     "loadingMessages": "Fetching messages...",
-    "functionReturn": "Function response",
-    "internalMonologue": "Internal monologue",
+    "toolReturn": "Tool response",
+    "reasoningMessage": "Reasoning",
     "hiddenUserMessage": "Internal user message",
     "noParsableMessages": "There are no messages available in this view, usually this is caused by a lack of triggered send_message actions in your agent, check the debug more to verify."
   },
@@ -712,6 +725,7 @@
     },
     "FlushSimulationSessionDialog": {
       "title": "Flush Simulation",
+      "trigger": "Flush agent simulation",
       "description": "Are you sure you want to flush the simulation? This will reset the simulated agent's memory and state.",
       "confirm": "Flush",
       "success": "Simulation has been flushed",
@@ -741,18 +755,20 @@
     },
     "DialogSessionSheet": {
       "updating": "Updating variables...",
-      "placeholder": "Variable Value",
-      "save": "Update Variables",
-      "label": "Variable Name",
+      "placeholder": "Variable value",
+      "save": "Update variables",
+      "label": "Variable name",
       "editLabel": "Edit {variableName}",
-      "noVariablesDefined": "You have no variables set yet, to define a variable, write a alphanumeric name wrapped in handlebars in Memory Blocks, e.g. {variableName}"
+      "noVariablesDefined": "You have no variables set yet, to define a variable, write a alphanumeric name wrapped in handlebars inside of core memory, e.g. {variableName}"
     },
     "showVariables": "Variables",
     "hideVariables": "Hide variables",
     "updateVariables": "Update variables",
     "hasFailedToSendMessageText": {
       "local": "Failed to send message, please try again or check your server logs",
-      "cloud": "Failed to send message, please try again or contact support"
+      "cloud": "Failed to send message, please try again or contact support",
+      "contextWindowExceeded": "Input exceeded context window limit and is at max compression, please increase limit and try again.",
+      "rateLimitExceeded": "Rate limit reached, please wait a few moments before trying again."
     }
   },
   "ADE/ADESidebar": {
@@ -982,6 +998,9 @@
     }
   },
   "component-library/reusable/ChatInput": {
+    "CopySendMessageRequestButton": {
+      "label": " Copy curl request to clipboard"
+    },
     "placeholder": "Type a message...",
     "send": "Send",
     "role": {
@@ -1344,10 +1363,7 @@
   },
   "projects/(projectSlug)/agents/(agentId)/AgentPage": {
     "preparingAgent": "Preparing agent",
-    "error": "There was a severe error in this application, please refresh this page. If the error persists, please contact support in the top right corner.",
-    "Navigation": {
-      "dashboard": "Project dashboard"
-    },
+    "error": "Fatal error occured, please refresh the page. If the error persists, please contact support in the top right corner.",
     "AgentMobileNavigation": {
       "more": "More panels",
       "less": "Less panels"
@@ -1522,6 +1538,7 @@
   "login/LoginComponent": {
     "title": "Sign in to Letta Cloud",
     "google": "Continue with Google",
+    "github": "Continue with GitHub",
     "terms": "By clicking the button above, you agree to our <terms>Terms of Service</terms> and <privacy>Privacy Policy</privacy>."
   },
   "data-sources/layout": {
