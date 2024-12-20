@@ -41,11 +41,17 @@ jobs:
           source venv/bin/activate
           pip install -r desktop_app/requirements.txt
 
+      - name: Create poetry env
+        run: |
+          cd installable_apps
+          poetry install
+
       - name: Run DMG creator script
         run: |
           cd installable_apps
           source venv/bin/activate
           bash dmg_packager.sh
+
       - name: Upload created dmg to GCP bucket
         run: |
           gsutil cp installable_apps/*.dmg gs://some-bucket-where-dmgs-live/
