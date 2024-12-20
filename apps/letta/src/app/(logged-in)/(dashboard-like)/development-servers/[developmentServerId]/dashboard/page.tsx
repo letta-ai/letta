@@ -15,6 +15,7 @@ import {
   SearchIcon,
   Typography,
   VStack,
+  PlusIcon,
 } from '@letta-web/component-library';
 import { useTranslations } from 'next-intl';
 import {
@@ -38,6 +39,7 @@ import AdBannerTwo from './ad_banner_two.webp';
 import Image from 'next/image';
 import semver from 'semver/preload';
 import Link from 'next/link';
+import CreateAgentDialog from '../components/CreateAgentDialog/CreateAgentDialog';
 
 function UserIsNotConnectedComponent() {
   const t = useTranslations(
@@ -53,7 +55,7 @@ function UserIsNotConnectedComponent() {
       fullHeight
       fullWidth
     >
-      <LettaLoader size="large" />
+      <LettaLoader variant="flipper" size="large" />
       <VStack gap="small" paddingTop>
         <Typography variant="heading5">{t('connecting')}</Typography>
         <VStack align="center">
@@ -199,10 +201,14 @@ function DevelopmentServersDashboardPage() {
           <NiceGridDisplay itemWidth="252px" itemHeight="252px">
             <CTACard
               action={
-                <Button
-                  href="/development-servers/local/agents/new"
-                  label={t('gettingStarted.actions.createAgent.cta')}
-                  color="secondary"
+                <CreateAgentDialog
+                  trigger={
+                    <Button
+                      preIcon={<PlusIcon />}
+                      color="secondary"
+                      label={t('gettingStarted.actions.createAgent.cta')}
+                    />
+                  }
                 />
               }
               icon={<LettaInvaderOutlineIcon />}
