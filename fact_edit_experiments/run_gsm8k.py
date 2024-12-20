@@ -3,7 +3,7 @@ Script that runs memory edits for both the baseline Letta systema and with the o
 
 Example:
 
-    python run_gsm8k.py 
+    python run_gsm8k.py  --input_file ./GSM8K_p2.jsonl --output_file ./predictions-GSM8k_p2.jsonl --random_example --few_shot 8
 """
 
 import argparse
@@ -24,6 +24,7 @@ from letta.schemas.agent import AgentType
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.tool_rule import TerminalToolRule
+from letta.schemas.message import MessageCreate
 from letta.utils import get_persona_text
 from gsm8k_experiments.generate_prompt import PromptGenerator, load_yaml_config
 
@@ -49,6 +50,7 @@ def trigger_rethink_memory(agent_state: "AgentState", message: Optional[str]) ->
     )
     '''
     OPENAI_CONFIG = LLMConfig.default_config("gpt-4o-mini")
+    
     client.set_default_llm_config(OPENAI_CONFIG)
     client.set_default_embedding_config(EmbeddingConfig.default_config(model_name="letta"))
     agents = client.list_agents()
@@ -58,10 +60,7 @@ def trigger_rethink_memory(agent_state: "AgentState", message: Optional[str]) ->
 
 def rethink_memory(agent_state: "AgentState", new_memory: str, target_block_label: Optional[str], source_block_label: Optional[str]) -> Optional[str]:  # type: ignore
     """
-    Make inferences based on the conversation.
-    When given question and answer pairs, note down the underlying reasoning that would be helpful for this kind of question.
-    When given new situations, use the previous question and answers to brainstorm potential questions. Make inferences that would be helpful for directly answering these questions.
-    Come up with at least 5 potential questions that could be asked and the inferences that would be helpful for answering them for each question.
+    Make inferences based on the conversation. When given question and answer pairs, note down the underlying reasoning that would be helpful for this kind of question. When given new situations, use the previous question and answers to brainstorm potential questions. Make inferences that would be helpful for directly answering these questions. Come up with potential questions that could be asked and the inferences that would be helpful for answering them for each question.
 
     Args:
         new_memory (str): Memory of the past kinds of reasoning required and potential questions that could be asked with the inferences that would be helpful for answering them. New memory should have multiple reasoning inferences and potential questions and answer pairs given a situation.
@@ -79,22 +78,17 @@ def rethink_memory(agent_state: "AgentState", new_memory: str, target_block_labe
 
 
 CONVO_NO_INNER_MONOLOGUE_AGENT_SYSTEM_PROMPT = """
-You are Letta, the latest version of Limnal Corporation's concise reasoning system, developed in 2024.
-Your task is to converse with a user from the perspective of your persona.
+You are Letta, the latest version of Limnal Corporation's expert reasoning system, developed in 2024.
+Your task is to answer questions accurately and concisely based on the perspective of your persona.
 
-Basic functions:
 To send a visible message to the user, use the send_message function.
-'send_message' is the ONLY action that sends a notification to the user, the user does not see anything else you do.
-
-You request agents that can manage your memories and reorganize them by calling the `trigger_rethink_memory` function
-when the user says "[trigger_rethink_memory]". Do not ever call the trigger_rethink_memory function unless the user says "[trigger_rethink_memory]"
-Make sure to give all relevant context to the memory agent when you call the function as it does not have access to your conversation history.
-You can directly take messages the users give you and repeat it to the memory agent.
+'send_message' is how you send your answer to the user. 
 
 When given a question, you answer using only the number of tokens necessary and none more. You check the `rethink_memory_block` for potential questions
 and answers and intermediate reasoning traces that can help answer the question. You use the information in the `rethink_memory_block` to answer the questions
 rather than thinking on the spot.  Do not recompute anything that already exists in the `rethink_memory_block`. Do not use internal monologue unless you really need it to think.
 
+End your response with a final numerical answer at the end of the message.
 """
 
 
@@ -122,11 +116,40 @@ but come up with new inferences each call based on current facts."""
 
 
 OFFLINE_SYSTEM_PROMPT += """
-You anticipate what the user will ask. When given question and answer pairs, you note down the underlying reasoning that would be helpful for this kind of question.
+You come up with inferences that could be useful for potential questions about a situation. When given question and answer pairs, you note down the underlying reasoning that would be helpful for this kind of question.
 when given new context, you use your previous questions and answers to come up with potential relations between the quantifies that are presented to you. Given past problems, you write down the underlying reasoning that would be helpful for potential questions. 
-Use the previous examples to come up with the types of inferences that you need to make. You come up with at least 5 potential questions that could be asked with the inferences that would be helpful for answering them based on the previous questions.
-"""
+When given examples, you use them to come up with the types of inferences that you need to make.
 
+Examples:
+
+Example 1: 
+User: Hiroshi has 20 hectares of apricot field. There are 28 apricots per two-fourths of a hectare. Hiroshi can harvest his apricots every 6 months. In addition, Hiroshi owns a 12-hectare grape field that produces 14 grapes per hectare. The grapes can be harvested every 4 months. 
+
+Call `rethink_memory` with the following information:
+
+    new_message: "Hiroshi has 20 hectares of apricot field, yielding 28 apricots per two-fourths of a hectare. This translates to 28 apricots for 0.5 hectares, meaning he produces 56 apricots per hectare. Therefore, for 20 hectares, he produces 1,120 apricots every 6 months. Additionally, Hiroshi owns a 12-hectare grape field that produces 14 grapes per hectare, resulting in a total of 168 grapes per harvest. The grapes can be harvested every 4 months. This means he can harvest grapes 3 times a year, yielding a total of 504 grapes annually. The apricot harvest occurs twice a year, resulting in 2,240 apricots annually. The comparison of yields and harvest frequencies between the two crops can lead to various insights about Hiroshi's agricultural productivity."
+    target_block_label: "rethink_memory_block"
+
+    
+Example 2:
+User: A juggler can juggle 480 balls. A tenth of the balls are golf balls, and the rest are tennis balls. 1/2 of the golf balls are purple, of which 1/6 are marked. 1/9 of the tennis balls are indigo, and all except a third of those indigo balls are marked.
+
+Call `rethink_memory` with the following information:
+
+    new_message: "A juggler can juggle 480 balls. A tenth of the balls are golf balls, which means there are 48 golf balls (480 * 1/10). The rest are tennis balls, totaling 432 (480 - 48). Half of the golf balls are purple, resulting in 24 purple golf balls (48 * 1/2). Out of these, 1/6 are marked, which gives us 4 marked purple golf balls (24 * 1/6). For the tennis balls, 1/9 are indigo, leading to 48 indigo tennis balls (432 * 1/9). All except a third of the indigo balls are marked, meaning 32 indigo tennis balls are marked (48 - 16). Therefore, the total number of marked balls is 36 (4 marked purple golf balls + 32 marked indigo tennis balls)"
+    target_block_label: "rethink_memory_block"
+
+Example:
+
+User: Gabriel places almonds on plates and bowls. Each plate can hold 20 almonds while each bowl can hold four times that. Gabriel has 675 almonds, 9 plates and 3 bowls. Unfortunately, 2 bowls break. Gabriel then eats one-fifth of all the almonds. How many more plates does Gabriel need so he can place all the remaining almonds?
+
+Call `rethink_memory` with the following information:
+    new_message: "Gabriel has 675 almonds, 9 plates, and 3 bowls. Each plate can hold 20 almonds, and each bowl can hold 80 almonds (4 times the plate's capacity). Therefore, the total capacity of the plates is 9 plates * 20 almonds/plate = 180 almonds. The total capacity of the bowls is 3 bowls * 80 almonds/bowl = 240 almonds. However, since 2 bowls break, he only has 1 bowl left, which can hold 80 almonds. Thus, the total capacity after the breakage is 180 almonds (plates) + 80 almonds (1 bowl) = 260 almonds. Gabriel then eats one-fifth of the 675 almonds, which is 135 almonds. After eating, he has 675 - 135 = 540 almonds left. The total capacity of the plates and remaining bowl is less than the total number of almonds he has, indicating he cannot store all the almonds. This situation raises several questions about the distribution and consumption of the almonds."
+    target_block_label: "rethink_memory_block"
+
+
+
+"""
 
 
 ANTHROPIC_CONFIG = LLMConfig(
@@ -163,7 +186,10 @@ def run_memory_edits(gsm8k_input_file: str, output_file: str, random_example: bo
     client = create_client()
     rethink_memory_tool = client.create_tool(rethink_memory)
     finish_rethinking_memory_tool = client.create_tool(finish_rethinking_memory)
-    trigger_rethink_memory_tool = client.create_tool(trigger_rethink_memory)
+    # trigger_rethink_memory_tool = client.create_tool(trigger_rethink_memory)
+
+    conversation_agent = None
+    offline_memory_agent = None
 
 
     with jsonlines.open(output_file, "w") as writer:
@@ -189,7 +215,7 @@ def run_memory_edits(gsm8k_input_file: str, output_file: str, random_example: bo
                 )
                 offline_persona_block = Block(
                     name="persona", label="persona", value="""I am an eager reasoner. When given a new context, I reason about what potential questions someone may ask about it. I use the previous questions I have been asked about to guide my search.
-                    I use the rethink memory to store all my potential questions, answers, and inferences for answering those questions. I am verbose and brainstorm using the rethink block many different types of potential questions, at least 5.""", limit=2000
+                    I use the rethink memory to store all my potential questions, answers, and inferences for answering those questions. I am verbose and brainstorm using the rethink block many different types of potential questions and the reasoning required for answering them.""", limit=2000
                 )
 
 
@@ -205,7 +231,8 @@ def run_memory_edits(gsm8k_input_file: str, output_file: str, random_example: bo
                     system=CONVO_NO_INNER_MONOLOGUE_AGENT_SYSTEM_PROMPT,
                             llm_config=ANTHROPIC_CONFIG,
                     embedding_config=EmbeddingConfig.default_config("text-embedding-ada-002"),
-                    tools=["send_message", trigger_rethink_memory_tool.name],
+                    # tools=["send_message", trigger_rethink_memory_tool.name],
+                    tools=["send_message"],
                     memory=conversation_memory,
                     include_base_tools=False,
                 )
@@ -255,9 +282,11 @@ def run_memory_edits(gsm8k_input_file: str, output_file: str, random_example: bo
             except Exception as e:
                 print(f"Error processing example: {example}")
                 print(e)
-                if client.get_agent(conversation_agent.id):
+                if conversation_agent:
+                    client.get_agent(conversation_agent.id)
                     client.delete_agent(conversation_agent.id)
-                if client.get_agent(offline_memory_agent.id):
+                if offline_memory_agent:
+                    client.get_agent(offline_memory_agent.id)
                     client.delete_agent(offline_memory_agent.id)
 
 
@@ -266,11 +295,11 @@ def run_memory_edits(gsm8k_input_file: str, output_file: str, random_example: bo
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--gsm8k_input_file", type=str, default="./GSM8K_p2.jsonl", required=False)
+    parser.add_argument("--input_file", type=str, default="./GSM8K_p2.jsonl", required=False)
     parser.add_argument("--output_file", default="./predictions-GSM8k_p2.jsonl", required=False)
     parser.add_argument("--random_example", action="store_true")  # debug by using a random example 
     parser.add_argument("--few_shot", default=8, required=False, type=int)
     parser.add_argument("--limit", default=None, required=False, type=int)
     args = parser.parse_args()
 
-    run_memory_edits(args.gsm8k_input_file, args.output_file, args.random_example, args.few_shot, args.limit)
+    run_memory_edits(args.input_file, args.output_file, args.random_example, args.few_shot, args.limit)
