@@ -20,7 +20,7 @@ from letta.schemas.letta_message import (
     AssistantMessage,
     ToolCallMessage,
     ToolReturnMessage,
-    InternalMonologue,
+    ReasoningMessage,
     LettaMessage,
     SystemMessage,
     UserMessage,
@@ -171,7 +171,7 @@ def test_agent_interactions(mock_e2b_api_key_none, client: Union[LocalClient, RE
         assert type(letta_message) in [
             SystemMessage,
             UserMessage,
-            InternalMonologue,
+            ReasoningMessage,
             ToolCallMessage,
             ToolReturnMessage,
             AssistantMessage,
@@ -255,7 +255,7 @@ def test_streaming_send_message(mock_e2b_api_key_none, client: RESTClient, agent
     assert response, "Sending message failed"
     for chunk in response:
         assert isinstance(chunk, LettaStreamingResponse)
-        if isinstance(chunk, InternalMonologue) and chunk.internal_monologue and chunk.internal_monologue != "":
+        if isinstance(chunk, ReasoningMessage) and chunk.reasoning and chunk.reasoning != "":
             inner_thoughts_exist = True
             inner_thoughts_count += 1
         if isinstance(chunk, ToolCallMessage) and chunk.tool_call and chunk.tool_call.name == "send_message":
@@ -529,6 +529,7 @@ def test_sources(client: Union[LocalClient, RESTClient], agent: AgentState):
 
 def test_message_update(client: Union[LocalClient, RESTClient], agent: AgentState):
     """Test that we can update the details of a message"""
+    import json
 
     # create a message
     message_response = client.send_message(agent_id=agent.id, message="Test message", role="user")
@@ -537,7 +538,7 @@ def test_message_update(client: Union[LocalClient, RESTClient], agent: AgentStat
     assert isinstance(message_response.messages[-1], ToolReturnMessage)
     message = message_response.messages[-1]
 
-    new_text = "This exact string would never show up in the message???"
+    new_text = json.dumps({"message": "This exact string would never show up in the message???"})
     new_message = client.update_message(message_id=message.id, text=new_text, agent_id=agent.id)
     assert new_message.text == new_text
 

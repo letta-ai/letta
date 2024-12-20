@@ -19,7 +19,7 @@ from letta.schemas.letta_message import (
     ToolCall as LettaToolCall,
     ToolCallMessage,
     ToolReturnMessage,
-    InternalMonologue,
+    ReasoningMessage,
     LettaMessage,
     SystemMessage,
     UserMessage,
@@ -145,10 +145,10 @@ class Message(BaseMessage):
             if self.text is not None:
                 # This is type InnerThoughts
                 messages.append(
-                    InternalMonologue(
+                    ReasoningMessage(
                         id=self.id,
                         date=self.created_at,
-                        internal_monologue=self.text,
+                        reasoning=self.text,
                     )
                 )
             if self.tool_calls is not None:

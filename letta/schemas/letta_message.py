@@ -60,18 +60,18 @@ class UserMessage(LettaMessage):
     message: str
 
 
-class InternalMonologue(LettaMessage):
+class ReasoningMessage(LettaMessage):
     """
-    Representation of an agent's internal monologue.
+    Representation of an agent's internal reasoning.
 
     Attributes:
-        internal_monologue (str): The internal monologue of the agent
+        reasoning (str): The internal reasoning of the agent
         id (str): The ID of the message
         date (datetime): The date the message was created in ISO format
     """
 
-    message_type: Literal["internal_monologue"] = "internal_monologue"
-    internal_monologue: str
+    message_type: Literal["reasoning_message"] = "reasoning_message"
+    reasoning: str
 
 
 class ToolCall(BaseModel):
@@ -196,10 +196,24 @@ class LegacyFunctionReturn(LettaMessage):
     stderr: Optional[List[str]] = None
 
 
-LegacyLettaMessage = Union[InternalMonologue, AssistantMessage, LegacyFunctionCallMessage, LegacyFunctionReturn]
+class LegacyInternalMonologue(LettaMessage):
+    """
+    Representation of an agent's internal monologue.
+
+    Attributes:
+        internal_monologue (str): The internal monologue of the agent
+        id (str): The ID of the message
+        date (datetime): The date the message was created in ISO format
+    """
+
+    message_type: Literal["internal_monologue"] = "internal_monologue"
+    internal_monologue: str
+
+
+LegacyLettaMessage = Union[LegacyInternalMonologue, AssistantMessage, LegacyFunctionCallMessage, LegacyFunctionReturn]
 
 
 LettaMessageUnion = Annotated[
-    Union[SystemMessage, UserMessage, InternalMonologue, ToolCallMessage, ToolReturnMessage, AssistantMessage],
+    Union[SystemMessage, UserMessage, ReasoningMessage, ToolCallMessage, ToolReturnMessage, AssistantMessage],
     Field(discriminator="message_type"),
 ]

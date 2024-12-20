@@ -40,6 +40,8 @@ class LettaResponse(BaseModel):
         def get_formatted_content(msg):
             if msg.message_type == "internal_monologue":
                 return f'<div class="content"><span class="internal-monologue">{html.escape(msg.internal_monologue)}</span></div>'
+            if msg.message_type == "reasoning_message":
+                return f'<div class="content"><span class="internal-monologue">{html.escape(msg.reasoning)}</span></div>'
             elif msg.message_type == "function_call":
                 args = format_json(msg.function_call.arguments)
                 return f'<div class="content"><span class="function-name">{html.escape(msg.function_call.name)}</span>({args})</div>'
