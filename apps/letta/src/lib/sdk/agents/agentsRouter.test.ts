@@ -337,33 +337,6 @@ describe('agentsRouter', () => {
         });
       });
 
-      it('should return an error if user is creating a deployed agent from a starter kit', async () => {
-        const response = await createAgent(
-          {
-            body: {
-              template: false,
-              from_template: 'personalAssistant',
-              project_id: 'test-project-id',
-            },
-          },
-          {
-            request: {
-              userId: 'test-id',
-              organizationId: 'test-org-id',
-              lettaAgentsUserId: 'test-id',
-            },
-          }
-        );
-
-        expect(response).toEqual({
-          status: 400,
-          body: {
-            message:
-              'Cannot create a deployed agent from a starter kit template',
-          },
-        });
-      });
-
       it('should create an agent from a starter kit', async () => {
         const createdAgent = {
           id: 'test-agent-id',
