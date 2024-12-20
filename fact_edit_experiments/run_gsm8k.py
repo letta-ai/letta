@@ -136,7 +136,11 @@ ANTHROPIC_CONFIG = LLMConfig(
             context_window=32000,
         )
 
-OPENAI_CONFIG = LLMConfig.default_config("gpt-4o-mini")
+# OPENAI_CONFIG = LLMConfig.default_config("gpt-4o-mini")
+OPENAI_CONFIG = LLMConfig(model="gpt-4o-2024-08-06",
+                          model_endpoint_type="openai",
+                          model_endpoint="https://api.openai.com/v1",
+                          context_window=32000)
 
 def run_memory_edits(gsm8k_input_file: str, output_file: str, random_example: bool = False, few_shot: bool = True, limit: int = None) -> None:
     if few_shot:
@@ -199,7 +203,7 @@ def run_memory_edits(gsm8k_input_file: str, output_file: str, random_example: bo
                     name="conversation_agent",
                     agent_type=AgentType.memgpt_agent,
                     system=CONVO_NO_INNER_MONOLOGUE_AGENT_SYSTEM_PROMPT,
-                            llm_config=OPENAI_CONFIG,
+                            llm_config=ANTHROPIC_CONFIG,
                     embedding_config=EmbeddingConfig.default_config("text-embedding-ada-002"),
                     tools=["send_message", trigger_rethink_memory_tool.name],
                     memory=conversation_memory,
@@ -211,7 +215,7 @@ def run_memory_edits(gsm8k_input_file: str, output_file: str, random_example: bo
                     agent_type=AgentType.offline_memory_agent,
                     system=OFFLINE_SYSTEM_PROMPT,
                     memory=offline_memory,
-                            llm_config=OPENAI_CONFIG,
+                            llm_config=ANTHROPIC_CONFIG,
                     embedding_config=EmbeddingConfig.default_config("text-embedding-ada-002"),
                     tools=[rethink_memory_tool.name, finish_rethinking_memory_tool.name],
                     tool_rules=[TerminalToolRule(tool_name=finish_rethinking_memory_tool.name)],
