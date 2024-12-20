@@ -1511,6 +1511,7 @@ async function createTemplateFromAgent(
 ): Promise<CreateTemplateFromAgentResponse> {
   const { agent_id: agentId } = request.params;
   const { lettaAgentsUserId } = context.request;
+  const { project_id } = request.body;
 
   const agent = await AgentsService.getAgent(
     {
@@ -1533,6 +1534,7 @@ async function createTemplateFromAgent(
   const response = await createAgent(
     {
       body: {
+        project_id,
         llm_config: agent.llm_config,
         embedding_config: agent.embedding_config,
         system: agent.system,
