@@ -15,7 +15,7 @@ tabs:
   ref:
     display-name: API Reference
     icon: regular rectangle-terminal
-    slug: api-reference
+    skip-slug: true
   python: 
     display-name: Python SDK
     icon: brands python
