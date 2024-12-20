@@ -131,16 +131,16 @@ class LettaMessageError(LettaError):
         return f"{error_msg}\n\n{message_json}"
 
 
-class MissingFunctionCallError(LettaMessageError):
-    """Error raised when a message is missing a function call."""
+class MissingToolCallError(LettaMessageError):
+    """Error raised when a message is missing a tool call."""
 
-    default_error_message = "The message is missing a function call."
+    default_error_message = "The message is missing a tool call."
 
 
-class InvalidFunctionCallError(LettaMessageError):
-    """Error raised when a message uses an invalid function call."""
+class InvalidToolCallError(LettaMessageError):
+    """Error raised when a message uses an invalid tool call."""
 
-    default_error_message = "The message uses an invalid function call or has improper usage of a function call."
+    default_error_message = "The message uses an invalid tool call or has improper usage of a tool call."
 
 
 class MissingInnerMonologueError(LettaMessageError):

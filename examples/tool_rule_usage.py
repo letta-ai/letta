@@ -2,7 +2,7 @@ import os
 import uuid
 
 from letta import create_client
-from letta.schemas.letta_message import FunctionCallMessage
+from letta.schemas.letta_message import ToolCallMessage
 from letta.schemas.tool_rule import ChildToolRule, InitToolRule, TerminalToolRule
 from tests.helpers.endpoints_helper import (
     assert_invoked_send_message_with_keyword,
@@ -116,9 +116,9 @@ def main():
     # 6. Here, we thoroughly check the correctness of the response
     tool_names += ["send_message"]  # Add send message because we expect this to be called at the end
     for m in response.messages:
-        if isinstance(m, FunctionCallMessage):
+        if isinstance(m, ToolCallMessage):
             # Check that it's equal to the first one
-            assert m.function_call.name == tool_names[0]
+            assert m.tool_call.name == tool_names[0]
             # Pop out first one
             tool_names = tool_names[1:]
 
