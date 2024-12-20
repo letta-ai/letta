@@ -4,6 +4,8 @@ from typing import Annotated, List, Literal, Optional, Union
 
 from pydantic import BaseModel, Field, field_serializer, field_validator
 
+from letta.schemas.usage import LettaUsageStatistics
+
 # Letta API style responses (intended to be easier to use vs getting true Message types)
 
 
@@ -160,6 +162,18 @@ class ToolReturnMessage(LettaMessage):
     tool_call_id: str
     stdout: Optional[List[str]] = None
     stderr: Optional[List[str]] = None
+
+
+class UsageMessage(LettaMessage):
+     """
+     A message representint the usage statistics for the agent interaction.
+     Attributes:
+         usage (LettaUsageStatistics): Usage statistics for the agent interaction.
+     """
+
+     message_type: Literal["usage_message"] = "usage_message"
+     usage: LettaUsageStatistics
+
 
 
 # Legacy Letta API had an additional type "assistant_message" and the "function_call" was a formatted string
