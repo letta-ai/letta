@@ -9,6 +9,7 @@ from fastapi import Header
 from pydantic import BaseModel
 
 from letta.errors import ContextWindowExceededError, RateLimitExceededError
+from letta.schemas.letta_message import UsageMessage
 from letta.schemas.usage import LettaUsageStatistics
 from letta.server.rest_api.interface import StreamingServerInterface
 from letta.server.server import SyncServer
@@ -59,9 +60,9 @@ async def sse_async_generator(
             try:
                 usage = await usage_task
                 # Double-check the type
-                if not isinstance(usage, LettaUsageStatistics):
-                    raise ValueError(f"Expected LettaUsageStatistics, got {type(usage)}")
-                yield sse_formatter({"usage": usage.model_dump()})
+                if not isinstance(usage, UsageMessage):
+                    raise ValueError(f"Expected UsageMessage, got {type(usage)}")
+                yield sse_formatter(usage.model_dump())
 
             except ContextWindowExceededError as e:
                 log_error_to_sentry(e)

@@ -260,10 +260,10 @@ def test_streaming_send_message(mock_e2b_api_key_none, client: RESTClient, agent
                 send_message_ran = True
             if isinstance(chunk, UsageMessage):
                 # Some rough metrics for a reasonable usage pattern
-                assert chunk.step_count == 1
-                assert chunk.completion_tokens > 10
-                assert chunk.prompt_tokens > 1000
-                assert chunk.total_tokens > 1000
+                assert chunk.usage.step_count == 1
+                assert chunk.usage.completion_tokens > 10
+                assert chunk.usage.prompt_tokens > 1000
+                assert chunk.usage.total_tokens > 1000
         elif chunk == OPENAI_SSE_DONE:
             assert not done, "Message stream already done"
             done = True
