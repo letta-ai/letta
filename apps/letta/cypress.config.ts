@@ -10,6 +10,7 @@ export default defineConfig({
   e2e: {
     ...nxE2EPreset(__filename, { cypressDir: 'cypress', bundler: 'vite' }),
     baseUrl: 'http://localhost:3000',
+    defaultCommandTimeout: 10000,
   },
   env: {
     googleRefreshToken: process.env.CYPRESS_GOOGLE_REFRESH_TOKEN,
