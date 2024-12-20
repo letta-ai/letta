@@ -7,7 +7,7 @@ api:
 groups:
   python-sdk:
     generators:
-      - name: letta-ai/letta-python
+      - name: fernapi/fern-python-sdk
         version: 4.3.9
         output:
           location: pypi
