@@ -871,6 +871,36 @@
     "lastUpdated": "Last updated on {date}",
     "updating": "Updating..."
   },
+  "projects/(projectSlug)/agents/page/DeployAgentDialog": {
+    "SelectedTemplateState": {
+      "readying": "Readying template for agent deployment...",
+      "title": "Configure Agent",
+      "description": "This template contains variables that need to be set before deploying the agent",
+      "create": "Create Agent",
+      "return": "Go back",
+      "inputLabel": "Set {variableName}",
+      "inputPlaceholder": "my-variable-value"
+    },
+    "FromStarterKit": {
+      "title": "Starter kits",
+      "description": "Choose from a starter pack and customize it in the ADE, or start from scratch"
+    },
+    "loading": "Creating agent...",
+    "title": "Create an Agent",
+    "trigger": "Create a new agent",
+    "error": "There was an error creating the agent, please try again or contact support.",
+    "DeployFromTemplate": {
+      "noItems": "The best way to get started is to create an agent from a template, visit the templates page to get started.",
+      "notFound": "No templates found that match your search",
+      "searchPlaceholder": "Search templates",
+      "title": "From an existing template",
+      "description": "Choose a template to deploy as an agent",
+      "items": {
+        "version": "Version: {version}",
+        "noDescription": "No description provided"
+      }
+    }
+  },
   "projects/(projectSlug)/agents/page": {
     "table": {
       "columns": {

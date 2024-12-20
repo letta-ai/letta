@@ -5,10 +5,10 @@ import { STARTER_KITS, webOriginSDKApi } from '$letta/client';
 import { useRouter } from 'next/navigation';
 import {
   Alert,
-  DashboardPageSection,
   Dialog,
   LoadingEmptyStatusComponent,
   NiceGridDisplay,
+  Section,
   VStack,
 } from '@letta-web/component-library';
 import { StarterKitItems } from '$letta/client/components';
@@ -61,7 +61,7 @@ export function CreateNewTemplateDialog(props: CreateNewTemplateDialogProps) {
       disableForm
       size="xxlarge"
     >
-      <DashboardPageSection
+      <Section
         title={t('starterKits.title')}
         description={t('starterKits.description')}
       >
@@ -89,7 +89,7 @@ export function CreateNewTemplateDialog(props: CreateNewTemplateDialogProps) {
             </VStack>
           )}
         </VStack>
-      </DashboardPageSection>
+      </Section>
     </Dialog>
   );
 }

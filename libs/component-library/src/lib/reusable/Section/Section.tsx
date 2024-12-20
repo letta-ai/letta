@@ -15,13 +15,14 @@ interface DashboardSearchBarProps {
   searchValue: string;
 }
 
-function DashboardSearchBar(props: DashboardSearchBarProps) {
+function SectionSearchBar(props: DashboardSearchBarProps) {
   const { onSearch, searchPlaceholder, searchValue } = props;
   return (
     <HStack>
       <RawInput
         preIcon={<SearchIcon />}
         hideLabel
+        color="grey"
         role="search"
         label="Search"
         fullWidth
@@ -35,7 +36,7 @@ function DashboardSearchBar(props: DashboardSearchBarProps) {
   );
 }
 
-type DashboardPageSectionProps = PropsWithChildren<
+type SectionProps = PropsWithChildren<
   Partial<DashboardSearchBarProps> & {
     actions?: React.ReactNode;
     fullHeight?: boolean;
@@ -45,7 +46,7 @@ type DashboardPageSectionProps = PropsWithChildren<
   }
 >;
 
-export function DashboardPageSection(props: DashboardPageSectionProps) {
+export function Section(props: SectionProps) {
   const {
     children,
     actions,
@@ -60,8 +61,6 @@ export function DashboardPageSection(props: DashboardPageSectionProps) {
 
   return (
     <VStack
-      paddingX="large"
-      paddingTop="medium"
       paddingBottom="small"
       fullHeight={fullHeight}
       flex={fullHeight}
@@ -71,7 +70,7 @@ export function DashboardPageSection(props: DashboardPageSectionProps) {
       <VStack gap={false}>
         {title && (
           <HStack align="center" justify="spaceBetween">
-            <Typography align="left" noWrap bold variant="heading4">
+            <Typography align="left" noWrap bold variant="body">
               {title}
             </Typography>
             <HiddenOnMobile>
@@ -80,14 +79,14 @@ export function DashboardPageSection(props: DashboardPageSectionProps) {
           </HStack>
         )}
         {description && (
-          <Typography align="left" variant="body">
+          <Typography align="left" color="lighter" variant="body">
             {description}
           </Typography>
         )}
       </VStack>
       {onSearch && (
-        <Frame paddingTop>
-          <DashboardSearchBar
+        <Frame>
+          <SectionSearchBar
             searchPlaceholder={searchPlaceholder || ''}
             searchValue={searchValue || ''}
             onSearch={onSearch}

@@ -337,34 +337,7 @@ describe('agentsRouter', () => {
         });
       });
 
-      it('should return an error if user is creating a deployed agent from a starter kit', async () => {
-        const response = await createAgent(
-          {
-            body: {
-              template: false,
-              from_template: 'personalAssistant',
-              project_id: 'test-project-id',
-            },
-          },
-          {
-            request: {
-              userId: 'test-id',
-              organizationId: 'test-org-id',
-              lettaAgentsUserId: 'test-id',
-            },
-          }
-        );
-
-        expect(response).toEqual({
-          status: 400,
-          body: {
-            message:
-              'Cannot create a deployed agent from a starter kit template',
-          },
-        });
-      });
-
-      it('should create an agent from a starter kit', async () => {
+      it('should create an template from a starter kit', async () => {
         const createdAgent = {
           id: 'test-agent-id',
           name: 'test-agent',
@@ -430,9 +403,87 @@ describe('agentsRouter', () => {
             name: 'test',
           },
         });
+
+        expect(versionAgentTemplate).toHaveBeenCalled();
       });
 
-      expect(versionAgentTemplate).not.toHaveBeenCalled();
+      it('should create an agent from a starter kit', async () => {
+        const createdAgent = {
+          id: 'test-agent-id',
+          name: 'test-agent',
+          metadata_: {},
+          agent_type: 'memgpt_agent',
+          created_at: new Date().toISOString(),
+          system: '',
+          ...premadeTemplate,
+        };
+
+        lettaAgentAPIMock.AgentsService.createAgent.mockResolvedValue(
+          createdAgent
+        );
+
+        const { valuesFn, returningFn } = mockDatabaseInsert();
+
+        returningFn.mockReturnValue([
+          {
+            deployedAgentId: 'deployed-test-template-id',
+          },
+        ]);
+
+        const response = await createAgent(
+          {
+            body: {
+              template: false,
+              from_template: 'personalAssistant',
+              project_id: 'test-project-id',
+              name: 'test',
+            },
+          },
+          {
+            request: {
+              userId: 'test-id',
+              organizationId: 'test-org-id',
+              lettaAgentsUserId: 'letta-test-id',
+            },
+          }
+        );
+
+        expect(
+          lettaAgentAPIMock.AgentsService.createAgent
+        ).toHaveBeenCalledWith(
+          {
+            requestBody: {
+              ...STARTER_KITS.personalAssistant.agentState,
+              tool_ids: [],
+              llm_config: llmConfig,
+              embedding_config: embeddingConfig,
+              name: expect.any(String),
+            },
+          },
+          {
+            user_id: 'letta-test-id',
+          }
+        );
+
+        expect(valuesFn).toHaveBeenCalledWith({
+          deployedAgentTemplateId: '',
+          id: 'test-agent-id',
+          internalAgentCountId: 0,
+          key: 'test',
+          organizationId: 'test-org-id',
+          projectId: 'test-project-id',
+        });
+
+        expect(response).toEqual({
+          status: 201,
+          body: {
+            ...createdAgent,
+            name: 'test',
+          },
+        });
+
+        expect(versionAgentTemplate).not.toHaveBeenCalled();
+      });
     });
 
     it('should throw an error if user is creating an agent from template and template does not exist', async () => {

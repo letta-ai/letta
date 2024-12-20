@@ -9,6 +9,7 @@ import {
   agentSimulatorSessions,
   agentTemplates,
   db,
+  deployedAgentTemplates,
 } from '@letta-web/database';
 import { copyAgentById, updateAgentFromAgentId } from '$letta/sdk';
 import { AgentsService } from '@letta-web/letta-agents-api';
@@ -33,7 +34,13 @@ type ListAgentTemplatesQueryResponse = ServerInferResponses<
 export async function listAgentTemplates(
   req: ListAgentTemplatesQueryRequest
 ): Promise<ListAgentTemplatesQueryResponse> {
-  const { search, offset, limit = 10, projectId } = req.query;
+  const {
+    search,
+    offset,
+    includeLatestDeployedVersion,
+    limit = 10,
+    projectId,
+  } = req.query;
 
   const organizationId = await getUserActiveOrganizationIdOrThrow();
 
@@ -54,6 +61,15 @@ export async function listAgentTemplates(
     where: and(...where),
     limit: limit + 1,
     offset,
+    with: {
+      ...(includeLatestDeployedVersion && {
+        deployedAgentTemplates: {
+          limit: 1,
+          where: isNull(deployedAgentTemplates.deletedAt),
+          orderBy: [desc(deployedAgentTemplates.createdAt)],
+        },
+      }),
+    },
     orderBy: [desc(agentTemplates.createdAt)],
     columns: {
       name: true,
@@ -74,6 +90,13 @@ export async function listAgentTemplates(
             name: agentTemplate.name,
             id: agentTemplate.id,
             updatedAt: agentTemplate.updatedAt.toISOString(),
+            ...(includeLatestDeployedVersion
+              ? {
+                  latestDeployedVersion:
+                    agentTemplate.deployedAgentTemplates[0]?.version,
+                  latestDeployedId: agentTemplate.deployedAgentTemplates[0]?.id,
+                }
+              : {}),
           };
         }),
       hasNextPage,
