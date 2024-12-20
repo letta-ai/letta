@@ -47,7 +47,7 @@ const CreateAgentBodySchema = z.object({
     description: 'A list of message IDs associated with the agent',
   }),
   memory_blocks: MemoryBlocksSchema.nullable().optional(),
-  tools: z.string().array().nullable().optional(),
+  tool_ids: z.string().array().nullable().optional(),
   system: z.string().nullable().optional(),
   llm_config: LLMConfigSchema.nullable()?.optional(),
   embedding_config: EmbeddingConfigSchema.nullable()?.optional(),
@@ -348,6 +348,26 @@ const searchDeployedAgentsContract = c.mutation({
   },
 });
 
+const FailedToCreateAgentTemplateErrorSchema = z.object({
+  message: z.literal('Failed to create agent template'),
+});
+
+const createTemplateFromAgentContract = c.mutation({
+  method: 'POST',
+  summary: 'Create Template From Agent',
+  path: '/v1/agents/:agent_id/template',
+  description: 'Create a template from an agent',
+  pathParams: z.object({
+    agent_id: z.string(),
+  }),
+  body: z.undefined(),
+  responses: {
+    201: CreateAgentResponseSchema,
+    404: AgentNotFoundResponseSchema,
+    500: FailedToCreateAgentTemplateErrorSchema,
+  },
+});
+
 export const agentsContract = c.router({
   createAgent: createAgentContract,
   searchDeployedAgents: searchDeployedAgentsContract,
@@ -357,6 +377,7 @@ export const agentsContract = c.router({
   getAgentById: getAgentByIdContract,
   deleteAgent: deleteAgentContract,
   updateAgent: updateAgentContract,
+  createTemplateFromAgent: createTemplateFromAgentContract,
 });
 
 export const agentsQueryKeys = {

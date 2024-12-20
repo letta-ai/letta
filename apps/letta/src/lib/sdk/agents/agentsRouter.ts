@@ -609,7 +609,7 @@ export async function createAgent(
     {
       requestBody: {
         ...agent,
-        tools: agent.tools || undefined,
+        tool_ids: agent.tool_ids || undefined,
         memory_blocks: agent.memory_blocks || [],
         name: crypto.randomUUID(),
       },
@@ -1497,6 +1497,74 @@ async function searchDeployedAgents(
   };
 }
 
+type CreateTemplateFromAgentRequest = ServerInferRequest<
+  typeof sdkContracts.agents.createTemplateFromAgent
+>;
+
+type CreateTemplateFromAgentResponse = ServerInferResponses<
+  typeof sdkContracts.agents.createTemplateFromAgent
+>;
+
+async function createTemplateFromAgent(
+  request: CreateTemplateFromAgentRequest,
+  context: SDKContext
+): Promise<CreateTemplateFromAgentResponse> {
+  const { agent_id: agentId } = request.params;
+  const { lettaAgentsUserId } = context.request;
+
+  const agent = await AgentsService.getAgent(
+    {
+      agentId,
+    },
+    {
+      user_id: lettaAgentsUserId,
+    }
+  );
+
+  if (!agent) {
+    return {
+      status: 404,
+      body: {
+        message: 'Agent not found',
+      },
+    };
+  }
+
+  const response = await createAgent(
+    {
+      body: {
+        llm_config: agent.llm_config,
+        embedding_config: agent.embedding_config,
+        system: agent.system,
+        tool_ids: agent.tools.map((tool) => tool.id || '').filter(Boolean),
+        memory_blocks: agent.memory.blocks.map((block) => {
+          return {
+            limit: block.limit,
+            label: block.label || '',
+            value: block.value,
+          };
+        }),
+        template: true,
+      },
+    },
+    context
+  );
+
+  if (response.status !== 201) {
+    return {
+      status: 500,
+      body: {
+        message: 'Failed to create agent template',
+      },
+    };
+  }
+
+  return {
+    status: 201,
+    body: response.body,
+  };
+}
+
 export const agentsRouter = {
   createAgent,
   versionAgentTemplate,
@@ -1506,4 +1574,5 @@ export const agentsRouter = {
   deleteAgent,
   updateAgent,
   searchDeployedAgents,
+  createTemplateFromAgent,
 };

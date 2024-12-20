@@ -161,32 +161,29 @@ function FromStarterKit(props: FromStarterKitProps) {
 
   const { push } = useRouter();
 
-  const { mutate } = webOriginSDKApi.agents.createAgent.useMutation();
+  const { mutate } = webOriginSDKApi.agents.createAgent.useMutation({
+    onError: () => {
+      onIsCreating(false);
+      onError();
+    },
+    onSuccess: (data) => {
+      push(`/projects/${slug}/agents/${data.body.id}`);
+    },
+  });
 
   const handleSelectStarterKit = useCallback(
     (starterKitId: string) => {
       onIsCreating(true);
 
-      mutate(
-        {
-          body: {
-            template: false,
-            from_template: starterKitId,
-            project_id: projectId,
-          },
+      mutate({
+        body: {
+          template: false,
+          from_template: starterKitId,
+          project_id: projectId,
         },
-        {
-          onError: () => {
-            onIsCreating(false);
-            onError();
-          },
-          onSuccess: (data) => {
-            push(`/projects/${slug}/agents/${data.body.id}`);
-          },
-        }
-      );
+      });
     },
-    [mutate, onError, onIsCreating, projectId, push, slug]
+    [mutate, onIsCreating, projectId]
   );
 
   return (
