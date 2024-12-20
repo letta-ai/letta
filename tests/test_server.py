@@ -10,11 +10,11 @@ from letta.constants import BASE_MEMORY_TOOLS, BASE_TOOLS
 from letta.schemas.block import CreateBlock
 from letta.schemas.enums import MessageRole
 from letta.schemas.letta_message import (
-    FunctionCallMessage,
-    FunctionReturn,
-    InternalMonologue,
     LettaMessage,
+    ReasoningMessage,
     SystemMessage,
+    ToolCallMessage,
+    ToolReturnMessage,
     UserMessage,
 )
 from letta.schemas.user import User
@@ -610,28 +610,28 @@ def _test_get_messages_letta_format(
                 print(f"Assistant Message at {i}: {type(letta_message)}")
 
                 if reverse:
-                    # Reverse handling: FunctionCallMessages come first
+                    # Reverse handling: ToolCallMessage come first
                     if message.tool_calls:
                         for tool_call in message.tool_calls:
                             try:
                                 json.loads(tool_call.function.arguments)
                             except json.JSONDecodeError:
                                 warnings.warn(f"Invalid JSON in function arguments: {tool_call.function.arguments}")
-                            assert isinstance(letta_message, FunctionCallMessage)
+                            assert isinstance(letta_message, ToolCallMessage)
                             letta_message_index += 1
                             if letta_message_index >= len(letta_messages):
                                 break
                             letta_message = letta_messages[letta_message_index]
 
                     if message.text:
-                        assert isinstance(letta_message, InternalMonologue)
+                        assert isinstance(letta_message, ReasoningMessage)
                         letta_message_index += 1
                     else:
                         assert message.tool_calls is not None
 
                 else:  # Non-reverse handling
                     if message.text:
-                        assert isinstance(letta_message, InternalMonologue)
+                        assert isinstance(letta_message, ReasoningMessage)
                         letta_message_index += 1
                         if letta_message_index >= len(letta_messages):
                             break
@@ -643,9 +643,9 @@ def _test_get_messages_letta_format(
                                 json.loads(tool_call.function.arguments)
                             except json.JSONDecodeError:
                                 warnings.warn(f"Invalid JSON in function arguments: {tool_call.function.arguments}")
-                            assert isinstance(letta_message, FunctionCallMessage)
-                            assert tool_call.function.name == letta_message.function_call.name
-                            assert tool_call.function.arguments == letta_message.function_call.arguments
+                            assert isinstance(letta_message, ToolCallMessage)
+                            assert tool_call.function.name == letta_message.tool_call.name
+                            assert tool_call.function.arguments == letta_message.tool_call.arguments
                             letta_message_index += 1
                             if letta_message_index >= len(letta_messages):
                                 break
@@ -662,8 +662,8 @@ def _test_get_messages_letta_format(
                 letta_message_index += 1
 
             elif message.role == MessageRole.tool:
-                assert isinstance(letta_message, FunctionReturn)
-                assert message.text == letta_message.function_return
+                assert isinstance(letta_message, ToolReturnMessage)
+                assert message.text == letta_message.tool_return
                 letta_message_index += 1
 
             else:
@@ -735,7 +735,7 @@ def test_tool_run(server, mock_e2b_api_key_none, user, agent_id):
     )
     print(result)
     assert result.status == "success"
-    assert result.function_return == "Ingested message Hello, world!", result.function_return
+    assert result.tool_return == "Ingested message Hello, world!", result.tool_return
     assert not result.stdout
     assert not result.stderr
 
@@ -748,7 +748,7 @@ def test_tool_run(server, mock_e2b_api_key_none, user, agent_id):
     )
     print(result)
     assert result.status == "success"
-    assert result.function_return == "Ingested message Well well well", result.function_return
+    assert result.tool_return == "Ingested message Well well well", result.tool_return
     assert not result.stdout
     assert not result.stderr
 
@@ -761,8 +761,8 @@ def test_tool_run(server, mock_e2b_api_key_none, user, agent_id):
     )
     print(result)
     assert result.status == "error"
-    assert "Error" in result.function_return, result.function_return
-    assert "missing 1 required positional argument" in result.function_return, result.function_return
+    assert "Error" in result.tool_return, result.tool_return
+    assert "missing 1 required positional argument" in result.tool_return, result.tool_return
     assert not result.stdout
     assert result.stderr
     assert "missing 1 required positional argument" in result.stderr[0]
@@ -777,7 +777,7 @@ def test_tool_run(server, mock_e2b_api_key_none, user, agent_id):
     )
     print(result)
     assert result.status == "success"
-    assert result.function_return == "Ingested message Well well well", result.function_return
+    assert result.tool_return == "Ingested message Well well well", result.tool_return
     assert result.stdout
     assert "I'm a distractor" in result.stdout[0]
     assert not result.stderr
@@ -792,7 +792,7 @@ def test_tool_run(server, mock_e2b_api_key_none, user, agent_id):
     )
     print(result)
     assert result.status == "success"
-    assert result.function_return == "Ingested message Well well well", result.function_return
+    assert result.tool_return == "Ingested message Well well well", result.tool_return
     assert result.stdout
     assert "I'm a distractor" in result.stdout[0]
     assert not result.stderr
@@ -807,7 +807,7 @@ def test_tool_run(server, mock_e2b_api_key_none, user, agent_id):
     )
     print(result)
     assert result.status == "success"
-    assert result.function_return == str(None), result.function_return
+    assert result.tool_return == str(None), result.tool_return
     assert result.stdout
     assert "I'm a distractor" in result.stdout[0]
     assert not result.stderr

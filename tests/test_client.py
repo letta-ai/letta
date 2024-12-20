@@ -15,7 +15,7 @@ from letta.schemas.agent import AgentState
 from letta.schemas.block import CreateBlock
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.job import JobStatus
-from letta.schemas.letta_message import FunctionReturn
+from letta.schemas.letta_message import ToolReturnMessage
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.sandbox_config import LocalSandboxConfig, SandboxType
 from letta.utils import create_random_username
@@ -365,12 +365,12 @@ def test_function_return_limit(client: Union[LocalClient, RESTClient]):
 
     response_message = None
     for message in response.messages:
-        if isinstance(message, FunctionReturn):
+        if isinstance(message, ToolReturnMessage):
             response_message = message
             break
 
-    assert response_message, "FunctionReturn message not found in response"
-    res = response_message.function_return
+    assert response_message, "ToolReturnMessage message not found in response"
+    res = response_message.tool_return
     assert "function output was truncated " in res
 
     # TODO: Re-enable later

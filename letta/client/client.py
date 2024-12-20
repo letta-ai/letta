@@ -2909,7 +2909,7 @@ class LocalClient(AbstractClient):
         job = self.server.job_manager.create_job(pydantic_job=job, actor=self.user)
 
         # TODO: implement blocking vs. non-blocking
-        self.server.load_file_to_source(source_id=source_id, file_path=filename, job_id=job.id)
+        self.server.load_file_to_source(source_id=source_id, file_path=filename, job_id=job.id, actor=self.user)
         return job
 
     def delete_file_from_source(self, source_id: str, file_id: str):

@@ -75,6 +75,10 @@ def nb_print(messages):
             return_data = json.loads(msg.function_return)
             if "message" in return_data and return_data["message"] == "None":
                 continue
+        if msg.message_type == "tool_return_message":
+            return_data = json.loads(msg.tool_return)
+            if "message" in return_data and return_data["message"] == "None":
+                continue
 
         title = msg.message_type.replace("_", " ").upper()
         html_output += f"""
@@ -91,12 +95,20 @@ def nb_print(messages):
 def get_formatted_content(msg):
     if msg.message_type == "internal_monologue":
         return f'<div class="content"><span class="internal-monologue">{html.escape(msg.internal_monologue)}</span></div>'
+    elif msg.message_type == "reasoning_message":
+        return f'<div class="content"><span class="internal-monologue">{html.escape(msg.reasoning)}</span></div>'
     elif msg.message_type == "function_call":
         args = format_json(msg.function_call.arguments)
         return f'<div class="content"><span class="function-name">{html.escape(msg.function_call.name)}</span>({args})</div>'
+    elif msg.message_type == "tool_call_message":
+        args = format_json(msg.tool_call.arguments)
+        return f'<div class="content"><span class="function-name">{html.escape(msg.function_call.name)}</span>({args})</div>'
     elif msg.message_type == "function_return":
-
         return_value = format_json(msg.function_return)
+        # return f'<div class="status-line">Status: {html.escape(msg.status)}</div><div class="content">{return_value}</div>'
+        return f'<div class="content">{return_value}</div>'
+    elif msg.message_type == "tool_return_message":
+        return_value = format_json(msg.tool_return)
         # return f'<div class="status-line">Status: {html.escape(msg.status)}</div><div class="content">{return_value}</div>'
         return f'<div class="content">{return_value}</div>'
     elif msg.message_type == "user_message":
