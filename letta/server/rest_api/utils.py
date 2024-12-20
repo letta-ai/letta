@@ -61,7 +61,7 @@ async def sse_async_generator(
                 # Double-check the type
                 if not isinstance(usage, LettaUsageStatistics):
                     raise ValueError(f"Expected LettaUsageStatistics, got {type(usage)}")
-                yield sse_formatter({"usage": usage.model_dump()})
+                yield sse_formatter(usage.model_dump())
 
             except ContextWindowExceededError as e:
                 log_error_to_sentry(e)
