@@ -360,7 +360,9 @@ const createTemplateFromAgentContract = c.mutation({
   pathParams: z.object({
     agent_id: z.string(),
   }),
-  body: z.undefined(),
+  body: z.object({
+    project_id: z.string().optional(),
+  }),
   responses: {
     201: CreateAgentResponseSchema,
     404: AgentNotFoundResponseSchema,

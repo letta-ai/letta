@@ -59,11 +59,17 @@ async function AgentsAgentPage(context: AgentsAgentPageProps) {
     columns: {
       key: true,
       id: true,
+      projectId: true,
       deployedAgentTemplateId: true,
     },
   });
 
   if (!deployedAgent) {
+    redirect(`/projects/${projectSlug}/agents`);
+    return;
+  }
+
+  if (project.body.id !== deployedAgent.projectId) {
     redirect(`/projects/${projectSlug}/agents`);
     return;
   }
