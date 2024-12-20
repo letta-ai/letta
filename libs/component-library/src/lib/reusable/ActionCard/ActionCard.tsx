@@ -99,7 +99,7 @@ export const ActionCard = forwardRef<HTMLElement, ToggleCardProps>(
         {isSkeleton && (
           <>
             <Skeleton className="w-full h-full z-[2] top-0 left-0 absolute" />
-            <div className="bg-background w-full h-full z-[1] absolute" />
+            <div className="bg-background top-0 left-0 w-full h-full z-[1] absolute" />
           </>
         )}
         <HStack fullWidth fullHeight>

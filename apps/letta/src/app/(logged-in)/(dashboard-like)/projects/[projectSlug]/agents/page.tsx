@@ -39,6 +39,7 @@ import { useAgentsServiceGetAgent } from '@letta-web/letta-agents-api';
 import { useRouter } from 'next/navigation';
 import { Messages } from '$letta/client/components';
 import { useTranslations } from 'next-intl';
+import { DeployAgentDialog } from './DeployAgentDialog/DeployAgentDialog';
 
 interface AgentMessagesListProps {
   agentId: string;
@@ -401,7 +402,11 @@ function DeployedAgentsPage() {
   const [debouncedSearch] = useDebouncedValue(search, 500);
 
   return (
-    <DashboardPageLayout encapsulatedFullHeight title="Agents">
+    <DashboardPageLayout
+      actions={<DeployAgentDialog />}
+      encapsulatedFullHeight
+      title="Agents"
+    >
       <DashboardPageSection fullHeight>
         <VStack fullHeight fullWidth>
           <VStack gap={false} fullWidth>

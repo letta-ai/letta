@@ -10,6 +10,8 @@ const c = initContract();
 export const AgentTemplateSchema = z.object({
   name: z.string(),
   id: z.string(),
+  latestDeployedVersion: z.string().optional(),
+  latestDeployedId: z.string().optional(),
   updatedAt: z.string(),
 });
 
@@ -32,6 +34,7 @@ export const ListAgentTemplatesQuerySchema = z.object({
   offset: z.number().optional(),
   search: z.string().optional(),
   projectId: z.string().optional(),
+  includeLatestDeployedVersion: z.boolean().optional(),
 });
 
 export type ListAgentTemplatesQuery = z.infer<

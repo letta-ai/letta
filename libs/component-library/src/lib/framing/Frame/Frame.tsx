@@ -117,6 +117,7 @@ const frameVariants = cva('', {
     },
     paddingTop: {
       xxsmall: 'pt-1',
+      xsmall: 'pt-2',
       small: 'pt-2.5',
       medium: 'pt-3',
       large: 'pt-4',

@@ -294,16 +294,6 @@ export async function createAgent(
         };
       }
 
-      if (!template) {
-        return {
-          status: 400,
-          body: {
-            message:
-              'Cannot create a deployed agent from a starter kit template',
-          },
-        };
-      }
-
       let toolIdsToAttach: string[] = [];
 
       if ('tools' in starterKit) {
@@ -391,6 +381,47 @@ export async function createAgent(
           body: {
             message: 'Failed to create agent',
           },
+        };
+      }
+
+      if (!template) {
+        let uniqueId = name;
+        let nextInternalAgentCountId = 0;
+
+        if (!uniqueId) {
+          const lastDeployedAgent = await db.query.deployedAgents.findFirst({
+            where: eq(deployedAgents.organizationId, organizationId),
+            orderBy: [desc(deployedAgents.createdAt)],
+          });
+
+          nextInternalAgentCountId =
+            (lastDeployedAgent?.internalAgentCountId || 0) + 1;
+
+          uniqueId = `deployed-agent-${nextInternalAgentCountId}`;
+        }
+
+        const [createdAgent] = await db
+          .insert(deployedAgents)
+          .values({
+            id: response.id,
+            projectId: project_id,
+            key: uniqueId,
+            internalAgentCountId: nextInternalAgentCountId,
+            deployedAgentTemplateId: '',
+            organizationId,
+          })
+          .returning({ deployedAgentId: deployedAgents.id });
+
+        await db.insert(deployedAgentVariables).values({
+          deployedAgentId: createdAgent.deployedAgentId,
+          value: variables || {},
+        });
+
+        return {
+          status: 201,
+          body: prepareAgentForUser(response, {
+            agentName: name,
+          }),
         };
       }
 
