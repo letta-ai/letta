@@ -17,7 +17,6 @@ from letta.constants import (
     MESSAGE_SUMMARY_WARNING_FRAC,
     O1_BASE_TOOLS,
     REQ_HEARTBEAT_MESSAGE,
-    STRUCTURED_OUTPUT_MODELS,
 )
 from letta.errors import ContextWindowExceededError
 from letta.helpers import ToolRulesSolver
@@ -47,7 +46,10 @@ from letta.schemas.usage import LettaUsageStatistics
 from letta.schemas.user import User as PydanticUser
 from letta.services.agent_manager import AgentManager
 from letta.services.block_manager import BlockManager
-from letta.services.helpers.agent_manager_helper import compile_memory_metadata_block
+from letta.services.helpers.agent_manager_helper import (
+    check_supports_structured_output,
+    compile_memory_metadata_block,
+)
 from letta.services.message_manager import MessageManager
 from letta.services.passage_manager import PassageManager
 from letta.services.source_manager import SourceManager
@@ -121,7 +123,7 @@ class Agent(BaseAgent):
 
         # gpt-4, gpt-3.5-turbo, ...
         self.model = self.agent_state.llm_config.model
-        self.check_tool_rules()
+        self.supports_structured_output = check_supports_structured_output(model=self.model, tool_rules=agent_state.tool_rules)
 
         # state managers
         self.block_manager = BlockManager()
@@ -151,16 +153,6 @@ class Agent(BaseAgent):
 
         # Load last function response from message history
         self.last_function_response = self.load_last_function_response()
-
-    def check_tool_rules(self):
-        if self.model not in STRUCTURED_OUTPUT_MODELS:
-            if len(self.tool_rules_solver.init_tool_rules) > 1:
-                raise ValueError(
-                    "Multiple initial tools are not supported for non-structured models. Please use only one initial tool rule."
-                )
-            self.supports_structured_output = False
-        else:
-            self.supports_structured_output = True
 
     def load_last_function_response(self):
         """Load the last function response from message history"""

@@ -2,7 +2,8 @@ import datetime
 from typing import List, Literal, Optional
 
 from letta import system
-from letta.constants import IN_CONTEXT_MEMORY_KEYWORD
+from letta.constants import IN_CONTEXT_MEMORY_KEYWORD, STRUCTURED_OUTPUT_MODELS
+from letta.helpers import ToolRulesSolver
 from letta.orm.agent import Agent as AgentModel
 from letta.orm.agents_tags import AgentsTags
 from letta.orm.errors import NoResultFound
@@ -11,6 +12,7 @@ from letta.schemas.agent import AgentState, AgentType
 from letta.schemas.enums import MessageRole
 from letta.schemas.memory import Memory
 from letta.schemas.message import Message, MessageCreate
+from letta.schemas.tool_rule import ToolRule
 from letta.schemas.user import User
 from letta.system import get_initial_boot_messages, get_login_event
 from letta.utils import get_local_time
@@ -247,3 +249,12 @@ def package_initial_message_sequence(
             Message(role=message_create.role, text=packed_message, organization_id=actor.organization_id, agent_id=agent_id, model=model)
         )
     return init_messages
+
+
+def check_supports_structured_output(model: str, tool_rules: List[ToolRule]) -> bool:
+    if model not in STRUCTURED_OUTPUT_MODELS:
+        if len(ToolRulesSolver(tool_rules=tool_rules).init_tool_rules) > 1:
+            raise ValueError("Multiple initial tools are not supported for non-structured models. Please use only one initial tool rule.")
+        return False
+    else:
+        return True
