@@ -1,6 +1,7 @@
 'use client';
 import * as React from 'react';
 import { HStack } from '../../framing/HStack/HStack';
+import type { InputProps } from '../Input/Input';
 import { RawInput } from '../Input/Input';
 import { VStack } from '../../framing/VStack/VStack';
 import type {
@@ -15,10 +16,9 @@ import { useMemo } from 'react';
 import { useState } from 'react';
 import { useCallback } from 'react';
 import { get, set } from 'lodash-es';
-import type { InputProps } from 'react-select';
 import { Button } from '../Button/Button';
 import { useTranslations } from 'next-intl';
-import { CloseIcon } from '../../icons';
+import { CloseIcon, PlusIcon } from '../../icons';
 
 const DISABLE_COMBINATOR = true;
 
@@ -64,8 +64,8 @@ const baseQuery: GenericQueryCondition = {
 interface QueryBuilderContextData {
   definition: FieldDefinitions;
   fieldsOptions: OptionType[];
-  query: RootQuery;
-  setQuery: Dispatch<SetStateAction<RootQuery>>;
+  query: QueryBuilderQuery;
+  setQuery: Dispatch<SetStateAction<QueryBuilderQuery>>;
 }
 
 const QueryBuilderContext = React.createContext<QueryBuilderContextData>({
@@ -194,27 +194,31 @@ function RemoveCondition(props: RemoveConditionProps) {
   }, [path, setQuery]);
 
   return (
-    <Button
-      onClick={handleRemoveCondition}
-      color="tertiary-transparent"
-      label={t('removeCondition')}
-      hideLabel
-      preIcon={<CloseIcon />}
-    />
+    <HStack>
+      <Button
+        type="button"
+        onClick={handleRemoveCondition}
+        color="tertiary"
+        label={t('removeCondition')}
+        hideLabel
+        preIcon={<CloseIcon />}
+      />
+    </HStack>
   );
 }
 
-interface GenericQueryItem {
+export interface GenericQueryItem {
   field?: string;
   queryData?: Record<string, OptionType | undefined>;
 }
 
 interface QueryRowProps extends GenericQueryItem {
   path: string;
+  isFirstCondition?: boolean;
 }
 
 function QueryCondition(props: QueryRowProps) {
-  const { field = '', queryData = {}, path } = props;
+  const { field = '', isFirstCondition, queryData = {}, path } = props;
 
   const { setQuery } = useQueryBuilder();
 
@@ -282,7 +286,7 @@ function QueryCondition(props: QueryRowProps) {
           />
         );
       })}
-      <RemoveCondition path={path} />
+      {!isFirstCondition && <RemoveCondition path={path} />}
     </HStack>
   );
 }
@@ -315,7 +319,13 @@ function AddNewCombinator(props: AddNewCombinatorProps) {
     });
   }, [path, setQuery]);
 
-  return <Button onClick={handleAddCombinator} label={t('addCombinator')} />;
+  return (
+    <Button
+      type="button"
+      onClick={handleAddCombinator}
+      label={t('addCombinator')}
+    />
+  );
 }
 
 interface AddNewConditionProps {
@@ -326,7 +336,7 @@ function AddNewCondition(props: AddNewConditionProps) {
   const { path } = props;
   const t = useTranslations('components/QueryBuilder');
 
-  const { setQuery } = useQueryBuilder();
+  const { setQuery, definition } = useQueryBuilder();
 
   const handleAddCondition = useCallback(() => {
     setQuery((prevQuery) => {
@@ -337,18 +347,26 @@ function AddNewCondition(props: AddNewConditionProps) {
         items: [],
       });
 
+      const firstField = Object.keys(definition)[0];
+
       set(newQuery, path, {
         ...existingCombinator,
-        items: [...existingCombinator.items, { field: '', queryData: {} }],
+        items: [
+          ...existingCombinator.items,
+          { field: firstField || '', queryData: {} },
+        ],
       });
 
       return newQuery;
     });
-  }, [path, setQuery]);
+  }, [definition, path, setQuery]);
 
   return (
     <Button
-      color="secondary"
+      type="button"
+      color="tertiary"
+      hideLabel
+      preIcon={<PlusIcon />}
       onClick={handleAddCondition}
       label={t('addCondition')}
     />
@@ -362,8 +380,21 @@ interface GenericQueryCondition {
   items: Array<GenericQueryCondition | GenericQueryItem>;
 }
 
+export function isGenericQueryCondition(
+  item: GenericQueryCondition | GenericQueryItem
+): item is GenericQueryCondition {
+  return 'combinator' in item;
+}
+
+export function isGenericQueryItem(
+  item: GenericQueryCondition | GenericQueryItem
+): item is GenericQueryItem {
+  return !('combinator' in item);
+}
+
 interface QueryCombinatorProps extends GenericQueryCondition {
   path: string;
+  isFirstCondition?: boolean;
 }
 
 function QueryCombinator(props: QueryCombinatorProps) {
@@ -401,24 +432,20 @@ function QueryCombinator(props: QueryCombinatorProps) {
 
   return (
     <HStack>
-      {!DISABLE_COMBINATOR && (
-        <HStack>
-          <RawSelect
-            label="Select Condition"
-            hideLabel
-            options={combinatorOptions}
-            value={selectedCombinator}
-            onSelect={(option) => {
-              if (!isMultiValue(option)) {
-                handleSelectCombinator(
-                  option || { value: 'AND', label: 'AND' }
-                );
-              }
-            }}
-          />
-        </HStack>
-      )}
-
+      <HStack>
+        <RawSelect
+          __use_rarely_className="min-w-[65px]"
+          label="Select Condition"
+          hideLabel
+          options={combinatorOptions}
+          value={selectedCombinator}
+          onSelect={(option) => {
+            if (!isMultiValue(option)) {
+              handleSelectCombinator(option || { value: 'AND', label: 'AND' });
+            }
+          }}
+        />
+      </HStack>
       <VStack fullWidth>
         {items.map((item, index) => {
           if ('combinator' in item) {
@@ -431,16 +458,18 @@ function QueryCombinator(props: QueryCombinatorProps) {
             );
           } else {
             return (
-              <QueryCondition
-                path={`${path}.items.${index}`}
-                key={index}
-                {...item}
-              />
+              <HStack key={index}>
+                <QueryCondition
+                  isFirstCondition={index === 0 && path === 'root'}
+                  path={`${path}.items.${index}`}
+                  {...item}
+                />
+                {index === items.length - 1 && <AddNewCondition path={path} />}
+              </HStack>
             );
           }
         })}
-        <HStack fullWidth>
-          <AddNewCondition path={path} />
+        <HStack fullWidth justify="end">
           {!DISABLE_COMBINATOR && items.length > 0 && (
             <AddNewCombinator path={path} />
           )}
@@ -450,20 +479,53 @@ function QueryCombinator(props: QueryCombinatorProps) {
   );
 }
 
-interface RootQuery {
+export interface QueryBuilderQuery {
   root: GenericQueryCondition;
 }
 
 interface QueryBuilderProps {
-  query: RootQuery;
+  query: QueryBuilderQuery;
   definition: FieldDefinitions;
   defaultQuery?: GenericQueryCondition;
-  onSetQuery?: (query: GenericQueryCondition) => void;
+  onSetQuery?: Dispatch<SetStateAction<QueryBuilderQuery>>;
+}
+
+export function createDefaultQuery(): QueryBuilderQuery {
+  return {
+    root: {
+      combinator: 'AND',
+      items: [],
+    },
+  };
 }
 
 export function QueryBuilder(props: QueryBuilderProps) {
-  const { query, definition } = props;
-  const [queryState, setQueryState] = useState<RootQuery>(query);
+  const { query, definition, onSetQuery } = props;
+  const [_queryState, _setQueryState] = useState<QueryBuilderQuery>(
+    query || createDefaultQuery()
+  );
+
+  const setQueryState: Dispatch<SetStateAction<QueryBuilderQuery>> =
+    useCallback(
+      (query) => {
+        if (onSetQuery) {
+          onSetQuery(query);
+
+          return;
+        }
+
+        _setQueryState(query);
+      },
+      [onSetQuery]
+    );
+
+  const queryState = useMemo(() => {
+    if (query) {
+      return query;
+    }
+
+    return _queryState;
+  }, [query, _queryState]);
 
   const fieldsOptions = useMemo(() => {
     return Object.keys(definition).map((key) => ({
@@ -481,9 +543,7 @@ export function QueryBuilder(props: QueryBuilderProps) {
         setQuery: setQueryState,
       }}
     >
-      <VStack overflowY="auto" border padding>
-        <QueryCombinator path="root" {...queryState.root} />
-      </VStack>
+      <QueryCombinator path="root" {...queryState.root} />
     </QueryBuilderContext.Provider>
   );
 }

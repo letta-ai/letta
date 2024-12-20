@@ -253,10 +253,11 @@ function AsyncSelectPrimitive(_props: AsyncSelectProps) {
 export interface SelectProps extends BaseSelectProps {
   options: OptionType[];
   hideIconsOnOptions?: boolean;
+  __use_rarely_className?: string;
 }
 
 function SelectPrimitive(_props: SelectProps) {
-  const { hideIconsOnOptions, ...props } = _props;
+  const { hideIconsOnOptions, __use_rarely_className, ...props } = _props;
   const styles = useStyles(props.styleConfig || {});
   const { isInDialog } = useDialogContext();
   const [open, setOpen] = React.useState(false);
@@ -291,6 +292,7 @@ function SelectPrimitive(_props: SelectProps) {
       )}
       <ReactSelect
         unstyled
+        className={__use_rarely_className}
         // menuIsOpen
         menuPortalTarget={menuPortalTarget}
         onChange={(value) => {
