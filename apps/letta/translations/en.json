@@ -1433,8 +1433,16 @@
       "description": "Deploy your agent to Letta Cloud to manage and monitor your agents, get insights and more. Apply for early access below.",
       "cta": "Apply for early access"
     },
+    "CreateTemplateButton": {
+      "error": "There was an error converting this agent to a template, please try again or contact support.",
+      "trigger": "Create Template",
+      "title": "Convert your agent to a template",
+      "description": "Agent templates allow you to create common starting points that new agents can fork from. Templates csupport memory variables and can be versioned.",
+      "cta": "Convert to template"
+    },
     "DeploymentButton": {
       "version": "VERSION {version}",
+
       "readyToDeploy": {
         "trigger": "Deploy",
         "heading": "Your template is good to go!",

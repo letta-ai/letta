@@ -8,7 +8,7 @@ import {
   LettaInvaderIcon,
   NiceGridDisplay,
   PlusIcon,
-  TabGroupIcon,
+  TemplateIcon,
   VStack,
 } from '@letta-web/component-library';
 import React, { useMemo } from 'react';
@@ -140,7 +140,7 @@ function QuickActions() {
               justify="center"
               color="background-grey"
             >
-              <TabGroupIcon color="primary" size="xxlarge" />
+              <TemplateIcon color="primary" size="xxlarge" />
             </VStack>
           }
           title={t('QuickActions.viewTemplates.title')}
