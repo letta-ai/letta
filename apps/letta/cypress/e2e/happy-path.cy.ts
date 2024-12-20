@@ -75,7 +75,7 @@ describe('letta', () => {
     cy.findByTestId('save-variables-button').click();
 
     cy.findByTestId('tab-item:simulated').click();
-    cy.findByTestId('simulated-memory:human', { timeout: 100000 }).should(
+    cy.findByTestId('simulated-memory:human', { timeout: 10000 }).should(
       'contain.value',
       'Shubham'
     );

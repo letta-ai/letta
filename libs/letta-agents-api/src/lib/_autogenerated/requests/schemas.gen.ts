@@ -218,6 +218,9 @@ export const $AgentState = {
               {
                 $ref: '#/components/schemas/TerminalToolRule',
               },
+              {
+                $ref: '#/components/schemas/ConditionalToolRule',
+              },
             ],
           },
           type: 'array',
@@ -1473,6 +1476,55 @@ export const $Choice = {
   title: 'Choice',
 } as const;
 
+export const $ConditionalToolRule = {
+  properties: {
+    tool_name: {
+      type: 'string',
+      title: 'Tool Name',
+      description:
+        "The name of the tool. Must exist in the database for the user's organization.",
+    },
+    type: {
+      $ref: '#/components/schemas/ToolRuleType',
+      default: 'conditional',
+    },
+    default_child: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Default Child',
+      description:
+        'The default child tool to be called. If None, any tool can be called.',
+    },
+    child_output_mapping: {
+      additionalProperties: {
+        type: 'string',
+      },
+      type: 'object',
+      title: 'Child Output Mapping',
+      description: 'The output case to check for mapping',
+    },
+    require_output_mapping: {
+      type: 'boolean',
+      title: 'Require Output Mapping',
+      description:
+        "Whether to throw an error when output doesn't match any case",
+      default: false,
+    },
+  },
+  additionalProperties: false,
+  type: 'object',
+  required: ['tool_name', 'child_output_mapping'],
+  title: 'ConditionalToolRule',
+  description:
+    'A ToolRule that conditionally maps to different child tools based on the output.',
+} as const;
+
 export const $ContextWindowOverview = {
   properties: {
     context_window_size_max: {
@@ -1688,6 +1740,9 @@ export const $CreateAgentRequest = {
               },
               {
                 $ref: '#/components/schemas/TerminalToolRule',
+              },
+              {
+                $ref: '#/components/schemas/ConditionalToolRule',
               },
             ],
           },
@@ -3469,7 +3524,7 @@ export const $Organization = {
       type: 'string',
       title: 'Name',
       description: 'The name of the organization.',
-      default: 'CheerfulKitten',
+      default: 'HappyZeppelin',
     },
     created_at: {
       anyOf: [
@@ -4691,6 +4746,7 @@ export const $ToolRuleType = {
     'InitToolRule',
     'TerminalToolRule',
     'continue_loop',
+    'conditional',
     'ToolRule',
     'require_parent_tools',
   ],
@@ -4935,6 +4991,9 @@ export const $UpdateAgent = {
               },
               {
                 $ref: '#/components/schemas/TerminalToolRule',
+              },
+              {
+                $ref: '#/components/schemas/ConditionalToolRule',
               },
             ],
           },

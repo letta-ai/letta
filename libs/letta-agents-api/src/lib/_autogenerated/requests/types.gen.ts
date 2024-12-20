@@ -82,7 +82,9 @@ export type AgentState = {
   /**
    * The list of tool rules.
    */
-  tool_rules?: Array<ChildToolRule | InitToolRule | TerminalToolRule> | null;
+  tool_rules?: Array<
+    ChildToolRule | InitToolRule | TerminalToolRule | ConditionalToolRule
+  > | null;
   /**
    * The ids of the messages in the agent's in-context memory.
    */
@@ -448,6 +450,31 @@ export type Choice = {
 };
 
 /**
+ * A ToolRule that conditionally maps to different child tools based on the output.
+ */
+export type ConditionalToolRule = {
+  /**
+   * The name of the tool. Must exist in the database for the user's organization.
+   */
+  tool_name: string;
+  type?: ToolRuleType;
+  /**
+   * The default child tool to be called. If None, any tool can be called.
+   */
+  default_child?: string | null;
+  /**
+   * The output case to check for mapping
+   */
+  child_output_mapping: {
+    [key: string]: string;
+  };
+  /**
+   * Whether to throw an error when output doesn't match any case
+   */
+  require_output_mapping?: boolean;
+};
+
+/**
  * Overview of the context window, including the number of messages and tokens.
  */
 export type ContextWindowOverview = {
@@ -548,7 +575,9 @@ export type CreateAgentRequest = {
   /**
    * The tool rules governing the agent.
    */
-  tool_rules?: Array<ChildToolRule | InitToolRule | TerminalToolRule> | null;
+  tool_rules?: Array<
+    ChildToolRule | InitToolRule | TerminalToolRule | ConditionalToolRule
+  > | null;
   /**
    * The tags associated with the agent.
    */
@@ -1889,6 +1918,7 @@ export type ToolRuleType =
   | 'InitToolRule'
   | 'TerminalToolRule'
   | 'continue_loop'
+  | 'conditional'
   | 'ToolRule'
   | 'require_parent_tools';
 
@@ -1972,7 +2002,9 @@ export type UpdateAgent = {
   /**
    * The tool rules governing the agent.
    */
-  tool_rules?: Array<ChildToolRule | InitToolRule | TerminalToolRule> | null;
+  tool_rules?: Array<
+    ChildToolRule | InitToolRule | TerminalToolRule | ConditionalToolRule
+  > | null;
   /**
    * The LLM configuration used by the agent.
    */
