@@ -24,6 +24,7 @@ import { UpdateDevelopmentServerDetailsDialog } from '../../shared/UpdateDevelop
 import { useCurrentUser } from '$letta/client/hooks';
 import { trackClientSideEvent } from '@letta-web/analytics/client';
 import { AnalyticsEvent } from '@letta-web/analytics';
+import CreateAgentDialog from '../components/CreateAgentDialog/CreateAgentDialog';
 
 const LIMIT = 10;
 
@@ -197,11 +198,14 @@ function LocalProjectPage() {
       title={currentDevelopmentServerConfig?.name || ''}
       actions={
         <HStack>
-          <Button
-            preIcon={<PlusIcon />}
-            color="secondary"
-            href={`/development-servers/${currentDevelopmentServerConfig?.id}/agents/new`}
-            label={t('createAgent')}
+          <CreateAgentDialog
+            trigger={
+              <Button
+                preIcon={<PlusIcon />}
+                color="secondary"
+                label={t('createAgent')}
+              />
+            }
           />
         </HStack>
       }

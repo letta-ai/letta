@@ -1041,7 +1041,7 @@
     "errorResponse": "Error response",
     "dismiss": "Dismiss"
   },
-  "development-servers/agents/new/page": {
+  "development-servers/agents/CreateAgentDialog": {
     "serverOffline": "Your server is offline, please start it to create a new agent.",
     "serverOfflineConnect": "Turn on your server with the command below:",
     "isFetchingStatus": "Sorry, we are still attempting to connect to your server. Please wait a moment.",
@@ -1053,7 +1053,8 @@
       "descriptionRemote": "This will create an agent on the remote server. This will not deploy the agent to Letta Cloud."
     },
     "error": "There was an error creating the agent, below is the error message, please try again or contact support.",
-    "loading": "Creating agent...",
+    "creating": "Creating agent...",
+    "loading": "Booting up...",
     "starterKits": {
       "title": "Starter kits",
       "description": "Choose from a starter pack and customize it in the ADE, or start from scratch"
