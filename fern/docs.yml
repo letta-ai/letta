@@ -1,5 +1,6 @@
 instances:
-  - url: https://letta-1412240455.docs.buildwithfern.com
+  - url: https://letta.docs.buildwithfern.com
+    custom-domain: https://docs.letta.com
 title: Letta | Documentation
 
 tabs:

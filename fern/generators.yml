@@ -23,7 +23,7 @@ groups:
         output:
           location: npm
           package-name: "letta"
-          # token: ${NPM_TOKEN}
+          token: ${NPM_TOKEN}
         github:
           repository: "letta-ai/letta-node"
         config:
