@@ -205,7 +205,7 @@ class Agent(BaseAgent):
             # NOTE: don't do this since re-buildin the memory is handled at the start of the step
             # rebuild memory - this records the last edited timestamp of the memory
             # TODO: pass in update timestamp from block edit time
-            self.agent_manager.rebuild_system_prompt(agent_id=self.agent_state.id, actor=self.user)
+            self.agent_state = self.agent_manager.rebuild_system_prompt(agent_id=self.agent_state.id, actor=self.user)
 
             return True
         return False
@@ -565,7 +565,7 @@ class Agent(BaseAgent):
 
         # rebuild memory
         # TODO: @charles please check this
-        self.agent_manager.rebuild_system_prompt(agent_id=self.agent_state.id, actor=self.user)
+        self.agent_state = self.agent_manager.rebuild_system_prompt(agent_id=self.agent_state.id, actor=self.user)
 
         # Update ToolRulesSolver state with last called function
         self.tool_rules_solver.update_tool_usage(function_name)
@@ -597,6 +597,7 @@ class Agent(BaseAgent):
                 messages=next_input_message,
                 **kwargs,
             )
+
             heartbeat_request = step_response.heartbeat_request
             function_failed = step_response.function_failed
             token_warning = step_response.in_context_memory_warning
@@ -748,7 +749,9 @@ class Agent(BaseAgent):
                     f"last response total_tokens ({current_total_tokens}) < {MESSAGE_SUMMARY_WARNING_FRAC * int(self.agent_state.llm_config.context_window)}"
                 )
 
-            self.agent_manager.append_to_in_context_messages(all_new_messages, agent_id=self.agent_state.id, actor=self.user)
+            self.agent_state = self.agent_manager.append_to_in_context_messages(
+                all_new_messages, agent_id=self.agent_state.id, actor=self.user
+            )
 
             return AgentStepResponse(
                 messages=all_new_messages,
@@ -917,9 +920,9 @@ class Agent(BaseAgent):
         printd(f"Packaged into message: {summary_message}")
 
         prior_len = len(in_context_messages_openai)
-        self.agent_manager.trim_older_in_context_messages(cutoff, agent_id=self.agent_state.id, actor=self.user)
+        self.agent_state = self.agent_manager.trim_older_in_context_messages(cutoff, agent_id=self.agent_state.id, actor=self.user)
         packed_summary_message = {"role": "user", "content": summary_message}
-        self.agent_manager.prepend_to_in_context_messages(
+        self.agent_state = self.agent_manager.prepend_to_in_context_messages(
             messages=[
                 Message.dict_to_message(
                     agent_id=self.agent_state.id,

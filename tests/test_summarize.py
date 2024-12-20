@@ -121,9 +121,9 @@ def test_auto_summarize(mock_e2b_api_key_none):
 
             # check if the summarize message is inside the messages
             assert isinstance(client, LocalClient), "Test only works with LocalClient"
-            agent_obj = client.server.load_agent(agent_id=agent_state.id, actor=client.user)
-            print("SUMMARY", summarize_message_exists(agent_obj._messages))
-            if summarize_message_exists(agent_obj._messages):
+            in_context_messages = client.server.agent_manager.get_in_context_messages(agent_id=agent_state.id, actor=client.user)
+            print("SUMMARY", summarize_message_exists(in_context_messages))
+            if summarize_message_exists(in_context_messages):
                 break
 
             if message_count > MAX_ATTEMPTS:
