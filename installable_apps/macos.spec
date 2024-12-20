@@ -17,9 +17,8 @@ a = Analysis(
         ('venv/lib/python3.12/site-packages/letta/prompts/system', 'letta/prompts/system'),
         ('venv/lib/python3.12/site-packages/letta/functions/function_sets', 'letta/functions/function_sets'),
         ('assets','assets'),
-        ('desktop_application/templates','templates'),
+        ('desktop_application/templates', 'desktop_application/templates'),
         ('desktop_application', 'desktop_application'),
-
     ],
     hiddenimports=[
         'desktop_application',
