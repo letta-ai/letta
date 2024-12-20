@@ -7,25 +7,25 @@ api:
 groups:
   python-sdk:
     generators:
-      - name: fernapi/fern-python-sdk
+      - name: letta-ai/letta-python
         version: 4.3.9
         output:
           location: pypi
-          package-name: letta
+          package-name: letta-client
         github:
-          repository: fern-demo/letta-python-sdk
+          repository: letta-ai/letta-python
         config:
           client_class_name: Letta
   ts-sdk:
     generators:
-      - name: fernapi/fern-typescript-node-sdk
+      - name: letta-ai/letta-node
         version: 0.44.0
         output:
           location: npm
           package-name: "letta"
           # token: ${NPM_TOKEN}
         github:
-          repository: "fern-demo/letta-typescript-sdk"
+          repository: "letta-ai/letta-node"
         config:
           namespaceExport: Letta
           allowCustomFetcher: true
