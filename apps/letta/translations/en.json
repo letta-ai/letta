@@ -489,7 +489,7 @@
     "subtitle": "Create, manage and monitor agents in this project",
     "QuickActions": {
       "subtitle": "Get started with these quick actions",
-      "title": "Quick Actions",
+      "title": "Quick actions",
       "createTemplate": {
         "title": "Create a new agent template",
         "description": "Create a new template from an existing template or start from scratch"
