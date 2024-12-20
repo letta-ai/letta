@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "letta-dmg"
+version = "0.1.0"
+description = ""
+authors = ["Mindy Long <mindy@letta.com>"]
+
+[tool.poetry.dependencies]
+python = ">=3.12,<3.14"
+setuptools = "68.2.2"
+letta = "0.6.5"
+pgserver = "~0.1.4"
+pystray = "*"
+pillow = "*"
+darkdetect = "*"
+pyinstaller = "6.11.1"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
