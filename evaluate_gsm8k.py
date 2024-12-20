@@ -9,6 +9,7 @@ import argparse
 import jsonlines
 import json
 import re
+import statistics
 
 def evaluate(input_file: str):
     correct = 0
@@ -17,6 +18,12 @@ def evaluate(input_file: str):
         for obj in reader:
             ignore_regex = '(?s).*#### '
             answer = re.sub(ignore_regex, '', obj['answer'])
+
+            answer = answer.replace("$", "")
+            answer = answer.replace(",", "")
+            answer = answer.strip(".")
+
+
             final_answer = ""
             for message in obj['response']['messages']:
                 if message['message_type'] == "function_call":
@@ -34,10 +41,21 @@ def evaluate(input_file: str):
 
             if final_num == answer: # TODO: should we convert to float
                 correct += 1
+            else:
+                print("Final Answer: ", final_num)
+                print("Expected Answer: ", answer)
+                print("Matches: ", matches)
+                print("\n\n")
             total += 1
 
     
-    print("Accuracy: ", correct / total)
+        print("Accuracy: ", correct / total)
+    with jsonlines.open(input_file) as reader:
+        lines = list(reader)
+    print("avg. completion tokens: ", statistics.mean([obj['response']['usage']['completion_tokens'] for obj in lines]))
+    print("std. completion tokens: ", statistics.stdev([obj['response']['usage']['completion_tokens'] for obj in lines]))
+    print("avg. prompt tokens: ", statistics.mean([obj['response']['usage']['prompt_tokens'] for obj in lines]))
+    print("std. prompt tokens: ", statistics.stdev([obj['response']['usage']['prompt_tokens'] for obj in lines]))
 
     
 
