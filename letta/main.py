@@ -194,46 +194,6 @@ def run_agent_loop(
                     print(f"Current model: {letta_agent.agent_state.llm_config.model}")
                     continue
 
-                elif user_input.lower() == "/pop" or user_input.lower().startswith("/pop "):
-                    # Check if there's an additional argument that's an integer
-                    command = user_input.strip().split()
-                    pop_amount = int(command[1]) if len(command) > 1 and command[1].isdigit() else 3
-                    try:
-                        popped_messages = letta_agent.pop_message(count=pop_amount)
-                    except ValueError as e:
-                        print(f"Error popping messages: {e}")
-                    continue
-
-                elif user_input.lower() == "/retry":
-                    print(f"Retrying for another answer...")
-                    try:
-                        letta_agent.retry_message()
-                    except Exception as e:
-                        print(f"Error retrying message: {e}")
-                    continue
-
-                elif user_input.lower() == "/rethink" or user_input.lower().startswith("/rethink "):
-                    if len(user_input) < len("/rethink "):
-                        print("Missing text after the command")
-                        continue
-                    try:
-                        letta_agent.rethink_message(new_thought=user_input[len("/rethink ") :].strip())
-                    except Exception as e:
-                        print(f"Error rethinking message: {e}")
-                    continue
-
-                elif user_input.lower() == "/rewrite" or user_input.lower().startswith("/rewrite "):
-                    if len(user_input) < len("/rewrite "):
-                        print("Missing text after the command")
-                        continue
-
-                    text = user_input[len("/rewrite ") :].strip()
-                    try:
-                        letta_agent.rewrite_message(new_text=text)
-                    except Exception as e:
-                        print(f"Error rewriting message: {e}")
-                    continue
-
                 elif user_input.lower() == "/summarize":
                     try:
                         letta_agent.summarize_messages_inplace()
@@ -319,42 +279,6 @@ def run_agent_loop(
                         questionary.print(cmd, "bold")
                         questionary.print(f" {desc}")
                     continue
-
-                elif user_input.lower().startswith("/systemswap"):
-                    if len(user_input) < len("/systemswap "):
-                        print("Missing new system prompt after the command")
-                        continue
-                    old_system_prompt = letta_agent.system
-                    new_system_prompt = user_input[len("/systemswap ") :].strip()
-
-                    # Show warning and prompts to user
-                    typer.secho(
-                        "\nWARNING: You are about to change the system prompt.",
-                        # fg=typer.colors.BRIGHT_YELLOW,
-                        bold=True,
-                    )
-                    typer.secho(
-                        f"\nOld system prompt:\n{old_system_prompt}",
-                        fg=typer.colors.RED,
-                        bold=True,
-                    )
-                    typer.secho(
-                        f"\nNew system prompt:\n{new_system_prompt}",
-                        fg=typer.colors.GREEN,
-                        bold=True,
-                    )
-
-                    # Ask for confirmation
-                    confirm = questionary.confirm("Do you want to proceed with the swap?").ask()
-
-                    if confirm:
-                        letta_agent.update_system_prompt(new_system_prompt=new_system_prompt)
-                        print("System prompt updated successfully.")
-                    else:
-                        print("System prompt swap cancelled.")
-
-                    continue
-
                 else:
                     print(f"Unrecognized command: {user_input}")
                     continue

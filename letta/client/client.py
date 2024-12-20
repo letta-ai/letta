@@ -2234,7 +2234,7 @@ class LocalClient(AbstractClient):
         """
         # TODO: add the abilitty to reset linked block_ids
         self.interface.clear()
-        agent_state = self.server.update_agent(
+        agent_state = self.server.agent_manager.update_agent(
             agent_id,
             UpdateAgent(
                 name=name,
@@ -2262,7 +2262,7 @@ class LocalClient(AbstractClient):
             List[Tool]: A list of Tool objs
         """
         self.interface.clear()
-        return self.server.get_tools_from_agent(agent_id=agent_id, user_id=self.user_id)
+        return self.server.agent_manager.get_agent_by_id(agent_id=agent_id, actor=self.user).tools
 
     def add_tool_to_agent(self, agent_id: str, tool_id: str):
         """
@@ -2276,7 +2276,7 @@ class LocalClient(AbstractClient):
             agent_state (AgentState): State of the updated agent
         """
         self.interface.clear()
-        agent_state = self.server.add_tool_to_agent(agent_id=agent_id, tool_id=tool_id, user_id=self.user_id)
+        agent_state = self.server.agent_manager.attach_tool(agent_id=agent_id, tool_id=tool_id, actor=self.user)
         return agent_state
 
     def remove_tool_from_agent(self, agent_id: str, tool_id: str):
@@ -2291,7 +2291,7 @@ class LocalClient(AbstractClient):
             agent_state (AgentState): State of the updated agent
         """
         self.interface.clear()
-        agent_state = self.server.remove_tool_from_agent(agent_id=agent_id, tool_id=tool_id, user_id=self.user_id)
+        agent_state = self.server.agent_manager.remove_tool_from_agent(agent_id=agent_id, tool_id=tool_id, actor=self.user)
         return agent_state
 
     def rename_agent(self, agent_id: str, new_name: str):
@@ -3075,7 +3075,7 @@ class LocalClient(AbstractClient):
             agent_id (str): ID of the agent
             memory_id (str): ID of the memory
         """
-        self.server.delete_archival_memory(agent_id=agent_id, memory_id=memory_id, actor=self.user)
+        self.server.delete_archival_memory(memory_id=memory_id, actor=self.user)
 
     def get_archival_memory(
         self, agent_id: str, before: Optional[str] = None, after: Optional[str] = None, limit: Optional[int] = 1000

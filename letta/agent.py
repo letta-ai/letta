@@ -31,7 +31,7 @@ from letta.schemas.block import BlockUpdate
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import MessageRole
 from letta.schemas.memory import ContextWindowOverview, Memory
-from letta.schemas.message import Message, MessageUpdate
+from letta.schemas.message import Message
 from letta.schemas.openai.chat_completion_request import (
     Tool as ChatCompletionRequestTool,
 )
@@ -46,6 +46,7 @@ from letta.schemas.usage import LettaUsageStatistics
 from letta.schemas.user import User as PydanticUser
 from letta.services.agent_manager import AgentManager
 from letta.services.block_manager import BlockManager
+from letta.services.helpers.agent_manager_helper import compile_memory_metadata_block
 from letta.services.message_manager import MessageManager
 from letta.services.passage_manager import PassageManager
 from letta.services.source_manager import SourceManager
@@ -67,7 +68,6 @@ from letta.utils import (
     json_loads,
     parse_json,
     printd,
-    united_diff,
     validate_function_response,
 )
 
@@ -75,7 +75,7 @@ from letta.utils import (
 class BaseAgent(ABC):
     """
     Abstract class for all agents.
-    Only two interfaces are required: step and update_state.
+    Only one interface is required: step.
     """
 
     @abstractmethod
@@ -88,10 +88,6 @@ class BaseAgent(ABC):
         """
         raise NotImplementedError
 
-    @abstractmethod
-    def update_state(self) -> AgentState:
-        raise NotImplementedError
-
 
 class Agent(BaseAgent):
     def __init__(
@@ -101,7 +97,6 @@ class Agent(BaseAgent):
         user: User,
         # extras
         first_message_verify_mono: bool = True,  # TODO move to config?
-        initial_message_sequence: Optional[List[Message]] = None,
     ):
         assert isinstance(agent_state.memory, Memory), f"Memory object is not of type Memory: {type(agent_state.memory)}"
         # Hold a copy of the state that was used to init the agent
@@ -192,7 +187,7 @@ class Agent(BaseAgent):
             # NOTE: don't do this since re-buildin the memory is handled at the start of the step
             # rebuild memory - this records the last edited timestamp of the memory
             # TODO: pass in update timestamp from block edit time
-            self.rebuild_system_prompt()
+            self.agent_manager.rebuild_system_prompt(agent_id=self.agent_state.id, actor=self.user)
 
             return True
         return False
@@ -550,7 +545,7 @@ class Agent(BaseAgent):
 
         # rebuild memory
         # TODO: @charles please check this
-        self.rebuild_system_prompt()
+        self.agent_manager.rebuild_system_prompt(agent_id=self.agent_state.id, actor=self.user)
 
         # Update ToolRulesSolver state with last called function
         self.tool_rules_solver.update_tool_usage(function_name)
@@ -733,7 +728,7 @@ class Agent(BaseAgent):
                     f"last response total_tokens ({current_total_tokens}) < {MESSAGE_SUMMARY_WARNING_FRAC * int(self.agent_state.llm_config.context_window)}"
                 )
 
-            self.agent_manager.append_to_in_context_messages(all_new_messages, agent_id=agent_state.id, actor=self.user)
+            self.agent_manager.append_to_in_context_messages(all_new_messages, agent_id=self.agent_state.id, actor=self.user)
 
             return AgentStepResponse(
                 messages=all_new_messages,
@@ -894,7 +889,7 @@ class Agent(BaseAgent):
         printd(f"Got summary: {summary}")
 
         # Metadata that's useful for the agent to see
-        all_time_message_count = self.messages_total
+        all_time_message_count = self.message_manager.size(agent_id=self.agent_state.id, actor=self.user)
         remaining_message_count = len(in_context_messages_openai[cutoff:])
         hidden_message_count = all_time_message_count - remaining_message_count
         summary_message_count = len(message_sequence_to_summarize)
@@ -921,67 +916,6 @@ class Agent(BaseAgent):
         self.agent_alerted_about_memory_pressure = False
 
         printd(f"Ran summarizer, messages length {prior_len} -> {len(in_context_messages_openai)}")
-
-    def rebuild_system_prompt(self, force=False, update_timestamp=True):
-        """Rebuilds the system message with the latest memory object and any shared memory block updates
-
-        Updates to core memory blocks should trigger a "rebuild", which itself will create a new message object
-
-        Updates to the memory header should *not* trigger a rebuild, since that will simply flood recall storage with excess messages
-        """
-
-        curr_system_message = self.agent_manager.get_system_message(
-            agent_id=self.agent_state.id, actor=self.user
-        )  # this is the system + memory bank, not just the system prompt
-        curr_system_message_openai = curr_system_message.to_openai_dict()
-
-        # note: we only update the system prompt if the core memory is changed
-        # this means that the archival/recall memory statistics may be someout out of date
-        curr_memory_str = self.agent_state.memory.compile()
-        if curr_memory_str in curr_system_message_openai["content"] and not force:
-            # NOTE: could this cause issues if a block is removed? (substring match would still work)
-            printd(f"Memory hasn't changed, skipping system prompt rebuild")
-            return
-
-        # If the memory didn't update, we probably don't want to update the timestamp inside
-        # For example, if we're doing a system prompt swap, this should probably be False
-        if update_timestamp:
-            memory_edit_timestamp = get_utc_time()
-        else:
-            # NOTE: a bit of a hack - we pull the timestamp from the message created_by
-            memory_edit_timestamp = curr_system_message.created_at
-
-        # update memory (TODO: potentially update recall/archival stats separately)
-        new_system_message_str = compile_system_message(
-            agent_id=self.agent_state.id,
-            system_prompt=self.agent_state.system,
-            in_context_memory=self.agent_state.memory,
-            in_context_memory_last_edit=memory_edit_timestamp,
-            actor=self.user,
-            agent_manager=self.agent_manager,
-            message_manager=self.message_manager,
-            user_defined_variables=None,
-            append_icm_if_missing=True,
-        )
-
-        diff = united_diff(curr_system_message_openai["content"], new_system_message_str)
-        if len(diff) > 0:  # there was a diff
-            printd(f"Rebuilding system with new memory...\nDiff:\n{diff}")
-
-            # Swap the system message out (only if there is a diff)
-            self.agent_manager.swap_system_message(new_system_message=new_system_message_str, agent_id=self.agent_state.id, actor=self.user)
-
-    def update_system_prompt(self, new_system_prompt: str):
-        """Update the system prompt of the agent (requires rebuilding the memory block if there's a difference)"""
-        assert isinstance(new_system_prompt, str)
-
-        if new_system_prompt == self.agent_state.system:
-            return
-
-        self.agent_state.system = new_system_prompt
-
-        # updating the system prompt requires rebuilding the memory block inside the compiled system message
-        self.rebuild_system_prompt(force=True, update_timestamp=False)
 
     def add_function(self, function_name: str) -> str:
         # TODO: refactor
@@ -1023,12 +957,6 @@ class Agent(BaseAgent):
         printd(
             f"Attached data source {source.name} to agent {self.agent_state.name}.",
         )
-
-    def update_message(self, message_id: str, request: MessageUpdate) -> Message:
-        """Update the details of a message associated with an agent"""
-        # Save the updated message
-        updated_message = self.message_manager.update_message_by_id(message_id=message_id, message_update=request, actor=self.user)
-        return updated_message
 
     def get_context_window(self) -> ContextWindowOverview:
         """Get the context window of the agent"""
@@ -1075,11 +1003,9 @@ class Agent(BaseAgent):
         agent_manager_passage_size = self.agent_manager.passage_size(actor=self.user, agent_id=self.agent_state.id)
         message_manager_size = self.message_manager.size(actor=self.user, agent_id=self.agent_state.id)
         external_memory_summary = compile_memory_metadata_block(
-            actor=self.user,
-            agent_id=self.agent_state.id,
-            memory_edit_timestamp=get_utc_time(),  # dummy timestamp
-            agent_manager=self.agent_manager,
-            message_manager=self.message_manager,
+            memory_edit_timestamp=get_utc_time(),
+            previous_message_count=self.message_manager.size(actor=self.user, agent_id=self.agent_state.id),
+            archival_memory_size=self.agent_manager.passage_size(actor=self.user, agent_id=self.agent_state.id),
         )
         num_tokens_external_memory_summary = count_tokens(external_memory_summary)
 

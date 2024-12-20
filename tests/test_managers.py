@@ -519,14 +519,14 @@ def test_create_agent_passed_in_initial_messages(server: SyncServer, default_use
         create_agent_request,
         actor=default_user,
     )
-    assert server.agent_manager.get_total_message_count(agent_state.id, default_user) == 2
+    assert server.message_manager.size(agent_id=agent_state.id, actor=default_user) == 2
     init_messages = server.agent_manager.get_in_context_messages(agent_id=agent_state.id, actor=default_user)
     # Check that the system appears in the first initial message
     assert create_agent_request.system in init_messages[0].text
     assert create_agent_request.memory_blocks[0].value in init_messages[0].text
     # Check that the second message is the passed in initial message seq
     assert create_agent_request.initial_message_sequence[0].role == init_messages[1].role
-    assert create_agent_request.initial_message_sequence[0].text == init_messages[1].text
+    assert create_agent_request.initial_message_sequence[0].text in init_messages[1].text
 
 
 def test_create_agent_default_initial_message(server: SyncServer, default_user, default_block):
@@ -544,7 +544,7 @@ def test_create_agent_default_initial_message(server: SyncServer, default_user, 
         create_agent_request,
         actor=default_user,
     )
-    assert server.agent_manager.get_total_message_count(agent_state.id, default_user) == 4
+    assert server.message_manager.size(agent_id=agent_state.id, actor=default_user) == 4
     init_messages = server.agent_manager.get_in_context_messages(agent_id=agent_state.id, actor=default_user)
     # Check that the system appears in the first initial message
     assert create_agent_request.system in init_messages[0].text

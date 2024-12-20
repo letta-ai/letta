@@ -78,7 +78,13 @@ def setup_agent(
 
     memory = ChatMemory(human=memory_human_str, persona=memory_persona_str)
     agent_state = client.create_agent(
-        name=agent_uuid, llm_config=llm_config, embedding_config=embedding_config, memory=memory, tool_ids=tool_ids, tool_rules=tool_rules, include_base_tools=include_base_tools,
+        name=agent_uuid,
+        llm_config=llm_config,
+        embedding_config=embedding_config,
+        memory=memory,
+        tool_ids=tool_ids,
+        tool_rules=tool_rules,
+        include_base_tools=include_base_tools,
     )
 
     return agent_state
@@ -105,12 +111,13 @@ def check_first_response_is_valid_for_llm_endpoint(filename: str) -> ChatComplet
     agent_state = setup_agent(client, filename)
 
     full_agent_state = client.get_agent(agent_state.id)
+    messages = client.server.agent_manager.get_in_context_messages(agent_id=full_agent_state, actor=client.user)
     agent = Agent(agent_state=full_agent_state, interface=None, user=client.user)
 
     response = create(
         llm_config=agent_state.llm_config,
         user_id=str(uuid.UUID(int=1)),  # dummy user_id
-        messages=agent._messages,
+        messages=messages,
         functions=[t.json_schema for t in agent.agent_state.tools],
     )
 
