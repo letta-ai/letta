@@ -1075,10 +1075,10 @@ def test_add_remove_tools_update_agent(server: SyncServer, user_id: str, base_to
 
     # Add all the base tools
     request.tool_ids = [b.id for b in base_tools]
-    agent_state = server.agent_manager.update_agent(agent_state.id, request=request, actor=actor)
+    agent_state = server.agent_manager.update_agent(agent_state.id, agent_update=request, actor=actor)
     assert len(agent_state.tools) == len(base_tools)
 
     # Remove one base tool
     request.tool_ids = [b.id for b in base_tools[:-2]]
-    agent_state = server.agent_manager.update_agent(agent_state.id, request=request, actor=actor)
+    agent_state = server.agent_manager.update_agent(agent_state.id, agent_update=request, actor=actor)
     assert len(agent_state.tools) == len(base_tools) - 2
