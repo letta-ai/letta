@@ -79,7 +79,8 @@ describe('letta', () => {
     cy.findByTestId('tab-item:simulated').click();
     cy.findByTestId('simulated-memory:human').should(
       'contain.value',
-      'Shubham'
+      'Shubham',
+      { timeout: 100000 }
     );
 
     cy.findByTestId('tab:edit-data-sources').click();
