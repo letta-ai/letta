@@ -1,13 +1,17 @@
 import datetime
 from typing import List, Literal, Optional
 
+from letta import system
 from letta.constants import IN_CONTEXT_MEMORY_KEYWORD
 from letta.orm.agent import Agent as AgentModel
 from letta.orm.agents_tags import AgentsTags
 from letta.orm.errors import NoResultFound
 from letta.prompts import gpt_system
 from letta.schemas.agent import AgentState, AgentType
+from letta.schemas.enums import MessageRole
 from letta.schemas.memory import Memory
+from letta.schemas.message import Message, MessageCreate
+from letta.schemas.user import User
 from letta.system import get_initial_boot_messages, get_login_event
 from letta.utils import get_local_time
 
@@ -219,3 +223,27 @@ def initialize_message_sequence(
         ]
 
     return messages
+
+
+def package_initial_message_sequence(
+    agent_id: str, initial_message_sequence: List[MessageCreate], model: str, actor: User
+) -> List[Message]:
+    # create the agent object
+    init_messages = []
+    for message_create in initial_message_sequence:
+
+        if message_create.role == MessageRole.user:
+            packed_message = system.package_user_message(
+                user_message=message_create.text,
+            )
+        elif message_create.role == MessageRole.system:
+            packed_message = system.package_system_message(
+                system_message=message_create.text,
+            )
+        else:
+            raise ValueError(f"Invalid message role: {message_create.role}")
+
+        init_messages.append(
+            Message(role=message_create.role, text=packed_message, organization_id=actor.organization_id, agent_id=agent_id, model=model)
+        )
+    return init_messages

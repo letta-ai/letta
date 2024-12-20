@@ -104,7 +104,7 @@ def get_agent_context_window(
     """
     actor = server.user_manager.get_user_or_default(user_id=user_id)
 
-    return server.get_agent_context_window(user_id=actor.id, agent_id=agent_id)
+    return server.get_agent_context_window(agent_id=agent_id, actor=actor)
 
 
 class CreateAgentRequest(CreateAgent):
@@ -138,7 +138,7 @@ def update_agent(
 ):
     """Update an exsiting agent"""
     actor = server.user_manager.get_user_or_default(user_id=user_id)
-    return server.update_agent(agent_id, update_agent, actor=actor)
+    return server.agent_manager.update_agent(agent_id=agent_id, agent_update=update_agent, actor=actor)
 
 
 @router.get("/{agent_id}/tools", response_model=List[Tool], operation_id="get_tools_from_agent")
@@ -149,7 +149,7 @@ def get_tools_from_agent(
 ):
     """Get tools from an existing agent"""
     actor = server.user_manager.get_user_or_default(user_id=user_id)
-    return server.get_tools_from_agent(agent_id=agent_id, user_id=actor.id)
+    return server.agent_manager.get_agent_by_id(agent_id=agent_id, actor=actor).tools
 
 
 @router.patch("/{agent_id}/add-tool/{tool_id}", response_model=AgentState, operation_id="add_tool_to_agent")
@@ -161,7 +161,7 @@ def add_tool_to_agent(
 ):
     """Add tools to an existing agent"""
     actor = server.user_manager.get_user_or_default(user_id=user_id)
-    return server.add_tool_to_agent(agent_id=agent_id, tool_id=tool_id, user_id=actor.id)
+    return server.agent_manager.attach_tool(agent_id=agent_id, tool_id=tool_id, user_id=actor)
 
 
 @router.patch("/{agent_id}/remove-tool/{tool_id}", response_model=AgentState, operation_id="remove_tool_from_agent")
@@ -173,7 +173,7 @@ def remove_tool_from_agent(
 ):
     """Add tools to an existing agent"""
     actor = server.user_manager.get_user_or_default(user_id=user_id)
-    return server.remove_tool_from_agent(agent_id=agent_id, tool_id=tool_id, user_id=actor.id)
+    return server.agent_manager.detach_tool(agent_id=agent_id, tool_id=tool_id, actor=actor)
 
 
 @router.get("/{agent_id}", response_model=AgentState, operation_id="get_agent")
@@ -232,7 +232,7 @@ def get_agent_in_context_messages(
     Retrieve the messages in the context of a specific agent.
     """
     actor = server.user_manager.get_user_or_default(user_id=user_id)
-    return server.get_in_context_messages(agent_id=agent_id, actor=actor)
+    return server.agent_manager.get_in_context_messages(agent_id=agent_id, actor=actor)
 
 
 # TODO: remove? can also get with agent blocks
@@ -429,7 +429,7 @@ def delete_agent_archival_memory(
     """
     actor = server.user_manager.get_user_or_default(user_id=user_id)
 
-    server.delete_archival_memory(agent_id=agent_id, memory_id=memory_id, actor=actor)
+    server.delete_archival_memory(memory_id=memory_id, actor=actor)
     return JSONResponse(status_code=status.HTTP_200_OK, content={"message": f"Memory id={memory_id} successfully deleted"})
 
 
@@ -479,8 +479,9 @@ def update_message(
     """
     Update the details of a message associated with an agent.
     """
+    # TODO: Get rid of agent_id here, it's not really relevant
     actor = server.user_manager.get_user_or_default(user_id=user_id)
-    return server.update_agent_message(agent_id=agent_id, message_id=message_id, request=request, actor=actor)
+    return server.message_manager.update_message_by_id(message_id=message_id, message_update=request, actor=actor)
 
 
 @router.post(
