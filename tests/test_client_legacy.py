@@ -249,14 +249,14 @@ def test_streaming_send_message(mock_e2b_api_key_none, client: RESTClient, agent
     # 3. Check that we get the end token we want (StreamDoneStatus)
     done = False
 
-    print(response)
+    # print(response)
     assert response, "Sending message failed"
     for chunk in response:
         if isinstance(chunk, LettaMessage):
             if isinstance(chunk, ReasoningMessage) and chunk.reasoning and chunk.reasoning != "":
                 inner_thoughts_exist = True
                 inner_thoughts_count += 1
-            if isinstance(chunk, ToolReturnMessage) and chunk.tool_call and chunk.tool_call.name == "send_message":
+            if isinstance(chunk, ToolCallMessage) and chunk.tool_call and chunk.tool_call.name == "send_message":
                 send_message_ran = True
         elif chunk == OPENAI_SSE_DONE:
             assert not done, "Message stream already done"
