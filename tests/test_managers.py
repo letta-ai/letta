@@ -370,8 +370,8 @@ def other_tool(server: SyncServer, default_user, default_organization):
 @pytest.fixture
 def sarah_agent(server: SyncServer, default_user, default_organization):
     """Fixture to create and return a sample agent within the default organization."""
-    agent_state = server.create_agent(
-        request=CreateAgent(
+    agent_state = server.agent_manager.create_agent(
+        agent_create=CreateAgent(
             name="sarah_agent",
             memory_blocks=[],
             llm_config=LLMConfig.default_config("gpt-4"),
@@ -385,8 +385,8 @@ def sarah_agent(server: SyncServer, default_user, default_organization):
 @pytest.fixture
 def charles_agent(server: SyncServer, default_user, default_organization):
     """Fixture to create and return a sample agent within the default organization."""
-    agent_state = server.create_agent(
-        request=CreateAgent(
+    agent_state = server.agent_manager.create_agent(
+        agent_create=CreateAgent(
             name="charles_agent",
             memory_blocks=[CreateBlock(label="human", value="Charles"), CreateBlock(label="persona", value="I am a helpful assistant")],
             llm_config=LLMConfig.default_config("gpt-4"),
@@ -501,6 +501,54 @@ def test_create_get_list_agent(server: SyncServer, comprehensive_test_agent_fixt
     server.agent_manager.delete_agent(get_agent.id, default_user)
     list_agents = server.agent_manager.list_agents(actor=default_user)
     assert len(list_agents) == 0
+
+
+def test_create_agent_passed_in_initial_messages(server: SyncServer, default_user, default_block):
+    memory_blocks = [CreateBlock(label="human", value="BananaBoy"), CreateBlock(label="persona", value="I am a helpful assistant")]
+    create_agent_request = CreateAgent(
+        system="test system",
+        memory_blocks=memory_blocks,
+        llm_config=LLMConfig.default_config("gpt-4"),
+        embedding_config=EmbeddingConfig.default_config(provider="openai"),
+        block_ids=[default_block.id],
+        tags=["a", "b"],
+        description="test_description",
+        initial_message_sequence=[MessageCreate(role=MessageRole.user, text="hello world")],
+    )
+    agent_state = server.agent_manager.create_agent(
+        create_agent_request,
+        actor=default_user,
+    )
+    assert server.agent_manager.get_total_message_count(agent_state.id, default_user) == 2
+    init_messages = server.agent_manager.get_in_context_messages(agent_id=agent_state.id, actor=default_user)
+    # Check that the system appears in the first initial message
+    assert create_agent_request.system in init_messages[0].text
+    assert create_agent_request.memory_blocks[0].value in init_messages[0].text
+    # Check that the second message is the passed in initial message seq
+    assert create_agent_request.initial_message_sequence[0].role == init_messages[1].role
+    assert create_agent_request.initial_message_sequence[0].text == init_messages[1].text
+
+
+def test_create_agent_default_initial_message(server: SyncServer, default_user, default_block):
+    memory_blocks = [CreateBlock(label="human", value="BananaBoy"), CreateBlock(label="persona", value="I am a helpful assistant")]
+    create_agent_request = CreateAgent(
+        system="test system",
+        memory_blocks=memory_blocks,
+        llm_config=LLMConfig.default_config("gpt-4"),
+        embedding_config=EmbeddingConfig.default_config(provider="openai"),
+        block_ids=[default_block.id],
+        tags=["a", "b"],
+        description="test_description",
+    )
+    agent_state = server.agent_manager.create_agent(
+        create_agent_request,
+        actor=default_user,
+    )
+    assert server.agent_manager.get_total_message_count(agent_state.id, default_user) == 4
+    init_messages = server.agent_manager.get_in_context_messages(agent_id=agent_state.id, actor=default_user)
+    # Check that the system appears in the first initial message
+    assert create_agent_request.system in init_messages[0].text
+    assert create_agent_request.memory_blocks[0].value in init_messages[0].text
 
 
 def test_update_agent(server: SyncServer, comprehensive_test_agent_fixture, other_tool, other_source, other_block, default_user):
@@ -794,8 +842,8 @@ def test_list_agents_by_tags_with_other_filters(server: SyncServer, sarah_agent,
 def test_list_agents_by_tags_pagination(server: SyncServer, default_user, default_organization):
     """Test pagination when listing agents by tags."""
     # Create first agent
-    agent1 = server.create_agent(
-        request=CreateAgent(
+    agent1 = server.agent_manager.create_agent(
+        agent_create=CreateAgent(
             name="agent1",
             tags=["pagination_test", "tag1"],
             llm_config=LLMConfig.default_config("gpt-4"),
@@ -809,8 +857,8 @@ def test_list_agents_by_tags_pagination(server: SyncServer, default_user, defaul
         time.sleep(CREATE_DELAY_SQLITE)  # Ensure distinct created_at timestamps
 
     # Create second agent
-    agent2 = server.create_agent(
-        request=CreateAgent(
+    agent2 = server.agent_manager.create_agent(
+        agent_create=CreateAgent(
             name="agent2",
             tags=["pagination_test", "tag2"],
             llm_config=LLMConfig.default_config("gpt-4"),

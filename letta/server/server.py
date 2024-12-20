@@ -846,15 +846,6 @@ class SyncServer(Server):
         if request.system:
             letta_agent.update_system_prompt(request.system)
 
-        # update in-context messages
-        if request.message_ids:
-            # This means the user is trying to change what messages are in the message buffer
-            # Internally this requires (1) pulling from recall,
-            # then (2) setting the attributes ._messages and .state.message_ids
-            letta_agent.set_message_buffer(message_ids=request.message_ids)
-
-        letta_agent.update_state()
-
         return agent_state
 
     def get_tools_from_agent(self, agent_id: str, user_id: Optional[str]) -> List[Tool]:
