@@ -432,7 +432,7 @@ class SyncServer(Server):
             )
 
             # save agent after step
-            save_agent(letta_agent)
+            # save_agent(letta_agent)
 
         except Exception as e:
             logger.error(f"Error in server._step: {e}")
