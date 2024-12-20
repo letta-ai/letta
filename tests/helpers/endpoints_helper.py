@@ -107,7 +107,7 @@ def check_first_response_is_valid_for_llm_endpoint(filename: str) -> ChatComplet
     agent_state = setup_agent(client, filename)
 
     full_agent_state = client.get_agent(agent_state.id)
-    messages = client.server.agent_manager.get_in_context_messages(agent_id=full_agent_state, actor=client.user)
+    messages = client.server.agent_manager.get_in_context_messages(agent_id=full_agent_state.id, actor=client.user)
     agent = Agent(agent_state=full_agent_state, interface=None, user=client.user)
 
     response = create(
