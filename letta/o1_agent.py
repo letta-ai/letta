@@ -3,10 +3,12 @@ from typing import List, Optional, Union
 from letta.agent import Agent, save_agent
 from letta.interface import AgentInterface
 from letta.schemas.agent import AgentState
+from letta.schemas.letta_message import UsageMessage
 from letta.schemas.message import Message
 from letta.schemas.openai.chat_completion_response import UsageStatistics
 from letta.schemas.usage import LettaUsageStatistics
 from letta.schemas.user import User
+from letta.utils import get_utc_time
 
 
 def send_thinking_message(self: "Agent", message: str) -> Optional[str]:
@@ -56,7 +58,7 @@ class O1Agent(Agent):
         chaining: bool = True,
         max_chaining_steps: Optional[int] = None,
         **kwargs,
-    ) -> LettaUsageStatistics:
+    ) -> UsageMessage:
         """Run Agent.inner_step in a loop, terminate when final thinking message is sent or max_thinking_steps is reached"""
         # assert ms is not None, "MetadataStore is required"
         next_input_message = messages if isinstance(messages, list) else [messages]
@@ -83,4 +85,8 @@ class O1Agent(Agent):
                 break
             save_agent(self)
 
-        return LettaUsageStatistics(**total_usage.model_dump(), step_count=step_count)
+        return UsageMessage(
+            id="null",
+            date=get_utc_time(),
+            usage=LettaUsageStatistics(**total_usage.model_dump(), step_count=step_count)
+        )

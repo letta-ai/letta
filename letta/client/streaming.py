@@ -11,9 +11,9 @@ from letta.schemas.letta_message import (
     ToolCallMessage,
     ToolReturnMessage,
     ReasoningMessage,
+    UsageMessage,
 )
 from letta.schemas.letta_response import LettaStreamingResponse
-from letta.schemas.usage import LettaUsageStatistics
 
 
 def _sse_post(url: str, data: dict, headers: dict) -> Generator[LettaStreamingResponse, None, None]:
@@ -60,7 +60,7 @@ def _sse_post(url: str, data: dict, headers: dict) -> Generator[LettaStreamingRe
                         elif "tool_return" in chunk_data:
                             yield ToolReturnMessage(**chunk_data)
                         elif "usage" in chunk_data:
-                            yield LettaUsageStatistics(**chunk_data["usage"])
+                            yield UsageMessage(**chunk_data)
                         else:
                             raise ValueError(f"Unknown message type in chunk_data: {chunk_data}")
 

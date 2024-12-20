@@ -24,12 +24,12 @@ from letta.schemas.letta_message import (
     ReasoningMessage,
     LettaMessage,
     SystemMessage,
+    UsageMessage,
     UserMessage,
 )
 from letta.schemas.letta_response import LettaResponse, LettaStreamingResponse
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import MessageCreate
-from letta.schemas.usage import LettaUsageStatistics
 from letta.services.organization_manager import OrganizationManager
 from letta.services.user_manager import UserManager
 from letta.settings import model_settings
@@ -258,15 +258,15 @@ def test_streaming_send_message(mock_e2b_api_key_none, client: RESTClient, agent
                 inner_thoughts_count += 1
             if isinstance(chunk, ToolCallMessage) and chunk.tool_call and chunk.tool_call.name == "send_message":
                 send_message_ran = True
+            if isinstance(chunk, UsageMessage):
+                # Some rough metrics for a reasonable usage pattern
+                assert chunk.step_count == 1
+                assert chunk.completion_tokens > 10
+                assert chunk.prompt_tokens > 1000
+                assert chunk.total_tokens > 1000
         elif chunk == OPENAI_SSE_DONE:
             assert not done, "Message stream already done"
             done = True
-        elif isinstance(chunk, LettaUsageStatistics):
-            # Some rough metrics for a reasonable usage pattern
-            assert chunk.step_count == 1
-            assert chunk.completion_tokens > 10
-            assert chunk.prompt_tokens > 1000
-            assert chunk.total_tokens > 1000
         else:
             assert isinstance(chunk, LettaStreamingResponse)
 

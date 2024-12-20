@@ -47,7 +47,7 @@ from letta.schemas.embedding_config import EmbeddingConfig
 # openai schemas
 from letta.schemas.enums import JobStatus
 from letta.schemas.job import Job, JobUpdate
-from letta.schemas.letta_message import ToolReturnMessage, LettaMessage
+from letta.schemas.letta_message import ToolReturnMessage, LettaMessage, UsageMessage
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.memory import (
     ArchivalMemorySummary,
@@ -427,7 +427,7 @@ class SyncServer(Server):
         input_messages: Union[Message, List[Message]],
         interface: Union[AgentInterface, None] = None,  # needed to getting responses
         # timestamp: Optional[datetime],
-    ) -> LettaUsageStatistics:
+    ) -> UsageMessage:
         """Send the input message through the agent"""
         # TODO: Thread actor directly through this function, since the top level caller most likely already retrieved the user
         # Input validation
@@ -469,7 +469,7 @@ class SyncServer(Server):
 
         return usage_stats
 
-    def _command(self, user_id: str, agent_id: str, command: str) -> LettaUsageStatistics:
+    def _command(self, user_id: str, agent_id: str, command: str) -> UsageMessage:
         """Process a CLI command"""
         # TODO: Thread actor directly through this function, since the top level caller most likely already retrieved the user
         actor = self.user_manager.get_user_or_default(user_id=user_id)
@@ -583,7 +583,7 @@ class SyncServer(Server):
             usage = self._step(actor=actor, agent_id=agent_id, input_message=input_message)
 
         if not usage:
-            usage = LettaUsageStatistics()
+            usage = UsageMessage(id="null", date=get_utc_time(), usage=LettaUsageStatistics())
 
         return usage
 
@@ -593,7 +593,7 @@ class SyncServer(Server):
         agent_id: str,
         message: Union[str, Message],
         timestamp: Optional[datetime] = None,
-    ) -> LettaUsageStatistics:
+    ) -> UsageMessage:
         """Process an incoming user message and feed it through the Letta agent"""
         try:
             actor = self.user_manager.get_user_by_id(user_id=user_id)
@@ -645,7 +645,7 @@ class SyncServer(Server):
         agent_id: str,
         message: Union[str, Message],
         timestamp: Optional[datetime] = None,
-    ) -> LettaUsageStatistics:
+    ) -> UsageMessage:
         """Process an incoming system message and feed it through the Letta agent"""
         try:
             actor = self.user_manager.get_user_by_id(user_id=user_id)
@@ -712,7 +712,7 @@ class SyncServer(Server):
         wrap_user_message: bool = True,
         wrap_system_message: bool = True,
         interface: Union[AgentInterface, None] = None,  # needed to getting responses
-    ) -> LettaUsageStatistics:
+    ) -> UsageMessage:
         """Send a list of messages to the agent
 
         If the messages are of type MessageCreate, we need to turn them into
@@ -761,7 +761,7 @@ class SyncServer(Server):
         return self._step(actor=actor, agent_id=agent_id, input_messages=message_objects, interface=interface)
 
     # @LockingServer.agent_lock_decorator
-    def run_command(self, user_id: str, agent_id: str, command: str) -> LettaUsageStatistics:
+    def run_command(self, user_id: str, agent_id: str, command: str) -> UsageMessage:
         """Run a command on the agent"""
         # If the input begins with a command prefix, attempt to process it as a command
         if command.startswith("/"):

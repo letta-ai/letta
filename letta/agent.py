@@ -33,6 +33,7 @@ from letta.schemas.agent import AgentState, AgentStepResponse, UpdateAgent
 from letta.schemas.block import BlockUpdate
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import MessageRole
+from letta.schemas.letta_message import UsageMessage
 from letta.schemas.memory import ContextWindowOverview, Memory
 from letta.schemas.message import Message, MessageUpdate
 from letta.schemas.openai.chat_completion_request import (
@@ -232,7 +233,7 @@ class BaseAgent(ABC):
     def step(
         self,
         messages: Union[Message, List[Message]],
-    ) -> LettaUsageStatistics:
+    ) -> UsageMessage:
         """
         Top-level event message handler for the agent.
         """
@@ -917,7 +918,7 @@ class Agent(BaseAgent):
         chaining: bool = True,
         max_chaining_steps: Optional[int] = None,
         **kwargs,
-    ) -> LettaUsageStatistics:
+    ) -> UsageMessage:
         """Run Agent.step in a loop, handling chaining via heartbeat requests and function failures"""
         next_input_message = messages if isinstance(messages, list) else [messages]
         counter = 0
@@ -991,8 +992,11 @@ class Agent(BaseAgent):
             # Letta no-op / yield
             else:
                 break
-
-        return LettaUsageStatistics(**total_usage.model_dump(), step_count=step_count)
+        return UsageMessage(
+            id="null",
+            date=get_utc_time(),
+            usage=LettaUsageStatistics(**total_usage.model_dump(), step_count=step_count)
+        )
 
     def inner_step(
         self,

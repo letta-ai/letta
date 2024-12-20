@@ -6,10 +6,10 @@ from letta.interface import AgentInterface
 from letta.prompts import gpt_system
 from letta.schemas.agent import AgentState, AgentType
 from letta.schemas.embedding_config import EmbeddingConfig
+from letta.schemas.letta_message import UsageMessage
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.memory import BasicBlockMemory, Block
 from letta.schemas.message import Message
-from letta.schemas.usage import LettaUsageStatistics
 from letta.schemas.user import User
 from letta.utils import get_persona_text
 
@@ -36,7 +36,7 @@ class ChatOnlyAgent(Agent):
         chaining: bool = True,
         max_chaining_steps: Optional[int] = None,
         **kwargs,
-    ) -> LettaUsageStatistics:
+    ) -> UsageMessage:
         letta_statistics = super().step(messages=messages, chaining=chaining, max_chaining_steps=max_chaining_steps, **kwargs)
 
         if self.always_rethink_memory:

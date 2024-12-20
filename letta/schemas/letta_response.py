@@ -5,8 +5,7 @@ from typing import List, Literal, Union
 
 from pydantic import BaseModel, Field
 
-from letta.schemas.letta_message import LettaMessage, LettaMessageUnion
-from letta.schemas.usage import LettaUsageStatistics
+from letta.schemas.letta_message import LettaMessage, LettaMessageUnion, UsageMessage
 from letta.utils import json_dumps
 
 # TODO: consider moving into own file
@@ -24,14 +23,14 @@ class LettaResponse(BaseModel):
     """
 
     messages: List[LettaMessageUnion] = Field(..., description="The messages returned by the agent.")
-    usage: LettaUsageStatistics = Field(..., description="The usage statistics of the agent.")
+    usage: UsageMessage = Field(..., description="The usage statistics of the agent.")
 
     def __str__(self):
         return json_dumps(
             {
                 "messages": [message.model_dump() for message in self.messages],
-                # Assume `Message` and `LettaMessage` have a `dict()` method
-                "usage": self.usage.model_dump(),  # Assume `LettaUsageStatistics` has a `dict()` method
+                # Assume `Message` and `UsageMessage` have a `dict()` method
+                "usage": self.usage.model_dump(),  # Assume `UsageMessage` has a `dict()` method
             },
             indent=4,
         )
@@ -139,7 +138,7 @@ class LettaResponse(BaseModel):
         html_output += "</div>"
 
         # Formatting the usage statistics
-        usage_html = json.dumps(self.usage.model_dump(), indent=2)
+        usage_html = json.dumps(self.usage.usage.model_dump(), indent=2)
         html_output += f"""
         <div class="usage-container">
             <div class="usage-stats">
@@ -153,4 +152,4 @@ class LettaResponse(BaseModel):
 
 
 # The streaming response is either [DONE], an error, or a LettaMessage
-LettaStreamingResponse = Union[LettaMessage, StreamDoneStatus, LettaUsageStatistics]
+LettaStreamingResponse = Union[LettaMessage, StreamDoneStatus]
