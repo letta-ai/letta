@@ -9,5 +9,5 @@ class SourcesAgents(Base):
 
     __tablename__ = "sources_agents"
 
-    agent_id: Mapped[String] = mapped_column(String, ForeignKey("agents.id"), primary_key=True)
-    source_id: Mapped[String] = mapped_column(String, ForeignKey("sources.id"), primary_key=True)
+    agent_id: Mapped[String] = mapped_column(String, ForeignKey("agents.id", ondelete="CASCADE"), primary_key=True)
+    source_id: Mapped[String] = mapped_column(String, ForeignKey("sources.id", ondelete="CASCADE"), primary_key=True)
