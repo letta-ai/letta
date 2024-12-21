@@ -1043,6 +1043,7 @@ class Agent(BaseAgent):
             num_archival_memory=agent_manager_passage_size,
             num_recall_memory=message_manager_size,
             num_tokens_external_memory_summary=num_tokens_external_memory_summary,
+            external_memory_summary=external_memory_summary,
             # top-level information
             context_window_size_max=self.agent_state.llm_config.context_window,
             context_window_size_current=num_tokens_used_total,

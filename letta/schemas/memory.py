@@ -30,6 +30,9 @@ class ContextWindowOverview(BaseModel):
     num_tokens_external_memory_summary: int = Field(
         ..., description="The number of tokens in the external memory summary (archival + recall metadata)."
     )
+    external_memory_summary: str = Field(
+        ..., description="The metadata summary of the external memory sources (archival + recall metadata)."
+    )
 
     # context window breakdown (in tokens)
     # this should all add up to context_window_size_current
