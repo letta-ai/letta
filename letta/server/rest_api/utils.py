@@ -3,7 +3,7 @@ import json
 import os
 import warnings
 from enum import Enum
-from typing import AsyncGenerator, Literal, Optional, Union
+from typing import AsyncGenerator, Optional, Union
 
 from fastapi import Header
 from pydantic import BaseModel
@@ -13,7 +13,6 @@ from letta.schemas.letta_message import UsageMessage
 from letta.schemas.usage import LettaUsageStatistics
 from letta.server.rest_api.interface import StreamingServerInterface
 from letta.server.server import SyncServer
-from letta.utils import get_utc_time
 
 # from letta.orm.user import User
 # from letta.orm.utilities import get_db_session
@@ -63,8 +62,8 @@ async def sse_async_generator(
                 # Double-check the type
                 if not isinstance(usage, LettaUsageStatistics):
                     raise ValueError(f"Expected LettaUsageStatistics, got {type(usage)}")
-                usage_message = UsageMessage(id="null", date=get_utc_time(), usage=usage)
-                yield sse_formatter(usage_message.model_dump())
+                usage_message = UsageMessage(usage=usage)
+                yield sse_formatter(usage_message.model_dump(exclude_none=True))
 
             except ContextWindowExceededError as e:
                 log_error_to_sentry(e)
@@ -104,6 +103,7 @@ def get_user_id(user_id: Optional[str] = Header(None, alias="user_id")) -> Optio
 
 def get_current_interface() -> StreamingServerInterface:
     return StreamingServerInterface
+
 
 def log_error_to_sentry(e):
     import traceback
