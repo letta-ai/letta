@@ -43,6 +43,7 @@ class EmbeddingConfig(BaseModel):
     embedding_model: str = Field(..., description="The model for the embedding.")
     embedding_dim: int = Field(..., description="The dimension of the embedding.")
     embedding_chunk_size: Optional[int] = Field(300, description="The chunk size of the embedding.")
+    handle: Optional[str] = Field(None, description="The handle for this config, in the format provider/model-name.")
 
     # azure only
     azure_endpoint: Optional[str] = Field(None, description="The Azure endpoint for the model.")
