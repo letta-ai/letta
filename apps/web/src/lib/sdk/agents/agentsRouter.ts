@@ -19,7 +19,7 @@ import {
   organizationPreferences,
 } from '@letta-web/database';
 import { createProject } from '$web/web-api/router';
-import { and, asc, desc, eq, isNull, like, ne } from 'drizzle-orm';
+import { and, asc, desc, eq, isNull, like, ne, or } from 'drizzle-orm';
 import { findUniqueAgentTemplateName } from '$web/server';
 
 import type { OrderByValuesEnumType } from '$web/sdk/agents/agentsContract';
