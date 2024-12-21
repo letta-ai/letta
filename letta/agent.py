@@ -43,7 +43,6 @@ from letta.schemas.openai.chat_completion_response import UsageStatistics
 from letta.schemas.tool import Tool
 from letta.schemas.tool_rule import TerminalToolRule
 from letta.schemas.usage import LettaUsageStatistics
-from letta.schemas.user import User as PydanticUser
 from letta.services.agent_manager import AgentManager
 from letta.services.block_manager import BlockManager
 from letta.services.helpers.agent_manager_helper import (
@@ -52,7 +51,6 @@ from letta.services.helpers.agent_manager_helper import (
 )
 from letta.services.message_manager import MessageManager
 from letta.services.passage_manager import PassageManager
-from letta.services.source_manager import SourceManager
 from letta.services.tool_execution_sandbox import ToolExecutionSandbox
 from letta.streaming_interface import StreamingRefreshCLIInterface
 from letta.system import (
@@ -946,32 +944,6 @@ class Agent(BaseAgent):
 
         # TODO: recall memory
         raise NotImplementedError()
-
-    def attach_source(
-        self,
-        user: PydanticUser,
-        source_id: str,
-        source_manager: SourceManager,
-        agent_manager: AgentManager,
-    ):
-        """Attach a source to the agent using the SourcesAgents ORM relationship.
-
-        Args:
-            user: User performing the action
-            source_id: ID of the source to attach
-            source_manager: SourceManager instance to verify source exists
-            agent_manager: AgentManager instance to manage agent-source relationship
-        """
-        # Verify source exists and user has permission to access it
-        source = source_manager.get_source_by_id(source_id=source_id, actor=user)
-        assert source is not None, f"Source {source_id} not found in user's organization ({user.organization_id})"
-
-        # Use the agent_manager to create the relationship
-        agent_manager.attach_source(agent_id=self.agent_state.id, source_id=source_id, actor=user)
-
-        printd(
-            f"Attached data source {source.name} to agent {self.agent_state.name}.",
-        )
 
     def get_context_window(self) -> ContextWindowOverview:
         """Get the context window of the agent"""
