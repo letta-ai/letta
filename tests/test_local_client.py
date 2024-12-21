@@ -259,10 +259,10 @@ def test_recall_memory(client: LocalClient, agent: AgentState):
     assert exists
 
     # get in-context messages
-    messages = client.get_in_context_messages(agent.id)
+    in_context_messages = client.get_in_context_messages(agent.id)
     exists = False
-    for m in messages:
-        if message_str in str(m):
+    for m in in_context_messages:
+        if message_str in m.text:
             exists = True
     assert exists
 

@@ -243,6 +243,7 @@ def add_composio_tool(
         raise HTTPException(
             status_code=400,  # Bad Request
             detail={
+                "code": "EnumStringNotFound",
                 "message": f"Cannot find composio action with name `{composio_action_name}`.",
                 "composio_action_name": composio_action_name,
             },
@@ -251,6 +252,7 @@ def add_composio_tool(
         raise HTTPException(
             status_code=400,  # Bad Request
             detail={
+                "code": "ComposioSDKError",
                 "message": f"No connected account found for tool `{composio_action_name}`. You need to connect the relevant app in Composio order to use the tool.",
                 "composio_action_name": composio_action_name,
             },

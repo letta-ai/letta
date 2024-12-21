@@ -129,9 +129,8 @@ class OfflineMemoryAgent(Agent):
         # extras
         first_message_verify_mono: bool = False,
         max_memory_rethinks: int = 10,
-        initial_message_sequence: Optional[List[Message]] = None,
     ):
-        super().__init__(interface, agent_state, user, initial_message_sequence=initial_message_sequence)
+        super().__init__(interface, agent_state, user)
         self.first_message_verify_mono = first_message_verify_mono
         self.max_memory_rethinks = max_memory_rethinks
 
