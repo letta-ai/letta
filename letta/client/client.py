@@ -2987,7 +2987,11 @@ class LocalClient(AbstractClient):
             source_id (str): ID of the source
             source_name (str): Name of the source
         """
-        self.server.attach_source_to_agent(source_id=source_id, source_name=source_name, agent_id=agent_id, user_id=self.user_id)
+        if source_name:
+            source = self.server.source_manager.get_source_by_id(source_id=source_id, actor=self.user)
+            source_id = source.id
+
+        self.server.agent_manager.attach_source(source_id=source_id, agent_id=agent_id, actor=self.user)
 
     def detach_source_from_agent(self, agent_id: str, source_id: Optional[str] = None, source_name: Optional[str] = None):
         """
@@ -2999,7 +3003,10 @@ class LocalClient(AbstractClient):
         Returns:
             source (Source): Detached source
         """
-        return self.server.detach_source_from_agent(source_id=source_id, source_name=source_name, agent_id=agent_id, user_id=self.user_id)
+        if source_name:
+            source = self.server.source_manager.get_source_by_id(source_id=source_id, actor=self.user)
+            source_id = source.id
+        return self.server.agent_manager.detach_source(agent_id=agent_id, source_id=source_id, actor=self.user)
 
     def list_sources(self) -> List[Source]:
         """
