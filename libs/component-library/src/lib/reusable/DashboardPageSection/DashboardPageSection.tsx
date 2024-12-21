@@ -38,7 +38,6 @@ function DashboardSearchBar(props: DashboardSearchBarProps) {
 type DashboardPageSectionProps = PropsWithChildren<
   Partial<DashboardSearchBarProps> & {
     actions?: React.ReactNode;
-
     fullHeight?: boolean;
     borderBottom?: boolean;
     title?: string;

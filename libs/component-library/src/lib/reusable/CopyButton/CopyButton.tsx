@@ -1,7 +1,7 @@
 'use client';
 import * as React from 'react';
 import { Button } from '../../core/Button/Button';
-import { CheckIcon, ClipboardIcon } from '../../icons';
+import { CheckIcon, CopyIcon } from '../../icons';
 import { useCopyToClipboard } from '../../hooks';
 
 interface CopyButtonProps {
@@ -10,7 +10,7 @@ interface CopyButtonProps {
   fullWidth?: boolean;
   copyButtonText?: string;
   color?: 'tertiary-transparent' | 'tertiary';
-  size?: 'default' | 'small';
+  size?: 'default' | 'small' | 'xsmall';
   hideLabel?: boolean;
 }
 
@@ -35,7 +35,7 @@ export function CopyButton(props: CopyButtonProps) {
       hideLabel={hideLabel}
       type="button"
       data-testid={testId}
-      preIcon={isCopied ? <CheckIcon /> : <ClipboardIcon />}
+      preIcon={isCopied ? <CheckIcon /> : <CopyIcon />}
       label={isCopied ? 'Copied' : copyButtonText}
       onClick={() => {
         void copyToClipboard();

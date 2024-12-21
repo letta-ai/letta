@@ -1,0 +1,26 @@
+name: Release TypeScript SDK
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "The version of the TypeScript SDK that you would like to release"
+        required: true
+        type: string
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Download Fern
+        run: npm install -g fern-api
+
+      - name: Generate TypeScript SDK
+        env:
+          FERN_TOKEN: ${{ secrets.FERN_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          fern generate --group ts-sdk --version ${{ inputs.version }} --log-level debug

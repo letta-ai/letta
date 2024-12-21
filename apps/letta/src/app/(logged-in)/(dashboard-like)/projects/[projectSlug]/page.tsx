@@ -1,17 +1,14 @@
 'use client';
 
 import {
-  Button,
-  CTACard,
-  DashboardEmptyArea,
+  Avatar,
   DashboardPageLayout,
   DashboardPageSection,
   HStack,
+  LettaInvaderIcon,
   NiceGridDisplay,
   PlusIcon,
-  SearchIcon,
-  Skeleton,
-  TabGroupIcon,
+  TemplateIcon,
   VStack,
 } from '@letta-web/component-library';
 import React, { useMemo } from 'react';
@@ -19,80 +16,50 @@ import { useCurrentProject } from './hooks';
 import { webApi, webApiQueryKeys } from '$letta/client';
 import type { ProjectAgentTemplateType } from '$letta/web-api/contracts';
 import { useTranslations } from 'next-intl';
-import { AgentTemplateCard, Tutorials } from '$letta/client/components';
+import { DashboardCard, Tutorials } from '$letta/client/components';
 import { useWelcomeText } from '$letta/client/hooks/useWelcomeText/useWelcomeText';
 import { CreateNewTemplateDialog } from './_components/CreateNewTemplateDialog/CreateNewTemplateDialog';
+import { useDateFormatter } from '@letta-web/helpful-client-utils';
 
 interface AgentTemplatesListProps {
   agents?: ProjectAgentTemplateType[];
 }
 
 const RECENT_AGENTS_TO_DISPLAY = 3;
-const TESTING_CARD_HEIGHT = '62px';
-const TESTING_CARD_HEIGHT_CLASS = 'h-[62px]';
-const testingPageHeight = `calc((var(--default-gap) * 2) + (${TESTING_CARD_HEIGHT} * ${RECENT_AGENTS_TO_DISPLAY}))`;
 
 function AgentTemplatesList(props: AgentTemplatesListProps) {
   const { agents } = props;
   const t = useTranslations('projects/(projectSlug)/page');
+  const { slug: projectSlug } = useCurrentProject();
+
+  const { formatDateAndTime } = useDateFormatter();
 
   if (!agents) {
     return (
-      <VStack fullHeight fullWidth>
+      <NiceGridDisplay itemHeight="112px" itemWidth="318px">
         {new Array(RECENT_AGENTS_TO_DISPLAY).fill(null).map((_u, index) => (
-          // eslint-disable-next-line react/forbid-component-props
-          <Skeleton key={index} className={TESTING_CARD_HEIGHT_CLASS} />
+          <DashboardCard title="" key={index} isSkeleton />
         ))}
-      </VStack>
-    );
-  }
-
-  if (agents.length === 0) {
-    return (
-      // eslint-disable-next-line react/forbid-component-props
-      <VStack fullHeight fullWidth style={{ height: testingPageHeight }}>
-        <DashboardEmptyArea
-          message={t('agentTemplatesList.emptyMessage')}
-          action={
-            <CreateNewTemplateDialog
-              trigger={
-                <Button
-                  preIcon={<PlusIcon />}
-                  data-testid="create-agent-template-button"
-                  label={t('agentTemplatesList.createAgentTemplate')}
-                  color="secondary"
-                />
-              }
-            />
-          }
-        />
-      </VStack>
+      </NiceGridDisplay>
     );
   }
 
   return (
-    <VStack fullWidth>
+    <NiceGridDisplay itemHeight="112px" itemWidth="318px">
       {agents.map((agent) => (
-        <AgentTemplateCard key={agent.id} agent={agent} />
-      ))}
-    </VStack>
-  );
-}
-
-function CreateAgentTemplateButton() {
-  const t = useTranslations('projects/(projectSlug)/page');
-
-  return (
-    <CreateNewTemplateDialog
-      trigger={
-        <Button
-          label={t('agentTemplatesSection.createAgentTemplate')}
-          data-testid="create-agent-template-button"
-          preIcon={<PlusIcon />}
-          color="tertiary"
+        <DashboardCard
+          href={`/projects/${projectSlug}/templates/${agent.name}`}
+          largeImage={
+            <Avatar size="xxlarge" name={agent.name.replace('-', ' ')} />
+          }
+          description={t('agentTemplatesList.updatedAt', {
+            date: formatDateAndTime(agent.updatedAt),
+          })}
+          title={agent.name}
+          key={agent.id}
         />
-      }
-    />
+      ))}
+    </NiceGridDisplay>
   );
 }
 
@@ -114,25 +81,20 @@ function AgentTemplatesSection() {
 
   const t = useTranslations('projects/(projectSlug)/page');
 
-  const agentCount = useMemo(
-    () => data?.body.agentTemplates.length ?? 0,
-    [data]
-  );
   const agentsList = useMemo(
     () => data?.body.agentTemplates.slice(0, RECENT_AGENTS_TO_DISPLAY),
     [data]
   );
 
+  if (agentsList && agentsList.length === 0) {
+    return null;
+  }
+
   return (
     <>
       <DashboardPageSection
         title={t('agentTemplatesSection.title')}
-        actions={
-          <>
-            {/* This button should only be displayed if we have agents, otherwise we show an alert that asks them to do so instead */}
-            {agentCount >= 1 && <CreateAgentTemplateButton />}
-          </>
-        }
+        description={t('agentTemplatesSection.subtitle')}
       >
         <HStack fullWidth>
           <AgentTemplatesList agents={agentsList} />
@@ -142,39 +104,67 @@ function AgentTemplatesSection() {
   );
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function QuickActions() {
   const t = useTranslations('projects/(projectSlug)/page');
+  const { slug: projectSlug } = useCurrentProject();
 
   return (
     <DashboardPageSection
       title={t('QuickActions.title')}
       description={t('QuickActions.subtitle')}
     >
-      <NiceGridDisplay itemWidth="252px" itemHeight="252px">
-        <CTACard
-          action={
-            <Button
-              href="/development-servers/local/agents/new"
-              label={t('QuickActions.createTemplate.cta')}
-              color="secondary"
-            />
+      <NiceGridDisplay itemWidth="318px" itemHeight="112px">
+        <DashboardCard
+          href={`/projects/${projectSlug}/agents`}
+          largeImage={
+            <VStack
+              fullHeight
+              fullWidth
+              align="center"
+              justify="center"
+              color="background-grey"
+            >
+              <LettaInvaderIcon color="primary" size="xxlarge" />
+            </VStack>
           }
-          icon={<TabGroupIcon />}
-          title={t('QuickActions.createTemplate.title')}
-          subtitle={t('QuickActions.createTemplate.description')}
-        />
-        <CTACard
-          action={
-            <Button
-              href="/development-servers/local/agents"
-              label={t('QuickActions.monitorAgents.cta')}
-              color="secondary"
-            />
-          }
-          icon={<SearchIcon />}
           title={t('QuickActions.monitorAgents.title')}
-          subtitle={t('QuickActions.monitorAgents.description')}
+          description={t('QuickActions.monitorAgents.description')}
+        />
+        <DashboardCard
+          href={`/projects/${projectSlug}/templates`}
+          largeImage={
+            <VStack
+              fullHeight
+              fullWidth
+              align="center"
+              justify="center"
+              color="background-grey"
+            >
+              <TemplateIcon color="primary" size="xxlarge" />
+            </VStack>
+          }
+          title={t('QuickActions.viewTemplates.title')}
+          description={t('QuickActions.viewTemplates.description')}
+        />
+        <CreateNewTemplateDialog
+          trigger={
+            <DashboardCard
+              testId="create-agent-template-button"
+              largeImage={
+                <VStack
+                  fullHeight
+                  fullWidth
+                  align="center"
+                  justify="center"
+                  color="background-grey"
+                >
+                  <PlusIcon color="muted" size="xxlarge" />
+                </VStack>
+              }
+              title={t('QuickActions.createTemplate.title')}
+              description={t('QuickActions.createTemplate.description')}
+            />
+          }
         />
       </NiceGridDisplay>
     </DashboardPageSection>
@@ -194,6 +184,7 @@ function ProjectPage() {
       subtitle={t('subtitle', { name })}
     >
       <AgentTemplatesSection />
+      <QuickActions />
       <Tutorials />
     </DashboardPageLayout>
   );

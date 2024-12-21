@@ -1,12 +1,25 @@
 'use client';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import {
-  Card,
-  InputFilter,
-  isMultiValue,
-  RawSelect,
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
+import type {
+  FieldDefinitions,
+  QueryBuilderQuery,
 } from '@letta-web/component-library';
-import type { OptionType } from '@letta-web/component-library';
+import {
+  Badge,
+  Card,
+  CopyButton,
+  isGenericQueryCondition,
+  isMultiValue,
+  MiddleTruncate,
+  QueryBuilder,
+  SearchIcon,
+} from '@letta-web/component-library';
 import { Frame } from '@letta-web/component-library';
 import {
   Button,
@@ -20,25 +33,19 @@ import {
   DashboardPageSection,
   DataTable,
   HStack,
-  RawAsyncSelect,
   RawInput,
 } from '@letta-web/component-library';
-import { SearchIcon } from '@letta-web/component-library';
-import {
-  webApi,
-  webApiQueryKeys,
-  webOriginSDKApi,
-  webOriginSDKQueryKeys,
-} from '$letta/client';
+import { webApi, webApiQueryKeys, webOriginSDKApi } from '$letta/client';
 import { useCurrentProject } from '../hooks';
-import { usePathname, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import type { ColumnDef } from '@tanstack/react-table';
-import { useDebouncedValue } from '@mantine/hooks';
 import type { AgentState } from '@letta-web/letta-agents-api';
 import { useAgentsServiceGetAgent } from '@letta-web/letta-agents-api';
-import { useRouter } from 'next/navigation';
 import { Messages } from '$letta/client/components';
 import { useTranslations } from 'next-intl';
+import { DeployAgentDialog } from './DeployAgentDialog/DeployAgentDialog';
+import { useDateFormatter } from '@letta-web/helpful-client-utils';
+import { SearchDeployedAgentsSchema } from '$letta/sdk/agents/agentsContract';
 
 interface AgentMessagesListProps {
   agentId: string;
@@ -150,117 +157,14 @@ function DeployedAgentView(props: DeployedAgentViewProps) {
   );
 }
 
-interface DeployedAgentListProps {
-  search: string;
-  filterBy?: OptionType;
+interface UseQueryDefinitionResponse {
+  fieldDefinitions: FieldDefinitions;
+  initialQuery: QueryBuilderQuery;
 }
 
-function DeployedAgentList(props: DeployedAgentListProps) {
-  const [limit, setLimit] = useState(20);
-
-  const [selectedAgent, setSelectedAgent] = useState<AgentState>();
-  const { search, filterBy } = props;
-  const [offset, setOffset] = useState(0);
-  const { id: currentProjectId } = useCurrentProject();
+function useQueryDefinition() {
   const t = useTranslations('projects/(projectSlug)/agents/page');
 
-  useEffect(() => {
-    setOffset(0);
-  }, [search]);
-
-  const { data } = webOriginSDKApi.agents.listAgents.useQuery({
-    queryKey: webOriginSDKQueryKeys.agents.listAgentsWithSearch({
-      name: search,
-      project_id: currentProjectId,
-      by_version: filterBy?.value,
-      limit,
-      offset,
-    }),
-    queryData: {
-      query: {
-        search: search,
-        project_id: currentProjectId,
-        by_version: filterBy?.value,
-        offset,
-        limit,
-      },
-    },
-  });
-
-  const DeployedAgentColumns: Array<ColumnDef<AgentState>> = useMemo(
-    () => [
-      {
-        header: t('table.columns.id'),
-        accessorKey: 'id',
-      },
-      {
-        header: t('table.columns.name'),
-        accessorKey: 'key',
-      },
-      {
-        header: t('table.columns.lastActive'),
-        accessorKey: 'lastActiveAt',
-      },
-    ],
-    [t]
-  );
-
-  const agents = useMemo(() => {
-    return data?.body || [];
-  }, [data]);
-
-  return (
-    <HStack fullHeight position="relative" fullWidth>
-      <DataTable
-        onRowClick={(row) => {
-          setSelectedAgent(row);
-        }}
-        fullHeight
-        autofitHeight
-        minHeight={400}
-        limit={limit}
-        onLimitChange={setLimit}
-        hasNextPage={data?.body.length === limit}
-        showPagination
-        offset={offset}
-        onSetOffset={setOffset}
-        loadingText={
-          search || filterBy ? t('table.searching') : t('table.loading')
-        }
-        noResultsText={
-          search || filterBy ? t('table.noResults') : t('table.emptyMessage')
-        }
-        columns={DeployedAgentColumns}
-        data={agents}
-        isLoading={!data}
-      />
-      {selectedAgent && (
-        <DeployedAgentView
-          onClose={() => {
-            setSelectedAgent(undefined);
-          }}
-          agent={selectedAgent}
-        />
-      )}
-    </HStack>
-  );
-}
-
-interface FilterByDeployedAgentTemplateComponentProps {
-  filterBy?: OptionType;
-  onFilterChange: (filter: OptionType) => void;
-}
-
-function FilterByDeployedAgentTemplateComponent(
-  props: FilterByDeployedAgentTemplateComponentProps
-) {
-  const t = useTranslations('projects/(projectSlug)/agents/page');
-
-  const { id: currentProjectId } = useCurrentProject();
-  const { filterBy, onFilterChange } = props;
-
-  const router = useRouter();
-  const pathname = usePathname();
   const params = useSearchParams();
 
   const initialFilter = useMemo(() => {
@@ -273,11 +177,7 @@ function FilterByDeployedAgentTemplateComponent(
     }
   }, [params]);
 
-  useEffect(() => {
-    if (initialFilter) {
-      onFilterChange(initialFilter);
-    }
-  }, [initialFilter, onFilterChange]);
+  const { id: currentProjectId } = useCurrentProject();
 
   const { data } = webApi.projects.getProjectDeployedAgentTemplates.useQuery({
     queryKey:
@@ -318,17 +218,7 @@ function FilterByDeployedAgentTemplateComponent(
     [currentProjectId, t]
   );
 
-  useEffect(() => {
-    const nextURLSearchParams = new URLSearchParams();
-
-    if (filterBy) {
-      nextURLSearchParams.set('template', filterBy.value || '');
-    }
-
-    router.replace(`${pathname}?${nextURLSearchParams.toString()}`);
-  }, [filterBy, router, pathname]);
-
-  const defaultOptions = useMemo(() => {
+  const defaultTemplateSearchOptions = useMemo(() => {
     if (!data?.body) {
       return null;
     }
@@ -355,75 +245,394 @@ function FilterByDeployedAgentTemplateComponent(
     return arr;
   }, [data?.body, initialFilter, t]);
 
-  if (!defaultOptions) {
-    return (
-      <RawSelect
-        options={[]}
-        isLoading
-        inline
-        fullWidth
-        label={t('searchDropdown.label')}
-        placeholder={t('searchDropdown.placeholder')}
-      />
-    );
-  }
+  return useMemo(() => {
+    const fieldDefinitions = {
+      name: {
+        id: 'name',
+        name: t('useQueryDefinition.agentName.name'),
+        queries: [
+          {
+            key: 'operator',
+            label: t('useQueryDefinition.agentName.operator.label'),
+            display: 'select',
+            options: {
+              options: [
+                {
+                  label: t(
+                    'useQueryDefinition.agentName.operator.operators.contains'
+                  ),
+                  value: 'contains',
+                },
+                {
+                  label: t(
+                    'useQueryDefinition.agentName.operator.operators.equals'
+                  ),
+                  value: 'eq',
+                },
+                {
+                  label: t(
+                    'useQueryDefinition.agentName.operator.operators.notEquals'
+                  ),
+                  value: 'neq',
+                },
+              ],
+            },
+          },
+          {
+            key: 'value',
+            label: t('useQueryDefinition.agentName.value.label'),
+            display: 'input',
+            options: {
+              placeholder: t('useQueryDefinition.agentName.value.placeholder'),
+            },
+          },
+        ],
+      },
+      version: {
+        id: 'version',
+        name: t('useQueryDefinition.agentTemplate.name'),
+        queries: [
+          {
+            key: 'operator',
+            label: t('useQueryDefinition.agentTemplate.operator.label'),
+            display: 'select',
+            options: {
+              options: [
+                {
+                  label: t(
+                    'useQueryDefinition.agentTemplate.operator.operators.equals'
+                  ),
+                  value: 'eq',
+                },
+                {
+                  label: t(
+                    'useQueryDefinition.agentTemplate.operator.operators.notEquals'
+                  ),
+                  value: 'neq',
+                },
+              ],
+            },
+          },
+          {
+            key: 'value',
+            label: t('useQueryDefinition.agentTemplate.value.label'),
+            display: 'async-select',
+            options: {
+              placeholder: t(
+                'useQueryDefinition.agentTemplate.value.placeholder'
+              ),
+              defaultOptions: defaultTemplateSearchOptions || [],
+              loadOptions: handleLoadOptions,
+            },
+          },
+        ],
+      },
+    } as const satisfies FieldDefinitions;
 
-  return (
-    <RawAsyncSelect
-      value={filterBy}
-      cacheOptions
-      isSearchable
-      onSelect={(value) => {
-        if (isMultiValue(value)) {
-          onFilterChange(value[0]);
-          return;
-        } else {
-          if (value) {
-            onFilterChange(value);
-          }
-        }
-      }}
-      fullWidth
-      inline
-      loadOptions={handleLoadOptions}
-      label={t('searchDropdown.label')}
-      placeholder={t('searchDropdown.placeholder')}
-      defaultOptions={defaultOptions}
-    />
-  );
+    const initialQuery = {
+      root: {
+        combinator: 'AND',
+        items: [
+          {
+            field: fieldDefinitions.name.id,
+            queryData: {
+              operator: fieldDefinitions.name.queries[0].options.options[0],
+              value: {
+                label: '',
+                value: '',
+              },
+            },
+          },
+        ],
+      },
+    } satisfies QueryBuilderQuery;
+
+    return {
+      fieldDefinitions,
+      initialQuery,
+    } satisfies UseQueryDefinitionResponse;
+  }, [defaultTemplateSearchOptions, handleLoadOptions, t]);
 }
 
 function DeployedAgentsPage() {
-  const [filterBy, setFilterBy] = useState<OptionType>();
-  const [search, setSearch] = useState('');
+  const { fieldDefinitions, initialQuery } = useQueryDefinition();
+
+  const [query, setQuery] = useState<QueryBuilderQuery>(initialQuery);
   const t = useTranslations('projects/(projectSlug)/agents/page');
 
-  const [debouncedSearch] = useDebouncedValue(search, 500);
+  const [limit, setLimit] = useState(0);
+
+  const [selectedAgent, setSelectedAgent] = useState<AgentState>();
+
+  const [offset, setOffset] = useState(0);
+  const { id: currentProjectId } = useCurrentProject();
+
+  const compileQuery = useCallback(
+    (queryToCompile: QueryBuilderQuery) => {
+      const val = {
+        search: queryToCompile.root.items.map((item) => {
+          if (isGenericQueryCondition(item) || !item.queryData) {
+            return null;
+          }
+
+          return {
+            field: item.field,
+            ...Object.entries(item.queryData).reduce((acc, [key, value]) => {
+              if (!value) {
+                return acc;
+              }
+
+              if (isMultiValue(value)) {
+                return {
+                  ...acc,
+                  [key]: value.map((val) => val.value),
+                };
+              }
+
+              return {
+                ...acc,
+                [key]: value?.value || '',
+              };
+            }, {}),
+          };
+        }),
+        offset,
+        limit,
+        project_id: currentProjectId,
+        combinator: queryToCompile.root.combinator,
+      };
+
+      if (SearchDeployedAgentsSchema.safeParse(val).success) {
+        return val;
+      }
+
+      return {};
+    },
+    [currentProjectId, limit, offset]
+  );
+
+  const { data, mutate } =
+    webOriginSDKApi.agents.searchDeployedAgents.useMutation();
+
+  const searchAgents = useCallback(
+    (override?: QueryBuilderQuery) => {
+      mutate({
+        body: compileQuery(override || query),
+      });
+    },
+    [compileQuery, mutate, query]
+  );
+
+  const mounted = useRef(false);
+
+  useEffect(() => {
+    if (limit === 0) {
+      return;
+    }
+    if (mounted.current) {
+      return;
+    }
+
+    mounted.current = true;
+
+    searchAgents();
+  }, [currentProjectId, limit, mutate, offset, query, searchAgents]);
+
+  const filterByVersion = useCallback(
+    (version: string) => {
+      const nextQuery = {
+        root: {
+          combinator: 'AND',
+          items: [
+            ...query.root.items.filter((item) => {
+              if (isGenericQueryCondition(item)) {
+                return true;
+              }
+
+              return item.field !== fieldDefinitions.version.id;
+            }),
+            {
+              field: fieldDefinitions.version.id,
+              queryData: {
+                operator:
+                  fieldDefinitions.version.queries[0].options.options[0],
+                value: {
+                  label: version,
+                  value: version,
+                },
+              },
+            },
+          ],
+        },
+      } satisfies QueryBuilderQuery;
+
+      setQuery(nextQuery);
+
+      searchAgents(nextQuery);
+    },
+    [
+      fieldDefinitions.version.id,
+      fieldDefinitions.version.queries,
+      query.root.items,
+      searchAgents,
+    ]
+  );
+
+  const agents = data?.body.agents || [];
+  const hasNextPage = data?.body.hasNextPage || false;
+
+  const { slug: currentProjectSlug } = useCurrentProject();
+  const { formatDateAndTime } = useDateFormatter();
+
+  const DeployedAgentColumns: Array<
+    ColumnDef<AgentState & { version?: string }>
+  > = useMemo(
+    () => [
+      {
+        id: 'name',
+        header: t('table.columns.name'),
+        cell: ({ row }) => {
+          return (
+            <HStack>
+              <Typography>{row.original.name}</Typography>
+              {row.original.version && (
+                <button
+                  onClick={() => {
+                    filterByVersion(row.original.version || '');
+                  }}
+                >
+                  <Badge size="small" content={row.original.version} />
+                </button>
+              )}
+            </HStack>
+          );
+        },
+      },
+      {
+        id: 'id',
+        header: t('table.columns.id'),
+        cell: ({ row }) => {
+          return (
+            <HStack align="center">
+              <MiddleTruncate visibleStart={4} visibleEnd={4}>
+                {row.original.id}
+              </MiddleTruncate>
+              <CopyButton
+                copyButtonText={t('table.copyId')}
+                color="tertiary-transparent"
+                size="small"
+                hideLabel
+                textToCopy={row.original.id}
+              />
+            </HStack>
+          );
+        },
+      },
+      {
+        id: 'createdAt',
+        header: t('table.columns.lastUpdatedAt'),
+        cell: ({ row }) => {
+          return formatDateAndTime(row.original?.created_at || '');
+        },
+      },
+      {
+        header: '',
+        id: 'actions',
+        meta: {
+          style: {
+            columnAlign: 'right',
+            sticky: 'right',
+          },
+        },
+        cell: ({ row }) => (
+          <HStack>
+            <Button
+              href={`/projects/${currentProjectSlug}/agents/${row.original.id}`}
+              color="tertiary-transparent"
+              label={t('table.openInADE')}
+            />
+            <Button
+              onClick={() => {
+                setSelectedAgent(row.original);
+              }}
+              color="tertiary"
+              label={t('table.preview')}
+            />
+          </HStack>
+        ),
+      },
+    ],
+    [currentProjectSlug, filterByVersion, formatDateAndTime, t]
+  );
 
   return (
-    <DashboardPageLayout encapsulatedFullHeight title="Agents">
+    <DashboardPageLayout
+      actions={<DeployAgentDialog />}
+      encapsulatedFullHeight
+      title="Agents"
+    >
       <DashboardPageSection fullHeight>
         <VStack fullHeight fullWidth>
-          <VStack gap={false} fullWidth>
-            <RawInput
-              onChange={(e) => {
-                setSearch(e.target.value);
-              }}
-              value={search}
-              preIcon={<SearchIcon />}
-              hideLabel
-              label={t('search.label')}
-              placeholder={t('search.placeholder')}
-              fullWidth
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              searchAgents();
+            }}
+          >
+            <VStack border gap={false}>
+              <HStack
+                justify="spaceBetween"
+                color="background-grey"
+                padding="small"
+                borderBottom
+              >
+                <Typography>{t('search.label')}</Typography>
+              </HStack>
+              <VStack paddingX="small" paddingTop="small">
+                <QueryBuilder
+                  query={query}
+                  onSetQuery={(query) => {
+                    setQuery(query);
+                  }}
+                  definition={fieldDefinitions}
+                />
+              </VStack>
+              <HStack justify="end" padding="small" borderTop>
+                <Button
+                  type="submit"
+                  preIcon={<SearchIcon />}
+                  label={t('search.button')}
+                  color="tertiary"
+                />
+              </HStack>
+            </VStack>
+          </form>
+          <HStack fullHeight position="relative" fullWidth>
+            <DataTable
+              fullHeight
+              autofitHeight
+              minHeight={400}
+              limit={limit}
+              onLimitChange={setLimit}
+              hasNextPage={hasNextPage}
+              showPagination
+              offset={offset}
+              onSetOffset={setOffset}
+              loadingText={t('table.loading')}
+              noResultsText={t('table.noResults')}
+              columns={DeployedAgentColumns}
+              data={agents}
+              isLoading={!data}
             />
-            <InputFilter>
-              <FilterByDeployedAgentTemplateComponent
-                filterBy={filterBy}
-                onFilterChange={setFilterBy}
+            {selectedAgent && (
+              <DeployedAgentView
+                onClose={() => {
+                  setSelectedAgent(undefined);
+                }}
+                agent={selectedAgent}
               />
-            </InputFilter>
-          </VStack>
-          <DeployedAgentList search={debouncedSearch} filterBy={filterBy} />
+            )}
+          </HStack>
         </VStack>
       </DashboardPageSection>
     </DashboardPageLayout>

@@ -19,7 +19,7 @@ import {
   organizationPreferences,
 } from '@letta-web/database';
 import { createProject } from '$letta/web-api/router';
-import { and, asc, desc, eq, isNull, like, ne } from 'drizzle-orm';
+import { and, asc, desc, eq, isNull, like, ne, or } from 'drizzle-orm';
 import { findUniqueAgentTemplateName } from '$letta/server';
 
 import type { OrderByValuesEnumType } from '$letta/sdk/agents/agentsContract';
@@ -294,16 +294,6 @@ export async function createAgent(
         };
       }
 
-      if (!template) {
-        return {
-          status: 400,
-          body: {
-            message:
-              'Cannot create a deployed agent from a starter kit template',
-          },
-        };
-      }
-
       let toolIdsToAttach: string[] = [];
 
       if ('tools' in starterKit) {
@@ -391,6 +381,47 @@ export async function createAgent(
           body: {
             message: 'Failed to create agent',
           },
+        };
+      }
+
+      if (!template) {
+        let uniqueId = name;
+        let nextInternalAgentCountId = 0;
+
+        if (!uniqueId) {
+          const lastDeployedAgent = await db.query.deployedAgents.findFirst({
+            where: eq(deployedAgents.organizationId, organizationId),
+            orderBy: [desc(deployedAgents.createdAt)],
+          });
+
+          nextInternalAgentCountId =
+            (lastDeployedAgent?.internalAgentCountId || 0) + 1;
+
+          uniqueId = `deployed-agent-${nextInternalAgentCountId}`;
+        }
+
+        const [createdAgent] = await db
+          .insert(deployedAgents)
+          .values({
+            id: response.id,
+            projectId: project_id,
+            key: uniqueId,
+            internalAgentCountId: nextInternalAgentCountId,
+            deployedAgentTemplateId: '',
+            organizationId,
+          })
+          .returning({ deployedAgentId: deployedAgents.id });
+
+        await db.insert(deployedAgentVariables).values({
+          deployedAgentId: createdAgent.deployedAgentId,
+          value: variables || {},
+        });
+
+        return {
+          status: 201,
+          body: prepareAgentForUser(response, {
+            agentName: name,
+          }),
         };
       }
 
@@ -578,7 +609,7 @@ export async function createAgent(
     {
       requestBody: {
         ...agent,
-        tools: agent.tools || undefined,
+        tool_ids: agent.tool_ids || undefined,
         memory_blocks: agent.memory_blocks || [],
         name: crypto.randomUUID(),
       },
@@ -1342,8 +1373,15 @@ async function searchDeployedAgents(
   req: SearchDeployedAgentsRequest,
   context: SDKContext
 ): Promise<SearchDeployedAgentsResponse> {
-  const { search, limit = 5, offset } = req.body;
+  const {
+    search = [],
+    combinator = 'AND',
+    project_id,
+    limit = 5,
+    offset,
+  } = req.body;
 
+  const combinatorFunction = combinator === 'AND' ? and : or;
   const where = [
     eq(deployedAgents.organizationId, context.request.organizationId),
   ];
@@ -1376,10 +1414,14 @@ async function searchDeployedAgents(
         return;
       }
 
-      if (searchTerm.field === 'project_id') {
-        const operator = searchTerm.operator === 'eq' ? eq : ne;
-
-        where.push(operator(deployedAgents.projectId, searchTerm.value));
+      if (searchTerm.field === 'name') {
+        if (searchTerm.operator === 'eq') {
+          where.push(eq(deployedAgents.key, searchTerm.value));
+        } else if (searchTerm.operator === 'neq') {
+          where.push(ne(deployedAgents.key, searchTerm.value));
+        } else if (searchTerm.operator === 'contains') {
+          where.push(like(deployedAgents.key, `%${searchTerm.value || ''}%`));
+        }
       }
 
       if (searchTerm.field === 'version') {
@@ -1415,10 +1457,7 @@ async function searchDeployedAgents(
         }
 
         where.push(
-          eq(
-            deployedAgents.deployedAgentTemplateId,
-            deployedAgentTemplate.version
-          )
+          eq(deployedAgents.deployedAgentTemplateId, deployedAgentTemplate.id)
         );
 
         return;
@@ -1427,12 +1466,24 @@ async function searchDeployedAgents(
   );
 
   const query = await db.query.deployedAgents.findMany({
-    where: and(...where),
-    limit,
+    where: and(
+      combinatorFunction(...where),
+      eq(deployedAgents.organizationId, context.request.organizationId),
+      isNull(deployedAgents.deletedAt),
+      ...(project_id ? [eq(deployedAgents.projectId, project_id)] : [])
+    ),
+    limit: limit + 1,
     offset,
     orderBy,
     with: {
       deployedAgentTemplate: {
+        with: {
+          agentTemplate: {
+            columns: {
+              name: true,
+            },
+          },
+        },
         columns: {
           version: true,
         },
@@ -1441,7 +1492,7 @@ async function searchDeployedAgents(
   });
 
   const allAgentsDetails = await Promise.all(
-    query.map(async (agent) => {
+    query.slice(0, limit).map(async (agent) => {
       return AgentsService.getAgent(
         {
           agentId: agent.id,
@@ -1452,7 +1503,11 @@ async function searchDeployedAgents(
       ).then((response) => {
         return prepareAgentForUser(response, {
           agentName: agent.key,
-          version: agent.deployedAgentTemplate?.version,
+          version: agent.deployedAgentTemplate?.version
+            ? `${
+                agent.deployedAgentTemplate?.agentTemplate?.name || 'unknown'
+              }:${agent.deployedAgentTemplate?.version}`
+            : '',
         });
       });
     })
@@ -1462,7 +1517,78 @@ async function searchDeployedAgents(
     status: 200,
     body: {
       agents: allAgentsDetails,
+      hasNextPage: query.length > limit,
     },
+  };
+}
+
+type CreateTemplateFromAgentRequest = ServerInferRequest<
+  typeof sdkContracts.agents.createTemplateFromAgent
+>;
+
+type CreateTemplateFromAgentResponse = ServerInferResponses<
+  typeof sdkContracts.agents.createTemplateFromAgent
+>;
+
+async function createTemplateFromAgent(
+  request: CreateTemplateFromAgentRequest,
+  context: SDKContext
+): Promise<CreateTemplateFromAgentResponse> {
+  const { agent_id: agentId } = request.params;
+  const { lettaAgentsUserId } = context.request;
+  const { project_id } = request.body;
+
+  const agent = await AgentsService.getAgent(
+    {
+      agentId,
+    },
+    {
+      user_id: lettaAgentsUserId,
+    }
+  );
+
+  if (!agent) {
+    return {
+      status: 404,
+      body: {
+        message: 'Agent not found',
+      },
+    };
+  }
+
+  const response = await createAgent(
+    {
+      body: {
+        project_id,
+        llm_config: agent.llm_config,
+        embedding_config: agent.embedding_config,
+        system: agent.system,
+        tool_ids: agent.tools.map((tool) => tool.id || '').filter(Boolean),
+        memory_blocks: agent.memory.blocks.map((block) => {
+          return {
+            limit: block.limit,
+            label: block.label || '',
+            value: block.value,
+          };
+        }),
+        template: true,
+      },
+    },
+    context
+  );
+
+  if (response.status !== 201) {
+    return {
+      status: 500,
+      body: {
+        message: 'Failed to create agent template',
+      },
+    };
+  }
+
+  return {
+    status: 201,
+    body: response.body,
   };
 }
 
@@ -1475,4 +1601,5 @@ export const agentsRouter = {
   deleteAgent,
   updateAgent,
   searchDeployedAgents,
+  createTemplateFromAgent,
 };

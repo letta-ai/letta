@@ -47,7 +47,7 @@ const CreateAgentBodySchema = z.object({
     description: 'A list of message IDs associated with the agent',
   }),
   memory_blocks: MemoryBlocksSchema.nullable().optional(),
-  tools: z.string().array().nullable().optional(),
+  tool_ids: z.string().array().nullable().optional(),
   system: z.string().nullable().optional(),
   llm_config: LLMConfigSchema.nullable()?.optional(),
   embedding_config: EmbeddingConfigSchema.nullable()?.optional(),
@@ -305,10 +305,10 @@ const SearchByAgentVersionSchema = z.object({
   value: z.string(),
 });
 
-const SearchByProjectIdSchema = z.object({
-  field: z.literal('project_id'),
+const SearchByAgentName = z.object({
+  field: z.literal('name'),
+  operator: z.enum(['eq', 'neq', 'contains']),
   value: z.string(),
-  operator: z.enum(['eq', 'ne']),
 });
 
 export const OrderByValuesEnum = z.enum(['created_at', 'updated_at']);
@@ -321,20 +321,21 @@ const OrderBySchema = z.object({
   direction: z.enum(['asc', 'desc']),
 });
 
-const SearchDeployedAgentsSchema = z.object({
-  search: z.array(
-    z.union([
-      SearchByAgentVersionSchema,
-      SearchByProjectIdSchema,
-      OrderBySchema,
-    ])
-  ),
+export const SearchDeployedAgentsSchema = z.object({
+  search: z
+    .array(
+      z.union([SearchByAgentVersionSchema, SearchByAgentName, OrderBySchema])
+    )
+    .optional(),
+  project_id: z.string().optional(),
+  combinator: z.enum(['AND', 'OR']).optional(),
   limit: z.number().optional(),
   offset: z.number().optional(),
 });
 
 const SearchDeployedAgentsResponseSchema = c.type<{
   agents: ModifiedAgentState[];
+  hasNextPage: boolean;
 }>();
 
 const searchDeployedAgentsContract = c.mutation({
@@ -348,6 +349,28 @@ const searchDeployedAgentsContract = c.mutation({
   },
 });
 
+const FailedToCreateAgentTemplateErrorSchema = z.object({
+  message: z.literal('Failed to create agent template'),
+});
+
+const createTemplateFromAgentContract = c.mutation({
+  method: 'POST',
+  summary: 'Create Template From Agent',
+  path: '/v1/agents/:agent_id/template',
+  description: 'Create a template from an agent',
+  pathParams: z.object({
+    agent_id: z.string(),
+  }),
+  body: z.object({
+    project_id: z.string().optional(),
+  }),
+  responses: {
+    201: CreateAgentResponseSchema,
+    404: AgentNotFoundResponseSchema,
+    500: FailedToCreateAgentTemplateErrorSchema,
+  },
+});
+
 export const agentsContract = c.router({
   createAgent: createAgentContract,
   searchDeployedAgents: searchDeployedAgentsContract,
@@ -357,9 +380,13 @@ export const agentsContract = c.router({
   getAgentById: getAgentByIdContract,
   deleteAgent: deleteAgentContract,
   updateAgent: updateAgentContract,
+  createTemplateFromAgent: createTemplateFromAgentContract,
 });
 
 export const agentsQueryKeys = {
   listAgentsWithSearch: (query: ListAgentsQuery) => ['agents', query],
   getAgentById: (agentId: string) => ['agents', agentId],
+  searchDeployedAgents: (
+    options: z.infer<typeof SearchDeployedAgentsSchema>
+  ) => ['agents', options],
 };

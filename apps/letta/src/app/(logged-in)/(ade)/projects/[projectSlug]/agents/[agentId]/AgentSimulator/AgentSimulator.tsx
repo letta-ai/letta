@@ -37,6 +37,7 @@ import type {
   AgentState,
   Source,
 } from '@letta-web/letta-agents-api';
+import { isAgentState } from '@letta-web/letta-agents-api';
 import { ErrorMessageSchema } from '@letta-web/letta-agents-api';
 import { useLettaAgentsAPI } from '@letta-web/letta-agents-api';
 import { getIsAgentState } from '@letta-web/letta-agents-api';
@@ -58,9 +59,8 @@ import { useTranslations } from 'next-intl';
 import { useDebouncedCallback, useLocalStorage } from '@mantine/hooks';
 import { webApi, webApiQueryKeys, webOriginSDKApi } from '$letta/client';
 import { useCurrentProject } from '../../../../../../(dashboard-like)/projects/[projectSlug]/hooks';
-import { findMemoryBlockVariables } from '$letta/utils';
+import { compareAgentStates, findMemoryBlockVariables } from '$letta/utils';
 import type { GetAgentTemplateSimulatorSessionResponseBody } from '$letta/web-api/agent-templates/agentTemplatesContracts';
-import { isEqual } from 'lodash-es';
 import { useCurrentSimulatedAgent } from '../hooks/useCurrentSimulatedAgent/useCurrentSimulatedAgent';
 import { useCurrentAgentMetaData } from '../hooks/useCurrentAgentMetaData/useCurrentAgentMetaData';
 import { atom, useAtom, useSetAtom } from 'jotai';
@@ -234,36 +234,34 @@ function useSendMessage(agentId: string, options: UseSendMessageOptions = {}) {
 
                   // explicit handlers for each message type
                   switch (extracted.message_type) {
-                    case 'function_call': {
+                    case 'tool_call_message': {
                       const maybeArguments = get(
                         newMessage,
-                        'function_call.arguments',
+                        'tool_call.arguments',
                         ''
                       );
 
-                      newMessage.function_call = {
-                        function_call_id:
-                          newMessage.function_call.function_call_id ||
-                          extracted.function_call.function_call_id,
+                      newMessage.tool_call = {
+                        tool_call_id:
+                          newMessage.tool_call.tool_call_id ||
+                          extracted.tool_call.tool_call_id,
                         message_type:
-                          newMessage.function_call.message_type ||
-                          extracted.function_call.message_type,
+                          newMessage.tool_call.message_type ||
+                          extracted.tool_call.message_type,
                         name:
-                          newMessage.function_call.name ||
-                          extracted.function_call.name,
+                          newMessage.tool_call.name || extracted.tool_call.name,
                         arguments:
-                          maybeArguments + extracted.function_call.arguments,
+                          maybeArguments + extracted.tool_call.arguments,
                       };
                       break;
                     }
-                    case 'function_return': {
-                      newMessage.function_return = extracted.function_return;
+                    case 'tool_return_message': {
+                      newMessage.tool_return = extracted.tool_return;
                       break;
                     }
-                    case 'internal_monologue': {
-                      newMessage.internal_monologue =
-                        (newMessage.internal_monologue || '') +
-                        extracted.internal_monologue;
+                    case 'reasoning_message': {
+                      newMessage.reasoning =
+                        (newMessage.reasoning || '') + extracted.reasoning;
                       break;
                     }
                     default: {
@@ -744,9 +742,7 @@ function Chatroom() {
     return variableList.some((variable) => !sessionVariables[variable]);
   }, [agentSession?.body.variables, variableList]);
 
-  const agentStateStore = useRef<GenerateAgentStateHashResponse>(
-    generateAgentStateHash(agentState, [])
-  );
+  const agentStateStore = useRef<AgentState>(agentState as AgentState);
 
   const { mutate: updateSession } =
     webApi.agentTemplates.refreshAgentTemplateSimulatorSession.useMutation({
@@ -784,14 +780,16 @@ function Chatroom() {
       return;
     }
 
-    const currentState = generateAgentStateHash(agentState, sourceList || []);
-
-    // check if the agent state has changed
-    if (isEqual(currentState, agentStateStore.current)) {
+    if (!isAgentState(agentState)) {
       return;
     }
 
-    agentStateStore.current = currentState;
+    // check if the agent state has changed
+    if (compareAgentStates(agentState, agentStateStore.current)) {
+      return;
+    }
+
+    agentStateStore.current = agentState;
 
     // update the existing session
     debounceUpdateSession({

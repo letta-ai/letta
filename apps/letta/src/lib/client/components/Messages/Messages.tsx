@@ -270,7 +270,7 @@ export function Messages(props: MessagesProps) {
       allMessages: AgentMessage[]
     ): AgentSimulatorMessageType | null {
       switch (agentMessage.message_type) {
-        case 'function_return':
+        case 'tool_return_message':
           if (mode === 'simple') {
             return null;
           }
@@ -285,7 +285,7 @@ export function Messages(props: MessagesProps) {
               <MessageWrapper
                 type="code"
                 header={{
-                  title: t('functionReturn'),
+                  title: t('toolReturn'),
 
                   badge: (
                     <Badge
@@ -308,7 +308,7 @@ export function Messages(props: MessagesProps) {
                     {
                       ...agentMessage,
                       function_return: tryFallbackParseJson(
-                        agentMessage.function_return
+                        agentMessage.tool_return
                       ),
                     },
                     null,
@@ -321,21 +321,19 @@ export function Messages(props: MessagesProps) {
             timestamp: new Date(agentMessage.date).toISOString(),
             name: 'Agent',
           };
-        case 'function_call': {
+        case 'tool_call_message': {
           const parsedFunctionCallArguments = tryFallbackParseJson(
-            agentMessage.function_call.arguments || ''
+            agentMessage.tool_call.arguments || ''
           );
 
           if (mode === 'simple' || mode === 'interactive') {
             if (
-              agentMessage.function_call.name === 'send_message' &&
-              agentMessage.function_call.arguments
+              agentMessage.tool_call.name === 'send_message' &&
+              agentMessage.tool_call.arguments
             ) {
               try {
                 const out = SendMessageFunctionCallSchema.safeParse(
-                  tryFallbackParseJson(
-                    agentMessage.function_call.arguments || ''
-                  )
+                  tryFallbackParseJson(agentMessage.tool_call.arguments || '')
                 );
 
                 if (!out.success) {
@@ -365,20 +363,20 @@ export function Messages(props: MessagesProps) {
             if (mode === 'interactive') {
               const functionResponse = allMessages.find(
                 (message) =>
-                  message.message_type === 'function_return' &&
+                  message.message_type === 'tool_return_message' &&
                   // eslint-disable-next-line @typescript-eslint/no-confusing-void-expression
-                  get(message, 'function_call_id') ===
+                  get(message, 'tool_call_id') ===
                     // eslint-disable-next-line @typescript-eslint/no-confusing-void-expression
-                    agentMessage.function_call.function_call_id
+                    agentMessage.tool_call.tool_call_id
               );
 
               return {
                 id: `${agentMessage.id}-${agentMessage.message_type}`,
                 content: (
                   <FunctionCall
-                    name={agentMessage.function_call.name || ''}
-                    inputs={agentMessage.function_call.arguments || ''}
-                    response={get(functionResponse, 'function_return')}
+                    name={agentMessage.tool_call.name || ''}
+                    inputs={agentMessage.tool_call.arguments || ''}
+                    response={get(functionResponse, 'tool_return')}
                     status={get(functionResponse, 'status')}
                   />
                 ),
@@ -396,7 +394,7 @@ export function Messages(props: MessagesProps) {
               <MessageWrapper
                 type="code"
                 header={{
-                  title: agentMessage.function_call.name || '',
+                  title: agentMessage.tool_call.name || '',
                   preIcon: <FunctionIcon />,
                 }}
               >
@@ -406,10 +404,10 @@ export function Messages(props: MessagesProps) {
                   showLineNumbers={false}
                   code={JSON.stringify(
                     {
-                      ...agentMessage.function_call,
+                      ...agentMessage.tool_call,
                       arguments:
                         parsedFunctionCallArguments ||
-                        agentMessage.function_call.arguments,
+                        agentMessage.tool_call.arguments,
                     },
                     null,
                     2
@@ -422,7 +420,7 @@ export function Messages(props: MessagesProps) {
             name: 'Agent',
           };
         }
-        case 'internal_monologue':
+        case 'reasoning_message':
           if (mode === 'simple') {
             return null;
           }
@@ -436,10 +434,10 @@ export function Messages(props: MessagesProps) {
                     <HStack align="center" gap="small">
                       <InnerMonologueIcon color="violet" size="small" />
                       <Typography bold color="violet" variant="body2">
-                        {t('thoughts')}
+                        {t('reasoning')}
                       </Typography>
                     </HStack>
-                    <Typography>{agentMessage.internal_monologue}</Typography>
+                    <Typography>{agentMessage.reasoning}</Typography>
                   </VStack>
                 </BlockQuote>
               ),
@@ -452,13 +450,13 @@ export function Messages(props: MessagesProps) {
             id: `${agentMessage.id}-${agentMessage.message_type}`,
             content: (
               <MessageWrapper
-                type="internalMonologue"
+                type="reasoningMessage"
                 header={{
                   preIcon: <ThoughtsIcon />,
-                  title: t('internalMonologue'),
+                  title: t('reasoningMessage'),
                 }}
               >
-                <Typography>{agentMessage.internal_monologue}</Typography>
+                <Typography>{agentMessage.reasoning}</Typography>
               </MessageWrapper>
             ),
             timestamp: new Date(agentMessage.date).toISOString(),

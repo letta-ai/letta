@@ -156,3 +156,7 @@ export * from './lib/core/Link/Link';
 export * from './lib/core/BlockQuote/BlockQuote';
 
 export * from './lib/reusable/CopyWithCodePreview/CopyWithCodePreview';
+
+export * from './lib/reusable/Section/Section';
+
+export * from './lib/core/MiddleTruncate/MiddleTruncate';

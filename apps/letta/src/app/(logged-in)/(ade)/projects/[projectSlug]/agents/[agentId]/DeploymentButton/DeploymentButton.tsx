@@ -13,6 +13,8 @@ import {
   HStack,
   Popover,
   RocketIcon,
+  TemplateIcon,
+  toast,
   Typography,
   WarningIcon,
   useForm,
@@ -31,6 +33,7 @@ import { useCurrentUser } from '$letta/client/hooks';
 import { compareAgentStates } from '$letta/utils';
 import type { ServerInferResponses } from '@ts-rest/core';
 import type { contracts } from '$letta/web-api/contracts';
+import { useRouter } from 'next/navigation';
 
 interface DeployAgentDialogProps {
   isAtLatestVersion: boolean;
@@ -362,16 +365,80 @@ function TemplateVersionDisplay() {
   );
 }
 
+function CreateTemplateButton() {
+  const { push } = useRouter();
+  const { slug, id: currentProjectId } = useCurrentProject();
+  const { id: agentId } = useCurrentAgent();
+  const { mutate, isPending, isSuccess } =
+    webOriginSDKApi.agents.createTemplateFromAgent.useMutation({
+      onSuccess: (body) => {
+        const { name } = body.body;
+
+        push(`/projects/${slug}/templates/${name}`);
+      },
+      onError: () => {
+        toast.error(t('CreateTemplateButton.error'));
+      },
+    });
+
+  const t = useTranslations(
+    'projects/(projectSlug)/agents/(agentId)/AgentPage'
+  );
+
+  const handleConvert = useCallback(() => {
+    mutate({
+      params: { agent_id: agentId },
+      body: {
+        project_id: currentProjectId,
+      },
+    });
+  }, [mutate, agentId, currentProjectId]);
+
+  return (
+    <Popover
+      align="end"
+      triggerAsChild
+      trigger={
+        <Button
+          size="small"
+          preIcon={<TemplateIcon />}
+          color="secondary"
+          label={t('CreateTemplateButton.trigger')}
+        />
+      }
+    >
+      <VStack padding="medium" gap="large">
+        <VStack>
+          <Typography bold>{t('CreateTemplateButton.title')}</Typography>
+          <Typography>{t('CreateTemplateButton.description')}</Typography>
+        </VStack>
+        <Button
+          color="secondary"
+          busy={isPending || isSuccess}
+          fullWidth
+          label={t('CreateTemplateButton.cta')}
+          type="button"
+          onClick={handleConvert}
+        />
+      </VStack>
+    </Popover>
+  );
+}
+
 export function DeploymentButton() {
-  const { isLocal, isTemplate } = useCurrentAgentMetaData();
+  const { isLocal, isTemplate, isFromTemplate } = useCurrentAgentMetaData();
   const user = useCurrentUser();
 
-  if (isLocal && !user?.hasCloudAccess) {
+  if (isLocal || !user?.hasCloudAccess) {
     return <CloudUpsellDeploy />;
   }
 
   if (isTemplate) {
     return <TemplateVersionDisplay />;
+  }
+
+  if (!isFromTemplate) {
+    return <CreateTemplateButton />;
   }
 
   return null;

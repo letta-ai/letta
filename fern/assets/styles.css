@@ -1,0 +1,15 @@
+.fern-header-container * {
+  font-weight: 600;
+}
+
+.rounded-xl,
+.rounded-lg,
+.rounded-md,
+.rounded-sm,
+.fern-sidebar-link {
+  border-radius: 0px !important;
+}
+
+:is(.light) .code-block-line-content span[style*="color: rgb(194, 195, 197);"] {
+  color: #8e8e8e !important;
+}

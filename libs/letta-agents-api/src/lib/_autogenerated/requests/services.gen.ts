@@ -356,8 +356,8 @@ export class ToolsService {
   }
 
   /**
-   * Add Base Tools
-   * Add base tools
+   * Upsert Base Tools
+   * Upsert base tools
    * @param data The data for the request.
    * @param data.userId
    * @returns letta__schemas__tool__Tool Successful Response
@@ -383,7 +383,7 @@ export class ToolsService {
    * @param data The data for the request.
    * @param data.requestBody
    * @param data.userId
-   * @returns FunctionReturn Successful Response
+   * @returns ToolReturnMessage Successful Response
    * @throws ApiError
    */
   public static runToolFromSource(

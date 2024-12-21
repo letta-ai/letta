@@ -439,8 +439,8 @@
     "/v1/tools/add-base-tools": {
       "post": {
         "tags": ["tools"],
-        "summary": "Add Base Tools",
-        "description": "Add base tools",
+        "summary": "Upsert Base Tools",
+        "description": "Upsert base tools",
         "operationId": "add_base_tools",
         "parameters": [
           {
@@ -528,7 +528,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/FunctionReturn"
+                  "$ref": "#/components/schemas/ToolReturnMessage"
                 }
               }
             }
@@ -3051,13 +3051,13 @@
                             "$ref": "#/components/schemas/UserMessage-Output"
                           },
                           {
-                            "$ref": "#/components/schemas/InternalMonologue"
+                            "$ref": "#/components/schemas/ReasoningMessage"
                           },
                           {
-                            "$ref": "#/components/schemas/FunctionCallMessage"
+                            "$ref": "#/components/schemas/ToolCallMessage"
                           },
                           {
-                            "$ref": "#/components/schemas/FunctionReturn"
+                            "$ref": "#/components/schemas/ToolReturnMessage"
                           },
                           {
                             "$ref": "#/components/schemas/AssistantMessage-Output"
@@ -3068,9 +3068,9 @@
                           "mapping": {
                             "system_message": "#/components/schemas/SystemMessage-Output",
                             "user_message": "#/components/schemas/UserMessage-Output",
-                            "internal_monologue": "#/components/schemas/InternalMonologue",
-                            "function_call": "#/components/schemas/FunctionCallMessage",
-                            "function_return": "#/components/schemas/FunctionReturn",
+                            "reasoning_message": "#/components/schemas/ReasoningMessage",
+                            "tool_call_message": "#/components/schemas/ToolCallMessage",
+                            "tool_return_message": "#/components/schemas/ToolReturnMessage",
                             "assistant_message": "#/components/schemas/AssistantMessage-Output"
                           }
                         }
@@ -5326,6 +5326,9 @@
                     },
                     {
                       "$ref": "#/components/schemas/TerminalToolRule"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ConditionalToolRule"
                     }
                   ]
                 },
@@ -6542,6 +6545,50 @@
         "required": ["finish_reason", "index", "message"],
         "title": "Choice"
       },
+      "ConditionalToolRule": {
+        "properties": {
+          "tool_name": {
+            "type": "string",
+            "title": "Tool Name",
+            "description": "The name of the tool. Must exist in the database for the user's organization."
+          },
+          "type": {
+            "$ref": "#/components/schemas/ToolRuleType",
+            "default": "conditional"
+          },
+          "default_child": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Default Child",
+            "description": "The default child tool to be called. If None, any tool can be called."
+          },
+          "child_output_mapping": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Child Output Mapping",
+            "description": "The output case to check for mapping"
+          },
+          "require_output_mapping": {
+            "type": "boolean",
+            "title": "Require Output Mapping",
+            "description": "Whether to throw an error when output doesn't match any case",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["tool_name", "child_output_mapping"],
+        "title": "ConditionalToolRule",
+        "description": "A ToolRule that conditionally maps to different child tools based on the output."
+      },
       "ContextWindowOverview": {
         "properties": {
           "context_window_size_max": {
@@ -6754,6 +6801,9 @@
                     },
                     {
                       "$ref": "#/components/schemas/TerminalToolRule"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ConditionalToolRule"
                     }
                   ]
                 },
@@ -7411,151 +7461,20 @@
         "required": ["name"],
         "title": "FunctionCall"
       },
-      "FunctionCallDelta": {
+      "FunctionCall-Output": {
         "properties": {
-          "name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Name"
-          },
           "arguments": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "string",
             "title": "Arguments"
           },
-          "function_call_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Function Call Id"
+          "name": {
+            "type": "string",
+            "title": "Name"
           }
         },
         "type": "object",
-        "required": ["name", "arguments", "function_call_id"],
-        "title": "FunctionCallDelta"
-      },
-      "FunctionCallMessage": {
-        "properties": {
-          "id": {
-            "type": "string",
-            "title": "Id"
-          },
-          "date": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Date"
-          },
-          "message_type": {
-            "type": "string",
-            "enum": ["function_call"],
-            "const": "function_call",
-            "title": "Message Type",
-            "default": "function_call"
-          },
-          "function_call": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/letta__schemas__letta_message__FunctionCall"
-              },
-              {
-                "$ref": "#/components/schemas/FunctionCallDelta"
-              }
-            ],
-            "title": "Function Call"
-          }
-        },
-        "type": "object",
-        "required": ["id", "date", "function_call"],
-        "title": "FunctionCallMessage",
-        "description": "A message representing a request to call a function (generated by the LLM to trigger function execution).\n\nAttributes:\n    function_call (Union[FunctionCall, FunctionCallDelta]): The function call\n    id (str): The ID of the message\n    date (datetime): The date the message was created in ISO format"
-      },
-      "FunctionReturn": {
-        "properties": {
-          "id": {
-            "type": "string",
-            "title": "Id"
-          },
-          "date": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Date"
-          },
-          "message_type": {
-            "type": "string",
-            "enum": ["function_return"],
-            "const": "function_return",
-            "title": "Message Type",
-            "default": "function_return"
-          },
-          "function_return": {
-            "type": "string",
-            "title": "Function Return"
-          },
-          "status": {
-            "type": "string",
-            "enum": ["success", "error"],
-            "title": "Status"
-          },
-          "function_call_id": {
-            "type": "string",
-            "title": "Function Call Id"
-          },
-          "stdout": {
-            "anyOf": [
-              {
-                "items": {
-                  "type": "string"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Stdout"
-          },
-          "stderr": {
-            "anyOf": [
-              {
-                "items": {
-                  "type": "string"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Stderr"
-          }
-        },
-        "type": "object",
-        "required": [
-          "id",
-          "date",
-          "function_return",
-          "status",
-          "function_call_id"
-        ],
-        "title": "FunctionReturn",
-        "description": "A message representing the return value of a function call (generated by Letta executing the requested function).\n\nAttributes:\n    function_return (str): The return value of the function\n    status (Literal[\"success\", \"error\"]): The status of the function call\n    id (str): The ID of the message\n    date (datetime): The date the message was created in ISO format\n    function_call_id (str): A unique identifier for the function call that generated this message\n    stdout (Optional[List(str)]): Captured stdout (e.g. prints, logs) from the function invocation\n    stderr (Optional[List(str)]): Captured stderr from the function invocation"
+        "required": ["arguments", "name"],
+        "title": "FunctionCall"
       },
       "FunctionSchema": {
         "properties": {
@@ -7636,34 +7555,6 @@
         "required": ["tool_name"],
         "title": "InitToolRule",
         "description": "Represents the initial tool rule configuration."
-      },
-      "InternalMonologue": {
-        "properties": {
-          "id": {
-            "type": "string",
-            "title": "Id"
-          },
-          "date": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Date"
-          },
-          "message_type": {
-            "type": "string",
-            "enum": ["internal_monologue"],
-            "const": "internal_monologue",
-            "title": "Message Type",
-            "default": "internal_monologue"
-          },
-          "internal_monologue": {
-            "type": "string",
-            "title": "Internal Monologue"
-          }
-        },
-        "type": "object",
-        "required": ["id", "date", "internal_monologue"],
-        "title": "InternalMonologue",
-        "description": "Representation of an agent's internal monologue.\n\nAttributes:\n    internal_monologue (str): The internal monologue of the agent\n    id (str): The ID of the message\n    date (datetime): The date the message was created in ISO format"
       },
       "Job": {
         "properties": {
@@ -7913,7 +7804,94 @@
             "title": "AssistantMessage",
             "type": "object"
           },
-          "FunctionCall": {
+          "LettaUsageStatistics": {
+            "description": "Usage statistics for the agent interaction.\n\nAttributes:\n    completion_tokens (int): The number of tokens generated by the agent.\n    prompt_tokens (int): The number of tokens in the prompt.\n    total_tokens (int): The total number of tokens processed by the agent.\n    step_count (int): The number of steps taken by the agent.",
+            "properties": {
+              "completion_tokens": {
+                "default": 0,
+                "description": "The number of tokens generated by the agent.",
+                "title": "Completion Tokens",
+                "type": "integer"
+              },
+              "prompt_tokens": {
+                "default": 0,
+                "description": "The number of tokens in the prompt.",
+                "title": "Prompt Tokens",
+                "type": "integer"
+              },
+              "total_tokens": {
+                "default": 0,
+                "description": "The total number of tokens processed by the agent.",
+                "title": "Total Tokens",
+                "type": "integer"
+              },
+              "step_count": {
+                "default": 0,
+                "description": "The number of steps taken by the agent.",
+                "title": "Step Count",
+                "type": "integer"
+              }
+            },
+            "title": "LettaUsageStatistics",
+            "type": "object"
+          },
+          "ReasoningMessage": {
+            "description": "Representation of an agent's internal reasoning.\n\nAttributes:\n    reasoning (str): The internal reasoning of the agent\n    id (str): The ID of the message\n    date (datetime): The date the message was created in ISO format",
+            "properties": {
+              "id": {
+                "title": "Id",
+                "type": "string"
+              },
+              "date": {
+                "format": "date-time",
+                "title": "Date",
+                "type": "string"
+              },
+              "message_type": {
+                "const": "reasoning_message",
+                "default": "reasoning_message",
+                "enum": ["reasoning_message"],
+                "title": "Message Type",
+                "type": "string"
+              },
+              "reasoning": {
+                "title": "Reasoning",
+                "type": "string"
+              }
+            },
+            "required": ["id", "date", "reasoning"],
+            "title": "ReasoningMessage",
+            "type": "object"
+          },
+          "SystemMessage": {
+            "description": "A message generated by the system. Never streamed back on a response, only used for cursor pagination.\n\nAttributes:\n    message (str): The message sent by the system\n    id (str): The ID of the message\n    date (datetime): The date the message was created in ISO format",
+            "properties": {
+              "id": {
+                "title": "Id",
+                "type": "string"
+              },
+              "date": {
+                "format": "date-time",
+                "title": "Date",
+                "type": "string"
+              },
+              "message_type": {
+                "const": "system_message",
+                "default": "system_message",
+                "enum": ["system_message"],
+                "title": "Message Type",
+                "type": "string"
+              },
+              "message": {
+                "title": "Message",
+                "type": "string"
+              }
+            },
+            "required": ["id", "date", "message"],
+            "title": "SystemMessage",
+            "type": "object"
+          },
+          "ToolCall": {
             "properties": {
               "name": {
                 "title": "Name",
@@ -7923,16 +7901,16 @@
                 "title": "Arguments",
                 "type": "string"
               },
-              "function_call_id": {
-                "title": "Function Call Id",
+              "tool_call_id": {
+                "title": "Tool Call Id",
                 "type": "string"
               }
             },
-            "required": ["name", "arguments", "function_call_id"],
-            "title": "FunctionCall",
+            "required": ["name", "arguments", "tool_call_id"],
+            "title": "ToolCall",
             "type": "object"
           },
-          "FunctionCallDelta": {
+          "ToolCallDelta": {
             "properties": {
               "name": {
                 "anyOf": [
@@ -7956,7 +7934,7 @@
                 ],
                 "title": "Arguments"
               },
-              "function_call_id": {
+              "tool_call_id": {
                 "anyOf": [
                   {
                     "type": "string"
@@ -7965,15 +7943,15 @@
                     "type": "null"
                   }
                 ],
-                "title": "Function Call Id"
+                "title": "Tool Call Id"
               }
             },
-            "required": ["name", "arguments", "function_call_id"],
-            "title": "FunctionCallDelta",
+            "required": ["name", "arguments", "tool_call_id"],
+            "title": "ToolCallDelta",
             "type": "object"
           },
-          "FunctionCallMessage": {
-            "description": "A message representing a request to call a function (generated by the LLM to trigger function execution).\n\nAttributes:\n    function_call (Union[FunctionCall, FunctionCallDelta]): The function call\n    id (str): The ID of the message\n    date (datetime): The date the message was created in ISO format",
+          "ToolCallMessage": {
+            "description": "A message representing a request to call a tool (generated by the LLM to trigger tool execution).\n\nAttributes:\n    tool_call (Union[ToolCall, ToolCallDelta]): The tool call\n    id (str): The ID of the message\n    date (datetime): The date the message was created in ISO format",
             "properties": {
               "id": {
                 "title": "Id",
@@ -7985,30 +7963,30 @@
                 "type": "string"
               },
               "message_type": {
-                "const": "function_call",
-                "default": "function_call",
-                "enum": ["function_call"],
+                "const": "tool_call_message",
+                "default": "tool_call_message",
+                "enum": ["tool_call_message"],
                 "title": "Message Type",
                 "type": "string"
               },
-              "function_call": {
+              "tool_call": {
                 "anyOf": [
                   {
-                    "$ref": "#/components/schemas/LettaResponse/properties/FunctionCall"
+                    "$ref": "#/components/schemas/LettaResponse/properties/ToolCall"
                   },
                   {
-                    "$ref": "#/components/schemas/LettaResponse/properties/FunctionCallDelta"
+                    "$ref": "#/components/schemas/LettaResponse/properties/ToolCallDelta"
                   }
                 ],
-                "title": "Function Call"
+                "title": "Tool Call"
               }
             },
-            "required": ["id", "date", "function_call"],
-            "title": "FunctionCallMessage",
+            "required": ["id", "date", "tool_call"],
+            "title": "ToolCallMessage",
             "type": "object"
           },
-          "FunctionReturn": {
-            "description": "A message representing the return value of a function call (generated by Letta executing the requested function).\n\nAttributes:\n    function_return (str): The return value of the function\n    status (Literal[\"success\", \"error\"]): The status of the function call\n    id (str): The ID of the message\n    date (datetime): The date the message was created in ISO format\n    function_call_id (str): A unique identifier for the function call that generated this message\n    stdout (Optional[List(str)]): Captured stdout (e.g. prints, logs) from the function invocation\n    stderr (Optional[List(str)]): Captured stderr from the function invocation",
+          "ToolReturnMessage": {
+            "description": "A message representing the return value of a tool call (generated by Letta executing the requested tool).\n\nAttributes:\n    tool_return (str): The return value of the tool\n    status (Literal[\"success\", \"error\"]): The status of the tool call\n    id (str): The ID of the message\n    date (datetime): The date the message was created in ISO format\n    tool_call_id (str): A unique identifier for the tool call that generated this message\n    stdout (Optional[List(str)]): Captured stdout (e.g. prints, logs) from the tool invocation\n    stderr (Optional[List(str)]): Captured stderr from the tool invocation",
             "properties": {
               "id": {
                 "title": "Id",
@@ -8020,14 +7998,14 @@
                 "type": "string"
               },
               "message_type": {
-                "const": "function_return",
-                "default": "function_return",
-                "enum": ["function_return"],
+                "const": "tool_return_message",
+                "default": "tool_return_message",
+                "enum": ["tool_return_message"],
                 "title": "Message Type",
                 "type": "string"
               },
-              "function_return": {
-                "title": "Function Return",
+              "tool_return": {
+                "title": "Tool Return",
                 "type": "string"
               },
               "status": {
@@ -8035,8 +8013,8 @@
                 "title": "Status",
                 "type": "string"
               },
-              "function_call_id": {
-                "title": "Function Call Id",
+              "tool_call_id": {
+                "title": "Tool Call Id",
                 "type": "string"
               },
               "stdout": {
@@ -8070,101 +8048,8 @@
                 "title": "Stderr"
               }
             },
-            "required": [
-              "id",
-              "date",
-              "function_return",
-              "status",
-              "function_call_id"
-            ],
-            "title": "FunctionReturn",
-            "type": "object"
-          },
-          "InternalMonologue": {
-            "description": "Representation of an agent's internal monologue.\n\nAttributes:\n    internal_monologue (str): The internal monologue of the agent\n    id (str): The ID of the message\n    date (datetime): The date the message was created in ISO format",
-            "properties": {
-              "id": {
-                "title": "Id",
-                "type": "string"
-              },
-              "date": {
-                "format": "date-time",
-                "title": "Date",
-                "type": "string"
-              },
-              "message_type": {
-                "const": "internal_monologue",
-                "default": "internal_monologue",
-                "enum": ["internal_monologue"],
-                "title": "Message Type",
-                "type": "string"
-              },
-              "internal_monologue": {
-                "title": "Internal Monologue",
-                "type": "string"
-              }
-            },
-            "required": ["id", "date", "internal_monologue"],
-            "title": "InternalMonologue",
-            "type": "object"
-          },
-          "LettaUsageStatistics": {
-            "description": "Usage statistics for the agent interaction.\n\nAttributes:\n    completion_tokens (int): The number of tokens generated by the agent.\n    prompt_tokens (int): The number of tokens in the prompt.\n    total_tokens (int): The total number of tokens processed by the agent.\n    step_count (int): The number of steps taken by the agent.",
-            "properties": {
-              "completion_tokens": {
-                "default": 0,
-                "description": "The number of tokens generated by the agent.",
-                "title": "Completion Tokens",
-                "type": "integer"
-              },
-              "prompt_tokens": {
-                "default": 0,
-                "description": "The number of tokens in the prompt.",
-                "title": "Prompt Tokens",
-                "type": "integer"
-              },
-              "total_tokens": {
-                "default": 0,
-                "description": "The total number of tokens processed by the agent.",
-                "title": "Total Tokens",
-                "type": "integer"
-              },
-              "step_count": {
-                "default": 0,
-                "description": "The number of steps taken by the agent.",
-                "title": "Step Count",
-                "type": "integer"
-              }
-            },
-            "title": "LettaUsageStatistics",
-            "type": "object"
-          },
-          "SystemMessage": {
-            "description": "A message generated by the system. Never streamed back on a response, only used for cursor pagination.\n\nAttributes:\n    message (str): The message sent by the system\n    id (str): The ID of the message\n    date (datetime): The date the message was created in ISO format",
-            "properties": {
-              "id": {
-                "title": "Id",
-                "type": "string"
-              },
-              "date": {
-                "format": "date-time",
-                "title": "Date",
-                "type": "string"
-              },
-              "message_type": {
-                "const": "system_message",
-                "default": "system_message",
-                "enum": ["system_message"],
-                "title": "Message Type",
-                "type": "string"
-              },
-              "message": {
-                "title": "Message",
-                "type": "string"
-              }
-            },
-            "required": ["id", "date", "message"],
-            "title": "SystemMessage",
+            "required": ["id", "date", "tool_return", "status", "tool_call_id"],
+            "title": "ToolReturnMessage",
             "type": "object"
           },
           "UserMessage": {
@@ -8589,7 +8474,7 @@
             "type": "string",
             "title": "Name",
             "description": "The name of the organization.",
-            "default": "LivelyReindeer"
+            "default": "HappyZeppelin"
           },
           "created_at": {
             "anyOf": [
@@ -8784,6 +8669,34 @@
         "required": ["text", "embedding", "embedding_config"],
         "title": "Passage",
         "description": "Representation of a passage, which is stored in archival memory.\n\nParameters:\n    text (str): The text of the passage.\n    embedding (List[float]): The embedding of the passage.\n    embedding_config (EmbeddingConfig): The embedding configuration used by the passage.\n    created_at (datetime): The creation date of the passage.\n    user_id (str): The unique identifier of the user associated with the passage.\n    agent_id (str): The unique identifier of the agent associated with the passage.\n    source_id (str): The data source of the passage.\n    file_id (str): The unique identifier of the file associated with the passage."
+      },
+      "ReasoningMessage": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "date": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Date"
+          },
+          "message_type": {
+            "type": "string",
+            "enum": ["reasoning_message"],
+            "const": "reasoning_message",
+            "title": "Message Type",
+            "default": "reasoning_message"
+          },
+          "reasoning": {
+            "type": "string",
+            "title": "Reasoning"
+          }
+        },
+        "type": "object",
+        "required": ["id", "date", "reasoning"],
+        "title": "ReasoningMessage",
+        "description": "Representation of an agent's internal reasoning.\n\nAttributes:\n    reasoning (str): The internal reasoning of the agent\n    id (str): The ID of the message\n    date (datetime): The date the message was created in ISO format"
       },
       "RecallMemorySummary": {
         "properties": {
@@ -9422,6 +9335,46 @@
         "required": ["function"],
         "title": "Tool"
       },
+      "ToolCallDelta": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "arguments": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Arguments"
+          },
+          "tool_call_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tool Call Id"
+          }
+        },
+        "type": "object",
+        "required": ["name", "arguments", "tool_call_id"],
+        "title": "ToolCallDelta"
+      },
       "ToolCallFunction-Output": {
         "properties": {
           "name": {
@@ -9438,6 +9391,41 @@
         "type": "object",
         "required": ["name", "arguments"],
         "title": "ToolCallFunction"
+      },
+      "ToolCallMessage": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "date": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Date"
+          },
+          "message_type": {
+            "type": "string",
+            "enum": ["tool_call_message"],
+            "const": "tool_call_message",
+            "title": "Message Type",
+            "default": "tool_call_message"
+          },
+          "tool_call": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/letta__schemas__letta_message__ToolCall"
+              },
+              {
+                "$ref": "#/components/schemas/ToolCallDelta"
+              }
+            ],
+            "title": "Tool Call"
+          }
+        },
+        "type": "object",
+        "required": ["id", "date", "tool_call"],
+        "title": "ToolCallMessage",
+        "description": "A message representing a request to call a tool (generated by the LLM to trigger tool execution).\n\nAttributes:\n    tool_call (Union[ToolCall, ToolCallDelta]): The tool call\n    id (str): The ID of the message\n    date (datetime): The date the message was created in ISO format"
       },
       "ToolCreate": {
         "properties": {
@@ -9558,12 +9546,78 @@
         "required": ["content", "tool_call_id"],
         "title": "ToolMessage"
       },
+      "ToolReturnMessage": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "date": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Date"
+          },
+          "message_type": {
+            "type": "string",
+            "enum": ["tool_return_message"],
+            "const": "tool_return_message",
+            "title": "Message Type",
+            "default": "tool_return_message"
+          },
+          "tool_return": {
+            "type": "string",
+            "title": "Tool Return"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["success", "error"],
+            "title": "Status"
+          },
+          "tool_call_id": {
+            "type": "string",
+            "title": "Tool Call Id"
+          },
+          "stdout": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stdout"
+          },
+          "stderr": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stderr"
+          }
+        },
+        "type": "object",
+        "required": ["id", "date", "tool_return", "status", "tool_call_id"],
+        "title": "ToolReturnMessage",
+        "description": "A message representing the return value of a tool call (generated by Letta executing the requested tool).\n\nAttributes:\n    tool_return (str): The return value of the tool\n    status (Literal[\"success\", \"error\"]): The status of the tool call\n    id (str): The ID of the message\n    date (datetime): The date the message was created in ISO format\n    tool_call_id (str): A unique identifier for the tool call that generated this message\n    stdout (Optional[List(str)]): Captured stdout (e.g. prints, logs) from the tool invocation\n    stderr (Optional[List(str)]): Captured stderr from the tool invocation"
+      },
       "ToolRuleType": {
         "type": "string",
         "enum": [
           "InitToolRule",
           "TerminalToolRule",
           "continue_loop",
+          "conditional",
           "ToolRule",
           "require_parent_tools"
         ],
@@ -9804,6 +9858,9 @@
                     },
                     {
                       "$ref": "#/components/schemas/TerminalToolRule"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ConditionalToolRule"
                     }
                   ]
                 },
@@ -10117,7 +10174,7 @@
         "required": ["loc", "msg", "type"],
         "title": "ValidationError"
       },
-      "letta__schemas__letta_message__FunctionCall": {
+      "letta__schemas__letta_message__ToolCall": {
         "properties": {
           "name": {
             "type": "string",
@@ -10127,14 +10184,14 @@
             "type": "string",
             "title": "Arguments"
           },
-          "function_call_id": {
+          "tool_call_id": {
             "type": "string",
-            "title": "Function Call Id"
+            "title": "Tool Call Id"
           }
         },
         "type": "object",
-        "required": ["name", "arguments", "function_call_id"],
-        "title": "FunctionCall"
+        "required": ["name", "arguments", "tool_call_id"],
+        "title": "ToolCall"
       },
       "letta__schemas__message__Message": {
         "properties": {
@@ -10339,21 +10396,6 @@
         "required": ["name", "arguments"],
         "title": "ToolCallFunction"
       },
-      "letta__schemas__openai__chat_completion_response__FunctionCall": {
-        "properties": {
-          "arguments": {
-            "type": "string",
-            "title": "Arguments"
-          },
-          "name": {
-            "type": "string",
-            "title": "Name"
-          }
-        },
-        "type": "object",
-        "required": ["arguments", "name"],
-        "title": "FunctionCall"
-      },
       "letta__schemas__openai__chat_completion_response__Message": {
         "properties": {
           "content": {
@@ -10388,7 +10430,7 @@
           "function_call": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/letta__schemas__openai__chat_completion_response__FunctionCall"
+                "$ref": "#/components/schemas/FunctionCall-Output"
               },
               {
                 "type": "null"
@@ -10414,7 +10456,7 @@
             "default": "function"
           },
           "function": {
-            "$ref": "#/components/schemas/letta__schemas__openai__chat_completion_response__FunctionCall"
+            "$ref": "#/components/schemas/FunctionCall-Output"
           }
         },
         "type": "object",

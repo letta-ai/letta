@@ -4,7 +4,7 @@ import {
   DashboardWithSidebarWrapper,
   LettaInvaderOutlineIcon,
   SpaceDashboardIcon,
-  TabGroupIcon,
+  TemplateIcon,
   InstantMixIcon,
   SidebarTitle,
   HStack,
@@ -49,7 +49,7 @@ export function ProjectLayoutInner(props: ProjectLayoutInnerProps) {
         },
         {
           id: 'templates',
-          icon: <TabGroupIcon />,
+          icon: <TemplateIcon />,
           label: t('nav.templates'),
           href: `/projects/${projectSlug}/templates`,
         },

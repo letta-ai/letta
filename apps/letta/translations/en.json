@@ -491,22 +491,27 @@
       "subtitle": "Get started with these quick actions",
       "title": "Quick Actions",
       "createTemplate": {
-        "title": "New template",
-        "description": "Create a new agent template to define the structure of agents you deploy in your project.",
-        "cta": "Create template"
+        "title": "Create a new agent template",
+        "description": "Create a template from an existing template, or start from scratch"
+      },
+      "viewTemplates": {
+        "title": "View all agent templates",
+        "description": "Templates are used to define the structure of agents you deploy"
       },
       "monitorAgents": {
-        "title": "Monitor agents",
-        "description": "View and manage all agents deployed in your project.",
-        "cta": "View agents"
+        "title": "View deployed agents",
+        "description": "View and manage all agents deployed in your project."
       }
     },
     "agentTemplatesList": {
+      "updatedAt": "You last edited this template at {date}",
       "emptyMessage": "You have no templates in this project",
-      "createAgentTemplate": "New agent template"
+      "createAgentTemplate": "New agent template",
+      "badge": "Template"
     },
     "agentTemplatesSection": {
-      "title": "Recent templates",
+      "title": "Recent activity",
+      "subtitle": "Pick up where you left off",
       "createAgentTemplate": "New agent template"
     }
   },
@@ -695,10 +700,10 @@
     "error": "There was an error while updating the model, please try again or contact support."
   },
   "components/Messages": {
-    "thoughts": "Thoughts",
+    "reasoning": "Reasoning",
     "loadingMessages": "Fetching messages...",
-    "functionReturn": "Function response",
-    "internalMonologue": "Internal monologue",
+    "toolReturn": "Tool response",
+    "reasoningMessage": "Reasoning",
     "hiddenUserMessage": "Internal user message",
     "noParsableMessages": "There are no messages available in this view, usually this is caused by a lack of triggered send_message actions in your agent, check the debug more to verify."
   },
@@ -866,18 +871,83 @@
     "lastUpdated": "Last updated on {date}",
     "updating": "Updating..."
   },
+  "projects/(projectSlug)/agents/page/DeployAgentDialog": {
+    "SelectedTemplateState": {
+      "readying": "Readying template for agent deployment...",
+      "title": "Configure Agent",
+      "description": "This template contains variables that need to be set before deploying the agent",
+      "create": "Create Agent",
+      "return": "Go back",
+      "inputLabel": "Set {variableName}",
+      "inputPlaceholder": "my-variable-value"
+    },
+    "FromStarterKit": {
+      "title": "Starter kits",
+      "description": "Choose from a starter pack and customize it in the ADE, or start from scratch"
+    },
+    "loading": "Creating agent...",
+    "title": "Create an Agent",
+    "trigger": "Create a new agent",
+    "error": "There was an error creating the agent, please try again or contact support.",
+    "DeployFromTemplate": {
+      "noItems": "The best way to get started is to create an agent from a template, visit the templates page to get started.",
+      "notFound": "No templates found that match your search",
+      "searchPlaceholder": "Search templates",
+      "title": "From an existing template",
+      "description": "Choose a template to deploy as an agent",
+      "items": {
+        "version": "Version: {version}",
+        "noDescription": "No description provided"
+      }
+    }
+  },
   "projects/(projectSlug)/agents/page": {
+    "useQueryDefinition": {
+      "agentTemplate": {
+        "name": "Agent Template",
+        "operator": {
+          "operators": {
+            "equals": "equals",
+            "notEquals": "does not equal"
+          },
+          "label": "Operator"
+        },
+        "value": {
+          "label": "Value",
+          "placeholder": "my-template-name"
+        }
+      },
+      "agentName": {
+        "name": "Agent Name",
+        "operator": {
+          "operators": {
+            "equals": "equals",
+            "contains": "contains",
+            "notEquals": "not"
+          },
+          "label": "Operator"
+        },
+        "value": {
+          "label": "Value",
+          "placeholder": "my-agent-name"
+        }
+      }
+    },
     "table": {
+      "copyId": "Copy id",
       "columns": {
         "id": "ID",
         "name": "Name",
-        "lastActive": "Last Active"
+        "actions": "Actions",
+        "lastUpdatedAt": "Last Updated At"
       },
+      "openInADE": "Open in ADE",
+      "preview": "Preview",
       "emptyMessage": "No agents deployed.",
       "noResults": "No agents found",
       "deployAction": "Deploy Agent",
       "searching": "Searching agents...",
-      "loading": "Loading agents..."
+      "loading": "Searching agents..."
     },
     "anyVersion": "(Any Version)",
     "searchDropdown": {
@@ -885,8 +955,8 @@
       "placeholder": "Template version"
     },
     "search": {
-      "placeholder": "Search agents by name",
-      "label": "agent-name"
+      "button": "Search agents",
+      "label": "Search agents"
     },
     "latestMessages": "Latest Messages",
     "openInADE": "Open in ADE",
@@ -1006,7 +1076,7 @@
     "errorResponse": "Error response",
     "dismiss": "Dismiss"
   },
-  "development-servers/agents/new/page": {
+  "development-servers/agents/CreateAgentDialog": {
     "serverOffline": "Your server is offline, please start it to create a new agent.",
     "serverOfflineConnect": "Turn on your server with the command below:",
     "isFetchingStatus": "Sorry, we are still attempting to connect to your server. Please wait a moment.",
@@ -1018,7 +1088,8 @@
       "descriptionRemote": "This will create an agent on the remote server. This will not deploy the agent to Letta Cloud."
     },
     "error": "There was an error creating the agent, below is the error message, please try again or contact support.",
-    "loading": "Creating agent...",
+    "creating": "Creating agent...",
+    "loading": "Booting up...",
     "starterKits": {
       "title": "Starter kits",
       "description": "Choose from a starter pack and customize it in the ADE, or start from scratch"
@@ -1399,8 +1470,16 @@
       "description": "Letta Cloud allows you to deploy agents at scale with zero infrastructure.",
       "cta": "Get early access"
     },
+    "CreateTemplateButton": {
+      "error": "There was an error converting this agent to a template, please try again or contact support.",
+      "trigger": "Create Template",
+      "title": "Convert your agent to a template",
+      "description": "Agent templates allow you to create common starting points that new agents can fork from. Templates csupport memory variables and can be versioned.",
+      "cta": "Convert to template"
+    },
     "DeploymentButton": {
       "version": "VERSION {version}",
+
       "readyToDeploy": {
         "trigger": "Template v{version}",
         "triggerNoVersion": "Template",
@@ -1537,7 +1616,7 @@
   "login/LoginComponent": {
     "title": "Sign in to Letta Cloud",
     "google": "Continue with Google",
-    "github": "Continue with Github",
+    "github": "Continue with GitHub",
     "terms": "By clicking the button above, you agree to our <terms>Terms of Service</terms> and <privacy>Privacy Policy</privacy>."
   },
   "data-sources/layout": {

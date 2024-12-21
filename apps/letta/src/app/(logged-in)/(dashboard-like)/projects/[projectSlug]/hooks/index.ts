@@ -4,7 +4,7 @@ import { webApi, webApiQueryKeys } from '$letta/client';
 import type { PartialProjectType } from '$letta/web-api/contracts';
 import { useTranslations } from 'next-intl';
 
-export const REMOTE_DEVELOPMENT_ID = 'remote-development';
+export const REMOTE_DEVELOPMENT_ID = '__remote-development';
 
 export function useCurrentProject(): PartialProjectType {
   const projectSlug = useParams<{ projectSlug: string }>().projectSlug;
