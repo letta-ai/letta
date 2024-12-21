@@ -22,7 +22,7 @@ groups:
         version: 0.44.0
         output:
           location: npm
-          package-name: "letta"
+          package-name: "@letta-ai/letta-client"
           token: ${NPM_TOKEN}
         github:
           repository: "letta-ai/letta-node"
