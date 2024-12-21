@@ -306,15 +306,15 @@ function SelectedTemplateState(props: SelectedTemplateStateProps) {
         title={t('SelectedTemplateState.title')}
         description={t('SelectedTemplateState.description')}
       >
-        <VStack paddingBottom>
+        <VStack paddingBottom flex fullHeight>
           <Form
             onSubmit={(e) => {
               e.preventDefault();
               handleCreateAgent();
             }}
           >
-            <VStack gap="form">
-              <VStack flex>
+            <VStack flex fullHeight gap="form">
+              <VStack fullHeight flex>
                 {variablesInTemplate.map((variable) => (
                   <HStack border fullWidth align="center" key={variable}>
                     <HStack paddingX="small" fullWidth borderRight>
@@ -439,7 +439,7 @@ export function DeployAgentDialog() {
         <Button label={t('trigger')} preIcon={<PlusIcon />} color="secondary" />
       }
     >
-      <div className="min-h-[60vh]">{view}</div>
+      <div className="min-h-[60vh] h-full flex flex-col">{view}</div>
     </Dialog>
   );
 }
