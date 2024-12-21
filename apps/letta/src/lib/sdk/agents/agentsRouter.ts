@@ -19,7 +19,7 @@ import {
   organizationPreferences,
 } from '@letta-web/database';
 import { createProject } from '$letta/web-api/router';
-import { and, asc, desc, eq, isNull, like, ne } from 'drizzle-orm';
+import { and, asc, desc, eq, isNull, like, ne, or } from 'drizzle-orm';
 import { findUniqueAgentTemplateName } from '$letta/server';
 
 import type { OrderByValuesEnumType } from '$letta/sdk/agents/agentsContract';
@@ -1373,8 +1373,15 @@ async function searchDeployedAgents(
   req: SearchDeployedAgentsRequest,
   context: SDKContext
 ): Promise<SearchDeployedAgentsResponse> {
-  const { search, limit = 5, offset } = req.body;
+  const {
+    search = [],
+    combinator = 'AND',
+    project_id,
+    limit = 5,
+    offset,
+  } = req.body;
 
+  const combinatorFunction = combinator === 'AND' ? and : or;
   const where = [
     eq(deployedAgents.organizationId, context.request.organizationId),
   ];
@@ -1407,10 +1414,14 @@ async function searchDeployedAgents(
         return;
       }
 
-      if (searchTerm.field === 'project_id') {
-        const operator = searchTerm.operator === 'eq' ? eq : ne;
-
-        where.push(operator(deployedAgents.projectId, searchTerm.value));
+      if (searchTerm.field === 'name') {
+        if (searchTerm.operator === 'eq') {
+          where.push(eq(deployedAgents.key, searchTerm.value));
+        } else if (searchTerm.operator === 'neq') {
+          where.push(ne(deployedAgents.key, searchTerm.value));
+        } else if (searchTerm.operator === 'contains') {
+          where.push(like(deployedAgents.key, `%${searchTerm.value || ''}%`));
+        }
       }
 
       if (searchTerm.field === 'version') {
@@ -1446,10 +1457,7 @@ async function searchDeployedAgents(
         }
 
         where.push(
-          eq(
-            deployedAgents.deployedAgentTemplateId,
-            deployedAgentTemplate.version
-          )
+          eq(deployedAgents.deployedAgentTemplateId, deployedAgentTemplate.id)
         );
 
         return;
@@ -1458,12 +1466,24 @@ async function searchDeployedAgents(
   );
 
   const query = await db.query.deployedAgents.findMany({
-    where: and(...where),
-    limit,
+    where: and(
+      combinatorFunction(...where),
+      eq(deployedAgents.organizationId, context.request.organizationId),
+      isNull(deployedAgents.deletedAt),
+      ...(project_id ? [eq(deployedAgents.projectId, project_id)] : [])
+    ),
+    limit: limit + 1,
     offset,
     orderBy,
     with: {
       deployedAgentTemplate: {
+        with: {
+          agentTemplate: {
+            columns: {
+              name: true,
+            },
+          },
+        },
         columns: {
           version: true,
         },
@@ -1472,7 +1492,7 @@ async function searchDeployedAgents(
   });
 
   const allAgentsDetails = await Promise.all(
-    query.map(async (agent) => {
+    query.slice(0, limit).map(async (agent) => {
       return AgentsService.getAgent(
         {
           agentId: agent.id,
@@ -1483,7 +1503,11 @@ async function searchDeployedAgents(
       ).then((response) => {
         return prepareAgentForUser(response, {
           agentName: agent.key,
-          version: agent.deployedAgentTemplate?.version,
+          version: agent.deployedAgentTemplate?.version
+            ? `${
+                agent.deployedAgentTemplate?.agentTemplate?.name || 'unknown'
+              }:${agent.deployedAgentTemplate?.version}`
+            : '',
         });
       });
     })
@@ -1493,6 +1517,7 @@ async function searchDeployedAgents(
     status: 200,
     body: {
       agents: allAgentsDetails,
+      hasNextPage: query.length > limit,
     },
   };
 }

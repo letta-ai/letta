@@ -305,10 +305,10 @@ const SearchByAgentVersionSchema = z.object({
   value: z.string(),
 });
 
-const SearchByProjectIdSchema = z.object({
-  field: z.literal('project_id'),
+const SearchByAgentName = z.object({
+  field: z.literal('name'),
+  operator: z.enum(['eq', 'neq', 'contains']),
   value: z.string(),
-  operator: z.enum(['eq', 'ne']),
 });
 
 export const OrderByValuesEnum = z.enum(['created_at', 'updated_at']);
@@ -321,20 +321,21 @@ const OrderBySchema = z.object({
   direction: z.enum(['asc', 'desc']),
 });
 
-const SearchDeployedAgentsSchema = z.object({
-  search: z.array(
-    z.union([
-      SearchByAgentVersionSchema,
-      SearchByProjectIdSchema,
-      OrderBySchema,
-    ])
-  ),
+export const SearchDeployedAgentsSchema = z.object({
+  search: z
+    .array(
+      z.union([SearchByAgentVersionSchema, SearchByAgentName, OrderBySchema])
+    )
+    .optional(),
+  project_id: z.string().optional(),
+  combinator: z.enum(['AND', 'OR']).optional(),
   limit: z.number().optional(),
   offset: z.number().optional(),
 });
 
 const SearchDeployedAgentsResponseSchema = c.type<{
   agents: ModifiedAgentState[];
+  hasNextPage: boolean;
 }>();
 
 const searchDeployedAgentsContract = c.mutation({
@@ -385,4 +386,7 @@ export const agentsContract = c.router({
 export const agentsQueryKeys = {
   listAgentsWithSearch: (query: ListAgentsQuery) => ['agents', query],
   getAgentById: (agentId: string) => ['agents', agentId],
+  searchDeployedAgents: (
+    options: z.infer<typeof SearchDeployedAgentsSchema>
+  ) => ['agents', options],
 };
