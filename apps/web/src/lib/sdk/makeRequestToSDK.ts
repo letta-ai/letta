@@ -27,6 +27,7 @@ const usageDetails: ToZod<LettaResponse['LettaUsageStatistics']> = z
     prompt_tokens: z.number().optional(),
     total_tokens: z.number().optional(),
     step_count: z.number().optional(),
+    message_type: z.literal('usage_statistics'),
   })
   .optional();
 

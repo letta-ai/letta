@@ -132,6 +132,8 @@ const frameVariants = cva('', {
       medium: 'pb-3',
       large: 'pb-4',
       true: 'pb-5',
+      xlarge: 'pb-6',
+      xxlarge: 'pb-8',
     },
     paddingLeft: {
       small: 'pl-2.5',

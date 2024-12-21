@@ -5,7 +5,7 @@ import {
   DashboardPageLayout,
   DashboardPageSection,
   HStack,
-  LettaInvaderIcon,
+  LettaInvaderOutlineIcon,
   NiceGridDisplay,
   PlusIcon,
   TemplateIcon,
@@ -124,7 +124,7 @@ function QuickActions() {
               justify="center"
               color="background-grey"
             >
-              <LettaInvaderIcon color="primary" size="xxlarge" />
+              <LettaInvaderOutlineIcon color="primary" size="xxlarge" />
             </VStack>
           }
           title={t('QuickActions.monitorAgents.title')}
@@ -158,7 +158,7 @@ function QuickActions() {
                   justify="center"
                   color="background-grey"
                 >
-                  <PlusIcon color="muted" size="xxlarge" />
+                  <PlusIcon color="primary" size="xxlarge" />
                 </VStack>
               }
               title={t('QuickActions.createTemplate.title')}

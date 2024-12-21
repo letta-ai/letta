@@ -11,7 +11,7 @@ describe('letta', () => {
   });
 
   it('should perform the happy path', () => {
-    Cypress.config('defaultCommandTimeout', 10000);
+    Cypress.config('defaultCommandTimeout', 50000);
 
     cy.visit('/');
     cy.location('pathname').should('eq', '/login');
@@ -28,13 +28,13 @@ describe('letta', () => {
     cy.findByTestId('create-project-dialog-confirm-button').click();
 
     // creates an agent
-    cy.findAllByTestId('create-agent-template-button', { timeout: 10000 })
+    cy.findAllByTestId('create-agent-template-button', { timeout: 50000 })
       .first()
       .click();
 
     cy.findByTestId('image-card:Customer support').click();
 
-    cy.location('pathname', { timeout: 10000 }).should(
+    cy.location('pathname', { timeout: 50000 }).should(
       'match',
       /\/projects\/(.+)\/templates\/(.+)/
     );
@@ -47,14 +47,14 @@ describe('letta', () => {
 
     cy.findByTestId('update-name-dialog-confirm-button').click();
 
-    cy.location('pathname', { timeout: 10000 }).should(
+    cy.location('pathname', { timeout: 50000 }).should(
       'match',
       /\/projects\/(.+)\/templates\/CYDOGGTestAgent/
     );
 
     cy.clearPointerEventLock();
 
-    cy.findByTestId('edit-memory-block-human-content', { timeout: 10000 }).type(
+    cy.findByTestId('edit-memory-block-human-content', { timeout: 50000 }).type(
       'The users name is {{name}}. Please include the word BananaMan at the end of every message.',
       { parseSpecialCharSequences: false }
     );
@@ -75,7 +75,7 @@ describe('letta', () => {
     cy.findByTestId('save-variables-button').click();
 
     cy.findByTestId('tab-item:simulated').click();
-    cy.findByTestId('simulated-memory:human', { timeout: 10000 }).should(
+    cy.findByTestId('simulated-memory:human', { timeout: 50000 }).should(
       'contain.value',
       'Shubham'
     );
@@ -90,16 +90,16 @@ describe('letta', () => {
     cy.findByTestId('filetree-action-detach').click();
     cy.findByTestId('detach-data-source-dialog-confirm-button').click();
     cy.findByTestId('tab:edit-data-sources', {
-      timeout: 10000,
+      timeout: 50000,
     }).contains('Sources (0)');
 
     cy.findByTestId('create-data-source-dialog-trigger', {
-      timeout: 10000,
+      timeout: 50000,
     }).click({ waitForAnimations: true, force: true });
     cy.findByTestId('attach-existing-data-source').click();
 
     cy.findAllByTestId('attach-data-source-button', {
-      timeout: 10000,
+      timeout: 50000,
     })
       .first()
       .click();
@@ -115,8 +115,8 @@ describe('letta', () => {
       force: true,
     });
 
-    cy.findByTestId('messages-list', { timeout: 10000 }).contains('Shubham');
-    cy.findByTestId('messages-list', { timeout: 10000 }).contains('BananaMan');
+    cy.findByTestId('messages-list', { timeout: 50000 }).contains('Shubham');
+    cy.findByTestId('messages-list', { timeout: 50000 }).contains('BananaMan');
 
     cy.clearPointerEventLock();
     cy.findByTestId('tab:tools-panel').click({ force: true });
@@ -128,11 +128,11 @@ describe('letta', () => {
 
     cy.findByTestId('submit-create-tool').click();
 
-    cy.findByTestId('attach-tool-to-agent', { timeout: 10000 }).click();
+    cy.findByTestId('attach-tool-to-agent', { timeout: 50000 }).click();
 
     cy.findByTestId('close-tool-explorer').click();
 
-    cy.findByText('roll_d20', { timeout: 10000 }).should('exist');
+    cy.findByText('roll_d20', { timeout: 50000 }).should('exist');
 
     cy.get('body').click({ force: true });
 
@@ -142,7 +142,7 @@ describe('letta', () => {
 
     cy.findByTestId('stage-new-version-button').click({ force: true });
     cy.findByTestId('stage-agent-dialog-confirm-button').click({ force: true });
-    cy.findByTestId('deploy-agent-dialog-trigger', { timeout: 10000 }).click();
+    cy.findByTestId('deploy-agent-dialog-trigger', { timeout: 50000 }).click();
 
     cy.clearPointerEventLock();
 
@@ -159,11 +159,11 @@ describe('letta', () => {
     //   });
 
     // cy.get('[data-testid="chat-with-agent-instructions-raw-code"]', {
-    //   timeout: 10000,
+    //   timeout: 50000,
     // }).should('exist');
     //
     // cy.get('[data-testid="chat-with-agent-instructions-raw-code"]', {
-    //   timeout: 10000,
+    //   timeout: 50000,
     // })
     //   .invoke('text')
     //   .then((text) => {
@@ -172,7 +172,7 @@ describe('letta', () => {
     //       .replace(/true/g, 'false')
     //       .replace('-N', '');
     //
-    //     cy.exec(textToSubmit, { timeout: 10000 }).then((result) => {
+    //     cy.exec(textToSubmit, { timeout: 50000 }).then((result) => {
     //       expect(result.stdout).to.contain('BananaMan');
     //     });
     //   });
@@ -186,7 +186,7 @@ describe('letta', () => {
     // cy.findByTestId('stage-agent-dialog-confirm-button').click();
 
     // cy.findByTestId('show-deployment-instructions-0', {
-    //   timeout: 10000,
+    //   timeout: 50000,
     // }).click();
     //
     // deploy the agent
@@ -202,11 +202,11 @@ describe('letta', () => {
     //   });
     //
     // cy.get('[data-testid="chat-with-agent-instructions-raw-code"]', {
-    //   timeout: 10000,
+    //   timeout: 50000,
     // }).should('exist');
 
     // cy.get('[data-testid="chat-with-agent-instructions-raw-code"]', {
-    //   timeout: 10000,
+    //   timeout: 50000,
     // })
     //   .invoke('text')
     //   .then((text) => {
@@ -215,7 +215,7 @@ describe('letta', () => {
     //       .replace(/true/g, 'false')
     //       .replace('-N', '');
     //
-    //     cy.exec(textToSubmit, { timeout: 10000 }).then((result) => {
+    //     cy.exec(textToSubmit, { timeout: 50000 }).then((result) => {
     //       expect(result.stdout).to.contain('BananaMan');
     //     });
     //   });

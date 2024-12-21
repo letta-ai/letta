@@ -8052,6 +8052,33 @@
             "title": "ToolReturnMessage",
             "type": "object"
           },
+          "UsageMessage": {
+            "description": "A message representint the usage statistics for the agent interaction.\n\nAttributes:\n    usage (LettaUsageStatistics): Usage statistics for the agent interaction.",
+            "properties": {
+              "id": {
+                "title": "Id",
+                "type": "string"
+              },
+              "date": {
+                "format": "date-time",
+                "title": "Date",
+                "type": "string"
+              },
+              "message_type": {
+                "const": "usage_message",
+                "default": "usage_message",
+                "enum": ["usage_message"],
+                "title": "Message Type",
+                "type": "string"
+              },
+              "usage": {
+                "$ref": "#/components/schemas/LettaResponse/properties/LettaUsageStatistics"
+              }
+            },
+            "required": ["id", "date", "usage"],
+            "title": "UsageMessage",
+            "type": "object"
+          },
           "UserMessage": {
             "description": "A message sent by the user. Never streamed back on a response, only used for cursor pagination.\n\nAttributes:\n    message (str): The message sent by the user\n    id (str): The ID of the message\n    date (datetime): The date the message was created in ISO format",
             "properties": {
@@ -8474,7 +8501,7 @@
             "type": "string",
             "title": "Name",
             "description": "The name of the organization.",
-            "default": "HappyZeppelin"
+            "default": "GratefulBalloon"
           },
           "created_at": {
             "anyOf": [
@@ -9937,6 +9964,33 @@
         },
         "type": "object",
         "title": "UpdateAgent"
+      },
+      "UsageMessage": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "date": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Date"
+          },
+          "message_type": {
+            "type": "string",
+            "enum": ["usage_message"],
+            "const": "usage_message",
+            "title": "Message Type",
+            "default": "usage_message"
+          },
+          "usage": {
+            "$ref": "#/components/schemas/LettaUsageStatistics"
+          }
+        },
+        "type": "object",
+        "required": ["id", "date", "usage"],
+        "title": "UsageMessage",
+        "description": "A message representint the usage statistics for the agent interaction.\n\nAttributes:\n    usage (LettaUsageStatistics): Usage statistics for the agent interaction."
       },
       "UsageStatistics": {
         "properties": {

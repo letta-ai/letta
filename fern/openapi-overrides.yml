@@ -169,17 +169,6 @@ paths:
         - agents
         - memory
       x-fern-sdk-method-name: get
-    patch:
-      x-fern-sdk-group-name:
-        - agents
-        - memory
-      x-fern-sdk-method-name: update
-  /v1/agents/{agent_id}/memory/label:
-    patch:
-      x-fern-sdk-group-name:
-        - agents
-        - memory
-      x-fern-sdk-method-name: updateLabel
   /v1/agents/{agent_id}/memory/block:
     post:
       x-fern-sdk-group-name:
@@ -192,12 +181,6 @@ paths:
         - agents
         - memory_blocks
       x-fern-sdk-method-name: remove
-  /v1/agents/{agent_id}/memory/limit:
-    patch:
-      x-fern-sdk-group-name:
-        - agents
-        - memory
-      x-fern-sdk-method-name: updateLimit
   /v1/agents/{agent_id}/memory/recall:
     get:
       x-fern-sdk-group-name:
@@ -261,9 +244,9 @@ paths:
                   oneOf: 
                     - "$ref": "#/components/schemas/SystemMessage-Output"
                     - "$ref": "#/components/schemas/UserMessage-Output"
-                    - "$ref": "#/components/schemas/InternalMonologue"
-                    - "$ref": "#/components/schemas/FunctionCallMessage"
-                    - "$ref": "#/components/schemas/FunctionReturn"
+                    - "$ref": "#/components/schemas/ReasoningMessage"
+                    - "$ref": "#/components/schemas/ToolCallMessage"
+                    - "$ref": "#/components/schemas/ToolReturnMessage"
                     - "$ref": "#/components/schemas/AssistantMessage-Output"
                     - "$ref": "#/components/schemas/LettaUsageStatistics"
   /v1/models/:
