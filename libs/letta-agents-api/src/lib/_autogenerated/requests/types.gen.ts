@@ -1201,6 +1201,18 @@ export type LettaResponse = {
     stderr?: Array<string> | null;
   };
   /**
+   * A message representint the usage statistics for the agent interaction.
+   *
+   * Attributes:
+   * usage (LettaUsageStatistics): Usage statistics for the agent interaction.
+   */
+  UsageMessage?: {
+    id: string;
+    date: string;
+    message_type?: 'usage_message';
+    usage: LettaResponse['LettaUsageStatistics'];
+  };
+  /**
    * A message sent by the user. Never streamed back on a response, only used for cursor pagination.
    *
    * Attributes:
@@ -2029,6 +2041,21 @@ export type UpdateAgent = {
   } | null;
 };
 
+/**
+ * A message representint the usage statistics for the agent interaction.
+ *
+ * Attributes:
+ * usage (LettaUsageStatistics): Usage statistics for the agent interaction.
+ */
+export type UsageMessage = {
+  id: string;
+  date: string;
+  message_type?: 'usage_message';
+  usage: LettaUsageStatistics;
+};
+
+export type message_type6 = 'usage_message';
+
 export type UsageStatistics = {
   completion_tokens?: number;
   prompt_tokens?: number;
@@ -2102,7 +2129,7 @@ export type UserMessage_Output = {
   message: string;
 };
 
-export type message_type6 = 'user_message';
+export type message_type7 = 'user_message';
 
 export type UserUpdate = {
   /**
