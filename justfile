@@ -30,18 +30,18 @@ configure-kubectl:
     gcloud container clusters get-credentials letta --region {{REGION}} --project {{PROJECT_NAME}}
 
 # Build the web Docker image
-build-web:
+build-web-ui:
     npm run slack-bot-says "Building web Docker image with tag: {{TAG}}..."
     @echo "🚧 Building web Docker image with tag: {{TAG}}..."
     SENTRY_AUTH_TOKEN=$SENTRY_AUTH_TOKEN docker buildx build --platform linux/amd64 --target web -t {{DOCKER_REGISTRY}}/web:{{TAG}} . --load --secret id=SENTRY_AUTH_TOKEN
 
 # Build the migrations Docker image
-build-migrations:
+build-web-migrations:
     @echo "🚧 Building migrations Docker image with tag: {{TAG}}..."
     docker buildx build --platform linux/amd64 --target migrations -t {{DOCKER_REGISTRY}}/web-migrations:{{TAG}} . --load
 
 # Build all Docker images synchronously
-build: build-web build-migrations
+build-web: build-web-ui build-web-migrations
     @echo "✅ All Docker images built successfully."
     npm run slack-bot-says "Docker image with tag: {{TAG}} built successfully."
 
@@ -52,7 +52,7 @@ push:
     docker push {{DOCKER_REGISTRY}}/web-migrations:{{TAG}}
 
 # Deploy the Helm chart
-deploy: push
+deploy-web: push
     @echo "🚧 Deploying Helm chart..."
     kubectl delete job {{HELM_CHART_NAME}}-migration --ignore-not-found
     npm run slack-bot-says "Deploying web service Helm chart with tag: {{TAG}}..."
