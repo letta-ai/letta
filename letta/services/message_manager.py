@@ -32,7 +32,7 @@ class MessageManager:
     def get_messages_by_ids(self, message_ids: List[str], actor: PydanticUser) -> List[PydanticMessage]:
         """Fetch messages by ID and return them in the requested order."""
         with self.session_maker() as session:
-            results = MessageModel.list(db_session=session, id=message_ids, organization_id=actor.organization_id)
+            results = MessageModel.list(db_session=session, id=message_ids, organization_id=actor.organization_id, limit=len(message_ids))
 
             if len(results) != len(message_ids):
                 raise NoResultFound(
