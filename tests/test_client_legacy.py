@@ -24,12 +24,12 @@ from letta.schemas.letta_message import (
     SystemMessage,
     ToolCallMessage,
     ToolReturnMessage,
+    UsageMessage,
     UserMessage,
 )
 from letta.schemas.letta_response import LettaResponse, LettaStreamingResponse
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import MessageCreate
-from letta.schemas.usage import LettaUsageStatistics
 from letta.services.helpers.agent_manager_helper import initialize_message_sequence
 from letta.services.organization_manager import OrganizationManager
 from letta.services.user_manager import UserManager
