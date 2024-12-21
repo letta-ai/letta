@@ -59,8 +59,8 @@ def _sse_post(url: str, data: dict, headers: dict) -> Generator[LettaStreamingRe
                             yield ToolCallMessage(**chunk_data)
                         elif "tool_return" in chunk_data:
                             yield ToolReturnMessage(**chunk_data)
-                        elif "usage" in chunk_data:
-                            yield LettaUsageStatistics(**chunk_data["usage"])
+                        elif "step_count" in chunk_data:
+                            yield LettaUsageStatistics(**chunk_data)
                         else:
                             raise ValueError(f"Unknown message type in chunk_data: {chunk_data}")
 
