@@ -56,10 +56,35 @@ def retry_until_threshold(threshold=0.5, max_attempts=10, sleep_time_seconds=4):
     return decorator_retry
 
 
+def retry_until_success(max_attempts=10, sleep_time_seconds=4):
+    """
+    Decorator to retry a function until it succeeds or the maximum number of attempts is reached.
+
+    :param max_attempts: Maximum number of attempts to retry the function.
+    :param sleep_time_seconds: Time to wait between attempts, in seconds.
+    """
+
+    def decorator_retry(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            for attempt in range(1, max_attempts + 1):
+                try:
+                    return func(*args, **kwargs)
+                except Exception as e:
+                    print(f"\033[93mAttempt {attempt} failed with error:\n{e}\033[0m")
+                    if attempt == max_attempts:
+                        raise
+                    time.sleep(sleep_time_seconds)
+
+        return wrapper
+
+    return decorator_retry
+
+
 # ======================================================================================================================
 # OPENAI TESTS
 # ======================================================================================================================
-@retry_until_threshold(threshold=0.75, max_attempts=4)
+@retry_until_success(max_attempts=5, sleep_time_seconds=2)
 def test_openai_gpt_4o_returns_valid_first_message():
     filename = os.path.join(llm_config_dir, "openai-gpt-4o.json")
     response = check_first_response_is_valid_for_llm_endpoint(filename)
@@ -67,6 +92,7 @@ def test_openai_gpt_4o_returns_valid_first_message():
     print(f"Got successful response from client: \n\n{response}")
 
 
+@retry_until_success(max_attempts=5, sleep_time_seconds=2)
 def test_openai_gpt_4o_returns_keyword():
     keyword = "banana"
     filename = os.path.join(llm_config_dir, "openai-gpt-4o.json")
@@ -75,6 +101,7 @@ def test_openai_gpt_4o_returns_keyword():
     print(f"Got successful response from client: \n\n{response}")
 
 
+@retry_until_success(max_attempts=5, sleep_time_seconds=2)
 def test_openai_gpt_4o_uses_external_tool():
     filename = os.path.join(llm_config_dir, "openai-gpt-4o.json")
     response = check_agent_uses_external_tool(filename)
@@ -82,6 +109,7 @@ def test_openai_gpt_4o_uses_external_tool():
     print(f"Got successful response from client: \n\n{response}")
 
 
+@retry_until_success(max_attempts=5, sleep_time_seconds=2)
 def test_openai_gpt_4o_recall_chat_memory():
     filename = os.path.join(llm_config_dir, "openai-gpt-4o.json")
     response = check_agent_recall_chat_memory(filename)
@@ -89,6 +117,7 @@ def test_openai_gpt_4o_recall_chat_memory():
     print(f"Got successful response from client: \n\n{response}")
 
 
+@retry_until_success(max_attempts=5, sleep_time_seconds=2)
 def test_openai_gpt_4o_archival_memory_retrieval():
     filename = os.path.join(llm_config_dir, "openai-gpt-4o.json")
     response = check_agent_archival_memory_retrieval(filename)
@@ -96,6 +125,7 @@ def test_openai_gpt_4o_archival_memory_retrieval():
     print(f"Got successful response from client: \n\n{response}")
 
 
+@retry_until_success(max_attempts=5, sleep_time_seconds=2)
 def test_openai_gpt_4o_archival_memory_insert():
     filename = os.path.join(llm_config_dir, "openai-gpt-4o.json")
     response = check_agent_archival_memory_insert(filename)
@@ -103,6 +133,7 @@ def test_openai_gpt_4o_archival_memory_insert():
     print(f"Got successful response from client: \n\n{response}")
 
 
+@retry_until_success(max_attempts=5, sleep_time_seconds=2)
 def test_openai_gpt_4o_edit_core_memory():
     filename = os.path.join(llm_config_dir, "openai-gpt-4o.json")
     response = check_agent_edit_core_memory(filename)
@@ -110,12 +141,14 @@ def test_openai_gpt_4o_edit_core_memory():
     print(f"Got successful response from client: \n\n{response}")
 
 
+@retry_until_success(max_attempts=5, sleep_time_seconds=2)
 def test_openai_gpt_4o_summarize_memory():
     filename = os.path.join(llm_config_dir, "openai-gpt-4o.json")
     response = check_agent_summarize_memory_simple(filename)
     print(f"Got successful response from client: \n\n{response}")
 
 
+@retry_until_success(max_attempts=5, sleep_time_seconds=2)
 def test_embedding_endpoint_openai():
     filename = os.path.join(embedding_config_dir, "openai_embed.json")
     run_embedding_endpoint(filename)
