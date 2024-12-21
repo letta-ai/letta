@@ -76,6 +76,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.git_hash || github.event.inputs.branch || github.sha }}
+          submodules: recursive
       - name: Restore node_modules cache if exist
         id: cache-nodemodules
         uses: actions/cache@v2
