@@ -16,6 +16,7 @@ import {
   TemplateIcon,
   toast,
   Typography,
+  WarningIcon,
   useForm,
   VStack,
 } from '@letta-web/component-library';
@@ -208,7 +209,7 @@ function CloudUpsellDeploy() {
           color="secondary"
           preIcon={<RocketIcon size="small" />}
           data-testid="trigger-cloud-upsell"
-          label={t('DeploymentButton.readyToDeploy.trigger')}
+          label={t('CloudUpsellDeploy.trigger')}
         />
       }
       align="end"
@@ -302,6 +303,8 @@ function TemplateVersionDisplay() {
     deployedAgentTemplateId: deployedAgentTemplate?.id,
   });
 
+  const versionNumber = deployedAgentTemplate?.version;
+
   return (
     <Popover
       triggerAsChild
@@ -310,8 +313,12 @@ function TemplateVersionDisplay() {
           size="small"
           color="secondary"
           data-testid="version-template-trigger"
-          label={t('DeploymentButton.readyToDeploy.trigger')}
-          preIcon={!isAtLatestVersion ? <RocketIcon size="small" /> : undefined}
+          label={
+            isAtLatestVersion ? 
+            (versionNumber ? t('DeploymentButton.readyToDeploy.trigger', { version: versionNumber }) : t('DeploymentButton.readyToDeploy.triggerNoVersion')) 
+            : 
+            (versionNumber ? t('DeploymentButton.updateAvailable.trigger', { version: versionNumber }) : t('DeploymentButton.updateAvailable.triggerNoVersion'))}
+          preIcon={isAtLatestVersion ? <RocketIcon size="small" /> : <WarningIcon size="small" />}
         />
       }
       align="end"
@@ -336,7 +343,7 @@ function TemplateVersionDisplay() {
           <Typography>
             {isAtLatestVersion
               ? t('DeploymentButton.readyToDeploy.copy')
-              : t('DeploymentButton.updateAvailable.copy')}
+              : (versionNumber ? t('DeploymentButton.updateAvailable.copy', { version: versionNumber }) : t('DeploymentButton.updateAvailable.copyNoVersion'))}
           </Typography>
         </VStack>
         <VStack gap="small">
