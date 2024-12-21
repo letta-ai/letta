@@ -1,8 +1,10 @@
 from typing import List, Optional
 
+from composio.client import ComposioClientError, HTTPError, NoItemsFound
 from composio.client.collections import ActionModel, AppModel
 from composio.client.enums.base import EnumStringNotFound
-from composio.exceptions import ComposioSDKError
+from composio.exceptions import ApiKeyNotProvidedError, ComposioSDKError
+from composio.tools.base.abs import InvalidClassDefinition
 from fastapi import APIRouter, Body, Depends, Header, HTTPException
 
 from letta.errors import LettaToolCreateError
@@ -239,21 +241,66 @@ def add_composio_tool(
     try:
         tool_create = ToolCreate.from_composio(action_name=composio_action_name, api_key=composio_api_key)
         return server.tool_manager.create_or_update_tool(pydantic_tool=Tool(**tool_create.model_dump()), actor=actor)
-    except EnumStringNotFound:
+    except EnumStringNotFound as e:
         raise HTTPException(
             status_code=400,  # Bad Request
             detail={
                 "code": "EnumStringNotFound",
-                "message": f"Cannot find composio action with name `{composio_action_name}`.",
+                "message": str(e),
                 "composio_action_name": composio_action_name,
             },
         )
-    except ComposioSDKError:
+    except HTTPError as e:
+        raise HTTPException(
+            status_code=400,  # Bad Request
+            detail={
+                "code": "HTTPError",
+                "message": str(e),
+                "composio_action_name": composio_action_name,
+            },
+        )
+    except NoItemsFound as e:
+        raise HTTPException(
+            status_code=400,  # Bad Request
+            detail={
+                "code": "NoItemsFound",
+                "message": str(e),
+                "composio_action_name": composio_action_name,
+            },
+        )
+    except ComposioClientError as e:
+        raise HTTPException(
+            status_code=400,  # Bad Request
+            detail={
+                "code": "ComposioClientError",
+                "message": str(e),
+                "composio_action_name": composio_action_name,
+            },
+        )
+    except ApiKeyNotProvidedError as e:
+        raise HTTPException(
+            status_code=400,  # Bad Request
+            detail={
+                "code": "ApiKeyNotProvidedError",
+                "message": str(e),
+                "composio_action_name": composio_action_name,
+            },
+        )
+    except InvalidClassDefinition as e:
+        raise HTTPException(
+            status_code=400,  # Bad Request
+            detail={
+                "code": "InvalidClassDefinition",
+                "message": str(e),
+                "composio_action_name": composio_action_name,
+            },
+        )
+    except ComposioSDKError as e:
         raise HTTPException(
             status_code=400,  # Bad Request
             detail={
                 "code": "ComposioSDKError",
-                "message": f"No connected account found for tool `{composio_action_name}`. You need to connect the relevant app in Composio order to use the tool.",
+                "message": str(e),
                 "composio_action_name": composio_action_name,
             },
         )
