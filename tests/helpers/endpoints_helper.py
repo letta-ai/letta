@@ -15,20 +15,16 @@ from letta.config import LettaConfig
 from letta.constants import DEFAULT_HUMAN, DEFAULT_PERSONA
 from letta.embeddings import embedding_model
 from letta.errors import (
-    InvalidToolCallError,
     InvalidInnerMonologueError,
-    MissingToolCallError,
+    InvalidToolCallError,
     MissingInnerMonologueError,
+    MissingToolCallError,
 )
 from letta.llm_api.llm_api_tools import create
 from letta.local_llm.constants import INNER_THOUGHTS_KWARG
 from letta.schemas.agent import AgentState
 from letta.schemas.embedding_config import EmbeddingConfig
-from letta.schemas.letta_message import (
-    ToolCallMessage,
-    ReasoningMessage,
-    LettaMessage,
-)
+from letta.schemas.letta_message import LettaMessage, ReasoningMessage, ToolCallMessage
 from letta.schemas.letta_response import LettaResponse
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.memory import ChatMemory
@@ -78,7 +74,13 @@ def setup_agent(
 
     memory = ChatMemory(human=memory_human_str, persona=memory_persona_str)
     agent_state = client.create_agent(
-        name=agent_uuid, llm_config=llm_config, embedding_config=embedding_config, memory=memory, tool_ids=tool_ids, tool_rules=tool_rules, include_base_tools=include_base_tools,
+        name=agent_uuid,
+        llm_config=llm_config,
+        embedding_config=embedding_config,
+        memory=memory,
+        tool_ids=tool_ids,
+        tool_rules=tool_rules,
+        include_base_tools=include_base_tools,
     )
 
     return agent_state
@@ -105,12 +107,13 @@ def check_first_response_is_valid_for_llm_endpoint(filename: str) -> ChatComplet
     agent_state = setup_agent(client, filename)
 
     full_agent_state = client.get_agent(agent_state.id)
+    messages = client.server.agent_manager.get_in_context_messages(agent_id=full_agent_state.id, actor=client.user)
     agent = Agent(agent_state=full_agent_state, interface=None, user=client.user)
 
     response = create(
         llm_config=agent_state.llm_config,
         user_id=str(uuid.UUID(int=1)),  # dummy user_id
-        messages=agent._messages,
+        messages=messages,
         functions=[t.json_schema for t in agent.agent_state.tools],
     )
 
@@ -412,9 +415,7 @@ def assert_invoked_function_call(messages: Sequence[LettaMessage], function_name
             # Found it, do nothing
             return
 
-    raise MissingToolCallError(
-        messages=messages, explanation=f"No messages were found invoking function call with name: {function_name}"
-    )
+    raise MissingToolCallError(messages=messages, explanation=f"No messages were found invoking function call with name: {function_name}")
 
 
 def assert_inner_monologue_is_present_and_valid(messages: List[LettaMessage]) -> None:

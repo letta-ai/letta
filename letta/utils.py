@@ -28,6 +28,7 @@ from letta.constants import (
     CLI_WARNING_PREFIX,
     CORE_MEMORY_HUMAN_CHAR_LIMIT,
     CORE_MEMORY_PERSONA_CHAR_LIMIT,
+    ERROR_MESSAGE_PREFIX,
     LETTA_DIR,
     MAX_FILENAME_LENGTH,
     TOOL_CALL_ID_MAX_LEN,
@@ -1122,7 +1123,7 @@ def sanitize_filename(filename: str) -> str:
 def get_friendly_error_msg(function_name: str, exception_name: str, exception_message: str):
     from letta.constants import MAX_ERROR_MESSAGE_CHAR_LIMIT
 
-    error_msg = f"Error executing function {function_name}: {exception_name}: {exception_message}"
+    error_msg = f"{ERROR_MESSAGE_PREFIX} executing function {function_name}: {exception_name}: {exception_message}"
     if len(error_msg) > MAX_ERROR_MESSAGE_CHAR_LIMIT:
         error_msg = error_msg[:MAX_ERROR_MESSAGE_CHAR_LIMIT]
     return error_msg

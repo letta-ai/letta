@@ -63,8 +63,8 @@ class ChatOnlyAgent(Agent):
                 conversation_persona_block_new = Block(
                     name="chat_agent_persona_new", label="chat_agent_persona_new", value=conversation_persona_block.value, limit=2000
                 )
-
-                recent_convo = "".join([str(message) for message in self.messages[3:]])[-self.recent_convo_limit :]
+                in_context_messages = self.agent_manager.get_in_context_messages(agent_id=self.agent_state.id, actor=self.user)
+                recent_convo = "".join([str(message) for message in in_context_messages[3:]])[-self.recent_convo_limit :]
                 conversation_messages_block = Block(
                     name="conversation_block", label="conversation_block", value=recent_convo, limit=self.recent_convo_limit
                 )

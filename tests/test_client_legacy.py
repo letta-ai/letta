@@ -19,21 +19,22 @@ from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import MessageRole
 from letta.schemas.letta_message import (
     AssistantMessage,
+    LettaMessage,
+    ReasoningMessage,
+    SystemMessage,
     ToolCallMessage,
     ToolReturnMessage,
-    ReasoningMessage,
-    LettaMessage,
-    SystemMessage,
-    UsageMessage,
     UserMessage,
 )
 from letta.schemas.letta_response import LettaResponse, LettaStreamingResponse
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import MessageCreate
 from letta.schemas.usage import LettaUsageStatistics
+from letta.services.helpers.agent_manager_helper import initialize_message_sequence
 from letta.services.organization_manager import OrganizationManager
 from letta.services.user_manager import UserManager
 from letta.settings import model_settings
+from letta.utils import get_utc_time
 from tests.helpers.client_helper import upload_file_using_client
 
 # from tests.utils import create_config
@@ -594,18 +595,11 @@ def test_initial_message_sequence(client: Union[LocalClient, RESTClient], agent:
     If we pass in a non-empty list, we should get that sequence
     If we pass in an empty list, we should get an empty sequence
     """
-    from letta.agent import initialize_message_sequence
-    from letta.utils import get_utc_time
-
     # The reference initial message sequence:
     reference_init_messages = initialize_message_sequence(
-        model=agent.llm_config.model,
-        system=agent.system,
-        agent_id=agent.id,
-        memory=agent.memory,
+        agent_state=agent,
         memory_edit_timestamp=get_utc_time(),
         include_initial_boot_message=True,
-        actor=default_user,
     )
 
     # system, login message, send_message test, send_message receipt

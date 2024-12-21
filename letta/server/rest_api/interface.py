@@ -239,7 +239,7 @@ class QueuingInterface(AgentInterface):
             new_message = {"function_return": msg, "status": "success"}
 
         elif msg.startswith("Error: "):
-            msg = msg.replace("Error: ", "")
+            msg = msg.replace("Error: ", "", 1)
             new_message = {"function_return": msg, "status": "error"}
 
         else:
@@ -953,7 +953,7 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
             )
 
         elif msg.startswith("Error: "):
-            msg = msg.replace("Error: ", "")
+            msg = msg.replace("Error: ", "", 1)
             # new_message = {"function_return": msg, "status": "error"}
             assert msg_obj.tool_call_id is not None
             new_message = ToolReturnMessage(
