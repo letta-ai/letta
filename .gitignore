@@ -66,3 +66,6 @@ external-services/*
 .swc
 
 flag.overrides.json
+
+# Fern SDK Previews
+**/.preview
