@@ -244,5 +244,7 @@ const InputPrimitive = React.forwardRef<HTMLInputElement, InputPrimitiveProps>(
   }
 );
 
+export type InputProps = Omit<InputPrimitiveProps, 'ref'>;
+
 export const Input = makeInput(InputPrimitive, 'Input');
 export const RawInput = makeRawInput(InputPrimitive, 'RawInput');
