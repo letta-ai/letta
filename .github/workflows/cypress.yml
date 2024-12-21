@@ -101,15 +101,8 @@ jobs:
         with:
           path: ~/.cache/Cypress
           key: ${{ runner.os }}-${{ env.cache-name }}
-      - name: Checkout letta agents
-        uses: actions/checkout@v4
-        with:
-          submodules: 'true'
-          repository: letta-ai/letta-agents
-          token: ${{ secrets.PULLER_TOKEN }}
-          path: letta-agents
       - name: Turn on Letta agents
-        working-directory: letta-agents/MemGPT
+        working-directory: apps/core
         env:
           LETTA_PG_DB: letta
           LETTA_PG_USER: letta
