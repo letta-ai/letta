@@ -360,7 +360,7 @@ function TemplateVersionDisplay() {
 
 function CreateTemplateButton() {
   const { push } = useRouter();
-  const { slug } = useCurrentProject();
+  const { slug, id: currentProjectId } = useCurrentProject();
   const { id: agentId } = useCurrentAgent();
   const { mutate, isPending, isSuccess } =
     webOriginSDKApi.agents.createTemplateFromAgent.useMutation({
@@ -381,8 +381,11 @@ function CreateTemplateButton() {
   const handleConvert = useCallback(() => {
     mutate({
       params: { agent_id: agentId },
+      body: {
+        project_id: currentProjectId,
+      },
     });
-  }, [mutate, agentId]);
+  }, [mutate, agentId, currentProjectId]);
 
   return (
     <Popover

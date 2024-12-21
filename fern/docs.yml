@@ -1,24 +1,21 @@
 instances:
-  - url: https://letta-1412240455.docs.buildwithfern.com
+  - url: https://letta.docs.buildwithfern.com
+    custom-domain: https://docs.letta.com
 title: Letta | Documentation
 
 tabs:
   home:
     display-name: Home
-    icon: regular home 
+    icon: fa-solid home 
     skip-slug: true
   docs: 
     display-name: Documentation
-    icon: regular book-open
+    icon: fa-solid book-open
     slug: documentation
   ref:
     display-name: API Reference
-    icon: regular rectangle-terminal
-    slug: api-reference
-  python: 
-    display-name: Python SDK
-    icon: brands python
-    slug: python-reference
+    icon: fa-solid code 
+    skip-slug: true
 
 navigation:
   - tab: home
@@ -106,54 +103,6 @@ navigation:
           python: letta
         layout: 
           - agents
-  - tab: python
-    layout:
-      - section: Client
-        contents:
-          - page: LocalClient
-            path: python-reference/LocalClient.mdx
-          - page: RESTClient
-            path: python-reference/RESTClient.mdx
-      - section: Data Models
-        contents:
-          - page: AgentState
-            path: python-reference/AgentState.mdx
-          - page: Block
-            path: python-reference/Block.mdx
-          - page: Tool
-            path: python-reference/Tool.mdx
-          - page: Memory
-            path: python-reference/Memory.mdx
-          - page: Job
-            path: python-reference/Job.mdx
-          - page: Passage
-            path: python-reference/Passage.mdx
-          - page: Document
-            path: python-reference/Document.mdx
-          - page: LLMConfig
-            path: python-reference/LLMConfig.mdx
-          - page: EmbeddingConfig
-            path: python-reference/EmbeddingConfig.mdx
-          - page: User
-            path: python-reference/User.mdx
-      - section: Response Models
-        contents:
-          - page: Letta Response
-            path: python-reference/LettaResponse.mdx
-          - section: Message Types
-            contents:
-              - page: Message
-                path: python-reference/Message.mdx
-              - page: LettaMessage
-                path: python-reference/LettaMessage.mdx
-          - page: LettaUsageStatistics
-            path: python-reference/LettaUsageStatistics.mdx
-      - section: Connectors
-        contents:
-          - page: DataConnector
-            path: python-reference/DataConnector.mdx
-          - page: DirectoryConnector
-            path: python-reference/DirectoryConnector.mdx
   
 colors:
   accentPrimary: 

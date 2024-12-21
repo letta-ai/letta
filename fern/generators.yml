@@ -11,9 +11,9 @@ groups:
         version: 4.3.9
         output:
           location: pypi
-          package-name: letta
+          package-name: letta-client
         github:
-          repository: fern-demo/letta-python-sdk
+          repository: letta-ai/letta-python
         config:
           client_class_name: Letta
   ts-sdk:
@@ -23,9 +23,9 @@ groups:
         output:
           location: npm
           package-name: "letta"
-          # token: ${NPM_TOKEN}
+          token: ${NPM_TOKEN}
         github:
-          repository: "fern-demo/letta-typescript-sdk"
+          repository: "letta-ai/letta-node"
         config:
           namespaceExport: Letta
           allowCustomFetcher: true

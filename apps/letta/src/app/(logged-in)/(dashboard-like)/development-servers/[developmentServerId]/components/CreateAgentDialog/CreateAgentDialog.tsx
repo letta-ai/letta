@@ -2,12 +2,12 @@
 import { useTranslations } from 'next-intl';
 import {
   Alert,
-  DashboardPageLayout,
-  DashboardPageSection,
+  Dialog,
   Frame,
   LoadingEmptyStatusComponent,
   NiceGridDisplay,
   RawCodeEditor,
+  Section,
   toast,
   Typography,
   VStack,
@@ -33,8 +33,13 @@ import { useCurrentUser } from '$letta/client/hooks';
 import { ConnectToLocalServerCommand } from '$letta/client/components';
 import { StarterKitItems } from '$letta/client/components';
 
-function NewAgentPage() {
-  const t = useTranslations('development-servers/agents/new/page');
+interface CreateAgentDialogProps {
+  trigger: React.ReactNode;
+}
+
+function CreateAgentDialog(props: CreateAgentDialogProps) {
+  const { trigger } = props;
+  const t = useTranslations('development-servers/agents/CreateAgentDialog');
 
   const { data: llmModels } = useLlmsServiceListModels();
   const { data: embeddingModels } = useLlmsServiceListEmbeddingModels();
@@ -164,27 +169,39 @@ function NewAgentPage() {
     return Object.entries(STARTER_KITS);
   }, []);
 
+  const loadingCopy = useMemo(() => {
+    if (isSuccess || isPending) {
+      return t('creating');
+    }
+
+    if (!llmModels || !embeddingModels) {
+      return t('loading');
+    }
+
+    return false;
+  }, [isSuccess, isPending, llmModels, embeddingModels, t]);
+
   return (
-    <DashboardPageLayout
+    <Dialog
+      hideFooter
       title={t('title')}
-      returnButton={{
-        href: `/development-servers/${config?.id}/agents`,
-        text: t('back'),
-      }}
+      disableForm
+      size="xxlarge"
+      trigger={trigger}
     >
-      <DashboardPageSection
+      <Section
         title={t('starterKits.title')}
         description={t('starterKits.description')}
       >
-        {isSuccess || isPending ? (
+        {loadingCopy ? (
           <LoadingEmptyStatusComponent
             emptyMessage=""
             isLoading
-            loadingMessage={t('loading')}
+            loadingMessage={loadingCopy}
           />
         ) : (
           /* eslint-disable-next-line react/forbid-component-props */
-          <VStack gap="form" className="max-w-[1052px]">
+          <VStack paddingBottom gap="form" className="max-w-[1052px]">
             {isHealthy && (
               <Alert
                 variant="info"
@@ -234,9 +251,9 @@ function NewAgentPage() {
             </VStack>
           </VStack>
         )}
-      </DashboardPageSection>
-    </DashboardPageLayout>
+      </Section>
+    </Dialog>
   );
 }
 
-export default NewAgentPage;
+export default CreateAgentDialog;
