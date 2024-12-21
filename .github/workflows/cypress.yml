@@ -123,7 +123,7 @@ jobs:
           build: npm run build:e2e
           start: npm run start:e2e
           install: false
-          project: apps/letta
+          project: apps/web
           wait-on: 'http://localhost:3000' # Waits for above
           # Records to Cypress Cloud
           # https://docs.cypress.io/guides/cloud/projects#Set-up-a-project-to-record
