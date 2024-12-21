@@ -1243,7 +1243,7 @@ function ToolEditor(props: ToolEditorProps) {
       if (data) {
         const { stdout, stderr, ...outputValue } = data;
         return {
-          outputValue: JSON.stringify(outputValue, null, 2),
+          outputValue: JSON.stringify(outputValue.tool_return, null, 2), // stringify ensures that the output won't be highlighted
           outputStdout: stdout?.join('\n') ?? '',
           outputStderr: stderr?.join('\n') ?? '',
           outputStatus:
