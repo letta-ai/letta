@@ -22,8 +22,8 @@ class LettaMessage(BaseModel):
     # NOTE: use Pydantic's discriminated unions feature: https://docs.pydantic.dev/latest/concepts/unions/#discriminated-unions
     # see `message_type` attribute
 
-    id: str
-    date: datetime
+    id: Optional[str] = Field(None, description="The ID of the message object")
+    date: Optional[datetime] = Field(None, description="The date the message object was created")
 
     @field_serializer("date")
     def serialize_datetime(self, dt: datetime, _info):
@@ -165,15 +165,14 @@ class ToolReturnMessage(LettaMessage):
 
 
 class UsageMessage(LettaMessage):
-     """
-     A message representint the usage statistics for the agent interaction.
-     Attributes:
-         usage (LettaUsageStatistics): Usage statistics for the agent interaction.
-     """
+    """
+    A message representint the usage statistics for the agent interaction.
+    Attributes:
+        usage (LettaUsageStatistics): Usage statistics for the agent interaction.
+    """
 
-     message_type: Literal["usage_message"] = "usage_message"
-     usage: LettaUsageStatistics
-
+    message_type: Literal["usage_message"] = "usage_message"
+    usage: LettaUsageStatistics
 
 
 # Legacy Letta API had an additional type "assistant_message" and the "function_call" was a formatted string
