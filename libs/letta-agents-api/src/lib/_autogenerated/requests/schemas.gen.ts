@@ -2218,6 +2218,19 @@ export const $EmbeddingConfig = {
       description: 'The chunk size of the embedding.',
       default: 300,
     },
+    handle: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Handle',
+      description:
+        'The handle for this config, in the format provider/model-name.',
+    },
     azure_endpoint: {
       anyOf: [
         {
@@ -2720,6 +2733,19 @@ export const $LLMConfig = {
         "Puts 'inner_thoughts' as a kwarg in the function call if this is set to True. This helps with function calling performance and also the generation of inner thoughts.",
       default: true,
     },
+    handle: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Handle',
+      description:
+        'The handle for this config, in the format provider/model-name.',
+    },
   },
   type: 'object',
   required: ['model', 'model_endpoint_type', 'context_window'],
@@ -3069,36 +3095,6 @@ Attributes:
       },
       required: ['id', 'date', 'tool_return', 'status', 'tool_call_id'],
       title: 'ToolReturnMessage',
-      type: 'object',
-    },
-    UsageMessage: {
-      description: `A message representint the usage statistics for the agent interaction.
-
-Attributes:
-    usage (LettaUsageStatistics): Usage statistics for the agent interaction.`,
-      properties: {
-        id: {
-          title: 'Id',
-          type: 'string',
-        },
-        date: {
-          format: 'date-time',
-          title: 'Date',
-          type: 'string',
-        },
-        message_type: {
-          const: 'usage_message',
-          default: 'usage_message',
-          enum: ['usage_message'],
-          title: 'Message Type',
-          type: 'string',
-        },
-        usage: {
-          $ref: '#/components/schemas/LettaResponse/properties/LettaUsageStatistics',
-        },
-      },
-      required: ['id', 'date', 'usage'],
-      title: 'UsageMessage',
       type: 'object',
     },
     UserMessage: {
@@ -3554,7 +3550,7 @@ export const $Organization = {
       type: 'string',
       title: 'Name',
       description: 'The name of the organization.',
-      default: 'GratefulBalloon',
+      default: 'KindUkulele',
     },
     created_at: {
       anyOf: [
@@ -5100,37 +5096,6 @@ export const $UpdateAgent = {
   },
   type: 'object',
   title: 'UpdateAgent',
-} as const;
-
-export const $UsageMessage = {
-  properties: {
-    id: {
-      type: 'string',
-      title: 'Id',
-    },
-    date: {
-      type: 'string',
-      format: 'date-time',
-      title: 'Date',
-    },
-    message_type: {
-      type: 'string',
-      enum: ['usage_message'],
-      const: 'usage_message',
-      title: 'Message Type',
-      default: 'usage_message',
-    },
-    usage: {
-      $ref: '#/components/schemas/LettaUsageStatistics',
-    },
-  },
-  type: 'object',
-  required: ['id', 'date', 'usage'],
-  title: 'UsageMessage',
-  description: `A message representint the usage statistics for the agent interaction.
-
-Attributes:
-    usage (LettaUsageStatistics): Usage statistics for the agent interaction.`,
 } as const;
 
 export const $UsageStatistics = {

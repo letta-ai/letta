@@ -810,6 +810,10 @@ export type EmbeddingConfig = {
    */
   embedding_chunk_size?: number | null;
   /**
+   * The handle for this config, in the format provider/model-name.
+   */
+  handle?: string | null;
+  /**
    * The Azure endpoint for the model.
    */
   azure_endpoint?: string | null;
@@ -1053,6 +1057,10 @@ export type LLMConfig = {
    * Puts 'inner_thoughts' as a kwarg in the function call if this is set to True. This helps with function calling performance and also the generation of inner thoughts.
    */
   put_inner_thoughts_in_kwargs?: boolean | null;
+  /**
+   * The handle for this config, in the format provider/model-name.
+   */
+  handle?: string | null;
 };
 
 /**
@@ -1199,18 +1207,6 @@ export type LettaResponse = {
     tool_call_id: string;
     stdout?: Array<string> | null;
     stderr?: Array<string> | null;
-  };
-  /**
-   * A message representint the usage statistics for the agent interaction.
-   *
-   * Attributes:
-   * usage (LettaUsageStatistics): Usage statistics for the agent interaction.
-   */
-  UsageMessage?: {
-    id: string;
-    date: string;
-    message_type?: 'usage_message';
-    usage: LettaResponse['LettaUsageStatistics'];
   };
   /**
    * A message sent by the user. Never streamed back on a response, only used for cursor pagination.
@@ -2041,21 +2037,6 @@ export type UpdateAgent = {
   } | null;
 };
 
-/**
- * A message representint the usage statistics for the agent interaction.
- *
- * Attributes:
- * usage (LettaUsageStatistics): Usage statistics for the agent interaction.
- */
-export type UsageMessage = {
-  id: string;
-  date: string;
-  message_type?: 'usage_message';
-  usage: LettaUsageStatistics;
-};
-
-export type message_type6 = 'usage_message';
-
 export type UsageStatistics = {
   completion_tokens?: number;
   prompt_tokens?: number;
@@ -2129,7 +2110,7 @@ export type UserMessage_Output = {
   message: string;
 };
 
-export type message_type7 = 'user_message';
+export type message_type6 = 'user_message';
 
 export type UserUpdate = {
   /**
