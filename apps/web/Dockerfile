@@ -68,7 +68,7 @@ ENV NEXT_TELEMETRY_DISABLED 1
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
-COPY --from=builder /app/apps/letta/public ./apps/letta/public
+COPY --from=builder /app/apps/web/public ./apps/web/public
 
 # Set the correct permission for prerender cache
 RUN mkdir .next
@@ -76,8 +76,8 @@ RUN chown nextjs:nodejs .next
 
 # Automatically leverage output traces to reduce image size
 # https://nextjs.org/docs/advanced-features/output-file-tracing
-COPY --from=builder --chown=nextjs:nodejs /app/apps/letta/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/apps/letta/.next/static ./apps/letta/.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/static ./apps/web/.next/static
 
 USER nextjs
 
@@ -86,7 +86,7 @@ ENV PORT=8080
 
 # server.js is created by next build from the standalone output
 # https://nextjs.org/docs/pages/api-reference/next-config-js/output
-CMD ["node", "apps/letta/server.js"]
+CMD ["node", "apps/web/server.js"]
 
 # Migration image
 FROM base AS migrations

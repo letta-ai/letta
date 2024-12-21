@@ -30,34 +30,29 @@ configure-kubectl:
     gcloud container clusters get-credentials letta --region {{REGION}} --project {{PROJECT_NAME}}
 
 # Build the web Docker image
-[working-directory: 'apps/web']
-build-web-ui:
+@build-web-ui:
     npm run slack-bot-says "Building web Docker image with tag: {{TAG}}..."
     @echo "🚧 Building web Docker image with tag: {{TAG}}..."
-    SENTRY_AUTH_TOKEN=$SENTRY_AUTH_TOKEN docker buildx build --platform linux/amd64 --target web -t {{DOCKER_REGISTRY}}/web:{{TAG}} . --load --secret id=SENTRY_AUTH_TOKEN
+    SENTRY_AUTH_TOKEN=$SENTRY_AUTH_TOKEN docker buildx build --platform linux/amd64 --target web -t {{DOCKER_REGISTRY}}/web:{{TAG}} . --load --secret id=SENTRY_AUTH_TOKEN --file apps/web/Dockerfile
 
 # Build the migrations Docker image
-[working-directory: 'apps/web']
-build-web-migrations:
+@build-web-migrations:
     @echo "🚧 Building migrations Docker image with tag: {{TAG}}..."
-    docker buildx build --platform linux/amd64 --target migrations -t {{DOCKER_REGISTRY}}/web-migrations:{{TAG}} . --load
+    docker buildx build --platform linux/amd64 --target migrations -t {{DOCKER_REGISTRY}}/web-migrations:{{TAG}} . --load --file apps/web/Dockerfile
 
 # Build all Docker images synchronously
-[working-directory: 'apps/web']
-build-web: build-web-ui build-web-migrations
+@build-web: build-web-ui build-web-migrations
     @echo "✅ All Docker images built successfully."
     npm run slack-bot-says "Docker image with tag: {{TAG}} built successfully."
 
 # Push the Docker images to the registry
-[working-directory: 'apps/web']
-push-web:
+@push-web:
     @echo "🚀 Pushing Docker images to registry with tag: {{TAG}}..."
     docker push {{DOCKER_REGISTRY}}/web:{{TAG}}
     docker push {{DOCKER_REGISTRY}}/web-migrations:{{TAG}}
 
 # Deploy the Helm chart
-[working-directory: 'apps/web']
-deploy-web: push-web
+@deploy-web: push-web
     @echo "🚧 Deploying Helm chart..."
     kubectl delete job {{HELM_CHART_NAME}}-migration --ignore-not-found
     npm run slack-bot-says "Deploying web service Helm chart with tag: {{TAG}}..."
@@ -115,21 +110,18 @@ describe-web:
     kubectl describe pod $(kubectl get pods -l app.kubernetes.io/name=letta-web -o jsonpath="{.items[0].metadata.name}")
 
 # Core stuff
-[working-directory: 'apps/core']
-build-core:
+@build-core:
     echo "🚧 Building multi-architecture Docker images with tag: {{TAG}}..."
-    docker buildx create --use
+    docker buildx create --use --file libs/core-deploy-configs/Dockerfile
     docker buildx build --progress=plain --platform linux/amd64 -t {{DOCKER_REGISTRY}}/memgpt-server:{{TAG}} . --load
 
 # Push the Docker images to the registry
-[working-directory: 'apps/core']
-push-core:
+@push-core:
     echo "🚀 Pushing Docker images to registry with tag: {{TAG}}..."
     docker push {{DOCKER_REGISTRY}}/memgpt-server:{{TAG}}
 
 # Deploy the Helm chart
-[working-directory: 'apps/core']
-deploy deploy_message="": push-core
+@deploy deploy_message="": push-core
     echo "🚧 Deploying Helm chart..."
     helm upgrade --install {{HELM_CHART_NAME}} {{HELM_CHARTS_DIR}}/{{HELM_CHART_NAME}} \
         --set deployMessage='{{deploy_message}}' \
