@@ -759,7 +759,7 @@
       "save": "Update Variables",
       "label": "Variable Name",
       "editLabel": "Edit {variableName}",
-      "noVariablesDefined": "You have no variables set yet, to define a variable, write a alphanumeric name wrapped in handlebars in Memory Blocks, e.g. {variableName}"
+      "noVariablesDefined": "You have no variables set yet, to define a variable, write a alphanumeric name wrapped in handlebars in core memory, e.g. {variableName}"
     },
     "showVariables": "Variables",
     "hideVariables": "Hide variables",
