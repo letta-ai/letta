@@ -759,7 +759,7 @@
       "save": "Update Variables",
       "label": "Variable Name",
       "editLabel": "Edit {variableName}",
-      "noVariablesDefined": "You have no variables set yet, to define a variable, write a alphanumeric name wrapped in handlebars in Memory Blocks, e.g. {variableName}"
+      "noVariablesDefined": "You have no variables set yet, to define a variable, write a alphanumeric name wrapped in handlebars in core memory, e.g. {variableName}"
     },
     "showVariables": "Variables",
     "hideVariables": "Hide variables",
@@ -882,19 +882,19 @@
       "inputPlaceholder": "my-variable-value"
     },
     "FromStarterKit": {
-      "title": "Starter kits",
-      "description": "Choose from a starter pack and customize it in the ADE, or start from scratch"
+      "title": "Create an agent from a starter kit (or start from scratch)",
+      "description": "Our starter kits include some example agent designs to help you get started"
     },
     "loading": "Creating agent...",
-    "title": "Create an Agent",
+    "title": "Create an agent",
     "trigger": "Create a new agent",
     "error": "There was an error creating the agent, please try again or contact support.",
     "DeployFromTemplate": {
       "noItems": "The best way to get started is to create an agent from a template, visit the templates page to get started.",
       "notFound": "No templates found that match your search",
-      "searchPlaceholder": "Search templates",
-      "title": "From an existing template",
-      "description": "Choose a template to deploy as an agent",
+      "searchPlaceholder": "Search your templates",
+      "title": "Create an agent from an existing template",
+      "description": "Templates are used to create common starting points for new agents",
       "items": {
         "version": "Version: {version}",
         "noDescription": "No description provided"
@@ -1472,9 +1472,9 @@
     },
     "CreateTemplateButton": {
       "error": "There was an error converting this agent to a template, please try again or contact support.",
-      "trigger": "Create Template",
+      "trigger": "Create template",
       "title": "Convert your agent to a template",
-      "description": "Agent templates allow you to create common starting points that new agents can fork from. Templates csupport memory variables and can be versioned.",
+      "description": "Agent templates allow you to create common starting points that new agents can fork from. Templates support memory variables and can be versioned.",
       "cta": "Convert to template"
     },
     "DeploymentButton": {
