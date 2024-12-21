@@ -141,6 +141,7 @@
     "@nx/vite": "19.6.3",
     "@nx/web": "19.6.3",
     "@nx/workspace": "19.6.3",
+    "@nxlv/python": "^20.2.0",
     "@playwright/test": "^1.36.0",
     "@radix-ui/react-select": "^2.1.1",
     "@storybook/addon-essentials": "8.2.9",
