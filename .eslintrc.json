@@ -162,7 +162,7 @@
           "error",
           {
             "enforceBuildableLibDependency": true,
-            "allow": ["$letta/**"],
+            "allow": ["$web/**"],
             "depConstraints": [
               {
                 "sourceTag": "*",

@@ -2218,6 +2218,19 @@ export const $EmbeddingConfig = {
       description: 'The chunk size of the embedding.',
       default: 300,
     },
+    handle: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Handle',
+      description:
+        'The handle for this config, in the format provider/model-name.',
+    },
     azure_endpoint: {
       anyOf: [
         {
@@ -2720,6 +2733,19 @@ export const $LLMConfig = {
         "Puts 'inner_thoughts' as a kwarg in the function call if this is set to True. This helps with function calling performance and also the generation of inner thoughts.",
       default: true,
     },
+    handle: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Handle',
+      description:
+        'The handle for this config, in the format provider/model-name.',
+    },
   },
   type: 'object',
   required: ['model', 'model_endpoint_type', 'context_window'],
@@ -2735,7 +2761,7 @@ Attributes:
     put_inner_thoughts_in_kwargs (bool): Puts \`inner_thoughts\` as a kwarg in the function call if this is set to True. This helps with function calling performance and also the generation of inner thoughts.`,
 } as const;
 
-export const $LettaRequest = {
+export const $webRequest = {
   properties: {
     messages: {
       items: {
@@ -2764,7 +2790,7 @@ export const $LettaRequest = {
   title: 'LettaRequest',
 } as const;
 
-export const $LettaResponse = {
+export const $webResponse = {
   properties: {
     AssistantMessage: {
       properties: {
@@ -3071,36 +3097,6 @@ Attributes:
       title: 'ToolReturnMessage',
       type: 'object',
     },
-    UsageMessage: {
-      description: `A message representint the usage statistics for the agent interaction.
-
-Attributes:
-    usage (LettaUsageStatistics): Usage statistics for the agent interaction.`,
-      properties: {
-        id: {
-          title: 'Id',
-          type: 'string',
-        },
-        date: {
-          format: 'date-time',
-          title: 'Date',
-          type: 'string',
-        },
-        message_type: {
-          const: 'usage_message',
-          default: 'usage_message',
-          enum: ['usage_message'],
-          title: 'Message Type',
-          type: 'string',
-        },
-        usage: {
-          $ref: '#/components/schemas/LettaResponse/properties/LettaUsageStatistics',
-        },
-      },
-      required: ['id', 'date', 'usage'],
-      title: 'UsageMessage',
-      type: 'object',
-    },
     UserMessage: {
       description: `A message sent by the user. Never streamed back on a response, only used for cursor pagination.
 
@@ -3137,7 +3133,7 @@ Attributes:
   },
 } as const;
 
-export const $LettaStreamingRequest = {
+export const $webStreamingRequest = {
   properties: {
     messages: {
       items: {
@@ -3173,7 +3169,7 @@ export const $LettaStreamingRequest = {
   title: 'LettaStreamingRequest',
 } as const;
 
-export const $LettaUsageStatistics = {
+export const $webUsageStatistics = {
   properties: {
     completion_tokens: {
       type: 'integer',
@@ -3554,7 +3550,7 @@ export const $Organization = {
       type: 'string',
       title: 'Name',
       description: 'The name of the organization.',
-      default: 'GratefulBalloon',
+      default: 'KindUkulele',
     },
     created_at: {
       anyOf: [
@@ -5102,37 +5098,6 @@ export const $UpdateAgent = {
   title: 'UpdateAgent',
 } as const;
 
-export const $UsageMessage = {
-  properties: {
-    id: {
-      type: 'string',
-      title: 'Id',
-    },
-    date: {
-      type: 'string',
-      format: 'date-time',
-      title: 'Date',
-    },
-    message_type: {
-      type: 'string',
-      enum: ['usage_message'],
-      const: 'usage_message',
-      title: 'Message Type',
-      default: 'usage_message',
-    },
-    usage: {
-      $ref: '#/components/schemas/LettaUsageStatistics',
-    },
-  },
-  type: 'object',
-  required: ['id', 'date', 'usage'],
-  title: 'UsageMessage',
-  description: `A message representint the usage statistics for the agent interaction.
-
-Attributes:
-    usage (LettaUsageStatistics): Usage statistics for the agent interaction.`,
-} as const;
-
 export const $UsageStatistics = {
   properties: {
     completion_tokens: {
@@ -5386,7 +5351,7 @@ export const $ValidationError = {
   title: 'ValidationError',
 } as const;
 
-export const $letta__schemas__letta_message__ToolCall = {
+export const $web__schemas__letta_message__ToolCall = {
   properties: {
     name: {
       type: 'string',
@@ -5406,7 +5371,7 @@ export const $letta__schemas__letta_message__ToolCall = {
   title: 'ToolCall',
 } as const;
 
-export const $letta__schemas__message__Message = {
+export const $web__schemas__message__Message = {
   properties: {
     created_by_id: {
       anyOf: [
@@ -5569,7 +5534,7 @@ Attributes:
     tool_call_id (str): The id of the tool call.`,
 } as const;
 
-export const $letta__schemas__openai__chat_completion_request__Tool = {
+export const $web__schemas__openai__chat_completion_request__Tool = {
   properties: {
     type: {
       type: 'string',
@@ -5587,7 +5552,7 @@ export const $letta__schemas__openai__chat_completion_request__Tool = {
   title: 'Tool',
 } as const;
 
-export const $letta__schemas__openai__chat_completion_request__ToolCall = {
+export const $web__schemas__openai__chat_completion_request__ToolCall = {
   properties: {
     id: {
       type: 'string',
@@ -5609,7 +5574,7 @@ export const $letta__schemas__openai__chat_completion_request__ToolCall = {
   title: 'ToolCall',
 } as const;
 
-export const $letta__schemas__openai__chat_completion_request__ToolCallFunction =
+export const $web__schemas__openai__chat_completion_request__ToolCallFunction =
   {
     properties: {
       name: {
@@ -5626,7 +5591,7 @@ export const $letta__schemas__openai__chat_completion_request__ToolCallFunction 
     title: 'ToolCallFunction',
   } as const;
 
-export const $letta__schemas__openai__chat_completion_response__Message = {
+export const $web__schemas__openai__chat_completion_response__Message = {
   properties: {
     content: {
       anyOf: [
@@ -5673,7 +5638,7 @@ export const $letta__schemas__openai__chat_completion_response__Message = {
   title: 'Message',
 } as const;
 
-export const $letta__schemas__openai__chat_completion_response__ToolCall = {
+export const $web__schemas__openai__chat_completion_response__ToolCall = {
   properties: {
     id: {
       type: 'string',
@@ -5695,7 +5660,7 @@ export const $letta__schemas__openai__chat_completion_response__ToolCall = {
   title: 'ToolCall',
 } as const;
 
-export const $letta__schemas__openai__chat_completions__ToolCall_Input = {
+export const $web__schemas__openai__chat_completions__ToolCall_Input = {
   properties: {
     id: {
       type: 'string',
@@ -5717,7 +5682,7 @@ export const $letta__schemas__openai__chat_completions__ToolCall_Input = {
   title: 'ToolCall',
 } as const;
 
-export const $letta__schemas__openai__chat_completions__ToolCall_Output = {
+export const $web__schemas__openai__chat_completions__ToolCall_Output = {
   properties: {
     id: {
       type: 'string',
@@ -5739,7 +5704,7 @@ export const $letta__schemas__openai__chat_completions__ToolCall_Output = {
   title: 'ToolCall',
 } as const;
 
-export const $letta__schemas__openai__chat_completions__ToolCallFunction = {
+export const $web__schemas__openai__chat_completions__ToolCallFunction = {
   properties: {
     name: {
       type: 'string',
@@ -5757,7 +5722,7 @@ export const $letta__schemas__openai__chat_completions__ToolCallFunction = {
   title: 'ToolCallFunction',
 } as const;
 
-export const $letta__schemas__tool__Tool = {
+export const $web__schemas__tool__Tool = {
   properties: {
     id: {
       type: 'string',
