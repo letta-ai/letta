@@ -131,9 +131,7 @@ def attach_source_to_agent(
     """
     actor = server.user_manager.get_user_or_default(user_id=user_id)
 
-    source = server.source_manager.get_source_by_id(source_id=source_id, actor=actor)
-    assert source is not None, f"Source with id={source_id} not found."
-    source = server.attach_source_to_agent(source_id=source.id, agent_id=agent_id, user_id=actor.id)
+    source = server.agent_manager.attach_source(source_id=source_id, agent_id=agent_id, actor=actor)
     return source
 
 
@@ -148,8 +146,7 @@ def detach_source_from_agent(
     Detach a data source from an existing agent.
     """
     actor = server.user_manager.get_user_or_default(user_id=user_id)
-
-    return server.detach_source_from_agent(source_id=source_id, agent_id=agent_id, user_id=actor.id)
+    return server.agent_manager.detach_source(agent_id=agent_id, source_id=source_id, actor=actor)
 
 
 @router.post("/{source_id}/upload", response_model=Job, operation_id="upload_file_to_source")

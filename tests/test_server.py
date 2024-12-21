@@ -389,9 +389,7 @@ def test_user_message_memory(server, user_id, agent_id):
 
 
 @pytest.mark.order(3)
-def test_load_data(server, user_id, agent_id):
-    user = server.user_manager.get_user_or_default(user_id=user_id)
-
+def test_load_data(server, user, agent_id):
     # create source
     passages_before = server.agent_manager.list_passages(actor=user, agent_id=agent_id, cursor=None, limit=10000)
     assert len(passages_before) == 0
@@ -409,10 +407,10 @@ def test_load_data(server, user_id, agent_id):
         "Shishir loves indian food",
     ]
     connector = DummyDataConnector(archival_memories)
-    server.load_data(user_id, connector, source.name)
+    server.load_data(user.id, connector, source.name)
 
     # attach source
-    server.attach_source_to_agent(user_id=user_id, agent_id=agent_id, source_name="test_source")
+    server.agent_manager.attach_source(agent_id=agent_id, source_id=source.id, actor=user)
 
     # check archival memory size
     passages_after = server.agent_manager.list_passages(actor=user, agent_id=agent_id, cursor=None, limit=10000)

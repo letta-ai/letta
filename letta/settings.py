@@ -83,9 +83,6 @@ class Settings(BaseSettings):
     pg_pool_recycle: int = 1800  # When to recycle connections
     pg_echo: bool = False  # Logging
 
-    # tools configuration
-    load_default_external_tools: Optional[bool] = None
-
     @property
     def letta_pg_uri(self) -> str:
         if self.pg_uri:
