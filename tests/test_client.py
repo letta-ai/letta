@@ -400,16 +400,16 @@ def test_function_always_error(client: Union[LocalClient, RESTClient]):
 
     response_message = None
     for message in response.messages:
-        if isinstance(message, FunctionReturn):
+        if isinstance(message, ToolReturnMessage):
             response_message = message
             break
 
-    assert response_message, "FunctionReturn message not found in response"
+    assert response_message, "ToolReturnMessage message not found in response"
     assert response_message.status == "error"
     if isinstance(client, RESTClient):
-        assert response_message.function_return == "Error executing function always_error: ZeroDivisionError: division by zero"
+        assert response_message.tool_return == "Error executing function always_error: ZeroDivisionError: division by zero"
     else:
-        response_json = json.loads(response_message.function_return)
+        response_json = json.loads(response_message.tool_return)
         assert response_json['status'] == "Failed"
         assert response_json['message'] == "Error executing function always_error: ZeroDivisionError: division by zero"
 
