@@ -282,7 +282,6 @@ class Agent(BaseAgent):
         # Force a tool call if exactly one tool is specified
         elif step_count is not None and step_count > 0 and len(allowed_tool_names) == 1:
             force_tool_call = allowed_tool_names[0]
-
         for attempt in range(1, empty_response_retry_limit + 1):
             try:
                 response = create(
@@ -314,7 +313,7 @@ class Agent(BaseAgent):
             except ValueError as ve:
                 if attempt >= empty_response_retry_limit:
                     warnings.warn(f"Retry limit reached. Final error: {ve}")
-                    break
+                    raise Exception(f"Retries exhausted and no valid response received. Final error: {ve}")
                 else:
                     delay = min(backoff_factor * (2 ** (attempt - 1)), max_delay)
                     warnings.warn(f"Attempt {attempt} failed: {ve}. Retrying in {delay} seconds...")
