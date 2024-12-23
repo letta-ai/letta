@@ -148,9 +148,15 @@ def create(
 
     # openai
     if llm_config.model_endpoint_type == "openai":
+
         if model_settings.openai_api_key is None and llm_config.model_endpoint == "https://api.openai.com/v1":
             # only is a problem if we are *not* using an openai proxy
             raise LettaConfigurationError(message="OpenAI key is missing from letta config file", missing_fields=["openai_api_key"])
+
+        if function_call is None:
+            # force function calling for reliability, see https://platform.openai.com/docs/api-reference/chat/create#chat-create-tool_choice
+            # TODO(matt) move into LLMConfig
+            function_call = "auto"  # TODO change to "required" once proxy supports it
 
         data = build_openai_chat_completions_request(llm_config, messages, user_id, functions, function_call, use_tool_naming, max_tokens)
         if stream:  # Client requested token streaming
