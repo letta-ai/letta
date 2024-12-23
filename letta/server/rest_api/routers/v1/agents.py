@@ -161,7 +161,7 @@ def add_tool_to_agent(
 ):
     """Add tools to an existing agent"""
     actor = server.user_manager.get_user_or_default(user_id=user_id)
-    return server.agent_manager.attach_tool(agent_id=agent_id, tool_id=tool_id, user_id=actor)
+    return server.agent_manager.attach_tool(agent_id=agent_id, tool_id=tool_id, actor=actor)
 
 
 @router.patch("/{agent_id}/remove-tool/{tool_id}", response_model=AgentState, operation_id="remove_tool_from_agent")
