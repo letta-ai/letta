@@ -1,7 +1,6 @@
 from typing import TYPE_CHECKING, List, Optional
 
 from fastapi import APIRouter, Body, Depends, Header, HTTPException, Query, Response
-
 from letta.orm.errors import NoResultFound
 from letta.schemas.block import Block, BlockUpdate, CreateBlock
 from letta.server.rest_api.utils import get_letta_server

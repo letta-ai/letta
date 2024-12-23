@@ -1,13 +1,12 @@
 from typing import TYPE_CHECKING, List, Optional
 
-from sqlalchemy import JSON, String, UniqueConstraint
-from sqlalchemy.orm import Mapped, mapped_column, relationship
-
 # TODO everything in functions should live in this model
 from letta.orm.enums import ToolSourceType
 from letta.orm.mixins import OrganizationMixin
 from letta.orm.sqlalchemy_base import SqlalchemyBase
 from letta.schemas.tool import Tool as PydanticTool
+from sqlalchemy import JSON, String, UniqueConstraint
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 if TYPE_CHECKING:
     from letta.orm.organization import Organization

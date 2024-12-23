@@ -8,7 +8,6 @@ from composio.client.collections import (
     AppModel,
 )
 from fastapi.testclient import TestClient
-
 from letta.schemas.tool import ToolCreate, ToolUpdate
 from letta.server.rest_api.app import app
 from letta.server.rest_api.utils import get_letta_server

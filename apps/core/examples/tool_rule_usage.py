@@ -5,8 +5,8 @@ from letta import create_client
 from letta.schemas.letta_message import ToolCallMessage
 from letta.schemas.tool_rule import ChildToolRule, InitToolRule, TerminalToolRule
 from tests.helpers.endpoints_helper import (
-    assert_invoked_send_message_with_keyword,
-    setup_agent,
+  assert_invoked_send_message_with_keyword,
+  setup_agent,
 )
 from tests.helpers.utils import cleanup
 from tests.test_model_letta_perfomance import llm_config_dir

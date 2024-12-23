@@ -13,7 +13,6 @@ from typing import Annotated, List, Optional
 
 import questionary
 import typer
-
 from letta import create_client
 from letta.data_sources.connectors import DirectoryConnector
 

@@ -5,10 +5,9 @@ from typing import Annotated, List, Optional
 
 import questionary
 import typer
+from letta import utils
 from prettytable.colortable import ColorTable, Themes
 from tqdm import tqdm
-
-from letta import utils
 
 app = typer.Typer()
 

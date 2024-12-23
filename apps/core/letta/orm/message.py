@@ -1,13 +1,12 @@
 from typing import Optional
 
-from sqlalchemy import Index
-from sqlalchemy.orm import Mapped, mapped_column, relationship
-
 from letta.orm.custom_columns import ToolCallColumn
 from letta.orm.mixins import AgentMixin, OrganizationMixin
 from letta.orm.sqlalchemy_base import SqlalchemyBase
 from letta.schemas.message import Message as PydanticMessage
 from letta.schemas.openai.chat_completions import ToolCall
+from sqlalchemy import Index
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 
 class Message(SqlalchemyBase, OrganizationMixin, AgentMixin):

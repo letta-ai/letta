@@ -1,7 +1,6 @@
+from letta.orm import Base
 from sqlalchemy import ForeignKey, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
-
-from letta.orm import Base
 
 
 class ToolsAgents(Base):

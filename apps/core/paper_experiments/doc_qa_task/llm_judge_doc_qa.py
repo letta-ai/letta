@@ -2,10 +2,9 @@ import argparse
 import json
 import re
 
+from letta.credentials import LettaCredentials
 from openai import OpenAI
 from tqdm import tqdm
-
-from letta.credentials import LettaCredentials
 
 # Note: did not end up using since no cases of cheating were observed
 # CHEATING_PROMPT = \

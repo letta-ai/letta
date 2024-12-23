@@ -14,8 +14,6 @@ from fastapi import (
     status,
 )
 from fastapi.responses import JSONResponse, StreamingResponse
-from pydantic import Field
-
 from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG
 from letta.log import get_logger
 from letta.orm.errors import NoResultFound
@@ -49,6 +47,7 @@ from letta.schemas.user import User
 from letta.server.rest_api.interface import StreamingServerInterface
 from letta.server.rest_api.utils import get_letta_server, sse_async_generator
 from letta.server.server import SyncServer
+from pydantic import Field
 
 # These can be forward refs, but because Fastapi needs them at runtime the must be imported normally
 

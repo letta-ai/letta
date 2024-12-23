@@ -3,7 +3,6 @@ import uuid
 from typing import List, Optional, Union
 
 import requests
-
 from letta.local_llm.utils import count_tokens
 from letta.schemas.message import Message
 from letta.schemas.openai.chat_completion_request import ChatCompletionRequest, Tool

@@ -102,13 +102,9 @@ def convert_tools_to_anthropic_format(tools: List[Tool]) -> List[dict]:
     formatted_tools = []
     for tool in tools:
         formatted_tool = {
-            "name"         : tool.function.name,
-            "description"  : tool.function.description,
-            "input_schema"   : tool.function.parameters or {
-                "type": "object",
-                "properties": {},
-                "required": []
-            }
+            "name": tool.function.name,
+            "description": tool.function.description,
+            "input_schema": tool.function.parameters or {"type": "object", "properties": {}, "required": []},
         }
         formatted_tools.append(formatted_tool)
 
@@ -346,7 +342,7 @@ def anthropic_chat_completions_request(
             data["tool_choice"] = {
                 "type": "tool",  # Changed from "function" to "tool"
                 "name": anthropic_tools[0]["name"],  # Directly specify name without nested "function" object
-                "disable_parallel_tool_use": True  # Force single tool use
+                "disable_parallel_tool_use": True,  # Force single tool use
             }
 
     # Move 'system' to the top level
