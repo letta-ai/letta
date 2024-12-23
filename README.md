@@ -157,7 +157,7 @@ This project uses GitHub Actions for continuous integration and continuous deplo
 2. GitHub Actions executes the steps defined in `.github/workflows/deploy.yml`:
    - Sets up the necessary tools (Node.js, Google Cloud SDK, kubectl, just, Helm)
    - Configures authentication with Google Cloud Platform
-   - Builds Docker images using `just build-gh-actions`
+   - Builds Docker images using `just deploy-web-on-github`
    - Deploys the application using `just deploy`
 3. The deployment process includes:
    - Pushing Docker images to the GCP Container Registry
