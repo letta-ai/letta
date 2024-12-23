@@ -128,7 +128,7 @@ jobs:
 
       - name: Deploy
         id: deploy
-        run: just deploy
+        run: just deploy-web
 
       - name: Update deployment status to success
         if: success()

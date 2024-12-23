@@ -168,12 +168,14 @@ build-gh-actions:
         --cache-from type=local,src=/tmp/.buildx-cache \
         --cache-to type=local,dest=/tmp/.buildx-cache-new,mode=max \
         -t {{DOCKER_REGISTRY}}/web:{{TAG}} . --load --secret id=SENTRY_AUTH_TOKEN
+        --file apps/web/Dockerfile
 
     @echo "🚧 Building migrations Docker image with tag: {{TAG}}..."
     docker buildx build --platform linux/amd64 --target migrations \
         --cache-from type=local,src=/tmp/.buildx-cache \
         --cache-to type=local,dest=/tmp/.buildx-cache-new,mode=max \
         -t {{DOCKER_REGISTRY}}/web-migrations:{{TAG}} . --load
+        --file apps/web/Dockerfile
 
     @echo "🚧 Moving cache..."
     @rm -rf /tmp/.buildx-cache

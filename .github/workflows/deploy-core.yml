@@ -1,4 +1,4 @@
-name: Build and Deploy
+name: Deploy Core
 
 on:
   push:
@@ -94,4 +94,4 @@ jobs:
           E2B_SANDBOX_TEMPLATE_ID: ${{ secrets.E2B_SANDBOX_TEMPLATE_ID }}
           LETTA_LOAD_DEFAULT_EXTERNAL_TOOLS: 'True'
         run: |
-          just build deploy "${DEPLOY_MESSAGE}"
+          just build-core deploy-core "${DEPLOY_MESSAGE}"
