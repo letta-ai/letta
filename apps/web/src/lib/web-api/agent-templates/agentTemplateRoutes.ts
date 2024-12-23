@@ -250,9 +250,7 @@ async function getAgentTemplateSimulatorSession(
 
     agentId = newAgentId;
     id = simulatorSession.id;
-    console.log('create new simulator session');
   } else {
-    console.log('use existing simulator session');
     agentId = simulatorSession.agentId;
     id = simulatorSession.id;
   }
