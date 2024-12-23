@@ -2,6 +2,7 @@ import time
 import uuid
 
 import pytest
+
 from letta import create_client
 from letta.schemas.letta_message import ToolCallMessage
 from letta.schemas.tool_rule import (
@@ -42,7 +43,7 @@ def second_secret_word(prev_secret_word: str):
         prev_secret_word (str): The secret word retrieved from calling first_secret_word.
     """
     if prev_secret_word != "v0iq020i0g":
-        raise RuntimeError(f"Expected secret {"v0iq020i0g"}, got {prev_secret_word}")
+        raise RuntimeError(f"Expected secret {'v0iq020i0g'}, got {prev_secret_word}")
 
     return "4rwp2b4gxq"
 
@@ -55,7 +56,7 @@ def third_secret_word(prev_secret_word: str):
         prev_secret_word (str): The secret word retrieved from calling second_secret_word.
     """
     if prev_secret_word != "4rwp2b4gxq":
-        raise RuntimeError(f"Expected secret {"4rwp2b4gxq"}, got {prev_secret_word}")
+        raise RuntimeError(f'Expected secret "4rwp2b4gxq", got {prev_secret_word}')
 
     return "hj2hwibbqm"
 
@@ -68,7 +69,7 @@ def fourth_secret_word(prev_secret_word: str):
         prev_secret_word (str): The secret word retrieved from calling third_secret_word.
     """
     if prev_secret_word != "hj2hwibbqm":
-        raise RuntimeError(f"Expected secret {"hj2hwibbqm"}, got {prev_secret_word}")
+        raise RuntimeError(f"Expected secret {'hj2hwibbqm'}, got {prev_secret_word}")
 
     return "banana"
 
@@ -194,16 +195,13 @@ def test_check_tool_rules_with_different_models(mock_e2b_api_key_none):
         "tests/configs/llm_model_configs/openai-gpt-3.5-turbo.json",
         "tests/configs/llm_model_configs/openai-gpt-4o.json",
     ]
- 
+
     # Create two test tools
     t1_name = "first_secret_word"
     t2_name = "second_secret_word"
     t1 = client.create_or_update_tool(first_secret_word, name=t1_name)
     t2 = client.create_or_update_tool(second_secret_word, name=t2_name)
-    tool_rules = [
-        InitToolRule(tool_name=t1_name),
-        InitToolRule(tool_name=t2_name)
-    ]
+    tool_rules = [InitToolRule(tool_name=t1_name), InitToolRule(tool_name=t2_name)]
     tools = [t1, t2]
 
     for config_file in config_files:
@@ -212,34 +210,26 @@ def test_check_tool_rules_with_different_models(mock_e2b_api_key_none):
 
         if "gpt-4o" in config_file:
             # Structured output model (should work with multiple init tools)
-            agent_state = setup_agent(client, config_file, agent_uuid=agent_uuid,
-                                    tool_ids=[t.id for t in tools],
-                                    tool_rules=tool_rules)
+            agent_state = setup_agent(client, config_file, agent_uuid=agent_uuid, tool_ids=[t.id for t in tools], tool_rules=tool_rules)
             assert agent_state is not None
         else:
             # Non-structured output model (should raise error with multiple init tools)
             with pytest.raises(ValueError, match="Multiple initial tools are not supported for non-structured models"):
-                setup_agent(client, config_file, agent_uuid=agent_uuid,
-                            tool_ids=[t.id for t in tools],
-                            tool_rules=tool_rules)
-        
+                setup_agent(client, config_file, agent_uuid=agent_uuid, tool_ids=[t.id for t in tools], tool_rules=tool_rules)
+
         # Cleanup
         cleanup(client=client, agent_uuid=agent_uuid)
 
     # Create tool rule with single initial tool
     t3_name = "third_secret_word"
     t3 = client.create_or_update_tool(third_secret_word, name=t3_name)
-    tool_rules = [
-        InitToolRule(tool_name=t3_name)
-    ]
+    tool_rules = [InitToolRule(tool_name=t3_name)]
     tools = [t3]
     for config_file in config_files:
         agent_uuid = str(uuid.uuid4())
 
         # Structured output model (should work with single init tool)
-        agent_state = setup_agent(client, config_file, agent_uuid=agent_uuid,
-                                tool_ids=[t.id for t in tools],
-                                tool_rules=tool_rules)
+        agent_state = setup_agent(client, config_file, agent_uuid=agent_uuid, tool_ids=[t.id for t in tools], tool_rules=tool_rules)
         assert agent_state is not None
 
         cleanup(client=client, agent_uuid=agent_uuid)
@@ -257,7 +247,7 @@ def test_claude_initial_tool_rule_enforced(mock_e2b_api_key_none):
     tool_rules = [
         InitToolRule(tool_name=t1_name),
         ChildToolRule(tool_name=t1_name, children=[t2_name]),
-        TerminalToolRule(tool_name=t2_name)
+        TerminalToolRule(tool_name=t2_name),
     ]
     tools = [t1, t2]
 
@@ -265,7 +255,9 @@ def test_claude_initial_tool_rule_enforced(mock_e2b_api_key_none):
     anthropic_config_file = "tests/configs/llm_model_configs/claude-3-sonnet-20240229.json"
     for i in range(3):
         agent_uuid = str(uuid.uuid4())
-        agent_state = setup_agent(client, anthropic_config_file, agent_uuid=agent_uuid, tool_ids=[t.id for t in tools], tool_rules=tool_rules)
+        agent_state = setup_agent(
+            client, anthropic_config_file, agent_uuid=agent_uuid, tool_ids=[t.id for t in tools], tool_rules=tool_rules
+        )
         response = client.user_message(agent_id=agent_state.id, message="What is the second secret word?")
 
         assert_sanity_checks(response)
@@ -289,8 +281,9 @@ def test_claude_initial_tool_rule_enforced(mock_e2b_api_key_none):
 
         # Implement exponential backoff with initial time of 10 seconds
         if i < 2:
-            backoff_time = 10 * (2 ** i)
+            backoff_time = 10 * (2**i)
             time.sleep(backoff_time)
+
 
 @pytest.mark.timeout(60)  # Sets a 60-second timeout for the test since this could loop infinitely
 def test_agent_no_structured_output_with_one_child_tool(mock_e2b_api_key_none):
@@ -389,7 +382,7 @@ def test_agent_conditional_tool_easy(mock_e2b_api_key_none):
             default_child=coin_flip_name,
             child_output_mapping={
                 "hj2hwibbqm": secret_word_tool,
-            }
+            },
         ),
         TerminalToolRule(tool_name=secret_word_tool),
     ]
@@ -425,7 +418,6 @@ def test_agent_conditional_tool_easy(mock_e2b_api_key_none):
     cleanup(client=client, agent_uuid=agent_uuid)
 
 
-
 @pytest.mark.timeout(90)  # Longer timeout since this test has more steps
 def test_agent_conditional_tool_hard(mock_e2b_api_key_none):
     """
@@ -450,7 +442,7 @@ def test_agent_conditional_tool_hard(mock_e2b_api_key_none):
     final_tool = "fourth_secret_word"
     play_game_tool = client.create_or_update_tool(can_play_game, name=play_game)
     flip_coin_tool = client.create_or_update_tool(flip_coin_hard, name=coin_flip_name)
-    reveal_secret = client.create_or_update_tool(fourth_secret_word, name=final_tool) 
+    reveal_secret = client.create_or_update_tool(fourth_secret_word, name=final_tool)
 
     # Make tool rules - chain them together with conditional rules
     tool_rules = [
@@ -458,16 +450,10 @@ def test_agent_conditional_tool_hard(mock_e2b_api_key_none):
         ConditionalToolRule(
             tool_name=play_game,
             default_child=play_game,  # Keep trying if we can't play
-            child_output_mapping={
-                True: coin_flip_name  # Only allow access when can_play_game returns True
-            }
+            child_output_mapping={True: coin_flip_name},  # Only allow access when can_play_game returns True
         ),
         ConditionalToolRule(
-            tool_name=coin_flip_name,
-            default_child=coin_flip_name,
-            child_output_mapping={
-                "hj2hwibbqm": final_tool, "START_OVER": play_game
-            }
+            tool_name=coin_flip_name, default_child=coin_flip_name, child_output_mapping={"hj2hwibbqm": final_tool, "START_OVER": play_game}
         ),
         TerminalToolRule(tool_name=final_tool),
     ]
@@ -475,13 +461,7 @@ def test_agent_conditional_tool_hard(mock_e2b_api_key_none):
     # Setup agent with all tools
     tools = [play_game_tool, flip_coin_tool, reveal_secret]
     config_file = "tests/configs/llm_model_configs/claude-3-sonnet-20240229.json"
-    agent_state = setup_agent(
-        client,
-        config_file,
-        agent_uuid=agent_uuid,
-        tool_ids=[t.id for t in tools],
-        tool_rules=tool_rules
-    )
+    agent_state = setup_agent(client, config_file, agent_uuid=agent_uuid, tool_ids=[t.id for t in tools], tool_rules=tool_rules)
 
     # Ask agent to try to get all secret words
     response = client.user_message(agent_id=agent_state.id, message="hi")
@@ -520,7 +500,7 @@ def test_agent_conditional_tool_without_default_child(mock_e2b_api_key_none):
     Test the agent with a conditional tool that allows any child tool to be called if a function returns None.
 
                 Tool Flow:
-       
+
                 return_none
                      |
                      v
@@ -541,27 +521,16 @@ def test_agent_conditional_tool_without_default_child(mock_e2b_api_key_none):
         ConditionalToolRule(
             tool_name=tool_name,
             default_child=None,  # Allow any tool to be called if output doesn't match
-            child_output_mapping={
-                "anything but none": "first_secret_word"
-            }
-        )
+            child_output_mapping={"anything but none": "first_secret_word"},
+        ),
     ]
     tools = [tool, secret_word]
 
     # Setup agent with all tools
-    agent_state = setup_agent(
-        client,
-        config_file,
-        agent_uuid=agent_uuid,
-        tool_ids=[t.id for t in tools],
-        tool_rules=tool_rules
-    )
+    agent_state = setup_agent(client, config_file, agent_uuid=agent_uuid, tool_ids=[t.id for t in tools], tool_rules=tool_rules)
 
     # Ask agent to try different tools based on the game output
-    response = client.user_message(
-        agent_id=agent_state.id,
-        message="call a function, any function. then call send_message"
-    )
+    response = client.user_message(agent_id=agent_state.id, message="call a function, any function. then call send_message")
 
     # Make checks
     assert_sanity_checks(response)
@@ -613,18 +582,14 @@ def test_agent_reload_remembers_function_response(mock_e2b_api_key_none):
         ConditionalToolRule(
             tool_name=flip_coin_name,
             default_child=flip_coin_name,  # Allow any tool to be called if output doesn't match
-            child_output_mapping={
-                "hj2hwibbqm": secret_word
-            }
+            child_output_mapping={"hj2hwibbqm": secret_word},
         ),
-        TerminalToolRule(tool_name=secret_word)
+        TerminalToolRule(tool_name=secret_word),
     ]
     tools = [flip_coin_tool, secret_word_tool]
 
     # Setup initial agent
-    agent_state = setup_agent(
-        client, config_file, agent_uuid=agent_uuid, tool_ids=[t.id for t in tools], tool_rules=tool_rules
-    )
+    agent_state = setup_agent(client, config_file, agent_uuid=agent_uuid, tool_ids=[t.id for t in tools], tool_rules=tool_rules)
 
     # Call flip_coin first
     response = client.user_message(agent_id=agent_state.id, message="flip a coin")
