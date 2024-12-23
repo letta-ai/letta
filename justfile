@@ -5,7 +5,8 @@ REGION := "us-central1"
 REGISTRY_NAME := "letta"
 DOCKER_REGISTRY := REGION + "-docker.pkg.dev/" + PROJECT_NAME + "/" + REGISTRY_NAME
 HELM_CHARTS_DIR := "helm"
-HELM_CHART_NAME := "letta-web"
+WEB_HELM_CHART_NAME := "letta-web"
+CORE_HELM_CHART_NAME := "memgpt-server"
 REDIS_HOST := "10.167.199.148"
 TAG := env_var_or_default("TAG", "latest")
 
@@ -54,9 +55,9 @@ configure-kubectl:
 # Deploy the Helm chart
 @deploy-web: push-web
     @echo "🚧 Deploying Helm chart..."
-    kubectl delete job {{HELM_CHART_NAME}}-migration --ignore-not-found
+    kubectl delete job {{WEB_HELM_CHART_NAME}}-migration --ignore-not-found
     npm run slack-bot-says "Deploying web service Helm chart with tag: {{TAG}}..."
-    helm upgrade --install {{HELM_CHART_NAME}} {{HELM_CHARTS_DIR}}/{{HELM_CHART_NAME}} \
+    helm upgrade --install {{WEB_HELM_CHART_NAME}} {{HELM_CHARTS_DIR}}/{{WEB_HELM_CHART_NAME}} \
         --force \
         --set image.repository={{DOCKER_REGISTRY}}/web \
         --set image.tag={{TAG}} \
@@ -85,7 +86,8 @@ configure-kubectl:
 # Destroy the Helm chart
 destroy:
     @echo "🚧 Undeploying web service Helm chart..."
-    helm uninstall {{HELM_CHART_NAME}}
+    helm uninstall {{WEB_HELM_CHART_NAME}}
+    helm uninstall {{CORE_HELM_CHART_NAME}}
 
 # Show environment variables on the pod
 show-env:
@@ -123,7 +125,7 @@ describe-web:
 # Deploy the Helm chart
 @deploy-core deploy_message="": push-core
     echo "🚧 Deploying Helm chart..."
-    helm upgrade --install {{HELM_CHART_NAME}} {{HELM_CHARTS_DIR}}/{{HELM_CHART_NAME}} \
+    helm upgrade --install {{CORE_HELM_CHART_NAME}} {{HELM_CHARTS_DIR}}/{{CORE_HELM_CHART_NAME}} \
         --set deployMessage='{{deploy_message}}' \
         --set image.repository={{DOCKER_REGISTRY}}/memgpt-server \
         --set image.tag={{TAG}} \
@@ -145,8 +147,11 @@ describe-web:
 
 
 # Get migration job logs
-migration-logs:
-    kubectl logs job/{{HELM_CHART_NAME}}-migration
+web-migration-logs:
+    kubectl logs job/{{WEB_HELM_CHART_NAME}}-migration
+
+core-migration-logs:
+    kubectl logs job/{{CORE_HELM_CHART_NAME}}-migration
 
 
 # starts up cool dev environment
