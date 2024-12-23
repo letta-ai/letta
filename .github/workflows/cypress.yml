@@ -30,6 +30,7 @@ jobs:
           files: |
             .github/workflows/cypress.yml
             apps/letta/**
+            apps/core/**
             libs/**
             package.json
             package-lock.json
