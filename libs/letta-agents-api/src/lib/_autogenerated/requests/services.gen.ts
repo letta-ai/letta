@@ -104,6 +104,8 @@ import type {
   UpdateAgentMessageResponse,
   CreateAgentMessageStreamData,
   CreateAgentMessageStreamResponse,
+  CreateAgentMessageAsyncData,
+  CreateAgentMessageAsyncResponse,
   ListModelsResponse,
   ListEmbeddingModelsResponse,
   ListMemoryBlocksData,
@@ -157,12 +159,6 @@ import type {
   UpdateUserResponse,
   DeleteUserData,
   DeleteUserResponse,
-  CreateApiKeyData,
-  CreateApiKeyResponse,
-  ListApiKeysData,
-  ListApiKeysResponse,
-  DeleteApiKeyData,
-  DeleteApiKeyResponse,
   ListOrgsData,
   ListOrgsResponse,
   CreateOrganizationData,
@@ -360,8 +356,8 @@ export class ToolsService {
   }
 
   /**
-   * Add Base Tools
-   * Add base tools
+   * Upsert Base Tools
+   * Upsert base tools
    * @param data The data for the request.
    * @param data.userId
    * @returns letta__schemas__tool__Tool Successful Response
@@ -387,7 +383,7 @@ export class ToolsService {
    * @param data The data for the request.
    * @param data.requestBody
    * @param data.userId
-   * @returns FunctionReturn Successful Response
+   * @returns ToolReturnMessage Successful Response
    * @throws ApiError
    */
   public static runToolFromSource(
@@ -820,6 +816,7 @@ export class AgentsService {
    * @param data The data for the request.
    * @param data.name Name of the agent
    * @param data.tags List of tags to filter agents by
+   * @param data.matchAllTags If True, only returns agents that match ALL given tags. Otherwise, return agents that have ANY of the passed in tags.
    * @param data.userId
    * @returns AgentState Successful Response
    * @throws ApiError
@@ -834,6 +831,7 @@ export class AgentsService {
       query: {
         name: data.name,
         tags: data.tags,
+        match_all_tags: data.matchAllTags,
       },
       errors: {
         422: 'Validation Error',
@@ -954,7 +952,7 @@ export class AgentsService {
    * @param data The data for the request.
    * @param data.agentId
    * @param data.userId
-   * @returns unknown Successful Response
+   * @returns AgentState Successful Response
    * @throws ApiError
    */
   public static deleteAgent(
@@ -1061,6 +1059,7 @@ export class AgentsService {
    * Get the sources associated with an agent.
    * @param data The data for the request.
    * @param data.agentId
+   * @param data.userId
    * @returns Source Successful Response
    * @throws ApiError
    */
@@ -1086,7 +1085,8 @@ export class AgentsService {
    * Retrieve the messages in the context of a specific agent.
    * @param data The data for the request.
    * @param data.agentId
-   * @returns letta__schemas__message__Message_Output Successful Response
+   * @param data.userId
+   * @returns letta__schemas__message__Message Successful Response
    * @throws ApiError
    */
   public static listAgentInContextMessages(
@@ -1112,6 +1112,7 @@ export class AgentsService {
    * This endpoint fetches the current memory state of the agent identified by the user ID and agent ID.
    * @param data The data for the request.
    * @param data.agentId
+   * @param data.userId
    * @returns Memory Successful Response
    * @throws ApiError
    */
@@ -1279,6 +1280,7 @@ export class AgentsService {
    * Retrieve the summary of the recall memory of a specific agent.
    * @param data The data for the request.
    * @param data.agentId
+   * @param data.userId
    * @returns RecallMemorySummary Successful Response
    * @throws ApiError
    */
@@ -1304,6 +1306,7 @@ export class AgentsService {
    * Retrieve the summary of the archival memory of a specific agent.
    * @param data The data for the request.
    * @param data.agentId
+   * @param data.userId
    * @returns ArchivalMemorySummary Successful Response
    * @throws ApiError
    */
@@ -1490,7 +1493,8 @@ export class AgentsService {
    * @param data.agentId
    * @param data.messageId
    * @param data.requestBody
-   * @returns letta__schemas__message__Message_Output Successful Response
+   * @param data.userId
+   * @returns letta__schemas__message__Message Successful Response
    * @throws ApiError
    */
   public static updateAgentMessage(
@@ -1532,6 +1536,36 @@ export class AgentsService {
     return __request(OpenAPI, {
       method: 'POST',
       url: '/v1/agents/{agent_id}/messages/stream',
+      path: {
+        agent_id: data.agentId,
+      },
+      body: data.requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Send Message Async
+   * Asynchronously process a user message and return a job ID.
+   * The actual processing happens in the background, and the status can be checked using the job ID.
+   * @param data The data for the request.
+   * @param data.agentId
+   * @param data.requestBody
+   * @param data.userId
+   * @returns Job Successful Response
+   * @throws ApiError
+   */
+  public static createAgentMessageAsync(
+    data: CreateAgentMessageAsyncData,
+    headers?: { user_id: string }
+  ): CancelablePromise<CreateAgentMessageAsyncResponse> {
+    return __request(OpenAPI, {
+      method: 'POST',
+      url: '/v1/agents/{agent_id}/messages/async',
       path: {
         agent_id: data.agentId,
       },
@@ -1748,7 +1782,7 @@ export class BlocksService {
    * @param data.blockId
    * @param data.agentId The unique identifier of the agent to attach the source to.
    * @param data.userId
-   * @returns Block Successful Response
+   * @returns void Successful Response
    * @throws ApiError
    */
   public static linkAgentMemoryBlock(
@@ -1778,7 +1812,7 @@ export class BlocksService {
    * @param data.blockId
    * @param data.agentId The unique identifier of the agent to attach the source to.
    * @param data.userId
-   * @returns Memory Successful Response
+   * @returns void Successful Response
    * @throws ApiError
    */
   public static unlinkAgentMemoryBlock(
@@ -2280,79 +2314,6 @@ export class UsersService {
       headers,
     });
   }
-
-  /**
-   * Create New Api Key
-   * Create a new API key for a user
-   * @param data The data for the request.
-   * @param data.requestBody
-   * @returns APIKey Successful Response
-   * @throws ApiError
-   */
-  public static createApiKey(
-    data: CreateApiKeyData,
-    headers?: { user_id: string }
-  ): CancelablePromise<CreateApiKeyResponse> {
-    return __request(OpenAPI, {
-      method: 'POST',
-      url: '/v1/admin/users/keys',
-      body: data.requestBody,
-      mediaType: 'application/json',
-      errors: {
-        422: 'Validation Error',
-      },
-      headers,
-    });
-  }
-
-  /**
-   * Get Api Keys
-   * Get a list of all API keys for a user
-   * @param data The data for the request.
-   * @param data.userId The unique identifier of the user.
-   * @returns APIKey Successful Response
-   * @throws ApiError
-   */
-  public static listApiKeys(
-    data: ListApiKeysData,
-    headers?: { user_id: string }
-  ): CancelablePromise<ListApiKeysResponse> {
-    return __request(OpenAPI, {
-      method: 'GET',
-      url: '/v1/admin/users/keys',
-      query: {
-        user_id: data.userId,
-      },
-      errors: {
-        422: 'Validation Error',
-      },
-      headers,
-    });
-  }
-
-  /**
-   * Delete Api Key
-   * @param data The data for the request.
-   * @param data.apiKey The API key to be deleted.
-   * @returns APIKey Successful Response
-   * @throws ApiError
-   */
-  public static deleteApiKey(
-    data: DeleteApiKeyData,
-    headers?: { user_id: string }
-  ): CancelablePromise<DeleteApiKeyResponse> {
-    return __request(OpenAPI, {
-      method: 'DELETE',
-      url: '/v1/admin/users/keys',
-      query: {
-        api_key: data.apiKey,
-      },
-      errors: {
-        422: 'Validation Error',
-      },
-      headers,
-    });
-  }
 }
 
 export class AdminService {
@@ -2447,79 +2408,6 @@ export class AdminService {
       url: '/v1/admin/users/',
       query: {
         user_id: data.userId,
-      },
-      errors: {
-        422: 'Validation Error',
-      },
-      headers,
-    });
-  }
-
-  /**
-   * Create New Api Key
-   * Create a new API key for a user
-   * @param data The data for the request.
-   * @param data.requestBody
-   * @returns APIKey Successful Response
-   * @throws ApiError
-   */
-  public static createApiKey(
-    data: CreateApiKeyData,
-    headers?: { user_id: string }
-  ): CancelablePromise<CreateApiKeyResponse> {
-    return __request(OpenAPI, {
-      method: 'POST',
-      url: '/v1/admin/users/keys',
-      body: data.requestBody,
-      mediaType: 'application/json',
-      errors: {
-        422: 'Validation Error',
-      },
-      headers,
-    });
-  }
-
-  /**
-   * Get Api Keys
-   * Get a list of all API keys for a user
-   * @param data The data for the request.
-   * @param data.userId The unique identifier of the user.
-   * @returns APIKey Successful Response
-   * @throws ApiError
-   */
-  public static listApiKeys(
-    data: ListApiKeysData,
-    headers?: { user_id: string }
-  ): CancelablePromise<ListApiKeysResponse> {
-    return __request(OpenAPI, {
-      method: 'GET',
-      url: '/v1/admin/users/keys',
-      query: {
-        user_id: data.userId,
-      },
-      errors: {
-        422: 'Validation Error',
-      },
-      headers,
-    });
-  }
-
-  /**
-   * Delete Api Key
-   * @param data The data for the request.
-   * @param data.apiKey The API key to be deleted.
-   * @returns APIKey Successful Response
-   * @throws ApiError
-   */
-  public static deleteApiKey(
-    data: DeleteApiKeyData,
-    headers?: { user_id: string }
-  ): CancelablePromise<DeleteApiKeyResponse> {
-    return __request(OpenAPI, {
-      method: 'DELETE',
-      url: '/v1/admin/users/keys',
-      query: {
-        api_key: data.apiKey,
       },
       errors: {
         422: 'Validation Error',

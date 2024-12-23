@@ -27,15 +27,15 @@ const typographyVariants = cva('break-words', {
       body3: 'text-xs',
     },
     color: {
-      default: '',
+      default: 'text-text-default',
       black: 'text-black',
       primary: 'text-primary',
       muted: 'text-muted',
       white: 'text-white',
       positive: 'text-positive',
       destructive: 'text-destructive',
-      forceTextPrimary: 'text-text-primary',
-      forceTextSecondary: 'text-text-secondary',
+      lighter: 'text-text-lighter',
+      violet: 'text-violet',
     },
     font: {
       mono: 'font-mono',
@@ -74,7 +74,7 @@ const typographyVariants = cva('break-words', {
   },
 });
 
-type TypographyProps = HTMLProps<HTMLElement> &
+export type TypographyProps = HTMLProps<HTMLElement> &
   VariantProps<typeof typographyVariants> & {
     overrideEl?: 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6' | 'p' | 'span';
   };
@@ -147,22 +147,22 @@ export function LoadedTypography(props: LoadedTypographyProps) {
 
   return (
     <div className="relative w-fit">
-      {doesTextExist && (
-        <Typography {...rest} className="absolute left-0 text-right">
+      {doesTextExist ? (
+        <Typography {...rest} className="">
           {text}
         </Typography>
+      ) : (
+        <Typography
+          {...rest}
+          role="presentation"
+          tabIndex={-1}
+          className={cn(
+            'pointer-events-none bg-gray-200 select-none  text-transparent animate-pulse'
+          )}
+        >
+          {fillerText}
+        </Typography>
       )}
-      <Typography
-        {...rest}
-        role="presentation"
-        tabIndex={-1}
-        className={cn(
-          'pointer-events-none bg-gray-200 select-none  text-transparent ',
-          doesTextExist ? 'opacity-0 ' : 'animate-pulse'
-        )}
-      >
-        {fillerText}
-      </Typography>
     </div>
   );
 }

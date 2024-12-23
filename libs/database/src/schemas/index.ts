@@ -11,10 +11,7 @@ import {
   primaryKey,
 } from 'drizzle-orm/pg-core';
 import { sql, relations } from 'drizzle-orm';
-import type {
-  GenericPanelTemplateId,
-  PanelItemPositionsMatrix,
-} from '@letta-web/component-library';
+import type { ProviderConfiguration } from '@letta-web/types';
 
 export const emailWhitelist = pgTable('email_whitelist', {
   id: text('id')
@@ -80,7 +77,11 @@ export const organizationPreferencesRelations = relations(
   })
 );
 
-export const signupMethodsEnum = pgEnum('signup_methods', ['google', 'email']);
+export const signupMethodsEnum = pgEnum('signup_methods', [
+  'google',
+  'email',
+  'github',
+]);
 
 export const users = pgTable('users', {
   id: text('id')
@@ -476,9 +477,7 @@ export const adePreferences = pgTable(
       .references(() => users.id, { onDelete: 'cascade' })
       .notNull(),
     agentId: text('agent_id'),
-    displayConfig: json('display_config')
-      .$type<PanelItemPositionsMatrix<GenericPanelTemplateId>>()
-      .notNull(),
+    displayConfig: json('display_config').$type().notNull(),
   },
   (table) => ({
     unique: {
@@ -672,3 +671,45 @@ export const embeddingModelsMetadata = pgTable(
     },
   })
 );
+
+export const toolMetadataProviderEnum = pgEnum('provider_enum', [
+  'composio',
+  'generic',
+]);
+
+export const toolMetadata = pgTable(
+  'tool_metadata',
+  {
+    id: text('id')
+      .notNull()
+      .unique()
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    name: text('name').notNull(),
+    description: text('description').notNull(),
+    brand: text('brand').notNull(),
+    provider: toolMetadataProviderEnum('provider').notNull(),
+    providerId: text('provider_id').notNull(),
+    configuration: json('configuration').$type<ProviderConfiguration>(),
+    tags: text('tags').notNull(),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    disabledAt: timestamp('disabled_at'),
+    updatedAt: timestamp('updated_at')
+      .notNull()
+      .$onUpdate(() => new Date()),
+  },
+  (self) => ({
+    unique: {
+      uniqueProviderId: uniqueIndex('unique_provider_id').on(
+        self.provider,
+        self.providerId
+      ),
+    },
+  })
+);
+
+export const toolGroupMetadata = pgTable('tool_group_metadata', {
+  brand: text('brand').notNull().unique().primaryKey(),
+  imageUrl: text('image_url'),
+  description: text('description').notNull(),
+});

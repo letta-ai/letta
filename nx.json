@@ -23,6 +23,9 @@
   "neverConnectToCloud": true,
   "plugins": [
     {
+      "plugin": "@nxlv/python"
+    },
+    {
       "plugin": "@nx/next/plugin",
       "options": {
         "startTargetName": "start",
@@ -82,6 +85,11 @@
     },
     "e2e": {
       "cache": true
+    },
+    "@nx/esbuild:esbuild": {
+      "cache": true,
+      "dependsOn": ["^build"],
+      "inputs": ["production", "^production"]
     }
   },
   "generators": {

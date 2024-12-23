@@ -47,8 +47,9 @@ const DialogOverlay = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <DialogPrimitive.Overlay
     ref={ref}
+    data-testid="dialog-overlay"
     className={cn(
-      'fixed inset-0 z-dialog bg-black/80  data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
+      'fixed inset-0 z-dialog bg-black/30  data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
       className
     )}
     {...props}
@@ -209,6 +210,7 @@ const dialogVariants = cva('', {
       medium: 'max-w-md',
       large: 'max-w-[600px]',
       xlarge: 'max-w-[800px]',
+      xxlarge: 'max-w-[1024px]',
       full: 'max-w-[85vw] h-full max-h-[85dvh]',
     },
   },
@@ -355,7 +357,6 @@ interface DialogProps extends VariantProps<typeof dialogVariants> {
   disableForm?: boolean;
   hideCancel?: boolean;
   hideConfirm?: boolean;
-  noContentPadding?: boolean;
   hideFooter?: boolean;
   color?: 'background-grey' | 'background';
   reverseButtons?: boolean;
@@ -367,7 +368,6 @@ export function Dialog(props: DialogProps) {
     color = 'background-grey',
     defaultOpen,
     errorMessage,
-    noContentPadding,
     errorAdditionalMessage,
     onOpenChange,
     title,
@@ -442,7 +442,7 @@ export function Dialog(props: DialogProps) {
           <Element
             className={cn(
               'overflow-y-auto overflow-x-hidden flex flex-col flex-1',
-              !noContentPadding ? 'pt-4' : '',
+              'pt-4',
               size === 'full' ? 'h-full' : ''
             )}
             /* @ts-expect-error - element */
@@ -451,7 +451,7 @@ export function Dialog(props: DialogProps) {
             <VStack
               className={cn(
                 'flex-1',
-                noContentPadding ? '' : 'px-[24px]',
+                'px-[24px]',
                 size === 'full' ? 'h-full flex flex-col' : ''
               )}
             >

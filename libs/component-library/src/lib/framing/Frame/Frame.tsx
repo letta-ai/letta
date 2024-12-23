@@ -26,6 +26,7 @@ const frameVariants = cva('', {
       sidebarNavOverlay: 'z-sidebarNavOverlay',
       sidebarNav: 'z-sidebarNav',
       header: 'z-header',
+      miniApp: 'z-miniapp',
       dialog: 'z-dialog',
       tooltip: 'z-tooltip',
       draggedItem: 'z-draggedItem',
@@ -44,7 +45,8 @@ const frameVariants = cva('', {
       'background-black': 'bg-background-black text-background-black-content',
       tertiary: 'bg-tertiary text-tertiary-content',
       success: 'bg-background-success text-background-success-content',
-      destructive: 'bg-destructive text-destructive-content',
+      destructive:
+        'bg-background-destructive text-background-destructive-content',
       primary: 'bg-primary text-primary-content',
       secondary: 'bg-secondary text-secondary-content',
       warning: 'bg-background-warning text-background-warning-content',
@@ -57,7 +59,7 @@ const frameVariants = cva('', {
       sidebar: 'w-sidebar',
     },
     height: {
-      header: 'h-header',
+      header: 'h-header min-h-header',
       'header-sm': 'h-header-sm',
     },
     borderColor: {
@@ -115,6 +117,7 @@ const frameVariants = cva('', {
     },
     paddingTop: {
       xxsmall: 'pt-1',
+      xsmall: 'pt-2',
       small: 'pt-2.5',
       medium: 'pt-3',
       large: 'pt-4',
@@ -129,6 +132,8 @@ const frameVariants = cva('', {
       medium: 'pb-3',
       large: 'pb-4',
       true: 'pb-5',
+      xlarge: 'pb-6',
+      xxlarge: 'pb-8',
     },
     paddingLeft: {
       small: 'pl-2.5',
@@ -206,6 +211,7 @@ export const Frame = forwardRef<HTMLElement, PropsWithChildren<FrameProps>>(
       overflow,
       overflowY,
       overflowX,
+      height,
       ...rest
     } = props;
 
@@ -217,6 +223,7 @@ export const Frame = forwardRef<HTMLElement, PropsWithChildren<FrameProps>>(
       border,
       borderY,
       zIndex,
+      height,
       borderX,
       borderRight,
       collapseWidth,

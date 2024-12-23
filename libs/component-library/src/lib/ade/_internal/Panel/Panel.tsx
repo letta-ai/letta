@@ -1,11 +1,11 @@
 import type { PropsWithChildren } from 'react';
 import React from 'react';
 import { HStack } from '../../../framing/HStack/HStack';
-import type { ADEDropdownMenuProps } from '../../ADEDropdownMenu/ADEDropdownMenu';
 import { Typography } from '../../../core/Typography/Typography';
 import { VStack } from '../../../framing/VStack/VStack';
 import { cn } from '@letta-web/core-style-config';
 import { InfoTooltip } from '../../../reusable/InfoTooltip/InfoTooltip';
+import type { ADEDropdownMenuProps } from '../../ADEDropdownMenu/ADEDropdownMenu';
 
 type GenericrPanelTabBarProps = PropsWithChildren;
 
@@ -52,7 +52,7 @@ export function GenericTab(props: GenericTabProps) {
         as="button"
         fullWidth
         data-testid={`tab:${panelId || title}`}
-        paddingLeft="large"
+        paddingLeft="small"
         align="center"
         paddingY="xsmall"
         className="h-full"
@@ -62,11 +62,7 @@ export function GenericTab(props: GenericTabProps) {
         <Typography bold variant="body3" className="uppercase" noWrap>
           {title}
         </Typography>
-        {infoTooltipText && (
-          <span className="mt-[-3px]">
-            <InfoTooltip text={infoTooltipText} />
-          </span>
-        )}
+        {infoTooltipText && <InfoTooltip text={infoTooltipText} />}
       </HStack>
       <HStack className="mt-[-4px]" align="center" gap="small">
         {/*<ADEDropdownMenu*/}

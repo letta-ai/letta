@@ -11,18 +11,19 @@
     "importHelpers": true,
     "target": "es2015",
     "module": "esnext",
-    "lib": ["es2020", "dom"],
+    "lib": ["ES2023.Array", "es2020", "dom"],
     "skipLibCheck": true,
     "skipDefaultLibCheck": true,
     "baseUrl": ".",
     "strictNullChecks": true,
     "paths": {
-      "$letta/*": ["apps/letta/src/lib/*"],
+      "$web/*": ["apps/web/src/lib/*"],
       "@letta-web/analytics": ["libs/analytics/src/events.ts"],
       "@letta-web/analytics/client": ["libs/analytics/src/client/index.tsx"],
       "@letta-web/analytics/server": ["libs/analytics/src/server/index.ts"],
       "@letta-web/component-library": ["libs/component-library/src/index.tsx"],
       "@letta-web/component-library/*": ["component-library/src/*"],
+      "@letta-web/composio": ["libs/composio/src/index.ts"],
       "@letta-web/configure": ["scripts/configure/src/index.ts"],
       "@letta-web/core-style-config": ["libs/core-style-config/src/index.ts"],
       "@letta-web/core-style-config/*": ["utils/src/*"],
@@ -33,6 +34,7 @@
         "libs/environmental-variables/src/index.ts"
       ],
       "@letta-web/feature-flags": ["libs/feature-flags/src/index.ts"],
+      "@letta-web/generic-utils": ["libs/generic-utils/src/index.ts"],
       "@letta-web/helpful-client-utils": [
         "libs/helpful-client-utils/src/index.ts"
       ],
@@ -40,7 +42,8 @@
       "@letta-web/letta-agents-api-testing": [
         "libs/letta-agents-api-testing/src/index.ts"
       ],
-      "@letta-web/redis": ["libs/redis/src/index.ts"]
+      "@letta-web/redis": ["libs/redis/src/index.ts"],
+      "@letta-web/types": ["libs/types/src/index.ts"]
     },
     "jsx": "react"
   },

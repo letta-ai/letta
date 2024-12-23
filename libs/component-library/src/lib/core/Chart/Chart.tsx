@@ -22,6 +22,21 @@ const defaultOptions: EChartsOption = {
   },
 };
 
+interface MakeFormattedTooltipOptions {
+  value: string;
+  label: string;
+  color: string;
+}
+
+export function makeFormattedTooltip(options: MakeFormattedTooltipOptions) {
+  const { value, label, color } = options;
+  return `<div class="tooltip-format-container">
+    <div class="tooltip-color" style="background-color: ${color}"></div>
+    <div class="tooltip-value">${value}</div>
+        <div class="tooltip-label">${label}</div>
+</div>`;
+}
+
 export function Chart(props: ChartOptions) {
   const { options, width, height, showLegend } = props;
   const mounted = useRef(false);
@@ -78,6 +93,12 @@ export function Chart(props: ChartOptions) {
         ...defaultOptions,
         ...options,
         tooltip: {
+          borderWidth: 0,
+          height: 28,
+          padding: 0,
+          trigger: 'item',
+          position: 'top',
+          backgroundColor: 'hsl(var(--background-grey2))',
           ...options.tooltip,
           className: 'chart-tooltip',
         },

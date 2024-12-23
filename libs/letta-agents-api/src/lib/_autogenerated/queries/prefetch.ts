@@ -177,18 +177,26 @@ export const prefetchUseSourcesServiceListFilesFromSource = (
 export const prefetchUseAgentsServiceListAgents = (
   queryClient: QueryClient,
   {
+    matchAllTags,
     name,
     tags,
     userId,
   }: {
+    matchAllTags?: boolean;
     name?: string;
     tags?: string[];
     userId?: string;
   } = {}
 ) =>
   queryClient.prefetchQuery({
-    queryKey: Common.UseAgentsServiceListAgentsKeyFn({ name, tags, userId }),
-    queryFn: () => AgentsService.listAgents({ name, tags, userId }),
+    queryKey: Common.UseAgentsServiceListAgentsKeyFn({
+      matchAllTags,
+      name,
+      tags,
+      userId,
+    }),
+    queryFn: () =>
+      AgentsService.listAgents({ matchAllTags, name, tags, userId }),
   });
 export const prefetchUseAgentsServiceGetAgentContextWindow = (
   queryClient: QueryClient,
@@ -242,39 +250,47 @@ export const prefetchUseAgentsServiceGetAgentSources = (
   queryClient: QueryClient,
   {
     agentId,
+    userId,
   }: {
     agentId: string;
+    userId?: string;
   }
 ) =>
   queryClient.prefetchQuery({
-    queryKey: Common.UseAgentsServiceGetAgentSourcesKeyFn({ agentId }),
-    queryFn: () => AgentsService.getAgentSources({ agentId }),
+    queryKey: Common.UseAgentsServiceGetAgentSourcesKeyFn({ agentId, userId }),
+    queryFn: () => AgentsService.getAgentSources({ agentId, userId }),
   });
 export const prefetchUseAgentsServiceListAgentInContextMessages = (
   queryClient: QueryClient,
   {
     agentId,
+    userId,
   }: {
     agentId: string;
+    userId?: string;
   }
 ) =>
   queryClient.prefetchQuery({
     queryKey: Common.UseAgentsServiceListAgentInContextMessagesKeyFn({
       agentId,
+      userId,
     }),
-    queryFn: () => AgentsService.listAgentInContextMessages({ agentId }),
+    queryFn: () =>
+      AgentsService.listAgentInContextMessages({ agentId, userId }),
   });
 export const prefetchUseAgentsServiceGetAgentMemory = (
   queryClient: QueryClient,
   {
     agentId,
+    userId,
   }: {
     agentId: string;
+    userId?: string;
   }
 ) =>
   queryClient.prefetchQuery({
-    queryKey: Common.UseAgentsServiceGetAgentMemoryKeyFn({ agentId }),
-    queryFn: () => AgentsService.getAgentMemory({ agentId }),
+    queryKey: Common.UseAgentsServiceGetAgentMemoryKeyFn({ agentId, userId }),
+    queryFn: () => AgentsService.getAgentMemory({ agentId, userId }),
   });
 export const prefetchUseAgentsServiceGetAgentMemoryBlock = (
   queryClient: QueryClient,
@@ -318,29 +334,37 @@ export const prefetchUseAgentsServiceGetAgentRecallMemorySummary = (
   queryClient: QueryClient,
   {
     agentId,
+    userId,
   }: {
     agentId: string;
+    userId?: string;
   }
 ) =>
   queryClient.prefetchQuery({
     queryKey: Common.UseAgentsServiceGetAgentRecallMemorySummaryKeyFn({
       agentId,
+      userId,
     }),
-    queryFn: () => AgentsService.getAgentRecallMemorySummary({ agentId }),
+    queryFn: () =>
+      AgentsService.getAgentRecallMemorySummary({ agentId, userId }),
   });
 export const prefetchUseAgentsServiceGetAgentArchivalMemorySummary = (
   queryClient: QueryClient,
   {
     agentId,
+    userId,
   }: {
     agentId: string;
+    userId?: string;
   }
 ) =>
   queryClient.prefetchQuery({
     queryKey: Common.UseAgentsServiceGetAgentArchivalMemorySummaryKeyFn({
       agentId,
+      userId,
     }),
-    queryFn: () => AgentsService.getAgentArchivalMemorySummary({ agentId }),
+    queryFn: () =>
+      AgentsService.getAgentArchivalMemorySummary({ agentId, userId }),
   });
 export const prefetchUseAgentsServiceListAgentArchivalMemory = (
   queryClient: QueryClient,
@@ -587,18 +611,6 @@ export const prefetchUseUsersServiceListUsers = (
     queryKey: Common.UseUsersServiceListUsersKeyFn({ cursor, limit }),
     queryFn: () => UsersService.listUsers({ cursor, limit }),
   });
-export const prefetchUseUsersServiceListApiKeys = (
-  queryClient: QueryClient,
-  {
-    userId,
-  }: {
-    userId: string;
-  }
-) =>
-  queryClient.prefetchQuery({
-    queryKey: Common.UseUsersServiceListApiKeysKeyFn({ userId }),
-    queryFn: () => UsersService.listApiKeys({ userId }),
-  });
 export const prefetchUseAdminServiceListUsers = (
   queryClient: QueryClient,
   {
@@ -612,18 +624,6 @@ export const prefetchUseAdminServiceListUsers = (
   queryClient.prefetchQuery({
     queryKey: Common.UseAdminServiceListUsersKeyFn({ cursor, limit }),
     queryFn: () => AdminService.listUsers({ cursor, limit }),
-  });
-export const prefetchUseAdminServiceListApiKeys = (
-  queryClient: QueryClient,
-  {
-    userId,
-  }: {
-    userId: string;
-  }
-) =>
-  queryClient.prefetchQuery({
-    queryKey: Common.UseAdminServiceListApiKeysKeyFn({ userId }),
-    queryFn: () => AdminService.listApiKeys({ userId }),
   });
 export const prefetchUseAdminServiceListOrgs = (
   queryClient: QueryClient,

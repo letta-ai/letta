@@ -1,9 +1,9 @@
 import * as React from 'react';
 import { Slot } from '@radix-ui/react-slot';
-import { ChevronRightIcon, DotsHorizontalIcon } from '../../icons';
+import { DotsHorizontalIcon } from '../../icons';
 import { cn } from '@letta-web/core-style-config';
-import { Typography } from '../Typography/Typography';
-import Link from 'next/link';
+import { Button } from '../Button/Button';
+import { Fragment } from 'react';
 
 const BreadcrumbPrimitive = React.forwardRef<
   HTMLElement,
@@ -20,7 +20,7 @@ const BreadcrumbList = React.forwardRef<
   <ol
     ref={ref}
     className={cn(
-      'flex flex-wrap items-center gap-1.5 break-words text-sm text-muted-foreground sm:gap-2.5',
+      'flex flex-wrap items-center gap-0.5 break-words text-sm text-muted-foreground',
       className
     )}
     {...props}
@@ -82,10 +82,10 @@ function BreadcrumbSeparator({
     <li
       role="presentation"
       aria-hidden="true"
-      className={cn('[&>svg]:size-3.5', className)}
+      className={cn('text-base text-text-lighter', className)}
       {...props}
     >
-      {children ?? <ChevronRightIcon />}
+      {children ?? '/'}
     </li>
   );
 }
@@ -107,31 +107,69 @@ function BreadcrumbEllipsis({
     </span>
   );
 }
+
+type Variants = 'default' | 'small';
 BreadcrumbEllipsis.displayName = 'BreadcrumbElipssis';
 
 export interface BreadcrumbItemType {
-  href: string;
+  href?: string;
+  onClick?: () => void;
   label: string;
+  preIcon?: React.ReactNode;
+  contentOverride?: React.ReactNode;
+}
+
+interface BreadcrumbItemWrapperProps {
+  item: BreadcrumbItemType;
+  variant?: Variants;
+  isLast?: boolean;
+}
+
+function BreadcrumbItemWrapper(props: BreadcrumbItemWrapperProps) {
+  const { item, isLast } = props;
+
+  const { href, preIcon, contentOverride, label, onClick } = item;
+
+  if (contentOverride) {
+    return contentOverride;
+  }
+
+  return (
+    <BreadcrumbItem>
+      <Button
+        onClick={onClick}
+        {...(href ? { href } : {})}
+        color="tertiary-transparent"
+        preIcon={preIcon}
+        label={label}
+        size="small"
+        _use_rarely_className={cn(
+          !isLast ? 'text-text-lighter' : '',
+          !onClick && !href ? 'cursor-default hover:bg-transparent' : ''
+        )}
+      />
+    </BreadcrumbItem>
+  );
 }
 
 export interface BreadcrumbProps {
   items: BreadcrumbItemType[];
-  variant?: 'heading1';
+  variant?: Variants;
 }
 
-export function Breadcrumb({ items, variant = 'heading1' }: BreadcrumbProps) {
+export function Breadcrumb({ items, variant }: BreadcrumbProps) {
   return (
     <BreadcrumbPrimitive>
       <BreadcrumbList>
         {items.map((item, index) => (
-          <BreadcrumbItem key={item.href}>
-            <Link href={item.href}>
-              <Typography className="hover:underline" bold variant={variant}>
-                {item.label}
-              </Typography>
-            </Link>
-            {index < items.length - 1 && <BreadcrumbSeparator />}
-          </BreadcrumbItem>
+          <Fragment key={index}>
+            <BreadcrumbItemWrapper
+              isLast={index === items.length - 1}
+              variant={variant}
+              item={item}
+            />
+            {index !== items.length - 1 && <BreadcrumbSeparator />}
+          </Fragment>
         ))}
       </BreadcrumbList>
     </BreadcrumbPrimitive>

@@ -38,7 +38,6 @@ function DashboardSearchBar(props: DashboardSearchBarProps) {
 type DashboardPageSectionProps = PropsWithChildren<
   Partial<DashboardSearchBarProps> & {
     actions?: React.ReactNode;
-
     fullHeight?: boolean;
     borderBottom?: boolean;
     title?: string;
@@ -61,9 +60,10 @@ export function DashboardPageSection(props: DashboardPageSectionProps) {
 
   return (
     <VStack
+      gap="large"
       paddingX="large"
-      paddingTop="medium"
-      paddingBottom="small"
+      paddingTop="large"
+      paddingBottom="large"
       fullHeight={fullHeight}
       flex={fullHeight}
       fullWidth
@@ -81,7 +81,7 @@ export function DashboardPageSection(props: DashboardPageSectionProps) {
           </HStack>
         )}
         {description && (
-          <Typography align="left" variant="body">
+          <Typography align="left" variant="body" color="lighter">
             {description}
           </Typography>
         )}

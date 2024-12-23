@@ -47,9 +47,14 @@ const buttonVariants = cva(
           'bg-background-black text-background-black-content hover:bg-background-black-hover border-transparent',
       },
       size: {
-        large: 'px-6 py-2 h-biHeight-lg text-lg font-medium gap-2',
-        default: 'px-4 py-1 h-biHeight text-base font-medium gap-2',
-        small: 'px-3 py-1 h-biHeight-sm text-sm font-medium gap-2',
+        xsmall:
+          'px-2 py-1 h-biHeight-xs min-h-biHeight-xs text-xs font-medium gap-2',
+        large:
+          'px-6 py-2 h-biHeight-lg min-h-biHeight-lg text-lg font-medium gap-2',
+        default:
+          'px-4 py-1 h-biHeight min-h-biHeight text-base font-medium gap-2',
+        small:
+          'px-3 py-1 h-biHeight-sm min-h-biHeight-sm text-sm font-medium gap-2',
       },
       active: {
         true: '',
@@ -114,6 +119,7 @@ export type ButtonProps = Omit<
       target?: string;
       type?: 'button' | 'reset' | 'submit';
       _use_rarely_className?: string;
+      _use_rarely_disableTooltip?: boolean;
     },
   'children' | 'className'
 >;
@@ -138,6 +144,7 @@ export const Button = forwardRef<
     size,
     hideLabel,
     _use_rarely_className,
+    _use_rarely_disableTooltip,
     ...rest
   } = props;
 
@@ -157,7 +164,7 @@ export const Button = forwardRef<
     <MaybeTooltip
       asChild
       placement={tooltipPlacement}
-      renderTooltip={!!hideLabel}
+      renderTooltip={!!hideLabel && !_use_rarely_disableTooltip}
       content={label}
     >
       <ButtonPrimitive
