@@ -102,7 +102,7 @@ const premadeTemplate = {
     },
   ],
   llm_config: {
-    model: 'gpt-4',
+    model: 'gpt-4o-mini',
     model_endpoint_type: 'openai',
     model_endpoint: 'https://api.openai.com/v1',
     model_wrapper: null,
@@ -285,7 +285,7 @@ describe('agentsRouter', () => {
 
     describe('starter kits', () => {
       const llmConfig = {
-        model: 'gpt-4',
+        model: 'gpt-4o-mini',
         model_endpoint_type: 'openai',
         model_endpoint: 'https://api.openai.com/v1',
         model_wrapper: null,

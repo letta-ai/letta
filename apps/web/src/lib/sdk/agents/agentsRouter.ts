@@ -351,7 +351,7 @@ export async function createAgent(
             ...starterKit.agentState,
             tool_ids: toolIdsToAttach,
             llm_config: {
-              model: 'gpt-4',
+              model: 'gpt-4o-mini',
               model_endpoint_type: 'openai',
               model_endpoint: 'https://api.openai.com/v1',
               model_wrapper: null,
