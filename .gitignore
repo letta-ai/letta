@@ -61,3 +61,11 @@ data/
 
 external-services/*
 !external-services/.gitkeep
+
+
+.swc
+
+flag.overrides.json
+
+# Fern SDK Previews
+**/.preview

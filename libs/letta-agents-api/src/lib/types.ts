@@ -42,9 +42,9 @@ export const UserMessageSchema = z.object({
   id: z.string(),
 });
 
-export const InternalMonologueSchema = z.object({
-  message_type: z.literal('internal_monologue'),
-  internal_monologue: z.string(),
+export const ReasoningMessageSchema = z.object({
+  message_type: z.literal('reasoning_message'),
+  reasoning: z.string(),
   date: z.string(),
   id: z.string(),
 });
@@ -53,13 +53,13 @@ export const SendMessageFunctionCallSchema = z.object({
   message: z.string(),
 });
 
-export const FunctionCallSchema = z.object({
-  message_type: z.literal('function_call'),
-  function_call: z.object({
-    message_type: z.literal('function_call').optional(),
-    type: z.literal('function_call').optional(),
+export const ToolCallMessageSchema = z.object({
+  message_type: z.literal('tool_call_message'),
+  tool_call: z.object({
+    message_type: z.literal('tool_call_message').optional(),
+    type: z.literal('tool_call').optional(),
     name: z.string().optional(),
-    function_call_id: z.string().optional(),
+    tool_call_id: z.string().optional(),
     arguments: z.string().optional(),
     formattedArguments: z.record(z.unknown()).optional(),
   }),
@@ -67,27 +67,38 @@ export const FunctionCallSchema = z.object({
   id: z.string(),
 });
 
-export const FunctionReturnSchema = z.object({
-  message_type: z.literal('function_return'),
-  function_return: z.string(),
-  function_call_id: z.string(),
+export const ToolReturnMessageSchema = z.object({
+  message_type: z.literal('tool_return_message'),
+  tool_return: z.string(),
+  tool_call_id: z.string(),
   status: z.string(),
   date: z.string(),
   id: z.string(),
 });
 
 export const AgentMessageSchema = z.discriminatedUnion('message_type', [
-  FunctionReturnSchema,
-  FunctionCallSchema,
-  InternalMonologueSchema,
+  ToolReturnMessageSchema,
+  ToolCallMessageSchema,
+  ReasoningMessageSchema,
   UserMessageSchema,
   SystemMessageSchema,
 ]);
 
+const ErrorCodeSchema = z.enum([
+  'INTERNAL_SERVER_ERROR',
+  'CONTEXT_WINDOW_EXCEEDED',
+  'RATE_LIMIT_EXCEEDED',
+]);
+
+export const ErrorMessageSchema = z.object({
+  error: z.string(),
+  code: ErrorCodeSchema.optional(),
+});
+
 export const AgentMessageTypeSchema = z.enum([
-  'function_return',
-  'function_call',
-  'internal_monologue',
+  'tool_return_message',
+  'tool_call_message',
+  'reasoning_message',
   'user_message',
   'system_message',
 ]);
@@ -132,7 +143,7 @@ export const LLMConfigSchema = z.object({
 });
 
 export const EmbeddingConfigSchema = z.object({
-  embedding_endpoint_type: z.string(),
+  embedding_endpoint_type: modelEndpointTypesSchema,
   embedding_endpoint: z.string().optional().nullable(),
   embedding_model: z.string(),
   embedding_dim: z.number(),

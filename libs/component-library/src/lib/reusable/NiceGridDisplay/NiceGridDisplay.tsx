@@ -25,7 +25,7 @@ export function NiceGridDisplay(props: NiceGridDisplayProps) {
             }
           : {}),
       }}
-      className={cn('nice-grid-display')}
+      className={cn('nice-grid-display w-full')}
     >
       {children}
     </div>

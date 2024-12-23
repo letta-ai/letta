@@ -15,3 +15,6 @@ echo "     GOOGLE_REDIRECT_URI: $GOOGLE_REDIRECT_URI" >> deployment_env.yaml
 echo "     REDIS_HOST: $REDIS_HOST" >> deployment_env.yaml
 echo "     REDIS_PASSWORD: $REDIS_PASSWORD" >> deployment_env.yaml
 echo "     REDIS_PORT: $REDIS_PORT" >> deployment_env.yaml
+echo "     AUTH_GITHUB_CLIENT_ID: $AUTH_GITHUB_CLIENT_ID" >> deployment_env.yaml
+echo "     AUTH_GITHUB_CLIENT_SECRET: $AUTH_GITHUB_CLIENT_SECRET" >> deployment_env.yaml
+echo "     AUTH_GITHUB_REDIRECT_URI: $AUTH_GITHUB_REDIRECT_URI" >> deployment_env.yaml

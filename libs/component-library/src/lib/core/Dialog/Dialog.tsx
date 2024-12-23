@@ -47,6 +47,7 @@ const DialogOverlay = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <DialogPrimitive.Overlay
     ref={ref}
+    data-testid="dialog-overlay"
     className={cn(
       'fixed inset-0 z-dialog bg-black/30  data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
       className
@@ -209,6 +210,7 @@ const dialogVariants = cva('', {
       medium: 'max-w-md',
       large: 'max-w-[600px]',
       xlarge: 'max-w-[800px]',
+      xxlarge: 'max-w-[1024px]',
       full: 'max-w-[85vw] h-full max-h-[85dvh]',
     },
   },

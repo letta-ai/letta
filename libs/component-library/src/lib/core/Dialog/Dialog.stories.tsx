@@ -81,7 +81,7 @@ export const WithCategories: Story = {
             id: 'category3',
             title: 'Category 3',
             children: 'Category 3 Content',
-          }
+          },
         ]}
       />
     ),

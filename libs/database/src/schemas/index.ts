@@ -11,10 +11,6 @@ import {
   primaryKey,
 } from 'drizzle-orm/pg-core';
 import { sql, relations } from 'drizzle-orm';
-import type {
-  GenericPanelTemplateId,
-  PanelItemPositionsMatrix,
-} from '@letta-web/component-library';
 import type { ProviderConfiguration } from '@letta-web/types';
 
 export const emailWhitelist = pgTable('email_whitelist', {
@@ -81,7 +77,11 @@ export const organizationPreferencesRelations = relations(
   })
 );
 
-export const signupMethodsEnum = pgEnum('signup_methods', ['google', 'email']);
+export const signupMethodsEnum = pgEnum('signup_methods', [
+  'google',
+  'email',
+  'github',
+]);
 
 export const users = pgTable('users', {
   id: text('id')
@@ -477,9 +477,7 @@ export const adePreferences = pgTable(
       .references(() => users.id, { onDelete: 'cascade' })
       .notNull(),
     agentId: text('agent_id'),
-    displayConfig: json('display_config')
-      .$type<PanelItemPositionsMatrix<GenericPanelTemplateId>>()
-      .notNull(),
+    displayConfig: json('display_config').$type().notNull(),
   },
   (table) => ({
     unique: {

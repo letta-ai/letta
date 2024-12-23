@@ -231,16 +231,21 @@ export type AgentsServiceListAgentsQueryResult<
 export const useAgentsServiceListAgentsKey = 'AgentsServiceListAgents';
 export const UseAgentsServiceListAgentsKeyFn = (
   {
+    matchAllTags,
     name,
     tags,
     userId,
   }: {
+    matchAllTags?: boolean;
     name?: string;
     tags?: string[];
     userId?: string;
   } = {},
   queryKey?: Array<unknown>
-) => [useAgentsServiceListAgentsKey, ...(queryKey ?? [{ name, tags, userId }])];
+) => [
+  useAgentsServiceListAgentsKey,
+  ...(queryKey ?? [{ matchAllTags, name, tags, userId }]),
+];
 export type AgentsServiceGetAgentContextWindowDefaultResponse = Awaited<
   ReturnType<typeof AgentsService.getAgentContextWindow>
 >;
@@ -315,11 +320,16 @@ export const useAgentsServiceGetAgentSourcesKey =
 export const UseAgentsServiceGetAgentSourcesKeyFn = (
   {
     agentId,
+    userId,
   }: {
     agentId: string;
+    userId?: string;
   },
   queryKey?: Array<unknown>
-) => [useAgentsServiceGetAgentSourcesKey, ...(queryKey ?? [{ agentId }])];
+) => [
+  useAgentsServiceGetAgentSourcesKey,
+  ...(queryKey ?? [{ agentId, userId }]),
+];
 export type AgentsServiceListAgentInContextMessagesDefaultResponse = Awaited<
   ReturnType<typeof AgentsService.listAgentInContextMessages>
 >;
@@ -332,13 +342,15 @@ export const useAgentsServiceListAgentInContextMessagesKey =
 export const UseAgentsServiceListAgentInContextMessagesKeyFn = (
   {
     agentId,
+    userId,
   }: {
     agentId: string;
+    userId?: string;
   },
   queryKey?: Array<unknown>
 ) => [
   useAgentsServiceListAgentInContextMessagesKey,
-  ...(queryKey ?? [{ agentId }]),
+  ...(queryKey ?? [{ agentId, userId }]),
 ];
 export type AgentsServiceGetAgentMemoryDefaultResponse = Awaited<
   ReturnType<typeof AgentsService.getAgentMemory>
@@ -351,11 +363,16 @@ export const useAgentsServiceGetAgentMemoryKey = 'AgentsServiceGetAgentMemory';
 export const UseAgentsServiceGetAgentMemoryKeyFn = (
   {
     agentId,
+    userId,
   }: {
     agentId: string;
+    userId?: string;
   },
   queryKey?: Array<unknown>
-) => [useAgentsServiceGetAgentMemoryKey, ...(queryKey ?? [{ agentId }])];
+) => [
+  useAgentsServiceGetAgentMemoryKey,
+  ...(queryKey ?? [{ agentId, userId }]),
+];
 export type AgentsServiceGetAgentMemoryBlockDefaultResponse = Awaited<
   ReturnType<typeof AgentsService.getAgentMemoryBlock>
 >;
@@ -414,13 +431,15 @@ export const useAgentsServiceGetAgentRecallMemorySummaryKey =
 export const UseAgentsServiceGetAgentRecallMemorySummaryKeyFn = (
   {
     agentId,
+    userId,
   }: {
     agentId: string;
+    userId?: string;
   },
   queryKey?: Array<unknown>
 ) => [
   useAgentsServiceGetAgentRecallMemorySummaryKey,
-  ...(queryKey ?? [{ agentId }]),
+  ...(queryKey ?? [{ agentId, userId }]),
 ];
 export type AgentsServiceGetAgentArchivalMemorySummaryDefaultResponse = Awaited<
   ReturnType<typeof AgentsService.getAgentArchivalMemorySummary>
@@ -434,13 +453,15 @@ export const useAgentsServiceGetAgentArchivalMemorySummaryKey =
 export const UseAgentsServiceGetAgentArchivalMemorySummaryKeyFn = (
   {
     agentId,
+    userId,
   }: {
     agentId: string;
+    userId?: string;
   },
   queryKey?: Array<unknown>
 ) => [
   useAgentsServiceGetAgentArchivalMemorySummaryKey,
-  ...(queryKey ?? [{ agentId }]),
+  ...(queryKey ?? [{ agentId, userId }]),
 ];
 export type AgentsServiceListAgentArchivalMemoryDefaultResponse = Awaited<
   ReturnType<typeof AgentsService.listAgentArchivalMemory>
@@ -745,22 +766,6 @@ export const UseUsersServiceListUsersKeyFn = (
   } = {},
   queryKey?: Array<unknown>
 ) => [useUsersServiceListUsersKey, ...(queryKey ?? [{ cursor, limit }])];
-export type UsersServiceListApiKeysDefaultResponse = Awaited<
-  ReturnType<typeof UsersService.listApiKeys>
->;
-export type UsersServiceListApiKeysQueryResult<
-  TData = UsersServiceListApiKeysDefaultResponse,
-  TError = unknown
-> = UseQueryResult<TData, TError>;
-export const useUsersServiceListApiKeysKey = 'UsersServiceListApiKeys';
-export const UseUsersServiceListApiKeysKeyFn = (
-  {
-    userId,
-  }: {
-    userId: string;
-  },
-  queryKey?: Array<unknown>
-) => [useUsersServiceListApiKeysKey, ...(queryKey ?? [{ userId }])];
 export type AdminServiceListUsersDefaultResponse = Awaited<
   ReturnType<typeof AdminService.listUsers>
 >;
@@ -779,22 +784,6 @@ export const UseAdminServiceListUsersKeyFn = (
   } = {},
   queryKey?: Array<unknown>
 ) => [useAdminServiceListUsersKey, ...(queryKey ?? [{ cursor, limit }])];
-export type AdminServiceListApiKeysDefaultResponse = Awaited<
-  ReturnType<typeof AdminService.listApiKeys>
->;
-export type AdminServiceListApiKeysQueryResult<
-  TData = AdminServiceListApiKeysDefaultResponse,
-  TError = unknown
-> = UseQueryResult<TData, TError>;
-export const useAdminServiceListApiKeysKey = 'AdminServiceListApiKeys';
-export const UseAdminServiceListApiKeysKeyFn = (
-  {
-    userId,
-  }: {
-    userId: string;
-  },
-  queryKey?: Array<unknown>
-) => [useAdminServiceListApiKeysKey, ...(queryKey ?? [{ userId }])];
 export type AdminServiceListOrgsDefaultResponse = Awaited<
   ReturnType<typeof AdminService.listOrgs>
 >;
@@ -903,14 +892,8 @@ export type SandboxConfigServiceCreateSandboxEnvVarV1SandboxConfigSandboxConfigI
 export type UsersServiceCreateUserMutationResult = Awaited<
   ReturnType<typeof UsersService.createUser>
 >;
-export type UsersServiceCreateApiKeyMutationResult = Awaited<
-  ReturnType<typeof UsersService.createApiKey>
->;
 export type AdminServiceCreateUserMutationResult = Awaited<
   ReturnType<typeof AdminService.createUser>
->;
-export type AdminServiceCreateApiKeyMutationResult = Awaited<
-  ReturnType<typeof AdminService.createApiKey>
 >;
 export type AdminServiceCreateOrganizationMutationResult = Awaited<
   ReturnType<typeof AdminService.createOrganization>
@@ -1011,14 +994,8 @@ export type SandboxConfigServiceDeleteSandboxEnvVarV1SandboxConfigEnvironmentVar
 export type UsersServiceDeleteUserMutationResult = Awaited<
   ReturnType<typeof UsersService.deleteUser>
 >;
-export type UsersServiceDeleteApiKeyMutationResult = Awaited<
-  ReturnType<typeof UsersService.deleteApiKey>
->;
 export type AdminServiceDeleteUserMutationResult = Awaited<
   ReturnType<typeof AdminService.deleteUser>
->;
-export type AdminServiceDeleteApiKeyMutationResult = Awaited<
-  ReturnType<typeof AdminService.deleteApiKey>
 >;
 export type AdminServiceDeleteOrganizationByIdMutationResult = Awaited<
   ReturnType<typeof AdminService.deleteOrganizationById>

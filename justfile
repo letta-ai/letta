@@ -30,29 +30,29 @@ configure-kubectl:
     gcloud container clusters get-credentials letta --region {{REGION}} --project {{PROJECT_NAME}}
 
 # Build the web Docker image
-build-web:
+@build-web-ui:
     npm run slack-bot-says "Building web Docker image with tag: {{TAG}}..."
     @echo "🚧 Building web Docker image with tag: {{TAG}}..."
-    docker buildx build --platform linux/amd64 --target web -t {{DOCKER_REGISTRY}}/web:{{TAG}} . --load
+    SENTRY_AUTH_TOKEN=$SENTRY_AUTH_TOKEN docker buildx build --platform linux/amd64 --target web -t {{DOCKER_REGISTRY}}/web:{{TAG}} . --load --secret id=SENTRY_AUTH_TOKEN --file apps/web/Dockerfile
 
 # Build the migrations Docker image
-build-migrations:
+@build-web-migrations:
     @echo "🚧 Building migrations Docker image with tag: {{TAG}}..."
-    docker buildx build --platform linux/amd64 --target migrations -t {{DOCKER_REGISTRY}}/web-migrations:{{TAG}} . --load
+    docker buildx build --platform linux/amd64 --target migrations -t {{DOCKER_REGISTRY}}/web-migrations:{{TAG}} . --load --file apps/web/Dockerfile
 
 # Build all Docker images synchronously
-build: build-web build-migrations
+@build-web: build-web-ui build-web-migrations
     @echo "✅ All Docker images built successfully."
     npm run slack-bot-says "Docker image with tag: {{TAG}} built successfully."
 
 # Push the Docker images to the registry
-push:
+@push-web:
     @echo "🚀 Pushing Docker images to registry with tag: {{TAG}}..."
     docker push {{DOCKER_REGISTRY}}/web:{{TAG}}
     docker push {{DOCKER_REGISTRY}}/web-migrations:{{TAG}}
 
 # Deploy the Helm chart
-deploy: push
+@deploy-web: push-web
     @echo "🚧 Deploying Helm chart..."
     kubectl delete job {{HELM_CHART_NAME}}-migration --ignore-not-found
     npm run slack-bot-says "Deploying web service Helm chart with tag: {{TAG}}..."
@@ -75,7 +75,11 @@ deploy: push
         --set env.HUBSPOT_API_KEY="${HUBSPOT_API_KEY}" \
         --set env.COMPOSIO_API_KEY="${COMPOSIO_API_KEY}" \
         --set env.E2B_API_KEY="${E2B_API_KEY}" \
-        --set env.E2B_SANDBOX_TEMPLATE_ID="${E2B_SANDBOX_TEMPLATE_ID}"
+        --set env.E2B_SANDBOX_TEMPLATE_ID="${E2B_SANDBOX_TEMPLATE_ID}" \
+        --set env.AUTH_GITHUB_CLIENT_ID="${AUTH_GITHUB_CLIENT_ID}" \
+        --set env.AUTH_GITHUB_CLIENT_SECRET="${AUTH_GITHUB_CLIENT_SECRET}" \
+        --set env.AUTH_GITHUB_REDIRECT_URI="${AUTH_GITHUB_REDIRECT_URI}"
+
     npm run slack-bot-says "Successfully deployed web service Helm chart with tag: {{TAG}}."
 
 # Destroy the Helm chart
@@ -105,6 +109,41 @@ web-logs:
 describe-web:
     kubectl describe pod $(kubectl get pods -l app.kubernetes.io/name=letta-web -o jsonpath="{.items[0].metadata.name}")
 
+# Core stuff
+@build-core:
+    echo "🚧 Building multi-architecture Docker images with tag: {{TAG}}..."
+    docker buildx create --use
+    docker buildx build --progress=plain --platform linux/amd64 -t {{DOCKER_REGISTRY}}/memgpt-server:{{TAG}} . --load --file libs/core-deploy-configs/Dockerfile
+
+# Push the Docker images to the registry
+@push-core:
+    echo "🚀 Pushing Docker images to registry with tag: {{TAG}}..."
+    docker push {{DOCKER_REGISTRY}}/memgpt-server:{{TAG}}
+
+# Deploy the Helm chart
+@deploy-core deploy_message="": push-core
+    echo "🚧 Deploying Helm chart..."
+    helm upgrade --install {{HELM_CHART_NAME}} {{HELM_CHARTS_DIR}}/{{HELM_CHART_NAME}} \
+        --set deployMessage='{{deploy_message}}' \
+        --set image.repository={{DOCKER_REGISTRY}}/memgpt-server \
+        --set image.tag={{TAG}} \
+        --set-string "podAnnotations.kubectl\.kubernetes\.io/restartedAt"="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+        --set secrets.OPENAI_API_KEY=${OPENAI_API_KEY} \
+        --set secrets.COMPOSIO_API_KEY=${COMPOSIO_API_KEY} \
+        --set secrets.LETTA_PG_PASSWORD=${LETTA_PG_PASSWORD} \
+        --set secrets.LETTA_PG_USER=${LETTA_PG_USER} \
+        --set secrets.LETTA_PG_DB=${LETTA_PG_DB} \
+        --set secrets.LETTA_PG_HOST=${LETTA_PG_HOST} \
+        --set secrets.LETTA_PG_PORT=${LETTA_PG_PORT} \
+        --set secrets.MEMGPT_SERVER_PASS=${MEMGPT_SERVER_PASS} \
+        --set secrets.TOGETHER_API_KEY=${TOGETHER_API_KEY} \
+        --set secrets.ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY} \
+        --set secrets.SENTRY_DSN=${SENTRY_DSN} \
+        --set secrets.E2B_API_KEY=${E2B_API_KEY} \
+        --set secrets.E2B_SANDBOX_TEMPLATE_ID=${E2B_SANDBOX_TEMPLATE_ID} \
+        --set secrets.LETTA_LOAD_DEFAULT_EXTERNAL_TOOLS=True
+
+
 # Get migration job logs
 migration-logs:
     kubectl logs job/{{HELM_CHART_NAME}}-migration
@@ -128,13 +167,13 @@ build-gh-actions:
     docker buildx build --platform linux/amd64 --target web \
         --cache-from type=local,src=/tmp/.buildx-cache \
         --cache-to type=local,dest=/tmp/.buildx-cache-new,mode=max \
-        -t {{DOCKER_REGISTRY}}/web:{{TAG}} . --load
+        -t {{DOCKER_REGISTRY}}/web:{{TAG}} . --load --secret id=SENTRY_AUTH_TOKEN --file libs/core-deploy-configs/Dockerfile
 
     @echo "🚧 Building migrations Docker image with tag: {{TAG}}..."
     docker buildx build --platform linux/amd64 --target migrations \
         --cache-from type=local,src=/tmp/.buildx-cache \
         --cache-to type=local,dest=/tmp/.buildx-cache-new,mode=max \
-        -t {{DOCKER_REGISTRY}}/web-migrations:{{TAG}} . --load
+        -t {{DOCKER_REGISTRY}}/web-migrations:{{TAG}} . --load --file libs/core-deploy-configs/Dockerfile
 
     @echo "🚧 Moving cache..."
     @rm -rf /tmp/.buildx-cache
@@ -142,3 +181,20 @@ build-gh-actions:
 
     @echo "✅ All Docker images built successfully."
     npm run slack-bot-says "Docker images with tag: {{TAG}} built successfully."
+
+# Processes the letta core api into a consumable sdk and openapi spec for documentation and downstream consumption
+stage-api:
+    @echo "🚧 Syncing API..."
+    npm run core:generate-web-sdk
+
+# Takes the staged API and pushes it to docs
+publish-api:
+    @echo "🚧 Publishing API..."
+    # Generates an openapi spec from any public web api endpoints
+    npm run web:generate-web-only-openapi-spec
+    # Merges the core api and web api openapi specs and moves it to the docs folder
+    npm run docs:publish-api
+
+preview-docs:
+    @echo "🚧 Previewing docs..."
+    npm run docs:dev

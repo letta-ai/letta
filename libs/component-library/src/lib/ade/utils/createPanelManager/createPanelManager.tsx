@@ -1177,11 +1177,11 @@ export function createPanelManager<
     const dropdownItems = useMemo(
       () => [
         {
-          label: 'Split and move right',
+          label: 'Move right',
           onClick: handleMoveRight,
         },
         {
-          label: 'Split and move down',
+          label: 'Move down',
           onClick: handleMoveDown,
         },
       ],

@@ -5,13 +5,15 @@ import type { VariantProps } from 'class-variance-authority';
 import { cva } from 'class-variance-authority';
 import { cn } from '@letta-web/core-style-config';
 import { Slot } from '@radix-ui/react-slot';
-import { Typography } from '../Typography/Typography';
 
 const badgeVariants = cva('items-center flex', {
   variants: {
     size: {
       default: 'text-xs px-2 py-1',
-      small: 'text-[10px]  px-2 font-semibold',
+      small: 'text-[10px]   px-1 font-semibold',
+    },
+    uppercase: {
+      true: 'uppercase tracking-wide',
     },
   },
   defaultVariants: {
@@ -24,21 +26,20 @@ interface BadgeProps extends VariantProps<typeof badgeVariants> {
   preIcon?: React.ReactNode;
   className?: string;
   color?: FrameProps['color'];
+  uppercase?: boolean;
 }
 
 export function Badge(props: BadgeProps) {
-  const { size, className, preIcon, content } = props;
+  const { size, className, preIcon, uppercase, content } = props;
 
   return (
     <HStack
-      className={cn(badgeVariants({ size }), className)}
+      className={cn(badgeVariants({ size, uppercase }), className)}
       color={props.color || 'background-grey'}
       gap="small"
     >
       {preIcon && <Slot className="w-3 h-3">{preIcon}</Slot>}
-      <Typography variant="body2" bold>
-        {content}
-      </Typography>
+      <span className="bold">{content}</span>
     </HStack>
   );
 }

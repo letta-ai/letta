@@ -23,7 +23,7 @@ function PanelSearch(props: PanelSearchProps) {
   );
 
   return (
-    <HStack align="center" paddingLeft="medium" fullWidth>
+    <HStack align="center" paddingLeft="small" fullWidth>
       <RawInput
         label="search"
         hideLabel

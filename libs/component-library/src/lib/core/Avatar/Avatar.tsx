@@ -10,10 +10,12 @@ import { cva } from 'class-variance-authority';
 const avatarVariants = cva('relative flex shrink-0 overflow-hidden text-sm', {
   variants: {
     size: {
+      xsmall: 'h-[18px] w-[18px] text-base',
       small: 'h-biHeight-sm w-biWidth-sm',
       medium: 'h-[36px] w-[36px]',
       large: 'h-[40px] w-[40px] text-base',
       xlarge: 'h-[48px] w-[48px] text-base',
+      xxlarge: 'h-[72px] w-[72px] text-[28px]',
     },
   },
   defaultVariants: {
@@ -65,7 +67,7 @@ const AvatarFallback = React.forwardRef<
 ));
 AvatarFallback.displayName = AvatarPrimitive.Fallback.displayName;
 
-interface AvatarProps extends AvatarVariantProps {
+export interface AvatarProps extends AvatarVariantProps {
   imageSrc?: string;
   name: string;
 }

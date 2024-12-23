@@ -10,7 +10,7 @@ export function InfoTooltip(props: InfoTooltipProps) {
   const { text } = props;
   return (
     <Tooltip asChild content={text}>
-      <span>
+      <span className="inline-flex">
         <InfoIcon color="muted" />
       </span>
     </Tooltip>

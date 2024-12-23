@@ -76,9 +76,10 @@ export function buildConfig(appDir: string): Config {
           input: 'hsl(var(--input))',
           ring: 'hsl(var(--ring))',
           steel: 'hsl(var(--steel))',
+          violet: 'hsl(var(--violet))',
           text: {
-            DEFAULT: 'hsl(var(--text-primary))',
-            secondary: 'hsl(var(--text-secondary))',
+            DEFAULT: 'hsl(var(--text-default))',
+            lighter: 'hsl(var(--text-lighter))',
           },
           'background-violet': {
             DEFAULT: 'hsl(var(--background-violet))',
