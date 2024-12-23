@@ -110,7 +110,7 @@ def create(
     user_id: Optional[str] = None,  # option UUID to associate request with
     functions: Optional[list] = None,
     functions_python: Optional[dict] = None,
-    function_call: str = "auto",
+    function_call: Optional[str] = None,  # see: https://platform.openai.com/docs/api-reference/chat/create#chat-create-tool_choice
     # hint
     first_message: bool = False,
     force_tool_call: Optional[str] = None,  # Force a specific tool to be called
@@ -255,12 +255,7 @@ def create(
 
         tool_call = None
         if force_tool_call is not None:
-            tool_call = {
-                "type": "function",
-                "function": {
-                    "name": force_tool_call
-                }
-            }
+            tool_call = {"type": "function", "function": {"name": force_tool_call}}
             assert functions is not None
 
         return anthropic_chat_completions_request(
