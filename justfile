@@ -112,8 +112,8 @@ describe-web:
 # Core stuff
 @build-core:
     echo "🚧 Building multi-architecture Docker images with tag: {{TAG}}..."
-    docker buildx create --use --file libs/core-deploy-configs/Dockerfile
-    docker buildx build --progress=plain --platform linux/amd64 -t {{DOCKER_REGISTRY}}/memgpt-server:{{TAG}} . --load
+    docker buildx create --use
+    docker buildx build --progress=plain --platform linux/amd64 -t {{DOCKER_REGISTRY}}/memgpt-server:{{TAG}} . --load --file libs/core-deploy-configs/Dockerfile
 
 # Push the Docker images to the registry
 @push-core:
@@ -121,7 +121,7 @@ describe-web:
     docker push {{DOCKER_REGISTRY}}/memgpt-server:{{TAG}}
 
 # Deploy the Helm chart
-@deploy deploy_message="": push-core
+@deploy-core deploy_message="": push-core
     echo "🚧 Deploying Helm chart..."
     helm upgrade --install {{HELM_CHART_NAME}} {{HELM_CHARTS_DIR}}/{{HELM_CHART_NAME}} \
         --set deployMessage='{{deploy_message}}' \
@@ -167,15 +167,13 @@ build-gh-actions:
     docker buildx build --platform linux/amd64 --target web \
         --cache-from type=local,src=/tmp/.buildx-cache \
         --cache-to type=local,dest=/tmp/.buildx-cache-new,mode=max \
-        -t {{DOCKER_REGISTRY}}/web:{{TAG}} . --load --secret id=SENTRY_AUTH_TOKEN
-        --file apps/web/Dockerfile
+        -t {{DOCKER_REGISTRY}}/web:{{TAG}} . --load --secret id=SENTRY_AUTH_TOKEN --file libs/core-deploy-configs/Dockerfile
 
     @echo "🚧 Building migrations Docker image with tag: {{TAG}}..."
     docker buildx build --platform linux/amd64 --target migrations \
         --cache-from type=local,src=/tmp/.buildx-cache \
         --cache-to type=local,dest=/tmp/.buildx-cache-new,mode=max \
-        -t {{DOCKER_REGISTRY}}/web-migrations:{{TAG}} . --load
-        --file apps/web/Dockerfile
+        -t {{DOCKER_REGISTRY}}/web-migrations:{{TAG}} . --load --file libs/core-deploy-configs/Dockerfile
 
     @echo "🚧 Moving cache..."
     @rm -rf /tmp/.buildx-cache
@@ -183,3 +181,4 @@ build-gh-actions:
 
     @echo "✅ All Docker images built successfully."
     npm run slack-bot-says "Docker images with tag: {{TAG}} built successfully."
+
