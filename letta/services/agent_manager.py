@@ -336,7 +336,7 @@ class AgentManager:
         curr_memory_str = agent_state.memory.compile()
         if curr_memory_str in curr_system_message_openai["content"] and not force:
             # NOTE: could this cause issues if a block is removed? (substring match would still work)
-            logger.info(
+            logger.debug(
                 f"Memory hasn't changed for agent id={agent_id} and actor=({actor.id}, {actor.name}), skipping system prompt rebuild"
             )
             return agent_state
