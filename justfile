@@ -173,8 +173,7 @@ build-gh-actions:
     docker buildx build --platform linux/amd64 --target migrations \
         --cache-from type=local,src=/tmp/.buildx-cache \
         --cache-to type=local,dest=/tmp/.buildx-cache-new,mode=max \
-        -t {{DOCKER_REGISTRY}}/web-migrations:{{TAG}} . --load
-        --file apps/web/Dockerfile
+        -t {{DOCKER_REGISTRY}}/web-migrations:{{TAG}} . --load --file libs/core-deploy-configs/Dockerfile
 
     @echo "🚧 Moving cache..."
     @rm -rf /tmp/.buildx-cache
