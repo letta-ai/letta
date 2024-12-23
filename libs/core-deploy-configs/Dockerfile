@@ -11,7 +11,7 @@ ENV POETRY_NO_INTERACTION=1 \
 
 WORKDIR /app
 
-COPY MemGPT/pyproject.toml MemGPT/poetry.lock ./
+COPY apps/core/pyproject.toml apps/core/poetry.lock ./
 RUN poetry lock --no-update
 RUN poetry install --no-root --all-extras
 
