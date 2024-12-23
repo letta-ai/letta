@@ -106,6 +106,7 @@ jobs:
         working-directory: apps/core
         run: poetry install --no-interaction --no-root ${{ inputs.install-args || '-E dev -E postgres -E external-tools -E tests' }}
       - name: Migrate database
+        working-directory: apps/core
         env:
           LETTA_PG_PORT: 5432
           LETTA_PG_USER: postgres
@@ -116,6 +117,7 @@ jobs:
           psql -h localhost -U postgres -d postgres -c 'CREATE EXTENSION vector'
           poetry run alembic upgrade head
       - name: Run core unit tests
+        working-directory: apps/core
         env:
           LETTA_PG_PORT: 5432
           LETTA_PG_USER: postgres
