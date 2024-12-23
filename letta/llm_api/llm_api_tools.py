@@ -110,7 +110,7 @@ def create(
     user_id: Optional[str] = None,  # option UUID to associate request with
     functions: Optional[list] = None,
     functions_python: Optional[dict] = None,
-    function_call: str = "auto",
+    function_call: Optional[str] = None,  # see: https://platform.openai.com/docs/api-reference/chat/create#chat-create-tool_choice
     # hint
     first_message: bool = False,
     force_tool_call: Optional[str] = None,  # Force a specific tool to be called
@@ -148,9 +148,18 @@ def create(
 
     # openai
     if llm_config.model_endpoint_type == "openai":
+
         if model_settings.openai_api_key is None and llm_config.model_endpoint == "https://api.openai.com/v1":
             # only is a problem if we are *not* using an openai proxy
             raise LettaConfigurationError(message="OpenAI key is missing from letta config file", missing_fields=["openai_api_key"])
+
+        if function_call is None and functions is not None and len(functions) > 0:
+            # force function calling for reliability, see https://platform.openai.com/docs/api-reference/chat/create#chat-create-tool_choice
+            # TODO(matt) move into LLMConfig
+            if llm_config.model_endpoint == "https://inference.memgpt.ai":
+                function_call = "auto"  # TODO change to "required" once proxy supports it
+            else:
+                function_call = "required"
 
         data = build_openai_chat_completions_request(llm_config, messages, user_id, functions, function_call, use_tool_naming, max_tokens)
         if stream:  # Client requested token streaming
@@ -255,12 +264,7 @@ def create(
 
         tool_call = None
         if force_tool_call is not None:
-            tool_call = {
-                "type": "function",
-                "function": {
-                    "name": force_tool_call
-                }
-            }
+            tool_call = {"type": "function", "function": {"name": force_tool_call}}
             assert functions is not None
 
         return anthropic_chat_completions_request(

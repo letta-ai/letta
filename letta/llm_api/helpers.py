@@ -250,6 +250,8 @@ def unpack_all_inner_thoughts_from_kwargs(
 
 def unpack_inner_thoughts_from_kwargs(choice: Choice, inner_thoughts_key: str) -> Choice:
     message = choice.message
+    rewritten_choice = choice  # inner thoughts unpacked out of the function
+
     if message.role == "assistant" and message.tool_calls and len(message.tool_calls) >= 1:
         if len(message.tool_calls) > 1:
             warnings.warn(f"Unpacking inner thoughts from more than one tool call ({len(message.tool_calls)}) is not supported")
@@ -271,14 +273,18 @@ def unpack_inner_thoughts_from_kwargs(choice: Choice, inner_thoughts_key: str) -
                     warnings.warn(f"Overwriting existing inner monologue ({new_choice.message.content}) with kwarg ({inner_thoughts})")
                 new_choice.message.content = inner_thoughts
 
-                return new_choice
+                # update the choice object
+                rewritten_choice = new_choice
             else:
                 warnings.warn(f"Did not find inner thoughts in tool call: {str(tool_call)}")
-                return choice
 
         except json.JSONDecodeError as e:
             warnings.warn(f"Failed to strip inner thoughts from kwargs: {e}")
             raise e
+    else:
+        warnings.warn(f"Did not find tool call in message: {str(message)}")
+
+    return rewritten_choice
 
 
 def is_context_overflow_error(exception: Union[requests.exceptions.RequestException, Exception]) -> bool:
