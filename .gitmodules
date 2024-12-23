@@ -1,3 +1,0 @@
-[submodule "core"]
-	path = apps/core
-	url = git@github.com:letta-ai/letta.git
