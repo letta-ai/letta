@@ -1,4 +1,4 @@
-# Letta Web Monorepo
+# Letta Monorepo
 
 This is the monorepo for all internal Letta web projects. It uses [Nx](https://nx.dev) to manage the workspace.
 
@@ -37,39 +37,52 @@ curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
 brew install just
 ```
 
+- `1password-cli` - [linky](https://support.1password.com/command-line-getting-started/)
+```sh
+# Install 1password-cli on mac 
+brew install 1password-cli
+```
+
 ### Setup
 Then run the following commands to setup the environment:
 
 ```sh
 cd ~/Developer
 
-git clone git@github.com:letta-ai/letta-web.git letta-web
-git clone --recurse-submodules -j8 git@github.com:letta-ai/letta-agents.git external-services/letta-agents
+git clone git@github.com:letta-ai/letta-cloud.git letta-cloud
 
-cd letta-web
+# Start all supporting services
+just start-services
 
-nvm install
-nvm use
+# sign into 1password
+eval $(op signin)
 
-npm install
-
-# Start the required services
-docker compose up -d redis postgres letta-agents
-
-# Generates .env and migrates the database
-npm run setup
+# Setups up the environment
+just setup
 ```
 
 ### Starting the Development Environment
-#### The basic way
-```shell
-npm run dev
+#### Running letta core
+```
+# migrates your databases and starts the web server
+just ready
+
+just core
 ```
 
-#### The advanced way (requires tmux and tmuxinator)
-```shell
-just dev
+#### Running letta web
 ```
+# migrates your databases and starts the web server
+just ready
+
+# in a different terminal (you need core running)
+just core 
+
+# in a different terminal
+just web
+```
+
+
 
 Access the app at [http://localhost:3000](http://localhost:3000)
 
