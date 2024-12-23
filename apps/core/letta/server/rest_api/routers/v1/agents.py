@@ -343,7 +343,12 @@ def update_agent_memory_block(
     actor = server.user_manager.get_user_or_default(user_id=user_id)
 
     block = server.agent_manager.get_block_with_label(agent_id=agent_id, block_label=block_label, actor=actor)
-    return server.block_manager.update_block(block.id, block_update=block_update, actor=actor)
+    block = server.block_manager.update_block(block.id, block_update=block_update, actor=actor)
+
+    # This should also trigger a system prompt change in the agent
+    server.agent_manager.rebuild_system_prompt(agent_id=agent_id, actor=actor, force=True, update_timestamp=False)
+
+    return block
 
 
 @router.get("/{agent_id}/memory/recall", response_model=RecallMemorySummary, operation_id="get_agent_recall_memory_summary")
