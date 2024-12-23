@@ -160,20 +160,20 @@ check-github-status:
     npm run check-github-status
 
 # Build all Docker images for GitHub Actions with cache management
-build-gh-actions:
+deploy-web-on-github:
     npm run slack-bot-says "Building Docker images for GitHub Actions with tag: {{TAG}}..."
     @echo "🚧 Building web Docker image with tag: {{TAG}}..."
     @mkdir -p /tmp/.buildx-cache
     docker buildx build --platform linux/amd64 --target web \
         --cache-from type=local,src=/tmp/.buildx-cache \
         --cache-to type=local,dest=/tmp/.buildx-cache-new,mode=max \
-        -t {{DOCKER_REGISTRY}}/web:{{TAG}} . --load --secret id=SENTRY_AUTH_TOKEN --file libs/core-deploy-configs/Dockerfile
+        -t {{DOCKER_REGISTRY}}/web:{{TAG}} . --load --secret id=SENTRY_AUTH_TOKEN --file apps/web/Dockerfile
 
     @echo "🚧 Building migrations Docker image with tag: {{TAG}}..."
     docker buildx build --platform linux/amd64 --target migrations \
         --cache-from type=local,src=/tmp/.buildx-cache \
         --cache-to type=local,dest=/tmp/.buildx-cache-new,mode=max \
-        -t {{DOCKER_REGISTRY}}/web-migrations:{{TAG}} . --load --file libs/core-deploy-configs/Dockerfile
+        -t {{DOCKER_REGISTRY}}/web-migrations:{{TAG}} . --load --file apps/web/Dockerfile
 
     @echo "🚧 Moving cache..."
     @rm -rf /tmp/.buildx-cache
