@@ -2,8 +2,6 @@ from datetime import datetime
 from typing import Dict, List, Optional
 
 import numpy as np
-from sqlalchemy import Select, func, literal, select, union_all
-
 from letta.constants import BASE_MEMORY_TOOLS, BASE_TOOLS, MAX_EMBEDDING_DIM
 from letta.embeddings import embedding_model
 from letta.log import get_logger
@@ -40,6 +38,7 @@ from letta.services.source_manager import SourceManager
 from letta.services.tool_manager import ToolManager
 from letta.settings import settings
 from letta.utils import enforce_types, get_utc_time, united_diff
+from sqlalchemy import Select, func, literal, select, union_all
 
 logger = get_logger(__name__)
 

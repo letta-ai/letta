@@ -8,8 +8,6 @@ from typing import List, Union
 
 import pytest
 from dotenv import load_dotenv
-from sqlalchemy import delete
-
 from letta import LocalClient, RESTClient, create_client
 from letta.orm import SandboxConfig, SandboxEnvironmentVariable
 from letta.schemas.agent import AgentState
@@ -20,6 +18,7 @@ from letta.schemas.letta_message import ToolReturnMessage
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.sandbox_config import LocalSandboxConfig, SandboxType
 from letta.utils import create_random_username
+from sqlalchemy import delete
 
 # Constants
 SERVER_PORT = 8283
@@ -341,7 +340,9 @@ def test_messages(client: Union[LocalClient, RESTClient], agent: AgentState):
 
 def test_send_system_message(client: Union[LocalClient, RESTClient], agent: AgentState):
     """Important unit test since the Letta API exposes sending system messages, but some backends don't natively support it (eg Anthropic)"""
-    send_system_message_response = client.send_message(agent_id=agent.id, message="Event occurred: The user just logged off.", role="system")
+    send_system_message_response = client.send_message(
+        agent_id=agent.id, message="Event occurred: The user just logged off.", role="system"
+    )
     assert send_system_message_response, "Sending message failed"
 
 
@@ -390,7 +391,7 @@ def test_function_always_error(client: Union[LocalClient, RESTClient]):
         """
         Always throw an error.
         """
-        return 5/0
+        return 5 / 0
 
     tool = client.create_or_update_tool(func=always_error)
     agent = client.create_agent(tool_ids=[tool.id])
@@ -410,8 +411,8 @@ def test_function_always_error(client: Union[LocalClient, RESTClient]):
         assert response_message.tool_return == "Error executing function always_error: ZeroDivisionError: division by zero"
     else:
         response_json = json.loads(response_message.tool_return)
-        assert response_json['status'] == "Failed"
-        assert response_json['message'] == "Error executing function always_error: ZeroDivisionError: division by zero"
+        assert response_json["status"] == "Failed"
+        assert response_json["message"] == "Error executing function always_error: ZeroDivisionError: division by zero"
 
     client.delete_agent(agent_id=agent.id)
 

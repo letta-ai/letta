@@ -8,12 +8,11 @@ Create Date: 2024-10-11 14:19:19.875656
 
 from typing import Sequence, Union
 
+import letta.orm
 import pgvector
 import sqlalchemy as sa
-from sqlalchemy.dialects import postgresql
-
-import letta.orm
 from alembic import op
+from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision: str = "9a505cc7eca9"

@@ -23,9 +23,6 @@ import uuid
 from typing import List
 
 from icml_experiments.utils import get_experiment_config, load_gzipped_file
-from openai import OpenAI
-from tqdm import tqdm
-
 from letta import utils
 from letta.agent_store.storage import StorageConnector, TableType
 from letta.cli.cli_config import delete
@@ -33,6 +30,8 @@ from letta.config import LettaConfig
 from letta.credentials import LettaCredentials
 from letta.embeddings import embedding_model
 from letta.utils import count_tokens
+from openai import OpenAI
+from tqdm import tqdm
 
 DATA_SOURCE_NAME = "wikipedia"
 DOC_QA_PERSONA = "You are Letta DOC-QA bot. Your job is to answer questions about documents that are stored in your archival memory. The answer to the users question will ALWAYS be in your archival memory, so remember to keep searching if you can't find the answer. Answer the questions as if though the year is 2018."  # TODO decide on a good persona/human

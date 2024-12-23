@@ -19,11 +19,9 @@ from typing import List, Union, _GenericAlias, get_args, get_origin, get_type_hi
 from urllib.parse import urljoin, urlparse
 
 import demjson3 as demjson
+import letta
 import pytz
 import tiktoken
-from pathvalidate import sanitize_filename as pathvalidate_sanitize_filename
-
-import letta
 from letta.constants import (
     CLI_WARNING_PREFIX,
     CORE_MEMORY_HUMAN_CHAR_LIMIT,
@@ -34,6 +32,7 @@ from letta.constants import (
     TOOL_CALL_ID_MAX_LEN,
 )
 from letta.schemas.openai.chat_completion_response import ChatCompletionResponse
+from pathvalidate import sanitize_filename as pathvalidate_sanitize_filename
 
 DEBUG = False
 if "LOG_LEVEL" in os.environ:
@@ -1119,6 +1118,7 @@ def sanitize_filename(filename: str) -> str:
 
     # Return the sanitized filename
     return sanitized_filename
+
 
 def get_friendly_error_msg(function_name: str, exception_name: str, exception_message: str):
     from letta.constants import MAX_ERROR_MESSAGE_CHAR_LIMIT

@@ -1,12 +1,11 @@
 import pytest
-
 from letta.helpers import ToolRulesSolver
 from letta.helpers.tool_rule_solver import ToolRuleValidationError
 from letta.schemas.tool_rule import (
     ChildToolRule,
     ConditionalToolRule,
     InitToolRule,
-    TerminalToolRule
+    TerminalToolRule,
 )
 
 # Constants for tool names used in the tests
@@ -113,11 +112,7 @@ def test_conditional_tool_rule():
     # Setup: Define a conditional tool rule
     init_rule = InitToolRule(tool_name=START_TOOL)
     terminal_rule = TerminalToolRule(tool_name=END_TOOL)
-    rule = ConditionalToolRule(
-        tool_name=START_TOOL,
-        default_child=None,
-        child_output_mapping={True: END_TOOL, False: START_TOOL}
-    )
+    rule = ConditionalToolRule(tool_name=START_TOOL, default_child=None, child_output_mapping={True: END_TOOL, False: START_TOOL})
     solver = ToolRulesSolver(tool_rules=[init_rule, rule, terminal_rule])
 
     # Action & Assert: Verify the rule properties
@@ -126,8 +121,12 @@ def test_conditional_tool_rule():
 
     # Step 2: After using 'start_tool'
     solver.update_tool_usage(START_TOOL)
-    assert solver.get_allowed_tool_names(last_function_response='{"message": "true"}') == [END_TOOL], "After 'start_tool' returns true, should allow 'end_tool'"
-    assert solver.get_allowed_tool_names(last_function_response='{"message": "false"}') == [START_TOOL], "After 'start_tool' returns false, should allow 'start_tool'"
+    assert solver.get_allowed_tool_names(last_function_response='{"message": "true"}') == [
+        END_TOOL
+    ], "After 'start_tool' returns true, should allow 'end_tool'"
+    assert solver.get_allowed_tool_names(last_function_response='{"message": "false"}') == [
+        START_TOOL
+    ], "After 'start_tool' returns false, should allow 'start_tool'"
 
     # Step 3: After using 'end_tool'
     assert solver.is_terminal_tool(END_TOOL) is True, "Should recognize 'end_tool' as terminal"
@@ -137,11 +136,7 @@ def test_invalid_conditional_tool_rule():
     # Setup: Define an invalid conditional tool rule
     init_rule = InitToolRule(tool_name=START_TOOL)
     terminal_rule = TerminalToolRule(tool_name=END_TOOL)
-    invalid_rule_1 = ConditionalToolRule(
-        tool_name=START_TOOL,
-        default_child=END_TOOL,
-        child_output_mapping={}
-    )
+    invalid_rule_1 = ConditionalToolRule(tool_name=START_TOOL, default_child=END_TOOL, child_output_mapping={})
 
     # Test 1: Missing child output mapping
     with pytest.raises(ToolRuleValidationError, match="Conditional tool rule must have at least one child tool."):

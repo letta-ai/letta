@@ -2,9 +2,8 @@ import json
 from typing import TYPE_CHECKING, Optional
 
 from fastapi import APIRouter, Body, Depends, Header, HTTPException
-
 from letta.schemas.enums import MessageRole
-from letta.schemas.letta_message import ToolCall, LettaMessage
+from letta.schemas.letta_message import LettaMessage, ToolCall
 from letta.schemas.openai.chat_completion_request import ChatCompletionRequest
 from letta.schemas.openai.chat_completion_response import (
     ChatCompletionResponse,

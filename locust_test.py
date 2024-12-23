@@ -1,8 +1,6 @@
 import random
 import string
 
-from locust import HttpUser, between, task
-
 from letta.constants import BASE_TOOLS, DEFAULT_HUMAN, DEFAULT_PERSONA
 from letta.schemas.agent import AgentState, CreateAgent
 from letta.schemas.letta_request import LettaRequest
@@ -10,6 +8,7 @@ from letta.schemas.letta_response import LettaResponse
 from letta.schemas.memory import ChatMemory
 from letta.schemas.message import MessageCreate, MessageRole
 from letta.utils import get_human_text, get_persona_text
+from locust import HttpUser, between, task
 
 
 class LettaUser(HttpUser):

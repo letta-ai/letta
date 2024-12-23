@@ -3,7 +3,6 @@ import time
 from typing import List, Optional, Union
 
 import requests
-
 from letta.constants import CLI_WARNING_PREFIX
 from letta.errors import LettaConfigurationError, RateLimitExceededError
 from letta.llm_api.anthropic import anthropic_chat_completions_request
@@ -255,12 +254,7 @@ def create(
 
         tool_call = None
         if force_tool_call is not None:
-            tool_call = {
-                "type": "function",
-                "function": {
-                    "name": force_tool_call
-                }
-            }
+            tool_call = {"type": "function", "function": {"name": force_tool_call}}
             assert functions is not None
 
         return anthropic_chat_completions_request(
