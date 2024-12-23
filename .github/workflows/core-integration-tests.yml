@@ -33,7 +33,7 @@ jobs:
         uses: tj-actions/changed-files@v44
         with:
           files: |
-            apps/core
+            apps/core/**
             .github/workflows/core-integration-tests.yml
   main:
     needs: [ changed-files ]
