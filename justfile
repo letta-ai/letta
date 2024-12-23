@@ -182,3 +182,19 @@ build-gh-actions:
     @echo "✅ All Docker images built successfully."
     npm run slack-bot-says "Docker images with tag: {{TAG}} built successfully."
 
+# Processes the letta core api into a consumable sdk and openapi spec for documentation and downstream consumption
+stage-api:
+    @echo "🚧 Syncing API..."
+    npm run core:generate-web-sdk
+
+# Takes the staged API and pushes it to docs
+publish-api:
+    @echo "🚧 Publishing API..."
+    # Generates an openapi spec from any public web api endpoints
+    npm run web:generate-web-only-openapi-spec
+    # Merges the core api and web api openapi specs and moves it to the docs folder
+    npm run docs:publish-api
+
+preview-docs:
+    @echo "🚧 Previewing docs..."
+    npm run docs:dev
