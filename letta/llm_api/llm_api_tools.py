@@ -153,7 +153,7 @@ def create(
             # only is a problem if we are *not* using an openai proxy
             raise LettaConfigurationError(message="OpenAI key is missing from letta config file", missing_fields=["openai_api_key"])
 
-        if function_call is None:
+        if function_call is None and functions is not None and len(functions) > 0:
             # force function calling for reliability, see https://platform.openai.com/docs/api-reference/chat/create#chat-create-tool_choice
             # TODO(matt) move into LLMConfig
             if llm_config.model_endpoint == "https://inference.memgpt.ai":
