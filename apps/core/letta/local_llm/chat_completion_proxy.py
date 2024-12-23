@@ -3,7 +3,6 @@
 import uuid
 
 import requests
-
 from letta.constants import CLI_WARNING_PREFIX
 from letta.errors import LocalLLMConnectionError, LocalLLMError
 from letta.local_llm.constants import DEFAULT_WRAPPER

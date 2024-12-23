@@ -1,9 +1,8 @@
 from typing import TYPE_CHECKING, List, Union
 
-from sqlalchemy.orm import Mapped, mapped_column, relationship
-
 from letta.orm.sqlalchemy_base import SqlalchemyBase
 from letta.schemas.organization import Organization as PydanticOrganization
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 if TYPE_CHECKING:
 
@@ -38,19 +37,11 @@ class Organization(SqlalchemyBase):
     agents: Mapped[List["Agent"]] = relationship("Agent", back_populates="organization", cascade="all, delete-orphan")
     messages: Mapped[List["Message"]] = relationship("Message", back_populates="organization", cascade="all, delete-orphan")
     source_passages: Mapped[List["SourcePassage"]] = relationship(
-        "SourcePassage", 
-        back_populates="organization", 
-        cascade="all, delete-orphan"
+        "SourcePassage", back_populates="organization", cascade="all, delete-orphan"
     )
-    agent_passages: Mapped[List["AgentPassage"]] = relationship(
-        "AgentPassage", 
-        back_populates="organization", 
-        cascade="all, delete-orphan"
-    )
+    agent_passages: Mapped[List["AgentPassage"]] = relationship("AgentPassage", back_populates="organization", cascade="all, delete-orphan")
 
     @property
     def passages(self) -> List[Union["SourcePassage", "AgentPassage"]]:
         """Convenience property to get all passages"""
         return self.source_passages + self.agent_passages
-
-

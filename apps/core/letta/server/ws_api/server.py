@@ -3,9 +3,8 @@ import signal
 import sys
 import traceback
 
-import websockets
-
 import letta.server.ws_api.protocol as protocol
+import websockets
 from letta.server.constants import WS_DEFAULT_PORT
 from letta.server.server import SyncServer
 from letta.server.ws_api.interface import SyncWebSocketInterface

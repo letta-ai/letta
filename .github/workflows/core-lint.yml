@@ -1,0 +1,93 @@
+name: 🐍🧹 [Core] Lint and Test
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  changed-files:
+    runs-on: ubuntu-latest
+    name: changed-files
+    outputs:
+      all_changed_files: ${{ steps.changed-files.outputs.all_changed_files }}
+      any_changed: ${{ steps.changed-files.outputs.any_changed }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v44
+        with:
+          files: |
+            apps/core
+            .github/workflows/core-lint.yml
+  main:
+    needs: [ changed-files ]
+    if: ${{ needs.changed-files.outputs.any_changed == 'true' }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.12"]  # Adjust Python version matrix if needed
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+    - name: Set up python 3.12
+      id: setup-python
+      uses: actions/setup-python@v5
+      with:
+        python-version: 3.12
+    - name: Load cached Poetry Binary
+      id: cached-poetry-binary
+      uses: actions/cache@v4
+      with:
+        path: ~/.local
+        key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ inputs.poetry-version }}
+    - name: Install Poetry
+      uses: snok/install-poetry@v1
+      with:
+        version: ${{ inputs.poetry-version }}
+        virtualenvs-create: true
+        virtualenvs-in-project: true
+    - name: Load cached venv
+      id: cached-poetry-dependencies
+      uses: actions/cache@v4
+      with:
+        path: .venv
+        key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}${{ inputs.install-args || '-E dev -E postgres -E external-tools -E tests' }}
+        # Restore cache with this prefix if not exact match with key
+        # Note cache-hit returns false in this case, so the below step will run
+        restore-keys: |
+          venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-
+    - name: Install dependencies
+      if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
+      shell: bash
+      working-directory: apps/core
+      run: poetry install --no-interaction --no-root ${{ inputs.install-args || '-E dev -E postgres -E external-tools -E tests' }}
+    - name: Validate PR Title
+      if: github.event_name == 'pull_request'
+      uses: amannn/action-semantic-pull-request@v5
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Run Pyright
+      uses: jakebailey/pyright-action@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+        level: "error"
+      continue-on-error: true
+
+    - name: Run isort
+      working-directory: apps/core
+      run: poetry run isort --profile black --check-only --diff .
+
+    - name: Run Black
+      working-directory: apps/core
+      run: poetry run black --check .
+
+    - name: Run Autoflake
+      working-directory: apps/core
+      run: poetry run autoflake --remove-all-unused-imports --remove-unused-variables --in-place --recursive --ignore-init-module-imports .

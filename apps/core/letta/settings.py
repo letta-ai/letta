@@ -1,10 +1,9 @@
 from pathlib import Path
 from typing import Optional
 
+from letta.local_llm.constants import DEFAULT_WRAPPER_NAME
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
-
-from letta.local_llm.constants import DEFAULT_WRAPPER_NAME
 
 
 class ToolSettings(BaseSettings):

@@ -8,9 +8,6 @@ from typing import Optional
 import uvicorn
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
-from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.middleware.cors import CORSMiddleware
-
 from letta.__init__ import __version__
 from letta.constants import ADMIN_PREFIX, API_PREFIX, OPENAI_API_PREFIX
 from letta.errors import LettaAgentNotFoundError, LettaUserNotFoundError
@@ -47,6 +44,8 @@ from letta.server.rest_api.routers.v1.users import (
 from letta.server.rest_api.static_files import mount_static_files
 from letta.server.server import SyncServer
 from letta.settings import settings
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.middleware.cors import CORSMiddleware
 
 # TODO(ethan)
 # NOTE(charles): @ethan I had to add this to get the global as the bottom to work

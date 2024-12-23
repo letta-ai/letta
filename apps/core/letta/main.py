@@ -2,14 +2,12 @@ import os
 import sys
 import traceback
 
-import questionary
-import requests
-import typer
-from rich.console import Console
-
 import letta.agent as agent
 import letta.errors as errors
 import letta.system as system
+import questionary
+import requests
+import typer
 
 # import benchmark
 from letta import create_client
@@ -22,6 +20,7 @@ from letta.constants import FUNC_FAILED_HEARTBEAT_MESSAGE, REQ_HEARTBEAT_MESSAGE
 
 # from letta.interface import CLIInterface as interface  # for printing to terminal
 from letta.streaming_interface import AgentRefreshStreamingInterface
+from rich.console import Console
 
 # interface = interface()
 

@@ -1,10 +1,5 @@
 from typing import TYPE_CHECKING, Dict, List, Optional
 
-from sqlalchemy import JSON
-from sqlalchemy import Enum as SqlEnum
-from sqlalchemy import String, UniqueConstraint
-from sqlalchemy.orm import Mapped, mapped_column, relationship
-
 from letta.orm.mixins import OrganizationMixin, SandboxConfigMixin
 from letta.orm.sqlalchemy_base import SqlalchemyBase
 from letta.schemas.sandbox_config import SandboxConfig as PydanticSandboxConfig
@@ -12,6 +7,10 @@ from letta.schemas.sandbox_config import (
     SandboxEnvironmentVariable as PydanticSandboxEnvironmentVariable,
 )
 from letta.schemas.sandbox_config import SandboxType
+from sqlalchemy import JSON
+from sqlalchemy import Enum as SqlEnum
+from sqlalchemy import String, UniqueConstraint
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 if TYPE_CHECKING:
     from letta.orm.organization import Organization

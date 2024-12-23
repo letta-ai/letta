@@ -1,14 +1,13 @@
 from typing import TYPE_CHECKING, Optional, Type
 
-from sqlalchemy import JSON, BigInteger, Integer, UniqueConstraint, event
-from sqlalchemy.orm import Mapped, attributes, mapped_column, relationship
-
 from letta.constants import CORE_MEMORY_BLOCK_CHAR_LIMIT
 from letta.orm.blocks_agents import BlocksAgents
 from letta.orm.mixins import OrganizationMixin
 from letta.orm.sqlalchemy_base import SqlalchemyBase
 from letta.schemas.block import Block as PydanticBlock
 from letta.schemas.block import Human, Persona
+from sqlalchemy import JSON, BigInteger, Integer, UniqueConstraint, event
+from sqlalchemy.orm import Mapped, attributes, mapped_column, relationship
 
 if TYPE_CHECKING:
     from letta.orm import Organization

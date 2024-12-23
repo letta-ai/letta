@@ -1,7 +1,6 @@
+from letta.orm.base import Base
 from sqlalchemy import ForeignKey, ForeignKeyConstraint, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
-
-from letta.orm.base import Base
 
 
 class BlocksAgents(Base):

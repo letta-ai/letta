@@ -3,10 +3,9 @@ import sys
 from enum import Enum
 from typing import Annotated, Optional
 
+import letta.utils as utils
 import questionary
 import typer
-
-import letta.utils as utils
 from letta import create_client
 from letta.agent import Agent, save_agent
 from letta.config import LettaConfig

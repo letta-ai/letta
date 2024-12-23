@@ -2,7 +2,6 @@ import json
 from typing import List, Optional
 
 import typer
-
 from letta import AgentState, EmbeddingConfig, LLMConfig, create_client
 from letta.schemas.agent import AgentType
 from letta.schemas.memory import BasicBlockMemory, Block

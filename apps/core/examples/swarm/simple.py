@@ -1,7 +1,6 @@
 import typer
-from swarm import Swarm
-
 from letta import EmbeddingConfig, LLMConfig
+from swarm import Swarm
 
 """
 This is an example of how to implement the basic example provided by OpenAI for tranferring a conversation between two agents:

@@ -4,7 +4,6 @@ import uuid
 from typing import List
 
 import pytest
-
 from letta import create_client
 from letta.agent import Agent
 from letta.client.client import LocalClient

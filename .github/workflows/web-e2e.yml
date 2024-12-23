@@ -1,4 +1,4 @@
-name: 🕸️ Cypress Tests
+name: 🦸️ End-to-End Tests
 
 
 permissions:
@@ -28,8 +28,8 @@ jobs:
         uses: tj-actions/changed-files@v44
         with:
           files: |
-            .github/workflows/cypress.yml
-            apps/letta/**
+            .github/workflows/web-e2e.yml
+            apps/web/**
             apps/core/**
             libs/**
             package.json

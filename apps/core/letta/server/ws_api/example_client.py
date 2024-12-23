@@ -1,8 +1,7 @@
 import asyncio
 
-import websockets
-
 import letta.server.ws_api.protocol as protocol
+import websockets
 from letta.server.constants import WS_CLIENT_TIMEOUT, WS_DEFAULT_PORT
 from letta.server.utils import condition_to_stop_receiving, print_server_response
 
