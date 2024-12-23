@@ -71,8 +71,12 @@ import {
 } from '$web/client/components/DashboardLikeLayout/DashboardNavigation/DashboardNavigation';
 import { trackClientSideEvent } from '@letta-web/analytics/client';
 import { AnalyticsEvent } from '@letta-web/analytics';
-import { DeploymentButton } from './DeploymentButton/DeploymentButton';
+import {
+  DeploymentButton,
+  isAgentConvertingToTemplateAtom,
+} from './DeploymentButton/DeploymentButton';
 import Link from 'next/link';
+import { useAtomValue } from 'jotai';
 
 interface ADEHeaderProps {
   children?: React.ReactNode;
@@ -702,6 +706,32 @@ export function AgentPage() {
 
     return null;
   }, [isLocal, isTemplate, t]);
+
+  const isAgentConvertingToTemplate = useAtomValue(
+    isAgentConvertingToTemplateAtom
+  );
+
+  if (isAgentConvertingToTemplate) {
+    return (
+      <div className="w-[100dvw] h-[100dvh] flex flex-col items-center justify-center">
+        <VStack
+          gap="large"
+          padding
+          border
+          fullWidth
+          fullHeight
+          flex
+          align="center"
+        >
+          <LoadingEmptyStatusComponent
+            emptyMessage=""
+            isError
+            errorMessage={t('convertingToTemplate')}
+          />
+        </VStack>
+      </div>
+    );
+  }
 
   return (
     <PanelManagerProvider

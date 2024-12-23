@@ -33,7 +33,7 @@ import { useCurrentUser } from '$web/client/hooks';
 import { compareAgentStates } from '$web/utils';
 import type { ServerInferResponses } from '@ts-rest/core';
 import type { contracts } from '$web/web-api/contracts';
-import { useRouter } from 'next/navigation';
+import { atom, useSetAtom } from 'jotai';
 
 interface DeployAgentDialogProps {
   isAtLatestVersion: boolean;
@@ -314,11 +314,25 @@ function TemplateVersionDisplay() {
           color="secondary"
           data-testid="version-template-trigger"
           label={
-            isAtLatestVersion ? 
-            (versionNumber ? t('DeploymentButton.readyToDeploy.trigger', { version: versionNumber }) : t('DeploymentButton.readyToDeploy.triggerNoVersion')) 
-            : 
-            (versionNumber ? t('DeploymentButton.updateAvailable.trigger', { version: versionNumber }) : t('DeploymentButton.updateAvailable.triggerNoVersion'))}
-          preIcon={isAtLatestVersion ? <RocketIcon size="small" /> : <WarningIcon size="small" />}
+            isAtLatestVersion
+              ? versionNumber
+                ? t('DeploymentButton.readyToDeploy.trigger', {
+                    version: versionNumber,
+                  })
+                : t('DeploymentButton.readyToDeploy.triggerNoVersion')
+              : versionNumber
+              ? t('DeploymentButton.updateAvailable.trigger', {
+                  version: versionNumber,
+                })
+              : t('DeploymentButton.updateAvailable.triggerNoVersion')
+          }
+          preIcon={
+            isAtLatestVersion ? (
+              <RocketIcon size="small" />
+            ) : (
+              <WarningIcon size="small" />
+            )
+          }
         />
       }
       align="end"
@@ -343,7 +357,11 @@ function TemplateVersionDisplay() {
           <Typography>
             {isAtLatestVersion
               ? t('DeploymentButton.readyToDeploy.copy')
-              : (versionNumber ? t('DeploymentButton.updateAvailable.copy', { version: versionNumber }) : t('DeploymentButton.updateAvailable.copyNoVersion'))}
+              : versionNumber
+              ? t('DeploymentButton.updateAvailable.copy', {
+                  version: versionNumber,
+                })
+              : t('DeploymentButton.updateAvailable.copyNoVersion')}
           </Typography>
         </VStack>
         <VStack gap="small">
@@ -365,18 +383,22 @@ function TemplateVersionDisplay() {
   );
 }
 
+export const isAgentConvertingToTemplateAtom = atom(false);
+
 function CreateTemplateButton() {
-  const { push } = useRouter();
   const { slug, id: currentProjectId } = useCurrentProject();
   const { id: agentId } = useCurrentAgent();
+  const setConvertingAtom = useSetAtom(isAgentConvertingToTemplateAtom);
   const { mutate, isPending, isSuccess } =
     webOriginSDKApi.agents.createTemplateFromAgent.useMutation({
       onSuccess: (body) => {
         const { name } = body.body;
 
-        push(`/projects/${slug}/templates/${name}`);
+        // do not use next/link here as we need to force a full page reload
+        window.location.href = `/projects/${slug}/templates/${name}`;
       },
       onError: () => {
+        setConvertingAtom(false);
         toast.error(t('CreateTemplateButton.error'));
       },
     });
@@ -386,13 +408,15 @@ function CreateTemplateButton() {
   );
 
   const handleConvert = useCallback(() => {
+    setConvertingAtom(true);
+
     mutate({
       params: { agent_id: agentId },
       body: {
         project_id: currentProjectId,
       },
     });
-  }, [mutate, agentId, currentProjectId]);
+  }, [setConvertingAtom, mutate, agentId, currentProjectId]);
 
   return (
     <Popover
