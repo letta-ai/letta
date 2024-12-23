@@ -79,7 +79,7 @@
                     },
                     "nullable": true
                   },
-                  "tools": {
+                  "tool_ids": {
                     "type": "array",
                     "items": {
                       "type": "string"
@@ -141,7 +141,26 @@
                     "type": "object",
                     "properties": {
                       "embedding_endpoint_type": {
-                        "type": "string"
+                        "type": "string",
+                        "enum": [
+                          "openai",
+                          "anthropic",
+                          "cohere",
+                          "google_ai",
+                          "azure",
+                          "groq",
+                          "ollama",
+                          "webui",
+                          "webui-legacy",
+                          "lmstudio",
+                          "lmstudio-legacy",
+                          "llamacpp",
+                          "koboldcpp",
+                          "vllm",
+                          "hugging-face",
+                          "mistral",
+                          "together"
+                        ]
                       },
                       "embedding_endpoint": {
                         "type": "string",
@@ -342,6 +361,100 @@
         }
       }
     },
+    "/v1/agents/search": {
+      "post": {
+        "description": "Search deployed agents",
+        "summary": "Search Deployed Agents",
+        "tags": ["agents"],
+        "parameters": [],
+        "operationId": "agents.searchDeployedAgents",
+        "requestBody": {
+          "description": "Body",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "search": {
+                    "type": "array",
+                    "items": {
+                      "oneOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "field": {
+                              "type": "string",
+                              "enum": ["version"]
+                            },
+                            "value": {
+                              "type": "string"
+                            }
+                          },
+                          "required": ["field", "value"]
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "field": {
+                              "type": "string",
+                              "enum": ["name"]
+                            },
+                            "operator": {
+                              "type": "string",
+                              "enum": ["eq", "neq", "contains"]
+                            },
+                            "value": {
+                              "type": "string"
+                            }
+                          },
+                          "required": ["field", "operator", "value"]
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "field": {
+                              "type": "string",
+                              "enum": ["order_by"]
+                            },
+                            "value": {
+                              "type": "string",
+                              "enum": ["created_at", "updated_at"]
+                            },
+                            "direction": {
+                              "type": "string",
+                              "enum": ["asc", "desc"]
+                            }
+                          },
+                          "required": ["field", "value", "direction"]
+                        }
+                      ]
+                    }
+                  },
+                  "project_id": {
+                    "type": "string"
+                  },
+                  "combinator": {
+                    "type": "string",
+                    "enum": ["AND", "OR"]
+                  },
+                  "limit": {
+                    "type": "number"
+                  },
+                  "offset": {
+                    "type": "number"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "200"
+          }
+        }
+      }
+    },
     "/v1/agents/{agent_id}/version-template": {
       "post": {
         "description": "Creates a versioned version of an agent",
@@ -358,7 +471,7 @@
             "description": "The agent ID of the agent to migrate, if this agent is not a template, it will create a agent template from the agent provided as well"
           },
           {
-            "name": "returnAgentId",
+            "name": "returnAgentState",
             "in": "query",
             "schema": {
               "type": "boolean"
@@ -383,23 +496,7 @@
         },
         "responses": {
           "201": {
-            "description": "201",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "version": {
-                      "type": "string"
-                    },
-                    "agentId": {
-                      "type": "string"
-                    }
-                  },
-                  "required": ["version"]
-                }
-              }
-            }
+            "description": "201"
           },
           "404": {
             "description": "404",
@@ -772,6 +869,78 @@
         }
       }
     },
+    "/v1/agents/{agent_id}/template": {
+      "post": {
+        "description": "Create a template from an agent",
+        "summary": "Create Template From Agent",
+        "tags": ["agents"],
+        "parameters": [
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "operationId": "agents.createTemplateFromAgent",
+        "requestBody": {
+          "description": "Body",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "project_id": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "201"
+          },
+          "404": {
+            "description": "404",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "enum": ["Agent not found"]
+                    }
+                  },
+                  "required": ["message"]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "500",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "enum": ["Failed to create agent template"]
+                    }
+                  },
+                  "required": ["message"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/models/": {
       "get": {
         "tags": ["models"],
@@ -881,7 +1050,26 @@
                     "type": "object",
                     "properties": {
                       "embedding_endpoint_type": {
-                        "type": "string"
+                        "type": "string",
+                        "enum": [
+                          "openai",
+                          "anthropic",
+                          "cohere",
+                          "google_ai",
+                          "azure",
+                          "groq",
+                          "ollama",
+                          "webui",
+                          "webui-legacy",
+                          "lmstudio",
+                          "lmstudio-legacy",
+                          "llamacpp",
+                          "koboldcpp",
+                          "vllm",
+                          "hugging-face",
+                          "mistral",
+                          "together"
+                        ]
                       },
                       "embedding_endpoint": {
                         "type": "string",

@@ -1,0 +1,62 @@
+name: Preview SDKs
+
+on:
+  pull_request:
+    branches:
+      - main
+  paths:
+    - 'fern/**'
+
+jobs:
+  preview-typescript-sdk:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Setup node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Install Fern
+        run: npm install -g fern-api
+
+      - name: Generate TypeScript SDK Preview
+        working-directory: apps
+        env:
+          FERN_TOKEN: ${{ secrets.FERN_TOKEN }}
+        run: |
+          fern generate --group ts-sdk --preview
+          cd fern/.preview/fern-typescript-node-sdk
+          yarn install
+          yarn build
+
+  preview-python-sdk:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          version: 1.5.1
+
+      - name: Install Fern
+        run: npm install -g fern-api
+
+      - name: Generate Python SDK Preview
+        working-directory: apps
+        env:
+          FERN_TOKEN: ${{ secrets.FERN_TOKEN }}
+        run: |
+          fern generate --group python-sdk --preview
+          cd fern/.preview/fern-python-sdk
+          poetry install
+          poetry run mypy .

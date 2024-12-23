@@ -6,7 +6,6 @@ import { RESTRICTED_ROUTE_BASE_PATHS } from '@letta-web/letta-agents-api';
 import { createInferenceTransaction } from '$web/server/inferenceTransactions/inferenceTransactions';
 import * as Sentry from '@sentry/nextjs';
 import { z } from 'zod';
-import type { ToZod } from '@letta-web/helpful-client-utils';
 
 interface RequestOptions {
   pathname: string;
@@ -21,13 +20,13 @@ interface RequestOptions {
   organizationId: string;
 }
 
-const usageDetails: ToZod<LettaResponse['LettaUsageStatistics']> = z
+const usageDetails = z
   .object({
     completion_tokens: z.number().optional(),
     prompt_tokens: z.number().optional(),
     total_tokens: z.number().optional(),
     step_count: z.number().optional(),
-    message_type: z.literal('usage_statistics').optional(),
+    message_type: z.literal('usage_statistics'),
   })
   .optional();
 
