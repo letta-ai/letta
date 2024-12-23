@@ -1,19 +1,13 @@
-from typing import List, Optional
 from datetime import datetime
-import numpy as np
+from typing import List, Optional
 
-from sqlalchemy import select, union_all, literal
-
-from letta.constants import MAX_EMBEDDING_DIM
 from letta.embeddings import embedding_model, parse_and_chunk_text
 from letta.orm.errors import NoResultFound
 from letta.orm.passage import AgentPassage, SourcePassage
 from letta.schemas.agent import AgentState
-from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.passage import Passage as PydanticPassage
 from letta.schemas.user import User as PydanticUser
 from letta.utils import enforce_types
-
 
 
 class PassageManager:

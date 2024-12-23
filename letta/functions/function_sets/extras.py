@@ -3,7 +3,6 @@ import uuid
 from typing import Optional
 
 import requests
-
 from letta.constants import (
     MESSAGE_CHATGPT_FUNCTION_MODEL,
     MESSAGE_CHATGPT_FUNCTION_SYSTEM_MESSAGE,

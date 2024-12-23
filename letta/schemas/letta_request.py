@@ -1,9 +1,8 @@
 from typing import List
 
-from pydantic import BaseModel, Field
-
 from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG
 from letta.schemas.message import MessageCreate
+from pydantic import BaseModel, Field
 
 
 class LettaRequest(BaseModel):

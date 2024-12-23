@@ -4,7 +4,6 @@ import sys
 
 import pexpect
 import pytest
-
 from letta.local_llm.constants import (
     ASSISTANT_MESSAGE_CLI_SYMBOL,
     INNER_THOUGHTS_CLI_SYMBOL,

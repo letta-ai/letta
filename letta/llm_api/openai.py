@@ -6,7 +6,6 @@ import httpx
 import requests
 from httpx_sse import connect_sse
 from httpx_sse._exceptions import SSEError
-
 from letta.constants import OPENAI_CONTEXT_WINDOW_ERROR_SUBSTRING
 from letta.errors import LLMError
 from letta.llm_api.helpers import (

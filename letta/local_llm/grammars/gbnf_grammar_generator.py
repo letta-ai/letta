@@ -19,9 +19,8 @@ from typing import (
 )
 
 from docstring_parser import parse
-from pydantic import BaseModel, create_model
-
 from letta.utils import json_dumps
+from pydantic import BaseModel, create_model
 
 
 class PydanticDataType(Enum):

@@ -1,9 +1,8 @@
 from typing import Any, Dict, List, Optional, Union
 
-from pydantic import Field
-
 from letta.schemas.enums import ToolRuleType
 from letta.schemas.letta_base import LettaBase
+from pydantic import Field
 
 
 class BaseToolRule(LettaBase):
@@ -25,6 +24,7 @@ class ConditionalToolRule(BaseToolRule):
     """
     A ToolRule that conditionally maps to different child tools based on the output.
     """
+
     type: ToolRuleType = ToolRuleType.conditional
     default_child: Optional[str] = Field(None, description="The default child tool to be called. If None, any tool can be called.")
     child_output_mapping: Dict[Any, str] = Field(..., description="The output case to check for mapping")

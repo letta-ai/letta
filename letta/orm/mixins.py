@@ -1,10 +1,9 @@
 from typing import Optional
 from uuid import UUID
 
+from letta.orm.base import Base
 from sqlalchemy import ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column
-
-from letta.orm.base import Base
 
 
 def is_valid_uuid4(uuid_string: str) -> bool:
@@ -31,12 +30,14 @@ class UserMixin(Base):
 
     user_id: Mapped[str] = mapped_column(String, ForeignKey("users.id"))
 
+
 class AgentMixin(Base):
     """Mixin for models that belong to an agent."""
 
     __abstract__ = True
 
     agent_id: Mapped[str] = mapped_column(String, ForeignKey("agents.id", ondelete="CASCADE"))
+
 
 class FileMixin(Base):
     """Mixin for models that belong to a file."""

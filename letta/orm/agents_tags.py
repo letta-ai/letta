@@ -1,7 +1,6 @@
+from letta.orm.base import Base
 from sqlalchemy import ForeignKey, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-
-from letta.orm.base import Base
 
 
 class AgentsTags(Base):

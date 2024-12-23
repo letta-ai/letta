@@ -1,14 +1,13 @@
 from typing import TYPE_CHECKING, List, Optional
 
-from sqlalchemy import JSON
-from sqlalchemy.orm import Mapped, mapped_column, relationship
-
 from letta.orm import FileMetadata
 from letta.orm.custom_columns import EmbeddingConfigColumn
 from letta.orm.mixins import OrganizationMixin
 from letta.orm.sqlalchemy_base import SqlalchemyBase
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.source import Source as PydanticSource
+from sqlalchemy import JSON
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 if TYPE_CHECKING:
     from letta.orm.agent import Agent
