@@ -34,12 +34,14 @@
     "test": "npx nx run-many -p web component-library  --skip-nx-cache --parallel --targets=test",
     "type-check": "nx run-many --all --skip-nx-cache --parallel --targets=type-check",
     "web:dev": "nx dev web",
+    "web:lint": "npx nx run-many --all --exclude=core --skip-nx-cache --parallel --targets=lint",
     "web:generate-web-only-openapi-spec": "nx generate-openapi web",
     "web:database:check": "nx run database:check",
     "web:database:generate": "nx run database:generate",
     "web:database:migrate": "nx run database:migrate",
     "web:database:migrate:ci": "cd libs/database && drizzle-kit migrate",
-    "web:database:studio": "nx run database:studio"
+    "web:database:studio": "nx run database:studio",
+    "web:test": "npx nx run-many -p web component-library --exclude=core  --skip-nx-cache --parallel --targets=test"
   },
   "private": true,
   "dependencies": {
