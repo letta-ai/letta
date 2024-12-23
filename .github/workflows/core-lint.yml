@@ -23,7 +23,7 @@ jobs:
         with:
           files: |
             apps/core
-            .github/workflows/core-lint-and-test.yml
+            .github/workflows/core-lint.yml
   main:
     needs: [ changed-files ]
     if: ${{ needs.changed-files.outputs.any_changed == 'true' }}
@@ -33,19 +33,40 @@ jobs:
         python-version: ["3.12"]  # Adjust Python version matrix if needed
 
     steps:
-    - name: Checkout code
+    - name: Checkout
       uses: actions/checkout@v4
+    - name: Set up python 3.12
+      id: setup-python
+      uses: actions/setup-python@v5
       with:
-        ref: ${{ github.head_ref }}  # Checkout the PR branch
-        fetch-depth: 0  # Fetch all history for all branches and tags
-
-    - name: "Setup Python, Poetry and Dependencies"
-      uses: packetcoders/action-setup-cache-python-poetry@main
+        python-version: 3.12
+    - name: Load cached Poetry Binary
+      id: cached-poetry-binary
+      uses: actions/cache@v4
       with:
-        python-version: ${{ matrix.python-version }}
-        poetry-version: "1.8.2"
-        install-args: "-E dev -E postgres -E external-tools -E tests"  # Adjust as necessary
-
+        path: ~/.local
+        key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ inputs.poetry-version }}
+    - name: Install Poetry
+      uses: snok/install-poetry@v1
+      with:
+        version: ${{ inputs.poetry-version }}
+        virtualenvs-create: true
+        virtualenvs-in-project: true
+    - name: Load cached venv
+      id: cached-poetry-dependencies
+      uses: actions/cache@v4
+      with:
+        path: .venv
+        key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}${{ inputs.install-args || '-E dev -E postgres -E external-tools -E tests' }}
+        # Restore cache with this prefix if not exact match with key
+        # Note cache-hit returns false in this case, so the below step will run
+        restore-keys: |
+          venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-
+    - name: Install dependencies
+      if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
+      shell: bash
+      working-directory: MemGPT
+      run: poetry install --no-interaction --no-root ${{ inputs.install-args || '-E dev -E postgres -E external-tools -E tests' }}
     - name: Validate PR Title
       if: github.event_name == 'pull_request'
       uses: amannn/action-semantic-pull-request@v5
