@@ -227,5 +227,7 @@ setup:
     @echo "Setting up the database..."
     npm run web:database:migrate
     npm run core:database:migrate
+
+    echo "{}" > apps/web/flag.overrides.json
     @echo "✅ Project setup complete. You should be able to run your services, just run 'just web' or 'just core'."
 
