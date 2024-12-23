@@ -39,7 +39,7 @@ import type {
   AgentSimulatorMessageType,
 } from '../../../../app/(logged-in)/(ade)/projects/[projectSlug]/agents/[agentId]/AgentSimulator/types';
 import { FunctionIcon } from '@letta-web/component-library';
-import { useInfiniteQuery } from '@tanstack/react-query';
+import { skipToken, useInfiniteQuery } from '@tanstack/react-query';
 import type { InfiniteData } from '@tanstack/query-core';
 import { jsonrepair } from 'jsonrepair';
 import { useTranslations } from 'next-intl';
@@ -202,29 +202,33 @@ export function Messages(props: MessagesProps) {
   >({
     refetchInterval,
     queryKey: UseAgentsServiceListAgentMessagesKeyFn({ agentId }),
-    queryFn: async (query) => {
-      const res = (await getMessages({
-        url: developmentServerConfig?.url,
-        headers: {
-          ...(developmentServerConfig?.password
-            ? {
-                'X-BARE-PASSWORD': `password ${developmentServerConfig.password}`,
-              }
-            : {}),
+    queryFn: isMessageUpdateLock
+      ? skipToken
+      : async (query) => {
+          const res = (await getMessages({
+            url: developmentServerConfig?.url,
+            headers: {
+              ...(developmentServerConfig?.password
+                ? {
+                    'X-BARE-PASSWORD': `password ${developmentServerConfig.password}`,
+                  }
+                : {}),
+            },
+            agentId,
+            limit: MESSAGE_LIMIT,
+            ...(query.pageParam.before
+              ? { cursor: query.pageParam.before }
+              : {}),
+          })) as unknown as AgentMessage[];
+
+          if (isMessageUpdateLock) {
+            return messageCache;
+          }
+
+          setMessageCache(res);
+
+          return res;
         },
-        agentId,
-        limit: MESSAGE_LIMIT,
-        ...(query.pageParam.before ? { cursor: query.pageParam.before } : {}),
-      })) as unknown as AgentMessage[];
-
-      if (isMessageUpdateLock) {
-        return messageCache;
-      }
-
-      setMessageCache(res);
-
-      return res;
-    },
     getNextPageParam: (lastPage) => {
       if (lastPage.length < MESSAGE_LIMIT) {
         return undefined;
