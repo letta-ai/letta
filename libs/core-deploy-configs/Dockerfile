@@ -33,7 +33,7 @@ COPY --from=builder /app/pyproject.toml /app/poetry.lock /
 COPY ../apps/core/letta /letta
 COPY ../apps/core/alembic.ini /alembic.ini
 COPY ../apps/core/alembic /alembic
-COPY ./scripts /scripts
+COPY ./libs/core-deploy-configs/scripts /scripts
 COPY ../apps/core/scripts /letta-scripts
 
 EXPOSE 8283
