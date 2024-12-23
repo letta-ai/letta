@@ -5,7 +5,7 @@ on:
     branches:
       - main
   paths:
-    - 'fern/**'
+    - 'apps/fern/**'
 
 jobs:
   preview-typescript-sdk:

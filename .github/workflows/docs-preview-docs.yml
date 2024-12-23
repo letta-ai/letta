@@ -3,7 +3,7 @@ name: Preview Docs
 on:
   pull_request:
   paths:
-    - 'fern/**'
+    - 'apps/fern/**'
 
 jobs:
   run:
