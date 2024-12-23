@@ -112,8 +112,8 @@ describe-web:
 # Core stuff
 @build-core:
     echo "🚧 Building multi-architecture Docker images with tag: {{TAG}}..."
-    docker buildx create --use --file libs/core-deploy-configs/Dockerfile
-    docker buildx build --progress=plain --platform linux/amd64 -t {{DOCKER_REGISTRY}}/memgpt-server:{{TAG}} . --load
+    docker buildx create --use
+    docker buildx build --progress=plain --platform linux/amd64 -t {{DOCKER_REGISTRY}}/memgpt-server:{{TAG}} . --load --file libs/core-deploy-configs/Dockerfile
 
 # Push the Docker images to the registry
 @push-core:
