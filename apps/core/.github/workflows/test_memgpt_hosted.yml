@@ -1,0 +1,31 @@
+name: Endpoint (Letta)
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: "Setup Python, Poetry and Dependencies"
+      uses: packetcoders/action-setup-cache-python-poetry@main
+      with:
+        python-version: "3.12"
+        poetry-version: "1.8.2"
+        install-args: "-E dev"
+
+    - name: Test LLM endpoint
+      run: |
+        poetry run pytest -s -vv tests/test_model_letta_perfomance.py::test_llm_endpoint_letta_hosted
+      continue-on-error: true
+
+    - name: Test embedding endpoint
+      run: |
+        poetry run pytest -s -vv tests/test_model_letta_perfomance.py::test_embedding_endpoint_letta_hosted
