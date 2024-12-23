@@ -1,7 +1,6 @@
 from typing import TYPE_CHECKING
 
 from fastapi import APIRouter
-
 from letta.cli.cli import version
 from letta.schemas.health import Health
 

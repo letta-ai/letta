@@ -1,10 +1,9 @@
 from datetime import datetime
 from typing import Optional
 
-from pydantic import Field
-
 from letta.schemas.enums import JobStatus
 from letta.schemas.letta_base import OrmMetadataBase
+from pydantic import Field
 
 
 class JobBase(OrmMetadataBase):

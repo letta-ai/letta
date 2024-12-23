@@ -2,7 +2,6 @@ import uuid
 from typing import List, Optional, Tuple
 
 import requests
-
 from letta.constants import NON_USER_MSG_PREFIX
 from letta.llm_api.helpers import make_post_request
 from letta.local_llm.json_parser import clean_json_string_extra_backslash

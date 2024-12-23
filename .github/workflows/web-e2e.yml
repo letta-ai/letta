@@ -1,4 +1,4 @@
-name: 🕸️ Cypress Tests
+name: 🦸️ Cypress Tests
 
 
 permissions:
@@ -29,7 +29,7 @@ jobs:
         with:
           files: |
             .github/workflows/cypress.yml
-            apps/letta/**
+            apps/web/**
             apps/core/**
             libs/**
             package.json

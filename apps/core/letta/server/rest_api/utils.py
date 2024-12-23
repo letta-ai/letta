@@ -6,12 +6,11 @@ from enum import Enum
 from typing import AsyncGenerator, Optional, Union
 
 from fastapi import Header
-from pydantic import BaseModel
-
 from letta.errors import ContextWindowExceededError, RateLimitExceededError
 from letta.schemas.usage import LettaUsageStatistics
 from letta.server.rest_api.interface import StreamingServerInterface
 from letta.server.server import SyncServer
+from pydantic import BaseModel
 
 # from letta.orm.user import User
 # from letta.orm.utilities import get_db_session
@@ -101,6 +100,7 @@ def get_user_id(user_id: Optional[str] = Header(None, alias="user_id")) -> Optio
 
 def get_current_interface() -> StreamingServerInterface:
     return StreamingServerInterface
+
 
 def log_error_to_sentry(e):
     import traceback

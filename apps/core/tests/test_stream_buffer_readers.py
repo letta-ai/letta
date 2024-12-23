@@ -1,7 +1,6 @@
 import json
 
 import pytest
-
 from letta.streaming_utils import JSONInnerThoughtsExtractor
 
 

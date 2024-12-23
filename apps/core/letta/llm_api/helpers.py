@@ -5,7 +5,6 @@ from collections import OrderedDict
 from typing import Any, List, Union
 
 import requests
-
 from letta.constants import OPENAI_CONTEXT_WINDOW_ERROR_SUBSTRING
 from letta.schemas.openai.chat_completion_response import ChatCompletionResponse, Choice
 from letta.utils import json_dumps, printd

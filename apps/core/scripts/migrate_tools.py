@@ -1,8 +1,7 @@
-from tqdm import tqdm
-
 from letta.schemas.user import User
 from letta.services.organization_manager import OrganizationManager
 from letta.services.tool_manager import ToolManager
+from tqdm import tqdm
 
 
 def deprecated_tool():

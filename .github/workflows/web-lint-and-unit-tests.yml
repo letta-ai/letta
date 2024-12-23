@@ -1,4 +1,4 @@
-name: 🧪 Lint and Test
+name: 🕸️🧪 [Web] Lint and Test
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -30,9 +30,9 @@ jobs:
         uses: tj-actions/changed-files@v44
         with:
           files: |
-            apps/letta/**
+            apps/web/**
             libs/component-library/**
-            .github/workflows/tests.yml
+            .github/workflows/web-tests.yml
   main:
     needs: [ changed-files ]
     if: ${{ needs.changed-files.outputs.any_changed == 'true' }}

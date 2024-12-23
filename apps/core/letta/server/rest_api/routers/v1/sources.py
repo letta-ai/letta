@@ -11,7 +11,6 @@ from fastapi import (
     Query,
     UploadFile,
 )
-
 from letta.schemas.file import FileMetadata
 from letta.schemas.job import Job
 from letta.schemas.passage import Passage

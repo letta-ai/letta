@@ -2,9 +2,8 @@ import logging
 import time
 from typing import Callable, Dict, Generator, List, Optional, Union
 
-import requests
-
 import letta.utils
+import requests
 from letta.constants import (
     ADMIN_PREFIX,
     BASE_MEMORY_TOOLS,
