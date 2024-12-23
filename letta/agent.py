@@ -251,7 +251,7 @@ class Agent(BaseAgent):
     def _get_ai_reply(
         self,
         message_sequence: List[Message],
-        function_call: str = "auto",
+        function_call: Optional[str] = None,
         first_message: bool = False,
         stream: bool = False,  # TODO move to config?
         empty_response_retry_limit: int = 3,
