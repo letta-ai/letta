@@ -11,7 +11,7 @@ services:
     ports:
       - '6379:6379'
     volumes:
-      - ./data:/data
+      - ./data/redis:/data
     command: redis-server --appendonly yes
   postgres:
     image: ankane/pgvector
@@ -28,7 +28,8 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: letta
     volumes:
-      - ./misc/postgres-db-init/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./data/postgres:/var/lib/postgresql/data
+      - ./scripts/postgres-db-init/init.sql:/docker-entrypoint-initdb.d/init.sql
   web:
     depends_on:
       postgres:
@@ -37,7 +38,7 @@ services:
         condition: service_healthy
     container_name: letta-web
     build:
-      context: .
+      context: ./apps/web
       dockerfile: Dockerfile
       target: web
     ports:
@@ -50,7 +51,7 @@ services:
       GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI}
       LETTA_AGENTS_ENDPOINT: ${LETTA_AGENTS_ENDPOINT}
       NEXT_PUBLIC_CURRENT_HOST: ${NEXT_PUBLIC_CURRENT_HOST}
-  letta-agents:
+  core:
     depends_on:
       postgres:
         condition: service_healthy
@@ -58,7 +59,7 @@ services:
         condition: service_healthy
     container_name: letta-agents
     build:
-      context: ./external-services/letta-agents/MemGPT
+      context: ./libs/core-deploy-configs
       dockerfile: Dockerfile
       target: development
     ports:

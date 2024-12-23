@@ -198,3 +198,34 @@ publish-api:
 preview-docs:
     @echo "🚧 Previewing docs..."
     npm run docs:dev
+
+core:
+    npm run core:dev
+
+web:
+    npm run web:dev
+
+ready:
+  @echo "🚧 Updating your local environment..."
+  npm run core:install
+  npm install
+
+
+
+
+start-services:
+    @echo "🚧 Starting up postgres, redis..."
+    docker compose up -d redis postgres
+
+setup:
+    @echo "🚧 Setting up the project..."
+    @echo "Attaching environment variables..."
+    op inject -i .env.template -o .env
+    @echo "Installing dependencies..."
+    npm run core:install
+    npm install
+    @echo "Setting up the database..."
+    npm run web:database:migrate
+    npm run core:database:migrate
+    @echo "✅ Project setup complete. You should be able to run your services, just run 'just web' or 'just core'."
+
