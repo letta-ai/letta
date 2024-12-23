@@ -47,6 +47,13 @@
         "cwd": "apps/core"
       }
     },
+    "lint": {
+      "executor": "@nxlv/python:run-commands",
+      "options": {
+        "command": "poetry run isort --profile black . && poetry run black . && poetry run autoflake --remove-all-unused-imports --remove-unused-variables --in-place --recursive --ignore-init-module-imports .",
+        "cwd": "apps/core"
+      }
+    },
     "database:migrate": {
       "executor": "@nxlv/python:run-commands",
       "options": {

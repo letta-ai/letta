@@ -1,4 +1,4 @@
-name: Deploy Core
+name: 🐍🚀 Deploy Core
 
 on:
   workflow_run:
