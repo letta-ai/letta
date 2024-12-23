@@ -5,7 +5,7 @@
   "scripts": {
     "build": "nx build web --prod",
     "build-storybook": "nx run component-library:build-storybook",
-    "build:e2e": "npm run database:migrate && npm run build",
+    "build:e2e": "npm run web:database:migrate && npm run build",
     "check-github-status": "node ./scripts/check-github-status/check-github-status.js",
     "chromatic": "npx chromatic --project-token=chpt_163d302713dd4f3",
     "cl": "npm run component-libray",
