@@ -1,10 +1,12 @@
 name: Deploy Core
 
 on:
-  push:
+  workflow_run:
+    workflows: ["🕸️ Cypress Tests"]
+    types:
+      - completed
     branches:
       - main
-      - 'deploy-**'
   workflow_dispatch:
     inputs:
       git_hash:
