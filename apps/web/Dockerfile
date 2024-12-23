@@ -101,4 +101,4 @@ COPY . .
 
 USER nextjs
 
-CMD ["npm", "run", "database:migrate:ci"]
+CMD ["npm", "run", "web:database:migrate:ci"]
