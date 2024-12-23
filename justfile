@@ -121,7 +121,7 @@ describe-web:
     docker push {{DOCKER_REGISTRY}}/memgpt-server:{{TAG}}
 
 # Deploy the Helm chart
-@deploy deploy_message="": push-core
+@deploy-core deploy_message="": push-core
     echo "🚧 Deploying Helm chart..."
     helm upgrade --install {{HELM_CHART_NAME}} {{HELM_CHARTS_DIR}}/{{HELM_CHART_NAME}} \
         --set deployMessage='{{deploy_message}}' \
@@ -181,3 +181,4 @@ build-gh-actions:
 
     @echo "✅ All Docker images built successfully."
     npm run slack-bot-says "Docker images with tag: {{TAG}} built successfully."
+
