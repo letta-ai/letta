@@ -75,6 +75,7 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { isAxiosError } from 'axios';
 import { useDebouncedValue } from '@mantine/hooks';
+import { get } from 'lodash-es';
 
 type ToolViewerState = 'edit' | 'view';
 
@@ -356,8 +357,34 @@ function AddToolToAgentButton(props: AddToolToAgentButtonProps) {
           };
         }
       );
-    } catch (_e) {
-      toast.error(t('AddToolToAgentButton.error'));
+    } catch (e) {
+      let errorMessage = t('AddToolToAgentButton.error');
+      const errorCode = get(e, 'body.detail.code') || '';
+
+      if (errorCode) {
+        switch (errorCode) {
+          case 'ComposioSDKError': {
+            errorMessage = t(
+              'AddToolToAgentButton.errors.composio.ComposioSDKError'
+            );
+            break;
+          }
+
+          case 'ApiKeyNotProvidedError': {
+            errorMessage = t(
+              'AddToolToAgentButton.errors.composio.ApiKeyNotProvidedError'
+            );
+            break;
+          }
+
+          default: {
+            errorMessage = t('AddToolToAgentButton.error');
+            break;
+          }
+        }
+      }
+
+      toast.error(errorMessage);
     } finally {
       setIsPending(false);
     }
@@ -460,6 +487,10 @@ function ViewTool(props: ViewToolProps) {
     enabled: !isCustomOrLettaProvider,
   });
 
+  const toolMetaDataSearchResult = useMemo(() => {
+    return toolMetaData?.body.toolMetadata[0];
+  }, [toolMetaData?.body.toolMetadata]);
+
   const tool: ToolMetadataPreviewType = useMemo(() => {
     if (isCustomOrLettaProvider) {
       return {
@@ -475,16 +506,15 @@ function ViewTool(props: ViewToolProps) {
       };
     }
 
-    const metaDataTool = toolMetaData?.body.toolMetadata[0];
-
     return {
-      name: metaDataTool?.name || baseTool.name || '',
-      description: metaDataTool?.description || baseTool.description || '',
-      id: metaDataTool?.id || baseTool.id || '',
-      brand: metaDataTool?.brand || baseTool.brand || 'custom',
-      provider: metaDataTool?.provider || baseTool.provider,
-      imageUrl: metaDataTool?.imageUrl || baseTool.provider,
-      providerId: metaDataTool?.providerId || baseTool.providerId,
+      name: toolMetaDataSearchResult?.name || baseTool.name || '',
+      description:
+        toolMetaDataSearchResult?.description || baseTool.description || '',
+      id: toolMetaDataSearchResult?.id || baseTool.id || '',
+      brand: toolMetaDataSearchResult?.brand || baseTool.brand || 'custom',
+      provider: toolMetaDataSearchResult?.provider || baseTool.provider,
+      imageUrl: toolMetaDataSearchResult?.imageUrl || baseTool.provider,
+      providerId: toolMetaDataSearchResult?.providerId || baseTool.providerId,
     };
   }, [
     baseTool.brand,
@@ -495,7 +525,7 @@ function ViewTool(props: ViewToolProps) {
     baseTool.providerId,
     isCustomOrLettaProvider,
     localTool,
-    toolMetaData?.body.toolMetadata,
+    toolMetaDataSearchResult,
   ]);
 
   const toolDescription = useMemo(() => {
@@ -519,6 +549,18 @@ function ViewTool(props: ViewToolProps) {
   const isEditable = useMemo(() => {
     return tool.provider === 'custom';
   }, [tool.provider]);
+
+  const composioViewUrl = useMemo(() => {
+    if (!toolMetaDataSearchResult) {
+      return '';
+    }
+
+    if (toolMetaDataSearchResult.configuration?.type !== 'composio') {
+      return '';
+    }
+
+    return `https://app.composio.dev/app/${toolMetaDataSearchResult.configuration.appId}`;
+  }, [toolMetaDataSearchResult]);
 
   const showComposioSetupBanner = useMemo(() => {
     if (isComposioConnectedLoading) {
@@ -579,11 +621,11 @@ function ViewTool(props: ViewToolProps) {
             <HStack>
               {showAddToolToAgent && <AddToolToAgentButton tool={tool} />}
               {isEditable && <EditToolButton />}
-              {isComposioTool && (
+              {composioViewUrl && (
                 <Button
                   target="_blank"
                   size="small"
-                  href={`https://app.composio.dev/app/${tool.brand}`}
+                  href={composioViewUrl}
                   label={t('ViewTool.viewOnComposio')}
                   color="tertiary"
                 />
