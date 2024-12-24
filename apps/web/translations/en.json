@@ -1283,6 +1283,7 @@
       "attach": "Attach tool"
     },
     "EditToolWrapper": {
+      "unnamed": "Unnamed tool",
       "root": "All tools",
       "edit": "Tool Editor"
     },

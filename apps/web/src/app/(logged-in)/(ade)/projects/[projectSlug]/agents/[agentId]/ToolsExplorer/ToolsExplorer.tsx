@@ -1640,7 +1640,9 @@ function EditToolWrapper() {
                 onClick: () => {
                   switchToolState('view');
                 },
-                label: `${toolName}()`,
+                label: `${
+                  toolName || tool?.name || t('EditToolWrapper.unnamed')
+                }()`,
               },
               {
                 label: t('EditToolWrapper.edit'),
