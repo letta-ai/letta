@@ -211,6 +211,13 @@
       "when": 1734548098150,
       "tag": "0029_hard_mephisto",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1734998610953,
+      "tag": "0030_wide_sister_grimm",
+      "breakpoints": true
     }
   ]
 }

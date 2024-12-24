@@ -24,6 +24,7 @@ import {
   VariableIcon,
   WarningIcon,
   FlushIcon,
+  Skeleton,
 } from '@letta-web/component-library';
 import type { PanelTemplate, ChatInputRef } from '@letta-web/component-library';
 import { PanelBar } from '@letta-web/component-library';
@@ -32,11 +33,7 @@ import type { Dispatch, FormEvent, SetStateAction } from 'react';
 import { useEffect } from 'react';
 import { useMemo } from 'react';
 import React, { useCallback, useRef, useState } from 'react';
-import type {
-  AgentMessage,
-  AgentState,
-  Source,
-} from '@letta-web/letta-agents-api';
+import type { AgentMessage, AgentState } from '@letta-web/letta-agents-api';
 import { isAgentState } from '@letta-web/letta-agents-api';
 import { ErrorMessageSchema } from '@letta-web/letta-agents-api';
 import { useLettaAgentsAPI } from '@letta-web/letta-agents-api';
@@ -57,7 +54,12 @@ import { Messages } from '$web/client/components';
 import { z } from 'zod';
 import { useTranslations } from 'next-intl';
 import { useDebouncedCallback, useLocalStorage } from '@mantine/hooks';
-import { webApi, webApiQueryKeys, webOriginSDKApi } from '$web/client';
+import {
+  webApi,
+  webApiQueryKeys,
+  webOriginSDKApi,
+  webOriginSDKQueryKeys,
+} from '$web/client';
 import { useCurrentProject } from '../../../../../../(dashboard-like)/projects/[projectSlug]/hooks';
 import { compareAgentStates, findMemoryBlockVariables } from '$web/utils';
 import type { GetAgentTemplateSimulatorSessionResponseBody } from '$web/web-api/agent-templates/agentTemplatesContracts';
@@ -70,6 +72,8 @@ import { useCurrentUser } from '$web/client/hooks';
 import { firstPageMessagesCache } from '$web/client/components/Messages/firstPageMessagesCache/firstPageMessagesCache';
 import { useCurrentAPIHostConfig } from '$web/client/hooks/useCurrentAPIHostConfig/useCurrentAPIHostConfig';
 import { jsonToCurl } from '@letta-web/generic-utils';
+import type { ServerInferResponses } from '@ts-rest/core';
+import type { contracts } from '$web/web-api/contracts';
 
 const isSendingMessageAtom = atom(false);
 
@@ -687,31 +691,125 @@ function AgentSimulatorOptionsMenu() {
   );
 }
 
-export interface GenerateAgentStateHashResponse extends Partial<AgentState> {
-  datasources: string[];
+function useAgentVariables() {
+  const { isFromTemplate } = useCurrentAgentMetaData();
+  const { id: agentId } = useCurrentAgent();
+  return webOriginSDKApi.agents.getAgentVariables.useQuery({
+    queryKey: webOriginSDKQueryKeys.agents.getAgentVariables(agentId),
+    queryData: {
+      params: {
+        agent_id: agentId,
+      },
+    },
+    enabled: isFromTemplate,
+  });
 }
 
-export function generateAgentStateHash(
-  agentState: Partial<AgentState>,
-  datasources: Source[]
-): GenerateAgentStateHashResponse {
-  const agentStateCopy = { ...agentState };
+function DeployedAgentVariables() {
+  const t = useTranslations('ADE/AgentSimulator');
+  const { data } = useAgentVariables();
 
-  if (agentStateCopy.memory?.blocks) {
-    Object.keys(agentStateCopy.memory.blocks).forEach((_, index) => {
-      if (agentStateCopy.memory) {
-        agentStateCopy.memory.blocks[index].id = '';
-      }
-    });
+  const variableList = useMemo(() => {
+    return Object.entries(data?.body.variables || {}) || [];
+  }, [data]);
+
+  if (!data) {
+    return (
+      <HStack borderBottom padding="small">
+        <Skeleton
+          /* eslint-disable-next-line react/forbid-component-props */
+          className="w-full h-[30px]"
+        />
+        <Skeleton
+          /* eslint-disable-next-line react/forbid-component-props */
+          className="w-full h-[30px]"
+        />
+      </HStack>
+    );
   }
 
-  return {
-    ...agentState,
-    datasources: datasources.map((source) => source.id || '').filter(Boolean),
-  };
+  if (!variableList.length) {
+    return (
+      <HStack padding="small">
+        <Alert title={t('noVariablesInDeployedAgent')} variant="info" />
+      </HStack>
+    );
+  }
+
+  return (
+    <VStack
+      color="background-grey"
+      position="relative"
+      borderBottom
+      borderTop
+      padding="small"
+    >
+      <Table>
+        <TableBody>
+          {variableList.map(([variable, value]) => (
+            <TableRow key={variable}>
+              <TableCell>
+                <Typography variant="body2">{variable}</Typography>
+              </TableCell>
+              <TableCellInput
+                value={value}
+                label={t('DialogSessionSheet.label')}
+                placeholder={t('DialogSessionSheet.placeholder')}
+              />
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </VStack>
+  );
+}
+
+interface VariableMenuWrapperProps {
+  variableList: string[];
+  existingVariables: ServerInferResponses<
+    typeof contracts.agentTemplates.getAgentTemplateSimulatorSession,
+    200
+  >['body']['variables'];
+}
+
+function VariableMenuWrapper(props: VariableMenuWrapperProps) {
+  const { isLocal, isTemplate, isFromTemplate } = useCurrentAgentMetaData();
+  const t = useTranslations('ADE/AgentSimulator');
+  const { variableList, existingVariables } = props;
+
+  if (isLocal) {
+    return (
+      <HStack padding="small">
+        <Alert title={t('localAgent')} variant="info" />
+      </HStack>
+    );
+  }
+
+  if (!isTemplate) {
+    if (!isFromTemplate) {
+      return (
+        <HStack padding="small">
+          <Alert
+            title={t('noVariablesInDeployedAgentWithNoTemplate')}
+            variant="info"
+          />
+        </HStack>
+      );
+    }
+
+    return <DeployedAgentVariables />;
+  }
+
+  return (
+    <DialogSessionSheet
+      existingVariables={existingVariables}
+      variables={variableList}
+    />
+  );
 }
 
 function Chatroom() {
+  useAgentVariables();
   const t = useTranslations('ADE/AgentSimulator');
   const agentState = useCurrentAgent();
   const [showVariablesMenu, setShowVariablesMenu] = useState(false);
@@ -908,16 +1006,10 @@ function Chatroom() {
         </PanelBar>
         {showVariablesMenu && (
           <VStack>
-            {isLocal ? (
-              <HStack padding="small">
-                <Alert title={t('localAgent')} variant="info" />
-              </HStack>
-            ) : (
-              <DialogSessionSheet
-                existingVariables={agentSession?.body.variables || {}}
-                variables={variableList}
-              />
-            )}
+            <VariableMenuWrapper
+              variableList={variableList}
+              existingVariables={agentSession?.body.variables || {}}
+            />
           </VStack>
         )}
         <VStack collapseHeight gap={false} fullWidth>
