@@ -37,6 +37,7 @@ interface DashboardPageLayoutProps {
   encapsulatedFullHeight?: boolean;
   /* Fixes the page to a capped width */
   cappedWidth?: boolean;
+  headerBottomPadding?: 'default' | 'large';
   title?: TitleProps['title'];
   subtitle?: React.ReactNode;
   actions?: React.ReactNode;
@@ -54,6 +55,7 @@ export function DashboardPageLayout(props: DashboardPageLayoutProps) {
     returnButton,
     subtitle,
     cappedWidth,
+    headerBottomPadding = 'default',
     encapsulatedFullHeight,
     actions,
   } = props;
@@ -78,7 +80,9 @@ export function DashboardPageLayout(props: DashboardPageLayoutProps) {
             gap="small"
             paddingX="large"
             paddingTop="xxlarge"
-            paddingBottom="xxlarge"
+            paddingBottom={
+              headerBottomPadding === 'large' ? 'xxlarge' : 'small'
+            }
           >
             <VStack gap={false}>
               {returnButton && (

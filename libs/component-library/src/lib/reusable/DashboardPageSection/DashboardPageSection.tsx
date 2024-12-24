@@ -62,32 +62,34 @@ export function DashboardPageSection(props: DashboardPageSectionProps) {
     <VStack
       gap="large"
       paddingX="large"
-      paddingTop="large"
+      paddingTop="medium"
       paddingBottom="large"
       fullHeight={fullHeight}
       flex={fullHeight}
       fullWidth
       borderBottom={borderBottom}
     >
-      <VStack gap={false}>
-        {title && (
-          <HStack align="center" justify="spaceBetween">
-            <Typography align="left" noWrap bold variant="heading4">
-              {title}
+      {!title || !description ? null : (
+        <VStack gap={false}>
+          {title && (
+            <HStack align="center" justify="spaceBetween">
+              <Typography align="left" noWrap bold variant="heading4">
+                {title}
+              </Typography>
+              <HiddenOnMobile>
+                <HStack>{actions}</HStack>
+              </HiddenOnMobile>
+            </HStack>
+          )}
+          {description && (
+            <Typography align="left" variant="body" color="lighter">
+              {description}
             </Typography>
-            <HiddenOnMobile>
-              <HStack>{actions}</HStack>
-            </HiddenOnMobile>
-          </HStack>
-        )}
-        {description && (
-          <Typography align="left" variant="body" color="lighter">
-            {description}
-          </Typography>
-        )}
-      </VStack>
+          )}
+        </VStack>
+      )}
       {onSearch && (
-        <Frame paddingTop>
+        <Frame>
           <DashboardSearchBar
             searchPlaceholder={searchPlaceholder || ''}
             searchValue={searchValue || ''}
