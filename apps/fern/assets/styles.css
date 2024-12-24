@@ -2,6 +2,10 @@
   font-weight: 600;
 }
 
+.fern-button {
+  border-radius: 0 !important;
+}
+
 .rounded-xl,
 .rounded-lg,
 .rounded-md,
