@@ -159,7 +159,12 @@ function DevelopmentServersDashboardPage() {
     );
 
   return (
-    <DashboardPageLayout cappedWidth title={title} subtitle={t('description')}>
+    <DashboardPageLayout
+      headerBottomPadding="large"
+      cappedWidth
+      title={title}
+      subtitle={t('description')}
+    >
       <VStack paddingX="large">
         {showVersionCompatibilityBanner && (
           <Alert
