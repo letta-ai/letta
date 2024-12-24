@@ -118,7 +118,7 @@ interface TableCellInputProps {
   value: string;
   testId?: string;
   placeholder: string;
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
 const TableCellInput = React.forwardRef<

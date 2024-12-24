@@ -415,6 +415,7 @@ export async function createAgent(
         await db.insert(deployedAgentVariables).values({
           deployedAgentId: createdAgent.deployedAgentId,
           value: variables || {},
+          organizationId,
         });
 
         return {
@@ -595,6 +596,7 @@ export async function createAgent(
     await db.insert(deployedAgentVariables).values({
       deployedAgentId: deployedAgent.deployedAgentId,
       value: variables || {},
+      organizationId,
     });
 
     return {
@@ -680,6 +682,7 @@ export async function createAgent(
     await db.insert(deployedAgentVariables).values({
       deployedAgentId: createdAgent.deployedAgentId,
       value: variables || {},
+      organizationId,
     });
   }
 
@@ -1592,11 +1595,66 @@ async function createTemplateFromAgent(
   };
 }
 
+type GetAgentVariablesRequest = ServerInferRequest<
+  typeof sdkContracts.agents.getAgentVariables
+>;
+
+type GetAgentVariablesResponse = ServerInferResponses<
+  typeof sdkContracts.agents.getAgentVariables
+>;
+
+async function getAgentVariables(
+  req: GetAgentVariablesRequest,
+  context: SDKContext
+): Promise<GetAgentVariablesResponse> {
+  const { agent_id: agentId } = req.params;
+
+  // find agent
+
+  const agent = await AgentsService.getAgent(
+    {
+      agentId,
+    },
+    {
+      user_id: context.request.lettaAgentsUserId,
+    }
+  );
+
+  if (!agent) {
+    return {
+      status: 404,
+      body: {
+        message: 'Agent not found',
+      },
+    };
+  }
+
+  const deployedAgentVariablesItem =
+    await db.query.deployedAgentVariables.findFirst({
+      where: and(
+        eq(deployedAgentVariables.deployedAgentId, agentId),
+        isNull(deployedAgentVariables.deletedAt),
+        eq(
+          deployedAgentVariables.organizationId,
+          context.request.organizationId
+        )
+      ),
+    });
+
+  return {
+    status: 200,
+    body: {
+      variables: deployedAgentVariablesItem?.value || {},
+    },
+  };
+}
+
 export const agentsRouter = {
   createAgent,
   versionAgentTemplate,
   migrateAgent,
   listAgents,
+  getAgentVariables,
   getAgentById,
   deleteAgent,
   updateAgent,

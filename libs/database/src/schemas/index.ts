@@ -359,8 +359,10 @@ export const deployedAgentVariables = pgTable('deployed_agent_variables', {
     .notNull()
     .references(() => deployedAgents.id, { onDelete: 'cascade' })
     .primaryKey(),
+  organizationId: text('organization_id').notNull(),
   value: json('value').notNull().$type<Record<string, string>>(),
   createdAt: timestamp('created_at').notNull().defaultNow(),
+  deletedAt: timestamp('deleted_at'),
   updatedAt: timestamp('updated_at')
     .notNull()
     .$onUpdate(() => new Date()),

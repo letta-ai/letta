@@ -371,6 +371,29 @@ const createTemplateFromAgentContract = c.mutation({
   },
 });
 
+/* get agent variables */
+const GetAgentVariablesResponseSchema = z.object({
+  variables: z.record(z.string()),
+});
+
+const GetAgentVariablesNotFoundResponseSchema = z.object({
+  message: z.literal('Agent not found'),
+});
+
+const getAgentVariablesContract = c.query({
+  method: 'GET',
+  summary: 'Get Agent Variables',
+  path: '/v1/agents/:agent_id/variables',
+  description: 'Get the variables associated with an agent',
+  pathParams: z.object({
+    agent_id: z.string(),
+  }),
+  responses: {
+    200: GetAgentVariablesResponseSchema,
+    404: GetAgentVariablesNotFoundResponseSchema,
+  },
+});
+
 export const agentsContract = c.router({
   createAgent: createAgentContract,
   searchDeployedAgents: searchDeployedAgentsContract,
@@ -381,6 +404,7 @@ export const agentsContract = c.router({
   deleteAgent: deleteAgentContract,
   updateAgent: updateAgentContract,
   createTemplateFromAgent: createTemplateFromAgentContract,
+  getAgentVariables: getAgentVariablesContract,
 });
 
 export const agentsQueryKeys = {
@@ -389,4 +413,5 @@ export const agentsQueryKeys = {
   searchDeployedAgents: (
     options: z.infer<typeof SearchDeployedAgentsSchema>
   ) => ['agents', options],
+  getAgentVariables: (agentId: string) => ['agents', agentId, 'variables'],
 };
