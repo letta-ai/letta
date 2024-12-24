@@ -1,10 +1,10 @@
 servers:
   - url: https://app.letta.com
-    description: Letta Hosted
-    x-fern-server-name: Letta Hosted
+    description: Letta Cloud
+    x-fern-server-name: Letta Cloud
   - url: http://localhost:8283
-    description: Self Hosted
-    x-fern-server-name: Self Hosted
+    description: Self-hosted
+    x-fern-server-name: Self-hosted 
 
 paths:
   /v1/tools/{tool_id}:

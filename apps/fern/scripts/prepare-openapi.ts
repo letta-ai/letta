@@ -100,11 +100,11 @@ result.output.info = {
 result.output.servers = [
   {
     url: 'https://app.letta.com',
-    description: 'Letta Hosted',
+    description: 'Letta Cloud',
   },
   {
     url: 'http://localhost:8283',
-    description: 'Self Hosted',
+    description: 'Self-hosted',
   },
 ];
 

@@ -1,0 +1,58 @@
+---
+title: Agent templates
+subtitle: Understanding agent templates
+slug: cloud/templates
+---
+
+Agent templates allow you to create a common starting point (or "template") for your agents.
+You can define the structure of your agent (its tools and memory) in a template,
+then easily create new agents off of that template.
+
+Agent templates support *versioning*, which allows you to programatically 
+upgrade all agents on an old version of a template to the new version of the same template.
+
+Agent templates also support *memory variables*, a way to conveniently customize
+sections of memory inside the template at time of agent creation.
+
+## Example usecase: customer service
+
+Imagine you're creating a customer service chatbot application.
+You may want every user that starts a chat sesion to get their own personalized agent:
+the agent should know things specific to each user, like their purchase history, membership status, and so on.
+
+However, despite being custom to individual users, each agent may share a common structure:
+all agents may have access to the same tools, and the general strucutre of their memory may look the same.
+For example, all customer service agents may have the `update_ticket_status` tool that allows the agent to update the status of a support ticket in your backend service.
+Additionally, the agents may share a common structure to their memory block storing user information.
+
+This is the perfect scenario to use an agent template!
+You can take advantage of memory variables to write our user memory to exploit common structure:
+```
+The user is contacting me to resolve a customer support issue.
+Their name is {{name}} and the ticket number associated with this request is {{ticket}}.
+They have spent ${{amount}} on the platform.
+```
+
+Notice how the memory block uses variables (wrapped in `{{ }}`) to specify what part of the memory should be defined at agent creation time, vs within the template itself.
+When we create an agent using this template, we can specify the values to use in place of the variables.
+
+## Agents vs. Agent Templates
+
+Templates define a common starting point for your agents, but they are not agents themselves.
+When you are editing a template in the ADE, the ADE will simulate an agent for you
+(to help you debug and design your template), but the agent in the simulator is ephemeral (it is not retained).
+
+To create a persistent agent from a template, you can use the "Deploy Template" API route:
+```sh
+curl ...
+```
+
+## Versioning
+
+When you create a template, it starts off at version 1.
+When you make edits to your template in the ADE, you'll be prompted to update the version of the template.
+
+If you've deployed agents on a previous version of the template, you'll be asked if you want to migrate your existing agents to the new version of the template.
+
+## Memory variables
+
