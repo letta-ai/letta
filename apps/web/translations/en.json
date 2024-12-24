@@ -1280,7 +1280,7 @@
     "AddToolToAgentButton": {
       "errors": {
         "composio": {
-          "ComposioSDKError": "Please connect your Composio account with this tool app to add this tool to your agent.",
+          "ComposioSDKError": "Please connect this App on Composio before attempting to attach this tool. Press the 'View on Composio' button to do this",
           "ApiKeyNotProvidedError": "Please connect your Composio API key with Letta to add this tool to your agent."
         }
       },
