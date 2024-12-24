@@ -1,10 +1,5 @@
 {
   "generators": {
-    "setup": {
-      "factory": "./src/setup/generator",
-      "schema": "./src/setup/schema.json",
-      "description": "setup generator"
-    },
     "new-component": {
       "factory": "./src/new-component/generator",
       "schema": "./src/new-component/schema.json",
