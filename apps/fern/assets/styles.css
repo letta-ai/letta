@@ -2,7 +2,48 @@
   font-weight: 600;
 }
 
+/* Override styles related to soft borders */
 .fern-button {
+  border-radius: 0 !important;
+}
+.fern-collapsible-card {
+  border-radius: 0 !important;
+}
+.fern-api-property-meta code {
+  border-radius: 0 !important;
+}
+.fern-docs-badge {
+  border-radius: 0 !important;
+}
+.bg-accent-highlight {
+  border-radius: 0 !important;
+}
+.fern-scroll-area {
+  border-radius: 0 !important;
+}
+.fern-dropdown-item {
+  border-radius: 0 !important;
+}
+.fern-anchor-icon {
+  border-radius: 0 !important;
+}
+.fern-search-bar {
+  border-radius: 0 !important;
+}
+.keyboard-shortcut-hint {
+  border-radius: 0 !important;
+}
+.fern-search-button {
+  border-radius: 0 !important;
+}
+/* [data-radix-scroll-area-viewport] {
+  border-radius: 0 !important;
+}
+[data-radix-popper-content-wrapper] {
+  border-radius: 0 !important;
+} */
+[data-radix-popper-content-wrapper],
+[data-radix-popper-content-wrapper] > * {
   border-radius: 0 !important;
 }
 
