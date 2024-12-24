@@ -48,5 +48,5 @@ jobs:
           cache-dependency-path: ./package.json
           node-version: 20
       - run: npm ci --legacy-peer-deps
-      - run: npm run lint
-      - run: npm run test
+      - run: npm run web:lint
+      - run: npm run web:test
