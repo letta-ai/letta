@@ -55,6 +55,7 @@ async function listToolMetadata(
           description: t.description,
           id: t.id,
           brand: t.brand,
+          configuration: t.configuration,
           imageUrl:
             t.configuration?.type === 'composio' ? t.configuration.logo : null,
           providerId: t.providerId,
