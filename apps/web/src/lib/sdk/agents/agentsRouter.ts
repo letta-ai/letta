@@ -223,6 +223,10 @@ export async function createAgent(
     from_template,
     template,
     variables,
+    llm,
+    embedding,
+    context_window_limit,
+    embedding_chunk_size,
     name: preName,
     ...agent
   } = req.body;
@@ -614,6 +618,10 @@ export async function createAgent(
         tool_ids: agent.tool_ids || undefined,
         memory_blocks: agent.memory_blocks || [],
         name: crypto.randomUUID(),
+        llm: llm,
+        embedding: embedding,
+        context_window_limit: context_window_limit,
+        embedding_chunk_size: embedding_chunk_size,
       },
     },
     {
