@@ -36,8 +36,6 @@ import {
   CloseMiniApp,
   Code,
   CodeIcon,
-  ComposioLockup,
-  DashboardPageSection,
   Debugger,
   Dialog,
   ExploreIcon,
@@ -58,7 +56,6 @@ import {
   PlusIcon,
   RawCodeEditor,
   RawInput,
-  RawToggleGroup,
   SearchIcon,
   TerminalIcon,
   toast,
@@ -66,6 +63,9 @@ import {
   Typography,
   useForm,
   VStack,
+  Section,
+  ComposioLockupDynamic,
+  TabGroup,
 } from '@letta-web/component-library';
 import { useFeatureFlag, webApi, webApiQueryKeys } from '$web/client';
 import { useCurrentAgentMetaData } from '../hooks/useCurrentAgentMetaData/useCurrentAgentMetaData';
@@ -149,33 +149,47 @@ function ViewToolCodePreview(props: ViewToolCodePreviewProps) {
   const { toolId, provider } = props;
   const [viewMode, setViewMode] = useState<ViewMode>('code');
   const t = useTranslations('ADE/Tools');
+
+  const hasPreviewAbleProvider = useMemo(() => {
+    return ['letta', 'custom'].includes(provider);
+  }, [provider]);
+
   const { data: tool } = useToolsServiceGetTool(
     {
       toolId,
     },
     undefined,
     {
-      enabled: ['letta', 'custom'].includes(provider),
+      enabled: hasPreviewAbleProvider,
     }
   );
 
-  if (provider === 'composio') {
-    return null;
-  }
+  const toolCode = useMemo(() => {
+    if (hasPreviewAbleProvider) {
+      return tool?.source_code || '';
+    }
+
+    return t('SpecificToolComponent.codePreviewUnavailableForComposio');
+  }, [hasPreviewAbleProvider, tool, t]);
+
+  const toolSchema = useMemo(() => {
+    if (hasPreviewAbleProvider) {
+      return tool?.json_schema ? JSON.stringify(tool.json_schema, null, 2) : '';
+    }
+
+    return t('SpecificToolComponent.jsonPreviewUnavailableForComposio');
+  }, [hasPreviewAbleProvider, t, tool?.json_schema]);
 
   return (
     <div className="min-h-[400px] w-full flex-1 flex flex-col">
       <VStack flex collapseHeight>
-        <RawToggleGroup
-          hideLabel
-          border
+        <TabGroup
           value={viewMode}
           onValueChange={(mode) => {
             if (mode) {
               setViewMode(mode as ViewMode);
             }
           }}
-          label={t('ViewToolCodePreview.viewToggle.label')}
           items={[
             {
               label: t('ViewToolCodePreview.viewToggle.options.code'),
@@ -199,7 +213,7 @@ function ViewToolCodePreview(props: ViewToolCodePreviewProps) {
               collapseHeight
               label=""
               language="python"
-              code={tool?.source_code || ''}
+              code={toolCode}
             />
           ) : (
             <RawCodeEditor
@@ -210,11 +224,7 @@ function ViewToolCodePreview(props: ViewToolCodePreviewProps) {
               collapseHeight
               label=""
               language="javascript"
-              code={
-                tool?.json_schema
-                  ? JSON.stringify(tool.json_schema, null, 2)
-                  : ''
-              }
+              code={toolSchema}
             />
           )}
         </VStack>
@@ -572,8 +582,8 @@ function ViewTool(props: ViewToolProps) {
 
   return (
     <VStack overflowY="auto" paddingX paddingBottom fullHeight flex>
-      <VStack gap="large" paddingBottom fullWidth>
-        <HStack fullWidth align="center">
+      <VStack fullHeight gap="large" paddingBottom fullWidth>
+        <HStack borderBottom paddingBottom fullWidth align="center">
           <div className="w-[100px] p-5">
             {tool.imageUrl ? (
               <IconWrapper
@@ -612,7 +622,7 @@ function ViewTool(props: ViewToolProps) {
                       {t('ViewTool.viaComposioTool')}
                     </Typography>
                     <div className="mt-[2px]">
-                      <ComposioLockup height={20} />
+                      <ComposioLockupDynamic width={80} />
                     </div>
                   </>
                 )}
@@ -661,15 +671,14 @@ function ViewTool(props: ViewToolProps) {
           </Alert>
         )}
         <VStack width="largeContained" fullWidth>
-          <DashboardPageSection title={t('SpecificToolComponent.description')}>
+          <Section title={t('SpecificToolComponent.description')}>
             <Typography fullWidth variant="body" italic={!tool?.description}>
               {toolDescription?.replace(/\n|\t/g, ' ').trim()}
             </Typography>
-          </DashboardPageSection>
+          </Section>
         </VStack>
+        <ViewToolCodePreview toolId={tool.id} provider={tool.provider} />
       </VStack>
-
-      <ViewToolCodePreview toolId={tool.id} provider={tool.provider} />
     </VStack>
   );
 }
