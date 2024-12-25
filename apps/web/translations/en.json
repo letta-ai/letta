@@ -1309,6 +1309,9 @@
     },
     "SpecificToolComponent": {
       "back": "Back",
+      "codePreviewUnavailableForComposio": "# Code preview unavailable for Composio tools",
+      "jsonPreviewUnavailableForComposio": "// JSON schema preview unavailable for Composio tools",
+
       "description": "Description",
       "noDescription": "No description provided",
       "add": "Add tool to Agent",

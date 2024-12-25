@@ -20,8 +20,8 @@ async function listToolMetadata(
   if (search) {
     where.push(
       or(
-        like(toolMetadata.name, `%${search}%`),
-        like(toolMetadata.brand, `%${search}%`)
+        like(toolMetadata.name, `%${search}%`.toLowerCase()),
+        like(toolMetadata.brand, `%${search}%`.toLowerCase())
       )
     );
   }
