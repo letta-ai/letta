@@ -1,5 +1,5 @@
 import { ImageResponse } from 'next/og';
-import { cookies } from 'next/headers';
+import { cookies, type UnsafeUnwrappedCookies } from 'next/headers';
 import { CookieNames } from '$web/server/cookies/types';
 
 // Image metadata
@@ -11,7 +11,9 @@ export const contentType = 'image/png';
 
 // Image generation
 export default function Icon() {
-  const theme = cookies().get(CookieNames.THEME);
+  const theme = (cookies() as unknown as UnsafeUnwrappedCookies).get(
+    CookieNames.THEME
+  );
 
   return new ImageResponse(
     (

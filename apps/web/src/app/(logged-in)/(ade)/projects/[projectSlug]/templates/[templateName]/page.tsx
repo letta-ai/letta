@@ -17,10 +17,10 @@ import { AgentPage } from '../../agents/[agentId]/AgentPage';
 import { getUserOrRedirect } from '$web/server/auth';
 
 interface AgentsAgentPageProps {
-  params: {
+  params: Promise<{
     templateName: string;
     projectSlug: string;
-  };
+  }>;
 }
 
 async function AgentsAgentPage(context: AgentsAgentPageProps) {
@@ -31,7 +31,7 @@ async function AgentsAgentPage(context: AgentsAgentPageProps) {
     return null;
   }
 
-  const { templateName, projectSlug } = context.params;
+  const { templateName, projectSlug } = await context.params;
 
   const project = await getProjectByIdOrSlug({
     params: { projectId: projectSlug },

@@ -11,16 +11,14 @@ import { redirect } from 'next/navigation';
 
 interface OrganizationLayoutProps {
   children: React.ReactNode;
-  params: {
+  params: Promise<{
     organizationId: string;
-  };
+  }>;
 }
 
 async function OrganizationLayout(props: OrganizationLayoutProps) {
-  const {
-    children,
-    params: { organizationId },
-  } = props;
+  const { children, params } = props;
+  const { organizationId } = await params;
   const queryClient = new QueryClient();
 
   const organization = await router.admin.organizations.getOrganization({

@@ -25,9 +25,9 @@ import { queryClientKeys } from '$web/web-api/contracts';
 import { useQueryClient } from '@tanstack/react-query';
 
 interface EmbeddingModelPageProps {
-  params: {
+  params: Promise<{
     modelId: string;
-  };
+  }>;
 }
 
 interface UpdateEmbeddingModelFormProps {
@@ -134,9 +134,9 @@ function UpdateEmbeddingModelForm(props: UpdateEmbeddingModelFormProps) {
   );
 }
 
-function EmbeddingModelPage(props: EmbeddingModelPageProps) {
+async function EmbeddingModelPage(props: EmbeddingModelPageProps) {
   const { params } = props;
-  const { modelId } = params;
+  const { modelId } = await params;
 
   const {
     data: model,
