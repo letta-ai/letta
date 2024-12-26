@@ -31,7 +31,7 @@ const usageDetails = z
   .optional();
 
 interface OnCompletionOptions {
-  usageDetails: LettaResponse['LettaUsageStatistics'];
+  usageDetails: LettaResponse['usage'];
 }
 
 async function handleEventStreamRequest(options: RequestOptions) {
