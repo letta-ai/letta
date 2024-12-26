@@ -1,7 +1,7 @@
 /* Admin Get Users */
 import type { contracts } from '$web/web-api/contracts';
 import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
-import { desc, eq, like } from 'drizzle-orm';
+import { desc, eq, ilike } from 'drizzle-orm';
 import {
   db,
   organizations,
@@ -29,7 +29,7 @@ async function adminGetUsers(
     offset,
     orderBy: desc(users.createdAt),
     limit: limit + 1,
-    where: search ? like(users.email, `%${search}%`) : undefined,
+    where: search ? ilike(users.email, `%${search}%`) : undefined,
   });
 
   return {

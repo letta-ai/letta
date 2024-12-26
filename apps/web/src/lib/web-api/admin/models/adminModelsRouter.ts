@@ -5,7 +5,7 @@ import {
   embeddingModelsMetadata,
   inferenceModelsMetadata,
 } from '@letta-web/database';
-import { and, eq, isNotNull, isNull, like } from 'drizzle-orm';
+import { and, eq, ilike, isNotNull, isNull } from 'drizzle-orm';
 import {
   getLettaAgentsEmbeddingModelsSingleton,
   getLettaAgentsInferenceModelsSingleton,
@@ -66,7 +66,7 @@ async function getAdminInferenceModels(
   }
 
   if (search) {
-    where.push(like(inferenceModelsMetadata.name, `%${search}%`));
+    where.push(ilike(inferenceModelsMetadata.name, `%${search}%`));
   }
 
   if (typeof disabled === 'boolean') {
@@ -443,7 +443,7 @@ async function getAdminEmbeddingModels(
   }
 
   if (search) {
-    where.push(like(embeddingModelsMetadata.name, `%${search}%`));
+    where.push(ilike(embeddingModelsMetadata.name, `%${search}%`));
   }
 
   if (typeof disabled === 'boolean') {

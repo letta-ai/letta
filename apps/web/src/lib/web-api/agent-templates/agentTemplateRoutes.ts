@@ -4,7 +4,7 @@ import {
   getUserActiveOrganizationIdOrThrow,
   getUserWithActiveOrganizationIdOrThrow,
 } from '$web/server/auth';
-import { and, desc, eq, isNull, like } from 'drizzle-orm';
+import { and, desc, eq, ilike, isNull } from 'drizzle-orm';
 import {
   agentSimulatorSessions,
   agentTemplates,
@@ -54,7 +54,7 @@ export async function listAgentTemplates(
   }
 
   if (search) {
-    where.push(like(agentTemplates.name, `%${search}%`));
+    where.push(ilike(agentTemplates.name, `%${search}%`));
   }
 
   const agentTemplatesResponse = await db.query.agentTemplates.findMany({

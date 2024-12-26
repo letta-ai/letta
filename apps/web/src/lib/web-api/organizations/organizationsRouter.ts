@@ -13,7 +13,7 @@ import {
 } from '$web/server/auth';
 import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
 import type { contracts } from '$web/web-api/contracts';
-import { and, eq, gt, inArray, like } from 'drizzle-orm';
+import { and, eq, gt, ilike, inArray } from 'drizzle-orm';
 
 type GetCurrentOrganizationResponse = ServerInferResponses<
   typeof contracts.organizations.getCurrentOrganization
@@ -67,7 +67,7 @@ async function getCurrentOrganizationTeamMembers(
   const where = [eq(organizationUsers.organizationId, organizationId)];
 
   if (search) {
-    where.push(like(users.name, `%${search}%`));
+    where.push(ilike(users.name, `%${search}%`));
   }
 
   const members = await db.query.organizationUsers.findMany({
@@ -310,7 +310,7 @@ async function listInvitedMembers(
   }
 
   if (search) {
-    where.push(like(organizationInvitedUsers.email, `%${search}%`));
+    where.push(ilike(organizationInvitedUsers.email, `%${search}%`));
   }
 
   const invitedMembers = await db.query.organizationInvitedUsers.findMany({

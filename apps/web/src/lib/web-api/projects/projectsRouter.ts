@@ -8,7 +8,7 @@ import {
   organizationPreferences,
 } from '@letta-web/database';
 import { getUserActiveOrganizationIdOrThrow } from '$web/server/auth';
-import { eq, and, like, desc, count, isNull } from 'drizzle-orm';
+import { eq, and, desc, count, isNull, ilike } from 'drizzle-orm';
 import type { contracts, projectsContract } from '$web/web-api/contracts';
 import { generateSlug } from '$web/server';
 
@@ -30,7 +30,7 @@ export async function getProjects(
   ];
 
   if (search) {
-    where.push(like(projects.name, `%${search}%`));
+    where.push(ilike(projects.name, `%${search}%`));
   }
 
   const projectsList = await db.query.projects.findMany({
@@ -190,7 +190,7 @@ export async function getProjectDeployedAgentTemplates(
   ];
 
   if (search) {
-    where.push(like(deployedAgentTemplates.version, `%${search}%`));
+    where.push(ilike(deployedAgentTemplates.version, `%${search}%`));
   }
 
   if (agentTemplateId) {
@@ -263,7 +263,7 @@ export async function getDeployedAgents(
   }
 
   if (search) {
-    where.push(like(deployedAgents.key, `%${search}%` || '%'));
+    where.push(ilike(deployedAgents.key, `%${search}%` || '%'));
   }
 
   const existingDeployedAgentTemplateCount =
