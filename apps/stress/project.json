@@ -38,9 +38,9 @@
       }
     },
     "type-check": {
-      "executor": "@webpro/nx-tsc:tsc",
+      "executor": "nx:run-commands",
       "options": {
-        "tsConfig": ["tsconfig.json"]
+        "command": "tsc --noEmit -p apps/stress/tsconfig.app.json"
       }
     },
     "test": {
