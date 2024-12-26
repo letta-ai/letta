@@ -34,9 +34,7 @@ async function ProjectPageLayout(props: ProjectPageWrapperProps) {
 
   await queryClient.prefetchQuery({
     queryKey: webApiQueryKeys.projects.getProjectByIdOrSlug(projectSlug),
-    queryFn: () => ({
-      body: project.body,
-    }),
+    queryFn: () => project,
   });
 
   return (

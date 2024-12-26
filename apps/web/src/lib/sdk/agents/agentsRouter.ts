@@ -175,7 +175,7 @@ async function getCatchAllProjectId(args: GetCatchAllProjectId) {
   const orgPrefResponse = await db.query.organizationPreferences.findFirst({
     where: eq(organizationPreferences.organizationId, organizationId),
     columns: {
-      catchAllAgentsProjectId: true,
+      defaultProjectId: true,
     },
   });
 
@@ -187,7 +187,7 @@ async function getCatchAllProjectId(args: GetCatchAllProjectId) {
     throw new Error('Organization preferences not found');
   }
 
-  let projectId = orgPrefResponse.catchAllAgentsProjectId || '';
+  let projectId = orgPrefResponse.defaultProjectId || '';
 
   const randomThreeDigitNumber = Math.floor(100 + Math.random() * 900);
 

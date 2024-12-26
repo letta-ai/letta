@@ -389,6 +389,27 @@ export async function deleteProject(
   const { projectId } = req.params;
   const organizationId = await getUserActiveOrganizationIdOrThrow();
 
+  const organizationPreferenceRes =
+    await db.query.organizationPreferences.findFirst({
+      where: eq(organizationPreferences.organizationId, organizationId),
+    });
+
+  if (!organizationPreferenceRes) {
+    return {
+      status: 404,
+      body: {},
+    };
+  }
+
+  if (organizationPreferenceRes.defaultProjectId === projectId) {
+    return {
+      status: 400,
+      body: {
+        errorCode: 'defaultProjectCannotBeDeleted',
+      },
+    };
+  }
+
   const project = await db.query.projects.findFirst({
     where: and(
       isNull(projects.deletedAt),
@@ -436,27 +457,7 @@ export async function deleteProject(
       .where(eq(agentTemplates.projectId, projectId))
   );
 
-  await Promise.all([
-    ...operations,
-    (async () => {
-      // check if deleted project is the organizationPreferences.catchAllAgentsProjectId
-      // if it is, set it to null
-
-      const isMatching = await db.query.organizationPreferences.findFirst({
-        where: and(
-          eq(organizationPreferences.organizationId, organizationId),
-          eq(organizationPreferences.catchAllAgentsProjectId, projectId)
-        ),
-      });
-
-      if (isMatching) {
-        await db
-          .update(organizationPreferences)
-          .set({ catchAllAgentsProjectId: null })
-          .where(eq(organizationPreferences.organizationId, organizationId));
-      }
-    })(),
-  ]);
+  await Promise.all([...operations]);
 
   return {
     status: 200,
