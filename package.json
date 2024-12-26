@@ -194,7 +194,6 @@
     "cypress-dotenv": "^2.0.0",
     "dotenv": "^16.4.7",
     "drizzle-kit": "^0.30.1",
-    "esbuild": "^0.24.2",
     "eslint": "~9.17.0",
     "eslint-config-next": "15.1.3",
     "eslint-config-prettier": "^9.1.0",
@@ -240,6 +239,9 @@
     },
     "@ts-rest/serverless": {
       "next": "$next"
+    },
+    "@7nohe/openapi-react-query-codegen": {
+      "ts-morph": "$ts-morph"
     },
     "@types/react": "19.0.2",
     "@types/react-dom": "19.0.2"
