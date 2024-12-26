@@ -23,8 +23,32 @@ class LettaResponse(BaseModel):
         usage (LettaUsageStatistics): The usage statistics
     """
 
-    messages: List[LettaMessageUnion] = Field(..., description="The messages returned by the agent.")
-    usage: LettaUsageStatistics = Field(..., description="The usage statistics of the agent.")
+    messages: List[LettaMessageUnion] = Field(
+        ..., 
+        description="The messages returned by the agent.",
+        json_schema_extra={
+            "items": {
+                "oneOf": [
+                    {"x-ref-name": "SystemMessage"},
+                    {"x-ref-name": "UserMessage"},
+                    {"x-ref-name": "ReasoningMessage"},
+                    {"x-ref-name": "ToolCallMessage"},
+                    {"x-ref-name": "ToolReturnMessage"},
+                    {"x-ref-name": "AssistantMessage"}
+                ],
+                "discriminator": {
+                    "propertyName": "message_type"
+                }
+            }
+        }
+    )
+    usage: LettaUsageStatistics = Field(
+        ..., 
+        description="The usage statistics of the agent.",
+        json_schema_extra={
+            "x-ref-name": "LettaUsageStatistics"
+        }
+    )
 
     def __str__(self):
         return json_dumps(
