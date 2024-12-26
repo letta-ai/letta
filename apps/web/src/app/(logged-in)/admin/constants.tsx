@@ -7,6 +7,7 @@ import {
   EmbeddingModelsIcon,
   UserFaceIcon,
   ToolsIcon,
+  TrophyIcon,
 } from '@letta-web/component-library';
 import React from 'react';
 
@@ -59,5 +60,12 @@ export const NavigationItems: AdminNavigationItemProps[] = [
     icon: <ToolsIcon />,
     href: '/admin/tools',
     description: 'Manage tools',
+  },
+  {
+    id: 'leaderboard',
+    label: 'Usage Leaderboard',
+    icon: <TrophyIcon />,
+    href: '/admin/leaderboard',
+    description: 'Organization usage leaderboard',
   },
 ];

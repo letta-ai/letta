@@ -54,6 +54,10 @@ import {
   toolMetadataContracts,
   toolMetadataQueryClientKeys,
 } from '$web/web-api/tool-metadata/toolMetadataContract';
+import {
+  adminUsageContracts,
+  adminUsageQueryKeys,
+} from '$web/web-api/admin/usage/adminUsageContracts';
 
 export const contracts = {
   user: userContract,
@@ -68,6 +72,7 @@ export const contracts = {
   usage: usageContracts,
   toolMetadata: toolMetadataContracts,
   admin: {
+    usage: adminUsageContracts,
     toolMetadata: adminToolMetadataContracts,
     users: adminUsersContracts,
     models: adminModelsContracts,
@@ -90,6 +95,7 @@ export const queryClientKeys = {
   usage: usageQueryKeys,
   toolMetadata: toolMetadataQueryClientKeys,
   admin: {
+    usage: adminUsageQueryKeys,
     users: adminUsersQueryClientKeys,
     models: adminModelsQueryClientKeys,
     whitelistedEmails: adminWhitelistedEmailsQueryKeys,
