@@ -96,7 +96,7 @@ interface ToolsExplorerContextState {
 }
 
 function isCurrentToolInViewOrEdit(
-  state: ToolsExplorerContextState['currentTool']
+  state: ToolsExplorerContextState['currentTool'],
 ): state is ViewOrEditState {
   return !!(state && Object.prototype.hasOwnProperty.call(state, 'data'));
 }
@@ -161,7 +161,7 @@ function ViewToolCodePreview(props: ViewToolCodePreviewProps) {
     undefined,
     {
       enabled: hasPreviewAbleProvider,
-    }
+    },
   );
 
   const toolCode = useMemo(() => {
@@ -256,7 +256,7 @@ function useIsComposioConnected() {
     webApi.environmentVariables.getEnvironmentVariableByKey.useQuery({
       queryKey:
         webApiQueryKeys.environmentVariables.getEnvironmentVariableByKey(
-          COMPOSIO_KEY_NAME
+          COMPOSIO_KEY_NAME,
         ),
       queryData: {
         params: {
@@ -365,7 +365,7 @@ function AddToolToAgentButton(props: AddToolToAgentButtonProps) {
             ...oldData,
             tools: response.tools,
           };
-        }
+        },
       );
     } catch (e) {
       let errorMessage = t('AddToolToAgentButton.error');
@@ -375,14 +375,14 @@ function AddToolToAgentButton(props: AddToolToAgentButtonProps) {
         switch (errorCode) {
           case 'ComposioSDKError': {
             errorMessage = t(
-              'AddToolToAgentButton.errors.composio.ComposioSDKError'
+              'AddToolToAgentButton.errors.composio.ComposioSDKError',
             );
             break;
           }
 
           case 'ApiKeyNotProvidedError': {
             errorMessage = t(
-              'AddToolToAgentButton.errors.composio.ApiKeyNotProvidedError'
+              'AddToolToAgentButton.errors.composio.ApiKeyNotProvidedError',
             );
             break;
           }
@@ -482,7 +482,7 @@ function ViewTool(props: ViewToolProps) {
     undefined,
     {
       enabled: isCustomOrLettaProvider,
-    }
+    },
   );
 
   const { data: toolMetaData } = webApi.toolMetadata.listToolMetadata.useQuery({
@@ -649,7 +649,11 @@ function ViewTool(props: ViewToolProps) {
               {isLocal ? (
                 <Typography overrideEl="span">
                   {t.rich('ViewTool.connectComposio.descriptionLocal', {
-                    code: (chunks) => <InlineCode code={`${chunks}`} />,
+                    code: (chunks) => (
+                      <InlineCode
+                        code={typeof chunks === 'string' ? chunks : ''}
+                      />
+                    ),
                   })}
                 </Typography>
               ) : (
@@ -715,7 +719,7 @@ function ViewCategoryTools(props: ViewCategoryToolsProps) {
       brand: ['all', 'custom'].includes(category) ? undefined : category,
       search: debouncedSearch,
     }),
-    [category, debouncedSearch]
+    [category, debouncedSearch],
   );
 
   const shouldShowComposioTools = useShowComposioTools();
@@ -751,7 +755,7 @@ function ViewCategoryTools(props: ViewCategoryToolsProps) {
       undefined,
       {
         enabled: ['all', 'custom'].includes(category),
-      }
+      },
     );
 
   const hasNextPage = useMemo(() => {
@@ -938,7 +942,7 @@ function AllToolsView() {
     {
       queryKey: webApiQueryKeys.toolMetadata.getToolMetadataSummary,
       enabled: shouldShowComposioTools,
-    }
+    },
   );
 
   const { data: groupMetaData } =
@@ -1003,7 +1007,7 @@ function AllToolsView() {
       setCategory(category);
       clearCurrentTool();
     },
-    [clearCurrentTool]
+    [clearCurrentTool],
   );
 
   const { data: customTools, isLoading: isLoadingCustomTools } =
@@ -1162,7 +1166,7 @@ export function useToolsExplorerState() {
         isOpen: true,
       });
     },
-    [setExplorerState]
+    [setExplorerState],
   );
 
   const startCreateTool = useCallback(() => {
@@ -1199,7 +1203,7 @@ export function useToolsExplorerState() {
         };
       });
     },
-    [setExplorerState]
+    [setExplorerState],
   );
 
   const setCurrentTool = useCallback(
@@ -1214,7 +1218,7 @@ export function useToolsExplorerState() {
         };
       });
     },
-    [setExplorerState]
+    [setExplorerState],
   );
 
   const clearCurrentTool = useCallback(() => {
@@ -1257,7 +1261,7 @@ function ToolEditor(props: ToolEditorProps) {
       schema: z.record(z.string(), z.any()),
       inputLabel: t('ToolEditor.inputLabel'),
     }),
-    [t]
+    [t],
   );
 
   const extractedFunctionName = useMemo(() => {
@@ -1283,10 +1287,10 @@ function ToolEditor(props: ToolEditorProps) {
           onSuccess: () => {
             setCompletedAt(Date.now());
           },
-        }
+        },
       );
     },
-    [code, extractedFunctionName, inputConfig, mutate, reset]
+    [code, extractedFunctionName, inputConfig, mutate, reset],
   );
 
   const { outputValue, outputStdout, outputStderr, outputStatus } =
@@ -1444,7 +1448,7 @@ function ToolCreator() {
           imageUrl: null,
           providerId: '',
         },
-        'view'
+        'view',
       );
 
       void queryClient.invalidateQueries({
@@ -1472,7 +1476,7 @@ function ToolCreator() {
         },
       });
     },
-    [mutate]
+    [mutate],
   );
 
   const { isLocal } = useCurrentAgentMetaData();
@@ -1591,12 +1595,12 @@ function EditTool(props: EditToolProps) {
                 ...oldData,
                 source_code: sourceCode,
               };
-            }
+            },
           );
 
           setOpen(false);
         },
-      }
+      },
     );
   }, [mutate, queryClient, sourceCode, tool.id]);
 
@@ -1671,7 +1675,7 @@ function EditToolWrapper() {
     undefined,
     {
       enabled: !!toolId,
-    }
+    },
   );
 
   const t = useTranslations('ADE/Tools');
@@ -1756,7 +1760,7 @@ export function ToolsExplorer() {
 
       openToolExplorer();
     },
-    [closeToolExplorer, currentTool?.mode, openToolExplorer]
+    [closeToolExplorer, currentTool?.mode, openToolExplorer],
   );
 
   const component = useMemo(() => {

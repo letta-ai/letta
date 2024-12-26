@@ -1,5 +1,5 @@
 import { ImageResponse } from 'next/og';
-import { cookies, type UnsafeUnwrappedCookies } from 'next/headers';
+import { cookies } from 'next/headers';
 import { CookieNames } from '$web/server/cookies/types';
 
 // Image metadata
@@ -10,10 +10,8 @@ export const size = {
 export const contentType = 'image/png';
 
 // Image generation
-export default function Icon() {
-  const theme = (cookies() as unknown as UnsafeUnwrappedCookies).get(
-    CookieNames.THEME
-  );
+export default async function Icon() {
+  const theme = (await cookies()).get(CookieNames.THEME);
 
   return new ImageResponse(
     (
@@ -44,6 +42,6 @@ export default function Icon() {
       // For convenience, we can re-use the exported icons size metadata
       // config to also set the ImageResponse's width and height.
       ...size,
-    }
+    },
   );
 }

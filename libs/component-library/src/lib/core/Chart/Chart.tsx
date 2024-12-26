@@ -128,9 +128,7 @@ export function Chart(props: ChartOptions) {
                 className="min-w-2 min-h-2"
                 style={{
                   backgroundColor:
-                    typeof series.color === 'string'
-                      ? series.color
-                      : series.color?.toString(),
+                    typeof series.color === 'string' ? series.color : '',
                 }}
               />
               <Typography variant="body3">{series.name}</Typography>

@@ -18,7 +18,7 @@ type GetProjectsRequest = ServerInferRequest<
 >;
 
 export async function getProjects(
-  req: GetProjectsRequest
+  req: GetProjectsRequest,
 ): Promise<ResponseShapes['getProjects']> {
   const { search, offset, limit } = req.query;
 
@@ -66,7 +66,7 @@ type GetProjectByIdRequest = ServerInferRequest<
 >;
 
 export async function getProjectByIdOrSlug(
-  req: GetProjectByIdRequest
+  req: GetProjectByIdRequest,
 ): Promise<GetProjectByIdResponse> {
   const { projectId } = req.params;
   const { lookupBy } = req.query;
@@ -120,7 +120,7 @@ type CreateProjectResponse = ServerInferResponses<
 >;
 
 export async function createProject(
-  req: CreateProjectRequest
+  req: CreateProjectRequest,
 ): Promise<CreateProjectResponse> {
   const { name } = req.body;
 
@@ -132,7 +132,7 @@ export async function createProject(
     where: and(
       isNull(projects.deletedAt),
       eq(projects.organizationId, organizationId),
-      eq(projects.slug, projectSlug)
+      eq(projects.slug, projectSlug),
     ),
   });
 
@@ -176,7 +176,7 @@ type GetProjectDeployedAgentTemplatesResponse = ServerInferResponses<
 >;
 
 export async function getProjectDeployedAgentTemplates(
-  req: GetProjectDeployedAgentTemplatesRequest
+  req: GetProjectDeployedAgentTemplatesRequest,
 ): Promise<GetProjectDeployedAgentTemplatesResponse> {
   const organizationId = await getUserActiveOrganizationIdOrThrow();
   const { projectId } = req.params;
@@ -244,7 +244,7 @@ type GetProjectDeployedAgentsResponse = ServerInferResponses<
 >;
 
 export async function getDeployedAgents(
-  req: GetProjectDeployedAgentsRequest
+  req: GetProjectDeployedAgentsRequest,
 ): Promise<GetProjectDeployedAgentsResponse> {
   const organizationId = await getUserActiveOrganizationIdOrThrow();
   const { projectId } = req.params;
@@ -258,12 +258,12 @@ export async function getDeployedAgents(
 
   if (deployedAgentTemplateId) {
     where.push(
-      eq(deployedAgents.deployedAgentTemplateId, deployedAgentTemplateId)
+      eq(deployedAgents.deployedAgentTemplateId, deployedAgentTemplateId),
     );
   }
 
   if (search) {
-    where.push(ilike(deployedAgents.key, `%${search}%` || '%'));
+    where.push(ilike(deployedAgents.key, `%${search}%`));
   }
 
   const existingDeployedAgentTemplateCount =
@@ -307,7 +307,7 @@ type UpdateProjectResponse = ServerInferResponses<
 >;
 
 export async function updateProject(
-  req: UpdateProjectRequest
+  req: UpdateProjectRequest,
 ): Promise<UpdateProjectResponse> {
   const { projectId } = req.params;
   const organizationId = await getUserActiveOrganizationIdOrThrow();
@@ -326,7 +326,7 @@ export async function updateProject(
     where: and(
       isNull(projects.deletedAt),
       eq(projects.id, projectId),
-      eq(projects.organizationId, organizationId)
+      eq(projects.organizationId, organizationId),
     ),
   });
 
@@ -342,7 +342,7 @@ export async function updateProject(
     const existingProject = await db.query.projects.findFirst({
       where: and(
         eq(projects.organizationId, organizationId),
-        eq(projects.slug, slug)
+        eq(projects.slug, slug),
       ),
     });
 
@@ -384,7 +384,7 @@ type DeleteProjectResponse = ServerInferResponses<
 >;
 
 export async function deleteProject(
-  req: DeleteProjectRequest
+  req: DeleteProjectRequest,
 ): Promise<DeleteProjectResponse> {
   const { projectId } = req.params;
   const organizationId = await getUserActiveOrganizationIdOrThrow();
@@ -414,7 +414,7 @@ export async function deleteProject(
     where: and(
       isNull(projects.deletedAt),
       eq(projects.id, projectId),
-      eq(projects.organizationId, organizationId)
+      eq(projects.organizationId, organizationId),
     ),
   });
 
@@ -430,7 +430,7 @@ export async function deleteProject(
     db
       .update(projects)
       .set({ deletedAt: new Date() })
-      .where(eq(projects.id, projectId))
+      .where(eq(projects.id, projectId)),
   );
 
   // delete all deployed agents
@@ -438,7 +438,7 @@ export async function deleteProject(
     db
       .update(deployedAgents)
       .set({ deletedAt: new Date() })
-      .where(eq(deployedAgents.projectId, projectId))
+      .where(eq(deployedAgents.projectId, projectId)),
   );
 
   // delete all deployed agent templates
@@ -446,7 +446,7 @@ export async function deleteProject(
     db
       .update(deployedAgentTemplates)
       .set({ deletedAt: new Date() })
-      .where(eq(deployedAgentTemplates.projectId, projectId))
+      .where(eq(deployedAgentTemplates.projectId, projectId)),
   );
 
   // delete all templates
@@ -454,7 +454,7 @@ export async function deleteProject(
     db
       .update(agentTemplates)
       .set({ deletedAt: new Date() })
-      .where(eq(agentTemplates.projectId, projectId))
+      .where(eq(agentTemplates.projectId, projectId)),
   );
 
   await Promise.all([...operations]);
