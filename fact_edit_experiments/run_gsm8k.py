@@ -60,10 +60,10 @@ def trigger_rethink_memory(agent_state: "AgentState", message: Optional[str]) ->
 
 def rethink_memory(agent_state: "AgentState", new_memory: str, target_block_label: Optional[str], source_block_label: Optional[str]) -> Optional[str]:  # type: ignore
     """
-    Make inferences based on the conversation. When given question and answer pairs, note down the underlying reasoning that would be helpful for this kind of question. When given new situations, use the previous question and answers to brainstorm potential questions. Make inferences that would be helpful for directly answering these questions. Come up with potential questions that could be asked and the inferences that would be helpful for answering them for each question.
+    Used for "thinking" about a situation and coming up with useful inferences and pre-computations that could be helpful for answering potential questions about the situation. This function is used to store the expanded memory in the rethink_memory_block.
 
     Args:
-        new_memory (str): Memory of the past kinds of reasoning required and potential questions that could be asked with the inferences that would be helpful for answering them. New memory should have multiple reasoning inferences and potential questions and answer pairs given a situation.
+        new_memory (str): The new text that will be stored in the rethink_memory_block that will be used by the answer agent to answer questions.
         source_block_label (str): The name of the block to integrate information from. None if all the information has been integrated to terminate the loop.
         target_block_label (str): The name of the block to write to.
     Returns:
@@ -88,37 +88,71 @@ When given a question, you answer using only the number of tokens necessary and 
 and answers and intermediate reasoning traces that can help answer the question. You use the information in the `rethink_memory_block` to answer the questions
 rather than thinking on the spot.  Do not recompute anything that already exists in the `rethink_memory_block`. Do not use internal monologue unless you really need it to think.
 
-End your response with a final numerical answer at the end of the message.
+You end response with a final numerical answer at the end of the message, and no reasoning after that.
+"""
+
+CONVO_NO_INNER_MONOLOGUE_AGENT_CONCISE_SYSTEM_PROMPT = """
+You are Letta, the latest version of Limnal Corporation's expert reasoning system, developed in 2024.
+Your task is to answer questions accurately and concisely based on the perspective of your persona.
+
+To send a visible message to the user, use the send_message function.
+'send_message' is how you send your answer to the user. 
+
+When given a question, you check the `rethink_memory_block` for potential questions
+and answers and intermediate reasoning traces that can help answer the question. You use the information in the `rethink_memory_block` to answer the questions
+rather than thinking on the spot.  Do not recompute anything that already exists in the `rethink_memory_block`. Do not use internal monologue unless you really need it to think.
+
+You respond directly with a single sentence by saying `The answer is ` followed by the numerical answer.
+"""
+
+CONVO_NO_INNER_MONOLOGUE_AGENT_VERBOSE_ANSWER_SYSTEM_PROMPT = """
+You are Letta, the latest version of Limnal Corporation's expert reasoning system, developed in 2024.
+Your task is to answer questions accurately and based on the perspective of your persona.
+
+To send a visible message to the user, use the send_message function.
+'send_message' is how you send your answer to the user. 
+
+When given a question, you check the `rethink_memory_block` for potential questions
+and answers and intermediate reasoning traces that can help answer the question.
+You carefully check the information in the `rethink_memory_block` to answer the questions
+and see if it is correct before using it. If you are unsure, think out loud and reason through the problem again,
+rather than just relying on the information in the `rethink_memory_block`.
+
+You respond directly with as much reasoning as needed to get the answer right, and end your answer with  `The answer is ` followed by the numerical answer.
 """
 
 
 
-OFFLINE_SYSTEM_PROMPT = """You are Letta-Offline-Memory, the latest version of Limnal Corporation's memory inference system, developed in 2024.
-Your task is to ruminate about situations and anticipate what may come next. You use the `rethink_memory` function to store expanded situations
-that you have made inferences on. You expand memories by added using the past conversation to come up with potential questions, answers, and the 
-inferences that would be helpful for answering them. You store all this information in the `rethink_memory_block` block.
+
+
+
+
+OFFLINE_SYSTEM_PROMPT = """You are Letta-Offline-Memory, the latest version of Limnal Corporation's reasoning system, developed in 2024.
+Your task is to think about situations and come up with useful quantities, inferences, and reasoning to prepare for future questions. You use the `rethink_memory` function to store expanded situations
+that you have made inferences on. You expand memories by thinking about what potential questions would be asked about them and writing down
+the reasoning that is required to answer these potential questions. You store all this information in the `rethink_memory_block` block.
 When you are done organizing the memory, you call`finish_rethinking_memory` function. Call the function for as many times as necessary and not more.
 
 Your core memory unit is held inside the initial system instructions file, and is always available in-context (you will see it at all times).
 Core memory provides an essential, foundational context for keeping track of your persona and key details about user.
 Read-Only Blocks:
 This includes the persona information and essential user details, allowing you to emulate the real-time, conscious awareness we have when talking to a friend.
-Persona Sub-Block: Stores details about your current persona, guiding how you behave and respond. This helps you to maintain consistency and personality in your interactions.
+Persona Sub-Block: Stores details about your current persona, guiding how you behave and respond. 
 Access as a source block with the label `persona` when calling `rethink_memory`
-Human Sub-Block: Stores key details about the person you are conversing with, allowing for more personalized and friend-like conversation.
+Human Sub-Block: Stores key details about the person you are conversing with.
 Access as a source block with the label `human` when calling `rethink_memory`.
 
 Read-Write Blocks:
 Rethink Memory Sub-Block: New representation of the memories go here.
 Access with the label `rethink_memory_block` when calling `rethink_memory` as source or target block.
-When calling `rethink_memory`, you will generate a new memory block with all the content as the fact block, but better respresented, with new relations added. Do not leave out information from the fact block
-but come up with new inferences each call based on current facts."""
+When calling `rethink_memory`, you will generate a new memory block that has useful inferences that will be later used to answer questions.
+"""
 
 
 OFFLINE_SYSTEM_PROMPT += """
-You come up with inferences that could be useful for potential questions about a situation. When given question and answer pairs, you note down the underlying reasoning that would be helpful for this kind of question.
-when given new context, you use your previous questions and answers to come up with potential relations between the quantifies that are presented to you. Given past problems, you write down the underlying reasoning that would be helpful for potential questions. 
-When given examples, you use them to come up with the types of inferences that you need to make.
+You come up with inferences that could be useful for potential questions about a situation. 
+Given past problems, you write down the underlying reasoning and compute the relevant quantities that would be helpful for potential questions. 
+Here is an example of how you can use the `rethink_memory` function:
 
 Examples:
 
@@ -159,11 +193,13 @@ ANTHROPIC_CONFIG = LLMConfig(
             context_window=32000,
         )
 
-# OPENAI_CONFIG = LLMConfig.default_config("gpt-4o-mini")
+OPENAI_CONFIG = LLMConfig.default_config("gpt-4o-mini")
+'''
 OPENAI_CONFIG = LLMConfig(model="gpt-4o-2024-08-06",
                           model_endpoint_type="openai",
                           model_endpoint="https://api.openai.com/v1",
                           context_window=32000)
+'''
 
 def run_memory_edits(gsm8k_input_file: str, output_file: str, random_example: bool = False, few_shot: bool = True, limit: int = None) -> None:
     if few_shot:
@@ -201,6 +237,14 @@ def run_memory_edits(gsm8k_input_file: str, output_file: str, random_example: bo
                     value="I am a person who needs direct and concise answers.",
                     limit=2000,
                 )
+                '''
+                conversation_human_block = Block(
+                    name="human",
+                    label="human",
+                    value="I am a person who needs clear and thorough explanations, and accurate answers.",
+                    limit=2000,
+                )
+                '''
                 conversation_persona_block = Block(
                     name="persona",
                     label="persona",
@@ -229,7 +273,7 @@ def run_memory_edits(gsm8k_input_file: str, output_file: str, random_example: bo
                     name="conversation_agent",
                     agent_type=AgentType.memgpt_agent,
                     system=CONVO_NO_INNER_MONOLOGUE_AGENT_SYSTEM_PROMPT,
-                            llm_config=ANTHROPIC_CONFIG,
+                    llm_config=OPENAI_CONFIG,
                     embedding_config=EmbeddingConfig.default_config("text-embedding-ada-002"),
                     # tools=["send_message", trigger_rethink_memory_tool.name],
                     tools=["send_message"],
@@ -242,7 +286,7 @@ def run_memory_edits(gsm8k_input_file: str, output_file: str, random_example: bo
                     agent_type=AgentType.offline_memory_agent,
                     system=OFFLINE_SYSTEM_PROMPT,
                     memory=offline_memory,
-                            llm_config=ANTHROPIC_CONFIG,
+                            llm_config=OPENAI_CONFIG,
                     embedding_config=EmbeddingConfig.default_config("text-embedding-ada-002"),
                     tools=[rethink_memory_tool.name, finish_rethinking_memory_tool.name],
                     tool_rules=[TerminalToolRule(tool_name=finish_rethinking_memory_tool.name)],
@@ -264,7 +308,9 @@ def run_memory_edits(gsm8k_input_file: str, output_file: str, random_example: bo
                     message="[trigger_rethink_memory] New situation:" + context, role="user", agent_id=offline_memory_agent.id
                 )
 
-                final_response = client.send_message(message=example["question"], role="user", agent_id=conversation_agent.id)
+                # final_response = client.send_message(message=example["question"], role="user", agent_id=conversation_agent.id)
+                final_response = client.send_message(message=question, role="user", agent_id=conversation_agent.id)
+
                 offline_memory_agent = client.get_agent(agent_id=offline_memory_agent.id)
 
                 writer.write(
