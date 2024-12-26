@@ -1371,9 +1371,7 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AgentState"
-                }
+                "schema": {}
               }
             }
           },
@@ -3487,6 +3485,62 @@
                     "message": {
                       "type": "string",
                       "enum": ["Failed to create agent template"]
+                    }
+                  },
+                  "required": ["message"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/agents/{agent_id}/variables": {
+      "get": {
+        "description": "Get the variables associated with an agent",
+        "summary": "Get Agent Variables",
+        "tags": ["agents"],
+        "parameters": [
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "operationId": "agents.getAgentVariables",
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "variables": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "required": ["variables"]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "404",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "enum": ["Agent not found"]
                     }
                   },
                   "required": ["message"]
@@ -6919,7 +6973,7 @@
             "type": "string",
             "title": "Name",
             "description": "The name of the organization.",
-            "default": "XenodochialEagle"
+            "default": "BrightFalcon"
           },
           "created_at": {
             "anyOf": [

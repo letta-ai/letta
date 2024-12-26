@@ -3576,7 +3576,7 @@ export const $Organization = {
       type: 'string',
       title: 'Name',
       description: 'The name of the organization.',
-      default: 'XenodochialEagle',
+      default: 'BrightFalcon',
     },
     created_at: {
       anyOf: [

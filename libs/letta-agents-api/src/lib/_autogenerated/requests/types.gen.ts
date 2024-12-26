@@ -2583,7 +2583,7 @@ export type DeleteAgentData = {
   userId?: string | null;
 };
 
-export type DeleteAgentResponse = AgentState;
+export type DeleteAgentResponse = unknown;
 
 export type GetToolsFromAgentData = {
   agentId: string;
@@ -3471,7 +3471,7 @@ export type $OpenApiTs = {
         /**
          * Successful Response
          */
-        200: AgentState;
+        200: unknown;
         /**
          * Validation Error
          */
