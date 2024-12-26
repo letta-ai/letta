@@ -26,7 +26,7 @@
     "format": "nx format:write",
     "lint": "npx nx run-many --all --skip-nx-cache --parallel --targets=lint",
     "lettuce:dev": "nx dev lettuce",
-    "prepare": "husky install",
+    "prepare": "husky",
     "precommit": "concurrently  \"npx lint-staged --concurrent true --relative\" \"npm run type-check\"",
     "slack-bot-says": "node ./scripts/slack-bot-says",
     "start": "nx start web -p 8080",
@@ -235,6 +235,12 @@
     "npm": "10.8.2"
   },
   "overrides": {
+    "@ts-rest/react-query": {
+      "react": "$react"
+    },
+    "@ts-rest/serverless": {
+      "next": "$next"
+    },
     "@types/react": "19.0.2",
     "@types/react-dom": "19.0.2"
   }
