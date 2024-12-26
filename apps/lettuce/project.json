@@ -9,7 +9,7 @@
       "executor": "nx:run-commands",
       "options": {
         "cwd": "apps/lettuce",
-        "command": "nodemon ./src/main.ts"
+        "command": "nodemon --watch . --watch ../../libs/lettuce-client ./src/main.ts"
       }
     },
     "build": {

@@ -9,6 +9,5 @@ export async function startPingPong(name: string) {
     args: [name],
     workflowId: 'ping-' + nanoid(),
   });
-
   return handle.result();
 }
