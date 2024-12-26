@@ -4,7 +4,7 @@ import type {
   UpdateDevelopmentServerRequestSchemaType,
 } from '$web/web-api/development-servers/developmentServersContracts';
 import { getUserActiveOrganizationIdOrThrow } from '$web/server/auth';
-import { and, eq, like } from 'drizzle-orm';
+import { and, eq, ilike } from 'drizzle-orm';
 import {
   db,
   developmentServerPasswords,
@@ -29,7 +29,7 @@ async function getDevelopmentServers(
   const where = [eq(developmentServers.organizationId, organizationId)];
 
   if (search) {
-    where.push(like(developmentServers.name, `%${search}%`));
+    where.push(ilike(developmentServers.name, `%${search}%`));
   }
 
   const response = await db.query.developmentServers.findMany({
