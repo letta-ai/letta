@@ -944,11 +944,11 @@ function AllToolsView() {
   const { data: groupMetaData } =
     webApi.toolMetadata.listToolGroupMetadata.useQuery({
       queryKey: webApiQueryKeys.toolMetadata.listToolMetadataWithSearch({
-        limit: 200,
+        limit: 400,
       }),
       queryData: {
         query: {
-          limit: 200,
+          limit: 400,
         },
       },
       enabled: shouldShowComposioTools,
@@ -968,10 +968,10 @@ function AllToolsView() {
 
   const brandIntegrations = useMemo(() => {
     return (groupMetaData?.body.toolGroups || [])
-      .filter(({ brand, toolCount }) => toolCount > 0 && isBrandKey(brand))
+      .filter(({ toolCount }) => toolCount > 0)
       .map(({ brand, toolCount, imageUrl }) => {
         return {
-          name: isBrandKey(brand) ? brandKeyToName(brand) : 'Unknown',
+          name: isBrandKey(brand) ? brandKeyToName(brand) : `${brand} (Beta)`,
           description: '',
           imageUrl,
           category: brand,
