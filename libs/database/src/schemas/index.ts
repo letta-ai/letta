@@ -60,7 +60,7 @@ export const organizationPreferences = pgTable('organization_preferences', {
     .notNull()
     .references(() => organizations.id, { onDelete: 'cascade' })
     .notNull(),
-  catchAllAgentsProjectId: text('catch_all_agents_project_id'),
+  defaultProjectId: text('default_project_id').notNull(),
 });
 
 export const organizationPreferencesRelations = relations(
@@ -71,7 +71,7 @@ export const organizationPreferencesRelations = relations(
       references: [organizations.id],
     }),
     catchAllAgentsProject: one(projects, {
-      fields: [organizationPreferences.catchAllAgentsProjectId],
+      fields: [organizationPreferences.defaultProjectId],
       references: [projects.id],
     }),
   })

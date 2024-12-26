@@ -4,6 +4,7 @@ import {
   users,
   organizations,
   organizationUsers,
+  organizationPreferences,
 } from '@letta-web/database';
 import {
   createOrganization as authCreateOrganization,
@@ -423,8 +424,34 @@ async function createOrganization(
   };
 }
 
+/* getCurrentOrganizationPreferences */
+type GetCurrentOrganizationPreferencesResponse = ServerInferResponses<
+  typeof contracts.organizations.getCurrentOrganizationPreferences
+>;
+
+async function getCurrentOrganizationPreferences(): Promise<GetCurrentOrganizationPreferencesResponse> {
+  const { activeOrganizationId } =
+    await getUserWithActiveOrganizationIdOrThrow();
+
+  const organization = await db.query.organizationPreferences.findFirst({
+    where: eq(organizationPreferences.organizationId, activeOrganizationId),
+  });
+
+  if (!organization) {
+    throw new Error('Organization not found');
+  }
+
+  return {
+    status: 200,
+    body: {
+      defaultProjectId: organization.defaultProjectId,
+    },
+  };
+}
+
 export const organizationsRouter = {
   getCurrentOrganization,
+  getCurrentOrganizationPreferences,
   getCurrentOrganizationTeamMembers,
   removeTeamMember,
   inviteNewTeamMember,

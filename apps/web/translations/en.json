@@ -271,6 +271,11 @@
     "submit": "Create Organization"
   },
   "project/[projectId]/settings": {
+    "DeleteProjectSettings": {
+      "title": "Delete project",
+      "cannotDeleteDefault": "You cannot delete the default project, please contact support for assistance.",
+      "description": " Deleting a project will permanently remove all data associated with it. This action cannot be undone. It will delete all deployments, agents, and configurations associated with this project."
+    },
     "title": "Project settings",
     "EditProjectSettings": {
       "name": {

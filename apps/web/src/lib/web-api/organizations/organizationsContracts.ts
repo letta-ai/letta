@@ -222,8 +222,22 @@ export const createOrganizationContract = c.mutation({
   },
 });
 
+/* Get Organization Preferences */
+const CurrentOrganizationPreferencesSchema = z.object({
+  defaultProjectId: z.string().optional(),
+});
+
+export const getCurrentOrganizationPreferencesContract = c.query({
+  method: 'GET',
+  path: '/organizations/self/preferences',
+  responses: {
+    200: CurrentOrganizationPreferencesSchema,
+  },
+});
+
 export const organizationsContract = c.router({
   getCurrentOrganization: getCurrentOrganizationContract,
+  getCurrentOrganizationPreferences: getCurrentOrganizationPreferencesContract,
   getCurrentOrganizationTeamMembers: getCurrentOrganizationTeamMembersContract,
   inviteNewTeamMember: inviteNewTeamMemberContract,
   unInviteTeamMember: unInviteTeamMemberContract,
@@ -248,4 +262,5 @@ export const organizationsQueryClientKeys = {
     ...organizationsQueryClientKeys.listInvitedMembers,
     params,
   ],
+  getCurrentOrganizationPreferences: ['organizations', 'self', 'preferences'],
 };
