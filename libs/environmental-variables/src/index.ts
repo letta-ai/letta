@@ -23,12 +23,14 @@ export const environment = createEnv({
     AUTH_GITHUB_CLIENT_ID: z.string().optional(),
     AUTH_GITHUB_CLIENT_SECRET: z.string().optional(),
     AUTH_GITHUB_REDIRECT_URI: z.string().optional(),
+    TEMPORAL_API_HOST: z.string().optional(),
   },
   client: {
     NEXT_PUBLIC_CURRENT_HOST: z.string().optional(),
     NEXT_PUBLIC_MIXPANEL_TOKEN: z.string().optional(),
   },
   runtimeEnv: {
+    TEMPORAL_API_HOST: process.env.TEMPORAL_API_HOST,
     GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
     GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
     GOOGLE_REDIRECT_URI: process.env.GOOGLE_REDIRECT_URI,

@@ -12,10 +12,13 @@ brew install temporal
 ### Running the service
 1. Start the temporal server
 ```bash
-temporal server start
+just start-temporal
 ```
 
-2. Start the worker
+2. Start the worker (in a different terminal)
 ```bash
 just lettuce
 ```
+
+## Contributing
+This app is just a shell, all the code associated with the worker processes are located in lettuce-client. 
