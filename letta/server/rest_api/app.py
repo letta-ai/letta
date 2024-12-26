@@ -68,9 +68,6 @@ def generate_openapi_schema(app: FastAPI):
     openai_docs["info"]["title"] = "OpenAI Assistants API"
     letta_docs["paths"] = {k: v for k, v in letta_docs["paths"].items() if not k.startswith("/openai")}
     letta_docs["info"]["title"] = "Letta API"
-    letta_docs["components"]["schemas"]["LettaResponse"] = {
-        "properties": LettaResponse.model_json_schema(ref_template="#/components/schemas/LettaResponse/properties/{model}")["$defs"]
-    }
 
     # Split the API docs into Letta API, and OpenAI Assistants compatible API
     for name, docs in [
