@@ -220,7 +220,7 @@ ready:
 
 start-services:
     @echo "🚧 Starting up postgres, redis..."
-    docker compose up -d redis postgres
+    docker compose up -d redis postgres temporal
 
 setup:
     @echo "🚧 Setting up the project..."
@@ -236,3 +236,13 @@ setup:
     echo "{}" > apps/web/flag.overrides.json
     @echo "✅ Project setup complete. You should be able to run your services, just run 'just web' or 'just core'."
 
+
+lettuce:
+    # Check if temporal server is running at localhost:8088
+    curl -s http://localhost:8233/metrics > /dev/null || (echo "\n\n\n\n🚨 Temporal server is not running. Please start it with 'just start-temporal'." && exit 1)
+    @echo "🚧 Running lettuce..."
+    npm run lettuce:dev
+
+start-temporal:
+    @echo "🚧 Starting Temporal server..."
+    temporal server start-dev
