@@ -170,7 +170,7 @@ def get_agent_state(
         raise HTTPException(status_code=404, detail=str(e))
 
 
-@router.delete("/{agent_id}", response_model=AgentState, operation_id="delete_agent")
+@router.delete("/{agent_id}", response_model=None, operation_id="delete_agent")
 def delete_agent(
     agent_id: str,
     server: "SyncServer" = Depends(get_letta_server),
@@ -181,7 +181,8 @@ def delete_agent(
     """
     actor = server.user_manager.get_user_or_default(user_id=user_id)
     try:
-        return server.agent_manager.delete_agent(agent_id=agent_id, actor=actor)
+        server.agent_manager.delete_agent(agent_id=agent_id, actor=actor)
+        return JSONResponse(status_code=status.HTTP_200_OK)
     except NoResultFound:
         raise HTTPException(status_code=404, detail=f"Agent agent_id={agent_id} not found for user_id={actor.id}.")
 
