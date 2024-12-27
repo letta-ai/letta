@@ -1,8 +1,9 @@
 from typing import Any, Dict, List, Optional, Union
 
+from pydantic import Field
+
 from letta.schemas.enums import ToolRuleType
 from letta.schemas.letta_base import LettaBase
-from pydantic import Field
 
 
 class BaseToolRule(LettaBase):

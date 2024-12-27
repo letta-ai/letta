@@ -3,11 +3,12 @@ import json
 import re
 from typing import List, Union
 
+from pydantic import BaseModel, Field
+
 from letta.schemas.enums import MessageStreamStatus
 from letta.schemas.letta_message import LettaMessage, LettaMessageUnion
 from letta.schemas.usage import LettaUsageStatistics
 from letta.utils import json_dumps
-from pydantic import BaseModel, Field
 
 # TODO: consider moving into own file
 
@@ -22,8 +23,26 @@ class LettaResponse(BaseModel):
         usage (LettaUsageStatistics): The usage statistics
     """
 
-    messages: List[LettaMessageUnion] = Field(..., description="The messages returned by the agent.")
-    usage: LettaUsageStatistics = Field(..., description="The usage statistics of the agent.")
+    messages: List[LettaMessageUnion] = Field(
+        ...,
+        description="The messages returned by the agent.",
+        json_schema_extra={
+            "items": {
+                "oneOf": [
+                    {"x-ref-name": "SystemMessage"},
+                    {"x-ref-name": "UserMessage"},
+                    {"x-ref-name": "ReasoningMessage"},
+                    {"x-ref-name": "ToolCallMessage"},
+                    {"x-ref-name": "ToolReturnMessage"},
+                    {"x-ref-name": "AssistantMessage"},
+                ],
+                "discriminator": {"propertyName": "message_type"},
+            }
+        },
+    )
+    usage: LettaUsageStatistics = Field(
+        ..., description="The usage statistics of the agent.", json_schema_extra={"x-ref-name": "LettaUsageStatistics"}
+    )
 
     def __str__(self):
         return json_dumps(

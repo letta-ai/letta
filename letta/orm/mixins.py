@@ -1,9 +1,10 @@
 from typing import Optional
 from uuid import UUID
 
-from letta.orm.base import Base
 from sqlalchemy import ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column
+
+from letta.orm.base import Base
 
 
 def is_valid_uuid4(uuid_string: str) -> bool:

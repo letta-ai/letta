@@ -5,6 +5,7 @@ import uuid
 from typing import Annotated, Union
 
 import typer
+
 from letta import LocalClient, RESTClient, create_client
 from letta.benchmark.constants import HUMAN, PERSONA, PROMPTS, TRIES
 from letta.config import LettaConfig

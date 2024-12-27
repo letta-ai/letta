@@ -3,10 +3,11 @@ import json
 from enum import Enum
 from typing import Any, Dict, List, Literal, Optional, Union
 
+from pydantic import BaseModel, Field, model_validator
+
 from letta.schemas.agent import AgentState
 from letta.schemas.letta_base import LettaBase, OrmMetadataBase
 from letta.settings import tool_settings
-from pydantic import BaseModel, Field, model_validator
 
 
 # Sandbox Config

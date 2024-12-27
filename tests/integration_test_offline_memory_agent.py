@@ -1,4 +1,5 @@
 import pytest
+
 from letta import BasicBlockMemory
 from letta.client.client import Block, create_client
 from letta.constants import DEFAULT_HUMAN, DEFAULT_PERSONA

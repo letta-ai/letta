@@ -3,42 +3,21 @@ import warnings
 from datetime import datetime
 from typing import List, Optional, Union
 
-from fastapi import (
-    APIRouter,
-    BackgroundTasks,
-    Body,
-    Depends,
-    Header,
-    HTTPException,
-    Query,
-    status,
-)
+from fastapi import APIRouter, BackgroundTasks, Body, Depends, Header, HTTPException, Query, status
 from fastapi.responses import JSONResponse, StreamingResponse
+from pydantic import Field
+
 from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG
 from letta.log import get_logger
 from letta.orm.errors import NoResultFound
 from letta.schemas.agent import AgentState, CreateAgent, UpdateAgent
-from letta.schemas.block import (  # , BlockLabelUpdate, BlockLimitUpdate
-    Block,
-    BlockUpdate,
-    CreateBlock,
-)
+from letta.schemas.block import Block, BlockUpdate, CreateBlock  # , BlockLabelUpdate, BlockLimitUpdate
 from letta.schemas.enums import MessageStreamStatus
 from letta.schemas.job import Job, JobStatus, JobUpdate
-from letta.schemas.letta_message import (
-    LegacyLettaMessage,
-    LettaMessage,
-    LettaMessageUnion,
-)
+from letta.schemas.letta_message import LegacyLettaMessage, LettaMessage, LettaMessageUnion
 from letta.schemas.letta_request import LettaRequest, LettaStreamingRequest
 from letta.schemas.letta_response import LettaResponse
-from letta.schemas.memory import (
-    ArchivalMemorySummary,
-    ContextWindowOverview,
-    CreateArchivalMemory,
-    Memory,
-    RecallMemorySummary,
-)
+from letta.schemas.memory import ArchivalMemorySummary, ContextWindowOverview, CreateArchivalMemory, Memory, RecallMemorySummary
 from letta.schemas.message import Message, MessageCreate, MessageUpdate
 from letta.schemas.passage import Passage
 from letta.schemas.source import Source
@@ -47,7 +26,6 @@ from letta.schemas.user import User
 from letta.server.rest_api.interface import StreamingServerInterface
 from letta.server.rest_api.utils import get_letta_server, sse_async_generator
 from letta.server.server import SyncServer
-from pydantic import Field
 
 # These can be forward refs, but because Fastapi needs them at runtime the must be imported normally
 
@@ -192,7 +170,7 @@ def get_agent_state(
         raise HTTPException(status_code=404, detail=str(e))
 
 
-@router.delete("/{agent_id}", response_model=AgentState, operation_id="delete_agent")
+@router.delete("/{agent_id}", response_model=None, operation_id="delete_agent")
 def delete_agent(
     agent_id: str,
     server: "SyncServer" = Depends(get_letta_server),
@@ -203,7 +181,8 @@ def delete_agent(
     """
     actor = server.user_manager.get_user_or_default(user_id=user_id)
     try:
-        return server.agent_manager.delete_agent(agent_id=agent_id, actor=actor)
+        server.agent_manager.delete_agent(agent_id=agent_id, actor=actor)
+        return JSONResponse(status_code=status.HTTP_200_OK)
     except NoResultFound:
         raise HTTPException(status_code=404, detail=f"Agent agent_id={agent_id} not found for user_id={actor.id}.")
 
@@ -761,6 +740,3 @@ async def send_message_to_agent(
 
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"{e}")
-
-
-    

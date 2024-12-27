@@ -1,8 +1,9 @@
 from datetime import datetime
 from typing import Optional
 
-from letta.schemas.letta_base import LettaBase
 from pydantic import Field
+
+from letta.schemas.letta_base import LettaBase
 
 
 class FileMetadataBase(LettaBase):

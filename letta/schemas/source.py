@@ -1,9 +1,10 @@
 from datetime import datetime
 from typing import Optional
 
+from pydantic import Field
+
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.letta_base import LettaBase
-from pydantic import Field
 
 
 class BaseSource(LettaBase):
