@@ -30,6 +30,9 @@ class ContextWindowOverview(BaseModel):
     num_tokens_external_memory_summary: int = Field(
         ..., description="The number of tokens in the external memory summary (archival + recall metadata)."
     )
+    external_memory_summary: str = Field(
+        ..., description="The metadata summary of the external memory sources (archival + recall metadata)."
+    )
 
     # context window breakdown (in tokens)
     # this should all add up to context_window_size_current
@@ -87,7 +90,7 @@ class Memory(BaseModel, validate_assignment=True):
             Template(prompt_template)
 
             # Validate compatibility with current memory structure
-            test_render = Template(prompt_template).render(blocks=self.blocks)
+            Template(prompt_template).render(blocks=self.blocks)
 
             # If we get here, the template is valid and compatible
             self.prompt_template = prompt_template
@@ -213,6 +216,7 @@ class ChatMemory(BasicBlockMemory):
             human (str): The starter value for the human block.
             limit (int): The character limit for each block.
         """
+        # TODO: Should these be CreateBlocks?
         super().__init__(blocks=[Block(value=persona, limit=limit, label="persona"), Block(value=human, limit=limit, label="human")])
 
 

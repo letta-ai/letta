@@ -2,7 +2,6 @@ from typing import List, Optional, Union
 
 from letta.agent import Agent, AgentState, save_agent
 from letta.interface import AgentInterface
-from letta.metadata import MetadataStore
 from letta.orm import User
 from letta.schemas.message import Message
 from letta.schemas.openai.chat_completion_response import UsageStatistics
@@ -142,9 +141,8 @@ class OfflineMemoryAgent(Agent):
         # extras
         first_message_verify_mono: bool = False,
         max_memory_rethinks: int = 10,
-        initial_message_sequence: Optional[List[Message]] = None,
     ):
-        super().__init__(interface, agent_state, user, initial_message_sequence=initial_message_sequence)
+        super().__init__(interface, agent_state, user)
         self.first_message_verify_mono = first_message_verify_mono
         self.max_memory_rethinks = max_memory_rethinks
 
@@ -153,7 +151,6 @@ class OfflineMemoryAgent(Agent):
         messages: Union[Message, List[Message]],
         chaining: bool = True,
         max_chaining_steps: Optional[int] = None,
-        ms: Optional[MetadataStore] = None,
         **kwargs,
     ) -> LettaUsageStatistics:
         """Go through what is currently in memory core memory and integrate information."""
@@ -165,7 +162,6 @@ class OfflineMemoryAgent(Agent):
         while counter < self.max_memory_rethinks:
             if counter > 0:
                 next_input_message = []
-            kwargs["ms"] = ms
             kwargs["first_message"] = False
             step_response = self.inner_step(
                 messages=next_input_message,
@@ -184,7 +180,6 @@ class OfflineMemoryAgent(Agent):
             counter += 1
             self.interface.step_complete()
 
-            if ms:
-                save_agent(self, ms)
+            save_agent(self)
 
         return LettaUsageStatistics(**total_usage.model_dump(), step_count=step_count)
