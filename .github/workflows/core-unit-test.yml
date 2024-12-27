@@ -6,6 +6,8 @@ env:
   ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
   GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
   GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+  E2B_API_KEY: ${{ secrets.E2B_API_KEY }}
+  E2B_SANDBOX_TEMPLATE_ID: ${{ secrets.E2B_SANDBOX_TEMPLATE_ID }}
 
 on:
   push:
@@ -96,7 +98,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: .venv
-          key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}${{ inputs.install-args || '-E dev -E postgres -E external-tools -E tests' }}
+          key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}${{ inputs.install-args || '-E dev -E postgres -E external-tools -E tests -E cloud-tool-sandbox' }}
           # Restore cache with this prefix if not exact match with key
           # Note cache-hit returns false in this case, so the below step will run
           restore-keys: |
@@ -105,7 +107,7 @@ jobs:
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
         shell: bash
         working-directory: apps/core
-        run: poetry install --no-interaction --no-root ${{ inputs.install-args || '-E dev -E postgres -E external-tools -E tests' }}
+        run: poetry install --no-interaction --no-root ${{ inputs.install-args || '-E dev -E postgres -E external-tools -E tests -E cloud-tool-sandbox' }}
       - name: Migrate database
         working-directory: apps/core
         env:
