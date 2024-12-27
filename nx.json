@@ -127,5 +127,6 @@
         "style": "tailwind"
       }
     }
-  }
+  },
+  "defaultProject": "apps-desktop-electron"
 }

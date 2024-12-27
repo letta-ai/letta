@@ -256,3 +256,8 @@ push-core-to-oss $name:
 pull-oss-to-core:
     @echo "🚀 Pushing core to OSS..."
     ./scripts/oss-sync-scripts/pull.sh
+
+
+desktop:
+    @echo "🚧 Starting up the desktop app..."
+    npm run desktop:dev
