@@ -14,6 +14,13 @@ from starlette.middleware.cors import CORSMiddleware
 from letta.__init__ import __version__
 from letta.constants import ADMIN_PREFIX, API_PREFIX, OPENAI_API_PREFIX
 from letta.errors import LettaAgentNotFoundError, LettaUserNotFoundError
+from letta.log import get_logger
+from letta.orm.errors import (
+    DatabaseTimeoutError,
+    ForeignKeyConstraintViolationError,
+    NoResultFound,
+    UniqueConstraintViolationError,
+)
 from letta.schemas.letta_response import LettaResponse
 from letta.server.constants import REST_DEFAULT_PORT
 
@@ -24,9 +31,6 @@ from letta.server.rest_api.auth.index import (
 from letta.server.rest_api.interface import StreamingServerInterface
 from letta.server.rest_api.routers.openai.assistants.assistants import (
     router as openai_assistants_router,
-)
-from letta.server.rest_api.routers.openai.assistants.threads import (
-    router as openai_threads_router,
 )
 from letta.server.rest_api.routers.openai.chat_completions.chat_completions import (
     router as openai_chat_completions_router,
@@ -48,6 +52,7 @@ from letta.settings import settings
 # NOTE(charles): @ethan I had to add this to get the global as the bottom to work
 interface: StreamingServerInterface = StreamingServerInterface
 server = SyncServer(default_interface_factory=lambda: interface())
+logger = get_logger(__name__)
 
 # TODO: remove
 password = None
@@ -173,6 +178,41 @@ def create_application() -> "FastAPI":
             },
         )
 
+    @app.exception_handler(NoResultFound)
+    async def no_result_found_handler(request: Request, exc: NoResultFound):
+        logger.error(f"NoResultFound: {exc}")
+
+        return JSONResponse(
+            status_code=404,
+            content={"detail": str(exc)},
+        )
+
+    @app.exception_handler(ForeignKeyConstraintViolationError)
+    async def foreign_key_constraint_handler(request: Request, exc: ForeignKeyConstraintViolationError):
+        logger.error(f"ForeignKeyConstraintViolationError: {exc}")
+
+        return JSONResponse(
+            status_code=409,
+            content={"detail": str(exc)},
+        )
+
+    @app.exception_handler(UniqueConstraintViolationError)
+    async def unique_key_constraint_handler(request: Request, exc: UniqueConstraintViolationError):
+        logger.error(f"UniqueConstraintViolationError: {exc}")
+
+        return JSONResponse(
+            status_code=409,
+            content={"detail": str(exc)},
+        )
+
+    @app.exception_handler(DatabaseTimeoutError)
+    async def database_timeout_error_handler(request: Request, exc: DatabaseTimeoutError):
+        logger.error(f"Timeout occurred: {exc}. Original exception: {exc.original_exception}")
+        return JSONResponse(
+            status_code=503,
+            content={"detail": "The database is temporarily unavailable. Please try again later."},
+        )
+
     @app.exception_handler(ValueError)
     async def value_error_handler(request: Request, exc: ValueError):
         return JSONResponse(status_code=400, content={"detail": str(exc)})
@@ -215,7 +255,6 @@ def create_application() -> "FastAPI":
 
     # openai
     app.include_router(openai_assistants_router, prefix=OPENAI_API_PREFIX)
-    app.include_router(openai_threads_router, prefix=OPENAI_API_PREFIX)
     app.include_router(openai_chat_completions_router, prefix=OPENAI_API_PREFIX)
 
     # /api/auth endpoints
@@ -226,17 +265,11 @@ def create_application() -> "FastAPI":
 
     @app.on_event("startup")
     def on_startup():
-        # load the default tools
-        # from letta.orm.tool import Tool
-
-        # Tool.load_default_tools(get_db_session())
-
         generate_openapi_schema(app)
 
     @app.on_event("shutdown")
     def on_shutdown():
         global server
-        server.save_agents()
         # server = None
 
     return app

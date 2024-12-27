@@ -19,7 +19,6 @@ from letta.cli.cli_config import add, add_tool, configure, delete, list, list_to
 from letta.cli.cli_load import app as load_app
 from letta.config import LettaConfig
 from letta.constants import FUNC_FAILED_HEARTBEAT_MESSAGE, REQ_HEARTBEAT_MESSAGE
-from letta.metadata import MetadataStore
 
 # from letta.interface import CLIInterface as interface  # for printing to terminal
 from letta.streaming_interface import AgentRefreshStreamingInterface
@@ -62,7 +61,6 @@ def run_agent_loop(
     letta_agent: agent.Agent,
     config: LettaConfig,
     first: bool,
-    ms: MetadataStore,
     no_verify: bool = False,
     strip_ui: bool = False,
     stream: bool = False,
@@ -92,7 +90,6 @@ def run_agent_loop(
 
     # create client
     client = create_client()
-    ms = MetadataStore(config)  # TODO: remove
 
     # run loops
     while True:
@@ -130,11 +127,11 @@ def run_agent_loop(
                 # updated agent save functions
                 if user_input.lower() == "/exit":
                     # letta_agent.save()
-                    agent.save_agent(letta_agent, ms)
+                    agent.save_agent(letta_agent)
                     break
                 elif user_input.lower() == "/save" or user_input.lower() == "/savechat":
                     # letta_agent.save()
-                    agent.save_agent(letta_agent, ms)
+                    agent.save_agent(letta_agent)
                     continue
                 elif user_input.lower() == "/attach":
                     # TODO: check if agent already has it
@@ -195,46 +192,6 @@ def run_agent_loop(
 
                 elif user_input.lower() == "/model":
                     print(f"Current model: {letta_agent.agent_state.llm_config.model}")
-                    continue
-
-                elif user_input.lower() == "/pop" or user_input.lower().startswith("/pop "):
-                    # Check if there's an additional argument that's an integer
-                    command = user_input.strip().split()
-                    pop_amount = int(command[1]) if len(command) > 1 and command[1].isdigit() else 3
-                    try:
-                        popped_messages = letta_agent.pop_message(count=pop_amount)
-                    except ValueError as e:
-                        print(f"Error popping messages: {e}")
-                    continue
-
-                elif user_input.lower() == "/retry":
-                    print(f"Retrying for another answer...")
-                    try:
-                        letta_agent.retry_message()
-                    except Exception as e:
-                        print(f"Error retrying message: {e}")
-                    continue
-
-                elif user_input.lower() == "/rethink" or user_input.lower().startswith("/rethink "):
-                    if len(user_input) < len("/rethink "):
-                        print("Missing text after the command")
-                        continue
-                    try:
-                        letta_agent.rethink_message(new_thought=user_input[len("/rethink ") :].strip())
-                    except Exception as e:
-                        print(f"Error rethinking message: {e}")
-                    continue
-
-                elif user_input.lower() == "/rewrite" or user_input.lower().startswith("/rewrite "):
-                    if len(user_input) < len("/rewrite "):
-                        print("Missing text after the command")
-                        continue
-
-                    text = user_input[len("/rewrite ") :].strip()
-                    try:
-                        letta_agent.rewrite_message(new_text=text)
-                    except Exception as e:
-                        print(f"Error rewriting message: {e}")
                     continue
 
                 elif user_input.lower() == "/summarize":
@@ -322,42 +279,6 @@ def run_agent_loop(
                         questionary.print(cmd, "bold")
                         questionary.print(f" {desc}")
                     continue
-
-                elif user_input.lower().startswith("/systemswap"):
-                    if len(user_input) < len("/systemswap "):
-                        print("Missing new system prompt after the command")
-                        continue
-                    old_system_prompt = letta_agent.system
-                    new_system_prompt = user_input[len("/systemswap ") :].strip()
-
-                    # Show warning and prompts to user
-                    typer.secho(
-                        "\nWARNING: You are about to change the system prompt.",
-                        # fg=typer.colors.BRIGHT_YELLOW,
-                        bold=True,
-                    )
-                    typer.secho(
-                        f"\nOld system prompt:\n{old_system_prompt}",
-                        fg=typer.colors.RED,
-                        bold=True,
-                    )
-                    typer.secho(
-                        f"\nNew system prompt:\n{new_system_prompt}",
-                        fg=typer.colors.GREEN,
-                        bold=True,
-                    )
-
-                    # Ask for confirmation
-                    confirm = questionary.confirm("Do you want to proceed with the swap?").ask()
-
-                    if confirm:
-                        letta_agent.update_system_prompt(new_system_prompt=new_system_prompt)
-                        print("System prompt updated successfully.")
-                    else:
-                        print("System prompt swap cancelled.")
-
-                    continue
-
                 else:
                     print(f"Unrecognized command: {user_input}")
                     continue
@@ -378,7 +299,6 @@ def run_agent_loop(
                     first_message=False,
                     skip_verify=no_verify,
                     stream=stream,
-                    ms=ms,
                 )
             else:
                 step_response = letta_agent.step_user_message(
@@ -386,7 +306,6 @@ def run_agent_loop(
                     first_message=False,
                     skip_verify=no_verify,
                     stream=stream,
-                    ms=ms,
                 )
             new_messages = step_response.messages
             heartbeat_request = step_response.heartbeat_request
@@ -394,7 +313,7 @@ def run_agent_loop(
             token_warning = step_response.in_context_memory_warning
             step_response.usage
 
-            agent.save_agent(letta_agent, ms)
+            agent.save_agent(letta_agent)
             skip_next_user_input = False
             if token_warning:
                 user_message = system.get_token_limit_warning()

@@ -3,7 +3,7 @@ import json
 
 from letta.utils import json_dumps, json_loads
 
-NO_HEARTBEAT_FUNCS = ["send_message", "pause_heartbeats"]
+NO_HEARTBEAT_FUNCS = ["send_message"]
 
 
 def insert_heartbeat(message):
@@ -32,7 +32,7 @@ def heartbeat_correction(message_history, new_message):
 
     If the last message in the stack is a user message and the new message is an assistant func call, fix the heartbeat
 
-    See: https://github.com/cpacker/Letta/issues/601
+    See: https://github.com/letta-ai/letta/issues/601
     """
     if len(message_history) < 1:
         return None
