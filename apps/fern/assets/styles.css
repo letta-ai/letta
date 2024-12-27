@@ -36,6 +36,12 @@
 .fern-search-button {
   border-radius: 0 !important;
 }
+code:not(.code-block) {
+  border-radius: 0 !important;
+}
+.fern-accordion {
+  border-radius: 0 !important;
+}
 /* [data-radix-scroll-area-viewport] {
   border-radius: 0 !important;
 }
