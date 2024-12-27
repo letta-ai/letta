@@ -81,7 +81,7 @@ jobs:
           submodules: recursive
       - name: Restore node_modules cache if exist
         id: cache-nodemodules
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         env:
           cache-name: cache-node-modules-${{ env.node-version }}
         with:
@@ -90,7 +90,7 @@ jobs:
 
       - name: Restore NPM cache if exist
         id: cache-npm
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         env:
           cache-name: cache-npm-${{ env.node-version }}
         with:
@@ -98,7 +98,7 @@ jobs:
           key: ${{ runner.os }}-${{ env.cache-name }}
 
       - name: Restore Cypress cache if exist
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         env:
           cache-name: cache-cypress-${{ env.node-version }}
         with:
