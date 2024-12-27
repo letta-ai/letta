@@ -246,3 +246,13 @@ lettuce:
 start-temporal:
     @echo "🚧 Starting Temporal server..."
     temporal server start-dev
+
+
+push-core-to-oss $name:
+    @echo "🚀 Pushing core to OSS..."
+    ./scripts/oss-sync-scripts/push.sh $name
+
+
+pull-oss-to-core:
+    @echo "🚀 Pushing core to OSS..."
+    ./scripts/oss-sync-scripts/pull.sh
