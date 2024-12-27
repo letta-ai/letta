@@ -1,11 +1,10 @@
-import { nanoid } from 'nanoid';
 import { getCookie, setCookie } from '$web/server/cookies';
 import { CookieNames } from '$web/server/cookies/types';
 
 export const STATE_SEPERATOR = '__';
 
 export async function generateOAuthStateUrl(redirectUrl?: string) {
-  const csrfKey = nanoid(15);
+  const csrfKey = `csrf-${Math.random().toString(36).substring(2)}`;
 
   await setCookie(CookieNames.CSRF_PROTECTION, csrfKey);
 

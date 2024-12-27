@@ -1,5 +1,5 @@
 import { mockDatabase, mockDatabaseDelete } from '@letta-web/database-testing';
-import { deleteUser } from '$web/server/auth';
+import { deleteUser } from '$web/server/auth/lib/deleteUser';
 import { eq } from 'drizzle-orm';
 import { organizations, users } from '@letta-web/database';
 
