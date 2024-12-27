@@ -5,11 +5,7 @@ from typing import List, Optional, Union
 from letta.llm_api.helpers import make_post_request
 from letta.schemas.message import Message
 from letta.schemas.openai.chat_completion_request import ChatCompletionRequest, Tool
-from letta.schemas.openai.chat_completion_response import (
-    ChatCompletionResponse,
-    Choice,
-    FunctionCall,
-)
+from letta.schemas.openai.chat_completion_response import ChatCompletionResponse, Choice, FunctionCall
 from letta.schemas.openai.chat_completion_response import (
     Message as ChoiceMessage,  # NOTE: avoid conflict with our own Letta Message datatype
 )

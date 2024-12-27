@@ -2,6 +2,7 @@ import json
 import os
 
 import pytest
+
 from letta.functions.functions import derive_openai_json_schema
 from letta.llm_api.helpers import convert_to_structured_output, make_post_request
 

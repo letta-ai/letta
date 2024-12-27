@@ -1,9 +1,10 @@
 from datetime import datetime
 from typing import Optional
 
+from pydantic import Field
+
 from letta.schemas.letta_base import LettaBase
 from letta.services.organization_manager import OrganizationManager
-from pydantic import Field
 
 
 class UserBase(LettaBase):

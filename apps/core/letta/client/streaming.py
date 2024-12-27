@@ -3,14 +3,11 @@ from typing import Generator
 
 import httpx
 from httpx_sse import SSEError, connect_sse
+
 from letta.constants import OPENAI_CONTEXT_WINDOW_ERROR_SUBSTRING
 from letta.errors import LLMError
 from letta.schemas.enums import MessageStreamStatus
-from letta.schemas.letta_message import (
-    ReasoningMessage,
-    ToolCallMessage,
-    ToolReturnMessage,
-)
+from letta.schemas.letta_message import ReasoningMessage, ToolCallMessage, ToolReturnMessage
 from letta.schemas.letta_response import LettaStreamingResponse
 from letta.schemas.usage import LettaUsageStatistics
 

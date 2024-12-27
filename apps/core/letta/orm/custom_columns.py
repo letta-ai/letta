@@ -2,18 +2,14 @@ import base64
 from typing import List, Union
 
 import numpy as np
+from sqlalchemy import JSON
+from sqlalchemy.types import BINARY, TypeDecorator
+
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import ToolRuleType
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.openai.chat_completions import ToolCall, ToolCallFunction
-from letta.schemas.tool_rule import (
-    ChildToolRule,
-    ConditionalToolRule,
-    InitToolRule,
-    TerminalToolRule,
-)
-from sqlalchemy import JSON
-from sqlalchemy.types import BINARY, TypeDecorator
+from letta.schemas.tool_rule import ChildToolRule, ConditionalToolRule, InitToolRule, TerminalToolRule
 
 
 class EmbeddingConfigColumn(TypeDecorator):

@@ -3,6 +3,9 @@ import time
 from datetime import datetime, timedelta
 
 import pytest
+from sqlalchemy import delete
+from sqlalchemy.exc import IntegrityError
+
 from letta.config import LettaConfig
 from letta.constants import BASE_MEMORY_TOOLS, BASE_TOOLS
 from letta.embeddings import embedding_model
@@ -60,8 +63,6 @@ from letta.server.server import SyncServer
 from letta.services.block_manager import BlockManager
 from letta.services.organization_manager import OrganizationManager
 from letta.settings import tool_settings
-from sqlalchemy import delete
-from sqlalchemy.exc import IntegrityError
 from tests.helpers.utils import comprehensive_agent_checks
 
 DEFAULT_EMBEDDING_CONFIG = EmbeddingConfig(

@@ -9,10 +9,11 @@ Create Date: 2024-12-14 17:23:08.772554
 from typing import Sequence, Union
 
 import sqlalchemy as sa
-from alembic import op
-from letta.orm.custom_columns import EmbeddingConfigColumn
 from pgvector.sqlalchemy import Vector
 from sqlalchemy.dialects import postgresql
+
+from alembic import op
+from letta.orm.custom_columns import EmbeddingConfigColumn
 
 # revision identifiers, used by Alembic.
 revision: str = "54dec07619c4"

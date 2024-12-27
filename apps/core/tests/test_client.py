@@ -8,6 +8,8 @@ from typing import List, Union
 
 import pytest
 from dotenv import load_dotenv
+from sqlalchemy import delete
+
 from letta import LocalClient, RESTClient, create_client
 from letta.orm import SandboxConfig, SandboxEnvironmentVariable
 from letta.schemas.agent import AgentState
@@ -18,7 +20,6 @@ from letta.schemas.letta_message import ToolReturnMessage
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.sandbox_config import LocalSandboxConfig, SandboxType
 from letta.utils import create_random_username
-from sqlalchemy import delete
 
 # Constants
 SERVER_PORT = 8283

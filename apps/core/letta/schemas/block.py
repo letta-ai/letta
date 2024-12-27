@@ -1,9 +1,10 @@
 from typing import Optional
 
-from letta.constants import CORE_MEMORY_BLOCK_CHAR_LIMIT
-from letta.schemas.letta_base import LettaBase
 from pydantic import BaseModel, Field, model_validator
 from typing_extensions import Self
+
+from letta.constants import CORE_MEMORY_BLOCK_CHAR_LIMIT
+from letta.schemas.letta_base import LettaBase
 
 # block of the LLM context
 
