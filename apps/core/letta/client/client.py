@@ -2,16 +2,10 @@ import logging
 import time
 from typing import Callable, Dict, Generator, List, Optional, Union
 
-import letta.utils
 import requests
-from letta.constants import (
-  ADMIN_PREFIX,
-  BASE_MEMORY_TOOLS,
-  BASE_TOOLS,
-  DEFAULT_HUMAN,
-  DEFAULT_PERSONA,
-  FUNCTION_RETURN_CHAR_LIMIT,
-)
+
+import letta.utils
+from letta.constants import ADMIN_PREFIX, BASE_MEMORY_TOOLS, BASE_TOOLS, DEFAULT_HUMAN, DEFAULT_PERSONA, FUNCTION_RETURN_CHAR_LIMIT
 from letta.data_sources.connectors import DataConnector
 from letta.functions.functions import parse_source_code
 from letta.orm.errors import NoResultFound
@@ -26,26 +20,20 @@ from letta.schemas.job import Job
 from letta.schemas.letta_request import LettaRequest, LettaStreamingRequest
 from letta.schemas.letta_response import LettaResponse, LettaStreamingResponse
 from letta.schemas.llm_config import LLMConfig
-from letta.schemas.memory import (
-  ArchivalMemorySummary,
-  ChatMemory,
-  CreateArchivalMemory,
-  Memory,
-  RecallMemorySummary,
-)
+from letta.schemas.memory import ArchivalMemorySummary, ChatMemory, CreateArchivalMemory, Memory, RecallMemorySummary
 from letta.schemas.message import Message, MessageCreate, MessageUpdate
 from letta.schemas.openai.chat_completions import ToolCall
 from letta.schemas.organization import Organization
 from letta.schemas.passage import Passage
 from letta.schemas.sandbox_config import (
-  E2BSandboxConfig,
-  LocalSandboxConfig,
-  SandboxConfig,
-  SandboxConfigCreate,
-  SandboxConfigUpdate,
-  SandboxEnvironmentVariable,
-  SandboxEnvironmentVariableCreate,
-  SandboxEnvironmentVariableUpdate,
+    E2BSandboxConfig,
+    LocalSandboxConfig,
+    SandboxConfig,
+    SandboxConfigCreate,
+    SandboxConfigUpdate,
+    SandboxEnvironmentVariable,
+    SandboxEnvironmentVariableCreate,
+    SandboxEnvironmentVariableUpdate,
 )
 from letta.schemas.source import Source, SourceCreate, SourceUpdate
 from letta.schemas.tool import Tool, ToolCreate, ToolUpdate

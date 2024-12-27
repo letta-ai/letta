@@ -1,5 +1,6 @@
-import letta.functions.function_sets.base as base_functions
 import pytest
+
+import letta.functions.function_sets.base as base_functions
 from letta import LocalClient, create_client
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.llm_config import LLMConfig

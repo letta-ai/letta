@@ -5,12 +5,12 @@ from typing import Optional
 
 import letta
 from letta.constants import (
-  CORE_MEMORY_HUMAN_CHAR_LIMIT,
-  CORE_MEMORY_PERSONA_CHAR_LIMIT,
-  DEFAULT_HUMAN,
-  DEFAULT_PERSONA,
-  DEFAULT_PRESET,
-  LETTA_DIR,
+    CORE_MEMORY_HUMAN_CHAR_LIMIT,
+    CORE_MEMORY_PERSONA_CHAR_LIMIT,
+    DEFAULT_HUMAN,
+    DEFAULT_PERSONA,
+    DEFAULT_PRESET,
+    LETTA_DIR,
 )
 from letta.log import get_logger
 from letta.schemas.embedding_config import EmbeddingConfig

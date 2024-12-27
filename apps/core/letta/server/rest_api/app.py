@@ -8,44 +8,30 @@ from typing import Optional
 import uvicorn
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.middleware.cors import CORSMiddleware
+
 from letta.__init__ import __version__
 from letta.constants import ADMIN_PREFIX, API_PREFIX, OPENAI_API_PREFIX
 from letta.errors import LettaAgentNotFoundError, LettaUserNotFoundError
 from letta.log import get_logger
-from letta.orm.errors import (
-  DatabaseTimeoutError,
-  ForeignKeyConstraintViolationError,
-  NoResultFound,
-  UniqueConstraintViolationError,
-)
+from letta.orm.errors import DatabaseTimeoutError, ForeignKeyConstraintViolationError, NoResultFound, UniqueConstraintViolationError
 from letta.schemas.letta_response import LettaResponse
 from letta.server.constants import REST_DEFAULT_PORT
 
 # NOTE(charles): these are extra routes that are not part of v1 but we still need to mount to pass tests
-from letta.server.rest_api.auth.index import (
-  setup_auth_router,  # TODO: probably remove right?
-)
+from letta.server.rest_api.auth.index import setup_auth_router  # TODO: probably remove right?
 from letta.server.rest_api.interface import StreamingServerInterface
-from letta.server.rest_api.routers.openai.assistants.assistants import (
-  router as openai_assistants_router,
-)
-from letta.server.rest_api.routers.openai.chat_completions.chat_completions import (
-  router as openai_chat_completions_router,
-)
+from letta.server.rest_api.routers.openai.assistants.assistants import router as openai_assistants_router
+from letta.server.rest_api.routers.openai.chat_completions.chat_completions import router as openai_chat_completions_router
 
 # from letta.orm.utilities import get_db_session  # TODO(ethan) reenable once we merge ORM
 from letta.server.rest_api.routers.v1 import ROUTERS as v1_routes
-from letta.server.rest_api.routers.v1.organizations import (
-  router as organizations_router,
-)
-from letta.server.rest_api.routers.v1.users import (
-  router as users_router,  # TODO: decide on admin
-)
+from letta.server.rest_api.routers.v1.organizations import router as organizations_router
+from letta.server.rest_api.routers.v1.users import router as users_router  # TODO: decide on admin
 from letta.server.rest_api.static_files import mount_static_files
 from letta.server.server import SyncServer
 from letta.settings import settings
-from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.middleware.cors import CORSMiddleware
 
 # TODO(ethan)
 # NOTE(charles): @ethan I had to add this to get the global as the bottom to work

@@ -3,18 +3,14 @@ from enum import Enum
 from functools import wraps
 from typing import TYPE_CHECKING, List, Literal, Optional
 
-from letta.log import get_logger
-from letta.orm.base import Base, CommonSqlalchemyMetaMixins
-from letta.orm.errors import (
-  DatabaseTimeoutError,
-  ForeignKeyConstraintViolationError,
-  NoResultFound,
-  UniqueConstraintViolationError,
-)
-from letta.orm.sqlite_functions import adapt_array
 from sqlalchemy import String, desc, func, or_, select
 from sqlalchemy.exc import DBAPIError, IntegrityError, TimeoutError
 from sqlalchemy.orm import Mapped, Session, mapped_column
+
+from letta.log import get_logger
+from letta.orm.base import Base, CommonSqlalchemyMetaMixins
+from letta.orm.errors import DatabaseTimeoutError, ForeignKeyConstraintViolationError, NoResultFound, UniqueConstraintViolationError
+from letta.orm.sqlite_functions import adapt_array
 
 if TYPE_CHECKING:
     from pydantic import BaseModel

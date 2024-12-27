@@ -1,5 +1,8 @@
 from typing import TYPE_CHECKING
 
+from sqlalchemy import JSON, Column, Index
+from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
+
 from letta.config import LettaConfig
 from letta.constants import MAX_EMBEDDING_DIM
 from letta.orm.custom_columns import CommonVector, EmbeddingConfigColumn
@@ -7,8 +10,6 @@ from letta.orm.mixins import AgentMixin, FileMixin, OrganizationMixin, SourceMix
 from letta.orm.sqlalchemy_base import SqlalchemyBase
 from letta.schemas.passage import Passage as PydanticPassage
 from letta.settings import settings
-from sqlalchemy import JSON, Column, Index
-from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 config = LettaConfig()
 

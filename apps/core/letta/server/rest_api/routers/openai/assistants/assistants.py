@@ -1,13 +1,14 @@
 from typing import List
 
 from fastapi import APIRouter, Body, HTTPException, Path, Query
+
 from letta.constants import DEFAULT_PRESET
 from letta.schemas.openai.openai import AssistantFile, OpenAIAssistant
 from letta.server.rest_api.routers.openai.assistants.schemas import (
-  CreateAssistantFileRequest,
-  CreateAssistantRequest,
-  DeleteAssistantFileResponse,
-  DeleteAssistantResponse,
+    CreateAssistantFileRequest,
+    CreateAssistantRequest,
+    DeleteAssistantFileResponse,
+    DeleteAssistantResponse,
 )
 from letta.utils import get_utc_time
 

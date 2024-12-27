@@ -1,6 +1,7 @@
 from typing import TYPE_CHECKING, List
 
 from fastapi import APIRouter, Depends
+
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.llm_config import LLMConfig
 from letta.server.rest_api.utils import get_letta_server

@@ -8,6 +8,7 @@ def adjust_menu_prices(percentage: float) -> str:
         str: A formatted string summarizing the price adjustments.
     """
     import cowsay
+
     from core.menu import Menu, MenuItem  # Import a class from the codebase
     from core.utils import format_currency  # Use a utility function to test imports
 

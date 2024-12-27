@@ -1,14 +1,12 @@
 from typing import List, Optional
 
+from pydantic import BaseModel, Field, model_validator
+
 from letta.constants import LLM_MAX_TOKENS, MIN_CONTEXT_WINDOW
-from letta.llm_api.azure_openai import (
-  get_azure_chat_completions_endpoint,
-  get_azure_embeddings_endpoint,
-)
+from letta.llm_api.azure_openai import get_azure_chat_completions_endpoint, get_azure_embeddings_endpoint
 from letta.llm_api.azure_openai_constants import AZURE_MODEL_TO_CONTEXT_LENGTH
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.llm_config import LLMConfig
-from pydantic import BaseModel, Field, model_validator
 
 
 class Provider(BaseModel):
@@ -567,9 +565,7 @@ class AzureProvider(Provider):
         return values
 
     def list_llm_models(self) -> List[LLMConfig]:
-        from letta.llm_api.azure_openai import (
-          azure_openai_get_chat_completion_model_list,
-        )
+        from letta.llm_api.azure_openai import azure_openai_get_chat_completion_model_list
 
         model_options = azure_openai_get_chat_completion_model_list(self.base_url, api_key=self.api_key, api_version=self.api_version)
         configs = []
