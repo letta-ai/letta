@@ -27,17 +27,17 @@ from letta.offline_memory_agent import OfflineMemoryAgent
 from letta.orm import Base
 from letta.orm.errors import NoResultFound
 from letta.providers import (
-    AnthropicProvider,
-    AzureProvider,
-    GoogleAIProvider,
-    GroqProvider,
-    LettaProvider,
-    OllamaProvider,
-    OpenAIProvider,
-    Provider,
-    TogetherProvider,
-    VLLMChatCompletionsProvider,
-    VLLMCompletionsProvider,
+  AnthropicProvider,
+  AzureProvider,
+  GoogleAIProvider,
+  GroqProvider,
+  LettaProvider,
+  OllamaProvider,
+  OpenAIProvider,
+  Provider,
+  TogetherProvider,
+  VLLMChatCompletionsProvider,
+  VLLMCompletionsProvider,
 )
 from letta.schemas.agent import AgentState, AgentType, CreateAgent
 from letta.schemas.block import BlockUpdate
@@ -49,10 +49,10 @@ from letta.schemas.job import Job, JobUpdate
 from letta.schemas.letta_message import LettaMessage, ToolReturnMessage
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.memory import (
-    ArchivalMemorySummary,
-    ContextWindowOverview,
-    Memory,
-    RecallMemorySummary,
+  ArchivalMemorySummary,
+  ContextWindowOverview,
+  Memory,
+  RecallMemorySummary,
 )
 from letta.schemas.message import Message, MessageCreate, MessageRole, MessageUpdate
 from letta.schemas.organization import Organization

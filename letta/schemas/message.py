@@ -5,18 +5,18 @@ from datetime import datetime, timezone
 from typing import List, Literal, Optional
 
 from letta.constants import (
-    DEFAULT_MESSAGE_TOOL,
-    DEFAULT_MESSAGE_TOOL_KWARG,
-    TOOL_CALL_ID_MAX_LEN,
+  DEFAULT_MESSAGE_TOOL,
+  DEFAULT_MESSAGE_TOOL_KWARG,
+  TOOL_CALL_ID_MAX_LEN,
 )
 from letta.local_llm.constants import INNER_THOUGHTS_KWARG
 from letta.schemas.enums import MessageRole
 from letta.schemas.letta_base import OrmMetadataBase
 from letta.schemas.letta_message import (
-    AssistantMessage,
-    LettaMessage,
-    ReasoningMessage,
-    SystemMessage,
+  AssistantMessage,
+  LettaMessage,
+  ReasoningMessage,
+  SystemMessage,
 )
 from letta.schemas.letta_message import ToolCall as LettaToolCall
 from letta.schemas.letta_message import ToolCallMessage, ToolReturnMessage, UserMessage

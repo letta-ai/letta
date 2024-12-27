@@ -8,8 +8,8 @@ from letta.errors import LocalLLMConnectionError, LocalLLMError
 from letta.local_llm.constants import DEFAULT_WRAPPER
 from letta.local_llm.function_parser import patch_function
 from letta.local_llm.grammars.gbnf_grammar_generator import (
-    create_dynamic_model_from_function,
-    generate_gbnf_grammar_and_documentation,
+  create_dynamic_model_from_function,
+  generate_gbnf_grammar_and_documentation,
 )
 from letta.local_llm.koboldcpp.api import get_koboldcpp_completion
 from letta.local_llm.llamacpp.api import get_llamacpp_completion
@@ -20,15 +20,15 @@ from letta.local_llm.utils import count_tokens, get_available_wrappers
 from letta.local_llm.vllm.api import get_vllm_completion
 from letta.local_llm.webui.api import get_webui_completion
 from letta.local_llm.webui.legacy_api import (
-    get_webui_completion as get_webui_completion_legacy,
+  get_webui_completion as get_webui_completion_legacy,
 )
 from letta.prompts.gpt_summarize import SYSTEM as SUMMARIZE_SYSTEM_MESSAGE
 from letta.schemas.openai.chat_completion_response import (
-    ChatCompletionResponse,
-    Choice,
-    Message,
-    ToolCall,
-    UsageStatistics,
+  ChatCompletionResponse,
+  Choice,
+  Message,
+  ToolCall,
+  UsageStatistics,
 )
 from letta.utils import get_tool_call_id, get_utc_time, json_dumps
 

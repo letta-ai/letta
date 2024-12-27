@@ -14,12 +14,12 @@ from letta.schemas.llm_config import LLMConfig
 from letta.schemas.memory import ChatMemory
 from letta.schemas.organization import Organization
 from letta.schemas.sandbox_config import (
-    E2BSandboxConfig,
-    LocalSandboxConfig,
-    SandboxConfigCreate,
-    SandboxConfigUpdate,
-    SandboxEnvironmentVariableCreate,
-    SandboxType,
+  E2BSandboxConfig,
+  LocalSandboxConfig,
+  SandboxConfigCreate,
+  SandboxConfigUpdate,
+  SandboxEnvironmentVariableCreate,
+  SandboxType,
 )
 from letta.schemas.tool import Tool, ToolCreate
 from letta.schemas.user import User
@@ -212,7 +212,7 @@ def clear_core_memory_tool(test_user):
 @pytest.fixture
 def external_codebase_tool(test_user):
     from tests.test_tool_sandbox.restaurant_management_system.adjust_menu_prices import (
-        adjust_menu_prices,
+      adjust_menu_prices,
     )
 
     tool = create_tool_from_func(adjust_menu_prices)

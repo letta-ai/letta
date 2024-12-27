@@ -2,10 +2,10 @@ from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 from composio.client.collections import (
-    ActionModel,
-    ActionParametersModel,
-    ActionResponseModel,
-    AppModel,
+  ActionModel,
+  ActionParametersModel,
+  ActionResponseModel,
+  AppModel,
 )
 from fastapi.testclient import TestClient
 from letta.schemas.tool import ToolCreate, ToolUpdate

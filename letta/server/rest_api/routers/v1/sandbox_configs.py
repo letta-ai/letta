@@ -5,9 +5,9 @@ from letta.schemas.sandbox_config import SandboxConfig as PydanticSandboxConfig
 from letta.schemas.sandbox_config import SandboxConfigCreate, SandboxConfigUpdate
 from letta.schemas.sandbox_config import SandboxEnvironmentVariable as PydanticEnvVar
 from letta.schemas.sandbox_config import (
-    SandboxEnvironmentVariableCreate,
-    SandboxEnvironmentVariableUpdate,
-    SandboxType,
+  SandboxEnvironmentVariableCreate,
+  SandboxEnvironmentVariableUpdate,
+  SandboxType,
 )
 from letta.server.rest_api.utils import get_letta_server, get_user_id
 from letta.server.server import SyncServer

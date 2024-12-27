@@ -2,10 +2,10 @@ import pytest
 from letta.helpers import ToolRulesSolver
 from letta.helpers.tool_rule_solver import ToolRuleValidationError
 from letta.schemas.tool_rule import (
-    ChildToolRule,
-    ConditionalToolRule,
-    InitToolRule,
-    TerminalToolRule,
+  ChildToolRule,
+  ConditionalToolRule,
+  InitToolRule,
+  TerminalToolRule,
 )
 
 # Constants for tool names used in the tests
