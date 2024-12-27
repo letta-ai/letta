@@ -29,6 +29,21 @@ class MessageManager:
                 return None
 
     @enforce_types
+    def get_messages_by_ids(self, message_ids: List[str], actor: PydanticUser) -> List[PydanticMessage]:
+        """Fetch messages by ID and return them in the requested order."""
+        with self.session_maker() as session:
+            results = MessageModel.list(db_session=session, id=message_ids, organization_id=actor.organization_id, limit=len(message_ids))
+
+            if len(results) != len(message_ids):
+                raise NoResultFound(
+                    f"Expected {len(message_ids)} messages, but found {len(results)}. Missing ids={set(message_ids) - set([r.id for r in results])}"
+                )
+
+            # Sort results directly based on message_ids
+            result_dict = {msg.id: msg.to_pydantic() for msg in results}
+            return [result_dict[msg_id] for msg_id in message_ids]
+
+    @enforce_types
     def create_message(self, pydantic_msg: PydanticMessage, actor: PydanticUser) -> PydanticMessage:
         """Create a new message."""
         with self.session_maker() as session:
@@ -147,6 +162,7 @@ class MessageManager:
             limit=limit,
             filters=message_filters,
             query_text=query_text,
+            ascending=ascending,
         )
 
     @enforce_types
