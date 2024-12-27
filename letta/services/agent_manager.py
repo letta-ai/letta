@@ -294,7 +294,7 @@ class AgentManager:
         with self.session_maker() as session:
             # Retrieve the agent
             agent = AgentModel.read(db_session=session, identifier=agent_id, actor=actor)
-            agent_state = agent.to_pydantic()
+            agent.to_pydantic()
             agent.hard_delete(session)
 
     # ======================================================================================================================
