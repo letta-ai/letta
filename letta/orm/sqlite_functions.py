@@ -3,9 +3,10 @@ import sqlite3
 from typing import Optional, Union
 
 import numpy as np
-from letta.constants import MAX_EMBEDDING_DIM
 from sqlalchemy import event
 from sqlalchemy.engine import Engine
+
+from letta.constants import MAX_EMBEDDING_DIM
 
 
 def adapt_array(arr):

@@ -7,17 +7,17 @@ from abc import ABC, abstractmethod
 from typing import List, Optional, Tuple, Union
 
 from letta.constants import (
-  BASE_TOOLS,
-  CLI_WARNING_PREFIX,
-  ERROR_MESSAGE_PREFIX,
-  FIRST_MESSAGE_ATTEMPTS,
-  FUNC_FAILED_HEARTBEAT_MESSAGE,
-  LLM_MAX_TOKENS,
-  MESSAGE_SUMMARY_TRUNC_KEEP_N_LAST,
-  MESSAGE_SUMMARY_TRUNC_TOKEN_FRAC,
-  MESSAGE_SUMMARY_WARNING_FRAC,
-  O1_BASE_TOOLS,
-  REQ_HEARTBEAT_MESSAGE,
+    BASE_TOOLS,
+    CLI_WARNING_PREFIX,
+    ERROR_MESSAGE_PREFIX,
+    FIRST_MESSAGE_ATTEMPTS,
+    FUNC_FAILED_HEARTBEAT_MESSAGE,
+    LLM_MAX_TOKENS,
+    MESSAGE_SUMMARY_TRUNC_KEEP_N_LAST,
+    MESSAGE_SUMMARY_TRUNC_TOKEN_FRAC,
+    MESSAGE_SUMMARY_WARNING_FRAC,
+    O1_BASE_TOOLS,
+    REQ_HEARTBEAT_MESSAGE,
 )
 from letta.errors import ContextWindowExceededError
 from letta.helpers import ToolRulesSolver
@@ -33,44 +33,31 @@ from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import MessageRole
 from letta.schemas.memory import ContextWindowOverview, Memory
 from letta.schemas.message import Message
-from letta.schemas.openai.chat_completion_request import (
-  Tool as ChatCompletionRequestTool,
-)
+from letta.schemas.openai.chat_completion_request import Tool as ChatCompletionRequestTool
 from letta.schemas.openai.chat_completion_response import ChatCompletionResponse
-from letta.schemas.openai.chat_completion_response import (
-  Message as ChatCompletionMessage,
-)
+from letta.schemas.openai.chat_completion_response import Message as ChatCompletionMessage
 from letta.schemas.openai.chat_completion_response import UsageStatistics
 from letta.schemas.tool import Tool
 from letta.schemas.tool_rule import TerminalToolRule
 from letta.schemas.usage import LettaUsageStatistics
 from letta.services.agent_manager import AgentManager
 from letta.services.block_manager import BlockManager
-from letta.services.helpers.agent_manager_helper import (
-  check_supports_structured_output,
-  compile_memory_metadata_block,
-)
+from letta.services.helpers.agent_manager_helper import check_supports_structured_output, compile_memory_metadata_block
 from letta.services.message_manager import MessageManager
 from letta.services.passage_manager import PassageManager
 from letta.services.tool_execution_sandbox import ToolExecutionSandbox
 from letta.streaming_interface import StreamingRefreshCLIInterface
-from letta.system import (
-  get_heartbeat,
-  get_token_limit_warning,
-  package_function_response,
-  package_summarize_message,
-  package_user_message,
-)
+from letta.system import get_heartbeat, get_token_limit_warning, package_function_response, package_summarize_message, package_user_message
 from letta.utils import (
-  count_tokens,
-  get_friendly_error_msg,
-  get_tool_call_id,
-  get_utc_time,
-  json_dumps,
-  json_loads,
-  parse_json,
-  printd,
-  validate_function_response,
+    count_tokens,
+    get_friendly_error_msg,
+    get_tool_call_id,
+    get_utc_time,
+    json_dumps,
+    json_loads,
+    parse_json,
+    printd,
+    validate_function_response,
 )
 
 

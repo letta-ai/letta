@@ -3,11 +3,9 @@ from datetime import datetime
 from typing import Optional
 
 from IPython.display import HTML, display
-from letta.local_llm.constants import (
-  ASSISTANT_MESSAGE_CLI_SYMBOL,
-  INNER_THOUGHTS_CLI_SYMBOL,
-)
 from sqlalchemy.testing.plugin.plugin_base import warnings
+
+from letta.local_llm.constants import ASSISTANT_MESSAGE_CLI_SYMBOL, INNER_THOUGHTS_CLI_SYMBOL
 
 
 def pprint(messages):

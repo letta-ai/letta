@@ -7,6 +7,8 @@ from typing import List, Union
 
 import pytest
 from dotenv import load_dotenv
+from sqlalchemy import delete
+
 from letta import create_client
 from letta.client.client import LocalClient, RESTClient
 from letta.constants import BASE_MEMORY_TOOLS, BASE_TOOLS, DEFAULT_PRESET
@@ -15,13 +17,13 @@ from letta.schemas.agent import AgentState
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import MessageRole, MessageStreamStatus
 from letta.schemas.letta_message import (
-  AssistantMessage,
-  LettaMessage,
-  ReasoningMessage,
-  SystemMessage,
-  ToolCallMessage,
-  ToolReturnMessage,
-  UserMessage,
+    AssistantMessage,
+    LettaMessage,
+    ReasoningMessage,
+    SystemMessage,
+    ToolCallMessage,
+    ToolReturnMessage,
+    UserMessage,
 )
 from letta.schemas.letta_response import LettaResponse, LettaStreamingResponse
 from letta.schemas.llm_config import LLMConfig
@@ -32,7 +34,6 @@ from letta.services.organization_manager import OrganizationManager
 from letta.services.user_manager import UserManager
 from letta.settings import model_settings
 from letta.utils import get_utc_time
-from sqlalchemy import delete
 from tests.helpers.client_helper import upload_file_using_client
 
 # from tests.utils import create_config

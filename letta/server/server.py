@@ -7,12 +7,13 @@ from abc import abstractmethod
 from datetime import datetime
 from typing import Callable, List, Optional, Tuple, Union
 
-import letta.constants as constants
-import letta.server.utils as server_utils
-import letta.system as system
 from composio.client import Composio
 from composio.client.collections import ActionModel, AppModel
 from fastapi import HTTPException
+
+import letta.constants as constants
+import letta.server.utils as server_utils
+import letta.system as system
 from letta.agent import Agent, save_agent
 from letta.chat_only_agent import ChatOnlyAgent
 from letta.credentials import LettaCredentials
@@ -27,17 +28,17 @@ from letta.offline_memory_agent import OfflineMemoryAgent
 from letta.orm import Base
 from letta.orm.errors import NoResultFound
 from letta.providers import (
-  AnthropicProvider,
-  AzureProvider,
-  GoogleAIProvider,
-  GroqProvider,
-  LettaProvider,
-  OllamaProvider,
-  OpenAIProvider,
-  Provider,
-  TogetherProvider,
-  VLLMChatCompletionsProvider,
-  VLLMCompletionsProvider,
+    AnthropicProvider,
+    AzureProvider,
+    GoogleAIProvider,
+    GroqProvider,
+    LettaProvider,
+    OllamaProvider,
+    OpenAIProvider,
+    Provider,
+    TogetherProvider,
+    VLLMChatCompletionsProvider,
+    VLLMCompletionsProvider,
 )
 from letta.schemas.agent import AgentState, AgentType, CreateAgent
 from letta.schemas.block import BlockUpdate
@@ -48,12 +49,7 @@ from letta.schemas.enums import JobStatus
 from letta.schemas.job import Job, JobUpdate
 from letta.schemas.letta_message import LettaMessage, ToolReturnMessage
 from letta.schemas.llm_config import LLMConfig
-from letta.schemas.memory import (
-  ArchivalMemorySummary,
-  ContextWindowOverview,
-  Memory,
-  RecallMemorySummary,
-)
+from letta.schemas.memory import ArchivalMemorySummary, ContextWindowOverview, Memory, RecallMemorySummary
 from letta.schemas.message import Message, MessageCreate, MessageRole, MessageUpdate
 from letta.schemas.organization import Organization
 from letta.schemas.passage import Passage
@@ -138,15 +134,16 @@ class Server(object):
 
 from contextlib import contextmanager
 
-from letta.config import LettaConfig
-
-# NOTE: hack to see if single session management works
-from letta.settings import model_settings, settings, tool_settings
 from rich.console import Console
 from rich.panel import Panel
 from rich.text import Text
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+
+from letta.config import LettaConfig
+
+# NOTE: hack to see if single session management works
+from letta.settings import model_settings, settings, tool_settings
 
 config = LettaConfig.load()
 

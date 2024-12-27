@@ -29,10 +29,11 @@ from typing import Optional
 
 import openai
 from icml_experiments.utils import get_experiment_config, load_gzipped_file
+from tqdm import tqdm
+
 from letta import utils
 from letta.cli.cli_config import delete
 from letta.config import LettaConfig
-from tqdm import tqdm
 
 # TODO: update personas
 NESTED_PERSONA = "You are Letta DOC-QA bot. Your job is to answer questions about documents that are stored in your archival memory. The answer to the users question will ALWAYS be in your archival memory, so remember to keep searching if you can't find the answer. DO NOT STOP SEARCHING UNTIL YOU VERIFY THAT THE VALUE IS NOT A KEY. Do not stop making nested lookups until this condition is met."  # TODO decide on a good persona/human

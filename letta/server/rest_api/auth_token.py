@@ -2,6 +2,7 @@ import uuid
 
 from fastapi import Depends, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+
 from letta.server.server import SyncServer
 
 security = HTTPBearer()

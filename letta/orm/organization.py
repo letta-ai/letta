@@ -1,8 +1,9 @@
 from typing import TYPE_CHECKING, List, Union
 
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
 from letta.orm.sqlalchemy_base import SqlalchemyBase
 from letta.schemas.organization import Organization as PydanticOrganization
-from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 if TYPE_CHECKING:
 

@@ -1,6 +1,7 @@
 from typing import TYPE_CHECKING, List, Optional
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Query
+
 from letta.schemas.organization import Organization, OrganizationCreate
 from letta.server.rest_api.utils import get_letta_server
 

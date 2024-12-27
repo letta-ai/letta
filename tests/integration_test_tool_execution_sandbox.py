@@ -5,6 +5,8 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
+from sqlalchemy import delete
+
 from letta import create_client
 from letta.functions.function_sets.base import core_memory_append, core_memory_replace
 from letta.orm import SandboxConfig, SandboxEnvironmentVariable
@@ -14,12 +16,12 @@ from letta.schemas.llm_config import LLMConfig
 from letta.schemas.memory import ChatMemory
 from letta.schemas.organization import Organization
 from letta.schemas.sandbox_config import (
-  E2BSandboxConfig,
-  LocalSandboxConfig,
-  SandboxConfigCreate,
-  SandboxConfigUpdate,
-  SandboxEnvironmentVariableCreate,
-  SandboxType,
+    E2BSandboxConfig,
+    LocalSandboxConfig,
+    SandboxConfigCreate,
+    SandboxConfigUpdate,
+    SandboxEnvironmentVariableCreate,
+    SandboxType,
 )
 from letta.schemas.tool import Tool, ToolCreate
 from letta.schemas.user import User
@@ -29,7 +31,6 @@ from letta.services.tool_execution_sandbox import ToolExecutionSandbox
 from letta.services.tool_manager import ToolManager
 from letta.services.user_manager import UserManager
 from letta.settings import tool_settings
-from sqlalchemy import delete
 from tests.helpers.utils import create_tool_from_func
 
 # Constants
@@ -211,9 +212,7 @@ def clear_core_memory_tool(test_user):
 
 @pytest.fixture
 def external_codebase_tool(test_user):
-    from tests.test_tool_sandbox.restaurant_management_system.adjust_menu_prices import (
-      adjust_menu_prices,
-    )
+    from tests.test_tool_sandbox.restaurant_management_system.adjust_menu_prices import adjust_menu_prices
 
     tool = create_tool_from_func(adjust_menu_prices)
     tool = ToolManager().create_or_update_tool(tool, test_user)

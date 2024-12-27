@@ -1,6 +1,8 @@
 from enum import Enum
 from typing import Dict, List, Optional
 
+from pydantic import BaseModel, Field, field_validator
+
 from letta.constants import DEFAULT_EMBEDDING_CHUNK_SIZE
 from letta.schemas.block import CreateBlock
 from letta.schemas.embedding_config import EmbeddingConfig
@@ -13,7 +15,6 @@ from letta.schemas.source import Source
 from letta.schemas.tool import Tool
 from letta.schemas.tool_rule import ToolRule
 from letta.utils import create_random_username
-from pydantic import BaseModel, Field, field_validator
 
 
 class AgentType(str, Enum):

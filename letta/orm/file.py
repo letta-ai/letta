@@ -1,10 +1,11 @@
 from typing import TYPE_CHECKING, List, Optional
 
+from sqlalchemy import Integer, String
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
 from letta.orm.mixins import OrganizationMixin, SourceMixin
 from letta.orm.sqlalchemy_base import SqlalchemyBase
 from letta.schemas.file import FileMetadata as PydanticFileMetadata
-from sqlalchemy import Integer, String
-from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 if TYPE_CHECKING:
     from letta.orm.organization import Organization
