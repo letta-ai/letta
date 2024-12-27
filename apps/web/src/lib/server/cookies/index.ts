@@ -15,7 +15,7 @@ const cookieConfiguration: Record<
   Partial<RequestCookieInterface>
 > = {
   [CookieNames.CSRF_PROTECTION]: {
-    httpOnly: true,
+    httpOnly: false,
     path: '/',
     // safari does not allow secure cookies for localhost development
     secure: process.env.NODE_ENV === 'production',
@@ -39,7 +39,7 @@ const cookieConfiguration: Record<
 export async function setCookie<CookieName extends CookieNames>(
   name: CookieName,
   payload: CookieTypePayload[CookieName],
-  extraConfig?: Partial<RequestCookieInterface>
+  extraConfig?: Partial<RequestCookieInterface>,
 ) {
   (await cookies()).set(name, JSON.stringify(payload), {
     ...cookieConfiguration[name],
@@ -48,7 +48,7 @@ export async function setCookie<CookieName extends CookieNames>(
 }
 
 export async function getCookie<CookieName extends CookieNames>(
-  name: CookieName
+  name: CookieName,
 ): Promise<CookieTypePayload[CookieName] | null> {
   const cookie = (await cookies()).get(name);
 
@@ -60,7 +60,7 @@ export async function getCookie<CookieName extends CookieNames>(
 }
 
 export async function deleteCookie<CookieName extends CookieNames>(
-  name: CookieName
+  name: CookieName,
 ) {
   (await cookies()).delete(name);
 }

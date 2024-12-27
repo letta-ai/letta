@@ -118,6 +118,8 @@ export function LoginComponent() {
     });
   }, []);
 
+  const searchParams = useSearchParams();
+
   return (
     <VStack align="center" position="relative" fullWidth>
       <Suspense>
@@ -138,7 +140,7 @@ export function LoginComponent() {
           <MarketingButton
             onClick={spinOnClick}
             ref={marketingButtonRef}
-            href="/auth/google/init"
+            href={`/auth/google/init?${searchParams.toString()}`}
             variant="secondary"
             preIcon={<GoogleLogoMarkDynamic />}
             label={t('google')}
@@ -146,7 +148,7 @@ export function LoginComponent() {
           <MarketingButton
             onClick={spinOnClick}
             ref={marketingButtonRef}
-            href="/auth/github/init"
+            href={`/auth/github/init?${searchParams.toString()}`}
             variant="secondary"
             preIcon={<GithubLogoMarkDynamic />}
             label={t('github')}

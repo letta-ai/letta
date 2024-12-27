@@ -6,6 +6,8 @@ import {
   extractGoogleIdTokenData,
   generateRedirectSignatureForLoggedInUser,
   getGithubUserDetails,
+  getRedirectUrlFromState,
+  isValidCSRFState,
   signInUserFromProviderLogin,
 } from '$web/server/auth';
 import { LoginErrorsEnum } from '$web/errors';
@@ -19,7 +21,7 @@ interface GoogleAccessTokenResponse {
 }
 
 async function getAccessTokenFromGoogle(
-  code: string
+  code: string,
 ): Promise<ProviderUserPayload> {
   const response = await axios.post<GoogleAccessTokenResponse>(
     'https://oauth2.googleapis.com/token',
@@ -29,14 +31,14 @@ async function getAccessTokenFromGoogle(
       code,
       grant_type: 'authorization_code',
       redirect_uri: process.env.GOOGLE_REDIRECT_URI,
-    }
+    },
   );
 
   return extractGoogleIdTokenData(response.data.id_token);
 }
 
 async function getAccessTokenFromGithub(
-  code: string
+  code: string,
 ): Promise<ProviderUserPayload> {
   const response = await axios.post<string>(
     'https://github.com/login/oauth/access_token',
@@ -45,7 +47,7 @@ async function getAccessTokenFromGithub(
       client_secret: process.env.AUTH_GITHUB_CLIENT_SECRET,
       code,
       redirect_uri: process.env.AUTH_GITHUB_REDIRECT_URI,
-    }
+    },
   );
 
   const accessToken = new URLSearchParams(response.data).get('access_token');
@@ -59,7 +61,7 @@ async function getAccessTokenFromGithub(
 
 async function getUserDetailsFromProvider(
   provider: SupportedProviders,
-  code: string
+  code: string,
 ): Promise<ProviderUserPayload> {
   switch (provider) {
     case 'google':
@@ -73,26 +75,31 @@ async function getUserDetailsFromProvider(
 
 export async function GET(
   req: NextRequest,
-  context: AuthProviderContextSchema
+  context: AuthProviderContextSchema,
 ) {
   try {
     const code = req.nextUrl.searchParams.get('code');
+    const state = req.nextUrl.searchParams.get('state');
+
+    if (!state || !isValidCSRFState(state)) {
+      return new Response('Invalid CSRF state', { status: 400 });
+    }
 
     if (!code) {
       return new Response('No code provided', { status: 400 });
     }
 
     const userPayload = await getUserDetailsFromProvider(
-      (
-        await context.params
-      ).provider,
-      code
+      (await context.params).provider,
+      code,
     );
 
     const { newUserDetails } = await signInUserFromProviderLogin(userPayload);
 
+    const redirectUrl = getRedirectUrlFromState(state);
     return generateRedirectSignatureForLoggedInUser({
       newUserDetails,
+      redirectUrl,
     });
   } catch (e) {
     console.error(e);

@@ -1,7 +1,10 @@
 import type { SupportedProviders } from '$web/types';
 import { environment } from '@letta-web/environmental-variables';
 import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+
 import type { AuthProviderContextSchema } from '../types';
+import { generateOAuthStateUrl } from '$web/server/auth/lib/generateOAuthStateUrl/generateOAuthStateUrl';
 
 function generateOAuthStep1URL(provider: SupportedProviders) {
   switch (provider) {
@@ -14,8 +17,14 @@ function generateOAuthStep1URL(provider: SupportedProviders) {
   }
 }
 
-export async function GET(_req: Request, context: AuthProviderContextSchema) {
-  const urlToRedirect = generateOAuthStep1URL((await context.params).provider);
+export async function GET(
+  req: NextRequest,
+  context: AuthProviderContextSchema,
+) {
+  const authUrl = generateOAuthStep1URL((await context.params).provider);
 
-  return NextResponse.redirect(urlToRedirect, { status: 302 });
+  const returnUrl = req.nextUrl.searchParams.get('redirect');
+  const state = await generateOAuthStateUrl(returnUrl || '');
+
+  return NextResponse.redirect(`${authUrl}&state=${state}`, { status: 302 });
 }
