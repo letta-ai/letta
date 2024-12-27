@@ -1,3 +1,4 @@
+'use client';
 import { HStack, VStack } from '@letta-web/component-library';
 import { LoginComponent } from './LoginComponent';
 

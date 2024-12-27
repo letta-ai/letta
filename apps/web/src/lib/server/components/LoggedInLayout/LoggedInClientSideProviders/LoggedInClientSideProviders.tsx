@@ -1,4 +1,5 @@
 'use client';
+
 interface LoggedInClientSideProvidersProps {
   children: React.ReactNode;
 }
