@@ -3,9 +3,9 @@ from typing import TYPE_CHECKING, List, Optional
 
 from letta.orm.block import Block
 from letta.orm.custom_columns import (
-    EmbeddingConfigColumn,
-    LLMConfigColumn,
-    ToolRulesColumn,
+  EmbeddingConfigColumn,
+  LLMConfigColumn,
+  ToolRulesColumn,
 )
 from letta.orm.message import Message
 from letta.orm.mixins import OrganizationMixin

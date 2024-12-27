@@ -15,13 +15,13 @@ from letta.schemas.agent import AgentState
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import MessageRole, MessageStreamStatus
 from letta.schemas.letta_message import (
-    AssistantMessage,
-    LettaMessage,
-    ReasoningMessage,
-    SystemMessage,
-    ToolCallMessage,
-    ToolReturnMessage,
-    UserMessage,
+  AssistantMessage,
+  LettaMessage,
+  ReasoningMessage,
+  SystemMessage,
+  ToolCallMessage,
+  ToolReturnMessage,
+  UserMessage,
 )
 from letta.schemas.letta_response import LettaResponse, LettaStreamingResponse
 from letta.schemas.llm_config import LLMConfig

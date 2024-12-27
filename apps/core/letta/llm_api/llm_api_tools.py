@@ -8,36 +8,36 @@ from letta.errors import LettaConfigurationError, RateLimitExceededError
 from letta.llm_api.anthropic import anthropic_chat_completions_request
 from letta.llm_api.azure_openai import azure_openai_chat_completions_request
 from letta.llm_api.google_ai import (
-    convert_tools_to_google_ai_format,
-    google_ai_chat_completions_request,
+  convert_tools_to_google_ai_format,
+  google_ai_chat_completions_request,
 )
 from letta.llm_api.helpers import (
-    add_inner_thoughts_to_functions,
-    unpack_all_inner_thoughts_from_kwargs,
+  add_inner_thoughts_to_functions,
+  unpack_all_inner_thoughts_from_kwargs,
 )
 from letta.llm_api.openai import (
-    build_openai_chat_completions_request,
-    openai_chat_completions_process_stream,
-    openai_chat_completions_request,
+  build_openai_chat_completions_request,
+  openai_chat_completions_process_stream,
+  openai_chat_completions_request,
 )
 from letta.local_llm.chat_completion_proxy import get_chat_completion
 from letta.local_llm.constants import (
-    INNER_THOUGHTS_KWARG,
-    INNER_THOUGHTS_KWARG_DESCRIPTION,
+  INNER_THOUGHTS_KWARG,
+  INNER_THOUGHTS_KWARG_DESCRIPTION,
 )
 from letta.local_llm.utils import num_tokens_from_functions, num_tokens_from_messages
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message
 from letta.schemas.openai.chat_completion_request import (
-    ChatCompletionRequest,
-    Tool,
-    cast_message_to_subtype,
+  ChatCompletionRequest,
+  Tool,
+  cast_message_to_subtype,
 )
 from letta.schemas.openai.chat_completion_response import ChatCompletionResponse
 from letta.settings import ModelSettings
 from letta.streaming_interface import (
-    AgentChunkStreamingInterface,
-    AgentRefreshStreamingInterface,
+  AgentChunkStreamingInterface,
+  AgentRefreshStreamingInterface,
 )
 
 LLM_API_PROVIDER_OPTIONS = ["openai", "azure", "anthropic", "google_ai", "cohere", "local", "groq"]

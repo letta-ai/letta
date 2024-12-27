@@ -5,13 +5,13 @@ from typing import List, Optional
 
 from letta.interface import CLIInterface
 from letta.local_llm.constants import (
-    ASSISTANT_MESSAGE_CLI_SYMBOL,
-    INNER_THOUGHTS_CLI_SYMBOL,
+  ASSISTANT_MESSAGE_CLI_SYMBOL,
+  INNER_THOUGHTS_CLI_SYMBOL,
 )
 from letta.schemas.message import Message
 from letta.schemas.openai.chat_completion_response import (
-    ChatCompletionChunkResponse,
-    ChatCompletionResponse,
+  ChatCompletionChunkResponse,
+  ChatCompletionResponse,
 )
 
 # from colorama import Fore, Style, init

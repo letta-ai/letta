@@ -1,7 +1,7 @@
 from letta.errors import LLMJSONParsingError
 from letta.local_llm.json_parser import clean_json
 from letta.local_llm.llm_chat_completion_wrappers.wrapper_base import (
-    LLMChatCompletionWrapper,
+  LLMChatCompletionWrapper,
 )
 from letta.utils import json_dumps, json_loads
 
@@ -75,8 +75,8 @@ class LLaMA3InnerMonologueWrapper(LLMChatCompletionWrapper):
         func_str += "\n  params:"
         if add_inner_thoughts:
             from letta.local_llm.constants import (
-                INNER_THOUGHTS_KWARG,
-                INNER_THOUGHTS_KWARG_DESCRIPTION,
+              INNER_THOUGHTS_KWARG,
+              INNER_THOUGHTS_KWARG_DESCRIPTION,
             )
 
             func_str += f"\n    {INNER_THOUGHTS_KWARG}: {INNER_THOUGHTS_KWARG_DESCRIPTION}"

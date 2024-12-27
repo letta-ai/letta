@@ -4,14 +4,14 @@ from datetime import datetime
 from typing import List, Optional, Union
 
 from fastapi import (
-    APIRouter,
-    BackgroundTasks,
-    Body,
-    Depends,
-    Header,
-    HTTPException,
-    Query,
-    status,
+  APIRouter,
+  BackgroundTasks,
+  Body,
+  Depends,
+  Header,
+  HTTPException,
+  Query,
+  status,
 )
 from fastapi.responses import JSONResponse, StreamingResponse
 from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG
@@ -19,25 +19,25 @@ from letta.log import get_logger
 from letta.orm.errors import NoResultFound
 from letta.schemas.agent import AgentState, CreateAgent, UpdateAgent
 from letta.schemas.block import (  # , BlockLabelUpdate, BlockLimitUpdate
-    Block,
-    BlockUpdate,
-    CreateBlock,
+  Block,
+  BlockUpdate,
+  CreateBlock,
 )
 from letta.schemas.enums import MessageStreamStatus
 from letta.schemas.job import Job, JobStatus, JobUpdate
 from letta.schemas.letta_message import (
-    LegacyLettaMessage,
-    LettaMessage,
-    LettaMessageUnion,
+  LegacyLettaMessage,
+  LettaMessage,
+  LettaMessageUnion,
 )
 from letta.schemas.letta_request import LettaRequest, LettaStreamingRequest
 from letta.schemas.letta_response import LettaResponse
 from letta.schemas.memory import (
-    ArchivalMemorySummary,
-    ContextWindowOverview,
-    CreateArchivalMemory,
-    Memory,
-    RecallMemorySummary,
+  ArchivalMemorySummary,
+  ContextWindowOverview,
+  CreateArchivalMemory,
+  Memory,
+  RecallMemorySummary,
 )
 from letta.schemas.message import Message, MessageCreate, MessageUpdate
 from letta.schemas.passage import Passage

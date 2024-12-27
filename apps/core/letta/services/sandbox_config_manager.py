@@ -10,9 +10,9 @@ from letta.schemas.sandbox_config import SandboxConfig as PydanticSandboxConfig
 from letta.schemas.sandbox_config import SandboxConfigCreate, SandboxConfigUpdate
 from letta.schemas.sandbox_config import SandboxEnvironmentVariable as PydanticEnvVar
 from letta.schemas.sandbox_config import (
-    SandboxEnvironmentVariableCreate,
-    SandboxEnvironmentVariableUpdate,
-    SandboxType,
+  SandboxEnvironmentVariableCreate,
+  SandboxEnvironmentVariableUpdate,
+  SandboxType,
 )
 from letta.schemas.user import User as PydanticUser
 from letta.utils import enforce_types, printd

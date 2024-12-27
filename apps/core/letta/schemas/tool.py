@@ -3,8 +3,8 @@ from typing import Dict, List, Optional
 from letta.constants import FUNCTION_RETURN_CHAR_LIMIT
 from letta.functions.functions import derive_openai_json_schema
 from letta.functions.helpers import (
-    generate_composio_tool_wrapper,
-    generate_langchain_tool_wrapper,
+  generate_composio_tool_wrapper,
+  generate_langchain_tool_wrapper,
 )
 from letta.functions.schema_generator import generate_schema_from_args_schema_v2
 from letta.schemas.letta_base import LettaBase

@@ -4,9 +4,9 @@ from typing import Any, List, Optional
 import numpy as np
 import tiktoken
 from letta.constants import (
-    EMBEDDING_TO_TOKENIZER_DEFAULT,
-    EMBEDDING_TO_TOKENIZER_MAP,
-    MAX_EMBEDDING_DIM,
+  EMBEDDING_TO_TOKENIZER_DEFAULT,
+  EMBEDDING_TO_TOKENIZER_MAP,
+  MAX_EMBEDDING_DIM,
 )
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.utils import is_valid_url, printd

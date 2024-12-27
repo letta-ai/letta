@@ -25,13 +25,13 @@ from letta.schemas.tool_rule import ToolRule as PydanticToolRule
 from letta.schemas.user import User as PydanticUser
 from letta.services.block_manager import BlockManager
 from letta.services.helpers.agent_manager_helper import (
-    _process_relationship,
-    _process_tags,
-    check_supports_structured_output,
-    compile_system_message,
-    derive_system_message,
-    initialize_message_sequence,
-    package_initial_message_sequence,
+  _process_relationship,
+  _process_tags,
+  check_supports_structured_output,
+  compile_system_message,
+  derive_system_message,
+  initialize_message_sequence,
+  package_initial_message_sequence,
 )
 from letta.services.message_manager import MessageManager
 from letta.services.source_manager import SourceManager

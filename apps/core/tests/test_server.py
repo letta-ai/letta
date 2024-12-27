@@ -9,12 +9,12 @@ from letta.constants import BASE_MEMORY_TOOLS, BASE_TOOLS
 from letta.schemas.block import CreateBlock
 from letta.schemas.enums import MessageRole
 from letta.schemas.letta_message import (
-    LettaMessage,
-    ReasoningMessage,
-    SystemMessage,
-    ToolCallMessage,
-    ToolReturnMessage,
-    UserMessage,
+  LettaMessage,
+  ReasoningMessage,
+  SystemMessage,
+  ToolCallMessage,
+  ToolReturnMessage,
+  UserMessage,
 )
 from letta.schemas.user import User
 

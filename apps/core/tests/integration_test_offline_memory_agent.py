@@ -3,11 +3,11 @@ from letta import BasicBlockMemory
 from letta.client.client import Block, create_client
 from letta.constants import DEFAULT_HUMAN, DEFAULT_PERSONA
 from letta.offline_memory_agent import (
-    finish_rethinking_memory,
-    finish_rethinking_memory_convo,
-    rethink_memory,
-    rethink_memory_convo,
-    trigger_rethink_memory,
+  finish_rethinking_memory,
+  finish_rethinking_memory_convo,
+  rethink_memory,
+  rethink_memory_convo,
+  trigger_rethink_memory,
 )
 from letta.prompts import gpt_system
 from letta.schemas.agent import AgentType

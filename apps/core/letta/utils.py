@@ -23,13 +23,13 @@ import letta
 import pytz
 import tiktoken
 from letta.constants import (
-    CLI_WARNING_PREFIX,
-    CORE_MEMORY_HUMAN_CHAR_LIMIT,
-    CORE_MEMORY_PERSONA_CHAR_LIMIT,
-    ERROR_MESSAGE_PREFIX,
-    LETTA_DIR,
-    MAX_FILENAME_LENGTH,
-    TOOL_CALL_ID_MAX_LEN,
+  CLI_WARNING_PREFIX,
+  CORE_MEMORY_HUMAN_CHAR_LIMIT,
+  CORE_MEMORY_PERSONA_CHAR_LIMIT,
+  ERROR_MESSAGE_PREFIX,
+  LETTA_DIR,
+  MAX_FILENAME_LENGTH,
+  TOOL_CALL_ID_MAX_LEN,
 )
 from letta.schemas.openai.chat_completion_response import ChatCompletionResponse
 from pathvalidate import sanitize_filename as pathvalidate_sanitize_filename

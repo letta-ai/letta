@@ -1,14 +1,14 @@
 import os
 
 from letta.providers import (
-    AnthropicProvider,
-    AzureProvider,
-    GoogleAIProvider,
-    GroqProvider,
-    MistralProvider,
-    OllamaProvider,
-    OpenAIProvider,
-    TogetherProvider,
+  AnthropicProvider,
+  AzureProvider,
+  GoogleAIProvider,
+  GroqProvider,
+  MistralProvider,
+  OllamaProvider,
+  OpenAIProvider,
+  TogetherProvider,
 )
 from letta.settings import model_settings
 

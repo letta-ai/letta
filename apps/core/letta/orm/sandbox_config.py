@@ -4,7 +4,7 @@ from letta.orm.mixins import OrganizationMixin, SandboxConfigMixin
 from letta.orm.sqlalchemy_base import SqlalchemyBase
 from letta.schemas.sandbox_config import SandboxConfig as PydanticSandboxConfig
 from letta.schemas.sandbox_config import (
-    SandboxEnvironmentVariable as PydanticSandboxEnvironmentVariable,
+  SandboxEnvironmentVariable as PydanticSandboxEnvironmentVariable,
 )
 from letta.schemas.sandbox_config import SandboxType
 from sqlalchemy import JSON

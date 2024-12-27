@@ -6,10 +6,10 @@ from letta.schemas.enums import MessageRole
 from letta.schemas.letta_message import LettaMessage, ToolCall
 from letta.schemas.openai.chat_completion_request import ChatCompletionRequest
 from letta.schemas.openai.chat_completion_response import (
-    ChatCompletionResponse,
-    Choice,
-    Message,
-    UsageStatistics,
+  ChatCompletionResponse,
+  Choice,
+  Message,
+  UsageStatistics,
 )
 
 # TODO this belongs in a controller!

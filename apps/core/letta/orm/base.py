@@ -3,11 +3,11 @@ from typing import Optional
 
 from sqlalchemy import Boolean, DateTime, String, func, text
 from sqlalchemy.orm import (
-    DeclarativeBase,
-    Mapped,
-    declarative_mixin,
-    declared_attr,
-    mapped_column,
+  DeclarativeBase,
+  Mapped,
+  declarative_mixin,
+  declared_attr,
+  mapped_column,
 )
 
 

@@ -8,22 +8,22 @@ from letta.constants import BASE_MEMORY_TOOLS, BASE_TOOLS
 from letta.embeddings import embedding_model
 from letta.functions.functions import derive_openai_json_schema, parse_source_code
 from letta.orm import (
-    Agent,
-    AgentPassage,
-    Block,
-    BlocksAgents,
-    FileMetadata,
-    Job,
-    Message,
-    Organization,
-    SandboxConfig,
-    SandboxEnvironmentVariable,
-    Source,
-    SourcePassage,
-    SourcesAgents,
-    Tool,
-    ToolsAgents,
-    User,
+  Agent,
+  AgentPassage,
+  Block,
+  BlocksAgents,
+  FileMetadata,
+  Job,
+  Message,
+  Organization,
+  SandboxConfig,
+  SandboxEnvironmentVariable,
+  Source,
+  SourcePassage,
+  SourcesAgents,
+  Tool,
+  ToolsAgents,
+  User,
 )
 from letta.orm.agents_tags import AgentsTags
 from letta.orm.errors import NoResultFound, UniqueConstraintViolationError
@@ -41,13 +41,13 @@ from letta.schemas.message import MessageCreate, MessageUpdate
 from letta.schemas.organization import Organization as PydanticOrganization
 from letta.schemas.passage import Passage as PydanticPassage
 from letta.schemas.sandbox_config import (
-    E2BSandboxConfig,
-    LocalSandboxConfig,
-    SandboxConfigCreate,
-    SandboxConfigUpdate,
-    SandboxEnvironmentVariableCreate,
-    SandboxEnvironmentVariableUpdate,
-    SandboxType,
+  E2BSandboxConfig,
+  LocalSandboxConfig,
+  SandboxConfigCreate,
+  SandboxConfigUpdate,
+  SandboxEnvironmentVariableCreate,
+  SandboxEnvironmentVariableUpdate,
+  SandboxType,
 )
 from letta.schemas.source import Source as PydanticSource
 from letta.schemas.source import SourceUpdate

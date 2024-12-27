@@ -1,11 +1,11 @@
 from typing import List, Optional
 
 from letta.schemas.openai.openai import (
-    MessageRoleType,
-    OpenAIMessage,
-    OpenAIThread,
-    ToolCall,
-    ToolCallOutput,
+  MessageRoleType,
+  OpenAIMessage,
+  OpenAIThread,
+  ToolCall,
+  ToolCallOutput,
 )
 from pydantic import BaseModel, Field
 
