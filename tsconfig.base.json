@@ -18,6 +18,10 @@
     "strictNullChecks": true,
     "paths": {
       "$web/*": ["apps/web/src/lib/*"],
+      "@letta-cloud/lettuce-client": ["libs/lettuce-client/src/index.ts"],
+      "@letta-cloud/lettuce-server": [
+        "libs/lettuce-client/src/lib/lettuce-server.ts"
+      ],
       "@letta-web/analytics": ["libs/analytics/src/events.ts"],
       "@letta-web/analytics/client": ["libs/analytics/src/client/index.tsx"],
       "@letta-web/analytics/server": ["libs/analytics/src/server/index.ts"],

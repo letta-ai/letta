@@ -25,9 +25,9 @@ import { queryClientKeys } from '$web/web-api/contracts';
 import { useQueryClient } from '@tanstack/react-query';
 
 interface InferenceModelPageProps {
-  params: {
+  params: Promise<{
     modelId: string;
-  };
+  }>;
 }
 
 interface UpdateInferenceModelFormProps {
@@ -164,9 +164,9 @@ function UpdateInferenceModelForm(props: UpdateInferenceModelFormProps) {
   );
 }
 
-function InferenceModelPage(props: InferenceModelPageProps) {
+async function InferenceModelPage(props: InferenceModelPageProps) {
   const { params } = props;
-  const { modelId } = params;
+  const { modelId } = await params;
 
   const {
     data: model,

@@ -15,6 +15,7 @@ import { adminUsersRouter } from '$web/web-api/admin/users/adminUsersRouter';
 import { usageRouter } from '$web/web-api/usage/usageRouter';
 import { adminToolMetadataRouter } from '$web/web-api/admin/tool-metadata/adminToolMetadataRouter';
 import { toolMetadataRouter } from '$web/web-api/tool-metadata/toolMetadataRouter';
+import { adminUsageRouter } from '$web/web-api/admin/usage/adminUsageRouter';
 
 export const router = {
   user: userRouter,
@@ -29,6 +30,7 @@ export const router = {
   usage: usageRouter,
   toolMetadata: toolMetadataRouter,
   admin: {
+    usage: adminUsageRouter,
     toolMetadata: adminToolMetadataRouter,
     users: adminUsersRouter,
     models: adminModelsRouter,

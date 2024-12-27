@@ -9,7 +9,7 @@ import {
   organizationUsers,
   users,
 } from '@letta-web/database';
-import { and, count, eq, inArray, like } from 'drizzle-orm';
+import { and, count, eq, ilike, inArray } from 'drizzle-orm';
 import { AdminService } from '@letta-web/letta-agents-api';
 import { getUsageByModelSummaryAndOrganizationId } from '$web/web-api/usage/usageRouter';
 
@@ -26,7 +26,7 @@ async function getOrganizations(
   req: GetOrganizationsQuery
 ): Promise<GetOrganizationsResponse> {
   const { offset, limit = 10, search } = req.query;
-  const where = search ? like(organizations.name, `%${search}%`) : undefined;
+  const where = search ? ilike(organizations.name, `%${search}%`) : undefined;
 
   const response = await db.query.organizations.findMany({
     offset,

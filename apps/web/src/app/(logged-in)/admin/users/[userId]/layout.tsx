@@ -11,16 +11,15 @@ import { redirect } from 'next/navigation';
 
 interface UserLayoutProps {
   children: React.ReactNode;
-  params: {
+  params: Promise<{
     userId: string;
-  };
+  }>;
 }
 
 async function UserLayout(props: UserLayoutProps) {
-  const {
-    children,
-    params: { userId },
-  } = props;
+  const { children, params } = props;
+
+  const { userId } = await params;
   const queryClient = new QueryClient();
 
   const user = await router.admin.users.adminGetUser({

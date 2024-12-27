@@ -10,7 +10,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 export function useSyncUpdateCurrentAgent() {
   const currentAgent = useCurrentAgent();
   const queryClient = useQueryClient();
-  const debouncer = useRef<ReturnType<typeof setTimeout>>();
+  const debouncer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const [lastUpdatedAt, setLastUpdatedAt] = useState<string | null>();
   const [error, setError] = useState<boolean>(false);
   const [isUpdating, setIsUpdating] = useState<boolean>(false);

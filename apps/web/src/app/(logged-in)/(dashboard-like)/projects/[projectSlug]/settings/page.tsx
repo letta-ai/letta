@@ -10,6 +10,7 @@ import {
   FormField,
   FormProvider,
   Input,
+  LoadingEmptyStatusComponent,
   Typography,
   useForm,
   VStack,
@@ -42,6 +43,16 @@ function DeleteProjectSettings() {
     resolver: zodResolver(DeleteProjectSchema),
   });
 
+  const { data, isLoading } =
+    webApi.organizations.getCurrentOrganizationPreferences.useQuery({
+      queryKey: webApiQueryKeys.organizations.getCurrentOrganizationPreferences,
+      refetchOnMount: false,
+    });
+
+  const isDefaultProject = useMemo(() => {
+    return data?.body.defaultProjectId === projectId;
+  }, [data, projectId]);
+
   const handleReset = useCallback(() => {
     form.reset();
   }, [form]);
@@ -61,75 +72,95 @@ function DeleteProjectSettings() {
     );
   }, [mutate, projectId]);
 
+  const t = useTranslations('project/[projectId]/settings');
+
   return (
     <DashboardPageSection>
       <VStack width="contained" gap="large">
         <Typography variant="heading5" bold>
-          Delete project
+          {t('DeleteProjectSettings.title')}
         </Typography>
-        <Typography variant="body">
-          Deleting a project will permanently remove all data associated with
-          it. This action cannot be undone. It will delete all deployments,
-          agents, and configurations associated with this project.
-        </Typography>
-        <FormActions align="start">
-          <FormProvider {...form}>
-            <Dialog
-              isConfirmBusy={isPending}
-              errorMessage={
-                isError
-                  ? 'Failed to delete project - please contact support'
-                  : undefined
-              }
-              onSubmit={form.handleSubmit(handleSubmit)}
-              onOpenChange={(isOpen) => {
-                if (!isOpen) {
-                  handleReset();
-                }
-              }}
-              title="Are you sure you want to delete this project?"
-              confirmText="Delete project"
-              confirmColor="destructive"
-              trigger={<Button label="Delete project" color="destructive" />}
-            >
-              <Typography>
-                This action cannot be undone. All data associated with this
-                project will be permanently deleted.
-              </Typography>
-              <FormField
-                name="name"
-                render={({ field }) => (
-                  <Input
-                    fullWidth
-                    {...field}
-                    label="Project name"
-                    placeholder="Type the project name to confirm"
-                  />
-                )}
-              />
-              <FormField
-                name="confirmed"
-                render={({ field }) => {
-                  return (
-                    <Checkbox
-                      fullWidth
-                      label="I understand the consequences of deleting this project"
-                      onCheckedChange={field.onChange}
-                      checked={field.value}
+        {isDefaultProject ? (
+          <Typography>
+            {t('DeleteProjectSettings.cannotDeleteDefault')}
+          </Typography>
+        ) : (
+          <>
+            <Typography variant="body">
+              {t('DeleteProjectSettings.description')}
+            </Typography>
+            <FormActions align="start">
+              <FormProvider {...form}>
+                <Dialog
+                  isConfirmBusy={isPending}
+                  errorMessage={
+                    isError
+                      ? 'Failed to delete project - please contact support'
+                      : undefined
+                  }
+                  onSubmit={form.handleSubmit(handleSubmit)}
+                  onOpenChange={(isOpen) => {
+                    if (!isOpen) {
+                      handleReset();
+                    }
+                  }}
+                  title="Are you sure you want to delete this project?"
+                  confirmText="Delete project"
+                  confirmColor="destructive"
+                  trigger={
+                    <Button
+                      disabled={isLoading}
+                      label="Delete project"
+                      color="destructive"
                     />
-                  );
-                }}
-              />
-            </Dialog>
-          </FormProvider>
-        </FormActions>
+                  }
+                >
+                  <Typography>
+                    This action cannot be undone. All data associated with this
+                    project will be permanently deleted.
+                  </Typography>
+                  <FormField
+                    name="name"
+                    render={({ field }) => (
+                      <Input
+                        fullWidth
+                        {...field}
+                        label="Project name"
+                        placeholder="Type the project name to confirm"
+                      />
+                    )}
+                  />
+                  <FormField
+                    name="confirmed"
+                    render={({ field }) => {
+                      return (
+                        <Checkbox
+                          fullWidth
+                          label="I understand the consequences of deleting this project"
+                          onCheckedChange={field.onChange}
+                          checked={field.value}
+                        />
+                      );
+                    }}
+                  />
+                </Dialog>
+              </FormProvider>
+            </FormActions>
+          </>
+        )}
       </VStack>
     </DashboardPageSection>
   );
 }
 
-function EditSettingsSection() {
-  const { slug, id: projectId } = useCurrentProject();
+interface EditSettingsSectionProps {
+  name: string;
+  slug: string;
+}
+
+function EditSettingsSection(props: EditSettingsSectionProps) {
+  const { id: projectId } = useCurrentProject();
+  const { name, slug } = props;
   const t = useTranslations('project/[projectId]/settings');
 
   const EditProjectSettingsSchema = useMemo(() => {
@@ -181,7 +212,6 @@ function EditSettingsSection() {
       },
     });
 
-  const { name } = useCurrentProject();
   const form = useForm<EditProjectSettingsFormType>({
     resolver: zodResolver(EditProjectSettingsSchema),
     defaultValues: {
@@ -278,10 +308,21 @@ function EditSettingsSection() {
 
 function SettingsPage() {
   const t = useTranslations('project/[projectId]/settings');
+  const { name, slug } = useCurrentProject();
+
+  if (!slug) {
+    return (
+      <DashboardPageLayout encapsulatedFullHeight>
+        <VStack fullHeight fullWidth align="center" justify="center">
+          <LoadingEmptyStatusComponent isLoading noMinHeight />
+        </VStack>
+      </DashboardPageLayout>
+    );
+  }
 
   return (
     <DashboardPageLayout title={t('title')}>
-      <EditSettingsSection />
+      <EditSettingsSection name={name} slug={slug} />
       <DeleteProjectSettings />
     </DashboardPageLayout>
   );

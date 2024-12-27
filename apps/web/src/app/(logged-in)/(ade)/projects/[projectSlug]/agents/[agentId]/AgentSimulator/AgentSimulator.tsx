@@ -92,7 +92,7 @@ interface UseSendMessageOptions {
 
 function useSendMessage(agentId: string, options: UseSendMessageOptions = {}) {
   const [isPending, setIsPending] = useAtom(isSendingMessageAtom);
-  const abortController = useRef<AbortController>();
+  const abortController = useRef<AbortController>(undefined);
   const queryClient = useQueryClient();
   const { isLocal } = useCurrentAgentMetaData();
   const user = useCurrentUser();

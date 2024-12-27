@@ -1,7 +1,7 @@
 import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
 import type { contracts } from '$web/web-api/contracts';
 import { db, emailWhitelist } from '@letta-web/database';
-import { eq, like } from 'drizzle-orm';
+import { eq, ilike } from 'drizzle-orm';
 
 type GetWhitelistedEmailsResponse = ServerInferResponses<
   typeof contracts.admin.whitelistedEmails.getWhitelistedEmails
@@ -14,7 +14,7 @@ export async function getWhitelistedEmails(
   req: GetWhitelistedEmailsQuery
 ): Promise<GetWhitelistedEmailsResponse> {
   const { offset, limit = 10, search } = req.query;
-  const where = search ? like(emailWhitelist.email, search) : undefined;
+  const where = search ? ilike(emailWhitelist.email, search) : undefined;
 
   const response = await db.query.emailWhitelist.findMany({
     offset,

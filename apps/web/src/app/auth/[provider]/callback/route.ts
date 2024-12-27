@@ -83,7 +83,9 @@ export async function GET(
     }
 
     const userPayload = await getUserDetailsFromProvider(
-      context.params.provider,
+      (
+        await context.params
+      ).provider,
       code
     );
 

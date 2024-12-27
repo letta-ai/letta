@@ -1,7 +1,7 @@
 import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
 import type { contracts } from '$web/web-api/contracts';
 import { db, toolMetadata } from '@letta-web/database';
-import { and, count, eq, like, or, sql } from 'drizzle-orm';
+import { and, count, eq, ilike, or, sql } from 'drizzle-orm';
 
 type ListToolMetadataRequest = ServerInferRequest<
   typeof contracts.toolMetadata.listToolMetadata
@@ -20,15 +20,15 @@ async function listToolMetadata(
   if (search) {
     where.push(
       or(
-        like(toolMetadata.name, `%${search}%`),
-        like(toolMetadata.brand, `%${search}%`)
+        ilike(toolMetadata.name, `%${search}%`),
+        ilike(toolMetadata.brand, `%${search}%`)
       )
     );
   }
 
   if (tags) {
     tags.forEach((tag) => {
-      where.push(like(toolMetadata.tags, `%${tag}%`));
+      where.push(ilike(toolMetadata.tags, `%${tag}%`));
     });
   }
 
@@ -40,6 +40,7 @@ async function listToolMetadata(
     where.push(eq(toolMetadata.providerId, providerId));
   }
 
+  console.log(where);
   const toolMetaData = await db.query.toolMetadata.findMany({
     where: and(...where),
     offset,
@@ -55,6 +56,7 @@ async function listToolMetadata(
           description: t.description,
           id: t.id,
           brand: t.brand,
+          configuration: t.configuration,
           imageUrl:
             t.configuration?.type === 'composio' ? t.configuration.logo : null,
           providerId: t.providerId,
@@ -110,7 +112,7 @@ async function listToolGroupMetadata(
   const where = [];
 
   if (search) {
-    where.push(like(toolMetadata.brand, `%${search}%`));
+    where.push(ilike(toolMetadata.brand, `%${search}%`));
   }
 
   const toolGroups = await db.query.toolGroupMetadata.findMany({

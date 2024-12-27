@@ -1,12 +1,11 @@
 import uuid
 from typing import TYPE_CHECKING, List, Optional
 
+from sqlalchemy import JSON, String, UniqueConstraint
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
 from letta.orm.block import Block
-from letta.orm.custom_columns import (
-    EmbeddingConfigColumn,
-    LLMConfigColumn,
-    ToolRulesColumn,
-)
+from letta.orm.custom_columns import EmbeddingConfigColumn, LLMConfigColumn, ToolRulesColumn
 from letta.orm.message import Message
 from letta.orm.mixins import OrganizationMixin
 from letta.orm.organization import Organization
@@ -17,8 +16,6 @@ from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.memory import Memory
 from letta.schemas.tool_rule import ToolRule
-from sqlalchemy import JSON, String, UniqueConstraint
-from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 if TYPE_CHECKING:
     from letta.orm.agents_tags import AgentsTags

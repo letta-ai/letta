@@ -271,6 +271,11 @@
     "submit": "Create Organization"
   },
   "project/[projectId]/settings": {
+    "DeleteProjectSettings": {
+      "title": "Delete project",
+      "cannotDeleteDefault": "You cannot delete the default project, please contact support for assistance.",
+      "description": " Deleting a project will permanently remove all data associated with it. This action cannot be undone. It will delete all deployments, agents, and configurations associated with this project."
+    },
     "title": "Project settings",
     "EditProjectSettings": {
       "name": {
@@ -1280,6 +1285,12 @@
       }
     },
     "AddToolToAgentButton": {
+      "errors": {
+        "composio": {
+          "ComposioSDKError": "Please connect this App on Composio before attempting to attach this tool. Press the 'View on Composio' button to do this",
+          "ApiKeyNotProvidedError": "Please connect your Composio API key with Letta to add this tool to your agent."
+        }
+      },
       "error": "There was an error adding this tool, please try again or contact support.",
       "alreadyAdded": "Attached",
       "attach": "Attach tool"
@@ -1303,6 +1314,9 @@
     },
     "SpecificToolComponent": {
       "back": "Back",
+      "codePreviewUnavailableForComposio": "# Code preview unavailable for Composio tools",
+      "jsonPreviewUnavailableForComposio": "// JSON schema preview unavailable for Composio tools",
+
       "description": "Description",
       "noDescription": "No description provided",
       "add": "Add tool to Agent",

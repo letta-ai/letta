@@ -1,8 +1,6 @@
 from letta.errors import LLMJSONParsingError
 from letta.local_llm.json_parser import clean_json
-from letta.local_llm.llm_chat_completion_wrappers.wrapper_base import (
-    LLMChatCompletionWrapper,
-)
+from letta.local_llm.llm_chat_completion_wrappers.wrapper_base import LLMChatCompletionWrapper
 from letta.schemas.enums import MessageRole
 from letta.utils import json_dumps, json_loads
 
@@ -75,10 +73,7 @@ class ChatMLInnerMonologueWrapper(LLMChatCompletionWrapper):
         func_str += f"\n  description: {schema['description']}"
         func_str += f"\n  params:"
         if add_inner_thoughts:
-            from letta.local_llm.constants import (
-                INNER_THOUGHTS_KWARG,
-                INNER_THOUGHTS_KWARG_DESCRIPTION,
-            )
+            from letta.local_llm.constants import INNER_THOUGHTS_KWARG, INNER_THOUGHTS_KWARG_DESCRIPTION
 
             func_str += f"\n    {INNER_THOUGHTS_KWARG}: {INNER_THOUGHTS_KWARG_DESCRIPTION}"
         for param_k, param_v in schema["parameters"]["properties"].items():

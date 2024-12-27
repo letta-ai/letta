@@ -36,8 +36,6 @@ import {
   CloseMiniApp,
   Code,
   CodeIcon,
-  ComposioLockup,
-  DashboardPageSection,
   Debugger,
   Dialog,
   ExploreIcon,
@@ -58,7 +56,6 @@ import {
   PlusIcon,
   RawCodeEditor,
   RawInput,
-  RawToggleGroup,
   SearchIcon,
   TerminalIcon,
   toast,
@@ -66,6 +63,9 @@ import {
   Typography,
   useForm,
   VStack,
+  Section,
+  ComposioLockupDynamic,
+  TabGroup,
 } from '@letta-web/component-library';
 import { useFeatureFlag, webApi, webApiQueryKeys } from '$web/client';
 import { useCurrentAgentMetaData } from '../hooks/useCurrentAgentMetaData/useCurrentAgentMetaData';
@@ -75,6 +75,7 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { isAxiosError } from 'axios';
 import { useDebouncedValue } from '@mantine/hooks';
+import { get } from 'lodash-es';
 
 type ToolViewerState = 'edit' | 'view';
 
@@ -95,7 +96,7 @@ interface ToolsExplorerContextState {
 }
 
 function isCurrentToolInViewOrEdit(
-  state: ToolsExplorerContextState['currentTool']
+  state: ToolsExplorerContextState['currentTool'],
 ): state is ViewOrEditState {
   return !!(state && Object.prototype.hasOwnProperty.call(state, 'data'));
 }
@@ -148,33 +149,47 @@ function ViewToolCodePreview(props: ViewToolCodePreviewProps) {
   const { toolId, provider } = props;
   const [viewMode, setViewMode] = useState<ViewMode>('code');
   const t = useTranslations('ADE/Tools');
+
+  const hasPreviewAbleProvider = useMemo(() => {
+    return ['letta', 'custom'].includes(provider);
+  }, [provider]);
+
   const { data: tool } = useToolsServiceGetTool(
     {
       toolId,
     },
     undefined,
     {
-      enabled: ['letta', 'custom'].includes(provider),
-    }
+      enabled: hasPreviewAbleProvider,
+    },
   );
 
-  if (provider === 'composio') {
-    return null;
-  }
+  const toolCode = useMemo(() => {
+    if (hasPreviewAbleProvider) {
+      return tool?.source_code || '';
+    }
+
+    return t('SpecificToolComponent.codePreviewUnavailableForComposio');
+  }, [hasPreviewAbleProvider, tool, t]);
+
+  const toolSchema = useMemo(() => {
+    if (hasPreviewAbleProvider) {
+      return tool?.json_schema ? JSON.stringify(tool.json_schema, null, 2) : '';
+    }
+
+    return t('SpecificToolComponent.jsonPreviewUnavailableForComposio');
+  }, [hasPreviewAbleProvider, t, tool?.json_schema]);
 
   return (
     <div className="min-h-[400px] w-full flex-1 flex flex-col">
       <VStack flex collapseHeight>
-        <RawToggleGroup
-          hideLabel
-          border
+        <TabGroup
           value={viewMode}
           onValueChange={(mode) => {
             if (mode) {
               setViewMode(mode as ViewMode);
             }
           }}
-          label={t('ViewToolCodePreview.viewToggle.label')}
           items={[
             {
               label: t('ViewToolCodePreview.viewToggle.options.code'),
@@ -198,7 +213,7 @@ function ViewToolCodePreview(props: ViewToolCodePreviewProps) {
               collapseHeight
               label=""
               language="python"
-              code={tool?.source_code || ''}
+              code={toolCode}
             />
           ) : (
             <RawCodeEditor
@@ -209,11 +224,7 @@ function ViewToolCodePreview(props: ViewToolCodePreviewProps) {
               collapseHeight
               label=""
               language="javascript"
-              code={
-                tool?.json_schema
-                  ? JSON.stringify(tool.json_schema, null, 2)
-                  : ''
-              }
+              code={toolSchema}
             />
           )}
         </VStack>
@@ -245,7 +256,7 @@ function useIsComposioConnected() {
     webApi.environmentVariables.getEnvironmentVariableByKey.useQuery({
       queryKey:
         webApiQueryKeys.environmentVariables.getEnvironmentVariableByKey(
-          COMPOSIO_KEY_NAME
+          COMPOSIO_KEY_NAME,
         ),
       queryData: {
         params: {
@@ -354,10 +365,36 @@ function AddToolToAgentButton(props: AddToolToAgentButtonProps) {
             ...oldData,
             tools: response.tools,
           };
-        }
+        },
       );
-    } catch (_e) {
-      toast.error(t('AddToolToAgentButton.error'));
+    } catch (e) {
+      let errorMessage = t('AddToolToAgentButton.error');
+      const errorCode = get(e, 'body.detail.code') || '';
+
+      if (errorCode) {
+        switch (errorCode) {
+          case 'ComposioSDKError': {
+            errorMessage = t(
+              'AddToolToAgentButton.errors.composio.ComposioSDKError',
+            );
+            break;
+          }
+
+          case 'ApiKeyNotProvidedError': {
+            errorMessage = t(
+              'AddToolToAgentButton.errors.composio.ApiKeyNotProvidedError',
+            );
+            break;
+          }
+
+          default: {
+            errorMessage = t('AddToolToAgentButton.error');
+            break;
+          }
+        }
+      }
+
+      toast.error(errorMessage);
     } finally {
       setIsPending(false);
     }
@@ -445,7 +482,7 @@ function ViewTool(props: ViewToolProps) {
     undefined,
     {
       enabled: isCustomOrLettaProvider,
-    }
+    },
   );
 
   const { data: toolMetaData } = webApi.toolMetadata.listToolMetadata.useQuery({
@@ -459,6 +496,10 @@ function ViewTool(props: ViewToolProps) {
     },
     enabled: !isCustomOrLettaProvider,
   });
+
+  const toolMetaDataSearchResult = useMemo(() => {
+    return toolMetaData?.body.toolMetadata[0];
+  }, [toolMetaData?.body.toolMetadata]);
 
   const tool: ToolMetadataPreviewType = useMemo(() => {
     if (isCustomOrLettaProvider) {
@@ -475,16 +516,15 @@ function ViewTool(props: ViewToolProps) {
       };
     }
 
-    const metaDataTool = toolMetaData?.body.toolMetadata[0];
-
     return {
-      name: metaDataTool?.name || baseTool.name || '',
-      description: metaDataTool?.description || baseTool.description || '',
-      id: metaDataTool?.id || baseTool.id || '',
-      brand: metaDataTool?.brand || baseTool.brand || 'custom',
-      provider: metaDataTool?.provider || baseTool.provider,
-      imageUrl: metaDataTool?.imageUrl || baseTool.provider,
-      providerId: metaDataTool?.providerId || baseTool.providerId,
+      name: toolMetaDataSearchResult?.name || baseTool.name || '',
+      description:
+        toolMetaDataSearchResult?.description || baseTool.description || '',
+      id: toolMetaDataSearchResult?.id || baseTool.id || '',
+      brand: toolMetaDataSearchResult?.brand || baseTool.brand || 'custom',
+      provider: toolMetaDataSearchResult?.provider || baseTool.provider,
+      imageUrl: toolMetaDataSearchResult?.imageUrl || baseTool.provider,
+      providerId: toolMetaDataSearchResult?.providerId || baseTool.providerId,
     };
   }, [
     baseTool.brand,
@@ -495,7 +535,7 @@ function ViewTool(props: ViewToolProps) {
     baseTool.providerId,
     isCustomOrLettaProvider,
     localTool,
-    toolMetaData?.body.toolMetadata,
+    toolMetaDataSearchResult,
   ]);
 
   const toolDescription = useMemo(() => {
@@ -520,6 +560,18 @@ function ViewTool(props: ViewToolProps) {
     return tool.provider === 'custom';
   }, [tool.provider]);
 
+  const composioViewUrl = useMemo(() => {
+    if (!toolMetaDataSearchResult) {
+      return '';
+    }
+
+    if (toolMetaDataSearchResult.configuration?.type !== 'composio') {
+      return '';
+    }
+
+    return `https://app.composio.dev/app/${toolMetaDataSearchResult.configuration.appId}`;
+  }, [toolMetaDataSearchResult]);
+
   const showComposioSetupBanner = useMemo(() => {
     if (isComposioConnectedLoading) {
       return false;
@@ -530,8 +582,8 @@ function ViewTool(props: ViewToolProps) {
 
   return (
     <VStack overflowY="auto" paddingX paddingBottom fullHeight flex>
-      <VStack gap="large" paddingBottom fullWidth>
-        <HStack fullWidth align="center">
+      <VStack fullHeight gap="large" paddingBottom fullWidth>
+        <HStack borderBottom paddingBottom fullWidth align="center">
           <div className="w-[100px] p-5">
             {tool.imageUrl ? (
               <IconWrapper
@@ -570,7 +622,7 @@ function ViewTool(props: ViewToolProps) {
                       {t('ViewTool.viaComposioTool')}
                     </Typography>
                     <div className="mt-[2px]">
-                      <ComposioLockup height={20} />
+                      <ComposioLockupDynamic width={80} />
                     </div>
                   </>
                 )}
@@ -579,11 +631,11 @@ function ViewTool(props: ViewToolProps) {
             <HStack>
               {showAddToolToAgent && <AddToolToAgentButton tool={tool} />}
               {isEditable && <EditToolButton />}
-              {isComposioTool && (
+              {composioViewUrl && (
                 <Button
                   target="_blank"
                   size="small"
-                  href={`https://app.composio.dev/app/${tool.brand}`}
+                  href={composioViewUrl}
                   label={t('ViewTool.viewOnComposio')}
                   color="tertiary"
                 />
@@ -597,7 +649,11 @@ function ViewTool(props: ViewToolProps) {
               {isLocal ? (
                 <Typography overrideEl="span">
                   {t.rich('ViewTool.connectComposio.descriptionLocal', {
-                    code: (chunks) => <InlineCode code={`${chunks}`} />,
+                    code: (chunks) => (
+                      <InlineCode
+                        code={typeof chunks === 'string' ? chunks : ''}
+                      />
+                    ),
                   })}
                 </Typography>
               ) : (
@@ -619,15 +675,14 @@ function ViewTool(props: ViewToolProps) {
           </Alert>
         )}
         <VStack width="largeContained" fullWidth>
-          <DashboardPageSection title={t('SpecificToolComponent.description')}>
+          <Section title={t('SpecificToolComponent.description')}>
             <Typography fullWidth variant="body" italic={!tool?.description}>
               {toolDescription?.replace(/\n|\t/g, ' ').trim()}
             </Typography>
-          </DashboardPageSection>
+          </Section>
         </VStack>
+        <ViewToolCodePreview toolId={tool.id} provider={tool.provider} />
       </VStack>
-
-      <ViewToolCodePreview toolId={tool.id} provider={tool.provider} />
     </VStack>
   );
 }
@@ -664,7 +719,7 @@ function ViewCategoryTools(props: ViewCategoryToolsProps) {
       brand: ['all', 'custom'].includes(category) ? undefined : category,
       search: debouncedSearch,
     }),
-    [category, debouncedSearch]
+    [category, debouncedSearch],
   );
 
   const shouldShowComposioTools = useShowComposioTools();
@@ -700,7 +755,7 @@ function ViewCategoryTools(props: ViewCategoryToolsProps) {
       undefined,
       {
         enabled: ['all', 'custom'].includes(category),
-      }
+      },
     );
 
   const hasNextPage = useMemo(() => {
@@ -887,17 +942,17 @@ function AllToolsView() {
     {
       queryKey: webApiQueryKeys.toolMetadata.getToolMetadataSummary,
       enabled: shouldShowComposioTools,
-    }
+    },
   );
 
   const { data: groupMetaData } =
     webApi.toolMetadata.listToolGroupMetadata.useQuery({
       queryKey: webApiQueryKeys.toolMetadata.listToolMetadataWithSearch({
-        limit: 200,
+        limit: 400,
       }),
       queryData: {
         query: {
-          limit: 200,
+          limit: 400,
         },
       },
       enabled: shouldShowComposioTools,
@@ -917,10 +972,10 @@ function AllToolsView() {
 
   const brandIntegrations = useMemo(() => {
     return (groupMetaData?.body.toolGroups || [])
-      .filter(({ brand, toolCount }) => toolCount > 0 && isBrandKey(brand))
+      .filter(({ toolCount }) => toolCount > 0)
       .map(({ brand, toolCount, imageUrl }) => {
         return {
-          name: isBrandKey(brand) ? brandKeyToName(brand) : 'Unknown',
+          name: isBrandKey(brand) ? brandKeyToName(brand) : `${brand} (Beta)`,
           description: '',
           imageUrl,
           category: brand,
@@ -952,7 +1007,7 @@ function AllToolsView() {
       setCategory(category);
       clearCurrentTool();
     },
-    [clearCurrentTool]
+    [clearCurrentTool],
   );
 
   const { data: customTools, isLoading: isLoadingCustomTools } =
@@ -1111,7 +1166,7 @@ export function useToolsExplorerState() {
         isOpen: true,
       });
     },
-    [setExplorerState]
+    [setExplorerState],
   );
 
   const startCreateTool = useCallback(() => {
@@ -1148,7 +1203,7 @@ export function useToolsExplorerState() {
         };
       });
     },
-    [setExplorerState]
+    [setExplorerState],
   );
 
   const setCurrentTool = useCallback(
@@ -1163,7 +1218,7 @@ export function useToolsExplorerState() {
         };
       });
     },
-    [setExplorerState]
+    [setExplorerState],
   );
 
   const clearCurrentTool = useCallback(() => {
@@ -1206,7 +1261,7 @@ function ToolEditor(props: ToolEditorProps) {
       schema: z.record(z.string(), z.any()),
       inputLabel: t('ToolEditor.inputLabel'),
     }),
-    [t]
+    [t],
   );
 
   const extractedFunctionName = useMemo(() => {
@@ -1232,10 +1287,10 @@ function ToolEditor(props: ToolEditorProps) {
           onSuccess: () => {
             setCompletedAt(Date.now());
           },
-        }
+        },
       );
     },
-    [code, extractedFunctionName, inputConfig, mutate, reset]
+    [code, extractedFunctionName, inputConfig, mutate, reset],
   );
 
   const { outputValue, outputStdout, outputStderr, outputStatus } =
@@ -1393,7 +1448,7 @@ function ToolCreator() {
           imageUrl: null,
           providerId: '',
         },
-        'view'
+        'view',
       );
 
       void queryClient.invalidateQueries({
@@ -1421,7 +1476,7 @@ function ToolCreator() {
         },
       });
     },
-    [mutate]
+    [mutate],
   );
 
   const { isLocal } = useCurrentAgentMetaData();
@@ -1540,12 +1595,12 @@ function EditTool(props: EditToolProps) {
                 ...oldData,
                 source_code: sourceCode,
               };
-            }
+            },
           );
 
           setOpen(false);
         },
-      }
+      },
     );
   }, [mutate, queryClient, sourceCode, tool.id]);
 
@@ -1620,7 +1675,7 @@ function EditToolWrapper() {
     undefined,
     {
       enabled: !!toolId,
-    }
+    },
   );
 
   const t = useTranslations('ADE/Tools');
@@ -1705,7 +1760,7 @@ export function ToolsExplorer() {
 
       openToolExplorer();
     },
-    [closeToolExplorer, currentTool?.mode, openToolExplorer]
+    [closeToolExplorer, currentTool?.mode, openToolExplorer],
   );
 
   const component = useMemo(() => {

@@ -1,12 +1,13 @@
 from datetime import datetime
 from typing import TYPE_CHECKING, Optional
 
+from sqlalchemy import JSON, String
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
 from letta.orm.mixins import UserMixin
 from letta.orm.sqlalchemy_base import SqlalchemyBase
 from letta.schemas.enums import JobStatus
 from letta.schemas.job import Job as PydanticJob
-from sqlalchemy import JSON, String
-from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 if TYPE_CHECKING:
     from letta.orm.user import User

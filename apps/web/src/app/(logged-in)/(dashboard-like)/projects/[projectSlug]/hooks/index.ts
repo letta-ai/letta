@@ -21,6 +21,7 @@ export function useCurrentProject(): PartialProjectType {
         lookupBy: 'slug',
       },
     },
+    refetchOnMount: false,
     enabled: !!projectSlug,
   });
 

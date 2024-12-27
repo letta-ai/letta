@@ -5,7 +5,7 @@ import IntegrationPageLayout from '../common/IntegrationPageLayout/IntegrationPa
 import {
   Alert,
   Button,
-  ComposioLockup,
+  ComposioLockupDynamic,
   Dialog,
   FormField,
   FormProvider,
@@ -239,7 +239,7 @@ function ComposioSettingsPage() {
 
   return (
     <IntegrationPageLayout
-      image={<ComposioLockup height={50} />}
+      image={<ComposioLockupDynamic width={200} />}
       description={t('description')}
       disconnect={
         isConnected && (

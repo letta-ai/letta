@@ -44,7 +44,8 @@
       "plugin": "@nx/jest/plugin",
       "options": {
         "targetName": "test"
-      }
+      },
+      "exclude": ["apps/lettuce-e2e/**/*"]
     },
     {
       "plugin": "@nx/storybook/plugin",

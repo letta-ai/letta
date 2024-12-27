@@ -1,9 +1,10 @@
 from typing import TYPE_CHECKING, List
 
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
 from letta.orm.mixins import OrganizationMixin
 from letta.orm.sqlalchemy_base import SqlalchemyBase
 from letta.schemas.user import User as PydanticUser
-from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 if TYPE_CHECKING:
     from letta.orm import Job, Organization

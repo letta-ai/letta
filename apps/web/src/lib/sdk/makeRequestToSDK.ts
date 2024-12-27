@@ -30,12 +30,8 @@ const usageDetails = z
   })
   .optional();
 
-const usageMessageSchema = z.object({
-  usage: usageDetails,
-});
-
 interface OnCompletionOptions {
-  usageDetails: LettaResponse['LettaUsageStatistics'];
+  usageDetails: LettaResponse['usage'];
 }
 
 async function handleEventStreamRequest(options: RequestOptions) {
@@ -120,8 +116,8 @@ async function handleEventStreamRequest(options: RequestOptions) {
         try {
           const message = JSON.parse(e.data);
 
-          if (usageMessageSchema.safeParse(message).success && message.usage) {
-            void recordUsageDetails({ usageDetails: message.usage });
+          if (usageDetails.safeParse(message).success) {
+            void recordUsageDetails({ usageDetails: message });
           }
 
           if (Object.prototype.hasOwnProperty.call(message, 'id')) {

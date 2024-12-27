@@ -2,10 +2,11 @@ from typing import Optional
 from uuid import UUID
 
 from fastapi import APIRouter
+from pydantic import BaseModel, Field
+
 from letta.log import get_logger
 from letta.server.rest_api.interface import QueuingInterface
 from letta.server.server import SyncServer
-from pydantic import BaseModel, Field
 
 logger = get_logger(__name__)
 router = APIRouter()

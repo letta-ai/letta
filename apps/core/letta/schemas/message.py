@@ -4,25 +4,17 @@ import warnings
 from datetime import datetime, timezone
 from typing import List, Literal, Optional
 
-from letta.constants import (
-    DEFAULT_MESSAGE_TOOL,
-    DEFAULT_MESSAGE_TOOL_KWARG,
-    TOOL_CALL_ID_MAX_LEN,
-)
+from pydantic import BaseModel, Field, field_validator
+
+from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG, TOOL_CALL_ID_MAX_LEN
 from letta.local_llm.constants import INNER_THOUGHTS_KWARG
 from letta.schemas.enums import MessageRole
 from letta.schemas.letta_base import OrmMetadataBase
-from letta.schemas.letta_message import (
-    AssistantMessage,
-    LettaMessage,
-    ReasoningMessage,
-    SystemMessage,
-)
+from letta.schemas.letta_message import AssistantMessage, LettaMessage, ReasoningMessage, SystemMessage
 from letta.schemas.letta_message import ToolCall as LettaToolCall
 from letta.schemas.letta_message import ToolCallMessage, ToolReturnMessage, UserMessage
 from letta.schemas.openai.chat_completions import ToolCall, ToolCallFunction
 from letta.utils import get_utc_time, is_utc_datetime, json_dumps
-from pydantic import BaseModel, Field, field_validator
 
 
 def add_inner_thoughts_to_tool_call(

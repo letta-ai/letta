@@ -9,6 +9,7 @@ Create Date: 2024-12-09 18:27:25.650079
 from typing import Sequence, Union
 
 import sqlalchemy as sa
+
 from alembic import op
 from letta.constants import FUNCTION_RETURN_CHAR_LIMIT
 

@@ -175,7 +175,7 @@ async function getCatchAllProjectId(args: GetCatchAllProjectId) {
   const orgPrefResponse = await db.query.organizationPreferences.findFirst({
     where: eq(organizationPreferences.organizationId, organizationId),
     columns: {
-      catchAllAgentsProjectId: true,
+      defaultProjectId: true,
     },
   });
 
@@ -187,7 +187,7 @@ async function getCatchAllProjectId(args: GetCatchAllProjectId) {
     throw new Error('Organization preferences not found');
   }
 
-  let projectId = orgPrefResponse.catchAllAgentsProjectId || '';
+  let projectId = orgPrefResponse.defaultProjectId || '';
 
   const randomThreeDigitNumber = Math.floor(100 + Math.random() * 900);
 
@@ -223,6 +223,10 @@ export async function createAgent(
     from_template,
     template,
     variables,
+    llm,
+    embedding,
+    context_window_limit,
+    embedding_chunk_size,
     name: preName,
     ...agent
   } = req.body;
@@ -614,6 +618,10 @@ export async function createAgent(
         tool_ids: agent.tool_ids || undefined,
         memory_blocks: agent.memory_blocks || [],
         name: crypto.randomUUID(),
+        llm: llm,
+        embedding: embedding,
+        context_window_limit: context_window_limit,
+        embedding_chunk_size: embedding_chunk_size,
       },
     },
     {

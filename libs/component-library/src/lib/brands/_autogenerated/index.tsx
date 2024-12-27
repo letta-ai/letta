@@ -26,6 +26,7 @@ export type BrandKeys =
   | 'blackboard'
   | 'brevo'
   | 'browserbase'
+  | 'cal'
   | 'calendly'
   | 'canva'
   | 'canvas'

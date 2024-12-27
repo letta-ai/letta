@@ -5,6 +5,7 @@ from importlib import util
 from typing import Dict, Iterator, List, Tuple
 
 import requests
+
 from letta.config import LettaConfig
 from letta.data_sources.connectors import DataConnector
 from letta.schemas.file import FileMetadata

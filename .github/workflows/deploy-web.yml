@@ -2,7 +2,7 @@ name:  🕸🚀 Deploy
 
 on:
     workflow_run:
-      workflows: ["🕸️ Cypress Tests"]
+      workflows: ["🦸️ End-to-End Tests"]
       types:
         - completed
       branches:

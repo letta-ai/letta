@@ -1,15 +1,10 @@
 import json
 from typing import List, Optional, Union
 
-from letta.schemas.enums import ToolRuleType
-from letta.schemas.tool_rule import (
-    BaseToolRule,
-    ChildToolRule,
-    ConditionalToolRule,
-    InitToolRule,
-    TerminalToolRule,
-)
 from pydantic import BaseModel, Field
+
+from letta.schemas.enums import ToolRuleType
+from letta.schemas.tool_rule import BaseToolRule, ChildToolRule, ConditionalToolRule, InitToolRule, TerminalToolRule
 
 
 class ToolRuleValidationError(Exception):

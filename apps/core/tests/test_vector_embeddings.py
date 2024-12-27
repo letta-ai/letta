@@ -1,4 +1,5 @@
 import numpy as np
+
 from letta.orm.sqlalchemy_base import adapt_array
 from letta.orm.sqlite_functions import convert_array, verify_embedding_dimension
 

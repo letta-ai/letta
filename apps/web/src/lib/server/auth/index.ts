@@ -98,7 +98,7 @@ export async function createOrganization(args: CreateOrganizationArgs) {
 
   await db.insert(organizationPreferences).values({
     organizationId: createdOrg.organizationId,
-    catchAllAgentsProjectId: createdProject.id,
+    defaultProjectId: createdProject.id,
   });
 
   return {
@@ -116,16 +116,16 @@ interface CreateFirstAgentArgs {
 async function createFirstAgent(args: CreateFirstAgentArgs) {
   const { organizationId, lettaAgentsUserId, userId } = args;
 
-  const catchAllProject = await db.query.organizationPreferences.findFirst({
+  const orgPreferences = await db.query.organizationPreferences.findFirst({
     where: eq(organizationPreferences.organizationId, organizationId),
   });
 
-  if (!catchAllProject?.catchAllAgentsProjectId) {
+  if (!orgPreferences?.defaultProjectId) {
     throw new Error('Organization preferences not found');
   }
 
   const createdProject = await db.query.projects.findFirst({
-    where: eq(projects.id, catchAllProject.catchAllAgentsProjectId),
+    where: eq(projects.id, orgPreferences.defaultProjectId),
   });
 
   if (!createdProject) {
@@ -557,7 +557,7 @@ export async function signInUserFromProviderLogin(
     expires,
   });
 
-  cookies().set(CookieNames.THEME, user.theme);
+  (await cookies()).set(CookieNames.THEME, user.theme);
 
   await setRedisData('userSession', sessionId, {
     expiresAt: expires,

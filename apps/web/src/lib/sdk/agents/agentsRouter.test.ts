@@ -128,7 +128,7 @@ describe('agentsRouter', () => {
   describe('createAgent', () => {
     it('should create an agent with no project id with a name', async () => {
       mockDatabase.query.organizationPreferences.findFirst.mockResolvedValue({
-        catchAllAgentsProjectId: null,
+        defaultProjectId: null,
         id: 'test-org-id',
         organizationId: 'test-org-id',
       });
@@ -1178,7 +1178,7 @@ describe('agentsRouter', () => {
 
     it('should create an agent with no project id', async () => {
       mockDatabase.query.organizationPreferences.findFirst.mockResolvedValue({
-        catchAllAgentsProjectId: null,
+        defaultProjectId: null,
         id: 'test-org-id',
         organizationId: 'test-org-id',
       });
@@ -1264,7 +1264,7 @@ describe('agentsRouter', () => {
 
   it('should create an agent template with no project id', async () => {
     mockDatabase.query.organizationPreferences.findFirst.mockResolvedValue({
-      catchAllAgentsProjectId: null,
+      defaultProjectId: null,
       id: 'test-org-id',
       organizationId: 'test-org-id',
     });

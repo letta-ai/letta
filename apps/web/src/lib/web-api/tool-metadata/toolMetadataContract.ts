@@ -20,6 +20,7 @@ export const ToolMetadataPreview = z.object({
   brand: z.string(),
   provider: z.string(),
   providerId: z.string().optional(),
+  configuration: ProviderSchemaConfiguration.nullable().optional(),
   imageUrl: z.string().nullable(),
 });
 
