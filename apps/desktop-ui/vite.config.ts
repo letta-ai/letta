@@ -3,6 +3,7 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { nxViteTsPaths } from '@nx/vite/plugins/nx-tsconfig-paths.plugin';
 import { nxCopyAssetsPlugin } from '@nx/vite/plugins/nx-copy-assets.plugin';
+import * as path from 'path';
 
 export default defineConfig({
   root: __dirname,
@@ -20,6 +21,19 @@ export default defineConfig({
   // worker: {
   //  plugins: [ nxViteTsPaths() ],
   // },
+  define: {
+    process: {
+      env: {
+        LETTA_AGENTS_ENDPOINT: 'http://localhost:8283/',
+      },
+    },
+  },
+  resolve: {
+    alias: {
+      'next/link': path.resolve(__dirname, 'src/next-overrides/Link'),
+      'next/image': path.resolve(__dirname, 'src/next-overrides/Image'),
+    },
+  },
   build: {
     outDir: '../../dist/apps/desktop-ui',
     emptyOutDir: true,

@@ -3,6 +3,7 @@ import { rendererAppName, rendererAppPort } from './constants';
 import { environment } from '../environments/environment';
 import { join } from 'path';
 import { format } from 'url';
+import * as electron from 'electron';
 
 export default class App {
   // Keep a global reference of the window object, if you don't, the window will
@@ -63,18 +64,33 @@ export default class App {
     const workAreaSize = screen.getPrimaryDisplay().workAreaSize;
     const width = Math.min(1280, workAreaSize.width || 1280);
     const height = Math.min(720, workAreaSize.height || 720);
+    const app = electron.app;
 
     // Create the browser window.
     App.mainWindow = new BrowserWindow({
       width: width,
       height: height,
       show: false,
+      frame: false,
+      roundedCorners: true,
+      trafficLightPosition: { x: 20, y: 25 },
+      icon: electron.nativeImage.createFromPath(
+        app.getAppPath() + '/assets/icon.png',
+      ),
+      titleBarStyle: 'hidden',
+      ...(process.platform !== 'darwin' ? { titleBarOverlay: true } : {}),
       webPreferences: {
         contextIsolation: true,
         backgroundThrottling: false,
         preload: join(__dirname, 'main.preload.js'),
       },
     });
+
+    const image = electron.nativeImage.createFromPath(
+      app.getAppPath() + '/assets/icon.png',
+    );
+    app.dock.setIcon(image);
+
     App.mainWindow.setMenu(null);
     App.mainWindow.center();
 

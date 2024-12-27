@@ -5,6 +5,7 @@
     "esModuleInterop": false,
     "allowSyntheticDefaultImports": true,
     "strict": true,
+    "resolveJsonModule": true,
     "types": ["vite/client"]
   },
   "files": [],

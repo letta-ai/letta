@@ -37,12 +37,11 @@ import {
   GenericTab,
   GenericTabRenderer,
 } from '../../_internal/Panel/Panel';
-import * as Sentry from '@sentry/nextjs';
 
 export type GenericPanelTemplateId = number | string | symbol;
 
 export interface PanelTemplate<
-  TPanelTemplateId extends GenericPanelTemplateId
+  TPanelTemplateId extends GenericPanelTemplateId,
 > {
   noTab?: boolean;
   templateId: TPanelTemplateId;
@@ -77,27 +76,27 @@ export interface PanelDimensionType<TPositions> {
 // the second dimension is the y axis
 // the third dimension is the tab
 export type PanelItemTabsPositions<
-  TPanelTemplateId extends GenericPanelTemplateId
+  TPanelTemplateId extends GenericPanelTemplateId,
 > = PanelDimensionType<Array<PanelPositionItem<TPanelTemplateId>>>;
 
 export type PanelItemYPositions<
-  TPanelTemplateId extends GenericPanelTemplateId
+  TPanelTemplateId extends GenericPanelTemplateId,
 > = PanelDimensionType<Array<PanelItemTabsPositions<TPanelTemplateId>>>;
 
 export type PanelItemPositionsMatrix<
-  TPanelTemplateId extends GenericPanelTemplateId
+  TPanelTemplateId extends GenericPanelTemplateId,
 > = Array<PanelItemYPositions<TPanelTemplateId>>;
 
 export function createPanelManager<
   TPanelTemplateId extends GenericPanelTemplateId,
-  TPanelRegistry extends PanelTemplateRegistry<TPanelTemplateId>
+  TPanelRegistry extends PanelTemplateRegistry<TPanelTemplateId>,
 >(panelRegistry: TPanelRegistry) {
   interface PanelManagerContextProps {
     children: React.ReactNode;
   }
 
   function isDataTabData(
-    data: unknown
+    data: unknown,
   ): data is PanelPositionItem<RegisteredPanelTemplateId> {
     return Object.prototype.hasOwnProperty.call(data, 'templateId');
   }
@@ -119,7 +118,7 @@ export function createPanelManager<
             <Tab tab={active.data.current} isActive={false} x={0} y={0} />
           )}
         </DragOverlay>,
-        document.body
+        document.body,
       )
     );
   }
@@ -140,7 +139,7 @@ export function createPanelManager<
       mouseSensor,
       touchSensor,
       keyboardSensor,
-      pointerSensor
+      pointerSensor,
     );
 
     function handleDragEnd(event: DragEndEvent) {
@@ -173,7 +172,7 @@ export function createPanelManager<
   type PanelId = string;
 
   interface OpenPanelOptions<
-    TPanelTemplateId extends RegisteredPanelTemplateId
+    TPanelTemplateId extends RegisteredPanelTemplateId,
   > {
     id: PanelId;
     templateId: TPanelTemplateId;
@@ -185,11 +184,11 @@ export function createPanelManager<
     resizeX: (x: number, size: number) => void;
     resizeY: (x: number, y: number, size: number) => void;
     getIsPanelTemplateActive: (
-      panelTemplateId: RegisteredPanelTemplateId
+      panelTemplateId: RegisteredPanelTemplateId,
     ) => boolean;
     setPositions: (positions: RegisteredPanelItemPositionsMatrix) => void;
     openPanel: <TPanelTemplateId extends RegisteredPanelTemplateId>(
-      options: OpenPanelOptions<TPanelTemplateId>
+      options: OpenPanelOptions<TPanelTemplateId>,
     ) => void;
     activatePanel: (panelId: PanelId) => void;
     closePanel: (panelId: PanelId) => void;
@@ -278,7 +277,7 @@ export function createPanelManager<
                       ...yPosition,
                       positions: yPosition.positions.filter(
                         (tabPosition) =>
-                          !templateIdDenyListSet.has(tabPosition.templateId)
+                          !templateIdDenyListSet.has(tabPosition.templateId),
                       ),
                     };
                   }),
@@ -384,7 +383,7 @@ export function createPanelManager<
         xPositions.forEach((yPositions) => {
           yPositions?.positions?.forEach((tabPositions) => {
             const firstActivePanel = tabPositions.positions.find(
-              (panel) => panel.isActive
+              (panel) => panel.isActive,
             );
 
             tabPositions?.positions?.forEach((panel) => {
@@ -416,7 +415,7 @@ export function createPanelManager<
           panelIdToPositionMap,
         };
       },
-      [templateIdDenyListSet]
+      [templateIdDenyListSet],
     );
 
     const [state, setState] = useState<PanelState>(() => {
@@ -466,7 +465,7 @@ export function createPanelManager<
           return nextState;
         });
       },
-      [reconcilePositions]
+      [reconcilePositions],
     );
 
     const resizeY = useCallback((x: number, y: number, size: number) => {
@@ -547,7 +546,7 @@ export function createPanelManager<
           };
 
           const { positions: nextState } = reconcilePositions(
-            prevState.positions
+            prevState.positions,
           );
 
           if (!nextState[firstXIndex]) {
@@ -574,7 +573,7 @@ export function createPanelManager<
             if (firstActivePanel) {
               const firstActivePanelIndex =
                 nextState[firstXIndex].positions[0].positions.indexOf(
-                  firstActivePanel
+                  firstActivePanel,
                 );
 
               nextState[firstXIndex].positions[0].positions[
@@ -589,7 +588,7 @@ export function createPanelManager<
               nextState[firstXIndex].positions[0].positions.splice(
                 firstActivePanelIndex + 1,
                 0,
-                panelPayload
+                panelPayload,
               );
             } else {
               nextState[firstXIndex].positions[0].positions.push(panelPayload);
@@ -599,7 +598,7 @@ export function createPanelManager<
           return reconcilePositions(nextState);
         });
       },
-      [reconcilePositions]
+      [reconcilePositions],
     );
 
     const closePanel = useCallback(
@@ -623,7 +622,7 @@ export function createPanelManager<
           return reconcilePositions(nextState);
         });
       },
-      [reconcilePositions]
+      [reconcilePositions],
     );
 
     const activatePanel = useCallback(
@@ -633,7 +632,7 @@ export function createPanelManager<
         setState((prevState) => {
           try {
             const { positions: nextPositions } = reconcilePositions(
-              prevState.positions
+              prevState.positions,
             );
 
             const position = prevState.panelIdToPositionMap[panelId];
@@ -649,14 +648,13 @@ export function createPanelManager<
             });
 
             return reconcilePositions(nextPositions);
-          } catch (e) {
-            Sentry.captureException(e);
+          } catch (_e) {
             onPositionError();
             return reconcilePositions(fallbackPositions);
           }
         });
       },
-      [fallbackPositions, onPositionError, reconcilePositions]
+      [fallbackPositions, onPositionError, reconcilePositions],
     );
 
     const movePanelToPosition = useCallback(
@@ -721,19 +719,19 @@ export function createPanelManager<
               nextState[nextX].positions[nextY].positions.splice(
                 0,
                 0,
-                panelToMove
+                panelToMove,
               );
             } else if (nextState[nextX].positions[nextY].positions[tab]) {
               nextState[nextX].positions[nextY].positions.splice(
                 tab + 1,
                 0,
-                panelToMove
+                panelToMove,
               );
             } else {
               nextState[nextX].positions[nextY].positions.splice(
                 tab,
                 0,
-                panelToMove
+                panelToMove,
               );
             }
 
@@ -756,44 +754,43 @@ export function createPanelManager<
               if (movedLeft) {
                 nextState[currentX].positions[currentY].positions.splice(
                   currentTab + 1,
-                  1
+                  1,
                 );
               } else {
                 nextState[currentX].positions[currentY].positions.splice(
                   currentTab,
-                  1
+                  1,
                 );
               }
             } else {
               nextState[currentX].positions[currentY].positions.splice(
                 currentTab,
-                1
+                1,
               );
             }
 
             return reconcilePositions(nextState);
           });
-        } catch (e) {
-          Sentry.captureException(e);
+        } catch (_e) {
           onPositionError();
           setState(reconcilePositions(fallbackPositions));
         }
       },
-      [fallbackPositions, onPositionError, reconcilePositions]
+      [fallbackPositions, onPositionError, reconcilePositions],
     );
 
     const getIsPanelTemplateActive = useCallback(
       (panelTemplateId: RegisteredPanelTemplateId) => {
         return state.activePanelTemplates.has(panelTemplateId);
       },
-      [state]
+      [state],
     );
 
     const getIsPanelIdExists = useCallback(
       (panelId: PanelId) => {
         return Boolean(state.panelIdToPositionMap[panelId]);
       },
-      [state.panelIdToPositionMap]
+      [state.panelIdToPositionMap],
     );
 
     const getIsPanelIdActive = useCallback(
@@ -809,14 +806,14 @@ export function createPanelManager<
 
         return state.positions[x].positions[y].positions[tab].isActive;
       },
-      [reconcilePositions, state.positions]
+      [reconcilePositions, state.positions],
     );
 
     const setPositions = useCallback(
       (positions: RegisteredPanelItemPositionsMatrix) => {
         setState(reconcilePositions(positions));
       },
-      [reconcilePositions]
+      [reconcilePositions],
     );
 
     const value = useMemo(() => {
@@ -923,7 +920,7 @@ export function createPanelManager<
           'opacity-0 w-full h-full inset-0 bg-blue-50 z-[10]',
           !active ? 'pointer-events-none' : '',
           isOver ? 'opacity-80' : '',
-          className
+          className,
         )}
       />
     );
@@ -966,7 +963,7 @@ export function createPanelManager<
             'opacity-0 absolute w-[30%] h-full inset-0',
             position === 'left' ? 'left-0' : 'right-0 left-auto',
             !active ? 'pointer-events-none' : '',
-            className
+            className,
           )}
         />
         <div
@@ -975,7 +972,7 @@ export function createPanelManager<
           }}
           className={cn(
             allowOpenUI ? 'w-[100px] bg-blue-50 z-[10]' : 'w-[0]',
-            'transition-all h-full'
+            'transition-all h-full',
           )}
         />
       </div>
@@ -1039,7 +1036,7 @@ export function createPanelManager<
 
         resizeX(x, nextWidth);
       },
-      [resizeX, x]
+      [resizeX, x],
     );
 
     useEffect(() => {
@@ -1114,7 +1111,7 @@ export function createPanelManager<
 
         resizeY(x, y, nextHeight);
       },
-      [resizeY, x, y]
+      [resizeY, x, y],
     );
 
     useEffect(() => {
@@ -1185,7 +1182,7 @@ export function createPanelManager<
           onClick: handleMoveDown,
         },
       ],
-      [handleMoveDown, handleMoveRight]
+      [handleMoveDown, handleMoveRight],
     );
 
     return (
@@ -1212,7 +1209,7 @@ export function createPanelManager<
     const { tabs, activeTabId, x, y } = props;
 
     const filteredTabs = tabs.filter(
-      (tab) => !panelRegistry[tab.templateId].noTab
+      (tab) => !panelRegistry[tab.templateId].noTab,
     );
 
     if (filteredTabs.length === 0) {
@@ -1374,7 +1371,7 @@ export function createPanelManager<
   }
 
   interface PanelOpenerProps<
-    TPanelTemplateId extends RegisteredPanelTemplateId
+    TPanelTemplateId extends RegisteredPanelTemplateId,
   > {
     templateId: TPanelTemplateId;
     data: ExtractPanelData<TPanelTemplateId>;
@@ -1383,7 +1380,7 @@ export function createPanelManager<
   }
 
   function PanelOpener<TPanelTemplateId extends RegisteredPanelTemplateId>(
-    props: PanelOpenerProps<TPanelTemplateId>
+    props: PanelOpenerProps<TPanelTemplateId>,
   ) {
     const { templateId, data, id } = props;
     const { openPanel } = usePanelManager();
@@ -1414,7 +1411,7 @@ export function createPanelManager<
   }
 
   function PanelToggle<PanelTemplateId extends RegisteredPanelTemplateId>(
-    props: PanelOpenerProps<PanelTemplateId>
+    props: PanelOpenerProps<PanelTemplateId>,
   ) {
     const { templateId, data, id } = props;
     const { openPanel, closePanel } = usePanelManager();

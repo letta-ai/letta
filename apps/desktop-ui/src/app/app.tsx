@@ -1,48 +1,52 @@
-import NxWelcome from './nx-welcome';
+import { Route, Routes, Link, useNavigation } from 'react-router-dom';
+import { AppHeader } from './AppHeader/AppHeader';
+import { Homepage } from './pages/Homepage/Homepage';
+import {
+  Button,
+  Frame,
+  HStack,
+  LettaInvaderIcon,
+  VStack,
+} from '@letta-web/component-library';
+import { useTranslation } from 'react-i18next';
 
-import { Route, Routes, Link } from 'react-router-dom';
+function Sidebar() {
+  const { t } = useTranslation('App', { keyPrefix: 'Sidebar' });
+  return (
+    <VStack border padding="small" borderRight fullHeight>
+      <Link to="/">
+        <Button
+          hideLabel
+          active={window.location.pathname === '/'}
+          preIcon={<LettaInvaderIcon />}
+          color="tertiary-transparent"
+          label={t('agents')}
+        ></Button>
+      </Link>
+    </VStack>
+  );
+}
 
 export function App() {
   return (
-    <div>
-      <NxWelcome title="desktop-ui" />
-
-      {/* START: routes */}
-      {/* These routes and navigation have been generated for you */}
-      {/* Feel free to move and update them to fit your needs */}
-      <br />
-      <hr />
-      <br />
-      <div role="navigation">
-        <ul>
-          <li>
-            <Link to="/">Home</Link>
-          </li>
-          <li>
-            <Link to="/page-2">Page 2</Link>
-          </li>
-        </ul>
-      </div>
-      <Routes>
-        <Route
-          path="/"
-          element={
-            <div>
-              This is the generated root route.{' '}
-              <Link to="/page-2">Click here for page 2.</Link>
-            </div>
-          }
-        />
-        <Route
-          path="/page-2"
-          element={
-            <div>
-              <Link to="/">Click here to go back to root page.</Link>
-            </div>
-          }
-        />
-      </Routes>
-      {/* END: routes */}
+    <div className="flex flex-col w-[100dvw] h-[100dvh]">
+      <AppHeader />
+      <HStack padding="xxsmall" fullWidth gap="small" fullHeight>
+        <Sidebar />
+        <Frame border padding="small" fullWidth fullHeight>
+          <Routes>
+            <Route path="/" element={<Homepage />} />
+            <Route
+              path="/page-2"
+              element={
+                <div>
+                  <Link to="/">Click here to go back to root page.</Link>
+                </div>
+              }
+            />
+          </Routes>
+        </Frame>
+      </HStack>
     </div>
   );
 }
