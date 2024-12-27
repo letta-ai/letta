@@ -1,7 +1,7 @@
 import json
 import logging
 import uuid
-from typing import Callable, List, Optional, Union
+from typing import Callable, List, Optional, Sequence, Union
 
 from letta.llm_api.helpers import unpack_inner_thoughts_from_kwargs
 from letta.schemas.tool_rule import BaseToolRule
@@ -15,20 +15,16 @@ from letta.config import LettaConfig
 from letta.constants import DEFAULT_HUMAN, DEFAULT_PERSONA
 from letta.embeddings import embedding_model
 from letta.errors import (
-    InvalidFunctionCallError,
     InvalidInnerMonologueError,
-    MissingFunctionCallError,
+    InvalidToolCallError,
     MissingInnerMonologueError,
+    MissingToolCallError,
 )
 from letta.llm_api.llm_api_tools import create
 from letta.local_llm.constants import INNER_THOUGHTS_KWARG
 from letta.schemas.agent import AgentState
 from letta.schemas.embedding_config import EmbeddingConfig
-from letta.schemas.letta_message import (
-    FunctionCallMessage,
-    InternalMonologue,
-    LettaMessage,
-)
+from letta.schemas.letta_message import LettaMessage, ReasoningMessage, ToolCallMessage
 from letta.schemas.letta_response import LettaResponse
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.memory import ChatMemory
@@ -61,9 +57,10 @@ def setup_agent(
     filename: str,
     memory_human_str: str = get_human_text(DEFAULT_HUMAN),
     memory_persona_str: str = get_persona_text(DEFAULT_PERSONA),
-    tools: Optional[List[str]] = None,
+    tool_ids: Optional[List[str]] = None,
     tool_rules: Optional[List[BaseToolRule]] = None,
     agent_uuid: str = agent_uuid,
+    include_base_tools: bool = True,
 ) -> AgentState:
     config_data = json.load(open(filename, "r"))
     llm_config = LLMConfig(**config_data)
@@ -77,7 +74,13 @@ def setup_agent(
 
     memory = ChatMemory(human=memory_human_str, persona=memory_persona_str)
     agent_state = client.create_agent(
-        name=agent_uuid, llm_config=llm_config, embedding_config=embedding_config, memory=memory, tools=tools, tool_rules=tool_rules
+        name=agent_uuid,
+        llm_config=llm_config,
+        embedding_config=embedding_config,
+        memory=memory,
+        tool_ids=tool_ids,
+        tool_rules=tool_rules,
+        include_base_tools=include_base_tools,
     )
 
     return agent_state
@@ -103,16 +106,15 @@ def check_first_response_is_valid_for_llm_endpoint(filename: str) -> ChatComplet
     cleanup(client=client, agent_uuid=agent_uuid)
     agent_state = setup_agent(client, filename)
 
-    tools = [client.get_tool(client.get_tool_id(name=name)) for name in agent_state.tool_names]
     full_agent_state = client.get_agent(agent_state.id)
+    messages = client.server.agent_manager.get_in_context_messages(agent_id=full_agent_state.id, actor=client.user)
     agent = Agent(agent_state=full_agent_state, interface=None, user=client.user)
 
     response = create(
         llm_config=agent_state.llm_config,
         user_id=str(uuid.UUID(int=1)),  # dummy user_id
-        messages=agent._messages,
-        functions=agent.functions,
-        functions_python=agent.functions_python,
+        messages=messages,
+        functions=[t.json_schema for t in agent.agent_state.tools],
     )
 
     # Basic check
@@ -125,7 +127,11 @@ def check_first_response_is_valid_for_llm_endpoint(filename: str) -> ChatComplet
     choice = response.choices[0]
 
     # Ensure that the first message returns a "send_message"
-    validator_func = lambda function_call: function_call.name == "send_message" or function_call.name == "archival_memory_search"
+    validator_func = (
+        lambda function_call: function_call.name == "send_message"
+        or function_call.name == "archival_memory_search"
+        or function_call.name == "core_memory_append"
+    )
     assert_contains_valid_function_call(choice.message, validator_func)
 
     # Assert that the message has an inner monologue
@@ -171,19 +177,18 @@ def check_agent_uses_external_tool(filename: str) -> LettaResponse:
     client = create_client()
     cleanup(client=client, agent_uuid=agent_uuid)
     tool = client.load_composio_tool(action=Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER)
-    tool_name = tool.name
 
     # Set up persona for tool usage
     persona = f"""
 
     My name is Letta.
 
-    I am a personal assistant who answers a user's questions about a website `example.com`. When a user asks me a question about `example.com`, I will use a tool called {tool_name} which will search `example.com` and answer the relevant question.
+    I am a personal assistant who answers a user's questions about a website `example.com`. When a user asks me a question about `example.com`, I will use a tool called {tool.name} which will search `example.com` and answer the relevant question.
 
     Don’t forget - inner monologue / inner thoughts should always be different than the contents of send_message! send_message is how you communicate with the user, whereas inner thoughts are your own personal inner thoughts.
     """
 
-    agent_state = setup_agent(client, filename, memory_persona_str=persona, tools=[tool_name])
+    agent_state = setup_agent(client, filename, memory_persona_str=persona, tool_ids=[tool.id])
 
     response = client.user_message(agent_id=agent_state.id, message="What's on the example.com website?")
 
@@ -191,7 +196,7 @@ def check_agent_uses_external_tool(filename: str) -> LettaResponse:
     assert_sanity_checks(response)
 
     # Make sure the tool was called
-    assert_invoked_function_call(response.messages, tool_name)
+    assert_invoked_function_call(response.messages, tool.name)
 
     # Make sure some inner monologue is present
     assert_inner_monologue_is_present_and_valid(response.messages)
@@ -334,7 +339,7 @@ def check_agent_summarize_memory_simple(filename: str) -> LettaResponse:
     client.user_message(agent_id=agent_state.id, message="Does the number 42 ring a bell?")
 
     # Summarize
-    agent = client.server.load_agent(agent_id=agent_state.id)
+    agent = client.server.load_agent(agent_id=agent_state.id, actor=client.user)
     agent.summarize_messages_inplace()
     print(f"Summarization succeeded: messages[1] = \n\n{json_dumps(agent.messages[1])}\n")
 
@@ -375,27 +380,27 @@ def assert_sanity_checks(response: LettaResponse):
     assert len(response.messages) > 0, response
 
 
-def assert_invoked_send_message_with_keyword(messages: List[LettaMessage], keyword: str, case_sensitive: bool = False) -> None:
+def assert_invoked_send_message_with_keyword(messages: Sequence[LettaMessage], keyword: str, case_sensitive: bool = False) -> None:
     # Find first instance of send_message
     target_message = None
     for message in messages:
-        if isinstance(message, FunctionCallMessage) and message.function_call.name == "send_message":
+        if isinstance(message, ToolCallMessage) and message.tool_call.name == "send_message":
             target_message = message
             break
 
     # No messages found with `send_messages`
     if target_message is None:
-        raise MissingFunctionCallError(messages=messages, explanation="Missing `send_message` function call")
+        raise MissingToolCallError(messages=messages, explanation="Missing `send_message` function call")
 
-    send_message_function_call = target_message.function_call
+    send_message_function_call = target_message.tool_call
     try:
         arguments = json.loads(send_message_function_call.arguments)
     except:
-        raise InvalidFunctionCallError(messages=[target_message], explanation="Function call arguments could not be loaded into JSON")
+        raise InvalidToolCallError(messages=[target_message], explanation="Function call arguments could not be loaded into JSON")
 
     # Message field not in send_message
     if "message" not in arguments:
-        raise InvalidFunctionCallError(
+        raise InvalidToolCallError(
             messages=[target_message], explanation=f"send_message function call does not have required field `message`"
         )
 
@@ -405,23 +410,21 @@ def assert_invoked_send_message_with_keyword(messages: List[LettaMessage], keywo
         arguments["message"] = arguments["message"].lower()
 
     if not keyword in arguments["message"]:
-        raise InvalidFunctionCallError(messages=[target_message], explanation=f"Message argument did not contain keyword={keyword}")
+        raise InvalidToolCallError(messages=[target_message], explanation=f"Message argument did not contain keyword={keyword}")
 
 
-def assert_invoked_function_call(messages: List[LettaMessage], function_name: str) -> None:
+def assert_invoked_function_call(messages: Sequence[LettaMessage], function_name: str) -> None:
     for message in messages:
-        if isinstance(message, FunctionCallMessage) and message.function_call.name == function_name:
+        if isinstance(message, ToolCallMessage) and message.tool_call.name == function_name:
             # Found it, do nothing
             return
 
-    raise MissingFunctionCallError(
-        messages=messages, explanation=f"No messages were found invoking function call with name: {function_name}"
-    )
+    raise MissingToolCallError(messages=messages, explanation=f"No messages were found invoking function call with name: {function_name}")
 
 
 def assert_inner_monologue_is_present_and_valid(messages: List[LettaMessage]) -> None:
     for message in messages:
-        if isinstance(message, InternalMonologue):
+        if isinstance(message, ReasoningMessage):
             # Found it, do nothing
             return
 
@@ -448,7 +451,7 @@ def assert_contains_valid_function_call(
     if (hasattr(message, "function_call") and message.function_call is not None) and (
         hasattr(message, "tool_calls") and message.tool_calls is not None
     ):
-        raise InvalidFunctionCallError(messages=[message], explanation="Both function_call and tool_calls is present in the message")
+        raise InvalidToolCallError(messages=[message], explanation="Both function_call and tool_calls is present in the message")
     elif hasattr(message, "function_call") and message.function_call is not None:
         function_call = message.function_call
     elif hasattr(message, "tool_calls") and message.tool_calls is not None:
@@ -457,10 +460,10 @@ def assert_contains_valid_function_call(
         function_call = message.tool_calls[0].function
     else:
         # Throw a missing function call error
-        raise MissingFunctionCallError(messages=[message])
+        raise MissingToolCallError(messages=[message])
 
     if function_call_validator and not function_call_validator(function_call):
-        raise InvalidFunctionCallError(messages=[message], explanation=validation_failure_summary)
+        raise InvalidToolCallError(messages=[message], explanation=validation_failure_summary)
 
 
 def assert_inner_monologue_is_valid(message: Message) -> None:

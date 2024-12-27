@@ -8,7 +8,7 @@ import pytest
 from sqlalchemy import delete
 
 from letta import create_client
-from letta.functions.function_sets.base import core_memory_replace
+from letta.functions.function_sets.base import core_memory_append, core_memory_replace
 from letta.orm import SandboxConfig, SandboxEnvironmentVariable
 from letta.schemas.agent import AgentState
 from letta.schemas.embedding_config import EmbeddingConfig
@@ -55,13 +55,6 @@ def clear_tables():
 
     for sandbox in Sandbox.list():
         Sandbox.connect(sandbox.sandbox_id).kill()
-
-
-@pytest.fixture
-def check_e2b_key_is_set():
-    original_api_key = tool_settings.e2b_api_key
-    assert original_api_key is not None, "Missing e2b key! Cannot execute these tests."
-    yield
 
 
 @pytest.fixture
@@ -177,6 +170,7 @@ def always_err_tool(test_user):
             str: not important
         """
         # Raise a unusual error so we know it's from this function
+        print("Going to error now")
         raise ZeroDivisionError("This is an intentionally weird division!")
 
     tool = create_tool_from_func(error)
@@ -212,13 +206,6 @@ def clear_core_memory_tool(test_user):
         agent_state.memory.get_block("persona").value = ""
 
     tool = create_tool_from_func(clear_memory)
-    tool = ToolManager().create_or_update_tool(tool, test_user)
-    yield tool
-
-
-@pytest.fixture
-def core_memory_replace_tool(test_user):
-    tool = create_tool_from_func(core_memory_replace)
     tool = ToolManager().create_or_update_tool(tool, test_user)
     yield tool
 
@@ -272,6 +259,21 @@ def custom_test_sandbox_config(test_user):
     return manager, local_sandbox_config
 
 
+# Tool-specific fixtures
+@pytest.fixture
+def core_memory_tools(test_user):
+    """Create all base tools for testing."""
+    tools = {}
+    for func in [
+        core_memory_replace,
+        core_memory_append,
+    ]:
+        tool = create_tool_from_func(func)
+        tool = ToolManager().create_or_update_tool(tool, test_user)
+        tools[func.__name__] = tool
+    yield tools
+
+
 # Local sandbox tests
 
 
@@ -281,12 +283,12 @@ def test_local_sandbox_default(mock_e2b_api_key_none, add_integers_tool, test_us
 
     # Mock and assert correct pathway was invoked
     with patch.object(ToolExecutionSandbox, "run_local_dir_sandbox") as mock_run_local_dir_sandbox:
-        sandbox = ToolExecutionSandbox(add_integers_tool.name, args, user_id=test_user.id)
+        sandbox = ToolExecutionSandbox(add_integers_tool.name, args, user=test_user)
         sandbox.run()
         mock_run_local_dir_sandbox.assert_called_once()
 
     # Run again to get actual response
-    sandbox = ToolExecutionSandbox(add_integers_tool.name, args, user_id=test_user.id)
+    sandbox = ToolExecutionSandbox(add_integers_tool.name, args, user=test_user)
     result = sandbox.run()
     assert result.func_return == args["x"] + args["y"]
 
@@ -295,7 +297,7 @@ def test_local_sandbox_default(mock_e2b_api_key_none, add_integers_tool, test_us
 def test_local_sandbox_stateful_tool(mock_e2b_api_key_none, clear_core_memory_tool, test_user, agent_state):
     args = {}
     # Run again to get actual response
-    sandbox = ToolExecutionSandbox(clear_core_memory_tool.name, args, user_id=test_user.id)
+    sandbox = ToolExecutionSandbox(clear_core_memory_tool.name, args, user=test_user)
     result = sandbox.run(agent_state=agent_state)
     assert result.agent_state.memory.get_block("human").value == ""
     assert result.agent_state.memory.get_block("persona").value == ""
@@ -303,31 +305,8 @@ def test_local_sandbox_stateful_tool(mock_e2b_api_key_none, clear_core_memory_to
 
 
 @pytest.mark.local_sandbox
-def test_local_sandbox_core_memory_replace(mock_e2b_api_key_none, core_memory_replace_tool, test_user, agent_state):
-    new_name = "Matt"
-    args = {"label": "human", "old_content": "Chad", "new_content": new_name}
-    sandbox = ToolExecutionSandbox(core_memory_replace_tool.name, args, user_id=test_user.id)
-
-    # run the sandbox
-    result = sandbox.run(agent_state=agent_state)
-    assert new_name in result.agent_state.memory.get_block("human").value
-    assert result.func_return is None
-
-
-@pytest.mark.e2b_sandbox
-def test_local_sandbox_core_memory_replace_errors(mock_e2b_api_key_none, core_memory_replace_tool, test_user, agent_state):
-    nonexistent_name = "Alexander Wang"
-    args = {"label": "human", "old_content": nonexistent_name, "new_content": "Matt"}
-    sandbox = ToolExecutionSandbox(core_memory_replace_tool.name, args, user_id=test_user.id)
-
-    # run the sandbox
-    with pytest.raises(ValueError, match=f"Old content '{nonexistent_name}' not found in memory block 'human'"):
-        sandbox.run(agent_state=agent_state)
-
-
-@pytest.mark.local_sandbox
 def test_local_sandbox_with_list_rv(mock_e2b_api_key_none, list_tool, test_user):
-    sandbox = ToolExecutionSandbox(list_tool.name, {}, user_id=test_user.id)
+    sandbox = ToolExecutionSandbox(list_tool.name, {}, user=test_user)
     result = sandbox.run()
     assert len(result.func_return) == 5
 
@@ -352,7 +331,7 @@ def test_local_sandbox_env(mock_e2b_api_key_none, get_env_tool, test_user):
     args = {}
 
     # Run the custom sandbox
-    sandbox = ToolExecutionSandbox(get_env_tool.name, args, user_id=test_user.id)
+    sandbox = ToolExecutionSandbox(get_env_tool.name, args, user=test_user)
     result = sandbox.run()
 
     assert long_random_string in result.func_return
@@ -370,7 +349,7 @@ def test_local_sandbox_e2e_composio_star_github(mock_e2b_api_key_none, check_com
         actor=test_user,
     )
 
-    result = ToolExecutionSandbox(composio_github_star_tool.name, {"owner": "letta-ai", "repo": "letta"}, user_id=test_user.id).run()
+    result = ToolExecutionSandbox(composio_github_star_tool.name, {"owner": "letta-ai", "repo": "letta"}, user=test_user).run()
     assert result.func_return["details"] == "Action executed successfully"
 
 
@@ -380,7 +359,7 @@ def test_local_sandbox_external_codebase(mock_e2b_api_key_none, custom_test_sand
     args = {"percentage": 10}
 
     # Run again to get actual response
-    sandbox = ToolExecutionSandbox(external_codebase_tool.name, args, user_id=test_user.id)
+    sandbox = ToolExecutionSandbox(external_codebase_tool.name, args, user=test_user)
     result = sandbox.run()
 
     # Assert that the function return is correct
@@ -392,18 +371,21 @@ def test_local_sandbox_external_codebase(mock_e2b_api_key_none, custom_test_sand
 def test_local_sandbox_with_venv_and_warnings_does_not_error(
     mock_e2b_api_key_none, custom_test_sandbox_config, get_warning_tool, test_user
 ):
-    sandbox = ToolExecutionSandbox(get_warning_tool.name, {}, user_id=test_user.id)
+    sandbox = ToolExecutionSandbox(get_warning_tool.name, {}, user=test_user)
     result = sandbox.run()
     assert result.func_return == "Hello World"
 
 
 @pytest.mark.e2b_sandbox
 def test_local_sandbox_with_venv_errors(mock_e2b_api_key_none, custom_test_sandbox_config, always_err_tool, test_user):
-    sandbox = ToolExecutionSandbox(always_err_tool.name, {}, user_id=test_user.id)
+    sandbox = ToolExecutionSandbox(always_err_tool.name, {}, user=test_user)
 
     # run the sandbox
-    with pytest.raises(ZeroDivisionError, match="This is an intentionally weird division!"):
-        sandbox.run()
+    result = sandbox.run()
+    assert len(result.stdout) != 0, "stdout not empty"
+    assert "error" in result.stdout[0], "stdout contains printed string"
+    assert len(result.stderr) != 0, "stderr not empty"
+    assert "ZeroDivisionError: This is an intentionally weird division!" in result.stderr[0], "stderr contains expected error"
 
 
 # E2B sandbox tests
@@ -415,12 +397,12 @@ def test_e2b_sandbox_default(check_e2b_key_is_set, add_integers_tool, test_user)
 
     # Mock and assert correct pathway was invoked
     with patch.object(ToolExecutionSandbox, "run_e2b_sandbox") as mock_run_local_dir_sandbox:
-        sandbox = ToolExecutionSandbox(add_integers_tool.name, args, user_id=test_user.id)
+        sandbox = ToolExecutionSandbox(add_integers_tool.name, args, user=test_user)
         sandbox.run()
         mock_run_local_dir_sandbox.assert_called_once()
 
     # Run again to get actual response
-    sandbox = ToolExecutionSandbox(add_integers_tool.name, args, user_id=test_user.id)
+    sandbox = ToolExecutionSandbox(add_integers_tool.name, args, user=test_user)
     result = sandbox.run()
     assert int(result.func_return) == args["x"] + args["y"]
 
@@ -438,14 +420,14 @@ def test_e2b_sandbox_pip_installs(check_e2b_key_is_set, cowsay_tool, test_user):
         SandboxEnvironmentVariableCreate(key=key, value=long_random_string), sandbox_config_id=config.id, actor=test_user
     )
 
-    sandbox = ToolExecutionSandbox(cowsay_tool.name, {}, user_id=test_user.id)
+    sandbox = ToolExecutionSandbox(cowsay_tool.name, {}, user=test_user)
     result = sandbox.run()
     assert long_random_string in result.stdout[0]
 
 
 @pytest.mark.e2b_sandbox
 def test_e2b_sandbox_reuses_same_sandbox(check_e2b_key_is_set, list_tool, test_user):
-    sandbox = ToolExecutionSandbox(list_tool.name, {}, user_id=test_user.id)
+    sandbox = ToolExecutionSandbox(list_tool.name, {}, user=test_user)
 
     # Run the function once
     result = sandbox.run()
@@ -460,7 +442,7 @@ def test_e2b_sandbox_reuses_same_sandbox(check_e2b_key_is_set, list_tool, test_u
 
 @pytest.mark.e2b_sandbox
 def test_e2b_sandbox_stateful_tool(check_e2b_key_is_set, clear_core_memory_tool, test_user, agent_state):
-    sandbox = ToolExecutionSandbox(clear_core_memory_tool.name, {}, user_id=test_user.id)
+    sandbox = ToolExecutionSandbox(clear_core_memory_tool.name, {}, user=test_user)
 
     # run the sandbox
     result = sandbox.run(agent_state=agent_state)
@@ -470,48 +452,13 @@ def test_e2b_sandbox_stateful_tool(check_e2b_key_is_set, clear_core_memory_tool,
 
 
 @pytest.mark.e2b_sandbox
-def test_e2b_sandbox_core_memory_replace(check_e2b_key_is_set, core_memory_replace_tool, test_user, agent_state):
-    new_name = "Matt"
-    args = {"label": "human", "old_content": "Chad", "new_content": new_name}
-    sandbox = ToolExecutionSandbox(core_memory_replace_tool.name, args, user_id=test_user.id)
-
-    # run the sandbox
-    result = sandbox.run(agent_state=agent_state)
-    assert new_name in result.agent_state.memory.get_block("human").value
-    assert result.func_return is None
-
-
-@pytest.mark.e2b_sandbox
-def test_e2b_sandbox_escape_strings_in_args(check_e2b_key_is_set, core_memory_replace_tool, test_user, agent_state):
-    new_name = "Matt"
-    args = {"label": "human", "old_content": "Chad", "new_content": new_name + "\n"}
-    sandbox = ToolExecutionSandbox(core_memory_replace_tool.name, args, user_id=test_user.id)
-
-    # run the sandbox
-    result = sandbox.run(agent_state=agent_state)
-    assert new_name in result.agent_state.memory.get_block("human").value
-    assert result.func_return is None
-
-
-@pytest.mark.e2b_sandbox
-def test_e2b_sandbox_core_memory_replace_errors(check_e2b_key_is_set, core_memory_replace_tool, test_user, agent_state):
-    nonexistent_name = "Alexander Wang"
-    args = {"label": "human", "old_content": nonexistent_name, "new_content": "Matt"}
-    sandbox = ToolExecutionSandbox(core_memory_replace_tool.name, args, user_id=test_user.id)
-
-    # run the sandbox
-    with pytest.raises(ValueError, match=f"Old content '{nonexistent_name}' not found in memory block 'human'"):
-        sandbox.run(agent_state=agent_state)
-
-
-@pytest.mark.e2b_sandbox
 def test_e2b_sandbox_inject_env_var_existing_sandbox(check_e2b_key_is_set, get_env_tool, test_user):
     manager = SandboxConfigManager(tool_settings)
     config_create = SandboxConfigCreate(config=E2BSandboxConfig().model_dump())
     config = manager.create_or_update_sandbox_config(config_create, test_user)
 
     # Run the custom sandbox once, assert nothing returns because missing env variable
-    sandbox = ToolExecutionSandbox(get_env_tool.name, {}, user_id=test_user.id, force_recreate=True)
+    sandbox = ToolExecutionSandbox(get_env_tool.name, {}, user=test_user, force_recreate=True)
     result = sandbox.run()
     # response should be None
     assert result.func_return is None
@@ -524,7 +471,7 @@ def test_e2b_sandbox_inject_env_var_existing_sandbox(check_e2b_key_is_set, get_e
     )
 
     # Assert that the environment variable gets injected correctly, even when the sandbox is NOT refreshed
-    sandbox = ToolExecutionSandbox(get_env_tool.name, {}, user_id=test_user.id)
+    sandbox = ToolExecutionSandbox(get_env_tool.name, {}, user=test_user)
     result = sandbox.run()
     assert long_random_string in result.func_return
 
@@ -540,7 +487,7 @@ def test_e2b_sandbox_config_change_force_recreates_sandbox(check_e2b_key_is_set,
     config = manager.create_or_update_sandbox_config(config_create, test_user)
 
     # Run the custom sandbox once, assert a failure gets returned because missing environment variable
-    sandbox = ToolExecutionSandbox(list_tool.name, {}, user_id=test_user.id)
+    sandbox = ToolExecutionSandbox(list_tool.name, {}, user=test_user)
     result = sandbox.run()
     assert len(result.func_return) == 5
     old_config_fingerprint = result.sandbox_config_fingerprint
@@ -550,7 +497,7 @@ def test_e2b_sandbox_config_change_force_recreates_sandbox(check_e2b_key_is_set,
     config = manager.update_sandbox_config(config.id, config_update, test_user)
 
     # Run again
-    result = ToolExecutionSandbox(list_tool.name, {}, user_id=test_user.id).run()
+    result = ToolExecutionSandbox(list_tool.name, {}, user=test_user).run()
     new_config_fingerprint = result.sandbox_config_fingerprint
     assert config.fingerprint() == new_config_fingerprint
 
@@ -560,7 +507,7 @@ def test_e2b_sandbox_config_change_force_recreates_sandbox(check_e2b_key_is_set,
 
 @pytest.mark.e2b_sandbox
 def test_e2b_sandbox_with_list_rv(check_e2b_key_is_set, list_tool, test_user):
-    sandbox = ToolExecutionSandbox(list_tool.name, {}, user_id=test_user.id)
+    sandbox = ToolExecutionSandbox(list_tool.name, {}, user=test_user)
     result = sandbox.run()
     assert len(result.func_return) == 5
 
@@ -577,5 +524,81 @@ def test_e2b_e2e_composio_star_github(check_e2b_key_is_set, check_composio_key_s
         actor=test_user,
     )
 
-    result = ToolExecutionSandbox(composio_github_star_tool.name, {"owner": "letta-ai", "repo": "letta"}, user_id=test_user.id).run()
+    result = ToolExecutionSandbox(composio_github_star_tool.name, {"owner": "letta-ai", "repo": "letta"}, user=test_user).run()
     assert result.func_return["details"] == "Action executed successfully"
+
+
+# Core memory integration tests
+class TestCoreMemoryTools:
+    """
+    Tests for core memory manipulation tools.
+    Tests run in both local sandbox and e2b environments.
+    """
+
+    # Local sandbox tests
+    @pytest.mark.local_sandbox
+    def test_core_memory_replace_local(self, mock_e2b_api_key_none, core_memory_tools, test_user, agent_state):
+        """Test successful replacement of content in core memory - local sandbox."""
+        new_name = "Charles"
+        args = {"label": "human", "old_content": "Chad", "new_content": new_name}
+        sandbox = ToolExecutionSandbox(core_memory_tools["core_memory_replace"].name, args, user=test_user)
+
+        result = sandbox.run(agent_state=agent_state)
+        assert new_name in result.agent_state.memory.get_block("human").value
+        assert result.func_return is None
+
+    @pytest.mark.local_sandbox
+    def test_core_memory_append_local(self, mock_e2b_api_key_none, core_memory_tools, test_user, agent_state):
+        """Test successful appending of content to core memory - local sandbox."""
+        append_text = "\nLikes coffee"
+        args = {"label": "human", "content": append_text}
+        sandbox = ToolExecutionSandbox(core_memory_tools["core_memory_append"].name, args, user=test_user)
+
+        result = sandbox.run(agent_state=agent_state)
+        assert append_text in result.agent_state.memory.get_block("human").value
+        assert result.func_return is None
+
+    @pytest.mark.local_sandbox
+    def test_core_memory_replace_error_local(self, mock_e2b_api_key_none, core_memory_tools, test_user, agent_state):
+        """Test error handling when trying to replace non-existent content - local sandbox."""
+        nonexistent_name = "Alexander Wang"
+        args = {"label": "human", "old_content": nonexistent_name, "new_content": "Charles"}
+        sandbox = ToolExecutionSandbox(core_memory_tools["core_memory_replace"].name, args, user=test_user)
+
+        result = sandbox.run(agent_state=agent_state)
+        assert len(result.stderr) != 0
+        assert f"ValueError: Old content '{nonexistent_name}' not found in memory block 'human'" in result.stderr[0]
+
+    # E2B sandbox tests
+    @pytest.mark.e2b_sandbox
+    def test_core_memory_replace_e2b(self, check_e2b_key_is_set, core_memory_tools, test_user, agent_state):
+        """Test successful replacement of content in core memory - e2b sandbox."""
+        new_name = "Charles"
+        args = {"label": "human", "old_content": "Chad", "new_content": new_name}
+        sandbox = ToolExecutionSandbox(core_memory_tools["core_memory_replace"].name, args, user=test_user)
+
+        result = sandbox.run(agent_state=agent_state)
+        assert new_name in result.agent_state.memory.get_block("human").value
+        assert result.func_return is None
+
+    @pytest.mark.e2b_sandbox
+    def test_core_memory_append_e2b(self, check_e2b_key_is_set, core_memory_tools, test_user, agent_state):
+        """Test successful appending of content to core memory - e2b sandbox."""
+        append_text = "\nLikes coffee"
+        args = {"label": "human", "content": append_text}
+        sandbox = ToolExecutionSandbox(core_memory_tools["core_memory_append"].name, args, user=test_user)
+
+        result = sandbox.run(agent_state=agent_state)
+        assert append_text in result.agent_state.memory.get_block("human").value
+        assert result.func_return is None
+
+    @pytest.mark.e2b_sandbox
+    def test_core_memory_replace_error_e2b(self, check_e2b_key_is_set, core_memory_tools, test_user, agent_state):
+        """Test error handling when trying to replace non-existent content - e2b sandbox."""
+        nonexistent_name = "Alexander Wang"
+        args = {"label": "human", "old_content": nonexistent_name, "new_content": "Charles"}
+        sandbox = ToolExecutionSandbox(core_memory_tools["core_memory_replace"].name, args, user=test_user)
+
+        result = sandbox.run(agent_state=agent_state)
+        assert len(result.stderr) != 0
+        assert f"ValueError: Old content '{nonexistent_name}' not found in memory block 'human'" in result.stderr[0]

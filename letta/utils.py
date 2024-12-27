@@ -28,6 +28,7 @@ from letta.constants import (
     CLI_WARNING_PREFIX,
     CORE_MEMORY_HUMAN_CHAR_LIMIT,
     CORE_MEMORY_PERSONA_CHAR_LIMIT,
+    ERROR_MESSAGE_PREFIX,
     LETTA_DIR,
     MAX_FILENAME_LENGTH,
     TOOL_CALL_ID_MAX_LEN,
@@ -548,13 +549,13 @@ def enforce_types(func):
         for arg_name, arg_value in args_with_hints.items():
             hint = hints.get(arg_name)
             if hint and not matches_type(arg_value, hint):
-                raise ValueError(f"Argument {arg_name} does not match type {hint}")
+                raise ValueError(f"Argument {arg_name} does not match type {hint}; is {arg_value}")
 
         # Check types of keyword arguments
         for arg_name, arg_value in kwargs.items():
             hint = hints.get(arg_name)
             if hint and not matches_type(arg_value, hint):
-                raise ValueError(f"Argument {arg_name} does not match type {hint}")
+                raise ValueError(f"Argument {arg_name} does not match type {hint}; is {arg_value}")
 
         return func(*args, **kwargs)
 
@@ -1118,3 +1119,11 @@ def sanitize_filename(filename: str) -> str:
 
     # Return the sanitized filename
     return sanitized_filename
+
+def get_friendly_error_msg(function_name: str, exception_name: str, exception_message: str):
+    from letta.constants import MAX_ERROR_MESSAGE_CHAR_LIMIT
+
+    error_msg = f"{ERROR_MESSAGE_PREFIX} executing function {function_name}: {exception_name}: {exception_message}"
+    if len(error_msg) > MAX_ERROR_MESSAGE_CHAR_LIMIT:
+        error_msg = error_msg[:MAX_ERROR_MESSAGE_CHAR_LIMIT]
+    return error_msg

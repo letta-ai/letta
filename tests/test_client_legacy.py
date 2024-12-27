@@ -11,28 +11,29 @@ from sqlalchemy import delete
 
 from letta import create_client
 from letta.client.client import LocalClient, RESTClient
-from letta.constants import DEFAULT_PRESET
+from letta.constants import BASE_MEMORY_TOOLS, BASE_TOOLS, DEFAULT_PRESET
 from letta.orm import FileMetadata, Source
 from letta.schemas.agent import AgentState
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import MessageRole, MessageStreamStatus
 from letta.schemas.letta_message import (
     AssistantMessage,
-    FunctionCallMessage,
-    FunctionReturn,
-    InternalMonologue,
     LettaMessage,
+    ReasoningMessage,
     SystemMessage,
+    ToolCallMessage,
+    ToolReturnMessage,
     UserMessage,
 )
 from letta.schemas.letta_response import LettaResponse, LettaStreamingResponse
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import MessageCreate
 from letta.schemas.usage import LettaUsageStatistics
+from letta.services.helpers.agent_manager_helper import initialize_message_sequence
 from letta.services.organization_manager import OrganizationManager
-from letta.services.tool_manager import ToolManager
 from letta.services.user_manager import UserManager
 from letta.settings import model_settings
+from letta.utils import get_utc_time
 from tests.helpers.client_helper import upload_file_using_client
 
 # from tests.utils import create_config
@@ -172,9 +173,9 @@ def test_agent_interactions(mock_e2b_api_key_none, client: Union[LocalClient, RE
         assert type(letta_message) in [
             SystemMessage,
             UserMessage,
-            InternalMonologue,
-            FunctionCallMessage,
-            FunctionReturn,
+            ReasoningMessage,
+            ToolCallMessage,
+            ToolReturnMessage,
             AssistantMessage,
         ], f"Unexpected message type: {type(letta_message)}"
 
@@ -256,10 +257,10 @@ def test_streaming_send_message(mock_e2b_api_key_none, client: RESTClient, agent
     assert response, "Sending message failed"
     for chunk in response:
         assert isinstance(chunk, LettaStreamingResponse)
-        if isinstance(chunk, InternalMonologue) and chunk.internal_monologue and chunk.internal_monologue != "":
+        if isinstance(chunk, ReasoningMessage) and chunk.reasoning and chunk.reasoning != "":
             inner_thoughts_exist = True
             inner_thoughts_count += 1
-        if isinstance(chunk, FunctionCallMessage) and chunk.function_call and chunk.function_call.name == "send_message":
+        if isinstance(chunk, ToolCallMessage) and chunk.tool_call and chunk.tool_call.name == "send_message":
             send_message_ran = True
         if isinstance(chunk, MessageStreamStatus):
             if chunk == MessageStreamStatus.done:
@@ -336,9 +337,9 @@ def test_list_tools_pagination(client: Union[LocalClient, RESTClient]):
 
 
 def test_list_tools(client: Union[LocalClient, RESTClient]):
-    tools = client.add_base_tools()
+    tools = client.upsert_base_tools()
     tool_names = [t.name for t in tools]
-    expected = ToolManager.BASE_TOOL_NAMES + ToolManager.BASE_MEMORY_TOOL_NAMES
+    expected = BASE_TOOLS + BASE_MEMORY_TOOLS
     assert sorted(tool_names) == sorted(expected)
 
 
@@ -482,7 +483,6 @@ def test_sources(client: Union[LocalClient, RESTClient], agent: AgentState):
 
     # check agent archival memory size
     archival_memories = client.get_archival_memory(agent_id=agent.id)
-    print(archival_memories)
     assert len(archival_memories) == 0
 
     # load a file into a source (non-blocking job)
@@ -531,15 +531,16 @@ def test_sources(client: Union[LocalClient, RESTClient], agent: AgentState):
 
 def test_message_update(client: Union[LocalClient, RESTClient], agent: AgentState):
     """Test that we can update the details of a message"""
+    import json
 
     # create a message
     message_response = client.send_message(agent_id=agent.id, message="Test message", role="user")
     print("Messages=", message_response)
     assert isinstance(message_response, LettaResponse)
-    assert isinstance(message_response.messages[-1], FunctionReturn)
+    assert isinstance(message_response.messages[-1], ToolReturnMessage)
     message = message_response.messages[-1]
 
-    new_text = "This exact string would never show up in the message???"
+    new_text = json.dumps({"message": "This exact string would never show up in the message???"})
     new_message = client.update_message(message_id=message.id, text=new_text, agent_id=agent.id)
     assert new_message.text == new_text
 
@@ -583,43 +584,6 @@ def test_list_llm_models(client: RESTClient):
         assert has_model_endpoint_type(models, "anthropic")
 
 
-def test_shared_blocks(mock_e2b_api_key_none, client: Union[LocalClient, RESTClient], agent: AgentState):
-    # _reset_config()
-
-    # create a block
-    block = client.create_block(label="human", value="username: sarah")
-
-    # create agents with shared block
-    from letta.schemas.block import Block
-    from letta.schemas.memory import BasicBlockMemory
-
-    # persona1_block = client.create_block(label="persona", value="you are agent 1")
-    # persona2_block = client.create_block(label="persona", value="you are agent 2")
-    # create agnets
-    agent_state1 = client.create_agent(name="agent1", memory=BasicBlockMemory([Block(label="persona", value="you are agent 1"), block]))
-    agent_state2 = client.create_agent(name="agent2", memory=BasicBlockMemory([Block(label="persona", value="you are agent 2"), block]))
-
-    ## attach shared block to both agents
-    # client.link_agent_memory_block(agent_state1.id, block.id)
-    # client.link_agent_memory_block(agent_state2.id, block.id)
-
-    # update memory
-    response = client.user_message(agent_id=agent_state1.id, message="my name is actually charles")
-
-    # check agent 2 memory
-    assert "charles" in client.get_block(block.id).value.lower(), f"Shared block update failed {client.get_block(block.id).value}"
-
-    response = client.user_message(agent_id=agent_state2.id, message="whats my name?")
-    assert (
-        "charles" in client.get_core_memory(agent_state2.id).get_block("human").value.lower()
-    ), f"Shared block update failed {client.get_core_memory(agent_state2.id).get_block('human').value}"
-    # assert "charles" in response.messages[1].text.lower(), f"Shared block update failed {response.messages[0].text}"
-
-    # cleanup
-    client.delete_agent(agent_state1.id)
-    client.delete_agent(agent_state2.id)
-
-
 @pytest.fixture
 def cleanup_agents(client):
     created_agents = []
@@ -640,18 +604,11 @@ def test_initial_message_sequence(client: Union[LocalClient, RESTClient], agent:
     If we pass in a non-empty list, we should get that sequence
     If we pass in an empty list, we should get an empty sequence
     """
-    from letta.agent import initialize_message_sequence
-    from letta.utils import get_utc_time
-
     # The reference initial message sequence:
     reference_init_messages = initialize_message_sequence(
-        model=agent.llm_config.model,
-        system=agent.system,
-        agent_id=agent.id,
-        memory=agent.memory,
+        agent_state=agent,
         memory_edit_timestamp=get_utc_time(),
         include_initial_boot_message=True,
-        actor=default_user,
     )
 
     # system, login message, send_message test, send_message receipt

@@ -312,11 +312,7 @@ def generate_schema(function, name: Optional[str] = None, description: Optional[
     for param in sig.parameters.values():
         # Exclude 'self' parameter
         # TODO: eventually remove this (only applies to BASE_TOOLS)
-        if param.name == "self":
-            continue
-
-        # exclude 'agent_state' parameter
-        if param.name == "agent_state":
+        if param.name in ["self", "agent_state"]:  # Add agent_manager to excluded
             continue
 
         # Assert that the parameter has a type annotation
@@ -390,7 +386,7 @@ def generate_schema(function, name: Optional[str] = None, description: Optional[
     # append the heartbeat
     # TODO: don't hard-code
     # TODO: if terminal, don't include this
-    if function.__name__ not in ["send_message", "pause_heartbeats"]:
+    if function.__name__ not in ["send_message"]:
         schema["parameters"]["properties"]["request_heartbeat"] = {
             "type": "boolean",
             "description": "Request an immediate heartbeat after function execution. Set to `True` if you want to send a follow-up message or run a follow-up function.",

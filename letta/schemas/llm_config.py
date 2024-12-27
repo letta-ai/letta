@@ -44,6 +44,7 @@ class LLMConfig(BaseModel):
         True,
         description="Puts 'inner_thoughts' as a kwarg in the function call if this is set to True. This helps with function calling performance and also the generation of inner thoughts.",
     )
+    handle: Optional[str] = Field(None, description="The handle for this config, in the format provider/model-name.")
 
     # FIXME hack to silence pydantic protected namespace warning
     model_config = ConfigDict(protected_namespaces=())
