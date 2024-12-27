@@ -952,7 +952,7 @@ export class AgentsService {
    * @param data The data for the request.
    * @param data.agentId
    * @param data.userId
-   * @returns AgentState Successful Response
+   * @returns unknown Successful Response
    * @throws ApiError
    */
   public static deleteAgent(

@@ -196,6 +196,22 @@
                     ],
                     "nullable": true
                   },
+                  "llm": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "embedding": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "context_window_limit": {
+                    "type": "number",
+                    "nullable": true
+                  },
+                  "embedding_chunk_size": {
+                    "type": "number",
+                    "nullable": true
+                  },
                   "template": {
                     "type": "boolean"
                   },
@@ -931,6 +947,62 @@
                     "message": {
                       "type": "string",
                       "enum": ["Failed to create agent template"]
+                    }
+                  },
+                  "required": ["message"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/agents/{agent_id}/variables": {
+      "get": {
+        "description": "Get the variables associated with an agent",
+        "summary": "Get Agent Variables",
+        "tags": ["agents"],
+        "parameters": [
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "operationId": "agents.getAgentVariables",
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "variables": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "required": ["variables"]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "404",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "enum": ["Agent not found"]
                     }
                   },
                   "required": ["message"]
