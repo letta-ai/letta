@@ -26,9 +26,9 @@ def evaluate(input_file: str):
 
             final_answer = ""
             for message in obj['response']['messages']:
-                if message['message_type'] == "function_call":
-                    if message['function_call']['name'] == "send_message":
-                        arguments = json.loads(message['function_call']['arguments'])
+                if message['message_type'] == "tool_call_message":
+                    if message['tool_call']['name'] == "send_message":
+                        arguments = json.loads(message['tool_call']['arguments'])
                         final_answer = arguments['message']
 
             # TODO: make sure this matches lm-evaluation-harness
