@@ -63,10 +63,10 @@ function AddRemoteDevelopmentServer() {
           onSuccess: (response) => {
             window.location.href = `/development-servers/${response.body.developmentServer.id}/agents`;
           },
-        }
+        },
       );
     },
-    [isPending, isSuccess, mutate]
+    [isPending, isSuccess, mutate],
   );
 
   return (
@@ -79,7 +79,7 @@ function AddRemoteDevelopmentServer() {
                 {t.rich('description', {
                   code: (chunks) => (
                     <InlineCode
-                      code={chunks?.toString() || ''}
+                      code={typeof chunks === 'string' ? chunks : ''}
                       hideCopyButton
                     />
                   ),

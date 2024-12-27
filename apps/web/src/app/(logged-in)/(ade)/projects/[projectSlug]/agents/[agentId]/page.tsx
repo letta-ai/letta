@@ -17,10 +17,10 @@ import { AgentPage } from './AgentPage';
 import { getUserOrRedirect } from '$web/server/auth';
 
 interface AgentsAgentPageProps {
-  params: {
+  params: Promise<{
     agentId: string;
     projectSlug: string;
-  };
+  }>;
 }
 
 async function AgentsAgentPage(context: AgentsAgentPageProps) {
@@ -31,7 +31,7 @@ async function AgentsAgentPage(context: AgentsAgentPageProps) {
     return null;
   }
 
-  const { agentId, projectSlug } = context.params;
+  const { agentId, projectSlug } = await context.params;
 
   if (projectSlug === 'development-servers') {
     redirect('/projects');

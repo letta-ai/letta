@@ -41,7 +41,7 @@ export async function setCookie<CookieName extends CookieNames>(
   payload: CookieTypePayload[CookieName],
   extraConfig?: Partial<RequestCookieInterface>
 ) {
-  cookies().set(name, JSON.stringify(payload), {
+  (await cookies()).set(name, JSON.stringify(payload), {
     ...cookieConfiguration[name],
     ...extraConfig,
   });
@@ -50,7 +50,7 @@ export async function setCookie<CookieName extends CookieNames>(
 export async function getCookie<CookieName extends CookieNames>(
   name: CookieName
 ): Promise<CookieTypePayload[CookieName] | null> {
-  const cookie = cookies().get(name);
+  const cookie = (await cookies()).get(name);
 
   if (!cookie) {
     return null;
@@ -62,5 +62,5 @@ export async function getCookie<CookieName extends CookieNames>(
 export async function deleteCookie<CookieName extends CookieNames>(
   name: CookieName
 ) {
-  cookies().delete(name);
+  (await cookies()).delete(name);
 }

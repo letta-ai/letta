@@ -108,7 +108,7 @@ function CreateAgentDialog(props: CreateAgentDialogProps) {
                   name: tool.name,
                 },
               });
-            })
+            }),
           );
         }
 
@@ -142,7 +142,7 @@ function CreateAgentDialog(props: CreateAgentDialogProps) {
         });
 
         push(
-          `/development-servers/${developmentServerConfig.id}/agents/${response.id}`
+          `/development-servers/${developmentServerConfig.id}/agents/${response.id}`,
         );
       } catch (_e) {
         setIsPending(false);
@@ -162,7 +162,7 @@ function CreateAgentDialog(props: CreateAgentDialogProps) {
       user?.id,
       push,
       getAllTools,
-    ]
+    ],
   );
 
   const starterKits = useMemo(() => {
@@ -209,7 +209,7 @@ function CreateAgentDialog(props: CreateAgentDialogProps) {
                   serverName:
                     config?.id === 'local'
                       ? t('alert.local')
-                      : `"${config?.name || ''}"` || '',
+                      : `"${config?.name}"`,
                 })}
               >
                 {config?.id === 'local'

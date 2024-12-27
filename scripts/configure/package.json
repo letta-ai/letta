@@ -2,8 +2,8 @@
   "name": "@letta-web/configure",
   "version": "0.0.1",
   "dependencies": {
-    "@nx/devkit": "19.6.3",
-    "@nx/workspace": "19.6.3",
+    "@nx/devkit": "20.3.0",
+    "@nx/workspace": "20.3.0",
     "tslib": "^2.3.0",
     "lodash": "^4.17.21"
   },

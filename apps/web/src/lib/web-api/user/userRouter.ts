@@ -74,11 +74,11 @@ async function updateCurrentUser(
   }
 
   if (payload.body.theme) {
-    cookies().set(CookieNames.THEME, payload.body.theme);
+    (await cookies()).set(CookieNames.THEME, payload.body.theme);
   }
 
   if (payload.body.locale) {
-    cookies().set(CookieNames.LOCALE, payload.body.locale);
+    (await cookies()).set(CookieNames.LOCALE, payload.body.locale);
   }
 
   const updatedUser = {

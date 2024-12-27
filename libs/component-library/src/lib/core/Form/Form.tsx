@@ -9,7 +9,6 @@ import { Controller, FormProvider, useFormContext } from 'react-hook-form';
 import { cn } from '@letta-web/core-style-config';
 import { cva, type VariantProps } from 'class-variance-authority';
 import type { PropsWithChildren } from 'react';
-import { forwardRef } from 'react';
 import { useId, useMemo } from 'react';
 import { HStack } from '../../framing/HStack/HStack';
 import { Typography } from '../Typography/Typography';
@@ -189,6 +188,7 @@ function InputContainerHeader(props: InputContainerHeaderProps) {
 
 export interface InputContainerProps {
   label: string;
+  ref?: any;
   preLabelIcon?: React.ReactNode;
   labelVariant?: LabelVariant;
   hideLabel?: boolean;
@@ -340,14 +340,14 @@ export function makeInput<T>(
   componentName: string,
   options?: MakeInputOptions
 ) {
-  function InputWrapper(props: MakeInputProps<T>, ref: any) {
+  function InputWrapper(props: MakeInputProps<T>) {
     const el = (
       <InputContainer
         {...props}
         inline={options?.inline}
         fullWidth={props.fullWidth || options?.fullWidth}
       >
-        <Input ref={ref} {...(omit(props, omitProps) as typeof props)} />
+        <Input ref={props.ref} {...(omit(props, omitProps) as typeof props)} />
       </InputContainer>
     );
 
@@ -358,7 +358,7 @@ export function makeInput<T>(
 
   InputWrapper.displayName = componentName;
 
-  return forwardRef<any, MakeInputProps<T>>(InputWrapper);
+  return InputWrapper;
 }
 
 export const inputStorybookArgTypes: ArgTypes = {

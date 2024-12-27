@@ -5,10 +5,10 @@ interface BodyProps {
   children: React.ReactNode;
 }
 
-export function Body(props: BodyProps) {
+export async function Body(props: BodyProps) {
   const { children } = props;
 
-  const theme = cookies().get(CookieNames.THEME);
+  const theme = (await cookies()).get(CookieNames.THEME);
 
   return (
     <body className={theme?.value} data-mode={theme?.value}>

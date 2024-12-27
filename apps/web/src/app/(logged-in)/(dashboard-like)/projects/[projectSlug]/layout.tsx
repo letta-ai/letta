@@ -10,14 +10,14 @@ import { redirect } from 'next/navigation';
 import { ProjectLayoutInner } from './_components/ProjectLayoutInner/ProjectLayoutInner';
 
 interface ProjectPageWrapperProps {
-  params: {
+  params: Promise<{
     projectSlug: string;
-  };
+  }>;
   children: React.ReactNode;
 }
 
 async function ProjectPageLayout(props: ProjectPageWrapperProps) {
-  const { projectSlug } = props.params;
+  const { projectSlug } = await props.params;
   const queryClient = new QueryClient();
 
   const project = await getProjectByIdOrSlug({

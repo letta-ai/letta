@@ -12,16 +12,16 @@ import { router } from '$web/web-api/router';
 
 interface LocalServiceLayoutProps {
   children: React.ReactNode;
-  params: {
+  params: Promise<{
     developmentServerId: string;
-  };
+  }>;
 }
 
 async function LocalServiceLayout(props: LocalServiceLayoutProps) {
-  const {
-    children,
-    params: { developmentServerId },
-  } = props;
+  const { children } = props;
+
+  const { developmentServerId } = await props.params;
+
   const queryClient = new QueryClient();
 
   if (developmentServerId === 'local') {

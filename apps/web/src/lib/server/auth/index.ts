@@ -557,7 +557,7 @@ export async function signInUserFromProviderLogin(
     expires,
   });
 
-  cookies().set(CookieNames.THEME, user.theme);
+  (await cookies()).set(CookieNames.THEME, user.theme);
 
   await setRedisData('userSession', sessionId, {
     expiresAt: expires,

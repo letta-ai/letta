@@ -13,14 +13,14 @@ import {
 import { DataSourceClientLayout } from './_components/DataSourceClientLayout/DataSourceClientLayout';
 
 interface ProjectPageWrapperProps {
-  params: {
+  params: Promise<{
     dataSourceId: string;
-  };
+  }>;
   children: React.ReactNode;
 }
 
 async function DataSourcePageLayout(props: ProjectPageWrapperProps) {
-  const { dataSourceId } = props.params;
+  const { dataSourceId } = await props.params;
   const queryClient = new QueryClient();
 
   const dataSource = await SourcesService.getSource({

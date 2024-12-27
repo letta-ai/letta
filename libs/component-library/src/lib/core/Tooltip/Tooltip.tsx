@@ -71,7 +71,7 @@ export function useTooltip({
       ...interactions,
       ...data,
     }),
-    [open, setOpen, interactions, data]
+    [open, setOpen, interactions, data],
   );
 }
 
@@ -85,7 +85,7 @@ function useTooltipContext() {
 
   if (context == null) {
     throw new Error(
-      'TooltipProvider components must be wrapped in <TooltipProvider />'
+      'TooltipProvider components must be wrapped in <TooltipProvider />',
     );
   }
 
@@ -111,7 +111,7 @@ const TooltipTrigger = React.forwardRef<
   React.HTMLProps<HTMLElement> & { asChild?: boolean }
 >(function TooltipTrigger({ children, asChild = false, ...props }, propRef) {
   const context = useTooltipContext();
-  const childrenRef = (children as any).ref;
+  const childrenRef = (props as any).ref;
   const ref = useMergeRefs([context.refs.setReference, propRef, childrenRef]);
 
   // `asChild` allows the user to pass any element as the anchor
@@ -121,9 +121,9 @@ const TooltipTrigger = React.forwardRef<
       context.getReferenceProps({
         ref,
         ...props,
-        ...children.props,
+        ...(children as any).props,
         'data-tooltipstate': context.open ? 'open' : 'closed',
-      })
+      }),
     );
   }
 

@@ -7,7 +7,7 @@ import en from '../../translations/en.json';
 export default getRequestConfig(async () => {
   // Provide a static locale, fetch a user setting,
   // read from `cookies()`, `headers()`, etc.
-  const locale = cookies().get(CookieNames.LOCALE)?.value || 'en';
+  const locale = (await cookies()).get(CookieNames.LOCALE)?.value || 'en';
 
   // load en.json as a fallback
   const messages = {
