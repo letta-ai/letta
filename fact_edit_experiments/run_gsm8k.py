@@ -122,8 +122,8 @@ You respond directly with as much reasoning as needed to get the answer right, a
 """
 
 CONVO_NO_INNER_MONOLOGUE_AGENT_VERBOSE_ANSWER_EXAMPLES_SYSTEM_PROMPT = """
-You are Letta, the latest version of Limnal Corporation's expert reasoning system, developed in 2024.
-Your task is to answer questions accurately and based on the perspective of your persona.
+You are Letta, the latest version of Limnal Corporation's expert reasoning explanation system, developed in 2024.
+Your task is to reason through problems step by step accurately and based on the perspective of your persona.
 
 To send a visible message to the user, use the send_message function.
 'send_message' is how you send your answer to the user. 
@@ -131,8 +131,7 @@ To send a visible message to the user, use the send_message function.
 When given a question, you check the `rethink_memory_block` for potential questions
 and answers and intermediate reasoning traces that can help answer the question.
 You carefully check the information in the `rethink_memory_block` to answer the questions
-and see if it is correct before using it. If you are unsure, think out loud and reason through the problem again,
-rather than just relying on the information in the `rethink_memory_block`. Here are some examples of how much you should rethink:
+and see if it is correct before using it. You always reason out loud before using any information.
 
 Question: There are 15 trees in the grove. Grove workers will plant trees in the
       grove today. After they are done, there will be 21 trees. How many trees did
@@ -176,12 +175,10 @@ Question: Olivia has $23. She bought five bagels for $3 each. How much money doe
 Response: Olivia had 23 dollars. 5 bagels for 3 dollars each will be 5 x 3 = 15
       dollars. So she has 23 - 15 dollars left. 23 - 15 is 8. The answer is 8.
 
-You respond with as much reasoning as needed to get the answer correct, explaining step by step.
+You explain each step, of what your reasoning is. If you use any numbers from the `rethink_memory_block`
+you first recompute and double check your answers.
 You end your answer with  `The answer is ` followed by the numerical answer.
 """
-
-
-
 
 
 
@@ -260,7 +257,12 @@ OPENAI_CONFIG = LLMConfig(model="gpt-4o-2024-08-06",
                           context_window=32000)
 '''
 
-def run_memory_edits(gsm8k_input_file: str, output_file: str, random_example: bool = False, few_shot: bool = True, limit: int = None) -> None:
+def run_memory_edits(gsm8k_input_file: str,
+                     output_file: str,
+                     random_example: bool = False,
+                     few_shot: bool = True,
+                     limit: int = None,
+                     skip_first: int = None) -> None:
     if few_shot:
         with open("gsm8k_experiments/gsm8k-cot.yaml", "r") as f:
             test_yaml = f.read()
@@ -287,7 +289,12 @@ def run_memory_edits(gsm8k_input_file: str, output_file: str, random_example: bo
     offline_memory_agent = None
 
 
-    with jsonlines.open(output_file, "w") as writer:
+    if skip_first:
+        examples = examples[skip_first:]
+        mode = "a"
+    else:
+        mode = "w"
+    with jsonlines.open(output_file, mode) as writer:
         for example in tqdm(examples):
             try:  
                 '''
@@ -304,10 +311,17 @@ def run_memory_edits(gsm8k_input_file: str, output_file: str, random_example: bo
                     value="I am a person who needs lengthy, thorough explanations, and each reasoning step explained step by step that lead to the correct answer.",
                     limit=2000,
                 )
+                '''
                 conversation_persona_block = Block(
                     name="persona",
                     label="persona",
                     value=" You pass off information that needs to be thought about deeply. You are as concise as possible when responding to the user. You only use the tokens necessary for reasoning and none more. You always give short answers without reasoning out loud. When possible, you always use the information that is in the `rethink_memory_block` to answer the questions rather than thinking on the spot.",
+                    limit=2000,
+                )'''
+                conversation_persona_block = Block(
+                    name="persona",
+                    label="persona",
+                    value="You reason through the problem step by step, double checking any information that has been previous computed. You explain your answer to the user thoroughly.",
                     limit=2000,
                 )
                 offline_human_block = Block(
@@ -328,6 +342,7 @@ def run_memory_edits(gsm8k_input_file: str, output_file: str, random_example: bo
                 )
                 offline_memory = BasicBlockMemory(blocks=[offline_persona_block, offline_human_block, new_memory])
 
+                send_message = client.server.tool_manager.get_tool_by_name(tool_name="send_message", actor=client.user)
                 conversation_agent = client.create_agent(
                     name="conversation_agent",
                     agent_type=AgentType.memgpt_agent,
@@ -335,7 +350,8 @@ def run_memory_edits(gsm8k_input_file: str, output_file: str, random_example: bo
                     llm_config=OPENAI_CONFIG,
                     embedding_config=EmbeddingConfig.default_config("text-embedding-ada-002"),
                     # tools=["send_message", trigger_rethink_memory_tool.name],
-                    tools=["send_message"],
+                    # tools=["send_message"],
+                    tool_ids=[send_message.id],
                     memory=conversation_memory,
                     include_base_tools=False,
                 )
@@ -347,15 +363,15 @@ def run_memory_edits(gsm8k_input_file: str, output_file: str, random_example: bo
                     memory=offline_memory,
                             llm_config=OPENAI_CONFIG,
                     embedding_config=EmbeddingConfig.default_config("text-embedding-ada-002"),
-                    tools=[rethink_memory_tool.name, finish_rethinking_memory_tool.name],
+                    tool_ids=[rethink_memory_tool.id, finish_rethinking_memory_tool.id],
                     tool_rules=[TerminalToolRule(tool_name=finish_rethinking_memory_tool.name)],
                     include_base_tools=False,
                     initial_message_sequence=[],
                 )
 
                 for requested_rewrite in few_shot_examples:
-                    client.send_message(
-                        message="[trigger_rethink_memory] Question answer pair" + requested_rewrite, role="user", agent_id=offline_memory_agent.id
+                    client.user_message(
+                        message="[trigger_rethink_memory] Question answer pair" + requested_rewrite, agent_id=offline_memory_agent.id
                     )
 
                 context = ". ".join(example["question"].split(".")[:-1])
@@ -363,12 +379,11 @@ def run_memory_edits(gsm8k_input_file: str, output_file: str, random_example: bo
 
                 print(context)
                 print(question)
-                client.send_message(
-                    message="[trigger_rethink_memory] New situation:" + context, role="user", agent_id=offline_memory_agent.id
+                client.user_message(
+                    message="[trigger_rethink_memory] New situation:" + context, agent_id=offline_memory_agent.id
                 )
 
-                # final_response = client.send_message(message=example["question"], role="user", agent_id=conversation_agent.id)
-                final_response = client.send_message(message=question, role="user", agent_id=conversation_agent.id)
+                final_response = client.send_message(message=example["question"], role="user", agent_id=conversation_agent.id)
 
                 offline_memory_agent = client.get_agent(agent_id=offline_memory_agent.id)
 
@@ -405,6 +420,7 @@ if __name__ == "__main__":
     parser.add_argument("--random_example", action="store_true")  # debug by using a random example 
     parser.add_argument("--few_shot", default=8, required=False, type=int)
     parser.add_argument("--limit", default=None, required=False, type=int)
+    parser.add_argument("--skip_first", default=0, required=False, type=int)
     args = parser.parse_args()
 
-    run_memory_edits(args.input_file, args.output_file, args.random_example, args.few_shot, args.limit)
+    run_memory_edits(args.input_file, args.output_file, args.random_example, args.few_shot, args.limit, args.skip_first)
