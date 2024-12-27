@@ -16,6 +16,7 @@ from letta.constants import ADMIN_PREFIX, API_PREFIX, OPENAI_API_PREFIX
 from letta.errors import LettaAgentNotFoundError, LettaUserNotFoundError
 from letta.log import get_logger
 from letta.orm.errors import DatabaseTimeoutError, ForeignKeyConstraintViolationError, NoResultFound, UniqueConstraintViolationError
+from letta.schemas.letta_response import LettaResponse
 from letta.server.constants import REST_DEFAULT_PORT
 
 # NOTE(charles): these are extra routes that are not part of v1 but we still need to mount to pass tests
