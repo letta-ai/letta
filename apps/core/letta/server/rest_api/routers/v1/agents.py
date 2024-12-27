@@ -182,7 +182,7 @@ def delete_agent(
     actor = server.user_manager.get_user_or_default(user_id=user_id)
     try:
         server.agent_manager.delete_agent(agent_id=agent_id, actor=actor)
-        return JSONResponse(status_code=status.HTTP_200_OK)
+        return JSONResponse(status_code=status.HTTP_200_OK, content={"message": f"Agent id={agent_id} successfully deleted"})
     except NoResultFound:
         raise HTTPException(status_code=404, detail=f"Agent agent_id={agent_id} not found for user_id={actor.id}.")
 
