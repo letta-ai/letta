@@ -70,3 +70,6 @@ flag.overrides.json
 
 # Fern SDK Previews
 **/.preview
+
+vite.config.*.timestamp*
+vitest.config.*.timestamp*

@@ -1,0 +1,9 @@
+{
+  "name": "desktop-ui",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/desktop-ui/src",
+  "projectType": "application",
+  "tags": [],
+  "// targets": "to see all targets run: nx show project desktop-ui --web",
+  "targets": {}
+}
