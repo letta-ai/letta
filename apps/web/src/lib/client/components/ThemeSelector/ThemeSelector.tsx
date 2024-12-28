@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect } from 'react';
 import { useCurrentUser } from '$web/client/hooks';
 import {
+  AutoThemeIcon,
   DarkModeIcon,
   LightModeIcon,
   RawToggleGroup,
@@ -17,7 +18,7 @@ export function ThemeSelector() {
     webApi.user.updateCurrentUser.useMutation();
   const queryClient = useQueryClient();
 
-  const theme = user?.theme || 'light';
+  const theme = user?.theme || 'auto';
 
   useEffect(() => {
     document.body.className = theme || '';
@@ -42,7 +43,7 @@ export function ThemeSelector() {
               theme: nextTheme,
             },
           };
-        }
+        },
       );
 
       updateCurrentUser(
@@ -56,15 +57,14 @@ export function ThemeSelector() {
             const faviconHref = document.getElementById('favicon');
 
             if (faviconHref) {
-              (
-                faviconHref as HTMLAnchorElement
-              ).href = `/icon?theme=${nextTheme}`;
+              (faviconHref as HTMLAnchorElement).href =
+                `/icon?theme=${nextTheme}`;
             }
           },
-        }
+        },
       );
     },
-    [queryClient, updateCurrentUser]
+    [queryClient, updateCurrentUser],
   );
 
   return (
@@ -79,6 +79,12 @@ export function ThemeSelector() {
       value={theme}
       label={t('label')}
       items={[
+        {
+          value: 'auto',
+          label: t('options.auto'),
+          icon: <AutoThemeIcon />,
+          hideLabel: true,
+        },
         {
           value: 'light',
           label: t('options.light'),

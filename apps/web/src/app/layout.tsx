@@ -1,4 +1,4 @@
-import './global.css';
+import './global.scss';
 import { ClientSideProviders } from './_components/ClientSideProviders/ClientSideProviders';
 import React from 'react';
 import { LoadMixpanelAnalytics } from '@letta-web/analytics/client';
