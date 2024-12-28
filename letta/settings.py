@@ -60,7 +60,13 @@ class ModelSettings(BaseSettings):
     openllm_api_key: Optional[str] = None
 
 
-cors_origins = ["http://letta.localhost", "http://localhost:8283", "http://localhost:8083", "http://localhost:3000", "http://localhost:4200"]
+cors_origins = [
+    "http://letta.localhost",
+    "http://localhost:8283",
+    "http://localhost:8083",
+    "http://localhost:3000",
+    "http://localhost:4200",
+]
 
 
 class Settings(BaseSettings):
