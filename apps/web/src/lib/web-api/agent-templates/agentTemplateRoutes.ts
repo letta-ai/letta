@@ -180,8 +180,6 @@ export async function forkAgentTemplate(
     },
   );
 
-  console.log(copiedAgent);
-
   if (copiedAgent.status !== 201) {
     return {
       status: 500,
