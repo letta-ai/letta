@@ -55,6 +55,7 @@ git clone git@github.com:letta-ai/letta-cloud.git letta-cloud
 just start-services
 
 # sign into 1password
+# if haven't linked the 1pass CLI to your account yet, first do: `op account add`
 eval $(op signin)
 
 # Setups up the environment
