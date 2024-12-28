@@ -321,6 +321,10 @@ function TemplateVersionDisplay() {
 
   const versionNumber = deployedAgentTemplate?.version;
 
+  const isLoading = useMemo(() => {
+    return !deployedAgentTemplate && !notFoundError && !otherError;
+  }, [deployedAgentTemplate, notFoundError, otherError]);
+
   if (otherError) {
     return (
       <Tooltip asChild content={t('DeploymentButton.errorTooltip')}>
@@ -340,6 +344,7 @@ function TemplateVersionDisplay() {
       triggerAsChild
       trigger={
         <Button
+          busy={isLoading}
           size="small"
           color="secondary"
           data-testid="version-template-trigger"
@@ -367,7 +372,7 @@ function TemplateVersionDisplay() {
       }
       align="end"
     >
-      {!deployedAgentTemplate && !notFoundError ? (
+      {isLoading ? (
         <VStack align="center" justify="center" padding>
           <LettaLoader variant="grower" />
           <Typography>{t('DeploymentButton.loading')}</Typography>

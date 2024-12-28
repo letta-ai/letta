@@ -147,10 +147,26 @@ export async function forkAgentTemplate(
     },
   );
 
+  const name = `forked-${testingAgent.name}-${getDateAsAlphanumericString(new Date())}`;
+
   const copiedAgent = await agentsRouter.createAgent(
     {
       body: {
-        ...agentDetails,
+        name,
+        // project_id: projectId,
+        llm_config: agentDetails.llm_config,
+        embedding_config: agentDetails.embedding_config,
+        system: agentDetails.system,
+        tool_ids: agentDetails.tools
+          .map((tool) => tool.id)
+          .filter(Boolean) as string[],
+        memory_blocks: agentDetails.memory.blocks.map((block) => {
+          return {
+            limit: block.limit,
+            label: block.label || '',
+            value: block.value,
+          };
+        }),
         template: true,
       },
     },
@@ -164,6 +180,8 @@ export async function forkAgentTemplate(
     },
   );
 
+  console.log(copiedAgent);
+
   if (copiedAgent.status !== 201) {
     return {
       status: 500,
@@ -173,38 +191,10 @@ export async function forkAgentTemplate(
     };
   }
 
-  let name = `forked-${testingAgent.name}`;
-
-  // check if name already exists
-  const existingAgent = await db.query.agentTemplates.findFirst({
-    where: and(
-      isNull(agentTemplates.deletedAt),
-      eq(agentTemplates.organizationId, activeOrganizationId),
-      eq(agentTemplates.projectId, projectId),
-      eq(agentTemplates.name, name),
-    ),
-  });
-
-  if (existingAgent) {
-    name = `${name}-${getDateAsAlphanumericString(new Date())}`;
-  }
-
-  const [agent] = await db
-    .insert(agentTemplates)
-    .values({
-      id: copiedAgent.body.id,
-      projectId: testingAgent.projectId,
-      organizationId: activeOrganizationId,
-      name,
-    })
-    .returning({
-      id: agentTemplates.id,
-    });
-
   return {
     status: 201,
     body: {
-      id: agent.id,
+      id: copiedAgent.body.id,
       name,
       updatedAt: new Date().toISOString(),
     },
