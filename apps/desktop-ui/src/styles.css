@@ -1,0 +1,32 @@
+@import '../../libs/core-style-config/src/global.css';
+
+/* You can add global styles to this file, and also import other style files */
+
+@font-face {
+  font-family: 'Manrope';
+  font-display: swap;
+  src: url('assets/fonts/variable/Manrope-VF.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'Fira Code';
+  font-display: swap;
+  src: url('assets/fonts/variable/FiraCode-VF.ttf') format('truetype');
+}
+
+
+
+html {
+  -webkit-text-size-adjust: 100%;
+  font-family: var(--font-sans), ui-sans-serif, system-ui, -apple-system,
+  BlinkMacSystemFont, Segoe UI, Roboto, Helvetica Neue, Arial, Noto Sans,
+  sans-serif, Apple Color Emoji, Segoe UI Emoji, Segoe UI Symbol,
+  Noto Color Emoji;
+  line-height: 1.5;
+  tab-size: 4;
+  scroll-behavior: smooth;
+}
+
+body {
+  container-type: inline-size;
+}

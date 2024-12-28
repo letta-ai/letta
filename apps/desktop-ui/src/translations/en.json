@@ -1,0 +1,14 @@
+{
+  "AppHeader": {
+    "ServerStatus": {
+      "connected": "Connected",
+      "connecting": "Connecting..."
+    }
+  },
+  "App": {
+    "Sidebar": {
+      "agents": "Agents",
+      "settings": "Settings"
+    }
+  }
+}
