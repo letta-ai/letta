@@ -1,0 +1,12 @@
+{
+  "name": "@letta-cloud/fern",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "prepare-openapi": "ts-node ./scripts/prepare-openapi.ts"
+  },
+  "dependencies": {
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
+  }
+}

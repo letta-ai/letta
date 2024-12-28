@@ -181,7 +181,7 @@ export class ToolsService {
    */
   public static deleteTool(
     data: DeleteToolData,
-    headers?: { user_id: string }
+    headers?: { user_id: string },
   ): CancelablePromise<DeleteToolResponse> {
     return __request(OpenAPI, {
       method: 'DELETE',
@@ -207,7 +207,7 @@ export class ToolsService {
    */
   public static getTool(
     data: GetToolData,
-    headers?: { user_id: string }
+    headers?: { user_id: string },
   ): CancelablePromise<GetToolResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -234,7 +234,7 @@ export class ToolsService {
    */
   public static updateTool(
     data: UpdateToolData,
-    headers?: { user_id: string }
+    headers?: { user_id: string },
   ): CancelablePromise<UpdateToolResponse> {
     return __request(OpenAPI, {
       method: 'PATCH',
@@ -262,7 +262,7 @@ export class ToolsService {
    */
   public static getToolIdByName(
     data: GetToolIdByNameData,
-    headers?: { user_id: string }
+    headers?: { user_id: string },
   ): CancelablePromise<GetToolIdByNameResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -289,7 +289,7 @@ export class ToolsService {
    */
   public static listTools(
     data: ListToolsData = {},
-    headers?: { user_id: string }
+    headers?: { user_id: string },
   ): CancelablePromise<ListToolsResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -316,7 +316,7 @@ export class ToolsService {
    */
   public static createTool(
     data: CreateToolData,
-    headers?: { user_id: string }
+    headers?: { user_id: string },
   ): CancelablePromise<CreateToolResponse> {
     return __request(OpenAPI, {
       method: 'POST',
@@ -341,7 +341,7 @@ export class ToolsService {
    */
   public static upsertTool(
     data: UpsertToolData,
-    headers?: { user_id: string }
+    headers?: { user_id: string },
   ): CancelablePromise<UpsertToolResponse> {
     return __request(OpenAPI, {
       method: 'PUT',
@@ -365,7 +365,7 @@ export class ToolsService {
    */
   public static addBaseTools(
     data: AddBaseToolsData = {},
-    headers?: { user_id: string }
+    headers?: { user_id: string },
   ): CancelablePromise<AddBaseToolsResponse> {
     return __request(OpenAPI, {
       method: 'POST',
@@ -388,7 +388,7 @@ export class ToolsService {
    */
   public static runToolFromSource(
     data: RunToolFromSourceData,
-    headers?: { user_id: string }
+    headers?: { user_id: string },
   ): CancelablePromise<RunToolFromSourceResponse> {
     return __request(OpenAPI, {
       method: 'POST',
@@ -412,7 +412,7 @@ export class ToolsService {
    */
   public static listComposioApps(
     data: ListComposioAppsData = {},
-    headers?: { user_id: string }
+    headers?: { user_id: string },
   ): CancelablePromise<ListComposioAppsResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -435,7 +435,7 @@ export class ToolsService {
    */
   public static listComposioActionsByApp(
     data: ListComposioActionsByAppData,
-    headers?: { user_id: string }
+    headers?: { user_id: string },
   ): CancelablePromise<ListComposioActionsByAppResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -461,7 +461,7 @@ export class ToolsService {
    */
   public static addComposioTool(
     data: AddComposioToolData,
-    headers?: { user_id: string }
+    headers?: { user_id: string },
   ): CancelablePromise<AddComposioToolResponse> {
     return __request(OpenAPI, {
       method: 'POST',
@@ -489,7 +489,7 @@ export class SourcesService {
    */
   public static getSource(
     data: GetSourceData,
-    headers?: { user_id: string }
+    headers?: { user_id: string },
   ): CancelablePromise<GetSourceResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -516,7 +516,7 @@ export class SourcesService {
    */
   public static updateSource(
     data: UpdateSourceData,
-    headers?: { user_id: string }
+    headers?: { user_id: string },
   ): CancelablePromise<UpdateSourceResponse> {
     return __request(OpenAPI, {
       method: 'PATCH',
@@ -544,7 +544,7 @@ export class SourcesService {
    */
   public static deleteSource(
     data: DeleteSourceData,
-    headers?: { user_id: string }
+    headers?: { user_id: string },
   ): CancelablePromise<DeleteSourceResponse> {
     return __request(OpenAPI, {
       method: 'DELETE',
@@ -570,7 +570,7 @@ export class SourcesService {
    */
   public static getSourceIdByName(
     data: GetSourceIdByNameData,
-    headers?: { user_id: string }
+    headers?: { user_id: string },
   ): CancelablePromise<GetSourceIdByNameResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -595,7 +595,7 @@ export class SourcesService {
    */
   public static listSources(
     data: ListSourcesData = {},
-    headers?: { user_id: string }
+    headers?: { user_id: string },
   ): CancelablePromise<ListSourcesResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -618,7 +618,7 @@ export class SourcesService {
    */
   public static createSource(
     data: CreateSourceData,
-    headers?: { user_id: string }
+    headers?: { user_id: string },
   ): CancelablePromise<CreateSourceResponse> {
     return __request(OpenAPI, {
       method: 'POST',
@@ -644,7 +644,7 @@ export class SourcesService {
    */
   public static attachAgentToSource(
     data: AttachAgentToSourceData,
-    headers?: { user_id: string }
+    headers?: { user_id: string },
   ): CancelablePromise<AttachAgentToSourceResponse> {
     return __request(OpenAPI, {
       method: 'POST',
@@ -674,7 +674,7 @@ export class SourcesService {
    */
   public static detachAgentFromSource(
     data: DetachAgentFromSourceData,
-    headers?: { user_id: string }
+    headers?: { user_id: string },
   ): CancelablePromise<DetachAgentFromSourceResponse> {
     return __request(OpenAPI, {
       method: 'POST',
@@ -704,7 +704,7 @@ export class SourcesService {
    */
   public static uploadFileToSource(
     data: UploadFileToSourceData,
-    headers?: { user_id: string }
+    headers?: { user_id: string },
   ): CancelablePromise<UploadFileToSourceResponse> {
     return __request(OpenAPI, {
       method: 'POST',
@@ -732,7 +732,7 @@ export class SourcesService {
    */
   public static listSourcePassages(
     data: ListSourcePassagesData,
-    headers?: { user_id: string }
+    headers?: { user_id: string },
   ): CancelablePromise<ListSourcePassagesResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -760,7 +760,7 @@ export class SourcesService {
    */
   public static listFilesFromSource(
     data: ListFilesFromSourceData,
-    headers?: { user_id: string }
+    headers?: { user_id: string },
   ): CancelablePromise<ListFilesFromSourceResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -791,7 +791,7 @@ export class SourcesService {
    */
   public static deleteFileFromSource(
     data: DeleteFileFromSourceData,
-    headers?: { user_id: string }
+    headers?: { user_id: string },
   ): CancelablePromise<DeleteFileFromSourceResponse> {
     return __request(OpenAPI, {
       method: 'DELETE',
@@ -823,7 +823,7 @@ export class AgentsService {
    */
   public static listAgents(
     data: ListAgentsData = {},
-    headers?: { user_id: string }
+    headers?: { user_id: string },
   ): CancelablePromise<ListAgentsResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -851,7 +851,7 @@ export class AgentsService {
    */
   public static createAgent(
     data: CreateAgentData,
-    headers?: { user_id: string }
+    headers?: { user_id: string },
   ): CancelablePromise<CreateAgentResponse> {
     return __request(OpenAPI, {
       method: 'POST',
@@ -876,7 +876,7 @@ export class AgentsService {
    */
   public static getAgentContextWindow(
     data: GetAgentContextWindowData,
-    headers?: { user_id: string }
+    headers?: { user_id: string },
   ): CancelablePromise<GetAgentContextWindowResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -903,7 +903,7 @@ export class AgentsService {
    */
   public static updateAgent(
     data: UpdateAgentData,
-    headers?: { user_id: string }
+    headers?: { user_id: string },
   ): CancelablePromise<UpdateAgentResponse> {
     return __request(OpenAPI, {
       method: 'PATCH',
@@ -931,7 +931,7 @@ export class AgentsService {
    */
   public static getAgent(
     data: GetAgentData,
-    headers?: { user_id: string }
+    headers?: { user_id: string },
   ): CancelablePromise<GetAgentResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -957,7 +957,7 @@ export class AgentsService {
    */
   public static deleteAgent(
     data: DeleteAgentData,
-    headers?: { user_id: string }
+    headers?: { user_id: string },
   ): CancelablePromise<DeleteAgentResponse> {
     return __request(OpenAPI, {
       method: 'DELETE',
@@ -983,7 +983,7 @@ export class AgentsService {
    */
   public static getToolsFromAgent(
     data: GetToolsFromAgentData,
-    headers?: { user_id: string }
+    headers?: { user_id: string },
   ): CancelablePromise<GetToolsFromAgentResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -1010,7 +1010,7 @@ export class AgentsService {
    */
   public static addToolToAgent(
     data: AddToolToAgentData,
-    headers?: { user_id: string }
+    headers?: { user_id: string },
   ): CancelablePromise<AddToolToAgentResponse> {
     return __request(OpenAPI, {
       method: 'PATCH',
@@ -1038,7 +1038,7 @@ export class AgentsService {
    */
   public static removeToolFromAgent(
     data: RemoveToolFromAgentData,
-    headers?: { user_id: string }
+    headers?: { user_id: string },
   ): CancelablePromise<RemoveToolFromAgentResponse> {
     return __request(OpenAPI, {
       method: 'PATCH',
@@ -1065,7 +1065,7 @@ export class AgentsService {
    */
   public static getAgentSources(
     data: GetAgentSourcesData,
-    headers?: { user_id: string }
+    headers?: { user_id: string },
   ): CancelablePromise<GetAgentSourcesResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -1091,7 +1091,7 @@ export class AgentsService {
    */
   public static listAgentInContextMessages(
     data: ListAgentInContextMessagesData,
-    headers?: { user_id: string }
+    headers?: { user_id: string },
   ): CancelablePromise<ListAgentInContextMessagesResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -1118,7 +1118,7 @@ export class AgentsService {
    */
   public static getAgentMemory(
     data: GetAgentMemoryData,
-    headers?: { user_id: string }
+    headers?: { user_id: string },
   ): CancelablePromise<GetAgentMemoryResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -1145,7 +1145,7 @@ export class AgentsService {
    */
   public static getAgentMemoryBlock(
     data: GetAgentMemoryBlockData,
-    headers?: { user_id: string }
+    headers?: { user_id: string },
   ): CancelablePromise<GetAgentMemoryBlockResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -1173,7 +1173,7 @@ export class AgentsService {
    */
   public static removeAgentMemoryBlockByLabel(
     data: RemoveAgentMemoryBlockByLabelData,
-    headers?: { user_id: string }
+    headers?: { user_id: string },
   ): CancelablePromise<RemoveAgentMemoryBlockByLabelResponse> {
     return __request(OpenAPI, {
       method: 'DELETE',
@@ -1202,7 +1202,7 @@ export class AgentsService {
    */
   public static updateAgentMemoryBlockByLabel(
     data: UpdateAgentMemoryBlockByLabelData,
-    headers?: { user_id: string }
+    headers?: { user_id: string },
   ): CancelablePromise<UpdateAgentMemoryBlockByLabelResponse> {
     return __request(OpenAPI, {
       method: 'PATCH',
@@ -1231,7 +1231,7 @@ export class AgentsService {
    */
   public static getAgentMemoryBlocks(
     data: GetAgentMemoryBlocksData,
-    headers?: { user_id: string }
+    headers?: { user_id: string },
   ): CancelablePromise<GetAgentMemoryBlocksResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -1258,7 +1258,7 @@ export class AgentsService {
    */
   public static addAgentMemoryBlock(
     data: AddAgentMemoryBlockData,
-    headers?: { user_id: string }
+    headers?: { user_id: string },
   ): CancelablePromise<AddAgentMemoryBlockResponse> {
     return __request(OpenAPI, {
       method: 'POST',
@@ -1286,7 +1286,7 @@ export class AgentsService {
    */
   public static getAgentRecallMemorySummary(
     data: GetAgentRecallMemorySummaryData,
-    headers?: { user_id: string }
+    headers?: { user_id: string },
   ): CancelablePromise<GetAgentRecallMemorySummaryResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -1312,7 +1312,7 @@ export class AgentsService {
    */
   public static getAgentArchivalMemorySummary(
     data: GetAgentArchivalMemorySummaryData,
-    headers?: { user_id: string }
+    headers?: { user_id: string },
   ): CancelablePromise<GetAgentArchivalMemorySummaryResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -1341,7 +1341,7 @@ export class AgentsService {
    */
   public static listAgentArchivalMemory(
     data: ListAgentArchivalMemoryData,
-    headers?: { user_id: string }
+    headers?: { user_id: string },
   ): CancelablePromise<ListAgentArchivalMemoryResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -1373,7 +1373,7 @@ export class AgentsService {
    */
   public static createAgentArchivalMemory(
     data: CreateAgentArchivalMemoryData,
-    headers?: { user_id: string }
+    headers?: { user_id: string },
   ): CancelablePromise<CreateAgentArchivalMemoryResponse> {
     return __request(OpenAPI, {
       method: 'POST',
@@ -1402,7 +1402,7 @@ export class AgentsService {
    */
   public static deleteAgentArchivalMemory(
     data: DeleteAgentArchivalMemoryData,
-    headers?: { user_id: string }
+    headers?: { user_id: string },
   ): CancelablePromise<DeleteAgentArchivalMemoryResponse> {
     return __request(OpenAPI, {
       method: 'DELETE',
@@ -1434,7 +1434,7 @@ export class AgentsService {
    */
   public static listAgentMessages(
     data: ListAgentMessagesData,
-    headers?: { user_id: string }
+    headers?: { user_id: string },
   ): CancelablePromise<ListAgentMessagesResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -1469,7 +1469,7 @@ export class AgentsService {
    */
   public static createAgentMessage(
     data: CreateAgentMessageData,
-    headers?: { user_id: string }
+    headers?: { user_id: string },
   ): CancelablePromise<CreateAgentMessageResponse> {
     return __request(OpenAPI, {
       method: 'POST',
@@ -1499,7 +1499,7 @@ export class AgentsService {
    */
   public static updateAgentMessage(
     data: UpdateAgentMessageData,
-    headers?: { user_id: string }
+    headers?: { user_id: string },
   ): CancelablePromise<UpdateAgentMessageResponse> {
     return __request(OpenAPI, {
       method: 'PATCH',
@@ -1531,7 +1531,7 @@ export class AgentsService {
    */
   public static createAgentMessageStream(
     data: CreateAgentMessageStreamData,
-    headers?: { user_id: string }
+    headers?: { user_id: string },
   ): CancelablePromise<CreateAgentMessageStreamResponse> {
     return __request(OpenAPI, {
       method: 'POST',
@@ -1561,7 +1561,7 @@ export class AgentsService {
    */
   public static createAgentMessageAsync(
     data: CreateAgentMessageAsyncData,
-    headers?: { user_id: string }
+    headers?: { user_id: string },
   ): CancelablePromise<CreateAgentMessageAsyncResponse> {
     return __request(OpenAPI, {
       method: 'POST',
@@ -1656,7 +1656,7 @@ export class BlocksService {
    */
   public static listMemoryBlocks(
     data: ListMemoryBlocksData = {},
-    headers?: { user_id: string }
+    headers?: { user_id: string },
   ): CancelablePromise<ListMemoryBlocksResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -1683,7 +1683,7 @@ export class BlocksService {
    */
   public static createMemoryBlock(
     data: CreateMemoryBlockData,
-    headers?: { user_id: string }
+    headers?: { user_id: string },
   ): CancelablePromise<CreateMemoryBlockResponse> {
     return __request(OpenAPI, {
       method: 'POST',
@@ -1708,7 +1708,7 @@ export class BlocksService {
    */
   public static updateMemoryBlock(
     data: UpdateMemoryBlockData,
-    headers?: { user_id: string }
+    headers?: { user_id: string },
   ): CancelablePromise<UpdateMemoryBlockResponse> {
     return __request(OpenAPI, {
       method: 'PATCH',
@@ -1735,7 +1735,7 @@ export class BlocksService {
    */
   public static deleteMemoryBlock(
     data: DeleteMemoryBlockData,
-    headers?: { user_id: string }
+    headers?: { user_id: string },
   ): CancelablePromise<DeleteMemoryBlockResponse> {
     return __request(OpenAPI, {
       method: 'DELETE',
@@ -1760,7 +1760,7 @@ export class BlocksService {
    */
   public static getMemoryBlock(
     data: GetMemoryBlockData,
-    headers?: { user_id: string }
+    headers?: { user_id: string },
   ): CancelablePromise<GetMemoryBlockResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -1787,7 +1787,7 @@ export class BlocksService {
    */
   public static linkAgentMemoryBlock(
     data: LinkAgentMemoryBlockData,
-    headers?: { user_id: string }
+    headers?: { user_id: string },
   ): CancelablePromise<LinkAgentMemoryBlockResponse> {
     return __request(OpenAPI, {
       method: 'PATCH',
@@ -1817,7 +1817,7 @@ export class BlocksService {
    */
   public static unlinkAgentMemoryBlock(
     data: UnlinkAgentMemoryBlockData,
-    headers?: { user_id: string }
+    headers?: { user_id: string },
   ): CancelablePromise<UnlinkAgentMemoryBlockResponse> {
     return __request(OpenAPI, {
       method: 'PATCH',
@@ -1848,7 +1848,7 @@ export class JobsService {
    */
   public static listJobs(
     data: ListJobsData = {},
-    headers?: { user_id: string }
+    headers?: { user_id: string },
   ): CancelablePromise<ListJobsResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -1873,7 +1873,7 @@ export class JobsService {
    */
   public static listActiveJobs(
     data: ListActiveJobsData = {},
-    headers?: { user_id: string }
+    headers?: { user_id: string },
   ): CancelablePromise<ListActiveJobsResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -1896,7 +1896,7 @@ export class JobsService {
    */
   public static getJob(
     data: GetJobData,
-    headers?: { user_id: string }
+    headers?: { user_id: string },
   ): CancelablePromise<GetJobResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -1922,7 +1922,7 @@ export class JobsService {
    */
   public static deleteJob(
     data: DeleteJobData,
-    headers?: { user_id: string }
+    headers?: { user_id: string },
   ): CancelablePromise<DeleteJobResponse> {
     return __request(OpenAPI, {
       method: 'DELETE',
@@ -1966,7 +1966,7 @@ export class SandboxConfigService {
    */
   public static createSandboxConfigV1SandboxConfigPost(
     data: CreateSandboxConfigV1SandboxConfigPostData,
-    headers?: { user_id: string }
+    headers?: { user_id: string },
   ): CancelablePromise<CreateSandboxConfigV1SandboxConfigPostResponse> {
     return __request(OpenAPI, {
       method: 'POST',
@@ -1991,7 +1991,7 @@ export class SandboxConfigService {
    */
   public static listSandboxConfigsV1SandboxConfigGet(
     data: ListSandboxConfigsV1SandboxConfigGetData = {},
-    headers?: { user_id: string }
+    headers?: { user_id: string },
   ): CancelablePromise<ListSandboxConfigsV1SandboxConfigGetResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -2016,7 +2016,7 @@ export class SandboxConfigService {
    */
   public static createDefaultE2bSandboxConfigV1SandboxConfigE2bDefaultPost(
     data: CreateDefaultE2bSandboxConfigV1SandboxConfigE2bDefaultPostData = {},
-    headers?: { user_id: string }
+    headers?: { user_id: string },
   ): CancelablePromise<CreateDefaultE2bSandboxConfigV1SandboxConfigE2bDefaultPostResponse> {
     return __request(OpenAPI, {
       method: 'POST',
@@ -2037,7 +2037,7 @@ export class SandboxConfigService {
    */
   public static createDefaultLocalSandboxConfigV1SandboxConfigLocalDefaultPost(
     data: CreateDefaultLocalSandboxConfigV1SandboxConfigLocalDefaultPostData = {},
-    headers?: { user_id: string }
+    headers?: { user_id: string },
   ): CancelablePromise<CreateDefaultLocalSandboxConfigV1SandboxConfigLocalDefaultPostResponse> {
     return __request(OpenAPI, {
       method: 'POST',
@@ -2060,7 +2060,7 @@ export class SandboxConfigService {
    */
   public static updateSandboxConfigV1SandboxConfigSandboxConfigIdPatch(
     data: UpdateSandboxConfigV1SandboxConfigSandboxConfigIdPatchData,
-    headers?: { user_id: string }
+    headers?: { user_id: string },
   ): CancelablePromise<UpdateSandboxConfigV1SandboxConfigSandboxConfigIdPatchResponse> {
     return __request(OpenAPI, {
       method: 'PATCH',
@@ -2087,7 +2087,7 @@ export class SandboxConfigService {
    */
   public static deleteSandboxConfigV1SandboxConfigSandboxConfigIdDelete(
     data: DeleteSandboxConfigV1SandboxConfigSandboxConfigIdDeleteData,
-    headers?: { user_id: string }
+    headers?: { user_id: string },
   ): CancelablePromise<DeleteSandboxConfigV1SandboxConfigSandboxConfigIdDeleteResponse> {
     return __request(OpenAPI, {
       method: 'DELETE',
@@ -2113,7 +2113,7 @@ export class SandboxConfigService {
    */
   public static createSandboxEnvVarV1SandboxConfigSandboxConfigIdEnvironmentVariablePost(
     data: CreateSandboxEnvVarV1SandboxConfigSandboxConfigIdEnvironmentVariablePostData,
-    headers?: { user_id: string }
+    headers?: { user_id: string },
   ): CancelablePromise<CreateSandboxEnvVarV1SandboxConfigSandboxConfigIdEnvironmentVariablePostResponse> {
     return __request(OpenAPI, {
       method: 'POST',
@@ -2142,7 +2142,7 @@ export class SandboxConfigService {
    */
   public static listSandboxEnvVarsV1SandboxConfigSandboxConfigIdEnvironmentVariableGet(
     data: ListSandboxEnvVarsV1SandboxConfigSandboxConfigIdEnvironmentVariableGetData,
-    headers?: { user_id: string }
+    headers?: { user_id: string },
   ): CancelablePromise<ListSandboxEnvVarsV1SandboxConfigSandboxConfigIdEnvironmentVariableGetResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -2172,7 +2172,7 @@ export class SandboxConfigService {
    */
   public static updateSandboxEnvVarV1SandboxConfigEnvironmentVariableEnvVarIdPatch(
     data: UpdateSandboxEnvVarV1SandboxConfigEnvironmentVariableEnvVarIdPatchData,
-    headers?: { user_id: string }
+    headers?: { user_id: string },
   ): CancelablePromise<UpdateSandboxEnvVarV1SandboxConfigEnvironmentVariableEnvVarIdPatchResponse> {
     return __request(OpenAPI, {
       method: 'PATCH',
@@ -2199,7 +2199,7 @@ export class SandboxConfigService {
    */
   public static deleteSandboxEnvVarV1SandboxConfigEnvironmentVariableEnvVarIdDelete(
     data: DeleteSandboxEnvVarV1SandboxConfigEnvironmentVariableEnvVarIdDeleteData,
-    headers?: { user_id: string }
+    headers?: { user_id: string },
   ): CancelablePromise<DeleteSandboxEnvVarV1SandboxConfigEnvironmentVariableEnvVarIdDeleteResponse> {
     return __request(OpenAPI, {
       method: 'DELETE',
@@ -2227,7 +2227,7 @@ export class UsersService {
    */
   public static listUsers(
     data: ListUsersData = {},
-    headers?: { user_id: string }
+    headers?: { user_id: string },
   ): CancelablePromise<ListUsersResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -2253,7 +2253,7 @@ export class UsersService {
    */
   public static createUser(
     data: CreateUserData,
-    headers?: { user_id: string }
+    headers?: { user_id: string },
   ): CancelablePromise<CreateUserResponse> {
     return __request(OpenAPI, {
       method: 'POST',
@@ -2277,7 +2277,7 @@ export class UsersService {
    */
   public static updateUser(
     data: UpdateUserData,
-    headers?: { user_id: string }
+    headers?: { user_id: string },
   ): CancelablePromise<UpdateUserResponse> {
     return __request(OpenAPI, {
       method: 'PUT',
@@ -2300,7 +2300,7 @@ export class UsersService {
    */
   public static deleteUser(
     data: DeleteUserData,
-    headers?: { user_id: string }
+    headers?: { user_id: string },
   ): CancelablePromise<DeleteUserResponse> {
     return __request(OpenAPI, {
       method: 'DELETE',
@@ -2328,7 +2328,7 @@ export class AdminService {
    */
   public static listUsers(
     data: ListUsersData = {},
-    headers?: { user_id: string }
+    headers?: { user_id: string },
   ): CancelablePromise<ListUsersResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -2354,7 +2354,7 @@ export class AdminService {
    */
   public static createUser(
     data: CreateUserData,
-    headers?: { user_id: string }
+    headers?: { user_id: string },
   ): CancelablePromise<CreateUserResponse> {
     return __request(OpenAPI, {
       method: 'POST',
@@ -2378,7 +2378,7 @@ export class AdminService {
    */
   public static updateUser(
     data: UpdateUserData,
-    headers?: { user_id: string }
+    headers?: { user_id: string },
   ): CancelablePromise<UpdateUserResponse> {
     return __request(OpenAPI, {
       method: 'PUT',
@@ -2401,7 +2401,7 @@ export class AdminService {
    */
   public static deleteUser(
     data: DeleteUserData,
-    headers?: { user_id: string }
+    headers?: { user_id: string },
   ): CancelablePromise<DeleteUserResponse> {
     return __request(OpenAPI, {
       method: 'DELETE',
@@ -2427,7 +2427,7 @@ export class AdminService {
    */
   public static listOrgs(
     data: ListOrgsData = {},
-    headers?: { user_id: string }
+    headers?: { user_id: string },
   ): CancelablePromise<ListOrgsResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -2453,7 +2453,7 @@ export class AdminService {
    */
   public static createOrganization(
     data: CreateOrganizationData,
-    headers?: { user_id: string }
+    headers?: { user_id: string },
   ): CancelablePromise<CreateOrganizationResponse> {
     return __request(OpenAPI, {
       method: 'POST',
@@ -2476,7 +2476,7 @@ export class AdminService {
    */
   public static deleteOrganizationById(
     data: DeleteOrganizationByIdData,
-    headers?: { user_id: string }
+    headers?: { user_id: string },
   ): CancelablePromise<DeleteOrganizationByIdResponse> {
     return __request(OpenAPI, {
       method: 'DELETE',
@@ -2504,7 +2504,7 @@ export class OrganizationService {
    */
   public static listOrgs(
     data: ListOrgsData = {},
-    headers?: { user_id: string }
+    headers?: { user_id: string },
   ): CancelablePromise<ListOrgsResponse> {
     return __request(OpenAPI, {
       method: 'GET',
@@ -2530,7 +2530,7 @@ export class OrganizationService {
    */
   public static createOrganization(
     data: CreateOrganizationData,
-    headers?: { user_id: string }
+    headers?: { user_id: string },
   ): CancelablePromise<CreateOrganizationResponse> {
     return __request(OpenAPI, {
       method: 'POST',
@@ -2553,7 +2553,7 @@ export class OrganizationService {
    */
   public static deleteOrganizationById(
     data: DeleteOrganizationByIdData,
-    headers?: { user_id: string }
+    headers?: { user_id: string },
   ): CancelablePromise<DeleteOrganizationByIdResponse> {
     return __request(OpenAPI, {
       method: 'DELETE',
@@ -2582,7 +2582,7 @@ export class AuthService {
    */
   public static authenticateUserV1AuthPost(
     data: AuthenticateUserV1AuthPostData,
-    headers?: { user_id: string }
+    headers?: { user_id: string },
   ): CancelablePromise<AuthenticateUserV1AuthPostResponse> {
     return __request(OpenAPI, {
       method: 'POST',
