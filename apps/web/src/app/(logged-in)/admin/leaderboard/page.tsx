@@ -40,14 +40,14 @@ export default function Leaderboard() {
         cell: ({ row }) => (
           <Button
             size="small"
-            href={`/admin/organization/${row.original.organizationId}`}
+            href={`/admin/organizations/${row.original.organizationId}`}
             target="_blank"
             label="View"
           />
         ),
       },
     ],
-    []
+    [],
   );
 
   return (
