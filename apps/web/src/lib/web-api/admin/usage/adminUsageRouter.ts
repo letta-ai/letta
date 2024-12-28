@@ -11,14 +11,14 @@ type GetUsageLeaderboardRequest = ServerInferRequest<
 >;
 
 async function getUsageLeaderboard(
-  req: GetUsageLeaderboardRequest
+  req: GetUsageLeaderboardRequest,
 ): Promise<GetUsageLeaderboardResponse> {
   const {
     offset = 0,
     limit = 10,
     // 30 days ago
     startDate = new Date(
-      new Date().getTime() - 30 * 24 * 60 * 60 * 1000
+      new Date().getTime() - 30 * 24 * 60 * 60 * 1000,
     ).getTime(),
     endDate = new Date().getTime(),
   } = req.query;
@@ -29,29 +29,33 @@ async function getUsageLeaderboard(
       count: sql<number>`cast(count(${inferenceTransactions.id}) as int)`,
     })
     .from(inferenceTransactions)
-    .offset(offset)
-    .limit(limit + 1)
     .where(
       and(
         gte(inferenceTransactions.startedAt, new Date(startDate)),
-        lt(inferenceTransactions.startedAt, new Date(endDate))
-      )
+        lt(inferenceTransactions.startedAt, new Date(endDate)),
+      ),
     )
-    .groupBy(inferenceTransactions.organizationId);
+    .groupBy(inferenceTransactions.organizationId)
+    .orderBy(sql`count desc`)
+    .offset(offset)
+    .limit(limit + 1);
 
   const croppedList = usageAggregation.slice(0, limit);
 
   const organizationNames = await db.query.organizations.findMany({
     where: inArray(
       organizations.id,
-      croppedList.map((usage) => usage.organizationId)
+      croppedList.map((usage) => usage.organizationId),
     ),
   });
 
-  const organizationNameMap = organizationNames.reduce((acc, organization) => {
-    acc[organization.id] = organization.name;
-    return acc;
-  }, {} as Record<string, string>);
+  const organizationNameMap = organizationNames.reduce(
+    (acc, organization) => {
+      acc[organization.id] = organization.name;
+      return acc;
+    },
+    {} as Record<string, string>,
+  );
 
   const leaderboard = croppedList.map((usage) => ({
     organizationId: usage.organizationId,
