@@ -72,8 +72,8 @@ export default class App {
       height: height,
       show: false,
       frame: false,
-      roundedCorners: true,
-      trafficLightPosition: { x: 20, y: 25 },
+      transparent: true,
+      trafficLightPosition: { x: 15, y: 12 },
       icon: electron.nativeImage.createFromPath(
         app.getAppPath() + '/assets/icon.png',
       ),
@@ -84,6 +84,12 @@ export default class App {
         backgroundThrottling: false,
         preload: join(__dirname, 'main.preload.js'),
       },
+    });
+
+    App.mainWindow.webContents.setWindowOpenHandler((edata) => {
+      shell.openExternal(edata.url);
+
+      return { action: 'deny' };
     });
 
     const image = electron.nativeImage.createFromPath(

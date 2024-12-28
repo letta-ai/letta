@@ -1,8 +1,9 @@
-import { Route, Routes, Link, useNavigation } from 'react-router-dom';
+import { Route, Routes, Link, useLocation } from 'react-router-dom';
 import { AppHeader } from './AppHeader/AppHeader';
 import { Homepage } from './pages/Homepage/Homepage';
 import {
   Button,
+  CogIcon,
   Frame,
   HStack,
   LettaInvaderIcon,
@@ -12,13 +13,24 @@ import { useTranslation } from 'react-i18next';
 
 function Sidebar() {
   const { t } = useTranslation('App', { keyPrefix: 'Sidebar' });
+
+  const location = useLocation();
   return (
-    <VStack border padding="small" borderRight fullHeight>
+    <VStack color="background-grey" padding="small" borderRight fullHeight>
       <Link to="/">
         <Button
           hideLabel
-          active={window.location.pathname === '/'}
+          active={location.pathname === '/'}
           preIcon={<LettaInvaderIcon />}
+          color="tertiary-transparent"
+          label={t('agents')}
+        ></Button>
+      </Link>
+      <Link to="/settings">
+        <Button
+          hideLabel
+          active={location.pathname === '/settings'}
+          preIcon={<CogIcon />}
           color="tertiary-transparent"
           label={t('agents')}
         ></Button>
@@ -29,15 +41,19 @@ function Sidebar() {
 
 export function App() {
   return (
-    <div className="flex flex-col w-[100dvw] h-[100dvh]">
+    <HStack
+      color="background-grey"
+      gap={false}
+      className="dark flex flex-col w-[100dvw] h-[100dvh]"
+    >
       <AppHeader />
-      <HStack padding="xxsmall" fullWidth gap="small" fullHeight>
+      <HStack fullWidth gap={false} fullHeight>
         <Sidebar />
-        <Frame border padding="small" fullWidth fullHeight>
+        <Frame overflowY="auto" padding="small" fullWidth fullHeight>
           <Routes>
             <Route path="/" element={<Homepage />} />
             <Route
-              path="/page-2"
+              path="/settings"
               element={
                 <div>
                   <Link to="/">Click here to go back to root page.</Link>
@@ -47,7 +63,7 @@ export function App() {
           </Routes>
         </Frame>
       </HStack>
-    </div>
+    </HStack>
   );
 }
 
