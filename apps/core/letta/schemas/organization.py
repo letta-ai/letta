@@ -13,7 +13,7 @@ class OrganizationBase(LettaBase):
 
 class Organization(OrganizationBase):
     id: str = OrganizationBase.generate_id_field()
-    name: str = Field(create_random_username(), description="The name of the organization.")
+    name: str = Field(create_random_username(), description="The name of the organization.", json_schema_extra={"default": "SincereYogurt"})
     created_at: Optional[datetime] = Field(default_factory=get_utc_time, description="The creation date of the organization.")
 
 

@@ -21,7 +21,7 @@ export type ToolsServiceGetToolDefaultResponse = Awaited<
 >;
 export type ToolsServiceGetToolQueryResult<
   TData = ToolsServiceGetToolDefaultResponse,
-  TError = unknown
+  TError = unknown,
 > = UseQueryResult<TData, TError>;
 export const useToolsServiceGetToolKey = 'ToolsServiceGetTool';
 export const UseToolsServiceGetToolKeyFn = (
@@ -32,14 +32,14 @@ export const UseToolsServiceGetToolKeyFn = (
     toolId: string;
     userId?: string;
   },
-  queryKey?: Array<unknown>
+  queryKey?: Array<unknown>,
 ) => [useToolsServiceGetToolKey, ...(queryKey ?? [{ toolId, userId }])];
 export type ToolsServiceGetToolIdByNameDefaultResponse = Awaited<
   ReturnType<typeof ToolsService.getToolIdByName>
 >;
 export type ToolsServiceGetToolIdByNameQueryResult<
   TData = ToolsServiceGetToolIdByNameDefaultResponse,
-  TError = unknown
+  TError = unknown,
 > = UseQueryResult<TData, TError>;
 export const useToolsServiceGetToolIdByNameKey = 'ToolsServiceGetToolIdByName';
 export const UseToolsServiceGetToolIdByNameKeyFn = (
@@ -50,7 +50,7 @@ export const UseToolsServiceGetToolIdByNameKeyFn = (
     toolName: string;
     userId?: string;
   },
-  queryKey?: Array<unknown>
+  queryKey?: Array<unknown>,
 ) => [
   useToolsServiceGetToolIdByNameKey,
   ...(queryKey ?? [{ toolName, userId }]),
@@ -60,7 +60,7 @@ export type ToolsServiceListToolsDefaultResponse = Awaited<
 >;
 export type ToolsServiceListToolsQueryResult<
   TData = ToolsServiceListToolsDefaultResponse,
-  TError = unknown
+  TError = unknown,
 > = UseQueryResult<TData, TError>;
 export const useToolsServiceListToolsKey = 'ToolsServiceListTools';
 export const UseToolsServiceListToolsKeyFn = (
@@ -73,7 +73,7 @@ export const UseToolsServiceListToolsKeyFn = (
     limit?: number;
     userId?: string;
   } = {},
-  queryKey?: Array<unknown>
+  queryKey?: Array<unknown>,
 ) => [
   useToolsServiceListToolsKey,
   ...(queryKey ?? [{ cursor, limit, userId }]),
@@ -83,7 +83,7 @@ export type ToolsServiceListComposioAppsDefaultResponse = Awaited<
 >;
 export type ToolsServiceListComposioAppsQueryResult<
   TData = ToolsServiceListComposioAppsDefaultResponse,
-  TError = unknown
+  TError = unknown,
 > = UseQueryResult<TData, TError>;
 export const useToolsServiceListComposioAppsKey =
   'ToolsServiceListComposioApps';
@@ -93,14 +93,14 @@ export const UseToolsServiceListComposioAppsKeyFn = (
   }: {
     userId?: string;
   } = {},
-  queryKey?: Array<unknown>
+  queryKey?: Array<unknown>,
 ) => [useToolsServiceListComposioAppsKey, ...(queryKey ?? [{ userId }])];
 export type ToolsServiceListComposioActionsByAppDefaultResponse = Awaited<
   ReturnType<typeof ToolsService.listComposioActionsByApp>
 >;
 export type ToolsServiceListComposioActionsByAppQueryResult<
   TData = ToolsServiceListComposioActionsByAppDefaultResponse,
-  TError = unknown
+  TError = unknown,
 > = UseQueryResult<TData, TError>;
 export const useToolsServiceListComposioActionsByAppKey =
   'ToolsServiceListComposioActionsByApp';
@@ -112,7 +112,7 @@ export const UseToolsServiceListComposioActionsByAppKeyFn = (
     composioAppName: string;
     userId?: string;
   },
-  queryKey?: Array<unknown>
+  queryKey?: Array<unknown>,
 ) => [
   useToolsServiceListComposioActionsByAppKey,
   ...(queryKey ?? [{ composioAppName, userId }]),
@@ -122,7 +122,7 @@ export type SourcesServiceGetSourceDefaultResponse = Awaited<
 >;
 export type SourcesServiceGetSourceQueryResult<
   TData = SourcesServiceGetSourceDefaultResponse,
-  TError = unknown
+  TError = unknown,
 > = UseQueryResult<TData, TError>;
 export const useSourcesServiceGetSourceKey = 'SourcesServiceGetSource';
 export const UseSourcesServiceGetSourceKeyFn = (
@@ -133,14 +133,14 @@ export const UseSourcesServiceGetSourceKeyFn = (
     sourceId: string;
     userId?: string;
   },
-  queryKey?: Array<unknown>
+  queryKey?: Array<unknown>,
 ) => [useSourcesServiceGetSourceKey, ...(queryKey ?? [{ sourceId, userId }])];
 export type SourcesServiceGetSourceIdByNameDefaultResponse = Awaited<
   ReturnType<typeof SourcesService.getSourceIdByName>
 >;
 export type SourcesServiceGetSourceIdByNameQueryResult<
   TData = SourcesServiceGetSourceIdByNameDefaultResponse,
-  TError = unknown
+  TError = unknown,
 > = UseQueryResult<TData, TError>;
 export const useSourcesServiceGetSourceIdByNameKey =
   'SourcesServiceGetSourceIdByName';
@@ -152,7 +152,7 @@ export const UseSourcesServiceGetSourceIdByNameKeyFn = (
     sourceName: string;
     userId?: string;
   },
-  queryKey?: Array<unknown>
+  queryKey?: Array<unknown>,
 ) => [
   useSourcesServiceGetSourceIdByNameKey,
   ...(queryKey ?? [{ sourceName, userId }]),
@@ -162,7 +162,7 @@ export type SourcesServiceListSourcesDefaultResponse = Awaited<
 >;
 export type SourcesServiceListSourcesQueryResult<
   TData = SourcesServiceListSourcesDefaultResponse,
-  TError = unknown
+  TError = unknown,
 > = UseQueryResult<TData, TError>;
 export const useSourcesServiceListSourcesKey = 'SourcesServiceListSources';
 export const UseSourcesServiceListSourcesKeyFn = (
@@ -171,14 +171,14 @@ export const UseSourcesServiceListSourcesKeyFn = (
   }: {
     userId?: string;
   } = {},
-  queryKey?: Array<unknown>
+  queryKey?: Array<unknown>,
 ) => [useSourcesServiceListSourcesKey, ...(queryKey ?? [{ userId }])];
 export type SourcesServiceListSourcePassagesDefaultResponse = Awaited<
   ReturnType<typeof SourcesService.listSourcePassages>
 >;
 export type SourcesServiceListSourcePassagesQueryResult<
   TData = SourcesServiceListSourcePassagesDefaultResponse,
-  TError = unknown
+  TError = unknown,
 > = UseQueryResult<TData, TError>;
 export const useSourcesServiceListSourcePassagesKey =
   'SourcesServiceListSourcePassages';
@@ -190,7 +190,7 @@ export const UseSourcesServiceListSourcePassagesKeyFn = (
     sourceId: string;
     userId?: string;
   },
-  queryKey?: Array<unknown>
+  queryKey?: Array<unknown>,
 ) => [
   useSourcesServiceListSourcePassagesKey,
   ...(queryKey ?? [{ sourceId, userId }]),
@@ -200,7 +200,7 @@ export type SourcesServiceListFilesFromSourceDefaultResponse = Awaited<
 >;
 export type SourcesServiceListFilesFromSourceQueryResult<
   TData = SourcesServiceListFilesFromSourceDefaultResponse,
-  TError = unknown
+  TError = unknown,
 > = UseQueryResult<TData, TError>;
 export const useSourcesServiceListFilesFromSourceKey =
   'SourcesServiceListFilesFromSource';
@@ -216,7 +216,7 @@ export const UseSourcesServiceListFilesFromSourceKeyFn = (
     sourceId: string;
     userId?: string;
   },
-  queryKey?: Array<unknown>
+  queryKey?: Array<unknown>,
 ) => [
   useSourcesServiceListFilesFromSourceKey,
   ...(queryKey ?? [{ cursor, limit, sourceId, userId }]),
@@ -226,7 +226,7 @@ export type AgentsServiceListAgentsDefaultResponse = Awaited<
 >;
 export type AgentsServiceListAgentsQueryResult<
   TData = AgentsServiceListAgentsDefaultResponse,
-  TError = unknown
+  TError = unknown,
 > = UseQueryResult<TData, TError>;
 export const useAgentsServiceListAgentsKey = 'AgentsServiceListAgents';
 export const UseAgentsServiceListAgentsKeyFn = (
@@ -241,7 +241,7 @@ export const UseAgentsServiceListAgentsKeyFn = (
     tags?: string[];
     userId?: string;
   } = {},
-  queryKey?: Array<unknown>
+  queryKey?: Array<unknown>,
 ) => [
   useAgentsServiceListAgentsKey,
   ...(queryKey ?? [{ matchAllTags, name, tags, userId }]),
@@ -251,7 +251,7 @@ export type AgentsServiceGetAgentContextWindowDefaultResponse = Awaited<
 >;
 export type AgentsServiceGetAgentContextWindowQueryResult<
   TData = AgentsServiceGetAgentContextWindowDefaultResponse,
-  TError = unknown
+  TError = unknown,
 > = UseQueryResult<TData, TError>;
 export const useAgentsServiceGetAgentContextWindowKey =
   'AgentsServiceGetAgentContextWindow';
@@ -263,7 +263,7 @@ export const UseAgentsServiceGetAgentContextWindowKeyFn = (
     agentId: string;
     userId?: string;
   },
-  queryKey?: Array<unknown>
+  queryKey?: Array<unknown>,
 ) => [
   useAgentsServiceGetAgentContextWindowKey,
   ...(queryKey ?? [{ agentId, userId }]),
@@ -273,7 +273,7 @@ export type AgentsServiceGetAgentDefaultResponse = Awaited<
 >;
 export type AgentsServiceGetAgentQueryResult<
   TData = AgentsServiceGetAgentDefaultResponse,
-  TError = unknown
+  TError = unknown,
 > = UseQueryResult<TData, TError>;
 export const useAgentsServiceGetAgentKey = 'AgentsServiceGetAgent';
 export const UseAgentsServiceGetAgentKeyFn = (
@@ -284,14 +284,14 @@ export const UseAgentsServiceGetAgentKeyFn = (
     agentId: string;
     userId?: string;
   },
-  queryKey?: Array<unknown>
+  queryKey?: Array<unknown>,
 ) => [useAgentsServiceGetAgentKey, ...(queryKey ?? [{ agentId, userId }])];
 export type AgentsServiceGetToolsFromAgentDefaultResponse = Awaited<
   ReturnType<typeof AgentsService.getToolsFromAgent>
 >;
 export type AgentsServiceGetToolsFromAgentQueryResult<
   TData = AgentsServiceGetToolsFromAgentDefaultResponse,
-  TError = unknown
+  TError = unknown,
 > = UseQueryResult<TData, TError>;
 export const useAgentsServiceGetToolsFromAgentKey =
   'AgentsServiceGetToolsFromAgent';
@@ -303,7 +303,7 @@ export const UseAgentsServiceGetToolsFromAgentKeyFn = (
     agentId: string;
     userId?: string;
   },
-  queryKey?: Array<unknown>
+  queryKey?: Array<unknown>,
 ) => [
   useAgentsServiceGetToolsFromAgentKey,
   ...(queryKey ?? [{ agentId, userId }]),
@@ -313,7 +313,7 @@ export type AgentsServiceGetAgentSourcesDefaultResponse = Awaited<
 >;
 export type AgentsServiceGetAgentSourcesQueryResult<
   TData = AgentsServiceGetAgentSourcesDefaultResponse,
-  TError = unknown
+  TError = unknown,
 > = UseQueryResult<TData, TError>;
 export const useAgentsServiceGetAgentSourcesKey =
   'AgentsServiceGetAgentSources';
@@ -325,7 +325,7 @@ export const UseAgentsServiceGetAgentSourcesKeyFn = (
     agentId: string;
     userId?: string;
   },
-  queryKey?: Array<unknown>
+  queryKey?: Array<unknown>,
 ) => [
   useAgentsServiceGetAgentSourcesKey,
   ...(queryKey ?? [{ agentId, userId }]),
@@ -335,7 +335,7 @@ export type AgentsServiceListAgentInContextMessagesDefaultResponse = Awaited<
 >;
 export type AgentsServiceListAgentInContextMessagesQueryResult<
   TData = AgentsServiceListAgentInContextMessagesDefaultResponse,
-  TError = unknown
+  TError = unknown,
 > = UseQueryResult<TData, TError>;
 export const useAgentsServiceListAgentInContextMessagesKey =
   'AgentsServiceListAgentInContextMessages';
@@ -347,7 +347,7 @@ export const UseAgentsServiceListAgentInContextMessagesKeyFn = (
     agentId: string;
     userId?: string;
   },
-  queryKey?: Array<unknown>
+  queryKey?: Array<unknown>,
 ) => [
   useAgentsServiceListAgentInContextMessagesKey,
   ...(queryKey ?? [{ agentId, userId }]),
@@ -357,7 +357,7 @@ export type AgentsServiceGetAgentMemoryDefaultResponse = Awaited<
 >;
 export type AgentsServiceGetAgentMemoryQueryResult<
   TData = AgentsServiceGetAgentMemoryDefaultResponse,
-  TError = unknown
+  TError = unknown,
 > = UseQueryResult<TData, TError>;
 export const useAgentsServiceGetAgentMemoryKey = 'AgentsServiceGetAgentMemory';
 export const UseAgentsServiceGetAgentMemoryKeyFn = (
@@ -368,7 +368,7 @@ export const UseAgentsServiceGetAgentMemoryKeyFn = (
     agentId: string;
     userId?: string;
   },
-  queryKey?: Array<unknown>
+  queryKey?: Array<unknown>,
 ) => [
   useAgentsServiceGetAgentMemoryKey,
   ...(queryKey ?? [{ agentId, userId }]),
@@ -378,7 +378,7 @@ export type AgentsServiceGetAgentMemoryBlockDefaultResponse = Awaited<
 >;
 export type AgentsServiceGetAgentMemoryBlockQueryResult<
   TData = AgentsServiceGetAgentMemoryBlockDefaultResponse,
-  TError = unknown
+  TError = unknown,
 > = UseQueryResult<TData, TError>;
 export const useAgentsServiceGetAgentMemoryBlockKey =
   'AgentsServiceGetAgentMemoryBlock';
@@ -392,7 +392,7 @@ export const UseAgentsServiceGetAgentMemoryBlockKeyFn = (
     blockLabel: string;
     userId?: string;
   },
-  queryKey?: Array<unknown>
+  queryKey?: Array<unknown>,
 ) => [
   useAgentsServiceGetAgentMemoryBlockKey,
   ...(queryKey ?? [{ agentId, blockLabel, userId }]),
@@ -402,7 +402,7 @@ export type AgentsServiceGetAgentMemoryBlocksDefaultResponse = Awaited<
 >;
 export type AgentsServiceGetAgentMemoryBlocksQueryResult<
   TData = AgentsServiceGetAgentMemoryBlocksDefaultResponse,
-  TError = unknown
+  TError = unknown,
 > = UseQueryResult<TData, TError>;
 export const useAgentsServiceGetAgentMemoryBlocksKey =
   'AgentsServiceGetAgentMemoryBlocks';
@@ -414,7 +414,7 @@ export const UseAgentsServiceGetAgentMemoryBlocksKeyFn = (
     agentId: string;
     userId?: string;
   },
-  queryKey?: Array<unknown>
+  queryKey?: Array<unknown>,
 ) => [
   useAgentsServiceGetAgentMemoryBlocksKey,
   ...(queryKey ?? [{ agentId, userId }]),
@@ -424,7 +424,7 @@ export type AgentsServiceGetAgentRecallMemorySummaryDefaultResponse = Awaited<
 >;
 export type AgentsServiceGetAgentRecallMemorySummaryQueryResult<
   TData = AgentsServiceGetAgentRecallMemorySummaryDefaultResponse,
-  TError = unknown
+  TError = unknown,
 > = UseQueryResult<TData, TError>;
 export const useAgentsServiceGetAgentRecallMemorySummaryKey =
   'AgentsServiceGetAgentRecallMemorySummary';
@@ -436,7 +436,7 @@ export const UseAgentsServiceGetAgentRecallMemorySummaryKeyFn = (
     agentId: string;
     userId?: string;
   },
-  queryKey?: Array<unknown>
+  queryKey?: Array<unknown>,
 ) => [
   useAgentsServiceGetAgentRecallMemorySummaryKey,
   ...(queryKey ?? [{ agentId, userId }]),
@@ -446,7 +446,7 @@ export type AgentsServiceGetAgentArchivalMemorySummaryDefaultResponse = Awaited<
 >;
 export type AgentsServiceGetAgentArchivalMemorySummaryQueryResult<
   TData = AgentsServiceGetAgentArchivalMemorySummaryDefaultResponse,
-  TError = unknown
+  TError = unknown,
 > = UseQueryResult<TData, TError>;
 export const useAgentsServiceGetAgentArchivalMemorySummaryKey =
   'AgentsServiceGetAgentArchivalMemorySummary';
@@ -458,7 +458,7 @@ export const UseAgentsServiceGetAgentArchivalMemorySummaryKeyFn = (
     agentId: string;
     userId?: string;
   },
-  queryKey?: Array<unknown>
+  queryKey?: Array<unknown>,
 ) => [
   useAgentsServiceGetAgentArchivalMemorySummaryKey,
   ...(queryKey ?? [{ agentId, userId }]),
@@ -468,7 +468,7 @@ export type AgentsServiceListAgentArchivalMemoryDefaultResponse = Awaited<
 >;
 export type AgentsServiceListAgentArchivalMemoryQueryResult<
   TData = AgentsServiceListAgentArchivalMemoryDefaultResponse,
-  TError = unknown
+  TError = unknown,
 > = UseQueryResult<TData, TError>;
 export const useAgentsServiceListAgentArchivalMemoryKey =
   'AgentsServiceListAgentArchivalMemory';
@@ -486,7 +486,7 @@ export const UseAgentsServiceListAgentArchivalMemoryKeyFn = (
     limit?: number;
     userId?: string;
   },
-  queryKey?: Array<unknown>
+  queryKey?: Array<unknown>,
 ) => [
   useAgentsServiceListAgentArchivalMemoryKey,
   ...(queryKey ?? [{ after, agentId, before, limit, userId }]),
@@ -496,7 +496,7 @@ export type AgentsServiceListAgentMessagesDefaultResponse = Awaited<
 >;
 export type AgentsServiceListAgentMessagesQueryResult<
   TData = AgentsServiceListAgentMessagesDefaultResponse,
-  TError = unknown
+  TError = unknown,
 > = UseQueryResult<TData, TError>;
 export const useAgentsServiceListAgentMessagesKey =
   'AgentsServiceListAgentMessages';
@@ -518,7 +518,7 @@ export const UseAgentsServiceListAgentMessagesKeyFn = (
     msgObject?: boolean;
     userId?: string;
   },
-  queryKey?: Array<unknown>
+  queryKey?: Array<unknown>,
 ) => [
   useAgentsServiceListAgentMessagesKey,
   ...(queryKey ?? [
@@ -538,7 +538,7 @@ export type ModelsServiceListModelsDefaultResponse = Awaited<
 >;
 export type ModelsServiceListModelsQueryResult<
   TData = ModelsServiceListModelsDefaultResponse,
-  TError = unknown
+  TError = unknown,
 > = UseQueryResult<TData, TError>;
 export const useModelsServiceListModelsKey = 'ModelsServiceListModels';
 export const UseModelsServiceListModelsKeyFn = (queryKey?: Array<unknown>) => [
@@ -550,19 +550,19 @@ export type ModelsServiceListEmbeddingModelsDefaultResponse = Awaited<
 >;
 export type ModelsServiceListEmbeddingModelsQueryResult<
   TData = ModelsServiceListEmbeddingModelsDefaultResponse,
-  TError = unknown
+  TError = unknown,
 > = UseQueryResult<TData, TError>;
 export const useModelsServiceListEmbeddingModelsKey =
   'ModelsServiceListEmbeddingModels';
 export const UseModelsServiceListEmbeddingModelsKeyFn = (
-  queryKey?: Array<unknown>
+  queryKey?: Array<unknown>,
 ) => [useModelsServiceListEmbeddingModelsKey, ...(queryKey ?? [])];
 export type LlmsServiceListModelsDefaultResponse = Awaited<
   ReturnType<typeof LlmsService.listModels>
 >;
 export type LlmsServiceListModelsQueryResult<
   TData = LlmsServiceListModelsDefaultResponse,
-  TError = unknown
+  TError = unknown,
 > = UseQueryResult<TData, TError>;
 export const useLlmsServiceListModelsKey = 'LlmsServiceListModels';
 export const UseLlmsServiceListModelsKeyFn = (queryKey?: Array<unknown>) => [
@@ -574,19 +574,19 @@ export type LlmsServiceListEmbeddingModelsDefaultResponse = Awaited<
 >;
 export type LlmsServiceListEmbeddingModelsQueryResult<
   TData = LlmsServiceListEmbeddingModelsDefaultResponse,
-  TError = unknown
+  TError = unknown,
 > = UseQueryResult<TData, TError>;
 export const useLlmsServiceListEmbeddingModelsKey =
   'LlmsServiceListEmbeddingModels';
 export const UseLlmsServiceListEmbeddingModelsKeyFn = (
-  queryKey?: Array<unknown>
+  queryKey?: Array<unknown>,
 ) => [useLlmsServiceListEmbeddingModelsKey, ...(queryKey ?? [])];
 export type BlocksServiceListMemoryBlocksDefaultResponse = Awaited<
   ReturnType<typeof BlocksService.listMemoryBlocks>
 >;
 export type BlocksServiceListMemoryBlocksQueryResult<
   TData = BlocksServiceListMemoryBlocksDefaultResponse,
-  TError = unknown
+  TError = unknown,
 > = UseQueryResult<TData, TError>;
 export const useBlocksServiceListMemoryBlocksKey =
   'BlocksServiceListMemoryBlocks';
@@ -602,7 +602,7 @@ export const UseBlocksServiceListMemoryBlocksKeyFn = (
     templatesOnly?: boolean;
     userId?: string;
   } = {},
-  queryKey?: Array<unknown>
+  queryKey?: Array<unknown>,
 ) => [
   useBlocksServiceListMemoryBlocksKey,
   ...(queryKey ?? [{ label, name, templatesOnly, userId }]),
@@ -612,7 +612,7 @@ export type BlocksServiceGetMemoryBlockDefaultResponse = Awaited<
 >;
 export type BlocksServiceGetMemoryBlockQueryResult<
   TData = BlocksServiceGetMemoryBlockDefaultResponse,
-  TError = unknown
+  TError = unknown,
 > = UseQueryResult<TData, TError>;
 export const useBlocksServiceGetMemoryBlockKey = 'BlocksServiceGetMemoryBlock';
 export const UseBlocksServiceGetMemoryBlockKeyFn = (
@@ -623,7 +623,7 @@ export const UseBlocksServiceGetMemoryBlockKeyFn = (
     blockId: string;
     userId?: string;
   },
-  queryKey?: Array<unknown>
+  queryKey?: Array<unknown>,
 ) => [
   useBlocksServiceGetMemoryBlockKey,
   ...(queryKey ?? [{ blockId, userId }]),
@@ -633,7 +633,7 @@ export type JobsServiceListJobsDefaultResponse = Awaited<
 >;
 export type JobsServiceListJobsQueryResult<
   TData = JobsServiceListJobsDefaultResponse,
-  TError = unknown
+  TError = unknown,
 > = UseQueryResult<TData, TError>;
 export const useJobsServiceListJobsKey = 'JobsServiceListJobs';
 export const UseJobsServiceListJobsKeyFn = (
@@ -644,14 +644,14 @@ export const UseJobsServiceListJobsKeyFn = (
     sourceId?: string;
     userId?: string;
   } = {},
-  queryKey?: Array<unknown>
+  queryKey?: Array<unknown>,
 ) => [useJobsServiceListJobsKey, ...(queryKey ?? [{ sourceId, userId }])];
 export type JobsServiceListActiveJobsDefaultResponse = Awaited<
   ReturnType<typeof JobsService.listActiveJobs>
 >;
 export type JobsServiceListActiveJobsQueryResult<
   TData = JobsServiceListActiveJobsDefaultResponse,
-  TError = unknown
+  TError = unknown,
 > = UseQueryResult<TData, TError>;
 export const useJobsServiceListActiveJobsKey = 'JobsServiceListActiveJobs';
 export const UseJobsServiceListActiveJobsKeyFn = (
@@ -660,14 +660,14 @@ export const UseJobsServiceListActiveJobsKeyFn = (
   }: {
     userId?: string;
   } = {},
-  queryKey?: Array<unknown>
+  queryKey?: Array<unknown>,
 ) => [useJobsServiceListActiveJobsKey, ...(queryKey ?? [{ userId }])];
 export type JobsServiceGetJobDefaultResponse = Awaited<
   ReturnType<typeof JobsService.getJob>
 >;
 export type JobsServiceGetJobQueryResult<
   TData = JobsServiceGetJobDefaultResponse,
-  TError = unknown
+  TError = unknown,
 > = UseQueryResult<TData, TError>;
 export const useJobsServiceGetJobKey = 'JobsServiceGetJob';
 export const UseJobsServiceGetJobKeyFn = (
@@ -678,14 +678,14 @@ export const UseJobsServiceGetJobKeyFn = (
     jobId: string;
     userId?: string;
   },
-  queryKey?: Array<unknown>
+  queryKey?: Array<unknown>,
 ) => [useJobsServiceGetJobKey, ...(queryKey ?? [{ jobId, userId }])];
 export type HealthServiceHealthCheckDefaultResponse = Awaited<
   ReturnType<typeof HealthService.healthCheck>
 >;
 export type HealthServiceHealthCheckQueryResult<
   TData = HealthServiceHealthCheckDefaultResponse,
-  TError = unknown
+  TError = unknown,
 > = UseQueryResult<TData, TError>;
 export const useHealthServiceHealthCheckKey = 'HealthServiceHealthCheck';
 export const UseHealthServiceHealthCheckKeyFn = (queryKey?: Array<unknown>) => [
@@ -698,7 +698,7 @@ export type SandboxConfigServiceListSandboxConfigsV1SandboxConfigGetDefaultRespo
   >;
 export type SandboxConfigServiceListSandboxConfigsV1SandboxConfigGetQueryResult<
   TData = SandboxConfigServiceListSandboxConfigsV1SandboxConfigGetDefaultResponse,
-  TError = unknown
+  TError = unknown,
 > = UseQueryResult<TData, TError>;
 export const useSandboxConfigServiceListSandboxConfigsV1SandboxConfigGetKey =
   'SandboxConfigServiceListSandboxConfigsV1SandboxConfigGet';
@@ -713,7 +713,7 @@ export const UseSandboxConfigServiceListSandboxConfigsV1SandboxConfigGetKeyFn =
       limit?: number;
       userId?: string;
     } = {},
-    queryKey?: Array<unknown>
+    queryKey?: Array<unknown>,
   ) => [
     useSandboxConfigServiceListSandboxConfigsV1SandboxConfigGetKey,
     ...(queryKey ?? [{ cursor, limit, userId }]),
@@ -726,7 +726,7 @@ export type SandboxConfigServiceListSandboxEnvVarsV1SandboxConfigSandboxConfigId
   >;
 export type SandboxConfigServiceListSandboxEnvVarsV1SandboxConfigSandboxConfigIdEnvironmentVariableGetQueryResult<
   TData = SandboxConfigServiceListSandboxEnvVarsV1SandboxConfigSandboxConfigIdEnvironmentVariableGetDefaultResponse,
-  TError = unknown
+  TError = unknown,
 > = UseQueryResult<TData, TError>;
 export const useSandboxConfigServiceListSandboxEnvVarsV1SandboxConfigSandboxConfigIdEnvironmentVariableGetKey =
   'SandboxConfigServiceListSandboxEnvVarsV1SandboxConfigSandboxConfigIdEnvironmentVariableGet';
@@ -743,7 +743,7 @@ export const UseSandboxConfigServiceListSandboxEnvVarsV1SandboxConfigSandboxConf
       sandboxConfigId: string;
       userId?: string;
     },
-    queryKey?: Array<unknown>
+    queryKey?: Array<unknown>,
   ) => [
     useSandboxConfigServiceListSandboxEnvVarsV1SandboxConfigSandboxConfigIdEnvironmentVariableGetKey,
     ...(queryKey ?? [{ cursor, limit, sandboxConfigId, userId }]),
@@ -753,7 +753,7 @@ export type UsersServiceListUsersDefaultResponse = Awaited<
 >;
 export type UsersServiceListUsersQueryResult<
   TData = UsersServiceListUsersDefaultResponse,
-  TError = unknown
+  TError = unknown,
 > = UseQueryResult<TData, TError>;
 export const useUsersServiceListUsersKey = 'UsersServiceListUsers';
 export const UseUsersServiceListUsersKeyFn = (
@@ -764,14 +764,14 @@ export const UseUsersServiceListUsersKeyFn = (
     cursor?: string;
     limit?: number;
   } = {},
-  queryKey?: Array<unknown>
+  queryKey?: Array<unknown>,
 ) => [useUsersServiceListUsersKey, ...(queryKey ?? [{ cursor, limit }])];
 export type AdminServiceListUsersDefaultResponse = Awaited<
   ReturnType<typeof AdminService.listUsers>
 >;
 export type AdminServiceListUsersQueryResult<
   TData = AdminServiceListUsersDefaultResponse,
-  TError = unknown
+  TError = unknown,
 > = UseQueryResult<TData, TError>;
 export const useAdminServiceListUsersKey = 'AdminServiceListUsers';
 export const UseAdminServiceListUsersKeyFn = (
@@ -782,14 +782,14 @@ export const UseAdminServiceListUsersKeyFn = (
     cursor?: string;
     limit?: number;
   } = {},
-  queryKey?: Array<unknown>
+  queryKey?: Array<unknown>,
 ) => [useAdminServiceListUsersKey, ...(queryKey ?? [{ cursor, limit }])];
 export type AdminServiceListOrgsDefaultResponse = Awaited<
   ReturnType<typeof AdminService.listOrgs>
 >;
 export type AdminServiceListOrgsQueryResult<
   TData = AdminServiceListOrgsDefaultResponse,
-  TError = unknown
+  TError = unknown,
 > = UseQueryResult<TData, TError>;
 export const useAdminServiceListOrgsKey = 'AdminServiceListOrgs';
 export const UseAdminServiceListOrgsKeyFn = (
@@ -800,14 +800,14 @@ export const UseAdminServiceListOrgsKeyFn = (
     cursor?: string;
     limit?: number;
   } = {},
-  queryKey?: Array<unknown>
+  queryKey?: Array<unknown>,
 ) => [useAdminServiceListOrgsKey, ...(queryKey ?? [{ cursor, limit }])];
 export type OrganizationServiceListOrgsDefaultResponse = Awaited<
   ReturnType<typeof OrganizationService.listOrgs>
 >;
 export type OrganizationServiceListOrgsQueryResult<
   TData = OrganizationServiceListOrgsDefaultResponse,
-  TError = unknown
+  TError = unknown,
 > = UseQueryResult<TData, TError>;
 export const useOrganizationServiceListOrgsKey = 'OrganizationServiceListOrgs';
 export const UseOrganizationServiceListOrgsKeyFn = (
@@ -818,7 +818,7 @@ export const UseOrganizationServiceListOrgsKeyFn = (
     cursor?: string;
     limit?: number;
   } = {},
-  queryKey?: Array<unknown>
+  queryKey?: Array<unknown>,
 ) => [useOrganizationServiceListOrgsKey, ...(queryKey ?? [{ cursor, limit }])];
 export type ToolsServiceCreateToolMutationResult = Awaited<
   ReturnType<typeof ToolsService.createTool>
