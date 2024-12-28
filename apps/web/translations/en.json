@@ -1496,8 +1496,10 @@
       "cta": "Convert to template"
     },
     "DeploymentButton": {
+      "loading": "Loading version information...",
       "version": "VERSION {version}",
-
+      "error": "ERROR",
+      "errorTooltip": "There was an error fetching template information, please refresh the page or contact support.",
       "readyToDeploy": {
         "trigger": "Template v{version}",
         "triggerNoVersion": "Template",
