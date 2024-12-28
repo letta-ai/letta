@@ -220,7 +220,7 @@ ready:
 
 start-services:
     @echo "🚧 Starting up postgres, redis..."
-    docker compose up -d redis postgres temporal
+    docker compose up -d redis postgres
 
 setup:
     @echo "🚧 Setting up the project..."
