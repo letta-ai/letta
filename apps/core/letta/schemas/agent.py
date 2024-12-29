@@ -119,6 +119,7 @@ class CreateAgent(BaseModel, validate_assignment=True):  #
     context_window_limit: Optional[int] = Field(None, description="The context window limit used by the agent.")
     embedding_chunk_size: Optional[int] = Field(DEFAULT_EMBEDDING_CHUNK_SIZE, description="The embedding chunk size used by the agent.")
     from_template: Optional[str] = Field(None, description="The template id used to configure the agent")
+    project_id: Optional[str] = Field(None, description="The project id that the agent will be associated with.")
 
     @field_validator("name")
     @classmethod

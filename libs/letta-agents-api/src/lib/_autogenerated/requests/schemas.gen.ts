@@ -1917,6 +1917,18 @@ export const $CreateAgentRequest = {
       title: 'From Template',
       description: 'The template id used to configure the agent',
     },
+    project_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Project Id',
+      description: 'The project id that the agent will be associated with.',
+    },
     user_id: {
       anyOf: [
         {

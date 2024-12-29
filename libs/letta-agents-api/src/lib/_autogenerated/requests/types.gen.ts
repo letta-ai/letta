@@ -636,6 +636,10 @@ export type CreateAgentRequest = {
    * The template id used to configure the agent
    */
   from_template?: string | null;
+  /**
+   * The project id that the agent will be associated with.
+   */
+  project_id?: string | null;
   user_id?: string | null;
 };
 
