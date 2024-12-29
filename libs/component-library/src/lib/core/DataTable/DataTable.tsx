@@ -95,7 +95,7 @@ function TableBodyContent<Data>(props: TableBodyContentProps<Data>) {
                   cell.column.columnDef.meta?.style.sticky === 'right' &&
                     'sticky right-0',
                   cell.column.columnDef.meta?.style.sticky &&
-                    'linear-gradient-background'
+                    'linear-gradient-background',
                 )}
                 key={cell.id}
               >
@@ -260,8 +260,8 @@ export function DataTable<TData, TValue>(props: DataTableProps<TData, TValue>) {
     <div
       ref={tableParentRef}
       className={cn(
-        'flex flex-col gap-2 w-full',
-        fullHeight || autofitHeight ? 'h-full flex-1' : ''
+        'flex  flex-col gap-2 w-full',
+        fullHeight || autofitHeight ? 'h-full flex-1' : '',
       )}
     >
       {props.onSearch && (
@@ -296,7 +296,7 @@ export function DataTable<TData, TValue>(props: DataTableProps<TData, TValue>) {
             fullHeight: fullHeight || autofitHeight,
             className,
           }),
-          'relative'
+          'relative',
         )}
         style={{
           height:
@@ -319,7 +319,7 @@ export function DataTable<TData, TValue>(props: DataTableProps<TData, TValue>) {
                         ? null
                         : flexRender(
                             header.column.columnDef.header,
-                            header.getContext()
+                            header.getContext(),
                           )}
                     </TableHead>
                   );

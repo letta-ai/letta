@@ -3,7 +3,7 @@ import { BrowserRouter } from 'react-router-dom';
 import * as ReactDOM from 'react-dom/client';
 import App from './app/app';
 import './i18n';
-import './styles.css';
+import './styles.scss';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { OpenAPI } from '@letta-web/letta-agents-api';
 

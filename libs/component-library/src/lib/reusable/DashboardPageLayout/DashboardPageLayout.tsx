@@ -35,6 +35,7 @@ interface DashboardPageLayoutProps {
   icon?: React.ReactNode;
   /** Makes the page full height in the sense that it will take up the full height of the screen, and the content will scroll within that space */
   encapsulatedFullHeight?: boolean;
+  fullHeight?: boolean;
   /* Fixes the page to a capped width */
   cappedWidth?: boolean;
   headerBottomPadding?: 'default' | 'large';
@@ -56,6 +57,7 @@ export function DashboardPageLayout(props: DashboardPageLayoutProps) {
     subtitle,
     cappedWidth,
     headerBottomPadding = 'default',
+    fullHeight,
     encapsulatedFullHeight,
     actions,
   } = props;
@@ -65,7 +67,8 @@ export function DashboardPageLayout(props: DashboardPageLayoutProps) {
       <VStack
         className={cn(
           encapsulatedFullHeight && 'encapsulated-full-height',
-          'max-w-[95%] mx-[auto]'
+          fullHeight && 'h-full',
+          'max-w-[95%] mx-[auto]',
         )}
         gap={false}
         fullWidth

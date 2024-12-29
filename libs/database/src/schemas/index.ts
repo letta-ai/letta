@@ -74,7 +74,7 @@ export const organizationPreferencesRelations = relations(
       fields: [organizationPreferences.defaultProjectId],
       references: [projects.id],
     }),
-  })
+  }),
 );
 
 export const signupMethodsEnum = pgEnum('signup_methods', [
@@ -94,7 +94,7 @@ export const users = pgTable('users', {
   imageUrl: text('image_url').notNull(),
   activeOrganizationId: text('active_organization_id'),
   lettaAgentsId: text('letta_agents_id').notNull().unique(),
-  theme: text('theme').default('light'),
+  theme: text('theme').default('auto'),
   locale: text('locale').default('en'),
   submittedOnboardingAt: timestamp('submitted_onboarding_at'),
   deletedAt: timestamp('deleted_at'),
@@ -139,7 +139,7 @@ export const userMarketingDetailsRelations = relations(
       fields: [userMarketingDetails.userId],
       references: [users.id],
     }),
-  })
+  }),
 );
 
 export interface OrganizationPermissionType {
@@ -167,7 +167,7 @@ export const organizationUsers = pgTable(
   },
   (table) => ({
     pk: primaryKey({ columns: [table.userId, table.organizationId] }),
-  })
+  }),
 );
 
 export const organizationUsersRelations = relations(
@@ -181,7 +181,7 @@ export const organizationUsersRelations = relations(
       fields: [organizationUsers.organizationId],
       references: [organizations.id],
     }),
-  })
+  }),
 );
 
 export const lettaAPIKeys = pgTable('letta_api_keys', {
@@ -216,7 +216,7 @@ export const lettaAgentsAPIKeyRelations = relations(
       fields: [lettaAPIKeys.organizationId],
       references: [organizations.id],
     }),
-  })
+  }),
 );
 
 export const projects = pgTable(
@@ -241,10 +241,10 @@ export const projects = pgTable(
     unique: {
       uniqueSlug: uniqueIndex('unique_slug').on(
         table.slug,
-        table.organizationId
+        table.organizationId,
       ),
     },
-  })
+  }),
 );
 
 export const projectRelations = relations(projects, ({ one, many }) => ({
@@ -281,10 +281,10 @@ export const agentTemplates = pgTable(
     unique: {
       uniqueName: uniqueIndex('unique_name').on(
         table.name,
-        table.organizationId
+        table.organizationId,
       ),
     },
-  })
+  }),
 );
 
 export const agentTemplateRelations = relations(
@@ -300,7 +300,7 @@ export const agentTemplateRelations = relations(
     }),
     deployedAgentTemplates: many(deployedAgentTemplates),
     agentSimulatorSessions: many(agentSimulatorSessions),
-  })
+  }),
 );
 
 export const deployedAgentTemplates = pgTable(
@@ -329,10 +329,10 @@ export const deployedAgentTemplates = pgTable(
       uniqueVersion: uniqueIndex('unique_version').on(
         table.version,
         table.organizationId,
-        table.agentTemplateId
+        table.agentTemplateId,
       ),
     },
-  })
+  }),
 );
 
 export const deployedAgentTemplatesRelations = relations(
@@ -351,7 +351,7 @@ export const deployedAgentTemplatesRelations = relations(
       fields: [deployedAgentTemplates.projectId],
       references: [projects.id],
     }),
-  })
+  }),
 );
 
 export const deployedAgentVariables = pgTable('deployed_agent_variables', {
@@ -375,7 +375,7 @@ export const deployedAgentVariablesRelations = relations(
       fields: [deployedAgentVariables.deployedAgentId],
       references: [deployedAgents.id],
     }),
-  })
+  }),
 );
 
 export const deployedAgents = pgTable(
@@ -408,10 +408,10 @@ export const deployedAgents = pgTable(
       uniqueKey: uniqueIndex('unique_key').on(
         table.key,
         table.organizationId,
-        table.projectId
+        table.projectId,
       ),
     },
-  })
+  }),
 );
 
 export const deployedAgentRelations = relations(deployedAgents, ({ one }) => ({
@@ -465,7 +465,7 @@ export const agentSimulatorSessionRelations = relations(
       fields: [agentSimulatorSessions.agentTemplateId],
       references: [agentTemplates.id],
     }),
-  })
+  }),
 );
 
 export const adePreferences = pgTable(
@@ -485,10 +485,10 @@ export const adePreferences = pgTable(
     unique: {
       uniqueUserAgent: uniqueIndex('unique_user_agent').on(
         table.userId,
-        table.agentId
+        table.agentId,
       ),
     },
-  })
+  }),
 );
 
 export const adePreferencesRelations = relations(adePreferences, ({ one }) => ({
@@ -526,7 +526,7 @@ export const inferenceTransactionRelations = relations(
       fields: [inferenceTransactions.organizationId],
       references: [organizations.id],
     }),
-  })
+  }),
 );
 
 export const organizationInvitedUsers = pgTable('organization_invites', {
@@ -552,7 +552,7 @@ export const organizationInvitedUsersRelations = relations(
       fields: [organizationInvitedUsers.organizationId],
       references: [organizations.id],
     }),
-  })
+  }),
 );
 
 export const developmentServers = pgTable('development_servers', {
@@ -582,7 +582,7 @@ export const developmentServerRelations = relations(
       fields: [developmentServers.id],
       references: [developmentServerPasswords.developmentServerId],
     }),
-  })
+  }),
 );
 
 export const developmentServerPasswords = pgTable(
@@ -599,7 +599,7 @@ export const developmentServerPasswords = pgTable(
     updatedAt: timestamp('updated_at')
       .notNull()
       .$onUpdate(() => new Date()),
-  }
+  },
 );
 
 export const developmentServerPasswordRelations = relations(
@@ -613,7 +613,7 @@ export const developmentServerPasswordRelations = relations(
       fields: [developmentServerPasswords.organizationId],
       references: [organizations.id],
     }),
-  })
+  }),
 );
 
 export const inferenceModelsMetadata = pgTable(
@@ -640,10 +640,10 @@ export const inferenceModelsMetadata = pgTable(
     unique: {
       uniqueModelName: uniqueIndex('unique_model_name').on(
         self.modelName,
-        self.modelEndpoint
+        self.modelEndpoint,
       ),
     },
-  })
+  }),
 );
 
 export const embeddingModelsMetadata = pgTable(
@@ -668,10 +668,10 @@ export const embeddingModelsMetadata = pgTable(
     unique: {
       uniqueModelName: uniqueIndex('unique_model_name').on(
         self.modelName,
-        self.modelEndpoint
+        self.modelEndpoint,
       ),
     },
-  })
+  }),
 );
 
 export const toolMetadataProviderEnum = pgEnum('provider_enum', [
@@ -704,10 +704,10 @@ export const toolMetadata = pgTable(
     unique: {
       uniqueProviderId: uniqueIndex('unique_provider_id').on(
         self.provider,
-        self.providerId
+        self.providerId,
       ),
     },
-  })
+  }),
 );
 
 export const toolGroupMetadata = pgTable('tool_group_metadata', {

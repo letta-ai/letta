@@ -1,6 +1,6 @@
 import * as React from 'react';
 import 'tailwindcss/tailwind.css';
-import '../../core-style-config/src/global.css';
+import '../../core-style-config/src/global.scss';
 import './storybook.css';
 
 import { Preview, ReactRenderer } from '@storybook/react';

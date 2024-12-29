@@ -1,4 +1,4 @@
-@import '../../libs/core-style-config/src/global.css';
+@import '../../libs/core-style-config/src/global.scss';
 
 /* You can add global styles to this file, and also import other style files */
 
@@ -25,8 +25,28 @@ html {
   line-height: 1.5;
   tab-size: 4;
   scroll-behavior: smooth;
+  overflow: hidden;
 }
 
 body {
   container-type: inline-size;
 }
+
+:root {
+  --background: var(--background-grey);
+}
+
+/* Follow the OS interface colours or force the use of the dark theme */
+@media (prefers-color-scheme: dark) {
+  :root {
+    @include dark;
+  }
+}
+//
+//.linear-gradient-background {
+//  background: hsl(var(--background-grey));
+//}
+//
+//.linear-gradient-background:before {
+//  background: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, hsl(var(--background-grey)) 10%, hsl(var(--background-grey)) 100%);
+//}

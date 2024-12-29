@@ -718,6 +718,7 @@
   "components/ThemeSelector": {
     "label": "Choose Theme",
     "options": {
+      "auto": "System default",
       "light": "Light",
       "dark": "Dark"
     }

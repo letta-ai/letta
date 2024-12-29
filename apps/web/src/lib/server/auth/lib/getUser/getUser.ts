@@ -89,7 +89,7 @@ export async function getUser(): Promise<GetUserDataResponse | null> {
     email: userFromDb.email,
     imageUrl: userFromDb.imageUrl,
     name: userFromDb.name,
-    theme: userFromDb.theme || 'light',
+    theme: userFromDb.theme || 'auto',
   };
 }
 

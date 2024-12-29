@@ -1,5 +1,21 @@
 {
+  "Homepage": {
+    "title": "Agents",
+    "table": {
+      "columns": {
+        "name": "Name",
+        "id": "id",
+        "createdAt": "Last Seen"
+      },
+      "openInADE": "Open in ADE"
+    }
+  },
   "AppHeader": {
+    "Navigation": {
+      "cloud": "Cloud ADE",
+      "documentation": "Documentation",
+      "apiReference": "API Reference"
+    },
     "ServerStatus": {
       "connected": "Connected",
       "connecting": "Connecting..."
