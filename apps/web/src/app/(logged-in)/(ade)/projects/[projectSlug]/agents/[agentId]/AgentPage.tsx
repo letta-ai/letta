@@ -171,7 +171,7 @@ function ADEHeader(props: ADEHeaderProps) {
 
 function RestoreLayoutButton() {
   const t = useTranslations(
-    'projects/(projectSlug)/agents/(agentId)/AgentPage'
+    'projects/(projectSlug)/agents/(agentId)/AgentPage',
   );
 
   const { setPositions } = usePanelManager();
@@ -210,11 +210,11 @@ function DeleteAgentDialog(props: DeleteAgentDialogProps) {
           message: 'Agent name does not match',
         }),
       }),
-    [name]
+    [name],
   );
 
   const t = useTranslations(
-    'projects/(projectSlug)/agents/(agentId)/AgentPage'
+    'projects/(projectSlug)/agents/(agentId)/AgentPage',
   );
 
   const form = useForm<z.infer<typeof DeleteAgentDialogFormSchema>>({
@@ -241,7 +241,7 @@ function DeleteAgentDialog(props: DeleteAgentDialogProps) {
           window.location.href = `/projects/${projectSlug}`;
         }
       },
-    }
+    },
   );
 
   const agentBaseType = useAgentBaseTypeName();
@@ -313,7 +313,7 @@ interface ForkAgentDialogProps {
 function ForkAgentDialog(props: ForkAgentDialogProps) {
   const { onClose } = props;
   const t = useTranslations(
-    'projects/(projectSlug)/agents/(agentId)/AgentPage'
+    'projects/(projectSlug)/agents/(agentId)/AgentPage',
   );
 
   const agentBaseType = useAgentBaseTypeName();
@@ -321,7 +321,7 @@ function ForkAgentDialog(props: ForkAgentDialogProps) {
   const { id: agentTemplateId } = useCurrentAgent();
   const { push } = useRouter();
   const { id: projectId, slug: projectSlug } = useCurrentProject();
-  const { mutate, isPending, isSuccess } =
+  const { mutate, isPending, isError, isSuccess } =
     webApi.agentTemplates.forkAgentTemplate.useMutation();
 
   const handleForkAgent = useCallback(() => {
@@ -340,7 +340,7 @@ function ForkAgentDialog(props: ForkAgentDialogProps) {
         onSuccess: (response) => {
           push(`/projects/${projectSlug}/templates/${response.body.name}`);
         },
-      }
+      },
     );
   }, [
     agentTemplateId,
@@ -366,6 +366,7 @@ function ForkAgentDialog(props: ForkAgentDialogProps) {
       confirmText={t('ForkAgentDialog.confirm', {
         agentBaseType: agentBaseType.capitalized,
       })}
+      errorMessage={isError ? t('ForkAgentDialog.error') : undefined}
       onConfirm={handleForkAgent}
       isConfirmBusy={isPending || isSuccess}
     >
@@ -411,7 +412,7 @@ type Dialogs = 'deleteAgent' | 'forkAgent' | 'renameAgent';
 
 function AgentSettingsDropdown() {
   const t = useTranslations(
-    'projects/(projectSlug)/agents/(agentId)/AgentPage'
+    'projects/(projectSlug)/agents/(agentId)/AgentPage',
   );
   const [openDialog, setOpenDialog] = useState<Dialogs | null>(null);
 
@@ -495,7 +496,7 @@ interface MobileNavigationProviderProps {
 
 function MobileNavigationProvider(props: MobileNavigationProviderProps) {
   const [activePanel, setActivePanelId] = useState<string | null>(
-    'agent-simulator'
+    'agent-simulator',
   );
 
   const { children } = props;
@@ -545,7 +546,7 @@ const MORE_PANELS = 'more-panels';
 
 function AgentMobileNavigation() {
   const t = useTranslations(
-    'projects/(projectSlug)/agents/(agentId)/AgentPage'
+    'projects/(projectSlug)/agents/(agentId)/AgentPage',
   );
 
   const [expanded, setExpanded] = useState(false);
@@ -665,7 +666,7 @@ function ADEPage(props: ADEPageProps) {
 
 function AgentPageError() {
   const t = useTranslations(
-    'projects/(projectSlug)/agents/(agentId)/AgentPage'
+    'projects/(projectSlug)/agents/(agentId)/AgentPage',
   );
 
   return (
@@ -688,7 +689,7 @@ export function AgentPage() {
   });
 
   const t = useTranslations(
-    'projects/(projectSlug)/agents/(agentId)/AgentPage'
+    'projects/(projectSlug)/agents/(agentId)/AgentPage',
   );
 
   useAgentsServiceGetAgent({
@@ -708,7 +709,7 @@ export function AgentPage() {
   }, [isLocal, isTemplate, t]);
 
   const isAgentConvertingToTemplate = useAtomValue(
-    isAgentConvertingToTemplateAtom
+    isAgentConvertingToTemplateAtom,
   );
 
   if (isAgentConvertingToTemplate) {

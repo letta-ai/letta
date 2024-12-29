@@ -19,6 +19,8 @@ import {
   WarningIcon,
   useForm,
   VStack,
+  Tooltip,
+  LettaLoader,
 } from '@letta-web/component-library';
 import { DeployAgentUsageInstructions } from '$web/client/code-reference/DeployAgentUsageInstructions';
 import { z } from 'zod';
@@ -34,6 +36,7 @@ import { compareAgentStates } from '$web/utils';
 import type { ServerInferResponses } from '@ts-rest/core';
 import type { contracts } from '$web/web-api/contracts';
 import { atom, useSetAtom } from 'jotai';
+import { get } from 'lodash-es';
 
 interface DeployAgentDialogProps {
   isAtLatestVersion: boolean;
@@ -44,7 +47,7 @@ function DeployAgentDialog(props: DeployAgentDialogProps) {
   const { name } = useCurrentAgent();
   const { id: projectId } = useCurrentProject();
   const t = useTranslations(
-    'projects/(projectSlug)/agents/(agentId)/AgentPage'
+    'projects/(projectSlug)/agents/(agentId)/AgentPage',
   );
 
   return (
@@ -82,7 +85,7 @@ function VersionAgentDialog() {
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const t = useTranslations(
-    'projects/(projectSlug)/agents/(agentId)/AgentPage'
+    'projects/(projectSlug)/agents/(agentId)/AgentPage',
   );
 
   const form = useForm<VersionAgentFormValues>({
@@ -103,7 +106,7 @@ function VersionAgentDialog() {
         >(
           {
             queryKey: webApiQueryKeys.agentTemplates.getAgentTemplateByVersion(
-              `${name}:latest`
+              `${name}:latest`,
             ),
             exact: true,
           },
@@ -116,7 +119,7 @@ function VersionAgentDialog() {
               ...oldData,
               body: response.body,
             };
-          }
+          },
         );
 
         setOpen(false);
@@ -135,7 +138,7 @@ function VersionAgentDialog() {
         params: { agent_id: agentTemplateId },
       });
     },
-    [mutate, agentTemplateId]
+    [mutate, agentTemplateId],
   );
 
   return (
@@ -172,7 +175,7 @@ function VersionAgentDialog() {
                             {chunks}
                           </ExternalLink>
                         ),
-                      }
+                      },
                     )}
                     label={t('VersionAgentDialog.migrate')}
                     onCheckedChange={(value) => {
@@ -197,7 +200,7 @@ function VersionAgentDialog() {
 
 function CloudUpsellDeploy() {
   const t = useTranslations(
-    'projects/(projectSlug)/agents/(agentId)/AgentPage'
+    'projects/(projectSlug)/agents/(agentId)/AgentPage',
   );
 
   return (
@@ -248,7 +251,7 @@ function useHasDeployedAgents(args: UseHasDeployedAgentsArgs) {
       {
         deployedAgentTemplateId: deployedAgentTemplateId,
         limit: 1,
-      }
+      },
     ),
     queryData: {
       params: {
@@ -269,35 +272,48 @@ function useHasDeployedAgents(args: UseHasDeployedAgentsArgs) {
 function useLatestAgentTemplate() {
   const { name } = useCurrentAgent();
 
-  const { data: deployedAgentTemplate } =
-    webApi.agentTemplates.getAgentTemplateByVersion.useQuery({
-      queryKey: webApiQueryKeys.agentTemplates.getAgentTemplateByVersion(
-        `${name}:latest`
-      ),
-      queryData: {
-        params: { slug: `${name}:latest` },
-      },
-    });
+  const {
+    data: deployedAgentTemplate,
+    error,
+    isError,
+  } = webApi.agentTemplates.getAgentTemplateByVersion.useQuery({
+    queryKey: webApiQueryKeys.agentTemplates.getAgentTemplateByVersion(
+      `${name}:latest`,
+    ),
+    queryData: {
+      params: { slug: `${name}:latest` },
+    },
+    retry: false,
+  });
 
-  return deployedAgentTemplate?.body;
+  return {
+    deployedAgentTemplate: deployedAgentTemplate?.body,
+    notFoundError: isError && get(error, 'status') === 404,
+    otherError: isError && get(error, 'status') !== 404,
+  };
 }
 
 function TemplateVersionDisplay() {
   // get latest template version
   const agentState = useCurrentAgent();
-  const deployedAgentTemplate = useLatestAgentTemplate();
+  const { deployedAgentTemplate, notFoundError, otherError } =
+    useLatestAgentTemplate();
   const { slug: projectSlug } = useCurrentProject();
   const t = useTranslations(
-    'projects/(projectSlug)/agents/(agentId)/AgentPage'
+    'projects/(projectSlug)/agents/(agentId)/AgentPage',
   );
 
   const isAtLatestVersion = useMemo(() => {
+    if (notFoundError) {
+      return false;
+    }
+
     if (!deployedAgentTemplate?.state || !isAgentState(agentState)) {
       return true;
     }
 
     return compareAgentStates(agentState, deployedAgentTemplate.state);
-  }, [deployedAgentTemplate, agentState]);
+  }, [deployedAgentTemplate, notFoundError, agentState]);
 
   const hasDeployedAgents = useHasDeployedAgents({
     deployedAgentTemplateId: deployedAgentTemplate?.id,
@@ -305,11 +321,30 @@ function TemplateVersionDisplay() {
 
   const versionNumber = deployedAgentTemplate?.version;
 
+  const isLoading = useMemo(() => {
+    return !deployedAgentTemplate && !notFoundError && !otherError;
+  }, [deployedAgentTemplate, notFoundError, otherError]);
+
+  if (otherError) {
+    return (
+      <Tooltip asChild content={t('DeploymentButton.errorTooltip')}>
+        <Button
+          size="small"
+          color="destructive"
+          data-testid="version-template-trigger"
+          label={t('DeploymentButton.error')}
+          preIcon={<WarningIcon size="small" />}
+        />
+      </Tooltip>
+    );
+  }
+
   return (
     <Popover
       triggerAsChild
       trigger={
         <Button
+          busy={isLoading}
           size="small"
           color="secondary"
           data-testid="version-template-trigger"
@@ -321,10 +356,10 @@ function TemplateVersionDisplay() {
                   })
                 : t('DeploymentButton.readyToDeploy.triggerNoVersion')
               : versionNumber
-              ? t('DeploymentButton.updateAvailable.trigger', {
-                  version: versionNumber,
-                })
-              : t('DeploymentButton.updateAvailable.triggerNoVersion')
+                ? t('DeploymentButton.updateAvailable.trigger', {
+                    version: versionNumber,
+                  })
+                : t('DeploymentButton.updateAvailable.triggerNoVersion')
           }
           preIcon={
             isAtLatestVersion ? (
@@ -337,48 +372,55 @@ function TemplateVersionDisplay() {
       }
       align="end"
     >
-      <VStack padding="medium" gap="large">
-        <VStack>
-          {deployedAgentTemplate?.version && (
-            <HStack>
-              <Badge
-                color="background-grey"
-                content={t('DeploymentButton.version', {
-                  version: deployedAgentTemplate?.version,
-                })}
+      {isLoading ? (
+        <VStack align="center" justify="center" padding>
+          <LettaLoader variant="grower" />
+          <Typography>{t('DeploymentButton.loading')}</Typography>
+        </VStack>
+      ) : (
+        <VStack padding="medium" gap="large">
+          <VStack>
+            {deployedAgentTemplate?.version && (
+              <HStack>
+                <Badge
+                  color="background-grey"
+                  content={t('DeploymentButton.version', {
+                    version: deployedAgentTemplate?.version,
+                  })}
+                />
+              </HStack>
+            )}
+            <Typography variant="heading5" bold>
+              {isAtLatestVersion
+                ? t('DeploymentButton.readyToDeploy.heading')
+                : t('DeploymentButton.updateAvailable.heading')}
+            </Typography>
+            <Typography>
+              {isAtLatestVersion
+                ? t('DeploymentButton.readyToDeploy.copy')
+                : versionNumber
+                  ? t('DeploymentButton.updateAvailable.copy', {
+                      version: versionNumber,
+                    })
+                  : t('DeploymentButton.updateAvailable.copyNoVersion')}
+            </Typography>
+          </VStack>
+          <VStack gap="small">
+            {!isAtLatestVersion && <VersionAgentDialog />}
+            <DeployAgentDialog isAtLatestVersion={isAtLatestVersion} />
+            {hasDeployedAgents && (
+              <Button
+                fullWidth
+                data-testid="view-deployed-agents"
+                target="_blank"
+                color="tertiary-transparent"
+                label={t('VersionAgentDialog.deployedAgents')}
+                href={`/projects/${projectSlug}/agents?template=${deployedAgentTemplate?.fullVersion}`}
               />
-            </HStack>
-          )}
-          <Typography variant="heading5" bold>
-            {isAtLatestVersion
-              ? t('DeploymentButton.readyToDeploy.heading')
-              : t('DeploymentButton.updateAvailable.heading')}
-          </Typography>
-          <Typography>
-            {isAtLatestVersion
-              ? t('DeploymentButton.readyToDeploy.copy')
-              : versionNumber
-              ? t('DeploymentButton.updateAvailable.copy', {
-                  version: versionNumber,
-                })
-              : t('DeploymentButton.updateAvailable.copyNoVersion')}
-          </Typography>
+            )}
+          </VStack>
         </VStack>
-        <VStack gap="small">
-          {!isAtLatestVersion && <VersionAgentDialog />}
-          <DeployAgentDialog isAtLatestVersion={isAtLatestVersion} />
-          {hasDeployedAgents && (
-            <Button
-              fullWidth
-              data-testid="view-deployed-agents"
-              target="_blank"
-              color="tertiary-transparent"
-              label={t('VersionAgentDialog.deployedAgents')}
-              href={`/projects/${projectSlug}/agents?template=${deployedAgentTemplate?.fullVersion}`}
-            />
-          )}
-        </VStack>
-      </VStack>
+      )}
     </Popover>
   );
 }
@@ -404,7 +446,7 @@ function CreateTemplateButton() {
     });
 
   const t = useTranslations(
-    'projects/(projectSlug)/agents/(agentId)/AgentPage'
+    'projects/(projectSlug)/agents/(agentId)/AgentPage',
   );
 
   const handleConvert = useCallback(() => {

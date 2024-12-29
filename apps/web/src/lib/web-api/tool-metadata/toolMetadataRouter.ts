@@ -11,7 +11,7 @@ type ListToolMetadataResponse = ServerInferResponses<
 >;
 
 async function listToolMetadata(
-  req: ListToolMetadataRequest
+  req: ListToolMetadataRequest,
 ): Promise<ListToolMetadataResponse> {
   const { search, tags, brand, offset, providerId, limit = 10 } = req.query;
 
@@ -21,8 +21,8 @@ async function listToolMetadata(
     where.push(
       or(
         ilike(toolMetadata.name, `%${search}%`),
-        ilike(toolMetadata.brand, `%${search}%`)
-      )
+        ilike(toolMetadata.brand, `%${search}%`),
+      ),
     );
   }
 
@@ -40,7 +40,6 @@ async function listToolMetadata(
     where.push(eq(toolMetadata.providerId, providerId));
   }
 
-  console.log(where);
   const toolMetaData = await db.query.toolMetadata.findMany({
     where: and(...where),
     offset,
@@ -105,7 +104,7 @@ type ListToolGroupsResponse = ServerInferResponses<
 >;
 
 async function listToolGroupMetadata(
-  req: ListToolGroupsRequest
+  req: ListToolGroupsRequest,
 ): Promise<ListToolGroupsResponse> {
   const { search, offset, limit = 10 } = req.query;
 
@@ -122,7 +121,7 @@ async function listToolGroupMetadata(
   });
 
   const result = await db.execute(
-    sql`SELECT brand, COUNT(*) FROM tool_metadata GROUP BY brand`
+    sql`SELECT brand, COUNT(*) FROM tool_metadata GROUP BY brand`,
   );
 
   const map = new Map(
@@ -132,7 +131,7 @@ async function listToolGroupMetadata(
       } catch (_) {
         return [r.brand, 0];
       }
-    })
+    }),
   );
 
   return {
@@ -159,7 +158,7 @@ type GetSingleToolMetadataResponse = ServerInferResponses<
 >;
 
 async function getSingleToolMetadata(
-  req: GetSingleToolMetadataRequest
+  req: GetSingleToolMetadataRequest,
 ): Promise<GetSingleToolMetadataResponse> {
   const { id } = req.params;
 

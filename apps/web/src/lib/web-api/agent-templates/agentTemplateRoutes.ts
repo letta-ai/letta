@@ -11,7 +11,7 @@ import {
   db,
   deployedAgentTemplates,
 } from '@letta-web/database';
-import { copyAgentById, updateAgentFromAgentId } from '$web/sdk';
+import { copyAgentById, agentsRouter, updateAgentFromAgentId } from '$web/sdk';
 import { AgentsService } from '@letta-web/letta-agents-api';
 import { getDeployedTemplateByVersion } from '$web/server/lib/getDeployedTemplateByVersion/getDeployedTemplateByVersion';
 
@@ -32,7 +32,7 @@ type ListAgentTemplatesQueryResponse = ServerInferResponses<
 >;
 
 export async function listAgentTemplates(
-  req: ListAgentTemplatesQueryRequest
+  req: ListAgentTemplatesQueryRequest,
 ): Promise<ListAgentTemplatesQueryResponse> {
   const {
     search,
@@ -113,18 +113,21 @@ type ForkAgentTemplateResponse = ServerInferResponses<
 >;
 
 export async function forkAgentTemplate(
-  req: ForkAgentTemplateRequest
+  req: ForkAgentTemplateRequest,
 ): Promise<ForkAgentTemplateResponse> {
   const { agentTemplateId, projectId } = req.params;
-  const { activeOrganizationId, lettaAgentsId } =
-    await getUserWithActiveOrganizationIdOrThrow();
+  const {
+    activeOrganizationId,
+    lettaAgentsId,
+    id: userId,
+  } = await getUserWithActiveOrganizationIdOrThrow();
 
   const testingAgent = await db.query.agentTemplates.findFirst({
     where: and(
       isNull(agentTemplates.deletedAt),
       eq(agentTemplates.organizationId, activeOrganizationId),
       eq(agentTemplates.projectId, projectId),
-      eq(agentTemplates.id, agentTemplateId)
+      eq(agentTemplates.id, agentTemplateId),
     ),
   });
 
@@ -135,9 +138,49 @@ export async function forkAgentTemplate(
     };
   }
 
-  const copiedAgent = await copyAgentById(testingAgent.id, lettaAgentsId);
+  const agentDetails = await AgentsService.getAgent(
+    {
+      agentId: testingAgent.id,
+    },
+    {
+      user_id: lettaAgentsId,
+    },
+  );
 
-  if (!copiedAgent.id) {
+  const name = `forked-${testingAgent.name}-${getDateAsAlphanumericString(new Date())}`;
+
+  const copiedAgent = await agentsRouter.createAgent(
+    {
+      body: {
+        name,
+        // project_id: projectId,
+        llm_config: agentDetails.llm_config,
+        embedding_config: agentDetails.embedding_config,
+        system: agentDetails.system,
+        tool_ids: agentDetails.tools
+          .map((tool) => tool.id)
+          .filter(Boolean) as string[],
+        memory_blocks: agentDetails.memory.blocks.map((block) => {
+          return {
+            limit: block.limit,
+            label: block.label || '',
+            value: block.value,
+          };
+        }),
+        template: true,
+      },
+    },
+    {
+      request: {
+        organizationId: activeOrganizationId,
+        userId,
+        lettaAgentsUserId: lettaAgentsId,
+        source: 'api',
+      },
+    },
+  );
+
+  if (copiedAgent.status !== 201) {
     return {
       status: 500,
       body: {
@@ -146,38 +189,10 @@ export async function forkAgentTemplate(
     };
   }
 
-  let name = `forked-${testingAgent.name}`;
-
-  // check if name already exists
-  const existingAgent = await db.query.agentTemplates.findFirst({
-    where: and(
-      isNull(agentTemplates.deletedAt),
-      eq(agentTemplates.organizationId, activeOrganizationId),
-      eq(agentTemplates.projectId, projectId),
-      eq(agentTemplates.name, name)
-    ),
-  });
-
-  if (existingAgent) {
-    name = `${name}-${getDateAsAlphanumericString(new Date())}`;
-  }
-
-  const [agent] = await db
-    .insert(agentTemplates)
-    .values({
-      id: copiedAgent.id,
-      projectId: testingAgent.projectId,
-      organizationId: activeOrganizationId,
-      name,
-    })
-    .returning({
-      id: agentTemplates.id,
-    });
-
   return {
     status: 201,
     body: {
-      id: agent.id,
+      id: copiedAgent.body.id,
       name,
       updatedAt: new Date().toISOString(),
     },
@@ -193,7 +208,7 @@ type GetAgentTemplateSimulatorSessionResponse = ServerInferResponses<
 >;
 
 async function getAgentTemplateSimulatorSession(
-  req: GetAgentTemplateSimulatorSessionRequest
+  req: GetAgentTemplateSimulatorSessionRequest,
 ): Promise<GetAgentTemplateSimulatorSessionResponse> {
   const { agentTemplateId } = req.params;
   const { activeOrganizationId, lettaAgentsId } =
@@ -203,7 +218,7 @@ async function getAgentTemplateSimulatorSession(
     where: and(
       isNull(agentTemplates.deletedAt),
       eq(agentTemplates.organizationId, activeOrganizationId),
-      eq(agentTemplates.id, agentTemplateId)
+      eq(agentTemplates.id, agentTemplateId),
     ),
   });
 
@@ -261,7 +276,7 @@ async function getAgentTemplateSimulatorSession(
     },
     {
       user_id: lettaAgentsId,
-    }
+    },
   );
 
   return {
@@ -284,7 +299,7 @@ type CreateAgentTemplateSimulatorSessionResponse = ServerInferResponses<
 >;
 
 async function createAgentTemplateSimulatorSession(
-  req: CreateAgentTemplateSimulatorSessionRequest
+  req: CreateAgentTemplateSimulatorSessionRequest,
 ): Promise<CreateAgentTemplateSimulatorSessionResponse> {
   const { agentTemplateId } = req.params;
   const { variables } = req.body;
@@ -295,7 +310,7 @@ async function createAgentTemplateSimulatorSession(
     where: and(
       isNull(agentTemplates.deletedAt),
       eq(agentTemplates.organizationId, activeOrganizationId),
-      eq(agentTemplates.id, agentTemplateId)
+      eq(agentTemplates.id, agentTemplateId),
     ),
   });
 
@@ -322,7 +337,7 @@ async function createAgentTemplateSimulatorSession(
       },
       {
         user_id: lettaAgentsId,
-      }
+      },
     );
 
     if (!existingTemplate?.id) {
@@ -364,7 +379,7 @@ async function createAgentTemplateSimulatorSession(
   const newAgent = await copyAgentById(
     agentTemplate.id,
     lettaAgentsId,
-    variables
+    variables,
   );
 
   if (!newAgent?.id) {
@@ -410,7 +425,7 @@ type RefreshAgentTemplateSimulatorSessionResponse = ServerInferResponses<
 >;
 
 async function refreshAgentTemplateSimulatorSession(
-  req: RefreshAgentTemplateSimulatorSessionRequest
+  req: RefreshAgentTemplateSimulatorSessionRequest,
 ): Promise<RefreshAgentTemplateSimulatorSessionResponse> {
   const { agentTemplateId, agentSessionId } = req.params;
   const { activeOrganizationId, lettaAgentsId } =
@@ -420,7 +435,7 @@ async function refreshAgentTemplateSimulatorSession(
     where: and(
       isNull(agentTemplates.deletedAt),
       eq(agentTemplates.organizationId, activeOrganizationId),
-      eq(agentTemplates.id, agentTemplateId)
+      eq(agentTemplates.id, agentTemplateId),
     ),
   });
 
@@ -435,7 +450,7 @@ async function refreshAgentTemplateSimulatorSession(
     where: and(
       eq(agentSimulatorSessions.agentTemplateId, agentTemplateId),
       eq(agentSimulatorSessions.id, agentSessionId),
-      eq(agentSimulatorSessions.organizationId, activeOrganizationId)
+      eq(agentSimulatorSessions.organizationId, activeOrganizationId),
     ),
   });
 
@@ -474,7 +489,7 @@ type DeleteAgentTemplateSimulatorSessionResponse = ServerInferResponses<
 >;
 
 async function deleteAgentTemplateSimulatorSession(
-  req: DeleteAgentTemplateSimulatorSessionRequest
+  req: DeleteAgentTemplateSimulatorSessionRequest,
 ): Promise<DeleteAgentTemplateSimulatorSessionResponse> {
   const { agentSessionId } = req.params;
   const { activeOrganizationId } =
@@ -483,7 +498,7 @@ async function deleteAgentTemplateSimulatorSession(
   const simulatorSession = await db.query.agentSimulatorSessions.findFirst({
     where: and(
       eq(agentSimulatorSessions.id, agentSessionId),
-      eq(agentSimulatorSessions.organizationId, activeOrganizationId)
+      eq(agentSimulatorSessions.organizationId, activeOrganizationId),
     ),
   });
 
@@ -517,7 +532,7 @@ type GetAgentTemplateByVersionResponse = ServerInferResponses<
 >;
 
 async function getAgentTemplateByVersion(
-  req: GetAgentTemplateByVersion
+  req: GetAgentTemplateByVersion,
 ): Promise<GetAgentTemplateByVersionResponse> {
   const { slug } = req.params;
   const { lettaAgentsId, activeOrganizationId } =
@@ -526,7 +541,7 @@ async function getAgentTemplateByVersion(
   const [versionName] = slug.split(':');
   const deployedAgentTemplate = await getDeployedTemplateByVersion(
     slug,
-    activeOrganizationId
+    activeOrganizationId,
   );
 
   if (!deployedAgentTemplate) {
@@ -544,7 +559,7 @@ async function getAgentTemplateByVersion(
     },
     {
       user_id: lettaAgentsId,
-    }
+    },
   );
 
   return {

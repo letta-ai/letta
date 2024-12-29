@@ -97,7 +97,7 @@ function AdvancedMemoryEditorForm(props: AdvancedMemoryEditorProps) {
         .string()
         .regex(
           /^[a-zA-Z_][a-zA-Z0-9_]*$/,
-          t('AdvancedMemoryEditorForm.label.error')
+          t('AdvancedMemoryEditorForm.label.error'),
         ),
       maxCharacters: z.coerce
         .number()
@@ -175,16 +175,15 @@ function AdvancedMemoryEditorForm(props: AdvancedMemoryEditorProps) {
                 }),
               },
             };
-          }
+          },
         );
       } catch (_e) {
-        console.log(_e);
         setIsError(true);
       } finally {
         setIsPending(false);
       }
     },
-    [agent.id, isPending, memory.label, queryClient, updateAgentMemoryByLabel]
+    [agent.id, isPending, memory.label, queryClient, updateAgentMemoryByLabel],
   );
 
   return (
@@ -311,7 +310,7 @@ function EditMemoryForm(props: EditMemoryFormProps) {
   const { value, onChange, error, lastUpdatedAt, isUpdating } = useUpdateMemory(
     {
       label,
-    }
+    },
   );
 
   return (

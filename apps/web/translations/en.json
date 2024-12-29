@@ -1497,8 +1497,10 @@
       "cta": "Convert to template"
     },
     "DeploymentButton": {
+      "loading": "Loading version information...",
       "version": "VERSION {version}",
-
+      "error": "ERROR",
+      "errorTooltip": "There was an error fetching template information, please refresh the page or contact support.",
       "readyToDeploy": {
         "trigger": "Template v{version}",
         "triggerNoVersion": "Template",
@@ -1533,6 +1535,7 @@
       "description": "Are you sure you want to delete this {agentBaseType}? This is permanent and cannot be undone."
     },
     "ForkAgentDialog": {
+      "error": "There was an error forking this agent, please try again or contact support.",
       "title": "Fork {agentBaseType}",
       "trigger": "Fork {agentBaseType}",
       "confirm": "Fork {agentBaseType}",

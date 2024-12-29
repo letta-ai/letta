@@ -128,7 +128,7 @@ describe('agentsRouter', () => {
   describe('createAgent', () => {
     it('should create an agent with no project id with a name', async () => {
       mockDatabase.query.organizationPreferences.findFirst.mockResolvedValue({
-        defaultProjectId: null,
+        defaultProjectId: 'new-project-id',
         id: 'test-org-id',
         organizationId: 'test-org-id',
       });
@@ -152,7 +152,7 @@ describe('agentsRouter', () => {
       });
 
       lettaAgentAPIMock.AgentsService.createAgent.mockResolvedValue(
-        createdAgent
+        createdAgent,
       );
 
       const { valuesFn, returningFn } = mockDatabaseInsert();
@@ -176,7 +176,7 @@ describe('agentsRouter', () => {
             organizationId: 'test-org-id',
             lettaAgentsUserId: 'letta-test-id',
           },
-        }
+        },
       );
 
       expect(response).toEqual({
@@ -197,7 +197,7 @@ describe('agentsRouter', () => {
         },
         {
           user_id: 'letta-test-id',
-        }
+        },
       );
 
       expect(valuesFn).toHaveBeenCalledWith({
@@ -236,7 +236,7 @@ describe('agentsRouter', () => {
             organizationId: 'test-org-id',
             lettaAgentsUserId: 'test-id',
           },
-        }
+        },
       );
 
       expect(response).toEqual({
@@ -272,7 +272,7 @@ describe('agentsRouter', () => {
             organizationId: 'test-org-id',
             lettaAgentsUserId: 'test-id',
           },
-        }
+        },
       );
 
       expect(response).toEqual({
@@ -325,7 +325,7 @@ describe('agentsRouter', () => {
               organizationId: 'test-org-id',
               lettaAgentsUserId: 'test-id',
             },
-          }
+          },
         );
 
         expect(response).toEqual({
@@ -349,7 +349,7 @@ describe('agentsRouter', () => {
         };
 
         lettaAgentAPIMock.AgentsService.createAgent.mockResolvedValue(
-          createdAgent
+          createdAgent,
         );
 
         const { valuesFn } = mockDatabaseInsert();
@@ -369,11 +369,11 @@ describe('agentsRouter', () => {
               organizationId: 'test-org-id',
               lettaAgentsUserId: 'letta-test-id',
             },
-          }
+          },
         );
 
         expect(
-          lettaAgentAPIMock.AgentsService.createAgent
+          lettaAgentAPIMock.AgentsService.createAgent,
         ).toHaveBeenCalledWith(
           {
             requestBody: {
@@ -386,7 +386,7 @@ describe('agentsRouter', () => {
           },
           {
             user_id: 'letta-test-id',
-          }
+          },
         );
 
         expect(valuesFn).toHaveBeenCalledWith({
@@ -419,7 +419,7 @@ describe('agentsRouter', () => {
         };
 
         lettaAgentAPIMock.AgentsService.createAgent.mockResolvedValue(
-          createdAgent
+          createdAgent,
         );
 
         const { valuesFn, returningFn } = mockDatabaseInsert();
@@ -445,11 +445,11 @@ describe('agentsRouter', () => {
               organizationId: 'test-org-id',
               lettaAgentsUserId: 'letta-test-id',
             },
-          }
+          },
         );
 
         expect(
-          lettaAgentAPIMock.AgentsService.createAgent
+          lettaAgentAPIMock.AgentsService.createAgent,
         ).toHaveBeenCalledWith(
           {
             requestBody: {
@@ -462,7 +462,7 @@ describe('agentsRouter', () => {
           },
           {
             user_id: 'letta-test-id',
-          }
+          },
         );
 
         expect(valuesFn).toHaveBeenCalledWith({
@@ -503,7 +503,7 @@ describe('agentsRouter', () => {
             organizationId: 'test-org-id',
             lettaAgentsUserId: 'test-id',
           },
-        }
+        },
       );
 
       expect(response).toEqual({
@@ -538,7 +538,7 @@ describe('agentsRouter', () => {
             organizationId: 'test-org-id',
             lettaAgentsUserId: 'test-id',
           },
-        }
+        },
       );
 
       expect(response).toEqual({
@@ -576,7 +576,7 @@ describe('agentsRouter', () => {
             organizationId: 'test-org-id',
             lettaAgentsUserId: 'test-id',
           },
-        }
+        },
       );
 
       expect(response).toEqual({
@@ -671,7 +671,7 @@ describe('agentsRouter', () => {
             organizationId: 'test-org-id',
             lettaAgentsUserId: 'test-id',
           },
-        }
+        },
       );
 
       expect(lettaAgentAPIMock.AgentsService.getAgent).toHaveBeenCalledWith(
@@ -680,7 +680,7 @@ describe('agentsRouter', () => {
         },
         {
           user_id: 'test-id',
-        }
+        },
       );
 
       const { tools, ...rest } = premadeTemplate;
@@ -711,7 +711,7 @@ describe('agentsRouter', () => {
         },
         {
           user_id: 'test-id',
-        }
+        },
       );
 
       expect(valuesFn).toHaveBeenCalledWith({
@@ -789,7 +789,7 @@ describe('agentsRouter', () => {
       };
 
       lettaAgentAPIMock.AgentsService.getAgent.mockResolvedValue(
-        GetAgentResolvedValue
+        GetAgentResolvedValue,
       );
 
       lettaAgentAPIMock.AgentsService.getAgentSources.mockResolvedValue([]);
@@ -803,7 +803,7 @@ describe('agentsRouter', () => {
       };
 
       lettaAgentAPIMock.AgentsService.createAgent.mockResolvedValue(
-        createdAgent
+        createdAgent,
       );
 
       const { valuesFn, returningFn } = mockDatabaseInsert();
@@ -828,7 +828,7 @@ describe('agentsRouter', () => {
             organizationId: 'test-org-id',
             lettaAgentsUserId: 'test-id',
           },
-        }
+        },
       );
 
       expect(lettaAgentAPIMock.AgentsService.getAgent).toHaveBeenCalledWith(
@@ -837,7 +837,7 @@ describe('agentsRouter', () => {
         },
         {
           user_id: 'test-id',
-        }
+        },
       );
 
       const { tools, ...rest } = premadeTemplate;
@@ -869,7 +869,7 @@ describe('agentsRouter', () => {
         },
         {
           user_id: 'test-id',
-        }
+        },
       );
 
       expect(valuesFn).toHaveBeenCalledWith({
@@ -970,7 +970,7 @@ describe('agentsRouter', () => {
             organizationId: 'test-org-id',
             lettaAgentsUserId: 'test-id',
           },
-        }
+        },
       );
 
       expect(lettaAgentAPIMock.AgentsService.getAgent).toHaveBeenCalledWith(
@@ -979,7 +979,7 @@ describe('agentsRouter', () => {
         },
         {
           user_id: 'test-id',
-        }
+        },
       );
 
       const { tools, ...rest } = premadeTemplate;
@@ -1011,7 +1011,7 @@ describe('agentsRouter', () => {
         },
         {
           user_id: 'test-id',
-        }
+        },
       );
 
       expect(valuesFn).toHaveBeenCalledWith({
@@ -1052,7 +1052,7 @@ describe('agentsRouter', () => {
       };
 
       lettaAgentAPIMock.AgentsService.createAgent.mockResolvedValue(
-        createdAgent
+        createdAgent,
       );
 
       const { valuesFn } = mockDatabaseInsert();
@@ -1072,7 +1072,7 @@ describe('agentsRouter', () => {
             organizationId: 'test-org-id',
             lettaAgentsUserId: 'letta-test-id',
           },
-        }
+        },
       );
 
       expect(lettaAgentAPIMock.AgentsService.createAgent).toHaveBeenCalledWith(
@@ -1085,7 +1085,7 @@ describe('agentsRouter', () => {
         },
         {
           user_id: 'letta-test-id',
-        }
+        },
       );
 
       expect(valuesFn).toHaveBeenCalledWith({
@@ -1115,7 +1115,7 @@ describe('agentsRouter', () => {
       };
 
       lettaAgentAPIMock.AgentsService.createAgent.mockResolvedValue(
-        createdAgent
+        createdAgent,
       );
 
       const { valuesFn, returningFn } = mockDatabaseInsert();
@@ -1140,7 +1140,7 @@ describe('agentsRouter', () => {
             organizationId: 'test-org-id',
             lettaAgentsUserId: 'letta-test-id',
           },
-        }
+        },
       );
 
       expect(lettaAgentAPIMock.AgentsService.createAgent).toHaveBeenCalledWith(
@@ -1153,7 +1153,7 @@ describe('agentsRouter', () => {
         },
         {
           user_id: 'letta-test-id',
-        }
+        },
       );
 
       expect(valuesFn).toHaveBeenCalledWith({
@@ -1178,7 +1178,7 @@ describe('agentsRouter', () => {
 
     it('should create an agent with no project id', async () => {
       mockDatabase.query.organizationPreferences.findFirst.mockResolvedValue({
-        defaultProjectId: null,
+        defaultProjectId: 'new-project-id',
         id: 'test-org-id',
         organizationId: 'test-org-id',
       });
@@ -1202,7 +1202,7 @@ describe('agentsRouter', () => {
       });
 
       lettaAgentAPIMock.AgentsService.createAgent.mockResolvedValue(
-        createdAgent
+        createdAgent,
       );
 
       const { valuesFn, returningFn } = mockDatabaseInsert();
@@ -1225,7 +1225,7 @@ describe('agentsRouter', () => {
             organizationId: 'test-org-id',
             lettaAgentsUserId: 'letta-test-id',
           },
-        }
+        },
       );
 
       expect(response).toEqual({
@@ -1246,7 +1246,7 @@ describe('agentsRouter', () => {
         },
         {
           user_id: 'letta-test-id',
-        }
+        },
       );
 
       expect(valuesFn).toHaveBeenCalledWith({
@@ -1264,7 +1264,7 @@ describe('agentsRouter', () => {
 
   it('should create an agent template with no project id', async () => {
     mockDatabase.query.organizationPreferences.findFirst.mockResolvedValue({
-      defaultProjectId: null,
+      defaultProjectId: 'new-project-id',
       id: 'test-org-id',
       organizationId: 'test-org-id',
     });
@@ -1310,7 +1310,7 @@ describe('agentsRouter', () => {
           organizationId: 'test-org-id',
           lettaAgentsUserId: 'letta-test-id',
         },
-      }
+      },
     );
 
     expect(response).toEqual({
@@ -1331,7 +1331,7 @@ describe('agentsRouter', () => {
       },
       {
         user_id: 'letta-test-id',
-      }
+      },
     );
 
     expect(valuesFn).toHaveBeenCalledWith({
