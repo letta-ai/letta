@@ -47,7 +47,6 @@ import {
 import { useCurrentAgent } from '../hooks';
 import { EventSource } from 'extended-eventsource';
 import { useQueryClient } from '@tanstack/react-query';
-import type { InfiniteData } from '@tanstack/query-core';
 import { get } from 'lodash-es';
 import type { MessagesDisplayMode } from '$web/client/components';
 import { Messages } from '$web/client/components';
@@ -69,7 +68,7 @@ import { atom, useAtom, useSetAtom } from 'jotai';
 import { trackClientSideEvent } from '@letta-web/analytics/client';
 import { AnalyticsEvent } from '@letta-web/analytics';
 import { useCurrentUser } from '$web/client/hooks';
-import { firstPageMessagesCache } from '$web/client/components/Messages/firstPageMessagesCache/firstPageMessagesCache';
+import { messagesInFlightCacheAtom } from '$web/client/components/Messages/messagesInFlightCacheAtom/messagesInFlightCacheAtom';
 import { useCurrentAPIHostConfig } from '$web/client/hooks/useCurrentAPIHostConfig/useCurrentAPIHostConfig';
 import { jsonToCurl } from '@letta-web/generic-utils';
 import type { ServerInferResponses } from '@ts-rest/core';
@@ -109,7 +108,7 @@ function useSendMessage(agentId: string, options: UseSendMessageOptions = {}) {
     };
   }, []);
 
-  const setFirstPageMessagesCache = useSetAtom(firstPageMessagesCache);
+  const setMessagesInFlightCache = useSetAtom(messagesInFlightCacheAtom);
 
   const sendMessage: SendMessageType = useCallback(
     (payload: SendMessagePayload) => {
@@ -118,38 +117,18 @@ function useSendMessage(agentId: string, options: UseSendMessageOptions = {}) {
       setFailedToSendMessage(false);
       setErrorCode(undefined);
 
-      queryClient.setQueriesData<InfiniteData<AgentMessage[]> | undefined>(
-        {
-          queryKey: UseAgentsServiceListAgentMessagesKeyFn({ agentId }),
-        },
-        (oldData) => {
-          if (!oldData) {
-            return oldData;
-          }
+      const newMessage: AgentMessage = {
+        message_type: role === 'user' ? 'user_message' : 'system_message',
+        message: JSON.stringify({
+          type: role === 'user' ? 'user_message' : 'system_alert',
+          message: message,
+          time: new Date().toISOString(),
+        }),
+        date: new Date().toISOString(),
+        id: `${new Date().getTime()}-user_message`,
+      };
 
-          const [firstPage, ...rest] = [...oldData.pages];
-
-          const newMessage: AgentMessage = {
-            message_type: role === 'user' ? 'user_message' : 'system_message',
-            message: JSON.stringify({
-              type: role === 'user' ? 'user_message' : 'system_alert',
-              message: message,
-              time: new Date().toISOString(),
-            }),
-            date: new Date().toISOString(),
-            id: `${new Date().getTime()}-user_message`,
-          };
-
-          const firstPageWithNewMessage = [newMessage, ...firstPage];
-
-          setFirstPageMessagesCache(firstPageWithNewMessage);
-
-          return {
-            pageParams: oldData.pageParams,
-            pages: [firstPageWithNewMessage, ...rest],
-          };
-        }
-      );
+      setMessagesInFlightCache([newMessage]);
 
       if (isLocal) {
         trackClientSideEvent(AnalyticsEvent.LOCAL_AGENT_MESSAGE_CREATED, {
@@ -185,7 +164,7 @@ function useSendMessage(agentId: string, options: UseSendMessageOptions = {}) {
               },
             ],
           }),
-        }
+        },
       );
 
       eventsource.onmessage = (e: MessageEvent) => {
@@ -211,90 +190,79 @@ function useSendMessage(agentId: string, options: UseSendMessageOptions = {}) {
         try {
           const extracted = AgentMessageSchema.parse(JSON.parse(e.data));
 
-          queryClient.setQueriesData<InfiniteData<AgentMessage[]>>(
-            {
-              queryKey: UseAgentsServiceListAgentMessagesKeyFn({ agentId }),
-            },
-            // @ts-expect-error - the typing is wrong
-            (oldData) => {
-              if (!oldData) {
-                return oldData;
-              }
+          console.log('extracted', extracted);
+          setMessagesInFlightCache((messages) => {
+            if (!messages) {
+              return messages;
+            }
 
-              const [firstPage, ...rest] = [...oldData.pages];
+            let hasExistingMessage = false;
 
-              let hasExistingMessage = false;
+            let transformedMessages = messages.map((message) => {
+              if (
+                `${message.id}-${message.message_type}` ===
+                `${extracted.id}-${extracted.message_type}`
+              ) {
+                hasExistingMessage = true;
 
-              let transformedFirstPage = firstPage.map((message) => {
-                if (
-                  `${message.id}-${message.message_type}` ===
-                  `${extracted.id}-${extracted.message_type}`
-                ) {
-                  hasExistingMessage = true;
+                const newMessage: Record<string, any> = {
+                  ...message,
+                };
 
-                  const newMessage: Record<string, any> = {
-                    ...message,
-                  };
+                // explicit handlers for each message type
+                switch (extracted.message_type) {
+                  case 'tool_call_message': {
+                    const maybeArguments = get(
+                      newMessage,
+                      'tool_call.arguments',
+                      '',
+                    );
 
-                  // explicit handlers for each message type
-                  switch (extracted.message_type) {
-                    case 'tool_call_message': {
-                      const maybeArguments = get(
-                        newMessage,
-                        'tool_call.arguments',
-                        ''
-                      );
-
-                      newMessage.tool_call = {
-                        tool_call_id:
-                          newMessage.tool_call.tool_call_id ||
-                          extracted.tool_call.tool_call_id,
-                        message_type:
-                          newMessage.tool_call.message_type ||
-                          extracted.tool_call.message_type,
-                        name:
-                          newMessage.tool_call.name || extracted.tool_call.name,
-                        arguments:
-                          maybeArguments + extracted.tool_call.arguments,
-                      };
-                      break;
-                    }
-                    case 'tool_return_message': {
-                      newMessage.tool_return = extracted.tool_return;
-                      break;
-                    }
-                    case 'reasoning_message': {
-                      newMessage.reasoning =
-                        (newMessage.reasoning || '') + extracted.reasoning;
-                      break;
-                    }
-                    default: {
-                      return newMessage;
-                    }
+                    newMessage.tool_call = {
+                      tool_call_id:
+                        newMessage.tool_call.tool_call_id ||
+                        extracted.tool_call.tool_call_id,
+                      message_type:
+                        newMessage.tool_call.message_type ||
+                        extracted.tool_call.message_type,
+                      name:
+                        newMessage.tool_call.name || extracted.tool_call.name,
+                      arguments: maybeArguments + extracted.tool_call.arguments,
+                    };
+                    break;
                   }
-
-                  return newMessage;
+                  case 'tool_return_message': {
+                    newMessage.tool_return = extracted.tool_return;
+                    break;
+                  }
+                  case 'reasoning_message': {
+                    newMessage.reasoning =
+                      (newMessage.reasoning || '') + extracted.reasoning;
+                    break;
+                  }
+                  default: {
+                    return newMessage;
+                  }
                 }
 
-                return message;
-              });
-
-              if (!hasExistingMessage) {
-                transformedFirstPage = [
-                  {
-                    ...extracted,
-                    date: new Date().toISOString(),
-                  },
-                  ...transformedFirstPage,
-                ];
+                return newMessage;
               }
 
-              return {
-                pageParams: oldData.pageParams,
-                pages: [transformedFirstPage, ...rest],
-              };
+              return message;
+            });
+
+            if (!hasExistingMessage) {
+              transformedMessages = [
+                {
+                  ...extracted,
+                  date: new Date().toISOString(),
+                },
+                ...transformedMessages,
+              ];
             }
-          );
+
+            return transformedMessages as AgentMessage[];
+          });
         } catch (_e) {
           // ignore
         }
@@ -320,10 +288,10 @@ function useSendMessage(agentId: string, options: UseSendMessageOptions = {}) {
       options,
       password,
       queryClient,
-      setFirstPageMessagesCache,
+      setMessagesInFlightCache,
       setIsPending,
       user?.id,
-    ]
+    ],
   );
 
   return { isPending, isError: failedToSendMessage, sendMessage, errorCode };
@@ -412,7 +380,7 @@ function DialogSessionSheet(props: DialogSessionDialogProps) {
               status: 200,
               body: response.body,
             };
-          }
+          },
         );
       },
     });
@@ -458,13 +426,13 @@ function DialogSessionSheet(props: DialogSessionDialogProps) {
                     },
                   },
                 };
-              }
+              },
             );
           },
-        }
+        },
       );
     },
-    [agentTemplateId, mutate, projectId, queryClient, variableData]
+    [agentTemplateId, mutate, projectId, queryClient, variableData],
   );
 
   const handleChange = useCallback((name: string, value: string) => {
@@ -561,7 +529,7 @@ function FlushSimulationSessionDialog() {
               status: 200,
               body: response.body,
             };
-          }
+          },
         );
 
         setIsOpen(false);
@@ -965,7 +933,7 @@ function Chatroom() {
         method: 'POST',
       });
     },
-    [agentIdToUse, hostConfig.headers, hostConfig.url, isTemplate]
+    [agentIdToUse, hostConfig.headers, hostConfig.url, isTemplate],
   );
 
   return (

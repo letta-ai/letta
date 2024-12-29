@@ -39,7 +39,7 @@ import type {
   AgentSimulatorMessageType,
 } from '../../../../app/(logged-in)/(ade)/projects/[projectSlug]/agents/[agentId]/AgentSimulator/types';
 import { FunctionIcon } from '@letta-web/component-library';
-import { skipToken, useInfiniteQuery } from '@tanstack/react-query';
+import { useInfiniteQuery } from '@tanstack/react-query';
 import type { InfiniteData } from '@tanstack/query-core';
 import { jsonrepair } from 'jsonrepair';
 import { useTranslations } from 'next-intl';
@@ -47,7 +47,7 @@ import { get } from 'lodash-es';
 import { useGetMessagesWorker } from '$web/client/components/Messages/useGetMessagesWorker/useGetMessagesWorker';
 import { useCurrentDevelopmentServerConfig } from '../../../../app/(logged-in)/(dashboard-like)/development-servers/[developmentServerId]/hooks/useCurrentDevelopmentServerConfig/useCurrentDevelopmentServerConfig';
 import { useAtom } from 'jotai';
-import { firstPageMessagesCache } from '$web/client/components/Messages/firstPageMessagesCache/firstPageMessagesCache';
+import { messagesInFlightCacheAtom } from '$web/client/components/Messages/messagesInFlightCacheAtom/messagesInFlightCacheAtom';
 
 // tryFallbackParseJson will attempt to parse a string as JSON, if it fails, it will trim the last character and try again
 // until it succeeds or the string is empty
@@ -81,7 +81,7 @@ function MessageGroup({ group }: MessageGroupType) {
   const { name, messages } = group;
 
   const sortedMessages = messages.sort(
-    (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+    (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
   );
 
   const textColor = useMemo(() => {
@@ -173,10 +173,6 @@ export function Messages(props: MessagesProps) {
   const developmentServerConfig = useCurrentDevelopmentServerConfig();
   const { getMessages } = useGetMessagesWorker();
 
-  const isMessageUpdateLock = useMemo(() => {
-    return isSendingMessage;
-  }, [isSendingMessage]);
-
   const refetchInterval = useMemo(() => {
     if (isSendingMessage) {
       return false;
@@ -191,7 +187,7 @@ export function Messages(props: MessagesProps) {
     return 5000;
   }, [isSendingMessage, lastMessageReceived]);
 
-  const [messageCache, setMessageCache] = useAtom(firstPageMessagesCache);
+  const [messagesInFlight] = useAtom(messagesInFlightCacheAtom);
 
   const { data, hasNextPage, fetchNextPage, isFetching } = useInfiniteQuery<
     AgentMessage[],
@@ -202,33 +198,23 @@ export function Messages(props: MessagesProps) {
   >({
     refetchInterval,
     queryKey: UseAgentsServiceListAgentMessagesKeyFn({ agentId }),
-    queryFn: isMessageUpdateLock
-      ? skipToken
-      : async (query) => {
-          const res = (await getMessages({
-            url: developmentServerConfig?.url,
-            headers: {
-              ...(developmentServerConfig?.password
-                ? {
-                    'X-BARE-PASSWORD': `password ${developmentServerConfig.password}`,
-                  }
-                : {}),
-            },
-            agentId,
-            limit: MESSAGE_LIMIT,
-            ...(query.pageParam.before
-              ? { cursor: query.pageParam.before }
-              : {}),
-          })) as unknown as AgentMessage[];
-
-          if (isMessageUpdateLock) {
-            return messageCache;
-          }
-
-          setMessageCache(res);
-
-          return res;
+    queryFn: async (query) => {
+      const res = (await getMessages({
+        url: developmentServerConfig?.url,
+        headers: {
+          ...(developmentServerConfig?.password
+            ? {
+                'X-BARE-PASSWORD': `password ${developmentServerConfig.password}`,
+              }
+            : {}),
         },
+        agentId,
+        limit: MESSAGE_LIMIT,
+        ...(query.pageParam.before ? { cursor: query.pageParam.before } : {}),
+      })) as unknown as AgentMessage[];
+
+      return res;
+    },
     getNextPageParam: (lastPage) => {
       if (lastPage.length < MESSAGE_LIMIT) {
         return undefined;
@@ -236,7 +222,7 @@ export function Messages(props: MessagesProps) {
 
       return {
         before: lastPage.sort(
-          (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+          (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
         )[0].id,
       };
     },
@@ -271,7 +257,7 @@ export function Messages(props: MessagesProps) {
     function extractMessage(
       agentMessage: AgentMessage,
       mode: MessagesDisplayMode,
-      allMessages: AgentMessage[]
+      allMessages: AgentMessage[],
     ): AgentSimulatorMessageType | null {
       switch (agentMessage.message_type) {
         case 'tool_return_message':
@@ -312,11 +298,11 @@ export function Messages(props: MessagesProps) {
                     {
                       ...agentMessage,
                       function_return: tryFallbackParseJson(
-                        agentMessage.tool_return
+                        agentMessage.tool_return,
                       ),
                     },
                     null,
-                    2
+                    2,
                   )}
                   language="javascript"
                 ></Code>
@@ -327,7 +313,7 @@ export function Messages(props: MessagesProps) {
           };
         case 'tool_call_message': {
           const parsedFunctionCallArguments = tryFallbackParseJson(
-            agentMessage.tool_call.arguments || ''
+            agentMessage.tool_call.arguments || '',
           );
 
           if (mode === 'simple' || mode === 'interactive') {
@@ -337,7 +323,7 @@ export function Messages(props: MessagesProps) {
             ) {
               try {
                 const out = SendMessageFunctionCallSchema.safeParse(
-                  tryFallbackParseJson(agentMessage.tool_call.arguments || '')
+                  tryFallbackParseJson(agentMessage.tool_call.arguments || ''),
                 );
 
                 if (!out.success) {
@@ -371,7 +357,7 @@ export function Messages(props: MessagesProps) {
                   // eslint-disable-next-line @typescript-eslint/no-confusing-void-expression
                   get(message, 'tool_call_id') ===
                     // eslint-disable-next-line @typescript-eslint/no-confusing-void-expression
-                    agentMessage.tool_call.tool_call_id
+                    agentMessage.tool_call.tool_call_id,
               );
 
               return {
@@ -414,7 +400,7 @@ export function Messages(props: MessagesProps) {
                         agentMessage.tool_call.arguments,
                     },
                     null,
-                    2
+                    2,
                   )}
                   language="javascript"
                 ></Code>
@@ -468,7 +454,7 @@ export function Messages(props: MessagesProps) {
           };
         case 'user_message': {
           const out = UserMessageMessageSchema.safeParse(
-            JSON.parse(agentMessage.message)
+            JSON.parse(agentMessage.message),
           );
 
           if (mode === 'simple' || mode === 'interactive') {
@@ -538,7 +524,7 @@ export function Messages(props: MessagesProps) {
 
           try {
             const tryParseResp = SystemAlertSchema.safeParse(
-              JSON.parse(agentMessage.message)
+              JSON.parse(agentMessage.message),
             );
 
             if (tryParseResp.success) {
@@ -557,7 +543,7 @@ export function Messages(props: MessagesProps) {
         }
       }
     },
-    [t]
+    [t],
   );
 
   const messageGroups = useMemo(() => {
@@ -565,16 +551,25 @@ export function Messages(props: MessagesProps) {
       return [];
     }
 
-    const preMessages = data.pages
-      .flat()
+    const anIdFromMessagesInFlight = messagesInFlight[1]?.id;
+    const firstPage = data.pages[0];
+
+    const firstPageHasAnIdFromMessagesInFlight = firstPage.some(
+      (message) => message.id === anIdFromMessagesInFlight,
+    );
+
+    const preMessages = [
+      ...(!firstPageHasAnIdFromMessagesInFlight ? messagesInFlight : []),
+      ...data.pages.flat(),
+    ]
       .map((message, _, allMessages) =>
         // @ts-expect-error - the typing is wrong
-        extractMessage(message, mode, allMessages)
+        extractMessage(message, mode, allMessages),
       )
       .filter((message) => !!message)
       .sort(
         (a, b) =>
-          new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+          new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
       );
 
     // group messages by name
@@ -602,7 +597,7 @@ export function Messages(props: MessagesProps) {
     });
 
     return groupedMessages;
-  }, [extractMessage, mode, data]);
+  }, [messagesInFlight, extractMessage, mode, data]);
 
   useEffect(() => {
     if (ref.current) {
