@@ -199,10 +199,7 @@ def test_composio_tool_schema_generation(openai_model: str, structured_output: b
             tool_create = ToolCreate.from_composio(action_name=action_name)
         except composio.exceptions.ComposioSDKError:
             # e.g. "composio.exceptions.ComposioSDKError: No connected account found for app `CAL`; Run `composio add cal` to fix this"
-            if "No connected account found for app" in str(composio.exceptions.ComposioSDKError):
-                pytest.skip(f"Composio account not figured to use action_name {action_name}")
-            else:
-                raise
+            pytest.skip(f"Composio account not configured to use action_name {action_name}")
 
         print(tool_create)
 
