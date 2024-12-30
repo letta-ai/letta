@@ -942,6 +942,7 @@
       }
     },
     "table": {
+      "totalResults": "{count} agents found matching your search",
       "copyId": "Copy id",
       "columns": {
         "id": "ID",
