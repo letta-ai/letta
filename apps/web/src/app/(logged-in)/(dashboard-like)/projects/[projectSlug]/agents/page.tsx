@@ -39,6 +39,7 @@ import {
   webApi,
   webApiQueryKeys,
   webOriginSDKApi,
+  webOriginSDKQueryKeys,
 } from '$web/client';
 import { useCurrentProject } from '../hooks';
 import { useSearchParams } from 'next/navigation';
@@ -50,6 +51,9 @@ import { useTranslations } from 'next-intl';
 import { DeployAgentDialog } from './DeployAgentDialog/DeployAgentDialog';
 import { useDateFormatter } from '@letta-web/helpful-client-utils';
 import { SearchDeployedAgentsSchema } from '$web/sdk/agents/agentsContract';
+import { useQuery } from '@tanstack/react-query';
+import type { sdkContracts } from '$web/sdk/contracts';
+import type { ServerInferResponses } from '@ts-rest/core';
 
 interface AgentMessagesListProps {
   agentId: string;
@@ -189,7 +193,7 @@ function useQueryDefinition() {
         currentProjectId,
         {
           includeAgentTemplateInfo: true,
-        }
+        },
       ),
     queryData: {
       params: { projectId: currentProjectId },
@@ -219,7 +223,7 @@ function useQueryDefinition() {
         { label: t('anyVersion'), value: '' },
       ];
     },
-    [currentProjectId, t]
+    [currentProjectId, t],
   );
 
   const defaultTemplateSearchOptions = useMemo(() => {
@@ -263,19 +267,19 @@ function useQueryDefinition() {
               options: [
                 {
                   label: t(
-                    'useQueryDefinition.agentName.operator.operators.contains'
+                    'useQueryDefinition.agentName.operator.operators.contains',
                   ),
                   value: 'contains',
                 },
                 {
                   label: t(
-                    'useQueryDefinition.agentName.operator.operators.equals'
+                    'useQueryDefinition.agentName.operator.operators.equals',
                   ),
                   value: 'eq',
                 },
                 {
                   label: t(
-                    'useQueryDefinition.agentName.operator.operators.notEquals'
+                    'useQueryDefinition.agentName.operator.operators.notEquals',
                   ),
                   value: 'neq',
                 },
@@ -304,13 +308,13 @@ function useQueryDefinition() {
               options: [
                 {
                   label: t(
-                    'useQueryDefinition.agentTemplate.operator.operators.equals'
+                    'useQueryDefinition.agentTemplate.operator.operators.equals',
                   ),
                   value: 'eq',
                 },
                 {
                   label: t(
-                    'useQueryDefinition.agentTemplate.operator.operators.notEquals'
+                    'useQueryDefinition.agentTemplate.operator.operators.notEquals',
                   ),
                   value: 'neq',
                 },
@@ -323,7 +327,7 @@ function useQueryDefinition() {
             display: 'async-select',
             options: {
               placeholder: t(
-                'useQueryDefinition.agentTemplate.value.placeholder'
+                'useQueryDefinition.agentTemplate.value.placeholder',
               ),
               defaultOptions: defaultTemplateSearchOptions || [],
               loadOptions: handleLoadOptions,
@@ -361,6 +365,7 @@ function useQueryDefinition() {
 function DeployedAgentsPage() {
   const { fieldDefinitions, initialQuery } = useQueryDefinition();
 
+  const [draftQuery, setDraftQuery] = useState<QueryBuilderQuery>(initialQuery);
   const [query, setQuery] = useState<QueryBuilderQuery>(initialQuery);
   const t = useTranslations('projects/(projectSlug)/agents/page');
 
@@ -371,61 +376,65 @@ function DeployedAgentsPage() {
   const [offset, setOffset] = useState(0);
   const { id: currentProjectId } = useCurrentProject();
 
-  const compileQuery = useCallback(
-    (queryToCompile: QueryBuilderQuery) => {
-      const val = {
-        search: queryToCompile.root.items.map((item) => {
-          if (isGenericQueryCondition(item) || !item.queryData) {
-            return null;
-          }
+  const compiledQuery = useMemo(() => {
+    const val = {
+      search: query.root.items.map((item) => {
+        if (isGenericQueryCondition(item) || !item.queryData) {
+          return null;
+        }
 
-          return {
-            field: item.field,
-            ...Object.entries(item.queryData).reduce((acc, [key, value]) => {
-              if (!value) {
-                return acc;
-              }
+        return {
+          field: item.field,
+          ...Object.entries(item.queryData).reduce((acc, [key, value]) => {
+            if (!value) {
+              return acc;
+            }
 
-              if (isMultiValue(value)) {
-                return {
-                  ...acc,
-                  [key]: value.map((val) => val.value),
-                };
-              }
-
+            if (isMultiValue(value)) {
               return {
                 ...acc,
-                [key]: value?.value || '',
+                [key]: value.map((val) => val.value),
               };
-            }, {}),
-          };
-        }),
-        offset,
-        limit,
-        project_id: currentProjectId,
-        combinator: queryToCompile.root.combinator,
-      };
+            }
 
-      if (SearchDeployedAgentsSchema.safeParse(val).success) {
-        return val;
+            return {
+              ...acc,
+              [key]: value?.value || '',
+            };
+          }, {}),
+        };
+      }),
+      offset,
+      limit,
+      project_id: currentProjectId,
+      combinator: query.root.combinator,
+    };
+
+    if (SearchDeployedAgentsSchema.safeParse(val).success) {
+      return val;
+    }
+
+    return {};
+  }, [currentProjectId, query, limit, offset]);
+
+  const { data } = useQuery<
+    ServerInferResponses<typeof sdkContracts.agents.searchDeployedAgents, 200>
+  >({
+    queryKey: webOriginSDKQueryKeys.agents.searchDeployedAgents(compiledQuery),
+    queryFn: async () => {
+      const response = await webOriginSDKApi.agents.searchDeployedAgents.mutate(
+        {
+          body: compiledQuery,
+        },
+      );
+
+      if (response.status !== 200) {
+        throw new Error('Failed to fetch agents');
       }
 
-      return {};
+      return response;
     },
-    [currentProjectId, limit, offset]
-  );
-
-  const { data, mutate } =
-    webOriginSDKApi.agents.searchDeployedAgents.useMutation();
-
-  const searchAgents = useCallback(
-    (override?: QueryBuilderQuery) => {
-      mutate({
-        body: compileQuery(override || query),
-      });
-    },
-    [compileQuery, mutate, query]
-  );
+  });
 
   const mounted = useRef(false);
 
@@ -438,9 +447,7 @@ function DeployedAgentsPage() {
     }
 
     mounted.current = true;
-
-    searchAgents();
-  }, [currentProjectId, limit, mutate, offset, query, searchAgents]);
+  }, [currentProjectId, limit, offset, query]);
 
   const filterByVersion = useCallback(
     (version: string) => {
@@ -471,19 +478,18 @@ function DeployedAgentsPage() {
       } satisfies QueryBuilderQuery;
 
       setQuery(nextQuery);
-
-      searchAgents(nextQuery);
+      setDraftQuery(nextQuery);
     },
     [
       fieldDefinitions.version.id,
       fieldDefinitions.version.queries,
       query.root.items,
-      searchAgents,
-    ]
+    ],
   );
 
   const agents = data?.body.agents || [];
   const hasNextPage = data?.body.hasNextPage || false;
+  const totalCount = data?.body.totalCount || 0;
 
   const { slug: currentProjectSlug } = useCurrentProject();
   const { formatDateAndTime } = useDateFormatter();
@@ -566,7 +572,7 @@ function DeployedAgentsPage() {
         ),
       },
     ],
-    [currentProjectSlug, filterByVersion, formatDateAndTime, t]
+    [currentProjectSlug, filterByVersion, formatDateAndTime, t],
   );
 
   return (
@@ -580,7 +586,7 @@ function DeployedAgentsPage() {
           <form
             onSubmit={(e) => {
               e.preventDefault();
-              searchAgents();
+              setQuery(draftQuery);
             }}
           >
             <VStack border gap={false}>
@@ -594,14 +600,28 @@ function DeployedAgentsPage() {
               </HStack>
               <VStack paddingX="small" paddingTop="small">
                 <QueryBuilder
-                  query={query}
+                  query={draftQuery}
                   onSetQuery={(query) => {
-                    setQuery(query);
+                    setDraftQuery(query);
                   }}
                   definition={fieldDefinitions}
                 />
               </VStack>
-              <HStack justify="end" padding="small" borderTop>
+              <HStack
+                fullWidth
+                align="center"
+                justify="spaceBetween"
+                padding="small"
+                borderTop
+              >
+                <HStack>
+                  {data?.body && (
+                    <Typography variant="body2" color="muted">
+                      {t('table.totalResults', { count: totalCount })}
+                    </Typography>
+                  )}
+                </HStack>
+
                 <Button
                   type="submit"
                   preIcon={<SearchIcon />}
