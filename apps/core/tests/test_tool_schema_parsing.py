@@ -187,10 +187,23 @@ def test_composio_tool_schema_generation(openai_model: str, structured_output: b
     if not os.getenv("COMPOSIO_API_KEY"):
         pytest.skip("COMPOSIO_API_KEY not set")
 
+    try:
+        import composio
+    except ImportError:
+        pytest.skip("Composio not installed")
+
     for action_name in [
         "CAL_GET_AVAILABLE_SLOTS_INFO",  # has an array arg, needs to be converted properly
     ]:
-        tool_create = ToolCreate.from_composio(action_name=action_name)
+        try:
+            tool_create = ToolCreate.from_composio(action_name=action_name)
+        except composio.exceptions.ComposioSDKError:
+            # e.g. "composio.exceptions.ComposioSDKError: No connected account found for app `CAL`; Run `composio add cal` to fix this"
+            if "No connected account found for app" in str(composio.exceptions.ComposioSDKError):
+                pytest.skip(f"Composio account not figured to use action_name {action_name}")
+            else:
+                raise
+
         print(tool_create)
 
         schema = tool_create.json_schema
