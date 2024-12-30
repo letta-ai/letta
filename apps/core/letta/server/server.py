@@ -53,7 +53,7 @@ from letta.schemas.memory import ArchivalMemorySummary, ContextWindowOverview, M
 from letta.schemas.message import Message, MessageCreate, MessageRole, MessageUpdate
 from letta.schemas.organization import Organization
 from letta.schemas.passage import Passage
-from letta.schemas.sandbox_config import SandboxType, SandboxEnvironmentVariableCreate
+from letta.schemas.sandbox_config import SandboxEnvironmentVariableCreate, SandboxType
 from letta.schemas.source import Source
 from letta.schemas.tool import Tool
 from letta.schemas.usage import LettaUsageStatistics
@@ -301,14 +301,14 @@ class SyncServer(Server):
 
             # Add composio keys to the tool sandbox env vars of the org
             if tool_settings.composio_api_key:
-              manager = SandboxConfigManager(tool_settings)
-              sandbox_config = manager.get_or_create_default_sandbox_config(sandbox_type=SandboxType.LOCAL, actor=self.default_user)
+                manager = SandboxConfigManager(tool_settings)
+                sandbox_config = manager.get_or_create_default_sandbox_config(sandbox_type=SandboxType.LOCAL, actor=self.default_user)
 
-              manager.create_sandbox_env_var(
-                SandboxEnvironmentVariableCreate(key="COMPOSIO_API_KEY", value=tool_settings.composio_api_key),
-                sandbox_config_id=sandbox_config.id,
-                actor=self.default_user,
-              )
+                manager.create_sandbox_env_var(
+                    SandboxEnvironmentVariableCreate(key="COMPOSIO_API_KEY", value=tool_settings.composio_api_key),
+                    sandbox_config_id=sandbox_config.id,
+                    actor=self.default_user,
+                )
 
         # collect providers (always has Letta as a default)
         self._enabled_providers: List[Provider] = [LettaProvider()]
