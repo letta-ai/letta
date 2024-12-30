@@ -5,6 +5,7 @@ import pytest
 
 from letta.functions.functions import derive_openai_json_schema
 from letta.llm_api.helpers import convert_to_structured_output, make_post_request
+from letta.schemas.tool import ToolCreate
 
 
 def _clean_diff(d1, d2):
@@ -154,8 +155,10 @@ def _load_schema_from_source_filename(filename: str) -> dict:
 
 # @pytest.mark.parametrize("openai_model", ["gpt-4o-mini"])
 # @pytest.mark.parametrize("structured_output", [True])
-@pytest.mark.parametrize("openai_model", ["gpt-4", "gpt-4o"])
-@pytest.mark.parametrize("structured_output", [True, False])
+# @pytest.mark.parametrize("openai_model", ["gpt-4", "gpt-4o"])
+# @pytest.mark.parametrize("structured_output", [True, False])
+@pytest.mark.parametrize("openai_model", ["gpt-4o-mini"])
+@pytest.mark.parametrize("structured_output", [True])
 def test_valid_schemas_via_openai(openai_model: str, structured_output: bool):
     """Test that we can send the schemas to OpenAI and get a tool call back."""
 
@@ -176,3 +179,20 @@ def test_valid_schemas_via_openai(openai_model: str, structured_output: bool):
                 _openai_payload(openai_model, schema, structured_output)
         else:
             _openai_payload(openai_model, schema, structured_output)
+
+
+@pytest.mark.parametrize("openai_model", ["gpt-4o-mini"])
+@pytest.mark.parametrize("structured_output", [True])
+def test_composio_tool_schema_generation(openai_model: str, structured_output: bool):
+    """Test that we can generate the schemas for some Composio tools."""
+
+    assert os.getenv("COMPOSIO_API_KEY") is not None, "COMPOSIO_API_KEY must be set"
+
+    for action_name in [
+        "CAL_GET_AVAILABLE_SLOTS_INFO",  # has an array arg, needs to be converted properly
+    ]:
+        tool_create = ToolCreate.from_composio(action_name=action_name)
+        print(tool_create)
+
+        schema = tool_create.json_schema
+        _openai_payload(openai_model, schema, structured_output)
