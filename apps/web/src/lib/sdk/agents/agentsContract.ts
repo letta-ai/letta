@@ -148,7 +148,7 @@ const MigrateAgentToNewVersionedAgentTemplateResponseSchema = z.object({
 const MigrateAgentToNewVersionedAgentTemplateNotFoundResponseSchema = z.object({
   message: z
     .literal(
-      'Agent provided is a template or not found, you can only migrate deployed agents'
+      'Agent provided is a template or not found, you can only migrate deployed agents',
     )
     .or(z.literal('Template version provided does not exist')),
 });
@@ -159,7 +159,7 @@ const MigrationFailedResponseSchema = z.object({
 
 const MigrationFailedDueToProjectMismatchResponseSchema = z.object({
   message: z.literal(
-    'You can only migrate agents to a new versioned agent template that belongs to the same project'
+    'You can only migrate agents to a new versioned agent template that belongs to the same project',
   ),
 });
 
@@ -328,7 +328,7 @@ const OrderBySchema = z.object({
 export const SearchDeployedAgentsSchema = z.object({
   search: z
     .array(
-      z.union([SearchByAgentVersionSchema, SearchByAgentName, OrderBySchema])
+      z.union([SearchByAgentVersionSchema, SearchByAgentName, OrderBySchema]),
     )
     .optional(),
   project_id: z.string().optional(),
@@ -339,6 +339,7 @@ export const SearchDeployedAgentsSchema = z.object({
 
 const SearchDeployedAgentsResponseSchema = c.type<{
   agents: ModifiedAgentState[];
+  totalCount: number;
   hasNextPage: boolean;
 }>();
 
@@ -415,7 +416,7 @@ export const agentsQueryKeys = {
   listAgentsWithSearch: (query: ListAgentsQuery) => ['agents', query],
   getAgentById: (agentId: string) => ['agents', agentId],
   searchDeployedAgents: (
-    options: z.infer<typeof SearchDeployedAgentsSchema>
+    options: z.infer<typeof SearchDeployedAgentsSchema>,
   ) => ['agents', options],
   getAgentVariables: (agentId: string) => ['agents', agentId, 'variables'],
 };
