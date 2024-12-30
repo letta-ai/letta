@@ -5,6 +5,7 @@ import pytest
 
 from letta.functions.functions import derive_openai_json_schema
 from letta.llm_api.helpers import convert_to_structured_output, make_post_request
+from letta.schemas.tool import ToolCreate
 
 
 def _clean_diff(d1, d2):
@@ -176,3 +177,38 @@ def test_valid_schemas_via_openai(openai_model: str, structured_output: bool):
                 _openai_payload(openai_model, schema, structured_output)
         else:
             _openai_payload(openai_model, schema, structured_output)
+
+
+@pytest.mark.parametrize("openai_model", ["gpt-4o-mini"])
+@pytest.mark.parametrize("structured_output", [True])
+def test_composio_tool_schema_generation(openai_model: str, structured_output: bool):
+    """Test that we can generate the schemas for some Composio tools."""
+
+    if not os.getenv("COMPOSIO_API_KEY"):
+        pytest.skip("COMPOSIO_API_KEY not set")
+
+    try:
+        import composio
+    except ImportError:
+        pytest.skip("Composio not installed")
+
+    for action_name in [
+        "CAL_GET_AVAILABLE_SLOTS_INFO",  # has an array arg, needs to be converted properly
+    ]:
+        try:
+            tool_create = ToolCreate.from_composio(action_name=action_name)
+        except composio.exceptions.ComposioSDKError:
+            # e.g. "composio.exceptions.ComposioSDKError: No connected account found for app `CAL`; Run `composio add cal` to fix this"
+            pytest.skip(f"Composio account not configured to use action_name {action_name}")
+
+        print(tool_create)
+
+        assert tool_create.json_schema
+        schema = tool_create.json_schema
+
+        try:
+            _openai_payload(openai_model, schema, structured_output)
+            print(f"Successfully called OpenAI using schema {schema} generated from {action_name}")
+        except:
+            print(f"Failed to call OpenAI using schema {schema} generated from {action_name}")
+            raise
