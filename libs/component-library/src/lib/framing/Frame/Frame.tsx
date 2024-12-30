@@ -136,6 +136,8 @@ const frameVariants = cva('', {
       xxlarge: 'pb-8',
     },
     paddingLeft: {
+      xxsmall: 'pl-1',
+      xsmall: 'pl-2',
       small: 'pl-2.5',
       medium: 'pl-3',
       large: 'pl-4',
@@ -257,5 +259,5 @@ export const Frame = forwardRef<HTMLElement, PropsWithChildren<FrameProps>>(
         {children}
       </Component>
     );
-  }
+  },
 );

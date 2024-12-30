@@ -18,7 +18,7 @@ import {
   deployedAgentVariables,
   organizationPreferences,
 } from '@letta-web/database';
-import { and, asc, desc, eq, isNull, like, ne, or } from 'drizzle-orm';
+import { and, asc, count, desc, eq, isNull, like, ne, or } from 'drizzle-orm';
 import { findUniqueAgentTemplateName } from '$web/server';
 
 import type { OrderByValuesEnumType } from '$web/sdk/agents/agentsContract';
@@ -1370,7 +1370,7 @@ async function searchDeployedAgents(
   } = req.body;
 
   const combinatorFunction = combinator === 'AND' ? and : or;
-  const where = [
+  const query = [
     eq(deployedAgents.organizationId, context.request.organizationId),
   ];
 
@@ -1404,11 +1404,11 @@ async function searchDeployedAgents(
 
       if (searchTerm.field === 'name') {
         if (searchTerm.operator === 'eq') {
-          where.push(eq(deployedAgents.key, searchTerm.value));
+          query.push(eq(deployedAgents.key, searchTerm.value));
         } else if (searchTerm.operator === 'neq') {
-          where.push(ne(deployedAgents.key, searchTerm.value));
+          query.push(ne(deployedAgents.key, searchTerm.value));
         } else if (searchTerm.operator === 'contains') {
-          where.push(like(deployedAgents.key, `%${searchTerm.value || ''}%`));
+          query.push(like(deployedAgents.key, `%${searchTerm.value || ''}%`));
         }
       }
 
@@ -1444,7 +1444,7 @@ async function searchDeployedAgents(
           return;
         }
 
-        where.push(
+        query.push(
           eq(deployedAgents.deployedAgentTemplateId, deployedAgentTemplate.id),
         );
 
@@ -1453,34 +1453,39 @@ async function searchDeployedAgents(
     }),
   );
 
-  const query = await db.query.deployedAgents.findMany({
-    where: and(
-      combinatorFunction(...where),
-      eq(deployedAgents.organizationId, context.request.organizationId),
-      isNull(deployedAgents.deletedAt),
-      ...(project_id ? [eq(deployedAgents.projectId, project_id)] : []),
-    ),
-    limit: limit + 1,
-    offset,
-    orderBy,
-    with: {
-      deployedAgentTemplate: {
-        with: {
-          agentTemplate: {
-            columns: {
-              name: true,
+  const where = and(
+    combinatorFunction(...query),
+    eq(deployedAgents.organizationId, context.request.organizationId),
+    isNull(deployedAgents.deletedAt),
+    ...(project_id ? [eq(deployedAgents.projectId, project_id)] : []),
+  );
+
+  const [result, [totalCount]] = await Promise.all([
+    db.query.deployedAgents.findMany({
+      where,
+      limit: limit + 1,
+      offset,
+      orderBy,
+      with: {
+        deployedAgentTemplate: {
+          with: {
+            agentTemplate: {
+              columns: {
+                name: true,
+              },
             },
           },
-        },
-        columns: {
-          version: true,
+          columns: {
+            version: true,
+          },
         },
       },
-    },
-  });
+    }),
+    db.select({ count: count() }).from(deployedAgents).where(where),
+  ]);
 
   const allAgentsDetails = await Promise.all(
-    query.slice(0, limit).map(async (agent) => {
+    result.slice(0, limit).map(async (agent) => {
       return AgentsService.getAgent(
         {
           agentId: agent.id,
@@ -1505,7 +1510,8 @@ async function searchDeployedAgents(
     status: 200,
     body: {
       agents: allAgentsDetails,
-      hasNextPage: query.length > limit,
+      hasNextPage: result.length > limit,
+      totalCount: totalCount.count,
     },
   };
 }
