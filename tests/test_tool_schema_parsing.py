@@ -203,5 +203,12 @@ def test_composio_tool_schema_generation(openai_model: str, structured_output: b
 
         print(tool_create)
 
+        assert tool_create.json_schema
         schema = tool_create.json_schema
-        _openai_payload(openai_model, schema, structured_output)
+
+        try:
+            _openai_payload(openai_model, schema, structured_output)
+            print(f"Successfully called OpenAI using schema {schema} generated from {action_name}")
+        except:
+            print(f"Failed to call OpenAI using schema {schema} generated from {action_name}")
+            raise
