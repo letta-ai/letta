@@ -347,7 +347,7 @@ def test_send_system_message(client: Union[LocalClient, RESTClient], agent: Agen
     assert send_system_message_response, "Sending message failed"
 
 
-def test_function_return_limit(client: Union[LocalClient, RESTClient]):
+def test_function_return_limit(mock_e2b_api_key_none, client: Union[LocalClient, RESTClient]):
     """Test to see if the function return limit works"""
 
     def big_return():
