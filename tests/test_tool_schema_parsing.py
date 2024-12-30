@@ -155,10 +155,8 @@ def _load_schema_from_source_filename(filename: str) -> dict:
 
 # @pytest.mark.parametrize("openai_model", ["gpt-4o-mini"])
 # @pytest.mark.parametrize("structured_output", [True])
-# @pytest.mark.parametrize("openai_model", ["gpt-4", "gpt-4o"])
-# @pytest.mark.parametrize("structured_output", [True, False])
-@pytest.mark.parametrize("openai_model", ["gpt-4o-mini"])
-@pytest.mark.parametrize("structured_output", [True])
+@pytest.mark.parametrize("openai_model", ["gpt-4", "gpt-4o"])
+@pytest.mark.parametrize("structured_output", [True, False])
 def test_valid_schemas_via_openai(openai_model: str, structured_output: bool):
     """Test that we can send the schemas to OpenAI and get a tool call back."""
 
@@ -186,7 +184,8 @@ def test_valid_schemas_via_openai(openai_model: str, structured_output: bool):
 def test_composio_tool_schema_generation(openai_model: str, structured_output: bool):
     """Test that we can generate the schemas for some Composio tools."""
 
-    assert os.getenv("COMPOSIO_API_KEY") is not None, "COMPOSIO_API_KEY must be set"
+    if not os.getenv("COMPOSIO_API_KEY"):
+        pytest.skip("COMPOSIO_API_KEY not set")
 
     for action_name in [
         "CAL_GET_AVAILABLE_SLOTS_INFO",  # has an array arg, needs to be converted properly
