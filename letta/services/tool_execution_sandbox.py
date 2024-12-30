@@ -127,7 +127,7 @@ class ToolExecutionSandbox:
             if local_configs.use_venv:
                 return self.run_local_dir_sandbox_venv(sbx_config, env, temp_file_path)
             else:
-                return self.run_local_dir_sandbox_runpy(sbx_config, env_vars, temp_file_path)
+                return self.run_local_dir_sandbox_runpy(sbx_config, env, temp_file_path)
         except Exception as e:
             logger.error(f"Executing tool {self.tool_name} has an unexpected error: {e}")
             logger.error(f"Logging out tool {self.tool_name} auto-generated code for debugging: \n\n{code}")
@@ -200,7 +200,7 @@ class ToolExecutionSandbox:
             logger.error(f"Executing tool {self.tool_name} has an unexpected error: {e}")
             raise e
 
-    def run_local_dir_sandbox_runpy(self, sbx_config: SandboxConfig, env_vars: Dict[str, str], temp_file_path: str) -> SandboxRunResult:
+    def run_local_dir_sandbox_runpy(self, sbx_config: SandboxConfig, env: Dict[str, str], temp_file_path: str) -> SandboxRunResult:
         status = "success"
         agent_state, stderr = None, None
 
@@ -213,8 +213,8 @@ class ToolExecutionSandbox:
 
         try:
             # Execute the temp file
-            with self.temporary_env_vars(env_vars):
-                result = runpy.run_path(temp_file_path, init_globals=env_vars)
+            with self.temporary_env_vars(env):
+                result = runpy.run_path(temp_file_path, init_globals=env)
 
             # Fetch the result
             func_result = result.get(self.LOCAL_SANDBOX_RESULT_VAR_NAME)
