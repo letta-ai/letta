@@ -43,7 +43,7 @@ def run_server():
 
 @pytest.fixture(
     params=[{"server": False}, {"server": True}],  # whether to use REST API server
-    # params=[{"server": True}],  # whether to use REST API server
+    # params=[{"server": False}],  # whether to use REST API server
     scope="module",
 )
 def client(request):
@@ -408,6 +408,7 @@ def test_function_always_error(client: Union[LocalClient, RESTClient]):
 
     assert response_message, "ToolReturnMessage message not found in response"
     assert response_message.status == "error"
+
     if isinstance(client, RESTClient):
         assert response_message.tool_return == "Error executing function always_error: ZeroDivisionError: division by zero"
     else:
