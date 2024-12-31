@@ -726,13 +726,13 @@ test = ["pytest"]
 
 [[package]]
 name = "composio-core"
-version = "0.6.3"
+version = "0.6.7"
 description = "Core package to act as a bridge between composio platform and other services."
 optional = false
 python-versions = "<4,>=3.9"
 files = [
-    {file = "composio_core-0.6.3-py3-none-any.whl", hash = "sha256:981a9856781b791242f947a9685a18974d8a012ac7fab2c09438e1b19610d6a2"},
-    {file = "composio_core-0.6.3.tar.gz", hash = "sha256:13098b20d8832e74453ca194889305c935432156fc07be91dfddf76561ad591b"},
+    {file = "composio_core-0.6.7-py3-none-any.whl", hash = "sha256:03cedeffe417b919d1021c1bc4751f54bd05829b52ff3285f7984e14bdf91efe"},
+    {file = "composio_core-0.6.7.tar.gz", hash = "sha256:b87f0b804d87945b4eae556468b9efc75f751d256bbf2c20fb8ae5b6a31a2818"},
 ]
 
 [package.dependencies]
@@ -762,13 +762,13 @@ tools = ["diskcache", "flake8", "networkx", "pathspec", "pygments", "ruff", "tra
 
 [[package]]
 name = "composio-langchain"
-version = "0.6.3"
+version = "0.6.7"
 description = "Use Composio to get an array of tools with your LangChain agent."
 optional = false
 python-versions = "<4,>=3.9"
 files = [
-    {file = "composio_langchain-0.6.3-py3-none-any.whl", hash = "sha256:0e749a1603dc0562293412d0a6429f88b75152b01a313cca859732070d762a6b"},
-    {file = "composio_langchain-0.6.3.tar.gz", hash = "sha256:2036f94bfe60974b31f2be0bfdb33dd75a1d43435f275141219b3376587bf49d"},
+    {file = "composio_langchain-0.6.7-py3-none-any.whl", hash = "sha256:f8653b6a7e6b03a61b679a096e278744d3009ebaf3741d7e24e5120a364f212e"},
+    {file = "composio_langchain-0.6.7.tar.gz", hash = "sha256:adeab3a87b0e6eb7e96048cef6b988dbe699b6a493a82fac2d371ab940e7e54e"},
 ]
 
 [package.dependencies]
@@ -6246,4 +6246,4 @@ tests = ["wikipedia"]
 [metadata]
 lock-version = "2.0"
 python-versions = "<4.0,>=3.10"
-content-hash = "4a7cf176579d5dc15648979542da152ec98290f1e9f39039cfe9baf73bc1076f"
+content-hash = "1c52219049a4470dd54a45318b22495a4cafa29e93a1c5369a0d54da71990adb"
