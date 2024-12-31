@@ -279,7 +279,7 @@ class AgentManager:
             return agent.to_pydantic()
 
     @enforce_types
-    def delete_agent(self, agent_id: str, actor: PydanticUser) -> PydanticAgentState:
+    def delete_agent(self, agent_id: str, actor: PydanticUser) -> None:
         """
         Deletes an agent and its associated relationships.
         Ensures proper permission checks and cascades where applicable.
@@ -288,15 +288,13 @@ class AgentManager:
             agent_id: ID of the agent to be deleted.
             actor: User performing the action.
 
-        Returns:
-            PydanticAgentState: The deleted agent state
+        Raises:
+            NoResultFound: If agent doesn't exist
         """
         with self.session_maker() as session:
             # Retrieve the agent
             agent = AgentModel.read(db_session=session, identifier=agent_id, actor=actor)
-            agent_state = agent.to_pydantic()
             agent.hard_delete(session)
-            return agent_state
 
     # ======================================================================================================================
     # In Context Messages Management

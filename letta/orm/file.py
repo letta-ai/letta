@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Optional, List
+from typing import TYPE_CHECKING, List, Optional
 
 from sqlalchemy import Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -9,8 +9,9 @@ from letta.schemas.file import FileMetadata as PydanticFileMetadata
 
 if TYPE_CHECKING:
     from letta.orm.organization import Organization
-    from letta.orm.source import Source
     from letta.orm.passage import SourcePassage
+    from letta.orm.source import Source
+
 
 class FileMetadata(SqlalchemyBase, OrganizationMixin, SourceMixin):
     """Represents metadata for an uploaded file."""
@@ -28,4 +29,6 @@ class FileMetadata(SqlalchemyBase, OrganizationMixin, SourceMixin):
     # relationships
     organization: Mapped["Organization"] = relationship("Organization", back_populates="files", lazy="selectin")
     source: Mapped["Source"] = relationship("Source", back_populates="files", lazy="selectin")
-    source_passages: Mapped[List["SourcePassage"]] = relationship("SourcePassage", back_populates="file", lazy="selectin", cascade="all, delete-orphan")
+    source_passages: Mapped[List["SourcePassage"]] = relationship(
+        "SourcePassage", back_populates="file", lazy="selectin", cascade="all, delete-orphan"
+    )

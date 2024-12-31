@@ -2,13 +2,7 @@ from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
-from letta.schemas.openai.openai import (
-    MessageRoleType,
-    OpenAIMessage,
-    OpenAIThread,
-    ToolCall,
-    ToolCallOutput,
-)
+from letta.schemas.openai.openai import MessageRoleType, OpenAIMessage, OpenAIThread, ToolCall, ToolCallOutput
 
 
 class CreateAssistantRequest(BaseModel):

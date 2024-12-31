@@ -4,10 +4,7 @@ from typing import Optional
 
 import requests
 
-from letta.constants import (
-    MESSAGE_CHATGPT_FUNCTION_MODEL,
-    MESSAGE_CHATGPT_FUNCTION_SYSTEM_MESSAGE,
-)
+from letta.constants import MESSAGE_CHATGPT_FUNCTION_MODEL, MESSAGE_CHATGPT_FUNCTION_SYSTEM_MESSAGE
 from letta.llm_api.llm_api_tools import create
 from letta.schemas.message import Message
 from letta.utils import json_dumps, json_loads

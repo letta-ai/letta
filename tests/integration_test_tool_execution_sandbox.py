@@ -212,9 +212,7 @@ def clear_core_memory_tool(test_user):
 
 @pytest.fixture
 def external_codebase_tool(test_user):
-    from tests.test_tool_sandbox.restaurant_management_system.adjust_menu_prices import (
-        adjust_menu_prices,
-    )
+    from tests.test_tool_sandbox.restaurant_management_system.adjust_menu_prices import adjust_menu_prices
 
     tool = create_tool_from_func(adjust_menu_prices)
     tool = ToolManager().create_or_update_tool(tool, test_user)
@@ -354,6 +352,14 @@ def test_local_sandbox_e2e_composio_star_github(mock_e2b_api_key_none, check_com
 
 
 @pytest.mark.local_sandbox
+def test_local_sandbox_e2e_composio_star_github_without_setting_db_env_vars(
+    mock_e2b_api_key_none, check_composio_key_set, composio_github_star_tool, test_user
+):
+    result = ToolExecutionSandbox(composio_github_star_tool.name, {"owner": "letta-ai", "repo": "letta"}, user=test_user).run()
+    assert result.func_return["details"] == "Action executed successfully"
+
+
+@pytest.mark.local_sandbox
 def test_local_sandbox_external_codebase(mock_e2b_api_key_none, custom_test_sandbox_config, external_codebase_tool, test_user):
     # Set the args
     args = {"percentage": 10}
@@ -458,7 +464,7 @@ def test_e2b_sandbox_inject_env_var_existing_sandbox(check_e2b_key_is_set, get_e
     config = manager.create_or_update_sandbox_config(config_create, test_user)
 
     # Run the custom sandbox once, assert nothing returns because missing env variable
-    sandbox = ToolExecutionSandbox(get_env_tool.name, {}, user=test_user, force_recreate=True)
+    sandbox = ToolExecutionSandbox(get_env_tool.name, {}, user=test_user)
     result = sandbox.run()
     # response should be None
     assert result.func_return is None

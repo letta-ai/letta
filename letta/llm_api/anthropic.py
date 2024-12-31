@@ -5,11 +5,7 @@ from typing import List, Optional, Union
 from letta.llm_api.helpers import make_post_request
 from letta.schemas.message import Message
 from letta.schemas.openai.chat_completion_request import ChatCompletionRequest, Tool
-from letta.schemas.openai.chat_completion_response import (
-    ChatCompletionResponse,
-    Choice,
-    FunctionCall,
-)
+from letta.schemas.openai.chat_completion_response import ChatCompletionResponse, Choice, FunctionCall
 from letta.schemas.openai.chat_completion_response import (
     Message as ChoiceMessage,  # NOTE: avoid conflict with our own Letta Message datatype
 )
@@ -102,13 +98,9 @@ def convert_tools_to_anthropic_format(tools: List[Tool]) -> List[dict]:
     formatted_tools = []
     for tool in tools:
         formatted_tool = {
-            "name"         : tool.function.name,
-            "description"  : tool.function.description,
-            "input_schema"   : tool.function.parameters or {
-                "type": "object",
-                "properties": {},
-                "required": []
-            }
+            "name": tool.function.name,
+            "description": tool.function.description,
+            "input_schema": tool.function.parameters or {"type": "object", "properties": {}, "required": []},
         }
         formatted_tools.append(formatted_tool)
 
@@ -346,7 +338,7 @@ def anthropic_chat_completions_request(
             data["tool_choice"] = {
                 "type": "tool",  # Changed from "function" to "tool"
                 "name": anthropic_tools[0]["name"],  # Directly specify name without nested "function" object
-                "disable_parallel_tool_use": True  # Force single tool use
+                "disable_parallel_tool_use": True,  # Force single tool use
             }
 
     # Move 'system' to the top level

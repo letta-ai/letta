@@ -38,19 +38,11 @@ class Organization(SqlalchemyBase):
     agents: Mapped[List["Agent"]] = relationship("Agent", back_populates="organization", cascade="all, delete-orphan")
     messages: Mapped[List["Message"]] = relationship("Message", back_populates="organization", cascade="all, delete-orphan")
     source_passages: Mapped[List["SourcePassage"]] = relationship(
-        "SourcePassage", 
-        back_populates="organization", 
-        cascade="all, delete-orphan"
+        "SourcePassage", back_populates="organization", cascade="all, delete-orphan"
     )
-    agent_passages: Mapped[List["AgentPassage"]] = relationship(
-        "AgentPassage", 
-        back_populates="organization", 
-        cascade="all, delete-orphan"
-    )
+    agent_passages: Mapped[List["AgentPassage"]] = relationship("AgentPassage", back_populates="organization", cascade="all, delete-orphan")
 
     @property
     def passages(self) -> List[Union["SourcePassage", "AgentPassage"]]:
         """Convenience property to get all passages"""
         return self.source_passages + self.agent_passages
-
-

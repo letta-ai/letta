@@ -102,6 +102,7 @@ def get_user_id(user_id: Optional[str] = Header(None, alias="user_id")) -> Optio
 def get_current_interface() -> StreamingServerInterface:
     return StreamingServerInterface
 
+
 def log_error_to_sentry(e):
     import traceback
 

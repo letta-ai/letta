@@ -9,28 +9,15 @@ from httpx_sse._exceptions import SSEError
 
 from letta.constants import OPENAI_CONTEXT_WINDOW_ERROR_SUBSTRING
 from letta.errors import LLMError
-from letta.llm_api.helpers import (
-    add_inner_thoughts_to_functions,
-    convert_to_structured_output,
-    make_post_request,
-)
-from letta.local_llm.constants import (
-    INNER_THOUGHTS_KWARG,
-    INNER_THOUGHTS_KWARG_DESCRIPTION,
-)
+from letta.llm_api.helpers import add_inner_thoughts_to_functions, convert_to_structured_output, make_post_request
+from letta.local_llm.constants import INNER_THOUGHTS_KWARG, INNER_THOUGHTS_KWARG_DESCRIPTION
 from letta.local_llm.utils import num_tokens_from_functions, num_tokens_from_messages
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message as _Message
 from letta.schemas.message import MessageRole as _MessageRole
 from letta.schemas.openai.chat_completion_request import ChatCompletionRequest
-from letta.schemas.openai.chat_completion_request import (
-    FunctionCall as ToolFunctionChoiceFunctionCall,
-)
-from letta.schemas.openai.chat_completion_request import (
-    Tool,
-    ToolFunctionChoice,
-    cast_message_to_subtype,
-)
+from letta.schemas.openai.chat_completion_request import FunctionCall as ToolFunctionChoiceFunctionCall
+from letta.schemas.openai.chat_completion_request import Tool, ToolFunctionChoice, cast_message_to_subtype
 from letta.schemas.openai.chat_completion_response import (
     ChatCompletionChunkResponse,
     ChatCompletionResponse,
@@ -41,10 +28,7 @@ from letta.schemas.openai.chat_completion_response import (
     UsageStatistics,
 )
 from letta.schemas.openai.embedding_response import EmbeddingResponse
-from letta.streaming_interface import (
-    AgentChunkStreamingInterface,
-    AgentRefreshStreamingInterface,
-)
+from letta.streaming_interface import AgentChunkStreamingInterface, AgentRefreshStreamingInterface
 from letta.utils import get_tool_call_id, smart_urljoin
 
 OPENAI_SSE_DONE = "[DONE]"

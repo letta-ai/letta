@@ -8,14 +8,7 @@ from letta.llm_api.helpers import make_post_request
 from letta.local_llm.json_parser import clean_json_string_extra_backslash
 from letta.local_llm.utils import count_tokens
 from letta.schemas.openai.chat_completion_request import Tool
-from letta.schemas.openai.chat_completion_response import (
-    ChatCompletionResponse,
-    Choice,
-    FunctionCall,
-    Message,
-    ToolCall,
-    UsageStatistics,
-)
+from letta.schemas.openai.chat_completion_response import ChatCompletionResponse, Choice, FunctionCall, Message, ToolCall, UsageStatistics
 from letta.utils import get_tool_call_id, get_utc_time, json_dumps
 
 
@@ -230,10 +223,7 @@ def convert_tools_to_google_ai_format(tools: List[Tool], inner_thoughts_in_kwarg
             param_fields["type"] = param_fields["type"].upper()
         # Add inner thoughts
         if inner_thoughts_in_kwargs:
-            from letta.local_llm.constants import (
-                INNER_THOUGHTS_KWARG,
-                INNER_THOUGHTS_KWARG_DESCRIPTION,
-            )
+            from letta.local_llm.constants import INNER_THOUGHTS_KWARG, INNER_THOUGHTS_KWARG_DESCRIPTION
 
             func["parameters"]["properties"][INNER_THOUGHTS_KWARG] = {
                 "type": "STRING",

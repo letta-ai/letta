@@ -5,12 +5,7 @@ import pytest
 
 from letta import create_client
 from letta.schemas.letta_message import ToolCallMessage
-from letta.schemas.tool_rule import (
-    ChildToolRule,
-    ConditionalToolRule,
-    InitToolRule,
-    TerminalToolRule,
-)
+from letta.schemas.tool_rule import ChildToolRule, ConditionalToolRule, InitToolRule, TerminalToolRule
 from tests.helpers.endpoints_helper import (
     assert_invoked_function_call,
     assert_invoked_send_message_with_keyword,

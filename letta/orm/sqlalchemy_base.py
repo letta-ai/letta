@@ -9,12 +9,7 @@ from sqlalchemy.orm import Mapped, Session, mapped_column
 
 from letta.log import get_logger
 from letta.orm.base import Base, CommonSqlalchemyMetaMixins
-from letta.orm.errors import (
-    DatabaseTimeoutError,
-    ForeignKeyConstraintViolationError,
-    NoResultFound,
-    UniqueConstraintViolationError,
-)
+from letta.orm.errors import DatabaseTimeoutError, ForeignKeyConstraintViolationError, NoResultFound, UniqueConstraintViolationError
 from letta.orm.sqlite_functions import adapt_array
 
 if TYPE_CHECKING:

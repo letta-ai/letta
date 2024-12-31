@@ -1120,6 +1120,7 @@ def sanitize_filename(filename: str) -> str:
     # Return the sanitized filename
     return sanitized_filename
 
+
 def get_friendly_error_msg(function_name: str, exception_name: str, exception_message: str):
     from letta.constants import MAX_ERROR_MESSAGE_CHAR_LIMIT
 

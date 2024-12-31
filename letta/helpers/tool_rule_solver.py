@@ -4,13 +4,7 @@ from typing import List, Optional, Union
 from pydantic import BaseModel, Field
 
 from letta.schemas.enums import ToolRuleType
-from letta.schemas.tool_rule import (
-    BaseToolRule,
-    ChildToolRule,
-    ConditionalToolRule,
-    InitToolRule,
-    TerminalToolRule,
-)
+from letta.schemas.tool_rule import BaseToolRule, ChildToolRule, ConditionalToolRule, InitToolRule, TerminalToolRule
 
 
 class ToolRuleValidationError(Exception):
@@ -50,7 +44,6 @@ class ToolRulesSolver(BaseModel):
                 assert isinstance(rule, TerminalToolRule)
                 self.terminal_tool_rules.append(rule)
 
-
     def update_tool_usage(self, tool_name: str):
         """Update the internal state to track the last tool called."""
         self.last_tool_name = tool_name
@@ -88,7 +81,7 @@ class ToolRulesSolver(BaseModel):
         return any(rule.tool_name == tool_name for rule in self.tool_rules)
 
     def validate_conditional_tool(self, rule: ConditionalToolRule):
-        '''
+        """
         Validate a conditional tool rule
 
         Args:
@@ -96,13 +89,13 @@ class ToolRulesSolver(BaseModel):
 
         Raises:
             ToolRuleValidationError: If the rule is invalid
-        '''
+        """
         if len(rule.child_output_mapping) == 0:
             raise ToolRuleValidationError("Conditional tool rule must have at least one child tool.")
         return True
 
     def evaluate_conditional_tool(self, tool: ConditionalToolRule, last_function_response: str) -> str:
-        '''
+        """
         Parse function response to determine which child tool to use based on the mapping
 
         Args:
@@ -111,7 +104,7 @@ class ToolRulesSolver(BaseModel):
 
         Returns:
             str: The name of the child tool to use next
-        '''
+        """
         json_response = json.loads(last_function_response)
         function_output = json_response["message"]
 

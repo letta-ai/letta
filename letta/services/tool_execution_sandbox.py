@@ -127,7 +127,7 @@ class ToolExecutionSandbox:
             if local_configs.use_venv:
                 return self.run_local_dir_sandbox_venv(sbx_config, env, temp_file_path)
             else:
-                return self.run_local_dir_sandbox_runpy(sbx_config, env_vars, temp_file_path)
+                return self.run_local_dir_sandbox_runpy(sbx_config, env, temp_file_path)
         except Exception as e:
             logger.error(f"Executing tool {self.tool_name} has an unexpected error: {e}")
             logger.error(f"Logging out tool {self.tool_name} auto-generated code for debugging: \n\n{code}")
@@ -200,7 +200,7 @@ class ToolExecutionSandbox:
             logger.error(f"Executing tool {self.tool_name} has an unexpected error: {e}")
             raise e
 
-    def run_local_dir_sandbox_runpy(self, sbx_config: SandboxConfig, env_vars: Dict[str, str], temp_file_path: str) -> SandboxRunResult:
+    def run_local_dir_sandbox_runpy(self, sbx_config: SandboxConfig, env: Dict[str, str], temp_file_path: str) -> SandboxRunResult:
         status = "success"
         agent_state, stderr = None, None
 
@@ -213,8 +213,8 @@ class ToolExecutionSandbox:
 
         try:
             # Execute the temp file
-            with self.temporary_env_vars(env_vars):
-                result = runpy.run_path(temp_file_path, init_globals=env_vars)
+            with self.temporary_env_vars(env):
+                result = runpy.run_path(temp_file_path, init_globals=env)
 
             # Fetch the result
             func_result = result.get(self.LOCAL_SANDBOX_RESULT_VAR_NAME)
@@ -277,6 +277,10 @@ class ToolExecutionSandbox:
         sbx_config = self.sandbox_config_manager.get_or_create_default_sandbox_config(sandbox_type=SandboxType.E2B, actor=self.user)
         sbx = self.get_running_e2b_sandbox_with_same_state(sbx_config)
         if not sbx or self.force_recreate:
+            if not sbx:
+              logger.info(f"No running e2b sandbox found with the same state: {sbx_config}")
+            else:
+              logger.info(f"Force recreated e2b sandbox with state: {sbx_config}")
             sbx = self.create_e2b_sandbox_with_metadata_hash(sandbox_config=sbx_config)
 
         # Since this sandbox was used, we extend its lifecycle by the timeout
@@ -292,6 +296,8 @@ class ToolExecutionSandbox:
             func_return, agent_state = self.parse_best_effort(execution.results[0].text)
         elif execution.error:
             logger.error(f"Executing tool {self.tool_name} failed with {execution.error}")
+            logger.error(f"E2B Sandbox configurations: {sbx_config}")
+            logger.error(f"E2B Sandbox ID: {sbx.sandbox_id}")
             func_return = get_friendly_error_msg(
                 function_name=self.tool_name, exception_name=execution.error.name, exception_message=execution.error.value
             )

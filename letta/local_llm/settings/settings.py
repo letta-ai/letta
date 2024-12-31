@@ -2,9 +2,7 @@ import json
 import os
 
 from letta.constants import LETTA_DIR
-from letta.local_llm.settings.deterministic_mirostat import (
-    settings as det_miro_settings,
-)
+from letta.local_llm.settings.deterministic_mirostat import settings as det_miro_settings
 from letta.local_llm.settings.simple import settings as simple_settings
 
 DEFAULT = "simple"

@@ -52,12 +52,10 @@ class LettaConfigurationError(LettaError):
 
 class LettaAgentNotFoundError(LettaError):
     """Error raised when an agent is not found."""
-    pass
 
 
 class LettaUserNotFoundError(LettaError):
     """Error raised when a user is not found."""
-    pass
 
 
 class LLMError(LettaError):

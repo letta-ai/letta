@@ -33,34 +33,21 @@ from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import MessageRole
 from letta.schemas.memory import ContextWindowOverview, Memory
 from letta.schemas.message import Message
-from letta.schemas.openai.chat_completion_request import (
-    Tool as ChatCompletionRequestTool,
-)
+from letta.schemas.openai.chat_completion_request import Tool as ChatCompletionRequestTool
 from letta.schemas.openai.chat_completion_response import ChatCompletionResponse
-from letta.schemas.openai.chat_completion_response import (
-    Message as ChatCompletionMessage,
-)
+from letta.schemas.openai.chat_completion_response import Message as ChatCompletionMessage
 from letta.schemas.openai.chat_completion_response import UsageStatistics
 from letta.schemas.tool import Tool
 from letta.schemas.tool_rule import TerminalToolRule
 from letta.schemas.usage import LettaUsageStatistics
 from letta.services.agent_manager import AgentManager
 from letta.services.block_manager import BlockManager
-from letta.services.helpers.agent_manager_helper import (
-    check_supports_structured_output,
-    compile_memory_metadata_block,
-)
+from letta.services.helpers.agent_manager_helper import check_supports_structured_output, compile_memory_metadata_block
 from letta.services.message_manager import MessageManager
 from letta.services.passage_manager import PassageManager
 from letta.services.tool_execution_sandbox import ToolExecutionSandbox
 from letta.streaming_interface import StreamingRefreshCLIInterface
-from letta.system import (
-    get_heartbeat,
-    get_token_limit_warning,
-    package_function_response,
-    package_summarize_message,
-    package_user_message,
-)
+from letta.system import get_heartbeat, get_token_limit_warning, package_function_response, package_summarize_message, package_user_message
 from letta.utils import (
     count_tokens,
     get_friendly_error_msg,
