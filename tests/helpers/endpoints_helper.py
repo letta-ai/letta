@@ -117,7 +117,11 @@ def check_first_response_is_valid_for_llm_endpoint(filename: str) -> ChatComplet
     choice = response.choices[0]
 
     # Ensure that the first message returns a "send_message"
-    validator_func = lambda function_call: function_call.name == "send_message" or function_call.name == "archival_memory_search"
+    validator_func = (
+        lambda function_call: function_call.name == "send_message"
+        or function_call.name == "archival_memory_search"
+        or function_call.name == "core_memory_append"
+    )
     assert_contains_valid_function_call(choice.message, validator_func)
 
     # Assert that the message has an inner monologue

@@ -508,6 +508,7 @@ def test_get_context_window_overview(server: SyncServer, user, agent_id):
     assert overview.num_archival_memory is not None
     assert overview.num_recall_memory is not None
     assert overview.num_tokens_external_memory_summary is not None
+    assert overview.external_memory_summary is not None
     assert overview.num_tokens_system is not None
     assert overview.system_prompt is not None
     assert overview.num_tokens_core_memory is not None

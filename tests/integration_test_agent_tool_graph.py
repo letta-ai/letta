@@ -38,7 +38,7 @@ def second_secret_word(prev_secret_word: str):
         prev_secret_word (str): The secret word retrieved from calling first_secret_word.
     """
     if prev_secret_word != "v0iq020i0g":
-        raise RuntimeError(f"Expected secret {"v0iq020i0g"}, got {prev_secret_word}")
+        raise RuntimeError(f"Expected secret {'v0iq020i0g'}, got {prev_secret_word}")
 
     return "4rwp2b4gxq"
 
@@ -51,7 +51,7 @@ def third_secret_word(prev_secret_word: str):
         prev_secret_word (str): The secret word retrieved from calling second_secret_word.
     """
     if prev_secret_word != "4rwp2b4gxq":
-        raise RuntimeError(f"Expected secret {"4rwp2b4gxq"}, got {prev_secret_word}")
+        raise RuntimeError(f'Expected secret "4rwp2b4gxq", got {prev_secret_word}')
 
     return "hj2hwibbqm"
 
@@ -64,7 +64,7 @@ def fourth_secret_word(prev_secret_word: str):
         prev_secret_word (str): The secret word retrieved from calling third_secret_word.
     """
     if prev_secret_word != "hj2hwibbqm":
-        raise RuntimeError(f"Expected secret {"hj2hwibbqm"}, got {prev_secret_word}")
+        raise RuntimeError(f"Expected secret {'hj2hwibbqm'}, got {prev_secret_word}")
 
     return "banana"
 

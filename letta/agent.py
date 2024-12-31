@@ -224,8 +224,8 @@ class Agent(BaseAgent):
                 )
                 function_response, updated_agent_state = sandbox_run_result.func_return, sandbox_run_result.agent_state
                 assert orig_memory_str == self.agent_state.memory.compile(), "Memory should not be modified in a sandbox tool"
-
-                self.update_memory_if_change(updated_agent_state.memory)
+                if updated_agent_state is not None:
+                    self.update_memory_if_change(updated_agent_state.memory)
         except Exception as e:
             # Need to catch error here, or else trunction wont happen
             # TODO: modify to function execution error
@@ -238,7 +238,7 @@ class Agent(BaseAgent):
     def _get_ai_reply(
         self,
         message_sequence: List[Message],
-        function_call: str = "auto",
+        function_call: Optional[str] = None,
         first_message: bool = False,
         stream: bool = False,  # TODO move to config?
         empty_response_retry_limit: int = 3,
@@ -1029,6 +1029,7 @@ class Agent(BaseAgent):
             num_archival_memory=agent_manager_passage_size,
             num_recall_memory=message_manager_size,
             num_tokens_external_memory_summary=num_tokens_external_memory_summary,
+            external_memory_summary=external_memory_summary,
             # top-level information
             context_window_size_max=self.agent_state.llm_config.context_window,
             context_window_size_current=num_tokens_used_total,
