@@ -464,7 +464,7 @@ def test_e2b_sandbox_inject_env_var_existing_sandbox(check_e2b_key_is_set, get_e
     config = manager.create_or_update_sandbox_config(config_create, test_user)
 
     # Run the custom sandbox once, assert nothing returns because missing env variable
-    sandbox = ToolExecutionSandbox(get_env_tool.name, {}, user=test_user, force_recreate=True)
+    sandbox = ToolExecutionSandbox(get_env_tool.name, {}, user=test_user)
     result = sandbox.run()
     # response should be None
     assert result.func_return is None
