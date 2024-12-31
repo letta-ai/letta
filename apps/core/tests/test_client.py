@@ -42,8 +42,8 @@ def run_server():
 
 
 @pytest.fixture(
-    # params=[{"server": False}, {"server": True}],  # whether to use REST API server
-    params=[{"server": False}],  # whether to use REST API server
+    params=[{"server": False}, {"server": True}],  # whether to use REST API server
+    # params=[{"server": False}],  # whether to use REST API server
     scope="module",
 )
 def client(request):
@@ -385,7 +385,7 @@ def test_function_return_limit(mock_e2b_api_key_none, client: Union[LocalClient,
     client.delete_agent(agent_id=agent.id)
 
 
-def test_function_always_error(mock_e2b_api_key_none, client: Union[LocalClient, RESTClient]):
+def test_function_always_error(client: Union[LocalClient, RESTClient]):
     """Test to see if function that errors works correctly"""
 
     def always_error():
@@ -409,7 +409,6 @@ def test_function_always_error(mock_e2b_api_key_none, client: Union[LocalClient,
     assert response_message, "ToolReturnMessage message not found in response"
     assert response_message.status == "error"
 
-    import ipdb;ipdb.set_trace()
     if isinstance(client, RESTClient):
         assert response_message.tool_return == "Error executing function always_error: ZeroDivisionError: division by zero"
     else:
