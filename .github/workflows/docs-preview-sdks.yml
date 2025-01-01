@@ -4,8 +4,8 @@ on:
   pull_request:
     branches:
       - main
-  paths:
-    - 'apps/fern/**'
+    paths:
+      - 'apps/fern/**'
 
 jobs:
   preview-typescript-sdk:
