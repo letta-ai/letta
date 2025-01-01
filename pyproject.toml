@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "letta"
-version = "0.6.6"
+version = "0.6.7.dev0"
 packages = [
     {include = "letta"}
 ]
@@ -16,7 +16,7 @@ letta = "letta.main:app"
 
 [tool.poetry.dependencies]
 python = "<4.0,>=3.10"
-typer = {extras = ["all"], version = "^0.9.0"}
+typer = ">=0.12,<1.0"
 questionary = "^2.0.1"
 pytz = "^2023.3.post1"
 tqdm = "^4.66.1"
