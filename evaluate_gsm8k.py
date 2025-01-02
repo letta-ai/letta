@@ -11,9 +11,11 @@ import json
 import re
 import statistics
 
+
 def evaluate(input_file: str):
     correct = 0
     total = 0
+    example_num_rethinks = []
     with jsonlines.open(input_file) as reader:
         for obj in reader:
             ignore_regex = '(?s).*#### '
@@ -51,10 +53,17 @@ def evaluate(input_file: str):
                 print("\n\n")
             total += 1
 
+            num_rethinks = 0
+            for message in obj['offline_responses'][0]['messages']:
+                if message['message_type'] == "function_call":
+                    if message['function_call']['name'] == "rethink_memory":
+                        num_rethinks += 1
+            example_num_rethinks.append(num_rethinks)
     
         print("Accuracy: ", correct / total)
     with jsonlines.open(input_file) as reader:
         lines = list(reader)
+    print("avg. num rethinks: ", statistics.mean(example_num_rethinks))
     print("avg. completion tokens: ", statistics.mean([obj['response']['usage']['completion_tokens'] for obj in lines]))
     print("std. completion tokens: ", statistics.stdev([obj['response']['usage']['completion_tokens'] for obj in lines]))
     print("avg. prompt tokens: ", statistics.mean([obj['response']['usage']['prompt_tokens'] for obj in lines]))
