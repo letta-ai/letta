@@ -19,7 +19,7 @@ import {
   LoginErrorsEnum,
   LoginErrorsMap,
 } from '$web/errors';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from '@letta-cloud/translations';
 
 function LoginErrorBanner() {
   const searchParams = useSearchParams();

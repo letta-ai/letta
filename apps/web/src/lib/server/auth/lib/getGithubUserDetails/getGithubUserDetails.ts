@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { ProviderUserPayload } from '$web/types';
+import type { ProviderUserPayload } from '@letta-cloud/web-api-client';
 
 interface GithubUserResponse {
   login: string;
@@ -58,7 +58,7 @@ interface EmailResponseItem {
 }
 
 export async function getGithubUserDetails(
-  accessToken: string
+  accessToken: string,
 ): Promise<ProviderUserPayload> {
   const emailsResponse = await axios.get<EmailResponseItem[]>(
     'https://api.github.com/user/emails',
@@ -67,7 +67,7 @@ export async function getGithubUserDetails(
         Accept: 'application/vnd.github.v3+json',
         Authorization: `Bearer ${accessToken}`,
       },
-    }
+    },
   );
 
   if (!emailsResponse.data.length) {
@@ -87,7 +87,7 @@ export async function getGithubUserDetails(
         Accept: 'application/vnd.github.v3+json',
         Authorization: `Bearer ${accessToken}`,
       },
-    }
+    },
   );
 
   return {

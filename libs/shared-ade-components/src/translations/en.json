@@ -1,0 +1,605 @@
+{
+  "ADE/AdvancedSettings": {
+    "title": "Advanced",
+    "model": "Model",
+    "mobileTitle": "Advanced",
+    "modelParameters": "Model parameters",
+    "modelEndpoint": "Model endpoint",
+    "endpointType": "Endpoint type",
+    "errorLoadingModelParameters": "There has been an error loading model parameters, please refresh the page or contact support.",
+    "contextWindowController": {
+      "label": "Context window size"
+    },
+    "AdvancedSettingsPanel": {
+      "embeddingDimensions": {
+        "label": "Embedding dimensions"
+      },
+      "embeddingChunkSize": {
+        "label": "Embedding chunk size"
+      }
+    }
+  },
+  "ADE/EditDataSourcesPanel": {
+    "mobileTitle": "Sources",
+    "infoTooltip": "External files loaded into the agent’s archival memory for RAG",
+    "AttachDataSourceView": {
+      "notCompatible": {
+        "title": "Not Compatible",
+        "details": "This data source's embedding model is not compatible with your current model."
+      },
+      "emptyMessage": "You have not created any data sources yet",
+      "emptySearchMessage": "No data sources found",
+      "emptyAction": "Create a new data source",
+      "attach": "Attach",
+      "attached": "Attached",
+      "searchInput": {
+        "placeholder": "Search data sources",
+        "label": "Search data sources"
+      }
+    },
+    "DeleteFileDialog": {
+      "title": "Delete {fileName}",
+      "areYouSure": "Are you sure you want to delete {fileName}?",
+      "trigger": "Delete File",
+      "confirm": "Delete",
+      "error": "There was an error deleting this file, please try again or contact support."
+    },
+    "DetachDataSourceConfirmDialog": {
+      "title": "Detach {sourceName}",
+      "areYouSure": "Are you sure you want to detach {sourceName}?",
+      "trigger": "Detach Data Source",
+      "confirm": "Detach",
+      "error": "There was an error detaching this data source, please try again or contact support."
+    },
+    "RenameDataSourceDialog": {
+      "title": "Rename source",
+      "trigger": "Rename source",
+      "confirm": "Rename",
+      "error": "There was an error renaming this data source, please try again or contact support.",
+      "name": {
+        "label": "Source Name",
+        "placeholder": "my-source-name"
+      }
+    },
+    "DeleteDataSourceDialog": {
+      "title": "Delete source",
+      "trigger": "Delete source",
+      "confirm": "Delete",
+      "error": "There was an error deleting this source, please try again or contact support.",
+      "description": "Be aware you are deleting this source from all agents, not detaching it. If you want to detach it, click the detach button instead.",
+      "confirmName": {
+        "label": "Type the name of the source to confirm",
+        "placeholder": "my-data-source-name",
+        "error": "The name you entered does not match the source name"
+      }
+    },
+    "EditDataSourcesContent": {
+      "notCompatible": {
+        "details": "This data source's embedding config does not match the agent config, this may lead to the agent not remembering data properly",
+        "title": "Not Compatible"
+      },
+      "processing": "This data source is being processed, please wait...",
+      "delete": "Delete file",
+      "addFile": "Add file",
+      "uploadFile": "Upload file",
+      "detachSource": "Detach source",
+      "fileProcessing": "File is being processed"
+    },
+    "FileUploadDialog": {
+      "title": "Upload a file",
+      "confirm": "Upload"
+    },
+    "title": "Sources ({count})",
+    "errorDetaching": "There was an error detaching this data source, please try again or contact support.",
+    "editName": {
+      "label": "Data source name",
+      "placeholder": "my-data-source-name"
+    },
+    "edit": "Edit",
+    "detach": "Detach Data Source",
+    "loading": "Loading data sources...",
+    "error": "There was an error loading data sources, please try again or contact support.",
+    "noDataSources": "You have no data sources attached to this agent yet. Click the button in the top right to attach a data source.",
+    "CreateDataSourceDialog": {
+      "titles": "Add New Data Source",
+      "trigger": "Create source",
+      "goBack": "Go back",
+      "error": "There was an error creating the data source, please try again or contact support.",
+      "creatingDataSource": "Creating data source...",
+      "title": "Create a new data source",
+      "options": {
+        "createANewDataSource": {
+          "title": "Create a new data source",
+          "description": "Create a new data source to use in your agent and other projects."
+        },
+        "attachAnExistingDataSource": {
+          "title": "Attach an existing data source",
+          "description": "Attach an existing data source that you have already created."
+        }
+      }
+    }
+  },
+  "ADE/AgentSettingsPanel": {
+    "mobileTitle": "{baseName}",
+    "SystemPromptEditor": {
+      "characterCount": "{count} CHARS",
+      "updatedAt": "Last updated on {date}",
+      "tooltip": "Configures the behavior of the agent, and placed in the context window",
+      "label": "System instructions",
+      "error": "There was an error while updating the system prompt, please try again or contact support.",
+      "expand": "Show full system prompt editor",
+      "dialog": {
+        "title": "Update System Prompt",
+        "label": "System Prompt",
+        "save": "Update",
+        "info": "The system instructions are not editable by the agent itself (unlike core memory).",
+        "characterCount": "{count} characters"
+      }
+    },
+    "embeddingInput": {
+      "label": "Embedding model"
+    },
+    "agentName": {
+      "label": "{baseName} name",
+      "edit": "Edit {baseName} name"
+    },
+    "AgentIdentifierToCopy": {
+      "copyAgentId": "Copy {baseName} ID"
+    },
+    "title": "{baseName} Settings",
+    "modelInput": {
+      "tooltip": "The LLM backend for the {baseName}",
+      "recommended": "Recommended models",
+      "others": "All available models",
+      "label": "Model"
+    },
+    "updateModel": "Update",
+    "lastUpdatedAt": "Last updated on {date}",
+    "error": "There was an error while updating the model, please try again or contact support."
+  },
+  "agentBaseType": {
+    "base": {
+      "template": "template",
+      "agent": "agent"
+    },
+    "capitalized": {
+      "template": "Template",
+      "agent": "Agent"
+    }
+  },
+  "ADE/ArchivalMemories": {
+    "infoTooltip": "Memories stored in an external database (read-write)",
+    "ViewArchivalMemoryDialog": {
+      "trigger": "...see all",
+      "copyText": "Copy Memory Text",
+      "title": "View Memory",
+      "label": "Memory Text"
+    },
+    "title": "Archival Memories ({count})",
+    "mobileTitle": "Archival Memories",
+    "MemoryItem": {
+      "copyText": "Copy Memory Text",
+      "removeMemory": "Remove Memory",
+      "deleteMemory": "Delete Memory",
+      "deleteConfirm": "Delete Memory",
+      "deleteConfirmation": "Are you sure you want to delete this memory? This is permanent and cannot be undone.",
+      "memoryText": "Memory at {date}"
+    },
+    "CreateMemoryDialog": {
+      "trigger": "Create memory",
+      "title": "Create a new memory",
+      "placeholder": "Enter memory text here",
+      "label": "Memory text",
+      "info": "This memory you create here is unique to the simulated agent. It will not be carried to agents created from this template."
+    }
+  },
+  "ADELayout": {
+    "contextWindow": "Context Window",
+    "agentSimulator": "Agent simulator",
+    "settings": "{baseName} Settings",
+    "advancedSettings": "Advanced settings"
+  },
+  "ADE/EditCoreMemoriesPanel": {
+    "SimulatedMemory": {
+      "error": "There was an error while reading the simulated memory block, please try again or contact support.",
+      "characterCount": "{count} CHARS"
+    },
+    "toggleMemoryType": {
+      "label": "Toggle Memory Type",
+      "templated": {
+        "label": "Template",
+        "tooltip": "The template memory is the initial memory state for any new deployed agents that use this template"
+      },
+      "simulated": {
+        "label": "Simulated",
+        "tooltip": "The memory state of the simulated agent (reset when you flush the simulator)"
+      }
+    },
+    "mobileTitle": "Core Memories",
+    "EditMemoryForm": {
+      "characterLimit": "{count}/{limit} CHARS"
+    },
+    "MemoryWarning": {
+      "title": "You may need to update your system instructions",
+      "message": "Adjusting the memory label may require you to update your system instructions to reflect the new memory label."
+    },
+    "CharacterCounter": {
+      "count": "{count} CHARS"
+    },
+    "AdvancedMemoryEditorForm": {
+      "error": "There was an error updating your memory, please try again or contact support",
+      "label": {
+        "label": "Label",
+        "placeholder": "my-label",
+        "error": "Labels must be alphanumeric and underscores only, and cannot start with a number"
+      },
+      "maxCharacters": {
+        "label": "Character Limit",
+        "placeholder": "100",
+        "error": "Minimum value is 100"
+      },
+      "value": {
+        "label": "Value",
+        "placeholder": "my-value"
+      },
+      "update": "Update memory",
+      "delete": {
+        "title": "Delete Memory",
+        "confirm": "Are you sure you want to delete this memory?"
+      }
+    },
+    "AdvancedEditMemory": {
+      "title": "Update Core Memories",
+      "newMemory": "Add memory block"
+    },
+    "systemPrompt": "System Prompt",
+    "EditSystemPrompt": {
+      "title": "System Prompt",
+      "label": "Edit System Prompt"
+    },
+    "expandContent": "Full Screen",
+    "MemorySettingsDialog": {
+      "trigger": "Settings",
+      "name": {
+        "label": "Memory Name",
+        "placeholder": "my-memory-name"
+      },
+      "title": "{label} Settings"
+    },
+    "title": "Core Memory ({count})",
+    "infoTooltip": "Editable, in-context memory of the agent that can be templated with variables",
+    "content": "Content",
+    "error": "There was an error while updating the memory block, please try again or contact support.",
+    "lastUpdated": "Last updated on {date}",
+    "updating": "Updating..."
+  },
+  "component-library/reusable/ChatInput": {
+    "CopySendMessageRequestButton": {
+      "label": " Copy curl request to clipboard"
+    },
+    "placeholder": "Type a message...",
+    "send": "Send",
+    "role": {
+      "label": "Click here to switch roles, the current role is {role}"
+    }
+  },
+  "component-library/core/Code": {
+    "errorResponse": "Error response",
+    "dismiss": "Dismiss"
+  },
+  "component-library/hooks/useCopyToClipboard": {
+    "copied": "Copied to clipboard"
+  },
+  "component-library/Debugger": {
+    "invalidJSON": "Invalid JSON",
+    "run": "Run",
+    "success": "Succeeded",
+    "error": "Failed to execute",
+    "output": "Output",
+    "inputPlaceholder": ""
+  },
+  "component-library/FunctionCall": {
+    "isExecuting": "Executing",
+    "error": "Error",
+    "success": "Success",
+    "request": "Request",
+    "response": "Response"
+  },
+  "component-library/CopyWithCodePreview": {
+    "description": "The code below will be copied to your clipboard:"
+  },
+  "development-servers/hooks": {
+    "localAgents": "Local agents"
+  },
+  "ADE/useCurrentSimulatedAgent": {
+    "error": "There was an error fetching the simulated agent, please try again or contact support."
+  },
+  "components/Messages": {
+    "reasoning": "Reasoning",
+    "loadingMessages": "Fetching messages...",
+    "toolReturn": "Tool response",
+    "reasoningMessage": "Reasoning",
+    "hiddenUserMessage": "Internal user message",
+    "noParsableMessages": "There are no messages available in this view, usually this is caused by a lack of triggered send_message actions in your agent, check the debug more to verify."
+  },
+  "UpdateNameDialog": {
+    "title": "Rename {agentBaseType}",
+    "trigger": "Rename {agentBaseType}",
+    "confirm": "Update",
+    "name": {
+      "label": "Name",
+      "description": "Updating the name will update all references to this {agentBaseType} in the project."
+    },
+    "error": {
+      "conflict": "This {agentBaseType} name is already in use, please choose another name",
+      "default": "There was an error updating the agent name, please try again or contact support."
+    }
+  },
+  "ADE/AgentSimulator": {
+    "loadingMessages": "Preparing agent",
+    "role": {
+      "user": "User",
+      "system": "System"
+    },
+    "FlushSimulationSessionDialog": {
+      "title": "Flush Simulation",
+      "trigger": "Flush agent simulation",
+      "description": "Are you sure you want to flush the simulation? This will reset the simulated agent's memory and state.",
+      "confirm": "Flush",
+      "success": "Simulation has been flushed",
+      "error": "There was an error flushing the simulation, please try again or contact support."
+    },
+    "AgentSimulatorOptionsMenu": {
+      "trigger": "Options",
+      "options": {
+        "flushSimulation": "Flush simulation",
+        "printDebug": {
+          "title": "Print simulated agent details",
+          "notReady": "Simulated agent has not loaded yet, please try again soon",
+          "success": "Simulated agent details have been printed to the console"
+        }
+      }
+    },
+    "localAgent": "This feature is only available on Letta Cloud",
+    "refreshError": "There was an error refreshing the agent simulator, please refresh the page or contact support.",
+    "sendingMessage": "Agent is thinking...",
+    "setChatroomRenderMode": {
+      "label": "Chatroom Render Mode",
+      "options": {
+        "debug": "Debug mode",
+        "interactive": "Interactive mode",
+        "simple": "Simple mode"
+      }
+    },
+    "DialogSessionSheet": {
+      "updating": "Updating variables...",
+      "placeholder": "Variable Value",
+      "save": "Update Variables",
+      "label": "Variable Name",
+      "editLabel": "Edit {variableName}",
+      "noVariablesDefined": "You have no variables set yet, to define a variable, write a alphanumeric name wrapped in handlebars in core memory, e.g. {variableName}"
+    },
+    "noVariablesInDeployedAgent": "No variables in this agent",
+    "noVariablesInDeployedAgentWithNoTemplate": "Variables allow you to programatically define parts of an agent's memory that can be customized per-user on agent creation. Variables are only available in templates - to use variables, click 'Create template' in the top right.",
+    "showVariables": "Variables",
+    "hideVariables": "Hide variables",
+    "updateVariables": "Update variables",
+    "hasFailedToSendMessageText": {
+      "local": "Failed to send message, please try again or check your server logs",
+      "cloud": "Failed to send message, please try again or contact support",
+      "contextWindowExceeded": "Input exceeded context window limit and is at max compression, please increase limit and try again.",
+      "rateLimitExceeded": "Rate limit reached, please wait a few moments before trying again."
+    }
+  },
+  "ADE/Tools": {
+    "ViewCategoryTools": {
+      "view": "View",
+      "showing": "Showing {count} tools",
+      "next": "Next",
+      "previous": "Previous",
+      "loadMore": "Load more",
+      "create": "Create new tool",
+      "search": {
+        "label": "Search tools",
+        "placeholder": "Search tools"
+      }
+    },
+    "AllToolsView": {
+      "backToAllTools": "All tools",
+      "backToCategory": "All {category}",
+      "title": "Tool Explorer",
+      "back": "Back",
+      "searchCategories": {
+        "placeholder": "Filter by category",
+        "label": "Search categories"
+      },
+      "titles": {
+        "allTools": "All tools",
+        "customTools": "Custom tools",
+        "brandTools": "{brand} tools"
+      },
+      "categories": {
+        "allTools": "All tools ({count})",
+        "customTools": "Custom tools ({count})",
+        "brandTools": "{brand} ({count})"
+      }
+    },
+    "ErrorMessageAlert": {
+      "title": "There was an error, see below for details:",
+      "dismiss": "Dismiss"
+    },
+    "infoTooltip": "Connect tools to your agent to allow them to take custom actions",
+    "mobileTitle": "Tools",
+    "title": "Tools ({toolCount})",
+    "AddToolDialogDetailActions": {
+      "addToAgent": "Add to Agent",
+      "alreadyAdded": "This tool is already added",
+      "removeError": "There was an error removing this tool, please try again or contact support.",
+      "addError": "There was an error adding this tool, please try again or contact support."
+    },
+    "ViewToolDialog": {
+      "title": "Viewing tool"
+    },
+    "ViewTool": {
+      "viewOnComposio": "View on Composio",
+      "viaComposioTool": "via",
+      "connectComposio": {
+        "title": "To attach this tool and 4000+ other tools to your agent, connect to Composio",
+        "descriptionLocal": "To enable Composio tools to your agent, add the <code>COMPOSIO_API_KEY</code> to your server environment variables",
+        "descriptionRemote": "To enable Composio tools to your agent, visit the Composio integration page",
+        "connect": "Setup Composio"
+      }
+    },
+    "AddToolToAgentButton": {
+      "errors": {
+        "composio": {
+          "ComposioSDKError": "Please connect this App on Composio before attempting to attach this tool. Press the 'View on Composio' button to do this",
+          "ApiKeyNotProvidedError": "Please connect your Composio API key with Letta to add this tool to your agent."
+        }
+      },
+      "error": "There was an error adding this tool, please try again or contact support.",
+      "alreadyAdded": "Attached",
+      "attach": "Attach tool"
+    },
+    "EditToolWrapper": {
+      "unnamed": "Unnamed tool",
+      "root": "All tools",
+      "edit": "Tool Editor"
+    },
+    "EditToolButton": {
+      "title": "Edit tool"
+    },
+    "ViewToolCodePreview": {
+      "viewToggle": {
+        "label": "View Mode",
+        "options": {
+          "schema": "JSON schema",
+          "code": "Code"
+        }
+      }
+    },
+    "SpecificToolComponent": {
+      "back": "Back",
+      "codePreviewUnavailableForComposio": "# Code preview unavailable for Composio tools",
+      "jsonPreviewUnavailableForComposio": "// JSON schema preview unavailable for Composio tools",
+
+      "description": "Description",
+      "noDescription": "No description provided",
+      "add": "Add tool to Agent",
+      "edit": "Edit tool",
+      "cancel": "Cancel",
+      "alreadyAdded": "This tool is already added"
+    },
+    "EditTool": {
+      "error": "There was an error updating your tool, see above for details.",
+      "close": "Close",
+      "name": {
+        "label": "Name"
+      },
+      "updateDialog": {
+        "title": "Update tool",
+        "description": "Are you sure you want to update this tool, it will update all agents that use this tool.",
+        "confirm": "Update",
+        "error": "There was an error updating your tool, see below for details."
+      },
+      "description": {
+        "label": "Description"
+      },
+      "sourceCode": {
+        "label": "Source code",
+        "error": "There was an error updating your tool, see below for details."
+      },
+      "update": "Update tool"
+    },
+    "ToolEditor": {
+      "label": "Debugger",
+      "inputLabel": "Tool input",
+      "outputLabel": "Tool output"
+    },
+    "ToolCreator": {
+      "new": "New tool",
+      "errorResponse": "There was an error creating your tool, see below for details.",
+      "error": "There was an error creating your tool, see above for details.",
+      "cancel": "Cancel",
+      "name": {
+        "label": "Name",
+        "placeholder": "my-tool-name",
+        "validation": "'Name must be alphanumeric and underscores only"
+      },
+      "description": {
+        "label": "Description",
+        "placeholder": "my-tool-description",
+        "validation": "Please provide a description for this tool"
+      },
+      "sourceCode": {
+        "label": "Source code",
+        "placeholder": "my-tool-source-code"
+      }
+    },
+    "AddToolDialog": {
+      "error": "There was an error adding this tool, please try again or contact support.",
+      "createTool": "Create new tool",
+      "title": {
+        "create": "Create a new tool",
+        "add": "Add tool to agent",
+        "view": "View and edit tool"
+      },
+      "categories": {
+        "allTools": "All tools"
+      },
+      "description": "Description",
+      "added": "Added",
+      "creator": "{creator}",
+      "search": {
+        "placeholder": "Search for a tool",
+        "label": "Search tools"
+      },
+      "noDescription": "This tool does not have a description",
+      "noToolSelected": {
+        "title": "No tool selected",
+        "description": "Select a tool from the list to view more details and add to your agent."
+      }
+    },
+    "ToolsExplorer": {
+      "confirmLeave": {
+        "title": "Are you sure you want to leave?",
+        "description": "You are about to leave the tool editor, any unsaved changes will be lost."
+      }
+    },
+    "ToolsListPage": {
+      "openExplorer": "Open tools explorer"
+    },
+    "ToolsList": {
+      "removeTool": "Remove tool",
+      "lettaCoreTools": "Letta core tools ({toolCount})",
+      "lettaCoreToolsInfo": "Default tools added to agents to enable memory management",
+      "otherTools": "Other tools ({toolCount})",
+      "addNewTool": "Add new tool"
+    },
+    "RemoveToolDialog": {
+      "title": "Remove {toolName}",
+      "trigger": "Remove tool",
+      "confirm": "Remove",
+      "error": "There was an error removing this tool, please try again or contact support.",
+      "confirmation": "Are you sure you want to remove this tool?"
+    }
+  },
+  "ADE/ContextEditorPanel": {
+    "infoTooltip": "Current status of the LLM context window (Letta will automatically compress on overflow)",
+    "title": "Context Window",
+    "mobileTitle": "Context Window",
+    "ContextWindowPreview": {
+      "usage": "{used}/{total} TOKENS",
+      "systemPrompt": "System instructions",
+      "toolPrompt": "Tools descriptions",
+      "memoryBlocks": "Core memory",
+      "externalSummaryLength": "External summary",
+      "totalOverage": "Total Overage",
+      "remaining": "Remaining",
+      "messagesTokens": "Messages",
+      "summaryMemory": "Recursive Memory",
+      "recallMemory": "Recall Memory",
+      "archivalMemory": "Archival Memory"
+    }
+  }
+}

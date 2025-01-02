@@ -1,6 +1,6 @@
 import { useCurrentAgent } from '../hooks';
 import { useCurrentProject } from '../../../../../../(dashboard-like)/projects/[projectSlug]/hooks';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from '@letta-cloud/translations';
 import {
   Badge,
   Button,
@@ -32,11 +32,11 @@ import { CLOUD_UPSELL_URL } from '$web/constants';
 import { isAgentState } from '@letta-web/letta-agents-api';
 import { useCurrentAgentMetaData } from '../hooks/useCurrentAgentMetaData/useCurrentAgentMetaData';
 import { useCurrentUser } from '$web/client/hooks';
-import { compareAgentStates } from '$web/utils';
 import type { ServerInferResponses } from '@ts-rest/core';
-import type { contracts } from '$web/web-api/contracts';
+import type { contracts } from '@letta-cloud/web-api-client';
 import { atom, useSetAtom } from 'jotai';
 import { get } from 'lodash-es';
+import { compareAgentStates } from '@letta-web/generic-utils';
 
 interface DeployAgentDialogProps {
   isAtLatestVersion: boolean;

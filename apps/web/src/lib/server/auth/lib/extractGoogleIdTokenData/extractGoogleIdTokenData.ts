@@ -1,4 +1,4 @@
-import type { ProviderUserPayload } from '$web/types';
+import type { ProviderUserPayload } from '@letta-cloud/web-api-client';
 import { jwtDecode } from 'jwt-decode';
 
 interface GoogleJWTResponse {

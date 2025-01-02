@@ -1,6 +1,7 @@
 import '@tanstack/react-table';
 import type { RowData } from '@tanstack/react-table';
 import type en from './translations/en.json';
+import type { en as adeEn } from '@letta-cloud/shared-ade-components/translations';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 declare module '*.svg' {
@@ -20,7 +21,12 @@ declare module '@tanstack/react-table' {
   }
 }
 
-type Messages = typeof en;
+export const messages = {
+  ...en,
+  ...adeEn,
+};
+
+type Messages = typeof messages;
 
 declare global {
   // Use type safe message keys with `next-intl`

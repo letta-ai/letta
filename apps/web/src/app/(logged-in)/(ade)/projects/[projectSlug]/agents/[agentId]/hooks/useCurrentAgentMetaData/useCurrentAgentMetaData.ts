@@ -1,5 +1,8 @@
 'use client';
-import { webOriginSDKApi, webOriginSDKQueryKeys } from '$web/client';
+import {
+  webOriginSDKApi,
+  webOriginSDKQueryKeys,
+} from '@letta-web/letta-agents-api';
 import { useParams, usePathname } from 'next/navigation';
 import { useAgentsServiceGetAgent } from '@letta-web/letta-agents-api';
 import { get } from 'lodash-es';
@@ -30,7 +33,7 @@ export function useCurrentAgentMetaData(): UseCurrentAgentMetaDataResponse {
     undefined,
     {
       enabled: startsWithLocalProject,
-    }
+    },
   );
 
   if (pathname.startsWith('/development-servers')) {
@@ -89,7 +92,7 @@ export function useCurrentAgentMetaData(): UseCurrentAgentMetaDataResponse {
 
   if (!agentId) {
     throw new Error(
-      'This hook should be used within a page that server-side renders the agent data'
+      'This hook should be used within a page that server-side renders the agent data',
     );
   }
 

@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import React, { useCallback, useState } from 'react';
 import { useResetAllLettaAgentsQueryKeys } from '@letta-web/letta-agents-api';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from '@letta-cloud/translations';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   Dialog,
@@ -13,7 +13,7 @@ import {
 import { zodResolver } from '@hookform/resolvers/zod';
 import { webApi, webApiQueryKeys } from '$web/client';
 import type { ServerInferResponses } from '@ts-rest/core';
-import type { developmentServersContracts } from '$web/web-api/development-servers/developmentServersContracts';
+import type { developmentServersContracts } from '$web/web-api/contracts';
 
 const updateDevelopmentDetailsDialogSchema = z.object({
   name: z.string().min(3).max(50),
@@ -34,7 +34,7 @@ interface UpdateDevelopmentServerDetailsDialogProps {
 }
 
 export function UpdateDevelopmentServerDetailsDialog(
-  props: UpdateDevelopmentServerDetailsDialogProps
+  props: UpdateDevelopmentServerDetailsDialogProps,
 ) {
   const { resetAllLettaAgentsQueryKeys } = useResetAllLettaAgentsQueryKeys();
 
@@ -88,11 +88,11 @@ export function UpdateDevelopmentServerDetailsDialog(
                       }
 
                       return server;
-                    }
+                    },
                   ),
                 },
               };
-            }
+            },
           );
 
           queryClient.setQueriesData<
@@ -103,7 +103,7 @@ export function UpdateDevelopmentServerDetailsDialog(
           >(
             {
               queryKey: webApiQueryKeys.developmentServers.getDevelopmentServer(
-                rest.id || ''
+                rest.id || '',
               ),
               exact: true,
             },
@@ -127,7 +127,7 @@ export function UpdateDevelopmentServerDetailsDialog(
                   },
                 },
               };
-            }
+            },
           );
 
           setTimeout(() => {
@@ -159,7 +159,7 @@ export function UpdateDevelopmentServerDetailsDialog(
         },
       });
     },
-    [isPending, rest, isSuccess, mutate]
+    [isPending, rest, isSuccess, mutate],
   );
 
   return (

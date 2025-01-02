@@ -18,7 +18,7 @@ import {
   Typography,
   VStack,
 } from '@letta-web/component-library';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from '@letta-cloud/translations';
 import { StarterKitItems } from '$web/client/components';
 import { useCurrentProject } from '../../hooks';
 import {
@@ -29,7 +29,7 @@ import {
 } from '$web/client';
 import { useRouter } from 'next/navigation';
 import { useAgentsServiceGetAgent } from '@letta-web/letta-agents-api';
-import { findMemoryBlockVariables } from '$web/utils';
+import { findMemoryBlockVariables } from '@letta-web/generic-utils';
 
 const elementWidth = '204px';
 const elementHeight = '166px';
@@ -41,7 +41,7 @@ interface DeployFromTemplateProps {
 function DeployFromTemplate(props: DeployFromTemplateProps) {
   const { onSelectTemplate } = props;
   const t = useTranslations(
-    'projects/(projectSlug)/agents/page/DeployAgentDialog'
+    'projects/(projectSlug)/agents/page/DeployAgentDialog',
   );
   const { id: currentProjectId } = useCurrentProject();
 
@@ -150,7 +150,7 @@ interface FromStarterKitProps {
 function FromStarterKit(props: FromStarterKitProps) {
   const { onIsCreating, onError } = props;
   const t = useTranslations(
-    'projects/(projectSlug)/agents/page/DeployAgentDialog'
+    'projects/(projectSlug)/agents/page/DeployAgentDialog',
   );
 
   const { id: projectId, slug } = useCurrentProject();
@@ -183,7 +183,7 @@ function FromStarterKit(props: FromStarterKitProps) {
         },
       });
     },
-    [mutate, onIsCreating, projectId]
+    [mutate, onIsCreating, projectId],
   );
 
   return (
@@ -221,7 +221,7 @@ interface SelectedTemplateStateProps {
 function SelectedTemplateState(props: SelectedTemplateStateProps) {
   const { selectedTemplate, onReset, onCreating, onErrored } = props;
   const t = useTranslations(
-    'projects/(projectSlug)/agents/page/DeployAgentDialog'
+    'projects/(projectSlug)/agents/page/DeployAgentDialog',
   );
   const { push } = useRouter();
   const { slug: projectSlug } = useCurrentProject();
@@ -368,7 +368,7 @@ export function DeployAgentDialog() {
   const [selectedTemplate, setSelectedTemplate] =
     React.useState<SelectedTemplate | null>(null);
   const t = useTranslations(
-    'projects/(projectSlug)/agents/page/DeployAgentDialog'
+    'projects/(projectSlug)/agents/page/DeployAgentDialog',
   );
 
   const handleCreating = useCallback((state: boolean) => {

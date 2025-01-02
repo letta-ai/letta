@@ -12,13 +12,13 @@ import {
   VStack,
   WarningIcon,
 } from '@letta-web/component-library';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from '@letta-cloud/translations';
 import type { AgentState } from '@letta-web/letta-agents-api';
 import { useAgentsServiceListAgents } from '@letta-web/letta-agents-api';
 import React, { useEffect, useMemo, useState } from 'react';
 import type { ColumnDef } from '@tanstack/react-table';
 import { useDateFormatter } from '@letta-web/helpful-client-utils';
-import { useCurrentDevelopmentServerConfig } from '../hooks/useCurrentDevelopmentServerConfig/useCurrentDevelopmentServerConfig';
+import { useCurrentDevelopmentServerConfig } from '@letta-web/helpful-client-utils';
 import { ConnectToLocalServerCommand } from '$web/client/components/ConnectToLocalServerCommand/ConnectToLocalServerCommand';
 import { UpdateDevelopmentServerDetailsDialog } from '../../shared/UpdateDevelopmentServerDetailsDialog/UpdateDevelopmentServerDetailsDialog';
 import { useCurrentUser } from '$web/client/hooks';
@@ -128,7 +128,7 @@ function LocalProjectPage() {
     }
 
     return data?.filter(({ name }) =>
-      name.toLowerCase().includes(search.toLowerCase())
+      name.toLowerCase().includes(search.toLowerCase()),
     );
   }, [data, search]);
 
@@ -189,7 +189,7 @@ function LocalProjectPage() {
         ),
       },
     ],
-    [t, formatDateAndTime, currentDevelopmentServerConfig?.id, user?.id]
+    [t, formatDateAndTime, currentDevelopmentServerConfig?.id, user?.id],
   );
 
   return (

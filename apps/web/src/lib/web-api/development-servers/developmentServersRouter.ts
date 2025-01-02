@@ -1,8 +1,5 @@
 import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
-import type {
-  developmentServersContracts,
-  UpdateDevelopmentServerRequestSchemaType,
-} from '$web/web-api/development-servers/developmentServersContracts';
+
 import { getUserActiveOrganizationIdOrThrow } from '$web/server/auth';
 import { and, eq, ilike } from 'drizzle-orm';
 import {
@@ -10,16 +7,17 @@ import {
   developmentServerPasswords,
   developmentServers,
 } from '@letta-web/database';
+import type { contracts } from '@letta-cloud/web-api-client';
 
 type GetDevelopmentServersRequest = ServerInferRequest<
-  typeof developmentServersContracts.getDevelopmentServers
+  typeof contracts.developmentServers.getDevelopmentServers
 >;
 type GetDevelopmentServersResponse = ServerInferResponses<
-  typeof developmentServersContracts.getDevelopmentServers
+  typeof contracts.developmentServers.getDevelopmentServers
 >;
 
 async function getDevelopmentServers(
-  request: GetDevelopmentServersRequest
+  request: GetDevelopmentServersRequest,
 ): Promise<GetDevelopmentServersResponse> {
   const { query } = request;
   const organizationId = await getUserActiveOrganizationIdOrThrow();
@@ -68,15 +66,15 @@ async function getDevelopmentServers(
 }
 
 type GetDevelopmentServerRequest = ServerInferRequest<
-  typeof developmentServersContracts.getDevelopmentServer
+  typeof contracts.developmentServers.getDevelopmentServer
 >;
 
 type GetDevelopmentServerResponse = ServerInferResponses<
-  typeof developmentServersContracts.getDevelopmentServer
+  typeof contracts.developmentServers.getDevelopmentServer
 >;
 
 async function getDevelopmentServer(
-  request: GetDevelopmentServerRequest
+  request: GetDevelopmentServerRequest,
 ): Promise<GetDevelopmentServerResponse> {
   const { params } = request;
   const organizationId = await getUserActiveOrganizationIdOrThrow();
@@ -84,7 +82,7 @@ async function getDevelopmentServer(
   const developmentServer = await db.query.developmentServers.findFirst({
     where: and(
       eq(developmentServers.id, params.developmentServerId),
-      eq(developmentServers.organizationId, organizationId)
+      eq(developmentServers.organizationId, organizationId),
     ),
     columns: {
       id: true,
@@ -127,14 +125,14 @@ async function getDevelopmentServer(
 }
 
 type CreateDevelopmentServerRequest = ServerInferRequest<
-  typeof developmentServersContracts.createDevelopmentServer
+  typeof contracts.developmentServers.createDevelopmentServer
 >;
 type CreateDevelopmentServerResponse = ServerInferResponses<
-  typeof developmentServersContracts.createDevelopmentServer
+  typeof contracts.developmentServers.createDevelopmentServer
 >;
 
 async function createDevelopmentServer(
-  request: CreateDevelopmentServerRequest
+  request: CreateDevelopmentServerRequest,
 ): Promise<CreateDevelopmentServerResponse> {
   const { body } = request;
   const organizationId = await getUserActiveOrganizationIdOrThrow();
@@ -169,19 +167,19 @@ async function createDevelopmentServer(
 }
 
 type UpdateDevelopmentServerRequest = ServerInferRequest<
-  typeof developmentServersContracts.updateDevelopmentServer
+  typeof contracts.developmentServers.updateDevelopmentServer
 >;
 type UpdateDevelopmentServerResponse = ServerInferResponses<
-  typeof developmentServersContracts.updateDevelopmentServer
+  typeof contracts.developmentServers.updateDevelopmentServer
 >;
 
 async function updateDevelopmentServer(
-  request: UpdateDevelopmentServerRequest
+  request: UpdateDevelopmentServerRequest,
 ): Promise<UpdateDevelopmentServerResponse> {
   const { body, params } = request;
   const organizationId = await getUserActiveOrganizationIdOrThrow();
 
-  const valuesToUpdate: UpdateDevelopmentServerRequestSchemaType = {};
+  const valuesToUpdate: UpdateDevelopmentServerRequest['body'] = {};
 
   if (body.name) {
     valuesToUpdate.name = body.name;
@@ -199,10 +197,10 @@ async function updateDevelopmentServer(
         and(
           eq(
             developmentServerPasswords.developmentServerId,
-            params.developmentServerId
+            params.developmentServerId,
           ),
-          eq(developmentServerPasswords.organizationId, organizationId)
-        )
+          eq(developmentServerPasswords.organizationId, organizationId),
+        ),
       );
   }
 
@@ -221,8 +219,8 @@ async function updateDevelopmentServer(
     .where(
       and(
         eq(developmentServers.id, params.developmentServerId),
-        eq(developmentServers.organizationId, organizationId)
-      )
+        eq(developmentServers.organizationId, organizationId),
+      ),
     )
     .returning({
       id: developmentServers.id,
@@ -247,14 +245,14 @@ async function updateDevelopmentServer(
 }
 
 type DeleteDevelopmentServerRequest = ServerInferRequest<
-  typeof developmentServersContracts.deleteDevelopmentServer
+  typeof contracts.developmentServers.deleteDevelopmentServer
 >;
 type DeleteDevelopmentServerResponse = ServerInferResponses<
-  typeof developmentServersContracts.deleteDevelopmentServer
+  typeof contracts.developmentServers.deleteDevelopmentServer
 >;
 
 async function deleteDevelopmentServer(
-  request: DeleteDevelopmentServerRequest
+  request: DeleteDevelopmentServerRequest,
 ): Promise<DeleteDevelopmentServerResponse> {
   const { params } = request;
   const organizationId = await getUserActiveOrganizationIdOrThrow();
@@ -264,8 +262,8 @@ async function deleteDevelopmentServer(
     .where(
       and(
         eq(developmentServers.id, params.developmentServerId),
-        eq(developmentServers.organizationId, organizationId)
-      )
+        eq(developmentServers.organizationId, organizationId),
+      ),
     );
 
   return {

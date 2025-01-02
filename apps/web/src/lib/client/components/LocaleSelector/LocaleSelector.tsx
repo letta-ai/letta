@@ -5,10 +5,11 @@ import {
   DropdownMenuItem,
   LanguageSwitcherIcon,
 } from '@letta-web/component-library';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from '@letta-cloud/translations';
 import { webApi, webApiQueryKeys } from '$web/client';
 import { useQueryClient } from '@tanstack/react-query';
-import type { GetUser200ResponseType } from '$web/web-api/user/userContracts';
+import type { ServerInferResponses } from '@ts-rest/core';
+import type { contracts } from '@letta-cloud/web-api-client';
 
 export function LocaleSelector() {
   const t = useTranslations('components/LocaleSelector');
@@ -22,7 +23,10 @@ export function LocaleSelector() {
 
   const handleLocaleChange = useCallback(
     (nextLocale: string) => {
-      queryClient.setQueriesData<GetUser200ResponseType | undefined>(
+      queryClient.setQueriesData<
+        | ServerInferResponses<typeof contracts.user.getCurrentUser, 200>
+        | undefined
+      >(
         {
           queryKey: webApiQueryKeys.user.getCurrentUser,
         },
@@ -38,7 +42,7 @@ export function LocaleSelector() {
               locale: nextLocale,
             },
           };
-        }
+        },
       );
 
       updateCurrentUser({
@@ -47,7 +51,7 @@ export function LocaleSelector() {
         },
       });
     },
-    [queryClient, updateCurrentUser]
+    [queryClient, updateCurrentUser],
   );
 
   return (

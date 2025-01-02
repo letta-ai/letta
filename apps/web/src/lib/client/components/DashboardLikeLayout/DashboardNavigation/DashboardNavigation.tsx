@@ -41,7 +41,7 @@ import { usePathname } from 'next/navigation';
 import { webApi, webApiQueryKeys } from '$web/client';
 import { CurrentUserDetailsBlock } from '$web/client/components';
 import { cn } from '@letta-web/core-style-config';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from '@letta-cloud/translations';
 import { ThemeSelector } from '$web/client/components/ThemeSelector/ThemeSelector';
 import { useCurrentProject } from '../../../../../app/(logged-in)/(dashboard-like)/projects/[projectSlug]/hooks';
 import { LocaleSelector } from '$web/client/components/LocaleSelector/LocaleSelector';
@@ -96,7 +96,7 @@ function NavButton(props: NavButtonProps) {
 
 function AdminNav() {
   const t = useTranslations(
-    'components/DashboardLikeLayout/DashboardNavigation'
+    'components/DashboardLikeLayout/DashboardNavigation',
   );
   const user = useCurrentUser();
 
@@ -141,7 +141,7 @@ interface MainNavigationItemsProps {
 function MainNavigationItems(props: MainNavigationItemsProps) {
   const { isMobile } = props;
   const t = useTranslations(
-    'components/DashboardLikeLayout/DashboardNavigation'
+    'components/DashboardLikeLayout/DashboardNavigation',
   );
 
   const currentUser = useCurrentUser();
@@ -415,7 +415,7 @@ interface SecondaryMenuItemsProps {
 function SecondaryMenuItems(props: SecondaryMenuItemsProps) {
   const { isMobile } = props;
   const t = useTranslations(
-    'components/DashboardLikeLayout/DashboardNavigation'
+    'components/DashboardLikeLayout/DashboardNavigation',
   );
 
   return (
@@ -563,7 +563,7 @@ function NavigationOverlay() {
               /* eslint-disable-next-line react/forbid-component-props */
               className={cn(
                 'top-0 min-w-sidebar max-w-sidebar z-sidebarNav transition-all duration-200 slide-in-from-left left-0',
-                !open ? 'ml-[-300px]' : 'ml-0'
+                !open ? 'ml-[-300px]' : 'ml-0',
               )}
               overflowY="auto"
               as="nav"
@@ -583,11 +583,11 @@ function NavigationOverlay() {
               /* eslint-disable-next-line react/forbid-component-props */
               className={cn(
                 'fixed fade-in-10 transition-all inset-0 bg-black bg-opacity-50 z-sidebarNavOverlay',
-                open ? 'opacity-100' : 'opacity-0 pointer-events-none'
+                open ? 'opacity-100' : 'opacity-0 pointer-events-none',
               )}
             />
           </>,
-          document.getElementById(SIDEBAR_OVERLAY_MOUNT_POINT_ID)!
+          document.getElementById(SIDEBAR_OVERLAY_MOUNT_POINT_ID)!,
         )}
     </>
   );
@@ -599,7 +599,7 @@ const reportAnIssueFormSchema = z.object({
 
 function ReportAnIssueForm() {
   const t = useTranslations(
-    'components/DashboardLikeLayout/DashboardNavigation'
+    'components/DashboardLikeLayout/DashboardNavigation',
   );
   const [submitted, setSubmitted] = useState(false);
   const user = useCurrentUser();
@@ -620,7 +620,7 @@ function ReportAnIssueForm() {
 
       setSubmitted(true);
     },
-    [user?.email, user?.name]
+    [user?.email, user?.name],
   );
 
   if (submitted) {
@@ -660,11 +660,11 @@ interface DashboardHeaderNavigationProps {
 }
 
 export function DashboardHeaderNavigation(
-  props: DashboardHeaderNavigationProps
+  props: DashboardHeaderNavigationProps,
 ) {
   const { preItems } = props;
   const t = useTranslations(
-    'components/DashboardLikeLayout/DashboardNavigation'
+    'components/DashboardLikeLayout/DashboardNavigation',
   );
 
   return (
@@ -701,7 +701,7 @@ export function DashboardHeaderNavigation(
             </Typography>
             <Typography>
               {t(
-                'DashboardHeaderNavigation.supportPopover.bugReport.description'
+                'DashboardHeaderNavigation.supportPopover.bugReport.description',
               )}
             </Typography>
             <ReportAnIssueForm />
@@ -712,7 +712,7 @@ export function DashboardHeaderNavigation(
             </Typography>
             <Typography>
               {t(
-                'DashboardHeaderNavigation.supportPopover.discord.description'
+                'DashboardHeaderNavigation.supportPopover.discord.description',
               )}
             </Typography>
             <a

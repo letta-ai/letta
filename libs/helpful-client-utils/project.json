@@ -4,16 +4,5 @@
   "sourceRoot": "libs/helpful-client-utils/src",
   "projectType": "library",
   "tags": [],
-  "targets": {
-    "build": {
-      "executor": "@nx/js:tsc",
-      "outputs": ["{options.outputPath}"],
-      "options": {
-        "outputPath": "dist/libs/helpful-client-utils",
-        "main": "libs/helpful-client-utils/src/index.ts",
-        "tsConfig": "libs/helpful-client-utils/tsconfig.lib.json",
-        "assets": ["libs/helpful-client-utils/*.md"]
-      }
-    }
-  }
+  "targets": {}
 }

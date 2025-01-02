@@ -1,6 +1,9 @@
 import axios from 'axios';
 import type { AuthProviderContextSchema } from '../types';
-import type { ProviderUserPayload, SupportedProviders } from '$web/types';
+import type {
+  ProviderUserPayload,
+  SupportedProviders,
+} from '@letta-cloud/web-api-client';
 import type { NextRequest } from 'next/server';
 import {
   extractGoogleIdTokenData,

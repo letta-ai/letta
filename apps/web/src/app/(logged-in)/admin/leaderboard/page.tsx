@@ -9,7 +9,7 @@ import {
   DataTable,
 } from '@letta-web/component-library';
 import type { ColumnDef } from '@tanstack/react-table';
-import type { UsageLeaderboardType } from '$web/web-api/admin/usage/adminUsageContracts';
+import type { UsageLeaderboardType } from '$web/web-api/contracts';
 
 export default function Leaderboard() {
   const { data, isError } = webApi.admin.usage.getUsageLeaderboard.useQuery({

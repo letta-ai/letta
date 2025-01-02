@@ -14,7 +14,7 @@ import { webApi, webApiQueryKeys } from '$web/client';
 import { useCurrentProject } from '../hooks';
 import { useDebouncedValue } from '@mantine/hooks';
 import { SearchIcon } from '@letta-web/component-library';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from '@letta-cloud/translations';
 import { AgentTemplateCard } from '$web/client/components';
 import { CreateNewTemplateDialog } from '../_components/CreateNewTemplateDialog/CreateNewTemplateDialog';
 

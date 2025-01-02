@@ -1,5 +1,5 @@
 import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
-import type { sdkContracts } from '$web/sdk/contracts';
+import type { sdkContracts } from '@letta-web/letta-agents-api';
 import * as Sentry from '@sentry/node';
 
 import type { SDKContext } from '$web/sdk/shared';
@@ -21,7 +21,7 @@ import {
 import { and, asc, count, desc, eq, isNull, like, ne, or } from 'drizzle-orm';
 import { findUniqueAgentTemplateName } from '$web/server';
 
-import type { OrderByValuesEnumType } from '$web/sdk/agents/agentsContract';
+import type { OrderByValuesEnumType } from '@letta-web/letta-agents-api';
 import { isTemplateNameAStarterKitId, STARTER_KITS } from '$web/client';
 import { getDeployedTemplateByVersion } from '$web/server/lib/getDeployedTemplateByVersion/getDeployedTemplateByVersion';
 import { versionAgentTemplate } from './lib/versionAgentTemplate/versionAgentTemplate';

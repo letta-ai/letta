@@ -28,7 +28,7 @@ import {
   useMonthCursor,
 } from '@letta-web/helpful-client-utils';
 import type { ColumnDef } from '@tanstack/react-table';
-import type { AdminOrganizationUserType } from '$web/web-api/admin/organizations/adminOrganizationsContracts';
+import type { AdminOrganizationUserType } from '$web/web-api/contracts';
 import { useQueryClient } from '@tanstack/react-query';
 import type { contracts } from '$web/web-api/contracts';
 import type { ServerInferResponses } from '@ts-rest/core';
@@ -56,7 +56,7 @@ function EnableCloudAccess() {
         onSuccess: () => {
           window.location.reload();
         },
-      }
+      },
     );
   }, [organization, mutate]);
 
@@ -93,7 +93,7 @@ function DisableCloudAccess() {
         onSuccess: () => {
           window.location.reload();
         },
-      }
+      },
     );
   }, [organization, mutate]);
 
@@ -149,10 +149,10 @@ function AddUserToOrganizationDialog() {
           onSuccess: () => {
             window.location.reload();
           },
-        }
+        },
       );
     },
-    [organization, mutate]
+    [organization, mutate],
   );
 
   const loadOptions = useCallback(async (inputValue: string) => {
@@ -214,7 +214,7 @@ interface RemoveUserFromOrganizationDialogProps {
 }
 
 function RemoveUserFromOrganizationDialog(
-  props: RemoveUserFromOrganizationDialogProps
+  props: RemoveUserFromOrganizationDialogProps,
 ) {
   const { userId } = props;
   const { mutate, isPending, isError } =
@@ -249,7 +249,7 @@ function RemoveUserFromOrganizationDialog(
             {
               queryKey:
                 webApiQueryKeys.admin.organizations.adminListOrganizationUsers(
-                  organization.id
+                  organization.id,
                 ),
               exact: false,
             },
@@ -262,16 +262,16 @@ function RemoveUserFromOrganizationDialog(
                 body: {
                   ...oldData.body,
                   users: oldData.body.users.filter(
-                    (user) => user.id !== userId
+                    (user) => user.id !== userId,
                   ),
                 },
               };
-            }
+            },
           );
 
           setIsDialogOpen(false);
         },
-      }
+      },
     );
   }, [organization, mutate, userId, queryClient]);
 
@@ -309,7 +309,7 @@ function OrganizationMembers() {
             search: debouncedSearch,
             offset,
             limit: LIMIT,
-          }
+          },
         ),
       queryData: {
         params: {
@@ -363,7 +363,7 @@ function OrganizationMembers() {
         ),
       },
     ],
-    []
+    [],
   );
 
   return (
@@ -399,7 +399,7 @@ function UsageDetails() {
           {
             startDate: startOfMonth.getTime(),
             endDate: endOfMonth.getTime(),
-          }
+          },
         ),
       queryData: {
         params: {
@@ -496,7 +496,7 @@ function OrganizationProperties() {
     webApi.admin.organizations.adminGetOrganizationStatistics.useQuery({
       queryKey:
         webApiQueryKeys.admin.organizations.adminGetOrganizationStatistics(
-          organization?.id || ''
+          organization?.id || '',
         ),
       queryData: {
         params: {
@@ -598,7 +598,7 @@ function DeleteOrganizationDialog() {
         onSuccess: () => {
           window.location.href = '/admin/organizations';
         },
-      }
+      },
     );
   }, [organization, mutate]);
 
@@ -640,7 +640,7 @@ function BanOrganizationDialog() {
         onSuccess: () => {
           window.location.reload();
         },
-      }
+      },
     );
   }, [organization, mutate]);
 
@@ -678,7 +678,7 @@ function UnBanOrganizationDialog() {
         onSuccess: () => {
           window.location.reload();
         },
-      }
+      },
     );
   }, [organization, mutate]);
 

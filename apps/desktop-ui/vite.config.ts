@@ -24,14 +24,25 @@ export default defineConfig({
   define: {
     process: {
       env: {
+        OVERRIDE_WEB_ORIGIN_SDK_ENDPOINT: 'http://localhost:8283',
         LETTA_AGENTS_ENDPOINT: 'http://localhost:8283/',
+        RUNTIME: 'desktop',
       },
     },
   },
   resolve: {
     alias: {
-      'next/link': path.resolve(__dirname, 'src/next-overrides/Link'),
-      'next/image': path.resolve(__dirname, 'src/next-overrides/Image'),
+      '@letta-web/environmental-variables': path.resolve(
+        __dirname,
+        'src/alias-overrides/environmental-variables',
+      ),
+      'next/navigation': path.resolve(
+        __dirname,
+        'src/alias-overrides/navigation',
+      ),
+      'next/link': path.resolve(__dirname, 'src/alias-overrides/Link'),
+      'next/image': path.resolve(__dirname, 'src/alias-overrides/Image'),
+      path: 'path-browserify',
     },
   },
   build: {

@@ -6,15 +6,13 @@ import {
   StatusIndicator,
   Typography,
 } from '@letta-web/component-library';
-import { useTranslation } from 'react-i18next';
 import { useHealthServiceHealthCheck } from '@letta-web/letta-agents-api';
 import { Link, useLocation } from 'react-router-dom';
 import { useMemo } from 'react';
+import { useTranslations } from '@letta-cloud/translations';
 
 function ServerStatus() {
-  const { t } = useTranslation('AppHeader', {
-    keyPrefix: 'ServerStatus',
-  });
+  const t = useTranslations('AppHeader');
 
   const { data } = useHealthServiceHealthCheck(undefined, {
     refetchInterval: 2500,
@@ -31,29 +29,27 @@ function ServerStatus() {
     >
       <StatusIndicator status={data ? 'active' : 'processing'} />
       <Typography variant="body3" bold>
-        {data ? t('connected') : t('connecting')}
+        {data ? t('ServerStatus.connected') : t('ServerStatus.connecting')}
       </Typography>
     </HStack>
   );
 }
 
 function Navigation() {
-  const { t } = useTranslation('AppHeader', {
-    keyPrefix: 'Navigation',
-  });
+  const t = useTranslations('AppHeader');
 
   return (
     <HStack className="disable-app-header" gap={false}>
       <Button
         size="small"
         target="_blank"
-        label={t('documentation')}
+        label={t('Navigation.documentation')}
         color="tertiary-transparent"
         href="https://docs.letta.com/introduction"
       />
       <Button
         size="small"
-        label={t('apiReference')}
+        label={t('Navigation.apiReference')}
         color="tertiary-transparent"
         href="https://docs.letta.com/api-reference/agents/list"
         target="_blank"
@@ -61,7 +57,7 @@ function Navigation() {
       <Button
         size="small"
         target="_blank"
-        label={t('cloud')}
+        label={t('Navigation.cloud')}
         color="secondary"
         href="https://app.letta.com"
       />

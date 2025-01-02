@@ -2,7 +2,7 @@
 import { useParams, usePathname } from 'next/navigation';
 import { webApi, webApiQueryKeys } from '$web/client';
 import type { PartialProjectType } from '$web/web-api/contracts';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from '@letta-cloud/translations';
 
 export const REMOTE_DEVELOPMENT_ID = '__remote-development';
 

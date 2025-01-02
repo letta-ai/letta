@@ -11,7 +11,7 @@ import {
   getLettaAgentsInferenceModelsSingleton,
 } from '$web/server';
 import type { EmbeddingConfig, LLMConfig } from '@letta-web/letta-agents-api';
-import { getBrandFromModelName } from '$web/utils';
+import { getBrandFromModelName } from '@letta-web/generic-utils';
 
 type GetAdminInferenceModelsResponse = ServerInferResponses<
   typeof contracts.admin.models.getAdminInferenceModels
@@ -22,7 +22,7 @@ type GetAdminInferenceModelsRequest = ServerInferRequest<
 >;
 
 async function getAdminInferenceModels(
-  req: GetAdminInferenceModelsRequest
+  req: GetAdminInferenceModelsRequest,
 ): Promise<GetAdminInferenceModelsResponse> {
   const {
     brand,
@@ -128,7 +128,7 @@ type GetAdminInferenceModelResponse = ServerInferResponses<
 >;
 
 async function getAdminInferenceModel(
-  req: GetAdminInferenceModelRequest
+  req: GetAdminInferenceModelRequest,
 ): Promise<GetAdminInferenceModelResponse> {
   const { id } = req.params;
 
@@ -158,7 +158,7 @@ async function getAdminInferenceModel(
       config: inferenceModels.find(
         (model) =>
           model.model === response.modelName &&
-          model.model_endpoint === response.modelEndpoint
+          model.model_endpoint === response.modelEndpoint,
       ),
       disabledAt: response.disabledAt?.toISOString(),
       createdAt: response.createdAt.toISOString(),
@@ -176,7 +176,7 @@ type CreateAdminInferenceModelResponse = ServerInferResponses<
 >;
 
 async function createAdminInferenceModel(
-  req: CreateAdminInferenceModelRequest
+  req: CreateAdminInferenceModelRequest,
 ): Promise<CreateAdminInferenceModelResponse> {
   const { modelName, modelEndpoint } = req.body;
 
@@ -185,7 +185,7 @@ async function createAdminInferenceModel(
 
   const selectedModel = agentsInferenceModelsList.find(
     (model) =>
-      model.model === modelName && model.model_endpoint === modelEndpoint
+      model.model === modelName && model.model_endpoint === modelEndpoint,
   );
 
   if (!selectedModel?.model_endpoint) {
@@ -252,7 +252,7 @@ interface UpdateAdminInferenceSetterType {
 }
 
 async function updateAdminInferenceModel(
-  req: UpdateAdminInferenceModelRequest
+  req: UpdateAdminInferenceModelRequest,
 ): Promise<UpdateAdminInferenceModelResponse> {
   const { id } = req.params;
   const { brand, disabled, name, isRecommended, tag } = req.body;
@@ -330,7 +330,7 @@ export type DeleteAdminInferenceModelResponse = ServerInferResponses<
 >;
 
 async function deleteAdminInferenceModel(
-  req: DeleteAdminInferenceModelRequest
+  req: DeleteAdminInferenceModelRequest,
 ): Promise<DeleteAdminInferenceModelResponse> {
   const { id } = req.params;
 
@@ -355,7 +355,7 @@ export type GetAdminEmbeddingModelResponse = ServerInferResponses<
 >;
 
 async function getAdminEmbeddingModel(
-  req: GetAdminEmbeddingModelRequest
+  req: GetAdminEmbeddingModelRequest,
 ): Promise<GetAdminEmbeddingModelResponse> {
   const { id } = req.params;
 
@@ -383,7 +383,7 @@ async function getAdminEmbeddingModel(
       config: embeddingModels.find(
         (model) =>
           model.embedding_model === response.modelName &&
-          model.embedding_endpoint === response.modelEndpoint
+          model.embedding_endpoint === response.modelEndpoint,
       ),
       disabledAt: response.disabledAt?.toISOString(),
       createdAt: response.createdAt.toISOString(),
@@ -401,7 +401,7 @@ export type GetAdminEmbeddingModelsResponse = ServerInferResponses<
 >;
 
 async function getAdminEmbeddingModels(
-  req: GetAdminEmbeddingModelsRequest
+  req: GetAdminEmbeddingModelsRequest,
 ): Promise<GetAdminEmbeddingModelsResponse> {
   const {
     brand,
@@ -503,7 +503,7 @@ export type CreateAdminEmbeddingModelResponse = ServerInferResponses<
 >;
 
 async function createAdminEmbeddingModel(
-  req: CreateAdminEmbeddingModelRequest
+  req: CreateAdminEmbeddingModelRequest,
 ): Promise<CreateAdminEmbeddingModelResponse> {
   const { modelName, modelEndpoint } = req.body;
 
@@ -513,7 +513,7 @@ async function createAdminEmbeddingModel(
   const selectedModel = agentsEmbeddingModelsList.find(
     (model) =>
       model.embedding_model === modelName &&
-      model.embedding_endpoint === modelEndpoint
+      model.embedding_endpoint === modelEndpoint,
   );
 
   if (!selectedModel?.embedding_endpoint) {
@@ -574,7 +574,7 @@ interface UpdateAdminEmbeddingSetterType {
 }
 
 async function updateAdminEmbeddingModel(
-  req: UpdateAdminEmbeddingModelRequest
+  req: UpdateAdminEmbeddingModelRequest,
 ): Promise<UpdateAdminEmbeddingModelResponse> {
   const { id } = req.params;
   const { brand, disabled, name } = req.body;
@@ -640,7 +640,7 @@ export type DeleteAdminEmbeddingModelResponse = ServerInferResponses<
 >;
 
 async function deleteAdminEmbeddingModel(
-  req: DeleteAdminEmbeddingModelRequest
+  req: DeleteAdminEmbeddingModelRequest,
 ): Promise<DeleteAdminEmbeddingModelResponse> {
   const { id } = req.params;
 

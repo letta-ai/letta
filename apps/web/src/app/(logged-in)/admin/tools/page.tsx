@@ -14,7 +14,7 @@ import type { ColumnDef } from '@tanstack/react-table';
 import type {
   ToolGroupType,
   ToolMetadataPreviewType,
-} from '$web/web-api/tool-metadata/toolMetadataContract';
+} from '$web/web-api/contracts';
 
 function ToolMetaDataTable() {
   const [offset, setOffset] = useState(0);
@@ -52,7 +52,7 @@ function ToolMetaDataTable() {
         accessorKey: 'provider',
       },
     ],
-    []
+    [],
   );
 
   return (
@@ -107,7 +107,7 @@ function ToolGroupDataTable() {
         accessorKey: 'toolCount',
       },
     ],
-    []
+    [],
   );
 
   return (
@@ -143,7 +143,7 @@ function AdminToolsPage() {
                   onSuccess: () => {
                     window.location.reload();
                   },
-                }
+                },
               );
             }}
             label="Sync with Composio"

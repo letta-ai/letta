@@ -1,5 +1,5 @@
 'use client';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from '@letta-cloud/translations';
 import {
   Alert,
   brandKeyToLogo,
@@ -13,7 +13,7 @@ import {
 import React, { useMemo } from 'react';
 import { webApi, webApiQueryKeys } from '$web/client';
 import type { ColumnDef } from '@tanstack/react-table';
-import type { GetUsageByModelItem } from '$web/web-api/usage/usageContract';
+import type { GetUsageByModelItem } from '$web/web-api/contracts';
 import { useMonthCursor } from '@letta-web/helpful-client-utils';
 
 function getStartOfMonth(date: Date) {
@@ -87,7 +87,7 @@ function UsageTable() {
         },
       },
     ],
-    [t]
+    [t],
   );
 
   const [limit, setLimit] = React.useState(10);

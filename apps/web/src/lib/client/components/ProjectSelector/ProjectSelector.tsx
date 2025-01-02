@@ -11,7 +11,7 @@ import {
   Typography,
   VStack,
 } from '@letta-web/component-library';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from '@letta-cloud/translations';
 import { useCurrentUser } from '$web/client/hooks';
 
 interface ProjectItemProps {
@@ -78,7 +78,7 @@ export function ProjectSelector(props: ProjectSelectorProps) {
     }
 
     return data.body.projects.filter(
-      (project) => project.id !== currentProject.id
+      (project) => project.id !== currentProject.id,
     );
   }, [currentProject.id, data]);
 

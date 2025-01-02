@@ -17,7 +17,7 @@ import {
   VStack,
   PlusIcon,
 } from '@letta-web/component-library';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from '@letta-cloud/translations';
 import { ConnectToLocalServerCommand, Tutorials } from '$web/client/components';
 import React, { useMemo } from 'react';
 import bannerBlue from './banner_blue.png';
@@ -40,7 +40,7 @@ import CreateAgentDialog from '../components/CreateAgentDialog/CreateAgentDialog
 
 function UserIsNotConnectedComponent() {
   const t = useTranslations(
-    'development-servers/components/UserIsNotConnectedComponent'
+    'development-servers/components/UserIsNotConnectedComponent',
   );
 
   return (
@@ -127,7 +127,7 @@ function DevelopmentServersDashboardPage() {
     {
       retry: 1,
       refetchInterval: 3000,
-    }
+    },
   );
   const user = useCurrentUser();
 
@@ -138,7 +138,7 @@ function DevelopmentServersDashboardPage() {
 
     return !semver.satisfies(
       isLocalServiceOnline.version,
-      SUPPORTED_LETTA_AGENTS_VERSIONS
+      SUPPORTED_LETTA_AGENTS_VERSIONS,
     );
   }, [isLocalServiceOnline]);
 
@@ -155,7 +155,7 @@ function DevelopmentServersDashboardPage() {
   const [isDismissed, setIsDismissed, isLoadingDismissed] =
     useLocalStorageWithLoadingState<boolean>(
       'development-servers/dashboard/page/upgrade-banner',
-      false
+      false,
     );
 
   return (
@@ -181,7 +181,7 @@ function DevelopmentServersDashboardPage() {
           /* eslint-disable-next-line react/forbid-component-props */
           className={cn(
             isDismissed || isLoadingDismissed ? 'h-0 pt-0' : 'h-[350px]',
-            'overflow-hidden transition-all duration-300'
+            'overflow-hidden transition-all duration-300',
           )}
           overflow="hidden"
           paddingTop="medium"

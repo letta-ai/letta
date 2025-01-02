@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
+import { useTranslations } from '@letta-cloud/translations';
 import { useCurrentUser } from '$web/client/hooks';
 import {
   Button,
@@ -29,7 +29,7 @@ import type {
   CurrentOrganizationTeamMembersType,
   GetCurrentOrganizationTeamMembersResponseBodyType,
   ListInvitedMembersResponseBodyType,
-} from '$web/web-api/organizations/organizationsContracts';
+} from '$web/web-api/contracts';
 import { webApi, webApiContracts, webApiQueryKeys } from '$web/client';
 import { useQueryClient } from '@tanstack/react-query';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -51,7 +51,7 @@ function useErrorMessages(error: unknown) {
     messageMap: {
       userAlreadyInvited: t('InviteMemberDialog.error.userAlreadyInvited'),
       userAlreadyInOrganization: t(
-        'InviteMemberDialog.error.userAlreadyInOrganization'
+        'InviteMemberDialog.error.userAlreadyInOrganization',
       ),
       default: t('InviteMemberDialog.error.default'),
     },
@@ -111,7 +111,7 @@ function InviteMemberDialog() {
                 ],
               },
             };
-          }
+          },
         );
 
         setIsDialogOpen(false);
@@ -206,7 +206,7 @@ function DeleteMemberDialog(props: DeleteMemberDialogProps) {
                 members: input.body.members.filter(({ id }) => id !== userId),
               },
             };
-          }
+          },
         );
       },
     });
@@ -250,7 +250,7 @@ function ExistingMembers() {
             offset,
             limit,
             search,
-          }
+          },
         ),
       queryData: {
         query: {
@@ -377,7 +377,7 @@ function DisInviteMemberButton(props: DisInviteMemberButtonProps) {
               members: data.body.members.filter((member) => member.id !== id),
             },
           };
-        }
+        },
       );
     },
   });

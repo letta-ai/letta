@@ -1,4 +1,3 @@
-export * from './Messages/Messages';
 export * from './AgentTemplateCard/AgentTemplateCard';
 export * from './CurrentUserDetailsBlock/CurrentUserDetailsBlock';
 export * from './CodeWithAPIKeyInjection/CodeWithAPIKeyInjection';

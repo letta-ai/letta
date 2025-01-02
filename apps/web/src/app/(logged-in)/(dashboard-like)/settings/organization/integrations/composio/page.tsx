@@ -1,6 +1,6 @@
 'use client';
 import React, { useCallback, useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from '@letta-cloud/translations';
 import IntegrationPageLayout from '../common/IntegrationPageLayout/IntegrationPageLayout';
 import {
   Alert,
@@ -19,8 +19,8 @@ import {
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { webApi, webApiQueryKeys } from '$web/client';
-import type { GetEnvironmentVariableByKey200Response } from '$web/web-api/environment-variables/environmentVariablesContracts';
-import { COMPOSIO_KEY_NAME } from '$web/web-api/environment-variables/environmentVariablesContracts';
+import type { GetEnvironmentVariableByKey200Response } from '$web/web-api/contracts';
+import { COMPOSIO_KEY_NAME } from '$web/web-api/contracts';
 import { useQueryClient } from '@tanstack/react-query';
 
 function useIsComposioConnected() {
@@ -37,7 +37,7 @@ function useIsComposioConnected() {
       refetchOnWindowFocus: false,
       queryKey:
         webApiQueryKeys.environmentVariables.getEnvironmentVariableByKey(
-          COMPOSIO_KEY_NAME
+          COMPOSIO_KEY_NAME,
         ),
     });
 
@@ -68,7 +68,7 @@ function DisconnectIntegrationDialog() {
             {
               queryKey:
                 webApiQueryKeys.environmentVariables.getEnvironmentVariableByKey(
-                  COMPOSIO_KEY_NAME
+                  COMPOSIO_KEY_NAME,
                 ),
             },
             () => {
@@ -76,10 +76,10 @@ function DisconnectIntegrationDialog() {
                 status: 404,
                 body: undefined,
               };
-            }
+            },
           );
         },
-      }
+      },
     );
   }, [envId, mutate, queryClient]);
 
@@ -143,7 +143,7 @@ function SetApiKeyDialog() {
               {
                 queryKey:
                   webApiQueryKeys.environmentVariables.getEnvironmentVariableByKey(
-                    COMPOSIO_KEY_NAME
+                    COMPOSIO_KEY_NAME,
                   ),
               },
               () => {
@@ -154,17 +154,17 @@ function SetApiKeyDialog() {
                     key: values.body.key,
                   },
                 };
-              }
+              },
             );
 
             form.reset();
             reset();
             setIsOpen(false);
           },
-        }
+        },
       );
     },
-    [form, mutate, queryClient, reset]
+    [form, mutate, queryClient, reset],
   );
 
   return (

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { supportedProvidersSchema } from '$web/types';
+import { supportedProvidersSchema } from '@letta-cloud/web-api-client';
 
 export const authProviderContextSchema = z.object({
   params: z

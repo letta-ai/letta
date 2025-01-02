@@ -32,9 +32,9 @@ body {
   container-type: inline-size;
 }
 
-:root {
-  --background: var(--background-grey);
-}
+//:root {
+//  --background: var(--background-grey);
+//}
 
 /* Follow the OS interface colours or force the use of the dark theme */
 @media (prefers-color-scheme: dark) {
@@ -42,11 +42,11 @@ body {
     @include dark;
   }
 }
-//
-//.linear-gradient-background {
-//  background: hsl(var(--background-grey));
-//}
-//
-//.linear-gradient-background:before {
-//  background: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, hsl(var(--background-grey)) 10%, hsl(var(--background-grey)) 100%);
-//}
+
+.linear-gradient-background {
+  background: hsl(var(--background-grey));
+}
+
+.linear-gradient-background:before {
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, hsl(var(--background-grey)) 10%, hsl(var(--background-grey)) 100%);
+}

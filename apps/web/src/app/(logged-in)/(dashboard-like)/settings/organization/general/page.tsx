@@ -13,13 +13,13 @@ import {
   useForm,
   VStack,
 } from '@letta-web/component-library';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from '@letta-cloud/translations';
 import { z } from 'zod';
 import { useQueryClient } from '@tanstack/react-query';
 import { webApi, webApiQueryKeys } from '$web/client';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useCallback } from 'react';
-import type { GetCurrentOrganizationSuccessResponse } from '$web/web-api/organizations/organizationsContracts';
+import type { GetCurrentOrganizationSuccessResponse } from '$web/web-api/contracts';
 import { useCurrentOrganization } from '$web/client/hooks';
 
 const EditOrganizationSettingsSchema = z.object({
@@ -59,7 +59,7 @@ function EditOrganizationSettings(props: EditOrganizationSettingsProps) {
                 name: response.body.name,
               },
             };
-          }
+          },
         );
 
         void queryClient.invalidateQueries({
@@ -83,7 +83,7 @@ function EditOrganizationSettings(props: EditOrganizationSettingsProps) {
         },
       });
     },
-    [mutate]
+    [mutate],
   );
 
   return (

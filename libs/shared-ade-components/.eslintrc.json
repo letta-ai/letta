@@ -1,0 +1,44 @@
+{
+  "extends": [
+    "plugin:cypress/recommended",
+    "plugin:@nx/react-typescript",
+    "next",
+    "next/core-web-vitals",
+    "../../.eslintrc.json"
+  ],
+  "ignorePatterns": ["!**/*", ".next/**/*", "*.config.js"],
+  "overrides": [
+    {
+      "files": ["*.ts", "*.tsx", "*.js", "*.jsx"],
+      "rules": {
+        "react/forbid-component-props": [
+          "error",
+          {
+            "forbid": ["style"]
+          }
+        ],
+        "@next/next/no-html-link-for-pages": ["error", "apps/letta/pages"],
+        "@typescript-eslint/no-unused-vars": "error",
+        "react-hooks/exhaustive-deps": "error"
+      }
+    },
+    {
+      "files": ["*.ts", "*.tsx"],
+      "rules": {}
+    },
+    {
+      "files": ["*.js", "*.jsx"],
+      "rules": {}
+    },
+    {
+      "files": ["*.spec.ts", "*.spec.tsx", "*.spec.js", "*.spec.jsx"],
+      "env": {
+        "jest": true
+      }
+    },
+    {
+      "files": ["*.cy.{ts,js,tsx,jsx}", "cypress/**/*.{ts,js,tsx,jsx}"],
+      "rules": {}
+    }
+  ]
+}

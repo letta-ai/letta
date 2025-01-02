@@ -16,7 +16,7 @@ import {
 import type {
   AdminWholeUserType,
   AdminWholeUserOrganizationType,
-} from '$web/web-api/admin/users/adminUsersContracts';
+} from '$web/web-api/contracts';
 import { useDateFormatter } from '@letta-web/helpful-client-utils';
 import { webApi } from '$web/client';
 import type { contracts } from '$web/web-api/contracts';
@@ -35,7 +35,7 @@ function UserOrganizationsList() {
   const { data, isLoading, error } =
     webApi.admin.users.adminGetUserOrganizations.useQuery({
       queryKey: queryClientKeys.admin.users.adminGetUserOrganizations(
-        user?.id || ''
+        user?.id || '',
       ),
       queryData: {
         params: {
@@ -77,7 +77,7 @@ function UserOrganizationsList() {
         ),
       },
     ],
-    [user?.activeOrganizationId]
+    [user?.activeOrganizationId],
   );
 
   return (
@@ -117,7 +117,7 @@ function SyncWithHubSpotButton() {
           >(
             {
               queryKey: queryClientKeys.admin.users.adminGetUser(
-                user?.id || ''
+                user?.id || '',
               ),
               exact: true,
             },
@@ -133,7 +133,7 @@ function SyncWithHubSpotButton() {
                   hubspotContactId: response.body.hubspotContactId,
                 },
               };
-            }
+            },
           );
 
           toast.success('User synced with Hubspot');
@@ -141,7 +141,7 @@ function SyncWithHubSpotButton() {
         onError: () => {
           toast.error('Error syncing user with Hubspot');
         },
-      }
+      },
     );
   }, [mutate, queryClient, user?.id]);
 
@@ -240,7 +240,7 @@ function DeleteUserSection() {
         onSuccess: () => {
           window.location.href = '/admin/users';
         },
-      }
+      },
     );
   }, [mutate, user?.id]);
 

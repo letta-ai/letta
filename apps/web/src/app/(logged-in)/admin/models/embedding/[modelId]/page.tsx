@@ -18,7 +18,7 @@ import {
   VStack,
 } from '@letta-web/component-library';
 import { webApi } from '$web/client';
-import type { AdminEmbeddingModelType } from '$web/web-api/admin/models/adminModelsContracts';
+import type { AdminEmbeddingModelType } from '$web/web-api/contracts';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { queryClientKeys } from '$web/web-api/contracts';
@@ -52,7 +52,7 @@ function UpdateEmbeddingModelForm(props: UpdateEmbeddingModelFormProps) {
       onSuccess: () => {
         void queryClient.invalidateQueries({
           queryKey: queryClientKeys.admin.models.getAdminEmbeddingModelById(
-            model.id
+            model.id,
           ),
         });
         void queryClient.invalidateQueries({
@@ -84,7 +84,7 @@ function UpdateEmbeddingModelForm(props: UpdateEmbeddingModelFormProps) {
         },
       });
     },
-    [model, mutate]
+    [model, mutate],
   );
 
   return (

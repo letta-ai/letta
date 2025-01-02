@@ -5,7 +5,6 @@ import {
   DashboardPageSection,
   DataTable,
 } from '@letta-web/component-library';
-import { useTranslation } from 'react-i18next';
 import {
   type AgentState,
   useAgentsServiceListAgents,
@@ -13,11 +12,12 @@ import {
 import type { ColumnDef } from '@tanstack/react-table';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useDateFormatter } from '@letta-web/helpful-client-utils';
+import { useTranslations } from '@letta-cloud/translations';
 
 const LIMIT = 10;
 
 export function Homepage() {
-  const { t } = useTranslation('Homepage');
+  const t = useTranslations('Homepage');
   const { formatDateAndTime } = useDateFormatter();
 
   const { data, isError } = useAgentsServiceListAgents();

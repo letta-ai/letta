@@ -10,7 +10,7 @@ import {
 } from '../../icons';
 import { Typography } from '../../core/Typography/Typography';
 import { RawCodeEditor } from '../../core/Code/Code';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from '@letta-cloud/translations';
 import { Spinner } from '../../core/Spinner/Spinner';
 import { useMemo } from 'react';
 

@@ -16,7 +16,7 @@ import TextareaAutosize from 'react-textarea-autosize';
 import { Button } from '../../core/Button/Button';
 import { SendIcon } from '../../icons';
 import { Popover } from '../../core/Popover/Popover';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from '@letta-cloud/translations';
 import { Slot } from '@radix-ui/react-slot';
 import { CopyWithCodePreview } from '../CopyWithCodePreview/CopyWithCodePreview';
 
@@ -50,7 +50,7 @@ interface CopySendMessageRequestButtonProps {
 }
 
 function CopySendMessageRequestButton(
-  props: CopySendMessageRequestButtonProps
+  props: CopySendMessageRequestButtonProps,
 ) {
   const { code } = props;
   const t = useTranslations('component-library/reusable/ChatInput');
@@ -109,7 +109,7 @@ export const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(
           handleSendMessage();
         }
       },
-      [handleSendMessage]
+      [handleSendMessage],
     );
 
     const handleSubmit = useCallback(
@@ -117,14 +117,14 @@ export const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(
         e.preventDefault();
         handleSendMessage();
       },
-      [handleSendMessage]
+      [handleSendMessage],
     );
 
     const [open, setOpen] = useState(false);
 
     const selectedRole = useMemo(
       () => roles.find((r) => r.value === role),
-      [role, roles]
+      [role, roles],
     );
 
     const sendSnippet = useMemo(() => {
@@ -143,7 +143,7 @@ export const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(
           position="absolute"
           className={cn(
             'mt-[-25px] fade-out-0 fade-in-10 z-[0] transition-all duration-200 slide-in-from-bottom-10',
-            isSendingMessage ? '' : 'mt-0 opacity-0'
+            isSendingMessage ? '' : 'mt-0 opacity-0',
           )}
         >
           <div>
@@ -252,5 +252,5 @@ export const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(
         </VStack>
       </Frame>
     );
-  }
+  },
 );

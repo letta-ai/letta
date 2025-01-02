@@ -1,6 +1,6 @@
 'use client';
 import { CenteredPageCard } from '$web/client/components';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from '@letta-cloud/translations';
 import { z } from 'zod';
 import {
   Alert,
@@ -46,7 +46,7 @@ function CreateOrganizationPage() {
         body: values,
       });
     },
-    [mutate]
+    [mutate],
   );
 
   return (

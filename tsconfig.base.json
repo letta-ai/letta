@@ -22,6 +22,15 @@
       "@letta-cloud/lettuce-server": [
         "libs/lettuce-client/src/lib/lettuce-server.ts"
       ],
+      "@letta-cloud/shared-ade-components": [
+        "libs/shared-ade-components/src/index.ts"
+      ],
+      "@letta-cloud/shared-ade-components/translations": [
+        "libs/shared-ade-components/src/translations/index.ts"
+      ],
+      "@letta-cloud/translations": ["libs/translations/src/index.ts"],
+      "@letta-cloud/type-utils": ["libs/type-utils/src/index.ts"],
+      "@letta-cloud/web-api-client": ["libs/web-api-client/src/index.ts"],
       "@letta-web/analytics": ["libs/analytics/src/events.ts"],
       "@letta-web/analytics/client": ["libs/analytics/src/client/index.tsx"],
       "@letta-web/analytics/server": ["libs/analytics/src/server/index.ts"],

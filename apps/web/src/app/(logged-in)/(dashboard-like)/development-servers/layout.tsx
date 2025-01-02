@@ -17,7 +17,7 @@ import {
   Dialog,
 } from '@letta-web/component-library';
 import React, { useCallback, useMemo, useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from '@letta-cloud/translations';
 import { webApi, webApiQueryKeys } from '$web/client';
 import {
   LOCAL_PROJECT_SERVER_URL,
@@ -27,10 +27,10 @@ import { UpdateDevelopmentServerDetailsDialog } from './shared/UpdateDevelopment
 import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import type { ServerInferResponses } from '@ts-rest/core';
-import type { developmentServersContracts } from '$web/web-api/development-servers/developmentServersContracts';
+import type { developmentServersContracts } from '$web/web-api/contracts';
 import { useDevelopmentServerStatus } from './hooks/useDevelopmentServerStatus/useDevelopmentServerStatus';
-import type { DevelopmentServerConfig } from './[developmentServerId]/hooks/useCurrentDevelopmentServerConfig/useCurrentDevelopmentServerConfig';
 import semver from 'semver/preload';
+import type { DevelopmentServerConfig } from '@letta-web/helpful-client-utils';
 
 interface DeleteDevelopmentServerDialogProps {
   trigger: React.ReactNode;
@@ -38,7 +38,7 @@ interface DeleteDevelopmentServerDialogProps {
 }
 
 function DeleteDevelopmentServerDialog(
-  props: DeleteDevelopmentServerDialogProps
+  props: DeleteDevelopmentServerDialogProps,
 ) {
   const t = useTranslations('development-servers/layout');
   const { trigger, id } = props;
@@ -69,11 +69,11 @@ function DeleteDevelopmentServerDialog(
               body: {
                 ...oldData.body,
                 developmentServers: oldData.body.developmentServers.filter(
-                  (server) => server.id !== id
+                  (server) => server.id !== id,
                 ),
               },
             };
-          }
+          },
         );
 
         push('/development-servers/local/dashboard');

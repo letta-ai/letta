@@ -1,5 +1,5 @@
 'use client';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from '@letta-cloud/translations';
 import {
   Alert,
   Button,
@@ -28,7 +28,7 @@ function DeleteAccountDialog() {
           message: t('DeleteAccountDialog.confirmCheckbox.error'),
         }),
       }),
-    [t]
+    [t],
   );
 
   type DeleteAccountFormValues = z.infer<typeof deleteAccountSchema>;
@@ -59,7 +59,7 @@ function DeleteAccountDialog() {
 
       mutate({});
     },
-    [isPending, mutate]
+    [isPending, mutate],
   );
 
   return (

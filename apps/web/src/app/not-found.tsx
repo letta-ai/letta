@@ -3,7 +3,7 @@ import {
   LoadingEmptyStatusComponent,
   VStack,
 } from '@letta-web/component-library';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from '@letta-cloud/translations';
 
 export default function NotFound() {
   const t = useTranslations('NotFoundPage');

@@ -16,7 +16,7 @@ import {
   useForm,
   VStack,
 } from '@letta-web/component-library';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from '@letta-cloud/translations';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ThemeSelector } from '$web/client/components/ThemeSelector/ThemeSelector';
@@ -26,8 +26,9 @@ import { cn } from '@letta-web/core-style-config';
 import './WelcomeOverlay.scss';
 import { useCurrentUser } from '$web/client/hooks';
 import { useQueryClient } from '@tanstack/react-query';
-import type { GetUser200ResponseType } from '$web/web-api/user/userContracts';
 import { webApi, webApiQueryKeys } from '$web/client';
+import type { ServerInferResponses } from '@ts-rest/core';
+import type { contracts } from '@letta-cloud/web-api-client';
 
 const welcomeFormSchema = z.object({
   useCases: OptionTypeSchemaSingle.array(),
@@ -87,7 +88,13 @@ export function WelcomeOverlayWrapper(props: WelcomeOverlayWrapperProps) {
           {
             onSuccess: () => {
               setTimeout(() => {
-                queryClient.setQueriesData<GetUser200ResponseType | undefined>(
+                queryClient.setQueriesData<
+                  | ServerInferResponses<
+                      typeof contracts.user.getCurrentUser,
+                      200
+                    >
+                  | undefined
+                >(
                   {
                     queryKey: webApiQueryKeys.user.getCurrentUser,
                   },
@@ -103,15 +110,15 @@ export function WelcomeOverlayWrapper(props: WelcomeOverlayWrapperProps) {
                         hasOnboarded: true,
                       },
                     };
-                  }
+                  },
                 );
               }, 500);
             },
-          }
+          },
         );
       }, 2500);
     },
-    [mutate, queryClient]
+    [mutate, queryClient],
   );
 
   if (!user || user.hasOnboarded) {
@@ -126,7 +133,7 @@ export function WelcomeOverlayWrapper(props: WelcomeOverlayWrapperProps) {
       className={cn(
         'h-[100dvh] welcome-overlay-wrapper',
         isSubmitting ? 'submitting' : '',
-        isSuccess ? 'transition-opacity opacity-0 duration-500' : ''
+        isSuccess ? 'transition-opacity opacity-0 duration-500' : '',
       )}
       color="background"
     >
@@ -245,13 +252,13 @@ export function WelcomeOverlayWrapper(props: WelcomeOverlayWrapperProps) {
                             {
                               value: 'chainOfThoughtReasoning',
                               label: t(
-                                'reasons.options.chainOfThoughtReasoning'
+                                'reasons.options.chainOfThoughtReasoning',
                               ),
                             },
                             {
                               value: 'deployingAgentsAtScale',
                               label: t(
-                                'reasons.options.deployingAgentsAtScale'
+                                'reasons.options.deployingAgentsAtScale',
                               ),
                             },
                           ]}

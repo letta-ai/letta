@@ -46,14 +46,14 @@ import { useSearchParams } from 'next/navigation';
 import type { ColumnDef } from '@tanstack/react-table';
 import type { AgentState } from '@letta-web/letta-agents-api';
 import { useAgentsServiceGetAgent } from '@letta-web/letta-agents-api';
-import { Messages } from '$web/client/components';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from '@letta-cloud/translations';
 import { DeployAgentDialog } from './DeployAgentDialog/DeployAgentDialog';
 import { useDateFormatter } from '@letta-web/helpful-client-utils';
-import { SearchDeployedAgentsSchema } from '$web/sdk/agents/agentsContract';
+import { SearchDeployedAgentsSchema } from '@letta-web/letta-agents-api';
 import { useQuery } from '@tanstack/react-query';
-import type { sdkContracts } from '$web/sdk/contracts';
+import type { sdkContracts } from '@letta-web/letta-agents-api';
 import type { ServerInferResponses } from '@ts-rest/core';
+import { Messages } from '@letta-cloud/shared-ade-components';
 
 interface AgentMessagesListProps {
   agentId: string;

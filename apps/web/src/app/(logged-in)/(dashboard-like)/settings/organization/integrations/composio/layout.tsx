@@ -5,7 +5,7 @@ import {
   QueryClient,
 } from '@tanstack/react-query';
 import { webApiQueryKeys } from '$web/client';
-import { COMPOSIO_KEY_NAME } from '$web/web-api/environment-variables/environmentVariablesContracts';
+import { COMPOSIO_KEY_NAME } from '$web/web-api/contracts';
 import { router } from '$web/web-api/router';
 
 interface ComposioIntegrationLayoutProps {
@@ -13,7 +13,7 @@ interface ComposioIntegrationLayoutProps {
 }
 
 async function ComposioIntegrationLayout(
-  props: ComposioIntegrationLayoutProps
+  props: ComposioIntegrationLayoutProps,
 ) {
   const { children } = props;
 
@@ -29,7 +29,7 @@ async function ComposioIntegrationLayout(
     await queryClient.prefetchQuery({
       queryKey:
         webApiQueryKeys.environmentVariables.getEnvironmentVariableByKey(
-          COMPOSIO_KEY_NAME
+          COMPOSIO_KEY_NAME,
         ),
       queryFn: () => ({
         status: 200,
@@ -40,7 +40,7 @@ async function ComposioIntegrationLayout(
     await queryClient.prefetchQuery({
       queryKey:
         webApiQueryKeys.environmentVariables.getEnvironmentVariableByKey(
-          COMPOSIO_KEY_NAME
+          COMPOSIO_KEY_NAME,
         ),
       queryFn: () => ({
         status: 404,

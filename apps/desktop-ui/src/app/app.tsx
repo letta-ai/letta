@@ -9,10 +9,11 @@ import {
   LettaInvaderIcon,
   VStack,
 } from '@letta-web/component-library';
-import { useTranslation } from 'react-i18next';
+import { useTranslations } from '@letta-cloud/translations';
+import { ADE } from './pages/ADE/ADE';
 
 function Sidebar() {
-  const { t } = useTranslation('App', { keyPrefix: 'Sidebar' });
+  const t = useTranslations('App');
 
   const location = useLocation();
   return (
@@ -23,7 +24,7 @@ function Sidebar() {
           active={location.pathname === '/'}
           preIcon={<LettaInvaderIcon />}
           color="tertiary-transparent"
-          label={t('agents')}
+          label={t('Sidebar.agents')}
         ></Button>
       </Link>
       <Link to="/settings">
@@ -32,7 +33,7 @@ function Sidebar() {
           active={location.pathname === '/settings'}
           preIcon={<CogIcon />}
           color="tertiary-transparent"
-          label={t('agents')}
+          label={t('Sidebar.agents')}
         ></Button>
       </Link>
     </VStack>
@@ -49,7 +50,7 @@ export function App() {
       <AppHeader />
       <HStack fullWidth gap={false} fullHeight>
         <Sidebar />
-        <Frame overflowY="auto" padding="small" fullWidth fullHeight>
+        <Frame overflowY="auto" fullWidth fullHeight>
           <Routes>
             <Route path="/" element={<Homepage />} />
             <Route
@@ -60,6 +61,7 @@ export function App() {
                 </div>
               }
             />
+            <Route path="/agents/:agentId" element={<ADE />} />
           </Routes>
         </Frame>
       </HStack>

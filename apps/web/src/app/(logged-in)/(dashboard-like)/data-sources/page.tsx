@@ -32,7 +32,7 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from '@letta-cloud/translations';
 
 const createDataSourceSchema = z.object({
   name: z.string().min(3),
@@ -65,14 +65,17 @@ function CreateDataSourceDialog() {
       return [];
     }
 
-    const modelEndpointMap = embeddingModels.reduce((acc, model) => {
-      acc[model.embedding_endpoint_type] =
-        acc[model.embedding_endpoint_type] || [];
+    const modelEndpointMap = embeddingModels.reduce(
+      (acc, model) => {
+        acc[model.embedding_endpoint_type] =
+          acc[model.embedding_endpoint_type] || [];
 
-      acc[model.embedding_endpoint_type].push(model.embedding_model);
+        acc[model.embedding_endpoint_type].push(model.embedding_model);
 
-      return acc;
-    }, {} as Record<string, string[]>);
+        return acc;
+      },
+      {} as Record<string, string[]>,
+    );
 
     return Object.entries(modelEndpointMap).map(([key, value]) => ({
       icon: isBrandKey(key) ? brandKeyToLogo(key) : '',
@@ -96,7 +99,8 @@ function CreateDataSourceDialog() {
   const handleSubmit = useCallback(
     (values: CreateDataSourceSchemaType) => {
       const embeddingModel = embeddingModels?.find(
-        (model) => model.embedding_model === values.embedding_config_model.value
+        (model) =>
+          model.embedding_model === values.embedding_config_model.value,
       );
 
       if (!embeddingModel) {
@@ -111,7 +115,7 @@ function CreateDataSourceDialog() {
         },
       });
     },
-    [embeddingModels, mutate]
+    [embeddingModels, mutate],
   );
 
   return (

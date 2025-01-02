@@ -10,7 +10,7 @@ import {
   DataTable,
 } from '@letta-web/component-library';
 import type { ColumnDef } from '@tanstack/react-table';
-import type { PublicOrganizationType } from '$web/web-api/admin/organizations/adminOrganizationsContracts';
+import type { PublicOrganizationType } from '$web/web-api/contracts';
 import { useDateFormatter } from '@letta-web/helpful-client-utils';
 
 function AdminOrganizationsPage() {
@@ -65,7 +65,7 @@ function AdminOrganizationsPage() {
         ),
       },
     ],
-    [formatDateAndTime]
+    [formatDateAndTime],
   );
 
   const organizations = useMemo(() => {

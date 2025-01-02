@@ -9,7 +9,7 @@ import {
   SidebarTitle,
   HStack,
 } from '@letta-web/component-library';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from '@letta-cloud/translations';
 import type { PropsWithChildren } from 'react';
 import React from 'react';
 import { useCurrentProject } from '../../hooks';

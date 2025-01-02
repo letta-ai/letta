@@ -1,5 +1,5 @@
 import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
-import type { sdkContracts } from '$web/sdk/contracts';
+import type { sdkContracts } from '@letta-web/letta-agents-api';
 import { router } from '$web/web-api/router';
 
 type ListLLMBackendsResponseType = ServerInferResponses<
@@ -11,7 +11,7 @@ type ListLLMBackendsRequestType = ServerInferRequest<
 >;
 
 async function listLLMBackends(
-  req: ListLLMBackendsRequestType
+  req: ListLLMBackendsRequestType,
 ): Promise<ListLLMBackendsResponseType> {
   const { extended } = req.query;
   const llmBackends = await router.admin.models.getAdminInferenceModels({
@@ -60,7 +60,7 @@ type ListEmbeddingBackendsRequestType = ServerInferRequest<
 >;
 
 async function listEmbeddingBackends(
-  req: ListEmbeddingBackendsRequestType
+  req: ListEmbeddingBackendsRequestType,
 ): Promise<ListEmbeddingBackendsResponseType> {
   const { extended } = req.query;
 

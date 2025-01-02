@@ -3,28 +3,24 @@
 import { webApi, webApiQueryKeys } from '$web/client';
 import { useCurrentAgentMetaData } from '../useCurrentAgentMetaData/useCurrentAgentMetaData';
 import { useCurrentAgent } from '../useCurrentAgent/useCurrentAgent';
-import { useCurrentProject } from '../../../../../../../(dashboard-like)/projects/[projectSlug]/hooks';
 import { useEffect, useMemo } from 'react';
 import { toast } from '@letta-web/component-library';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from '@letta-cloud/translations';
 
 export function useCurrentSimulatedAgent() {
   const agentState = useCurrentAgent();
   const { id: agentId } = agentState;
   const { isTemplate } = useCurrentAgentMetaData();
-  const { id: projectId } = useCurrentProject();
   const t = useTranslations('ADE/useCurrentSimulatedAgent');
 
   const { data: agentSession, isError } =
     webApi.agentTemplates.getAgentTemplateSimulatorSession.useQuery({
       queryKey: webApiQueryKeys.agentTemplates.getAgentTemplateSession({
         agentTemplateId: agentId,
-        projectId,
       }),
       queryData: {
         params: {
           agentTemplateId: agentId,
-          projectId,
         },
       },
       enabled: isTemplate,

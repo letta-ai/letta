@@ -3,7 +3,7 @@ import type { PopoverProps } from '../../core/Popover/Popover';
 import { Popover } from '../../core/Popover/Popover';
 import type { ButtonProps } from '../../core/Button/Button';
 import { Button } from '../../core/Button/Button';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from '@letta-cloud/translations';
 import { VStack } from '../../framing/VStack/VStack';
 import { Typography } from '../../core/Typography/Typography';
 import type { SupportedLangauges } from '../../core/Code/Code';

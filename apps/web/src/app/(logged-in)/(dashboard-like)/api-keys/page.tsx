@@ -29,7 +29,7 @@ import { webApi, webApiQueryKeys } from '$web/client';
 import type { APIKeyType } from '$web/web-api/contracts';
 import type { ColumnDef } from '@tanstack/react-table';
 import { useQueryClient } from '@tanstack/react-query';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from '@letta-cloud/translations';
 
 const CreateAPIKeySchema = z.object({
   name: z.string(),
@@ -60,7 +60,7 @@ function CreateAPIKeyDialog() {
     async (values: z.infer<typeof CreateAPIKeySchema>) => {
       mutate({ body: values });
     },
-    [mutate]
+    [mutate],
   );
 
   return (
@@ -290,7 +290,7 @@ function APIKeysPage() {
         },
       },
     ],
-    [t]
+    [t],
   );
 
   const apiKeys = useMemo(() => {

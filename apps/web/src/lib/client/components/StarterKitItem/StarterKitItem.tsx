@@ -1,5 +1,5 @@
 import type { StarterKit } from '$web/client';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from '@letta-cloud/translations';
 import { ImageCard, Typography, VStack } from '@letta-web/component-library';
 
 interface StarterKitItemProps {

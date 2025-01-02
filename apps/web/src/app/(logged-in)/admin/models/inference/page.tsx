@@ -23,7 +23,7 @@ import {
 } from '@letta-web/component-library';
 import type { ColumnDef } from '@tanstack/react-table';
 import { useDateFormatter } from '@letta-web/helpful-client-utils';
-import type { AdminInferenceModelType } from '$web/web-api/admin/models/adminModelsContracts';
+import type { AdminInferenceModelType } from '$web/web-api/contracts';
 import { useQueryClient } from '@tanstack/react-query';
 import type { ServerInferResponses } from '@ts-rest/core';
 
@@ -62,7 +62,7 @@ function ImportModelAction(props: ImportModelActionProps) {
                 hasNextPage: false,
               },
             };
-          }
+          },
         );
 
         queryClient.setQueriesData<
@@ -95,7 +95,7 @@ function ImportModelAction(props: ImportModelActionProps) {
                 ],
               },
             };
-          }
+          },
         );
       },
     });
@@ -278,7 +278,7 @@ function AdminInferenceModelsPage() {
           ),
         },
       ],
-      [formatDateAndTime]
+      [formatDateAndTime],
     );
 
   const inferenceModels = useMemo(() => {

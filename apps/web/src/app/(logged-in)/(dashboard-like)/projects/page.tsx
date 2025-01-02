@@ -25,7 +25,7 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from '@letta-cloud/translations';
 import { useDateFormatter } from '@letta-web/helpful-client-utils';
 import Link from 'next/link';
 
@@ -68,7 +68,7 @@ function CreateProjectDialog() {
         },
       });
     },
-    [mutate]
+    [mutate],
   );
 
   return (

@@ -1,7 +1,7 @@
 import { atom, useAtom } from 'jotai';
 import { useEffect } from 'react';
 import { useDebouncedCallback } from '@mantine/hooks';
-import type { DevelopmentServerConfig } from '../../[developmentServerId]/hooks/useCurrentDevelopmentServerConfig/useCurrentDevelopmentServerConfig';
+import type { DevelopmentServerConfig } from '@letta-web/helpful-client-utils';
 import type { HealthCheckResponse } from '@letta-web/letta-agents-api';
 
 interface Status {
@@ -12,10 +12,10 @@ interface Status {
 const developmentServerStatusAtom = atom<Record<string, Status>>({});
 
 export function useDevelopmentServerStatus(
-  config?: DevelopmentServerConfig | null
+  config?: DevelopmentServerConfig | null,
 ) {
   const [developmentServerStatus, setDevelopmentServerStatus] = useAtom(
-    developmentServerStatusAtom
+    developmentServerStatusAtom,
   );
   const fetchStatus = useDebouncedCallback(
     async (config: DevelopmentServerConfig) => {
@@ -48,7 +48,7 @@ export function useDevelopmentServerStatus(
         return;
       }
     },
-    500
+    500,
   );
 
   useEffect(() => {

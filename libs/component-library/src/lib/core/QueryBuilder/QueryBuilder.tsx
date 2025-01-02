@@ -17,7 +17,7 @@ import { useState } from 'react';
 import { useCallback } from 'react';
 import { get, set } from 'lodash-es';
 import { Button } from '../Button/Button';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from '@letta-cloud/translations';
 import { CloseIcon, PlusIcon } from '../../icons';
 
 const DISABLE_COMBINATOR = true;
@@ -186,7 +186,7 @@ function RemoveCondition(props: RemoveConditionProps) {
       set(
         newQuery,
         parentPath,
-        parent.filter((_, itemIndex) => itemIndex !== Number(index))
+        parent.filter((_, itemIndex) => itemIndex !== Number(index)),
       );
 
       return newQuery;
@@ -232,7 +232,7 @@ function QueryCondition(props: QueryRowProps) {
         return { ...newQuery };
       });
     },
-    [path, setQuery]
+    [path, setQuery],
   );
 
   const handleUpdateField = useCallback(
@@ -246,7 +246,7 @@ function QueryCondition(props: QueryRowProps) {
         return { ...newQuery };
       });
     },
-    [path, setQuery]
+    [path, setQuery],
   );
 
   const { definition, fieldsOptions } = useQueryBuilder();
@@ -381,13 +381,13 @@ interface GenericQueryCondition {
 }
 
 export function isGenericQueryCondition(
-  item: GenericQueryCondition | GenericQueryItem
+  item: GenericQueryCondition | GenericQueryItem,
 ): item is GenericQueryCondition {
   return 'combinator' in item;
 }
 
 export function isGenericQueryItem(
-  item: GenericQueryCondition | GenericQueryItem
+  item: GenericQueryCondition | GenericQueryItem,
 ): item is GenericQueryItem {
   return !('combinator' in item);
 }
@@ -407,7 +407,7 @@ function QueryCombinator(props: QueryCombinatorProps) {
   ];
 
   const selectedCombinator = combinatorOptions.find(
-    (option) => option.value === combinator
+    (option) => option.value === combinator,
   );
 
   const handleSelectCombinator = useCallback(
@@ -427,7 +427,7 @@ function QueryCombinator(props: QueryCombinatorProps) {
         return newQuery;
       });
     },
-    [path, setQuery]
+    [path, setQuery],
   );
 
   return (
@@ -502,7 +502,7 @@ export function createDefaultQuery(): QueryBuilderQuery {
 export function QueryBuilder(props: QueryBuilderProps) {
   const { query, definition, onSetQuery } = props;
   const [_queryState, _setQueryState] = useState<QueryBuilderQuery>(
-    query || createDefaultQuery()
+    query || createDefaultQuery(),
   );
 
   const setQueryState: Dispatch<SetStateAction<QueryBuilderQuery>> =
@@ -516,7 +516,7 @@ export function QueryBuilder(props: QueryBuilderProps) {
 
         _setQueryState(query);
       },
-      [onSetQuery]
+      [onSetQuery],
     );
 
   const queryState = useMemo(() => {

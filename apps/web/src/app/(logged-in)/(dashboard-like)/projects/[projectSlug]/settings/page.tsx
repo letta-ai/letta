@@ -25,7 +25,7 @@ import type {
   GetProjectByIdContractSuccessResponse,
   UpdateProjectPayloadType,
 } from '$web/web-api/contracts';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from '@letta-cloud/translations';
 import { useErrorTranslationMessage } from '@letta-web/helpful-client-utils';
 
 const DeleteProjectSchema = z.object({
@@ -68,7 +68,7 @@ function DeleteProjectSettings() {
         onSuccess: () => {
           window.location.href = '/projects';
         },
-      }
+      },
     );
   }, [mutate, projectId]);
 
@@ -203,7 +203,7 @@ function EditSettingsSection(props: EditSettingsSectionProps) {
                 slug: oldData.body.slug,
               },
             };
-          }
+          },
         );
 
         void queryClient.invalidateQueries({
@@ -223,7 +223,7 @@ function EditSettingsSection(props: EditSettingsSectionProps) {
   const errorTranslation = useErrorTranslationMessage(error, {
     messageMap: {
       atLeastOneFieldRequired: t(
-        'EditProjectSettings.errors.atLeastOneFieldRequired'
+        'EditProjectSettings.errors.atLeastOneFieldRequired',
       ),
 
       slugAlreadyTaken: t('EditProjectSettings.errors.slugAlreadyTaken'),
@@ -256,7 +256,7 @@ function EditSettingsSection(props: EditSettingsSectionProps) {
         },
       });
     },
-    [mutate, name, projectId, slug]
+    [mutate, name, projectId, slug],
   );
 
   return (

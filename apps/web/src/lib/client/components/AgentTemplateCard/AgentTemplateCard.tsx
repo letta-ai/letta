@@ -1,5 +1,5 @@
 import React from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from '@letta-cloud/translations';
 import { useCurrentProject } from '../../../../app/(logged-in)/(dashboard-like)/projects/[projectSlug]/hooks';
 import {
   ActionCard,
@@ -8,7 +8,7 @@ import {
   HStack,
 } from '@letta-web/component-library';
 import { useDateFormatter } from '@letta-web/helpful-client-utils';
-import type { AgentTemplateType } from '$web/web-api/agent-templates/agentTemplatesContracts';
+import type { AgentTemplateType } from '@letta-cloud/web-api-client';
 
 interface AgentTemplateCardProps {
   agent: AgentTemplateType;

@@ -1,4 +1,3 @@
-import type { AdePreferencesData } from '$web/web-api/ade-preferences/adePreferencesContracts';
 import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
 import type { contracts } from '../contracts';
 import { adePreferences, db } from '@letta-web/database';
@@ -15,7 +14,7 @@ type GetAdePreferencesRequest = ServerInferRequest<
 >;
 
 async function getADEPreferences(
-  request: GetAdePreferencesRequest
+  request: GetAdePreferencesRequest,
 ): Promise<GetAdePreferencesResponse> {
   const userId = await getUserIdOrThrow();
   const { agentId } = request.params;
@@ -23,7 +22,7 @@ async function getADEPreferences(
   let preferences = await db.query.adePreferences.findFirst({
     where: and(
       eq(adePreferences.userId, userId),
-      eq(adePreferences.agentId, agentId)
+      eq(adePreferences.agentId, agentId),
     ),
     columns: {
       displayConfig: true,
@@ -45,8 +44,7 @@ async function getADEPreferences(
   return {
     status: 200,
     body: {
-      displayConfig:
-        preferences.displayConfig as AdePreferencesData['displayConfig'],
+      displayConfig: preferences.displayConfig as any,
     },
   };
 }
@@ -59,7 +57,7 @@ type UpdateAdePreferencesResponse = ServerInferResponses<
 >;
 
 async function updateADEPreferences(
-  req: UpdateAdePreferencesRequest
+  req: UpdateAdePreferencesRequest,
 ): Promise<UpdateAdePreferencesResponse> {
   const { body, params } = req;
   const { agentId } = params;
@@ -73,8 +71,8 @@ async function updateADEPreferences(
     .where(
       and(
         eq(adePreferences.userId, userId),
-        eq(adePreferences.agentId, agentId)
-      )
+        eq(adePreferences.agentId, agentId),
+      ),
     );
 
   return {

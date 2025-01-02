@@ -1,5 +1,5 @@
 import { generateOpenApi } from '@ts-rest/open-api';
-import { sdkContracts } from '$web/sdk/contracts';
+import { sdkContracts } from '@letta-web/letta-agents-api';
 import fs from 'fs';
 import path from 'path';
 import { isErrorResult, merge } from 'openapi-merge';

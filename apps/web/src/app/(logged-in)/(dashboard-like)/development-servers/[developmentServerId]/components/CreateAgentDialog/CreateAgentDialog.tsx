@@ -1,5 +1,5 @@
 'use client';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from '@letta-cloud/translations';
 import {
   Alert,
   Dialog,
@@ -12,7 +12,7 @@ import {
   Typography,
   VStack,
 } from '@letta-web/component-library';
-import { useCurrentDevelopmentServerConfig } from '../../hooks/useCurrentDevelopmentServerConfig/useCurrentDevelopmentServerConfig';
+import { useCurrentDevelopmentServerConfig } from '@letta-web/helpful-client-utils';
 import { useCallback, useMemo, useState } from 'react';
 import type { StarterKit } from '$web/client';
 import { STARTER_KITS } from '$web/client';

@@ -1,10 +1,9 @@
-import type { AdePreferencesData } from '$web/web-api/ade-preferences/adePreferencesContracts';
 //
 // interface GenerateDefaultPreferencesOptions {
 //   firstTime?: boolean;
 // }
 
-export function generateDefaultADELayout(): AdePreferencesData {
+export function generateDefaultADELayout() {
   // options: GenerateDefaultPreferencesOptions = {}
   // const { firstTime } = options;
   return {

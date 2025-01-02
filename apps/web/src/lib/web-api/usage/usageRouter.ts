@@ -2,7 +2,7 @@ import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
 import type { contracts } from '$web/web-api/contracts';
 import { db, inferenceTransactions } from '@letta-web/database';
 import { and, eq, gte, lt } from 'drizzle-orm';
-import type { GetUsageByModelItem } from '$web/web-api/usage/usageContract';
+import type { GetUsageByModelItem } from '$web/web-api/contracts';
 import { getUserActiveOrganizationIdOrThrow } from '$web/server/auth';
 
 interface GetUsageByModelSummaryAndOrganizationIdOptions {
@@ -12,7 +12,7 @@ interface GetUsageByModelSummaryAndOrganizationIdOptions {
 }
 
 export async function getUsageByModelSummaryAndOrganizationId(
-  options: GetUsageByModelSummaryAndOrganizationIdOptions
+  options: GetUsageByModelSummaryAndOrganizationIdOptions,
 ): Promise<GetUsageByModelItem[]> {
   const { organizationId, startDate, endDate } = options;
 
@@ -21,7 +21,7 @@ export async function getUsageByModelSummaryAndOrganizationId(
       where: and(
         eq(inferenceTransactions.organizationId, organizationId),
         gte(inferenceTransactions.startedAt, new Date(startDate)),
-        lt(inferenceTransactions.startedAt, new Date(endDate))
+        lt(inferenceTransactions.startedAt, new Date(endDate)),
       ),
     }),
     db.query.inferenceModelsMetadata.findMany({
@@ -29,47 +29,53 @@ export async function getUsageByModelSummaryAndOrganizationId(
     }),
   ]);
 
-  const modelNameMap = models.reduce((acc, curr) => {
-    acc[curr.modelName] = {
-      name: curr.name,
-      brand: curr.brand,
-    };
-    return acc;
-  }, {} as Record<string, { name: string; brand: string }>);
-
-  const modelUsage = response.reduce((acc, curr) => {
-    if (!acc[curr.providerModel]) {
-      const { name, brand } = modelNameMap[curr.providerModel] || {
-        name: curr.providerModel,
-        brand: '',
+  const modelNameMap = models.reduce(
+    (acc, curr) => {
+      acc[curr.modelName] = {
+        name: curr.name,
+        brand: curr.brand,
       };
-      acc[curr.providerModel] = {
-        modelKey: curr.providerModel,
-        brand: brand,
-        modelName: name,
-        totalTokens: 0,
-        totalCost: 0,
-        totalRequests: 0,
-      };
-    }
+      return acc;
+    },
+    {} as Record<string, { name: string; brand: string }>,
+  );
 
-    let totalTokens = 0;
+  const modelUsage = response.reduce(
+    (acc, curr) => {
+      if (!acc[curr.providerModel]) {
+        const { name, brand } = modelNameMap[curr.providerModel] || {
+          name: curr.providerModel,
+          brand: '',
+        };
+        acc[curr.providerModel] = {
+          modelKey: curr.providerModel,
+          brand: brand,
+          modelName: name,
+          totalTokens: 0,
+          totalCost: 0,
+          totalRequests: 0,
+        };
+      }
 
-    try {
-      totalTokens = parseInt(curr.totalTokens);
+      let totalTokens = 0;
 
-      if (isNaN(totalTokens)) {
+      try {
+        totalTokens = parseInt(curr.totalTokens);
+
+        if (isNaN(totalTokens)) {
+          totalTokens = 0;
+        }
+      } catch (_e) {
         totalTokens = 0;
       }
-    } catch (_e) {
-      totalTokens = 0;
-    }
 
-    acc[curr.providerModel].totalTokens += totalTokens;
-    acc[curr.providerModel].totalCost += 0;
-    acc[curr.providerModel].totalRequests += 1;
-    return acc;
-  }, {} as Record<string, GetUsageByModelItem>);
+      acc[curr.providerModel].totalTokens += totalTokens;
+      acc[curr.providerModel].totalCost += 0;
+      acc[curr.providerModel].totalRequests += 1;
+      return acc;
+    },
+    {} as Record<string, GetUsageByModelItem>,
+  );
 
   return Object.values(modelUsage);
 }
@@ -82,7 +88,7 @@ type GetUsageByModelSummaryResponse = ServerInferResponses<
 >;
 
 async function getUsageByModelSummary(
-  request: GetUsageByModelSummaryRequest
+  request: GetUsageByModelSummaryRequest,
 ): Promise<GetUsageByModelSummaryResponse> {
   const { startDate, endDate } = request.query;
   const organizationId = await getUserActiveOrganizationIdOrThrow();

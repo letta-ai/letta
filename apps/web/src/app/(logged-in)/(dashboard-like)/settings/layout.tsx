@@ -1,7 +1,7 @@
 'use client';
 import React from 'react';
 import { DashboardWithSidebarWrapper } from '@letta-web/component-library';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from '@letta-cloud/translations';
 import { useCurrentUser } from '$web/client/hooks';
 
 interface SettingsLayoutProps {

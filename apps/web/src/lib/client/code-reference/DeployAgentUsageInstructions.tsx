@@ -15,9 +15,10 @@ import {
   CodeWithAPIKeyInjection,
 } from '$web/client/components';
 import { webApi, webApiQueryKeys } from '$web/client';
-import { findMemoryBlockVariables } from '$web/utils';
+
 import { useCurrentAgent } from '../../../app/(logged-in)/(ade)/projects/[projectSlug]/agents/[agentId]/hooks';
 import { getIsAgentState } from '@letta-web/letta-agents-api';
+import { findMemoryBlockVariables } from '@letta-web/generic-utils';
 
 interface DeployAgentInstructionsCurlProps {
   projectId: string;
@@ -73,7 +74,7 @@ function DeployAgentInstructionsCurl(props: DeployAgentInstructionsCurlProps) {
     }
 
     return Object.fromEntries(
-      findMemoryBlockVariables(agent).map((v) => [v, 'YOUR_VALUE_HERE'])
+      findMemoryBlockVariables(agent).map((v) => [v, 'YOUR_VALUE_HERE']),
     );
   }, [agent]);
 
@@ -95,8 +96,8 @@ function DeployAgentInstructionsCurl(props: DeployAgentInstructionsCurlProps) {
   -H 'Authorization: Bearer ${ACCESS_TOKEN_PLACEHOLDER}' \\
   -d '{
     "from_template": "${versionKey}"${
-            variables ? `,\n    "variables": ${JSON.stringify(variables)}` : ''
-          }
+      variables ? `,\n    "variables": ${JSON.stringify(variables)}` : ''
+    }
   }'`}
         />
       </Frame>
@@ -196,7 +197,7 @@ interface DeployAgentUsageInstructionsProps {
 }
 
 export function DeployAgentUsageInstructions(
-  props: DeployAgentUsageInstructionsProps
+  props: DeployAgentUsageInstructionsProps,
 ) {
   const { versionKey, projectId } = props;
   const [language, setLanguage] = useState<SupportedLanguages>('bash');

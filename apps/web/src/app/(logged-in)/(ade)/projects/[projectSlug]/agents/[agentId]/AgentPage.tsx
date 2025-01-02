@@ -1,15 +1,6 @@
 'use client';
 import {
-  panelRegistry,
-  usePanelManager,
-  RenderSinglePanel,
-} from './panelRegistry';
-import { PanelManagerProvider, PanelRenderer } from './panelRegistry';
-import {
-  ChevronDownIcon,
   HiddenOnMobile,
-  MobileFooterNavigation,
-  MobileFooterNavigationButton,
   LoadingEmptyStatusComponent,
   Tooltip,
   Logo,
@@ -27,8 +18,6 @@ import {
   DropdownMenu,
   DropdownMenuItem,
 } from '@letta-web/component-library';
-import { toast } from '@letta-web/component-library';
-import { LayoutIcon } from '@letta-web/component-library';
 import {
   Alert,
   Button,
@@ -38,7 +27,6 @@ import {
   LettaLoader,
   Typography,
   VisibleOnMobile,
-  ChevronUpIcon,
   ForkIcon,
   VStack,
 } from '@letta-web/component-library';
@@ -47,7 +35,7 @@ import {
   REMOTE_DEVELOPMENT_ID,
   useCurrentProject,
 } from '../../../../../(dashboard-like)/projects/[projectSlug]/hooks';
-import { webApi } from '$web/client';
+import { webApi } from '@letta-cloud/web-api-client';
 import { useRouter } from 'next/navigation';
 import { useCurrentUser } from '$web/client/hooks';
 import { ProjectSelector } from '$web/client/components';
@@ -58,12 +46,10 @@ import {
   useAgentsServiceDeleteAgent,
   useAgentsServiceGetAgent,
 } from '@letta-web/letta-agents-api';
-import { useTranslations } from 'next-intl';
-import { generateDefaultADELayout } from '$web/utils';
+import { useTranslations } from '@letta-cloud/translations';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useAgentBaseTypeName } from './hooks/useAgentBaseNameType/useAgentBaseNameType';
-import { useLocalStorage } from '@mantine/hooks';
 import { ErrorBoundary } from 'react-error-boundary';
 import {
   DashboardHeaderNavigation,
@@ -77,6 +63,7 @@ import {
 } from './DeploymentButton/DeploymentButton';
 import Link from 'next/link';
 import { useAtomValue } from 'jotai';
+import { ADELayout } from '@letta-cloud/shared-ade-components';
 
 interface ADEHeaderProps {
   children?: React.ReactNode;
@@ -166,27 +153,6 @@ function ADEHeader(props: ADEHeaderProps) {
         {props.children}
       </VisibleOnMobile>
     </HStack>
-  );
-}
-
-function RestoreLayoutButton() {
-  const t = useTranslations(
-    'projects/(projectSlug)/agents/(agentId)/AgentPage',
-  );
-
-  const { setPositions } = usePanelManager();
-
-  const handleRestoreLayout = useCallback(() => {
-    setPositions(generateDefaultADELayout().displayConfig);
-  }, [setPositions]);
-
-  return (
-    <DropdownMenuItem
-      preIcon={<LayoutIcon />}
-      onClick={handleRestoreLayout}
-      color="tertiary-transparent"
-      label={t('restoreLayout')}
-    />
   );
 }
 
@@ -458,7 +424,6 @@ function AgentSettingsDropdown() {
             })}
           />
         )}
-        <RestoreLayoutButton />
         <DropdownMenuItem
           onClick={() => {
             setOpenDialog('deleteAgent');
@@ -505,131 +470,6 @@ function MobileNavigationProvider(props: MobileNavigationProviderProps) {
     <MobileNavigationContext.Provider value={{ activePanel, setActivePanelId }}>
       {children}
     </MobileNavigationContext.Provider>
-  );
-}
-function useMobileNavigationContext() {
-  return React.useContext(MobileNavigationContext);
-}
-
-interface AgentMobileNavigationButtonType {
-  panelId: string;
-  onClick?: () => void;
-}
-
-function AgentMobileNavigationButton(props: AgentMobileNavigationButtonType) {
-  const { panelId, onClick } = props;
-  const { activePanel, setActivePanelId } = useMobileNavigationContext();
-  const panelTemplateId = panelId as keyof typeof panelRegistry;
-
-  const title = panelRegistry[panelTemplateId].useGetMobileTitle();
-  const icon = panelRegistry[panelTemplateId].icon;
-
-  const handleClick = useCallback(() => {
-    setActivePanelId(panelId);
-    onClick?.();
-  }, [setActivePanelId, panelId, onClick]);
-
-  return (
-    <MobileFooterNavigationButton
-      onClick={handleClick}
-      size="large"
-      preIcon={icon}
-      id={`mobile-navigation-button:${panelId}`}
-      color="tertiary-transparent"
-      label={title}
-      active={activePanel === panelId}
-    />
-  );
-}
-
-const MORE_PANELS = 'more-panels';
-
-function AgentMobileNavigation() {
-  const t = useTranslations(
-    'projects/(projectSlug)/agents/(agentId)/AgentPage',
-  );
-
-  const [expanded, setExpanded] = useState(false);
-  const { activePanel } = useMobileNavigationContext();
-
-  const panelToShowInMainNavigation = useMemo(() => {
-    const firstElements = ['agent-simulator', 'agent-settings'];
-
-    const activePanelIsFirstElement = firstElements.includes(activePanel || '');
-
-    const defaultPanelIdsToShow = [
-      ...firstElements,
-      !activePanelIsFirstElement ? activePanel : 'edit-core-memories',
-      MORE_PANELS,
-      'edit-core-memories',
-      'tools-panel',
-      'edit-data-sources',
-      'advanced-settings',
-    ];
-
-    const list = Array.from(new Set(defaultPanelIdsToShow));
-
-    if (expanded) {
-      return list;
-    }
-
-    return list.slice(0, 4);
-  }, [activePanel, expanded]);
-
-  return (
-    <MobileFooterNavigation>
-      {panelToShowInMainNavigation.map((panelId) => {
-        if (panelId === MORE_PANELS) {
-          return (
-            <MobileFooterNavigationButton
-              onClick={() => {
-                setExpanded((prev) => !prev);
-              }}
-              id="open-more-panels"
-              key={MORE_PANELS}
-              size="large"
-              preIcon={!expanded ? <ChevronUpIcon /> : <ChevronDownIcon />}
-              color="tertiary-transparent"
-              label={
-                !expanded
-                  ? t('AgentMobileNavigation.more')
-                  : t('AgentMobileNavigation.less')
-              }
-            />
-          );
-        }
-
-        if (!panelId) {
-          return null;
-        }
-
-        return (
-          <AgentMobileNavigationButton
-            onClick={() => {
-              setExpanded(false);
-            }}
-            key={panelId}
-            panelId={panelId}
-          />
-        );
-      })}
-    </MobileFooterNavigation>
-  );
-}
-
-function AgentMobileContent() {
-  const { activePanel } = useMobileNavigationContext();
-
-  if (!activePanel) {
-    return <LoaderContent />;
-  }
-
-  return (
-    <VStack collapseHeight flex fullWidth>
-      <VisibleOnMobile checkWithJs>
-        <RenderSinglePanel panelId={activePanel} />
-      </VisibleOnMobile>
-    </VStack>
   );
 }
 
@@ -683,11 +523,6 @@ function AgentPageError() {
 export function AgentPage() {
   const { agentName, agentId, isTemplate, isLocal } = useCurrentAgentMetaData();
 
-  const [adeLayout, setADELayout] = useLocalStorage({
-    key: `ade-layout-${agentId}-2`,
-    defaultValue: generateDefaultADELayout().displayConfig,
-  });
-
   const t = useTranslations(
     'projects/(projectSlug)/agents/(agentId)/AgentPage',
   );
@@ -707,6 +542,8 @@ export function AgentPage() {
 
     return null;
   }, [isLocal, isTemplate, t]);
+
+  const user = useCurrentUser();
 
   const isAgentConvertingToTemplate = useAtomValue(
     isAgentConvertingToTemplateAtom,
@@ -735,16 +572,7 @@ export function AgentPage() {
   }
 
   return (
-    <PanelManagerProvider
-      onPositionError={() => {
-        toast.error(t('positionError'));
-      }}
-      fallbackPositions={generateDefaultADELayout().displayConfig}
-      initialPositions={adeLayout}
-      onPositionChange={(positions) => {
-        setADELayout(positions);
-      }}
-    >
+    <>
       <div className="agent-page-fade-out fixed pointer-events-none z-[-1]">
         <LoaderContent />
       </div>
@@ -775,7 +603,7 @@ export function AgentPage() {
               )}
               <Frame overflow="hidden" position="relative" fullWidth fullHeight>
                 <HiddenOnMobile checkWithJs>
-                  <PanelRenderer />
+                  <ADELayout user={user} />
                 </HiddenOnMobile>
               </Frame>
             </VStack>
@@ -796,12 +624,13 @@ export function AgentPage() {
             }
           >
             <VStack fullHeight fullWidth flex>
-              <AgentMobileContent />
-              <AgentMobileNavigation />
+              <VisibleOnMobile checkWithJs>
+                <ADELayout user={user} />
+              </VisibleOnMobile>
             </VStack>
           </ADEPage>
         </MobileNavigationProvider>
       </VisibleOnMobile>
-    </PanelManagerProvider>
+    </>
   );
 }

@@ -9,7 +9,7 @@ import {
   DotsHorizontalIcon,
 } from '../../icons';
 import { LettaLoader } from '../LettaLoader/LettaLoader';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from '@letta-cloud/translations';
 import { Typography } from '../Typography/Typography';
 import { useMemo } from 'react';
 import { Slot } from '@radix-ui/react-slot';
@@ -41,7 +41,7 @@ interface FileType extends RootType {
 }
 
 export function getIsGenericFolder(
-  folder: unknown
+  folder: unknown,
 ): folder is GenericFolderType {
   return Object.prototype.hasOwnProperty.call(folder, 'contents');
 }

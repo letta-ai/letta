@@ -15,7 +15,7 @@ import React, { useMemo } from 'react';
 import { useCurrentProject } from './hooks';
 import { webApi, webApiQueryKeys } from '$web/client';
 import type { ProjectAgentTemplateType } from '$web/web-api/contracts';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from '@letta-cloud/translations';
 import { DashboardCard, Tutorials } from '$web/client/components';
 import { useWelcomeText } from '$web/client/hooks/useWelcomeText/useWelcomeText';
 import { CreateNewTemplateDialog } from './_components/CreateNewTemplateDialog/CreateNewTemplateDialog';
@@ -83,7 +83,7 @@ function AgentTemplatesSection() {
 
   const agentsList = useMemo(
     () => data?.body.agentTemplates.slice(0, RECENT_AGENTS_TO_DISPLAY),
-    [data]
+    [data],
   );
 
   if (agentsList && agentsList.length === 0) {

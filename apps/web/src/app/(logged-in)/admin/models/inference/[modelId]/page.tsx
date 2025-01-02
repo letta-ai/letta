@@ -18,7 +18,7 @@ import {
   VStack,
 } from '@letta-web/component-library';
 import { webApi } from '$web/client';
-import type { AdminInferenceModelType } from '$web/web-api/admin/models/adminModelsContracts';
+import type { AdminInferenceModelType } from '$web/web-api/contracts';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { queryClientKeys } from '$web/web-api/contracts';
@@ -54,7 +54,7 @@ function UpdateInferenceModelForm(props: UpdateInferenceModelFormProps) {
       onSuccess: () => {
         void queryClient.invalidateQueries({
           queryKey: queryClientKeys.admin.models.getAdminInferenceModelById(
-            model.id
+            model.id,
           ),
         });
         void queryClient.invalidateQueries({
@@ -88,7 +88,7 @@ function UpdateInferenceModelForm(props: UpdateInferenceModelFormProps) {
         },
       });
     },
-    [model, mutate]
+    [model, mutate],
   );
 
   return (

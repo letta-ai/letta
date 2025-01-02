@@ -1,5 +1,5 @@
 import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
-import type { sdkContracts } from '$web/sdk/contracts';
+import type { sdkContracts } from '@letta-web/letta-agents-api';
 import type { SDKContext } from '$web/sdk/shared';
 import {
   agentTemplates,
@@ -23,7 +23,7 @@ type DeployAgentTemplateResponse = ServerInferResponses<
 
 export async function versionAgentTemplate(
   req: DeployAgentTemplateRequest,
-  context: SDKContext
+  context: SDKContext,
 ): Promise<DeployAgentTemplateResponse> {
   const { agent_id: agentId } = req.params;
   const { returnAgentState } = req.query;
@@ -75,7 +75,7 @@ export async function versionAgentTemplate(
   if (!agentTemplateId) {
     const copiedAgent = await copyAgentById(
       agentId,
-      context.request.lettaAgentsUserId
+      context.request.lettaAgentsUserId,
     );
 
     if (!copiedAgent?.id) {
@@ -105,7 +105,7 @@ export async function versionAgentTemplate(
 
   const createdAgent = await copyAgentById(
     agentId,
-    context.request.lettaAgentsUserId
+    context.request.lettaAgentsUserId,
   );
 
   const deployedAgentTemplateId = createdAgent?.id;
@@ -155,7 +155,7 @@ export async function versionAgentTemplate(
           lettaAgentsUserId: context.request.lettaAgentsUserId,
           preserveCoreMemories: false,
         });
-      })
+      }),
     );
   }
 

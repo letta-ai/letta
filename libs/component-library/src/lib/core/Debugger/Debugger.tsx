@@ -3,7 +3,7 @@ import * as React from 'react';
 import { HStack } from '../../framing/HStack/HStack';
 import { RawInputContainer } from '../Form/Form';
 import type { z } from 'zod';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from '@letta-cloud/translations';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { VStack } from '../../framing/VStack/VStack';
 import { Code } from '../Code/Code';
@@ -57,7 +57,7 @@ interface DebuggerInputProps<InputSchema extends GenericSchema> {
 }
 
 function DebuggerInput<InputSchema extends GenericSchema>(
-  props: DebuggerInputProps<InputSchema>
+  props: DebuggerInputProps<InputSchema>,
 ) {
   const { inputConfig, isRunning, onRun } = props;
   const t = useTranslations('component-library/Debugger');
@@ -235,7 +235,7 @@ interface DebuggerProps<InputSchema extends GenericSchema> {
 }
 
 export function Debugger<InputSchema extends GenericSchema>(
-  props: DebuggerProps<InputSchema>
+  props: DebuggerProps<InputSchema>,
 ) {
   const { inputConfig, isRunning, output, onRun, preLabelIcon, label } = props;
 

@@ -4,7 +4,7 @@ import companion from './companion.webp';
 import personalAssistant from './personal_assistant.webp';
 import scratch from './scratch.webp';
 import customerSupport from './customer_support.webp';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from '@letta-cloud/translations';
 import type { CreateAgentRequest } from '@letta-web/letta-agents-api';
 import type { StaticImport } from 'next/dist/shared/lib/get-img-props';
 
@@ -23,7 +23,7 @@ export interface StarterKit {
 }
 
 export function isTemplateNameAStarterKitId(
-  templateName: string
+  templateName: string,
 ): templateName is keyof typeof STARTER_KITS {
   return Object.keys(STARTER_KITS).includes(templateName);
 }

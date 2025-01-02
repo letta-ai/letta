@@ -10,7 +10,7 @@ import {
   Typography,
   VStack,
 } from '@letta-web/component-library';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from '@letta-cloud/translations';
 import { webApi } from '$web/client';
 import type { ListUserOrganizationsItemSchemaType } from '$web/web-api/contracts';
 import { queryClientKeys } from '$web/web-api/contracts';
@@ -93,7 +93,7 @@ function SelectOrganizationPage() {
         },
       });
     },
-    [mutate]
+    [mutate],
   );
 
   if (isPending || isSuccess || updateError) {

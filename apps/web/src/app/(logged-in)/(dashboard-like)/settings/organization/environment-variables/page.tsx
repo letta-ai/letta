@@ -1,5 +1,5 @@
 'use client';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from '@letta-cloud/translations';
 import {
   Badge,
   Button,
@@ -29,8 +29,8 @@ import type { ColumnDef } from '@tanstack/react-table';
 import type {
   GetEnvironmentVariables200Response,
   PublicEnvironmentVariable,
-} from '$web/web-api/environment-variables/environmentVariablesContracts';
-import { COMPOSIO_KEY_NAME } from '$web/web-api/environment-variables/environmentVariablesContracts';
+} from '$web/web-api/contracts';
+import { COMPOSIO_KEY_NAME } from '$web/web-api/contracts';
 import { z } from 'zod';
 import { useQueryClient } from '@tanstack/react-query';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -42,7 +42,7 @@ interface DeleteEnvironmentVariableDialogProps {
 }
 
 function DeleteEnvironmentVariableDialog(
-  props: DeleteEnvironmentVariableDialogProps
+  props: DeleteEnvironmentVariableDialogProps,
 ) {
   const { environmentVariableKey, environmentVariableId } = props;
   const queryClient = useQueryClient();
@@ -78,16 +78,16 @@ function DeleteEnvironmentVariableDialog(
                   environmentVariables:
                     oldData.body.environmentVariables.filter(
                       (environmentVariable) =>
-                        environmentVariable.key !== environmentVariableKey
+                        environmentVariable.key !== environmentVariableKey,
                     ),
                 },
               };
-            }
+            },
           );
 
           setOpen(false);
         },
-      }
+      },
     );
   }, [mutate, queryClient, environmentVariableId, environmentVariableKey]);
 
@@ -121,7 +121,7 @@ interface UpdateEnvironmentVariableDialogProps {
 }
 
 function UpdateEnvironmentVariableDialog(
-  props: UpdateEnvironmentVariableDialogProps
+  props: UpdateEnvironmentVariableDialogProps,
 ) {
   const queryClient = useQueryClient();
   const { environmentVariableKey } = props;
@@ -181,19 +181,19 @@ function UpdateEnvironmentVariableDialog(
                         }
 
                         return environmentVariable;
-                      }
+                      },
                     ),
                   },
                 };
-              }
+              },
             );
 
             setOpen(false);
           },
-        }
+        },
       );
     },
-    [environmentVariableKey, mutate, queryClient]
+    [environmentVariableKey, mutate, queryClient],
   );
 
   return (
@@ -237,7 +237,7 @@ function UpdateEnvironmentVariableDialog(
               fullWidth
               {...field}
               placeholder={t(
-                'UpdateEnvironmentVariableDialog.value.placeholder'
+                'UpdateEnvironmentVariableDialog.value.placeholder',
               )}
               label={t('UpdateEnvironmentVariableDialog.value.label')}
             />
@@ -258,7 +258,7 @@ function CreateEnvironmentVariableDialog() {
   const errorTranslation = useErrorTranslationMessage(error, {
     messageMap: {
       keyAlreadyExists: t(
-        'CreateEnvironmentVariableDialog.errors.keyAlreadyExists'
+        'CreateEnvironmentVariableDialog.errors.keyAlreadyExists',
       ),
 
       default: t('CreateEnvironmentVariableDialog.errors.default'),
@@ -311,7 +311,7 @@ function CreateEnvironmentVariableDialog() {
                     environmentVariables: [
                       ...oldData.body.environmentVariables.filter(
                         (environmentVariable) =>
-                          environmentVariable.key !== values.key
+                          environmentVariable.key !== values.key,
                       ),
                       {
                         key: values.key,
@@ -321,16 +321,16 @@ function CreateEnvironmentVariableDialog() {
                     ],
                   },
                 };
-              }
+              },
             );
 
             reset();
             form.reset();
           },
-        }
+        },
       );
     },
-    [form, mutate, queryClient, reset]
+    [form, mutate, queryClient, reset],
   );
 
   return (
@@ -378,7 +378,7 @@ function CreateEnvironmentVariableDialog() {
               fullWidth
               {...field}
               placeholder={t(
-                'CreateEnvironmentVariableDialog.value.placeholder'
+                'CreateEnvironmentVariableDialog.value.placeholder',
               )}
               label={t('CreateEnvironmentVariableDialog.value.label')}
             />
@@ -401,18 +401,18 @@ function ManagedEnvironmentIndicator(props: ManagedEnvironmentIndicatorProps) {
     () =>
       ({
         [COMPOSIO_KEY_NAME]: t(
-          'ManagedEnvironmentIndicator.integrations.composio'
+          'ManagedEnvironmentIndicator.integrations.composio',
         ),
-      }[keyName]),
-    [keyName, t]
+      })[keyName],
+    [keyName, t],
   );
 
   const link = useMemo(
     () =>
       ({
         [COMPOSIO_KEY_NAME]: '/settings/organization/integrations/composio',
-      }[keyName]),
-    [keyName]
+      })[keyName],
+    [keyName],
   );
 
   if (!message) {
@@ -504,7 +504,7 @@ function EnvironmentVariablesPage() {
         },
       },
     ],
-    [t]
+    [t],
   );
 
   const environmentVariables = useMemo(() => {

@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from '@letta-cloud/translations';
 import { useCurrentProject } from '../../hooks';
 import { STARTER_KITS, webOriginSDKApi } from '$web/client';
 import { useRouter } from 'next/navigation';
@@ -20,7 +20,7 @@ interface CreateNewTemplateDialogProps {
 export function CreateNewTemplateDialog(props: CreateNewTemplateDialogProps) {
   const { trigger } = props;
   const t = useTranslations(
-    'projects/(projectSlug)/components/CreateNewTemplateDialog'
+    'projects/(projectSlug)/components/CreateNewTemplateDialog',
   );
   const { id: projectId, slug } = useCurrentProject();
 
@@ -47,10 +47,10 @@ export function CreateNewTemplateDialog(props: CreateNewTemplateDialogProps) {
           onSuccess: (data) => {
             push(`/projects/${slug}/templates/${data.body.name}`);
           },
-        }
+        },
       );
     },
-    [mutate, projectId, push, slug]
+    [mutate, projectId, push, slug],
   );
 
   return (

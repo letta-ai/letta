@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from '@letta-cloud/translations';
 import { CopyButton } from '../../reusable/CopyButton/CopyButton';
 import type { VariantProps } from 'class-variance-authority';
 import { cva } from 'class-variance-authority';
@@ -22,7 +22,7 @@ const inlineCodeVariants = cva(
     defaultVariants: {
       size: 'small',
     },
-  }
+  },
 );
 
 export interface InlineCodeProps
@@ -40,7 +40,7 @@ export function InlineCode({ code, hideCopyButton, ...rest }: InlineCodeProps) {
         inlineCodeVariants({
           ...rest,
         }),
-        'border'
+        'border',
       )}
     >
       {code}

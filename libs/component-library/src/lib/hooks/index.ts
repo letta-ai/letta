@@ -1,7 +1,7 @@
 'use client';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from '../core/Toaster/Toaster';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from '@letta-cloud/translations';
 
 interface UseCopyToClipboardArgs {
   textToCopy: string;

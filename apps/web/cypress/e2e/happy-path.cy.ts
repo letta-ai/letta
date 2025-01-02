@@ -36,7 +36,7 @@ describe('letta', () => {
 
     cy.location('pathname', { timeout: 50000 }).should(
       'match',
-      /\/projects\/(.+)\/templates\/(.+)/
+      /\/projects\/(.+)\/templates\/(.+)/,
     );
 
     cy.findByTestId('update-agent-name-button').click();
@@ -49,25 +49,15 @@ describe('letta', () => {
 
     cy.location('pathname', { timeout: 50000 }).should(
       'match',
-      /\/projects\/(.+)\/templates\/CYDOGGTestAgent/
+      /\/projects\/(.+)\/templates\/CYDOGGTestAgent/,
     );
 
     cy.clearPointerEventLock();
 
     cy.findByTestId('edit-memory-block-human-content', { timeout: 50000 }).type(
       'The users name is {{name}}. Please include the word BananaMan at the end of every message.',
-      { parseSpecialCharSequences: false }
+      { parseSpecialCharSequences: false },
     );
-
-    // hack to prevent duplicate clicks due to mobile hiding uis
-    cy.findByTestId('open-more-panels').click({
-      force: true,
-    });
-    cy.findByTestId('mobile-navigation-button:advanced-settings').click({
-      force: true,
-    });
-
-    cy.get('body').click({ force: true });
 
     cy.findByTestId('toggle-variables-button').first().click();
 
@@ -77,19 +67,19 @@ describe('letta', () => {
     cy.findByTestId('tab-item:simulated').click();
     cy.findByTestId('simulated-memory:human', { timeout: 50000 }).should(
       'contain.value',
-      'Shubham'
+      'Shubham',
     );
 
-    cy.findByTestId('tab:edit-data-sources').click();
+    cy.findByTestId('tab:datasources').click();
 
     cy.findByTestId('create-data-source-dialog-trigger').click();
     cy.findByTestId('create-new-data-source').click();
 
-    cy.findByTestId('tab:edit-data-sources').contains('Sources (1)');
+    cy.findByTestId('tab:datasources').contains('Sources (1)');
     cy.findByTestId('filetree-actions:1-0').click();
     cy.findByTestId('filetree-action-detach').click();
     cy.findByTestId('detach-data-source-dialog-confirm-button').click();
-    cy.findByTestId('tab:edit-data-sources', {
+    cy.findByTestId('tab:datasources', {
       timeout: 50000,
     }).contains('Sources (0)');
 
@@ -119,7 +109,7 @@ describe('letta', () => {
     cy.findByTestId('messages-list', { timeout: 50000 }).contains('BananaMan');
 
     cy.clearPointerEventLock();
-    cy.findByTestId('tab:tools-panel').click({ force: true });
+    cy.findByTestId('tab:tools').click({ force: true });
 
     /* tools */
     cy.findByTestId('open-tool-explorer').click();

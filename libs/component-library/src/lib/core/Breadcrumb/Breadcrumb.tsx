@@ -20,8 +20,8 @@ const BreadcrumbList = React.forwardRef<
   <ol
     ref={ref}
     className={cn(
-      'flex flex-wrap items-center gap-0.5 break-words text-sm text-muted-foreground',
-      className
+      'flex overflow-hidden items-center gap-0.5 break-words text-sm text-muted-foreground',
+      className,
     )}
     {...props}
   />
@@ -145,7 +145,7 @@ function BreadcrumbItemWrapper(props: BreadcrumbItemWrapperProps) {
         size="small"
         _use_rarely_className={cn(
           !isLast ? 'text-text-lighter' : '',
-          !onClick && !href ? 'cursor-default hover:bg-transparent' : ''
+          !onClick && !href ? 'cursor-default hover:bg-transparent' : '',
         )}
       />
     </BreadcrumbItem>

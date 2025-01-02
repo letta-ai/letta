@@ -12,7 +12,7 @@ import { isErrorResponse } from '@ts-rest/core';
 import * as Sentry from '@sentry/node';
 import { makeRequestToSDK } from '$web/sdk';
 import { sdkRouter } from '$web/sdk/router';
-import { sdkContracts } from '$web/sdk/contracts';
+import { sdkContracts } from '@letta-web/letta-agents-api';
 
 const handler = createNextHandler(sdkContracts, sdkRouter, {
   basePath: '',
@@ -115,7 +115,7 @@ const handler = createNextHandler(sdkContracts, sdkRouter, {
             message:
               'Invalid JSON body, please fix your body payload or change content type to something other than application/json',
           },
-          { status: 400 }
+          { status: 400 },
         );
       }
     }
@@ -130,7 +130,7 @@ const handler = createNextHandler(sdkContracts, sdkRouter, {
           {
             message: error.message,
           },
-          { status: error.statusCode }
+          { status: error.statusCode },
         );
       }
 
@@ -177,7 +177,7 @@ const handler = createNextHandler(sdkContracts, sdkRouter, {
         message: 'An unhandled error has happened, feel free to report.',
         errorId,
       },
-      { status: 500 }
+      { status: 500 },
     );
   },
 });

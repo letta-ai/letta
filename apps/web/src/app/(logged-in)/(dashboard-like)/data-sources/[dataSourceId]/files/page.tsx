@@ -15,7 +15,7 @@ import {
   useForm,
 } from '@letta-web/component-library';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from '@letta-cloud/translations';
 import type { FileMetadata } from '@letta-web/letta-agents-api';
 import {
   UseJobsServiceListActiveJobsKeyFn,
@@ -25,11 +25,11 @@ import {
 import { useSourcesServiceListFilesFromSource } from '@letta-web/letta-agents-api';
 import { useCurrentDataSourceId } from '../hooks';
 import type { ColumnDef } from '@tanstack/react-table';
-import type { DeleteFilePayload } from '../../../../(ade)/projects/[projectSlug]/agents/[agentId]/EditDataSourcesPanel/EditDataSourcesPanel';
-import { DeleteFileDialog } from '../../../../(ade)/projects/[projectSlug]/agents/[agentId]/EditDataSourcesPanel/EditDataSourcesPanel';
 import { z } from 'zod';
 import { useQueryClient } from '@tanstack/react-query';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { DeleteFileDialog } from '@letta-cloud/shared-ade-components';
+import type { DeleteFilePayload } from '@letta-cloud/shared-ade-components';
 
 const uploadToFormValuesSchema = z.object({
   file: z.custom<File>((v) => v instanceof File),
@@ -82,7 +82,7 @@ function UploadFileDialog({ limit }: UploadFileDialogProps) {
         sourceId: dataSourceId,
       });
     },
-    [dataSourceId, mutate]
+    [dataSourceId, mutate],
   );
 
   return (
@@ -122,7 +122,7 @@ function DataSourceFilesPage() {
     undefined,
     {
       enabled: limit > 0,
-    }
+    },
   );
 
   const [fileToDelete, setFileToDelete] = useState<Omit<
@@ -175,7 +175,7 @@ function DataSourceFilesPage() {
         accessorKey: 'id',
       },
     ],
-    [sourceId, t]
+    [sourceId, t],
   );
 
   return (

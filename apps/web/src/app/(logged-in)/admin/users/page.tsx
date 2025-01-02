@@ -3,6 +3,8 @@
 import { webApi } from '$web/client';
 import React, { useMemo, useState } from 'react';
 import { queryClientKeys } from '$web/web-api/contracts';
+import type { AdminPublicUserType } from '$web/web-api/contracts';
+
 import {
   Button,
   DashboardPageLayout,
@@ -11,7 +13,6 @@ import {
 } from '@letta-web/component-library';
 import type { ColumnDef } from '@tanstack/react-table';
 import { useDateFormatter } from '@letta-web/helpful-client-utils';
-import type { AdminPublicUserType } from '$web/web-api/admin/users/adminUsersContracts';
 
 function AdminUsersPage() {
   const [offset, setOffset] = useState(0);
@@ -69,7 +70,7 @@ function AdminUsersPage() {
         ),
       },
     ],
-    [formatDateAndTime]
+    [formatDateAndTime],
   );
 
   const users = useMemo(() => {

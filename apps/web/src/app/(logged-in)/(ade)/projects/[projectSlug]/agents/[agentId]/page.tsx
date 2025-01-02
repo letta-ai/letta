@@ -1,6 +1,7 @@
 import {
   AgentsService,
   UseAgentsServiceGetAgentKeyFn,
+  webOriginSDKQueryKeys,
 } from '@letta-web/letta-agents-api';
 import {
   dehydrate,
@@ -11,7 +12,7 @@ import React from 'react';
 import { db, deployedAgents } from '@letta-web/database';
 import { and, eq, isNull } from 'drizzle-orm';
 import { redirect } from 'next/navigation';
-import { webApiQueryKeys, webOriginSDKQueryKeys } from '$web/client';
+import { webApiQueryKeys } from '@letta-cloud/web-api-client';
 import { getProjectByIdOrSlug } from '$web/web-api/router';
 import { AgentPage } from './AgentPage';
 import { getUserOrRedirect } from '$web/server/auth';
@@ -54,7 +55,7 @@ async function AgentsAgentPage(context: AgentsAgentPageProps) {
     where: and(
       eq(deployedAgents.id, agentId),
       eq(deployedAgents.organizationId, user.activeOrganizationId),
-      isNull(deployedAgents.deletedAt)
+      isNull(deployedAgents.deletedAt),
     ),
     columns: {
       key: true,
@@ -80,7 +81,7 @@ async function AgentsAgentPage(context: AgentsAgentPageProps) {
     },
     {
       user_id: user.lettaAgentsId,
-    }
+    },
   );
 
   const queries = [

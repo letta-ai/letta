@@ -3,7 +3,7 @@ import {
   DashboardPageSection,
   NiceGridDisplay,
 } from '@letta-web/component-library';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from '@letta-cloud/translations';
 import memory from './memory.webp';
 import discord from './discord.webp';
 import multiagent from './multiagent.webp';

@@ -1,0 +1,15 @@
+{
+  "name": "web-api-client",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/web-api-client/src",
+  "projectType": "library",
+  "tags": [],
+  "targets": {
+    "type-check": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsc --noEmit -p libs/web-api-client/tsconfig.json"
+      }
+    }
+  }
+}

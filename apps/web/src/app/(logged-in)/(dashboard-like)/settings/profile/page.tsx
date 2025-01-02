@@ -17,8 +17,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useCurrentUser } from '$web/client/hooks';
 import { webApi, webApiQueryKeys } from '$web/client';
 import { useQueryClient } from '@tanstack/react-query';
-import { useTranslations } from 'next-intl';
-import type { PublicUserSchemaType } from '$web/web-api/user/userContracts';
+import { useTranslations } from '@letta-cloud/translations';
+import type { PublicUserSchemaType } from '$web/web-api/contracts';
 
 const UpdateUserProfileSchema = z.object({
   name: z.string(),
@@ -57,7 +57,7 @@ function UpdateUserProfileForm(props: UpdateUserProfileFormProps) {
         },
       });
     },
-    [mutate]
+    [mutate],
   );
 
   return (
