@@ -292,8 +292,8 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
         # if multi_step = True, the stream ends when the agent yields
         # if multi_step = False, the stream ends when the step ends
         self.multi_step = multi_step
-        self.multi_step_indicator = MessageStreamStatus.done_step
-        self.multi_step_gen_indicator = MessageStreamStatus.done_generation
+        # self.multi_step_indicator = MessageStreamStatus.done_step
+        # self.multi_step_gen_indicator = MessageStreamStatus.done_generation
 
         # Support for AssistantMessage
         self.use_assistant_message = False  # TODO: Remove this
@@ -378,8 +378,8 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
         """Clean up the stream by deactivating and clearing chunks."""
         self.streaming_chat_completion_mode_function_name = None
 
-        if not self.streaming_chat_completion_mode and not self.nonstreaming_legacy_mode:
-            self._push_to_buffer(self.multi_step_gen_indicator)
+        # if not self.streaming_chat_completion_mode and not self.nonstreaming_legacy_mode:
+        #     self._push_to_buffer(self.multi_step_gen_indicator)
 
         # Wipe the inner thoughts buffers
         self._reset_inner_thoughts_json_reader()
@@ -390,9 +390,9 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
             # end the stream
             self._active = False
             self._event.set()  # Unblock the generator if it's waiting to allow it to complete
-        elif not self.streaming_chat_completion_mode and not self.nonstreaming_legacy_mode:
-            # signal that a new step has started in the stream
-            self._push_to_buffer(self.multi_step_indicator)
+        # elif not self.streaming_chat_completion_mode and not self.nonstreaming_legacy_mode:
+        #     # signal that a new step has started in the stream
+        #     self._push_to_buffer(self.multi_step_indicator)
 
         # Wipe the inner thoughts buffers
         self._reset_inner_thoughts_json_reader()

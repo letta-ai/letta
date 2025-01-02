@@ -278,9 +278,9 @@ class ToolExecutionSandbox:
         sbx = self.get_running_e2b_sandbox_with_same_state(sbx_config)
         if not sbx or self.force_recreate:
             if not sbx:
-              logger.info(f"No running e2b sandbox found with the same state: {sbx_config}")
+                logger.info(f"No running e2b sandbox found with the same state: {sbx_config}")
             else:
-              logger.info(f"Force recreated e2b sandbox with state: {sbx_config}")
+                logger.info(f"Force recreated e2b sandbox with state: {sbx_config}")
             sbx = self.create_e2b_sandbox_with_metadata_hash(sandbox_config=sbx_config)
 
         # Since this sandbox was used, we extend its lifecycle by the timeout
