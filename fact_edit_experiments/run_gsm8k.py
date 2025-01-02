@@ -194,30 +194,39 @@ def run_memory_edits(gsm8k_input_file: str,
                     initial_message_sequence=[],
                 )
 
+                offline_responses = []
                 for requested_rewrite in few_shot_examples:
-                    client.user_message(
+                    response = client.user_message(
                         message="[trigger_rethink_memory] Question answer pair" + requested_rewrite, agent_id=offline_memory_agent.id
                     )
+                    offline_responses.append(response)
 
                 context = ". ".join(example["question"].split(".")[:-1])
                 question = example["question"].split(".")[-1]
-
                 print(context)
                 print(question)
-                client.user_message(
+                response = client.user_message(
                     message="[trigger_rethink_memory] New situation:" + context, agent_id=offline_memory_agent.id
                 )
+                offline_responses.append(response)
 
                 final_response = client.user_message(message=example["question"], agent_id=conversation_agent.id)
 
                 offline_memory_agent = client.get_agent(agent_id=offline_memory_agent.id)
-
+                # offline_messages =client.get_in_context_messages(offline_memory_agent.id)
+                '''
+                for offline_message in offline_messages:
+                    offline_message.updated_at = offline_message.updated_at.isoformat()
+                '''
+                
+                import ipdb; ipdb.set_trace()
                 writer.write(
                     {
                         "question": example["question"],
                         "response": final_response.model_dump(),
                         "offline_memory": offline_memory_agent.memory.get_block("rethink_memory_block").value,
                         "answer": example["answer"],
+                        "offline_responses": [offline_message.model_dump() for offline_message in offline_responses],
                     }
                 )
 
