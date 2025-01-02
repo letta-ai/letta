@@ -177,6 +177,7 @@ def run_memory_edits(gsm8k_input_file: str,
                     # tool_ids=[send_message.id],
                     memory=conversation_memory,
                     include_base_tools=False,
+                    initial_message_sequence=[],
                 )
 
                 offline_memory_agent = client.create_agent(

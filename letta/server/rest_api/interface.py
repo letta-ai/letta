@@ -202,7 +202,9 @@ class QueuingInterface(AgentInterface):
             new_message["date"] = msg_obj.created_at.isoformat()
         else:
             # FIXME this is a total hack
-            assert self.buffer.qsize() > 1, "Tried to reach back to grab function call data, but couldn't find a buffer message."
+            # Why is == 1 not allowed here?
+            # assert self.buffer.qsize() > 1, "Tried to reach back to grab function call data, but couldn't find a buffer message."
+            assert self.buffer.qsize() >= 1, "Tried to reach back to grab function call data, but couldn't find a buffer message."
             # TODO also should not be accessing protected member here
 
             new_message["id"] = self.buffer.queue[-1]["message_api"]["id"]
