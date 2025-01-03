@@ -439,7 +439,7 @@ class SyncServer(Server):
             agent = Agent(agent_state=agent_state, interface=interface, user=actor, initial_message_sequence=initial_message_sequence)
         elif agent_state.agent_type == AgentType.offline_memory_agent:
             agent = OfflineMemoryAgent(
-                agent_state=agent_state, interface=interface, user=actor, initial_message_sequence=initial_message_sequence
+                agent_state=agent_state, interface=interface, user=actor, initial_message_sequence=initial_message_sequence, max_memory_rethinks=agent_state.metadata_["max_memory_rethinks"], 
             )
         else:
             assert initial_message_sequence is None, f"Initial message sequence is not supported for O1Agents"
@@ -466,7 +466,7 @@ class SyncServer(Server):
             elif agent_state.agent_type == AgentType.o1_agent:
                 agent = O1Agent(agent_state=agent_state, interface=interface, user=actor)
             elif agent_state.agent_type == AgentType.offline_memory_agent:
-                agent = OfflineMemoryAgent(agent_state=agent_state, interface=interface, user=actor)
+                agent = OfflineMemoryAgent(agent_state=agent_state, interface=interface, user=actor, max_memory_rethinks=agent_state.metadata_["max_memory_rethinks"])
             elif agent_state.agent_type == AgentType.chat_only_agent:
                 agent = ChatOnlyAgent(agent_state=agent_state, interface=interface, user=actor)
             else:

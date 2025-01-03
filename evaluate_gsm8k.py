@@ -54,11 +54,12 @@ def evaluate(input_file: str):
             total += 1
 
             num_rethinks = 0
-            for message in obj['offline_responses'][0]['messages']:
-                if message['message_type'] == "function_call":
-                    if message['function_call']['name'] == "rethink_memory":
-                        num_rethinks += 1
-            example_num_rethinks.append(num_rethinks)
+            if 'offline_responses' in obj and len(obj['offline_responses']) > 0:
+                for message in obj['offline_responses'][0]['messages']:
+                    if message['message_type'] == "function_call":
+                        if message['function_call']['name'] == "rethink_memory":
+                            num_rethinks += 1
+                example_num_rethinks.append(num_rethinks)
     
         print("Accuracy: ", correct / total)
     with jsonlines.open(input_file) as reader:
