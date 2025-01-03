@@ -45,7 +45,6 @@ def _sse_post(url: str, data: dict, headers: dict) -> Generator[LettaStreamingRe
                     # break
                     if sse.data in [status.value for status in MessageStreamStatus]:
                         # break
-                        # print("sse.data::", sse.data)
                         yield MessageStreamStatus(sse.data)
                     else:
                         chunk_data = json.loads(sse.data)
