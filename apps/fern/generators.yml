@@ -31,5 +31,4 @@ groups:
           allowCustomFetcher: true
           skipResponseValidation: true
           includeApiReference: true
-          noSerdeLayer: true
         smart-casing: true
