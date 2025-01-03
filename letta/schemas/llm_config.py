@@ -90,6 +90,14 @@ class LLMConfig(BaseModel):
                 model_wrapper=None,
                 context_window=128000,
             )
+        elif model_name == "gpt-4o":
+            return cls(
+                model="gpt-4o",
+                model_endpoint_type="openai",
+                model_endpoint="https://api.openai.com/v1",
+                model_wrapper=None,
+                context_window=128000,
+            )
         elif model_name == "letta":
             return cls(
                 model="memgpt-openai",

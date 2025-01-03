@@ -49,6 +49,7 @@ def trigger_rethink_memory(agent_state: "AgentState", message: Optional[str]) ->
     )
     '''
     OPENAI_CONFIG = LLMConfig.default_config("gpt-4o-mini")
+    # NOTE: if we start using this finction, we might need to change the model here
     
     client.set_default_llm_config(OPENAI_CONFIG)
     client.set_default_embedding_config(EmbeddingConfig.default_config(model_name="letta"))
@@ -94,13 +95,26 @@ OPENAI_CONFIG = LLMConfig(model="gpt-4o-2024-08-06",
 def run_memory_edits(gsm8k_input_file: str,
                      output_file: str,
                      human_block_filename: str = "human_accurate",
-                     persona_block_filename: str = "persona_block_verbose",
+                     persona_block_filename: str = "persona_verbose",
                      system_block_filename: str = "convo_base",
                      offline_system_block_filename: str = "offline_base",
                      random_example: bool = False,
                      few_shot: bool = True,
                      limit: int = None,
-                     skip_first: int = None) -> None:
+                     skip_first: int = None,
+                     offline_memory_model: Optional[str] = None,
+                     conversation_model: Optional[str] = None) -> None:
+    
+    if offline_memory_model is None:
+        offline_openai_config = OPENAI_CONFIG
+    else:
+        offline_openai_config = LLMConfig.default_config(offline_memory_model)
+    
+    if conversation_model is None:
+        conversation_openai_config = OPENAI_CONFIG
+    else:
+        conversation_openai_config = LLMConfig.default_config(conversation_model)
+    
     if few_shot:
         with open("gsm8k_experiments/gsm8k-cot.yaml", "r") as f:
             test_yaml = f.read()
@@ -170,7 +184,7 @@ def run_memory_edits(gsm8k_input_file: str,
                     name="conversation_agent",
                     agent_type=AgentType.memgpt_agent,
                     system=get_system_text(system_block_filename),
-                    llm_config=OPENAI_CONFIG,
+                    llm_config=conversation_openai_config,
                     embedding_config=EmbeddingConfig.default_config("text-embedding-ada-002"),
                     # tools=["send_message", trigger_rethink_memory_tool.name],
                     tools=["send_message"],
@@ -185,7 +199,7 @@ def run_memory_edits(gsm8k_input_file: str,
                     agent_type=AgentType.offline_memory_agent,
                     system=get_system_text(offline_system_block_filename),
                     memory=offline_memory,
-                            llm_config=OPENAI_CONFIG,
+                    llm_config=offline_openai_config,
                     embedding_config=EmbeddingConfig.default_config("text-embedding-ada-002"),
                     tools = ["rethink_memory", "finish_rethinking_memory"],
                     # tool_ids=[rethink_memory_tool.id, finish_rethinking_memory_tool.id],
@@ -219,7 +233,7 @@ def run_memory_edits(gsm8k_input_file: str,
                     offline_message.updated_at = offline_message.updated_at.isoformat()
                 '''
                 
-                import ipdb; ipdb.set_trace()
+                # import ipdb; ipdb.set_trace()
                 writer.write(
                     {
                         "question": example["question"],
@@ -252,13 +266,15 @@ if __name__ == "__main__":
     parser.add_argument("--input_file", type=str, default="./GSM8K_p2.jsonl", required=False)
     parser.add_argument("--output_file", default="./predictions-GSM8k_p2.jsonl", required=False)
     parser.add_argument("--human_block_filename", default="human_accurate", required=False)
-    parser.add_argument("--persona_block_filename", default="persona_block_verbose", required=False)
+    parser.add_argument("--persona_block_filename", default="persona_verbose", required=False)
     parser.add_argument("--system_block_filename", default="convo_base", required=False)
     parser.add_argument("--offline_system_block_filename", default="offline_base", required=False)
     parser.add_argument("--random_example", action="store_true")  # debug by using a random example 
     parser.add_argument("--few_shot", default=8, required=False, type=int)
     parser.add_argument("--limit", default=None, required=False, type=int)
     parser.add_argument("--skip_first", default=0, required=False, type=int)
+    parser.add_argument("--offline_memory_model", default="gpt-4o-mini", required=False)
+    parser.add_argument("--conversation_model", default="gpt-4o-mini", required=False)
     args = parser.parse_args()
 
     run_memory_edits(args.input_file,
@@ -270,4 +286,6 @@ if __name__ == "__main__":
                      args.random_example,
                      args.few_shot,
                      args.limit,
-                     args.skip_first)
+                     args.skip_first,
+                     args.offline_memory_model,
+                     args.conversation_model)
