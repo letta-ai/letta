@@ -11,6 +11,8 @@ import jsonlines
 import random
 from tqdm import tqdm
 from typing import Optional
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
 
 from letta import BasicBlockMemory, EmbeddingConfig, LLMConfig
 from letta.client.client import Block, create_client
@@ -92,7 +94,7 @@ OPENAI_CONFIG = LLMConfig(model="gpt-4o-2024-08-06",
                           context_window=32000)
 '''
 
-def run_memory_edits(gsm8k_input_file: str,
+async def run_memory_edits(gsm8k_input_file: str,
                      output_file: str,
                      human_block_filename: str = "human_accurate",
                      persona_block_filename: str = "persona_verbose",
@@ -131,137 +133,157 @@ def run_memory_edits(gsm8k_input_file: str,
             examples = [random.choice(examples)]
         elif limit:
             examples = examples[:limit] 
-
-    client = create_client()
-    rethink_memory_tool = client.create_tool(rethink_memory)
-    finish_rethinking_memory_tool = client.create_tool(finish_rethinking_memory)
-    # trigger_rethink_memory_tool = client.create_tool(trigger_rethink_memory)
-
-    conversation_agent = None
-    offline_memory_agent = None
-
-
+    
     if skip_first:
         examples = examples[skip_first:]
         mode = "a"
     else:
         mode = "w"
-    with jsonlines.open(output_file, mode) as writer:
-        for example in tqdm(examples):
-            try:  
-                conversation_human_block = Block(
-                    name="human",
-                    label="human",
-                    value=get_human_text(human_block_filename),
-                    limit=2000,
-                )
-                conversation_persona_block = Block(
-                    name="persona",
-                    label="persona",
-                    value=get_persona_text(persona_block_filename),
-                    limit=2000,
-                )
-                offline_human_block = Block(
-                    name="human",
-                    label="human",
-                    value="I am a valuable source of information, I give problems that are worth thinking about deeply and carefully.",
-                    limit=2000,
-                )
-                offline_persona_block = Block(
-                    name="persona", label="persona", value="""I am an eager reasoner. When given a new context, I reason about what potential questions someone may ask about it. I use the previous questions I have been asked about to guide my search.
-                    I use the rethink memory to store all my potential questions, answers, and inferences for answering those questions. I am verbose and brainstorm using the rethink block many different types of potential questions and the reasoning required for answering them.""", limit=2000
-                )
+    
+    client = create_client()
+    rethink_memory_tool = client.create_or_update_tool(rethink_memory, name=f"rethink_memory")
+    finish_rethinking_memory_tool = client.create_or_update_tool(finish_rethinking_memory, name=f"finish_rethinking_memory")
+
+    progress = tqdm(total=len(examples))
+    
+    def process_example(idx, example):
+        # conversation_agent = None
+        # offline_memory_agent = None
+        try:
+            conversation_human_block = Block(
+                name=f"human",
+                label="human",
+                value=get_human_text(human_block_filename),
+                limit=2000,
+            )
+            conversation_persona_block = Block(
+                name=f"persona",
+                label="persona",
+                value=get_persona_text(persona_block_filename),
+                limit=2000,
+            )
+            offline_human_block = Block(
+                name=f"human",
+                label="human",
+                value="I am a valuable source of information, I give problems that are worth thinking about deeply and carefully.",
+                limit=2000,
+            )
+            offline_persona_block = Block(
+                name=f"persona", label="persona", value="""I am an eager reasoner. When given a new context, I reason about what potential questions someone may ask about it. I use the previous questions I have been asked about to guide my search.
+                I use the rethink memory to store all my potential questions, answers, and inferences for answering those questions. I am verbose and brainstorm using the rethink block many different types of potential questions and the reasoning required for answering them.""", limit=2000
+            )
 
 
-                new_memory = Block(name="rethink_memory_block", label="rethink_memory_block", value="[empty]", limit=5000)
-                conversation_memory = BasicBlockMemory(
-                    blocks=[conversation_persona_block, conversation_human_block, new_memory]
-                )
-                offline_memory = BasicBlockMemory(blocks=[offline_persona_block, offline_human_block, new_memory])
+            new_memory = Block(name=f"rethink_memory_block", label="rethink_memory_block", value="[empty]", limit=5000)
+            conversation_memory = BasicBlockMemory(
+                blocks=[conversation_persona_block, conversation_human_block, new_memory]
+            )
+            offline_memory = BasicBlockMemory(blocks=[offline_persona_block, offline_human_block, new_memory])
 
-                send_message = client.server.tool_manager.get_tool_by_name(tool_name="send_message", actor=client.user)
-                conversation_agent = client.create_agent(
-                    name="conversation_agent",
-                    agent_type=AgentType.memgpt_agent,
-                    system=get_system_text(system_block_filename),
-                    llm_config=conversation_openai_config,
-                    embedding_config=EmbeddingConfig.default_config("text-embedding-ada-002"),
-                    # tools=["send_message", trigger_rethink_memory_tool.name],
-                    tools=["send_message"],
-                    # tool_ids=[send_message.id],
-                    memory=conversation_memory,
-                    include_base_tools=False,
-                    initial_message_sequence=[],
-                )
+            send_message = client.server.tool_manager.get_tool_by_name(tool_name="send_message", actor=client.user)
+            conversation_agent = client.create_agent(
+                name=f"conversation_agent_{idx}",
+                agent_type=AgentType.memgpt_agent,
+                system=get_system_text(system_block_filename),
+                llm_config=conversation_openai_config,
+                embedding_config=EmbeddingConfig.default_config("text-embedding-ada-002"),
+                # tools=["send_message", trigger_rethink_memory_tool.name],
+                tools=["send_message"],
+                # tool_ids=[send_message.id],
+                memory=conversation_memory,
+                include_base_tools=False,
+                initial_message_sequence=[],
+            )
 
-                offline_memory_agent = client.create_agent(
-                    name="offline_memory_agent",
-                    agent_type=AgentType.offline_memory_agent,
-                    system=get_system_text(offline_system_block_filename),
-                    memory=offline_memory,
-                    llm_config=offline_openai_config,
-                    embedding_config=EmbeddingConfig.default_config("text-embedding-ada-002"),
-                    tools = ["rethink_memory", "finish_rethinking_memory"],
-                    # tool_ids=[rethink_memory_tool.id, finish_rethinking_memory_tool.id],
-                    tool_rules=[TerminalToolRule(tool_name=finish_rethinking_memory_tool.name)],
-                    include_base_tools=False,
-                    initial_message_sequence=[],
-                )
+            offline_memory_agent = client.create_agent(
+                name=f"offline_memory_agent_{idx}",
+                agent_type=AgentType.offline_memory_agent,
+                system=get_system_text(offline_system_block_filename),
+                memory=offline_memory,
+                llm_config=offline_openai_config,
+                embedding_config=EmbeddingConfig.default_config("text-embedding-ada-002"),
+                tools = [f"rethink_memory", f"finish_rethinking_memory"],
+                # tool_ids=[rethink_memory_tool.id, finish_rethinking_memory_tool.id],
+                tool_rules=[TerminalToolRule(tool_name=finish_rethinking_memory_tool.name)],
+                include_base_tools=False,
+                initial_message_sequence=[],
+            )
 
-                offline_responses = []
-                for requested_rewrite in few_shot_examples:
-                    response = client.user_message(
-                        message="[trigger_rethink_memory] Question answer pair" + requested_rewrite, agent_id=offline_memory_agent.id
-                    )
-                    offline_responses.append(response)
-
-                # context = ". ".join(example["question"].split(".")[:-1])
-                # question = example["question"].split(".")[-1]
-                sentences = list(map(lambda x: x.strip(), filter(lambda x: x.strip() != '', example["question"].split("."))))
-                ends_with_period = example["question"].split(".")[-1].strip() == ''
-                context = ". ".join(sentences[:-1]).strip()+'.'
-                question = sentences[-1]+('.' if ends_with_period else '')
-                print(context)
-                print(question)
+            offline_responses = []
+            for requested_rewrite in few_shot_examples:
                 response = client.user_message(
-                    message="[trigger_rethink_memory] New situation:" + context, agent_id=offline_memory_agent.id
+                    message="[trigger_rethink_memory] Question answer pair" + requested_rewrite, agent_id=offline_memory_agent.id
                 )
                 offline_responses.append(response)
 
-                final_response = client.user_message(message=example["question"], agent_id=conversation_agent.id)
+            # context = ". ".join(example["question"].split(".")[:-1])
+            # question = example["question"].split(".")[-1]
+            sentences = list(map(lambda x: x.strip(), filter(lambda x: x.strip() != '', example["question"].split("."))))
+            ends_with_period = example["question"].split(".")[-1].strip() == ''
+            context = ". ".join(sentences[:-1]).strip()+'.'
+            question = sentences[-1]+('.' if ends_with_period else '')
+            print(context)
+            print(question)
+            response = client.user_message(
+                message="[trigger_rethink_memory] New situation:" + context, agent_id=offline_memory_agent.id
+            )
+            offline_responses.append(response)
 
-                offline_memory_agent = client.get_agent(agent_id=offline_memory_agent.id)
-                # offline_messages =client.get_in_context_messages(offline_memory_agent.id)
-                '''
-                for offline_message in offline_messages:
-                    offline_message.updated_at = offline_message.updated_at.isoformat()
-                '''
-                
-                # import ipdb; ipdb.set_trace()
-                writer.write(
-                    {
-                        "question": example["question"],
-                        "response": final_response.model_dump(),
-                        "offline_memory": offline_memory_agent.memory.get_block("rethink_memory_block").value,
-                        "answer": example["answer"],
-                        "offline_responses": [offline_message.model_dump() for offline_message in offline_responses],
-                    }
-                )
+            final_response = client.user_message(message=example["question"], agent_id=conversation_agent.id)
 
-                # clean up
-                client.delete_agent(conversation_agent.id)
-                client.delete_agent(offline_memory_agent.id)
-            except Exception as e:
-                print(f"Error processing example: {example}")
-                print(e)
-                if conversation_agent:
-                    client.get_agent(conversation_agent.id)
-                    client.delete_agent(conversation_agent.id)
-                if offline_memory_agent:
-                    client.get_agent(offline_memory_agent.id)
-                    client.delete_agent(offline_memory_agent.id)
+            offline_memory_agent = client.get_agent(agent_id=offline_memory_agent.id)
+            # offline_messages =client.get_in_context_messages(offline_memory_agent.id)
+            '''
+            for offline_message in offline_messages:
+                offline_message.updated_at = offline_message.updated_at.isoformat()
+            '''
+            
+            # import ipdb; ipdb.set_trace()
+            result = {
+                "question": example["question"],
+                "response": final_response.model_dump(),
+                "offline_memory": offline_memory_agent.memory.get_block("rethink_memory_block").value,
+                "answer": example["answer"],
+                "offline_responses": [offline_message.model_dump() for offline_message in offline_responses],
+            }
 
+            # clean up
+            # client.delete_agent(conversation_agent.id)
+            # client.delete_agent(offline_memory_agent.id)
+        except Exception as e:
+            print(f"Error processing example: {example}")
+            print(e)
+            # if conversation_agent:
+            #     client.get_agent(conversation_agent.id)
+            #     client.delete_agent(conversation_agent.id)
+            # if offline_memory_agent:
+            #     client.get_agent(offline_memory_agent.id)
+            #     client.delete_agent(offline_memory_agent.id)
+            
+            result = None
+        
+        progress.update(1)
+        return result
+    
+    async def process_example_async(sem, pool, idx, example):
+        async with sem:
+            loop = asyncio.get_event_loop()
+            result = await loop.run_in_executor(pool, process_example, idx, example)
+            return result
+    
+    max_concurrent = 10  # going much higher than 10 causes db connection issues (https://docs.sqlalchemy.org/en/20/errors.html#error-3o7r)
+    sem = asyncio.Semaphore(max_concurrent)
 
+    with ThreadPoolExecutor(max_workers=max_concurrent) as pool:
+        results = await asyncio.gather(*[
+            process_example_async(sem, pool, idx, example) 
+            for idx, example in enumerate(examples)]
+        )
+
+    with jsonlines.open(output_file, mode) as writer:
+        for result in tqdm(results):
+            if result is not None:
+                writer.write(result)
 
 
 
@@ -281,7 +303,7 @@ if __name__ == "__main__":
     parser.add_argument("--conversation_model", default="gpt-4o-mini", required=False)
     args = parser.parse_args()
 
-    run_memory_edits(args.input_file,
+    asyncio.run(run_memory_edits(args.input_file,
                      args.output_file,
                      args.human_block_filename,
                      args.persona_block_filename,
@@ -292,4 +314,4 @@ if __name__ == "__main__":
                      args.limit,
                      args.skip_first,
                      args.offline_memory_model,
-                     args.conversation_model)
+                     args.conversation_model))
