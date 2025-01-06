@@ -1120,7 +1120,14 @@ export type LettaResponse = {
   /**
    * The messages returned by the agent.
    */
-  messages: Array<unknown>;
+  messages: Array<
+    | SystemMessage_Output
+    | UserMessage_Output
+    | ReasoningMessage
+    | ToolCallMessage
+    | ToolReturnMessage
+    | AssistantMessage_Output
+  >;
   /**
    * The usage statistics of the agent.
    */

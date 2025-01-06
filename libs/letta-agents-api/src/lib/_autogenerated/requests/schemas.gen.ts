@@ -2820,22 +2820,22 @@ export const $LettaResponse = {
       items: {
         oneOf: [
           {
-            'x-ref-name': 'SystemMessage',
+            $ref: '#/components/schemas/SystemMessage-Output',
           },
           {
-            'x-ref-name': 'UserMessage',
+            $ref: '#/components/schemas/UserMessage-Output',
           },
           {
-            'x-ref-name': 'ReasoningMessage',
+            $ref: '#/components/schemas/ReasoningMessage',
           },
           {
-            'x-ref-name': 'ToolCallMessage',
+            $ref: '#/components/schemas/ToolCallMessage',
           },
           {
-            'x-ref-name': 'ToolReturnMessage',
+            $ref: '#/components/schemas/ToolReturnMessage',
           },
           {
-            'x-ref-name': 'AssistantMessage',
+            $ref: '#/components/schemas/AssistantMessage-Output',
           },
         ],
         discriminator: {
@@ -2849,7 +2849,6 @@ export const $LettaResponse = {
     usage: {
       $ref: '#/components/schemas/LettaUsageStatistics',
       description: 'The usage statistics of the agent.',
-      'x-ref-name': 'LettaUsageStatistics',
     },
   },
   type: 'object',
