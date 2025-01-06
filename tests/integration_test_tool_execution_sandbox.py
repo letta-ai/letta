@@ -44,12 +44,6 @@ def clear_tables():
         session.execute(delete(SandboxConfig))
         session.commit()  # Commit the deletion
 
-    # Kill all sandboxes
-    from e2b_code_interpreter import Sandbox
-
-    for sandbox in Sandbox.list():
-        Sandbox.connect(sandbox.sandbox_id).kill()
-
 
 @pytest.fixture
 def check_composio_key_set():
