@@ -283,6 +283,9 @@ class ToolExecutionSandbox:
                 logger.info(f"Force recreated e2b sandbox with state: {sbx_config}")
             sbx = self.create_e2b_sandbox_with_metadata_hash(sandbox_config=sbx_config)
 
+        logger.info(f"E2B Sandbox configurations: {sbx_config}")
+        logger.info(f"E2B Sandbox ID: {sbx.sandbox_id}")
+
         # Since this sandbox was used, we extend its lifecycle by the timeout
         sbx.set_timeout(sbx_config.get_e2b_config().timeout)
 
@@ -296,8 +299,6 @@ class ToolExecutionSandbox:
             func_return, agent_state = self.parse_best_effort(execution.results[0].text)
         elif execution.error:
             logger.error(f"Executing tool {self.tool_name} failed with {execution.error}")
-            logger.error(f"E2B Sandbox configurations: {sbx_config}")
-            logger.error(f"E2B Sandbox ID: {sbx.sandbox_id}")
             func_return = get_friendly_error_msg(
                 function_name=self.tool_name, exception_name=execution.error.name, exception_message=execution.error.value
             )
