@@ -12,7 +12,7 @@ from letta.functions.function_sets.base import core_memory_append, core_memory_r
 from letta.orm.sandbox_config import SandboxConfig, SandboxEnvironmentVariable
 from letta.schemas.agent import AgentState
 from letta.schemas.embedding_config import EmbeddingConfig
-from letta.schemas.environment_variables import SandboxEnvironmentVariableCreate
+from letta.schemas.environment_variables import AgentEnvironmentVariable, SandboxEnvironmentVariableCreate
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.memory import ChatMemory
 from letta.schemas.organization import Organization
@@ -324,6 +324,41 @@ def test_local_sandbox_env(mock_e2b_api_key_none, get_env_tool, test_user):
 
 
 @pytest.mark.local_sandbox
+def test_local_sandbox_per_agent_env(mock_e2b_api_key_none, get_env_tool, agent_state, test_user):
+    manager = SandboxConfigManager(tool_settings)
+    key = "secret_word"
+
+    # Make a custom local sandbox config
+    sandbox_dir = str(Path(__file__).parent / "test_tool_sandbox")
+    config_create = SandboxConfigCreate(config=LocalSandboxConfig(sandbox_dir=sandbox_dir).model_dump())
+    config = manager.create_or_update_sandbox_config(config_create, test_user)
+
+    # Make a environment variable with a long random string
+    # Note: This has an overlapping key with agent state's environment variables
+    # We expect that the agent's env var supersedes this
+    wrong_long_random_string = "".join(secrets.choice(string.ascii_letters + string.digits) for _ in range(20))
+    manager.create_sandbox_env_var(
+        SandboxEnvironmentVariableCreate(key=key, value=wrong_long_random_string), sandbox_config_id=config.id, actor=test_user
+    )
+
+    # Make a environment variable with a long random string and put into agent state
+    correct_long_random_string = "".join(secrets.choice(string.ascii_letters + string.digits) for _ in range(20))
+    agent_state.tool_exec_environment_variables = [
+        AgentEnvironmentVariable(key=key, value=correct_long_random_string, agent_id=agent_state.id)
+    ]
+
+    # Create tool and args
+    args = {}
+
+    # Run the custom sandbox
+    sandbox = ToolExecutionSandbox(get_env_tool.name, args, user=test_user)
+    result = sandbox.run(agent_state=agent_state)
+
+    assert wrong_long_random_string not in result.func_return
+    assert correct_long_random_string in result.func_return
+
+
+@pytest.mark.local_sandbox
 def test_local_sandbox_e2e_composio_star_github(mock_e2b_api_key_none, check_composio_key_set, composio_github_star_tool, test_user):
     # Add the composio key
     manager = SandboxConfigManager(tool_settings)
@@ -470,6 +505,42 @@ def test_e2b_sandbox_inject_env_var_existing_sandbox(check_e2b_key_is_set, get_e
     assert long_random_string in result.func_return
 
 
+# TODO: There is a near dupe of this test above for local sandbox - we should try to make it parameterized tests to minimize code bloat
+@pytest.mark.e2b_sandbox
+def test_e2b_sandbox_per_agent_env(check_e2b_key_is_set, get_env_tool, agent_state, test_user):
+    manager = SandboxConfigManager(tool_settings)
+    key = "secret_word"
+
+    # Make a custom local sandbox config
+    sandbox_dir = str(Path(__file__).parent / "test_tool_sandbox")
+    config_create = SandboxConfigCreate(config=LocalSandboxConfig(sandbox_dir=sandbox_dir).model_dump())
+    config = manager.create_or_update_sandbox_config(config_create, test_user)
+
+    # Make a environment variable with a long random string
+    # Note: This has an overlapping key with agent state's environment variables
+    # We expect that the agent's env var supersedes this
+    wrong_long_random_string = "".join(secrets.choice(string.ascii_letters + string.digits) for _ in range(20))
+    manager.create_sandbox_env_var(
+        SandboxEnvironmentVariableCreate(key=key, value=wrong_long_random_string), sandbox_config_id=config.id, actor=test_user
+    )
+
+    # Make a environment variable with a long random string and put into agent state
+    correct_long_random_string = "".join(secrets.choice(string.ascii_letters + string.digits) for _ in range(20))
+    agent_state.tool_exec_environment_variables = [
+        AgentEnvironmentVariable(key=key, value=correct_long_random_string, agent_id=agent_state.id)
+    ]
+
+    # Create tool and args
+    args = {}
+
+    # Run the custom sandbox
+    sandbox = ToolExecutionSandbox(get_env_tool.name, args, user=test_user)
+    result = sandbox.run(agent_state=agent_state)
+
+    assert wrong_long_random_string not in result.func_return
+    assert correct_long_random_string in result.func_return
+
+
 @pytest.mark.e2b_sandbox
 def test_e2b_sandbox_config_change_force_recreates_sandbox(check_e2b_key_is_set, list_tool, test_user):
     manager = SandboxConfigManager(tool_settings)
@@ -506,7 +577,7 @@ def test_e2b_sandbox_with_list_rv(check_e2b_key_is_set, list_tool, test_user):
     assert len(result.func_return) == 5
 
 
-@pytest.mark.e2b_sandboxfunc
+@pytest.mark.e2b_sandbox
 def test_e2b_e2e_composio_star_github(check_e2b_key_is_set, check_composio_key_set, composio_github_star_tool, test_user):
     # Add the composio key
     manager = SandboxConfigManager(tool_settings)
