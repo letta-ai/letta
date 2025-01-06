@@ -14,6 +14,7 @@ from letta.orm import Source as SourceModel
 from letta.orm import SourcePassage, SourcesAgents
 from letta.orm import Tool as ToolModel
 from letta.orm.errors import NoResultFound
+from letta.orm.sandbox_config import AgentEnvironmentVariable as AgentEnvironmentVariableModel
 from letta.orm.sqlite_functions import adapt_array
 from letta.schemas.agent import AgentState as PydanticAgentState
 from letta.schemas.agent import AgentType, CreateAgent, UpdateAgent
@@ -116,6 +117,14 @@ class AgentManager:
             actor=actor,
         )
 
+        # If there are provided environment variables, add them in
+        if agent_create.tool_exec_environment_variables:
+            agent_state = self._set_environment_variables(
+                agent_id=agent_state.id,
+                env_vars=agent_create.tool_exec_environment_variables,
+                actor=actor,
+            )
+
         # TODO: See if we can merge this into the above SQL create call for performance reasons
         # Generate a sequence of initial messages to put in the buffer
         init_messages = initialize_message_sequence(
@@ -191,6 +200,14 @@ class AgentManager:
     @enforce_types
     def update_agent(self, agent_id: str, agent_update: UpdateAgent, actor: PydanticUser) -> PydanticAgentState:
         agent_state = self._update_agent(agent_id=agent_id, agent_update=agent_update, actor=actor)
+
+        # If there are provided environment variables, add them in
+        if agent_update.tool_exec_environment_variables:
+            agent_state = self._set_environment_variables(
+                agent_id=agent_state.id,
+                env_vars=agent_update.tool_exec_environment_variables,
+                actor=actor,
+            )
 
         # Rebuild the system prompt if it's different
         if agent_update.system and agent_update.system != agent_state.system:
@@ -295,6 +312,43 @@ class AgentManager:
             # Retrieve the agent
             agent = AgentModel.read(db_session=session, identifier=agent_id, actor=actor)
             agent.hard_delete(session)
+
+    # ======================================================================================================================
+    # Per Agent Environment Variable Management
+    # ======================================================================================================================
+    @enforce_types
+    def _set_environment_variables(
+        self,
+        agent_id: str,
+        env_vars: Dict[str, str],
+        actor: PydanticUser,
+    ) -> PydanticAgentState:
+        """
+        Adds or replaces the environment variables for the specified agent.
+
+        Args:
+            agent_id: The agent id.
+            env_vars: A dictionary of environment variable key-value pairs.
+            actor: The user performing the action.
+
+        Returns:
+            PydanticAgentState: The updated agent as a Pydantic model.
+        """
+        with self.session_maker() as session:
+            # Retrieve the agent
+            agent = AgentModel.read(db_session=session, identifier=agent_id, actor=actor)
+
+            # Replace the environment variables
+            agent.tool_exec_environment_variables = [
+                AgentEnvironmentVariableModel(key=key, value=value, agent_id=agent_id, organization_id=actor.organization_id)
+                for key, value in env_vars.items()
+            ]
+
+            # Update the agent in the database
+            agent.update(session, actor=actor)
+
+            # Return the updated agent state
+            return agent.to_pydantic()
 
     # ======================================================================================================================
     # In Context Messages Management

@@ -46,6 +46,7 @@ from letta.schemas.embedding_config import EmbeddingConfig
 
 # openai schemas
 from letta.schemas.enums import JobStatus
+from letta.schemas.environment_variables import SandboxEnvironmentVariableCreate
 from letta.schemas.job import Job, JobUpdate
 from letta.schemas.letta_message import LettaMessage, ToolReturnMessage
 from letta.schemas.llm_config import LLMConfig
@@ -53,7 +54,7 @@ from letta.schemas.memory import ArchivalMemorySummary, ContextWindowOverview, M
 from letta.schemas.message import Message, MessageCreate, MessageRole, MessageUpdate
 from letta.schemas.organization import Organization
 from letta.schemas.passage import Passage
-from letta.schemas.sandbox_config import SandboxEnvironmentVariableCreate, SandboxType
+from letta.schemas.sandbox_config import SandboxType
 from letta.schemas.source import Source
 from letta.schemas.tool import Tool
 from letta.schemas.usage import LettaUsageStatistics

@@ -5,6 +5,7 @@ from letta.functions.functions import parse_source_code
 from letta.functions.schema_generator import generate_schema
 from letta.schemas.agent import AgentState, CreateAgent, UpdateAgent
 from letta.schemas.tool import Tool
+from letta.schemas.user import User as PydanticUser
 
 
 def cleanup(client: Union[LocalClient, RESTClient], agent_uuid: str):
@@ -27,11 +28,18 @@ def create_tool_from_func(func: callable):
     )
 
 
-def comprehensive_agent_checks(agent: AgentState, request: Union[CreateAgent, UpdateAgent]):
+def comprehensive_agent_checks(agent: AgentState, request: Union[CreateAgent, UpdateAgent], actor: PydanticUser):
     # Assert scalar fields
     assert agent.system == request.system, f"System prompt mismatch: {agent.system} != {request.system}"
     assert agent.description == request.description, f"Description mismatch: {agent.description} != {request.description}"
     assert agent.metadata_ == request.metadata_, f"Metadata mismatch: {agent.metadata_} != {request.metadata_}"
+
+    # Assert agent env vars
+    if hasattr(request, "tool_exec_environment_variables"):
+        for agent_env_var in agent.tool_exec_environment_variables:
+            assert agent_env_var.key in request.tool_exec_environment_variables
+            assert request.tool_exec_environment_variables[agent_env_var.key] == agent_env_var.value
+            assert agent_env_var.organization_id == actor.organization_id
 
     # Assert agent type
     if hasattr(request, "agent_type"):

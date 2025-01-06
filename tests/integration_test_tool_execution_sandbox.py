@@ -9,20 +9,14 @@ from sqlalchemy import delete
 
 from letta import create_client
 from letta.functions.function_sets.base import core_memory_append, core_memory_replace
-from letta.orm import SandboxConfig, SandboxEnvironmentVariable
+from letta.orm.sandbox_config import SandboxConfig, SandboxEnvironmentVariable
 from letta.schemas.agent import AgentState
 from letta.schemas.embedding_config import EmbeddingConfig
+from letta.schemas.environment_variables import SandboxEnvironmentVariableCreate
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.memory import ChatMemory
 from letta.schemas.organization import Organization
-from letta.schemas.sandbox_config import (
-    E2BSandboxConfig,
-    LocalSandboxConfig,
-    SandboxConfigCreate,
-    SandboxConfigUpdate,
-    SandboxEnvironmentVariableCreate,
-    SandboxType,
-)
+from letta.schemas.sandbox_config import E2BSandboxConfig, LocalSandboxConfig, SandboxConfigCreate, SandboxConfigUpdate, SandboxType
 from letta.schemas.tool import Tool, ToolCreate
 from letta.schemas.user import User
 from letta.services.organization_manager import OrganizationManager

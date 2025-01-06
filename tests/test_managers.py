@@ -35,6 +35,7 @@ from letta.schemas.block import Block as PydanticBlock
 from letta.schemas.block import BlockUpdate, CreateBlock
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import JobStatus, MessageRole
+from letta.schemas.environment_variables import SandboxEnvironmentVariableCreate, SandboxEnvironmentVariableUpdate
 from letta.schemas.file import FileMetadata as PydanticFileMetadata
 from letta.schemas.job import Job as PydanticJob
 from letta.schemas.job import JobUpdate
@@ -43,15 +44,7 @@ from letta.schemas.message import Message as PydanticMessage
 from letta.schemas.message import MessageCreate, MessageUpdate
 from letta.schemas.organization import Organization as PydanticOrganization
 from letta.schemas.passage import Passage as PydanticPassage
-from letta.schemas.sandbox_config import (
-    E2BSandboxConfig,
-    LocalSandboxConfig,
-    SandboxConfigCreate,
-    SandboxConfigUpdate,
-    SandboxEnvironmentVariableCreate,
-    SandboxEnvironmentVariableUpdate,
-    SandboxType,
-)
+from letta.schemas.sandbox_config import E2BSandboxConfig, LocalSandboxConfig, SandboxConfigCreate, SandboxConfigUpdate, SandboxType
 from letta.schemas.source import Source as PydanticSource
 from letta.schemas.source import SourceUpdate
 from letta.schemas.tool import Tool as PydanticTool
@@ -413,6 +406,7 @@ def comprehensive_test_agent_fixture(server: SyncServer, default_user, print_too
         metadata_={"test_key": "test_value"},
         tool_rules=[InitToolRule(tool_name=print_tool.name)],
         initial_message_sequence=[MessageCreate(role=MessageRole.user, text="hello world")],
+        tool_exec_environment_variables={"test_env_var_key_a": "test_env_var_value_a", "test_env_var_key_b": "test_env_var_value_b"},
     )
     created_agent = server.agent_manager.create_agent(
         create_agent_request,
@@ -482,20 +476,20 @@ def agent_passages_setup(server, default_source, default_user, sarah_agent):
 def test_create_get_list_agent(server: SyncServer, comprehensive_test_agent_fixture, default_user):
     # Test agent creation
     created_agent, create_agent_request = comprehensive_test_agent_fixture
-    comprehensive_agent_checks(created_agent, create_agent_request)
+    comprehensive_agent_checks(created_agent, create_agent_request, actor=default_user)
 
     # Test get agent
     get_agent = server.agent_manager.get_agent_by_id(agent_id=created_agent.id, actor=default_user)
-    comprehensive_agent_checks(get_agent, create_agent_request)
+    comprehensive_agent_checks(get_agent, create_agent_request, actor=default_user)
 
     # Test get agent name
     get_agent_name = server.agent_manager.get_agent_by_name(agent_name=created_agent.name, actor=default_user)
-    comprehensive_agent_checks(get_agent_name, create_agent_request)
+    comprehensive_agent_checks(get_agent_name, create_agent_request, actor=default_user)
 
     # Test list agent
     list_agents = server.agent_manager.list_agents(actor=default_user)
     assert len(list_agents) == 1
-    comprehensive_agent_checks(list_agents[0], create_agent_request)
+    comprehensive_agent_checks(list_agents[0], create_agent_request, actor=default_user)
 
     # Test deleting the agent
     server.agent_manager.delete_agent(get_agent.id, default_user)
@@ -566,10 +560,11 @@ def test_update_agent(server: SyncServer, comprehensive_test_agent_fixture, othe
         embedding_config=EmbeddingConfig.default_config(model_name="letta"),
         message_ids=["10", "20"],
         metadata_={"train_key": "train_value"},
+        tool_exec_environment_variables={"new_tool_exec_key": "new_tool_exec_value"},
     )
 
     updated_agent = server.agent_manager.update_agent(agent.id, update_agent_request, actor=default_user)
-    comprehensive_agent_checks(updated_agent, update_agent_request)
+    comprehensive_agent_checks(updated_agent, update_agent_request, actor=default_user)
     assert updated_agent.message_ids == update_agent_request.message_ids
 
 
