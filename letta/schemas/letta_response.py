@@ -29,19 +29,20 @@ class LettaResponse(BaseModel):
         json_schema_extra={
             "items": {
                 "oneOf": [
-                    {"x-ref-name": "SystemMessage"},
-                    {"x-ref-name": "UserMessage"},
-                    {"x-ref-name": "ReasoningMessage"},
-                    {"x-ref-name": "ToolCallMessage"},
-                    {"x-ref-name": "ToolReturnMessage"},
-                    {"x-ref-name": "AssistantMessage"},
+                    {"$ref": "#/components/schemas/SystemMessage-Output"},
+                    {"$ref": "#/components/schemas/UserMessage-Output"},
+                    {"$ref": "#/components/schemas/ReasoningMessage"},
+                    {"$ref": "#/components/schemas/ToolCallMessage"},
+                    {"$ref": "#/components/schemas/ToolReturnMessage"},
+                    {"$ref": "#/components/schemas/AssistantMessage-Output"},
                 ],
                 "discriminator": {"propertyName": "message_type"},
             }
         },
     )
     usage: LettaUsageStatistics = Field(
-        ..., description="The usage statistics of the agent.", json_schema_extra={"x-ref-name": "LettaUsageStatistics"}
+        ...,
+        description="The usage statistics of the agent.",
     )
 
     def __str__(self):

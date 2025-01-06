@@ -102,31 +102,3 @@ class SandboxConfigUpdate(LettaBase):
     """Pydantic model for updating SandboxConfig fields."""
 
     config: Union[LocalSandboxConfig, E2BSandboxConfig] = Field(None, description="The JSON configuration data for the sandbox.")
-
-
-# Environment Variable
-class SandboxEnvironmentVariableBase(OrmMetadataBase):
-    __id_prefix__ = "sandbox-env"
-
-
-class SandboxEnvironmentVariable(SandboxEnvironmentVariableBase):
-    id: str = SandboxEnvironmentVariableBase.generate_id_field()
-    key: str = Field(..., description="The name of the environment variable.")
-    value: str = Field(..., description="The value of the environment variable.")
-    description: Optional[str] = Field(None, description="An optional description of the environment variable.")
-    sandbox_config_id: str = Field(..., description="The ID of the sandbox config this environment variable belongs to.")
-    organization_id: Optional[str] = Field(None, description="The ID of the organization this environment variable belongs to.")
-
-
-class SandboxEnvironmentVariableCreate(LettaBase):
-    key: str = Field(..., description="The name of the environment variable.")
-    value: str = Field(..., description="The value of the environment variable.")
-    description: Optional[str] = Field(None, description="An optional description of the environment variable.")
-
-
-class SandboxEnvironmentVariableUpdate(LettaBase):
-    """Pydantic model for updating SandboxEnvironmentVariable fields."""
-
-    key: Optional[str] = Field(None, description="The name of the environment variable.")
-    value: Optional[str] = Field(None, description="The value of the environment variable.")
-    description: Optional[str] = Field(None, description="An optional description of the environment variable.")
