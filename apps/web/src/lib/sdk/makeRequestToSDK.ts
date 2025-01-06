@@ -97,7 +97,7 @@ async function handleEventStreamRequest(options: RequestOptions) {
             Accept: 'text/event-stream',
           },
           body: body ? JSON.stringify(body) : undefined,
-        }
+        },
       );
 
       eventsource.onmessage = async (e: MessageEvent) => {
@@ -209,8 +209,20 @@ function isCreateMessageRequest(options: RequestOptions) {
   return regex.test(options.pathname) || regex2.test(options.pathname);
 }
 
+function isStreamMessageRequest(options: RequestOptions) {
+  // pathname must conform with /v1/agents/{agent-id}/messages/{message-id}/messages/stream
+  const regex =
+    /\/v1\/agents\/[a-zA-Z0-9-]+\/messages\/[a-zA-Z0-9-]+\/messages\/stream\/?/;
+
+  if (options.method !== 'POST') {
+    return false;
+  }
+
+  return regex.test(options.pathname);
+}
+
 export async function makeRequestToSDK(
-  options: RequestOptions
+  options: RequestOptions,
 ): Promise<Response> {
   const {
     pathname,
@@ -225,7 +237,7 @@ export async function makeRequestToSDK(
 
   if (
     RESTRICTED_ROUTE_BASE_PATHS.some((restrictedPath) =>
-      pathname.startsWith(restrictedPath)
+      pathname.startsWith(restrictedPath),
     )
   ) {
     return new Response('Not found', {
@@ -236,7 +248,10 @@ export async function makeRequestToSDK(
     });
   }
 
-  if (headers.get('Accept') === 'text/event-stream') {
+  if (
+    isStreamMessageRequest(options) ||
+    headers.get('Accept') === 'text/event-stream'
+  ) {
     return handleEventStreamRequest(options);
   }
 
