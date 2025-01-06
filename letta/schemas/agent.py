@@ -83,6 +83,13 @@ class AgentState(OrmMetadataBase, validate_assignment=True):
         ..., description="The environment variables for tool execution specific to this agent."
     )
 
+    def get_agent_env_vars_as_dict(self) -> Dict[str, str]:
+        # Get environment variables for this agent specifically
+        per_agent_env_vars = {}
+        for agent_env_var_obj in self.tool_exec_environment_variables:
+            per_agent_env_vars[agent_env_var_obj.key] = agent_env_var_obj.value
+        return per_agent_env_vars
+
 
 class CreateAgent(BaseModel, validate_assignment=True):  #
     # all optional as server can generate defaults
