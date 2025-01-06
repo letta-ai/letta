@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field, field_validator
 from letta.constants import DEFAULT_EMBEDDING_CHUNK_SIZE
 from letta.schemas.block import CreateBlock
 from letta.schemas.embedding_config import EmbeddingConfig
+from letta.schemas.environment_variables import AgentEnvironmentVariable
 from letta.schemas.letta_base import OrmMetadataBase
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.memory import Memory
@@ -78,6 +79,9 @@ class AgentState(OrmMetadataBase, validate_assignment=True):
     tools: List[Tool] = Field(..., description="The tools used by the agent.")
     sources: List[Source] = Field(..., description="The sources used by the agent.")
     tags: List[str] = Field(..., description="The tags associated with the agent.")
+    tool_exec_environment_variables: List[AgentEnvironmentVariable] = Field(
+        ..., description="The environment variables for tool execution specific to this agent."
+    )
 
 
 class CreateAgent(BaseModel, validate_assignment=True):  #
@@ -120,6 +124,9 @@ class CreateAgent(BaseModel, validate_assignment=True):  #
     embedding_chunk_size: Optional[int] = Field(DEFAULT_EMBEDDING_CHUNK_SIZE, description="The embedding chunk size used by the agent.")
     from_template: Optional[str] = Field(None, description="The template id used to configure the agent")
     project_id: Optional[str] = Field(None, description="The project id that the agent will be associated with.")
+    tool_exec_environment_variables: Optional[Dict[str, str]] = Field(
+        None, description="The environment variables for tool execution specific to this agent."
+    )
 
     @field_validator("name")
     @classmethod
@@ -184,6 +191,9 @@ class UpdateAgent(BaseModel):
     message_ids: Optional[List[str]] = Field(None, description="The ids of the messages in the agent's in-context memory.")
     description: Optional[str] = Field(None, description="The description of the agent.")
     metadata_: Optional[Dict] = Field(None, description="The metadata of the agent.", alias="metadata_")
+    tool_exec_environment_variables: Optional[Dict[str, str]] = Field(
+        None, description="The environment variables for tool execution specific to this agent."
+    )
 
     class Config:
         extra = "ignore"  # Ignores extra fields

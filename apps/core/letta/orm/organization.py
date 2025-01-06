@@ -9,6 +9,7 @@ if TYPE_CHECKING:
 
     from letta.orm.agent import Agent
     from letta.orm.file import FileMetadata
+    from letta.orm.sandbox_config import AgentEnvironmentVariable
     from letta.orm.tool import Tool
     from letta.orm.user import User
 
@@ -32,6 +33,9 @@ class Organization(SqlalchemyBase):
     )
     sandbox_environment_variables: Mapped[List["SandboxEnvironmentVariable"]] = relationship(
         "SandboxEnvironmentVariable", back_populates="organization", cascade="all, delete-orphan"
+    )
+    agent_environment_variables: Mapped[List["AgentEnvironmentVariable"]] = relationship(
+        "AgentEnvironmentVariable", back_populates="organization", cascade="all, delete-orphan"
     )
 
     # relationships
