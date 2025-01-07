@@ -52,6 +52,14 @@ export function useSyncUpdateCurrentAgent() {
                 requestBody: {
                   id: currentAgent.id,
                   ...updateAgentData,
+                  tool_exec_environment_variables:
+                    updateAgentData.tool_exec_environment_variables
+                      ? Object.fromEntries(
+                          updateAgentData.tool_exec_environment_variables.map(
+                            (item) => [item.key, item.value],
+                          ),
+                        )
+                      : undefined,
                 },
               },
               {

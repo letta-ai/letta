@@ -380,6 +380,8 @@ export const useSourcesServiceListFilesFromSource = <
  * @param data.name Name of the agent
  * @param data.tags List of tags to filter agents by
  * @param data.matchAllTags If True, only returns agents that match ALL given tags. Otherwise, return agents that have ANY of the passed in tags.
+ * @param data.cursor Cursor for pagination
+ * @param data.limit Limit for pagination
  * @param data.userId
  * @returns AgentState Successful Response
  * @throws ApiError
@@ -390,11 +392,15 @@ export const useAgentsServiceListAgents = <
   TQueryKey extends Array<unknown> = unknown[],
 >(
   {
+    cursor,
+    limit,
     matchAllTags,
     name,
     tags,
     userId,
   }: {
+    cursor?: number;
+    limit?: number;
     matchAllTags?: boolean;
     name?: string;
     tags?: string[];
@@ -405,11 +411,18 @@ export const useAgentsServiceListAgents = <
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseAgentsServiceListAgentsKeyFn(
-      { matchAllTags, name, tags, userId },
+      { cursor, limit, matchAllTags, name, tags, userId },
       queryKey,
     ),
     queryFn: () =>
-      AgentsService.listAgents({ matchAllTags, name, tags, userId }) as TData,
+      AgentsService.listAgents({
+        cursor,
+        limit,
+        matchAllTags,
+        name,
+        tags,
+        userId,
+      }) as TData,
     ...options,
   });
 /**

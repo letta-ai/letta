@@ -231,11 +231,15 @@ export type AgentsServiceListAgentsQueryResult<
 export const useAgentsServiceListAgentsKey = 'AgentsServiceListAgents';
 export const UseAgentsServiceListAgentsKeyFn = (
   {
+    cursor,
+    limit,
     matchAllTags,
     name,
     tags,
     userId,
   }: {
+    cursor?: number;
+    limit?: number;
     matchAllTags?: boolean;
     name?: string;
     tags?: string[];
@@ -244,7 +248,7 @@ export const UseAgentsServiceListAgentsKeyFn = (
   queryKey?: Array<unknown>,
 ) => [
   useAgentsServiceListAgentsKey,
-  ...(queryKey ?? [{ matchAllTags, name, tags, userId }]),
+  ...(queryKey ?? [{ cursor, limit, matchAllTags, name, tags, userId }]),
 ];
 export type AgentsServiceGetAgentContextWindowDefaultResponse = Awaited<
   ReturnType<typeof AgentsService.getAgentContextWindow>

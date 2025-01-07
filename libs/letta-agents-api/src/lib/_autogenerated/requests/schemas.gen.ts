@@ -142,6 +142,112 @@ export const $ActionResponseModel = {
   description: 'Action response data model.',
 } as const;
 
+export const $AgentEnvironmentVariable = {
+  properties: {
+    created_by_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Created By Id',
+      description: 'The id of the user that made this object.',
+    },
+    last_updated_by_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Last Updated By Id',
+      description: 'The id of the user that made this object.',
+    },
+    created_at: {
+      anyOf: [
+        {
+          type: 'string',
+          format: 'date-time',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Created At',
+      description: 'The timestamp when the object was created.',
+    },
+    updated_at: {
+      anyOf: [
+        {
+          type: 'string',
+          format: 'date-time',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Updated At',
+      description: 'The timestamp when the object was last updated.',
+    },
+    id: {
+      type: 'string',
+      pattern: '^agent-env-[a-fA-F0-9]{8}',
+      title: 'Id',
+      description: 'The human-friendly ID of the Agent-env',
+      examples: ['agent-env-123e4567-e89b-12d3-a456-426614174000'],
+    },
+    key: {
+      type: 'string',
+      title: 'Key',
+      description: 'The name of the environment variable.',
+    },
+    value: {
+      type: 'string',
+      title: 'Value',
+      description: 'The value of the environment variable.',
+    },
+    description: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Description',
+      description: 'An optional description of the environment variable.',
+    },
+    organization_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Organization Id',
+      description:
+        'The ID of the organization this environment variable belongs to.',
+    },
+    agent_id: {
+      type: 'string',
+      title: 'Agent Id',
+      description: 'The ID of the agent this environment variable belongs to.',
+    },
+  },
+  additionalProperties: false,
+  type: 'object',
+  required: ['key', 'value', 'agent_id'],
+  title: 'AgentEnvironmentVariable',
+} as const;
+
 export const $AgentState = {
   properties: {
     created_by_id: {
@@ -329,6 +435,15 @@ export const $AgentState = {
       title: 'Tags',
       description: 'The tags associated with the agent.',
     },
+    tool_exec_environment_variables: {
+      items: {
+        $ref: '#/components/schemas/AgentEnvironmentVariable',
+      },
+      type: 'array',
+      title: 'Tool Exec Environment Variables',
+      description:
+        'The environment variables for tool execution specific to this agent.',
+    },
   },
   additionalProperties: false,
   type: 'object',
@@ -343,6 +458,7 @@ export const $AgentState = {
     'tools',
     'sources',
     'tags',
+    'tool_exec_environment_variables',
   ],
   title: 'AgentState',
   description: `Representation of an agent's state. This is the state of the agent at a given time, and is persisted in the DB backend. The state has all the information needed to recreate a persisted agent.
@@ -1558,6 +1674,12 @@ export const $ContextWindowOverview = {
       description:
         'The number of tokens in the external memory summary (archival + recall metadata).',
     },
+    external_memory_summary: {
+      type: 'string',
+      title: 'External Memory Summary',
+      description:
+        'The metadata summary of the external memory sources (archival + recall metadata).',
+    },
     num_tokens_system: {
       type: 'integer',
       title: 'Num Tokens System',
@@ -1637,6 +1759,7 @@ export const $ContextWindowOverview = {
     'num_archival_memory',
     'num_recall_memory',
     'num_tokens_external_memory_summary',
+    'external_memory_summary',
     'num_tokens_system',
     'system_prompt',
     'num_tokens_core_memory',
@@ -1928,6 +2051,22 @@ export const $CreateAgentRequest = {
       ],
       title: 'Project Id',
       description: 'The project id that the agent will be associated with.',
+    },
+    tool_exec_environment_variables: {
+      anyOf: [
+        {
+          additionalProperties: {
+            type: 'string',
+          },
+          type: 'object',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Tool Exec Environment Variables',
+      description:
+        'The environment variables for tool execution specific to this agent.',
     },
     user_id: {
       anyOf: [
@@ -3768,12 +3907,6 @@ export const $SandboxEnvironmentVariable = {
       title: 'Description',
       description: 'An optional description of the environment variable.',
     },
-    sandbox_config_id: {
-      type: 'string',
-      title: 'Sandbox Config Id',
-      description:
-        'The ID of the sandbox config this environment variable belongs to.',
-    },
     organization_id: {
       anyOf: [
         {
@@ -3786,6 +3919,12 @@ export const $SandboxEnvironmentVariable = {
       title: 'Organization Id',
       description:
         'The ID of the organization this environment variable belongs to.',
+    },
+    sandbox_config_id: {
+      type: 'string',
+      title: 'Sandbox Config Id',
+      description:
+        'The ID of the sandbox config this environment variable belongs to.',
     },
   },
   additionalProperties: false,
@@ -3867,7 +4006,6 @@ export const $SandboxEnvironmentVariableUpdate = {
   additionalProperties: false,
   type: 'object',
   title: 'SandboxEnvironmentVariableUpdate',
-  description: 'Pydantic model for updating SandboxEnvironmentVariable fields.',
 } as const;
 
 export const $SandboxType = {
@@ -4828,6 +4966,22 @@ export const $UpdateAgent = {
       ],
       title: 'Metadata ',
       description: 'The metadata of the agent.',
+    },
+    tool_exec_environment_variables: {
+      anyOf: [
+        {
+          additionalProperties: {
+            type: 'string',
+          },
+          type: 'object',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Tool Exec Environment Variables',
+      description:
+        'The environment variables for tool execution specific to this agent.',
     },
   },
   type: 'object',

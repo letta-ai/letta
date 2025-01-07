@@ -40,6 +40,49 @@ export type ActionResponseModel = {
   required?: Array<string> | null;
 };
 
+export type AgentEnvironmentVariable = {
+  /**
+   * The id of the user that made this object.
+   */
+  created_by_id?: string | null;
+  /**
+   * The id of the user that made this object.
+   */
+  last_updated_by_id?: string | null;
+  /**
+   * The timestamp when the object was created.
+   */
+  created_at?: string | null;
+  /**
+   * The timestamp when the object was last updated.
+   */
+  updated_at?: string | null;
+  /**
+   * The human-friendly ID of the Agent-env
+   */
+  id?: string;
+  /**
+   * The name of the environment variable.
+   */
+  key: string;
+  /**
+   * The value of the environment variable.
+   */
+  value: string;
+  /**
+   * An optional description of the environment variable.
+   */
+  description?: string | null;
+  /**
+   * The ID of the organization this environment variable belongs to.
+   */
+  organization_id?: string | null;
+  /**
+   * The ID of the agent this environment variable belongs to.
+   */
+  agent_id: string;
+};
+
 /**
  * Representation of an agent's state. This is the state of the agent at a given time, and is persisted in the DB backend. The state has all the information needed to recreate a persisted agent.
  *
@@ -135,6 +178,10 @@ export type AgentState = {
    * The tags associated with the agent.
    */
   tags: Array<string>;
+  /**
+   * The environment variables for tool execution specific to this agent.
+   */
+  tool_exec_environment_variables: Array<AgentEnvironmentVariable>;
 };
 
 /**
@@ -503,6 +550,10 @@ export type ContextWindowOverview = {
    */
   num_tokens_external_memory_summary: number;
   /**
+   * The metadata summary of the external memory sources (archival + recall metadata).
+   */
+  external_memory_summary: string;
+  /**
    * The number of tokens in the system prompt.
    */
   num_tokens_system: number;
@@ -640,6 +691,12 @@ export type CreateAgentRequest = {
    * The project id that the agent will be associated with.
    */
   project_id?: string | null;
+  /**
+   * The environment variables for tool execution specific to this agent.
+   */
+  tool_exec_environment_variables?: {
+    [key: string]: string;
+  } | null;
   user_id?: string | null;
 };
 
@@ -1534,13 +1591,13 @@ export type SandboxEnvironmentVariable = {
    */
   description?: string | null;
   /**
-   * The ID of the sandbox config this environment variable belongs to.
-   */
-  sandbox_config_id: string;
-  /**
    * The ID of the organization this environment variable belongs to.
    */
   organization_id?: string | null;
+  /**
+   * The ID of the sandbox config this environment variable belongs to.
+   */
+  sandbox_config_id: string;
 };
 
 export type SandboxEnvironmentVariableCreate = {
@@ -1558,9 +1615,6 @@ export type SandboxEnvironmentVariableCreate = {
   description?: string | null;
 };
 
-/**
- * Pydantic model for updating SandboxEnvironmentVariable fields.
- */
 export type SandboxEnvironmentVariableUpdate = {
   /**
    * The name of the environment variable.
@@ -1947,6 +2001,12 @@ export type UpdateAgent = {
    */
   metadata_?: {
     [key: string]: unknown;
+  } | null;
+  /**
+   * The environment variables for tool execution specific to this agent.
+   */
+  tool_exec_environment_variables?: {
+    [key: string]: string;
   } | null;
 };
 
@@ -2437,6 +2497,14 @@ export type DeleteFileFromSourceData = {
 export type DeleteFileFromSourceResponse = void;
 
 export type ListAgentsData = {
+  /**
+   * Cursor for pagination
+   */
+  cursor?: number | null;
+  /**
+   * Limit for pagination
+   */
+  limit?: number | null;
   /**
    * If True, only returns agents that match ALL given tags. Otherwise, return agents that have ANY of the passed in tags.
    */
