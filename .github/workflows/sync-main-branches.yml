@@ -1,0 +1,18 @@
+name: Notify Letta Cloud
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger repository_dispatch
+        run: |
+          curl -X POST \
+            -H "Authorization: token ${{ secrets.SYNC_PAT }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/repos/letta-ai/letta-cloud/dispatches \
+            -d '{"event_type":"oss-update"}'
