@@ -46,6 +46,8 @@ def list_agents(
     ),
     server: "SyncServer" = Depends(get_letta_server),
     user_id: Optional[str] = Header(None, alias="user_id"),
+    cursor: Optional[int] = Query(None, description="Cursor for pagination"),
+    limit: Optional[int] = Query(None, description="Limit for pagination"),
     # Extract user_id from header, default to None if not present
 ):
     """
@@ -66,7 +68,7 @@ def list_agents(
     }
 
     # Call list_agents with the dynamic kwargs
-    agents = server.agent_manager.list_agents(actor=actor, **kwargs)
+    agents = server.agent_manager.list_agents(actor=actor, cursor=cursor, limit=limit, **kwargs)
     return agents
 
 
