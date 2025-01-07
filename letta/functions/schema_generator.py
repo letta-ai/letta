@@ -3,7 +3,6 @@ from typing import Any, Dict, List, Optional, Type, Union, get_args, get_origin
 
 from docstring_parser import parse
 from pydantic import BaseModel
-from pydantic.v1 import BaseModel as V1BaseModel
 
 
 def is_optional(annotation):
