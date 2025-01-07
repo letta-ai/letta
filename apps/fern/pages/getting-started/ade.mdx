@@ -1,0 +1,52 @@
+---
+title: Agent Development Environment (ADE)
+slug: agent-development-environment 
+---
+<Tip>
+The ADE is currently in open beta.
+During the beta period, you can access the ADE at [https://app.letta.com](https://app.letta.com) and connect it to your local Letta server or self-hosted deployments.
+</Tip>
+
+## What is the ADE?
+The **Agent Development Environment (ADE)** is a visual interface for creating and managing stateful agents.
+Use the ADE to design, test, and monitor your agents while getting direct visibility into their memory state and decision-making process.
+
+<img className="block w-300 dark:hidden" src="https://raw.githubusercontent.com/letta-ai/letta/refs/heads/main/assets/example_ade_screenshot_light.png" />
+<img className="hidden w-300 dark:block" src="https://raw.githubusercontent.com/letta-ai/letta/refs/heads/main/assets/example_ade_screenshot.png" />
+
+Unlike simple chatbot interfaces, the ADE gives you complete control over your agent's state across its entire lifecycle:
+- Create and customize agents without writing code
+- Visualize your agent's memory and context window in real-time
+- Add and test custom tools in a sandboxed environment
+- Monitor agent behavior and performance
+
+The ADE provides a graphical interface to agents running in your Letta server.
+These same agents can be accessed via the [Letta APIs](/api-reference/overview), allowing you to integrate them into your applications.
+
+## Main ADE features
+You can use the ADE to create, edit, and test agents running inside a Letta Server.
+The ADE provides you direct visibility into your agent's state, including its context window, core memory blocks, attached tools, and archival memory (e.g. vector database).
+
+### 👾 Agent Simulator
+The **agent simulator** (*center panel*) provides a real-time view of your agent's conversation and event history.
+Beyond just chatting, you can send system messages (e.g. for meta/event style messages) and observe how your agent processes information and makes decisions.
+
+### ⚙️ Agent Configuration
+Use the ADE to configure your **agent's settings** (*left panel*):
+- Choose from different LLM models
+- Configure your agent's system instructions
+- Connect tools and data sources to your agent
+
+### 🧠 State Visualization
+Monitor your **agent's state** in real-time (*right panel*):
+- **Context window viewer** shows exactly what information your agent is currently processing
+- **Core memory blocks** display persistent agent knowledge
+- **Archival memory** connects your agent to external data sources
+
+## ADE guide
+Learn more about the ADE in our ADE guide:
+- [Connecting the ADE to local and remote deployments](/guides/ade/setup)
+- [Explore the ADEs components in detail](/guides/ade/usage)
+- [Read our ADE FAQs](/faq#agent-development-environment-ade)
+
+If you have additional questions, feedback, or feature requests, reach out on [Discord](https://discord.gg/letta)!

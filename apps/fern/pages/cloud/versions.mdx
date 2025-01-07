@@ -1,0 +1,43 @@
+---
+title: Versioning Agent Templates
+slug: guides/templates/versioning
+---
+
+<Note>
+Versioning is a feature in [agent templates](/guides/templates) (part of [Letta Cloud](/guides/cloud)).
+To use versioning, you must be using an agent template, not an agent.
+</Note>
+
+Versions allow you to keep track of the changes you've made to your template over time.
+Agent templates follow the versioning convention of `template-name:version-number`.
+
+Similar to [Docker tags](https://docs.docker.com/get-started/docker-concepts/building-images/build-tag-and-publish-an-image/#tagging-images), you can specify the latest version of a template using the `latest` keyword (`template-name:latest`).
+
+## Creating a new template version
+When you create a template, it starts off at version 1.
+Once you've make edits to your template in the ADE, you can create a new version of the template by clicking the "Template" button in the ADE (top right), then clicking "Save new template version".
+Version numbers are incremented automatically (e.g. version 1 becomes version 2).
+
+## Migrating existing agents to a new template version
+If you've deployed agents on a previous version of the template, you'll be asked if you want to migrate your existing agents to the new version of the template.
+When you migrate existing agents to a new template version, Letta Cloud will re-create your existing agents using the new template information, but keeping prior agent state such as the conversation history.
+The memory state of the agent will be recreated from the new version of the template (memory variables will be injected using the prior agent variables).
+
+### When should I migrate (or not migrate) my agents?
+One reason you might want to migrate your agents is if you've added new tools to your agent template: migrating existing agents to the new version of the template will give them access to the new tools, while retaining all of their prior state.
+
+If you make significant changes to the memory structure of the agent template (e.g. adding new memory blocks), you likely are better off creating a new agent template instead.
+You can easily create a new agent template from an existing template by **forking** your template (click the settings button ⚙️ in the ADE, then click "Fork Template").
+
+## Specifying a version when creating an agent
+
+You can specify a template version when creating an agent in the [agent creation endpoint](/api-reference/agents/create).
+For example, to deploy an agent from a template called `template-name` at version 2, you would use `:v2` as the template tag:
+```sh
+curl -X POST https://app.letta.com/v1/agents \
+  -H 'Content-Type: application/json' \
+  -H 'Authorization: Bearer YOUR_API_KEY' \
+  -d '{
+    "from_template": template-name:v2"
+  }'
+```

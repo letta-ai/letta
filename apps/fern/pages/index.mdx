@@ -1,0 +1,133 @@
+---
+title: Home
+layout: custom 
+hide-feedback: true
+no-image-zoom: true
+slug: /
+---
+
+<style>
+  {`
+    img {
+      cursor: pointer !important;
+    }
+    .rm-Lightbox-trigger {
+      cursor: pointer !important;
+    }
+    [data-rmiz-wrap="visible"],
+    [data-rmiz-wrap="hidden"] {
+      cursor: pointer !important;
+    }
+
+    .letta-header {
+      padding-top: 64px !important;
+      padding-bottom: 64px !important;
+      background-color: #f6f6f6 !important;
+    }
+
+    :is(.dark) .letta-header {
+      background-color: #151515 !important;
+    }
+
+    .letta-header h1 {
+      font-size: 4.0rem !important;
+      line-height: 1.1 !important;
+      font-weight: 300 !important;
+      font-family: Roobert, sans-serif !important;  /* Use regular Roobert instead of Medium */
+    }
+
+    .letta-header p {
+      font-size: 1.25rem !important;
+      line-height: 1.3 !important;
+      font-weight: 400 !important;
+    }
+
+    .letta-header a {
+      border-bottom: 1px solid rgba(255,255,255,0.5) !important;
+      font-size: 0.5rem !important;
+      font-weight: normal !important;
+    }
+
+    .letta-header a:hover {
+      border-bottom-color: white !important;
+    }
+
+    .fern-main .landingbody {
+      max-width: 1195px !important;
+      margin-left: auto !important;
+      margin-right: auto !important;
+    }
+
+  `}
+</style>
+<div className="w-full letta-header">
+  <div className="max-w-4xl mx-auto px-8 py-16 text-center">
+    <h1 className="text-7xl mb-6">Build with Letta</h1>
+    <p className="text-3xl font-light mb-8">
+      Learn how to build and deploy stateful agents with the Letta Platform
+    </p>
+    <div className="mt-10">
+      <a href="/letta-platform" className="text-xl font-normal hover:opacity-90 transition-opacity">
+        Get started →
+      </a>
+    </div>
+  </div>
+</div>
+
+{/* Main Content */}
+<div className="landingbody max-w-4xl mx-auto px-8 py-12 mt-12">
+
+<CardGroup cols={3}>
+  <Card
+    title="Guides and Concepts"
+    icon="fa-sharp fa-solid fa-alien-8bit"
+    href="/letta-platform"
+  >
+Understand the basics of building Stateful Agents with Letta
+  </Card>
+  <Card
+    title="Quickstart"
+    icon="fa-sharp fa-light fa-bolt"
+    href="/guides/server/quickstart"
+  >
+Create your first Letta agent in a few minutes
+  </Card>
+  <Card
+    title="Agent Development Environment"
+    icon="fa-sharp fa-light fa-browser"
+    href="/agent-development-environment"
+  >
+    Learn how to use the Agent Development Environment (ADE)
+  </Card>
+  <Card
+    title="REST API and SDKs"
+    icon="fa-sharp fa-light fa-code"
+    href="/api-reference/overview"
+  >
+    Integrate Letta into your application with a few lines of code
+  </Card>
+  <Card
+    title="DeepLearning.AI Course" 
+    icon="fa-sharp fa-light fa-graduation-cap"
+    href="https://www.deeplearning.ai/short-courses/llms-as-operating-systems-agent-memory"
+  >
+    Take our free DeepLearning.AI course on agent memory
+  </Card>
+  <Card
+    title="Developer Community" 
+    icon="fa-brands fa-discord"
+    href="https://discord.gg/letta"
+  >
+    Join our developer community on Discord
+  </Card>
+  <Card
+    title="Open Source" 
+    icon="fa-brands fa-github"
+    href="https://github.com/letta-ai/letta"
+  >
+    Browse and contribute to Letta's open source code
+  </Card> 
+  
+</CardGroup>
+
+</div>

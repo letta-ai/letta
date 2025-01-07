@@ -1,6 +1,6 @@
-.fern-header-container * {
+/* .fern-header-container * {
   font-weight: 600;
-}
+} */
 
 /* Override styles related to soft borders */
 .fern-button {
@@ -63,4 +63,61 @@ code:not(.code-block) {
 
 :is(.light) .code-block-line-content span[style*="color: rgb(194, 195, 197);"] {
   color: #8e8e8e !important;
+}
+
+/* Different opacity for active items in the sidebar */
+
+/* Light mode */
+:is(.light) .fern-sidebar-link-container[data-state="active"] .fern-sidebar-link {
+  background-color: rgba(7, 7, 172, 0.04);
+}
+
+:is(.light) .fern-sidebar-link-container[data-state="active"] .fern-sidebar-link-text {
+  color: #0707ac;
+}
+
+/* Dark mode */
+:is(.dark) .fern-sidebar-link-container[data-state="active"] .fern-sidebar-link {
+  background-color: rgba(255, 187, 173, 0.08);  /* #FFBBAD */
+}
+
+:is(.dark) .fern-sidebar-link-container[data-state="active"] .fern-sidebar-link-text {
+  color: #FF5533;
+}
+
+/* Make uppercase sidebar heading */
+.fern-sidebar-heading .fern-sidebar-heading-content,
+.fern-breadcrumb-item {
+	/* font-family: var(--typography-code-font-family); */
+	font-weight: 600;
+	/* letter-spacing: 0.05em; */
+	text-transform: uppercase;
+	/* color: var(--gray-12); */
+	font-size: 0.8rem;
+	/* text-decoration: none; */
+}
+
+/* .fern-theme-default.fern-container .fern-header-tabs .fern-header-tab-button .fern-header-container * {
+  font-size: 1rem;
+} */
+
+.t-muted.whitespace-nowrap.text-xs,
+.inline-flex.items-baseline.gap-1 {
+  display: none !important;
+}
+
+/* disable overscroll */
+html, body {
+  overscroll-behavior: none !important;
+}
+
+/* Or if you need to be more specific for Fern */
+.fern-main {
+  overscroll-behavior: none !important;
+}
+
+/* You might also want to add these to be thorough */
+* {
+  -webkit-overflow-scrolling: auto !important;
+  overscroll-behavior: none !important;
 }

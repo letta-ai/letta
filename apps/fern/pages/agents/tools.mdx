@@ -1,0 +1,105 @@
+---
+title: Define and customize tools
+slug: guides/agents/tools
+---
+
+
+## Letta Tools 
+By default, agents in Letta are created with the following tools: 
+
+| Tool                       | Description                                          |
+|----------------------------|------------------------------------------------------|
+| `send_message`             | Sends a message to the human user.                   |
+| `conversation_search`      | Search prior conversation history                    |
+| `conversation_search_date` | Search prior conversation history using a date range |
+| `archival_memory_insert`   | Add a memory to archival memory                      |
+| `archival_memory_search`   | Search archival memory via embedding search          |
+
+
+## Custom Tools 
+You can create custom tools in Letta in Python. When you define the function for the tool, you must make sure to have a properly formatting docstring for Letta to parse the function schema. 
+```python
+from letta import Letta
+import inspect
+from textwrap import dedent
+from pprint import pprint
+
+client = Letta(token="LETTA_API_KEY")
+
+# define a function with a docstring
+def roll_dice() -> str:
+    """
+    Simulate the roll of a 20-sided die (d20).
+
+    This function generates a random integer between 1 and 20, inclusive,
+    which represents the outcome of a single roll of a d20.
+
+    Returns:
+        str: The result of the die roll.
+    """
+    import random
+
+    dice_role_outcome = random.randint(1, 20)
+    output_string = f"You rolled a {dice_role_outcome}"
+    return output_string
+
+
+def parse_source_code(func) -> str:
+    """Parse the source code of a function and remove indendation"""
+    source_code = dedent(inspect.getsource(func))
+    return source_code
+
+# create the tool
+tool = client.tools.create(
+    source_code=parse_source_code(roll_dice)
+)
+print(f"Created tool {tool.name}")
+```
+
+### Adding tools to agents
+Once the tool is created, you can add it to an agent by passing the tool name to the `tools` parameter in the agent creation.
+```python
+# create a new agent
+agent = client.agents.create(
+    memory_blocks=[
+        {"label": "human", "limit": 2000, "value": "Name: Bob"},
+        {"label": "persona", "limit": 2000, "value": "You are a friendly agent"}
+    ],
+    llm="openai/gpt-4",
+    embedding="openai/text-embedding-ada-002",
+    tool_ids=[tool.id]
+)
+```
+
+## External Tool Libraries 
+Letta also has early support for adding tools from the external tool library [Composio](https://docs.composio.dev).
+This integrations works by converting the external library tools into Letta tools.
+
+### Composio Tools 
+To use Letta with [Composio](https://docs.composio.dev) tools, make sure you install dependencies with `pip install 'letta[external-tools]`. Then, make sure you log in to Composio and add any necessary authentication.
+```bash
+composio login
+composio add github
+```
+For example, to use 
+```python
+# TODO: not sure how this works
+```
+Now, you can include the tool to be used with your agent. See a working example [here](https://github.com/letta-ai/letta/blob/main/examples/composio_tool_usage.py).
+
+## Excluding default tools 
+
+To skip adding default tools when creating a new agent, you can add in `include_default_tools=False` to the agent creation:
+```python
+# create an agent with no tools
+agent = client.agents.create(
+    include_default_tools=False
+)
+```
+This will create an agent with no tools, so the agent will have no ability to manage memory or search conversation history.
+
+## Tool Rules (Graphs)
+
+Tool rules allow you to define graph-like constrains on your tools, such as requiring that a tool terminate agent execution or be followed by another tool.
+
+Read more about tool rules [here](/guides/agents/tool-rules).

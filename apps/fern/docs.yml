@@ -1,99 +1,125 @@
 instances:
   - url: https://letta.docs.buildwithfern.com
     custom-domain: https://docs.letta.com
-title: Letta | Documentation
+title: Letta
 
 tabs:
-  home:
-    display-name: Home
-    icon: fa-solid home 
-    skip-slug: true
   docs: 
-    display-name: Documentation
-    icon: fa-solid book-open
+    display-name: Guides and Concepts 
+    icon: fa-sharp fa-light fa-file-lines 
     slug: documentation
   ref:
     display-name: API Reference
-    icon: fa-solid code 
+    icon: fa-sharp fa-light code 
     skip-slug: true
+  release:
+    display-name: Release Notes
+    icon: fa-sharp fa-light fa-square-rss
+    href: https://www.letta.com/news
+  discord:
+    display-name: Discord Community
+    icon: fa-brands fa-discord
+    href: https://discord.gg/letta
+
+landing-page:
+  page: home
+  path: pages/index.mdx
 
 navigation:
-  - tab: home
-    layout: 
-      - page: Home
-        path: template-pages/home.mdx
   - tab: docs
     layout:
       - section: Get Started
         contents:
-          - page: Overview
-            path: introduction.mdx
+          - page: The Letta Platform 
+            path: pages/getting-started/letta_platform.mdx
+          - page: Introduction to Stateful Agents
+            path: pages/getting-started/stateful_agents.mdx
+          - page: Agent Development Environment
+            path: pages/getting-started/ade.mdx
+          - page: Letta FAQs
+            path: pages/getting-started/faq.mdx
           - page: Quickstart
-            path: quickstart.mdx
-          - section: Letta server
+            path: pages/getting-started/quickstart.mdx
+      - section: Deployment Options
+        contents:
+          - section: Self-hosted Letta Server
             contents:
-              - page: Run with Docker
-                path: server/docker.mdx
-              - page: Run with pip
-                path: server/pip.mdx
-          - section: LLM configuration
-            contents:
-              - page: OpenAI
-                path: models/openai.mdx
-              - page: OpenAI proxy
-                path: models/openai_proxy.mdx
-              - page: Anthropic
-                path: models/anthropic.mdx
-              - page: Groq
-                path: models/groq.mdx
-              - page: Together
-                path: models/together.mdx
-              - page: Google AI (Gemini)
-                path: models/google.mdx
-              - page: Ollama
-                path: models/ollama.mdx
-              - page: vLLM
-                path: models/vllm.mdx
-              - page: Azure OpenAI
-                path: models/azure.mdx
-      - section: Key concepts
+            - page: Using Docker (recommended)
+              path: pages/server/docker.mdx
+            - page: Using pip
+              path: pages/server/pip.mdx
+            - page: Installing from Source 
+              path: pages/server/source.mdx
+            - page: Deploying on External Services
+              path: pages/deployment/railway.mdx
+            - section: Connecting API Providers
+              contents:
+                - page: OpenAI
+                  path: pages/models/openai.mdx
+                - page: OpenAI proxy
+                  path: pages/models/openai_proxy.mdx
+                - page: Anthropic
+                  path: pages/models/anthropic.mdx
+                - page: Groq
+                  path: pages/models/groq.mdx
+                - page: Together
+                  path: pages/models/together.mdx
+                - page: Google AI (Gemini)
+                  path: pages/models/google.mdx
+                - page: Ollama
+                  path: pages/models/ollama.mdx
+                - page: vLLM
+                  path: pages/models/vllm.mdx
+                - page: Azure OpenAI
+                  path: pages/models/azure.mdx
+          - page: Letta Cloud
+            path: pages/cloud/cloud.mdx
+      - section: Stateful Agents
+        contents:
+          - page: Building Stateful Agents
+            path: pages/agents/overview.mdx
+          - page: Memory
+            path: pages/agents/memory.mdx
+          - page: Tools
+            path: pages/agents/tools.mdx
+          - page: Tool Rules
+            path: pages/agents/tool_rules.mdx
+          - page: Data Sources
+            path: pages/agents/data_sources.mdx
+          - page: Messaging Agents
+            path: pages/agents/messages.mdx
+      - section: Agent Templates 
+        contents:
+          - page: Introduction to Templates
+            path: pages/cloud/templates.mdx
+          - page: Memory Variables 
+            path: pages/cloud/variables.mdx
+          - page: Versioning
+            path: pages/cloud/versions.mdx
+      - section: ADE Guide 
+        contents:
+          - page: Initial Setup
+            path: pages/agent-development-environment/connect.mdx
+          - page: Using the ADE
+            path: pages/agent-development-environment/usage.mdx
+          - page: Troubleshooting
+            path: pages/agent-development-environment/troubleshooting.mdx
+      - section: Key Concepts
         contents:
           - page: Letta concepts
-            path: concepts.mdx
+            path: pages/concepts/letta.mdx
           - page: MemGPT concepts
-            path: letta_memgpt.mdx
-      - section: Agent Development Environment
+            path: pages/concepts/memgpt.mdx
+      - section: External Resources
         contents:
-          - page: ADE overview
-            path: agent-development-environment/ade.mdx
-          - page: Connecting to the ADE
-            path: agent-development-environment/connect.mdx
-          - page: Troubleshooting
-            path: agent-development-environment/troubleshooting.mdx
-      - section: Deploying Letta server
-        contents:
-          - page: Deploy with Railway
-            path: deployment/railway.mdx
-      - section: Agents
-        contents:
-          - page: Agents overview
-            path: agents/overview.mdx
-          - page: Tools
-            path: agents/tools.mdx
-          - page: Memory
-            path: agents/memory.mdx
-          - page: Messaging agents
-            path: agents/messages.mdx
-          - page: Message streaming
-            path: agents/streaming.mdx
-      - section: Advanced
-        contents:
-          - page: Memory management
-            path: advanced/memory_management.mdx
-          - page: Custom memory
-            path: advanced/custom_memory.mdx
+          - link: DeepLearning.AI course
+            href: https://www.deeplearning.ai/short-courses/llms-as-operating-systems-agent-memory
   - tab: ref
     layout: 
+      - section: Letta API
+        contents:
+          - page: API and SDK Overview 
+            path: pages/api/about.mdx
       - api: API Reference
         display-errors: true
         paginated: true
@@ -103,42 +129,67 @@ navigation:
           python: letta
         layout: 
           - agents
+  - tab: release
+  - tab: discord
   
 colors:
-  accentPrimary: 
+  accent-primary: 
     light: '#0707ac'
     dark: '#FF5533'
   background: 
-    light: '#c9cdd1'
-    dark: '#202020'
+    light: '#ffffffff'
+    dark: '#0d0d0d'
   card-background:
-    light: '#c9cdd1'
-    dark: '#202020'
+    light: '#f6f6f6ff'
+    dark: '#151515'
+  header-background:
+    light: '#fbfbfbff'
+    dark: '#000000ff'
   border: 
-    light: '#8e8e8e'
-    dark: '#8e8e8e'
+    light: '#eef0f2ff'
+    dark: '#202020'
 
 css: assets/styles.css
 
 favicon: assets/favicon.png
 
 logo: 
+  href: /
   light: assets/logo-light.svg
   dark: assets/logo-dark.svg
   
 navbar-links: 
   - type: github
     value: https://github.com/letta-ai/letta
-  
+  - type: filled
+    text: Launch ADE
+    href: https://app.letta.com
+    rounded: false 
+
 layout: 
   page-width: full
   tabs-placement: header
-  searchbar-placement: header
+  searchbar-placement: header 
 
 typography: 
   bodyFont: 
-    name: Roobert
-    path: assets/Roobert.woff2
+    name: ManropeRegularBody
+    paths:
+      - path: assets/fonts/manrope/Manrope-Regular.ttf
+        weight: 400
+        style: normal
+      - path: assets/fonts/manrope/Manrope-Medium.ttf
+        weight: 500 900
+        style: normal
   headingsFont: 
-    name: RoobertMedium
-    path: assets/RoobertMedium.woff2
+    name: RoobertMediumHeading
+    path: assets/fonts/roobert/RoobertMedium.woff2
+  codeFont:
+    name: FiraCode 
+    paths:
+      - path: assets/fonts/fira-code/FiraCode-Regular.ttf
+        weight: 400
+        style: normal
+      - path: assets/fonts/fira-code/FiraCode-Medium.ttf
+        weight: 500 900
+        style: normal

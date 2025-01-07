@@ -1,0 +1,15 @@
+---
+title: Configuring your agent settings
+slug: configure
+---
+
+<img className="block w-300 dark:hidden" src="https://raw.githubusercontent.com/letta-ai/letta/refs/heads/main/assets/example_ade_screenshot_light.png" />
+<img className="hidden w-300 dark:block" src="https://raw.githubusercontent.com/letta-ai/letta/refs/heads/main/assets/example_ade_screenshot.png" />
+
+## Changing the LLM model
+
+## Configuring the max context length
+<Tip>Letta allows you to artificially limit the maximum context window length of your agent's underlying LLM. Even though some LLM API providers support large context windows (e.g. 200k+), artifically constraining the LLM context window can improve your agent's performance / stability and decrease overall cost / latency.</Tip>
+
+The max length of the context window is configurable in Letta (under "Advanced" agent settings).
+For example, if you're using Claude Sonnet 3.5, but do not want the context window to exceed 16k for performance/cost/latency reasons, you can set the max context window in Letta to 16k (instead of the 200k default). When the context window reaches its max length, Letta will automatically evict old events/messages to external storage (they are not deleted, and are still accessible to the agent via tool calls).
