@@ -254,7 +254,7 @@ push-core-to-oss $name:
 
 
 pull-oss-to-core:
-    @echo "🚀 Pushing core to OSS..."
+    @echo "🚀 Pulling OSS into core..."
     ./scripts/oss-sync-scripts/pull.sh
 
 
