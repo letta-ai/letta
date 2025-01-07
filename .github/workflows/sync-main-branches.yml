@@ -8,6 +8,7 @@ on:
 jobs:
   notify:
     runs-on: ubuntu-latest
+    if: ${{ !contains(github.event.head_commit.message, '[sync-skip]') }}
     steps:
       - name: Trigger repository_dispatch
         run: |
