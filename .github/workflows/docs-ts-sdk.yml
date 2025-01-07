@@ -27,6 +27,7 @@ jobs:
           fern generate --group ts-sdk --version ${{ inputs.version }} --log-level debug
 
       - name: Publish Docs
+        working-directory: apps
         env:
           FERN_TOKEN: ${{ secrets.FERN_TOKEN }}
-        run: fern generate --docs          
+        run: fern generate --docs
