@@ -80,7 +80,7 @@ class AgentState(OrmMetadataBase, validate_assignment=True):
     sources: List[Source] = Field(..., description="The sources used by the agent.")
     tags: List[str] = Field(..., description="The tags associated with the agent.")
     tool_exec_environment_variables: List[AgentEnvironmentVariable] = Field(
-        ..., description="The environment variables for tool execution specific to this agent."
+        default_factory=list, description="The environment variables for tool execution specific to this agent."
     )
 
     def get_agent_env_vars_as_dict(self) -> Dict[str, str]:
