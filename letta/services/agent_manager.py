@@ -338,11 +338,30 @@ class AgentManager:
             # Retrieve the agent
             agent = AgentModel.read(db_session=session, identifier=agent_id, actor=actor)
 
-            # Replace the environment variables
-            agent.tool_exec_environment_variables = [
-                AgentEnvironmentVariableModel(key=key, value=value, agent_id=agent_id, organization_id=actor.organization_id)
-                for key, value in env_vars.items()
-            ]
+            # Fetch existing environment variables as a dictionary
+            existing_vars = {var.key: var for var in agent.tool_exec_environment_variables}
+
+            # Update or create environment variables
+            updated_vars = []
+            for key, value in env_vars.items():
+                if key in existing_vars:
+                    # Update existing variable
+                    existing_vars[key].value = value
+                    updated_vars.append(existing_vars[key])
+                else:
+                    # Create new variable
+                    updated_vars.append(
+                        AgentEnvironmentVariableModel(
+                            key=key,
+                            value=value,
+                            agent_id=agent_id,
+                            organization_id=actor.organization_id,
+                        )
+                    )
+
+            # Remove stale variables
+            stale_keys = set(existing_vars) - set(env_vars)
+            agent.tool_exec_environment_variables = [var for var in updated_vars if var.key not in stale_keys]
 
             # Update the agent in the database
             agent.update(session, actor=actor)

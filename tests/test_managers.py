@@ -560,7 +560,7 @@ def test_update_agent(server: SyncServer, comprehensive_test_agent_fixture, othe
         embedding_config=EmbeddingConfig.default_config(model_name="letta"),
         message_ids=["10", "20"],
         metadata_={"train_key": "train_value"},
-        tool_exec_environment_variables={"new_tool_exec_key": "new_tool_exec_value"},
+        tool_exec_environment_variables={"test_env_var_key_a": "a", "new_tool_exec_key": "n"},
     )
 
     updated_agent = server.agent_manager.update_agent(agent.id, update_agent_request, actor=default_user)
