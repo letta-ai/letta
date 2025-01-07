@@ -18,10 +18,14 @@
     "strictNullChecks": true,
     "paths": {
       "$web/*": ["apps/web/src/lib/*"],
+      "@letta-cloud/agent-starter-kits": [
+        "libs/agent-starter-kits/src/index.ts"
+      ],
       "@letta-cloud/lettuce-client": ["libs/lettuce-client/src/index.ts"],
       "@letta-cloud/lettuce-server": [
         "libs/lettuce-client/src/lib/lettuce-server.ts"
       ],
+      "@letta-cloud/runtime": ["libs/runtime/src/index.ts"],
       "@letta-cloud/shared-ade-components": [
         "libs/shared-ade-components/src/index.ts"
       ],

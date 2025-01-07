@@ -8,7 +8,7 @@ export function useParams() {
   const location = useLocation();
 
   const urlRegex = new RegExp(
-    `^/agents/(?<agentId>[^/]+)(?<templateName>/[^/]+)?$`,
+    `/agents/(?<agentId>[^/]+)(?<templateName>/[^/]+)?$`,
   );
 
   const match = urlRegex.exec(location.pathname);

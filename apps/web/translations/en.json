@@ -532,9 +532,6 @@
       "openInAde": "Open in ADE"
     }
   },
-  "components/StarterKitItems": {
-    "tools": "<strong>Tools included:</strong> {toolsList}"
-  },
   "components/ThemeSelector": {
     "label": "Choose Theme",
     "options": {
@@ -735,33 +732,6 @@
       }
     }
   },
-  "starter-kits": {
-    "internetChatbot": {
-      "title": "Internet chatbot",
-      "description": "A general purpose chatbot designed to answer queries via the internet"
-    },
-    "characterRoleplay": {
-      "title": "Character roleplay",
-      "description": "Create an agent to roleplay as a character from a fantasy world"
-    },
-    "personalAssistant": {
-      "title": "Personal assistant",
-      "description": "Chat between a user and a personal assistant designed to enhance the user's productivity"
-    },
-    "scratch": {
-      "title": "Start from scratch",
-      "description": "Start with an empty agent with minimal default tools and a blank initial memory state"
-    },
-    "customerSupport": {
-      "title": "Customer support",
-      "description": "An agent designed to answer customer support requests"
-    },
-    "companion": {
-      "title": "Companion",
-      "description": "Chat between a user an an AI companion named Sam, designed to learn and adapt over time"
-    }
-  },
-
   "development-servers/agents/CreateAgentDialog": {
     "serverOffline": "Your server is offline, please start it to create a new agent.",
     "serverOfflineConnect": "Turn on your server with the command below:",
@@ -900,10 +870,6 @@
     "convertingToTemplate": "Converting to template...",
     "preparingAgent": "Preparing agent",
     "error": "There was a severe error in this application, please refresh this page. If the error persists, please contact support in the top right corner.",
-    "AgentMobileNavigation": {
-      "more": "More panels",
-      "less": "Less panels"
-    },
     "AgentSettingsDropdown": {
       "trigger": "{agentBaseType} settings",
       "returnToProject": "Return to project"

@@ -261,3 +261,26 @@ pull-oss-to-core:
 desktop:
     @echo "🚧 Starting up the desktop app..."
     npm run desktop:dev
+
+prepare-desktop:
+    @echo "Moving the alembic migration files to the desktop app..."
+    cp -R apps/core/alembic/versions apps/desktop-core/letta_desktop/alembic
+    cp apps/core/alembic.ini apps/desktop-core/letta_desktop/alembic.ini
+    @echo "Creating a embedded letta-core package..."
+    npm run desktop:setup-core
+    npm run desktop:package-core
+    @echo "Moving the core package to the desktop app..."
+    cp apps/desktop-core/dist/letta apps/desktop-electron/src/assets/letta
+    cp -R apps/desktop-core/letta_desktop/alembic apps/desktop-electron/src/assets
+    cp apps/desktop-core/letta_desktop/alembic.ini apps/desktop-electron/src/assets/alembic.ini
+    chmod +x dist/apps/desktop-electron/assets/letta
+
+package-desktop:
+    @echo "Packaging the desktop app..."
+    NODE_ENV=production npx nx build desktop-ui
+    npx nx build desktop-electron --production
+    npx nx package desktop-electron
+
+setup-pg-vector:
+    @echo "Setting up pg-vector..."
+    apps/desktop-electron/scripts/install-pgvector.sh

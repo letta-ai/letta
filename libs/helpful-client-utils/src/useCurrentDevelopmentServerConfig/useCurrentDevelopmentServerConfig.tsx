@@ -2,6 +2,7 @@
 import { useParams } from 'next/navigation';
 import { webApi, webApiQueryKeys } from '@letta-cloud/web-api-client';
 import { useTranslations } from '@letta-cloud/translations';
+import { CURRENT_RUNTIME } from '@letta-cloud/runtime';
 
 export interface DevelopmentServerConfig {
   id: string;
@@ -15,7 +16,7 @@ export function useCurrentDevelopmentServerConfig(): DevelopmentServerConfig | n
   const t = useTranslations('development-servers/hooks');
 
   const isLocal =
-    developmentServerId === 'local' || process.env.RUNTIME === 'desktop';
+    developmentServerId === 'local' || CURRENT_RUNTIME === 'letta-desktop';
 
   const { data } = webApi.developmentServers.getDevelopmentServer.useQuery({
     queryKey:

@@ -20,7 +20,6 @@ if settings.letta_pg_uri_no_default:
 else:
     config.set_main_option("sqlalchemy.url", "sqlite:///" + os.path.join(letta_config.recall_storage_path, "sqlite.db"))
 
-print(f"Using database: ", settings.letta_pg_uri, settings.letta_pg_uri_no_default)
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
 if config.config_file_name is not None:

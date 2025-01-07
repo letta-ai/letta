@@ -12,5 +12,23 @@
         "command": "tsc --noEmit -p apps/desktop-ui/tsconfig.json"
       }
     }
+  },
+  "build": {
+    "executor": "@nx/vite:build",
+    "outputs": ["{options.outputPath}"],
+    "defaultConfiguration": "production",
+    "options": {
+      "outputPath": "release/build/renderer"
+    },
+    "configurations": {
+      "development": {
+        "mode": "development",
+        "baseHref": "/"
+      },
+      "production": {
+        "mode": "production",
+        "baseHref": "./"
+      }
+    }
   }
 }

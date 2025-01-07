@@ -1,14 +1,59 @@
 {
+  "InstallLetta": {
+    "title": "Install the Letta CLI",
+    "install": "Install letta-server",
+    "description": "Click the button below to install the letta-server cli tool. This will enable you to start and manage your local server.",
+    "below": "You will be prompted for admin permissions to install the tool."
+  },
+  "Settings": {
+    "title": "Settings",
+    "description": "To add environment variables to your server, please export them in the terminal before starting the server. We are working on a UI for this feature soon."
+  },
+
   "Homepage": {
+    "booting": "Booting..."
+  },
+  "ConnectToLetta": {
+    "title": "Turn on your server",
+    "description": "Run the command below in your terminal to start your server. Once your server is running, the ADE will be available",
+    "status": {
+      "connecting": "Connecting...",
+      "connected": "Connected"
+    }
+  },
+  "Agents": {
     "title": "Agents",
+    "createAgent": "Create Agent",
     "table": {
+      "loading": "Loading...",
       "columns": {
         "name": "Name",
         "id": "id",
         "createdAt": "Last Seen"
       },
-      "openInADE": "Open in ADE"
+      "openInADE": "Open in ADE",
+      "noResults": "No agents found"
     }
+  },
+  "CreateLocalAgentDialog": {
+    "serverOffline": "Your server is offline, please start it to create a new agent.",
+    "serverOfflineConnect": "Turn on your server with the command below:",
+    "isFetchingStatus": "Sorry, we are still attempting to connect to your server. Please wait a moment.",
+    "title": "Create a new agent",
+    "alert": {
+      "local": "your local server (localhost)",
+      "title": "You are creating an agent on {serverName}",
+      "descriptionLocal": "This will create an agent locally on your machine. This will not deploy the agent to Letta Cloud.",
+      "descriptionRemote": "This will create an agent on the remote server. This will not deploy the agent to Letta Cloud."
+    },
+    "error": "There was an error creating the agent, below is the error message, please try again or contact support.",
+    "creating": "Creating agent...",
+    "loading": "Booting up...",
+    "starterKits": {
+      "title": "Starter kits",
+      "description": "Choose from a starter pack and customize it in the ADE, or start from scratch"
+    },
+    "back": "All agents"
   },
   "AppHeader": {
     "Navigation": {

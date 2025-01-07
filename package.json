@@ -1,6 +1,7 @@
 {
   "name": "@letta-cloud/source",
   "version": "0.0.0",
+  "author": "Letta",
   "license": "MIT",
   "scripts": {
     "build": "nx build web --prod",
@@ -19,6 +20,8 @@
     "core:generate-web-sdk": "nx run letta-agents-api:generate && nx run letta-agents-api:monkeypatch",
     "core:database:migrate": "nx database:migrate core",
     "core:install": "nx install core",
+    "desktop:setup-core": "nx install desktop-core",
+    "desktop:package-core": "nx package desktop-core",
     "desktop:dev": "concurrently \"nx serve desktop-electron\" \"nx serve desktop-ui\"",
     "docs:dev": "nx dev docs",
     "docs:publish-api": "nx generate-openapi docs",
@@ -92,6 +95,7 @@
     "clsx": "^2.1.1",
     "drizzle-orm": "^0.38.3",
     "echarts": "^5.5.1",
+    "embedded-postgres": "^17.2.0-beta.15",
     "extended-eventsource": "^2.0.0",
     "fern-api": "^0.46.13",
     "gsap": "^3.12.5",
@@ -126,6 +130,7 @@
     "react-textarea-autosize": "^8.5.6",
     "remark-gfm": "^4.0.0",
     "semver": "^7.6.3",
+    "sudo-prompt": "^9.2.1",
     "tailwind-merge": "^2.6.0",
     "tailwindcss-animate": "^1.0.7",
     "tiktoken": "^1.0.18",

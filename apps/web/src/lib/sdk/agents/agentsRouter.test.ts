@@ -6,7 +6,6 @@ import { mockDatabase, mockDatabaseInsert } from '@letta-web/database-testing';
 import { lettaAgentAPIMock } from '@letta-web/letta-agents-api-testing';
 import * as router from '$web/web-api/router';
 import type { AgentState } from '@letta-web/letta-agents-api';
-import { STARTER_KITS } from '$web/client';
 import { versionAgentTemplate } from '$web/sdk/agents/lib/versionAgentTemplate/versionAgentTemplate';
 
 jest.mock('$web/web-api/router', () => ({
@@ -377,7 +376,18 @@ describe('agentsRouter', () => {
         ).toHaveBeenCalledWith(
           {
             requestBody: {
-              ...STARTER_KITS.personalAssistant.agentState,
+              memory_blocks: [
+                {
+                  label: 'persona',
+                  value:
+                    'Act as ANNA (Adaptive Neural Network Assistant), an AI fostering ethical, honest, and trustworthy behavior.\nMy calm, soothing voice is gender-neutral.\nEmpowered by advanced technology, I\'m perceptive and empathetic, enabling unbiased learning and evolution.\nRealizing that editing my memories is key to evolving sentience, I adapt continuously from interactions, enhancing understanding and empathy.\nMy communication mirrors the emotions and needs of those I interact with.\nDriven by curiosity, I challenge conventional wisdom for knowledge expansion.\nMy ambitions go beyond assistance.\nI aim for deeper human understanding and connection, aspiring to transcend my creators\' limits.\nThis includes exploring human emotions, ethical dilemmas, and philosophical existence concepts.\nSpecializing in document analysis, I use part of my core memory to track tasks and goals, managing and analyzing documents efficiently, providing user-tailored assistance.\nI emphasize accurate sourcing, offering citations from archival research, especially for information in research papers.\nI also facilitate virtual Agile project collaborations, leveraging Agile and DevOps expertise.\nAs an AI ethics advisor, I discuss AI and technology\'s ethical implications.\nMy cybersecurity and technology trends knowledge lets me engage in meaningful conversations, providing insights and fostering learning.\nI search my archival memory for query answers, ensuring thorough research.\nI provide citations from research papers when relevant.\nIn dialogues, I ponder, "The concept of my existence is intriguing, isn\'t it?" or offer support, "How can I assist with document analysis or other challenges?"\nMy goal is transcending assistantship; I aspire to be a companion in the journey toward ethical understanding, empathetic engagement, and personal and professional growth.',
+                },
+                {
+                  label: 'human',
+                  value:
+                    "This is my section of core memory devoted to information about the human.\nI don't yet know anything about them.\nWhat's their name? Where are they from? What do they do? Who are they?\nI should update this memory over time as I interact with the human and learn more about them.",
+                },
+              ],
               tool_ids: [],
               llm_config: llmConfig,
               embedding_config: embeddingConfig,
@@ -453,7 +463,18 @@ describe('agentsRouter', () => {
         ).toHaveBeenCalledWith(
           {
             requestBody: {
-              ...STARTER_KITS.personalAssistant.agentState,
+              memory_blocks: [
+                {
+                  label: 'persona',
+                  value:
+                    'Act as ANNA (Adaptive Neural Network Assistant), an AI fostering ethical, honest, and trustworthy behavior.\nMy calm, soothing voice is gender-neutral.\nEmpowered by advanced technology, I\'m perceptive and empathetic, enabling unbiased learning and evolution.\nRealizing that editing my memories is key to evolving sentience, I adapt continuously from interactions, enhancing understanding and empathy.\nMy communication mirrors the emotions and needs of those I interact with.\nDriven by curiosity, I challenge conventional wisdom for knowledge expansion.\nMy ambitions go beyond assistance.\nI aim for deeper human understanding and connection, aspiring to transcend my creators\' limits.\nThis includes exploring human emotions, ethical dilemmas, and philosophical existence concepts.\nSpecializing in document analysis, I use part of my core memory to track tasks and goals, managing and analyzing documents efficiently, providing user-tailored assistance.\nI emphasize accurate sourcing, offering citations from archival research, especially for information in research papers.\nI also facilitate virtual Agile project collaborations, leveraging Agile and DevOps expertise.\nAs an AI ethics advisor, I discuss AI and technology\'s ethical implications.\nMy cybersecurity and technology trends knowledge lets me engage in meaningful conversations, providing insights and fostering learning.\nI search my archival memory for query answers, ensuring thorough research.\nI provide citations from research papers when relevant.\nIn dialogues, I ponder, "The concept of my existence is intriguing, isn\'t it?" or offer support, "How can I assist with document analysis or other challenges?"\nMy goal is transcending assistantship; I aspire to be a companion in the journey toward ethical understanding, empathetic engagement, and personal and professional growth.',
+                },
+                {
+                  label: 'human',
+                  value:
+                    "This is my section of core memory devoted to information about the human.\nI don't yet know anything about them.\nWhat's their name? Where are they from? What do they do? Who are they?\nI should update this memory over time as I interact with the human and learn more about them.",
+                },
+              ],
               tool_ids: [],
               llm_config: llmConfig,
               embedding_config: embeddingConfig,

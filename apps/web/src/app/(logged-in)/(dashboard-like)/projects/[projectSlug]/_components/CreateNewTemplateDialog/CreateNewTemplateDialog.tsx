@@ -1,7 +1,7 @@
 import React, { useCallback, useMemo } from 'react';
 import { useTranslations } from '@letta-cloud/translations';
 import { useCurrentProject } from '../../hooks';
-import { STARTER_KITS, webOriginSDKApi } from '$web/client';
+import { webOriginSDKApi } from '$web/client';
 import { useRouter } from 'next/navigation';
 import {
   Alert,
@@ -9,9 +9,10 @@ import {
   LoadingEmptyStatusComponent,
   NiceGridDisplay,
   Section,
+  StarterKitItems,
   VStack,
 } from '@letta-web/component-library';
-import { StarterKitItems } from '$web/client/components';
+import { STARTER_KITS } from '@letta-cloud/agent-starter-kits';
 
 interface CreateNewTemplateDialogProps {
   trigger: React.ReactNode;

@@ -10,4 +10,3 @@ export {
   webApiQueryKeys,
 } from '@letta-cloud/web-api-client';
 
-export * from './starter-kits/starter-kits';

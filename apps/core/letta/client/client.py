@@ -35,7 +35,6 @@ from letta.schemas.source import Source, SourceCreate, SourceUpdate
 from letta.schemas.tool import Tool, ToolCreate, ToolUpdate
 from letta.schemas.tool_rule import BaseToolRule
 from letta.server.rest_api.interface import QueuingInterface
-from letta.server.server import SyncServer
 from letta.utils import get_human_text, get_persona_text
 
 
@@ -2009,6 +2008,8 @@ class LocalClient(AbstractClient):
             user_id (str): The user ID.
             debug (bool): Whether to print debug information.
         """
+
+        from letta.server.server import SyncServer
 
         # set logging levels
         letta.utils.DEBUG = debug

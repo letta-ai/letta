@@ -1,5 +1,5 @@
 import { StrictMode, useEffect } from 'react';
-import { BrowserRouter } from 'react-router-dom';
+import { HashRouter } from 'react-router-dom';
 import * as ReactDOM from 'react-dom/client';
 import App from './app/app';
 import './styles.scss';
@@ -36,9 +36,9 @@ root.render(
         }}
       >
         <LettaCoreInterceptor />
-        <BrowserRouter>
+        <HashRouter>
           <App />
-        </BrowserRouter>
+        </HashRouter>
       </NextIntlClientProvider>
     </QueryClientProvider>
   </StrictMode>,

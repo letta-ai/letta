@@ -181,7 +181,7 @@ export type AgentState = {
   /**
    * The environment variables for tool execution specific to this agent.
    */
-  tool_exec_environment_variables: Array<AgentEnvironmentVariable>;
+  tool_exec_environment_variables?: Array<AgentEnvironmentVariable>;
 };
 
 /**

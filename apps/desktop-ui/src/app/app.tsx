@@ -1,6 +1,13 @@
-import { Route, Routes, Link, useLocation } from 'react-router-dom';
+import {
+  Route,
+  Routes,
+  Link,
+  useLocation,
+  Outlet,
+  useNavigate,
+} from 'react-router-dom';
 import { AppHeader } from './AppHeader/AppHeader';
-import { Homepage } from './pages/Homepage/Homepage';
+import { Agents } from './pages/Agents/Agents';
 import {
   Button,
   CogIcon,
@@ -11,6 +18,12 @@ import {
 } from '@letta-web/component-library';
 import { useTranslations } from '@letta-cloud/translations';
 import { ADE } from './pages/ADE/ADE';
+import { Homepage } from './pages/Homepage/Homepage';
+import { useEffect } from 'react';
+import { CenterPage } from './pages/shared/CenterPage/CenterPage';
+import { InstallLetta } from './pages/InstallLetta/InstallLetta';
+import { ConnectToLetta } from './pages/ConnectToLetta/ConnectToLetta';
+import { Settings } from './pages/Settings/Settings';
 
 function Sidebar() {
   const t = useTranslations('App');
@@ -18,19 +31,19 @@ function Sidebar() {
   const location = useLocation();
   return (
     <VStack color="background-grey" padding="small" borderRight fullHeight>
-      <Link to="/">
+      <Link to="/dashboard/agents">
         <Button
           hideLabel
-          active={location.pathname === '/'}
+          active={location.pathname === '/dashboard/agents'}
           preIcon={<LettaInvaderIcon />}
           color="tertiary-transparent"
           label={t('Sidebar.agents')}
         ></Button>
       </Link>
-      <Link to="/settings">
+      <Link to="/dashboard/settings">
         <Button
           hideLabel
-          active={location.pathname === '/settings'}
+          active={location.pathname === '/dashboard/settings'}
           preIcon={<CogIcon />}
           color="tertiary-transparent"
           label={t('Sidebar.agents')}
@@ -40,7 +53,11 @@ function Sidebar() {
   );
 }
 
-export function App() {
+function Dashboard() {
+  useEffect(() => {
+    window.electron.setToDashboardSize();
+  }, []);
+
   return (
     <HStack
       color="background-grey"
@@ -50,22 +67,34 @@ export function App() {
       <AppHeader />
       <HStack fullWidth gap={false} fullHeight>
         <Sidebar />
-        <Frame overflowY="auto" fullWidth fullHeight>
-          <Routes>
-            <Route path="/" element={<Homepage />} />
-            <Route
-              path="/settings"
-              element={
-                <div>
-                  <Link to="/">Click here to go back to root page.</Link>
-                </div>
-              }
-            />
-            <Route path="/agents/:agentId" element={<ADE />} />
-          </Routes>
-        </Frame>
+        <Outlet />
       </HStack>
     </HStack>
+  );
+}
+
+export function App() {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (Object.prototype.hasOwnProperty.call(window, 'router')) {
+      window.router.onUpdateRoute((route) => {
+        navigate(route);
+      });
+    }
+  }, []);
+
+  return (
+    <Routes>
+      <Route path="/" element={<Homepage />} />
+      <Route path="/install-letta" element={<InstallLetta />} />
+      <Route path="/connect-to-letta" element={<ConnectToLetta />} />
+      <Route path="dashboard" element={<Dashboard />}>
+        <Route path="/dashboard/agents" element={<Agents />} />
+        <Route path="/dashboard/agents/:agentId" element={<ADE />} />
+        <Route path="/dashboard/settings" element={<Settings />} />
+      </Route>
+    </Routes>
   );
 }
 

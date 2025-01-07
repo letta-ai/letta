@@ -8,14 +8,14 @@ import {
   NiceGridDisplay,
   RawCodeEditor,
   Section,
+  StarterKitItems,
   toast,
   Typography,
   VStack,
 } from '@letta-web/component-library';
+import type { StarterKit } from '@letta-cloud/agent-starter-kits';
 import { useCurrentDevelopmentServerConfig } from '@letta-web/helpful-client-utils';
 import { useCallback, useMemo, useState } from 'react';
-import type { StarterKit } from '$web/client';
-import { STARTER_KITS } from '$web/client';
 import {
   ToolsService,
   useToolsServiceListTools,
@@ -31,7 +31,7 @@ import { trackClientSideEvent } from '@letta-web/analytics/client';
 import { AnalyticsEvent } from '@letta-web/analytics';
 import { useCurrentUser } from '$web/client/hooks';
 import { ConnectToLocalServerCommand } from '$web/client/components';
-import { StarterKitItems } from '$web/client/components';
+import { STARTER_KITS } from '@letta-cloud/agent-starter-kits';
 
 interface CreateAgentDialogProps {
   trigger: React.ReactNode;

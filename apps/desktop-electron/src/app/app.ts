@@ -4,6 +4,11 @@ import { environment } from '../environments/environment';
 import { join } from 'path';
 import { format } from 'url';
 import * as electron from 'electron';
+import * as fs from 'fs';
+import * as os from 'os';
+
+const isMac = os.platform() === 'darwin';
+const isLinux = os.platform() === 'linux';
 
 export default class App {
   // Keep a global reference of the window object, if you don't, the window will
@@ -42,6 +47,41 @@ export default class App {
     }
   }
 
+  static async lettaStartupRouting() {
+    let isLettaCoreInstalledInBin = false;
+
+    if (isMac || isLinux) {
+      isLettaCoreInstalledInBin = fs.existsSync('/usr/local/bin/letta-server');
+    } else {
+      isLettaCoreInstalledInBin = fs.existsSync(
+        'C:\\Program Files\\Letta\\letta-server.exe',
+      );
+    }
+
+    if (!isLettaCoreInstalledInBin) {
+      App.mainWindow.webContents.send('set-path', '/install-letta');
+
+      return;
+    }
+
+    // check if letta is running (check http://localhost:8283/v1/health)
+    try {
+      const data = await fetch('http://localhost:8283/v1/health', {
+        method: 'GET',
+      });
+
+      if (data.status !== 200) {
+        App.mainWindow.webContents.send('set-path', '/dashboard');
+
+        return;
+      }
+    } catch (error) {
+      //
+    }
+
+    App.mainWindow.webContents.send('set-path', '/connect-to-letta');
+  }
+
   private static onReady() {
     // This method will be called when Electron has finished
     // initialization and is ready to create browser windows.
@@ -49,6 +89,9 @@ export default class App {
     if (rendererAppName) {
       App.initMainWindow();
       App.loadMainWindow();
+      App.mainWindow.webContents.on('did-finish-load', function () {
+        App.lettaStartupRouting();
+      });
     }
   }
 
@@ -62,8 +105,8 @@ export default class App {
 
   private static initMainWindow() {
     const workAreaSize = screen.getPrimaryDisplay().workAreaSize;
-    const width = Math.min(1280, workAreaSize.width || 1280);
-    const height = Math.min(720, workAreaSize.height || 720);
+    const width = Math.min(350, workAreaSize.width || 350);
+    const height = Math.min(475, workAreaSize.height || 475);
     const app = electron.app;
 
     // Create the browser window.
@@ -125,6 +168,7 @@ export default class App {
     // load the index.html of the app.
     if (!App.application.isPackaged) {
       App.mainWindow.loadURL(`http://localhost:${rendererAppPort}`);
+      App.mainWindow.webContents.openDevTools();
     } else {
       App.mainWindow.loadURL(
         format({

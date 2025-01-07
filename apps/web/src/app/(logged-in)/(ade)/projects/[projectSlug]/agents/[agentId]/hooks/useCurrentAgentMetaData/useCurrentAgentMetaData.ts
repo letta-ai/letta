@@ -6,6 +6,7 @@ import {
 import { useParams, usePathname } from 'next/navigation';
 import { useAgentsServiceGetAgent } from '@letta-web/letta-agents-api';
 import { get } from 'lodash-es';
+import { CURRENT_RUNTIME } from '@letta-cloud/runtime';
 
 interface UseCurrentAgentMetaDataResponse {
   agentId: string;
@@ -24,7 +25,9 @@ export function useCurrentAgentMetaData(): UseCurrentAgentMetaDataResponse {
 
   let agentId = preAgentId;
 
-  const startsWithLocalProject = pathname.startsWith('/development-servers');
+  const isLocal =
+    pathname.startsWith('/development-servers') ||
+    CURRENT_RUNTIME === 'letta-desktop';
 
   const localAgent = useAgentsServiceGetAgent(
     {
@@ -32,11 +35,11 @@ export function useCurrentAgentMetaData(): UseCurrentAgentMetaDataResponse {
     },
     undefined,
     {
-      enabled: startsWithLocalProject,
+      enabled: isLocal,
     },
   );
 
-  if (pathname.startsWith('/development-servers')) {
+  if (isLocal) {
     return {
       agentId: agentId,
       agentName: localAgent?.data?.name || '',

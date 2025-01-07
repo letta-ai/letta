@@ -1,5 +1,7 @@
 # See http://help.github.com/ignore-files/ for more about ignoring files.
 
+
+reports
 # compiled output
 dist
 tmp
@@ -73,3 +75,8 @@ flag.overrides.json
 
 vite.config.*.timestamp*
 vitest.config.*.timestamp*
+
+
+./openapi_letta.json
+./openapi_openai.json
+

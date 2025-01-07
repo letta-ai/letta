@@ -3,7 +3,10 @@ import type { sdkContracts } from '@letta-web/letta-agents-api';
 import * as Sentry from '@sentry/node';
 
 import type { SDKContext } from '$web/sdk/shared';
-import type { AgentState } from '@letta-web/letta-agents-api';
+import type {
+  AgentState,
+  OrderByValuesEnumType,
+} from '@letta-web/letta-agents-api';
 import { ToolsService } from '@letta-web/letta-agents-api';
 import {
   AgentsService,
@@ -21,10 +24,12 @@ import {
 import { and, asc, count, desc, eq, isNull, like, ne, or } from 'drizzle-orm';
 import { findUniqueAgentTemplateName } from '$web/server';
 
-import type { OrderByValuesEnumType } from '@letta-web/letta-agents-api';
-import { isTemplateNameAStarterKitId, STARTER_KITS } from '$web/client';
 import { getDeployedTemplateByVersion } from '$web/server/lib/getDeployedTemplateByVersion/getDeployedTemplateByVersion';
 import { versionAgentTemplate } from './lib/versionAgentTemplate/versionAgentTemplate';
+import {
+  isTemplateNameAStarterKitId,
+  STARTER_KITS,
+} from '@letta-cloud/agent-starter-kits';
 
 export function attachVariablesToTemplates(
   agentTemplate: AgentState,

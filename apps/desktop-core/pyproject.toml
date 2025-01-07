@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "letta_desktop"
+version = "0.0.1"
+packages = [
+  {include = "letta_desktop"}
+]
+description = "Create LLM agents with long-term memory and custom tools"
+authors = [
+  "Letta Team <contact@letta.com>",
+]
+license = "Apache License"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "<3.14,>=3.10"
+letta = {path = "../core", extras=["all"]}
+pyinstaller = {version = "^6.11.1"}
+pg8000 = "^1.31.2"
+flake8 = "^7.1.1"
+alembic = "^1.14.0"
+pgserver = "~0.1.4"

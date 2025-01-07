@@ -6,6 +6,7 @@ import { nxCopyAssetsPlugin } from '@nx/vite/plugins/nx-copy-assets.plugin';
 import * as path from 'path';
 
 export default defineConfig({
+  base: '',
   root: __dirname,
   cacheDir: '../../node_modules/.vite/apps/desktop-ui',
   server: {
@@ -26,7 +27,6 @@ export default defineConfig({
       env: {
         OVERRIDE_WEB_ORIGIN_SDK_ENDPOINT: 'http://localhost:8283',
         LETTA_AGENTS_ENDPOINT: 'http://localhost:8283/',
-        RUNTIME: 'desktop',
       },
     },
   },
@@ -36,10 +36,15 @@ export default defineConfig({
         __dirname,
         'src/alias-overrides/environmental-variables',
       ),
+      '@letta-cloud/runtime': path.resolve(
+        __dirname,
+        'src/alias-overrides/runtime',
+      ),
       'next/navigation': path.resolve(
         __dirname,
         'src/alias-overrides/navigation',
       ),
+
       'next/link': path.resolve(__dirname, 'src/alias-overrides/Link'),
       'next/image': path.resolve(__dirname, 'src/alias-overrides/Image'),
       path: 'path-browserify',

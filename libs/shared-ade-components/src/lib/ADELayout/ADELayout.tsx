@@ -233,9 +233,7 @@ const MORE_PANELS = 'more-panels';
 
 function AgentMobileNavigation(props: AgentMobileNavigationProps) {
   const { activePanel, setActivePanel } = props;
-  const t = useTranslations(
-    'projects/(projectSlug)/agents/(agentId)/AgentPage',
-  );
+  const t = useTranslations('AgentMobileNavigation');
 
   const [expanded, setExpanded] = useState(false);
   const appPanels = useAppPanels();
@@ -279,11 +277,7 @@ function AgentMobileNavigation(props: AgentMobileNavigationProps) {
               size="large"
               preIcon={!expanded ? <ChevronUpIcon /> : <ChevronDownIcon />}
               color="tertiary-transparent"
-              label={
-                !expanded
-                  ? t('AgentMobileNavigation.more')
-                  : t('AgentMobileNavigation.less')
-              }
+              label={!expanded ? t('more') : t('less')}
             />
           );
         }

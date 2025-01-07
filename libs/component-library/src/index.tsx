@@ -160,3 +160,4 @@ export * from './lib/reusable/CopyWithCodePreview/CopyWithCodePreview';
 export * from './lib/reusable/Section/Section';
 
 export * from './lib/core/MiddleTruncate/MiddleTruncate';
+export * from './lib/reusable/StarterKitItem/StarterKitItem';

@@ -1,6 +1,6 @@
-import type { StarterKit } from '$web/client';
 import { useTranslations } from '@letta-cloud/translations';
-import { ImageCard, Typography, VStack } from '@letta-web/component-library';
+import { ImageCard, Typography, VStack } from '../../../';
+import type { StarterKit } from '@letta-cloud/agent-starter-kits';
 
 interface StarterKitItemProps {
   starterKit: StarterKit;

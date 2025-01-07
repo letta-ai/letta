@@ -15,21 +15,17 @@ import {
   PlusIcon,
   RawInput,
   Section,
+  StarterKitItems,
   Typography,
   VStack,
 } from '@letta-web/component-library';
 import { useTranslations } from '@letta-cloud/translations';
-import { StarterKitItems } from '$web/client/components';
 import { useCurrentProject } from '../../hooks';
-import {
-  STARTER_KITS,
-  webApi,
-  webApiQueryKeys,
-  webOriginSDKApi,
-} from '$web/client';
+import { webApi, webApiQueryKeys, webOriginSDKApi } from '$web/client';
 import { useRouter } from 'next/navigation';
 import { useAgentsServiceGetAgent } from '@letta-web/letta-agents-api';
 import { findMemoryBlockVariables } from '@letta-web/generic-utils';
+import { STARTER_KITS } from '@letta-cloud/agent-starter-kits';
 
 const elementWidth = '204px';
 const elementHeight = '166px';

@@ -6,5 +6,4 @@ export * from './CenteredPageCard/CenteredPageCard';
 export * from './ProjectSelector/ProjectSelector';
 export * from './Tutorials/Tutorials';
 export * from './ConnectToLocalServerCommand/ConnectToLocalServerCommand';
-export * from './StarterKitItem/StarterKitItem';
 export * from './DashboardCard/DashboardCard';

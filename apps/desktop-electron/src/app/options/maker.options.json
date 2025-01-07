@@ -1,3 +1,15 @@
 {
-  "$schema": "../../../../../node_modules/nx-electron/src/validation/maker.schema.json"
+  "$schema": "../../../../../node_modules/nx-electron/src/validation/maker.schema.json",
+  "productName": "Letta Desktop",
+  "copyright": "Copyright © 2024 Letta",
+  "electronCompile": false,
+  "npmRebuild": false,
+  "asar": true,
+  "icon": "apps/desktop-electron/src/assets/icon.png",
+  "mac": {
+    "icon": "apps/desktop-electron/src/assets/icon.icns"
+  },
+  "win": {
+    "icon": "apps/desktop-electron/src/assets/icon.ico"
+  }
 }
