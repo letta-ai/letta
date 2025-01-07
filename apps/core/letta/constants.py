@@ -7,6 +7,8 @@ ADMIN_PREFIX = "/v1/admin"
 API_PREFIX = "/v1"
 OPENAI_API_PREFIX = "/openai"
 
+COMPOSIO_ENTITY_ENV_VAR_KEY = "COMPOSIO_ENTITY"
+
 # String in the error message for when the context window is too large
 # Example full message:
 # This model's maximum context length is 8192 tokens. However, your messages resulted in 8198 tokens (7450 in the messages, 748 in the functions). Please reduce the length of the messages or functions.

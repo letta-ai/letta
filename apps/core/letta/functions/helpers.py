@@ -1,7 +1,10 @@
 from typing import Any, Optional, Union
 
 import humps
+from composio.constants import DEFAULT_ENTITY_ID
 from pydantic import BaseModel
+
+from letta.constants import COMPOSIO_ENTITY_ENV_VAR_KEY
 
 
 def generate_composio_tool_wrapper(action_name: str) -> tuple[str, str]:
@@ -15,8 +18,10 @@ def generate_composio_tool_wrapper(action_name: str) -> tuple[str, str]:
 def {func_name}(**kwargs):
     from composio import Action, App, Tag
     from composio_langchain import ComposioToolSet
+    import os
 
-    composio_toolset = ComposioToolSet()
+    entity_id = os.getenv('{COMPOSIO_ENTITY_ENV_VAR_KEY}', '{DEFAULT_ENTITY_ID}')
+    composio_toolset = ComposioToolSet(entity_id=entity_id)
     tool = {tool_instantiation_str}
     return tool.func(**kwargs)['data']
     """
