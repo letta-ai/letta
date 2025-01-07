@@ -3817,18 +3817,6 @@
             "title": "Description",
             "description": "An optional description of the environment variable."
           },
-          "organization_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Organization Id",
-            "description": "The ID of the organization this environment variable belongs to."
-          },
           "agent_id": {
             "type": "string",
             "title": "Agent Id",
@@ -3961,18 +3949,6 @@
           "embedding_config": {
             "$ref": "#/components/schemas/EmbeddingConfig",
             "description": "The embedding configuration used by the agent."
-          },
-          "organization_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Organization Id",
-            "description": "The unique identifier of the organization associated with the agent."
           },
           "description": {
             "anyOf": [
@@ -4607,18 +4583,6 @@
             "title": "Id",
             "description": "The human-friendly ID of the Block",
             "examples": ["block-123e4567-e89b-12d3-a456-426614174000"]
-          },
-          "organization_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Organization Id",
-            "description": "The unique identifier of the organization associated with the block."
           },
           "created_by_id": {
             "anyOf": [
@@ -5605,17 +5569,6 @@
             ],
             "title": "Tool Exec Environment Variables",
             "description": "The environment variables for tool execution specific to this agent."
-          },
-          "user_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "User Id"
           }
         },
         "type": "object",
@@ -5977,18 +5930,6 @@
             "description": "The human-friendly ID of the File",
             "examples": ["file-123e4567-e89b-12d3-a456-426614174000"]
           },
-          "organization_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Organization Id",
-            "description": "The unique identifier of the organization associated with the document."
-          },
           "source_id": {
             "type": "string",
             "title": "Source Id",
@@ -6299,18 +6240,6 @@
             "title": "Id",
             "description": "The human-friendly ID of the Job",
             "examples": ["job-123e4567-e89b-12d3-a456-426614174000"]
-          },
-          "user_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "User Id",
-            "description": "The unique identifier of the user associated with the job."
           }
         },
         "additionalProperties": false,
@@ -6973,18 +6902,6 @@
             "description": "Whether this passage is deleted or not.",
             "default": false
           },
-          "organization_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Organization Id",
-            "description": "The unique identifier of the user associated with the passage."
-          },
           "agent_id": {
             "anyOf": [
               {
@@ -7194,18 +7111,6 @@
             "$ref": "#/components/schemas/SandboxType",
             "description": "The type of sandbox."
           },
-          "organization_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Organization Id",
-            "description": "The unique identifier of the organization associated with the sandbox."
-          },
           "config": {
             "type": "object",
             "title": "Config",
@@ -7337,18 +7242,6 @@
             "title": "Description",
             "description": "An optional description of the environment variable."
           },
-          "organization_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Organization Id",
-            "description": "The ID of the organization this environment variable belongs to."
-          },
           "sandbox_config_id": {
             "type": "string",
             "title": "Sandbox Config Id",
@@ -7467,18 +7360,6 @@
           "embedding_config": {
             "$ref": "#/components/schemas/EmbeddingConfig",
             "description": "The embedding configuration used by the source."
-          },
-          "organization_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Organization Id",
-            "description": "The ID of the organization that created the source."
           },
           "metadata_": {
             "anyOf": [
@@ -8391,19 +8272,6 @@
             "description": "The human-friendly ID of the User",
             "examples": ["user-123e4567-e89b-12d3-a456-426614174000"]
           },
-          "organization_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Organization Id",
-            "description": "The organization id of the user",
-            "default": "org-00000000-0000-4000-8000-000000000000"
-          },
           "name": {
             "type": "string",
             "title": "Name",
@@ -8454,11 +8322,6 @@
             "type": "string",
             "title": "Name",
             "description": "The name of the user."
-          },
-          "organization_id": {
-            "type": "string",
-            "title": "Organization Id",
-            "description": "The organization id of the user."
           }
         },
         "additionalProperties": false,
@@ -8549,18 +8412,6 @@
             ],
             "title": "Name",
             "description": "The new name of the user."
-          },
-          "organization_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Organization Id",
-            "description": "The new organization id of the user."
           }
         },
         "additionalProperties": false,
@@ -8683,18 +8534,6 @@
             ],
             "title": "Text",
             "description": "The text of the message."
-          },
-          "organization_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Organization Id",
-            "description": "The unique identifier of the organization."
           },
           "agent_id": {
             "anyOf": [
@@ -8989,18 +8828,6 @@
             ],
             "title": "Module",
             "description": "The module of the function."
-          },
-          "organization_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Organization Id",
-            "description": "The unique identifier of the organization associated with the tool."
           },
           "name": {
             "anyOf": [

@@ -1,6 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
+import { omit } from 'lodash';
 import { execSync } from 'child_process';
 import { merge, isErrorResult } from 'openapi-merge';
 import { Swagger } from 'atlassian-openapi';
@@ -125,6 +126,40 @@ result.output.security = [
     bearerAuth: [],
   },
 ];
+
+// omit all instances of "user_id" from the openapi.json file
+function deepOmitPreserveArrays(
+  obj: unknown,
+  key: string,
+): Record<string, unknown> | unknown {
+  if (Array.isArray(obj)) {
+    return obj.map((item) => deepOmitPreserveArrays(item, key));
+  }
+
+  if (typeof obj !== 'object' || obj === null) {
+    return obj;
+  }
+
+  if (key in obj) {
+    return omit(obj, key);
+  }
+
+  return Object.fromEntries(
+    Object.entries(obj).map(([k, v]) => [k, deepOmitPreserveArrays(v, key)]),
+  );
+}
+
+// @ts-ignore
+result.output.components = deepOmitPreserveArrays(
+  result.output.components,
+  'user_id',
+);
+
+// @ts-ignore
+result.output.components = deepOmitPreserveArrays(
+  result.output.components,
+  'organization_id',
+);
 
 fs.writeFileSync(
   path.join(__dirname, '..', 'openapi.json'),
