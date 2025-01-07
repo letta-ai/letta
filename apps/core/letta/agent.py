@@ -1075,6 +1075,7 @@ def save_agent(agent: Agent):
         message_ids=agent_state.message_ids,
         description=agent_state.description,
         metadata_=agent_state.metadata_,
+        tool_exec_environment_variables=agent_state.get_agent_env_vars_as_dict(),
     )
     agent_manager.update_agent(agent_id=agent_state.id, agent_update=update_agent, actor=agent.user)
 
