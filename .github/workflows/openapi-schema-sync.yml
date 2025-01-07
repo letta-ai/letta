@@ -1,0 +1,98 @@
+name: OpenAPI Schema Sync
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'apps/core/letta/schemas/**'
+      - 'apps/core/letta/server/rest_api/**'
+      - 'apps/fern/**'
+
+jobs:
+  generate-openapi-spec:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0  # Fetch full history for git diff
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+
+    - name: Install Poetry
+      uses: snok/install-poetry@v1
+      with:
+        version: 1.5.1
+
+    - name: Install Dependencies
+      run: |
+        curl --proto '=https' --tlsv1.2 -sSf https://just.systems/install.sh | bash -s -- --to /usr/local/bin
+        just --version
+        npm ci --prefer-offline
+
+    - name: Prepare Python Environment
+      run: |
+        cd apps/core/
+        poetry install --all-extras
+
+    - name: Step Stage API
+      run: just stage-api
+
+    - name: Check for changes after stage-api
+      id: stage-api-diff
+      run: |
+        if ! git diff --quiet; then
+          echo "Changes detected after staging API"
+          echo "changes=true" >> $GITHUB_OUTPUT
+          echo "STAGE_API_DIFF<<EOF" >> $GITHUB_ENV
+          git diff | head -n 10 >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+        else
+          echo "No changes detected"
+          echo "changes=false" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Fail if changes detected after stage-api
+      if: steps.stage-api-diff.outputs.changes == 'true'
+      run: |
+        echo "Error: cmd `just stage-api` resulted in uncommitted changes"
+        echo "============================Output============================"
+        echo "$ git diff"
+        echo "$STAGE_API_DIFF"
+        echo "..."
+        echo "=============================================================="
+        echo "Please run `just stage-api` and `just publish-api` locally and commit the changes"
+        exit 1
+
+    - name: Step Publish API
+      run: just publish-api
+
+    - name: Check for changes after publish-api
+      id: publish-api-diff
+      run: |
+        if ! git diff --quiet; then
+          echo "Changes detected after publishing API"
+          echo "changes=true" >> $GITHUB_OUTPUT
+          echo "PUBLISH_API_DIFF<<EOF" >> $GITHUB_ENV
+          git diff | head -n 10 >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+        else
+          echo "No changes detected"
+          echo "changes=false" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Fail if changes detected after publish-api
+      if: steps.publish-api-diff.outputs.changes == 'true'
+      run: |
+        echo "Error: cmd `just publish-api` resulted in uncommitted changes"
+        echo "============================Output============================"
+        echo "$ git diff"
+        echo "$PUBLISH_API_DIFF"
+        echo "..."
+        echo "=============================================================="
+        echo "Please run `just publish-api` locally and commit the changes"
+        exit 1
