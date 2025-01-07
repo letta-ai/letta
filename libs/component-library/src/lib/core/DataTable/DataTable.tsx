@@ -18,7 +18,7 @@ import {
 } from '../Table/Table';
 import { RawInput } from '../Input/Input';
 import { cva, type VariantProps } from 'class-variance-authority';
-import { cn } from '@letta-web/core-style-config';
+import { cn } from '@letta-cloud/core-style-config';
 import { Button } from '../Button/Button';
 import type { Dispatch, SetStateAction } from 'react';
 import { useRef } from 'react';

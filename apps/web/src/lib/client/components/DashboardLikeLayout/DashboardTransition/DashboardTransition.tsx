@@ -7,10 +7,10 @@ import {
   HStack,
   LoadingEmptyStatusComponent,
   VStack,
-} from '@letta-web/component-library';
+} from '@letta-cloud/component-library';
 import * as React from 'react';
 import './DashboardTransition.scss';
-import { cn } from '@letta-web/core-style-config';
+import { cn } from '@letta-cloud/core-style-config';
 
 function TransitionLoader() {
   // only will appear if element has existed for more than 0.5s
@@ -64,7 +64,7 @@ export function DashboardTransition({
               ease: 'power1.out',
               duration: 0.175,
               autoAlpha: 0,
-            }
+            },
           );
 
           return () => {
@@ -84,7 +84,7 @@ export function DashboardTransition({
               ease: 'power1.in',
               duration: 0,
               autoAlpha: 1,
-            }
+            },
           );
 
           return () => tl.kill();
@@ -94,7 +94,7 @@ export function DashboardTransition({
           /* eslint-disable-next-line react/forbid-component-props */
           className={cn(
             'transition-box z-[-1]',
-            alwaysFullscreenBox ? 'always-fullscreen-transition-box' : ''
+            alwaysFullscreenBox ? 'always-fullscreen-transition-box' : '',
           )}
           paddingTop="xxsmall"
           paddingRight="xxsmall"

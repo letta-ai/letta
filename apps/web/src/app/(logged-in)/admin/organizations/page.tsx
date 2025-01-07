@@ -8,10 +8,10 @@ import {
   DashboardPageLayout,
   DashboardPageSection,
   DataTable,
-} from '@letta-web/component-library';
+} from '@letta-cloud/component-library';
 import type { ColumnDef } from '@tanstack/react-table';
 import type { PublicOrganizationType } from '$web/web-api/contracts';
-import { useDateFormatter } from '@letta-web/helpful-client-utils';
+import { useDateFormatter } from '@letta-cloud/helpful-client-utils';
 
 function AdminOrganizationsPage() {
   const [offset, setOffset] = useState(0);

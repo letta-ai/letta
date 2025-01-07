@@ -214,8 +214,9 @@ ready:
   @echo "🚧 Updating your local environment..."
   npm run core:install
   npm install
-
-
+  @echo "Migrating the database..."
+  npm run web:database:migrate
+  npm run core:database:migrate
 
 
 start-services:

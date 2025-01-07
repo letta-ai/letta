@@ -6,7 +6,7 @@ import {
   Logo,
   Typography,
   VStack,
-} from '@letta-web/component-library';
+} from '@letta-cloud/component-library';
 
 export function InstallLetta() {
   const t = useTranslations('InstallLetta');

@@ -1,6 +1,6 @@
 import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
 import type { contracts } from '$web/web-api/contracts';
-import { db, emailWhitelist } from '@letta-web/database';
+import { db, emailWhitelist } from '@letta-cloud/database';
 import { eq, ilike } from 'drizzle-orm';
 
 type GetWhitelistedEmailsResponse = ServerInferResponses<
@@ -11,7 +11,7 @@ type GetWhitelistedEmailsQuery = ServerInferRequest<
 >;
 
 export async function getWhitelistedEmails(
-  req: GetWhitelistedEmailsQuery
+  req: GetWhitelistedEmailsQuery,
 ): Promise<GetWhitelistedEmailsResponse> {
   const { offset, limit = 10, search } = req.query;
   const where = search ? ilike(emailWhitelist.email, search) : undefined;
@@ -42,7 +42,7 @@ type CreateWhitelistedEmailResponse = ServerInferResponses<
 >;
 
 export async function createWhitelistedEmail(
-  req: CreateWhitelistedEmailRequest
+  req: CreateWhitelistedEmailRequest,
 ): Promise<CreateWhitelistedEmailResponse> {
   const { email } = req.body;
   const [response] = await db
@@ -70,7 +70,7 @@ type DeleteWhitelistedEmailResponse = ServerInferResponses<
 >;
 
 export async function deleteWhitelistedEmail(
-  req: DeleteWhitelistedEmailRequest
+  req: DeleteWhitelistedEmailRequest,
 ): Promise<DeleteWhitelistedEmailResponse> {
   await db
     .delete(emailWhitelist)

@@ -1,14 +1,14 @@
 import {
   AgentsService,
   UseAgentsServiceGetAgentKeyFn,
-} from '@letta-web/letta-agents-api';
+} from '@letta-cloud/letta-agents-api';
 import {
   dehydrate,
   HydrationBoundary,
   QueryClient,
 } from '@tanstack/react-query';
 import React from 'react';
-import { db, agentTemplates } from '@letta-web/database';
+import { db, agentTemplates } from '@letta-cloud/database';
 import { and, eq, isNull } from 'drizzle-orm';
 import { redirect } from 'next/navigation';
 import { webApiQueryKeys, webOriginSDKQueryKeys } from '$web/client';
@@ -49,7 +49,7 @@ async function AgentsAgentPage(context: AgentsAgentPageProps) {
     where: and(
       eq(agentTemplates.name, templateName),
       eq(agentTemplates.organizationId, user.activeOrganizationId),
-      isNull(agentTemplates.deletedAt)
+      isNull(agentTemplates.deletedAt),
     ),
     columns: {
       name: true,
@@ -70,7 +70,7 @@ async function AgentsAgentPage(context: AgentsAgentPageProps) {
     },
     {
       user_id: user.lettaAgentsId,
-    }
+    },
   );
 
   const queries = [

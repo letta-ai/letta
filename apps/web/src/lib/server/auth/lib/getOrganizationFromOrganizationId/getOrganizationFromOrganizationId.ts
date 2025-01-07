@@ -1,4 +1,4 @@
-import { db, organizations } from '@letta-web/database';
+import { db, organizations } from '@letta-cloud/database';
 import { and, eq, isNull } from 'drizzle-orm';
 
 export async function getOrganizationFromOrganizationId(

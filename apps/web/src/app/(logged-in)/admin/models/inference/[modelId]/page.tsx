@@ -16,7 +16,7 @@ import {
   Typography,
   useForm,
   VStack,
-} from '@letta-web/component-library';
+} from '@letta-cloud/component-library';
 import { webApi } from '$web/client';
 import type { AdminInferenceModelType } from '$web/web-api/contracts';
 import { z } from 'zod';

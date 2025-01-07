@@ -1,8 +1,8 @@
 import { useTranslations } from '@letta-cloud/translations';
 import { z } from 'zod';
 import { useCurrentAgent, useSyncUpdateCurrentAgent } from '../../hooks';
-import type { OptionType } from '@letta-web/component-library';
-import { CogIcon } from '@letta-web/component-library';
+import type { OptionType } from '@letta-cloud/component-library';
+import { CogIcon } from '@letta-cloud/component-library';
 import {
   Alert,
   brandKeyToLogo,
@@ -15,13 +15,13 @@ import {
   RawSelect,
   RawSlider,
   VStack,
-} from '@letta-web/component-library';
+} from '@letta-cloud/component-library';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   type AgentState,
   useModelsServiceListEmbeddingModels,
   useModelsServiceListModels,
-} from '@letta-web/letta-agents-api';
+} from '@letta-cloud/letta-agents-api';
 import { useDebouncedValue } from '@mantine/hooks';
 
 interface EmbeddingConfig {

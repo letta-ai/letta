@@ -1,10 +1,10 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useCurrentAgent } from '../useCurrentAgent/useCurrentAgent';
-import type { AgentState } from '@letta-web/letta-agents-api';
+import type { AgentState } from '@letta-cloud/letta-agents-api';
 import {
   UseAgentsServiceGetAgentKeyFn,
   useAgentsServiceUpdateAgent,
-} from '@letta-web/letta-agents-api';
+} from '@letta-cloud/letta-agents-api';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 export function useSyncUpdateCurrentAgent() {

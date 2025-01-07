@@ -3,7 +3,7 @@ import React from 'react';
 import * as ToggleGroupPrimitive from '@radix-ui/react-toggle-group';
 import * as TogglePrimitive from '@radix-ui/react-toggle';
 import { cva, type VariantProps } from 'class-variance-authority';
-import { cn } from '@letta-web/core-style-config';
+import { cn } from '@letta-cloud/core-style-config';
 import type { ToggleGroupSingleProps } from '@radix-ui/react-toggle-group';
 import { makeInput, makeRawInput } from '../Form/Form';
 import { Frame } from '../../framing/Frame/Frame';
@@ -46,7 +46,7 @@ const toggleVariants = cva(
         className: 'w-biHeight',
       },
     ],
-  }
+  },
 );
 
 const Toggle = React.forwardRef<
@@ -101,7 +101,7 @@ const ToggleGroupItem = React.forwardRef<
 >(
   (
     { className, hideLabel: _, children, variant, fullWidth, size, ...props },
-    ref
+    ref,
   ) => {
     const context = React.useContext(ToggleGroupContext);
 
@@ -115,14 +115,14 @@ const ToggleGroupItem = React.forwardRef<
             size: context.size || size,
             fullWidth: context.fullWidth || fullWidth,
           }),
-          className
+          className,
         )}
         {...props}
       >
         <div className="flex gap-2 items-center">{children}</div>
       </ToggleGroupPrimitive.Item>
     );
-  }
+  },
 );
 
 ToggleGroupItem.displayName = ToggleGroupPrimitive.Item.displayName;
@@ -149,7 +149,7 @@ function ToggleGroupWrapper(props: ToggleGroupProps) {
     <Frame
       className={cn(
         border ? 'frame-border-hack' : '',
-        fullWidth ? 'w-full' : ''
+        fullWidth ? 'w-full' : '',
       )}
     >
       <ToggleGroupRoot

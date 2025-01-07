@@ -1,4 +1,4 @@
-import type { AgentState } from '@letta-web/letta-agents-api';
+import type { AgentState } from '@letta-cloud/letta-agents-api';
 import { isEqual } from 'lodash';
 
 function stateCleaner(state: AgentState) {

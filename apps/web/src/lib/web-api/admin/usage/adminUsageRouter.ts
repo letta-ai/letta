@@ -1,6 +1,10 @@
 import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
 import type { contracts } from '$web/web-api/contracts';
-import { db, inferenceTransactions, organizations } from '@letta-web/database';
+import {
+  db,
+  inferenceTransactions,
+  organizations,
+} from '@letta-cloud/database';
 import { and, gte, inArray, lt, sql } from 'drizzle-orm';
 
 type GetUsageLeaderboardResponse = ServerInferResponses<

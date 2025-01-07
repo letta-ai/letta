@@ -8,8 +8,8 @@ import {
   organizationUsers,
   userMarketingDetails,
   users,
-} from '@letta-web/database';
-import { createOrUpdateCRMContact } from '@letta-web/crm';
+} from '@letta-cloud/database';
+import { createOrUpdateCRMContact } from '@letta-cloud/crm';
 import { inArray } from 'drizzle-orm/sql/expressions/conditions';
 
 type AdminGetUsersResponse = ServerInferResponses<
@@ -21,7 +21,7 @@ type AdminGetUsersRequest = ServerInferRequest<
 >;
 
 async function adminGetUsers(
-  req: AdminGetUsersRequest
+  req: AdminGetUsersRequest,
 ): Promise<AdminGetUsersResponse> {
   const { offset, limit = 10, search } = req.query;
 
@@ -56,7 +56,7 @@ type AdminGetUserRequest = ServerInferRequest<
 >;
 
 async function adminGetUser(
-  req: AdminGetUserRequest
+  req: AdminGetUserRequest,
 ): Promise<AdminGetUserResponse> {
   const { userId } = req.params;
 
@@ -102,7 +102,7 @@ type AdminUpdateUserRequest = ServerInferRequest<
 >;
 
 async function adminUpdateUser(
-  req: AdminUpdateUserRequest
+  req: AdminUpdateUserRequest,
 ): Promise<AdminUpdateUserResponse> {
   const { userId } = req.params;
   const { name } = req.body;
@@ -131,7 +131,7 @@ type AdminDeleteUserRequest = ServerInferRequest<
 >;
 
 async function adminDeleteUser(
-  req: AdminDeleteUserRequest
+  req: AdminDeleteUserRequest,
 ): Promise<AdminDeleteUserResponse> {
   const { userId } = req.params;
 
@@ -154,7 +154,7 @@ type AdminSyncUserWithHubspotRequest = ServerInferRequest<
 >;
 
 async function adminSyncUserWithHubspot(
-  req: AdminSyncUserWithHubspotRequest
+  req: AdminSyncUserWithHubspotRequest,
 ): Promise<AdminSyncUserWithHubspotResponse> {
   const { userId } = req.params;
 
@@ -210,7 +210,7 @@ type AdminGetUserOrganizationsRequest = ServerInferRequest<
 >;
 
 async function adminGetUserOrganizations(
-  req: AdminGetUserOrganizationsRequest
+  req: AdminGetUserOrganizationsRequest,
 ): Promise<AdminGetUserOrganizationsResponse> {
   const { userId } = req.params;
 
@@ -221,7 +221,7 @@ async function adminGetUserOrganizations(
   const organizationsResponse = await db.query.organizations.findMany({
     where: inArray(
       organizations.id,
-      organizationAssociations.map((association) => association.organizationId)
+      organizationAssociations.map((association) => association.organizationId),
     ),
   });
 

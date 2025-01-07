@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import React, { useCallback, useState } from 'react';
-import { useResetAllLettaAgentsQueryKeys } from '@letta-web/letta-agents-api';
+import { useResetAllLettaAgentsQueryKeys } from '@letta-cloud/letta-agents-api';
 import { useTranslations } from '@letta-cloud/translations';
 import { useQueryClient } from '@tanstack/react-query';
 import {
@@ -9,7 +9,7 @@ import {
   FormProvider,
   Input,
   useForm,
-} from '@letta-web/component-library';
+} from '@letta-cloud/component-library';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { webApi, webApiQueryKeys } from '$web/client';
 import type { ServerInferResponses } from '@ts-rest/core';

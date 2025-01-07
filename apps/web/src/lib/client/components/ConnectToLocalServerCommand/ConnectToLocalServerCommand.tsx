@@ -1,6 +1,6 @@
 import { LOCAL_PROJECT_SERVER_PORT } from '$web/constants';
-import type { InlineCodeProps } from '@letta-web/component-library';
-import { InlineCode } from '@letta-web/component-library';
+import type { InlineCodeProps } from '@letta-cloud/component-library';
+import { InlineCode } from '@letta-cloud/component-library';
 import React from 'react';
 
 interface ConnectToLocalServerCommandProps {
@@ -8,7 +8,7 @@ interface ConnectToLocalServerCommandProps {
 }
 
 export function ConnectToLocalServerCommand(
-  props: ConnectToLocalServerCommandProps
+  props: ConnectToLocalServerCommandProps,
 ) {
   return (
     <InlineCode

@@ -2,7 +2,7 @@ import {
   Button,
   LoadingEmptyStatusComponent,
   VStack,
-} from '@letta-web/component-library';
+} from '@letta-cloud/component-library';
 import { useTranslations } from '@letta-cloud/translations';
 
 export default function NotFound() {

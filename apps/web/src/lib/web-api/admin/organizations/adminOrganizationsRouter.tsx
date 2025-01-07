@@ -8,9 +8,9 @@ import {
   organizations,
   organizationUsers,
   users,
-} from '@letta-web/database';
+} from '@letta-cloud/database';
 import { and, count, eq, ilike, inArray } from 'drizzle-orm';
-import { AdminService } from '@letta-web/letta-agents-api';
+import { AdminService } from '@letta-cloud/letta-agents-api';
 import { getUsageByModelSummaryAndOrganizationId } from '$web/web-api/usage/usageRouter';
 
 /* Get Organizations */
@@ -23,7 +23,7 @@ type GetOrganizationsQuery = ServerInferRequest<
 >;
 
 async function getOrganizations(
-  req: GetOrganizationsQuery
+  req: GetOrganizationsQuery,
 ): Promise<GetOrganizationsResponse> {
   const { offset, limit = 10, search } = req.query;
   const where = search ? ilike(organizations.name, `%${search}%`) : undefined;
@@ -58,7 +58,7 @@ type GetOrganizationRequest = ServerInferRequest<
 >;
 
 async function getOrganization(
-  req: GetOrganizationRequest
+  req: GetOrganizationRequest,
 ): Promise<GetOrganizationResponse> {
   const { organizationId } = req.params;
 
@@ -99,7 +99,7 @@ type ToggleCloudOrganizationResponse = ServerInferResponses<
 >;
 
 async function toggleCloudOrganization(
-  req: ToggleCloudOrganizationRequest
+  req: ToggleCloudOrganizationRequest,
 ): Promise<ToggleCloudOrganizationResponse> {
   const { organizationId } = req.params;
   const { enabledCloud } = req.body;
@@ -147,7 +147,7 @@ type AdminBanOrganizationResponse = ServerInferResponses<
 >;
 
 async function adminBanOrganization(
-  req: AdminBanOrganizationRequest
+  req: AdminBanOrganizationRequest,
 ): Promise<AdminBanOrganizationResponse> {
   const { organizationId } = req.params;
 
@@ -198,8 +198,8 @@ async function adminBanOrganization(
     .where(
       inArray(
         users.id,
-        organizationUserList.map((user) => user.userId)
-      )
+        organizationUserList.map((user) => user.userId),
+      ),
     );
 
   return {
@@ -219,7 +219,7 @@ type UnbanOrganizationResponse = ServerInferResponses<
 >;
 
 async function adminUnbanOrganization(
-  req: UnbanOrganizationRequest
+  req: UnbanOrganizationRequest,
 ): Promise<UnbanOrganizationResponse> {
   const { organizationId } = req.params;
 
@@ -256,8 +256,8 @@ async function adminUnbanOrganization(
     .where(
       inArray(
         users.id,
-        organizationUserList.map((user) => user.userId)
-      )
+        organizationUserList.map((user) => user.userId),
+      ),
     );
 
   return {
@@ -277,7 +277,7 @@ type AdminAddUserToOrganizationResponse = ServerInferResponses<
 >;
 
 async function adminAddUserToOrganization(
-  req: AdminAddUserToOrganizationRequest
+  req: AdminAddUserToOrganizationRequest,
 ): Promise<AdminAddUserToOrganizationResponse> {
   const { organizationId } = req.params;
   const { userId } = req.body;
@@ -311,7 +311,7 @@ async function adminAddUserToOrganization(
   const existingOrganizationUser = await db.query.organizationUsers.findFirst({
     where: and(
       eq(organizationUsers.organizationId, organizationId),
-      eq(organizationUsers.userId, userId)
+      eq(organizationUsers.userId, userId),
     ),
   });
 
@@ -349,7 +349,7 @@ type AdminRemoveUserFromOrganizationResponse = ServerInferResponses<
 >;
 
 async function adminRemoveUserFromOrganization(
-  req: AdminRemoveUserFromOrganizationRequest
+  req: AdminRemoveUserFromOrganizationRequest,
 ): Promise<AdminRemoveUserFromOrganizationResponse> {
   const { organizationId } = req.params;
   const { userId } = req.body;
@@ -383,7 +383,7 @@ async function adminRemoveUserFromOrganization(
   const existingOrganizationUser = await db.query.organizationUsers.findFirst({
     where: and(
       eq(organizationUsers.organizationId, organizationId),
-      eq(organizationUsers.userId, userId)
+      eq(organizationUsers.userId, userId),
     ),
   });
 
@@ -410,8 +410,8 @@ async function adminRemoveUserFromOrganization(
     .where(
       and(
         eq(organizationUsers.organizationId, organizationId),
-        eq(organizationUsers.userId, userId)
-      )
+        eq(organizationUsers.userId, userId),
+      ),
     );
 
   return {
@@ -431,7 +431,7 @@ type AdminListOrganizationUsersResponse = ServerInferResponses<
 >;
 
 async function adminListOrganizationUsers(
-  req: AdminListOrganizationUsersRequest
+  req: AdminListOrganizationUsersRequest,
 ): Promise<AdminListOrganizationUsersResponse> {
   const { organizationId } = req.params;
   const { offset, limit = 10 } = req.query;
@@ -456,13 +456,13 @@ async function adminListOrganizationUsers(
   });
 
   const organizationUsersMap = Object.fromEntries(
-    organizationUsersList.map((ou) => [ou.userId, ou])
+    organizationUsersList.map((ou) => [ou.userId, ou]),
   );
 
   const usersList = await db.query.users.findMany({
     where: inArray(
       users.id,
-      organizationUsersList.map((ou) => ou.userId)
+      organizationUsersList.map((ou) => ou.userId),
     ),
   });
 
@@ -491,7 +491,7 @@ type AdminGetOrganizationStatisticsResponse = ServerInferResponses<
 >;
 
 async function adminGetOrganizationStatistics(
-  req: AdminGetOrganizationStatisticsRequest
+  req: AdminGetOrganizationStatisticsRequest,
 ): Promise<AdminGetOrganizationStatisticsResponse> {
   const { organizationId } = req.params;
 
@@ -546,7 +546,7 @@ type AdminDeleteOrganizationResponse = ServerInferResponses<
 >;
 
 async function adminDeleteOrganization(
-  req: AdminDeleteOrganizationRequest
+  req: AdminDeleteOrganizationRequest,
 ): Promise<AdminDeleteOrganizationResponse> {
   const { organizationId } = req.params;
 
@@ -586,7 +586,7 @@ type AdminGetOrganizationInferenceUsageResponse = ServerInferResponses<
 >;
 
 async function adminGetOrganizationInferenceUsage(
-  req: AdminGetOrganizationInferenceUsageRequest
+  req: AdminGetOrganizationInferenceUsageRequest,
 ): Promise<AdminGetOrganizationInferenceUsageResponse> {
   const { organizationId } = req.params;
   const { startDate, endDate } = req.query;

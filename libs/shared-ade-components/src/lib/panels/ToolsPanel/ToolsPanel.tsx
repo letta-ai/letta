@@ -1,25 +1,25 @@
 'use client';
 import React, { useCallback, useMemo, useState } from 'react';
-import type { FileTreeContentsType } from '@letta-web/component-library';
-import { VStack } from '@letta-web/component-library';
-import { brandKeyToLogo, isBrandKey } from '@letta-web/component-library';
-import { getIsGenericFolder } from '@letta-web/component-library';
+import type { FileTreeContentsType } from '@letta-cloud/component-library';
+import { VStack } from '@letta-cloud/component-library';
+import { brandKeyToLogo, isBrandKey } from '@letta-cloud/component-library';
+import { getIsGenericFolder } from '@letta-cloud/component-library';
 import {
   Dialog,
   FileTree,
   Logo,
   PlusIcon,
   ToolsIcon,
-} from '@letta-web/component-library';
+} from '@letta-cloud/component-library';
 import {
   Button,
   PanelBar,
   PanelMainContent,
-} from '@letta-web/component-library';
+} from '@letta-cloud/component-library';
 import { useCurrentAgent } from '../../hooks';
-import type { AgentState } from '@letta-web/letta-agents-api';
-import { useAgentsServiceRemoveToolFromAgent } from '@letta-web/letta-agents-api';
-import { UseAgentsServiceGetAgentKeyFn } from '@letta-web/letta-agents-api';
+import type { AgentState } from '@letta-cloud/letta-agents-api';
+import { useAgentsServiceRemoveToolFromAgent } from '@letta-cloud/letta-agents-api';
+import { UseAgentsServiceGetAgentKeyFn } from '@letta-cloud/letta-agents-api';
 
 import { useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from '@letta-cloud/translations';

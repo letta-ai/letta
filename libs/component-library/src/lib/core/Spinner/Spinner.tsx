@@ -2,7 +2,7 @@ import * as React from 'react';
 import type { VariantProps } from 'class-variance-authority';
 import { cva } from 'class-variance-authority';
 import { SpinnerPrimitive } from '../../../primitives';
-import { cn } from '@letta-web/core-style-config';
+import { cn } from '@letta-cloud/core-style-config';
 
 const spinnerVariants = cva('', {
   variants: {

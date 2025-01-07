@@ -10,9 +10,9 @@ import {
   DashboardPageLayout,
   DashboardPageSection,
   DataTable,
-} from '@letta-web/component-library';
+} from '@letta-cloud/component-library';
 import type { ColumnDef } from '@tanstack/react-table';
-import { useDateFormatter } from '@letta-web/helpful-client-utils';
+import { useDateFormatter } from '@letta-cloud/helpful-client-utils';
 
 function AdminUsersPage() {
   const [offset, setOffset] = useState(0);

@@ -4,7 +4,7 @@ import {
   type AgentState,
   UseAgentsServiceGetAgentKeyFn,
   useAgentsServiceUpdateAgentMemoryBlockByLabel,
-} from '@letta-web/letta-agents-api';
+} from '@letta-cloud/letta-agents-api';
 import { useQueryClient } from '@tanstack/react-query';
 import { useDebouncedCallback } from '@mantine/hooks';
 

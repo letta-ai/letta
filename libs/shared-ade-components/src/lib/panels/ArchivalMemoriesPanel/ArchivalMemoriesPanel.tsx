@@ -1,13 +1,13 @@
 'use client';
 import React, { useCallback, useMemo, useState } from 'react';
-import { LoadingEmptyStatusComponent } from '@letta-web/component-library';
+import { LoadingEmptyStatusComponent } from '@letta-cloud/component-library';
 import {
   CopyButton,
   HStack,
   RawTextArea,
   Typography,
-} from '@letta-web/component-library';
-import { PlusIcon } from '@letta-web/component-library';
+} from '@letta-cloud/component-library';
+import { PlusIcon } from '@letta-cloud/component-library';
 import {
   ActionCard,
   Alert,
@@ -20,22 +20,22 @@ import {
   TextArea,
   TrashIcon,
   useForm,
-} from '@letta-web/component-library';
+} from '@letta-cloud/component-library';
 import { z } from 'zod';
 import type {
   ListAgentArchivalMemoryResponse,
   Passage,
-} from '@letta-web/letta-agents-api';
+} from '@letta-cloud/letta-agents-api';
 import {
   useAgentsServiceCreateAgentArchivalMemory,
   useAgentsServiceDeleteAgentArchivalMemory,
   useAgentsServiceListAgentArchivalMemory,
   UseAgentsServiceListAgentArchivalMemoryKeyFn,
-} from '@letta-web/letta-agents-api';
+} from '@letta-cloud/letta-agents-api';
 import { useQueryClient } from '@tanstack/react-query';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslations } from '@letta-cloud/translations';
-import { useDateFormatter } from '@letta-web/helpful-client-utils';
+import { useDateFormatter } from '@letta-cloud/helpful-client-utils';
 import { useCurrentSimulatedAgent } from '../../hooks/useCurrentSimulatedAgent/useCurrentSimulatedAgent';
 import { useCurrentAgentMetaData } from '../../hooks';
 

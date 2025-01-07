@@ -6,7 +6,7 @@ import {
   db,
   developmentServerPasswords,
   developmentServers,
-} from '@letta-web/database';
+} from '@letta-cloud/database';
 import type { contracts } from '@letta-cloud/web-api-client';
 
 type GetDevelopmentServersRequest = ServerInferRequest<

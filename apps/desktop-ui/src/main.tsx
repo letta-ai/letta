@@ -4,7 +4,7 @@ import * as ReactDOM from 'react-dom/client';
 import App from './app/app';
 import './styles.scss';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { OpenAPI } from '@letta-web/letta-agents-api';
+import { OpenAPI } from '@letta-cloud/letta-agents-api';
 import { NextIntlClientProvider } from 'next-intl';
 import { en as adeEn } from '@letta-cloud/shared-ade-components';
 import en from './translations/en.json';

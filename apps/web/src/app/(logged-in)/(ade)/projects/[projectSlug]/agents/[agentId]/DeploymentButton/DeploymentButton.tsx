@@ -21,7 +21,7 @@ import {
   VStack,
   Tooltip,
   LettaLoader,
-} from '@letta-web/component-library';
+} from '@letta-cloud/component-library';
 import { DeployAgentUsageInstructions } from '$web/client/code-reference/DeployAgentUsageInstructions';
 import { z } from 'zod';
 import { useQueryClient } from '@tanstack/react-query';
@@ -29,14 +29,14 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { webApi, webApiQueryKeys, webOriginSDKApi } from '$web/client';
 import { CLOUD_UPSELL_URL } from '$web/constants';
-import { isAgentState } from '@letta-web/letta-agents-api';
+import { isAgentState } from '@letta-cloud/letta-agents-api';
 import { useCurrentAgentMetaData } from '../hooks/useCurrentAgentMetaData/useCurrentAgentMetaData';
 import { useCurrentUser } from '$web/client/hooks';
 import type { ServerInferResponses } from '@ts-rest/core';
 import type { contracts } from '@letta-cloud/web-api-client';
 import { atom, useSetAtom } from 'jotai';
 import { get } from 'lodash-es';
-import { compareAgentStates } from '@letta-web/generic-utils';
+import { compareAgentStates } from '@letta-cloud/generic-utils';
 
 interface DeployAgentDialogProps {
   isAtLatestVersion: boolean;

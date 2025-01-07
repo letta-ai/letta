@@ -3,7 +3,7 @@ import { useTranslations } from '@letta-cloud/translations';
 import { CopyButton } from '../../reusable/CopyButton/CopyButton';
 import type { VariantProps } from 'class-variance-authority';
 import { cva } from 'class-variance-authority';
-import { cn } from '@letta-web/core-style-config';
+import { cn } from '@letta-cloud/core-style-config';
 
 const inlineCodeVariants = cva(
   'inline-flex  text-sm gap-4 items-center border font-mono',

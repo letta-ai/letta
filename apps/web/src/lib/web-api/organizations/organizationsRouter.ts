@@ -5,7 +5,7 @@ import {
   organizations,
   organizationUsers,
   organizationPreferences,
-} from '@letta-web/database';
+} from '@letta-cloud/database';
 import {
   createOrganization as authCreateOrganization,
   getUserActiveOrganizationIdOrThrow,
@@ -52,7 +52,7 @@ type GetCurrentOrganizationTeamMembersRequest = ServerInferRequest<
 >;
 
 async function getCurrentOrganizationTeamMembers(
-  req: GetCurrentOrganizationTeamMembersRequest
+  req: GetCurrentOrganizationTeamMembersRequest,
 ): Promise<GetCurrentOrganizationTeamMembersResponse> {
   const { offset, limit = 20, search } = req.query;
   const organizationId = await getUserActiveOrganizationIdOrThrow();
@@ -81,8 +81,8 @@ async function getCurrentOrganizationTeamMembers(
     where: and(
       inArray(
         users.id,
-        members.map((member) => member.userId)
-      )
+        members.map((member) => member.userId),
+      ),
     ),
   });
 
@@ -111,7 +111,7 @@ type InviteNewTeamMemberResponse = ServerInferResponses<
 >;
 
 async function inviteNewTeamMember(
-  req: InviteNewTeamMemberRequest
+  req: InviteNewTeamMemberRequest,
 ): Promise<InviteNewTeamMemberResponse> {
   const { activeOrganizationId, id: userId } =
     await getUserWithActiveOrganizationIdOrThrow();
@@ -126,7 +126,7 @@ async function inviteNewTeamMember(
     const userInOrganization = await db.query.organizationUsers.findFirst({
       where: and(
         eq(organizationUsers.userId, user.id),
-        eq(organizationUsers.organizationId, activeOrganizationId)
+        eq(organizationUsers.organizationId, activeOrganizationId),
       ),
     });
 
@@ -173,7 +173,7 @@ async function inviteNewTeamMember(
   const invitedUser = await db.query.organizationInvitedUsers.findFirst({
     where: and(
       eq(organizationInvitedUsers.email, email),
-      eq(organizationInvitedUsers.organizationId, activeOrganizationId)
+      eq(organizationInvitedUsers.organizationId, activeOrganizationId),
     ),
   });
 
@@ -214,7 +214,7 @@ type UnInviteTeamMemberResponse = ServerInferResponses<
 >;
 
 async function unInviteTeamMember(
-  req: UnInviteTeamMemberRequest
+  req: UnInviteTeamMemberRequest,
 ): Promise<UnInviteTeamMemberResponse> {
   const { activeOrganizationId } =
     await getUserWithActiveOrganizationIdOrThrow();
@@ -225,8 +225,8 @@ async function unInviteTeamMember(
     .where(
       and(
         eq(organizationInvitedUsers.id, memberId),
-        eq(organizationInvitedUsers.organizationId, activeOrganizationId)
-      )
+        eq(organizationInvitedUsers.organizationId, activeOrganizationId),
+      ),
     );
 
   return {
@@ -246,7 +246,7 @@ type RemoveTeamMemberResponse = ServerInferResponses<
 >;
 
 async function removeTeamMember(
-  req: RemoveTeamMember
+  req: RemoveTeamMember,
 ): Promise<RemoveTeamMemberResponse> {
   const { activeOrganizationId, id: userId } =
     await getUserWithActiveOrganizationIdOrThrow();
@@ -274,8 +274,8 @@ async function removeTeamMember(
       .where(
         and(
           eq(users.id, memberId),
-          eq(users.activeOrganizationId, activeOrganizationId)
-        )
+          eq(users.activeOrganizationId, activeOrganizationId),
+        ),
       ),
   ]);
 
@@ -296,7 +296,7 @@ type ListInvitedMembersResponse = ServerInferResponses<
 >;
 
 async function listInvitedMembers(
-  req: ListInvitedMembersRequest
+  req: ListInvitedMembersRequest,
 ): Promise<ListInvitedMembersResponse> {
   const { activeOrganizationId } =
     await getUserWithActiveOrganizationIdOrThrow();
@@ -347,7 +347,7 @@ type UpdateOrganizationResponse = ServerInferResponses<
 >;
 
 async function updateOrganization(
-  req: UpdateOrganizationRequest
+  req: UpdateOrganizationRequest,
 ): Promise<UpdateOrganizationResponse> {
   const { activeOrganizationId } =
     await getUserWithActiveOrganizationIdOrThrow();
@@ -393,7 +393,7 @@ type CreateOrganizationResponse = ServerInferResponses<
 >;
 
 async function createOrganization(
-  req: CreateOrganizationRequest
+  req: CreateOrganizationRequest,
 ): Promise<CreateOrganizationResponse> {
   const { id } = await getUserOrThrow();
 

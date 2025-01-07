@@ -1,13 +1,13 @@
 import type { DeepMockProxy } from 'jest-mock-extended';
 import { mockDeep, mockReset } from 'jest-mock-extended';
 
-import type { db } from '@letta-web/database';
+import type { db } from '@letta-cloud/database';
 
 const mockDatabase: DeepMockProxy<typeof db> = mockDeep();
 
-jest.mock('@letta-web/database', () => ({
+jest.mock('@letta-cloud/database', () => ({
   __esModule: true,
-  ...jest.requireActual('@letta-web/database'),
+  ...jest.requireActual('@letta-cloud/database'),
   db: mockDatabase,
 }));
 

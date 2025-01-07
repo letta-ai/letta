@@ -20,13 +20,13 @@ import {
   Typography,
   useForm,
   VStack,
-} from '@letta-web/component-library';
+} from '@letta-cloud/component-library';
 import { webApi, webApiQueryKeys } from '$web/client';
 import React, { useCallback, useMemo, useState } from 'react';
 import {
   useDateFormatter,
   useMonthCursor,
-} from '@letta-web/helpful-client-utils';
+} from '@letta-cloud/helpful-client-utils';
 import type { ColumnDef } from '@tanstack/react-table';
 import type { AdminOrganizationUserType } from '$web/web-api/contracts';
 import { useQueryClient } from '@tanstack/react-query';

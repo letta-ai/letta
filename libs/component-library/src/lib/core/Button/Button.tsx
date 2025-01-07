@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { ButtonPrimitive, SpinnerPrimitive } from '../../../primitives';
-import { cn } from '@letta-web/core-style-config';
+import { cn } from '@letta-cloud/core-style-config';
 import { forwardRef, useMemo } from 'react';
 import { Slot } from '@radix-ui/react-slot';
 import { MaybeTooltip } from '../Tooltip/Tooltip';
@@ -101,7 +101,7 @@ const buttonVariants = cva(
       variant: 'default',
       size: 'default',
     },
-  }
+  },
 );
 
 export type ButtonProps = Omit<
@@ -182,7 +182,7 @@ export const Button = forwardRef<
             fullHeight,
             active,
           }),
-          _use_rarely_className
+          _use_rarely_className,
         )}
         {...rest}
         disabled={rest.disabled || busy}

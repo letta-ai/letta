@@ -9,7 +9,7 @@ import {
   LoadingEmptyStatusComponent,
   Typography,
   VStack,
-} from '@letta-web/component-library';
+} from '@letta-cloud/component-library';
 import { useTranslations } from '@letta-cloud/translations';
 import { webApi } from '$web/client';
 import type { ListUserOrganizationsItemSchemaType } from '$web/web-api/contracts';

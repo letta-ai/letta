@@ -11,7 +11,7 @@ import {
   Section,
   StarterKitItems,
   VStack,
-} from '@letta-web/component-library';
+} from '@letta-cloud/component-library';
 import { STARTER_KITS } from '@letta-cloud/agent-starter-kits';
 
 interface CreateNewTemplateDialogProps {

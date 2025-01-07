@@ -10,9 +10,9 @@ import {
   agentTemplates,
   db,
   deployedAgentTemplates,
-} from '@letta-web/database';
+} from '@letta-cloud/database';
 import { copyAgentById, agentsRouter, updateAgentFromAgentId } from '$web/sdk';
-import { AgentsService } from '@letta-web/letta-agents-api';
+import { AgentsService } from '@letta-cloud/letta-agents-api';
 import { getDeployedTemplateByVersion } from '$web/server/lib/getDeployedTemplateByVersion/getDeployedTemplateByVersion';
 
 function randomThreeDigitNumber() {

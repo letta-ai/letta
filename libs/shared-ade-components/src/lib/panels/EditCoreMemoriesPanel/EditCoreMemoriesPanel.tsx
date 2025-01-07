@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { TabGroup } from '@letta-web/component-library';
-import { InfoTooltip } from '@letta-web/component-library';
+import { TabGroup } from '@letta-cloud/component-library';
+import { InfoTooltip } from '@letta-cloud/component-library';
 import {
   Alert,
   Button,
@@ -12,23 +12,27 @@ import {
   Input,
   TextArea,
   useForm,
-} from '@letta-web/component-library';
-import { DialogContentWithCategories } from '@letta-web/component-library';
+} from '@letta-cloud/component-library';
+import { DialogContentWithCategories } from '@letta-cloud/component-library';
 
-import { Dialog } from '@letta-web/component-library';
-import { HStack, RawTextArea, Typography } from '@letta-web/component-library';
-import { VStack } from '@letta-web/component-library';
-import { PanelMainContent } from '@letta-web/component-library';
+import { Dialog } from '@letta-cloud/component-library';
+import {
+  HStack,
+  RawTextArea,
+  Typography,
+} from '@letta-cloud/component-library';
+import { VStack } from '@letta-cloud/component-library';
+import { PanelMainContent } from '@letta-cloud/component-library';
 import { useTranslations } from '@letta-cloud/translations';
 import { useCurrentAgent } from '../../hooks';
 import { useCallback, useState } from 'react';
 import React, { useMemo } from 'react';
-import { useDateFormatter } from '@letta-web/helpful-client-utils';
+import { useDateFormatter } from '@letta-cloud/helpful-client-utils';
 import { useUpdateMemory } from '../../hooks';
 import { useCurrentAgentMetaData } from '../../hooks';
-import type { Block, AgentState } from '@letta-web/letta-agents-api';
-import { useAgentsServiceUpdateAgentMemoryBlockByLabel } from '@letta-web/letta-agents-api';
-import { UseAgentsServiceGetAgentKeyFn } from '@letta-web/letta-agents-api';
+import type { Block, AgentState } from '@letta-cloud/letta-agents-api';
+import { useAgentsServiceUpdateAgentMemoryBlockByLabel } from '@letta-cloud/letta-agents-api';
+import { UseAgentsServiceGetAgentKeyFn } from '@letta-cloud/letta-agents-api';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useFormContext } from 'react-hook-form';
 import { useQueryClient } from '@tanstack/react-query';

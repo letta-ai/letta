@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { Slot } from '@radix-ui/react-slot';
 import { DotsHorizontalIcon } from '../../icons';
-import { cn } from '@letta-web/core-style-config';
+import { cn } from '@letta-cloud/core-style-config';
 import { Button } from '../Button/Button';
 import { Fragment } from 'react';
 

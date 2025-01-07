@@ -22,7 +22,7 @@ import {
   TrashIcon,
   Typography,
   useForm,
-} from '@letta-web/component-library';
+} from '@letta-cloud/component-library';
 import { webApi, webApiContracts, webApiQueryKeys } from '$web/client';
 import React, { useCallback, useMemo, useState } from 'react';
 import type { ColumnDef } from '@tanstack/react-table';
@@ -34,7 +34,7 @@ import { COMPOSIO_KEY_NAME } from '$web/web-api/contracts';
 import { z } from 'zod';
 import { useQueryClient } from '@tanstack/react-query';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useErrorTranslationMessage } from '@letta-web/helpful-client-utils';
+import { useErrorTranslationMessage } from '@letta-cloud/helpful-client-utils';
 
 interface DeleteEnvironmentVariableDialogProps {
   environmentVariableKey: string;

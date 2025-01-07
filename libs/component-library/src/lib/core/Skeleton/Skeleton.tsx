@@ -1,4 +1,4 @@
-import { cn } from '@letta-web/core-style-config';
+import { cn } from '@letta-cloud/core-style-config';
 
 export function Skeleton({
   className,

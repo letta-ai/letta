@@ -1,7 +1,7 @@
 'use client';
 import * as React from 'react';
 import { makeRawInput, makeInput } from '../Form/Form';
-import { cn } from '@letta-web/core-style-config';
+import { cn } from '@letta-cloud/core-style-config';
 import type { VariantProps } from 'class-variance-authority';
 import { cva } from 'class-variance-authority';
 import { Slot } from '@radix-ui/react-slot';
@@ -53,7 +53,7 @@ const inputVariants = cva(
     defaultVariants: {
       color: 'default',
     },
-  }
+  },
 );
 
 const inputIconVariants = cva('', {
@@ -141,7 +141,7 @@ const InputPrimitive = React.forwardRef<HTMLInputElement, InputPrimitiveProps>(
       color,
       ...props
     },
-    ref
+    ref,
   ) => {
     const [visibility, setVisibility] = React.useState(false);
 
@@ -164,7 +164,7 @@ const InputPrimitive = React.forwardRef<HTMLInputElement, InputPrimitiveProps>(
 
         onChange?.(e);
       },
-      [onChange, onNumericValueChange, type]
+      [onChange, onNumericValueChange, type],
     );
 
     const typeOverride = useMemo(() => {
@@ -195,7 +195,7 @@ const InputPrimitive = React.forwardRef<HTMLInputElement, InputPrimitiveProps>(
             fullWidth,
             color,
             className,
-          })
+          }),
         )}
       >
         <HStack
@@ -241,7 +241,7 @@ const InputPrimitive = React.forwardRef<HTMLInputElement, InputPrimitiveProps>(
         </HStack>
       </VStack>
     );
-  }
+  },
 );
 
 export type InputProps = Omit<InputPrimitiveProps, 'ref'>;

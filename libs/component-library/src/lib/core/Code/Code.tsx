@@ -17,7 +17,7 @@ import { HStack } from '../../framing/HStack/HStack';
 import { makeRawInput } from '../Form/Form';
 import type { VariantProps } from 'class-variance-authority';
 import { cva } from 'class-variance-authority';
-import { cn } from '@letta-web/core-style-config';
+import { cn } from '@letta-cloud/core-style-config';
 import { VStack } from '../../framing/VStack/VStack';
 import type { FrameProps } from '../../framing/Frame/Frame';
 
@@ -30,7 +30,7 @@ export type SupportedLangauges =
   | 'typescript';
 
 export function isSupportedLanguage(
-  language: string
+  language: string,
 ): language is SupportedLangauges {
   return [
     'bash',
@@ -127,7 +127,7 @@ export function Code(props: CodeProps) {
         </HStack>
       </HStack>
     ),
-    [code, language, testId, toolbarAction]
+    [code, language, testId, toolbarAction],
   );
 
   if (inline) {
@@ -181,7 +181,7 @@ export function Code(props: CodeProps) {
                   .split('\n')
                   .map(
                     (line, i) =>
-                      `<span class='editorLineNumber'>${i + 1}</span>${line}`
+                      `<span class='editorLineNumber'>${i + 1}</span>${line}`,
                   )
                   .join('\n');
               }

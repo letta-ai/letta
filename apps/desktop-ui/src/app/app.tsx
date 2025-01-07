@@ -15,7 +15,7 @@ import {
   HStack,
   LettaInvaderIcon,
   VStack,
-} from '@letta-web/component-library';
+} from '@letta-cloud/component-library';
 import { useTranslations } from '@letta-cloud/translations';
 import { ADE } from './pages/ADE/ADE';
 import { Homepage } from './pages/Homepage/Homepage';

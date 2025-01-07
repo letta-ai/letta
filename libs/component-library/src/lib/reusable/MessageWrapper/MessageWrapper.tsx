@@ -3,7 +3,7 @@ import type { VariantProps } from 'class-variance-authority';
 import { cva } from 'class-variance-authority';
 import { VStack } from '../../framing/VStack/VStack';
 import { HStack } from '../../framing/HStack/HStack';
-import { cn } from '@letta-web/core-style-config';
+import { cn } from '@letta-cloud/core-style-config';
 import { Slot } from '@radix-ui/react-slot';
 import { Typography } from '../../core/Typography/Typography';
 
@@ -48,7 +48,7 @@ export function MessageWrapper({
           <Slot
             className={cn(
               'w-3 h-3',
-              type === 'code' ? 'text-text-lighter' : ''
+              type === 'code' ? 'text-text-lighter' : '',
             )}
           >
             {header.preIcon}
@@ -68,7 +68,7 @@ export function MessageWrapper({
       <VStack
         className={cn(
           messageWrapperVariants({ type }),
-          type === 'code' ? 'bg-background border' : ''
+          type === 'code' ? 'bg-background border' : '',
         )}
         paddingY="small"
         paddingX="small"

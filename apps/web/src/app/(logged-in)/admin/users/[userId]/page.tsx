@@ -12,12 +12,12 @@ import {
   toast,
   Typography,
   VStack,
-} from '@letta-web/component-library';
+} from '@letta-cloud/component-library';
 import type {
   AdminWholeUserType,
   AdminWholeUserOrganizationType,
 } from '$web/web-api/contracts';
-import { useDateFormatter } from '@letta-web/helpful-client-utils';
+import { useDateFormatter } from '@letta-cloud/helpful-client-utils';
 import { webApi } from '$web/client';
 import type { contracts } from '$web/web-api/contracts';
 import { queryClientKeys } from '$web/web-api/contracts';

@@ -9,7 +9,7 @@ import {
   DashboardPageSection,
   DataTable,
   HStack,
-} from '@letta-web/component-library';
+} from '@letta-cloud/component-library';
 import type { ColumnDef } from '@tanstack/react-table';
 import type {
   ToolGroupType,

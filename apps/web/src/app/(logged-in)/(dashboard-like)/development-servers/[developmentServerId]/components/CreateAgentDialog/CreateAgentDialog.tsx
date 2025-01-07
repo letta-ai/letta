@@ -12,23 +12,23 @@ import {
   toast,
   Typography,
   VStack,
-} from '@letta-web/component-library';
+} from '@letta-cloud/component-library';
 import type { StarterKit } from '@letta-cloud/agent-starter-kits';
-import { useCurrentDevelopmentServerConfig } from '@letta-web/helpful-client-utils';
+import { useCurrentDevelopmentServerConfig } from '@letta-cloud/helpful-client-utils';
 import { useCallback, useMemo, useState } from 'react';
 import {
   ToolsService,
   useToolsServiceListTools,
-} from '@letta-web/letta-agents-api';
-import { useHealthServiceHealthCheck } from '@letta-web/letta-agents-api';
+} from '@letta-cloud/letta-agents-api';
+import { useHealthServiceHealthCheck } from '@letta-cloud/letta-agents-api';
 import {
   useAgentsServiceCreateAgent,
   useLlmsServiceListEmbeddingModels,
   useLlmsServiceListModels,
-} from '@letta-web/letta-agents-api';
+} from '@letta-cloud/letta-agents-api';
 import { useRouter } from 'next/navigation';
-import { trackClientSideEvent } from '@letta-web/analytics/client';
-import { AnalyticsEvent } from '@letta-web/analytics';
+import { trackClientSideEvent } from '@letta-cloud/analytics/client';
+import { AnalyticsEvent } from '@letta-cloud/analytics';
 import { useCurrentUser } from '$web/client/hooks';
 import { ConnectToLocalServerCommand } from '$web/client/components';
 import { STARTER_KITS } from '@letta-cloud/agent-starter-kits';

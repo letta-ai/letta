@@ -3,7 +3,7 @@ import { z } from 'zod';
 import {
   EmbeddingConfigSchema,
   LLMConfigSchema,
-} from '@letta-web/letta-agents-api';
+} from '@letta-cloud/letta-agents-api';
 import { GenericSearchSchema } from '../shared';
 
 const c = initContract();

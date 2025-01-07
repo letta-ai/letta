@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { environment } from '@letta-web/environmental-variables';
+import { environment } from '@letta-cloud/environmental-variables';
 
 export const composioRequest = axios.create({
   baseURL: 'https://backend.composio.dev',

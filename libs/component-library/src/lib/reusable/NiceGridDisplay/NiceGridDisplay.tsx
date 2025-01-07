@@ -1,6 +1,6 @@
 import * as React from 'react';
 import './NiceGridDisplay.scss';
-import { cn } from '@letta-web/core-style-config';
+import { cn } from '@letta-cloud/core-style-config';
 
 interface NiceGridDisplayProps {
   children: React.ReactNode;

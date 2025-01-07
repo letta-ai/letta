@@ -1,10 +1,10 @@
-import { AdminService, ToolsService } from '@letta-web/letta-agents-api';
+import { AdminService, ToolsService } from '@letta-cloud/letta-agents-api';
 import {
   db,
   organizationPreferences,
   organizations,
   projects,
-} from '@letta-web/database';
+} from '@letta-cloud/database';
 
 interface CreateOrganizationArgs {
   name: string;

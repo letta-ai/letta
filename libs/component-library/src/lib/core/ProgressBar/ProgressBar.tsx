@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import * as ProgressPrimitive from '@radix-ui/react-progress';
-import { cn } from '@letta-web/core-style-config';
+import { cn } from '@letta-cloud/core-style-config';
 
 interface ProgressBarProps
   extends React.ComponentPropsWithoutRef<typeof ProgressPrimitive.Root> {
@@ -17,14 +17,14 @@ const ProgressBar = React.forwardRef<
     ref={ref}
     className={cn(
       'relative h-[4px] w-full overflow-hidden bg-tertiary',
-      className
+      className,
     )}
     {...props}
   >
     <ProgressPrimitive.Indicator
       className={cn(
         'h-full w-full flex-1 bg-primary transition-all',
-        indeterminate && 'animate-progress origin-left'
+        indeterminate && 'animate-progress origin-left',
       )}
       style={{ transform: `translateX(-${100 - (value || 0)}%)` }}
     />

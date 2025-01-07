@@ -2,7 +2,7 @@
 import {
   DashboardWithSidebarWrapper,
   SidebarTitle,
-} from '@letta-web/component-library';
+} from '@letta-cloud/component-library';
 import React from 'react';
 import { useTranslations } from '@letta-cloud/translations';
 import { useCurrentDataSource } from '../../hooks';

@@ -11,7 +11,7 @@ import {
   primaryKey,
 } from 'drizzle-orm/pg-core';
 import { sql, relations } from 'drizzle-orm';
-import type { ProviderConfiguration } from '@letta-web/types';
+import type { ProviderConfiguration } from '@letta-cloud/types';
 
 export const emailWhitelist = pgTable('email_whitelist', {
   id: text('id')

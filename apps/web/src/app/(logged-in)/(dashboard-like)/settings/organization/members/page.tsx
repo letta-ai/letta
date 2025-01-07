@@ -22,7 +22,7 @@ import {
   toast,
   Typography,
   useForm,
-} from '@letta-web/component-library';
+} from '@letta-cloud/component-library';
 import React, { useCallback, useMemo, useState } from 'react';
 import type { ColumnDef } from '@tanstack/react-table';
 import type {
@@ -34,7 +34,7 @@ import { webApi, webApiContracts, webApiQueryKeys } from '$web/client';
 import { useQueryClient } from '@tanstack/react-query';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useErrorTranslationMessage } from '@letta-web/helpful-client-utils';
+import { useErrorTranslationMessage } from '@letta-cloud/helpful-client-utils';
 
 const inviteMemberDialogFormSchema = z.object({
   email: z.string().email(),

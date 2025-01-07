@@ -10,25 +10,25 @@ import {
   organizationUsers,
   projects,
   users,
-} from '@letta-web/database';
+} from '@letta-cloud/database';
 import { eq } from 'drizzle-orm';
 import { createAgent } from '$web/sdk';
 import { versionAgentTemplate } from '$web/sdk/agents/lib/versionAgentTemplate/versionAgentTemplate';
 import { generateDefaultADELayout } from '$web/utils';
 import type { UserSession } from '@letta-cloud/web-api-client';
 import type { ProviderUserPayload } from '@letta-cloud/web-api-client';
-import { AdminService } from '@letta-web/letta-agents-api';
+import { AdminService } from '@letta-cloud/letta-agents-api';
 import { LoginErrorsEnum } from '$web/errors';
-import { getDefaultFlags } from '@letta-web/feature-flags';
+import { getDefaultFlags } from '@letta-cloud/feature-flags';
 import {
   trackServerSideEvent,
   trackUserOnServer,
-} from '@letta-web/analytics/server';
-import { AnalyticsEvent } from '@letta-web/analytics';
+} from '@letta-cloud/analytics/server';
+import { AnalyticsEvent } from '@letta-cloud/analytics';
 import { setCookie } from '$web/server/cookies';
 import { CookieNames } from '$web/server/cookies/types';
 import { cookies } from 'next/headers';
-import { setRedisData } from '@letta-web/redis';
+import { setRedisData } from '@letta-cloud/redis';
 import { generateAPIKey } from '$web/server/auth/lib/generateApiKey/generateApiKey';
 import { createOrganization } from '$web/server/auth/lib/createOrganization/createOrganization';
 

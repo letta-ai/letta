@@ -15,14 +15,14 @@ import {
   Typography,
   useForm,
   VStack,
-} from '@letta-web/component-library';
+} from '@letta-cloud/component-library';
 import { useTranslations } from '@letta-cloud/translations';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ThemeSelector } from '$web/client/components/ThemeSelector/ThemeSelector';
 import { LocaleSelector } from '$web/client/components/LocaleSelector/LocaleSelector';
 import WelcomeImage from './welcome-image.webp';
-import { cn } from '@letta-web/core-style-config';
+import { cn } from '@letta-cloud/core-style-config';
 import './WelcomeOverlay.scss';
 import { useCurrentUser } from '$web/client/hooks';
 import { useQueryClient } from '@tanstack/react-query';

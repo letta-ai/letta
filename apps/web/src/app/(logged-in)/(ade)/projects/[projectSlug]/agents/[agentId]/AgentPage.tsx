@@ -5,19 +5,19 @@ import {
   Tooltip,
   Logo,
   Breadcrumb,
-} from '@letta-web/component-library';
-import { TrashIcon } from '@letta-web/component-library';
+} from '@letta-cloud/component-library';
+import { TrashIcon } from '@letta-cloud/component-library';
 import {
   FormField,
   FormProvider,
   Input,
   useForm,
-} from '@letta-web/component-library';
+} from '@letta-cloud/component-library';
 import {
   CogIcon,
   DropdownMenu,
   DropdownMenuItem,
-} from '@letta-web/component-library';
+} from '@letta-cloud/component-library';
 import {
   Alert,
   Button,
@@ -29,7 +29,7 @@ import {
   VisibleOnMobile,
   ForkIcon,
   VStack,
-} from '@letta-web/component-library';
+} from '@letta-cloud/component-library';
 import React, { useCallback, useMemo, useState } from 'react';
 import {
   REMOTE_DEVELOPMENT_ID,
@@ -45,7 +45,7 @@ import { useCurrentAgent } from './hooks';
 import {
   useAgentsServiceDeleteAgent,
   useAgentsServiceGetAgent,
-} from '@letta-web/letta-agents-api';
+} from '@letta-cloud/letta-agents-api';
 import { useTranslations } from '@letta-cloud/translations';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -55,8 +55,8 @@ import {
   DashboardHeaderNavigation,
   ProfilePopover,
 } from '$web/client/components/DashboardLikeLayout/DashboardNavigation/DashboardNavigation';
-import { trackClientSideEvent } from '@letta-web/analytics/client';
-import { AnalyticsEvent } from '@letta-web/analytics';
+import { trackClientSideEvent } from '@letta-cloud/analytics/client';
+import { AnalyticsEvent } from '@letta-cloud/analytics';
 import {
   DeploymentButton,
   isAgentConvertingToTemplateAtom,

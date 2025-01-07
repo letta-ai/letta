@@ -7,7 +7,7 @@ import {
   HStack,
   Typography,
   VStack,
-} from '@letta-web/component-library';
+} from '@letta-cloud/component-library';
 
 interface IntegrationPageLayoutProps {
   image: React.ReactNode;

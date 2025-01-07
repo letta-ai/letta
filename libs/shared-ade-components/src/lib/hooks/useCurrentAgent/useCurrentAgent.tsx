@@ -1,5 +1,5 @@
 'use client';
-import { useAgentsServiceGetAgent } from '@letta-web/letta-agents-api';
+import { useAgentsServiceGetAgent } from '@letta-cloud/letta-agents-api';
 import { useCurrentAgentMetaData } from '../useCurrentAgentMetaData/useCurrentAgentMetaData';
 
 export function useCurrentAgent() {

@@ -13,7 +13,7 @@ import {
   Typography,
   useForm,
   VStack,
-} from '@letta-web/component-library';
+} from '@letta-cloud/component-library';
 import React, { useCallback, useMemo } from 'react';
 import { z } from 'zod';
 import { webApi } from '$web/client';

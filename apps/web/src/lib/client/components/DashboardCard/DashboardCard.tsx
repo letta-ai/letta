@@ -1,4 +1,4 @@
-import { ActionCard, Typography } from '@letta-web/component-library';
+import { ActionCard, Typography } from '@letta-cloud/component-library';
 import * as React from 'react';
 
 interface DashboardCardProps {

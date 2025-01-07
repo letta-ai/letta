@@ -5,7 +5,7 @@ import {
   HStack,
   UseDashboardNavigationItemsProvider,
   VStack,
-} from '@letta-web/component-library';
+} from '@letta-cloud/component-library';
 import './DashboardLike.scss';
 import {
   DashboardHeader,

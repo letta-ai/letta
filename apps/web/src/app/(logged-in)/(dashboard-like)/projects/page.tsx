@@ -18,7 +18,7 @@ import {
   NiceGridDisplay,
   Card,
   Tooltip,
-} from '@letta-web/component-library';
+} from '@letta-cloud/component-library';
 import { webApi, webApiQueryKeys } from '$web/client';
 import { useDebouncedValue } from '@mantine/hooks';
 import { z } from 'zod';
@@ -26,7 +26,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from '@letta-cloud/translations';
-import { useDateFormatter } from '@letta-web/helpful-client-utils';
+import { useDateFormatter } from '@letta-cloud/helpful-client-utils';
 import Link from 'next/link';
 
 interface ProjectsListProps {

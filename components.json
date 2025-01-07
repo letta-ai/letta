@@ -9,7 +9,7 @@
     "cssVariables": true
   },
   "aliases": {
-    "components": "@letta-web/component-library",
-    "utils": "@letta-web/core-style-config"
+    "components": "@letta-cloud/component-library",
+    "utils": "@letta-cloud/core-style-config"
   }
 }

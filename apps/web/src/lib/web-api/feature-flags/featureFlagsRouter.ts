@@ -5,7 +5,7 @@ import {
   type FlagMap,
   getDefaultFlags,
   getOrganizationFeatureFlags,
-} from '@letta-web/feature-flags';
+} from '@letta-cloud/feature-flags';
 
 type FeatureFlagsResponse = ServerInferResponses<
   typeof contracts.featureFlags.getFeatureFlags
@@ -20,7 +20,7 @@ async function getFeatureFlags(): Promise<FeatureFlagsResponse> {
 
   if (user?.activeOrganizationId) {
     const org = await getOrganizationFromOrganizationId(
-      user.activeOrganizationId
+      user.activeOrganizationId,
     );
 
     if (org) {

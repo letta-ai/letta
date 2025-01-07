@@ -2,7 +2,7 @@ import type { LDClient } from '@launchdarkly/node-server-sdk';
 import * as ld from '@launchdarkly/node-server-sdk';
 
 export * from './flags';
-import { environment } from '@letta-web/environmental-variables';
+import { environment } from '@letta-cloud/environmental-variables';
 import type { Flag, FlagMap, FlagValue } from './flags';
 
 // Client fixing issue for launchdarkly reconnecting spam
@@ -26,7 +26,7 @@ if (environment.LAUNCH_DARKLY_SDK_KEY) {
         environment.LAUNCH_DARKLY_SDK_KEY,
         {
           stream: false,
-        }
+        },
       );
     }
 
@@ -37,7 +37,7 @@ if (environment.LAUNCH_DARKLY_SDK_KEY) {
 async function getLaunchDarklyClient() {
   if (!environment.LAUNCH_DARKLY_SDK_KEY) {
     console.warn(
-      'No LaunchDarkly SDK key provided, feature flags will default in the off state'
+      'No LaunchDarkly SDK key provided, feature flags will default in the off state',
     );
   }
 
@@ -77,7 +77,7 @@ export async function getOrganizationFeatureFlags(org: OrgDetails) {
 
 export async function getSingleFlag<SingleFlag extends Flag>(
   flag: SingleFlag,
-  org: OrgDetails
+  org: OrgDetails,
 ): Promise<FlagValue<SingleFlag> | undefined> {
   if (!environment.LAUNCH_DARKLY_SDK_KEY) {
     return undefined;
@@ -100,7 +100,7 @@ export async function getSingleFlag<SingleFlag extends Flag>(
         }
 
         resolve(res);
-      }
+      },
     );
   });
 }

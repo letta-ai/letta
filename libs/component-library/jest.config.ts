@@ -11,7 +11,7 @@ const config: Config = {
     '^.+\\.[tj]sx?$': ['babel-jest', { presets: ['@nx/next/babel'] }],
   },
   moduleNameMapper: pathsToModuleNameMapper({
-    '@letta-web/core-style-config': [
+    '@letta-cloud/core-style-config': [
       '../../libs/core-style-config/src/index.ts',
     ],
   }),

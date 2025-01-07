@@ -1,4 +1,4 @@
-import type { AgentState } from '@letta-web/letta-agents-api';
+import type { AgentState } from '@letta-cloud/letta-agents-api';
 
 export function findMemoryBlockVariables(agentState: AgentState) {
   // find all instances {{variable}} in memory blocks

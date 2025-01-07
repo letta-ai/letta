@@ -5,7 +5,7 @@ import { useCurrentAgent } from '../../hooks';
 import type {
   AgentState,
   letta__schemas__tool__Tool,
-} from '@letta-web/letta-agents-api';
+} from '@letta-cloud/letta-agents-api';
 import {
   type GetToolResponse,
   isAPIError,
@@ -15,14 +15,14 @@ import {
   UseToolsServiceListToolsKeyFn,
   useToolsServiceRunToolFromSource,
   useToolsServiceUpdateTool,
-} from '@letta-web/letta-agents-api';
+} from '@letta-cloud/letta-agents-api';
 import {
   useAgentsServiceAddToolToAgent,
   UseAgentsServiceGetAgentKeyFn,
   useToolsServiceGetTool,
   useToolsServiceListComposioApps,
   useToolsServiceListTools,
-} from '@letta-web/letta-agents-api';
+} from '@letta-cloud/letta-agents-api';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   ActionCard,
@@ -66,7 +66,7 @@ import {
   Section,
   ComposioLockupDynamic,
   TabGroup,
-} from '@letta-web/component-library';
+} from '@letta-cloud/component-library';
 import {
   useFeatureFlag,
   webApi,

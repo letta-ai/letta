@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { HStack, Typography, VStack } from '@letta-web/component-library';
+import { HStack, Typography, VStack } from '@letta-cloud/component-library';
 
 interface ADEItem {
   content: React.ReactNode;

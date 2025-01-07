@@ -1,6 +1,6 @@
 'use client';
 import * as React from 'react';
-import { cn } from '@letta-web/core-style-config';
+import { cn } from '@letta-cloud/core-style-config';
 import { makeInput, makeRawInput } from '../Form/Form';
 import TextareaAutosize, {
   type TextareaAutosizeProps,
@@ -56,7 +56,7 @@ const PrimitiveTextArea = React.forwardRef<HTMLTextAreaElement, TextAreaProps>(
       fullWidth,
       ...props
     },
-    ref
+    ref,
   ) => {
     if (!autosize) {
       return (
@@ -70,7 +70,7 @@ const PrimitiveTextArea = React.forwardRef<HTMLTextAreaElement, TextAreaProps>(
             className,
             fullHeight && 'h-full',
             fullWidth && 'w-full',
-            flex && 'flex'
+            flex && 'flex',
           )}
           ref={ref}
           {...props}
@@ -85,7 +85,7 @@ const PrimitiveTextArea = React.forwardRef<HTMLTextAreaElement, TextAreaProps>(
         {...props}
       />
     );
-  }
+  },
 );
 
 PrimitiveTextArea.displayName = 'Textarea';
@@ -116,7 +116,7 @@ const WrappedTextArea = forwardRef<HTMLTextAreaElement, TextAreaProps>(
         )}
       </Frame>
     );
-  }
+  },
 );
 
 export const TextArea = makeInput(WrappedTextArea, 'TextArea');

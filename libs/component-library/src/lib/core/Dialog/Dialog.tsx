@@ -3,7 +3,7 @@
 import * as React from 'react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { CloseIcon, PlusIcon } from '../../icons';
-import { cn } from '@letta-web/core-style-config';
+import { cn } from '@letta-cloud/core-style-config';
 import type { ButtonProps } from '../Button/Button';
 import { Button } from '../Button/Button';
 import { useCallback } from 'react';
@@ -50,7 +50,7 @@ const DialogOverlay = React.forwardRef<
     data-testid="dialog-overlay"
     className={cn(
       'fixed inset-0 z-dialog bg-black/30  data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
-      className
+      className,
     )}
     {...props}
   />
@@ -80,7 +80,7 @@ const DialogContent = React.forwardRef<
       errorAdditionalMessage,
       ...props
     },
-    ref
+    ref,
   ) => {
     const isFull = size === 'full';
 
@@ -93,7 +93,7 @@ const DialogContent = React.forwardRef<
             className={cn(
               'fixed flex flex-col max-h-[95dvh] text-base left-[50%] top-[50%] z-dialog w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-2 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%]',
               color === 'background' ? 'bg-background' : 'bg-background-grey',
-              className
+              className,
             )}
           >
             <VStack
@@ -134,7 +134,7 @@ const DialogContent = React.forwardRef<
     );
 
     return <DialogPortal>{contents}</DialogPortal>;
-  }
+  },
 );
 DialogContent.displayName = DialogPrimitive.Content.displayName;
 
@@ -148,7 +148,7 @@ function DialogHeader({
       borderBottom
       className={cn(
         'flex flex-col space-y-1.5 text-center sm:text-left',
-        className
+        className,
       )}
       {...props}
       color="background-grey2"
@@ -167,7 +167,7 @@ function DialogFooter({
       paddingX="xlarge"
       className={cn(
         'flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:space-x-2',
-        className
+        className,
       )}
       {...props}
       color={undefined}
@@ -184,7 +184,7 @@ const DialogTitle = React.forwardRef<
     ref={ref}
     className={cn(
       'text-base font-bold h-[48px] flex items-center justify-start leading-none tracking-tight',
-      className
+      className,
     )}
     {...props}
   />
@@ -247,7 +247,7 @@ export function DialogCategory(props: DialogCategoryProps) {
       align="center"
       className={cn(
         'relative h-[58px]',
-        isActive ? 'active-dialog-category' : ''
+        isActive ? 'active-dialog-category' : '',
       )}
       onClick={onClick}
       fullWidth
@@ -284,11 +284,11 @@ export interface DialogContentWithCategoriesProps {
 }
 
 export function DialogContentWithCategories(
-  props: DialogContentWithCategoriesProps
+  props: DialogContentWithCategoriesProps,
 ) {
   const { categories, onCreateNewCategory, defaultCategory } = props;
   const [selectedCategory, setSelectedCategory] = React.useState(
-    defaultCategory || categories[0].id
+    defaultCategory || categories[0].id,
   );
 
   const handleCategoryClick = useCallback((categoryId: string) => {
@@ -406,7 +406,7 @@ export function Dialog(props: DialogProps) {
 
       return;
     },
-    [onConfirm, onSubmit]
+    [onConfirm, onSubmit],
   );
 
   const Element = disableForm ? 'div' : 'form';
@@ -443,7 +443,7 @@ export function Dialog(props: DialogProps) {
             className={cn(
               'overflow-y-auto overflow-x-hidden flex flex-col flex-1',
               'pt-4',
-              size === 'full' ? 'h-full' : ''
+              size === 'full' ? 'h-full' : '',
             )}
             /* @ts-expect-error - element */
             onSubmit={handleSubmit}
@@ -452,7 +452,7 @@ export function Dialog(props: DialogProps) {
               className={cn(
                 'flex-1',
                 'px-[24px]',
-                size === 'full' ? 'h-full flex flex-col' : ''
+                size === 'full' ? 'h-full flex flex-col' : '',
               )}
             >
               {children}

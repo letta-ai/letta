@@ -3,7 +3,7 @@ import React from 'react';
 import { HStack } from '../../../framing/HStack/HStack';
 import { Typography } from '../../../core/Typography/Typography';
 import { VStack } from '../../../framing/VStack/VStack';
-import { cn } from '@letta-web/core-style-config';
+import { cn } from '@letta-cloud/core-style-config';
 import { InfoTooltip } from '../../../reusable/InfoTooltip/InfoTooltip';
 import type { ADEDropdownMenuProps } from '../../ADEDropdownMenu/ADEDropdownMenu';
 

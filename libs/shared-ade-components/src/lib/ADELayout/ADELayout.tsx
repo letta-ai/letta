@@ -17,7 +17,7 @@ import {
   ToolsIcon,
   VisibleOnMobile,
   VStack,
-} from '@letta-web/component-library';
+} from '@letta-cloud/component-library';
 import { AgentSettingsPanel } from '../panels/AgentSettingsPanel/AgentSettingsPanel';
 import { ADEGroup } from '../shared/ADEGroup/ADEGroup';
 import { useTranslations } from '@letta-cloud/translations';

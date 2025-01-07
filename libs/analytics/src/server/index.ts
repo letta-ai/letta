@@ -2,7 +2,7 @@
  * Right now only trigger events on the server side only!
  */
 import * as mixpanel from 'mixpanel';
-import { environment } from '@letta-web/environmental-variables';
+import { environment } from '@letta-cloud/environmental-variables';
 import type { AnalyticsEvent, AnalyticsEventProperties } from '../events';
 import * as Sentry from '@sentry/nextjs';
 
@@ -41,7 +41,7 @@ export function trackUserOnServer(user: TrackUserPayload) {
 
 export function trackServerSideEvent<Event extends AnalyticsEvent>(
   eventName: Event,
-  properties: AnalyticsEventProperties[Event]
+  properties: AnalyticsEventProperties[Event],
 ) {
   try {
     const mixpanel = getMixpanel();

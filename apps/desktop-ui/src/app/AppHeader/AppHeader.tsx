@@ -5,8 +5,8 @@ import {
   Logo,
   StatusIndicator,
   Typography,
-} from '@letta-web/component-library';
-import { useHealthServiceHealthCheck } from '@letta-web/letta-agents-api';
+} from '@letta-cloud/component-library';
+import { useHealthServiceHealthCheck } from '@letta-cloud/letta-agents-api';
 import { Link, useLocation } from 'react-router-dom';
 import { useMemo } from 'react';
 import { useTranslations } from '@letta-cloud/translations';

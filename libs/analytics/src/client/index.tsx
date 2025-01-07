@@ -1,6 +1,6 @@
 'use client';
 import React, { useEffect, useRef } from 'react';
-import { environment } from '@letta-web/environmental-variables';
+import { environment } from '@letta-cloud/environmental-variables';
 import mixpanel from 'mixpanel-browser';
 import type { AnalyticsEvent } from '../events';
 import type { AnalyticsEventProperties } from '../events';
@@ -30,7 +30,7 @@ function LoadMixpanelAnalyticsInner() {
 function LogErrorLoadingMixpanelAnalytics() {
   useEffect(() => {
     console.error(
-      'Mixpanel token not found. Please set the MIXPANEL_TOKEN environment variable.'
+      'Mixpanel token not found. Please set the MIXPANEL_TOKEN environment variable.',
     );
   }, []);
 
@@ -69,7 +69,7 @@ export function IdentifyUserForMixpanel(props: IdentifyUserProps) {
 
 export function trackClientSideEvent<Event extends AnalyticsEvent>(
   eventName: Event,
-  properties: AnalyticsEventProperties[Event]
+  properties: AnalyticsEventProperties[Event],
 ) {
   try {
     if (!environment.NEXT_PUBLIC_MIXPANEL_TOKEN) {

@@ -1,6 +1,6 @@
 import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
 import type { contracts } from '$web/web-api/contracts';
-import { db, inferenceTransactions } from '@letta-web/database';
+import { db, inferenceTransactions } from '@letta-cloud/database';
 import { and, eq, gte, lt } from 'drizzle-orm';
 import type { GetUsageByModelItem } from '$web/web-api/contracts';
 import { getUserActiveOrganizationIdOrThrow } from '$web/server/auth';

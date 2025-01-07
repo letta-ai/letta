@@ -5,7 +5,7 @@ import { CloseIcon } from '../../icons';
 import { Typography } from '../Typography/Typography';
 import Image from 'next/image';
 import type { StaticImport } from 'next/dist/shared/lib/get-img-props';
-import { cn } from '@letta-web/core-style-config';
+import { cn } from '@letta-cloud/core-style-config';
 
 interface AdBannerProps {
   onClose?: {

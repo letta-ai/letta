@@ -7,7 +7,7 @@ import {
   NiceGridDisplay,
   Typography,
   VStack,
-} from '@letta-web/component-library';
+} from '@letta-cloud/component-library';
 import { NavigationItems } from './constants';
 import Link from 'next/link';
 

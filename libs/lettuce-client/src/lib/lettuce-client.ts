@@ -1,5 +1,5 @@
 import { Client, Connection } from '@temporalio/client';
-import { environment } from '@letta-web/environmental-variables';
+import { environment } from '@letta-cloud/environmental-variables';
 
 const client: Client = makeClient();
 

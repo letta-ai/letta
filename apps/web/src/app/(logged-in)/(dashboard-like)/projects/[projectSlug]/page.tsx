@@ -10,7 +10,7 @@ import {
   PlusIcon,
   TemplateIcon,
   VStack,
-} from '@letta-web/component-library';
+} from '@letta-cloud/component-library';
 import React, { useMemo } from 'react';
 import { useCurrentProject } from './hooks';
 import { webApi, webApiQueryKeys } from '$web/client';
@@ -19,7 +19,7 @@ import { useTranslations } from '@letta-cloud/translations';
 import { DashboardCard, Tutorials } from '$web/client/components';
 import { useWelcomeText } from '$web/client/hooks/useWelcomeText/useWelcomeText';
 import { CreateNewTemplateDialog } from './_components/CreateNewTemplateDialog/CreateNewTemplateDialog';
-import { useDateFormatter } from '@letta-web/helpful-client-utils';
+import { useDateFormatter } from '@letta-cloud/helpful-client-utils';
 
 interface AgentTemplatesListProps {
   agents?: ProjectAgentTemplateType[];

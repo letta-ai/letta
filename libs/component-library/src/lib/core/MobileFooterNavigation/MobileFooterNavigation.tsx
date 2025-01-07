@@ -3,7 +3,7 @@ import { HStack } from '../../framing/HStack/HStack';
 import type { ButtonProps } from '../Button/Button';
 import { Slot } from '@radix-ui/react-slot';
 import { Typography } from '../Typography/Typography';
-import { cn } from '@letta-web/core-style-config';
+import { cn } from '@letta-cloud/core-style-config';
 
 export function MobileFooterNavigationButton(props: ButtonProps) {
   const { active } = props;
@@ -14,7 +14,7 @@ export function MobileFooterNavigationButton(props: ButtonProps) {
         'flex flex-col items-center h-[54px] justify-center gap-2',
         active
           ? 'bg-tertiary-active text-tertiary-content'
-          : 'bg-tertiary text-tertiary-content'
+          : 'bg-tertiary text-tertiary-content',
       )}
       data-testid={props['id']}
     >

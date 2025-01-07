@@ -11,19 +11,19 @@ import {
   Typography,
   VStack,
   WarningIcon,
-} from '@letta-web/component-library';
+} from '@letta-cloud/component-library';
 import { useTranslations } from '@letta-cloud/translations';
-import type { AgentState } from '@letta-web/letta-agents-api';
-import { useAgentsServiceListAgents } from '@letta-web/letta-agents-api';
+import type { AgentState } from '@letta-cloud/letta-agents-api';
+import { useAgentsServiceListAgents } from '@letta-cloud/letta-agents-api';
 import React, { useEffect, useMemo, useState } from 'react';
 import type { ColumnDef } from '@tanstack/react-table';
-import { useDateFormatter } from '@letta-web/helpful-client-utils';
-import { useCurrentDevelopmentServerConfig } from '@letta-web/helpful-client-utils';
+import { useDateFormatter } from '@letta-cloud/helpful-client-utils';
+import { useCurrentDevelopmentServerConfig } from '@letta-cloud/helpful-client-utils';
 import { ConnectToLocalServerCommand } from '$web/client/components/ConnectToLocalServerCommand/ConnectToLocalServerCommand';
 import { UpdateDevelopmentServerDetailsDialog } from '../../shared/UpdateDevelopmentServerDetailsDialog/UpdateDevelopmentServerDetailsDialog';
 import { useCurrentUser } from '$web/client/hooks';
-import { trackClientSideEvent } from '@letta-web/analytics/client';
-import { AnalyticsEvent } from '@letta-web/analytics';
+import { trackClientSideEvent } from '@letta-cloud/analytics/client';
+import { AnalyticsEvent } from '@letta-cloud/analytics';
 import CreateAgentDialog from '../components/CreateAgentDialog/CreateAgentDialog';
 
 const LIMIT = 10;

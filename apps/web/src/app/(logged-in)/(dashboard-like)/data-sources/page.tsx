@@ -19,15 +19,15 @@ import {
   brandKeyToName,
   isMultiValue,
   OptionTypeSchemaSingle,
-} from '@letta-web/component-library';
+} from '@letta-cloud/component-library';
 import type { ColumnDef } from '@tanstack/react-table';
-import type { Source } from '@letta-web/letta-agents-api';
-import { useModelsServiceListEmbeddingModels } from '@letta-web/letta-agents-api';
+import type { Source } from '@letta-cloud/letta-agents-api';
+import { useModelsServiceListEmbeddingModels } from '@letta-cloud/letta-agents-api';
 import {
   useSourcesServiceCreateSource,
   UseSourcesServiceListSourcesKeyFn,
-} from '@letta-web/letta-agents-api';
-import { useSourcesServiceListSources } from '@letta-web/letta-agents-api';
+} from '@letta-cloud/letta-agents-api';
+import { useSourcesServiceListSources } from '@letta-cloud/letta-agents-api';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQueryClient } from '@tanstack/react-query';

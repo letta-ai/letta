@@ -4,7 +4,7 @@ import type { LettaLoaderProps } from '../../core/LettaLoader/LettaLoader';
 import { LettaLoader } from '../../core/LettaLoader/LettaLoader';
 import { useMemo } from 'react';
 import type { LogoBaseProps } from '../../marketing/Logo/Logo';
-import { cn } from '@letta-web/core-style-config';
+import { cn } from '@letta-cloud/core-style-config';
 
 interface LoadingEmptyStatusComponentProps {
   loadingMessage?: string;
@@ -21,7 +21,7 @@ interface LoadingEmptyStatusComponentProps {
 }
 
 export function LoadingEmptyStatusComponent(
-  props: LoadingEmptyStatusComponentProps
+  props: LoadingEmptyStatusComponentProps,
 ) {
   const {
     emptyMessage,

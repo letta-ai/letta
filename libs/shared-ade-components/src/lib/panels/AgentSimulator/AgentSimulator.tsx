@@ -24,25 +24,25 @@ import {
   WarningIcon,
   FlushIcon,
   Skeleton,
-} from '@letta-web/component-library';
-import type { ChatInputRef } from '@letta-web/component-library';
-import { PanelBar } from '@letta-web/component-library';
-import { VStack } from '@letta-web/component-library';
+} from '@letta-cloud/component-library';
+import type { ChatInputRef } from '@letta-cloud/component-library';
+import { PanelBar } from '@letta-cloud/component-library';
+import { VStack } from '@letta-cloud/component-library';
 import type { Dispatch, FormEvent, SetStateAction } from 'react';
 import { useEffect } from 'react';
 import { useMemo } from 'react';
 import React, { useCallback, useRef, useState } from 'react';
-import type { AgentMessage, AgentState } from '@letta-web/letta-agents-api';
-import { isAgentState } from '@letta-web/letta-agents-api';
-import { ErrorMessageSchema } from '@letta-web/letta-agents-api';
-import { useLettaAgentsAPI } from '@letta-web/letta-agents-api';
-import { getIsAgentState } from '@letta-web/letta-agents-api';
-import { AgentsService } from '@letta-web/letta-agents-api';
-import { useAgentsServiceGetAgentSources } from '@letta-web/letta-agents-api';
+import type { AgentMessage, AgentState } from '@letta-cloud/letta-agents-api';
+import { isAgentState } from '@letta-cloud/letta-agents-api';
+import { ErrorMessageSchema } from '@letta-cloud/letta-agents-api';
+import { useLettaAgentsAPI } from '@letta-cloud/letta-agents-api';
+import { getIsAgentState } from '@letta-cloud/letta-agents-api';
+import { AgentsService } from '@letta-cloud/letta-agents-api';
+import { useAgentsServiceGetAgentSources } from '@letta-cloud/letta-agents-api';
 import {
   AgentMessageSchema,
   UseAgentsServiceListAgentMessagesKeyFn,
-} from '@letta-web/letta-agents-api';
+} from '@letta-cloud/letta-agents-api';
 import { useCurrentAgent } from '../../hooks';
 import { EventSource } from 'extended-eventsource';
 import { useQueryClient } from '@tanstack/react-query';
@@ -54,17 +54,17 @@ import { webApi, webApiQueryKeys } from '@letta-cloud/web-api-client';
 import {
   webOriginSDKApi,
   webOriginSDKQueryKeys,
-} from '@letta-web/letta-agents-api';
+} from '@letta-cloud/letta-agents-api';
 import {
   compareAgentStates,
   findMemoryBlockVariables,
-} from '@letta-web/generic-utils';
+} from '@letta-cloud/generic-utils';
 import { useCurrentSimulatedAgent } from '../../hooks/useCurrentSimulatedAgent/useCurrentSimulatedAgent';
 import { useCurrentAgentMetaData } from '../../hooks';
 import { atom, useAtom, useSetAtom } from 'jotai';
-import { trackClientSideEvent } from '@letta-web/analytics/client';
-import { AnalyticsEvent } from '@letta-web/analytics';
-import { jsonToCurl } from '@letta-web/generic-utils';
+import { trackClientSideEvent } from '@letta-cloud/analytics/client';
+import { AnalyticsEvent } from '@letta-cloud/analytics';
+import { jsonToCurl } from '@letta-cloud/generic-utils';
 import type { ServerInferResponses } from '@ts-rest/core';
 import type {
   contracts,
@@ -73,7 +73,7 @@ import type {
 import { messagesInFlightCacheAtom } from '../Messages/messagesInFlightCacheAtom/messagesInFlightCacheAtom';
 import { Messages } from '../Messages/Messages';
 import type { MessagesDisplayMode } from '../Messages/Messages';
-import { useCurrentAPIHostConfig } from '@letta-web/helpful-client-utils';
+import { useCurrentAPIHostConfig } from '@letta-cloud/helpful-client-utils';
 
 const isSendingMessageAtom = atom(false);
 

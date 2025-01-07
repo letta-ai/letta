@@ -8,7 +8,7 @@ import {
   UserFaceIcon,
   ToolsIcon,
   TrophyIcon,
-} from '@letta-web/component-library';
+} from '@letta-cloud/component-library';
 import React from 'react';
 
 export const NavigationItems: AdminNavigationItemProps[] = [

@@ -1,18 +1,18 @@
 import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
-import type { sdkContracts } from '@letta-web/letta-agents-api';
+import type { sdkContracts } from '@letta-cloud/letta-agents-api';
 import * as Sentry from '@sentry/node';
 
 import type { SDKContext } from '$web/sdk/shared';
 import type {
   AgentState,
   OrderByValuesEnumType,
-} from '@letta-web/letta-agents-api';
-import { ToolsService } from '@letta-web/letta-agents-api';
+} from '@letta-cloud/letta-agents-api';
+import { ToolsService } from '@letta-cloud/letta-agents-api';
 import {
   AgentsService,
   SourcesService,
   type UpdateAgent,
-} from '@letta-web/letta-agents-api';
+} from '@letta-cloud/letta-agents-api';
 import {
   agentTemplates,
   db,
@@ -20,7 +20,7 @@ import {
   deployedAgentTemplates,
   deployedAgentVariables,
   organizationPreferences,
-} from '@letta-web/database';
+} from '@letta-cloud/database';
 import { and, asc, count, desc, eq, isNull, like, ne, or } from 'drizzle-orm';
 import { findUniqueAgentTemplateName } from '$web/server';
 

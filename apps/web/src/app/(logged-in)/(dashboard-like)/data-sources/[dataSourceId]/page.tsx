@@ -8,12 +8,12 @@ import {
   IndeterminateProgress,
   Typography,
   VStack,
-} from '@letta-web/component-library';
-import type { Job } from '@letta-web/letta-agents-api';
+} from '@letta-cloud/component-library';
+import type { Job } from '@letta-cloud/letta-agents-api';
 import {
   useJobsServiceListActiveJobs,
   useSourcesServiceGetSource,
-} from '@letta-web/letta-agents-api';
+} from '@letta-cloud/letta-agents-api';
 import { useCurrentDataSourceId } from './hooks';
 import type { ColumnDef } from '@tanstack/react-table';
 import { useCurrentUser } from '$web/client/hooks';
@@ -127,7 +127,7 @@ function DashboardJobList() {
     {
       refetchInterval: 5000,
       enabled: !!user?.id,
-    }
+    },
   );
 
   if (!data || data?.length === 0) {

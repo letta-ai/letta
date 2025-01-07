@@ -6,7 +6,7 @@ import { Slot } from '@radix-ui/react-slot';
 import type { ControllerProps, FieldPath, FieldValues } from 'react-hook-form';
 import { Controller, FormProvider, useFormContext } from 'react-hook-form';
 
-import { cn } from '@letta-web/core-style-config';
+import { cn } from '@letta-cloud/core-style-config';
 import { cva, type VariantProps } from 'class-variance-authority';
 import type { PropsWithChildren } from 'react';
 import { useId, useMemo } from 'react';
@@ -19,7 +19,7 @@ import { InfoTooltip } from '../../reusable/InfoTooltip/InfoTooltip';
 export { useForm } from 'react-hook-form';
 
 const labelVariants = cva(
-  'text-base font-medium leading-none whitespace-nowrap peer-disabled:cursor-not-allowed peer-disabled:opacity-70'
+  'text-base font-medium leading-none whitespace-nowrap peer-disabled:cursor-not-allowed peer-disabled:opacity-70',
 );
 
 const LabelPrimitive = React.forwardRef<
@@ -37,18 +37,18 @@ LabelPrimitive.displayName = RadixLabelPrimitive.Root.displayName;
 
 interface FormFieldContextValue<
   TFieldValues extends FieldValues = FieldValues,
-  TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>
+  TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
 > {
   name: TName;
 }
 
 const FormFieldContext = React.createContext<FormFieldContextValue>(
-  {} as FormFieldContextValue
+  {} as FormFieldContextValue,
 );
 
 function FormField<
   TFieldValues extends FieldValues = FieldValues,
-  TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>
+  TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
 >({ ...props }: ControllerProps<TFieldValues, TName>) {
   return (
     <FormFieldContext.Provider value={{ name: props.name }}>
@@ -86,7 +86,7 @@ interface FormItemContextValue {
 }
 
 const FormItemContext = React.createContext<FormItemContextValue>(
-  {} as FormItemContextValue
+  {} as FormItemContextValue,
 );
 
 interface InputWrapperProps {
@@ -114,7 +114,7 @@ function InputWrapper({
       collapseHeight ? 'h-0' : '',
       fullWidth ? 'w-full' : 'w-fit',
       fullHeight ? 'h-full' : '',
-      flex ? 'flex-1' : ''
+      flex ? 'flex-1' : '',
     );
   }, [collapseHeight, flex, fullHeight, fullWidth]);
 
@@ -124,7 +124,7 @@ function InputWrapper({
         <div
           className={cn(
             'flex flex-wrap pt-2 sm:pt-0 sm:flex-nowrap gap-2 justify-between items-center',
-            inline === 'reverse' && 'flex-row-reverse justify-end'
+            inline === 'reverse' && 'flex-row-reverse justify-end',
           )}
         >
           {inputAndLabel}
@@ -324,7 +324,7 @@ type MakeInputProps<T> = InputContainerProps & T;
 type MakeRawInputProps<T> = RawInputContainerProps & T;
 
 export type MakeInputOptionsContainerType = (
-  props: PropsWithChildren<InputContainerProps>
+  props: PropsWithChildren<InputContainerProps>,
 ) => React.ReactNode;
 
 interface MakeInputOptions {
@@ -338,7 +338,7 @@ const omitProps = ['rightOfLabelContent', 'infoTooltip', 'labelVariant'];
 export function makeInput<T>(
   Input: React.ComponentType<T>,
   componentName: string,
-  options?: MakeInputOptions
+  options?: MakeInputOptions,
 ) {
   function InputWrapper(props: MakeInputProps<T>) {
     const el = (
@@ -378,7 +378,7 @@ export const inputStorybookArgs = {
 };
 
 export function extractAndRemoveInputProps<T>(
-  props: T & { label?: string; hideLabel?: boolean; infoTooltipText?: string }
+  props: T & { label?: string; hideLabel?: boolean; infoTooltipText?: string },
 ) {
   const { label, hideLabel, infoTooltipText, ...rest } = props;
   return rest;
@@ -387,7 +387,7 @@ export function extractAndRemoveInputProps<T>(
 export function makeRawInput<T>(
   Input: React.ComponentType<T>,
   componentName: string,
-  options?: MakeInputOptions
+  options?: MakeInputOptions,
 ) {
   function RawInputWrapper(props: MakeRawInputProps<T>) {
     const baseId = useId();
@@ -520,7 +520,7 @@ export function FormActions({
     <div
       className={cn(
         'flex gap-4 w-full justify-between',
-        align === 'start' ? 'flex-row-reverse' : 'flex-row'
+        align === 'start' ? 'flex-row-reverse' : 'flex-row',
       )}
     >
       {startAction ? startAction : <div />}

@@ -8,7 +8,7 @@ import React, {
 } from 'react';
 import { Frame } from '../../framing/Frame/Frame';
 import { HStack } from '../../framing/HStack/HStack';
-import { cn } from '@letta-web/core-style-config';
+import { cn } from '@letta-cloud/core-style-config';
 import { LettaLoader } from '../../core/LettaLoader/LettaLoader';
 import { Typography } from '../../core/Typography/Typography';
 import { VStack } from '../../framing/VStack/VStack';

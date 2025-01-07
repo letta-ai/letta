@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { environment } from '@letta-web/environmental-variables';
+import { environment } from '@letta-cloud/environmental-variables';
 
 export const hubspotRequest = axios.create({
   baseURL: 'https://api.hubapi.com',

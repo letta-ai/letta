@@ -4,7 +4,7 @@ import { Card } from '../Card/Card';
 import { VStack } from '../../framing/VStack/VStack';
 import Image from 'next/image';
 import { Typography } from '../Typography/Typography';
-import { cn } from '@letta-web/core-style-config';
+import { cn } from '@letta-cloud/core-style-config';
 import { HStack } from '../../framing/HStack/HStack';
 
 interface ImageCardProps {
@@ -48,7 +48,7 @@ export function ImageCard(props: ImageCardProps) {
       <Card
         className={cn(
           'h-full flex flex-col hover:bg-tertiary-hover',
-          className
+          className,
         )}
       >
         <VStack fullHeight flex align="start">

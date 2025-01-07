@@ -11,16 +11,16 @@ import {
   organizationUsers,
   userMarketingDetails,
   users,
-} from '@letta-web/database';
+} from '@letta-cloud/database';
 import { and, eq, inArray, isNull } from 'drizzle-orm';
 import { cookies } from 'next/headers';
 import { CookieNames } from '$web/server/cookies/types';
-import { AdminService } from '@letta-web/letta-agents-api';
-import { createOrUpdateCRMContact } from '@letta-web/crm';
+import { AdminService } from '@letta-cloud/letta-agents-api';
+import { createOrUpdateCRMContact } from '@letta-cloud/crm';
 import * as Sentry from '@sentry/node';
-import { environment } from '@letta-web/environmental-variables';
-import { trackServerSideEvent } from '@letta-web/analytics/server';
-import { AnalyticsEvent } from '@letta-web/analytics';
+import { environment } from '@letta-cloud/environmental-variables';
+import { trackServerSideEvent } from '@letta-cloud/analytics/server';
+import { AnalyticsEvent } from '@letta-cloud/analytics';
 
 type ResponseShapes = ServerInferResponses<typeof userContract>;
 
@@ -60,7 +60,7 @@ type UpdateUserPayload = ServerInferRequest<
 >;
 
 async function updateCurrentUser(
-  payload: UpdateUserPayload
+  payload: UpdateUserPayload,
 ): Promise<UpdateUserResponse> {
   const user = await getUser();
 
@@ -135,9 +135,9 @@ async function listUserOrganizations(): Promise<ListUserOrganizationsResponse> {
     where: and(
       inArray(
         organizations.id,
-        organizationsMapResponse.map((o) => o.organizationId)
+        organizationsMapResponse.map((o) => o.organizationId),
       ),
-      isNull(organizations.deletedAt)
+      isNull(organizations.deletedAt),
     ),
   });
 
@@ -161,7 +161,7 @@ type UpdateActiveOrganizationRequest = ServerInferRequest<
 >;
 
 async function updateActiveOrganization(
-  request: UpdateActiveOrganizationRequest
+  request: UpdateActiveOrganizationRequest,
 ): Promise<UpdateActiveOrganizationResponse> {
   const user = await getUser();
 
@@ -242,7 +242,7 @@ type SetUserAsOnboardedRequest = ServerInferRequest<
 >;
 
 async function setUserAsOnboarded(
-  req: SetUserAsOnboardedRequest
+  req: SetUserAsOnboardedRequest,
 ): Promise<SetUserAsOnboardedResponse> {
   const user = await getUser();
 

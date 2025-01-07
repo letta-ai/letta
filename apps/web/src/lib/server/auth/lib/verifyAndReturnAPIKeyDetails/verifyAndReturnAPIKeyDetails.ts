@@ -1,4 +1,4 @@
-import { db, lettaAPIKeys } from '@letta-web/database';
+import { db, lettaAPIKeys } from '@letta-cloud/database';
 import { and, eq, isNull } from 'drizzle-orm';
 import { parseAccessToken } from '$web/server/auth/lib/parseAccessToken/parseAccessToken';
 

@@ -1,4 +1,4 @@
-import { useAgentsServiceGetAgentContextWindow } from '@letta-web/letta-agents-api';
+import { useAgentsServiceGetAgentContextWindow } from '@letta-cloud/letta-agents-api';
 import React, { useEffect, useMemo } from 'react';
 import { useCoreMemorySummaryWorker } from './hooks/useCoreMemorySummaryWorker/useCoreMemorySummaryWorker';
 import type { WorkerResponse } from './types';
@@ -8,7 +8,7 @@ import {
   makeFormattedTooltip,
   Typography,
   VStack,
-} from '@letta-web/component-library';
+} from '@letta-cloud/component-library';
 import type { EChartsOption } from 'echarts';
 import { useTranslations } from '@letta-cloud/translations';
 import { atom, useAtom } from 'jotai';

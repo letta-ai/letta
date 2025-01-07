@@ -2,7 +2,7 @@
 import { useCallback } from 'react';
 
 import PromiseWorker from 'promise-worker';
-import type { ListAgentMessagesResponse } from '@letta-web/letta-agents-api';
+import type { ListAgentMessagesResponse } from '@letta-cloud/letta-agents-api';
 import type { GetMessagesWorkerPayload } from '../types';
 
 let worker: Worker;

@@ -1,6 +1,6 @@
 import { useTranslations } from '@letta-cloud/translations';
 import { DesktopPageLayout } from '../shared/DesktopPageLayout/DesktopPageLayout';
-import { Alert, Typography, VStack } from '@letta-web/component-library';
+import { Alert, Typography, VStack } from '@letta-cloud/component-library';
 
 export function Settings() {
   const t = useTranslations('Settings');

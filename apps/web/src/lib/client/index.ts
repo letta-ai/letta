@@ -3,10 +3,9 @@ export {
   webOriginSDKQueryKeys,
   sdkContracts,
   sdkQueryKeys,
-} from '@letta-web/letta-agents-api';
+} from '@letta-cloud/letta-agents-api';
 export {
   webApiContracts,
   webApi,
   webApiQueryKeys,
 } from '@letta-cloud/web-api-client';
-

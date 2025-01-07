@@ -1,6 +1,11 @@
 'use client';
 import React, { useEffect } from 'react';
-import { HomeIcon, HStack, VStack, Button } from '@letta-web/component-library';
+import {
+  HomeIcon,
+  HStack,
+  VStack,
+  Button,
+} from '@letta-cloud/component-library';
 import { usePathname } from 'next/navigation';
 import type { AdminNavigationItemProps } from '../../types';
 import { NavigationItems } from '../../constants';

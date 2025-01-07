@@ -7,7 +7,7 @@ import {
   DashboardPageLayout,
   DashboardPageSection,
   DataTable,
-} from '@letta-web/component-library';
+} from '@letta-cloud/component-library';
 import type { ColumnDef } from '@tanstack/react-table';
 import type { UsageLeaderboardType } from '$web/web-api/contracts';
 

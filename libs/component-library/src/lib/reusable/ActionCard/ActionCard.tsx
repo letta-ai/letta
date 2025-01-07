@@ -5,7 +5,7 @@ import { HStack } from '../../framing/HStack/HStack';
 import { Typography } from '../../core/Typography/Typography';
 import type { VariantProps } from 'class-variance-authority';
 import { cva } from 'class-variance-authority';
-import { cn } from '@letta-web/core-style-config';
+import { cn } from '@letta-cloud/core-style-config';
 import './ActionCard.scss';
 import { ChevronRightIcon } from '../../icons';
 import { Slot } from '@radix-ui/react-slot';
@@ -93,7 +93,7 @@ export const ActionCard = forwardRef<HTMLElement, ToggleCardProps>(
           isActive ? 'bg-background-grey' : 'bg-background',
           'action-card',
           'relative',
-          isSkeleton ? 'border-none' : ''
+          isSkeleton ? 'border-none' : '',
         )}
       >
         {isSkeleton && (
@@ -125,7 +125,7 @@ export const ActionCard = forwardRef<HTMLElement, ToggleCardProps>(
                 <HStack
                   fullWidth
                   className={cn(
-                    noMobileViewChange ? '' : 'action-card-titlearea'
+                    noMobileViewChange ? '' : 'action-card-titlearea',
                   )}
                   align="center"
                   overflowX="hidden"
@@ -190,5 +190,5 @@ export const ActionCard = forwardRef<HTMLElement, ToggleCardProps>(
         </HStack>
       </Card>
     );
-  }
+  },
 );

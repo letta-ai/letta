@@ -1,7 +1,7 @@
 import { z } from 'zod';
-import type { DialogTableItem } from '@letta-web/component-library';
-import { Badge, Tooltip, WarningIcon } from '@letta-web/component-library';
-import { StatusIndicatorOnIcon } from '@letta-web/component-library';
+import type { DialogTableItem } from '@letta-cloud/component-library';
+import { Badge, Tooltip, WarningIcon } from '@letta-cloud/component-library';
+import { StatusIndicatorOnIcon } from '@letta-cloud/component-library';
 import {
   ActionCard,
   Alert,
@@ -19,15 +19,15 @@ import {
   Typography,
   SearchIcon,
   useForm,
-} from '@letta-web/component-library';
-import { Dialog, DialogTable, RawInput } from '@letta-web/component-library';
-import { Button, HStack, PanelBar } from '@letta-web/component-library';
-import { VStack } from '@letta-web/component-library';
+} from '@letta-cloud/component-library';
+import { Dialog, DialogTable, RawInput } from '@letta-cloud/component-library';
+import { Button, HStack, PanelBar } from '@letta-cloud/component-library';
+import { VStack } from '@letta-cloud/component-library';
 import { useTranslations } from '@letta-cloud/translations';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import type { AgentState, Source } from '@letta-web/letta-agents-api';
-import { UseAgentsServiceGetAgentKeyFn } from '@letta-web/letta-agents-api';
-import { useSourcesServiceUpdateSource } from '@letta-web/letta-agents-api';
+import type { AgentState, Source } from '@letta-cloud/letta-agents-api';
+import { UseAgentsServiceGetAgentKeyFn } from '@letta-cloud/letta-agents-api';
+import { useSourcesServiceUpdateSource } from '@letta-cloud/letta-agents-api';
 import {
   type ListFilesFromSourceResponse,
   useJobsServiceListActiveJobs,
@@ -40,10 +40,13 @@ import {
   UseSourcesServiceListFilesFromSourceKeyFn,
   useSourcesServiceListSources,
   useSourcesServiceUploadFileToSource,
-} from '@letta-web/letta-agents-api';
+} from '@letta-cloud/letta-agents-api';
 import { useCurrentAgent } from '../../hooks';
 import { useQueryClient } from '@tanstack/react-query';
-import { DatabaseIcon, DatabaseUploadIcon } from '@letta-web/component-library';
+import {
+  DatabaseIcon,
+  DatabaseUploadIcon,
+} from '@letta-cloud/component-library';
 import {
   adjectives,
   animals,
@@ -52,8 +55,8 @@ import {
 } from 'unique-names-generator';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { get, isEqual } from 'lodash-es';
-import { trackClientSideEvent } from '@letta-web/analytics/client';
-import { AnalyticsEvent } from '@letta-web/analytics';
+import { trackClientSideEvent } from '@letta-cloud/analytics/client';
+import { AnalyticsEvent } from '@letta-cloud/analytics';
 import { useCurrentAgentMetaData } from '../../hooks';
 
 interface AttachDataSourceActionProps {

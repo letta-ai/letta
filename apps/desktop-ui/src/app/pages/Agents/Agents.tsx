@@ -3,14 +3,14 @@ import {
   Button,
   DashboardPageSection,
   DataTable,
-} from '@letta-web/component-library';
+} from '@letta-cloud/component-library';
 import {
   type AgentState,
   useAgentsServiceListAgents,
-} from '@letta-web/letta-agents-api';
+} from '@letta-cloud/letta-agents-api';
 import type { ColumnDef } from '@tanstack/react-table';
 import React, { useEffect, useMemo, useState } from 'react';
-import { useDateFormatter } from '@letta-web/helpful-client-utils';
+import { useDateFormatter } from '@letta-cloud/helpful-client-utils';
 import { useTranslations } from '@letta-cloud/translations';
 import { CreateLocalAgentDialog } from './CreateLocalAgentDialog/CreateLocalAgentDialog';
 import { DesktopPageLayout } from '../shared/DesktopPageLayout/DesktopPageLayout';

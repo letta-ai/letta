@@ -3,7 +3,7 @@ import type { FrameProps } from '../../framing/Frame/Frame';
 import { HStack } from '../../framing/HStack/HStack';
 import type { VariantProps } from 'class-variance-authority';
 import { cva } from 'class-variance-authority';
-import { cn } from '@letta-web/core-style-config';
+import { cn } from '@letta-cloud/core-style-config';
 import { Slot } from '@radix-ui/react-slot';
 
 const badgeVariants = cva('items-center flex', {

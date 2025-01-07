@@ -4,7 +4,7 @@ import {
   organizations,
   organizationUsers,
   users,
-} from '@letta-web/database';
+} from '@letta-cloud/database';
 import { eq } from 'drizzle-orm';
 
 export async function deleteUser(userId: string) {
@@ -34,7 +34,7 @@ export async function deleteUser(userId: string) {
   await Promise.all(
     organizationsIdsToDelete.map(async (orgId) => {
       await db.delete(organizations).where(eq(organizations.id, orgId));
-    })
+    }),
   );
 
   // delete user

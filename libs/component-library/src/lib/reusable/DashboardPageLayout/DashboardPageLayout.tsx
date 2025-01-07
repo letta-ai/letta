@@ -6,7 +6,7 @@ import { Typography } from '../../core/Typography/Typography';
 import type { BreadcrumbProps } from '../../core/Breadcrumb/Breadcrumb';
 import { Breadcrumb } from '../../core/Breadcrumb/Breadcrumb';
 import './DashboardPageLayout.scss';
-import { cn } from '@letta-web/core-style-config';
+import { cn } from '@letta-cloud/core-style-config';
 import Link from 'next/link';
 import { ChevronLeftIcon } from '../../icons';
 import { HiddenOnMobile } from '../../framing/HiddenOnMobile/HiddenOnMobile';

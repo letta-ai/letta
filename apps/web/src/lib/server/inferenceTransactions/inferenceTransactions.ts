@@ -3,11 +3,11 @@ import {
   deployedAgents,
   inferenceTransactions,
   users,
-} from '@letta-web/database';
-import { AgentsService } from '@letta-web/letta-agents-api';
+} from '@letta-cloud/database';
+import { AgentsService } from '@letta-cloud/letta-agents-api';
 import { eq } from 'drizzle-orm';
-import { trackServerSideEvent } from '@letta-web/analytics/server';
-import { AnalyticsEvent } from '@letta-web/analytics';
+import { trackServerSideEvent } from '@letta-cloud/analytics/server';
+import { AnalyticsEvent } from '@letta-cloud/analytics';
 import * as Sentry from '@sentry/node';
 
 interface CreateInferenceTransactionOptions {
@@ -25,7 +25,7 @@ interface CreateInferenceTransactionOptions {
 }
 
 export async function createInferenceTransaction(
-  options: CreateInferenceTransactionOptions
+  options: CreateInferenceTransactionOptions,
 ) {
   const {
     referenceId,
@@ -47,7 +47,7 @@ export async function createInferenceTransaction(
 
   if (!user) {
     Sentry.captureException(
-      new Error('Could not complete inference transaction due to missing user')
+      new Error('Could not complete inference transaction due to missing user'),
     );
     return;
   }
@@ -59,7 +59,7 @@ export async function createInferenceTransaction(
       },
       {
         user_id: user.lettaAgentsId,
-      }
+      },
     ),
     db.query.deployedAgents
       .findFirst({

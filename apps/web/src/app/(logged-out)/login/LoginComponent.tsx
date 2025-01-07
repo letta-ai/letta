@@ -6,7 +6,7 @@ import {
   Logo,
   GithubLogoMarkDynamic,
   GoogleLogoMarkDynamic,
-} from '@letta-web/component-library';
+} from '@letta-cloud/component-library';
 import type { ElementRef } from 'react';
 import { Suspense } from 'react';
 import { useMemo } from 'react';

@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import * as SliderPrimitive from '@radix-ui/react-slider';
-import { cn } from '@letta-web/core-style-config';
+import { cn } from '@letta-cloud/core-style-config';
 import { HStack } from '../../framing/HStack/HStack';
 import { useEffect, useMemo } from 'react';
 import { useCallback, useState } from 'react';
@@ -16,7 +16,7 @@ const SliderRoot = React.forwardRef<
     ref={ref}
     className={cn(
       'relative flex w-full touch-none select-none items-center',
-      className
+      className,
     )}
     {...props}
   >
@@ -36,10 +36,10 @@ function SliderInput(props: SliderProps) {
   const { value, onValueChange, fullWidth, ...sliderProps } = props;
 
   const [sliderNumericValue, setSliderNumericValue] = useState<number>(
-    value?.[0] || 0
+    value?.[0] || 0,
   );
   const [sliderValue, setSliderValue] = useState<string>(
-    value?.[0].toString() || ''
+    value?.[0].toString() || '',
   );
 
   const handleSliderValueChange = useCallback(
@@ -53,7 +53,7 @@ function SliderInput(props: SliderProps) {
 
       setSliderValue(value);
     },
-    [onValueChange]
+    [onValueChange],
   );
 
   const controlledValue = useMemo(() => {

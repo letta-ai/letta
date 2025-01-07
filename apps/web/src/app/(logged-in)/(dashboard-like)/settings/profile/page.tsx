@@ -11,7 +11,7 @@ import {
   LoadingEmptyStatusComponent,
   RawInput,
   useForm,
-} from '@letta-web/component-library';
+} from '@letta-cloud/component-library';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useCurrentUser } from '$web/client/hooks';

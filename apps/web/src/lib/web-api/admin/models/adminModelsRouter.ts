@@ -4,14 +4,14 @@ import {
   db,
   embeddingModelsMetadata,
   inferenceModelsMetadata,
-} from '@letta-web/database';
+} from '@letta-cloud/database';
 import { and, eq, ilike, isNotNull, isNull } from 'drizzle-orm';
 import {
   getLettaAgentsEmbeddingModelsSingleton,
   getLettaAgentsInferenceModelsSingleton,
 } from '$web/server';
-import type { EmbeddingConfig, LLMConfig } from '@letta-web/letta-agents-api';
-import { getBrandFromModelName } from '@letta-web/generic-utils';
+import type { EmbeddingConfig, LLMConfig } from '@letta-cloud/letta-agents-api';
+import { getBrandFromModelName } from '@letta-cloud/generic-utils';
 
 type GetAdminInferenceModelsResponse = ServerInferResponses<
   typeof contracts.admin.models.getAdminInferenceModels

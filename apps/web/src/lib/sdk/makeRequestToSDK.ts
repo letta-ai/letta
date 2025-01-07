@@ -1,8 +1,8 @@
 import { EventSource } from 'extended-eventsource';
-import { environment } from '@letta-web/environmental-variables';
+import { environment } from '@letta-cloud/environmental-variables';
 import axios, { isAxiosError } from 'axios';
-import type { LettaResponse } from '@letta-web/letta-agents-api';
-import { RESTRICTED_ROUTE_BASE_PATHS } from '@letta-web/letta-agents-api';
+import type { LettaResponse } from '@letta-cloud/letta-agents-api';
+import { RESTRICTED_ROUTE_BASE_PATHS } from '@letta-cloud/letta-agents-api';
 import { createInferenceTransaction } from '$web/server/inferenceTransactions/inferenceTransactions';
 import * as Sentry from '@sentry/nextjs';
 import { z } from 'zod';

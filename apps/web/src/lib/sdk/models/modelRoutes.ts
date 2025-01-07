@@ -1,5 +1,5 @@
 import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
-import type { sdkContracts } from '@letta-web/letta-agents-api';
+import type { sdkContracts } from '@letta-cloud/letta-agents-api';
 import { router } from '$web/web-api/router';
 
 type ListLLMBackendsResponseType = ServerInferResponses<

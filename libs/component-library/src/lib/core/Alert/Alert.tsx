@@ -2,7 +2,7 @@ import * as React from 'react';
 import { CheckIcon, CloseIcon, InfoIcon, WarningIcon } from '../../icons';
 import { useMemo } from 'react';
 import { cva, type VariantProps } from 'class-variance-authority';
-import { cn } from '@letta-web/core-style-config';
+import { cn } from '@letta-cloud/core-style-config';
 import { HStack } from '../../framing/HStack/HStack';
 import { Slot } from '@radix-ui/react-slot';
 
@@ -25,7 +25,7 @@ const alertVariants = cva(
     defaultVariants: {
       variant: 'warning',
     },
-  }
+  },
 );
 
 export type AlertVariants = 'destructive' | 'info' | 'success' | 'warning';

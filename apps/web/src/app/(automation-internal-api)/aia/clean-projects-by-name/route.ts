@@ -1,7 +1,7 @@
 import type { NextRequest } from 'next/server';
 import { getUserActiveOrganizationIdOrThrow } from '$web/server/auth';
 import * as process from 'node:process';
-import { db, projects } from '@letta-web/database';
+import { db, projects } from '@letta-cloud/database';
 import { and, eq } from 'drizzle-orm';
 
 export async function POST(req: NextRequest) {
@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
         headers: {
           'Content-Type': 'application/json',
         },
-      }
+      },
     );
   }
 
@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
         headers: {
           'Content-Type': 'application/json',
         },
-      }
+      },
     );
   }
 
@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
   await db
     .delete(projects)
     .where(
-      and(eq(projects.name, name), eq(projects.organizationId, organizationId))
+      and(eq(projects.name, name), eq(projects.organizationId, organizationId)),
     )
     .execute();
 
@@ -58,6 +58,6 @@ export async function POST(req: NextRequest) {
       headers: {
         'Content-Type': 'application/json',
       },
-    }
+    },
   );
 }

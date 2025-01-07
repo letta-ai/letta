@@ -1,6 +1,6 @@
 import type { RedisOptions } from 'ioredis';
 import Redis from 'ioredis';
-import { environment } from '@letta-web/environmental-variables';
+import { environment } from '@letta-cloud/environmental-variables';
 import type { RedisTypes, RedisKeySchemaMap } from '../schemas';
 import { redisTypeKeyMap } from '../schemas';
 
@@ -51,7 +51,7 @@ function createRedisInstance() {
 
 export async function getRedisData<Type extends RedisTypes = RedisTypes>(
   type: Type,
-  key: string
+  key: string,
 ): Promise<RedisKeySchemaMap[Type] | null> {
   const redis = createRedisInstance();
 
@@ -76,7 +76,7 @@ interface SetRedisDataOptions<Data> {
 export async function setRedisData<Type extends RedisTypes = RedisTypes>(
   type: Type,
   key: string,
-  options: SetRedisDataOptions<RedisKeySchemaMap[Type]>
+  options: SetRedisDataOptions<RedisKeySchemaMap[Type]>,
 ) {
   const redis = createRedisInstance();
   const { data, expiresAt } = options;
@@ -92,7 +92,7 @@ export async function setRedisData<Type extends RedisTypes = RedisTypes>(
 
 export async function deleteRedisData<Type extends RedisTypes = RedisTypes>(
   type: Type,
-  key: string
+  key: string,
 ) {
   const redis = createRedisInstance();
 

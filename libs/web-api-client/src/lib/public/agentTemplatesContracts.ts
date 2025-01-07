@@ -1,8 +1,8 @@
 import type { ServerInferResponses } from '@ts-rest/core';
 import { initContract } from '@ts-rest/core';
 import { z } from 'zod';
-import { VersionedTemplateType } from '@letta-web/letta-agents-api';
-import type { AgentState } from '@letta-web/letta-agents-api';
+import { VersionedTemplateType } from '@letta-cloud/letta-agents-api';
+import type { AgentState } from '@letta-cloud/letta-agents-api';
 
 import { ProjectAgentTemplateSchema } from './projectContracts';
 

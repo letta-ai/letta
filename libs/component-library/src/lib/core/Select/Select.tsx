@@ -3,7 +3,7 @@ import * as React from 'react';
 import type { MultiValue, SingleValue } from 'react-select';
 import ReactSelect, { components } from 'react-select';
 import AsyncReactSelect from 'react-select/async';
-import { cn } from '@letta-web/core-style-config';
+import { cn } from '@letta-cloud/core-style-config';
 import type { ReactNode } from 'react';
 import { useEffect } from 'react';
 import { CaretDownIcon, CloseIcon } from '../../icons';
@@ -42,7 +42,7 @@ export interface OptionType {
 }
 
 export function isMultiValue(
-  value: MultiValue<OptionType> | SingleValue<OptionType>
+  value: MultiValue<OptionType> | SingleValue<OptionType>,
 ): value is MultiValue<OptionType> {
   return Array.isArray(value);
 }
@@ -159,7 +159,7 @@ const classNames = {
   control: () =>
     cn(
       'border bg-background border-solid h-[auto] px-2 py-1 min-h-[36px]! w-full text-base',
-      'h-biHeight'
+      'h-biHeight',
     ),
   placeholder: () => cn('text-muted-content'),
   menu: () => cn('mt-1 bg-background border'),
@@ -321,5 +321,5 @@ export const RawSelect = makeRawInput(SelectPrimitive, 'RawSelect');
 export const AsyncSelect = makeInput(AsyncSelectPrimitive, 'AsyncSelect');
 export const RawAsyncSelect = makeRawInput(
   AsyncSelectPrimitive,
-  'RawAsyncSelect'
+  'RawAsyncSelect',
 );

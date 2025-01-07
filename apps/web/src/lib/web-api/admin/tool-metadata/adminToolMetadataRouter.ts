@@ -1,7 +1,7 @@
 import type { ServerInferResponses } from '@ts-rest/core';
 import type { contracts } from '$web/web-api/contracts';
-import { getAllToolsFromComposio } from '@letta-web/composio';
-import { db, toolGroupMetadata, toolMetadata } from '@letta-web/database';
+import { getAllToolsFromComposio } from '@letta-cloud/composio';
+import { db, toolGroupMetadata, toolMetadata } from '@letta-cloud/database';
 import { and, eq, inArray } from 'drizzle-orm';
 
 type SyncToolsWithComposioContractResponse = ServerInferResponses<
@@ -30,8 +30,8 @@ async function syncToolsWithComposio(): Promise<SyncToolsWithComposioContractRes
       eq(toolMetadata.provider, 'composio'),
       inArray(
         toolMetadata.providerId,
-        composioTools.map((t) => t.enum)
-      )
+        composioTools.map((t) => t.enum),
+      ),
     ),
   });
 
@@ -76,7 +76,7 @@ async function syncToolsWithComposio(): Promise<SyncToolsWithComposioContractRes
           providerId: composioTool.enum,
         })
         .where(eq(toolMetadata.id, t.id));
-    })
+    }),
   );
 
   await Promise.all(
@@ -101,7 +101,7 @@ async function syncToolsWithComposio(): Promise<SyncToolsWithComposioContractRes
         provider: 'composio',
         providerId: t.enum,
       });
-    })
+    }),
   );
 
   const existingUniqueBrands = await db.query.toolGroupMetadata.findMany({
@@ -111,7 +111,7 @@ async function syncToolsWithComposio(): Promise<SyncToolsWithComposioContractRes
   const existingBrandSet = new Set(existingUniqueBrands.map((v) => v.brand));
 
   const newBrands = Array.from(uniqueBrands).filter(
-    (v) => !existingBrandSet.has(v)
+    (v) => !existingBrandSet.has(v),
   );
 
   await Promise.all(
@@ -121,7 +121,7 @@ async function syncToolsWithComposio(): Promise<SyncToolsWithComposioContractRes
         description: '',
         imageUrl: uniqueBrandsToImage.get(brand) || '',
       });
-    })
+    }),
   );
 
   await Promise.all(
@@ -132,7 +132,7 @@ async function syncToolsWithComposio(): Promise<SyncToolsWithComposioContractRes
           imageUrl: uniqueBrandsToImage.get(brand.brand),
         })
         .where(eq(toolGroupMetadata.brand, brand.brand));
-    })
+    }),
   );
 
   return {

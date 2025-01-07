@@ -1,10 +1,10 @@
 import { useTranslations } from '@letta-cloud/translations';
-import { HealthService } from '@letta-web/letta-agents-api';
+import { HealthService } from '@letta-cloud/letta-agents-api';
 import {
   HStack,
   StatusIndicator,
   Typography,
-} from '@letta-web/component-library';
+} from '@letta-cloud/component-library';
 import { useEffect, useRef, useState } from 'react';
 
 interface ServerStatusProps {

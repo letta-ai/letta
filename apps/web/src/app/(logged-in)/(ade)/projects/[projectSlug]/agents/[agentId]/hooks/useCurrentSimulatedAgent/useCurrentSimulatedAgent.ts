@@ -4,7 +4,7 @@ import { webApi, webApiQueryKeys } from '$web/client';
 import { useCurrentAgentMetaData } from '../useCurrentAgentMetaData/useCurrentAgentMetaData';
 import { useCurrentAgent } from '../useCurrentAgent/useCurrentAgent';
 import { useEffect, useMemo } from 'react';
-import { toast } from '@letta-web/component-library';
+import { toast } from '@letta-cloud/component-library';
 import { useTranslations } from '@letta-cloud/translations';
 
 export function useCurrentSimulatedAgent() {

@@ -13,16 +13,16 @@ import {
   SingleFileUpload,
   UploadIcon,
   useForm,
-} from '@letta-web/component-library';
+} from '@letta-cloud/component-library';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslations } from '@letta-cloud/translations';
-import type { FileMetadata } from '@letta-web/letta-agents-api';
+import type { FileMetadata } from '@letta-cloud/letta-agents-api';
 import {
   UseJobsServiceListActiveJobsKeyFn,
   UseSourcesServiceListFilesFromSourceKeyFn,
   useSourcesServiceUploadFileToSource,
-} from '@letta-web/letta-agents-api';
-import { useSourcesServiceListFilesFromSource } from '@letta-web/letta-agents-api';
+} from '@letta-cloud/letta-agents-api';
+import { useSourcesServiceListFilesFromSource } from '@letta-cloud/letta-agents-api';
 import { useCurrentDataSourceId } from '../hooks';
 import type { ColumnDef } from '@tanstack/react-table';
 import { z } from 'zod';

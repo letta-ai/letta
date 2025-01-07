@@ -1,6 +1,6 @@
 import type { ServerInferResponses } from '@ts-rest/core';
 import type { contracts } from '$web/web-api/contracts';
-import { adePreferences, db } from '@letta-web/database';
+import { adePreferences, db } from '@letta-cloud/database';
 
 type FlushLayoutsResponse = ServerInferResponses<
   typeof contracts.admin.flushLayouts.flushLayouts

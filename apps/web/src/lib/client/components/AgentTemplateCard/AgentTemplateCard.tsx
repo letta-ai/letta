@@ -6,8 +6,8 @@ import {
   Avatar,
   Button,
   HStack,
-} from '@letta-web/component-library';
-import { useDateFormatter } from '@letta-web/helpful-client-utils';
+} from '@letta-cloud/component-library';
+import { useDateFormatter } from '@letta-cloud/helpful-client-utils';
 import type { AgentTemplateType } from '@letta-cloud/web-api-client';
 
 interface AgentTemplateCardProps {

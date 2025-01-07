@@ -25,20 +25,20 @@ import {
   LoadingEmptyStatusComponent,
   BlockQuote,
   InnerMonologueIcon,
-} from '@letta-web/component-library';
-import type { AgentMessage } from '@letta-web/letta-agents-api';
-import { SystemAlertSchema } from '@letta-web/letta-agents-api';
-import { SendMessageFunctionCallSchema } from '@letta-web/letta-agents-api';
+} from '@letta-cloud/component-library';
+import type { AgentMessage } from '@letta-cloud/letta-agents-api';
+import { SystemAlertSchema } from '@letta-cloud/letta-agents-api';
+import { SendMessageFunctionCallSchema } from '@letta-cloud/letta-agents-api';
 import {
   type ListAgentMessagesResponse,
   UseAgentsServiceListAgentMessagesKeyFn,
   UserMessageMessageSchema,
-} from '@letta-web/letta-agents-api';
+} from '@letta-cloud/letta-agents-api';
 import type {
   AgentSimulatorMessageGroupType,
   AgentSimulatorMessageType,
 } from '../AgentSimulator/types';
-import { FunctionIcon } from '@letta-web/component-library';
+import { FunctionIcon } from '@letta-cloud/component-library';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import type { InfiniteData } from '@tanstack/query-core';
 import { jsonrepair } from 'jsonrepair';
@@ -47,7 +47,7 @@ import { get } from 'lodash-es';
 import { useGetMessagesWorker } from './useGetMessagesWorker/useGetMessagesWorker';
 import { useAtom } from 'jotai';
 import { messagesInFlightCacheAtom } from './messagesInFlightCacheAtom/messagesInFlightCacheAtom';
-import { useCurrentDevelopmentServerConfig } from '@letta-web/helpful-client-utils';
+import { useCurrentDevelopmentServerConfig } from '@letta-cloud/helpful-client-utils';
 
 // tryFallbackParseJson will attempt to parse a string as JSON, if it fails, it will trim the last character and try again
 // until it succeeds or the string is empty

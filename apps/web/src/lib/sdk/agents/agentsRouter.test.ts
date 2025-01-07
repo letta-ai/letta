@@ -2,10 +2,13 @@
  * @jest-environment node
  */
 import { createAgent } from '$web/sdk';
-import { mockDatabase, mockDatabaseInsert } from '@letta-web/database-testing';
-import { lettaAgentAPIMock } from '@letta-web/letta-agents-api-testing';
+import {
+  mockDatabase,
+  mockDatabaseInsert,
+} from '@letta-cloud/database-testing';
+import { lettaAgentAPIMock } from '@letta-cloud/letta-agents-api-testing';
 import * as router from '$web/web-api/router';
-import type { AgentState } from '@letta-web/letta-agents-api';
+import type { AgentState } from '@letta-cloud/letta-agents-api';
 import { versionAgentTemplate } from '$web/sdk/agents/lib/versionAgentTemplate/versionAgentTemplate';
 
 jest.mock('$web/web-api/router', () => ({

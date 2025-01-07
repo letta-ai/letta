@@ -6,7 +6,7 @@ import {
   HStack,
   Typography,
   VStack,
-} from '@letta-web/component-library';
+} from '@letta-cloud/component-library';
 import { webApi, webApiQueryKeys } from '$web/client';
 
 interface CurrentUserDetailsBlockProps {

@@ -9,7 +9,7 @@ import { redirect } from 'next/navigation';
 import {
   SourcesService,
   UseSourcesServiceGetSourceKeyFn,
-} from '@letta-web/letta-agents-api';
+} from '@letta-cloud/letta-agents-api';
 import { DataSourceClientLayout } from './_components/DataSourceClientLayout/DataSourceClientLayout';
 
 interface ProjectPageWrapperProps {

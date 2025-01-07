@@ -1,7 +1,7 @@
 'use client';
 import React from 'react';
 import * as Tabs from '@radix-ui/react-tabs';
-import { cn } from '@letta-web/core-style-config';
+import { cn } from '@letta-cloud/core-style-config';
 import { Slot } from '@radix-ui/react-slot';
 import { Typography } from '../../core/Typography/Typography';
 
@@ -34,7 +34,7 @@ export function TabGroup(props: TabGroupProps) {
           <Tabs.Trigger
             className={cn(
               'px-4 h-[28px] flex items-center gap-2 flex-row border-b-2 data-[state=active]:font-medium data-[state=active]:border-content',
-              fullWidth ? 'flex-1 justify-center' : ''
+              fullWidth ? 'flex-1 justify-center' : '',
             )}
             key={item.value}
             value={item.value}

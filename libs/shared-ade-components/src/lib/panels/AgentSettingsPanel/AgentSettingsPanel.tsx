@@ -21,7 +21,7 @@ import {
   FormProvider,
   FormField,
   TextArea,
-} from '@letta-web/component-library';
+} from '@letta-cloud/component-library';
 import {
   useAgentBaseTypeName,
   useCurrentAgent,
@@ -29,22 +29,22 @@ import {
   useSyncUpdateCurrentAgent,
 } from '../../hooks';
 import { z } from 'zod';
-import type { AgentState } from '@letta-web/letta-agents-api';
+import type { AgentState } from '@letta-cloud/letta-agents-api';
 import {
   UseAgentsServiceGetAgentKeyFn,
   useAgentsServiceUpdateAgent,
-} from '@letta-web/letta-agents-api';
-import { useModelsServiceListModels } from '@letta-web/letta-agents-api';
+} from '@letta-cloud/letta-agents-api';
+import { useModelsServiceListModels } from '@letta-cloud/letta-agents-api';
 import { useTranslations } from '@letta-cloud/translations';
 import { useDebouncedCallback, useDebouncedValue } from '@mantine/hooks';
 import {
   webOriginSDKApi,
   webOriginSDKQueryKeys,
-} from '@letta-web/letta-agents-api';
-import { ExtendedLLMSchema } from '@letta-web/letta-agents-api';
+} from '@letta-cloud/letta-agents-api';
+import { ExtendedLLMSchema } from '@letta-cloud/letta-agents-api';
 import { useQueryClient } from '@tanstack/react-query';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { getBrandFromModelName } from '@letta-web/generic-utils';
+import { getBrandFromModelName } from '@letta-cloud/generic-utils';
 import { UpdateNameDialog } from '../../shared/UpdateAgentNameDialog/UpdateAgentNameDialog';
 
 interface SelectedModelType {

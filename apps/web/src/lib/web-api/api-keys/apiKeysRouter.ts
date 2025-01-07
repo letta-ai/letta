@@ -1,4 +1,4 @@
-import { db, lettaAPIKeys } from '@letta-web/database';
+import { db, lettaAPIKeys } from '@letta-cloud/database';
 import {
   generateAPIKey,
   getUser,
@@ -16,7 +16,7 @@ type CreateAPIKeyResponse = ServerInferResponses<
 >;
 
 export async function createAPIKey(
-  req: CreateAPIKeyPayload
+  req: CreateAPIKeyPayload,
 ): Promise<CreateAPIKeyResponse> {
   const { name } = req.body;
 
@@ -51,7 +51,7 @@ type GetAPIKeysResponse = ServerInferResponses<
 >;
 
 export async function getAPIKeys(
-  req: GetAPIKeysRequest
+  req: GetAPIKeysRequest,
 ): Promise<GetAPIKeysResponse> {
   const organizationId = await getUserActiveOrganizationIdOrThrow();
   const { offset, limit = 10, search } = req.query;
@@ -99,7 +99,7 @@ type DeleteAPIKeyResponse = ServerInferResponses<
 >;
 
 export async function deleteAPIKey(
-  req: DeleteAPIKeyRequest
+  req: DeleteAPIKeyRequest,
 ): Promise<DeleteAPIKeyResponse> {
   const { apiKeyId } = req.params;
 
@@ -110,8 +110,8 @@ export async function deleteAPIKey(
     .where(
       and(
         eq(lettaAPIKeys.id, apiKeyId),
-        eq(lettaAPIKeys.organizationId, organizationId)
-      )
+        eq(lettaAPIKeys.organizationId, organizationId),
+      ),
     );
 
   return {
@@ -127,7 +127,7 @@ type GetAPIKeyResponse = ServerInferResponses<
 >;
 
 export async function getAPIKey(
-  req: GetAPIKeyRequest
+  req: GetAPIKeyRequest,
 ): Promise<GetAPIKeyResponse> {
   const { apiKeyId } = req.params;
 

@@ -6,7 +6,7 @@ import {
   deployedAgentTemplates,
   agentTemplates,
   organizationPreferences,
-} from '@letta-web/database';
+} from '@letta-cloud/database';
 import { getUserActiveOrganizationIdOrThrow } from '$web/server/auth';
 import { eq, and, desc, count, isNull, ilike } from 'drizzle-orm';
 import type { contracts, projectsContract } from '$web/web-api/contracts';

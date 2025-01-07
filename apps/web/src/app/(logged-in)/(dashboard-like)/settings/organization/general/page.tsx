@@ -12,7 +12,7 @@ import {
   Typography,
   useForm,
   VStack,
-} from '@letta-web/component-library';
+} from '@letta-cloud/component-library';
 import { useTranslations } from '@letta-cloud/translations';
 import { z } from 'zod';
 import { useQueryClient } from '@tanstack/react-query';

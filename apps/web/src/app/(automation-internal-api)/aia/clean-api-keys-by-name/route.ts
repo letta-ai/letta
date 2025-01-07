@@ -1,7 +1,7 @@
 import type { NextRequest } from 'next/server';
 import { getUserActiveOrganizationIdOrThrow } from '$web/server/auth';
 import * as process from 'node:process';
-import { db, lettaAPIKeys } from '@letta-web/database';
+import { db, lettaAPIKeys } from '@letta-cloud/database';
 import { and, eq } from 'drizzle-orm';
 
 export async function POST(req: NextRequest) {
@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
         headers: {
           'Content-Type': 'application/json',
         },
-      }
+      },
     );
   }
 
@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
         headers: {
           'Content-Type': 'application/json',
         },
-      }
+      },
     );
   }
 
@@ -47,8 +47,8 @@ export async function POST(req: NextRequest) {
     .where(
       and(
         eq(lettaAPIKeys.name, name),
-        eq(lettaAPIKeys.organizationId, organizationId)
-      )
+        eq(lettaAPIKeys.organizationId, organizationId),
+      ),
     )
     .execute();
 
@@ -61,6 +61,6 @@ export async function POST(req: NextRequest) {
       headers: {
         'Content-Type': 'application/json',
       },
-    }
+    },
   );
 }

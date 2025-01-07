@@ -4,7 +4,7 @@ import { useMemo } from 'react';
 import { forwardRef } from 'react';
 import React from 'react';
 import { cva, type VariantProps } from 'class-variance-authority';
-import { cn } from '@letta-web/core-style-config';
+import { cn } from '@letta-cloud/core-style-config';
 
 const typographyVariants = cva('break-words', {
   variants: {
@@ -126,11 +126,11 @@ export const Typography = forwardRef<HTMLElement, TypographyProps>(
           fullWidth,
           variant,
           className,
-        })
+        }),
       ),
       ...rest,
     });
-  }
+  },
 );
 
 interface LoadedTypographyProps extends TypographyProps {
@@ -157,7 +157,7 @@ export function LoadedTypography(props: LoadedTypographyProps) {
           role="presentation"
           tabIndex={-1}
           className={cn(
-            'pointer-events-none bg-gray-200 select-none  text-transparent animate-pulse'
+            'pointer-events-none bg-gray-200 select-none  text-transparent animate-pulse',
           )}
         >
           {fillerText}

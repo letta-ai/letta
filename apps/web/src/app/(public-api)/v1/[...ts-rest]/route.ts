@@ -6,13 +6,13 @@ import {
 } from '@ts-rest/serverless/next';
 import { getUser, verifyAndReturnAPIKeyDetails } from '$web/server/auth';
 import type { RequestMiddlewareType } from '$web/sdk/shared';
-import { db, users } from '@letta-web/database';
+import { db, users } from '@letta-cloud/database';
 import { eq } from 'drizzle-orm';
 import { isErrorResponse } from '@ts-rest/core';
 import * as Sentry from '@sentry/node';
 import { makeRequestToSDK } from '$web/sdk';
 import { sdkRouter } from '$web/sdk/router';
-import { sdkContracts } from '@letta-web/letta-agents-api';
+import { sdkContracts } from '@letta-cloud/letta-agents-api';
 
 const handler = createNextHandler(sdkContracts, sdkRouter, {
   basePath: '',

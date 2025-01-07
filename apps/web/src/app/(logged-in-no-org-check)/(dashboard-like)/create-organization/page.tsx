@@ -12,7 +12,7 @@ import {
   Input,
   useForm,
   VStack,
-} from '@letta-web/component-library';
+} from '@letta-cloud/component-library';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { webApi } from '$web/client';
 import { useCallback } from 'react';

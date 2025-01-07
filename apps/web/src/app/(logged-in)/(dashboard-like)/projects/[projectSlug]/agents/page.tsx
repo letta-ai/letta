@@ -9,7 +9,7 @@ import React, {
 import type {
   FieldDefinitions,
   QueryBuilderQuery,
-} from '@letta-web/component-library';
+} from '@letta-cloud/component-library';
 import {
   Badge,
   Card,
@@ -19,22 +19,22 @@ import {
   MiddleTruncate,
   QueryBuilder,
   SearchIcon,
-} from '@letta-web/component-library';
-import { Frame } from '@letta-web/component-library';
+} from '@letta-cloud/component-library';
+import { Frame } from '@letta-cloud/component-library';
 import {
   Button,
   CloseIcon,
   LettaLoader,
   Typography,
   VStack,
-} from '@letta-web/component-library';
+} from '@letta-cloud/component-library';
 import {
   DashboardPageLayout,
   DashboardPageSection,
   DataTable,
   HStack,
   RawInput,
-} from '@letta-web/component-library';
+} from '@letta-cloud/component-library';
 import {
   webApi,
   webApiQueryKeys,
@@ -44,14 +44,14 @@ import {
 import { useCurrentProject } from '../hooks';
 import { useSearchParams } from 'next/navigation';
 import type { ColumnDef } from '@tanstack/react-table';
-import type { AgentState } from '@letta-web/letta-agents-api';
-import { useAgentsServiceGetAgent } from '@letta-web/letta-agents-api';
+import type { AgentState } from '@letta-cloud/letta-agents-api';
+import { useAgentsServiceGetAgent } from '@letta-cloud/letta-agents-api';
 import { useTranslations } from '@letta-cloud/translations';
 import { DeployAgentDialog } from './DeployAgentDialog/DeployAgentDialog';
-import { useDateFormatter } from '@letta-web/helpful-client-utils';
-import { SearchDeployedAgentsSchema } from '@letta-web/letta-agents-api';
+import { useDateFormatter } from '@letta-cloud/helpful-client-utils';
+import { SearchDeployedAgentsSchema } from '@letta-cloud/letta-agents-api';
 import { useQuery } from '@tanstack/react-query';
-import type { sdkContracts } from '@letta-web/letta-agents-api';
+import type { sdkContracts } from '@letta-cloud/letta-agents-api';
 import type { ServerInferResponses } from '@ts-rest/core';
 import { Messages } from '@letta-cloud/shared-ade-components';
 

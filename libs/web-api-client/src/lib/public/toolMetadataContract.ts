@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { initContract } from '@ts-rest/core';
 import type { GenericSearch } from '../shared';
 import { GenericSearchSchema } from '../shared';
-import { ProviderSchemaConfiguration } from '@letta-web/types';
+import { ProviderSchemaConfiguration } from '@letta-cloud/types';
 
 export const ToolGroup = z.object({
   brand: z.string(),

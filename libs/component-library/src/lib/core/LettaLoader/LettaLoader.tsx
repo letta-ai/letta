@@ -8,7 +8,7 @@ import './LettaFlipLoader.scss';
 import { DotLottieReact } from '@lottiefiles/dotlottie-react';
 import type { VariantProps } from 'class-variance-authority';
 import { cva } from 'class-variance-authority';
-import { cn } from '@letta-web/core-style-config';
+import { cn } from '@letta-cloud/core-style-config';
 import { ErrorBoundary } from 'react-error-boundary';
 import { useEffect, useRef } from 'react';
 

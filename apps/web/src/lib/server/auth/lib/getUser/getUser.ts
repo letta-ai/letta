@@ -1,7 +1,7 @@
 import { getCookie } from '$web/server/cookies';
 import { CookieNames } from '$web/server/cookies/types';
-import { getRedisData } from '@letta-web/redis';
-import { db, organizationUsers, users } from '@letta-web/database';
+import { getRedisData } from '@letta-cloud/redis';
+import { db, organizationUsers, users } from '@letta-cloud/database';
 import { and, eq, isNull } from 'drizzle-orm';
 import { redirect } from 'next/navigation';
 

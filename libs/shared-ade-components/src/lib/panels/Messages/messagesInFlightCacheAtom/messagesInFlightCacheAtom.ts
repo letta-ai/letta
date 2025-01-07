@@ -1,4 +1,4 @@
 import { atom } from 'jotai';
-import type { AgentMessage } from '@letta-web/letta-agents-api';
+import type { AgentMessage } from '@letta-cloud/letta-agents-api';
 
 export const messagesInFlightCacheAtom = atom<AgentMessage[]>([]);

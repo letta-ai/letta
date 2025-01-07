@@ -5,7 +5,7 @@ import {
   DarkModeIcon,
   LightModeIcon,
   RawToggleGroup,
-} from '@letta-web/component-library';
+} from '@letta-cloud/component-library';
 import { useTranslations } from '@letta-cloud/translations';
 import { webApi, webApiQueryKeys } from '$web/client';
 import { useQueryClient } from '@tanstack/react-query';

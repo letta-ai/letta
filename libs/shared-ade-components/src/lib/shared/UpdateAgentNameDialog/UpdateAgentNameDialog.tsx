@@ -6,10 +6,10 @@ import {
   FormProvider,
   Input,
   useForm,
-} from '@letta-web/component-library';
+} from '@letta-cloud/component-library';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useAgentsServiceUpdateAgent } from '@letta-web/letta-agents-api';
-import { webOriginSDKApi } from '@letta-web/letta-agents-api';
+import { useAgentsServiceUpdateAgent } from '@letta-cloud/letta-agents-api';
+import { webOriginSDKApi } from '@letta-cloud/letta-agents-api';
 import React, { useCallback, useEffect } from 'react';
 import { isFetchError } from '@ts-rest/react-query/v5';
 import { useAgentBaseTypeName } from '../../hooks';

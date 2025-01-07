@@ -1,4 +1,4 @@
-import type { Block } from '@letta-web/letta-agents-api';
+import type { Block } from '@letta-cloud/letta-agents-api';
 
 export interface ComputeCoreMemoryWorkerPayload {
   templateString: string;

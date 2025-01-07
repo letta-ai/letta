@@ -32,7 +32,7 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      '@letta-web/environmental-variables': path.resolve(
+      '@letta-cloud/environmental-variables': path.resolve(
         __dirname,
         'src/alias-overrides/environmental-variables',
       ),

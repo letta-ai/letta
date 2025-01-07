@@ -14,7 +14,7 @@ import {
   Typography,
   useForm,
   VStack,
-} from '@letta-web/component-library';
+} from '@letta-cloud/component-library';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useCurrentProject } from '../hooks';
@@ -26,7 +26,7 @@ import type {
   UpdateProjectPayloadType,
 } from '$web/web-api/contracts';
 import { useTranslations } from '@letta-cloud/translations';
-import { useErrorTranslationMessage } from '@letta-web/helpful-client-utils';
+import { useErrorTranslationMessage } from '@letta-cloud/helpful-client-utils';
 
 const DeleteProjectSchema = z.object({
   name: z.string(),

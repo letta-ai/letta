@@ -2,9 +2,9 @@
 import {
   webOriginSDKApi,
   webOriginSDKQueryKeys,
-} from '@letta-web/letta-agents-api';
+} from '@letta-cloud/letta-agents-api';
 import { useParams, usePathname } from 'next/navigation';
-import { useAgentsServiceGetAgent } from '@letta-web/letta-agents-api';
+import { useAgentsServiceGetAgent } from '@letta-cloud/letta-agents-api';
 import { get } from 'lodash-es';
 import { CURRENT_RUNTIME } from '@letta-cloud/runtime';
 

@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { cva, type VariantProps } from 'class-variance-authority';
 
-import { cn } from '@letta-web/core-style-config';
+import { cn } from '@letta-cloud/core-style-config';
 import { ButtonPrimitive } from '../../../primitives';
 import { forwardRef } from 'react';
 
@@ -18,7 +18,7 @@ const buttonVariants = cva(
     defaultVariants: {
       variant: 'primary',
     },
-  }
+  },
 );
 
 export type MarketingButtonProps = React.HTMLAttributes<
@@ -36,7 +36,7 @@ export const MarketingButton = forwardRef<
   MarketingButtonProps
 >(function MarketingButton(
   { className, preIcon, variant, label, ...props },
-  ref
+  ref,
 ) {
   return (
     <ButtonPrimitive

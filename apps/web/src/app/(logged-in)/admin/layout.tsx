@@ -8,7 +8,7 @@ import {
 import { redirect } from 'next/navigation';
 import { QueryClient } from '@tanstack/react-query';
 import { queryClientKeys } from '$web/web-api/contracts';
-import { Frame, HStack, Logo, VStack } from '@letta-web/component-library';
+import { Frame, HStack, Logo, VStack } from '@letta-cloud/component-library';
 import Link from 'next/link';
 import { AdminNavigation } from './_components/AdminNavigation/AdminNavigation';
 import { DashboardTransition } from '$web/client/components/DashboardLikeLayout/DashboardTransition/DashboardTransition';
@@ -65,7 +65,7 @@ export default async function LoggedInLayout(props: InAppProps) {
   }
 
   const organization = await getOrganizationFromOrganizationId(
-    user.activeOrganizationId
+    user.activeOrganizationId,
   );
 
   if (!organization?.isAdmin) {

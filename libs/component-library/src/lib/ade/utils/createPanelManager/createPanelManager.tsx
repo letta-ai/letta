@@ -14,7 +14,7 @@ import { Slot } from '@radix-ui/react-slot';
 import { HStack } from '../../../framing/HStack/HStack';
 import { VStack } from '../../../framing/VStack/VStack';
 import { createPortal } from 'react-dom';
-import { cn } from '@letta-web/core-style-config';
+import { cn } from '@letta-cloud/core-style-config';
 import './CreatePanelManager.css';
 import { Frame } from '../../../framing/Frame/Frame';
 import type { DragEndEvent } from '@dnd-kit/core';

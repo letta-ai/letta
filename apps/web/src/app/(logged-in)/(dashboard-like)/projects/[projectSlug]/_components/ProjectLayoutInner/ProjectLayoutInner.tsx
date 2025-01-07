@@ -8,7 +8,7 @@ import {
   InstantMixIcon,
   SidebarTitle,
   HStack,
-} from '@letta-web/component-library';
+} from '@letta-cloud/component-library';
 import { useTranslations } from '@letta-cloud/translations';
 import type { PropsWithChildren } from 'react';
 import React from 'react';

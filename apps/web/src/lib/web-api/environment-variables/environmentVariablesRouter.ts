@@ -2,7 +2,7 @@
 import type { contracts } from '$web/web-api/contracts';
 import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
 import { getUserOrThrow } from '$web/server/auth';
-import { SandboxConfigService } from '@letta-web/letta-agents-api';
+import { SandboxConfigService } from '@letta-cloud/letta-agents-api';
 
 async function getE2BSandboxConfigIdByLettaUserId(lettaUserId: string) {
   let configId = '';
@@ -14,7 +14,7 @@ async function getE2BSandboxConfigIdByLettaUserId(lettaUserId: string) {
       },
       {
         user_id: lettaUserId,
-      }
+      },
     );
 
   configId = sandboxes.find((sandbox) => sandbox.type === 'e2b')?.id || '';
@@ -27,7 +27,7 @@ async function getE2BSandboxConfigIdByLettaUserId(lettaUserId: string) {
         },
         {
           user_id: lettaUserId,
-        }
+        },
       );
     configId = newConfig.id || configId;
   }
@@ -41,7 +41,7 @@ async function getE2BSandboxConfigIdByLettaUserId(lettaUserId: string) {
 
 async function listSandboxEnvVarsV1SandboxConfigSandboxConfigIdEnvironmentVariableGet(
   lettaAgentUserId: string,
-  sandboxConfigId: string
+  sandboxConfigId: string,
 ) {
   return SandboxConfigService.listSandboxEnvVarsV1SandboxConfigSandboxConfigIdEnvironmentVariableGet(
     {
@@ -50,7 +50,7 @@ async function listSandboxEnvVarsV1SandboxConfigSandboxConfigIdEnvironmentVariab
     },
     {
       user_id: lettaAgentUserId,
-    }
+    },
   );
 }
 
@@ -63,23 +63,23 @@ export type GetEnvironmentVariableByKeyRequest = ServerInferRequest<
 >;
 
 async function getEnvironmentVariableByKey(
-  req: GetEnvironmentVariableByKeyRequest
+  req: GetEnvironmentVariableByKeyRequest,
 ): Promise<GetEnvironmentVariableByKeyResponse> {
   const user = await getUserOrThrow();
   const { key } = req.params;
 
   const sandboxConfigId = await getE2BSandboxConfigIdByLettaUserId(
-    user.lettaAgentsId
+    user.lettaAgentsId,
   );
 
   const environmentVariables =
     await listSandboxEnvVarsV1SandboxConfigSandboxConfigIdEnvironmentVariableGet(
       user.lettaAgentsId,
-      sandboxConfigId
+      sandboxConfigId,
     );
 
   const environmentVariable = environmentVariables.find(
-    (envVar) => envVar.key === key
+    (envVar) => envVar.key === key,
   );
 
   if (!environmentVariable) {
@@ -111,19 +111,19 @@ export type GetEnvironmentVariablesRequest = ServerInferRequest<
 const MAX_ENVIRONMENT_VARIABLES = 100;
 
 async function getEnvironmentVariables(
-  req: GetEnvironmentVariablesRequest
+  req: GetEnvironmentVariablesRequest,
 ): Promise<GetEnvironmentVariablesResponse> {
   const user = await getUserOrThrow();
   const { search = '' } = req.query;
 
   const sandboxConfigId = await getE2BSandboxConfigIdByLettaUserId(
-    user.lettaAgentsId
+    user.lettaAgentsId,
   );
 
   const environmentVariables =
     await listSandboxEnvVarsV1SandboxConfigSandboxConfigIdEnvironmentVariableGet(
       user.lettaAgentsId,
-      sandboxConfigId
+      sandboxConfigId,
     );
 
   return {
@@ -131,7 +131,7 @@ async function getEnvironmentVariables(
     body: {
       environmentVariables: environmentVariables
         .filter((envVar) =>
-          envVar.key.toLowerCase().includes(search.toLowerCase())
+          envVar.key.toLowerCase().includes(search.toLowerCase()),
         )
         .map((envVar) => ({
           id: envVar.id || '',
@@ -152,24 +152,24 @@ export type CreateEnvironmentVariableRequest = ServerInferRequest<
 >;
 
 async function createEnvironmentVariable(
-  req: CreateEnvironmentVariableRequest
+  req: CreateEnvironmentVariableRequest,
 ): Promise<CreateEnvironmentVariableResponse> {
   const user = await getUserOrThrow();
   const { key, value } = req.body;
 
   const sandboxConfigId = await getE2BSandboxConfigIdByLettaUserId(
-    user.lettaAgentsId
+    user.lettaAgentsId,
   );
 
   // first get the existing environment variables
   const existingEnvironmentVariables =
     await listSandboxEnvVarsV1SandboxConfigSandboxConfigIdEnvironmentVariableGet(
       user.lettaAgentsId,
-      sandboxConfigId
+      sandboxConfigId,
     );
 
   const existingEnvironmentVariable = existingEnvironmentVariables.find(
-    (envVar) => envVar.key === key
+    (envVar) => envVar.key === key,
   );
 
   if (existingEnvironmentVariable) {
@@ -194,7 +194,7 @@ async function createEnvironmentVariable(
       },
       {
         user_id: user.lettaAgentsId,
-      }
+      },
     );
 
   return {
@@ -215,24 +215,24 @@ export type SetEnvironmentVariableRequest = ServerInferRequest<
 >;
 
 async function setEnvironmentVariable(
-  req: SetEnvironmentVariableRequest
+  req: SetEnvironmentVariableRequest,
 ): Promise<SetEnvironmentVariableResponse> {
   const user = await getUserOrThrow();
   const { key, value } = req.body;
 
   const sandboxConfigId = await getE2BSandboxConfigIdByLettaUserId(
-    user.lettaAgentsId
+    user.lettaAgentsId,
   );
 
   // first get the existing environment variables
   const existingEnvironmentVariables =
     await listSandboxEnvVarsV1SandboxConfigSandboxConfigIdEnvironmentVariableGet(
       user.lettaAgentsId,
-      sandboxConfigId
+      sandboxConfigId,
     );
 
   const existingEnvironmentVariable = existingEnvironmentVariables.find(
-    (envVar) => envVar.key === key
+    (envVar) => envVar.key === key,
   );
 
   if (existingEnvironmentVariable) {
@@ -247,7 +247,7 @@ async function setEnvironmentVariable(
       },
       {
         user_id: user.lettaAgentsId,
-      }
+      },
     );
 
     return {
@@ -281,7 +281,7 @@ async function setEnvironmentVariable(
       },
       {
         user_id: user.lettaAgentsId,
-      }
+      },
     );
 
   return {
@@ -302,7 +302,7 @@ export type DeleteEnvironmentVariableRequest = ServerInferRequest<
 >;
 
 async function deleteEnvironmentVariable(
-  req: DeleteEnvironmentVariableRequest
+  req: DeleteEnvironmentVariableRequest,
 ): Promise<DeleteEnvironmentVariableResponse> {
   const user = await getUserOrThrow();
   const { id } = req.params;
@@ -314,7 +314,7 @@ async function deleteEnvironmentVariable(
     },
     {
       user_id: user.lettaAgentsId,
-    }
+    },
   );
 
   return {

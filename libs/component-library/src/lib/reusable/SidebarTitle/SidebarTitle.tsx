@@ -5,7 +5,7 @@ import { Avatar } from '../../core/Avatar/Avatar';
 import { Tooltip } from '../../core/Tooltip/Tooltip';
 import { Typography } from '../../core/Typography/Typography';
 import { useMemo } from 'react';
-import { cn } from '@letta-web/core-style-config';
+import { cn } from '@letta-cloud/core-style-config';
 
 interface SidebarTitleProps {
   name: string;
@@ -24,7 +24,7 @@ export function SidebarTitle(props: SidebarTitleProps) {
     <div
       className={cn(
         'gap-2 justify-start w-full flex',
-        isInline ? 'flex-row items-center' : 'flex-col'
+        isInline ? 'flex-row items-center' : 'flex-col',
       )}
     >
       <Avatar size={avatarSize} name={name} />

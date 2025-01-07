@@ -9,12 +9,12 @@ import {
   DataTable,
   HStack,
   isBrandKey,
-} from '@letta-web/component-library';
+} from '@letta-cloud/component-library';
 import React, { useMemo } from 'react';
 import { webApi, webApiQueryKeys } from '$web/client';
 import type { ColumnDef } from '@tanstack/react-table';
 import type { GetUsageByModelItem } from '$web/web-api/contracts';
-import { useMonthCursor } from '@letta-web/helpful-client-utils';
+import { useMonthCursor } from '@letta-cloud/helpful-client-utils';
 
 function getStartOfMonth(date: Date) {
   return new Date(date.getFullYear(), date.getMonth(), 1);

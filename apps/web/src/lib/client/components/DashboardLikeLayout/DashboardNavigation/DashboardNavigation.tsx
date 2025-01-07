@@ -13,8 +13,8 @@ import {
   TextArea,
   useForm,
   Breadcrumb,
-} from '@letta-web/component-library';
-import { HiddenOnMobile } from '@letta-web/component-library';
+} from '@letta-cloud/component-library';
+import { HiddenOnMobile } from '@letta-cloud/component-library';
 import {
   Avatar,
   Button,
@@ -35,12 +35,12 @@ import {
   SwitchOrganizationIcon,
   ChevronLeftIcon,
   LaptopIcon,
-} from '@letta-web/component-library';
+} from '@letta-cloud/component-library';
 import { useCurrentUser } from '$web/client/hooks';
 import { usePathname } from 'next/navigation';
 import { webApi, webApiQueryKeys } from '$web/client';
 import { CurrentUserDetailsBlock } from '$web/client/components';
-import { cn } from '@letta-web/core-style-config';
+import { cn } from '@letta-cloud/core-style-config';
 import { useTranslations } from '@letta-cloud/translations';
 import { ThemeSelector } from '$web/client/components/ThemeSelector/ThemeSelector';
 import { useCurrentProject } from '../../../../../app/(logged-in)/(dashboard-like)/projects/[projectSlug]/hooks';

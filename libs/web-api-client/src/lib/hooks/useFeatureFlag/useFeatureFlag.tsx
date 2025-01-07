@@ -1,6 +1,6 @@
 'use client';
 
-import type { Flag, FlagValue } from '@letta-web/feature-flags';
+import type { Flag, FlagValue } from '@letta-cloud/feature-flags';
 import { webApi, webApiQueryKeys } from '../../../index';
 
 interface UseFeatureFlagPayload<SingleFlag extends Flag> {

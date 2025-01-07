@@ -1,5 +1,5 @@
 import type { SupportedProviders } from '@letta-cloud/web-api-client';
-import { environment } from '@letta-web/environmental-variables';
+import { environment } from '@letta-cloud/environmental-variables';
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 

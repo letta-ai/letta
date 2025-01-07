@@ -1,6 +1,6 @@
 import type { FrameProps } from '../../lib/framing/Frame/Frame';
 import { Frame } from '../../lib/framing/Frame/Frame';
-import { cn } from '@letta-web/core-style-config';
+import { cn } from '@letta-cloud/core-style-config';
 import * as React from 'react';
 import type { VariantProps } from 'class-variance-authority';
 import { cva } from 'class-variance-authority';
@@ -50,7 +50,7 @@ export const StackPrimitive = forwardRef<
   StackPrimitiveProps
 >(function StackPrimitive(
   { className, justify, wrap, gap, children, ...props },
-  ref
+  ref,
 ) {
   return (
     <Frame
