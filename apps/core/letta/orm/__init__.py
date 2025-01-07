@@ -8,7 +8,7 @@ from letta.orm.job import Job
 from letta.orm.message import Message
 from letta.orm.organization import Organization
 from letta.orm.passage import AgentPassage, BasePassage, SourcePassage
-from letta.orm.sandbox_config import SandboxConfig, SandboxEnvironmentVariable
+from letta.orm.sandbox_config import SandboxConfig, SandboxEnvironmentVariable, AgentEnvironmentVariable
 from letta.orm.source import Source
 from letta.orm.sources_agents import SourcesAgents
 from letta.orm.tool import Tool
