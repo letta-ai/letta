@@ -15,7 +15,7 @@ flowchart TB
     server --> python["Python SDK"]
     server --> ts["TypeScript SDK"]
     server --> rest["REST API"]
-    
+
     class ade,python,ts,rest interface
 ```
 
@@ -25,6 +25,18 @@ We provide a comprehensive REST API and native SDKs in Python and TypeScript. Al
 
 ### Python SDK
 
+<Note>
+The legacy Letta Python `LocalClient`/`RestClient` SDK is available under `pip install letta` (which also contains the server).
+This client is deprecated and will be replaced in a future release with the new `letta-client`.
+Please migrate any Python code using the old `RESTClient` or `LocalClient` to use `letta-client` to avoid breaking changes in the future.
+</Note>
+
+The Letta [Python SDK](https://github.com/letta-ai/letta-python) can be downloaded with:
+```bash
+pip install letta-client
+```
+
+Once installed, you can instantiate the client in your Python code with:
 ```python
 from letta import Letta
 
@@ -32,13 +44,18 @@ from letta import Letta
 client = Letta(base_url="http://localhost:8283")
 
 # connect to Letta Cloud
-client = Letta(token="LETTA_API_KEY")   
+client = Letta(token="LETTA_API_KEY")
 ```
 
 ### TypeScript SDK
+The Letta [TypeScript (Node) SDK](https://github.com/letta-ai/letta-node) can be downloaded with:
+```bash
+npm install @letta-ai/letta-client
+```
 
+Once installed, you can instantiate the client in your TypeScript code with:
 ```typescript
-import { LettaClient} from '@letta-ai/letta-client'
+import { LettaClient } from '@letta-ai/letta-client'
 
 const client = new LettaClient({
     token: "LETTA_API_KEY",
