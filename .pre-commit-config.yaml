@@ -5,7 +5,7 @@ repos:
       - id: check-yaml
         exclude: 'docs/.*|tests/data/.*|configs/.*'
       - id: end-of-file-fixer
-        exclude: 'docs/.*|tests/data/.*|letta/server/static_files/.*'
+        exclude: 'docs/.*|tests/data/.*|letta/server/static_files/.*|.*/.*\.(scss|css|html)'
       - id: trailing-whitespace
         exclude: 'docs/.*|tests/data/.*|letta/server/static_files/.*'
 
