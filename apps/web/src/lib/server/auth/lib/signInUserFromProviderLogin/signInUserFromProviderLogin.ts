@@ -19,7 +19,6 @@ import type { UserSession } from '@letta-cloud/web-api-client';
 import type { ProviderUserPayload } from '@letta-cloud/web-api-client';
 import { AdminService } from '@letta-cloud/letta-agents-api';
 import { LoginErrorsEnum } from '$web/errors';
-import { getDefaultFlags } from '@letta-cloud/feature-flags';
 import {
   trackServerSideEvent,
   trackUserOnServer,
@@ -397,15 +396,8 @@ async function findOrCreateUserAndOrganizationFromProviderLogin(
 
   if (!user) {
     isNewUser = true;
-    const flags = await getDefaultFlags();
 
-    const isWhitelisted = await isUserInWhitelist(userData.email);
-
-    if (!flags.GA_ADE && !isWhitelisted) {
-      throw new Error(LoginErrorsEnum.USER_NOT_IN_WHITELIST);
-    }
-
-    const isCloudEnabled = isWhitelisted;
+    const isCloudEnabled = await isUserInWhitelist(userData.email);
 
     const res = await createUserAndOrganization(userData, {
       enableCloud: isCloudEnabled,
