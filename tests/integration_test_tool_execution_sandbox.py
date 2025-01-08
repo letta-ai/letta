@@ -382,6 +382,10 @@ def test_local_sandbox_e2e_composio_star_github(mock_e2b_api_key_none, check_com
     result = ToolExecutionSandbox(composio_github_star_tool.name, {"owner": "letta-ai", "repo": "letta"}, user=test_user).run()
     assert result.func_return["details"] == "Action executed successfully"
 
+    # Missing args causes error
+    result = ToolExecutionSandbox(composio_github_star_tool.name, {}, user=test_user).run()
+    assert "Invalid request data provided" in result.func_return
+
 
 @pytest.mark.local_sandbox
 def test_local_sandbox_multiple_composio_entities(
@@ -623,6 +627,10 @@ def test_e2b_e2e_composio_star_github(check_e2b_key_is_set, check_composio_key_s
 
     result = ToolExecutionSandbox(composio_github_star_tool.name, {"owner": "letta-ai", "repo": "letta"}, user=test_user).run()
     assert result.func_return["details"] == "Action executed successfully"
+
+    # Missing args causes error
+    result = ToolExecutionSandbox(composio_github_star_tool.name, {}, user=test_user).run()
+    assert "Invalid request data provided" in result.func_return
 
 
 @pytest.mark.e2b_sandbox
