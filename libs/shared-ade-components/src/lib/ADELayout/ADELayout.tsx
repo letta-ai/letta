@@ -65,6 +65,7 @@ function useADETitleTranslations() {
     archivalMemoriesTitle,
   };
 }
+import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 
 function DesktopLayout() {
   const t = useTranslations('ADELayout');
@@ -78,78 +79,88 @@ function DesktopLayout() {
 
   return (
     <HStack gap="small" fullWidth fullHeight>
-      <VStack className="min-w-[250px] w-full">
-        <ADEGroup
-          items={[
-            {
-              title: t('settings', { baseName }),
-              id: 'settings',
-              content: <AgentSettingsPanel />,
-            },
-            {
-              title: t('advancedSettings'),
-              id: 'advanced-settings',
-              content: <AdvancedSettingsPanel />,
-            },
-          ]}
-        />
-        <ADEGroup
-          items={[
-            {
-              title: toolsTitle,
-              id: 'tools',
-              content: <ToolsPanel />,
-            },
-            {
-              title: datasourcesTitle,
-              id: 'datasources',
-              content: <EditDataSourcesPanel />,
-            },
-          ]}
-        />
-      </VStack>
-      <HStack className="w-full min-w-[300px]">
-        <ADEGroup
-          items={[
-            {
-              title: t('agentSimulator'),
-              id: 'agent-simulator',
-              content: <AgentSimulator />,
-            },
-          ]}
-        />
-      </HStack>
-      <VStack className="min-w-[250px] w-full">
-        <HStack className="max-h-[100px]">
-          <ADEGroup
-            items={[
-              {
-                title: t('contextWindow'),
-                id: 'content-window',
-                content: <ContextWindowPanel />,
-              },
-            ]}
-          />
-        </HStack>
-        <ADEGroup
-          items={[
-            {
-              title: editCoreMemoriesTitle,
-              id: 'core-memories',
-              content: <EditMemory />,
-            },
-          ]}
-        />
-        <ADEGroup
-          items={[
-            {
-              title: archivalMemoriesTitle,
-              id: 'archival-memories',
-              content: <ArchivalMemoriesPanel />,
-            },
-          ]}
-        />
-      </VStack>
+      <PanelGroup className="h-full" direction="horizontal" autoSaveId="ade">
+        <Panel defaultValue={30} className="h-full" minSize={20}>
+          <VStack gap="small" fullWidth fullHeight>
+            <ADEGroup
+              items={[
+                {
+                  title: t('settings', { baseName }),
+                  id: 'settings',
+                  content: <AgentSettingsPanel />,
+                },
+                {
+                  title: t('advancedSettings'),
+                  id: 'advanced-settings',
+                  content: <AdvancedSettingsPanel />,
+                },
+              ]}
+            />
+            <ADEGroup
+              items={[
+                {
+                  title: toolsTitle,
+                  id: 'tools',
+                  content: <ToolsPanel />,
+                },
+                {
+                  title: datasourcesTitle,
+                  id: 'datasources',
+                  content: <EditDataSourcesPanel />,
+                },
+              ]}
+            />
+          </VStack>
+        </Panel>
+        <PanelResizeHandle className="w-[4px]" />
+        <Panel defaultValue={40} className="h-full" minSize={30}>
+          <HStack fullWidth fullHeight>
+            <ADEGroup
+              items={[
+                {
+                  title: t('agentSimulator'),
+                  id: 'agent-simulator',
+                  content: <AgentSimulator />,
+                },
+              ]}
+            />
+          </HStack>
+        </Panel>
+        <PanelResizeHandle className="w-[4px]" />
+        <Panel defaultValue={30} className="h-full" minSize={20}>
+          <VStack gap="small" fullWidth fullHeight>
+            <HStack className="max-h-[100px]">
+              <ADEGroup
+                items={[
+                  {
+                    title: t('contextWindow'),
+                    id: 'content-window',
+                    content: <ContextWindowPanel />,
+                  },
+                ]}
+              />
+            </HStack>
+            <ADEGroup
+              items={[
+                {
+                  title: editCoreMemoriesTitle,
+                  id: 'core-memories',
+                  content: <EditMemory />,
+                },
+              ]}
+            />
+            <ADEGroup
+              items={[
+                {
+                  title: archivalMemoriesTitle,
+                  id: 'archival-memories',
+                  content: <ArchivalMemoriesPanel />,
+                },
+              ]}
+            />
+          </VStack>
+        </Panel>
+      </PanelGroup>
     </HStack>
   );
 }
@@ -338,12 +349,12 @@ export function ADELayout(props: ADELayoutProps) {
   return (
     <UserProvider user={user}>
       <Frame position="relative" fullWidth fullHeight zIndex="rightAboveZero">
-        <VisibleOnMobile checkWithJs>
-          <MobileLayout />
-        </VisibleOnMobile>
         <HiddenOnMobile checkWithJs>
           <DesktopLayout />
         </HiddenOnMobile>
+        <VisibleOnMobile checkWithJs>
+          <MobileLayout />
+        </VisibleOnMobile>
       </Frame>
       <VStack
         className="top-0 left-0 fixed z-[-1]"

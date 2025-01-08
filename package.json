@@ -124,6 +124,7 @@
     "react-hot-toast": "^2.4.1",
     "react-i18next": "^15.2.0",
     "react-markdown": "^9.0.1",
+    "react-resizable-panels": "^2.1.7",
     "react-router-dom": "6.11.2",
     "react-select": "^5.9.0",
     "react-simple-code-editor": "^0.14.1",

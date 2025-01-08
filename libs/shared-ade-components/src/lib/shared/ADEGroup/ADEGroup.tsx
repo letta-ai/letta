@@ -16,7 +16,14 @@ export function ADEGroup(props: ADEGroupProps) {
   const [activeTab, setActiveTab] = useState(0);
 
   return (
-    <VStack gap={false} color="background" border fullWidth fullHeight>
+    <VStack
+      overflow="hidden"
+      gap={false}
+      color="background"
+      border
+      fullWidth
+      fullHeight
+    >
       <HStack>
         {items.map(function (item, index) {
           return (
