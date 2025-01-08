@@ -184,7 +184,12 @@ function MemoryItem(props: MemoryItemProps) {
   );
 }
 
-function MemoriesList() {
+interface MemoriesListProps {
+  search: string;
+}
+
+function MemoriesList(props: MemoriesListProps) {
+  const { search } = props;
   const { id: currentAgentId } = useCurrentSimulatedAgent();
 
   const { data, isLoading } = useAgentsServiceListAgentArchivalMemory(
@@ -215,9 +220,13 @@ function MemoriesList() {
 
   return (
     <PanelMainContent>
-      {allMemories.map((memory) => {
-        return <MemoryItem key={memory.id} memory={memory} />;
-      })}
+      {allMemories
+        .filter((memory) => {
+          return memory.text.toLowerCase().includes(search.toLowerCase());
+        })
+        .map((memory) => {
+          return <MemoryItem key={memory.id} memory={memory} />;
+        })}
     </PanelMainContent>
   );
 }
@@ -238,7 +247,7 @@ export function ArchivalMemoriesPanel() {
           </>
         }
       />
-      <MemoriesList />
+      <MemoriesList search={search} />
     </>
   );
 }
