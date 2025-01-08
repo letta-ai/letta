@@ -20,7 +20,7 @@ function AdminHomepage() {
             <Link href={item.href} key={item.id}>
               <Card
                 /* eslint-disable-next-line react/forbid-component-props */
-                className="h-full flex hover:bg-tertiary-hover"
+                className="h-full flex hover:bg-secondary-hover"
                 key={item.id}
               >
                 <VStack justify="start" align="start">

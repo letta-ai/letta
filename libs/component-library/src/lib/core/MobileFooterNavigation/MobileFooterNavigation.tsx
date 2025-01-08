@@ -13,8 +13,8 @@ export function MobileFooterNavigationButton(props: ButtonProps) {
       className={cn(
         'flex flex-col items-center h-[54px] justify-center gap-2',
         active
-          ? 'bg-tertiary-active text-tertiary-content'
-          : 'bg-tertiary text-tertiary-content',
+          ? 'bg-secondary-active text-tertiary-content'
+          : 'bg-secondary text-tertiary-content',
       )}
       data-testid={props['id']}
     >

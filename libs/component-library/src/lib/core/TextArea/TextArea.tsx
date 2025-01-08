@@ -108,7 +108,7 @@ const WrappedTextArea = forwardRef<HTMLTextAreaElement, TextAreaProps>(
               size="small"
               label={expandable.expandText}
               hideLabel
-              color="tertiary-transparent"
+              color="tertiary"
               onClick={expandable.onExpand}
               preIcon={<ExpandTextareaIcon color="muted" />}
             />

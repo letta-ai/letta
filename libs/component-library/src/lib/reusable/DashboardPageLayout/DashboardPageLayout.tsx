@@ -94,7 +94,7 @@ export function DashboardPageLayout(props: DashboardPageLayoutProps) {
                     paddingY="xxsmall"
                     paddingX="small"
                     gap={false}
-                    className="ml-[-10px] hover:bg-tertiary-hover"
+                    className="ml-[-10px] hover:bg-secondary-hover"
                     align="center"
                   >
                     <Link className="contents" href={returnButton.href}>

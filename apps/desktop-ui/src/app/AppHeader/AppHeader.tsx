@@ -44,13 +44,13 @@ function Navigation() {
         size="small"
         target="_blank"
         label={t('Navigation.documentation')}
-        color="tertiary-transparent"
+        color="tertiary"
         href="https://docs.letta.com/introduction"
       />
       <Button
         size="small"
         label={t('Navigation.apiReference')}
-        color="tertiary-transparent"
+        color="tertiary"
         href="https://docs.letta.com/api-reference/agents/list"
         target="_blank"
       />
@@ -58,7 +58,7 @@ function Navigation() {
         size="small"
         target="_blank"
         label={t('Navigation.cloud')}
-        color="secondary"
+        color="primary"
         href="https://app.letta.com"
       />
     </HStack>

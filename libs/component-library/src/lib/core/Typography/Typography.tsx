@@ -29,7 +29,6 @@ const typographyVariants = cva('break-words', {
     color: {
       default: 'text-text-default',
       black: 'text-black',
-      primary: 'text-primary',
       muted: 'text-muted',
       white: 'text-white',
       positive: 'text-positive',

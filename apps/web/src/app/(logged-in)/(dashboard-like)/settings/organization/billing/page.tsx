@@ -136,12 +136,12 @@ function UsageTable() {
       actions={
         <HStack>
           <Button
-            color="tertiary"
+            color="secondary"
             label={t('UsageTable.previousMonth')}
             onClick={moveToPrevMonth}
           />
           <Button
-            color="tertiary"
+            color="secondary"
             label={t('UsageTable.nextMonth')}
             onClick={moveToNextMonth}
             disabled={isAtCurrentMonth}

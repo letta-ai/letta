@@ -102,7 +102,7 @@ function UpgradeBanner(props: UpgradeBannerProps) {
           <Button
             href={CLOUD_UPSELL_URL}
             target="_blank"
-            color="secondary"
+            color="primary"
             label={t('UpgradeBanner.cta')}
             size="large"
           />
@@ -207,7 +207,7 @@ function DevelopmentServersDashboardPage() {
                   trigger={
                     <Button
                       preIcon={<PlusIcon />}
-                      color="secondary"
+                      color="primary"
                       label={t('gettingStarted.actions.createAgent.cta')}
                     />
                   }
@@ -222,7 +222,7 @@ function DevelopmentServersDashboardPage() {
                 <Button
                   href="/development-servers/local/agents"
                   label={t('gettingStarted.actions.viewAgents.cta')}
-                  color="secondary"
+                  color="primary"
                 />
               }
               icon={<SearchIcon />}
@@ -255,12 +255,12 @@ function DevelopmentServersDashboardPage() {
                   <Button
                     href={CLOUD_UPSELL_URL}
                     target="_blank"
-                    color="secondary"
+                    color="primary"
                     label={t('gettingStarted.actions.cloudSignup.cta')}
                   />
                 </Frame>
                 <Frame
-                  color="primary"
+                  color="brand"
                   position="absolute"
                   /* eslint-disable-next-line react/forbid-component-props */
                   className="top-0 right-0 z-[-1]"

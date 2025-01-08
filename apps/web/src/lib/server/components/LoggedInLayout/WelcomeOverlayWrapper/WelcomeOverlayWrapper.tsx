@@ -281,7 +281,7 @@ export function WelcomeOverlayWrapper(props: WelcomeOverlayWrapperProps) {
                   />
                 </VStack>
                 <HStack justify="spaceBetween">
-                  <Button color="secondary" label={t('submit')} type="submit" />
+                  <Button color="primary" label={t('submit')} type="submit" />
                   <button
                     onClick={fastSubmit}
                     className="hidden"

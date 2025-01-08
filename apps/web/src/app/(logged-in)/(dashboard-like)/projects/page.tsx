@@ -85,7 +85,7 @@ function CreateProjectDialog() {
           <Button
             data-testid="create-project-button"
             preIcon={<PlusIcon />}
-            color="secondary"
+            color="primary"
             label={t('createProjectDialog.triggerButton')}
           />
         }

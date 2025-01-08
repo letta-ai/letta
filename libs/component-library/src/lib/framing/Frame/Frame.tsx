@@ -43,14 +43,14 @@ const frameVariants = cva('', {
       'background-grey': 'bg-background-grey text-background-grey-content',
       'background-grey2': 'bg-background-grey2 text-background-grey2-content',
       'background-black': 'bg-background-black text-background-black-content',
-      tertiary: 'bg-tertiary text-tertiary-content',
+      tertiary: 'bg-secondary text-tertiary-content',
       success: 'bg-background-success text-background-success-content',
       destructive:
         'bg-background-destructive text-background-destructive-content',
+      brand: 'bg-brand text-brand-content',
       primary: 'bg-primary text-primary-content',
-      secondary: 'bg-secondary text-secondary-content',
       warning: 'bg-background-warning text-background-warning-content',
-      'primary-light': 'bg-primary-light text-primary-light-content',
+      'primary-light': 'bg-brand-light text-primary-light-content',
     },
     width: {
       centered: 'max-w-[800px]',

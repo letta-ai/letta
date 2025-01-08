@@ -151,7 +151,7 @@ const emailWhitelistColumns: Array<ColumnDef<WhitelistedEmailType>> = [
         <DropdownMenu
           trigger={
             <Button
-              color="tertiary-transparent"
+              color="tertiary"
               label="Actions"
               preIcon={<DotsHorizontalIcon />}
               size="small"

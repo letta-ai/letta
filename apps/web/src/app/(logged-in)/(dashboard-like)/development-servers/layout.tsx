@@ -200,7 +200,7 @@ function LocalProjectLayout(props: LocalProjectLayoutProps) {
             trigger={
               <Button
                 hideLabel
-                color="tertiary-transparent"
+                color="tertiary"
                 size="small"
                 preIcon={<DotsHorizontalIcon />}
                 label={t('settings')}

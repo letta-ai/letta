@@ -472,7 +472,7 @@ function AgentIdentifierToCopy() {
       </Typography>
       <CopyButton
         copyButtonText={t('AgentIdentifierToCopy.copyAgentId', { baseName })}
-        color="tertiary-transparent"
+        color="tertiary"
         size="small"
         textToCopy={identifier}
         hideLabel
@@ -508,7 +508,7 @@ export function AgentSettingsPanel() {
                 hideLabel
                 data-testid="update-agent-name-button"
                 preIcon={<EditIcon />}
-                color="tertiary"
+                color="secondary"
                 label={t('agentName.edit', { baseName })}
               />
             }

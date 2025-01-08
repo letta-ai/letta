@@ -148,7 +148,7 @@ function InviteMemberDialog() {
         confirmText={t('InviteMemberDialog.confirm')}
         isConfirmBusy={isPending}
         trigger={
-          <Button color="secondary" label={t('InviteMemberDialog.trigger')} />
+          <Button color="primary" label={t('InviteMemberDialog.trigger')} />
         }
       >
         <Typography>{t('InviteMemberDialog.description')}</Typography>
@@ -298,7 +298,7 @@ function ExistingMembers() {
                 trigger={
                   <Button
                     data-testid={`api-key-actions-button:${cell.row.original.name}`}
-                    color="tertiary-transparent"
+                    color="tertiary"
                     label={t('table.columns.actions')}
                     preIcon={<DotsHorizontalIcon />}
                     size="small"
@@ -393,7 +393,7 @@ function DisInviteMemberButton(props: DisInviteMemberButtonProps) {
         });
       }}
       size="small"
-      color="tertiary"
+      color="secondary"
       label={t('DisInviteMemberButton.dismiss')}
     />
   );
@@ -438,10 +438,7 @@ function InvitedMembersDialog() {
       title={t('InvitedMembersDialog.title')}
       hideConfirm
       trigger={
-        <Button
-          color="tertiary-transparent"
-          label={t('InvitedMembersDialog.trigger')}
-        />
+        <Button color="tertiary" label={t('InvitedMembersDialog.trigger')} />
       }
     >
       <HStack>

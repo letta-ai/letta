@@ -45,7 +45,7 @@ function IntegrationPageLayout(props: IntegrationPageLayoutProps) {
           <Button
             target="_blank"
             href={website}
-            color="tertiary"
+            color="secondary"
             label={t('visitWebsite')}
           />
         </HStack>

@@ -59,7 +59,7 @@ function AdminOrganizationsPage() {
           <Button
             size="small"
             href={`/admin/organizations/${row.original.id}`}
-            color="secondary"
+            color="primary"
             label="View"
           />
         ),

@@ -139,7 +139,7 @@ function BreadcrumbItemWrapper(props: BreadcrumbItemWrapperProps) {
       <Button
         onClick={onClick}
         {...(href ? { href } : {})}
-        color="tertiary-transparent"
+        color="tertiary"
         preIcon={preIcon}
         label={label}
         size="small"

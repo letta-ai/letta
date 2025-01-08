@@ -46,7 +46,7 @@ export function InlineCode({ code, hideCopyButton, ...rest }: InlineCodeProps) {
       {code}
       {!hideCopyButton && (
         <CopyButton
-          color="tertiary-transparent"
+          color="tertiary"
           hideLabel
           size="small"
           copyButtonText={t('copyButton')}

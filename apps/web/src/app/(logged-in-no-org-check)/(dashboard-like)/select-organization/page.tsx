@@ -34,7 +34,7 @@ function OrganizationRow(props: OrganizationRowProps) {
         <Typography align="left">{name}</Typography>
       </HStack>
       <Button
-        color="tertiary"
+        color="secondary"
         type="button"
         onClick={onSelect}
         label={t('OrganizationRow.select')}

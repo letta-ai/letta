@@ -155,7 +155,7 @@ function DataSourceFilesPage() {
                   label={t('actions')}
                   hideLabel
                   preIcon={<DotsHorizontalIcon />}
-                  color="tertiary-transparent"
+                  color="tertiary"
                 />
               }
             >

@@ -217,7 +217,7 @@ function UpdateEnvironmentVariableDialog(
           <DropdownMenuItem
             doNotCloseOnSelect
             label={t('UpdateEnvironmentVariableDialog.trigger')}
-            color="secondary"
+            color="primary"
           />
         }
         testId="update-environment-variable-dialog"
@@ -351,7 +351,7 @@ function CreateEnvironmentVariableDialog() {
         isConfirmBusy={isPending}
         trigger={
           <Button
-            color="secondary"
+            color="primary"
             preIcon={<PlusIcon />}
             label={t('CreateEnvironmentVariableDialog.trigger')}
           />
@@ -483,7 +483,7 @@ function EnvironmentVariablesPage() {
               trigger={
                 <Button
                   data-testid={`environment-variable-actions-button:${cell.row.original.key}`}
-                  color="tertiary-transparent"
+                  color="tertiary"
                   label={t('environmentVariablesColumns.actions')}
                   preIcon={<DotsHorizontalIcon />}
                   size="small"

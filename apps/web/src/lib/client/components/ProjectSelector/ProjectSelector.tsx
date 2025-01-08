@@ -37,7 +37,7 @@ function ProjectItem(props: ProjectItemProps) {
       align="left"
       onClick={onClick}
       active={isCurrent}
-      color="tertiary-transparent"
+      color="tertiary"
       size="small"
       fullWidth
       href={href}
@@ -117,7 +117,7 @@ export function ProjectSelector(props: ProjectSelectorProps) {
         ))}
         {!isLoading && projectsList.length >= LIMIT - 1 && (
           <Button
-            color="tertiary"
+            color="secondary"
             size="small"
             fullWidth
             href="/projects"

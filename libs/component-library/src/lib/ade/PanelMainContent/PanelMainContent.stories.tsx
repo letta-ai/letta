@@ -33,12 +33,7 @@ export const Primary: Story = {
       options: ['Scrolling Demo', 'Nothing'],
       mapping: {
         'Scrolling Demo': Array.from({ length: 15 }).map((_, i) => (
-          <Button
-            key={i}
-            color="secondary"
-            size="small"
-            label={`Button ${i}`}
-          />
+          <Button key={i} color="primary" size="small" label={`Button ${i}`} />
         )),
         Nothing: [
           <div className="bg-blue-50 w-full h-full">Panel Main Content</div>,

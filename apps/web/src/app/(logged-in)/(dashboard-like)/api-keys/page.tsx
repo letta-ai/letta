@@ -268,7 +268,7 @@ function APIKeysPage() {
               trigger={
                 <Button
                   data-testid={`api-key-actions-button:${cell.row.original.name}`}
-                  color="tertiary-transparent"
+                  color="tertiary"
                   label={t('apiKeysColumns.actions')}
                   preIcon={<DotsHorizontalIcon />}
                   size="small"

@@ -197,7 +197,7 @@ const dataSourceColumn: Array<ColumnDef<Source>> = [
     accessorKey: 'id',
     cell: ({ cell }) => (
       <Button
-        color="tertiary"
+        color="secondary"
         label="View"
         href={`/data-sources/${cell.row.original.id}`}
       />

@@ -104,7 +104,7 @@ function DebuggerInput<InputSchema extends GenericSchema>(
               size="small"
               busy={isRunning}
               onClick={handleSubmit}
-              color="tertiary"
+              color="secondary"
               label={runLabel || t('run')}
               type="button"
             />

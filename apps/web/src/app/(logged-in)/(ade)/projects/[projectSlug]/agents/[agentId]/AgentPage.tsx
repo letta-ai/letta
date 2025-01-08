@@ -77,7 +77,7 @@ function LogoContainer() {
     <HStack
       align="center"
       justify="center"
-      color="primary"
+      color="brand"
       /* eslint-disable-next-line react/forbid-component-props */
       className="h-[38px] min-w-[40px]"
       fullHeight
@@ -409,7 +409,7 @@ function AgentSettingsDropdown() {
             })}
             hideLabel
             size="small"
-            color="tertiary-transparent"
+            color="tertiary"
           />
         }
       >

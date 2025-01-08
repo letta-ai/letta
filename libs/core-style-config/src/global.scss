@@ -38,21 +38,21 @@
 
   --grey3: 210, 10%, 92%;
 
-  --primary: 240, 92%, 35%;
-  --primary-content: 0 0% 98%;
-  --primary-hover: 240, 54%, 48%;
+  --brand: 240, 92%, 35%;
+  --brand-content: 0 0% 98%;
+  --brand-hover: 240, 54%, 48%;
 
-  --primary-light: 240, 89%, 93%;
-  --primary-light-content: 240 10% 3.9%;
+  --brand-light: 240, 89%, 93%;
+  --brand-light-content: 240 10% 3.9%;
 
-  --secondary: 0 0% 0%;
-  --secondary-content: 0 0% 100%;
-  --secondary-hover: 0, 0%, 10%;
+  --primary: 0 0% 0%;
+  --primary-content: 0 0% 100%;
+  --primary-hover: 0, 0%, 10%;
 
-  --tertiary: var(--background);
-  --tertiary-content: var(--content);
-  --tertiary-active: var(--grey3);
-  --tertiary-hover: var(--background-grey2);
+  --secondary: var(--background);
+  --secondary-content: var(--content);
+  --secondary-active: var(--grey3);
+  --secondary-hover: var(--background-grey2);
 
   --muted: 218, 11%, 65%;
   --muted-content: 240 3.8% 46.1%;
@@ -98,7 +98,7 @@
   --popover-content: 240 10% 3.9%;
 
   --input: 240 5.9% 90%;
-  --ring: var(--primary);
+  --ring: var(--brand);
   --radius: 0.375rem;
   --violet: 278, 44%, 49%;
 
@@ -148,17 +148,17 @@
   --content: 0 0% 98%;
   --on-transparent: 0, 0%, 0%;
 
-  --primary:  0 0% 9%;
-  --primary-content: 0 0% 100%;
-  --primary-hover: 0 0% 20%;
+  --brand:  0 0% 9%;
+  --brand-content: 0 0% 100%;
+  --brand-hover: 0 0% 20%;
 
-  --secondary: 180, 100%, 67%;
-  --secondary-content: 0 0% 0%;
+  --primary: 180, 100%, 67%;
+  --primary-content: 0 0% 0%;
 
-  --tertiary: 0, 0, 67%;
-  --tertiary-content: 0, 0, 100%;
-  --tertiary-active: 180 100% 33%;
-  --tertiary-hover: 180 100% 33%;
+  --secondary: 0, 0, 67%;
+  --secondary-content: 0, 0, 100%;
+  --secondary-active: 180 100% 33%;
+  --secondary-hover: 180 100% 33%;
 
   --popover: 0, 0%, 0%;
   --popover-content: 0, 0%, 100%;
@@ -179,9 +179,9 @@
 
   --grey3: 200, 3%, 17%;
 
-  --primary: 10, 100%, 60%;
-  --primary-content:  0 0% 98%;
-  --primary-hover: 10, 100%, 67%;
+  --brand: 10, 100%, 60%;
+  --brand-content:  0 0% 98%;
+  --brand-hover: 10, 100%, 67%;
 
 
   --violet:  278 72%, 69%;;
@@ -202,13 +202,13 @@
   --popover: var(--background);
   --popover-content: var(--content);
 
-  --secondary: 0 0% 100%;
-  --secondary-content: 225 6% 13%;
+  --primary: 0 0% 100%;
+  --primary-content: 225 6% 13%;
 
-  --tertiary: var(--background);
-  --tertiary-content: var(--content);
-  --tertiary-active: var(--grey3);
-  --tertiary-hover: var(--background-grey2);
+  --secondary: var(--background);
+  --secondary-content: var(--content);
+  --secondary-active: var(--grey3);
+  --secondary-hover: var(--background-grey2);
 
   --muted: 210 2% 48%;
   --muted-content: 240 5% 64.9%;
@@ -249,7 +249,7 @@
 
 
 body {
-  scrollbar-color: hsl(var(--secondary)) transparent;
+  scrollbar-color: hsl(var(--primary)) transparent;
   scrollbar-width: thin;
 }
 
@@ -352,4 +352,3 @@ summary::-webkit-details-marker {
 
   }
 }
-

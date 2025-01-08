@@ -112,7 +112,7 @@ function EditOrganizationSettings(props: EditOrganizationSettingsProps) {
             >
               <Button
                 busy={isPending}
-                color="tertiary"
+                color="secondary"
                 label="Save"
                 type="submit"
               />

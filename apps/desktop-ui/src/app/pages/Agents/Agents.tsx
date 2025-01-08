@@ -81,7 +81,7 @@ export function Agents() {
         },
         cell: ({ row }) => (
           <Link to={`/dashboard/agents/${row.original?.id}`}>
-            <Button color="tertiary" label={t('table.openInADE')} />
+            <Button color="secondary" label={t('table.openInADE')} />
           </Link>
         ),
       },
@@ -93,7 +93,7 @@ export function Agents() {
     <DesktopPageLayout
       actions={
         <CreateLocalAgentDialog
-          trigger={<Button color="secondary" label={t('createAgent')} />}
+          trigger={<Button color="primary" label={t('createAgent')} />}
         />
       }
       title={t('title')}

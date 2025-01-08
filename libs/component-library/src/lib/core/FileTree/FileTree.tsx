@@ -69,7 +69,7 @@ function RowItem(props: RowItemProps) {
         style={{
           paddingLeft: `${depth * 20}px`,
         }}
-        className="hover:bg-tertiary-hover cursor-pointer"
+        className="hover:bg-secondary-hover cursor-pointer"
         fullWidth
         overflow="hidden"
         paddingY="small"
@@ -85,7 +85,7 @@ function RowItem(props: RowItemProps) {
           trigger={
             <Button
               label="Actions"
-              color="tertiary-transparent"
+              color="tertiary"
               size="small"
               hideLabel
               _use_rarely_className="absolute right-5 top-0 h-full"

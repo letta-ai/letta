@@ -84,14 +84,14 @@ function ErrorView(props: ErrorViewProps) {
           <HStack paddingTop="small">
             <Button
               onClick={onRetry}
-              color="secondary"
+              color="primary"
               label={t('ErrorView.retry')}
             />
             {currentDevelopmentServerConfig && !isLocal && (
               <UpdateDevelopmentServerDetailsDialog
                 trigger={
                   <Button
-                    color="tertiary"
+                    color="secondary"
                     label={t('ErrorView.updateConnectionDetails')}
                   />
                 }
@@ -183,7 +183,7 @@ function LocalProjectPage() {
             href={`/development-servers/${
               currentDevelopmentServerConfig?.id || 'local'
             }/agents/${row.original.id}`}
-            color="tertiary"
+            color="secondary"
             label={t('table.openInADE')}
           />
         ),
@@ -202,7 +202,7 @@ function LocalProjectPage() {
             trigger={
               <Button
                 preIcon={<PlusIcon />}
-                color="secondary"
+                color="primary"
                 label={t('createAgent')}
               />
             }

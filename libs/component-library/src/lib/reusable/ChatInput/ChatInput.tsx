@@ -221,7 +221,7 @@ export const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(
                       {roles.map((r) => (
                         <Button
                           key={r.value}
-                          color="tertiary-transparent"
+                          color="tertiary"
                           label={r.label}
                           preIcon={r.icon}
                           onClick={() => {
@@ -241,7 +241,7 @@ export const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(
                 <Button
                   data-testid="chat-simulator-send"
                   type="submit"
-                  color="secondary"
+                  color="primary"
                   preIcon={<SendIcon />}
                   disabled={isSendingMessage || disabled}
                   label={t('send')}

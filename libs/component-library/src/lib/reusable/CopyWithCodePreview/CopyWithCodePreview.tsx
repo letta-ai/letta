@@ -40,7 +40,7 @@ export function CopyWithCodePreview(props: CopyWithCodePreviewProps) {
       className="max-w-[500px] w-full"
       trigger={
         <Button
-          color="tertiary"
+          color="secondary"
           type="button"
           preIcon={isCopied ? <CheckIcon /> : <CopyIcon />}
           _use_rarely_disableTooltip

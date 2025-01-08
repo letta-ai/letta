@@ -22,7 +22,7 @@ function SingleFileUploadPrimitive(props: SingleFileUploadProps) {
       const file = event.dataTransfer.files[0];
       onChange(file);
     },
-    [onChange]
+    [onChange],
   );
 
   const inputRef = useRef<HTMLInputElement>(null);
@@ -37,7 +37,7 @@ function SingleFileUploadPrimitive(props: SingleFileUploadProps) {
 
       onChange(file);
     },
-    [onChange]
+    [onChange],
   );
 
   const triggerChooseFile = useCallback(() => {
@@ -66,7 +66,7 @@ function SingleFileUploadPrimitive(props: SingleFileUploadProps) {
               </Typography>
               <Button
                 onClick={triggerChooseFile}
-                color="tertiary"
+                color="secondary"
                 label="Choose file"
               ></Button>
             </VStack>
@@ -89,7 +89,7 @@ function SingleFileUploadPrimitive(props: SingleFileUploadProps) {
           <HStack>
             <Button
               onClick={triggerChooseFile}
-              color="tertiary"
+              color="secondary"
               label="Change file"
             ></Button>
             <Button
@@ -114,9 +114,9 @@ function SingleFileUploadPrimitive(props: SingleFileUploadProps) {
 
 export const SingleFileUpload = makeInput(
   SingleFileUploadPrimitive,
-  'SingleFileUpload'
+  'SingleFileUpload',
 );
 export const RawSingleFileUpload = makeRawInput(
   SingleFileUploadPrimitive,
-  'RawSingleFileUpload'
+  'RawSingleFileUpload',
 );

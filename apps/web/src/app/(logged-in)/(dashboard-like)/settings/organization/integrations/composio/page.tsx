@@ -178,7 +178,7 @@ function SetApiKeyDialog() {
         onSubmit={form.handleSubmit(handleSubmit)}
         confirmText={t('SetApiKeyDialog.confirm')}
         trigger={
-          <Button color="secondary" label={t('configuration.apiKey.update')} />
+          <Button color="primary" label={t('configuration.apiKey.update')} />
         }
       >
         {isConnected && (

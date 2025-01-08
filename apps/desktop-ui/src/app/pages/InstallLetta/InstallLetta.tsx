@@ -37,7 +37,7 @@ export function InstallLetta() {
             <Button
               onClick={handleInstallLetta}
               label={t('install')}
-              color="secondary"
+              color="primary"
             />
           </HStack>
           <HStack paddingX>

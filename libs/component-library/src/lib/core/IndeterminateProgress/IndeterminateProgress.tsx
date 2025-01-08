@@ -19,7 +19,7 @@ export function IndeterminateProgress(props: IndeterminateProgressProps) {
       border
     >
       <HStack
-        className="px-2 text-xs font-medium h-[16px] rounded-full absolute z-[1] bg-primary text-primary-content"
+        className="px-2 text-xs font-medium h-[16px] rounded-full absolute z-[1] bg-brand text-brand-content"
         borderRight
       >
         {content || 'Loading'}

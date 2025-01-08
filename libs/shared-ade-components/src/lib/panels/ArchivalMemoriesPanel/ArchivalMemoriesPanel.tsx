@@ -53,7 +53,7 @@ function ViewArchivalMemoryDialog(props: ViewArchivalMemoryDialogProps) {
       hideConfirm
       trigger={
         <button>
-          <Typography color="primary" underline overrideEl="span">
+          <Typography underline overrideEl="span">
             {t('ViewArchivalMemoryDialog.trigger')}
           </Typography>
         </button>
@@ -152,7 +152,7 @@ function MemoryItem(props: MemoryItemProps) {
             trigger={
               <Button
                 label={t('MemoryItem.deleteMemory')}
-                color="tertiary"
+                color="secondary"
                 preIcon={<TrashIcon />}
                 hideLabel
                 type="button"
@@ -304,7 +304,7 @@ function CreateMemoryDialog() {
           <Button
             hideLabel
             preIcon={<PlusIcon />}
-            color="tertiary"
+            color="secondary"
             label={t('CreateMemoryDialog.trigger')}
           />
         }

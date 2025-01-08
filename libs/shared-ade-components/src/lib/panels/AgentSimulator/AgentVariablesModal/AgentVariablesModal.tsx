@@ -214,13 +214,13 @@ function ToolVariables() {
                 onClick={() => {
                   setModalState(false);
                 }}
-                color="tertiary"
+                color="secondary"
                 label={t('close')}
               />
               <Button
                 busy={isPending}
                 type="submit"
-                color="secondary"
+                color="primary"
                 label={t('ToolVariables.save')}
               />
             </FormActions>
@@ -395,14 +395,14 @@ function MemoryVariableEditor(props: MemoryVariableEditorProps) {
                 setModalState(false);
               }}
               type="button"
-              color="tertiary"
+              color="secondary"
               label={t('close')}
             />
             <Button
               busy={isPending}
               type="submit"
               data-testid="save-variables-button"
-              color="secondary"
+              color="primary"
               label={t('MemoryVariableEditor.save')}
             />
           </FormActions>

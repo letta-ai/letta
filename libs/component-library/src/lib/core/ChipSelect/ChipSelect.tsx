@@ -28,7 +28,7 @@ function BaseChipSelect(props: ChipSelectProps) {
         onChange([selectedOption]);
       }
     },
-    [isMultiSelect, onChange, value]
+    [isMultiSelect, onChange, value],
   );
 
   return (
@@ -41,7 +41,7 @@ function BaseChipSelect(props: ChipSelectProps) {
             key={option.value}
             type="button"
             size="small"
-            color="tertiary"
+            color="secondary"
             active={isSelected}
             label={option.label}
             onClick={() => {

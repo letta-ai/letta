@@ -43,7 +43,7 @@ function IntegrationItem(props: IntegrationItemProps) {
           </VStack>
         </HStack>
         <Button
-          color="tertiary"
+          color="secondary"
           href={href}
           label={t('IntegrationItem.configure')}
         ></Button>

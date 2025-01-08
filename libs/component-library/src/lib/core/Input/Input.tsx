@@ -110,7 +110,7 @@ function CopyButton({ text }: CopyButtonProps) {
   return (
     <Button
       onClick={copyToClipboard}
-      color="tertiary-transparent"
+      color="tertiary"
       label="Copy"
       hideLabel
       type="button"
@@ -223,7 +223,7 @@ const InputPrimitive = React.forwardRef<HTMLInputElement, InputPrimitiveProps>(
               }}
               type="button"
               preIcon={visibility ? <EyeClosedIcon /> : <EyeOpenIcon />}
-              color="tertiary-transparent"
+              color="tertiary"
               label={visibility ? 'Hide' : 'Show'}
               hideLabel
               size="small"

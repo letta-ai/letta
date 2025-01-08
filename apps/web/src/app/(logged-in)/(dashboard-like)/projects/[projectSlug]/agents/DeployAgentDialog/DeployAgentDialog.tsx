@@ -399,13 +399,13 @@ function SelectedTemplateState(props: SelectedTemplateStateProps) {
                   type="button"
                   onClick={onReset}
                   label={t('SelectedTemplateState.return')}
-                  color="tertiary"
+                  color="secondary"
                 />
                 <Button
                   type="submit"
                   label={t('SelectedTemplateState.create')}
                   preIcon={<PlusIcon />}
-                  color="secondary"
+                  color="primary"
                 />
               </FormActions>
             </VStack>
@@ -513,7 +513,7 @@ export function DeployAgentDialog() {
       errorMessage={isError ? t('error') : undefined}
       size={selectedTemplate ? 'large' : 'xxlarge'}
       trigger={
-        <Button label={t('trigger')} preIcon={<PlusIcon />} color="secondary" />
+        <Button label={t('trigger')} preIcon={<PlusIcon />} color="primary" />
       }
     >
       <div className="min-h-[60vh] h-full flex flex-col">

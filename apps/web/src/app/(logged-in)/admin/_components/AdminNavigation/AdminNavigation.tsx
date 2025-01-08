@@ -23,7 +23,7 @@ function NavigationItem(props: AdminNavigationItemProps) {
       href={href}
       hideLabel={hideLabel}
       fullWidth
-      color="tertiary-transparent"
+      color="tertiary"
       align="left"
       label={label}
       preIcon={icon}

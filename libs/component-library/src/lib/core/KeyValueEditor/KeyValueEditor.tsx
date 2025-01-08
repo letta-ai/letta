@@ -95,7 +95,7 @@ function KeyValueEditorPrimitive(props: KeyValueEditorProps) {
         <Button
           onClick={addRow}
           type="button"
-          color="tertiary"
+          color="secondary"
           preIcon={<PlusIcon />}
           label={addVariableLabel || t('addVariable')}
         />
@@ -129,7 +129,7 @@ function KeyValueEditorPrimitive(props: KeyValueEditorProps) {
             {!disabled && !freezeRows && (
               <Button
                 hideLabel
-                color="tertiary"
+                color="secondary"
                 type="button"
                 preIcon={<CloseIcon />}
                 onClick={() => {
@@ -141,7 +141,7 @@ function KeyValueEditorPrimitive(props: KeyValueEditorProps) {
             {!disabled && !freezeRows && index === keyValuePairs.length - 1 && (
               <Button
                 hideLabel
-                color="tertiary"
+                color="secondary"
                 type="button"
                 preIcon={<PlusIcon />}
                 onClick={() => {

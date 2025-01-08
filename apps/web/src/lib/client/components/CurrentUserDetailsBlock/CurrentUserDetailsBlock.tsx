@@ -38,7 +38,7 @@ export function CurrentUserDetailsBlock(props: CurrentUserDetailsBlockProps) {
           size="small"
           target="_blank"
           href="/settings"
-          color="tertiary"
+          color="secondary"
           label="Settings"
         />
       )}

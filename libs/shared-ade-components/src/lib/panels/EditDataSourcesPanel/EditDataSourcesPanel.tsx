@@ -398,7 +398,7 @@ function CreateDataSourceDialog() {
       size="large"
       hideConfirm={mode !== 'attach'}
       preventCloseFromOutside={mode === 'create'}
-      confirmColor="tertiary-transparent"
+      confirmColor="tertiary"
       confirmText={t('CreateDataSourceDialog.goBack')}
       onConfirm={() => {
         setMode(null);
@@ -406,7 +406,7 @@ function CreateDataSourceDialog() {
       trigger={
         <Button
           preIcon={<PlusIcon />}
-          color="tertiary"
+          color="secondary"
           hideLabel
           data-testid="create-data-source-dialog-trigger"
           label={t('CreateDataSourceDialog.trigger')}

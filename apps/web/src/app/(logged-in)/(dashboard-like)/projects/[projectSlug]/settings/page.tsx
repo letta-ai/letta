@@ -294,7 +294,7 @@ function EditSettingsSection(props: EditSettingsSectionProps) {
             <FormActions align="start" errorMessage={errorTranslation?.message}>
               <Button
                 busy={isPending}
-                color="tertiary"
+                color="secondary"
                 label="Save"
                 type="submit"
               />

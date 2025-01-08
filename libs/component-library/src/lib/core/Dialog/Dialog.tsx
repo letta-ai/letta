@@ -251,7 +251,7 @@ export function DialogCategory(props: DialogCategoryProps) {
       fullWidth
     >
       <HStack align="center" fullWidth>
-        {isActive && <div className="w-[2px] absolute h-full bg-primary" />}
+        {isActive && <div className="w-[2px] absolute h-full bg-brand" />}
         <HStack paddingY="small" paddingX="xlarge" align="center" gap="large">
           {icon && <Slot className="w-4 h-4">{icon}</Slot>}
           <VStack gap="text">
@@ -466,7 +466,7 @@ export function Dialog(props: DialogProps) {
                     <Button
                       data-testid={`${testId}-cancel-button`}
                       label={cancelText}
-                      color="tertiary"
+                      color="secondary"
                     />
                   </DialogClose>
                 )}

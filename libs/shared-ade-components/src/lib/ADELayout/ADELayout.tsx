@@ -276,7 +276,7 @@ function AgentMobileNavigation(props: AgentMobileNavigationProps) {
               key={MORE_PANELS}
               size="large"
               preIcon={!expanded ? <ChevronUpIcon /> : <ChevronDownIcon />}
-              color="tertiary-transparent"
+              color="tertiary"
               label={!expanded ? t('more') : t('less')}
             />
           );

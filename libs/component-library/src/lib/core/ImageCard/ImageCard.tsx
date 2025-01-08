@@ -47,7 +47,7 @@ export function ImageCard(props: ImageCardProps) {
     >
       <Card
         className={cn(
-          'h-full flex flex-col hover:bg-tertiary-hover',
+          'h-full flex flex-col hover:bg-secondary-hover',
           className,
         )}
       >

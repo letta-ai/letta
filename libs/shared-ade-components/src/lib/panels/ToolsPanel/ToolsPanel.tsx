@@ -245,7 +245,7 @@ export function ToolsPanel() {
         actions={
           <Button
             label={t('ToolsListPage.openExplorer')}
-            color="tertiary"
+            color="secondary"
             data-testid="open-tool-explorer"
             hideLabel
             onClick={() => {

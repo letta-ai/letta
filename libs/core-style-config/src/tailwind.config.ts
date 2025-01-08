@@ -96,8 +96,8 @@ export function buildConfig(appDir: string): Config {
             DEFAULT: 'hsl(var(--background))',
           },
           'primary-light': {
-            DEFAULT: 'hsl(var(--primary-light))',
-            content: 'hsl(var(--primary-light-content))',
+            DEFAULT: 'hsl(var(--brand-light))',
+            content: 'hsl(var(--brand-light-content))',
           },
           'background-grey': {
             DEFAULT: 'hsl(var(--background-grey))',
@@ -120,25 +120,25 @@ export function buildConfig(appDir: string): Config {
           content: 'hsl(var(--content))',
           ['on-transparent']: 'hsl(var(--on-transparent))',
           'primary-alt': {
-            DEFAULT: 'hsl(var(--primary-alt))',
-            content: 'hsl(var(--primary-alt-content))',
-            hover: 'hsl(var(--primary-alt-hover))',
+            DEFAULT: 'hsl(var(--brand-alt))',
+            content: 'hsl(var(--brand-alt-content))',
+            hover: 'hsl(var(--brand-alt-hover))',
+          },
+          brand: {
+            DEFAULT: 'hsl(var(--brand))',
+            content: 'hsl(var(--brand-content))',
+            hover: 'hsl(var(--brand-hover))',
           },
           primary: {
             DEFAULT: 'hsl(var(--primary))',
-            content: 'hsl(var(--primary-content))',
             hover: 'hsl(var(--primary-hover))',
+            content: 'hsl(var(--primary-content))',
           },
           secondary: {
             DEFAULT: 'hsl(var(--secondary))',
-            hover: 'hsl(var(--secondary-hover))',
             content: 'hsl(var(--secondary-content))',
-          },
-          tertiary: {
-            DEFAULT: 'hsl(var(--tertiary))',
-            content: 'hsl(var(--tertiary-content))',
-            active: 'hsl(var(--tertiary-active))',
-            hover: 'hsl(var(--tertiary-hover))',
+            active: 'hsl(var(--secondary-active))',
+            hover: 'hsl(var(--secondary-hover))',
           },
           destructive: {
             DEFAULT: 'hsl(var(--destructive))',

@@ -92,13 +92,7 @@ export const Primary: Story = {
         'The button variant, inline-panel is used for buttons in a panel',
     },
     color: {
-      options: [
-        'primary',
-        'secondary',
-        'tertiary',
-        'destructive',
-        'tertiary-transparent',
-      ],
+      options: ['primary', 'secondary', 'tertiary', 'destructive'],
       control: { type: 'radio' },
     },
   },

@@ -14,7 +14,7 @@ const alertVariants = cva(
         true: 'w-full',
       },
       variant: {
-        success: 'bg-primary-light text-primary-light-content',
+        success: 'bg-brand-light text-brand-light-content',
         destructive:
           'bg-background-destructive border-destructive-content text-background-destructive-content',
         info: 'bg-background-grey border-grey-content text-background-grey-content',

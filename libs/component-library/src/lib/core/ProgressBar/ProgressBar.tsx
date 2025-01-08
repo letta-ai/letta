@@ -16,14 +16,14 @@ const ProgressBar = React.forwardRef<
   <ProgressPrimitive.Root
     ref={ref}
     className={cn(
-      'relative h-[4px] w-full overflow-hidden bg-tertiary',
+      'relative h-[4px] w-full overflow-hidden bg-secondary',
       className,
     )}
     {...props}
   >
     <ProgressPrimitive.Indicator
       className={cn(
-        'h-full w-full flex-1 bg-primary transition-all',
+        'h-full w-full flex-1 bg-brand transition-all',
         indeterminate && 'animate-progress origin-left',
       )}
       style={{ transform: `translateX(-${100 - (value || 0)}%)` }}

@@ -34,14 +34,14 @@ export function AgentTemplateCard(props: AgentTemplateCardProps) {
           {/*{versions && (*/}
           {/*    <Button*/}
           {/*      onClick={() => setOpenVersions(v => !v)}*/}
-          {/*      color="tertiary-transparent"*/}
+          {/*      color="tertiary"*/}
           {/*      label={t('versions', {*/}
           {/*      count: versions.length,*/}
           {/*    })} />*/}
           {/*  )}*/}
           <Button
             href={`/projects/${projectSlug}/templates/${name}`}
-            color="tertiary"
+            color="secondary"
             label={t('openInADE')}
           />
         </HStack>

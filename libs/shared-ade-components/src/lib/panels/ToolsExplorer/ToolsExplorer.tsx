@@ -135,7 +135,7 @@ function ToolCategoryButton(props: ToolCategoryButtonProps) {
           <ToolsIcon />
         )
       }
-      color="tertiary-transparent"
+      color="tertiary"
       active={selectedCategory === category}
       onClick={() => {
         setSelectedCategory(category);
@@ -248,7 +248,7 @@ function EditToolButton() {
         switchToolState('edit');
       }}
       label={t('EditToolButton.title')}
-      color="tertiary"
+      color="secondary"
     />
   );
 }
@@ -445,7 +445,7 @@ function AddToolToAgentButton(props: AddToolToAgentButtonProps) {
       <Button
         size="small"
         label={t('AddToolToAgentButton.alreadyAdded')}
-        color="tertiary"
+        color="secondary"
         disabled
       />
     );
@@ -641,7 +641,7 @@ function ViewTool(props: ViewToolProps) {
                   size="small"
                   href={composioViewUrl}
                   label={t('ViewTool.viewOnComposio')}
-                  color="tertiary"
+                  color="secondary"
                 />
               )}
             </HStack>
@@ -671,7 +671,7 @@ function ViewTool(props: ViewToolProps) {
                     target="_blank"
                     href="/settings/organization/integrations/composio"
                     label={t('ViewTool.connectComposio.connect')}
-                    color="secondary"
+                    color="primary"
                   />
                 </HStack>
               )}
@@ -839,7 +839,7 @@ function ViewCategoryTools(props: ViewCategoryToolsProps) {
         </VStack>
         <Button
           label={t('ViewCategoryTools.create')}
-          color="secondary"
+          color="primary"
           data-testid="start-create-tool"
           onClick={() => {
             startCreateTool();
@@ -881,7 +881,7 @@ function ViewCategoryTools(props: ViewCategoryToolsProps) {
             {hasNextPage && (
               <Button
                 fullWidth
-                color="tertiary"
+                color="secondary"
                 label={t('ViewCategoryTools.loadMore')}
                 onClick={() => {
                   void fetchNextPage();
@@ -1121,7 +1121,7 @@ function AllToolsView() {
                       category: title,
                     })
               }
-              color="tertiary-transparent"
+              color="tertiary"
               size="small"
               preIcon={<ChevronLeftIcon />}
               onClick={() => {
@@ -1539,7 +1539,7 @@ function ToolCreator() {
                 <CloseMiniApp>
                   <Button
                     type="button"
-                    color="tertiary"
+                    color="secondary"
                     label={t('SpecificToolComponent.back')}
                   />
                 </CloseMiniApp>
@@ -1547,7 +1547,7 @@ function ToolCreator() {
                   type="submit"
                   label="Create"
                   data-testid="submit-create-tool"
-                  color="secondary"
+                  color="primary"
                   busy={isCreatingTool || isSuccess}
                 />
               </FormActions>
@@ -1628,7 +1628,7 @@ function EditTool(props: EditToolProps) {
 
       <FormActions>
         <CloseMiniApp>
-          <Button color="tertiary" label={t('EditTool.close')} />
+          <Button color="secondary" label={t('EditTool.close')} />
         </CloseMiniApp>
         <Dialog
           title={t('EditTool.updateDialog.title')}
@@ -1641,7 +1641,7 @@ function EditTool(props: EditToolProps) {
             <Button
               type="button"
               label={t('EditTool.update')}
-              color="secondary"
+              color="primary"
             />
           }
         >

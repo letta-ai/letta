@@ -64,7 +64,7 @@ function AdminUsersPage() {
           <Button
             size="small"
             href={`/admin/users/${row.original.id}`}
-            color="secondary"
+            color="primary"
             label="View"
           />
         ),

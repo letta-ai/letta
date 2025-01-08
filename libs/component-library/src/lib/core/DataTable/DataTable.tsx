@@ -78,7 +78,7 @@ function TableBodyContent<Data>(props: TableBodyContentProps<Data>) {
         {table.getRowModel().rows.map((row) => (
           <TableRow
             className={
-              onRowClick ? 'cursor-pointer hover:bg-tertiary-hover' : ''
+              onRowClick ? 'cursor-pointer hover:bg-secondary-hover' : ''
             }
             onClick={() => {
               onRowClick?.(row.original);
@@ -347,7 +347,7 @@ export function DataTable<TData, TValue>(props: DataTableProps<TData, TValue>) {
               onClick={() => {
                 handlePreviousPage();
               }}
-              color="tertiary"
+              color="secondary"
               disabled={!hasPreviousPage}
               label="Previous"
             ></Button>
@@ -355,7 +355,7 @@ export function DataTable<TData, TValue>(props: DataTableProps<TData, TValue>) {
               onClick={() => {
                 handleNextPage();
               }}
-              color="tertiary"
+              color="secondary"
               disabled={!hasNextPage}
               label="Next"
             />

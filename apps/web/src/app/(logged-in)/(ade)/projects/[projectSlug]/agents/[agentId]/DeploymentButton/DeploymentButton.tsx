@@ -58,7 +58,7 @@ function DeployAgentDialog(props: DeployAgentDialogProps) {
         <Button
           fullWidth
           data-testid="deploy-agent-dialog-trigger"
-          color={!isAtLatestVersion ? 'tertiary-transparent' : 'secondary'}
+          color={!isAtLatestVersion ? 'tertiary' : 'primary'}
           label={t('DeployAgentDialog.trigger')}
           target="_blank"
         />
@@ -153,7 +153,7 @@ function VersionAgentDialog() {
         trigger={
           <Button
             data-testid="stage-new-version-button"
-            color="secondary"
+            color="primary"
             fullWidth
             label={t('VersionAgentDialog.trigger')}
           />
@@ -209,7 +209,7 @@ function CloudUpsellDeploy() {
       trigger={
         <Button
           size="small"
-          color="secondary"
+          color="primary"
           preIcon={<RocketIcon size="small" />}
           data-testid="trigger-cloud-upsell"
           label={t('CloudUpsellDeploy.trigger')}
@@ -228,7 +228,7 @@ function CloudUpsellDeploy() {
             label={t('CloudUpsellDeploy.cta')}
             href={CLOUD_UPSELL_URL}
             target="_blank"
-            color="secondary"
+            color="primary"
           />
         </VStack>
       </VStack>
@@ -346,7 +346,7 @@ function TemplateVersionDisplay() {
         <Button
           busy={isLoading}
           size="small"
-          color="secondary"
+          color="primary"
           data-testid="version-template-trigger"
           label={
             isAtLatestVersion
@@ -413,7 +413,7 @@ function TemplateVersionDisplay() {
                 fullWidth
                 data-testid="view-deployed-agents"
                 target="_blank"
-                color="tertiary-transparent"
+                color="tertiary"
                 label={t('VersionAgentDialog.deployedAgents')}
                 href={`/projects/${projectSlug}/agents?template=${deployedAgentTemplate?.fullVersion}`}
               />
@@ -468,7 +468,7 @@ function CreateTemplateButton() {
         <Button
           size="small"
           preIcon={<TemplateIcon />}
-          color="secondary"
+          color="primary"
           label={t('CreateTemplateButton.trigger')}
         />
       }
@@ -479,7 +479,7 @@ function CreateTemplateButton() {
           <Typography>{t('CreateTemplateButton.description')}</Typography>
         </VStack>
         <Button
-          color="secondary"
+          color="primary"
           busy={isPending || isSuccess}
           fullWidth
           label={t('CreateTemplateButton.cta')}

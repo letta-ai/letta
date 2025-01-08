@@ -34,13 +34,13 @@ const buttonVariants = cva(
         default: ' border',
       },
       color: {
-        'tertiary-transparent':
-          'bg-transparent border-none hover:bg-tertiary-hover text-tertiary-content',
-        primary:
-          'bg-primary hover:bg-primary-hover text-primary-content border-transparent',
-        secondary: 'bg-secondary text-secondary-content border-transparent',
         tertiary:
-          'bg-transparent hover:bg-tertiary-hover text-tertiary-content ',
+          'bg-transparent border-none hover:bg-secondary-hover text-tertiary-content',
+        brand:
+          'bg-brand hover:bg-brand-hover text-brand-content border-transparent',
+        primary: 'bg-primary text-primary-content border-transparent',
+        secondary:
+          'bg-transparent hover:bg-secondary-hover text-tertiary-content ',
         destructive:
           'bg-destructive hover:bg-destructive-hover text-white border-transparent',
         black:
@@ -67,7 +67,7 @@ const buttonVariants = cva(
       {
         color: 'tertiary',
         active: true,
-        className: 'bg-tertiary-active',
+        className: 'bg-secondary-active',
       },
       {
         color: 'primary',
@@ -75,9 +75,9 @@ const buttonVariants = cva(
         className: 'border-white',
       },
       {
-        color: 'tertiary-transparent',
+        color: 'tertiary',
         active: true,
-        className: 'bg-tertiary-active',
+        className: 'bg-secondary-active',
       },
       {
         variant: 'inline-panel',

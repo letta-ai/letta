@@ -60,7 +60,7 @@ export function LocaleSelector() {
       triggerAsChild
       trigger={
         <Button
-          color="tertiary"
+          color="secondary"
           hideLabel
           preIcon={<LanguageSwitcherIcon />}
           label={t('changeLocale')}

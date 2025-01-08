@@ -169,7 +169,7 @@ const classNames = {
   groupHeading: () =>
     cn('border-b px-3 mt-3 pb-2 text-sm font-medium text-tertiary-content'),
   multiValue: () =>
-    cn('bg-tertiary-dark h-[21px] gap-2 px-1 text-tertiary-content px-2'),
+    cn('bg-secondary-dark h-[21px] gap-2 px-1 text-tertiary-content px-2'),
 };
 
 function useStyles(args: UseStylesArgs) {

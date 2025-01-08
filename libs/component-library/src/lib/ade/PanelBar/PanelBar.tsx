@@ -19,7 +19,7 @@ function PanelSearch(props: PanelSearchProps) {
     function handleChange(event: ChangeEvent<HTMLInputElement>) {
       onChange(event.target.value);
     },
-    [onChange]
+    [onChange],
   );
 
   return (
@@ -53,7 +53,7 @@ export function PanelBar(props: PanelBarProps) {
       {onReturn && (
         <Button
           label="Return"
-          color="tertiary"
+          color="secondary"
           size="small"
           type="button"
           preIcon={<ChevronLeftIcon />}

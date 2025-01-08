@@ -36,7 +36,7 @@ function Sidebar() {
           hideLabel
           active={location.pathname === '/dashboard/agents'}
           preIcon={<LettaInvaderIcon />}
-          color="tertiary-transparent"
+          color="tertiary"
           label={t('Sidebar.agents')}
         ></Button>
       </Link>
@@ -45,7 +45,7 @@ function Sidebar() {
           hideLabel
           active={location.pathname === '/dashboard/settings'}
           preIcon={<CogIcon />}
-          color="tertiary-transparent"
+          color="tertiary"
           label={t('Sidebar.agents')}
         ></Button>
       </Link>

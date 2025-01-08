@@ -76,26 +76,26 @@ export function ColorSwatchTable() {
         <tbody>
           <ColorSwatches
             colors={{
-              default: 'bg-primary',
-              content: 'bg-primary-content',
-              hover: 'bg-primary-hover',
+              default: 'bg-brand',
+              content: 'bg-brand-content',
+              hover: 'bg-brand-hover',
             }}
             name="Primary"
           />
           <ColorSwatches
             colors={{
-              default: 'bg-secondary',
-              content: 'bg-secondary-content',
-              hover: 'bg-secondary-hover',
+              default: 'bg-primary',
+              content: 'bg-primary-content',
+              hover: 'bg-primary-hover',
             }}
             name="Secondary"
           />
           <ColorSwatches
             colors={{
-              default: 'bg-tertiary',
-              content: 'bg-tertiary-content',
-              active: 'bg-tertiary-active',
-              hover: 'bg-tertiary-hover',
+              default: 'bg-secondary',
+              content: 'bg-secondary-content',
+              active: 'bg-secondary-active',
+              hover: 'bg-secondary-hover',
             }}
             name="Tertiary"
           />

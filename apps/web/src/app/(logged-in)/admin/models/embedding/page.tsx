@@ -121,19 +121,14 @@ function ImportModelAction(props: ImportModelActionProps) {
 
   if (existingAdmin?.body.embeddingModels.length === 1) {
     return (
-      <Button
-        color="secondary"
-        size="small"
-        disabled
-        label="Already imported"
-      />
+      <Button color="primary" size="small" disabled label="Already imported" />
     );
   }
 
   return (
     <Button
       size="small"
-      color="secondary"
+      color="primary"
       label="Import"
       disabled={isLoading}
       onClick={() => {
@@ -272,7 +267,7 @@ function AdminEmbeddingModelsPage() {
             <Button
               size="small"
               href={`/admin/models/embedding/${row.original.id}`}
-              color="secondary"
+              color="primary"
               label="View"
             />
           ),

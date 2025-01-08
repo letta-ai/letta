@@ -349,7 +349,7 @@ function OrganizationMembers() {
               <Button
                 label="Actions"
                 hideLabel
-                color="tertiary-transparent"
+                color="tertiary"
                 preIcon={<DotsHorizontalIcon />}
               />
             }

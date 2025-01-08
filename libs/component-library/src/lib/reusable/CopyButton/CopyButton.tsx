@@ -9,7 +9,7 @@ interface CopyButtonProps {
   testId?: string;
   fullWidth?: boolean;
   copyButtonText?: string;
-  color?: 'tertiary-transparent' | 'tertiary';
+  color?: 'secondary' | 'tertiary';
   size?: 'default' | 'small' | 'xsmall';
   hideLabel?: boolean;
 }

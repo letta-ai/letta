@@ -123,11 +123,11 @@ function DeployedAgentView(props: DeployedAgentViewProps) {
             <Button
               href={`/projects/${currentProjectSlug}/agents/${agent.id}`}
               label={t('openInADE')}
-              color="tertiary"
+              color="secondary"
             />
             <Button
               onClick={onClose}
-              color="tertiary-transparent"
+              color="tertiary"
               label={t('close')}
               hideLabel
               preIcon={<CloseIcon />}
@@ -152,7 +152,7 @@ function DeployedAgentView(props: DeployedAgentViewProps) {
                     fullWidth
                   />
                   {/*<HStack fullWidth justify="end">*/}
-                  {/*  <Button label="Connection instructions" preIcon={<BotIcon />} color="tertiary" />*/}
+                  {/*  <Button label="Connection instructions" preIcon={<BotIcon />} color="secondary" />*/}
                   {/*</HStack>*/}
                 </VStack>
               </Card>
@@ -529,7 +529,7 @@ function DeployedAgentsPage() {
               </MiddleTruncate>
               <CopyButton
                 copyButtonText={t('table.copyId')}
-                color="tertiary-transparent"
+                color="tertiary"
                 size="small"
                 hideLabel
                 textToCopy={row.original.id}
@@ -558,14 +558,14 @@ function DeployedAgentsPage() {
           <HStack>
             <Button
               href={`/projects/${currentProjectSlug}/agents/${row.original.id}`}
-              color="tertiary-transparent"
+              color="tertiary"
               label={t('table.openInADE')}
             />
             <Button
               onClick={() => {
                 setSelectedAgent(row.original);
               }}
-              color="tertiary"
+              color="secondary"
               label={t('table.preview')}
             />
           </HStack>
@@ -626,7 +626,7 @@ function DeployedAgentsPage() {
                   type="submit"
                   preIcon={<SearchIcon />}
                   label={t('search.button')}
-                  color="tertiary"
+                  color="secondary"
                 />
               </HStack>
             </VStack>

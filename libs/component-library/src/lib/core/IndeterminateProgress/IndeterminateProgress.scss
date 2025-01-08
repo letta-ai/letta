@@ -30,7 +30,7 @@
   mask: var(--mask);
   height: round(20px, 1px);
   width: 100%;
-  background: linear-gradient(60deg, hsl(var(--primary)), hsl(var(--primary)));
+  background: linear-gradient(60deg, hsl(var(--brand)), hsl(var(--brand)));
   animation: ticker 3s linear infinite;
 }
 
@@ -55,8 +55,8 @@
   width: 100%;
   background: linear-gradient(
     60deg,
-    hsl(var(--secondary)),
-    hsl(var(--secondary))
+    hsl(var(--primary)),
+    hsl(var(--primary))
   );
   animation: ticker 2s linear infinite;
 }

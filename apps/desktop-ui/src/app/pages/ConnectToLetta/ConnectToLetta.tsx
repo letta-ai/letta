@@ -50,7 +50,7 @@ export function ConnectToLetta() {
             </Typography>
             <CopyButton
               hideLabel
-              color="tertiary-transparent"
+              color="tertiary"
               textToCopy={'letta-server'}
             />
           </HStack>

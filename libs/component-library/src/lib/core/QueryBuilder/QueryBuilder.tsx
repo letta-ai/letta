@@ -198,7 +198,7 @@ function RemoveCondition(props: RemoveConditionProps) {
       <Button
         type="button"
         onClick={handleRemoveCondition}
-        color="tertiary"
+        color="secondary"
         label={t('removeCondition')}
         hideLabel
         preIcon={<CloseIcon />}
@@ -364,7 +364,7 @@ function AddNewCondition(props: AddNewConditionProps) {
   return (
     <Button
       type="button"
-      color="tertiary"
+      color="secondary"
       hideLabel
       preIcon={<PlusIcon />}
       onClick={handleAddCondition}

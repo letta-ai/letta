@@ -403,7 +403,7 @@ function FlushSimulationSessionDialog() {
       trigger={
         <Button
           size="small"
-          color="tertiary"
+          color="secondary"
           preIcon={<FlushIcon />}
           hideLabel
           label={t('FlushSimulationSessionDialog.trigger')}
@@ -472,7 +472,7 @@ function AgentSimulatorOptionsMenu() {
         trigger={
           <Button
             size="small"
-            color="tertiary"
+            color="secondary"
             preIcon={<DotsHorizontalIcon />}
             hideLabel
             title={t('AgentSimulatorOptionsMenu.trigger')}
@@ -671,7 +671,7 @@ export function AgentSimulator() {
                       <VariableIcon />
                     )
                   }
-                  color="tertiary"
+                  color="secondary"
                   label={t('showVariables')}
                   size="small"
                 />

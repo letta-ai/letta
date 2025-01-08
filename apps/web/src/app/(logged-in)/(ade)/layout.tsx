@@ -10,7 +10,7 @@ function Layout({ children }: LayoutProps) {
     <>
       <NextTopLoader
         showSpinner={false}
-        color="hsl(var(--primary))"
+        color="hsl(var(--brand))"
         zIndex={9999}
       />
       {children}

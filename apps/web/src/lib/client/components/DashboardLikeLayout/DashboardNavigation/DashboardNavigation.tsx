@@ -86,7 +86,7 @@ function NavButton(props: NavButtonProps) {
       href={href}
       hideLabel={hideLabel}
       fullWidth
-      color="tertiary-transparent"
+      color="tertiary"
       align="left"
       label={label}
       preIcon={icon}
@@ -314,7 +314,7 @@ function MainNavigationItems(props: MainNavigationItemsProps) {
                 >
                   <Button
                     size="small"
-                    color="tertiary-transparent"
+                    color="tertiary"
                     preIcon={<ChevronLeftIcon />}
                     label={returnText}
                     align="left"
@@ -495,7 +495,7 @@ export function ProfilePopover(props: ProfilePopoverProps) {
       triggerAsChild
       trigger={
         <Button
-          color="tertiary-transparent"
+          color="tertiary"
           label="Settings"
           hideLabel
           preIcon={
@@ -673,14 +673,14 @@ export function DashboardHeaderNavigation(
         {preItems}
         <Button
           size="small"
-          color="tertiary-transparent"
+          color="tertiary"
           target="_blank"
           label={t('DashboardHeaderNavigation.documentation')}
           href="https://docs.letta.com/introduction"
         />
         <Button
           size="small"
-          color="tertiary-transparent"
+          color="tertiary"
           target="_blank"
           label={t('DashboardHeaderNavigation.apiReference')}
           href="https://docs.letta.com/api-reference"
@@ -690,7 +690,7 @@ export function DashboardHeaderNavigation(
           trigger={
             <Button
               size="small"
-              color="tertiary-transparent"
+              color="tertiary"
               label={t('DashboardHeaderNavigation.support')}
             />
           }

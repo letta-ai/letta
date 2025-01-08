@@ -86,7 +86,7 @@ function MessageGroup({ group }: MessageGroupType) {
 
   const textColor = useMemo(() => {
     if (name === 'Agent') {
-      return 'hsl(var(--primary-light-content))';
+      return 'hsl(var(--brand-light-content))';
     }
 
     if (name === 'User') {
@@ -98,7 +98,7 @@ function MessageGroup({ group }: MessageGroupType) {
 
   const backgroundColor = useMemo(() => {
     if (name === 'Agent') {
-      return 'hsl(var(--primary-light))';
+      return 'hsl(var(--brand-light))';
     }
 
     if (name === 'User') {
@@ -637,7 +637,7 @@ export function Messages(props: MessagesProps) {
             void fetchNextPage();
           }}
           fullWidth
-          color="tertiary"
+          color="secondary"
           label="Load more"
         />
       )}
