@@ -212,6 +212,13 @@ def run_memory_edits(gsm8k_input_file: str,
                     else:
                         offline_memory = BasicBlockMemory(blocks=[offline_persona_block, offline_human_block, new_memory])
 
+                    metadata = {}
+                    tools = ["rethink_memory"]
+                    if max_memory_rethinks:
+                        metadata = {"max_memory_rethinks": max_memory_rethinks}
+                    else:
+                        tools.append(finish_rethinking_memory_tool.name)
+
                     offline_memory_agent = client.create_agent(
                         name=f"offline_memory_agent_{idx}",
                         agent_type=AgentType.offline_memory_agent,
@@ -219,14 +226,11 @@ def run_memory_edits(gsm8k_input_file: str,
                         memory=offline_memory,
                         llm_config=offline_openai_config,
                         embedding_config=EmbeddingConfig.default_config("text-embedding-ada-002"),
-                        # tools = ["rethink_memory", "finish_rethinking_memory"],
-                        tools = ["rethink_memory"],
-                        # tool_ids=[rethink_memory_tool.id, finish_rethinking_memory_tool.id],
-                        # tool_rules=[TerminalToolRule(tool_name=finish_rethinking_memory_tool.name)],
+                        tools = tools,
                         tool_rules=[InitToolRule(tool_name=rethink_memory_tool.name)],
                         include_base_tools=False,
                         initial_message_sequence=[],
-                        metadata={"max_memory_rethinks": max_memory_rethinks}
+                        metadata=metadata
                     )
 
                     conversation_agents.append(conversation_agent)
@@ -304,7 +308,7 @@ if __name__ == "__main__":
     parser.add_argument("--skip_first", default=0, required=False, type=int)
     parser.add_argument("--offline_memory_model", default="gpt-4o-mini", required=False)
     parser.add_argument("--conversation_model", default="gpt-4o-mini", required=False)
-    parser.add_argument("--max_memory_rethinks", default=4, required=False, type=int) 
+    parser.add_argument("--max_memory_rethinks", default=None, required=False, type=int) 
     parser.add_argument("--num_offline_agents", default=1, required=False, type=int) 
 
     args = parser.parse_args()

@@ -438,9 +438,14 @@ class SyncServer(Server):
         if agent_state.agent_type == AgentType.memgpt_agent:
             agent = Agent(agent_state=agent_state, interface=interface, user=actor, initial_message_sequence=initial_message_sequence)
         elif agent_state.agent_type == AgentType.offline_memory_agent:
-            agent = OfflineMemoryAgent(
-                agent_state=agent_state, interface=interface, user=actor, initial_message_sequence=initial_message_sequence, max_memory_rethinks=agent_state.metadata_["max_memory_rethinks"], 
-            )
+            if "max_memory_rethinks" not in agent_state.metadata_:
+                agent = OfflineMemoryAgent(
+                    agent_state=agent_state, interface=interface, user=actor, initial_message_sequence=initial_message_sequence
+                )
+            else:
+                agent = OfflineMemoryAgent(
+                    agent_state=agent_state, interface=interface, user=actor, initial_message_sequence=initial_message_sequence, max_memory_rethinks=agent_state.metadata_.get("max_memory_rethinks")
+                )
         else:
             assert initial_message_sequence is None, f"Initial message sequence is not supported for O1Agents"
             agent = O1Agent(agent_state=agent_state, interface=interface, user=actor)
@@ -466,7 +471,10 @@ class SyncServer(Server):
             elif agent_state.agent_type == AgentType.o1_agent:
                 agent = O1Agent(agent_state=agent_state, interface=interface, user=actor)
             elif agent_state.agent_type == AgentType.offline_memory_agent:
-                agent = OfflineMemoryAgent(agent_state=agent_state, interface=interface, user=actor, max_memory_rethinks=agent_state.metadata_["max_memory_rethinks"])
+                if "max_memory_rethinks" not in agent_state.metadata_:
+                    agent = OfflineMemoryAgent(agent_state=agent_state, interface=interface, user=actor)
+                else:
+                    agent = OfflineMemoryAgent(agent_state=agent_state, interface=interface, user=actor, max_memory_rethinks=agent_state.metadata_.get("max_memory_rethinks"))
             elif agent_state.agent_type == AgentType.chat_only_agent:
                 agent = ChatOnlyAgent(agent_state=agent_state, interface=interface, user=actor)
             else:
