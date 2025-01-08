@@ -156,6 +156,10 @@ def run_memory_edits(gsm8k_input_file: str,
     with jsonlines.open(output_file, mode) as writer:
         for example in tqdm(examples):
             try:  
+                for agent in client.list_agents():
+                    # delete agents
+                    client.delete_agent(agent.id)
+
                 offline_memory_agents = []
                 conversation_agents = []
 
