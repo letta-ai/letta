@@ -262,6 +262,8 @@ function SelectPrimitive(_props: SelectProps) {
   const { isInDialog } = useDialogContext();
   const [open, setOpen] = React.useState(false);
 
+  const [mounted, setMounted] = React.useState(false);
+
   const [menuPortalTarget, setMenuPortalTarget] =
     React.useState<HTMLElement | null>(null);
 
@@ -278,6 +280,14 @@ function SelectPrimitive(_props: SelectProps) {
       setMenuPortalTarget(document.body);
     }
   }, [isInDialog]);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return null;
+  }
 
   return (
     <SelectOptionsProvider value={{ hideIconsOnOptions }}>

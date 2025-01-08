@@ -149,7 +149,7 @@ export async function versionAgentTemplate(
           });
 
         await updateAgentFromAgentId({
-          variables: deployedAgentVariablesItem?.value || {},
+          memoryVariables: deployedAgentVariablesItem?.value || {},
           baseAgentId: deployedAgentTemplateId,
           agentToUpdateId: deployedAgent.id,
           lettaAgentsUserId: context.request.lettaAgentsUserId,

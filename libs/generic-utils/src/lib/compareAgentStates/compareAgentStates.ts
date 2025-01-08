@@ -4,6 +4,12 @@ import { isEqual } from 'lodash';
 function stateCleaner(state: AgentState) {
   // only compare the following properties
   return {
+    tool_exec_environment_variables: state.tool_exec_environment_variables
+      ?.map((item) => ({
+        key: item.key,
+        value: item.value,
+      }))
+      .toSorted((a, b) => (a.key || '').localeCompare(b.key || '')),
     toolIds: state.tools
       .map((tool) => tool.id)
       .toSorted((a, b) => (a || '').localeCompare(b || '')),

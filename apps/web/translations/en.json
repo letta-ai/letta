@@ -568,6 +568,12 @@
   },
   "projects/(projectSlug)/agents/page/DeployAgentDialog": {
     "SelectedTemplateState": {
+      "memoryVariables": {
+        "label": "Memory Variables"
+      },
+      "toolVariables": {
+        "label": "Tool Variables"
+      },
       "readying": "Readying template for agent deployment...",
       "title": "Configure Agent",
       "description": "This template contains variables that need to be set before deploying the agent",

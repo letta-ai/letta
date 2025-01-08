@@ -61,10 +61,10 @@ describe('letta', () => {
 
     cy.findByTestId('toggle-variables-button').first().click();
 
-    cy.findByTestId('variable-input-name').type('Shubham');
+    cy.findByTestId('key-value-editor-value-0').type('Shubham');
     cy.findByTestId('save-variables-button').click();
 
-    cy.findByTestId('tab-item:simulated').click();
+    cy.findByTestId('tab-item:simulated', { timeout: 50000 }).click();
     cy.findByTestId('simulated-memory:human', { timeout: 50000 }).should(
       'contain.value',
       'Shubham',

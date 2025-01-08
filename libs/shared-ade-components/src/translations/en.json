@@ -32,6 +32,39 @@
     "more": "More panels",
     "less": "Less panels"
   },
+  "ADE/AgentVariablesModal": {
+    "noVariablesInDeployedAgent": "No variables in this agent",
+    "noVariablesInDeployedAgentWithNoTemplate": "Variables allow you to programatically define parts of an agent's memory that can be customized per-user on agent creation. Variables are only available in templates - to use variables, click 'Create template' in the top right.",
+    "title": {
+      "simulated": "Modify simulated agent variables",
+      "default": "Modify agent variables"
+    },
+    "AgentVariablesContent": {
+      "tabs": {
+        "memories": "Memory Variables",
+        "environment": "Tool Variables"
+      }
+    },
+    "DeployedAgentVariables": {
+      "label": "Deployed Agent Variables"
+    },
+    "close": "Close",
+    "MemoryVariableEditor": {
+      "keyError": "Keys must start with a letter or an underscore and can only contain letters, numbers, and underscores",
+      "save": "Update memory variables",
+      "label": "Edit Memory Variables",
+      "addVariable": "Add new memory",
+      "notSupported": "Memory variables are only available in our cloud product",
+      "details": "Memory variables are injected into the agent's memory on creation. To use a memory variable, simply add it to your core memory with the following syntax: <syntax></syntax>"
+    },
+    "ToolVariables": {
+      "keyError": "Keys must start with a letter or an underscore and can only contain letters, numbers, and underscores",
+      "addVariable": "Add new tool variable",
+      "save": "Update tool variables",
+      "label": "Edit tool variables",
+      "details": "Tool variables are exposed in tool calls. Agent-scoped tool variables superceed global tool variables. To configure your global tool variables, modify them in your <link>organization settings</link>"
+    }
+  },
   "ADE/AdvancedSettings": {
     "title": "Advanced",
     "model": "Model",
@@ -323,6 +356,10 @@
   "component-library/hooks/useCopyToClipboard": {
     "copied": "Copied to clipboard"
   },
+  "component-library/KeyValueEditor": {
+    "addVariable": "Add variable",
+    "removeVariable": "Remove variable"
+  },
   "component-library/Debugger": {
     "invalidJSON": "Invalid JSON",
     "run": "Run",
@@ -412,8 +449,6 @@
       "editLabel": "Edit {variableName}",
       "noVariablesDefined": "You have no variables set yet, to define a variable, write a alphanumeric name wrapped in handlebars in core memory, e.g. {variableName}"
     },
-    "noVariablesInDeployedAgent": "No variables in this agent",
-    "noVariablesInDeployedAgentWithNoTemplate": "Variables allow you to programatically define parts of an agent's memory that can be customized per-user on agent creation. Variables are only available in templates - to use variables, click 'Create template' in the top right.",
     "showVariables": "Variables",
     "hideVariables": "Hide variables",
     "updateVariables": "Update variables",

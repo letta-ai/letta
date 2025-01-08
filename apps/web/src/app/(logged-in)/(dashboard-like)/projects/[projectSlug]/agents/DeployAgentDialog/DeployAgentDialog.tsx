@@ -13,12 +13,13 @@ import {
   LoadingEmptyStatusComponent,
   NiceGridDisplay,
   PlusIcon,
-  RawInput,
+  RawKeyValueEditor,
   Section,
   StarterKitItems,
   Typography,
   VStack,
 } from '@letta-cloud/component-library';
+import type { KeyValue } from '@letta-cloud/component-library';
 import { useTranslations } from '@letta-cloud/translations';
 import { useCurrentProject } from '../../hooks';
 import { webApi, webApiQueryKeys, webOriginSDKApi } from '$web/client';
@@ -207,15 +208,79 @@ interface SelectedTemplate {
   id: string;
 }
 
-interface SelectedTemplateStateProps {
+interface SelectedTemplateStateWrapperProps {
   selectedTemplate: SelectedTemplate;
   onReset: () => void;
   onCreating: (isCreating: boolean) => void;
   onErrored: () => void;
 }
 
-function SelectedTemplateState(props: SelectedTemplateStateProps) {
+function SelectedTemplateStateWrapper(
+  props: SelectedTemplateStateWrapperProps,
+) {
   const { selectedTemplate, onReset, onCreating, onErrored } = props;
+  const { data: agent } = useAgentsServiceGetAgent({
+    agentId: selectedTemplate.id,
+  });
+
+  const t = useTranslations(
+    'projects/(projectSlug)/agents/page/DeployAgentDialog',
+  );
+
+  const memoryVariablesInTemplate = useMemo(() => {
+    if (!agent) {
+      return null;
+    }
+
+    return findMemoryBlockVariables(agent);
+  }, [agent]);
+
+  const toolVariablesInTemplate = useMemo(() => {
+    if (!agent) {
+      return [];
+    }
+
+    return (agent.tool_exec_environment_variables || [])?.map(
+      (item) => item.key,
+    );
+  }, [agent]);
+
+  if (!agent) {
+    return (
+      <LoadingEmptyStatusComponent
+        emptyMessage=""
+        isLoading
+        loadingMessage={t('SelectedTemplateState.readying')}
+      />
+    );
+  }
+
+  return (
+    <SelectedTemplateState
+      selectedTemplate={selectedTemplate}
+      onReset={onReset}
+      onCreating={onCreating}
+      onErrored={onErrored}
+      memoryVariablesInTemplate={memoryVariablesInTemplate}
+      toolVariablesInTemplate={toolVariablesInTemplate}
+    />
+  );
+}
+
+interface SelectedTemplateStateProps extends SelectedTemplateStateWrapperProps {
+  memoryVariablesInTemplate: string[] | null;
+  toolVariablesInTemplate: string[];
+}
+
+function SelectedTemplateState(props: SelectedTemplateStateProps) {
+  const {
+    selectedTemplate,
+    memoryVariablesInTemplate,
+    toolVariablesInTemplate,
+    onReset,
+    onCreating,
+    onErrored,
+  } = props;
   const t = useTranslations(
     'projects/(projectSlug)/agents/page/DeployAgentDialog',
   );
@@ -233,9 +298,17 @@ function SelectedTemplateState(props: SelectedTemplateStateProps) {
     },
   });
 
-  const [variablesForm, setVariablesForm] = React.useState<
-    Record<string, string>
-  >({});
+  const [memoryVariables, setMemoryVariables] = React.useState<KeyValue[]>(
+    memoryVariablesInTemplate
+      ? memoryVariablesInTemplate.map((item) => ({ key: item, value: '' }))
+      : [],
+  );
+
+  const [toolVariables, setToolVariables] = React.useState<KeyValue[]>(
+    toolVariablesInTemplate
+      ? toolVariablesInTemplate.map((item) => ({ key: item, value: '' }))
+      : [],
+  );
 
   const handleCreateAgent = useCallback(() => {
     onCreating(true);
@@ -246,8 +319,13 @@ function SelectedTemplateState(props: SelectedTemplateStateProps) {
 
     createAgent({
       body: {
-        variables: variablesForm,
+        variables: Object.fromEntries(
+          memoryVariables.map(({ key, value }) => [key, value]),
+        ),
         from_template: selectedTemplate.version,
+        tool_exec_environment_variables: Object.fromEntries(
+          toolVariables.map(({ key, value }) => [key, value]),
+        ),
       },
     });
   }, [
@@ -255,45 +333,33 @@ function SelectedTemplateState(props: SelectedTemplateStateProps) {
     isPending,
     isSuccess,
     onCreating,
+    toolVariables,
     selectedTemplate.version,
-    variablesForm,
+    memoryVariables,
   ]);
-
-  const { data: agent } = useAgentsServiceGetAgent({
-    agentId: selectedTemplate.id,
-  });
-
-  const variablesInTemplate = useMemo(() => {
-    if (!agent) {
-      return null;
-    }
-
-    return findMemoryBlockVariables(agent);
-  }, [agent]);
 
   useEffect(() => {
     if (isPending || isSuccess) {
       return;
     }
 
-    if (!variablesInTemplate) {
+    if (!memoryVariablesInTemplate) {
       return;
     }
 
-    if (variablesInTemplate.length === 0) {
+    if (
+      memoryVariablesInTemplate.length === 0 &&
+      toolVariablesInTemplate.length === 0
+    ) {
       handleCreateAgent();
     }
-  }, [handleCreateAgent, isPending, isSuccess, variablesInTemplate]);
-
-  if (!variablesInTemplate) {
-    return (
-      <LoadingEmptyStatusComponent
-        emptyMessage=""
-        isLoading
-        loadingMessage={t('SelectedTemplateState.readying')}
-      />
-    );
-  }
+  }, [
+    handleCreateAgent,
+    isPending,
+    isSuccess,
+    memoryVariablesInTemplate,
+    toolVariablesInTemplate.length,
+  ]);
 
   return (
     <VStack fullHeight flex>
@@ -309,32 +375,24 @@ function SelectedTemplateState(props: SelectedTemplateStateProps) {
               handleCreateAgent();
             }}
           >
-            <VStack flex fullHeight gap="form">
-              <VStack fullHeight flex>
-                {variablesInTemplate.map((variable) => (
-                  <HStack border fullWidth align="center" key={variable}>
-                    <HStack paddingX="small" fullWidth borderRight>
-                      <Typography align="left" bold>
-                        {variable}
-                      </Typography>
-                    </HStack>
-                    <RawInput
-                      placeholder={t('SelectedTemplateState.inputPlaceholder')}
-                      fullWidth
-                      color="transparent"
-                      label={t('SelectedTemplateState.inputLabel', {
-                        variable,
-                      })}
-                      onChange={(e) => {
-                        setVariablesForm({
-                          ...variablesForm,
-                          [variable]: e.target.value,
-                        });
-                      }}
-                      hideLabel
-                    />
-                  </HStack>
-                ))}
+            <VStack paddingTop flex fullHeight gap="form">
+              <VStack fullHeight gap="form" flex>
+                <RawKeyValueEditor
+                  freezeRows
+                  fullWidth
+                  disableKey
+                  label={t('SelectedTemplateState.memoryVariables.label')}
+                  value={memoryVariables}
+                  onValueChange={setMemoryVariables}
+                />
+                <RawKeyValueEditor
+                  freezeRows
+                  disableKey
+                  fullWidth
+                  label={t('SelectedTemplateState.toolVariables.label')}
+                  value={toolVariables}
+                  onValueChange={setToolVariables}
+                />
               </VStack>
               <FormActions>
                 <Button
@@ -358,6 +416,78 @@ function SelectedTemplateState(props: SelectedTemplateStateProps) {
   );
 }
 
+interface DeployAgentViewContentsProps {
+  isCreating: boolean;
+  setIsCreating: (isCreating: boolean) => void;
+  setIsError: (isError: boolean) => void;
+  selectedTemplate: SelectedTemplate | null;
+  setSelectedTemplate: (template: SelectedTemplate | null) => void;
+}
+
+function DeployAgentViewContents(props: DeployAgentViewContentsProps) {
+  const {
+    isCreating,
+    setIsCreating,
+    setIsError,
+    selectedTemplate,
+    setSelectedTemplate,
+  } = props;
+
+  const t = useTranslations(
+    'projects/(projectSlug)/agents/page/DeployAgentDialog',
+  );
+
+  const handleCreating = useCallback(
+    (state: boolean) => {
+      if (state) {
+        setIsError(false);
+      }
+
+      setIsCreating(state);
+    },
+    [setIsError, setIsCreating],
+  );
+
+  if (isCreating) {
+    return (
+      <LoadingEmptyStatusComponent
+        emptyMessage=""
+        isLoading
+        loadingMessage={t('loading')}
+      />
+    );
+  }
+
+  if (selectedTemplate) {
+    return (
+      <SelectedTemplateStateWrapper
+        onReset={() => {
+          setSelectedTemplate(null);
+        }}
+        onErrored={() => {
+          setIsCreating(false);
+          setIsError(true);
+        }}
+        onCreating={handleCreating}
+        selectedTemplate={selectedTemplate}
+      />
+    );
+  }
+
+  return (
+    <VStack paddingTop="xsmall" paddingBottom>
+      <DeployFromTemplate onSelectTemplate={setSelectedTemplate} />
+      <FromStarterKit
+        onError={() => {
+          setIsCreating(false);
+          setIsError(true);
+        }}
+        onIsCreating={handleCreating}
+      />
+    </VStack>
+  );
+}
+
 export function DeployAgentDialog() {
   const [isCreating, setIsCreating] = React.useState(false);
   const [isError, setIsError] = React.useState(false);
@@ -366,55 +496,6 @@ export function DeployAgentDialog() {
   const t = useTranslations(
     'projects/(projectSlug)/agents/page/DeployAgentDialog',
   );
-
-  const handleCreating = useCallback((state: boolean) => {
-    if (state) {
-      setIsError(false);
-    }
-
-    setIsCreating(state);
-  }, []);
-
-  const view = useMemo(() => {
-    if (isCreating) {
-      return (
-        <LoadingEmptyStatusComponent
-          emptyMessage=""
-          isLoading
-          loadingMessage={t('loading')}
-        />
-      );
-    }
-
-    if (selectedTemplate) {
-      return (
-        <SelectedTemplateState
-          onReset={() => {
-            setSelectedTemplate(null);
-          }}
-          onErrored={() => {
-            setIsCreating(false);
-            setIsError(true);
-          }}
-          onCreating={handleCreating}
-          selectedTemplate={selectedTemplate}
-        />
-      );
-    }
-
-    return (
-      <VStack paddingTop="xsmall" paddingBottom>
-        <DeployFromTemplate onSelectTemplate={setSelectedTemplate} />
-        <FromStarterKit
-          onError={() => {
-            setIsCreating(false);
-            setIsError(true);
-          }}
-          onIsCreating={handleCreating}
-        />
-      </VStack>
-    );
-  }, [handleCreating, isCreating, selectedTemplate, t]);
 
   return (
     <Dialog
@@ -435,7 +516,15 @@ export function DeployAgentDialog() {
         <Button label={t('trigger')} preIcon={<PlusIcon />} color="secondary" />
       }
     >
-      <div className="min-h-[60vh] h-full flex flex-col">{view}</div>
+      <div className="min-h-[60vh] h-full flex flex-col">
+        <DeployAgentViewContents
+          isCreating={isCreating}
+          setIsCreating={setIsCreating}
+          setIsError={setIsError}
+          selectedTemplate={selectedTemplate}
+          setSelectedTemplate={setSelectedTemplate}
+        />
+      </div>
     </Dialog>
   );
 }

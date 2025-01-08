@@ -285,7 +285,14 @@ async function getAgentTemplateSimulatorSession(
       agent,
       agentId,
       id,
-      variables: (simulatorSession?.variables as Record<string, string>) || {},
+      memoryVariables:
+        (simulatorSession?.variables as Record<string, string>) || {},
+      toolVariables: Object.fromEntries(
+        (agent.tool_exec_environment_variables || []).map((item) => [
+          item.key,
+          item.value,
+        ]),
+      ),
     },
   };
 }
@@ -302,7 +309,7 @@ async function createAgentTemplateSimulatorSession(
   req: CreateAgentTemplateSimulatorSessionRequest,
 ): Promise<CreateAgentTemplateSimulatorSessionResponse> {
   const { agentTemplateId } = req.params;
-  const { variables } = req.body;
+  const { memoryVariables, toolVariables } = req.body;
   const { activeOrganizationId, lettaAgentsId } =
     await getUserWithActiveOrganizationIdOrThrow();
 
@@ -328,7 +335,7 @@ async function createAgentTemplateSimulatorSession(
     });
 
   if (existingSimulatorSession) {
-    const { variables } = req.body;
+    const { memoryVariables } = req.body;
 
     // update existing simulator session
     const existingTemplate = await AgentsService.getAgent(
@@ -353,14 +360,15 @@ async function createAgentTemplateSimulatorSession(
       agentToUpdateId: existingSimulatorSession.agentId,
       baseAgentId: existingTemplate.id,
       preserveCoreMemories: false,
-      variables,
+      memoryVariables,
+      toolVariables,
       lettaAgentsUserId: lettaAgentsId,
     });
 
     await db
       .update(agentSimulatorSessions)
       .set({
-        variables,
+        variables: memoryVariables,
         agentId: existingSimulatorSession.agentId,
       })
       .where(eq(agentSimulatorSessions.id, existingSimulatorSession.id));
@@ -371,16 +379,21 @@ async function createAgentTemplateSimulatorSession(
         agent: agentState,
         agentId: existingSimulatorSession.agentId,
         id: existingSimulatorSession.id,
-        variables,
+        memoryVariables,
+        toolVariables: Object.fromEntries(
+          (agentState.tool_exec_environment_variables || []).map((item) => [
+            item.key,
+            item.value,
+          ]),
+        ),
       },
     };
   }
 
-  const newAgent = await copyAgentById(
-    agentTemplate.id,
-    lettaAgentsId,
-    variables,
-  );
+  const newAgent = await copyAgentById(agentTemplate.id, lettaAgentsId, {
+    memoryVariables,
+    toolVariables,
+  });
 
   if (!newAgent?.id) {
     return {
@@ -399,7 +412,7 @@ async function createAgentTemplateSimulatorSession(
       agentId: newAgentId,
       agentTemplateId: agentTemplate.id,
       organizationId: activeOrganizationId,
-      variables,
+      variables: memoryVariables,
     })
     .returning({
       id: agentSimulatorSessions.id,
@@ -411,7 +424,8 @@ async function createAgentTemplateSimulatorSession(
       agent: newAgent,
       id: simulatorSession.id,
       agentId: newAgentId,
-      variables,
+      memoryVariables,
+      toolVariables,
     },
   };
 }
@@ -462,7 +476,8 @@ async function refreshAgentTemplateSimulatorSession(
   }
 
   const agent = await updateAgentFromAgentId({
-    variables: (simulatorSession.variables as Record<string, string>) || {},
+    memoryVariables:
+      (simulatorSession.variables as Record<string, string>) || {},
     baseAgentId: agentTemplate.id,
     agentToUpdateId: simulatorSession.agentId,
     lettaAgentsUserId: lettaAgentsId,
@@ -475,7 +490,13 @@ async function refreshAgentTemplateSimulatorSession(
       agent,
       agentId: simulatorSession.agentId,
       id: simulatorSession.id,
-      variables: simulatorSession.variables as Record<string, string>,
+      memoryVariables: simulatorSession.variables as Record<string, string>,
+      toolVariables: Object.fromEntries(
+        (agent.tool_exec_environment_variables || []).map((item) => [
+          item.key,
+          item.value,
+        ]),
+      ),
     },
   };
 }

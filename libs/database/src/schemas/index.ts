@@ -446,7 +446,8 @@ export const agentSimulatorSessions = pgTable('agent_simulator_sessions', {
     .notNull()
     .references(() => agentTemplates.id, {
       onDelete: 'cascade',
-    }),
+    })
+    .unique(),
   organizationId: text('organization_id')
     .references(() => organizations.id, { onDelete: 'cascade' })
     .notNull(),

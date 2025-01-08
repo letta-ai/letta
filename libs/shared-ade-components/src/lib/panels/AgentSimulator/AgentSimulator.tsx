@@ -1,5 +1,4 @@
 import {
-  Alert,
   Button,
   ChatBubbleIcon,
   ChatInput,
@@ -13,22 +12,16 @@ import {
   PersonIcon,
   RawToggleGroup,
   SystemIcon,
-  Table,
-  TableBody,
-  TableCell,
-  TableCellInput,
-  TableRow,
   toast,
   Typography,
   VariableIcon,
   WarningIcon,
   FlushIcon,
-  Skeleton,
 } from '@letta-cloud/component-library';
 import type { ChatInputRef } from '@letta-cloud/component-library';
 import { PanelBar } from '@letta-cloud/component-library';
 import { VStack } from '@letta-cloud/component-library';
-import type { Dispatch, FormEvent, SetStateAction } from 'react';
+import type { Dispatch, SetStateAction } from 'react';
 import { useEffect } from 'react';
 import { useMemo } from 'react';
 import React, { useCallback, useRef, useState } from 'react';
@@ -51,10 +44,7 @@ import type { z } from 'zod';
 import { useTranslations } from '@letta-cloud/translations';
 import { useDebouncedCallback, useLocalStorage } from '@mantine/hooks';
 import { webApi, webApiQueryKeys } from '@letta-cloud/web-api-client';
-import {
-  webOriginSDKApi,
-  webOriginSDKQueryKeys,
-} from '@letta-cloud/letta-agents-api';
+import { webOriginSDKApi } from '@letta-cloud/letta-agents-api';
 import {
   compareAgentStates,
   findMemoryBlockVariables,
@@ -65,15 +55,12 @@ import { atom, useAtom, useSetAtom } from 'jotai';
 import { trackClientSideEvent } from '@letta-cloud/analytics/client';
 import { AnalyticsEvent } from '@letta-cloud/analytics';
 import { jsonToCurl } from '@letta-cloud/generic-utils';
-import type { ServerInferResponses } from '@ts-rest/core';
-import type {
-  contracts,
-  GetAgentTemplateSimulatorSessionResponseBody,
-} from '@letta-cloud/web-api-client';
+import type { GetAgentTemplateSimulatorSessionResponseBody } from '@letta-cloud/web-api-client';
 import { messagesInFlightCacheAtom } from '../Messages/messagesInFlightCacheAtom/messagesInFlightCacheAtom';
 import { Messages } from '../Messages/Messages';
 import type { MessagesDisplayMode } from '../Messages/Messages';
 import { useCurrentAPIHostConfig } from '@letta-cloud/helpful-client-utils';
+import { AgentVariablesModal } from './AgentVariablesModal/AgentVariablesModal';
 
 const isSendingMessageAtom = atom(false);
 
@@ -348,157 +335,6 @@ function ControlChatroomRenderMode() {
   );
 }
 
-interface DialogSessionDialogProps {
-  variables: string[];
-  existingVariables: Record<string, string>;
-}
-
-function DialogSessionSheet(props: DialogSessionDialogProps) {
-  const t = useTranslations('ADE/AgentSimulator');
-  const { variables, existingVariables } = props;
-  const { agentId: agentTemplateId } = useCurrentAgentMetaData();
-
-  const [variableData, setVariableData] =
-    useState<Record<string, string>>(existingVariables);
-
-  const queryClient = useQueryClient();
-
-  const { mutate, isPending } =
-    webApi.agentTemplates.createAgentTemplateSimulatorSession.useMutation({
-      onSuccess: (response) => {
-        queryClient.setQueriesData<GetAgentTemplateSimulatorSessionResponseBody>(
-          {
-            queryKey: webApiQueryKeys.agentTemplates.getAgentTemplateSession({
-              agentTemplateId,
-            }),
-          },
-          () => {
-            return {
-              status: 200,
-              body: response.body,
-            };
-          },
-        );
-      },
-    });
-
-  const handleUpdateSession = useCallback(
-    (e: FormEvent<HTMLFormElement>) => {
-      e.preventDefault();
-
-      mutate(
-        {
-          params: {
-            agentTemplateId,
-          },
-          body: {
-            variables: variableData,
-          },
-        },
-        {
-          onSuccess: () => {
-            queryClient.setQueriesData<
-              GetAgentTemplateSimulatorSessionResponseBody | undefined
-            >(
-              {
-                queryKey:
-                  webApiQueryKeys.agentTemplates.getAgentTemplateSession({
-                    agentTemplateId,
-                  }),
-              },
-              (oldData) => {
-                if (!oldData) {
-                  return oldData;
-                }
-
-                return {
-                  status: 200,
-                  body: {
-                    ...oldData?.body,
-                    variables: {
-                      ...oldData?.body.variables,
-                      ...variableData,
-                    },
-                  },
-                };
-              },
-            );
-          },
-        },
-      );
-    },
-    [agentTemplateId, mutate, queryClient, variableData],
-  );
-
-  const handleChange = useCallback((name: string, value: string) => {
-    setVariableData((prev) => {
-      return {
-        ...prev,
-        [name]: value,
-      };
-    });
-  }, []);
-
-  if (!variables.length) {
-    return (
-      <VStack borderBottom padding="small">
-        <Alert
-          title={t('DialogSessionSheet.noVariablesDefined', {
-            variableName: '{{variableName}}',
-          })}
-          variant="info"
-        />
-      </VStack>
-    );
-  }
-
-  return (
-    <form onSubmit={handleUpdateSession}>
-      <VStack
-        color="background-grey"
-        position="relative"
-        borderBottom
-        paddingTop
-        borderTop
-        padding="small"
-      >
-        <VStack color="background" border gap={false} borderBottom>
-          <Table>
-            <TableBody>
-              {variables.map((variable) => (
-                <TableRow key={variable}>
-                  <TableCell>
-                    <Typography variant="body2">{variable}</Typography>
-                  </TableCell>
-                  <TableCellInput
-                    testId={`variable-input-${variable}`}
-                    value={variableData[variable] || ''}
-                    label={t('DialogSessionSheet.label')}
-                    placeholder={t('DialogSessionSheet.placeholder')}
-                    onChange={(e) => {
-                      handleChange(variable, e.target.value);
-                    }}
-                  />
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </VStack>
-        <HStack justify="end">
-          <Button
-            data-testid="save-variables-button"
-            label={t('DialogSessionSheet.save')}
-            size="small"
-            busy={isPending}
-            type="submit"
-            color="secondary"
-          />
-        </HStack>
-      </VStack>
-    </form>
-  );
-}
-
 function FlushSimulationSessionDialog() {
   const [isOpen, setIsOpen] = useState(false);
   const t = useTranslations('ADE/AgentSimulator');
@@ -537,7 +373,8 @@ function FlushSimulationSessionDialog() {
             agentTemplateId,
           },
           body: {
-            variables: agentSession?.body.variables || {},
+            memoryVariables: agentSession?.body.memoryVariables || {},
+            toolVariables: agentSession?.body.toolVariables || {},
           },
         });
       },
@@ -651,128 +488,9 @@ function AgentSimulatorOptionsMenu() {
   );
 }
 
-function useAgentVariables() {
-  const { isFromTemplate } = useCurrentAgentMetaData();
-  const { id: agentId } = useCurrentAgent();
-  return webOriginSDKApi.agents.getAgentVariables.useQuery({
-    queryKey: webOriginSDKQueryKeys.agents.getAgentVariables(agentId),
-    queryData: {
-      params: {
-        agent_id: agentId,
-      },
-    },
-    enabled: isFromTemplate,
-  });
-}
-
-function DeployedAgentVariables() {
-  const t = useTranslations('ADE/AgentSimulator');
-  const { data } = useAgentVariables();
-
-  const variableList = useMemo(() => {
-    return Object.entries(data?.body.variables || {}) || [];
-  }, [data]);
-
-  if (!data) {
-    return (
-      <HStack borderBottom padding="small">
-        <Skeleton
-          /* eslint-disable-next-line react/forbid-component-props */
-          className="w-full h-[30px]"
-        />
-        <Skeleton
-          /* eslint-disable-next-line react/forbid-component-props */
-          className="w-full h-[30px]"
-        />
-      </HStack>
-    );
-  }
-
-  if (!variableList.length) {
-    return (
-      <HStack padding="small">
-        <Alert title={t('noVariablesInDeployedAgent')} variant="info" />
-      </HStack>
-    );
-  }
-
-  return (
-    <VStack
-      color="background-grey"
-      position="relative"
-      borderBottom
-      borderTop
-      padding="small"
-    >
-      <Table>
-        <TableBody>
-          {variableList.map(([variable, value]) => (
-            <TableRow key={variable}>
-              <TableCell>
-                <Typography variant="body2">{variable}</Typography>
-              </TableCell>
-              <TableCellInput
-                value={value}
-                label={t('DialogSessionSheet.label')}
-                placeholder={t('DialogSessionSheet.placeholder')}
-              />
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </VStack>
-  );
-}
-
-interface VariableMenuWrapperProps {
-  variableList: string[];
-  existingVariables: ServerInferResponses<
-    typeof contracts.agentTemplates.getAgentTemplateSimulatorSession,
-    200
-  >['body']['variables'];
-}
-
-function VariableMenuWrapper(props: VariableMenuWrapperProps) {
-  const { isLocal, isTemplate, isFromTemplate } = useCurrentAgentMetaData();
-  const t = useTranslations('ADE/AgentSimulator');
-  const { variableList, existingVariables } = props;
-
-  if (isLocal) {
-    return (
-      <HStack padding="small">
-        <Alert title={t('localAgent')} variant="info" />
-      </HStack>
-    );
-  }
-
-  if (!isTemplate) {
-    if (!isFromTemplate) {
-      return (
-        <HStack padding="small">
-          <Alert
-            title={t('noVariablesInDeployedAgentWithNoTemplate')}
-            variant="info"
-          />
-        </HStack>
-      );
-    }
-
-    return <DeployedAgentVariables />;
-  }
-
-  return (
-    <DialogSessionSheet
-      existingVariables={existingVariables}
-      variables={variableList}
-    />
-  );
-}
-
 export function AgentSimulator() {
-  useAgentVariables();
   const t = useTranslations('ADE/AgentSimulator');
   const agentState = useCurrentAgent();
-  const [showVariablesMenu, setShowVariablesMenu] = useState(false);
   const { id: agentId } = agentState;
   const [renderMode, setRenderMode] = useLocalStorage<MessagesDisplayMode>({
     defaultValue: 'interactive',
@@ -794,11 +512,11 @@ export function AgentSimulator() {
 
   const hasVariableMismatch = useMemo(() => {
     // check if variable mismatch
-    const sessionVariables = agentSession?.body.variables || {};
+    const sessionVariables = agentSession?.body.memoryVariables || {};
 
     // it's ok if there's more variables defined in the session than in the agent, but not the other way around
     return variableList.some((variable) => !sessionVariables[variable]);
-  }, [agentSession?.body.variables, variableList]);
+  }, [agentSession?.body.memoryVariables, variableList]);
 
   const agentStateStore = useRef<AgentState>(agentState as AgentState);
 
@@ -942,37 +660,25 @@ export function AgentSimulator() {
           }
         >
           <VStack paddingLeft="small">
-            <Button
-              onClick={() => {
-                setShowVariablesMenu((v) => !v);
-              }}
-              data-testid="toggle-variables-button"
-              active={showVariablesMenu}
-              preIcon={
-                hasVariableIssue ? (
-                  <WarningIcon color="warning" />
-                ) : (
-                  <VariableIcon />
-                )
+            <AgentVariablesModal
+              trigger={
+                <Button
+                  data-testid="toggle-variables-button"
+                  preIcon={
+                    hasVariableIssue ? (
+                      <WarningIcon color="warning" />
+                    ) : (
+                      <VariableIcon />
+                    )
+                  }
+                  color="tertiary"
+                  label={t('showVariables')}
+                  size="small"
+                />
               }
-              color="tertiary"
-              label={
-                !hasVariableIssue && showVariablesMenu
-                  ? t('hideVariables')
-                  : t('showVariables')
-              }
-              size="small"
             />
           </VStack>
         </PanelBar>
-        {showVariablesMenu && (
-          <VStack>
-            <VariableMenuWrapper
-              variableList={variableList}
-              existingVariables={agentSession?.body.variables || {}}
-            />
-          </VStack>
-        )}
         <VStack collapseHeight gap={false} fullWidth>
           <VStack gap="large" collapseHeight>
             <VStack collapseHeight position="relative">

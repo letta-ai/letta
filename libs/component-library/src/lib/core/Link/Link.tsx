@@ -3,6 +3,8 @@ import type { LinkProps } from 'next/link';
 import NextLink from 'next/link';
 import type { PropsWithChildren } from 'react';
 
-export function Link(props: LinkProps & PropsWithChildren) {
-  return <NextLink {...props} className="hover:underline" />;
+export function Link(
+  props: LinkProps & PropsWithChildren & { target?: string },
+) {
+  return <NextLink {...props} className="hover:underline underline" />;
 }

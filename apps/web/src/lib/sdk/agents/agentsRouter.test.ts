@@ -713,6 +713,7 @@ describe('agentsRouter', () => {
           requestBody: {
             ...rest,
             tool_ids: ['tool-name'],
+            tool_exec_environment_variables: {},
             system: 'test',
             name: expect.any(String),
             memory_blocks: premadeTemplate.memory_blocks.map((v) => {
@@ -844,6 +845,9 @@ describe('agentsRouter', () => {
             template: true,
             from_template: 'test-template:23',
             project_id: 'test-project-id',
+            variables: {
+              name: 'Timber',
+            },
           },
         },
         {
@@ -872,6 +876,7 @@ describe('agentsRouter', () => {
             ...rest,
             tool_ids: ['tool-name'],
             system: 'test',
+            tool_exec_environment_variables: {},
             name: expect.any(String),
             memory_blocks: premadeTemplate.memory_blocks.map((v) => {
               if (v.label === 'human') {
@@ -879,7 +884,7 @@ describe('agentsRouter', () => {
                   label: 'human',
                   limit: 2000,
                   value:
-                    "The human has not provided any information about themselves. But they are looking for help with a customer support issue. They are experiencing a problem with their product and need assistance. They are looking for a quick resolution to their issue. The human's name is {{name}}",
+                    "The human has not provided any information about themselves. But they are looking for help with a customer support issue. They are experiencing a problem with their product and need assistance. They are looking for a quick resolution to their issue. The human's name is Timber",
                 };
               }
 
@@ -986,6 +991,9 @@ describe('agentsRouter', () => {
             template: true,
             from_template: 'test-template',
             project_id: 'test-project-id',
+            variables: {
+              name: 'Timber',
+            },
           },
         },
         {
@@ -1014,6 +1022,7 @@ describe('agentsRouter', () => {
             ...rest,
             tool_ids: ['tool-name'],
             system: 'test',
+            tool_exec_environment_variables: {},
             name: expect.any(String),
             memory_blocks: premadeTemplate.memory_blocks.map((v) => {
               if (v.label === 'human') {
@@ -1021,7 +1030,7 @@ describe('agentsRouter', () => {
                   label: 'human',
                   limit: 2000,
                   value:
-                    "The human has not provided any information about themselves. But they are looking for help with a customer support issue. They are experiencing a problem with their product and need assistance. They are looking for a quick resolution to their issue. The human's name is {{name}}",
+                    "The human has not provided any information about themselves. But they are looking for help with a customer support issue. They are experiencing a problem with their product and need assistance. They are looking for a quick resolution to their issue. The human's name is Timber",
                 };
               }
 

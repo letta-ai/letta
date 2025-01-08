@@ -84,8 +84,8 @@ const DialogContent = React.forwardRef<
   ) => {
     const isFull = size === 'full';
 
-    const contents = (
-      <>
+    return (
+      <DialogPortal>
         <DialogOverlay />
         <DialogPrimitive.Content ref={ref} {...props}>
           <div id="dialog-dropdown-content" className="z-dropdown" />
@@ -130,10 +130,8 @@ const DialogContent = React.forwardRef<
             </VStack>
           </div>
         </DialogPrimitive.Content>
-      </>
+      </DialogPortal>
     );
-
-    return <DialogPortal>{contents}</DialogPortal>;
   },
 );
 DialogContent.displayName = DialogPrimitive.Content.displayName;

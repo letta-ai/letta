@@ -52,6 +52,8 @@ const CreateAgentBodySchema = z.object({
   context_window_limit: z.number().nullable().optional(),
   embedding_chunk_size: z.number().nullable().optional(),
 
+  tool_exec_environment_variables: z.record(z.string()).nullable().optional(),
+
   // letta specific fields
   template: z.boolean().optional(),
   project_id: z.string().optional(),

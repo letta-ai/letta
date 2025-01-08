@@ -35,41 +35,42 @@ export function attachVariablesToTemplates(
   agentTemplate: AgentState,
   variables?: CreateAgentRequest['body']['variables'],
 ) {
-  const nextAgent = {
-    ...agentTemplate,
-  };
-
-  nextAgent.memory.blocks.forEach((_, index) => {
-    if (typeof nextAgent.memory.blocks[index]?.value === 'string') {
-      // needs to be done or memory will rely on the existing block id
-      const { id: _id, ...rest } = nextAgent.memory.blocks[index];
-      nextAgent.memory.blocks[index] = rest;
-      if (variables) {
-        nextAgent.memory.blocks[index].value = nextAgent.memory.blocks[
-          index
-        ].value.replace(/{{(.*?)}}/g, (_m, p1) => {
+  const memoryBlockValues = agentTemplate.memory.blocks.map((block) => {
+    if (variables && typeof block.value === 'string') {
+      return {
+        ...block,
+        value: block.value.replace(/{{(.*?)}}/g, (_m, p1) => {
           return variables?.[p1] || '';
-        });
-      }
+        }),
+      };
     }
-  });
+
+    return block;
+  }, []);
 
   return {
-    system: nextAgent.system,
+    system: agentTemplate.system,
     tool_ids:
-      nextAgent.tools?.map((tool) => tool.id || '').filter(Boolean) || [],
+      agentTemplate.tools?.map((tool) => tool.id || '').filter(Boolean) || [],
     name: `name-${crypto.randomUUID()}`,
-    embedding_config: nextAgent.embedding_config,
-    memory: nextAgent.memory,
-    llm_config: nextAgent.llm_config,
+    embedding_config: agentTemplate.embedding_config,
+    memory_blocks: memoryBlockValues,
+    llm_config: agentTemplate.llm_config,
   };
+}
+
+interface CopyAgentByIdOptions {
+  memoryVariables?: Record<string, string>;
+  toolVariables?: Record<string, string>;
 }
 
 export async function copyAgentById(
   agentId: string,
   lettaAgentsUserId: string,
-  variables?: Record<string, string>,
+  options: CopyAgentByIdOptions = {},
 ) {
+  const { memoryVariables, toolVariables } = options;
+
   const [currentAgent, agentSources] = await Promise.all([
     AgentsService.getAgent(
       {
@@ -89,7 +90,7 @@ export async function copyAgentById(
     ),
   ]);
 
-  const agentBody = attachVariablesToTemplates(currentAgent, variables);
+  const agentBody = attachVariablesToTemplates(currentAgent, memoryVariables);
 
   const nextAgent = await AgentsService.createAgent(
     {
@@ -99,7 +100,8 @@ export async function copyAgentById(
         system: agentBody.system,
         tool_ids: agentBody.tool_ids,
         name: agentBody.name,
-        memory_blocks: agentBody.memory.blocks.map((block) => {
+        tool_exec_environment_variables: toolVariables,
+        memory_blocks: agentBody.memory_blocks.map((block) => {
           return {
             limit: block.limit,
             label: block.label || '',
@@ -209,6 +211,7 @@ export async function createAgent(
     context_window_limit,
     embedding_chunk_size,
     name: preName,
+    tool_exec_environment_variables,
     ...agent
   } = req.body;
 
@@ -497,7 +500,10 @@ export async function createAgent(
     const copiedAgent = await copyAgentById(
       agentTemplateIdToCopy,
       lettaAgentsUserId,
-      variables,
+      {
+        memoryVariables: variables || {},
+        toolVariables: tool_exec_environment_variables || {},
+      },
     );
 
     if (!copiedAgent?.id) {
@@ -603,6 +609,7 @@ export async function createAgent(
         embedding: embedding,
         context_window_limit: context_window_limit,
         embedding_chunk_size: embedding_chunk_size,
+        tool_exec_environment_variables: tool_exec_environment_variables,
       },
     },
     {
@@ -684,58 +691,30 @@ export async function createAgent(
 }
 interface UpdateAgentFromAgentId {
   preserveCoreMemories?: boolean;
-  variables: Record<string, string>;
+  memoryVariables: Record<string, string>;
   baseAgentId: string;
   agentToUpdateId: string;
+  toolVariables?: Record<string, string>;
   lettaAgentsUserId: string;
 }
 
 export async function updateAgentFromAgentId(options: UpdateAgentFromAgentId) {
   const {
     preserveCoreMemories = false,
-    variables,
+    memoryVariables,
     baseAgentId,
     agentToUpdateId,
+    toolVariables,
     lettaAgentsUserId,
   } = options;
 
-  const [agentTemplateData, oldDatasources, newDatasources] = await Promise.all(
-    [
-      AgentsService.getAgent(
-        {
-          agentId: baseAgentId,
-        },
-        {
-          user_id: lettaAgentsUserId,
-        },
-      ),
-      AgentsService.getAgentSources(
-        {
-          agentId: agentToUpdateId,
-        },
-        {
-          user_id: lettaAgentsUserId,
-        },
-      ),
-      AgentsService.getAgentSources(
-        {
-          agentId: baseAgentId,
-        },
-        {
-          user_id: lettaAgentsUserId,
-        },
-      ),
-    ],
-  );
-
-  const datasourcesToDetach = oldDatasources.filter(
-    ({ id }) =>
-      !newDatasources.some((newDatasource) => newDatasource.id === id),
-  );
-
-  const datasourceToAttach = newDatasources.filter(
-    (source) =>
-      !oldDatasources.some((oldDatasource) => oldDatasource.id === source.id),
+  const agentTemplateData = await AgentsService.getAgent(
+    {
+      agentId: baseAgentId,
+    },
+    {
+      user_id: lettaAgentsUserId,
+    },
   );
 
   let requestBody: UpdateAgent = {
@@ -745,9 +724,9 @@ export async function updateAgentFromAgentId(options: UpdateAgentFromAgentId) {
   };
 
   if (!preserveCoreMemories) {
-    const { memory, ...rest } = attachVariablesToTemplates(
+    const { memory_blocks, ...rest } = attachVariablesToTemplates(
       agentTemplateData,
-      variables,
+      memoryVariables,
     );
 
     requestBody = {
@@ -755,9 +734,9 @@ export async function updateAgentFromAgentId(options: UpdateAgentFromAgentId) {
       ...rest,
     };
 
-    if (memory) {
+    if (memory_blocks) {
       await Promise.all(
-        memory.blocks.map(async (block) => {
+        memory_blocks.map(async (block) => {
           if (!block.label) {
             return;
           }
@@ -780,6 +759,18 @@ export async function updateAgentFromAgentId(options: UpdateAgentFromAgentId) {
     }
   }
 
+  if (toolVariables) {
+    requestBody = {
+      ...requestBody,
+      tool_exec_environment_variables: toolVariables,
+    };
+  }
+
+  requestBody = {
+    ...requestBody,
+    source_ids: agentTemplateData.sources.map((source) => source.id || ''),
+  };
+
   const agent = await AgentsService.updateAgent(
     {
       agentId: agentToUpdateId,
@@ -789,35 +780,6 @@ export async function updateAgentFromAgentId(options: UpdateAgentFromAgentId) {
       user_id: lettaAgentsUserId,
     },
   );
-
-  await Promise.all([
-    Promise.all(
-      datasourceToAttach.map(async (datasource) => {
-        return SourcesService.attachAgentToSource(
-          {
-            agentId: agentToUpdateId,
-            sourceId: datasource.id || '',
-          },
-          {
-            user_id: lettaAgentsUserId,
-          },
-        );
-      }),
-    ),
-    Promise.all(
-      datasourcesToDetach.map(async (datasource) => {
-        return SourcesService.detachAgentFromSource(
-          {
-            agentId: agentToUpdateId,
-            sourceId: datasource.id || '',
-          },
-          {
-            user_id: lettaAgentsUserId,
-          },
-        );
-      }),
-    ),
-  ]);
 
   return agent;
 }
@@ -885,7 +847,7 @@ export async function migrateAgent(
   }
 
   await updateAgentFromAgentId({
-    variables: variables || {},
+    memoryVariables: variables || {},
     baseAgentId: deployedAgentTemplate.id,
     agentToUpdateId: agentIdToMigrate,
     lettaAgentsUserId,

@@ -79,7 +79,8 @@ type GetAgentTemplateSessionParams = z.infer<
 export const GetAgentTemplateSessionResponseSchema = c.type<{
   id: string;
   agentId: string;
-  variables: Record<string, string>;
+  memoryVariables: Record<string, string>;
+  toolVariables: Record<string, string>;
   agent: AgentState;
 }>();
 
@@ -105,12 +106,14 @@ const CreateAgentTemplateSessionParamsSchema = z.object({
 export const CreateAgentTemplateSessionResponseSchema = c.type<{
   id: string;
   agentId: string;
-  variables: Record<string, string>;
+  memoryVariables: Record<string, string>;
+  toolVariables: Record<string, string>;
   agent: AgentState;
 }>();
 
 export const CreateAgentTemplateSessionBodySchema = z.object({
-  variables: z.record(z.string()),
+  memoryVariables: z.record(z.string()),
+  toolVariables: z.record(z.string()),
 });
 
 const createAgentTemplateSimulatorSessionContract = c.mutation({

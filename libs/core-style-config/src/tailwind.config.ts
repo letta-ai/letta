@@ -9,7 +9,7 @@ export function buildConfig(appDir: string): Config {
     content: [
       join(
         appDir,
-        '{src,pages,components,app}/**/*!(*.stories|*.spec).{ts,tsx,html}'
+        '{src,pages,components,app}/**/*!(*.stories|*.spec).{ts,tsx,html}',
       ),
       ...createGlobPatternsForDependencies(appDir),
     ],
@@ -62,6 +62,8 @@ export function buildConfig(appDir: string): Config {
         },
         minWidth: {
           sidebar: 'var(--sidebar-width)',
+          biWidth: 'var(--button-input-height)',
+          'biWidth-sm': 'var(--button-input-height-sm)',
         },
         fontSize: {
           xxs: 'var(--font-size-xxs)',
