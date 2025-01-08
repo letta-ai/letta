@@ -66,6 +66,7 @@ from letta.services.message_manager import MessageManager
 from letta.services.organization_manager import OrganizationManager
 from letta.services.passage_manager import PassageManager
 from letta.services.per_agent_lock_manager import PerAgentLockManager
+from letta.services.provider_manager import ProviderManager
 from letta.services.sandbox_config_manager import SandboxConfigManager
 from letta.services.source_manager import SourceManager
 from letta.services.tool_execution_sandbox import ToolExecutionSandbox
@@ -290,6 +291,7 @@ class SyncServer(Server):
         self.message_manager = MessageManager()
         self.job_manager = JobManager()
         self.agent_manager = AgentManager()
+        self.provider_manager = ProviderManager()
 
         # Managers that interface with parallelism
         self.per_agent_lock_manager = PerAgentLockManager()
@@ -1030,7 +1032,7 @@ class SyncServer(Server):
         """List available models"""
 
         llm_models = []
-        for provider in self._enabled_providers:
+        for provider in self.get_enabled_providers():
             try:
                 llm_models.extend(provider.list_llm_models())
             except Exception as e:
@@ -1040,12 +1042,18 @@ class SyncServer(Server):
     def list_embedding_models(self) -> List[EmbeddingConfig]:
         """List available embedding models"""
         embedding_models = []
-        for provider in self._enabled_providers:
+        for provider in self.get_enabled_providers():
             try:
                 embedding_models.extend(provider.list_embedding_models())
             except Exception as e:
                 warnings.warn(f"An error occurred while listing embedding models for provider {provider}: {e}")
         return embedding_models
+
+    def get_enabled_providers(self):
+        providers_from_env = {p.name: p for p in self._enabled_providers}
+        providers_from_db = {p.name: p for p in self.provider_manager.list_providers()}
+        # Merge the two dictionaries, keeping the values from providers_from_db where conflicts occur
+        return {**providers_from_env, **providers_from_db}.values()
 
     def get_llm_config_from_handle(self, handle: str, context_window_limit: Optional[int] = None) -> LLMConfig:
         provider_name, model_name = handle.split("/", 1)
