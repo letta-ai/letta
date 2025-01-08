@@ -99,7 +99,7 @@ def evaluate(input_file: str):
                 example_num_rethinks.append(num_rethinks)
     
         print("Accuracy (any correct): ", any_correct_count / total)
-        print("Accuracy (final): ", correct / total)
+        print("Accuracy (majority vote): ", correct / total)
     with jsonlines.open(input_file) as reader:
         lines = list(reader)
     print("avg. num rethinks: ", statistics.mean(example_num_rethinks))
