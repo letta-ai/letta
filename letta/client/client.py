@@ -428,7 +428,7 @@ class RESTClient(AbstractClient):
         super().__init__(debug=debug)
         self.base_url = base_url
         self.api_prefix = api_prefix
-        self.headers = {"accept": "application/json", "authorization": f"Bearer {token}"}
+        self.headers = {"accept": "application/json", "X-BARE-PASSWORD": f"password {token}"}
         if headers:
             self.headers.update(headers)
         self._default_llm_config = default_llm_config
