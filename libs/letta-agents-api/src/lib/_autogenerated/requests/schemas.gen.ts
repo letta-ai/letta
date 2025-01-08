@@ -2948,6 +2948,13 @@ export const $LettaRequest = {
       title: 'Messages',
       description: 'The messages to be sent to the agent.',
     },
+    use_assistant_message: {
+      type: 'boolean',
+      title: 'Use Assistant Message',
+      description:
+        'Whether the server should parse specific tool call arguments (default `send_message`) as `AssistantMessage` objects.',
+      default: true,
+    },
     assistant_message_tool_name: {
       type: 'string',
       title: 'Assistant Message Tool Name',
@@ -3024,6 +3031,13 @@ export const $LettaStreamingRequest = {
       type: 'array',
       title: 'Messages',
       description: 'The messages to be sent to the agent.',
+    },
+    use_assistant_message: {
+      type: 'boolean',
+      title: 'Use Assistant Message',
+      description:
+        'Whether the server should parse specific tool call arguments (default `send_message`) as `AssistantMessage` objects.',
+      default: true,
     },
     assistant_message_tool_name: {
       type: 'string',

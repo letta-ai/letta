@@ -1162,6 +1162,10 @@ export type LettaRequest = {
    */
   messages: Array<MessageCreate>;
   /**
+   * Whether the server should parse specific tool call arguments (default `send_message`) as `AssistantMessage` objects.
+   */
+  use_assistant_message?: boolean;
+  /**
    * The name of the designated message tool.
    */
   assistant_message_tool_name?: string;
@@ -1202,6 +1206,10 @@ export type LettaStreamingRequest = {
    * The messages to be sent to the agent.
    */
   messages: Array<MessageCreate>;
+  /**
+   * Whether the server should parse specific tool call arguments (default `send_message`) as `AssistantMessage` objects.
+   */
+  use_assistant_message?: boolean;
   /**
    * The name of the designated message tool.
    */
