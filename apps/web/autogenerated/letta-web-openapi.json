@@ -212,6 +212,13 @@
                     "type": "number",
                     "nullable": true
                   },
+                  "tool_exec_environment_variables": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "string"
+                    },
+                    "nullable": true
+                  },
                   "template": {
                     "type": "boolean"
                   },

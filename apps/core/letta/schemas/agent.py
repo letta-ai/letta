@@ -134,6 +134,7 @@ class CreateAgent(BaseModel, validate_assignment=True):  #
     tool_exec_environment_variables: Optional[Dict[str, str]] = Field(
         None, description="The environment variables for tool execution specific to this agent."
     )
+    variables: Optional[Dict[str, str]] = Field(None, description="The variables that should be set for the agent.")
 
     @field_validator("name")
     @classmethod

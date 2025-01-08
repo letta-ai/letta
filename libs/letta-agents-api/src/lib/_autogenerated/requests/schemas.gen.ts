@@ -2067,6 +2067,21 @@ export const $CreateAgentRequest = {
       description:
         'The environment variables for tool execution specific to this agent.',
     },
+    variables: {
+      anyOf: [
+        {
+          additionalProperties: {
+            type: 'string',
+          },
+          type: 'object',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Variables',
+      description: 'The variables that should be set for the agent.',
+    },
     user_id: {
       anyOf: [
         {

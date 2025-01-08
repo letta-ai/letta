@@ -697,6 +697,12 @@ export type CreateAgentRequest = {
   tool_exec_environment_variables?: {
     [key: string]: string;
   } | null;
+  /**
+   * The variables that should be set for the agent.
+   */
+  variables?: {
+    [key: string]: string;
+  } | null;
   user_id?: string | null;
 };
 
