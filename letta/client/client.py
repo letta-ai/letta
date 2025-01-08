@@ -1031,9 +1031,10 @@ class RESTClient(AbstractClient):
     def create_block(
         self, label: str, value: str, limit: Optional[int] = None, template_name: Optional[str] = None, is_template: bool = False
     ) -> Block:  #
-        request = CreateBlock(label=label, value=value, template=is_template, template_name=template_name)
+        request_kwargs = dict(label=label, value=value, template=is_template, template_name=template_name)
         if limit:
-            request.limit = limit
+            request_kwargs['limit'] = limit
+        request = CreateBlock(**request_kwargs)
         response = requests.post(f"{self.base_url}/{self.api_prefix}/blocks", json=request.model_dump(), headers=self.headers)
         if response.status_code != 200:
             raise ValueError(f"Failed to create block: {response.text}")
