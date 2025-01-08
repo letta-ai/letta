@@ -16,14 +16,16 @@ def generate_composio_tool_wrapper(action_name: str) -> tuple[str, str]:
 
     wrapper_function_str = f"""
 def {func_name}(**kwargs):
-    from composio import Action, App, Tag
     from composio_langchain import ComposioToolSet
     import os
 
     entity_id = os.getenv('{COMPOSIO_ENTITY_ENV_VAR_KEY}', '{DEFAULT_ENTITY_ID}')
     composio_toolset = ComposioToolSet(entity_id=entity_id)
-    tool = {tool_instantiation_str}
-    return tool.func(**kwargs)['data']
+    response = composio_toolset.execute_action(action='{action_name}', params=kwargs)
+
+    if response["error"]:
+        raise RuntimeError(response["error"])
+    return response["data"]
     """
 
     # Compile safety check

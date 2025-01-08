@@ -306,7 +306,8 @@ class ToolExecutionSandbox:
         if execution.results:
             func_return, agent_state = self.parse_best_effort(execution.results[0].text)
         elif execution.error:
-            logger.error(f"Executing tool {self.tool_name} failed with {execution.error}")
+            logger.error(f"Executing tool {self.tool_name} raised a {execution.error.name} with message: \n{execution.error.value}")
+            logger.error(f"Traceback from e2b sandbox: \n{execution.error.traceback}")
             func_return = get_friendly_error_msg(
                 function_name=self.tool_name, exception_name=execution.error.name, exception_message=execution.error.value
             )
