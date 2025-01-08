@@ -67,7 +67,7 @@ function UserIsNotConnectedComponent() {
                   <Typography overrideEl="span" underline>
                     <Link
                       target="_blank"
-                      href="https://docs.letta.com/agent-development-environment/troubleshooting"
+                      href="https://docs.letta.com/guides/ade/troubleshooting"
                     >
                       {chunks}
                     </Link>
