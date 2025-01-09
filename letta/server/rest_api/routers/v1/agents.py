@@ -46,6 +46,8 @@ def list_agents(
     ),
     server: "SyncServer" = Depends(get_letta_server),
     user_id: Optional[str] = Header(None, alias="user_id"),
+    cursor: Optional[int] = Query(None, description="Cursor for pagination"),
+    limit: Optional[int] = Query(None, description="Limit for pagination"),
     # Extract user_id from header, default to None if not present
 ):
     """
@@ -66,7 +68,7 @@ def list_agents(
     }
 
     # Call list_agents with the dynamic kwargs
-    agents = server.agent_manager.list_agents(actor=actor, **kwargs)
+    agents = server.agent_manager.list_agents(actor=actor, cursor=cursor, limit=limit, **kwargs)
     return agents
 
 
@@ -491,6 +493,7 @@ async def send_message(
         stream_steps=False,
         stream_tokens=False,
         # Support for AssistantMessage
+        use_assistant_message=request.use_assistant_message,
         assistant_message_tool_name=request.assistant_message_tool_name,
         assistant_message_tool_kwarg=request.assistant_message_tool_kwarg,
     )
@@ -636,6 +639,7 @@ async def send_message_to_agent(
     chat_completion_mode: bool = False,
     timestamp: Optional[datetime] = None,
     # Support for AssistantMessage
+    use_assistant_message: bool = True,
     assistant_message_tool_name: str = DEFAULT_MESSAGE_TOOL,
     assistant_message_tool_kwarg: str = DEFAULT_MESSAGE_TOOL_KWARG,
 ) -> Union[StreamingResponse, LettaResponse]:
@@ -666,7 +670,7 @@ async def send_message_to_agent(
             stream_tokens = False
 
         # Create a new interface per request
-        letta_agent.interface = StreamingServerInterface()
+        letta_agent.interface = StreamingServerInterface(use_assistant_message)
         streaming_interface = letta_agent.interface
         if not isinstance(streaming_interface, StreamingServerInterface):
             raise ValueError(f"Agent has wrong type of interface: {type(streaming_interface)}")

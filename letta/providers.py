@@ -1,16 +1,24 @@
 from typing import List, Optional
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import Field, model_validator
 
 from letta.constants import LLM_MAX_TOKENS, MIN_CONTEXT_WINDOW
 from letta.llm_api.azure_openai import get_azure_chat_completions_endpoint, get_azure_embeddings_endpoint
 from letta.llm_api.azure_openai_constants import AZURE_MODEL_TO_CONTEXT_LENGTH
 from letta.schemas.embedding_config import EmbeddingConfig
+from letta.schemas.letta_base import LettaBase
 from letta.schemas.llm_config import LLMConfig
+from letta.services.organization_manager import OrganizationManager
 
 
-class Provider(BaseModel):
+class ProviderBase(LettaBase):
+    __id_prefix__ = "provider"
+
+
+class Provider(ProviderBase):
     name: str = Field(..., description="The name of the provider")
+    api_key: Optional[str] = Field(None, description="API key used for requests to the provider.")
+    organization_id: Optional[str] = Field(OrganizationManager.DEFAULT_ORG_ID, description="The organization id of the user")
 
     def list_llm_models(self) -> List[LLMConfig]:
         return []
@@ -27,6 +35,17 @@ class Provider(BaseModel):
 
     def get_handle(self, model_name: str) -> str:
         return f"{self.name}/{model_name}"
+
+
+class ProviderCreate(ProviderBase):
+    name: str = Field(..., description="The name of the provider.")
+    api_key: str = Field(..., description="API key used for requests to the provider.")
+    organization_id: str = Field(..., description="The organization id that this provider information pertains to.")
+
+
+class ProviderUpdate(ProviderBase):
+    id: str = Field(..., description="The id of the provider to update.")
+    api_key: str = Field(..., description="API key used for requests to the provider.")
 
 
 class LettaProvider(Provider):

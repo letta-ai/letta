@@ -98,7 +98,7 @@ class ToolExecutionSandbox:
             os.environ.clear()
             os.environ.update(original_env)  # Restore original environment variables
 
-    def run_local_dir_sandbox(self, agent_state: AgentState) -> SandboxRunResult:
+    def run_local_dir_sandbox(self, agent_state: Optional[AgentState] = None) -> SandboxRunResult:
         sbx_config = self.sandbox_config_manager.get_or_create_default_sandbox_config(sandbox_type=SandboxType.LOCAL, actor=self.user)
         local_configs = sbx_config.get_local_config()
 
@@ -106,6 +106,10 @@ class ToolExecutionSandbox:
         env_vars = self.sandbox_config_manager.get_sandbox_env_vars_as_dict(sandbox_config_id=sbx_config.id, actor=self.user, limit=100)
         env = os.environ.copy()
         env.update(env_vars)
+
+        # Get environment variables for this agent specifically
+        if agent_state:
+            env.update(agent_state.get_agent_env_vars_as_dict())
 
         # Safety checks
         if not os.path.isdir(local_configs.sandbox_dir):
@@ -273,7 +277,7 @@ class ToolExecutionSandbox:
 
     # e2b sandbox specific functions
 
-    def run_e2b_sandbox(self, agent_state: AgentState) -> SandboxRunResult:
+    def run_e2b_sandbox(self, agent_state: Optional[AgentState] = None) -> SandboxRunResult:
         sbx_config = self.sandbox_config_manager.get_or_create_default_sandbox_config(sandbox_type=SandboxType.E2B, actor=self.user)
         sbx = self.get_running_e2b_sandbox_with_same_state(sbx_config)
         if not sbx or self.force_recreate:
@@ -292,15 +296,18 @@ class ToolExecutionSandbox:
         # Get environment variables for the sandbox
         # TODO: We set limit to 100 here, but maybe we want it uncapped? Realistically this should be fine.
         env_vars = self.sandbox_config_manager.get_sandbox_env_vars_as_dict(sandbox_config_id=sbx_config.id, actor=self.user, limit=100)
+        # Get environment variables for this agent specifically
+        if agent_state:
+            env_vars.update(agent_state.get_agent_env_vars_as_dict())
+
         code = self.generate_execution_script(agent_state=agent_state)
         execution = sbx.run_code(code, envs=env_vars)
 
         if execution.results:
             func_return, agent_state = self.parse_best_effort(execution.results[0].text)
         elif execution.error:
-            logger.error(f"Executing tool {self.tool_name} failed with {execution.error}")
-            logger.error(f"E2B Sandbox configurations: {sbx_config}")
-            logger.error(f"E2B Sandbox ID: {sbx.sandbox_id}")
+            logger.error(f"Executing tool {self.tool_name} raised a {execution.error.name} with message: \n{execution.error.value}")
+            logger.error(f"Traceback from e2b sandbox: \n{execution.error.traceback}")
             func_return = get_friendly_error_msg(
                 function_name=self.tool_name, exception_name=execution.error.name, exception_message=execution.error.value
             )

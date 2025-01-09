@@ -9,6 +9,7 @@ if TYPE_CHECKING:
 
     from letta.orm.agent import Agent
     from letta.orm.file import FileMetadata
+    from letta.orm.provider import Provider
     from letta.orm.sandbox_config import AgentEnvironmentVariable
     from letta.orm.tool import Tool
     from letta.orm.user import User
@@ -45,6 +46,7 @@ class Organization(SqlalchemyBase):
         "SourcePassage", back_populates="organization", cascade="all, delete-orphan"
     )
     agent_passages: Mapped[List["AgentPassage"]] = relationship("AgentPassage", back_populates="organization", cascade="all, delete-orphan")
+    providers: Mapped[List["Provider"]] = relationship("Provider", back_populates="organization", cascade="all, delete-orphan")
 
     @property
     def passages(self) -> List[Union["SourcePassage", "AgentPassage"]]:

@@ -80,8 +80,15 @@ class AgentState(OrmMetadataBase, validate_assignment=True):
     sources: List[Source] = Field(..., description="The sources used by the agent.")
     tags: List[str] = Field(..., description="The tags associated with the agent.")
     tool_exec_environment_variables: List[AgentEnvironmentVariable] = Field(
-        ..., description="The environment variables for tool execution specific to this agent."
+        default_factory=list, description="The environment variables for tool execution specific to this agent."
     )
+
+    def get_agent_env_vars_as_dict(self) -> Dict[str, str]:
+        # Get environment variables for this agent specifically
+        per_agent_env_vars = {}
+        for agent_env_var_obj in self.tool_exec_environment_variables:
+            per_agent_env_vars[agent_env_var_obj.key] = agent_env_var_obj.value
+        return per_agent_env_vars
 
 
 class CreateAgent(BaseModel, validate_assignment=True):  #
@@ -127,6 +134,7 @@ class CreateAgent(BaseModel, validate_assignment=True):  #
     tool_exec_environment_variables: Optional[Dict[str, str]] = Field(
         None, description="The environment variables for tool execution specific to this agent."
     )
+    variables: Optional[Dict[str, str]] = Field(None, description="The variables that should be set for the agent.")
 
     @field_validator("name")
     @classmethod

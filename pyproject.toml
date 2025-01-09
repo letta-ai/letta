@@ -2,7 +2,7 @@
 name = "letta"
 version = "0.6.7"
 packages = [
-    {include = "letta"}
+    {include = "letta"},
 ]
 description = "Create LLM agents with long-term memory and custom tools"
 authors = [
@@ -15,7 +15,7 @@ readme = "README.md"
 letta = "letta.main:app"
 
 [tool.poetry.dependencies]
-python = "<4.0,>=3.10"
+python = "<3.14,>=3.10"
 typer = {extras = ["all"], version = "^0.9.0"}
 questionary = "^2.0.1"
 pytz = "^2023.3.post1"
