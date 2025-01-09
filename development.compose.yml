@@ -1,5 +1,4 @@
 services:
-
   letta_server:
     image: letta_server
     hostname: letta-server
