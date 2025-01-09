@@ -238,12 +238,10 @@ export const projects = pgTable(
       .$onUpdate(() => new Date()),
   },
   (table) => ({
-    unique: {
-      uniqueSlug: uniqueIndex('unique_slug').on(
-        table.slug,
-        table.organizationId,
-      ),
-    },
+    uniqueSlug: uniqueIndex('unique_slug').on(
+      table.slug,
+      table.organizationId,
+    ),
   }),
 );
 
@@ -278,12 +276,10 @@ export const agentTemplates = pgTable(
       .$onUpdate(() => new Date()),
   },
   (table) => ({
-    unique: {
-      uniqueName: uniqueIndex('unique_name').on(
-        table.name,
-        table.organizationId,
-      ),
-    },
+    uniqueName: uniqueIndex('unique_name').on(
+      table.name,
+      table.organizationId,
+    ),
   }),
 );
 
@@ -325,13 +321,11 @@ export const deployedAgentTemplates = pgTable(
       .$onUpdate(() => new Date()),
   },
   (table) => ({
-    unique: {
-      uniqueVersion: uniqueIndex('unique_version').on(
-        table.version,
-        table.organizationId,
-        table.agentTemplateId,
-      ),
-    },
+    uniqueVersion: uniqueIndex('unique_version').on(
+      table.version,
+      table.organizationId,
+      table.agentTemplateId,
+    ),
   }),
 );
 
@@ -404,13 +398,11 @@ export const deployedAgents = pgTable(
       .$onUpdate(() => new Date()),
   },
   (table) => ({
-    unique: {
-      uniqueKey: uniqueIndex('unique_key').on(
-        table.key,
-        table.organizationId,
-        table.projectId,
-      ),
-    },
+    uniqueKey: uniqueIndex('unique_key').on(
+      table.key,
+      table.organizationId,
+      table.projectId,
+    ),
   }),
 );
 
@@ -483,12 +475,10 @@ export const adePreferences = pgTable(
     displayConfig: json('display_config').$type().notNull(),
   },
   (table) => ({
-    unique: {
-      uniqueUserAgent: uniqueIndex('unique_user_agent').on(
-        table.userId,
-        table.agentId,
-      ),
-    },
+    uniqueUserAgent: uniqueIndex('unique_user_agent').on(
+      table.userId,
+      table.agentId,
+    ),
   }),
 );
 
@@ -534,17 +524,20 @@ export const organizationInvitedUsers = pgTable('organization_invites', {
   id: text('id')
     .primaryKey()
     .default(sql`gen_random_uuid()`),
-  email: text('email').notNull().unique(),
+  email: text('email').notNull(),
   organizationId: text('organization_id')
     .notNull()
     .references(() => organizations.id, { onDelete: 'cascade' })
     .notNull(),
+  inviteCode: text('invite_code').notNull().unique(),
   invitedBy: text('invited_by').notNull(),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at')
     .notNull()
     .$onUpdate(() => new Date()),
-});
+}, self => ({
+  uniqueEmailIndex: uniqueIndex('unique_email').on(self.email, self.organizationId),
+}));
 
 export const organizationInvitedUsersRelations = relations(
   organizationInvitedUsers,
@@ -638,12 +631,10 @@ export const inferenceModelsMetadata = pgTable(
       .$onUpdate(() => new Date()),
   },
   (self) => ({
-    unique: {
-      uniqueModelName: uniqueIndex('unique_model_name').on(
-        self.modelName,
-        self.modelEndpoint,
-      ),
-    },
+    uniqueModelName: uniqueIndex('unique_inference_model_name').on(
+      self.modelName,
+      self.modelEndpoint,
+    ),
   }),
 );
 
@@ -666,12 +657,10 @@ export const embeddingModelsMetadata = pgTable(
       .$onUpdate(() => new Date()),
   },
   (self) => ({
-    unique: {
-      uniqueModelName: uniqueIndex('unique_model_name').on(
-        self.modelName,
-        self.modelEndpoint,
-      ),
-    },
+    uniqueModelName: uniqueIndex('unique_embedding_model_name').on(
+      self.modelName,
+      self.modelEndpoint,
+    ),
   }),
 );
 
@@ -702,12 +691,10 @@ export const toolMetadata = pgTable(
       .$onUpdate(() => new Date()),
   },
   (self) => ({
-    unique: {
-      uniqueProviderId: uniqueIndex('unique_provider_id').on(
-        self.provider,
-        self.providerId,
-      ),
-    },
+    uniqueProviderId: uniqueIndex('unique_provider_id').on(
+      self.provider,
+      self.providerId,
+    ),
   }),
 );
 

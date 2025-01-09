@@ -109,7 +109,9 @@ function CopyButton({ text }: CopyButtonProps) {
 
   return (
     <Button
-      onClick={copyToClipboard}
+      onClick={() => {
+        void copyToClipboard();
+      }}
       color="tertiary"
       label="Copy"
       hideLabel

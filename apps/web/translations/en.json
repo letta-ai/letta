@@ -340,6 +340,20 @@
     "settings": "Settings"
   },
   "organization/members": {
+    "CopyInviteCodeButton": {
+      "success": "Invite code has been copied to your clipboard",
+      "label": "Copy invite code"
+    },
+    "InviteMembersDialog": {
+      "options": "Options",
+      "expired": "Invite expired",
+      "expiresIn": "Invite expires in {days} days"
+    },
+    "RegenerateInviteLinkButton": {
+      "action": "Regenerate invite link",
+      "success": "Invite link has been regenerated and copied to your clipboard",
+      "error": "There was an error regenerating the invite link, please try again or contact support."
+    },
     "DisInviteMemberButton": {
       "dismiss": "Dismiss invitation"
     },
@@ -356,6 +370,10 @@
       }
     },
     "InviteMemberDialog": {
+      "inviteCode": {
+        "description": "This is a personal invite link for the user, they can use this link to join your organization, it will expire in 7 days.",
+        "label": "Invite link"
+      },
       "200success": "User has been added to the organization, you may need to refresh the page to see the changes",
       "201success": "User has been invited to the organization",
       "email": {
@@ -370,7 +388,7 @@
       "trigger": "Invite member",
       "confirm": "Invite",
       "title": "Invite member",
-      "description": "Invite a new member to your organization. Once invited, they can sign in via Google and will have access to all projects and agents in the organization. If they already have an account with us, they will automatically get added to your organization."
+      "description": "Invite a new member to your organization. If they already have an account at Letta, they will be immediately be added to your organization. If they have yet to create an account, they can sign in via a provider or using the invite link generated in the next step. <bold>We do not send emails to invited members.</bold>"
     },
     "title": "Organization members",
     "table": {
@@ -383,6 +401,7 @@
       "emptyError": "There should always be at least one member in the organization (you), please contact support.",
       "loading": "Loading members..."
     },
+
     "DeleteMemberDialog": {
       "error": "There was an error removing this member, please try again or contact support.",
       "title": "Remove member",
@@ -1030,6 +1049,18 @@
     "google": "Continue with Google",
     "github": "Continue with GitHub",
     "terms": "By clicking the button above, you agree to our <terms>Terms of Service</terms> and <privacy>Privacy Policy</privacy>."
+  },
+  "signup-via-invite": {
+    "errors": {
+      "expired": "This invite link has expired, please contact the organization administrator for a new invite link.",
+      "mismatch": "The email address you are using does not match the one on the invite. Please sign in with the correct email address.",
+      "invalid": "This invite link is invalid, please contact the organization administrator for a new invite link.",
+      "default": "There was an error accepting the invite, please try again or contact support."
+    },
+    "loading": "Loading...",
+    "title": "Welcome",
+    "description": "You've been invited to join {organizationName}!",
+    "more": "Use the buttons below to complete sign up."
   },
   "data-sources/layout": {
     "navigation": {

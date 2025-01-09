@@ -24,6 +24,8 @@ const nonCloudWhitelist = [
   new RegExp('/api/tool-group-metadata(.+)?'),
 ];
 
+const publicApis = [new RegExp('/api/invites/(.+)?')];
+
 const handler = createNextHandler(contracts, router, {
   basePath: '/api',
   jsonQuery: true,
@@ -31,6 +33,10 @@ const handler = createNextHandler(contracts, router, {
   handlerType: 'app-router',
   requestMiddleware: [
     tsr.middleware<{ $userOverride?: GetUserDataResponse }>(async (req) => {
+      if (publicApis.some((path) => new URL(req.url).pathname.match(path))) {
+        return;
+      }
+
       const user = await getUser();
 
       if (!user) {
@@ -38,21 +44,21 @@ const handler = createNextHandler(contracts, router, {
           {
             message: 'Unauthorized',
           },
-          { status: 401 }
+          { status: 401 },
         );
       }
 
       if (!user?.hasCloudAccess) {
         if (
           !nonCloudWhitelist.some((path) =>
-            new URL(req.url).pathname.match(path)
+            new URL(req.url).pathname.match(path),
           )
         ) {
           return TsRestResponse.fromJson(
             {
               message: 'Unauthorized',
             },
-            { status: 401 }
+            { status: 401 },
           );
         }
       }
@@ -60,16 +66,15 @@ const handler = createNextHandler(contracts, router, {
       if (new URL(req.url).pathname.includes('admin')) {
         const organizationId = await getUserActiveOrganizationIdOrThrow();
 
-        const organization = await getOrganizationFromOrganizationId(
-          organizationId
-        );
+        const organization =
+          await getOrganizationFromOrganizationId(organizationId);
 
         if (!organization?.isAdmin) {
           return TsRestResponse.fromJson(
             {
               message: 'Unauthorized',
             },
-            { status: 401 }
+            { status: 401 },
           );
         }
       }
@@ -85,7 +90,7 @@ const handler = createNextHandler(contracts, router, {
         {
           message: error.message,
         },
-        { status: error.statusCode }
+        { status: error.statusCode },
       );
     }
 
@@ -99,7 +104,7 @@ const handler = createNextHandler(contracts, router, {
         message: 'An unhandled error has happened, feel free to report.',
         errorId,
       },
-      { status: 500 }
+      { status: 500 },
     );
   },
 });

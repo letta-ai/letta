@@ -232,6 +232,41 @@
       "when": 1736307913500,
       "tag": "0032_spooky_famine",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1736363191608,
+      "tag": "0033_productive_spitfire",
+      "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1736364264074,
+      "tag": "0034_talented_triathlon",
+      "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1736364477656,
+      "tag": "0035_harsh_tiger_shark",
+      "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1736364619163,
+      "tag": "0036_supreme_shinko_yamashiro",
+      "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1736364697370,
+      "tag": "0037_absent_christian_walker",
+      "breakpoints": true
     }
   ]
 }

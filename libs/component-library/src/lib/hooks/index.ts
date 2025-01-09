@@ -5,27 +5,31 @@ import { useTranslations } from '@letta-cloud/translations';
 
 interface UseCopyToClipboardArgs {
   textToCopy: string;
+  copySuccessMessage?: string;
 }
 
 export function useCopyToClipboard(args: UseCopyToClipboardArgs) {
-  const { textToCopy } = args;
+  const { textToCopy, copySuccessMessage } = args;
   const [isCopied, setIsCopied] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const t = useTranslations('component-library/hooks/useCopyToClipboard');
 
-  const copyToClipboard = useCallback(async () => {
-    try {
-      await navigator.clipboard.writeText(textToCopy);
-      setIsCopied(true);
-      toast.success(t('copied'));
+  const copyToClipboard = useCallback(
+    async (textOverride?: string) => {
+      try {
+        await navigator.clipboard.writeText(textOverride || textToCopy);
+        setIsCopied(true);
+        toast.success(copySuccessMessage || t('copied'));
 
-      timer.current = setTimeout(() => {
-        setIsCopied(false);
-      }, 2000);
-    } catch (_) {
-      alert('Failed to copy to clipboard');
-    }
-  }, [t, textToCopy]);
+        timer.current = setTimeout(() => {
+          setIsCopied(false);
+        }, 2000);
+      } catch (_) {
+        alert('Failed to copy to clipboard');
+      }
+    },
+    [t, textToCopy, copySuccessMessage],
+  );
 
   useEffect(() => {
     return () => {

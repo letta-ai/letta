@@ -61,9 +61,9 @@ export function DialogTable(props: DialogTableProps) {
             paddingY="small"
             paddingX="medium"
           >
-            <HStack fullWidth justify="start">
+            <HStack overflow="hidden" fullWidth justify="start">
               {item.icon && <Slot className="w-3">{item.icon}</Slot>}
-              <Typography align="left" fullWidth overflow="ellipsis">
+              <Typography noWrap align="left" fullWidth overflow="ellipsis">
                 {item.label}
               </Typography>
             </HStack>

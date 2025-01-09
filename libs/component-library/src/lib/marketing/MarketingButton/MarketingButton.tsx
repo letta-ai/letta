@@ -6,11 +6,11 @@ import { ButtonPrimitive } from '../../../primitives';
 import { forwardRef } from 'react';
 
 const buttonVariants = cva(
-  'px-9 py-2.5 cursor-pointer items-center inline-flex gap-3',
+  'px-9 py-2.5 cursor-pointer items-center bold inline-flex gap-3',
   {
     variants: {
       variant: {
-        primary: 'bg-foreground bg-background-hover',
+        primary: 'bg-background-grey2 bg-background-hover',
         secondary:
           'bg-transparent text-muted border-muted border border-solid hover:text-white hover:border-white transition-colors',
       },

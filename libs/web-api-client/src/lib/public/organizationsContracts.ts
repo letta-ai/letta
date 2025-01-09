@@ -73,6 +73,7 @@ export type GetCurrentOrganizationTeamMembersResponseBodyType =
 /* List invited members */
 export const InvitedMembersSchema = z.object({
   email: z.string(),
+  inviteCode: z.string(),
   createdAt: z.string(),
   id: z.string(),
 });
@@ -104,6 +105,25 @@ export type ListInvitedMembersResponseBodyType = ServerInferResponses<
   200
 >;
 
+/* Regenerate invite code */
+export const RegenerateInviteCodeSchema = z.object({
+  memberId: z.string(),
+});
+
+export const regenerateInviteCodeContract = c.mutation({
+  method: 'POST',
+  path: '/organizations/self/invited-members/:memberId/regenerate',
+  pathParams: RegenerateInviteCodeSchema,
+  body: z.undefined(),
+  responses: {
+    200: z.object({
+      email: z.string(),
+      inviteCode: z.string(),
+      id: z.string(),
+    }),
+  },
+});
+
 /* Invite new team member */
 export const InviteNewTeamMemberSchemaBody = z.object({
   email: z.string(),
@@ -111,6 +131,7 @@ export const InviteNewTeamMemberSchemaBody = z.object({
 
 export const InviteNewTeamMemberSchemaResponse = z.object({
   email: z.string(),
+  inviteCode: z.string(),
   id: z.string(),
 });
 
@@ -235,6 +256,19 @@ export const getCurrentOrganizationPreferencesContract = c.query({
   },
 });
 
+const GetInviteByCodeResponse = z.object({
+  organizationName: z.string(),
+  email: z.string(),
+});
+
+const GetInviteByCodeContract = c.query({
+  method: 'GET',
+  path: '/invites/:inviteCode',
+  responses: {
+    200: GetInviteByCodeResponse,
+  },
+});
+
 export const organizationsContract = c.router({
   getCurrentOrganization: getCurrentOrganizationContract,
   getCurrentOrganizationPreferences: getCurrentOrganizationPreferencesContract,
@@ -246,6 +280,8 @@ export const organizationsContract = c.router({
   deleteOrganization: deleteOrganizationContract,
   updateOrganization: updateOrganizationContract,
   createOrganization: createOrganizationContract,
+  regenerateInviteCode: regenerateInviteCodeContract,
+  getInviteByCode: GetInviteByCodeContract,
 });
 
 export const organizationsQueryClientKeys = {
@@ -263,4 +299,5 @@ export const organizationsQueryClientKeys = {
     params,
   ],
   getCurrentOrganizationPreferences: ['organizations', 'self', 'preferences'],
+  getInviteByCode: (inviteCode: string) => ['invites', inviteCode],
 };

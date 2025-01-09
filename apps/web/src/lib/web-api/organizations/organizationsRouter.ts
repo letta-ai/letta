@@ -15,6 +15,7 @@ import {
 import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
 import type { contracts } from '$web/web-api/contracts';
 import { and, eq, gt, ilike, inArray } from 'drizzle-orm';
+import { generateInviteCode, parseInviteCode } from '$web/utils';
 
 type GetCurrentOrganizationResponse = ServerInferResponses<
   typeof contracts.organizations.getCurrentOrganization
@@ -102,6 +103,61 @@ async function getCurrentOrganizationTeamMembers(
   };
 }
 
+type RegenerateInviteCodeRequest = ServerInferRequest<
+  typeof contracts.organizations.regenerateInviteCode
+>;
+
+type RegenerateInviteCodeResponse = ServerInferResponses<
+  typeof contracts.organizations.regenerateInviteCode
+>;
+
+async function regenerateInviteCode(
+  req: RegenerateInviteCodeRequest,
+): Promise<RegenerateInviteCodeResponse> {
+  const { activeOrganizationId } =
+    await getUserWithActiveOrganizationIdOrThrow();
+  const { memberId } = req.params;
+
+  const invitedMember = await db.query.organizationInvitedUsers.findFirst({
+    where: eq(organizationInvitedUsers.id, memberId),
+  });
+
+  if (!invitedMember) {
+    return {
+      status: 404,
+      body: {
+        message: 'User not found',
+      },
+    };
+  }
+
+  const inviteCode = generateInviteCode({
+    email: invitedMember.email,
+    organizationId: activeOrganizationId,
+  });
+
+  await db
+    .update(organizationInvitedUsers)
+    .set({
+      inviteCode,
+    })
+    .where(
+      and(
+        eq(organizationInvitedUsers.id, memberId),
+        eq(organizationInvitedUsers.organizationId, activeOrganizationId),
+      ),
+    );
+
+  return {
+    status: 200,
+    body: {
+      id: invitedMember.id,
+      email: invitedMember.email,
+      inviteCode,
+    },
+  };
+}
+
 type InviteNewTeamMemberRequest = ServerInferRequest<
   typeof contracts.organizations.inviteNewTeamMember
 >;
@@ -170,6 +226,11 @@ async function inviteNewTeamMember(
     };
   }
 
+  const inviteCode = generateInviteCode({
+    email,
+    organizationId: activeOrganizationId,
+  });
+
   const invitedUser = await db.query.organizationInvitedUsers.findFirst({
     where: and(
       eq(organizationInvitedUsers.email, email),
@@ -192,6 +253,7 @@ async function inviteNewTeamMember(
     .values({
       email,
       organizationId: activeOrganizationId,
+      inviteCode,
       invitedBy: userId,
     })
     .returning({ id: organizationInvitedUsers.id });
@@ -200,6 +262,7 @@ async function inviteNewTeamMember(
     status: 201,
     body: {
       email,
+      inviteCode,
       id: res.id,
     },
   };
@@ -329,6 +392,7 @@ async function listInvitedMembers(
       members: invitedMembers.slice(0, limit).map((member) => ({
         id: member.id,
         email: member.email,
+        inviteCode: member.inviteCode,
         invitedBy: member.invitedBy,
         createdAt: member.createdAt.toISOString(),
         updatedAt: member.updatedAt.toISOString(),
@@ -449,6 +513,65 @@ async function getCurrentOrganizationPreferences(): Promise<GetCurrentOrganizati
   };
 }
 
+type GetInviteByCode = ServerInferRequest<
+  typeof contracts.organizations.getInviteByCode
+>;
+
+type GetInviteByCodeResponse = ServerInferResponses<
+  typeof contracts.organizations.getInviteByCode
+>;
+
+async function getInviteByCode(
+  req: GetInviteByCode,
+): Promise<GetInviteByCodeResponse> {
+  const { inviteCode } = req.params;
+
+  const { isExpired } = parseInviteCode(inviteCode);
+
+  if (isExpired) {
+    return {
+      status: 404,
+      body: {
+        message: 'Invite not found',
+      },
+    };
+  }
+
+  const invite = await db.query.organizationInvitedUsers.findFirst({
+    where: eq(organizationInvitedUsers.inviteCode, inviteCode),
+  });
+
+  if (!invite) {
+    return {
+      status: 404,
+      body: {
+        message: 'Invite not found',
+      },
+    };
+  }
+
+  const organization = await db.query.organizations.findFirst({
+    where: eq(organizations.id, invite.organizationId),
+  });
+
+  if (!organization) {
+    return {
+      status: 404,
+      body: {
+        message: 'Organization not found',
+      },
+    };
+  }
+
+  return {
+    status: 200,
+    body: {
+      organizationName: organization.name,
+      email: invite.email,
+    },
+  };
+}
+
 export const organizationsRouter = {
   getCurrentOrganization,
   getCurrentOrganizationPreferences,
@@ -460,4 +583,6 @@ export const organizationsRouter = {
   deleteOrganization,
   updateOrganization,
   createOrganization,
+  regenerateInviteCode,
+  getInviteByCode,
 };

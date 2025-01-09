@@ -23,8 +23,13 @@ export async function GET(
 ) {
   const authUrl = generateOAuthStep1URL((await context.params).provider);
 
-  const returnUrl = req.nextUrl.searchParams.get('redirect');
-  const state = await generateOAuthStateUrl(returnUrl || '');
+  const redirectUrl = req.nextUrl.searchParams.get('redirect') || '';
+  const inviteCode = req.nextUrl.searchParams.get('inviteCode') || undefined;
+
+  const state = await generateOAuthStateUrl({
+    redirectUrl,
+    inviteCode,
+  });
 
   return NextResponse.redirect(`${authUrl}&state=${state}`, { status: 302 });
 }

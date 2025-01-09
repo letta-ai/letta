@@ -1,25 +1,14 @@
 'use client';
-import {
-  Typography,
-  MarketingButton,
-  VStack,
-  Logo,
-  GithubLogoMarkDynamic,
-  GoogleLogoMarkDynamic,
-} from '@letta-cloud/component-library';
-import type { ElementRef } from 'react';
+import { Typography, VStack, Logo } from '@letta-cloud/component-library';
 import { Suspense } from 'react';
 import { useMemo } from 'react';
-import { useEffect, useCallback, useRef } from 'react';
+import { useCallback, useRef } from 'react';
 import { isNull } from 'lodash-es';
 import './Login.scss';
 import { useSearchParams } from 'next/navigation';
-import {
-  isTextALoginError,
-  LoginErrorsEnum,
-  LoginErrorsMap,
-} from '$web/errors';
+import { isTextALoginError, LoginErrorsMap } from '$web/errors';
 import { useTranslations } from '@letta-cloud/translations';
+import { OAuthButtons } from '../OAuthButtons/OAuthButtons';
 
 function LoginErrorBanner() {
   const searchParams = useSearchParams();
@@ -36,35 +25,8 @@ function LoginErrorBanner() {
     return null;
   }
 
-  if (message === LoginErrorsEnum.USER_NOT_IN_WHITELIST) {
-    return (
-      <div className="select-none	relative">
-        <a href="https://forms.letta.com/early-access">
-          <div className="absolute left-[-150px] top-[-50px] w-[300px] mb-[20px] whitespace-nowrap flex items-center bg-white text-black">
-            <div>JOIN OUR WAITLIST JOIN OUR WAITLIST JOIN US</div>
-          </div>
-        </a>
-        <a href="https://forms.letta.com/early-access">
-          <div className="absolute rotate-90 top-[130px] left-[-6px] w-[336px] whitespace-nowrap flex items-center bg-white text-black">
-            <div>JOIN OUR WAITLIST JOIN OUR WAITLIST JOIN US</div>
-          </div>
-        </a>
-        <a href="https://forms.letta.com/early-access">
-          <div className="absolute left-[-150px] top-[310px] rotate-180 w-[300px] mb-[20px] whitespace-nowrap flex items-center bg-white text-black">
-            <div>JOIN OUR WAITLIST JOIN OUR WAITLIST JOIN US</div>
-          </div>
-        </a>
-        <a href="https://forms.letta.com/early-access">
-          <div className="absolute rotate-[270deg] top-[130px] right-[-6px] w-[336px] whitespace-nowrap flex items-center bg-white text-black">
-            <div>JOIN OUR WAITLIST JOIN OUR WAITLIST JOIN US</div>
-          </div>
-        </a>
-      </div>
-    );
-  }
-
   return (
-    <div className="fade-in-0 absolute top-[-90px] slide-in-from-bottom-2 text-mono mt-4 bg-white text-black animate-in  p-1 px-4">
+    <div className="fade-in-0 absolute top-[-90px] slide-in-from-bottom-2 text-mono mt-4 animate-in  p-1 px-4">
       {errorMessage}
     </div>
   );
@@ -72,7 +34,6 @@ function LoginErrorBanner() {
 
 export function LoginComponent() {
   const t = useTranslations('login/LoginComponent');
-  const marketingButtonRef = useRef<ElementRef<typeof MarketingButton>>(null);
   const logoRef = useRef<HTMLDivElement>(null);
 
   const spinOnClick = useCallback(() => {
@@ -84,40 +45,6 @@ export function LoginComponent() {
     logoRef.current.style.transform = 'rotateX(0deg) rotateY(0deg)';
   }, []);
 
-  useEffect(() => {
-    if (isNull(marketingButtonRef.current)) {
-      return;
-    }
-
-    marketingButtonRef.current.addEventListener('mousemove', (e) => {
-      if (isNull(logoRef.current) || isNull(marketingButtonRef.current)) {
-        return;
-      }
-
-      // given the range of the width and height of the button, we can calculate the angle of rotation
-      // based on the position of the mouse
-      // the degree of rotation for x is between 35 and 90
-      // the degree of rotation for y is between 45 and -45
-
-      const { left, width } =
-        marketingButtonRef.current.getBoundingClientRect();
-
-      const yAngle = ((e.clientX - left) / width) * 90 - 45;
-
-      logoRef.current.style.transform = `rotateX(30deg) rotateY(${-yAngle}deg)`;
-      logoRef.current.style.transformOrigin = 'center center';
-      logoRef.current.style.transition = 'transform 250ms';
-    });
-
-    marketingButtonRef.current.addEventListener('mouseleave', () => {
-      if (isNull(logoRef.current)) {
-        return;
-      }
-
-      logoRef.current.style.transform = 'rotateX(0deg) rotateY(0deg)';
-    });
-  }, []);
-
   const searchParams = useSearchParams();
 
   return (
@@ -125,52 +52,49 @@ export function LoginComponent() {
       <Suspense>
         <LoginErrorBanner />
       </Suspense>
-
-      {/* eslint-disable-next-line react/forbid-component-props */}
-      <VStack className="w-[300px] gap-[36px]" align="center">
-        <VStack align="center" gap="large">
-          <div className="relative" ref={logoRef}>
-            <Logo size="xlarge" />
-          </div>
-          <Typography bold variant="heading5">
-            {t('title')}
+      <VStack
+        /* eslint-disable-next-line react/forbid-component-props */
+        className="max-w-[350px] w-full py-[48px] h-full max-h-[498px] gap-[36px]"
+        align="center"
+        justify="center"
+        color="background-grey"
+      >
+        <VStack
+          /* eslint-disable-next-line react/forbid-component-props */
+          className="max-w-[262px]"
+          gap="xlarge"
+          align="center"
+        >
+          <VStack align="center" gap="xlarge">
+            <div className="relative" ref={logoRef}>
+              <Logo size="xlarge" />
+            </div>
+            <Typography bold variant="heading5">
+              {t('title')}
+            </Typography>
+          </VStack>
+          <OAuthButtons spinOnClick={spinOnClick} searchParams={searchParams} />
+          <Typography variant="body3">
+            {t.rich('terms', {
+              terms: (chunks) => (
+                <a
+                  className="underline"
+                  href="https://letta.com/terms-of-service"
+                >
+                  {chunks}
+                </a>
+              ),
+              privacy: (chunks) => (
+                <a
+                  className="underline"
+                  href="https://letta.com/privacy-policy"
+                >
+                  {chunks}
+                </a>
+              ),
+            })}
           </Typography>
         </VStack>
-        <VStack>
-          <MarketingButton
-            onClick={spinOnClick}
-            ref={marketingButtonRef}
-            href={`/auth/google/init?${searchParams.toString()}`}
-            variant="secondary"
-            preIcon={<GoogleLogoMarkDynamic />}
-            label={t('google')}
-          />
-          <MarketingButton
-            onClick={spinOnClick}
-            ref={marketingButtonRef}
-            href={`/auth/github/init?${searchParams.toString()}`}
-            variant="secondary"
-            preIcon={<GithubLogoMarkDynamic />}
-            label={t('github')}
-          />
-        </VStack>
-        <Typography>
-          {t.rich('terms', {
-            terms: (chunks) => (
-              <a
-                className="underline"
-                href="https://letta.com/terms-of-service"
-              >
-                {chunks}
-              </a>
-            ),
-            privacy: (chunks) => (
-              <a className="underline" href="https://letta.com/privacy-policy">
-                {chunks}
-              </a>
-            ),
-          })}
-        </Typography>
       </VStack>
     </VStack>
   );

@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "unique_email" ON "organization_invites" USING btree ("email","organization_id");

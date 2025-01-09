@@ -11,6 +11,7 @@ import {
   DialogTable,
   DotsHorizontalIcon,
   DropdownMenu,
+  DropdownMenuItem,
   DropdownMenuLabel,
   FormField,
   FormProvider,
@@ -21,6 +22,7 @@ import {
   SearchIcon,
   toast,
   Typography,
+  useCopyToClipboard,
   useForm,
 } from '@letta-cloud/component-library';
 import React, { useCallback, useMemo, useState } from 'react';
@@ -35,6 +37,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useErrorTranslationMessage } from '@letta-cloud/helpful-client-utils';
+import { environment } from '@letta-cloud/environmental-variables';
+import { parseInviteCode } from '$web/utils';
 
 const inviteMemberDialogFormSchema = z.object({
   email: z.string().email(),
@@ -61,7 +65,13 @@ function useErrorMessages(error: unknown) {
 
 function InviteMemberDialog() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [inviteCode, setInviteCode] = useState<string | null>(null);
   const queryClient = useQueryClient();
+
+  const onClose = useCallback(() => {
+    setInviteCode(null);
+    setIsDialogOpen(false);
+  }, []);
 
   const { mutate, isPending, error } =
     webApi.organizations.inviteNewTeamMember.useMutation({
@@ -75,7 +85,7 @@ function InviteMemberDialog() {
             exact: false,
           });
 
-          setIsDialogOpen(false);
+          onClose();
           return;
         }
 
@@ -106,6 +116,7 @@ function InviteMemberDialog() {
                   {
                     email: res.body.email,
                     id: res.body.id,
+                    inviteCode: res.body.inviteCode,
                     createdAt: new Date().toISOString(),
                   },
                 ],
@@ -114,7 +125,7 @@ function InviteMemberDialog() {
           },
         );
 
-        setIsDialogOpen(false);
+        setInviteCode(res.body.inviteCode);
       },
     });
 
@@ -141,7 +152,15 @@ function InviteMemberDialog() {
     <FormProvider {...form}>
       <Dialog
         isOpen={isDialogOpen}
-        onOpenChange={setIsDialogOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            onClose();
+
+            return;
+          }
+
+          setIsDialogOpen(open);
+        }}
         errorMessage={errorTranslation?.message}
         title={t('InviteMemberDialog.title')}
         onSubmit={form.handleSubmit(handleInviteMember)}
@@ -151,21 +170,47 @@ function InviteMemberDialog() {
           <Button color="primary" label={t('InviteMemberDialog.trigger')} />
         }
       >
-        <Typography>{t('InviteMemberDialog.description')}</Typography>
-        <FormField
-          name="email"
-          render={({ field }) => {
-            return (
-              <Input
-                fullWidth
-                type="email"
-                placeholder={t('InviteMemberDialog.email.placeholder')}
-                label={t('InviteMemberDialog.email.label')}
-                {...field}
-              />
-            );
-          }}
-        />
+        {inviteCode ? (
+          <>
+            <Typography>
+              {t('InviteMemberDialog.inviteCode.description')}
+            </Typography>
+            <Input
+              fullWidth
+              hideLabel
+              label={t('InviteMemberDialog.inviteCode.label')}
+              readOnly
+              value={generateInviteCodeLink(inviteCode)}
+              allowCopy
+            />
+          </>
+        ) : (
+          <>
+            <Typography>
+              {t.rich('InviteMemberDialog.description', {
+                bold: (chunks) => (
+                  <Typography inline bold>
+                    {chunks}
+                  </Typography>
+                ),
+              })}
+            </Typography>
+            <FormField
+              name="email"
+              render={({ field }) => {
+                return (
+                  <Input
+                    fullWidth
+                    type="email"
+                    placeholder={t('InviteMemberDialog.email.placeholder')}
+                    label={t('InviteMemberDialog.email.label')}
+                    {...field}
+                  />
+                );
+              }}
+            />
+          </>
+        )}
       </Dialog>
     </FormProvider>
   );
@@ -383,8 +428,7 @@ function DisInviteMemberButton(props: DisInviteMemberButtonProps) {
   });
 
   return (
-    <Button
-      type="button"
+    <DropdownMenuItem
       onClick={() => {
         mutate({
           params: {
@@ -392,9 +436,106 @@ function DisInviteMemberButton(props: DisInviteMemberButtonProps) {
           },
         });
       }}
-      size="small"
       color="secondary"
       label={t('DisInviteMemberButton.dismiss')}
+    />
+  );
+}
+
+function generateInviteCodeLink(code: string) {
+  return `${environment.NEXT_PUBLIC_CURRENT_HOST}/signup-via-invite?code=${code}`;
+}
+
+interface RegenerateInviteLinkButtonProps {
+  memberId: string;
+}
+
+function RegenerateInviteLinkButton(props: RegenerateInviteLinkButtonProps) {
+  const { memberId } = props;
+  const t = useTranslations('organization/members');
+  const { copyToClipboard } = useCopyToClipboard({
+    textToCopy: '',
+    copySuccessMessage: t('RegenerateInviteLinkButton.success'),
+  });
+
+  const query = useQueryClient();
+
+  const { mutate } = webApi.organizations.regenerateInviteCode.useMutation({
+    onSuccess: (response) => {
+      query.setQueriesData<ListInvitedMembersResponseBodyType | undefined>(
+        {
+          queryKey: webApiQueryKeys.organizations.listInvitedMembers,
+          exact: false,
+        },
+        (data) => {
+          if (!data) {
+            return data;
+          }
+
+          return {
+            ...data,
+            body: {
+              ...data.body,
+              members: data.body.members.map((member) => {
+                if (member.id === memberId) {
+                  return {
+                    ...member,
+                    inviteCode: response.body.inviteCode,
+                  };
+                }
+
+                return member;
+              }),
+            },
+          };
+        },
+      );
+
+      if (response.body && response.status === 200) {
+        void copyToClipboard(generateInviteCodeLink(response.body.inviteCode));
+        return;
+      }
+
+      toast.error(t('RegenerateInviteLinkButton.error'));
+    },
+    onError: () => {
+      toast.error(t('RegenerateInviteLinkButton.error'));
+    },
+  });
+
+  return (
+    <DropdownMenuItem
+      onClick={() => {
+        mutate({
+          params: {
+            memberId,
+          },
+        });
+      }}
+      color="secondary"
+      label={t('RegenerateInviteLinkButton.action')}
+    />
+  );
+}
+
+interface CopyInviteCodeButtonProps {
+  code: string;
+}
+
+function CopyInviteCodeButton(props: CopyInviteCodeButtonProps) {
+  const { code } = props;
+  const t = useTranslations('organization/members');
+  const { copyToClipboard } = useCopyToClipboard({
+    textToCopy: generateInviteCodeLink(code),
+    copySuccessMessage: t('CopyInviteCodeButton.success'),
+  });
+
+  return (
+    <DropdownMenuItem
+      onClick={() => {
+        void copyToClipboard();
+      }}
+      label={t('CopyInviteCodeButton.label')}
     />
   );
 }
@@ -425,12 +566,43 @@ function InvitedMembersDialog() {
       return [];
     }
 
-    return data.body.members.map((member) => ({
-      label: member.email,
-      id: member.id,
-      action: <DisInviteMemberButton id={member.id} />,
-    }));
-  }, [data?.body]);
+    return data.body.members.map((member) => {
+      const { expiresIn, isExpired } = parseInviteCode(member.inviteCode);
+
+      return {
+        label: member.email,
+        id: member.id,
+        action: (
+          <HStack align="center">
+            <Typography inline noWrap variant="body3">
+              {isExpired
+                ? t('InviteMembersDialog.expired')
+                : t('InviteMembersDialog.expiresIn', {
+                    days: Math.floor(expiresIn / (1000 * 60 * 60 * 24)),
+                  })}
+            </Typography>
+            <DropdownMenu
+              align="end"
+              triggerAsChild
+              trigger={
+                <Button
+                  hideLabel
+                  preIcon={<DotsHorizontalIcon />}
+                  size="small"
+                  color="tertiary"
+                  label={t('InviteMembersDialog.options')}
+                />
+              }
+            >
+              <CopyInviteCodeButton code={member.inviteCode} />
+              <RegenerateInviteLinkButton memberId={member.id} />
+              <DisInviteMemberButton id={member.id} />
+            </DropdownMenu>
+          </HStack>
+        ),
+      };
+    });
+  }, [t, data?.body]);
 
   return (
     <Dialog

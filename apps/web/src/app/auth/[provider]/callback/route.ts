@@ -9,12 +9,14 @@ import {
   extractGoogleIdTokenData,
   generateRedirectSignatureForLoggedInUser,
   getGithubUserDetails,
+  getInviteCodeFromState,
   getRedirectUrlFromState,
   isValidCSRFState,
   signInUserFromProviderLogin,
 } from '$web/server/auth';
 import { LoginErrorsEnum } from '$web/errors';
 import * as Sentry from '@sentry/node';
+import { parseInviteCode } from '$web/utils';
 
 interface GoogleAccessTokenResponse {
   access_token: string;
@@ -96,6 +98,30 @@ export async function GET(
       (await context.params).provider,
       code,
     );
+
+    const inviteCode = getInviteCodeFromState(state);
+
+    if (inviteCode) {
+      const { email, isExpired } = parseInviteCode(inviteCode);
+
+      if (isExpired) {
+        return new Response('Error signing in', {
+          status: 302,
+          headers: {
+            location: `/signup-via-invite?errorCode=${LoginErrorsEnum.INVALID_INVITE_CODE}&code=${inviteCode}`,
+          },
+        });
+      }
+
+      if (email !== userPayload.email) {
+        return new Response('Error signing in', {
+          status: 302,
+          headers: {
+            location: `/signup-via-invite?errorCode=${LoginErrorsEnum.INVITE_MISMATCH_EMAIL}&code=${inviteCode}`,
+          },
+        });
+      }
+    }
 
     const { newUserDetails } = await signInUserFromProviderLogin(userPayload);
 
