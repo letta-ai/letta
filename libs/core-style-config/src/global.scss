@@ -59,6 +59,7 @@
 
   --accent: 240 4.8% 95.9%;
   --accent-content: 240 5.9% 10%;
+  --grey4: 210,1.6%,48.2%;
 
   --destructive: 336, 98%, 37%;
   --destructive-content: 0 0% 98%;
@@ -236,6 +237,8 @@
   [data-mode="dark"] {
     @include dark;
   }
+
+
 }
 
 /* Follow the OS interface colours or force the use of the dark theme */
@@ -245,6 +248,41 @@
   }
 }
 
+.dark .visible-on-dark {
+  display: inherit;
+}
+
+.dark .invisible-on-dark {
+  display: none;
+}
+
+.visible-on-dark {
+  display: none;
+}
+
+.dark .opacity-0-on-dark {
+  opacity: 0;
+}
+
+.dark .opacity-100-on-dark {
+  opacity: 1;
+}
+
+
+
+.opacity-0-on-dark {
+  opacity: 1;
+}
+
+.opacity-100-on-dark {
+  opacity: 0;
+}
+
+
+
+.invisible-on-dark {
+  display: inherit;
+}
 
 
 
@@ -296,39 +334,6 @@ body {
 }
 
 
-.dark .visible-on-dark {
-  display: inherit;
-}
-
-.dark .invisible-on-dark {
-  display: none;
-}
-
-.visible-on-dark {
-  display: none;
-}
-
-.dark .opacity-0-on-dark {
-  opacity: 0;
-}
-
-.dark .opacity-100-on-dark {
-  opacity: 1;
-}
-
-.opacity-0-on-dark {
-  opacity: 1;
-}
-
-.opacity-100-on-dark {
-  opacity: 0;
-}
-
-
-
-.invisible-on-dark {
-  display: inherit;
-}
 
 .ignore-focus-on-buttons:has(button:focus) {
   box-shadow: none;

@@ -5,12 +5,11 @@ import { LogoBaseInner, LogoBaseOuter } from '../../marketing/Logo/Logo';
 import './LettaLoader.scss';
 import './LettaGrowLoader.scss';
 import './LettaFlipLoader.scss';
-import { DotLottieReact } from '@lottiefiles/dotlottie-react';
 import type { VariantProps } from 'class-variance-authority';
 import { cva } from 'class-variance-authority';
 import { cn } from '@letta-cloud/core-style-config';
-import { ErrorBoundary } from 'react-error-boundary';
 import { useEffect, useRef } from 'react';
+import { LettaSpinnerInner, LettaSpinnerOuter } from './LettaSpinner';
 
 function LettaFlipLoader(props: LettaLoaderProps) {
   const { size, id, color, stopAnimation } = props;
@@ -56,8 +55,8 @@ const loaderVariants = cva('', {
     size: {
       small: 'w-[16px]',
       medium: 'w-[20px]',
-      default: 'w-[24px]',
-      large: 'w-[128px]',
+      default: 'w-[64px]',
+      large: 'w-[96px]',
       xlarge: 'w-[256px]',
     },
   },
@@ -76,25 +75,24 @@ function LettaSpinLoader(props: LettaLoaderBaseProps) {
   const { id, size, stopAnimation } = props;
 
   return (
-    <div className={cn('relative', loaderVariants({ size }))} id={id}>
-      <ErrorBoundary fallback={<LettaLoaderGrow {...props} />}>
-        <div className="absolute top-0 opacity-100-on-dark w-full">
-          <DotLottieReact
-            width={256}
-            src="/animations/loader-dark.lottie"
-            loop={!stopAnimation}
-            autoplay
-          />
-        </div>
-        <div className="opacity-0-on-dark w-full">
-          <DotLottieReact
-            width={256}
-            src="/animations/loader.lottie"
-            loop={!stopAnimation}
-            autoplay
-          />
-        </div>
-      </ErrorBoundary>
+    <div
+      className={cn('relative overflow-hidden', loaderVariants({ size }))}
+      id={id}
+    >
+      <div
+        className={cn(
+          'absolute top-[0px] w-full',
+          !stopAnimation ? 'fadeInAnUp' : '',
+        )}
+      >
+        <LettaSpinnerOuter />
+      </div>
+      <div className={cn('absolute w-full flex items-center')}>
+        <LettaSpinnerInner />
+      </div>
+      <div className="opacity-0 mb-[10%]">
+        <LettaSpinnerOuter />
+      </div>
     </div>
   );
 }

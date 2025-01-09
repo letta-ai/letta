@@ -80,7 +80,12 @@ function DesktopLayout() {
   return (
     <HStack gap="small" fullWidth fullHeight>
       <PanelGroup className="h-full" direction="horizontal" autoSaveId="ade">
-        <Panel defaultValue={30} className="h-full" minSize={20}>
+        <Panel
+          defaultSize={30}
+          defaultValue={30}
+          className="h-full"
+          minSize={20}
+        >
           <VStack gap="small" fullWidth fullHeight>
             <ADEGroup
               items={[
@@ -113,7 +118,12 @@ function DesktopLayout() {
           </VStack>
         </Panel>
         <PanelResizeHandle className="w-[4px]" />
-        <Panel defaultValue={40} className="h-full" minSize={30}>
+        <Panel
+          defaultSize={40}
+          defaultValue={40}
+          className="h-full"
+          minSize={30}
+        >
           <HStack fullWidth fullHeight>
             <ADEGroup
               items={[
@@ -127,7 +137,12 @@ function DesktopLayout() {
           </HStack>
         </Panel>
         <PanelResizeHandle className="w-[4px]" />
-        <Panel defaultValue={30} className="h-full" minSize={20}>
+        <Panel
+          defaultSize={30}
+          defaultValue={30}
+          className="h-full"
+          minSize={20}
+        >
           <VStack gap="small" fullWidth fullHeight>
             <HStack className="max-h-[100px]">
               <ADEGroup

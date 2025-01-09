@@ -15,7 +15,7 @@ export const Primary: Story = {
   },
   argTypes: {
     variant: {
-      options: ['grower', 'spinner'],
+      options: ['grower', 'spinner', 'flipper'],
       control: { type: 'radio' },
     },
     size: {
