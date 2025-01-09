@@ -687,6 +687,18 @@ def ingest(message: str):
 
 '''
 
+EXAMPLE_TOOL_SOURCE_WITH_ENV_VAR = '''
+def ingest():
+    """
+    Ingest a message into the system.
+
+    Returns:
+        str: The result of ingesting the message.
+    """
+    import os
+    return os.getenv("secret")
+'''
+
 
 EXAMPLE_TOOL_SOURCE_WITH_DISTRACTOR = '''
 def util_do_nothing():
@@ -721,7 +733,7 @@ def test_tool_run(server, mock_e2b_api_key_none, user, agent_id):
         actor=user,
         tool_source=EXAMPLE_TOOL_SOURCE,
         tool_source_type="python",
-        tool_args=json.dumps({"message": "Hello, world!"}),
+        tool_args={"message": "Hello, world!"},
         # tool_name="ingest",
     )
     print(result)
@@ -732,9 +744,22 @@ def test_tool_run(server, mock_e2b_api_key_none, user, agent_id):
 
     result = server.run_tool_from_source(
         actor=user,
+        tool_source=EXAMPLE_TOOL_SOURCE_WITH_ENV_VAR,
+        tool_source_type="python",
+        tool_args={},
+        tool_env_vars={"secret": "banana"},
+    )
+    print(result)
+    assert result.status == "success"
+    assert result.tool_return == "banana", result.tool_return
+    assert not result.stdout
+    assert not result.stderr
+
+    result = server.run_tool_from_source(
+        actor=user,
         tool_source=EXAMPLE_TOOL_SOURCE,
         tool_source_type="python",
-        tool_args=json.dumps({"message": "Well well well"}),
+        tool_args={"message": "Well well well"},
         # tool_name="ingest",
     )
     print(result)
@@ -747,7 +772,7 @@ def test_tool_run(server, mock_e2b_api_key_none, user, agent_id):
         actor=user,
         tool_source=EXAMPLE_TOOL_SOURCE,
         tool_source_type="python",
-        tool_args=json.dumps({"bad_arg": "oh no"}),
+        tool_args={"bad_arg": "oh no"},
         # tool_name="ingest",
     )
     print(result)
@@ -763,7 +788,7 @@ def test_tool_run(server, mock_e2b_api_key_none, user, agent_id):
         actor=user,
         tool_source=EXAMPLE_TOOL_SOURCE_WITH_DISTRACTOR,
         tool_source_type="python",
-        tool_args=json.dumps({"message": "Well well well"}),
+        tool_args={"message": "Well well well"},
         # tool_name="ingest",
     )
     print(result)
@@ -778,7 +803,7 @@ def test_tool_run(server, mock_e2b_api_key_none, user, agent_id):
         actor=user,
         tool_source=EXAMPLE_TOOL_SOURCE_WITH_DISTRACTOR,
         tool_source_type="python",
-        tool_args=json.dumps({"message": "Well well well"}),
+        tool_args={"message": "Well well well"},
         tool_name="ingest",
     )
     print(result)
@@ -793,7 +818,7 @@ def test_tool_run(server, mock_e2b_api_key_none, user, agent_id):
         actor=user,
         tool_source=EXAMPLE_TOOL_SOURCE_WITH_DISTRACTOR,
         tool_source_type="python",
-        tool_args=json.dumps({}),
+        tool_args={},
         tool_name="util_do_nothing",
     )
     print(result)

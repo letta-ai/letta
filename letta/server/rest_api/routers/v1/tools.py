@@ -181,6 +181,7 @@ def run_tool_from_source(
             tool_source=request.source_code,
             tool_source_type=request.source_type,
             tool_args=request.args,
+            tool_env_vars=request.env_vars,
             tool_name=request.name,
             actor=actor,
         )
