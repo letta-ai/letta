@@ -6,6 +6,7 @@ import type {
   AgentState,
   letta__schemas__tool__Tool,
 } from '@letta-cloud/letta-agents-api';
+import { useToolsServiceDeleteTool } from '@letta-cloud/letta-agents-api';
 import {
   type GetToolResponse,
   isAPIError,
@@ -754,7 +755,7 @@ function ViewCategoryTools(props: ViewCategoryToolsProps) {
   const { data: customTools, isLoading: isLoadingCustomTools } =
     useToolsServiceListTools(
       {
-        limit: 100,
+        limit: 1000,
       },
       undefined,
       {
@@ -1016,7 +1017,7 @@ function AllToolsView() {
 
   const { data: customTools, isLoading: isLoadingCustomTools } =
     useToolsServiceListTools({
-      limit: 100,
+      limit: 1000,
     });
 
   const customToolCount = useMemo(() => {
@@ -1246,10 +1247,110 @@ export function useToolsExplorerState() {
   };
 }
 
-interface ToolEditorProps {
+interface EditableToolSettings {
+  returnCharLimit: number;
+}
+
+function DeleteToolButton() {
+  const { currentTool, clearCurrentTool } = useToolsExplorerState();
+  const t = useTranslations('ADE/Tools');
+
+  const [isOpened, setIsOpened] = useState(false);
+
+  const {
+    mutate: deleteTool,
+    isError,
+    isPending,
+  } = useToolsServiceDeleteTool();
+
+  const handleDelete = useCallback(() => {
+    if (currentTool?.mode !== 'edit') {
+      return;
+    }
+
+    deleteTool(
+      {
+        toolId: currentTool.data.id,
+      },
+      {
+        onSuccess: () => {
+          clearCurrentTool();
+          window.location.reload();
+        },
+      },
+    );
+  }, [clearCurrentTool, currentTool, deleteTool]);
+
+  return (
+    <Dialog
+      isConfirmBusy={isPending}
+      isOpen={isOpened}
+      confirmColor="destructive"
+      onOpenChange={setIsOpened}
+      errorMessage={isError ? t('DeleteToolButton.error') : undefined}
+      title={t('DeleteToolButton.title')}
+      confirmText={t('DeleteToolButton.confirm')}
+      onConfirm={handleDelete}
+      trigger={
+        <Button color="destructive" label={t('DeleteToolButton.trigger')} />
+      }
+    >
+      {t('DeleteToolButton.description')}
+    </Dialog>
+  );
+}
+
+interface ToolSettingsProps {
+  toolId?: string;
+  onUpdateSettings: (settings: EditableToolSettings) => void;
+  toolSettings: EditableToolSettings;
+}
+
+function ToolSettings(props: ToolSettingsProps) {
+  const { toolId, onUpdateSettings, toolSettings } = props;
+  const t = useTranslations('ADE/Tools');
+  return (
+    <VStack overflowY="auto" padding border fullHeight>
+      <Section
+        title={t('ToolSettings.title')}
+        description={t('ToolSettings.description')}
+      >
+        <RawInput
+          disabled={!!toolId}
+          label={t('ToolSettings.returnCharLimit.label')}
+          description={t('ToolSettings.returnCharLimit.description')}
+          type="number"
+          placeholder={t('ToolSettings.returnCharLimit.placeholder')}
+          fullWidth
+          value={toolSettings.returnCharLimit}
+          onChange={(e) => {
+            onUpdateSettings({
+              ...toolSettings,
+              returnCharLimit: parseInt(e.target.value, 10),
+            });
+          }}
+        />
+      </Section>
+      {toolId && (
+        <Section
+          title={t('ToolSettings.deleteTool.title')}
+          description={t('ToolSettings.deleteTool.description')}
+        >
+          <HStack>
+            <DeleteToolButton />
+          </HStack>
+        </Section>
+      )}
+    </VStack>
+  );
+}
+
+interface ToolEditorProps extends ToolSettingsProps {
   code: string;
   onSetCode: (code: string) => void;
 }
+
+type ToolEditorEditModes = 'settings' | 'source-code';
 
 function ToolEditor(props: ToolEditorProps) {
   const { code, onSetCode } = props;
@@ -1318,56 +1419,101 @@ function ToolEditor(props: ToolEditorProps) {
       };
     }, [data, error]);
 
+  const [mode, setMode] = useState<ToolEditorEditModes>('source-code');
+
   return (
-    <HStack flex overflow="hidden" fullWidth>
-      <RawCodeEditor
-        preLabelIcon={<CodeIcon />}
-        collapseHeight
-        fullWidth
-        flex
-        fullHeight
-        language="python"
-        // errorResponse={{
-        //   title: t('ToolCreator.errorResponse'),
-        //   content: errorMessage,
-        //   onDismiss: () => {
-        //     reset();
-        //   },
-        // }}
-        fontSize="small"
-        code={code}
-        onSetCode={onSetCode}
-        label={t('ToolCreator.sourceCode.label')}
-      />
-      <HiddenOnMobile>
-        <Debugger
-          preLabelIcon={<TerminalIcon />}
-          isRunning={isPending}
-          onRun={handleRun}
-          output={{
-            status: outputStatus,
-            duration: completedAt ? completedAt - submittedAt : undefined,
-            responses: [
-              {
-                label: t('ToolEditor.outputLabel'),
-                value: 'tool-output',
-                content: outputValue ?? '',
-              },
-              {
-                label: 'stdout',
-                value: 'stdout',
-                content: outputStdout,
-              },
-              {
-                label: 'stderr',
-                value: 'stderr',
-                content: outputStderr,
-              },
-            ],
+    <HStack gap="small" flex overflow="hidden" fullWidth>
+      <VStack overflow="hidden" fullWidth fullHeight gap={false}>
+        <TabGroup
+          variant="bordered-background"
+          onValueChange={(value) => {
+            setMode(value as ToolEditorEditModes);
           }}
-          inputConfig={inputConfig}
-          label={t('ToolEditor.label')}
+          value={mode}
+          items={[
+            {
+              icon: <CodeIcon />,
+              label: t('ToolEditor.sourceCode.label'),
+              value: 'source-code',
+            },
+            {
+              label: t('ToolEditor.settings.label'),
+              value: 'settings',
+            },
+          ]}
         />
+        {mode === 'source-code' ? (
+          <RawCodeEditor
+            preLabelIcon={<CodeIcon />}
+            collapseHeight
+            fullWidth
+            flex
+            fullHeight
+            language="python"
+            // errorResponse={{
+            //   title: t('ToolCreator.errorResponse'),
+            //   content: errorMessage,
+            //   onDismiss: () => {
+            //     reset();
+            //   },
+            // }}
+            fontSize="small"
+            code={code}
+            onSetCode={onSetCode}
+            hideLabel
+            label={t('ToolCreator.sourceCode.label')}
+          />
+        ) : (
+          <ToolSettings
+            toolSettings={props.toolSettings}
+            onUpdateSettings={props.onUpdateSettings}
+            toolId={props.toolId}
+          />
+        )}
+      </VStack>
+      <HiddenOnMobile>
+        <VStack overflow="hidden" gap={false} fullWidth fullHeight>
+          <TabGroup
+            variant="bordered-background"
+            value="run"
+            items={[
+              {
+                label: t('ToolEditor.label'),
+                value: 'run',
+                icon: <TerminalIcon />,
+              },
+            ]}
+          />
+          <Debugger
+            hideLabel
+            preLabelIcon={<TerminalIcon />}
+            isRunning={isPending}
+            onRun={handleRun}
+            output={{
+              status: outputStatus,
+              duration: completedAt ? completedAt - submittedAt : undefined,
+              responses: [
+                {
+                  label: t('ToolEditor.outputLabel'),
+                  value: 'tool-output',
+                  content: outputValue ?? '',
+                },
+                {
+                  label: 'stdout',
+                  value: 'stdout',
+                  content: outputStdout,
+                },
+                {
+                  label: 'stderr',
+                  value: 'stderr',
+                  content: outputStderr,
+                },
+              ],
+            }}
+            inputConfig={inputConfig}
+            label={t('ToolEditor.label')}
+          />
+        </VStack>
       </HiddenOnMobile>
     </HStack>
   );
@@ -1455,10 +1601,23 @@ function ToolCreator() {
         'view',
       );
 
-      void queryClient.invalidateQueries({
-        queryKey: UseToolsServiceListToolsKeyFn(),
-      });
+      void queryClient.setQueriesData<letta__schemas__tool__Tool[] | undefined>(
+        {
+          queryKey: UseToolsServiceListToolsKeyFn({ limit: 1000 }),
+        },
+        (oldData) => {
+          if (!oldData) {
+            return oldData;
+          }
+
+          return [...oldData, data];
+        },
+      );
     },
+  });
+
+  const [settings, setSettings] = useState<EditableToolSettings>({
+    returnCharLimit: 6000,
   });
 
   const form = useForm<z.infer<typeof createToolSchema>>({
@@ -1474,13 +1633,14 @@ function ToolCreator() {
         requestBody: {
           tags: [],
           source_type: 'python',
+          return_char_limit: settings.returnCharLimit,
           description: '',
           name: inferNameFromPythonCode(values.sourceCode),
           source_code: values.sourceCode,
         },
       });
     },
-    [mutate],
+    [mutate, settings],
   );
 
   const { isLocal } = useCurrentAgentMetaData();
@@ -1532,11 +1692,16 @@ function ToolCreator() {
                 control={form.control}
                 name="sourceCode"
                 render={({ field }) => (
-                  <ToolEditor code={field.value} onSetCode={field.onChange} />
+                  <ToolEditor
+                    toolSettings={settings}
+                    onUpdateSettings={setSettings}
+                    code={field.value}
+                    onSetCode={field.onChange}
+                  />
                 )}
               />
               <FormActions>
-                <CloseMiniApp>
+                <CloseMiniApp asChild>
                   <Button
                     type="button"
                     color="secondary"
@@ -1568,6 +1733,13 @@ function EditTool(props: EditToolProps) {
 
   const [open, setOpen] = useState(false);
   const queryClient = useQueryClient();
+
+  const [settings, setSettings] = useState<EditableToolSettings>({
+    returnCharLimit: tool.return_char_limit || 1000,
+  });
+
+  const { switchToolState } = useToolsExplorerState();
+
   const [sourceCode, setSourceCode] = useState(tool.source_code || '');
 
   const { mutate, isPending, error } = useToolsServiceUpdateTool();
@@ -1602,11 +1774,12 @@ function EditTool(props: EditToolProps) {
             },
           );
 
+          switchToolState('view');
           setOpen(false);
         },
       },
     );
-  }, [mutate, queryClient, sourceCode, tool.id]);
+  }, [mutate, queryClient, switchToolState, sourceCode, tool.id]);
 
   const errorMessage = useMemo(() => {
     if (!error) {
@@ -1624,10 +1797,16 @@ function EditTool(props: EditToolProps) {
 
   return (
     <VStack collapseHeight paddingX paddingBottom flex gap="form">
-      <ToolEditor code={sourceCode} onSetCode={setSourceCode} />
+      <ToolEditor
+        toolSettings={settings}
+        onUpdateSettings={setSettings}
+        toolId={tool.id}
+        code={sourceCode}
+        onSetCode={setSourceCode}
+      />
 
       <FormActions>
-        <CloseMiniApp>
+        <CloseMiniApp asChild>
           <Button color="secondary" label={t('EditTool.close')} />
         </CloseMiniApp>
         <Dialog

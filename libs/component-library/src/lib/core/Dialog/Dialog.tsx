@@ -376,7 +376,7 @@ export function Dialog(props: DialogProps) {
     isConfirmBusy,
     disableForm,
     trigger,
-    confirmColor = 'secondary',
+    confirmColor = 'primary',
     preventCloseFromOutside,
     cancelText = 'Cancel',
     confirmText = 'Confirm',

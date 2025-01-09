@@ -231,18 +231,28 @@ interface DebuggerProps<InputSchema extends GenericSchema> {
   isRunning?: boolean;
   output: Output;
   label: string;
+  hideLabel?: boolean;
   preLabelIcon?: React.ReactNode;
 }
 
 export function Debugger<InputSchema extends GenericSchema>(
   props: DebuggerProps<InputSchema>,
 ) {
-  const { inputConfig, isRunning, output, onRun, preLabelIcon, label } = props;
+  const {
+    inputConfig,
+    hideLabel,
+    isRunning,
+    output,
+    onRun,
+    preLabelIcon,
+    label,
+  } = props;
 
   return (
     <HStack className="min-h-[300px]" flex fullWidth>
       <RawInputContainer
         fullWidth
+        hideLabel={hideLabel}
         flex
         preLabelIcon={preLabelIcon}
         label={label}

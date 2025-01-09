@@ -460,6 +460,26 @@
     }
   },
   "ADE/Tools": {
+    "DeleteToolButton": {
+      "title": "Delete tool",
+      "trigger": "Delete tool",
+      "confirm": "Delete",
+      "description": "Are you sure you want to delete this tool? This is permanent and cannot be undone. This will remove the tool from all agents that use it.",
+      "error": "There was an error deleting this tool, please try again or contact support."
+    },
+    "ToolSettings": {
+      "deleteTool": {
+        "description": "Click the button below to delete this tool. This will unlink the tool from all agents that use it.",
+        "title": "Delete tool"
+      },
+      "title": "Tool settings",
+      "description": "Edit the settings of this tool",
+      "returnCharLimit": {
+        "label": "Return character limit",
+        "placeholder": "1000",
+        "description": "Defaults to 6000 if left blank"
+      }
+    },
     "ViewCategoryTools": {
       "view": "View",
       "showing": "Showing {count} tools",
@@ -580,6 +600,12 @@
       "update": "Update tool"
     },
     "ToolEditor": {
+      "sourceCode": {
+        "label": "Source code"
+      },
+      "settings": {
+        "label": "Settings"
+      },
       "label": "Debugger",
       "inputLabel": "Tool input",
       "outputLabel": "Tool output"
