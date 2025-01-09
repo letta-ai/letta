@@ -1,4 +1,4 @@
-name: Sync Repos
+name: Sync With OSS
 
 on:
   # 1) Triggered by a repository_dispatch from the OSS repo (letta)
@@ -10,6 +10,9 @@ on:
     branches: [main]
     paths:
       - 'apps/core/**'
+      
+  # 3) Manual trigger from GitHub web interface
+  workflow_dispatch:
 
 jobs:
   sync:
@@ -20,22 +23,24 @@ jobs:
         with:
           fetch-depth: 0
           token: ${{ secrets.SYNC_PAT }}
-      
-      - name: Setup Just
-        uses: extractions/setup-just@v1
 
       - name: Configure Git
         run: |
           git config user.name "Letta Sync Bot"
           git config user.email "bot@users.noreply.github.com"
 
+      - name: Configure Git remote
+        run: |
+          git remote remove letta-oss || true
+          git remote add letta-oss "https://x-access-token:${{ secrets.SYNC_PAT }}@github.com/letta-ai/letta.git"
+
       - name: Decide whether to pull or push
         run: |
-          if [ "${{ github.event_name }}" = "repository_dispatch" ]; then
-            echo "Triggered by repository_dispatch (oss-update). Pulling from OSS..."
+          if [ "${{ github.event_name }}" = "repository_dispatch" ] || [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "Triggered by ${{ github.event_name }}. Pulling from OSS..."
             
             # Pull changes from the OSS repo into apps/core
-            just pull-oss-to-core
+            git subtree pull --prefix=apps/core letta-oss main
             
             # If the pull added any new commits, commit and push them back to this private repo
             if ! git diff --quiet apps/core; then
@@ -50,6 +55,6 @@ jobs:
 
           elif [ "${{ github.event_name }}" = "push" ]; then
             echo "Triggered by push to private repo. Pushing changes to OSS..."
-            just push-core-to-oss main
+            git subtree push --prefix apps/core letta-oss main
             echo "Subtree changes pushed to OSS."
           fi
