@@ -22,7 +22,6 @@ from letta.data_sources.connectors import DataConnector, load_data
 from letta.interface import AgentInterface  # abstract
 from letta.interface import CLIInterface  # for printing to terminal
 from letta.log import get_logger
-from letta.o1_agent import O1Agent
 from letta.offline_memory_agent import OfflineMemoryAgent
 from letta.orm import Base
 from letta.orm.errors import NoResultFound
@@ -390,8 +389,6 @@ class SyncServer(Server):
             interface = interface or self.default_interface_factory()
             if agent_state.agent_type == AgentType.memgpt_agent:
                 agent = Agent(agent_state=agent_state, interface=interface, user=actor)
-            elif agent_state.agent_type == AgentType.o1_agent:
-                agent = O1Agent(agent_state=agent_state, interface=interface, user=actor)
             elif agent_state.agent_type == AgentType.offline_memory_agent:
                 agent = OfflineMemoryAgent(agent_state=agent_state, interface=interface, user=actor)
             elif agent_state.agent_type == AgentType.chat_only_agent:

@@ -190,7 +190,6 @@ export type AgentState = {
 export type AgentType =
   | 'memgpt_agent'
   | 'split_thread_agent'
-  | 'o1_agent'
   | 'offline_memory_agent'
   | 'chat_only_agent';
 
