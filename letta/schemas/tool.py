@@ -206,6 +206,7 @@ class ToolUpdate(LettaBase):
     json_schema: Optional[Dict] = Field(
         None, description="The JSON schema of the function (auto-generated from source_code if not provided)"
     )
+    return_char_limit: Optional[int] = Field(None, description="The maximum number of characters in the response.")
 
     class Config:
         extra = "ignore"  # Allows extra fields without validation errors

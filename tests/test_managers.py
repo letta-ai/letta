@@ -1391,9 +1391,10 @@ def test_list_tools(server: SyncServer, print_tool, default_user):
 
 def test_update_tool_by_id(server: SyncServer, print_tool, default_user):
     updated_description = "updated_description"
+    return_char_limit = 10000
 
     # Create a ToolUpdate object to modify the print_tool's description
-    tool_update = ToolUpdate(description=updated_description)
+    tool_update = ToolUpdate(description=updated_description, return_char_limit=return_char_limit)
 
     # Update the tool using the manager method
     server.tool_manager.update_tool_by_id(print_tool.id, tool_update, actor=default_user)
@@ -1403,6 +1404,7 @@ def test_update_tool_by_id(server: SyncServer, print_tool, default_user):
 
     # Assertions to check if the update was successful
     assert updated_tool.description == updated_description
+    assert updated_tool.return_char_limit == return_char_limit
 
 
 def test_update_tool_source_code_refreshes_schema_and_name(server: SyncServer, print_tool, default_user):
