@@ -108,6 +108,7 @@ def run_memory_edits(gsm8k_input_file: str,
                      conversation_model: Optional[str] = None,
                      max_memory_rethinks: int = 4,
                      num_offline_agents: int = 1,
+                     num_convo_agents: int = 1
                      ) -> None:
     
     if offline_memory_model is None:
@@ -164,36 +165,40 @@ def run_memory_edits(gsm8k_input_file: str,
                 conversation_agents = []
 
                 for idx in range(num_offline_agents):
-                    conversation_human_block = Block(
-                        name="human",
-                        label="human",
-                        value=get_human_text(human_block_filename),
-                        limit=2000,
-                    )
-                    conversation_persona_block = Block(
-                        name="persona",
-                        label="persona",
-                        value=get_persona_text(persona_block_filename),
-                        limit=2000,
-                    )
+
                     new_memory = Block(name="rethink_memory_block", label="rethink_memory_block", value="[empty]", limit=5000)
-                    conversation_memory = BasicBlockMemory(
+                    
+                    if num_convo_agents > 1:
+                        conversation_human_block = Block(
+                            name="human",
+                            label="human",
+                            value=get_human_text(human_block_filename),
+                            limit=2000,
+                        )
+                        conversation_persona_block = Block(
+                            name="persona",
+                            label="persona",
+                            value=get_persona_text(persona_block_filename),
+                            limit=2000,
+                        )
+                        conversation_memory = BasicBlockMemory(
                         blocks=[conversation_persona_block, conversation_human_block, new_memory]
-                    )
-                    send_message = client.server.tool_manager.get_tool_by_name(tool_name="send_message", actor=client.user)
-                    conversation_agent = client.create_agent(
-                        name=f"conversation_agent_{idx}",
-                        agent_type=AgentType.memgpt_agent,
-                        system=get_system_text(system_block_filename),
-                        llm_config=conversation_openai_config,
-                        embedding_config=EmbeddingConfig.default_config("text-embedding-ada-002"),
-                        # tools=["send_message", trigger_rethink_memory_tool.name],
-                        tools=["send_message"],
-                        # tool_ids=[send_message.id],
-                        memory=conversation_memory,
-                        include_base_tools=False,
-                        initial_message_sequence=[],
-                    )
+                        )
+                        send_message = client.server.tool_manager.get_tool_by_name(tool_name="send_message", actor=client.user)
+                        conversation_agent = client.create_agent(
+                            name=f"conversation_agent_{idx}",
+                            agent_type=AgentType.memgpt_agent,
+                            system=get_system_text(system_block_filename),
+                            llm_config=conversation_openai_config,
+                            embedding_config=EmbeddingConfig.default_config("text-embedding-ada-002"),
+                            # tools=["send_message", trigger_rethink_memory_tool.name],
+                            tools=["send_message"],
+                            # tool_ids=[send_message.id],
+                            memory=conversation_memory,
+                            include_base_tools=False,
+                            initial_message_sequence=[],
+                        )
+                        conversation_agents.append(conversation_agent)
                     offline_human_block = Block(
                         name="human",
                         label="human",
@@ -233,19 +238,47 @@ def run_memory_edits(gsm8k_input_file: str,
                         metadata=metadata
                     )
 
-                    conversation_agents.append(conversation_agent)
                     offline_memory_agents.append(offline_memory_agent)
 
-                # import ipdb; ipdb.set_trace()
+                if num_convo_agents == 1:
+                    # get all the rethink blocks from the offline agents
+
+                    offline_results = ""
+                    for offline_agent in offline_memory_agents:
+                        offline_results += client.get_agent(agent_id=offline_agent.id).memory.get_block("rethink_memory_block").value
+                    rethink_block = Block(name="rethink_memory_block", label="rethink_memory_block", value=offline_results, limit=5000)
+
+                    conversation_human_block = Block(
+                            name="human",
+                            label="human",
+                            value=get_human_text(human_block_filename),
+                            limit=2000,
+                    )
+                    conversation_persona_block = Block(
+                            name="persona",
+                            label="persona",
+                            value=get_persona_text(persona_block_filename),
+                            limit=2000,
+                    )
+                    conversation_memory = BasicBlockMemory(
+                        blocks=[conversation_persona_block, conversation_human_block, rethink_block]
+                        )
+                    conversation_agent = client.create_agent(
+                        name="conversation_agent",
+                        agent_type=AgentType.memgpt_agent,
+                        system=get_system_text(system_block_filename),
+                        llm_config=conversation_openai_config,
+                        embedding_config=EmbeddingConfig.default_config("text-embedding-ada-002"),
+                        # tools=["send_message", trigger_rethink_memory_tool.name],
+                        tools=["send_message"],
+                        # tool_ids=[send_message.id],
+                        memory=conversation_memory,
+                        include_base_tools=False,
+                        initial_message_sequence=[],
+                    )
+                    conversation_agents.append(conversation_agent)
 
                 offline_responses = []
-                '''
-                for requested_rewrite in few_shot_examples:
-                    response = client.user_message(
-                        message="[trigger_rethink_memory] Question answer pair" + requested_rewrite, agent_id=offline_memory_agent.id
-                    )
-                    offline_responses.append(response)
-                '''
                 sentences = list(map(lambda x: x.strip(), filter(lambda x: x.strip() != '', example["question"].split("."))))
                 ends_with_period = sentences[-1] == ''
                 context = ". ".join(sentences[:-1]).strip()+'.'
@@ -310,6 +343,7 @@ if __name__ == "__main__":
     parser.add_argument("--conversation_model", default="gpt-4o-mini", required=False)
     parser.add_argument("--max_memory_rethinks", default=None, required=False, type=int) 
     parser.add_argument("--num_offline_agents", default=1, required=False, type=int) 
+    parser.add_argument("--num_convo_agents", default=1, required=False, type=int, help="This should either be 1 or num_offline_agents")
 
     args = parser.parse_args()
 
@@ -326,4 +360,5 @@ if __name__ == "__main__":
                      args.offline_memory_model,
                      args.conversation_model,
                      args.max_memory_rethinks,
-                     args.num_offline_agents)
+                     args.num_offline_agents,
+                     args.num_convo_agents)
