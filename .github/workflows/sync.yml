@@ -1,0 +1,55 @@
+name: Sync Repos
+
+on:
+  # 1) Triggered by a repository_dispatch from the OSS repo (letta)
+  repository_dispatch:
+    types: [oss-update]
+
+  # 2) Triggered by a local push that touches files under apps/core/**
+  push:
+    branches: [main]
+    paths:
+      - 'apps/core/**'
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out private repo
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.SYNC_PAT }}
+      
+      - name: Setup Just
+        uses: extractions/setup-just@v1
+
+      - name: Configure Git
+        run: |
+          git config user.name "Letta Sync Bot"
+          git config user.email "bot@users.noreply.github.com"
+
+      - name: Decide whether to pull or push
+        run: |
+          if [ "${{ github.event_name }}" = "repository_dispatch" ]; then
+            echo "Triggered by repository_dispatch (oss-update). Pulling from OSS..."
+            
+            # Pull changes from the OSS repo into apps/core
+            just pull-oss-to-core
+            
+            # If the pull added any new commits, commit and push them back to this private repo
+            if ! git diff --quiet apps/core; then
+              echo "New changes from OSS found. Committing..."
+              git add apps/core
+              git commit -m "Pull from OSS [sync-skip]"
+              git push origin HEAD:main
+              echo "Pushed updated subtree to private repo main."
+            else
+              echo "No new changes from OSS. Nothing to commit."
+            fi
+
+          elif [ "${{ github.event_name }}" = "push" ]; then
+            echo "Triggered by push to private repo. Pushing changes to OSS..."
+            just push-core-to-oss main
+            echo "Subtree changes pushed to OSS."
+          fi
