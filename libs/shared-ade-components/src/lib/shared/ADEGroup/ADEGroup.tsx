@@ -24,14 +24,14 @@ export function ADEGroup(props: ADEGroupProps) {
       fullWidth
       fullHeight
     >
-      <HStack>
+      <HStack gap={false}>
         {items.map(function (item, index) {
           return (
             <HStack
               data-testid={`tab:${item.id}`}
               fullWidth
               className="cursor-pointer"
-              borderLeft={activeTab !== index}
+              borderLeft={index !== 0}
               borderBottom={activeTab !== index}
               padding="small"
               color={activeTab === index ? 'background' : 'background-grey'}
@@ -47,7 +47,7 @@ export function ADEGroup(props: ADEGroupProps) {
           );
         })}
       </HStack>
-      <VStack fullHeight fullWidth flex>
+      <VStack overflow="hidden" fullHeight fullWidth flex>
         {items[activeTab].content}
       </VStack>
     </VStack>

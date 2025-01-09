@@ -235,7 +235,7 @@ export function ToolsPanel() {
   const { openToolExplorer } = useToolsExplorerState();
 
   return (
-    <VStack gap={false}>
+    <VStack overflow="hidden" gap={false}>
       <ToolsExplorer />
       <PanelBar
         searchValue={search}
