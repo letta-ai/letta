@@ -16,6 +16,7 @@ import {
   ToolsService,
   UsersService,
 } from '../requests/services.gen';
+import { SandboxType } from '../requests/types.gen';
 export type ToolsServiceGetToolDefaultResponse = Awaited<
   ReturnType<typeof ToolsService.getTool>
 >;
@@ -711,16 +712,18 @@ export const UseSandboxConfigServiceListSandboxConfigsV1SandboxConfigGetKeyFn =
     {
       cursor,
       limit,
+      sandboxType,
       userId,
     }: {
       cursor?: string;
       limit?: number;
+      sandboxType?: SandboxType;
       userId?: string;
     } = {},
     queryKey?: Array<unknown>,
   ) => [
     useSandboxConfigServiceListSandboxConfigsV1SandboxConfigGetKey,
-    ...(queryKey ?? [{ cursor, limit, userId }]),
+    ...(queryKey ?? [{ cursor, limit, sandboxType, userId }]),
   ];
 export type SandboxConfigServiceListSandboxEnvVarsV1SandboxConfigSandboxConfigIdEnvironmentVariableGetDefaultResponse =
   Awaited<

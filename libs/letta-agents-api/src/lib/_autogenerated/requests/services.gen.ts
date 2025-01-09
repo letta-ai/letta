@@ -1989,6 +1989,7 @@ export class SandboxConfigService {
    * @param data The data for the request.
    * @param data.limit Number of results to return
    * @param data.cursor Pagination cursor to fetch the next set of results
+   * @param data.sandboxType Filter for this specific sandbox type
    * @param data.userId
    * @returns SandboxConfig Successful Response
    * @throws ApiError
@@ -2003,6 +2004,7 @@ export class SandboxConfigService {
       query: {
         limit: data.limit,
         cursor: data.cursor,
+        sandbox_type: data.sandboxType,
       },
       errors: {
         422: 'Validation Error',

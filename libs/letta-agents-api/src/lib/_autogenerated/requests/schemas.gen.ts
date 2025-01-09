@@ -4826,6 +4826,18 @@ export const $ToolUpdate = {
       description:
         'The JSON schema of the function (auto-generated from source_code if not provided)',
     },
+    return_char_limit: {
+      anyOf: [
+        {
+          type: 'integer',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Return Char Limit',
+      description: 'The maximum number of characters in the response.',
+    },
   },
   type: 'object',
   title: 'ToolUpdate',

@@ -36,6 +36,7 @@ import {
   SandboxConfigUpdate,
   SandboxEnvironmentVariableCreate,
   SandboxEnvironmentVariableUpdate,
+  SandboxType,
   SourceCreate,
   SourceUpdate,
   ToolCreate,
@@ -1128,6 +1129,7 @@ export const useHealthServiceHealthCheck = <
  * @param data The data for the request.
  * @param data.limit Number of results to return
  * @param data.cursor Pagination cursor to fetch the next set of results
+ * @param data.sandboxType Filter for this specific sandbox type
  * @param data.userId
  * @returns SandboxConfig Successful Response
  * @throws ApiError
@@ -1140,10 +1142,12 @@ export const useSandboxConfigServiceListSandboxConfigsV1SandboxConfigGet = <
   {
     cursor,
     limit,
+    sandboxType,
     userId,
   }: {
     cursor?: string;
     limit?: number;
+    sandboxType?: SandboxType;
     userId?: string;
   } = {},
   queryKey?: TQueryKey,
@@ -1152,13 +1156,14 @@ export const useSandboxConfigServiceListSandboxConfigsV1SandboxConfigGet = <
   useQuery<TData, TError>({
     queryKey:
       Common.UseSandboxConfigServiceListSandboxConfigsV1SandboxConfigGetKeyFn(
-        { cursor, limit, userId },
+        { cursor, limit, sandboxType, userId },
         queryKey,
       ),
     queryFn: () =>
       SandboxConfigService.listSandboxConfigsV1SandboxConfigGet({
         cursor,
         limit,
+        sandboxType,
         userId,
       }) as TData,
     ...options,

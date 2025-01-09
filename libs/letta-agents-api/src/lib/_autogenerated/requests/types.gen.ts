@@ -1969,6 +1969,10 @@ export type ToolUpdate = {
   json_schema?: {
     [key: string]: unknown;
   } | null;
+  /**
+   * The maximum number of characters in the response.
+   */
+  return_char_limit?: number | null;
 };
 
 export type UpdateAgent = {
@@ -2904,6 +2908,10 @@ export type ListSandboxConfigsV1SandboxConfigGetData = {
    * Number of results to return
    */
   limit?: number;
+  /**
+   * Filter for this specific sandbox type
+   */
+  sandboxType?: SandboxType | null;
   userId?: string | null;
 };
 
