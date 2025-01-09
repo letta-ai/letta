@@ -310,7 +310,6 @@ class ToolExecutionSandbox:
         # Finally, get any that are passed explicitly into the `run` function call
         if additional_env_vars:
             env_vars.update(additional_env_vars)
-
         code = self.generate_execution_script(agent_state=agent_state)
         execution = sbx.run_code(code, envs=env_vars)
 
