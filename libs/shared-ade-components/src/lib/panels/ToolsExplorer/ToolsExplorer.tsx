@@ -1283,7 +1283,7 @@ function ToolEditor(props: ToolEditorProps) {
         {
           requestBody: {
             name: extractedFunctionName,
-            args: JSON.stringify(input),
+            args: input,
             source_code: code,
           },
         },

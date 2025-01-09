@@ -1917,9 +1917,17 @@ export type ToolRunFromSource = {
    */
   source_code: string;
   /**
-   * The arguments to pass to the tool (as stringified JSON).
+   * The arguments to pass to the tool.
    */
-  args: string;
+  args: {
+    [key: string]: string;
+  };
+  /**
+   * The environment variables to pass to the tool.
+   */
+  env_vars?: {
+    [key: string]: string;
+  };
   /**
    * The name of the tool to run.
    */

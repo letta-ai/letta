@@ -7947,9 +7947,20 @@
             "description": "The source code of the function."
           },
           "args": {
-            "type": "string",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
             "title": "Args",
-            "description": "The arguments to pass to the tool (as stringified JSON)."
+            "description": "The arguments to pass to the tool."
+          },
+          "env_vars": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Env Vars",
+            "description": "The environment variables to pass to the tool."
           },
           "name": {
             "anyOf": [

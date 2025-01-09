@@ -212,13 +212,9 @@ class ToolUpdate(LettaBase):
         # TODO: Remove this, and clean usage of ToolUpdate everywhere else
 
 
-class ToolRun(LettaBase):
-    id: str = Field(..., description="The ID of the tool to run.")
-    args: str = Field(..., description="The arguments to pass to the tool (as stringified JSON).")
-
-
 class ToolRunFromSource(LettaBase):
     source_code: str = Field(..., description="The source code of the function.")
-    args: str = Field(..., description="The arguments to pass to the tool (as stringified JSON).")
+    args: Dict[str, str] = Field(..., description="The arguments to pass to the tool.")
+    env_vars: Dict[str, str] = Field(None, description="The environment variables to pass to the tool.")
     name: Optional[str] = Field(None, description="The name of the tool to run.")
     source_type: Optional[str] = Field(None, description="The type of the source code.")

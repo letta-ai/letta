@@ -59,22 +59,23 @@ class ToolExecutionSandbox:
         self.sandbox_config_manager = SandboxConfigManager(tool_settings)
         self.force_recreate = force_recreate
 
-    def run(self, agent_state: Optional[AgentState] = None) -> SandboxRunResult:
+    def run(self, agent_state: Optional[AgentState] = None, additional_env_vars: Optional[Dict] = None) -> SandboxRunResult:
         """
         Run the tool in a sandbox environment.
 
         Args:
             agent_state (Optional[AgentState]): The state of the agent invoking the tool
+            additional_env_vars (Optional[Dict]): Environment variables to inject into the sandbox
 
         Returns:
             Tuple[Any, Optional[AgentState]]: Tuple containing (tool_result, agent_state)
         """
         if tool_settings.e2b_api_key:
             logger.debug(f"Using e2b sandbox to execute {self.tool_name}")
-            result = self.run_e2b_sandbox(agent_state=agent_state)
+            result = self.run_e2b_sandbox(agent_state=agent_state, additional_env_vars=additional_env_vars)
         else:
             logger.debug(f"Using local sandbox to execute {self.tool_name}")
-            result = self.run_local_dir_sandbox(agent_state=agent_state)
+            result = self.run_local_dir_sandbox(agent_state=agent_state, additional_env_vars=additional_env_vars)
 
         # Log out any stdout/stderr from the tool run
         logger.debug(f"Executed tool '{self.tool_name}', logging output from tool run: \n")
@@ -98,18 +99,24 @@ class ToolExecutionSandbox:
             os.environ.clear()
             os.environ.update(original_env)  # Restore original environment variables
 
-    def run_local_dir_sandbox(self, agent_state: Optional[AgentState] = None) -> SandboxRunResult:
+    def run_local_dir_sandbox(
+        self, agent_state: Optional[AgentState] = None, additional_env_vars: Optional[Dict] = None
+    ) -> SandboxRunResult:
         sbx_config = self.sandbox_config_manager.get_or_create_default_sandbox_config(sandbox_type=SandboxType.LOCAL, actor=self.user)
         local_configs = sbx_config.get_local_config()
 
         # Get environment variables for the sandbox
-        env_vars = self.sandbox_config_manager.get_sandbox_env_vars_as_dict(sandbox_config_id=sbx_config.id, actor=self.user, limit=100)
         env = os.environ.copy()
+        env_vars = self.sandbox_config_manager.get_sandbox_env_vars_as_dict(sandbox_config_id=sbx_config.id, actor=self.user, limit=100)
         env.update(env_vars)
 
         # Get environment variables for this agent specifically
         if agent_state:
             env.update(agent_state.get_agent_env_vars_as_dict())
+
+        # Finally, get any that are passed explicitly into the `run` function call
+        if additional_env_vars:
+            env.update(additional_env_vars)
 
         # Safety checks
         if not os.path.isdir(local_configs.sandbox_dir):
@@ -277,7 +284,7 @@ class ToolExecutionSandbox:
 
     # e2b sandbox specific functions
 
-    def run_e2b_sandbox(self, agent_state: Optional[AgentState] = None) -> SandboxRunResult:
+    def run_e2b_sandbox(self, agent_state: Optional[AgentState] = None, additional_env_vars: Optional[Dict] = None) -> SandboxRunResult:
         sbx_config = self.sandbox_config_manager.get_or_create_default_sandbox_config(sandbox_type=SandboxType.E2B, actor=self.user)
         sbx = self.get_running_e2b_sandbox_with_same_state(sbx_config)
         if not sbx or self.force_recreate:
@@ -299,6 +306,10 @@ class ToolExecutionSandbox:
         # Get environment variables for this agent specifically
         if agent_state:
             env_vars.update(agent_state.get_agent_env_vars_as_dict())
+
+        # Finally, get any that are passed explicitly into the `run` function call
+        if additional_env_vars:
+            env_vars.update(additional_env_vars)
 
         code = self.generate_execution_script(agent_state=agent_state)
         execution = sbx.run_code(code, envs=env_vars)
