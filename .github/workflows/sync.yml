@@ -40,6 +40,7 @@ jobs:
             echo "Triggered by ${{ github.event_name }}. Pulling from OSS..."
             
             # Pull changes from the OSS repo into apps/core
+            git subtree split --prefix=apps/core --rejoin
             git subtree pull --prefix=apps/core letta-oss main
             
             # If the pull added any new commits, commit and push them back to this private repo
@@ -55,6 +56,6 @@ jobs:
 
           elif [ "${{ github.event_name }}" = "push" ]; then
             echo "Triggered by push to private repo. Pushing changes to OSS..."
-            git subtree push --prefix apps/core letta-oss main
+            git subtree push --prefix apps/core letta-oss letta-automated-integration-branch
             echo "Subtree changes pushed to OSS."
           fi
