@@ -284,6 +284,7 @@ def run_memory_edits(gsm8k_input_file: str,
                 context = ". ".join(sentences[:-1]).strip()+'.'
                 question = sentences[-1]+('.' if ends_with_period else '')
 
+
                 print(context)
                 print(question)
 
@@ -298,6 +299,7 @@ def run_memory_edits(gsm8k_input_file: str,
                 for conversation_agent in conversation_agents:
                     final_response = client.user_message(message=example["question"], agent_id=conversation_agent.id)
                     final_responses.append(final_response)
+
 
                 writer.write(
                     {
