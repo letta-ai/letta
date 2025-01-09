@@ -423,23 +423,28 @@ export function ContextWindowPanel() {
   ]);
 
   return (
-    <VStack gap="small" paddingX="large" paddingY="xsmall">
-      <div className="pointer-events-none mt-[-35px]">
-        <HStack fullWidth justify="spaceBetween">
-          <div />
-          <div className="pointer-events-auto">
-            <Typography
-              color={totalUsedLength > totalLength ? 'destructive' : 'muted'}
-              variant="body2"
-            >
-              {t('ContextWindowPreview.usage', {
-                used: totalUsedLength,
-                total: totalLength,
-              })}
-            </Typography>
-          </div>
-        </HStack>
-      </div>
+    <VStack border fullWidth gap="small" paddingX="small" paddingY="xsmall">
+      <HStack fullWidth justify="spaceBetween">
+        <Typography variant="body3" uppercase bold>
+          {t('title')}
+        </Typography>
+        <div className="pointer-events-none">
+          <HStack fullWidth justify="spaceBetween">
+            <div />
+            <div className="pointer-events-auto">
+              <Typography
+                color={totalUsedLength > totalLength ? 'destructive' : 'muted'}
+                variant="body2"
+              >
+                {t('ContextWindowPreview.usage', {
+                  used: totalUsedLength,
+                  total: totalLength,
+                })}
+              </Typography>
+            </div>
+          </HStack>
+        </div>
+      </HStack>
       {/* eslint-disable-next-line react/forbid-component-props */}
       <Chart height={35} options={standardChartOptions} />
     </VStack>

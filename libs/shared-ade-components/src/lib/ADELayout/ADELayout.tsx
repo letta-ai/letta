@@ -145,15 +145,7 @@ function DesktopLayout() {
         >
           <VStack gap="small" fullWidth fullHeight>
             <HStack className="max-h-[100px]">
-              <ADEGroup
-                items={[
-                  {
-                    title: t('contextWindow'),
-                    id: 'content-window',
-                    content: <ContextWindowPanel />,
-                  },
-                ]}
-              />
+              <ContextWindowPanel />
             </HStack>
             <ADEGroup
               items={[
