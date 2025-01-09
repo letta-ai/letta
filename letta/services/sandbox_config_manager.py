@@ -111,16 +111,15 @@ class SandboxConfigManager:
 
     @enforce_types
     def list_sandbox_configs(
-        self, actor: PydanticUser, cursor: Optional[str] = None, limit: Optional[int] = 50
+        self, actor: PydanticUser, cursor: Optional[str] = None, limit: Optional[int] = 50, sandbox_type: Optional[SandboxType] = None
     ) -> List[PydanticSandboxConfig]:
         """List all sandbox configurations with optional pagination."""
+        kwargs = {"organization_id": actor.organization_id}
+        if sandbox_type:
+            kwargs.update({"type": sandbox_type})
+
         with self.session_maker() as session:
-            sandboxes = SandboxConfigModel.list(
-                db_session=session,
-                cursor=cursor,
-                limit=limit,
-                organization_id=actor.organization_id,
-            )
+            sandboxes = SandboxConfigModel.list(db_session=session, cursor=cursor, limit=limit, **kwargs)
             return [sandbox.to_pydantic() for sandbox in sandboxes]
 
     @enforce_types

@@ -69,11 +69,12 @@ def delete_sandbox_config(
 def list_sandbox_configs(
     limit: int = Query(1000, description="Number of results to return"),
     cursor: Optional[str] = Query(None, description="Pagination cursor to fetch the next set of results"),
+    sandbox_type: Optional[SandboxType] = Query(None, description="Filter for this specific sandbox type"),
     server: SyncServer = Depends(get_letta_server),
     user_id: str = Depends(get_user_id),
 ):
     actor = server.user_manager.get_user_or_default(user_id=user_id)
-    return server.sandbox_config_manager.list_sandbox_configs(actor, limit=limit, cursor=cursor)
+    return server.sandbox_config_manager.list_sandbox_configs(actor, limit=limit, cursor=cursor, sandbox_type=sandbox_type)
 
 
 ### Sandbox Environment Variable Routes
