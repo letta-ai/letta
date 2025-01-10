@@ -100,9 +100,13 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
 
                 if match_all_tags:
                     # Match ALL tags - use subqueries
-                    for tag in tags:
-                        subquery = select(cls.tags.property.mapper.class_.agent_id).where(cls.tags.property.mapper.class_.tag == tag)
-                        query = query.filter(cls.id.in_(subquery))
+                    subquery = (
+                        select(cls.tags.property.mapper.class_.agent_id)
+                        .where(cls.tags.property.mapper.class_.tag.in_(tags))
+                        .group_by(cls.tags.property.mapper.class_.agent_id)
+                        .having(func.count() == len(tags))
+                    )
+                    query = query.filter(cls.id.in_(subquery))
                 else:
                     # Match ANY tag - use join and filter
                     query = (
