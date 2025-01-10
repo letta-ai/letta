@@ -1,8 +1,8 @@
 'use client';
-import React from 'react';
 import { DashboardWithSidebarWrapper } from '@letta-cloud/component-library';
 import { useTranslations } from '@letta-cloud/translations';
 import { useCurrentUser } from '$web/client/hooks';
+import { useFeatureFlag } from '@letta-cloud/web-api-client';
 
 interface SettingsLayoutProps {
   children: React.ReactNode;
@@ -14,6 +14,11 @@ function SettingsLayout(props: SettingsLayoutProps) {
   const t = useTranslations('settings/layout');
 
   const currentUser = useCurrentUser();
+
+  const { isLoading: isLoadingModelProviders, data: isModelProvidersEnabled } =
+    useFeatureFlag('ALLOW_MODEL_PROVIDER_CONFIGURATION');
+  const showModelProviders =
+    !isLoadingModelProviders && isModelProvidersEnabled;
 
   return (
     <DashboardWithSidebarWrapper
@@ -65,6 +70,15 @@ function SettingsLayout(props: SettingsLayoutProps) {
                     label: t('organization.environmentVariables'),
                     href: '/settings/organization/environment-variables',
                   },
+                  ...(showModelProviders
+                    ? [
+                        {
+                          id: 'model-providers',
+                          label: t('organization.modelProviders'),
+                          href: '/settings/organization/model-providers',
+                        },
+                      ]
+                    : []),
                 ],
               },
             ]

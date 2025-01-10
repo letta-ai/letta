@@ -16,6 +16,11 @@ export const featureFlags = {
     expiryDate: '2024-12-31',
     flagValue: z.boolean(),
   },
+  ALLOW_MODEL_PROVIDER_CONFIGURATION: {
+    description: 'Allow model provider configuration',
+    expiryDate: '2024-01-31',
+    flagValue: z.boolean(),
+  },
 } satisfies Record<string, FlagProperties>;
 
 export type Flag = keyof typeof featureFlags;

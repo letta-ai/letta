@@ -95,7 +95,56 @@
       }
     }
   },
-
+  "organization/model-providers": {
+    "title": "Model providers",
+    "description": "Manage model providers for your organization. API keys added here are scoped to the organization and will be used on all downstream requests. Keys cannot be read after being set.",
+    "modelProviderColumns": {
+      "name": "Name",
+      "updatedAt": "Last Updated",
+      "actions": "Actions"
+    },
+    "errorMessage": "There was an error loading your model providers, please try again or contact support.",
+    "loadingMessage": "Loading model providers...",
+    "DeleteModelProviderDialog": {
+      "title": "Delete model provider API key",
+      "trigger": "Delete model provider",
+      "confirm": "Delete",
+      "cancel": "Cancel",
+      "error": "There was an error deleting the model provider API key, please try again or contact support.",
+      "description": "Are you sure you want to delete the API key for {name}? This is permanent and cannot be undone."
+    },
+    "UpdateModelProviderDialog": {
+      "title": "Update model provider API key",
+      "trigger": "Update model provider",
+      "confirm": "Update",
+      "cancel": "Cancel",
+      "name": {
+        "label": "Name"
+      },
+      "apiKey": {
+        "label": "API Key",
+        "placeholder": "my-token"
+      },
+      "error": "There was an error updating the model provider, please try again or contact support."
+    },
+    "CreateModelProviderDialog": {
+      "title": "Add model provider API key",
+      "trigger": "Add model provider",
+      "confirm": "Add",
+      "cancel": "Cancel",
+      "name": {
+        "label": "Name"
+      },
+      "apiKey": {
+        "label": "API Key",
+        "placeholder": "my-token"
+      },
+      "errors": {
+        "default": "There was an error adding the model provider, please try again or contact support.",
+        "alreadyExists": "Configurations for this provider name already exists, please update existing configuration."
+      }
+    }
+  },
   "organization/environment-variables": {
     "title": "Environment variables",
     "description": "Manage environment variables for your organization. All environment variables are scoped to the organization and are available to all agents in the organization via tools. Keys cannot be read after being set.",
@@ -225,7 +274,8 @@
       "root": "Organization",
       "billing": "Usage and billing",
       "integrations": "Integrations",
-      "environmentVariables": "Environment variables"
+      "environmentVariables": "Environment variables",
+      "modelProviders": "Model providers"
     }
   },
   "data-sources/page": {
