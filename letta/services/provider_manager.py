@@ -17,6 +17,8 @@ class ProviderManager:
     def create_provider(self, provider: PydanticProvider) -> PydanticProvider:
         """Create a new provider if it doesn't already exist."""
         with self.session_maker() as session:
+            # Lazily create the provider id prior to persistence
+            provider.resolve_identifier()
             new_provider = ProviderModel(**provider.model_dump())
             new_provider.create(session)
             return new_provider.to_pydantic()
