@@ -4837,6 +4837,12 @@ export const $ToolRunFromSource = {
   title: 'ToolRunFromSource',
 } as const;
 
+export const $ToolType = {
+  type: 'string',
+  enum: ['custom', 'letta_core', 'letta_memory_core'],
+  title: 'ToolType',
+} as const;
+
 export const $ToolUpdate = {
   properties: {
     description: {
@@ -5773,6 +5779,11 @@ export const $letta__schemas__tool__Tool = {
       description: 'The human-friendly ID of the Tool',
       examples: ['tool-123e4567-e89b-12d3-a456-426614174000'],
     },
+    tool_type: {
+      $ref: '#/components/schemas/ToolType',
+      description: 'The type of the tool.',
+      default: 'custom',
+    },
     description: {
       anyOf: [
         {
@@ -5844,7 +5855,14 @@ export const $letta__schemas__tool__Tool = {
       default: [],
     },
     source_code: {
-      type: 'string',
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
       title: 'Source Code',
       description: 'The source code of the function.',
     },
@@ -5893,7 +5911,6 @@ export const $letta__schemas__tool__Tool = {
   },
   additionalProperties: false,
   type: 'object',
-  required: ['source_code'],
   title: 'Tool',
   description: `Representation of a tool, which is a function that can be called by the agent.
 

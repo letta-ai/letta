@@ -1982,6 +1982,8 @@ export type ToolRunFromSource = {
   source_type?: string | null;
 };
 
+export type ToolType = 'custom' | 'letta_core' | 'letta_memory_core';
+
 export type ToolUpdate = {
   /**
    * The description of the tool.
@@ -2333,6 +2335,10 @@ export type letta__schemas__tool__Tool = {
    */
   id?: string;
   /**
+   * The type of the tool.
+   */
+  tool_type?: ToolType;
+  /**
    * The description of the tool.
    */
   description?: string | null;
@@ -2359,7 +2365,7 @@ export type letta__schemas__tool__Tool = {
   /**
    * The source code of the function.
    */
-  source_code: string;
+  source_code?: string | null;
   /**
    * The JSON schema of the function.
    */

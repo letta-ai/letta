@@ -109,6 +109,7 @@ class Agent(SqlalchemyBase, OrganizationMixin):
         """converts to the basic pydantic model counterpart"""
         state = {
             "id": self.id,
+            "organization_id": self.organization_id,
             "name": self.name,
             "description": self.description,
             "message_ids": self.message_ids,

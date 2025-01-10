@@ -8,6 +8,9 @@ API_PREFIX = "/v1"
 OPENAI_API_PREFIX = "/openai"
 
 COMPOSIO_ENTITY_ENV_VAR_KEY = "COMPOSIO_ENTITY"
+COMPOSIO_TOOL_TAG_NAME = "composio"
+
+LETTA_CORE_TOOL_MODULE_NAME = "letta.functions.function_sets.base"
 
 # String in the error message for when the context window is too large
 # Example full message:

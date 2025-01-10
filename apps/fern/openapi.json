@@ -8262,6 +8262,11 @@
         "required": ["source_code", "args"],
         "title": "ToolRunFromSource"
       },
+      "ToolType": {
+        "type": "string",
+        "enum": ["custom", "letta_core", "letta_memory_core"],
+        "title": "ToolType"
+      },
       "ToolUpdate": {
         "properties": {
           "description": {
@@ -9112,6 +9117,11 @@
             "description": "The human-friendly ID of the Tool",
             "examples": ["tool-123e4567-e89b-12d3-a456-426614174000"]
           },
+          "tool_type": {
+            "$ref": "#/components/schemas/ToolType",
+            "description": "The type of the tool.",
+            "default": "custom"
+          },
           "description": {
             "anyOf": [
               {
@@ -9170,7 +9180,14 @@
             "default": []
           },
           "source_code": {
-            "type": "string",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Source Code",
             "description": "The source code of the function."
           },
@@ -9219,7 +9236,6 @@
         },
         "additionalProperties": false,
         "type": "object",
-        "required": ["source_code"],
         "title": "Tool",
         "description": "Representation of a tool, which is a function that can be called by the agent.\n\nParameters:\n    id (str): The unique identifier of the tool.\n    name (str): The name of the function.\n    tags (List[str]): Metadata tags.\n    source_code (str): The source code of the function.\n    json_schema (Dict): The JSON schema of the function."
       }
