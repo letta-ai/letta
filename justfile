@@ -285,35 +285,3 @@ package-desktop:
 setup-pg-vector:
     @echo "Setting up pg-vector..."
     apps/desktop-electron/scripts/install-pgvector.sh
-
-# Run web migrations job in isolation
-@run-web-migration:
-    @echo "🚧 Running web migrations job..."
-    kubectl delete job {{WEB_HELM_CHART_NAME}}-migration-manual --ignore-not-found
-    kubectl apply -f - <<EOF
-    apiVersion: batch/v1
-    kind: Job
-    metadata:
-      name: {{WEB_HELM_CHART_NAME}}-migration-manual
-      labels:
-        app.kubernetes.io/name: {{WEB_HELM_CHART_NAME}}
-    spec:
-      template:
-        metadata:
-          labels:
-            app.kubernetes.io/name: {{WEB_HELM_CHART_NAME}}
-        spec:
-          restartPolicy: Never
-          containers:
-            - name: migration
-              image: "{{DOCKER_REGISTRY}}/web-migrations:{{TAG}}"
-              imagePullPolicy: IfNotPresent
-              command: ["npm", "run", "web:database:migrate:ci"]
-              env:
-                - name: DATABASE_URL
-                  valueFrom:
-                    secretKeyRef:
-                      name: {{WEB_HELM_CHART_NAME}}-env
-                      key: DATABASE_URL
-    EOF
-    @echo "📊 To check migration logs, run: kubectl logs job/{{WEB_HELM_CHART_NAME}}-migration-manual"
