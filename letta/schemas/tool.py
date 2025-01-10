@@ -206,19 +206,16 @@ class ToolUpdate(LettaBase):
     json_schema: Optional[Dict] = Field(
         None, description="The JSON schema of the function (auto-generated from source_code if not provided)"
     )
+    return_char_limit: Optional[int] = Field(None, description="The maximum number of characters in the response.")
 
     class Config:
         extra = "ignore"  # Allows extra fields without validation errors
         # TODO: Remove this, and clean usage of ToolUpdate everywhere else
 
 
-class ToolRun(LettaBase):
-    id: str = Field(..., description="The ID of the tool to run.")
-    args: str = Field(..., description="The arguments to pass to the tool (as stringified JSON).")
-
-
 class ToolRunFromSource(LettaBase):
     source_code: str = Field(..., description="The source code of the function.")
-    args: str = Field(..., description="The arguments to pass to the tool (as stringified JSON).")
+    args: Dict[str, str] = Field(..., description="The arguments to pass to the tool.")
+    env_vars: Dict[str, str] = Field(None, description="The environment variables to pass to the tool.")
     name: Optional[str] = Field(None, description="The name of the tool to run.")
     source_type: Optional[str] = Field(None, description="The type of the source code.")

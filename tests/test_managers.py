@@ -1391,9 +1391,10 @@ def test_list_tools(server: SyncServer, print_tool, default_user):
 
 def test_update_tool_by_id(server: SyncServer, print_tool, default_user):
     updated_description = "updated_description"
+    return_char_limit = 10000
 
     # Create a ToolUpdate object to modify the print_tool's description
-    tool_update = ToolUpdate(description=updated_description)
+    tool_update = ToolUpdate(description=updated_description, return_char_limit=return_char_limit)
 
     # Update the tool using the manager method
     server.tool_manager.update_tool_by_id(print_tool.id, tool_update, actor=default_user)
@@ -1403,6 +1404,7 @@ def test_update_tool_by_id(server: SyncServer, print_tool, default_user):
 
     # Assertions to check if the update was successful
     assert updated_tool.description == updated_description
+    assert updated_tool.return_char_limit == return_char_limit
 
 
 def test_update_tool_source_code_refreshes_schema_and_name(server: SyncServer, print_tool, default_user):
@@ -2055,16 +2057,16 @@ def test_get_sandbox_config_by_type(server: SyncServer, sandbox_config_fixture, 
 
 def test_list_sandbox_configs(server: SyncServer, default_user):
     # Creating multiple sandbox configs
-    config_a = SandboxConfigCreate(
+    config_e2b_create = SandboxConfigCreate(
         config=E2BSandboxConfig(),
     )
-    config_b = SandboxConfigCreate(
+    config_local_create = SandboxConfigCreate(
         config=LocalSandboxConfig(sandbox_dir=""),
     )
-    server.sandbox_config_manager.create_or_update_sandbox_config(config_a, actor=default_user)
+    config_e2b = server.sandbox_config_manager.create_or_update_sandbox_config(config_e2b_create, actor=default_user)
     if USING_SQLITE:
         time.sleep(CREATE_DELAY_SQLITE)
-    server.sandbox_config_manager.create_or_update_sandbox_config(config_b, actor=default_user)
+    config_local = server.sandbox_config_manager.create_or_update_sandbox_config(config_local_create, actor=default_user)
 
     # List configs without pagination
     configs = server.sandbox_config_manager.list_sandbox_configs(actor=default_user)
@@ -2077,6 +2079,15 @@ def test_list_sandbox_configs(server: SyncServer, default_user):
     next_page = server.sandbox_config_manager.list_sandbox_configs(actor=default_user, cursor=paginated_configs[-1].id, limit=1)
     assert len(next_page) == 1
     assert next_page[0].id != paginated_configs[0].id
+
+    # List configs using sandbox_type filter
+    configs = server.sandbox_config_manager.list_sandbox_configs(actor=default_user, sandbox_type=SandboxType.E2B)
+    assert len(configs) == 1
+    assert configs[0].id == config_e2b.id
+
+    configs = server.sandbox_config_manager.list_sandbox_configs(actor=default_user, sandbox_type=SandboxType.LOCAL)
+    assert len(configs) == 1
+    assert configs[0].id == config_local.id
 
 
 # ======================================================================================================================

@@ -1,11 +1,10 @@
 # inspecting tools
-import json
 import os
 import traceback
 import warnings
 from abc import abstractmethod
 from datetime import datetime
-from typing import Callable, List, Optional, Tuple, Union
+from typing import Callable, Dict, List, Optional, Tuple, Union
 
 from composio.client import Composio
 from composio.client.collections import ActionModel, AppModel
@@ -23,7 +22,6 @@ from letta.data_sources.connectors import DataConnector, load_data
 from letta.interface import AgentInterface  # abstract
 from letta.interface import CLIInterface  # for printing to terminal
 from letta.log import get_logger
-from letta.o1_agent import O1Agent
 from letta.offline_memory_agent import OfflineMemoryAgent
 from letta.orm import Base
 from letta.orm.errors import NoResultFound
@@ -391,8 +389,6 @@ class SyncServer(Server):
             interface = interface or self.default_interface_factory()
             if agent_state.agent_type == AgentType.memgpt_agent:
                 agent = Agent(agent_state=agent_state, interface=interface, user=actor)
-            elif agent_state.agent_type == AgentType.o1_agent:
-                agent = O1Agent(agent_state=agent_state, interface=interface, user=actor)
             elif agent_state.agent_type == AgentType.offline_memory_agent:
                 agent = OfflineMemoryAgent(agent_state=agent_state, interface=interface, user=actor)
             elif agent_state.agent_type == AgentType.chat_only_agent:
@@ -1117,22 +1113,17 @@ class SyncServer(Server):
     def run_tool_from_source(
         self,
         actor: User,
-        tool_args: str,
+        tool_args: Dict[str, str],
         tool_source: str,
+        tool_env_vars: Optional[Dict[str, str]] = None,
         tool_source_type: Optional[str] = None,
         tool_name: Optional[str] = None,
     ) -> ToolReturnMessage:
         """Run a tool from source code"""
-
-        try:
-            tool_args_dict = json.loads(tool_args)
-        except json.JSONDecodeError:
-            raise ValueError("Invalid JSON string for tool_args")
-
         if tool_source_type is not None and tool_source_type != "python":
             raise ValueError("Only Python source code is supported at this time")
 
-        # NOTE: we're creating a floating Tool object and NOT persiting to DB
+        # NOTE: we're creating a floating Tool object and NOT persisting to DB
         tool = Tool(
             name=tool_name,
             source_code=tool_source,
@@ -1144,7 +1135,9 @@ class SyncServer(Server):
 
         # Next, attempt to run the tool with the sandbox
         try:
-            sandbox_run_result = ToolExecutionSandbox(tool.name, tool_args_dict, actor, tool_object=tool).run(agent_state=agent_state)
+            sandbox_run_result = ToolExecutionSandbox(tool.name, tool_args, actor, tool_object=tool).run(
+                agent_state=agent_state, additional_env_vars=tool_env_vars
+            )
             return ToolReturnMessage(
                 id="null",
                 tool_call_id="null",

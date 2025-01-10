@@ -16,7 +16,6 @@ from letta.constants import (
     MESSAGE_SUMMARY_TRUNC_KEEP_N_LAST,
     MESSAGE_SUMMARY_TRUNC_TOKEN_FRAC,
     MESSAGE_SUMMARY_WARNING_FRAC,
-    O1_BASE_TOOLS,
     REQ_HEARTBEAT_MESSAGE,
 )
 from letta.errors import ContextWindowExceededError
@@ -212,7 +211,7 @@ class Agent(BaseAgent):
             # TODO: This is NO BUENO
             # TODO: Matching purely by names is extremely problematic, users can create tools with these names and run them in the agent loop
             # TODO: We will have probably have to match the function strings exactly for safety
-            if function_name in BASE_TOOLS or function_name in O1_BASE_TOOLS:
+            if function_name in BASE_TOOLS:
                 # base tools are allowed to access the `Agent` object and run on the database
                 function_args["self"] = self  # need to attach self to arg since it's dynamically linked
                 function_response = callable_func(**function_args)
