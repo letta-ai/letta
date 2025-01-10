@@ -16,9 +16,14 @@ class ProviderBase(LettaBase):
 
 
 class Provider(ProviderBase):
+    id: Optional[str] = Field(None, description="The id of the provider, lazily created by the database manager.")
     name: str = Field(..., description="The name of the provider")
     api_key: Optional[str] = Field(None, description="API key used for requests to the provider.")
     organization_id: Optional[str] = Field(OrganizationManager.DEFAULT_ORG_ID, description="The organization id of the user")
+
+    def resolve_identifier(self):
+        if not self.id:
+            self.id = ProviderBase._generate_id(prefix=ProviderBase.__id_prefix__)
 
     def list_llm_models(self) -> List[LLMConfig]:
         return []
@@ -40,7 +45,7 @@ class Provider(ProviderBase):
 class ProviderCreate(ProviderBase):
     name: str = Field(..., description="The name of the provider.")
     api_key: str = Field(..., description="API key used for requests to the provider.")
-    organization_id: str = Field(..., description="The organization id that this provider information pertains to.")
+    organization_id: Optional[str] = Field(OrganizationManager.DEFAULT_ORG_ID, description="The organization id of the user")
 
 
 class ProviderUpdate(ProviderBase):
