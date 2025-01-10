@@ -21,3 +21,9 @@ export const ProviderSchemaConfiguration = z.union([
 ]);
 
 export type ProviderConfiguration = z.infer<typeof ProviderSchemaConfiguration>;
+
+export interface ServerLogType {
+  type: 'error' | 'info';
+  message: string;
+  timestamp: string;
+}

@@ -8,6 +8,8 @@ import { OpenAPI } from '@letta-cloud/letta-agents-api';
 import { NextIntlClientProvider } from 'next-intl';
 import { en as adeEn } from '@letta-cloud/shared-ade-components';
 import en from './translations/en.json';
+import { ServerStatusProvider } from './app/hooks/useServerStatus/useServerStatus';
+import { Toaster } from '@letta-cloud/component-library';
 
 const root = ReactDOM.createRoot(document.getElementById('root')!);
 
@@ -37,7 +39,10 @@ root.render(
       >
         <LettaCoreInterceptor />
         <HashRouter>
-          <App />
+          <Toaster />
+          <ServerStatusProvider>
+            <App />
+          </ServerStatusProvider>
         </HashRouter>
       </NextIntlClientProvider>
     </QueryClientProvider>

@@ -10,27 +10,27 @@ import { AppHeader } from './AppHeader/AppHeader';
 import { Agents } from './pages/Agents/Agents';
 import {
   Button,
-  CogIcon,
+  CogIcon, CommunicationsIcon,
   Frame,
   HStack,
   LettaInvaderIcon,
-  VStack,
+  TerminalIcon,
+  VStack
 } from '@letta-cloud/component-library';
 import { useTranslations } from '@letta-cloud/translations';
 import { ADE } from './pages/ADE/ADE';
 import { Homepage } from './pages/Homepage/Homepage';
 import { useEffect } from 'react';
-import { CenterPage } from './pages/shared/CenterPage/CenterPage';
-import { InstallLetta } from './pages/InstallLetta/InstallLetta';
-import { ConnectToLetta } from './pages/ConnectToLetta/ConnectToLetta';
-import { Settings } from './pages/Settings/Settings';
+import { Integrations } from './pages/Integrations/Integrations';
+import { NotConnectedOverlay } from './pages/shared/NotConnectedOverlay/NotConnectedOverlay';
+import { ServerStatus } from './pages/ServerStatus/ServerStatus';
 
 function Sidebar() {
   const t = useTranslations('App');
 
   const location = useLocation();
   return (
-    <VStack color="background-grey" padding="small" borderRight fullHeight>
+    <VStack padding="small" borderRight fullHeight>
       <Link to="/dashboard/agents">
         <Button
           hideLabel
@@ -40,13 +40,22 @@ function Sidebar() {
           label={t('Sidebar.agents')}
         ></Button>
       </Link>
-      <Link to="/dashboard/settings">
+      <Link to="/dashboard/server-status">
         <Button
           hideLabel
-          active={location.pathname === '/dashboard/settings'}
-          preIcon={<CogIcon />}
+          active={location.pathname === '/dashboard/server-status'}
+          preIcon={<TerminalIcon />}
           color="tertiary"
-          label={t('Sidebar.agents')}
+          label={t('Sidebar.serverStatus')}
+        ></Button>
+      </Link>
+      <Link to="/dashboard/integrations">
+        <Button
+          hideLabel
+          active={location.pathname === '/dashboard/integrations'}
+          preIcon={<CommunicationsIcon />}
+          color="tertiary"
+          label={t('Sidebar.integrations')}
         ></Button>
       </Link>
     </VStack>
@@ -60,14 +69,16 @@ function Dashboard() {
 
   return (
     <HStack
-      color="background-grey"
+      color="background"
       gap={false}
       className="dark flex flex-col w-[100dvw] h-[100dvh]"
     >
       <AppHeader />
-      <HStack fullWidth gap={false} fullHeight>
+      <HStack overflow="hidden" fullWidth gap={false} fullHeight>
         <Sidebar />
-        <Outlet />
+        <div className="relative w-full">
+          <Outlet />
+        </div>
       </HStack>
     </HStack>
   );
@@ -87,12 +98,26 @@ export function App() {
   return (
     <Routes>
       <Route path="/" element={<Homepage />} />
-      <Route path="/install-letta" element={<InstallLetta />} />
-      <Route path="/connect-to-letta" element={<ConnectToLetta />} />
-      <Route path="dashboard" element={<Dashboard />}>
-        <Route path="/dashboard/agents" element={<Agents />} />
-        <Route path="/dashboard/agents/:agentId" element={<ADE />} />
-        <Route path="/dashboard/settings" element={<Settings />} />
+      <Route path="/dashboard" element={<Dashboard />}>
+        <Route
+          path="/dashboard/agents"
+          element={
+            <NotConnectedOverlay>
+              <Agents />
+            </NotConnectedOverlay>
+          }
+        />
+        <Route
+          path="/dashboard/agents/:agentId"
+          element={
+            <NotConnectedOverlay>
+              <ADE />
+            </NotConnectedOverlay>
+          }
+        />
+        <Route path="/dashboard/server-status" element={<ServerStatus />} />
+
+        <Route path="/dashboard/integrations" element={<Integrations />} />
       </Route>
     </Routes>
   );

@@ -2280,7 +2280,7 @@ langsmith-pyo3 = ["langsmith-pyo3 (>=0.1.0rc2,<0.2.0)"]
 
 [[package]]
 name = "letta"
-version = "0.6.6"
+version = "0.6.8"
 description = "Create LLM agents with long-term memory and custom tools"
 optional = false
 python-versions = "<3.14,>=3.10"
@@ -6132,4 +6132,4 @@ testing = ["coverage[toml]", "zope.event", "zope.testing"]
 [metadata]
 lock-version = "2.0"
 python-versions = "<3.14,>=3.10"
-content-hash = "547b73d4c141f8037862bb05bfda017582d22f2771413b0fca36a9c47add04e9"
+content-hash = "a4c7da24cf694d422ed8fd51319b9a8b47136ca4e76355e88acc35660126cb5b"

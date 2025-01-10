@@ -5,10 +5,110 @@ import { join } from 'path';
 import { format } from 'url';
 import * as electron from 'electron';
 import * as fs from 'fs';
-import * as os from 'os';
+import { execFile } from 'child_process';
+import * as path from 'path';
+import type { ServerLogType } from '@letta-cloud/types';
 
-const isMac = os.platform() === 'darwin';
-const isLinux = os.platform() === 'linux';
+let lettaServer: ReturnType<typeof execFile> | null = null;
+
+class ServerLogs {
+  logs: ServerLogType[] = [];
+  limit: number = 1000;
+
+  constructor() {
+    this.logs = [];
+  }
+
+  addLog(log: ServerLogType) {
+    this.logs.push(log);
+    if (this.logs.length > this.limit) {
+      this.logs.shift();
+    }
+  }
+
+  getLogs() {
+    return this.logs;
+  }
+}
+
+const lettaServerLogs = new ServerLogs();
+
+function copyAlembicToLettaDir() {
+  let alembicFolderPath = path.join(
+    __dirname,
+    '..',
+    'desktop-electron',
+    'assets',
+    'alembic',
+  );
+  let alembicInitPath = path.join(
+    __dirname,
+    '..',
+    'desktop-electron',
+    'assets',
+    'alembic.ini',
+  );
+
+  if (App.application.isPackaged) {
+    alembicFolderPath = path.join(
+      __dirname,
+      '..',
+      'desktop-electron',
+      'assets',
+      'alembic',
+    );
+    alembicInitPath = path.join(
+      __dirname,
+      '..',
+      'desktop-electron',
+      'assets',
+      'alembic.ini',
+    );
+  }
+
+  const migrationsPath = path.join(
+    process.env.HOME || '/',
+    '.letta',
+    'migrations',
+  );
+
+  if (!fs.existsSync(migrationsPath)) {
+    fs.mkdirSync(migrationsPath, { recursive: true });
+  }
+
+  fs.copyFileSync(alembicInitPath, path.join(migrationsPath, 'alembic.ini'));
+
+  if (!fs.existsSync(migrationsPath)) {
+    fs.mkdirSync(path.join(migrationsPath), { recursive: true });
+  }
+
+  if (!fs.existsSync(path.join(migrationsPath, 'alembic'))) {
+    fs.mkdirSync(path.join(migrationsPath, 'alembic'), { recursive: true });
+  }
+
+  if (!fs.existsSync(path.join(migrationsPath, 'alembic', 'versions'))) {
+    fs.mkdirSync(path.join(migrationsPath, 'alembic', 'versions'), {
+      recursive: true,
+    });
+  }
+
+  fs.copyFileSync(
+    path.join(alembicFolderPath, 'env.py'),
+    path.join(migrationsPath, 'alembic', 'env.py'),
+  );
+
+  const alembicFiles = fs.readdirSync(path.join(alembicFolderPath, 'versions'));
+  for (const file of alembicFiles) {
+    if (file.endsWith('.py')) {
+      fs.copyFileSync(
+        path.join(alembicFolderPath, 'versions', file),
+        path.join(migrationsPath, 'alembic', 'versions', file),
+      );
+    }
+  }
+
+  console.log('Alembic files copied to Letta directory');
+}
 
 export default class App {
   // Keep a global reference of the window object, if you don't, the window will
@@ -47,39 +147,108 @@ export default class App {
     }
   }
 
-  static async lettaStartupRouting() {
-    let isLettaCoreInstalledInBin = false;
+  static getLettaServerLogs() {
+    return lettaServerLogs.getLogs();
+  }
 
-    if (isMac || isLinux) {
-      isLettaCoreInstalledInBin = fs.existsSync('/usr/local/bin/letta-server');
-    } else {
-      isLettaCoreInstalledInBin = fs.existsSync(
-        'C:\\Program Files\\Letta\\letta-server.exe',
+  static loadLettaConfig() {
+    const configPath = path.join(process.env.HOME || '/', '.letta', 'env');
+
+    if (!fs.existsSync(configPath)) {
+      // create the file
+      fs.writeFileSync(configPath, '');
+    }
+
+    return fs.readFileSync(configPath, 'utf-8');
+  }
+
+  static saveLettaConfig(config: string) {
+    const configPath = path.join(process.env.HOME || '/', '.letta', 'env');
+
+    fs.writeFileSync(configPath, config);
+
+    App.restartLettaServer();
+  }
+
+  static restartLettaServer() {
+    App.stopLettaServer();
+    App.startLettaServer();
+  }
+
+  static stopLettaServer() {
+    if (lettaServer) {
+      lettaServer.kill();
+      lettaServer = null;
+    }
+  }
+
+  static startLettaServer() {
+    copyAlembicToLettaDir();
+
+    let lettaServerPath = path.join(
+      __dirname,
+      '..',
+      'desktop-electron',
+      'assets',
+      'letta',
+    );
+
+    if (App.application.isPackaged) {
+      lettaServerPath = path.join(
+        __dirname,
+        '..',
+        'desktop-electron',
+        'assets',
+        'letta',
       );
+    } else {
+      // chmod +x
+      fs.chmodSync(
+        lettaServerPath,
+        parseInt('755', 8),
+      )
     }
 
-    if (!isLettaCoreInstalledInBin) {
-      App.mainWindow.webContents.send('set-path', '/install-letta');
 
-      return;
-    }
+    lettaServer = execFile(lettaServerPath);
 
-    // check if letta is running (check http://localhost:8283/v1/health)
-    try {
-      const data = await fetch('http://localhost:8283/v1/health', {
-        method: 'GET',
+    if (lettaServer.stdout) {
+      lettaServer.stdout.on('data', (data) => {
+        console.log(`stdout: ${data}`);
+
+        lettaServerLogs.addLog({
+          type: 'info',
+          message: data.toString(),
+          timestamp: new Date().toISOString(),
+        });
       });
-
-      if (data.status !== 200) {
-        App.mainWindow.webContents.send('set-path', '/dashboard');
-
-        return;
-      }
-    } catch (error) {
-      //
     }
 
-    App.mainWindow.webContents.send('set-path', '/connect-to-letta');
+    if (lettaServer.stderr) {
+      lettaServer.stderr.on('data', (data) => {
+        console.error(`stderr: ${data}`);
+
+        lettaServerLogs.addLog({
+          type: 'error',
+          message: data.toString(),
+          timestamp: new Date().toISOString(),
+        });
+      });
+    }
+
+    lettaServer.on('close', (code) => {
+      console.log(`child process exited with code ${code}`);
+
+      lettaServerLogs.addLog({
+        type: 'info',
+        message: `child process exited with code ${code}`,
+        timestamp: new Date().toISOString(),
+      });
+    });
+  }
+
+  static async lettaStartupRouting() {
+    App.mainWindow.webContents.send('set-path', '/dashboard/agents');
   }
 
   private static onReady() {
@@ -87,6 +256,8 @@ export default class App {
     // initialization and is ready to create browser windows.
     // Some APIs can only be used after this event occurs.
     if (rendererAppName) {
+      App.startLettaServer();
+
       App.initMainWindow();
       App.loadMainWindow();
       App.mainWindow.webContents.on('did-finish-load', function () {
@@ -159,6 +330,9 @@ export default class App {
       // Dereference the window object, usually you would store windows
       // in an array if your app supports multi windows, this is the time
       // when you should delete the corresponding element.
+
+      App.stopLettaServer();
+
       // @ts-ignore
       App.mainWindow = null;
     });

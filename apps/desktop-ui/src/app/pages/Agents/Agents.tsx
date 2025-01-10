@@ -3,6 +3,8 @@ import {
   Button,
   DashboardPageSection,
   DataTable,
+  LettaInvaderIcon,
+  VStack,
 } from '@letta-cloud/component-library';
 import {
   type AgentState,
@@ -91,29 +93,35 @@ export function Agents() {
 
   return (
     <DesktopPageLayout
+      icon={<LettaInvaderIcon />}
+      subtitle={t('subtitle')}
       actions={
         <CreateLocalAgentDialog
-          trigger={<Button color="primary" label={t('createAgent')} />}
+          trigger={
+            <Button size="small" color="primary" label={t('createAgent')} />
+          }
         />
       }
       title={t('title')}
     >
-      <DataTable
-        autofitHeight
-        offset={offset}
-        searchValue={search}
-        onSearch={!isError ? setSearch : undefined}
-        onLimitChange={setLimit}
-        limit={limit}
-        hasNextPage={hasNextPage}
-        showPagination
-        onSetOffset={setOffset}
-        columns={columns}
-        data={pagedData}
-        isLoading={!data}
-        loadingText={t('table.loading')}
-        noResultsText={t('table.noResults')}
-      />
+      <VStack fullWidth fullHeight paddingX="small" paddingTop="small">
+        <DataTable
+          autofitHeight
+          offset={offset}
+          searchValue={search}
+          onSearch={!isError ? setSearch : undefined}
+          onLimitChange={setLimit}
+          limit={limit}
+          hasNextPage={hasNextPage}
+          showPagination
+          onSetOffset={setOffset}
+          columns={columns}
+          data={pagedData}
+          isLoading={!data}
+          loadingText={t('table.loading')}
+          noResultsText={t('table.noResults')}
+        />
+      </VStack>
     </DesktopPageLayout>
   );
 }

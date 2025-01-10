@@ -1,15 +1,42 @@
 {
-  "InstallLetta": {
-    "title": "Install the Letta CLI",
-    "install": "Install letta-server",
-    "description": "Click the button below to install the letta-server cli tool. This will enable you to start and manage your local server.",
-    "below": "You will be prompted for admin permissions to install the tool."
+  "Integrations": {
+    "title": "Integrations",
+    "loading": "Loading...",
+    "learnMore": "Learn more",
+    "subtitle": "Below you can update the environment settings for the ADE.",
+    "label": "Environment Variables",
+    "save": "Update environment",
+    "configure": "Configure",
+    "saveSuccess": "Environment variables updated successfully, restarting the ADE server",
+    "IntegrationConfigurationDialog": {
+      "title": "Update connection with {integrationName}",
+      "alertTitle": "Learn more",
+      "description": "Learn about how to connect and more about this integration <link>here</link>"
+    },
+    "integrations": {
+      "openAI": {
+        "keyLabel": "OpenAI API Key",
+        "description": "Connect to the OpenAI API to use GPT models in the ADE"
+      },
+      "anthropic": {
+        "keyLabel": "Anthropic API Key",
+        "description": "Connect to the Anthropic API to use Anthropic models in the ADE"
+      },
+      "ollama": {
+        "urlLabel": "Ollama Base URL",
+        "description": "Connect to the Ollama API to use Ollama models in the ADE"
+      },
+      "azure": {
+        "keyLabel": "Azure API Key",
+        "urlLabel": "Azure Base URL",
+        "description": "Connect to the Azure API to use Azure models in the ADE"
+      },
+      "composio": {
+        "keyLabel": "Composio API Key",
+        "description": "Connect to the Composio API to use Composio tools in the ADE"
+      }
+    }
   },
-  "Settings": {
-    "title": "Settings",
-    "description": "To add environment variables to your server, please export them in the terminal before starting the server. We are working on a UI for this feature soon."
-  },
-
   "Homepage": {
     "booting": "Booting..."
   },
@@ -23,6 +50,7 @@
   },
   "Agents": {
     "title": "Agents",
+    "subtitle": "View and manage your agents below.",
     "createAgent": "Create Agent",
     "table": {
       "loading": "Loading...",
@@ -34,6 +62,11 @@
       "openInADE": "Open in ADE",
       "noResults": "No agents found"
     }
+  },
+  "NotConnectedOverlay": {
+    "connecting": "Connecting to the letta server...",
+    "details": "We are attempting to connect to your server. Please wait a moment, you can view connection details below.",
+    "action": "View connection details"
   },
   "CreateLocalAgentDialog": {
     "serverOffline": "Your server is offline, please start it to create a new agent.",
@@ -55,6 +88,11 @@
     },
     "back": "All agents"
   },
+  "ServerStatus": {
+    "restart": "Restart",
+    "title": "Letta Server Logs",
+    "subtitle": "View the status of your server and the agents connected to it."
+  },
   "AppHeader": {
     "Navigation": {
       "cloud": "Cloud ADE",
@@ -69,7 +107,8 @@
   "App": {
     "Sidebar": {
       "agents": "Agents",
-      "settings": "Settings"
+      "integrations": "Integrations",
+      "serverStatus": "Server Status"
     }
   }
 }

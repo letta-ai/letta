@@ -99,7 +99,7 @@ export function AppHeader() {
   return (
     <div className="app-header">
       <HStack
-        color="background-grey"
+        color="background"
         paddingLeft="xlarge"
         paddingRight="small"
         justify="spaceBetween"

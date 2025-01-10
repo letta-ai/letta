@@ -14,6 +14,8 @@ export * from './openai';
 export * from './qwen';
 export * from './snorkel-ai';
 export * from './together-ai';
+export * from './azure';
+export * from './ollama';
 export type BrandKeys =
   | 'affinity'
   | 'agencyzoom'
@@ -21,6 +23,7 @@ export type BrandKeys =
   | 'anthropic'
   | 'asana'
   | 'attio'
+  | 'azure'
   | 'bamboohr'
   | 'bitbucket'
   | 'blackboard'
@@ -78,6 +81,7 @@ export type BrandKeys =
   | 'notion'
   | 'nous-research'
   | 'nvidia'
+  | 'ollama'
   | 'one_drive'
   | 'openai'
   | 'outlook'

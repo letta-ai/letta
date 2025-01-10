@@ -59,6 +59,9 @@ class ModelSettings(BaseSettings):
     openllm_auth_type: Optional[str] = None
     openllm_api_key: Optional[str] = None
 
+    # disable openapi schema generation
+    disable_schema_generation: bool = False
+
 
 cors_origins = [
     "http://letta.localhost",

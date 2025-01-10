@@ -244,10 +244,6 @@ def create_application() -> "FastAPI":
     # / static files
     mount_static_files(app)
 
-    @app.on_event("startup")
-    def on_startup():
-        generate_openapi_schema(app)
-
     @app.on_event("shutdown")
     def on_shutdown():
         global server

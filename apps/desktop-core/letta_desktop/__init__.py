@@ -1,5 +1,20 @@
-from letta.settings import settings
+from dotenv import load_dotenv
 from pathlib import Path
+from os.path import join
+
+dotenv_path = join(Path.home() / ".letta", "env")
+
+# make env file and folder if it doesn't exist
+Path(dotenv_path).parent.mkdir(parents=True, exist_ok=True)
+
+# make file if it doesn't exist
+Path(dotenv_path).touch(exist_ok=True)
+
+load_dotenv(dotenv_path)
+
+from letta.settings import settings
+
+
 import os
 import sys
 import pgserver

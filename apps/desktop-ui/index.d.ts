@@ -1,4 +1,6 @@
 // extend window with electron
+import type { ServerLogType } from '@letta-cloud/types';
+
 declare global {
   interface Window {
     electron: {
@@ -9,9 +11,15 @@ declare global {
       toggle: () => Promise<void>;
       system: () => Promise<void>;
     };
-    lettaCore: {
-      start: () => Promise<void>;
-      stop: () => Promise<void>;
+    lettaServer: {
+      restart: () => Promise<void>;
+      getLogs: () => Promise<string>;
+      onGetLogs: (callback: (logs: ServerLogType[]) => void) => void;
+    };
+    lettaConfig: {
+      load: () => Promise<void>;
+      save: (config: any) => Promise<void>;
+      onLoad: (callback: (config: any) => void) => void;
     };
   }
 }
