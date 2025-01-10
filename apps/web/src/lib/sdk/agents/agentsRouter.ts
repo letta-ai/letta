@@ -1151,15 +1151,19 @@ export async function deleteAgent(
   );
 
   if (deployedAgent) {
-    await db
-      .update(deployedAgents)
-      .set({ deletedAt: new Date() })
-      .where(eq(deployedAgents.id, agentId));
+    // await db
+    //   .update(deployedAgents)
+    //   .set({ deletedAt: new Date() })
+    //   .where(eq(deployedAgents.id, agentId));
+    // hard delete for now
+    await db.delete(deployedAgents).where(eq(deployedAgents.id, agentId));
   } else {
-    await db
-      .update(agentTemplates)
-      .set({ deletedAt: new Date() })
-      .where(eq(agentTemplates.id, agentId));
+    // await db
+    //   .update(agentTemplates)
+    //   .set({ deletedAt: new Date() })
+    //   .where(eq(agentTemplates.id, agentId));
+    // hard delete for now
+    await db.delete(agentTemplates).where(eq(agentTemplates.id, agentId));
   }
 
   return {

@@ -426,35 +426,52 @@ export async function deleteProject(
   }
 
   const operations = [];
+  // operations.push(
+  //   db
+  //     .update(projects)
+  //     .set({ deletedAt: new Date() })
+  //     .where(eq(projects.id, projectId)),
+  // );
+  //
+  // // delete all deployed agents
+  // operations.push(
+  //   db
+  //     .update(deployedAgents)
+  //     .set({ deletedAt: new Date() })
+  //     .where(eq(deployedAgents.projectId, projectId)),
+  // );
+  //
+  // // delete all deployed agent templates
+  // operations.push(
+  //   db
+  //     .update(deployedAgentTemplates)
+  //     .set({ deletedAt: new Date() })
+  //     .where(eq(deployedAgentTemplates.projectId, projectId)),
+  // );
+  //
+  // // delete all templates
+  // operations.push(
+  //   db
+  //     .update(agentTemplates)
+  //     .set({ deletedAt: new Date() })
+  //     .where(eq(agentTemplates.projectId, projectId)),
+  // );
+
+  // hard delete for now
+  operations.push(db.delete(projects).where(eq(projects.id, projectId)));
+
   operations.push(
-    db
-      .update(projects)
-      .set({ deletedAt: new Date() })
-      .where(eq(projects.id, projectId)),
+    db.delete(deployedAgents).where(eq(deployedAgents.projectId, projectId)),
   );
 
-  // delete all deployed agents
   operations.push(
     db
-      .update(deployedAgents)
-      .set({ deletedAt: new Date() })
-      .where(eq(deployedAgents.projectId, projectId)),
-  );
-
-  // delete all deployed agent templates
-  operations.push(
-    db
-      .update(deployedAgentTemplates)
-      .set({ deletedAt: new Date() })
+      .delete(deployedAgentTemplates)
       .where(eq(deployedAgentTemplates.projectId, projectId)),
   );
 
-  // delete all templates
   operations.push(
-    db
-      .update(agentTemplates)
-      .set({ deletedAt: new Date() })
-      .where(eq(agentTemplates.projectId, projectId)),
+    db.delete(agentTemplates).where(eq(agentTemplates.projectId, projectId)),
   );
 
   await Promise.all([...operations]);
