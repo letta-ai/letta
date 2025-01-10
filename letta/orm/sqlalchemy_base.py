@@ -275,6 +275,8 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
         if actor:
             self._set_created_and_updated_by_fields(actor.id)
 
+        self.set_updated_at()
+
         with db_session as session:
             session.add(self)
             session.commit()

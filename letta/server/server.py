@@ -25,19 +25,6 @@ from letta.log import get_logger
 from letta.offline_memory_agent import OfflineMemoryAgent
 from letta.orm import Base
 from letta.orm.errors import NoResultFound
-from letta.providers import (
-    AnthropicProvider,
-    AzureProvider,
-    GoogleAIProvider,
-    GroqProvider,
-    LettaProvider,
-    OllamaProvider,
-    OpenAIProvider,
-    Provider,
-    TogetherProvider,
-    VLLMChatCompletionsProvider,
-    VLLMCompletionsProvider,
-)
 from letta.schemas.agent import AgentState, AgentType, CreateAgent
 from letta.schemas.block import BlockUpdate
 from letta.schemas.embedding_config import EmbeddingConfig
@@ -52,6 +39,19 @@ from letta.schemas.memory import ArchivalMemorySummary, ContextWindowOverview, M
 from letta.schemas.message import Message, MessageCreate, MessageRole, MessageUpdate
 from letta.schemas.organization import Organization
 from letta.schemas.passage import Passage
+from letta.schemas.providers import (
+    AnthropicProvider,
+    AzureProvider,
+    GoogleAIProvider,
+    GroqProvider,
+    LettaProvider,
+    OllamaProvider,
+    OpenAIProvider,
+    Provider,
+    TogetherProvider,
+    VLLMChatCompletionsProvider,
+    VLLMCompletionsProvider,
+)
 from letta.schemas.sandbox_config import SandboxType
 from letta.schemas.source import Source
 from letta.schemas.tool import Tool

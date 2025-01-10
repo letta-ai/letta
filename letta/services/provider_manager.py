@@ -1,8 +1,8 @@
 from typing import List, Optional
 
 from letta.orm.provider import Provider as ProviderModel
-from letta.providers import Provider as PydanticProvider
-from letta.providers import ProviderUpdate
+from letta.schemas.providers import Provider as PydanticProvider
+from letta.schemas.providers import ProviderUpdate
 from letta.utils import enforce_types
 
 
