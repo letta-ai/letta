@@ -203,6 +203,9 @@ DialogDescription.displayName = DialogPrimitive.Description.displayName;
 
 const dialogVariants = cva('', {
   variants: {
+    maintainAspectRatio: {
+      true: '',
+    },
     size: {
       small: 'max-w-sm',
       medium: 'max-w-md',
@@ -215,6 +218,13 @@ const dialogVariants = cva('', {
   defaultVariants: {
     size: 'medium',
   },
+  compoundVariants: [
+    {
+      size: 'large',
+      maintainAspectRatio: true,
+      className: 'h-full max-h-[600px]',
+    },
+  ],
 });
 
 interface ContentCategory {
@@ -356,6 +366,7 @@ interface DialogProps extends VariantProps<typeof dialogVariants> {
   hideCancel?: boolean;
   hideConfirm?: boolean;
   hideFooter?: boolean;
+  maintainAspectRatio?: boolean;
   color?: 'background-grey' | 'background';
   reverseButtons?: boolean;
 }
@@ -367,6 +378,7 @@ export function Dialog(props: DialogProps) {
     defaultOpen,
     errorMessage,
     errorAdditionalMessage,
+    maintainAspectRatio,
     onOpenChange,
     title,
     testId,
@@ -421,7 +433,7 @@ export function Dialog(props: DialogProps) {
         size={size}
         errorMessage={errorMessage}
         errorAdditionalMessage={errorAdditionalMessage}
-        className={dialogVariants({ size })}
+        className={dialogVariants({ size, maintainAspectRatio })}
         onInteractOutside={(e) => {
           if (preventCloseFromOutside) {
             e.preventDefault();

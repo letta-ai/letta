@@ -54,15 +54,19 @@
       "save": "Update memory variables",
       "label": "Edit Memory Variables",
       "addVariable": "Add new memory",
-      "notSupported": "Memory variables are only available in our cloud product",
+      "notSupported": "Memory variables allow you to inject variables into the agent's memory on creation. This feature is only available on our cloud platform.",
       "details": "Memory variables are injected into the agent's memory on creation. To use a memory variable, simply add it to your core memory with the following syntax: <syntax></syntax>"
     },
     "ToolVariables": {
+      "noVariables": "No tool variables in this agent",
       "keyError": "Keys must start with a letter or an underscore and can only contain letters, numbers, and underscores",
       "addVariable": "Add new tool variable",
       "save": "Update tool variables",
       "label": "Edit tool variables",
-      "details": "Tool variables are exposed in tool calls. Agent-scoped tool variables superceed global tool variables. To configure your global tool variables, modify them in your <link>organization settings</link>"
+      "details": {
+        "cloud": "Tool variables are exposed in tool calls. Agent-scoped tool variables superceed global tool variables. To configure your global tool variables, modify them in your <link>organization settings</link>",
+        "local": "Tool variables are exposed in tool calls. Agent-scoped tool variables superceed global tool variables set in your computer's environment variables."
+      }
     }
   },
   "ADE/AdvancedSettings": {

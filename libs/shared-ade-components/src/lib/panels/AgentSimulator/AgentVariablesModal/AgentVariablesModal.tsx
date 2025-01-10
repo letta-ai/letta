@@ -85,18 +85,16 @@ function DeployedAgentVariables() {
   }
 
   return (
-    <div className="min-h-[250px]">
-      <RawKeyValueEditor
-        label={t('DeployedAgentVariables.label')}
-        hideLabel
-        fullWidth
-        disabled
-        value={variableList.map(([variable, value]) => ({
-          key: variable,
-          value,
-        }))}
-      />
-    </div>
+    <RawKeyValueEditor
+      label={t('DeployedAgentVariables.label')}
+      hideLabel
+      fullWidth
+      disabled
+      value={variableList.map(([variable, value]) => ({
+        key: variable,
+        value,
+      }))}
+    />
   );
 }
 
@@ -148,6 +146,8 @@ function ToolVariables() {
     },
   });
 
+  const { isLocal } = useCurrentAgentMetaData();
+
   const form = useForm<EnvironmentVariableFormState>({
     resolver: zodResolver(environmentVariableFormState),
     defaultValues: {
@@ -171,44 +171,60 @@ function ToolVariables() {
     [agentId, mutate],
   );
 
+  const disableVariableEditing = useMemo(() => {
+    return !isTemplate && !isLocal;
+  }, [isTemplate, isLocal]);
+
   return (
-    <VStack>
+    <VStack fullHeight>
       <VStack>
         <Alert
           variant="info"
-          title={t.rich('ToolVariables.details', {
-            link: (chunks) => (
-              <Link
-                target="_blank"
-                href="/settings/organization/environment-variables"
-              >
-                {chunks}
-              </Link>
-            ),
-          })}
+          title={
+            isLocal
+              ? t('ToolVariables.details.local')
+              : t.rich('ToolVariables.details.cloud', {
+                  link: (chunks) => (
+                    <Link
+                      target="_blank"
+                      href="/settings/organization/environment-variables"
+                    >
+                      {chunks}
+                    </Link>
+                  ),
+                })
+          }
         />
       </VStack>
       <FormProvider {...form}>
         <Form onSubmit={form.handleSubmit(handleSubmit)}>
-          <div className="min-h-[250px]">
+          <VStack fullHeight>
             <FormField
               render={({ field }) => {
                 return (
-                  <KeyValueEditor
-                    addVariableLabel={t('ToolVariables.addVariable')}
-                    fullWidth
-                    disabled={!isTemplate}
-                    hideLabel
-                    label={t('ToolVariables.label')}
-                    value={field.value}
-                    onValueChange={field.onChange}
-                  />
+                  <>
+                    {disableVariableEditing && field.value.length === 0 && (
+                      <Alert
+                        variant="info"
+                        title={t('ToolVariables.noVariables')}
+                      />
+                    )}
+                    <KeyValueEditor
+                      addVariableLabel={t('ToolVariables.addVariable')}
+                      fullWidth
+                      disabled={disableVariableEditing}
+                      hideLabel
+                      label={t('ToolVariables.label')}
+                      value={field.value}
+                      onValueChange={field.onChange}
+                    />
+                  </>
                 );
               }}
               name="variables"
             />
-          </div>
-          {isTemplate && (
+          </VStack>
+          {!disableVariableEditing && (
             <FormActions>
               <Button
                 onClick={() => {
@@ -369,10 +385,10 @@ function MemoryVariableEditor(props: MemoryVariableEditorProps) {
   );
 
   return (
-    <VStack>
+    <VStack fullHeight>
       <FormProvider {...form}>
         <Form onSubmit={form.handleSubmit(handleUpdateSession)}>
-          <div className="min-h-[250px]">
+          <VStack fullHeight>
             <FormField
               render={({ field }) => {
                 return (
@@ -388,7 +404,7 @@ function MemoryVariableEditor(props: MemoryVariableEditorProps) {
               }}
               name="variables"
             />
-          </div>
+          </VStack>
           <FormActions>
             <Button
               onClick={() => {
@@ -431,18 +447,16 @@ function MemoriesVariables() {
   if (!isTemplate) {
     if (!isFromTemplate) {
       return (
-        <HStack padding="small">
-          <Alert
-            title={t('noVariablesInDeployedAgentWithNoTemplate')}
-            variant="info"
-          />
-        </HStack>
+        <Alert
+          title={t('noVariablesInDeployedAgentWithNoTemplate')}
+          variant="info"
+        />
       );
     }
   }
 
   return (
-    <VStack>
+    <VStack fullHeight>
       <Alert
         variant="info"
         title={t.rich('MemoryVariableEditor.details', {
@@ -460,25 +474,39 @@ function MemoriesVariables() {
 
 function AgentVariablesContent() {
   const t = useTranslations('ADE/AgentVariablesModal');
-  const [displayMode, setDisplayMode] =
-    React.useState<VariableDisplayMode>('memories');
+
+  const { isLocal } = useCurrentAgentMetaData();
+
+  const [displayMode, setDisplayMode] = React.useState<VariableDisplayMode>(
+    isLocal ? 'environment' : 'memories',
+  );
+
+  const items = useMemo(() => {
+    const preItems = [
+      {
+        label: t('AgentVariablesContent.tabs.memories'),
+        value: 'memories',
+      },
+      {
+        label: t('AgentVariablesContent.tabs.environment'),
+        value: 'environment',
+      },
+    ];
+
+    if (isLocal) {
+      return preItems.toReversed();
+    }
+
+    return preItems;
+  }, [isLocal, t]);
 
   return (
-    <VStack>
+    <VStack fullHeight>
       <TabGroup
         onValueChange={(value) => {
           setDisplayMode(value as VariableDisplayMode);
         }}
-        items={[
-          {
-            label: t('AgentVariablesContent.tabs.memories'),
-            value: 'memories',
-          },
-          {
-            label: t('AgentVariablesContent.tabs.environment'),
-            value: 'environment',
-          },
-        ]}
+        items={items}
       />
       {displayMode === 'memories' && <MemoriesVariables />}
       {displayMode === 'environment' && <ToolVariables />}
@@ -511,6 +539,7 @@ export function AgentVariablesModal(props: AgentVariablesModalProps) {
   return (
     <Dialog
       hideFooter
+      maintainAspectRatio
       isOpen={isOpen}
       onOpenChange={(nextOpen) => {
         setIsOpen(nextOpen);
@@ -521,7 +550,7 @@ export function AgentVariablesModal(props: AgentVariablesModalProps) {
       trigger={trigger}
       title={title}
     >
-      <VStack paddingBottom>
+      <VStack fullHeight paddingBottom>
         <AgentVariablesContent />
       </VStack>
     </Dialog>
