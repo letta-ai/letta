@@ -2,6 +2,7 @@ import os
 from logging import CRITICAL, DEBUG, ERROR, INFO, NOTSET, WARN, WARNING
 
 LETTA_DIR = os.path.join(os.path.expanduser("~"), ".letta")
+LETTA_DIR_TOOL_SANDBOX = os.path.join(LETTA_DIR, "tool_sandbox_dir")
 
 ADMIN_PREFIX = "/v1/admin"
 API_PREFIX = "/v1"

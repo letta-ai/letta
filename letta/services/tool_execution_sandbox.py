@@ -119,8 +119,9 @@ class ToolExecutionSandbox:
             env.update(additional_env_vars)
 
         # Safety checks
-        if not os.path.isdir(local_configs.sandbox_dir):
-            raise FileNotFoundError(f"Sandbox directory does not exist: {local_configs.sandbox_dir}")
+        if not os.path.exists(local_configs.sandbox_dir) or not os.path.isdir(local_configs.sandbox_dir):
+            logger.warning(f"Sandbox directory does not exist, creating: {local_configs.sandbox_dir}")
+            os.makedirs(local_configs.sandbox_dir)
 
         # Write the code to a temp file in the sandbox_dir
         with tempfile.NamedTemporaryFile(mode="w", dir=local_configs.sandbox_dir, suffix=".py", delete=False) as temp_file:
