@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import List, Optional
 
 from pydantic import Field, model_validator
@@ -20,6 +21,7 @@ class Provider(ProviderBase):
     name: str = Field(..., description="The name of the provider")
     api_key: Optional[str] = Field(None, description="API key used for requests to the provider.")
     organization_id: Optional[str] = Field(OrganizationManager.DEFAULT_ORG_ID, description="The organization id of the user")
+    updated_at: Optional[datetime] = Field(None, description="The update date of the provider.")
 
     def resolve_identifier(self):
         if not self.id:

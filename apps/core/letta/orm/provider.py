@@ -4,7 +4,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from letta.orm.mixins import OrganizationMixin
 from letta.orm.sqlalchemy_base import SqlalchemyBase
-from letta.providers import Provider as PydanticProvider
+from letta.schemas.providers import Provider as PydanticProvider
 
 if TYPE_CHECKING:
     from letta.orm.organization import Organization

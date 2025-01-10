@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends
 
-from letta.providers import Provider, ProviderCreate, ProviderUpdate
+from letta.schemas.providers import Provider, ProviderCreate, ProviderUpdate
 from letta.server.rest_api.utils import get_letta_server
 
 if TYPE_CHECKING:

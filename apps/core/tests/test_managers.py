@@ -19,6 +19,7 @@ from letta.orm import (
     Job,
     Message,
     Organization,
+    Provider,
     SandboxConfig,
     SandboxEnvironmentVariable,
     Source,
@@ -92,6 +93,7 @@ def clear_tables(server: SyncServer):
         session.execute(delete(Tool))  # Clear all records from the Tool table
         session.execute(delete(Agent))
         session.execute(delete(User))  # Clear all records from the user table
+        session.execute(delete(Provider))
         session.execute(delete(Organization))  # Clear all records from the organization table
         session.commit()  # Commit the deletion
 
@@ -563,9 +565,11 @@ def test_update_agent(server: SyncServer, comprehensive_test_agent_fixture, othe
         tool_exec_environment_variables={"test_env_var_key_a": "a", "new_tool_exec_key": "n"},
     )
 
+    last_updated_timestamp = agent.updated_at
     updated_agent = server.agent_manager.update_agent(agent.id, update_agent_request, actor=default_user)
     comprehensive_agent_checks(updated_agent, update_agent_request, actor=default_user)
     assert updated_agent.message_ids == update_agent_request.message_ids
+    assert updated_agent.updated_at > last_updated_timestamp
 
 
 # ======================================================================================================================
