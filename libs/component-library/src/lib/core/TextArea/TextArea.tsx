@@ -11,6 +11,8 @@ import { Frame } from '../../framing/Frame/Frame';
 import type { VariantProps } from 'class-variance-authority';
 import { cva } from 'class-variance-authority';
 import { forwardRef } from 'react';
+import { Skeleton } from '../Skeleton/Skeleton';
+import { VStack } from '../../framing/VStack/VStack';
 
 const defaultClass =
   'text-base text-text-lighter flex min-h-[40px] w-full border border-input bg-background px-3 py-2 pr-[10px] ring-offset-background placeholder:text-muted-foreground  disabled:cursor-not-allowed disabled:opacity-50';
@@ -34,8 +36,10 @@ type TextAreaProps = TextareaAutosizeProps &
     fullWidth?: boolean;
     fullHeight?: boolean;
     flex?: boolean;
+    isLoading?: boolean;
     hideLabel?: boolean;
     autosize?: boolean;
+
     hideFocus?: boolean;
     expandable?: {
       onExpand: () => void;
@@ -80,7 +84,7 @@ const PrimitiveTextArea = React.forwardRef<HTMLTextAreaElement, TextAreaProps>(
 
     return (
       <TextareaAutosize
-        className={cn(defaultClass, className)}
+        className={cn(defaultClass, textareaVariants({ resize }), className)}
         ref={ref}
         {...props}
       />
@@ -91,8 +95,25 @@ const PrimitiveTextArea = React.forwardRef<HTMLTextAreaElement, TextAreaProps>(
 PrimitiveTextArea.displayName = 'Textarea';
 
 const WrappedTextArea = forwardRef<HTMLTextAreaElement, TextAreaProps>(
-  function WrappedTextArea(props, ref) {
+  function WrappedTextArea(allProps, ref) {
+    const { isLoading, ...props } = allProps;
     const { expandable, fullHeight, flex, fullWidth } = props;
+
+    if (isLoading) {
+      return (
+        <VStack
+          padding="small"
+          border
+          fullWidth={fullWidth}
+          flex={flex}
+          fullHeight={fullHeight}
+        >
+          <Skeleton className="w-[100%] h-[1rem]" />
+          <Skeleton className="w-[80%] h-[1rem]" />
+          <Skeleton className="w-[50%] h-[1rem]" />9
+        </VStack>
+      );
+    }
 
     return (
       <Frame

@@ -1,7 +1,7 @@
 import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
 import type { contracts } from '../contracts';
 import {
-  getUserActiveOrganizationIdOrThrow,
+  getUserOrThrow,
   getUserWithActiveOrganizationIdOrThrow,
 } from '$web/server/auth';
 import { and, desc, eq, ilike, isNull } from 'drizzle-orm';
@@ -14,6 +14,7 @@ import {
 import { copyAgentById, agentsRouter, updateAgentFromAgentId } from '$web/sdk';
 import { AgentsService } from '@letta-cloud/letta-agents-api';
 import { getDeployedTemplateByVersion } from '$web/server/lib/getDeployedTemplateByVersion/getDeployedTemplateByVersion';
+import type { AgentState } from '@letta-cloud/letta-agents-api';
 
 function randomThreeDigitNumber() {
   return Math.floor(Math.random() * 1000);
@@ -38,11 +39,20 @@ export async function listAgentTemplates(
     search,
     offset,
     includeLatestDeployedVersion,
+    includeAgentState,
     limit = 10,
     projectId,
   } = req.query;
 
-  const organizationId = await getUserActiveOrganizationIdOrThrow();
+  const { activeOrganizationId: organizationId, lettaAgentsId } =
+    await getUserOrThrow();
+
+  if (!organizationId) {
+    return {
+      status: 404,
+      body: {},
+    };
+  }
 
   const where = [
     eq(agentTemplates.organizationId, organizationId),
@@ -80,6 +90,26 @@ export async function listAgentTemplates(
 
   const hasNextPage = agentTemplatesResponse.length > limit;
 
+  const agentStateMap = new Map<string, AgentState>();
+  if (includeAgentState) {
+    const agentStates = await Promise.all(
+      agentTemplatesResponse.map((agentTemplate) =>
+        AgentsService.getAgent(
+          {
+            agentId: agentTemplate.id,
+          },
+          {
+            user_id: lettaAgentsId,
+          },
+        ),
+      ),
+    );
+
+    agentStates.forEach((agentState, index) => {
+      agentStateMap.set(agentTemplatesResponse[index].id, agentState);
+    });
+  }
+
   return {
     status: 200,
     body: {
@@ -89,7 +119,16 @@ export async function listAgentTemplates(
           return {
             name: agentTemplate.name,
             id: agentTemplate.id,
+
             updatedAt: agentTemplate.updatedAt.toISOString(),
+            ...(includeAgentState
+              ? {
+                  agentState: {
+                    description:
+                      agentStateMap.get(agentTemplate.id)?.description || '',
+                  },
+                }
+              : {}),
             ...(includeLatestDeployedVersion
               ? {
                   latestDeployedVersion:
@@ -238,32 +277,48 @@ async function getAgentTemplateSimulatorSession(
 
   if (!simulatorSession) {
     // create new simulator session
-    const newAgent = await copyAgentById(agentTemplate.id, lettaAgentsId);
-
-    if (!newAgent?.id) {
-      return {
-        status: 500,
-        body: {
-          message: 'Failed to copy agent',
-        },
-      };
-    }
-
-    const newAgentId = newAgent.id;
-
     const [simulatorSession] = await db
       .insert(agentSimulatorSessions)
       .values({
-        agentId: newAgentId,
+        agentId: agentTemplate.id,
         agentTemplateId: agentTemplate.id,
         organizationId: activeOrganizationId,
         variables: {},
       })
       .returning({
         id: agentSimulatorSessions.id,
-      });
+        agentId: agentSimulatorSessions.agentId,
+      })
+      .onConflictDoNothing();
 
-    agentId = newAgentId;
+    if (!simulatorSession) {
+      return {
+        status: 409,
+        body: {
+          message: 'Simulator session already exists',
+        },
+      };
+    } else {
+      const newAgent = await copyAgentById(agentTemplate.id, lettaAgentsId);
+
+      if (!newAgent?.id) {
+        return {
+          status: 500,
+          body: {
+            message: 'Failed to copy agent',
+          },
+        };
+      }
+
+      db.update(agentSimulatorSessions)
+        .set({
+          agentId: newAgent.id,
+        })
+        .where(eq(agentSimulatorSessions.id, simulatorSession.id));
+
+      agentId = newAgent.id;
+    }
+
     id = simulatorSession.id;
   } else {
     agentId = simulatorSession.agentId;

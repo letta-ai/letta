@@ -342,6 +342,8 @@ describe('agentsRouter', () => {
       it('should create an template from a starter kit', async () => {
         const createdAgent = {
           id: 'test-agent-id',
+          description:
+            'Act as a personal assistant to help users with tasks and answer questions.',
           name: 'test-agent',
           metadata_: {},
           agent_type: 'memgpt_agent',
@@ -379,6 +381,8 @@ describe('agentsRouter', () => {
         ).toHaveBeenCalledWith(
           {
             requestBody: {
+              description:
+                'Act as a personal assistant to help users with tasks and answer questions.',
               memory_blocks: [
                 {
                   label: 'persona',
@@ -466,6 +470,8 @@ describe('agentsRouter', () => {
         ).toHaveBeenCalledWith(
           {
             requestBody: {
+              description:
+                'Act as a personal assistant to help users with tasks and answer questions.',
               memory_blocks: [
                 {
                   label: 'persona',

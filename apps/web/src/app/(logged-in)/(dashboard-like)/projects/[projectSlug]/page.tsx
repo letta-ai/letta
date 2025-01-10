@@ -13,16 +13,20 @@ import {
 } from '@letta-cloud/component-library';
 import React, { useMemo } from 'react';
 import { useCurrentProject } from './hooks';
+import type { webApiContracts } from '$web/client';
+
 import { webApi, webApiQueryKeys } from '$web/client';
-import type { ProjectAgentTemplateType } from '$web/web-api/contracts';
 import { useTranslations } from '@letta-cloud/translations';
 import { DashboardCard, Tutorials } from '$web/client/components';
 import { useWelcomeText } from '$web/client/hooks/useWelcomeText/useWelcomeText';
 import { CreateNewTemplateDialog } from './_components/CreateNewTemplateDialog/CreateNewTemplateDialog';
-import { useDateFormatter } from '@letta-cloud/helpful-client-utils';
+import type { ServerInferResponseBody } from '@ts-rest/core';
 
 interface AgentTemplatesListProps {
-  agents?: ProjectAgentTemplateType[];
+  agents?: ServerInferResponseBody<
+    typeof webApiContracts.agentTemplates.listAgentTemplates,
+    200
+  >['agentTemplates'];
 }
 
 const RECENT_AGENTS_TO_DISPLAY = 3;
@@ -32,11 +36,9 @@ function AgentTemplatesList(props: AgentTemplatesListProps) {
   const t = useTranslations('projects/(projectSlug)/page');
   const { slug: projectSlug } = useCurrentProject();
 
-  const { formatDateAndTime } = useDateFormatter();
-
   if (!agents) {
     return (
-      <NiceGridDisplay itemHeight="112px" itemWidth="318px">
+      <NiceGridDisplay itemHeight="98px" itemWidth="318px">
         {new Array(RECENT_AGENTS_TO_DISPLAY).fill(null).map((_u, index) => (
           <DashboardCard title="" key={index} isSkeleton />
         ))}
@@ -45,16 +47,17 @@ function AgentTemplatesList(props: AgentTemplatesListProps) {
   }
 
   return (
-    <NiceGridDisplay itemHeight="112px" itemWidth="318px">
+    <NiceGridDisplay itemHeight="98px" itemWidth="318px">
       {agents.map((agent) => (
         <DashboardCard
           href={`/projects/${projectSlug}/templates/${agent.name}`}
           largeImage={
             <Avatar size="xxlarge" name={agent.name.replace('-', ' ')} />
           }
-          description={t('agentTemplatesList.updatedAt', {
-            date: formatDateAndTime(agent.updatedAt),
-          })}
+          description={
+            agent.agentState?.description ||
+            t('agentTemplatesList.noDescription')
+          }
           title={agent.name}
           key={agent.id}
         />
@@ -69,11 +72,13 @@ function AgentTemplatesSection() {
     queryKey: webApiQueryKeys.agentTemplates.listAgentTemplatesWithSearch({
       search: '',
       projectId: currentProjectId,
+      includeAgentState: true,
       limit: RECENT_AGENTS_TO_DISPLAY + 1,
     }),
     queryData: {
       query: {
         projectId: currentProjectId,
+        includeAgentState: true,
         limit: RECENT_AGENTS_TO_DISPLAY + 1,
       },
     },
@@ -113,7 +118,7 @@ function QuickActions() {
       title={t('QuickActions.title')}
       description={t('QuickActions.subtitle')}
     >
-      <NiceGridDisplay itemWidth="318px" itemHeight="112px">
+      <NiceGridDisplay itemWidth="318px" itemHeight="98px">
         <DashboardCard
           href={`/projects/${projectSlug}/agents`}
           largeImage={

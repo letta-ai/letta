@@ -21,6 +21,7 @@ import {
   FormProvider,
   FormField,
   TextArea,
+  Spinner,
 } from '@letta-cloud/component-library';
 import {
   useAgentBaseTypeName,
@@ -46,6 +47,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { getBrandFromModelName } from '@letta-cloud/generic-utils';
 import { UpdateNameDialog } from '../../shared/UpdateAgentNameDialog/UpdateAgentNameDialog';
+import { webApiQueryKeys } from '@letta-cloud/web-api-client';
 
 interface SelectedModelType {
   icon: React.ReactNode;
@@ -481,8 +483,76 @@ function AgentIdentifierToCopy() {
   );
 }
 
+function TemplateDescription() {
+  const { agentId } = useCurrentAgentMetaData();
+
+  const { description } = useCurrentAgent();
+
+  const t = useTranslations('ADE/AgentSettingsPanel');
+
+  const { mutate, isPending } = useAgentsServiceUpdateAgent();
+
+  const debouncedMutation = useDebouncedCallback(mutate, 500);
+
+  const queryClient = useQueryClient();
+
+  const handleUpdate = useCallback(
+    async (description: string) => {
+      void queryClient.invalidateQueries({
+        queryKey: webApiQueryKeys.agentTemplates.listAgentTemplates,
+        exact: false,
+      });
+
+      queryClient.setQueriesData<AgentState | undefined>(
+        {
+          queryKey: UseAgentsServiceGetAgentKeyFn({
+            agentId,
+          }),
+        },
+        (oldData) => {
+          if (!oldData) {
+            return oldData;
+          }
+
+          debouncedMutation({
+            agentId,
+            requestBody: {
+              description,
+            },
+          });
+
+          return {
+            ...oldData,
+            description,
+          };
+        },
+      );
+    },
+    [debouncedMutation, agentId, queryClient],
+  );
+
+  return (
+    <RawTextArea
+      onChange={(e) => {
+        void handleUpdate(e.target.value);
+      }}
+      rightOfLabelContent={isPending ? <Spinner size="xsmall" /> : null}
+      placeholder={t('TemplateDescription.placeholder')}
+      rows={3}
+      value={description || ''}
+      fullWidth
+      resize="none"
+      autosize
+      maxRows={3}
+      minRows={3}
+      label={t('TemplateDescription.label')}
+    />
+  );
+}
+
 export function AgentSettingsPanel() {
   const currentAgent = useCurrentAgent();
+  const { isTemplate } = useCurrentAgentMetaData();
 
   const t = useTranslations('ADE/AgentSettingsPanel');
 
@@ -516,6 +586,7 @@ export function AgentSettingsPanel() {
         </HStack>
         <AgentIdentifierToCopy />
       </VStack>
+      {isTemplate && <TemplateDescription />}
       <ModelSelector llmConfig={currentAgent.llm_config} />
       <SystemPromptEditor />
     </PanelMainContent>

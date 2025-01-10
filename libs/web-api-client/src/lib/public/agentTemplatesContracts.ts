@@ -14,6 +14,12 @@ export const AgentTemplateSchema = z.object({
   latestDeployedVersion: z.string().optional(),
   latestDeployedId: z.string().optional(),
   updatedAt: z.string(),
+  agentState: z
+    .object({
+      description: z.string(),
+    })
+    .optional()
+    .nullable(),
 });
 
 export const AgentTemplatesSchema = z.array(AgentTemplateSchema);
@@ -36,6 +42,7 @@ export const ListAgentTemplatesQuerySchema = z.object({
   search: z.string().optional(),
   projectId: z.string().optional(),
   includeLatestDeployedVersion: z.boolean().optional(),
+  includeAgentState: z.boolean().optional(),
 });
 
 export type ListAgentTemplatesQuery = z.infer<

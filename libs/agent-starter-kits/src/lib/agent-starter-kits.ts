@@ -43,6 +43,8 @@ export const STARTER_KITS = {
     },
     image: scratch,
     agentState: {
+      description:
+        'A blank slate for you to create your own agent from scratch.',
       memory_blocks: [
         {
           label: 'persona',
@@ -87,6 +89,8 @@ export const STARTER_KITS = {
       return t('internetChatbot.description');
     },
     agentState: {
+      description:
+        "A personal assistant who answers a user's questions using Google web searches.",
       memory_blocks: [
         {
           label: 'persona',
@@ -116,6 +120,7 @@ export const STARTER_KITS = {
     },
 
     agentState: {
+      description: 'Act as a roleplay character in a fantasy setting.',
       memory_blocks: [
         {
           label: 'persona',
@@ -163,6 +168,8 @@ export const STARTER_KITS = {
     },
     image: personalAssistant,
     agentState: {
+      description:
+        'Act as a personal assistant to help users with tasks and answer questions.',
       memory_blocks: [
         {
           label: 'persona',
@@ -192,6 +199,8 @@ export const STARTER_KITS = {
     },
     image: customerSupport,
     agentState: {
+      description:
+        'Act as a customer support agent to help users with their issues.',
       memory_blocks: [
         {
           label: 'persona',
@@ -287,6 +296,8 @@ export const STARTER_KITS = {
     },
     image: companion,
     agentState: {
+      description:
+        'Act as a companion to the user, providing emotional support and companionship.',
       memory_blocks: [
         {
           label: 'persona',

@@ -1,7 +1,7 @@
 import React, { useCallback, useMemo } from 'react';
 import { useTranslations } from '@letta-cloud/translations';
 import { useCurrentProject } from '../../hooks';
-import { webOriginSDKApi } from '$web/client';
+import { webApiQueryKeys, webOriginSDKApi } from '$web/client';
 import { useRouter } from 'next/navigation';
 import {
   Alert,
@@ -13,6 +13,7 @@ import {
   VStack,
 } from '@letta-cloud/component-library';
 import { STARTER_KITS } from '@letta-cloud/agent-starter-kits';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface CreateNewTemplateDialogProps {
   trigger: React.ReactNode;
@@ -34,6 +35,8 @@ export function CreateNewTemplateDialog(props: CreateNewTemplateDialogProps) {
   const { mutate, isPending, isSuccess, isError } =
     webOriginSDKApi.agents.createAgent.useMutation();
 
+  const queryClient = useQueryClient();
+
   const handleSelectStarterKit = useCallback(
     (starterKitId: string) => {
       mutate(
@@ -46,12 +49,17 @@ export function CreateNewTemplateDialog(props: CreateNewTemplateDialogProps) {
         },
         {
           onSuccess: (data) => {
+            void queryClient.invalidateQueries({
+              queryKey: webApiQueryKeys.agentTemplates.listAgentTemplates,
+              exact: false,
+            });
+
             push(`/projects/${slug}/templates/${data.body.name}`);
           },
         },
       );
     },
-    [mutate, projectId, push, slug],
+    [mutate, projectId, queryClient, push, slug],
   );
 
   return (

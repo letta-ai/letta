@@ -34,9 +34,11 @@ export function DashboardCard(props: DashboardCardProps) {
       badge={badge}
       onClick={onClick}
     >
-      <Typography variant="body2" color="lighter" align="left">
-        {description}
-      </Typography>
+      {!isSkeleton && (
+        <Typography variant="body2" color="lighter" align="left">
+          {description}
+        </Typography>
+      )}
     </ActionCard>
   );
 }

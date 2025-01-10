@@ -190,6 +190,10 @@
     }
   },
   "ADE/AgentSettingsPanel": {
+    "TemplateDescription": {
+      "placeholder": "Enter a description for this template",
+      "label": "Template description"
+    },
     "mobileTitle": "{baseName}",
     "SystemPromptEditor": {
       "characterCount": "{count} CHARS",
