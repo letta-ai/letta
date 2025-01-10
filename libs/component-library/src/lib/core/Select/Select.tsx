@@ -3,6 +3,8 @@ import * as React from 'react';
 import type { MultiValue, SingleValue } from 'react-select';
 import ReactSelect, { components } from 'react-select';
 import AsyncReactSelect from 'react-select/async';
+import AsyncCreatableReactSelect from 'react-select/async-creatable';
+
 import { cn } from '@letta-cloud/core-style-config';
 import type { ReactNode } from 'react';
 import { useEffect } from 'react';
@@ -13,6 +15,7 @@ import { HStack } from '../../framing/HStack/HStack';
 import { Slot } from '@radix-ui/react-slot';
 import { Typography } from '../Typography/Typography';
 import { useDialogContext } from '../Dialog/Dialog';
+import { VStack } from '../../framing/VStack/VStack';
 
 interface SelectOptionsContextProps {
   hideIconsOnOptions?: boolean;
@@ -64,6 +67,8 @@ interface BaseSelectProps {
   value?: OptionType | OptionType[];
   noOptionsMessage?: (obj: { inputValue: string }) => ReactNode;
   styleConfig?: UseStylesArgs;
+  fullWidth?: boolean;
+  __use_rarely_className?: string;
 }
 
 /* eslint-disable @typescript-eslint/naming-convention */
@@ -87,6 +92,24 @@ const overridenComponents = {
         <CloseIcon />
       </HStack>
     </components.MultiValueRemove>
+  ),
+  // @ts-expect-error yest
+  MultiValueContainer: ({ children, ...props }) => (
+    // @ts-expect-error yest
+    <components.MultiValueContainer {...props}>
+      <HStack
+        color="background-grey2"
+        paddingY="xxsmall"
+        paddingX="xsmall"
+        align="center"
+        gap="small"
+      >
+        {props.data.icon && (
+          <Slot className="max-h-3 w-3">{props.data.icon}</Slot>
+        )}
+        {children}
+      </HStack>
+    </components.MultiValueContainer>
   ),
   // @ts-expect-error yest
   SingleValue: ({ children, ...props }) => (
@@ -165,11 +188,10 @@ const classNames = {
   menu: () => cn('mt-1 bg-background border'),
   option: () => cn('px-3 py-2  hover:bg-background-hover'),
   noOptionsMessage: () => cn('py-3 px-3'),
-  valueContainer: () => cn('flex items-center gap-2'),
+  valueContainer: () => cn('flex items-center gap-1'),
   groupHeading: () =>
     cn('border-b px-3 mt-3 pb-2 text-sm font-medium text-tertiary-content'),
-  multiValue: () =>
-    cn('bg-secondary-dark h-[21px] gap-2 px-1 text-tertiary-content px-2'),
+  multiValue: () => cn('h-[21px] text-sm'),
 };
 
 function useStyles(args: UseStylesArgs) {
@@ -178,7 +200,7 @@ function useStyles(args: UseStylesArgs) {
     menuPortal: (base: any) => ({ ...base, zIndex: 11 }),
     control: (base: any) => ({ ...base, height: 'auto', minHeight: '36px' }),
     option: () => ({ fontSize: 'var(--font-size-base)' }),
-    noOptionsMessage: () => ({ fontSize: 'var(--font-size-base)' }),
+    noOptionsMessage: () => ({ fontSize: 'var(--font-size-sm)' }),
     menu: (base: any) => ({
       ...base,
       ...(menuWidth ? { maxWidth: menuWidth, width: '100vw' } : {}),
@@ -215,6 +237,21 @@ function AsyncSelectPrimitive(_props: AsyncSelectProps) {
     }
   }, [isInDialog]);
 
+  const [mounted, setMounted] = React.useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return (
+      <UnmountedSelect
+        className={props.__use_rarely_className}
+        fullWidth={props.fullWidth}
+      />
+    );
+  }
+
   return (
     <SelectOptionsProvider value={{ hideIconsOnOptions }}>
       {props['data-testid'] && (
@@ -250,9 +287,31 @@ function AsyncSelectPrimitive(_props: AsyncSelectProps) {
   );
 }
 
+interface UnmountedSelectProps {
+  className?: string;
+  fullWidth?: boolean;
+}
+
+function UnmountedSelect(props: UnmountedSelectProps) {
+  const { className, fullWidth } = props;
+
+  return (
+    <VStack
+      fullWidth={fullWidth}
+      border
+      className={cn(
+        className,
+        'bg-background-grey min-h-biHeight',
+        'min-w-[200px]',
+      )}
+    />
+  );
+}
+
 export interface SelectProps extends BaseSelectProps {
   options: OptionType[];
   hideIconsOnOptions?: boolean;
+  fullWidth?: boolean;
   __use_rarely_className?: string;
 }
 
@@ -286,7 +345,12 @@ function SelectPrimitive(_props: SelectProps) {
   }, []);
 
   if (!mounted) {
-    return null;
+    return (
+      <UnmountedSelect
+        className={__use_rarely_className}
+        fullWidth={props.fullWidth}
+      />
+    );
   }
 
   return (
@@ -325,6 +389,89 @@ function SelectPrimitive(_props: SelectProps) {
     </SelectOptionsProvider>
   );
 }
+
+function CreatableAsyncSelectPrimitive(_props: AsyncSelectProps) {
+  const { hideIconsOnOptions, ...props } = _props;
+  const styles = useStyles(props.styleConfig || {});
+
+  const [mounted, setMounted] = React.useState(false);
+  const [open, setOpen] = React.useState(false);
+  const { isInDialog } = useDialogContext();
+
+  const [menuPortalTarget, setMenuPortalTarget] =
+    React.useState<HTMLElement | null>(null);
+
+  useEffect(() => {
+    if (typeof document === 'undefined') {
+      return;
+    }
+
+    if (isInDialog) {
+      if (document.getElementById('dialog-dropdown-content')) {
+        setMenuPortalTarget(document.getElementById('dialog-dropdown-content'));
+      }
+    } else {
+      setMenuPortalTarget(document.body);
+    }
+  }, [isInDialog]);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return (
+      <UnmountedSelect
+        className={props.__use_rarely_className}
+        fullWidth={props.fullWidth}
+      />
+    );
+  }
+
+  return (
+    <SelectOptionsProvider value={{ hideIconsOnOptions }}>
+      {props['data-testid'] && (
+        <div
+          className="absolute"
+          onClick={() => {
+            setOpen(true);
+          }}
+          data-testid={`${props['data-testid']}-trigger`}
+        />
+      )}
+      <AsyncCreatableReactSelect
+        unstyled
+        onMenuOpen={() => {
+          setOpen(true);
+        }}
+        onMenuClose={() => {
+          setOpen(false);
+        }}
+        menuIsOpen={open}
+        menuPortalTarget={menuPortalTarget}
+        onChange={(value) => {
+          props.onSelect?.(value);
+        }}
+        value={props.value}
+        // @ts-expect-error yest
+        components={overridenComponents}
+        styles={styles}
+        classNames={classNames}
+        {...props}
+      />
+    </SelectOptionsProvider>
+  );
+}
+
+export const CreatableAsyncSelect = makeInput(
+  CreatableAsyncSelectPrimitive,
+  'CreatableAsyncSelect',
+);
+
+export const RawCreatableAsyncSelect = makeRawInput(
+  CreatableAsyncSelectPrimitive,
+  'RawCreatableAsyncSelect',
+);
 
 export const Select = makeInput(SelectPrimitive, 'Select');
 export const RawSelect = makeRawInput(SelectPrimitive, 'RawSelect');

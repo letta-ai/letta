@@ -1,8 +1,15 @@
 import { useTranslations } from '@letta-cloud/translations';
-import { z } from 'zod';
-import { useCurrentAgent, useSyncUpdateCurrentAgent } from '../../hooks';
+import {
+  useCurrentAgent,
+  useCurrentAgentMetaData,
+  useSyncUpdateCurrentAgent,
+} from '../../hooks';
+import {
+  RawCreatableAsyncSelect,
+  Spinner,
+} from '@letta-cloud/component-library';
 import type { OptionType } from '@letta-cloud/component-library';
-import { CogIcon } from '@letta-cloud/component-library';
+
 import {
   Alert,
   brandKeyToLogo,
@@ -19,10 +26,14 @@ import {
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   type AgentState,
+  UseAgentsServiceGetAgentKeyFn,
+  useAgentsServiceUpdateAgent,
   useModelsServiceListEmbeddingModels,
   useModelsServiceListModels,
 } from '@letta-cloud/letta-agents-api';
-import { useDebouncedValue } from '@mantine/hooks';
+import { useDebouncedCallback, useDebouncedValue } from '@mantine/hooks';
+import { useQueryClient } from '@tanstack/react-query';
+import { webApiQueryKeys } from '@letta-cloud/web-api-client';
 
 interface EmbeddingConfig {
   embeddingConfig?: AgentState['embedding_config'];
@@ -121,9 +132,86 @@ export function EmbeddingSelector(props: EmbeddingConfig) {
   );
 }
 
+function AgentTags() {
+  const { id: agentId, tags: currentTags } = useCurrentAgent();
+
+  const t = useTranslations('ADE/AgentSettingsPanel');
+
+  const tags = useMemo(() => {
+    return (currentTags || []).map((tag) => ({
+      label: tag,
+      value: tag,
+    }));
+  }, [currentTags]);
+
+  const { mutate, isPending } = useAgentsServiceUpdateAgent();
+
+  const debouncedMutation = useDebouncedCallback(mutate, 500);
+
+  const queryClient = useQueryClient();
+
+  const handleUpdate = useCallback(
+    async (tags: string[]) => {
+      void queryClient.invalidateQueries({
+        queryKey: webApiQueryKeys.agentTemplates.listAgentTemplates,
+        exact: false,
+      });
+
+      queryClient.setQueriesData<AgentState | undefined>(
+        {
+          queryKey: UseAgentsServiceGetAgentKeyFn({
+            agentId,
+          }),
+        },
+        (oldData) => {
+          if (!oldData) {
+            return oldData;
+          }
+
+          debouncedMutation({
+            agentId,
+            requestBody: {
+              tags,
+            },
+          });
+
+          return {
+            ...oldData,
+            tags,
+          };
+        },
+      );
+    },
+    [debouncedMutation, agentId, queryClient],
+  );
+
+  return (
+    <RawCreatableAsyncSelect
+      fullWidth
+      rightOfLabelContent={isPending ? <Spinner size="xsmall" /> : null}
+      label={t('tags.label')}
+      placeholder={t('tags.placeholder')}
+      isMulti
+      value={tags}
+      noOptionsMessage={() => t('tags.noOptions')}
+      loadOptions={async () => {
+        return [];
+      }}
+      onSelect={(value) => {
+        if (!isMultiValue(value)) {
+          return;
+        }
+
+        void handleUpdate(value.map((v) => v.value || '').filter((v) => !!v));
+      }}
+    />
+  );
+}
+
 const MIN_CONTEXT_WINDOW = 4000;
 
 export function AdvancedSettingsPanel() {
+  const { isTemplate } = useCurrentAgentMetaData();
   const currentAgent = useCurrentAgent();
   const { data: modelsList } = useModelsServiceListModels();
   const t = useTranslations('ADE/AdvancedSettings');
@@ -180,12 +268,20 @@ export function AdvancedSettingsPanel() {
   }, [currentAgent.llm_config, currentBaseModel, handleContextWindowChange]);
 
   if (!currentAgent.llm_config || !modelsList) {
-    return <LoadingEmptyStatusComponent emptyMessage="" isLoading />;
+    return (
+      <LoadingEmptyStatusComponent
+        emptyMessage=""
+        loaderVariant="grower"
+        isLoading
+      />
+    );
   }
 
   return (
     <PanelMainContent>
       <VStack fullWidth paddingTop="small" gap="form" justify="start">
+        {!isTemplate && <AgentTags />}
+
         <RawSlider
           fullWidth
           label={t('contextWindowController.label')}
@@ -215,20 +311,3 @@ export function AdvancedSettingsPanel() {
     </PanelMainContent>
   );
 }
-
-export const advancedSettingsPanel = {
-  templateId: 'advanced-settings',
-  content: AdvancedSettingsPanel,
-  useGetMobileTitle: () => {
-    const t = useTranslations('ADE/AdvancedSettings');
-
-    return t('mobileTitle');
-  },
-  icon: <CogIcon />,
-  useGetTitle: () => {
-    const t = useTranslations('ADE/AdvancedSettings');
-
-    return t('title');
-  },
-  data: z.undefined(),
-};

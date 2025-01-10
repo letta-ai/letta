@@ -194,6 +194,11 @@
       "placeholder": "Enter a description for this template",
       "label": "Template description"
     },
+    "tags": {
+      "label": "Agent Tags",
+      "placeholder": "Enter tags...",
+      "noOptions": "No existing tags found, you can create a new tag by typing it in and pressing enter"
+    },
     "mobileTitle": "{baseName}",
     "SystemPromptEditor": {
       "characterCount": "{count} CHARS",

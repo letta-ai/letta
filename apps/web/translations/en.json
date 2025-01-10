@@ -673,6 +673,9 @@
     }
   },
   "projects/(projectSlug)/agents/page": {
+    "TagsShorthand": {
+      "showAll": "+{count} more"
+    },
     "useQueryDefinition": {
       "agentTemplate": {
         "name": "Agent Template",
@@ -708,6 +711,7 @@
       "totalResults": "{count} agents found matching your search",
       "copyId": "Copy id",
       "columns": {
+        "tags": "Tags",
         "id": "ID",
         "name": "Name",
         "actions": "Actions",

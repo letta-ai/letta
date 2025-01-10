@@ -362,6 +362,49 @@ function useQueryDefinition() {
   }, [defaultTemplateSearchOptions, handleLoadOptions, t]);
 }
 
+interface TagsShorthandProps {
+  tags: string[];
+  maxTags?: number;
+}
+
+function TagsShorthand(props: TagsShorthandProps) {
+  const { tags, maxTags = 3 } = props;
+  const t = useTranslations('projects/(projectSlug)/agents/page');
+
+  const [showAll, setShowAll] = useState(false);
+
+  const tagsToShow = useMemo(() => {
+    if (showAll) {
+      return tags;
+    }
+
+    return tags.slice(0, maxTags);
+  }, [maxTags, showAll, tags]);
+
+  return (
+    <HStack>
+      {tagsToShow.map((tag) => (
+        <Badge key={tag} size="small" content={tag} />
+      ))}
+      {tags.length > maxTags && !showAll && (
+        <button
+          onClick={() => {
+            setShowAll(true);
+          }}
+        >
+          <Badge
+            content={t('TagsShorthand.showAll', {
+              count: tags.length - maxTags,
+            })}
+            size="small"
+            color="background-grey"
+          />
+        </button>
+      )}
+    </HStack>
+  );
+}
+
 function DeployedAgentsPage() {
   const { fieldDefinitions, initialQuery } = useQueryDefinition();
 
@@ -516,6 +559,13 @@ function DeployedAgentsPage() {
               )}
             </HStack>
           );
+        },
+      },
+      {
+        id: 'tags',
+        header: t('table.columns.tags'),
+        cell: ({ row }) => {
+          return <TagsShorthand tags={row.original.tags || []} maxTags={3} />;
         },
       },
       {
