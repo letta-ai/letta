@@ -10,6 +10,7 @@ import {
   LlmsService,
   ModelsService,
   OrganizationService,
+  ProvidersService,
   SandboxConfigService,
   SourcesService,
   ToolsService,
@@ -926,6 +927,29 @@ export const prefetchUseSandboxConfigServiceListSandboxEnvVarsV1SandboxConfigSan
           { cursor, limit, sandboxConfigId, userId },
         ),
     });
+/**
+ * List Providers
+ * Get a list of all custom providers in the database
+ * @param data The data for the request.
+ * @param data.cursor
+ * @param data.limit
+ * @returns Provider Successful Response
+ * @throws ApiError
+ */
+export const prefetchUseProvidersServiceListProviders = (
+  queryClient: QueryClient,
+  {
+    cursor,
+    limit,
+  }: {
+    cursor?: string;
+    limit?: number;
+  } = {},
+) =>
+  queryClient.prefetchQuery({
+    queryKey: Common.UseProvidersServiceListProvidersKeyFn({ cursor, limit }),
+    queryFn: () => ProvidersService.listProviders({ cursor, limit }),
+  });
 /**
  * List Users
  * Get a list of all users in the database

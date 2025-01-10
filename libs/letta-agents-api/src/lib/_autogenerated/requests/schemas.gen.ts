@@ -3664,6 +3664,108 @@ Parameters:
     file_id (str): The unique identifier of the file associated with the passage.`,
 } as const;
 
+export const $Provider = {
+  properties: {
+    id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Id',
+      description:
+        'The id of the provider, lazily created by the database manager.',
+    },
+    name: {
+      type: 'string',
+      title: 'Name',
+      description: 'The name of the provider',
+    },
+    api_key: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Api Key',
+      description: 'API key used for requests to the provider.',
+    },
+    organization_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Organization Id',
+      description: 'The organization id of the user',
+    },
+    updated_at: {
+      anyOf: [
+        {
+          type: 'string',
+          format: 'date-time',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Updated At',
+      description: 'The last update timestamp of the provider.',
+    },
+  },
+  additionalProperties: false,
+  type: 'object',
+  required: ['name'],
+  title: 'Provider',
+} as const;
+
+export const $ProviderCreate = {
+  properties: {
+    name: {
+      type: 'string',
+      title: 'Name',
+      description: 'The name of the provider.',
+    },
+    api_key: {
+      type: 'string',
+      title: 'Api Key',
+      description: 'API key used for requests to the provider.',
+    },
+  },
+  additionalProperties: false,
+  type: 'object',
+  required: ['name', 'api_key'],
+  title: 'ProviderCreate',
+} as const;
+
+export const $ProviderUpdate = {
+  properties: {
+    id: {
+      type: 'string',
+      title: 'Id',
+      description: 'The id of the provider to update.',
+    },
+    api_key: {
+      type: 'string',
+      title: 'Api Key',
+      description: 'API key used for requests to the provider.',
+    },
+  },
+  additionalProperties: false,
+  type: 'object',
+  required: ['id', 'api_key'],
+  title: 'ProviderUpdate',
+} as const;
+
 export const $ReasoningMessage = {
   properties: {
     id: {

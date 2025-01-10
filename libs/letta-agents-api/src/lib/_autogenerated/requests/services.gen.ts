@@ -151,6 +151,14 @@ import type {
   UpdateSandboxEnvVarV1SandboxConfigEnvironmentVariableEnvVarIdPatchResponse,
   DeleteSandboxEnvVarV1SandboxConfigEnvironmentVariableEnvVarIdDeleteData,
   DeleteSandboxEnvVarV1SandboxConfigEnvironmentVariableEnvVarIdDeleteResponse,
+  ListProvidersData,
+  ListProvidersResponse,
+  CreateProviderData,
+  CreateProviderResponse,
+  UpdateProviderData,
+  UpdateProviderResponse,
+  DeleteProviderData,
+  DeleteProviderResponse,
   ListUsersData,
   ListUsersResponse,
   CreateUserData,
@@ -2212,6 +2220,109 @@ export class SandboxConfigService {
       url: '/v1/sandbox-config/environment-variable/{env_var_id}',
       path: {
         env_var_id: data.envVarId,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+}
+
+export class ProvidersService {
+  /**
+   * List Providers
+   * Get a list of all custom providers in the database
+   * @param data The data for the request.
+   * @param data.cursor
+   * @param data.limit
+   * @returns Provider Successful Response
+   * @throws ApiError
+   */
+  public static listProviders(
+    data: ListProvidersData = {},
+    headers?: { user_id: string },
+  ): CancelablePromise<ListProvidersResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/providers/',
+      query: {
+        cursor: data.cursor,
+        limit: data.limit,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Create Provider
+   * Create a new custom provider
+   * @param data The data for the request.
+   * @param data.requestBody
+   * @param data.userId
+   * @returns Provider Successful Response
+   * @throws ApiError
+   */
+  public static createProvider(
+    data: CreateProviderData,
+    headers?: { user_id: string },
+  ): CancelablePromise<CreateProviderResponse> {
+    return __request(OpenAPI, {
+      method: 'POST',
+      url: '/v1/providers/',
+      body: data.requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Update Provider
+   * Update an existing custom provider
+   * @param data The data for the request.
+   * @param data.requestBody
+   * @returns Provider Successful Response
+   * @throws ApiError
+   */
+  public static updateProvider(
+    data: UpdateProviderData,
+    headers?: { user_id: string },
+  ): CancelablePromise<UpdateProviderResponse> {
+    return __request(OpenAPI, {
+      method: 'PUT',
+      url: '/v1/providers/',
+      body: data.requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Delete Provider
+   * Delete an existing custom provider
+   * @param data The data for the request.
+   * @param data.providerId The provider_id key to be deleted.
+   * @returns unknown Successful Response
+   * @throws ApiError
+   */
+  public static deleteProvider(
+    data: DeleteProviderData,
+    headers?: { user_id: string },
+  ): CancelablePromise<DeleteProviderResponse> {
+    return __request(OpenAPI, {
+      method: 'DELETE',
+      url: '/v1/providers/',
+      query: {
+        provider_id: data.providerId,
       },
       errors: {
         422: 'Validation Error',

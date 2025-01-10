@@ -16,6 +16,7 @@ import {
   LlmsService,
   ModelsService,
   OrganizationService,
+  ProvidersService,
   SandboxConfigService,
   SourcesService,
   ToolsService,
@@ -32,6 +33,8 @@ import {
   LettaStreamingRequest,
   MessageUpdate,
   OrganizationCreate,
+  ProviderCreate,
+  ProviderUpdate,
   SandboxConfigCreate,
   SandboxConfigUpdate,
   SandboxEnvironmentVariableCreate,
@@ -1211,6 +1214,38 @@ export const useSandboxConfigServiceListSandboxEnvVarsV1SandboxConfigSandboxConf
       ...options,
     });
 /**
+ * List Providers
+ * Get a list of all custom providers in the database
+ * @param data The data for the request.
+ * @param data.cursor
+ * @param data.limit
+ * @returns Provider Successful Response
+ * @throws ApiError
+ */
+export const useProvidersServiceListProviders = <
+  TData = Common.ProvidersServiceListProvidersDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[],
+>(
+  {
+    cursor,
+    limit,
+  }: {
+    cursor?: string;
+    limit?: number;
+  } = {},
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
+) =>
+  useQuery<TData, TError>({
+    queryKey: Common.UseProvidersServiceListProvidersKeyFn(
+      { cursor, limit },
+      queryKey,
+    ),
+    queryFn: () => ProvidersService.listProviders({ cursor, limit }) as TData,
+    ...options,
+  });
+/**
  * List Users
  * Get a list of all users in the database
  * @param data The data for the request.
@@ -2169,6 +2204,49 @@ export const useSandboxConfigServiceCreateSandboxEnvVarV1SandboxConfigSandboxCon
       ...options,
     });
 /**
+ * Create Provider
+ * Create a new custom provider
+ * @param data The data for the request.
+ * @param data.requestBody
+ * @param data.userId
+ * @returns Provider Successful Response
+ * @throws ApiError
+ */
+export const useProvidersServiceCreateProvider = <
+  TData = Common.ProvidersServiceCreateProviderMutationResult,
+  TError = unknown,
+  TContext = unknown,
+>(
+  options?: Omit<
+    UseMutationOptions<
+      TData,
+      TError,
+      {
+        requestBody: ProviderCreate;
+        userId?: string;
+      },
+      TContext
+    >,
+    'mutationFn'
+  >,
+) =>
+  useMutation<
+    TData,
+    TError,
+    {
+      requestBody: ProviderCreate;
+      userId?: string;
+    },
+    TContext
+  >({
+    mutationFn: ({ requestBody, userId }) =>
+      ProvidersService.createProvider({
+        requestBody,
+        userId,
+      }) as unknown as Promise<TData>,
+    ...options,
+  });
+/**
  * Create User
  * Create a new user in the database
  * @param data The data for the request.
@@ -2401,6 +2479,45 @@ export const useToolsServiceUpsertTool = <
       ToolsService.upsertTool({
         requestBody,
         userId,
+      }) as unknown as Promise<TData>,
+    ...options,
+  });
+/**
+ * Update Provider
+ * Update an existing custom provider
+ * @param data The data for the request.
+ * @param data.requestBody
+ * @returns Provider Successful Response
+ * @throws ApiError
+ */
+export const useProvidersServiceUpdateProvider = <
+  TData = Common.ProvidersServiceUpdateProviderMutationResult,
+  TError = unknown,
+  TContext = unknown,
+>(
+  options?: Omit<
+    UseMutationOptions<
+      TData,
+      TError,
+      {
+        requestBody: ProviderUpdate;
+      },
+      TContext
+    >,
+    'mutationFn'
+  >,
+) =>
+  useMutation<
+    TData,
+    TError,
+    {
+      requestBody: ProviderUpdate;
+    },
+    TContext
+  >({
+    mutationFn: ({ requestBody }) =>
+      ProvidersService.updateProvider({
+        requestBody,
       }) as unknown as Promise<TData>,
     ...options,
   });
@@ -3478,6 +3595,45 @@ export const useSandboxConfigServiceDeleteSandboxEnvVarV1SandboxConfigEnvironmen
         ) as unknown as Promise<TData>,
       ...options,
     });
+/**
+ * Delete Provider
+ * Delete an existing custom provider
+ * @param data The data for the request.
+ * @param data.providerId The provider_id key to be deleted.
+ * @returns unknown Successful Response
+ * @throws ApiError
+ */
+export const useProvidersServiceDeleteProvider = <
+  TData = Common.ProvidersServiceDeleteProviderMutationResult,
+  TError = unknown,
+  TContext = unknown,
+>(
+  options?: Omit<
+    UseMutationOptions<
+      TData,
+      TError,
+      {
+        providerId: string;
+      },
+      TContext
+    >,
+    'mutationFn'
+  >,
+) =>
+  useMutation<
+    TData,
+    TError,
+    {
+      providerId: string;
+    },
+    TContext
+  >({
+    mutationFn: ({ providerId }) =>
+      ProvidersService.deleteProvider({
+        providerId,
+      }) as unknown as Promise<TData>,
+    ...options,
+  });
 /**
  * Delete User
  * @param data The data for the request.

@@ -11,6 +11,7 @@ import {
   LlmsService,
   ModelsService,
   OrganizationService,
+  ProvidersService,
   SandboxConfigService,
   SourcesService,
   ToolsService,
@@ -755,6 +756,28 @@ export const UseSandboxConfigServiceListSandboxEnvVarsV1SandboxConfigSandboxConf
     useSandboxConfigServiceListSandboxEnvVarsV1SandboxConfigSandboxConfigIdEnvironmentVariableGetKey,
     ...(queryKey ?? [{ cursor, limit, sandboxConfigId, userId }]),
   ];
+export type ProvidersServiceListProvidersDefaultResponse = Awaited<
+  ReturnType<typeof ProvidersService.listProviders>
+>;
+export type ProvidersServiceListProvidersQueryResult<
+  TData = ProvidersServiceListProvidersDefaultResponse,
+  TError = unknown,
+> = UseQueryResult<TData, TError>;
+export const useProvidersServiceListProvidersKey =
+  'ProvidersServiceListProviders';
+export const UseProvidersServiceListProvidersKeyFn = (
+  {
+    cursor,
+    limit,
+  }: {
+    cursor?: string;
+    limit?: number;
+  } = {},
+  queryKey?: Array<unknown>,
+) => [
+  useProvidersServiceListProvidersKey,
+  ...(queryKey ?? [{ cursor, limit }]),
+];
 export type UsersServiceListUsersDefaultResponse = Awaited<
   ReturnType<typeof UsersService.listUsers>
 >;
@@ -896,6 +919,9 @@ export type SandboxConfigServiceCreateSandboxEnvVarV1SandboxConfigSandboxConfigI
       typeof SandboxConfigService.createSandboxEnvVarV1SandboxConfigSandboxConfigIdEnvironmentVariablePost
     >
   >;
+export type ProvidersServiceCreateProviderMutationResult = Awaited<
+  ReturnType<typeof ProvidersService.createProvider>
+>;
 export type UsersServiceCreateUserMutationResult = Awaited<
   ReturnType<typeof UsersService.createUser>
 >;
@@ -913,6 +939,9 @@ export type AuthServiceAuthenticateUserV1AuthPostMutationResult = Awaited<
 >;
 export type ToolsServiceUpsertToolMutationResult = Awaited<
   ReturnType<typeof ToolsService.upsertTool>
+>;
+export type ProvidersServiceUpdateProviderMutationResult = Awaited<
+  ReturnType<typeof ProvidersService.updateProvider>
 >;
 export type UsersServiceUpdateUserMutationResult = Awaited<
   ReturnType<typeof UsersService.updateUser>
@@ -998,6 +1027,9 @@ export type SandboxConfigServiceDeleteSandboxEnvVarV1SandboxConfigEnvironmentVar
       typeof SandboxConfigService.deleteSandboxEnvVarV1SandboxConfigEnvironmentVariableEnvVarIdDelete
     >
   >;
+export type ProvidersServiceDeleteProviderMutationResult = Awaited<
+  ReturnType<typeof ProvidersService.deleteProvider>
+>;
 export type UsersServiceDeleteUserMutationResult = Awaited<
   ReturnType<typeof UsersService.deleteUser>
 >;

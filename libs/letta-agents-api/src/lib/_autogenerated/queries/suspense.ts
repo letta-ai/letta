@@ -10,6 +10,7 @@ import {
   LlmsService,
   ModelsService,
   OrganizationService,
+  ProvidersService,
   SandboxConfigService,
   SourcesService,
   ToolsService,
@@ -1181,6 +1182,38 @@ export const useSandboxConfigServiceListSandboxEnvVarsV1SandboxConfigSandboxConf
         ) as TData,
       ...options,
     });
+/**
+ * List Providers
+ * Get a list of all custom providers in the database
+ * @param data The data for the request.
+ * @param data.cursor
+ * @param data.limit
+ * @returns Provider Successful Response
+ * @throws ApiError
+ */
+export const useProvidersServiceListProvidersSuspense = <
+  TData = Common.ProvidersServiceListProvidersDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[],
+>(
+  {
+    cursor,
+    limit,
+  }: {
+    cursor?: string;
+    limit?: number;
+  } = {},
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
+) =>
+  useSuspenseQuery<TData, TError>({
+    queryKey: Common.UseProvidersServiceListProvidersKeyFn(
+      { cursor, limit },
+      queryKey,
+    ),
+    queryFn: () => ProvidersService.listProviders({ cursor, limit }) as TData,
+    ...options,
+  });
 /**
  * List Users
  * Get a list of all users in the database

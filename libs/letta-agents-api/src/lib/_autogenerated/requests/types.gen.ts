@@ -1488,6 +1488,51 @@ export type Passage = {
   embedding_config: EmbeddingConfig | null;
 };
 
+export type Provider = {
+  /**
+   * The id of the provider, lazily created by the database manager.
+   */
+  id?: string | null;
+  /**
+   * The name of the provider
+   */
+  name: string;
+  /**
+   * API key used for requests to the provider.
+   */
+  api_key?: string | null;
+  /**
+   * The organization id of the user
+   */
+  organization_id?: string | null;
+  /**
+   * The last update timestamp of the provider.
+   */
+  updated_at?: string | null;
+};
+
+export type ProviderCreate = {
+  /**
+   * The name of the provider.
+   */
+  name: string;
+  /**
+   * API key used for requests to the provider.
+   */
+  api_key: string;
+};
+
+export type ProviderUpdate = {
+  /**
+   * The id of the provider to update.
+   */
+  id: string;
+  /**
+   * API key used for requests to the provider.
+   */
+  api_key: string;
+};
+
 /**
  * Representation of an agent's internal reasoning.
  *
@@ -2994,6 +3039,35 @@ export type DeleteSandboxEnvVarV1SandboxConfigEnvironmentVariableEnvVarIdDeleteD
 export type DeleteSandboxEnvVarV1SandboxConfigEnvironmentVariableEnvVarIdDeleteResponse =
   void;
 
+export type ListProvidersData = {
+  cursor?: string | null;
+  limit?: number | null;
+};
+
+export type ListProvidersResponse = Array<Provider>;
+
+export type CreateProviderData = {
+  requestBody: ProviderCreate;
+  userId?: string | null;
+};
+
+export type CreateProviderResponse = Provider;
+
+export type UpdateProviderData = {
+  requestBody: ProviderUpdate;
+};
+
+export type UpdateProviderResponse = Provider;
+
+export type DeleteProviderData = {
+  /**
+   * The provider_id key to be deleted.
+   */
+  providerId: string;
+};
+
+export type DeleteProviderResponse = unknown;
+
 export type ListUsersData = {
   cursor?: string | null;
   limit?: number | null;
@@ -4117,6 +4191,60 @@ export type $OpenApiTs = {
          * Successful Response
          */
         204: void;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/providers/': {
+    get: {
+      req: ListProvidersData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: Array<Provider>;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+    post: {
+      req: CreateProviderData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: Provider;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+    put: {
+      req: UpdateProviderData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: Provider;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+    delete: {
+      req: DeleteProviderData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: unknown;
         /**
          * Validation Error
          */

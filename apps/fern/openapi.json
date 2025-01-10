@@ -3166,6 +3166,191 @@
         }
       }
     },
+    "/v1/providers/": {
+      "get": {
+        "tags": ["providers", "providers"],
+        "summary": "List Providers",
+        "description": "Get a list of all custom providers in the database",
+        "operationId": "list_providers",
+        "parameters": [
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": 50,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Provider"
+                  },
+                  "title": "Response List Providers"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["providers", "providers"],
+        "summary": "Create Provider",
+        "description": "Create a new custom provider",
+        "operationId": "create_provider",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProviderCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Provider"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["providers", "providers"],
+        "summary": "Update Provider",
+        "description": "Update an existing custom provider",
+        "operationId": "update_provider",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProviderUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Provider"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["providers", "providers"],
+        "summary": "Delete Provider",
+        "description": "Delete an existing custom provider",
+        "operationId": "delete_provider",
+        "parameters": [
+          {
+            "name": "provider_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "The provider_id key to be deleted.",
+              "title": "Provider Id"
+            },
+            "description": "The provider_id key to be deleted."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/agents/search": {
       "post": {
         "description": "Search deployed agents",
@@ -7020,6 +7205,92 @@
         "required": ["text", "embedding", "embedding_config"],
         "title": "Passage",
         "description": "Representation of a passage, which is stored in archival memory.\n\nParameters:\n    text (str): The text of the passage.\n    embedding (List[float]): The embedding of the passage.\n    embedding_config (EmbeddingConfig): The embedding configuration used by the passage.\n    created_at (datetime): The creation date of the passage.\n    user_id (str): The unique identifier of the user associated with the passage.\n    agent_id (str): The unique identifier of the agent associated with the passage.\n    source_id (str): The data source of the passage.\n    file_id (str): The unique identifier of the file associated with the passage."
+      },
+      "Provider": {
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id",
+            "description": "The id of the provider, lazily created by the database manager."
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "The name of the provider"
+          },
+          "api_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Api Key",
+            "description": "API key used for requests to the provider."
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At",
+            "description": "The last update timestamp of the provider."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["name"],
+        "title": "Provider"
+      },
+      "ProviderCreate": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "The name of the provider."
+          },
+          "api_key": {
+            "type": "string",
+            "title": "Api Key",
+            "description": "API key used for requests to the provider."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["name", "api_key"],
+        "title": "ProviderCreate"
+      },
+      "ProviderUpdate": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "The id of the provider to update."
+          },
+          "api_key": {
+            "type": "string",
+            "title": "Api Key",
+            "description": "API key used for requests to the provider."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["id", "api_key"],
+        "title": "ProviderUpdate"
       },
       "ReasoningMessage": {
         "properties": {
