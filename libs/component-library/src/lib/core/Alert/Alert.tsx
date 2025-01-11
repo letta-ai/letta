@@ -95,7 +95,7 @@ export function Alert(props: AlertProps) {
             </button>
           )}
         </HStack>
-        {children && <p>{children}</p>}
+        {children && <div>{children}</div>}
       </div>
     </div>
   );

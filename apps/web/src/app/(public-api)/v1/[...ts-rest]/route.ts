@@ -6,8 +6,6 @@ import {
 } from '@ts-rest/serverless/next';
 import { getUser, verifyAndReturnAPIKeyDetails } from '$web/server/auth';
 import type { RequestMiddlewareType } from '$web/sdk/shared';
-import { db, users } from '@letta-cloud/database';
-import { eq } from 'drizzle-orm';
 import { isErrorResponse } from '@ts-rest/core';
 import * as Sentry from '@sentry/node';
 import { makeRequestToSDK } from '$web/sdk';
@@ -36,33 +34,7 @@ const handler = createNextHandler(sdkContracts, sdkRouter, {
         if (apiKeyResponse) {
           middlewareData.organizationId = apiKeyResponse?.organizationId || '';
           middlewareData.userId = apiKeyResponse?.userId || '';
-
-          const response = await db.query.users.findFirst({
-            where: eq(users.id, middlewareData.userId),
-            columns: {
-              lettaAgentsId: true,
-              activeOrganizationId: true,
-              id: true,
-            },
-            with: {
-              activeOrganization: {
-                columns: {
-                  enabledCloudAt: true,
-                },
-              },
-            },
-          });
-
-          if (!response?.activeOrganization?.enabledCloudAt) {
-            return new Response(JSON.stringify({ message: 'Unauthorized' }), {
-              status: 401,
-              headers: {
-                'Content-Type': 'application/json',
-              },
-            });
-          }
-
-          middlewareData.lettaAgentsUserId = response?.lettaAgentsId || '';
+          middlewareData.lettaAgentsUserId = apiKeyResponse.coreUserId || '';
         }
       } else {
         const user = await getUser();

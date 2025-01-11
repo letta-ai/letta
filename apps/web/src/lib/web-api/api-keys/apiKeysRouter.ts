@@ -26,13 +26,10 @@ export async function createAPIKey(
     throw new Error('User not found');
   }
 
-  const apiKey = await generateAPIKey(user.activeOrganizationId);
-
-  await db.insert(lettaAPIKeys).values({
+  const apiKey = await generateAPIKey({
     name,
-    userId: user.id,
+    creatorUserId: user.id,
     organizationId: user.activeOrganizationId,
-    apiKey,
   });
 
   return {

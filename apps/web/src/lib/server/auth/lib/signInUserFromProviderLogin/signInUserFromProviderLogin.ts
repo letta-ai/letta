@@ -3,7 +3,6 @@ import {
   adePreferences,
   db,
   emailWhitelist,
-  lettaAPIKeys,
   organizationInvitedUsers,
   organizationPreferences,
   organizations,
@@ -216,8 +215,6 @@ async function createUserAndOrganization(
     throw new Error('Failed to create user from Letta Agents Service');
   }
 
-  const apiKey = await generateAPIKey(organizationId);
-
   const [[createdUser]] = await Promise.all([
     db
       .insert(users)
@@ -243,11 +240,10 @@ async function createUserAndOrganization(
   const userFullName = userData.name;
 
   await Promise.all([
-    db.insert(lettaAPIKeys).values({
+    generateAPIKey({
       name: `${userFullName}'s API Key`,
       organizationId,
-      userId: createdUser.userId,
-      apiKey,
+      creatorUserId: createdUser.userId,
     }),
     db
       .update(users)

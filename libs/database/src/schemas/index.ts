@@ -194,6 +194,7 @@ export const lettaAPIKeys = pgTable('letta_api_keys', {
     .notNull()
     .references(() => users.id, { onDelete: 'cascade' })
     .notNull(),
+  coreUserId: text('core_user_id').notNull(),
   organizationId: text('organization_id')
     .notNull()
     .references(() => organizations.id, { onDelete: 'cascade' })
@@ -238,10 +239,7 @@ export const projects = pgTable(
       .$onUpdate(() => new Date()),
   },
   (table) => ({
-    uniqueSlug: uniqueIndex('unique_slug').on(
-      table.slug,
-      table.organizationId,
-    ),
+    uniqueSlug: uniqueIndex('unique_slug').on(table.slug, table.organizationId),
   }),
 );
 
@@ -276,10 +274,7 @@ export const agentTemplates = pgTable(
       .$onUpdate(() => new Date()),
   },
   (table) => ({
-    uniqueName: uniqueIndex('unique_name').on(
-      table.name,
-      table.organizationId,
-    ),
+    uniqueName: uniqueIndex('unique_name').on(table.name, table.organizationId),
   }),
 );
 
@@ -520,24 +515,31 @@ export const inferenceTransactionRelations = relations(
   }),
 );
 
-export const organizationInvitedUsers = pgTable('organization_invites', {
-  id: text('id')
-    .primaryKey()
-    .default(sql`gen_random_uuid()`),
-  email: text('email').notNull(),
-  organizationId: text('organization_id')
-    .notNull()
-    .references(() => organizations.id, { onDelete: 'cascade' })
-    .notNull(),
-  inviteCode: text('invite_code').notNull().unique(),
-  invitedBy: text('invited_by').notNull(),
-  createdAt: timestamp('created_at').notNull().defaultNow(),
-  updatedAt: timestamp('updated_at')
-    .notNull()
-    .$onUpdate(() => new Date()),
-}, self => ({
-  uniqueEmailIndex: uniqueIndex('unique_email').on(self.email, self.organizationId),
-}));
+export const organizationInvitedUsers = pgTable(
+  'organization_invites',
+  {
+    id: text('id')
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    email: text('email').notNull(),
+    organizationId: text('organization_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' })
+      .notNull(),
+    inviteCode: text('invite_code').notNull().unique(),
+    invitedBy: text('invited_by').notNull(),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at')
+      .notNull()
+      .$onUpdate(() => new Date()),
+  },
+  (self) => ({
+    uniqueEmailIndex: uniqueIndex('unique_email').on(
+      self.email,
+      self.organizationId,
+    ),
+  }),
+);
 
 export const organizationInvitedUsersRelations = relations(
   organizationInvitedUsers,
