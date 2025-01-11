@@ -100,9 +100,13 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
 
                 if match_all_tags:
                     # Match ALL tags - use subqueries
-                    for tag in tags:
-                        subquery = select(cls.tags.property.mapper.class_.agent_id).where(cls.tags.property.mapper.class_.tag == tag)
-                        query = query.filter(cls.id.in_(subquery))
+                    subquery = (
+                        select(cls.tags.property.mapper.class_.agent_id)
+                        .where(cls.tags.property.mapper.class_.tag.in_(tags))
+                        .group_by(cls.tags.property.mapper.class_.agent_id)
+                        .having(func.count() == len(tags))
+                    )
+                    query = query.filter(cls.id.in_(subquery))
                 else:
                     # Match ANY tag - use join and filter
                     query = (
@@ -274,6 +278,8 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
         logger.debug(f"Updating {self.__class__.__name__} with ID: {self.id} with actor={actor}")
         if actor:
             self._set_created_and_updated_by_fields(actor.id)
+
+        self.set_updated_at()
 
         with db_session as session:
             session.add(self)

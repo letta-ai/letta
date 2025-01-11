@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import List, Optional
 
 from pydantic import Field, model_validator
@@ -8,7 +9,6 @@ from letta.llm_api.azure_openai_constants import AZURE_MODEL_TO_CONTEXT_LENGTH
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.letta_base import LettaBase
 from letta.schemas.llm_config import LLMConfig
-from letta.services.organization_manager import OrganizationManager
 
 
 class ProviderBase(LettaBase):
@@ -16,9 +16,15 @@ class ProviderBase(LettaBase):
 
 
 class Provider(ProviderBase):
+    id: Optional[str] = Field(None, description="The id of the provider, lazily created by the database manager.")
     name: str = Field(..., description="The name of the provider")
     api_key: Optional[str] = Field(None, description="API key used for requests to the provider.")
-    organization_id: Optional[str] = Field(OrganizationManager.DEFAULT_ORG_ID, description="The organization id of the user")
+    organization_id: Optional[str] = Field(None, description="The organization id of the user")
+    updated_at: Optional[datetime] = Field(None, description="The last update timestamp of the provider.")
+
+    def resolve_identifier(self):
+        if not self.id:
+            self.id = ProviderBase._generate_id(prefix=ProviderBase.__id_prefix__)
 
     def list_llm_models(self) -> List[LLMConfig]:
         return []
@@ -40,7 +46,6 @@ class Provider(ProviderBase):
 class ProviderCreate(ProviderBase):
     name: str = Field(..., description="The name of the provider.")
     api_key: str = Field(..., description="API key used for requests to the provider.")
-    organization_id: str = Field(..., description="The organization id that this provider information pertains to.")
 
 
 class ProviderUpdate(ProviderBase):

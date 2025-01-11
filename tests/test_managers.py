@@ -19,6 +19,7 @@ from letta.orm import (
     Job,
     Message,
     Organization,
+    Provider,
     SandboxConfig,
     SandboxEnvironmentVariable,
     Source,
@@ -29,6 +30,7 @@ from letta.orm import (
     User,
 )
 from letta.orm.agents_tags import AgentsTags
+from letta.orm.enums import ToolType
 from letta.orm.errors import NoResultFound, UniqueConstraintViolationError
 from letta.schemas.agent import CreateAgent, UpdateAgent
 from letta.schemas.block import Block as PydanticBlock
@@ -92,6 +94,7 @@ def clear_tables(server: SyncServer):
         session.execute(delete(Tool))  # Clear all records from the Tool table
         session.execute(delete(Agent))
         session.execute(delete(User))  # Clear all records from the user table
+        session.execute(delete(Provider))
         session.execute(delete(Organization))  # Clear all records from the organization table
         session.commit()  # Commit the deletion
 
@@ -563,9 +566,11 @@ def test_update_agent(server: SyncServer, comprehensive_test_agent_fixture, othe
         tool_exec_environment_variables={"test_env_var_key_a": "a", "new_tool_exec_key": "n"},
     )
 
+    last_updated_timestamp = agent.updated_at
     updated_agent = server.agent_manager.update_agent(agent.id, update_agent_request, actor=default_user)
     comprehensive_agent_checks(updated_agent, update_agent_request, actor=default_user)
     assert updated_agent.message_ids == update_agent_request.message_ids
+    assert updated_agent.updated_at > last_updated_timestamp
 
 
 # ======================================================================================================================
@@ -1364,6 +1369,7 @@ def test_get_tool_by_id(server: SyncServer, print_tool, default_user):
     assert fetched_tool.tags == print_tool.tags
     assert fetched_tool.source_code == print_tool.source_code
     assert fetched_tool.source_type == print_tool.source_type
+    assert fetched_tool.tool_type == ToolType.CUSTOM
 
 
 def test_get_tool_with_actor(server: SyncServer, print_tool, default_user):
@@ -1378,6 +1384,7 @@ def test_get_tool_with_actor(server: SyncServer, print_tool, default_user):
     assert fetched_tool.tags == print_tool.tags
     assert fetched_tool.source_code == print_tool.source_code
     assert fetched_tool.source_type == print_tool.source_type
+    assert fetched_tool.tool_type == ToolType.CUSTOM
 
 
 def test_list_tools(server: SyncServer, print_tool, default_user):
@@ -1441,6 +1448,7 @@ def test_update_tool_source_code_refreshes_schema_and_name(server: SyncServer, p
 
     new_schema = derive_openai_json_schema(source_code=updated_tool.source_code)
     assert updated_tool.json_schema == new_schema
+    assert updated_tool.tool_type == ToolType.CUSTOM
 
 
 def test_update_tool_source_code_refreshes_schema_only(server: SyncServer, print_tool, default_user):
@@ -1479,6 +1487,7 @@ def test_update_tool_source_code_refreshes_schema_only(server: SyncServer, print
     new_schema = derive_openai_json_schema(source_code=updated_tool.source_code, name=updated_tool.name)
     assert updated_tool.json_schema == new_schema
     assert updated_tool.name == name
+    assert updated_tool.tool_type == ToolType.CUSTOM
 
 
 def test_update_tool_multi_user(server: SyncServer, print_tool, default_user, other_user):
@@ -1514,6 +1523,15 @@ def test_upsert_base_tools(server: SyncServer, default_user):
     # Call it again to make sure it doesn't create duplicates
     tools = server.tool_manager.upsert_base_tools(actor=default_user)
     assert sorted([t.name for t in tools]) == expected_tool_names
+
+    # Confirm that the return tools have no source_code, but a json_schema
+    for t in tools:
+        if t.name in BASE_TOOLS:
+            assert t.tool_type == ToolType.LETTA_CORE
+        else:
+            assert t.tool_type == ToolType.LETTA_MEMORY_CORE
+        assert t.source_code is None
+        assert t.json_schema
 
 
 # ======================================================================================================================

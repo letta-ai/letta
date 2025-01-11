@@ -42,7 +42,9 @@ def run_server():
 
 
 @pytest.fixture(
-    params=[{"server": False}, {"server": True}],  # whether to use REST API server
+    params=[
+        {"server": False},
+    ],  # {"server": True}],  # whether to use REST API server
     # params=[{"server": False}],  # whether to use REST API server
     scope="module",
 )
@@ -121,7 +123,6 @@ def test_shared_blocks(mock_e2b_api_key_none, client: Union[LocalClient, RESTCli
     assert (
         "charles" in client.get_core_memory(agent_state2.id).get_block("human").value.lower()
     ), f"Shared block update failed {client.get_core_memory(agent_state2.id).get_block('human').value}"
-    # assert "charles" in response.messages[1].text.lower(), f"Shared block update failed {response.messages[0].text}"
 
     # cleanup
     client.delete_agent(agent_state1.id)

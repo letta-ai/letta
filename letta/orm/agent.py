@@ -1,7 +1,7 @@
 import uuid
 from typing import TYPE_CHECKING, List, Optional
 
-from sqlalchemy import JSON, String, UniqueConstraint
+from sqlalchemy import JSON, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from letta.orm.block import Block
@@ -27,7 +27,6 @@ if TYPE_CHECKING:
 class Agent(SqlalchemyBase, OrganizationMixin):
     __tablename__ = "agents"
     __pydantic_model__ = PydanticAgentState
-    __table_args__ = (UniqueConstraint("organization_id", "name", name="unique_org_agent_name"),)
 
     # agent generates its own id
     # TODO: We want to migrate all the ORM models to do this, so we will need to move this to the SqlalchemyBase
@@ -109,6 +108,7 @@ class Agent(SqlalchemyBase, OrganizationMixin):
         """converts to the basic pydantic model counterpart"""
         state = {
             "id": self.id,
+            "organization_id": self.organization_id,
             "name": self.name,
             "description": self.description,
             "message_ids": self.message_ids,

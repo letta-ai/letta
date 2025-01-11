@@ -198,10 +198,6 @@ class QueuingInterface(AgentInterface):
             assert is_utc_datetime(msg_obj.created_at), msg_obj.created_at
             new_message["date"] = msg_obj.created_at.isoformat()
         else:
-            # FIXME this is a total hack
-            assert self.buffer.qsize() > 1, "Tried to reach back to grab function call data, but couldn't find a buffer message."
-            # TODO also should not be accessing protected member here
-
             new_message["id"] = self.buffer.queue[-1]["message_api"]["id"]
             # assert is_utc_datetime(msg_obj.created_at), msg_obj.created_at
             new_message["date"] = self.buffer.queue[-1]["message_api"]["date"]

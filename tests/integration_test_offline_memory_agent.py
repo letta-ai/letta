@@ -45,7 +45,6 @@ def test_ripple_edit(client, mock_e2b_api_key_none):
     # Figure 1. from Evaluating the Ripple Effects of Knowledge Editing in Language Models (Cohen et al., 2023)
     # https://arxiv.org/pdf/2307.12976
     fact_block = client.create_block(
-        name="fact_block",
         label="fact_block",
         value="""Messi resides in the Paris.
                Messi plays in the league Ligue 1.
@@ -55,7 +54,7 @@ def test_ripple_edit(client, mock_e2b_api_key_none):
                Victor Ulloa plays for Inter Miami""",
         limit=2000,
     )
-    new_memory = client.create_block(name="rethink_memory_block", label="rethink_memory_block", value="[empty]", limit=2000)
+    new_memory = client.create_block(label="rethink_memory_block", value="[empty]", limit=2000)
 
     # conversation_human_block = Block(name="human", label="human", value=get_human_text(DEFAULT_HUMAN), limit=2000)
     # conversation_persona_block = Block(name="persona", label="persona", value=get_persona_text(DEFAULT_PERSONA), limit=2000)

@@ -1,8 +1,9 @@
 from typing import List, Optional
 
 from letta.orm.provider import Provider as ProviderModel
-from letta.providers import Provider as PydanticProvider
-from letta.providers import ProviderUpdate
+from letta.schemas.providers import Provider as PydanticProvider
+from letta.schemas.providers import ProviderUpdate
+from letta.schemas.user import User as PydanticUser
 from letta.utils import enforce_types
 
 
@@ -14,10 +15,16 @@ class ProviderManager:
         self.session_maker = db_context
 
     @enforce_types
-    def create_provider(self, provider: PydanticProvider) -> PydanticProvider:
+    def create_provider(self, provider: PydanticProvider, actor: PydanticUser) -> PydanticProvider:
         """Create a new provider if it doesn't already exist."""
         with self.session_maker() as session:
-            new_provider = ProviderModel(**provider.model_dump())
+            # Assign the organization id based on the actor
+            provider.organization_id = actor.organization_id
+
+            # Lazily create the provider id prior to persistence
+            provider.resolve_identifier()
+
+            new_provider = ProviderModel(**provider.model_dump(exclude_unset=True))
             new_provider.create(session)
             return new_provider.to_pydantic()
 

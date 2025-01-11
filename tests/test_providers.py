@@ -1,6 +1,6 @@
 import os
 
-from letta.providers import (
+from letta.schemas.providers import (
     AnthropicProvider,
     AzureProvider,
     GoogleAIProvider,

@@ -1,3 +1,4 @@
+import importlib
 import inspect
 from textwrap import dedent  # remove indentation
 from types import ModuleType
@@ -62,6 +63,70 @@ def parse_source_code(func) -> str:
     """Parse the source code of a function and remove indendation"""
     source_code = dedent(inspect.getsource(func))
     return source_code
+
+
+def get_function_from_module(module_name: str, function_name: str):
+    """
+    Dynamically imports a function from a specified module.
+
+    Args:
+        module_name (str): The name of the module to import (e.g., 'base').
+        function_name (str): The name of the function to retrieve.
+
+    Returns:
+        Callable: The imported function.
+
+    Raises:
+        ModuleNotFoundError: If the specified module cannot be found.
+        AttributeError: If the function is not found in the module.
+    """
+    try:
+        # Dynamically import the module
+        module = importlib.import_module(module_name)
+        # Retrieve the function
+        return getattr(module, function_name)
+    except ModuleNotFoundError:
+        raise ModuleNotFoundError(f"Module '{module_name}' not found.")
+    except AttributeError:
+        raise AttributeError(f"Function '{function_name}' not found in module '{module_name}'.")
+
+
+def get_json_schema_from_module(module_name: str, function_name: str) -> dict:
+    """
+    Dynamically loads a specific function from a module and generates its JSON schema.
+
+    Args:
+        module_name (str): The name of the module to import (e.g., 'base').
+        function_name (str): The name of the function to retrieve.
+
+    Returns:
+        dict: The JSON schema for the specified function.
+
+    Raises:
+        ModuleNotFoundError: If the specified module cannot be found.
+        AttributeError: If the function is not found in the module.
+        ValueError: If the attribute is not a user-defined function.
+    """
+    try:
+        # Dynamically import the module
+        module = importlib.import_module(module_name)
+
+        # Retrieve the function
+        attr = getattr(module, function_name, None)
+
+        # Check if it's a user-defined function
+        if not (inspect.isfunction(attr) and attr.__module__ == module.__name__):
+            raise ValueError(f"'{function_name}' is not a user-defined function in module '{module_name}'")
+
+        # Generate schema (assuming a `generate_schema` function exists)
+        generated_schema = generate_schema(attr)
+
+        return generated_schema
+
+    except ModuleNotFoundError:
+        raise ModuleNotFoundError(f"Module '{module_name}' not found.")
+    except AttributeError:
+        raise AttributeError(f"Function '{function_name}' not found in module '{module_name}'.")
 
 
 def load_function_set(module: ModuleType) -> dict:

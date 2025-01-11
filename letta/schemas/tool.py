@@ -1,11 +1,12 @@
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from pydantic import Field, model_validator
 
-from letta.constants import FUNCTION_RETURN_CHAR_LIMIT
-from letta.functions.functions import derive_openai_json_schema
+from letta.constants import COMPOSIO_TOOL_TAG_NAME, FUNCTION_RETURN_CHAR_LIMIT, LETTA_CORE_TOOL_MODULE_NAME
+from letta.functions.functions import derive_openai_json_schema, get_json_schema_from_module
 from letta.functions.helpers import generate_composio_tool_wrapper, generate_langchain_tool_wrapper
 from letta.functions.schema_generator import generate_schema_from_args_schema_v2
+from letta.orm.enums import ToolType
 from letta.schemas.letta_base import LettaBase
 from letta.schemas.openai.chat_completions import ToolCall
 
@@ -28,6 +29,7 @@ class Tool(BaseTool):
     """
 
     id: str = BaseTool.generate_id_field()
+    tool_type: ToolType = Field(ToolType.CUSTOM, description="The type of the tool.")
     description: Optional[str] = Field(None, description="The description of the tool.")
     source_type: Optional[str] = Field(None, description="The type of the source code.")
     module: Optional[str] = Field(None, description="The module of the function.")
@@ -36,7 +38,7 @@ class Tool(BaseTool):
     tags: List[str] = Field([], description="Metadata tags.")
 
     # code
-    source_code: str = Field(..., description="The source code of the function.")
+    source_code: Optional[str] = Field(None, description="The source code of the function.")
     json_schema: Optional[Dict] = Field(None, description="The JSON schema of the function.")
 
     # tool configuration
@@ -51,9 +53,19 @@ class Tool(BaseTool):
         """
         Populate missing fields: name, description, and json_schema.
         """
-        # Derive JSON schema if not provided
-        if not self.json_schema:
-            self.json_schema = derive_openai_json_schema(source_code=self.source_code)
+        if self.tool_type == ToolType.CUSTOM:
+            # If it's a custom tool, we need to ensure source_code is present
+            if not self.source_code:
+                raise ValueError(f"Custom tool with id={self.id} is missing source_code field.")
+
+            # Always derive json_schema for freshest possible json_schema
+            # TODO: Instead of checking the tag, we should having `COMPOSIO` as a specific ToolType
+            # TODO: We skip this for Composio bc composio json schemas are derived differently
+            if not (COMPOSIO_TOOL_TAG_NAME in self.tags):
+                self.json_schema = derive_openai_json_schema(source_code=self.source_code)
+        elif self.tool_type in {ToolType.LETTA_CORE, ToolType.LETTA_MEMORY_CORE}:
+            # If it's letta core tool, we generate the json_schema on the fly here
+            self.json_schema = get_json_schema_from_module(module_name=LETTA_CORE_TOOL_MODULE_NAME, function_name=self.name)
 
         # Derive name from the JSON schema if not provided
         if not self.name:
@@ -125,7 +137,7 @@ class ToolCreate(LettaBase):
 
         description = composio_tool.description
         source_type = "python"
-        tags = ["composio"]
+        tags = [COMPOSIO_TOOL_TAG_NAME]
         wrapper_func_name, wrapper_function_str = generate_composio_tool_wrapper(action_name)
         json_schema = generate_schema_from_args_schema_v2(composio_tool.args_schema, name=wrapper_func_name, description=description)
 
@@ -215,7 +227,7 @@ class ToolUpdate(LettaBase):
 
 class ToolRunFromSource(LettaBase):
     source_code: str = Field(..., description="The source code of the function.")
-    args: Dict[str, str] = Field(..., description="The arguments to pass to the tool.")
+    args: Dict[str, Any] = Field(..., description="The arguments to pass to the tool.")
     env_vars: Dict[str, str] = Field(None, description="The environment variables to pass to the tool.")
     name: Optional[str] = Field(None, description="The name of the tool to run.")
     source_type: Optional[str] = Field(None, description="The type of the source code.")

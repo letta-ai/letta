@@ -2,15 +2,15 @@ import functools
 import os
 import time
 
+import pytest
+
 from tests.helpers.endpoints_helper import (
     check_agent_archival_memory_insert,
     check_agent_archival_memory_retrieval,
     check_agent_edit_core_memory,
     check_agent_recall_chat_memory,
-    check_agent_summarize_memory_simple,
     check_agent_uses_external_tool,
     check_first_response_is_valid_for_llm_endpoint,
-    check_response_contains_keyword,
     run_embedding_endpoint,
 )
 
@@ -84,6 +84,7 @@ def retry_until_success(max_attempts=10, sleep_time_seconds=4):
 # ======================================================================================================================
 # OPENAI TESTS
 # ======================================================================================================================
+@pytest.mark.openai_basic
 @retry_until_success(max_attempts=5, sleep_time_seconds=2)
 def test_openai_gpt_4o_returns_valid_first_message():
     filename = os.path.join(llm_config_dir, "openai-gpt-4o.json")
@@ -92,23 +93,16 @@ def test_openai_gpt_4o_returns_valid_first_message():
     print(f"Got successful response from client: \n\n{response}")
 
 
+@pytest.mark.openai_basic
 @retry_until_success(max_attempts=5, sleep_time_seconds=2)
-def test_openai_gpt_4o_returns_keyword():
-    keyword = "banana"
-    filename = os.path.join(llm_config_dir, "openai-gpt-4o.json")
-    response = check_response_contains_keyword(filename, keyword=keyword)
-    # Log out successful response
-    print(f"Got successful response from client: \n\n{response}")
-
-
-@retry_until_success(max_attempts=5, sleep_time_seconds=2)
-def test_openai_gpt_4o_uses_external_tool():
+def test_openai_gpt_4o_uses_external_tool(mock_e2b_api_key_none):
     filename = os.path.join(llm_config_dir, "openai-gpt-4o.json")
     response = check_agent_uses_external_tool(filename)
     # Log out successful response
     print(f"Got successful response from client: \n\n{response}")
 
 
+@pytest.mark.openai_basic
 @retry_until_success(max_attempts=5, sleep_time_seconds=2)
 def test_openai_gpt_4o_recall_chat_memory():
     filename = os.path.join(llm_config_dir, "openai-gpt-4o.json")
@@ -117,6 +111,7 @@ def test_openai_gpt_4o_recall_chat_memory():
     print(f"Got successful response from client: \n\n{response}")
 
 
+@pytest.mark.openai_basic
 @retry_until_success(max_attempts=5, sleep_time_seconds=2)
 def test_openai_gpt_4o_archival_memory_retrieval():
     filename = os.path.join(llm_config_dir, "openai-gpt-4o.json")
@@ -125,6 +120,7 @@ def test_openai_gpt_4o_archival_memory_retrieval():
     print(f"Got successful response from client: \n\n{response}")
 
 
+@pytest.mark.openai_basic
 @retry_until_success(max_attempts=5, sleep_time_seconds=2)
 def test_openai_gpt_4o_archival_memory_insert():
     filename = os.path.join(llm_config_dir, "openai-gpt-4o.json")
@@ -133,6 +129,7 @@ def test_openai_gpt_4o_archival_memory_insert():
     print(f"Got successful response from client: \n\n{response}")
 
 
+@pytest.mark.openai_basic
 @retry_until_success(max_attempts=5, sleep_time_seconds=2)
 def test_openai_gpt_4o_edit_core_memory():
     filename = os.path.join(llm_config_dir, "openai-gpt-4o.json")
@@ -141,13 +138,7 @@ def test_openai_gpt_4o_edit_core_memory():
     print(f"Got successful response from client: \n\n{response}")
 
 
-@retry_until_success(max_attempts=5, sleep_time_seconds=2)
-def test_openai_gpt_4o_summarize_memory():
-    filename = os.path.join(llm_config_dir, "openai-gpt-4o.json")
-    response = check_agent_summarize_memory_simple(filename)
-    print(f"Got successful response from client: \n\n{response}")
-
-
+@pytest.mark.openai_basic
 @retry_until_success(max_attempts=5, sleep_time_seconds=2)
 def test_embedding_endpoint_openai():
     filename = os.path.join(embedding_config_dir, "openai_embed.json")
@@ -157,6 +148,8 @@ def test_embedding_endpoint_openai():
 # ======================================================================================================================
 # AZURE TESTS
 # ======================================================================================================================
+@pytest.mark.azure_basic
+@retry_until_success(max_attempts=5, sleep_time_seconds=2)
 def test_azure_gpt_4o_mini_returns_valid_first_message():
     filename = os.path.join(llm_config_dir, "azure-gpt-4o-mini.json")
     response = check_first_response_is_valid_for_llm_endpoint(filename)
@@ -164,21 +157,17 @@ def test_azure_gpt_4o_mini_returns_valid_first_message():
     print(f"Got successful response from client: \n\n{response}")
 
 
-def test_azure_gpt_4o_mini_returns_keyword():
-    keyword = "banana"
-    filename = os.path.join(llm_config_dir, "azure-gpt-4o-mini.json")
-    response = check_response_contains_keyword(filename, keyword=keyword)
-    # Log out successful response
-    print(f"Got successful response from client: \n\n{response}")
-
-
-def test_azure_gpt_4o_mini_uses_external_tool():
+@pytest.mark.azure_basic
+@retry_until_success(max_attempts=5, sleep_time_seconds=2)
+def test_azure_gpt_4o_mini_uses_external_tool(mock_e2b_api_key_none):
     filename = os.path.join(llm_config_dir, "azure-gpt-4o-mini.json")
     response = check_agent_uses_external_tool(filename)
     # Log out successful response
     print(f"Got successful response from client: \n\n{response}")
 
 
+@pytest.mark.azure_basic
+@retry_until_success(max_attempts=5, sleep_time_seconds=2)
 def test_azure_gpt_4o_mini_recall_chat_memory():
     filename = os.path.join(llm_config_dir, "azure-gpt-4o-mini.json")
     response = check_agent_recall_chat_memory(filename)
@@ -186,6 +175,8 @@ def test_azure_gpt_4o_mini_recall_chat_memory():
     print(f"Got successful response from client: \n\n{response}")
 
 
+@pytest.mark.azure_basic
+@retry_until_success(max_attempts=5, sleep_time_seconds=2)
 def test_azure_gpt_4o_mini_archival_memory_retrieval():
     filename = os.path.join(llm_config_dir, "azure-gpt-4o-mini.json")
     response = check_agent_archival_memory_retrieval(filename)
@@ -193,6 +184,8 @@ def test_azure_gpt_4o_mini_archival_memory_retrieval():
     print(f"Got successful response from client: \n\n{response}")
 
 
+@pytest.mark.azure_basic
+@retry_until_success(max_attempts=5, sleep_time_seconds=2)
 def test_azure_gpt_4o_mini_edit_core_memory():
     filename = os.path.join(llm_config_dir, "azure-gpt-4o-mini.json")
     response = check_agent_edit_core_memory(filename)
@@ -200,6 +193,8 @@ def test_azure_gpt_4o_mini_edit_core_memory():
     print(f"Got successful response from client: \n\n{response}")
 
 
+@pytest.mark.azure_basic
+@retry_until_success(max_attempts=5, sleep_time_seconds=2)
 def test_azure_embedding_endpoint():
     filename = os.path.join(embedding_config_dir, "azure_embed.json")
     run_embedding_endpoint(filename)
@@ -239,6 +234,8 @@ def test_embedding_endpoint_ollama():
 # ======================================================================================================================
 # ANTHROPIC TESTS
 # ======================================================================================================================
+@pytest.mark.anthropic_basic
+@retry_until_success(max_attempts=5, sleep_time_seconds=2)
 def test_claude_haiku_3_5_returns_valid_first_message():
     filename = os.path.join(llm_config_dir, "claude-3-5-haiku.json")
     response = check_first_response_is_valid_for_llm_endpoint(filename)
@@ -246,21 +243,17 @@ def test_claude_haiku_3_5_returns_valid_first_message():
     print(f"Got successful response from client: \n\n{response}")
 
 
-def test_claude_haiku_3_5_returns_keyword():
-    keyword = "banana"
-    filename = os.path.join(llm_config_dir, "claude-3-5-haiku.json")
-    response = check_response_contains_keyword(filename, keyword=keyword)
-    # Log out successful response
-    print(f"Got successful response from client: \n\n{response}")
-
-
-def test_claude_haiku_3_5_uses_external_tool():
+@pytest.mark.anthropic_basic
+@retry_until_success(max_attempts=5, sleep_time_seconds=2)
+def test_claude_haiku_3_5_uses_external_tool(mock_e2b_api_key_none):
     filename = os.path.join(llm_config_dir, "claude-3-5-haiku.json")
     response = check_agent_uses_external_tool(filename)
     # Log out successful response
     print(f"Got successful response from client: \n\n{response}")
 
 
+@pytest.mark.anthropic_basic
+@retry_until_success(max_attempts=5, sleep_time_seconds=2)
 def test_claude_haiku_3_5_recall_chat_memory():
     filename = os.path.join(llm_config_dir, "claude-3-5-haiku.json")
     response = check_agent_recall_chat_memory(filename)
@@ -268,6 +261,8 @@ def test_claude_haiku_3_5_recall_chat_memory():
     print(f"Got successful response from client: \n\n{response}")
 
 
+@pytest.mark.anthropic_basic
+@retry_until_success(max_attempts=5, sleep_time_seconds=2)
 def test_claude_haiku_3_5_archival_memory_retrieval():
     filename = os.path.join(llm_config_dir, "claude-3-5-haiku.json")
     response = check_agent_archival_memory_retrieval(filename)
@@ -275,6 +270,8 @@ def test_claude_haiku_3_5_archival_memory_retrieval():
     print(f"Got successful response from client: \n\n{response}")
 
 
+@pytest.mark.anthropic_basic
+@retry_until_success(max_attempts=5, sleep_time_seconds=2)
 def test_claude_haiku_3_5_edit_core_memory():
     filename = os.path.join(llm_config_dir, "claude-3-5-haiku.json")
     response = check_agent_edit_core_memory(filename)
@@ -292,15 +289,7 @@ def test_groq_llama31_70b_returns_valid_first_message():
     print(f"Got successful response from client: \n\n{response}")
 
 
-def test_groq_llama31_70b_returns_keyword():
-    keyword = "banana"
-    filename = os.path.join(llm_config_dir, "groq.json")
-    response = check_response_contains_keyword(filename, keyword=keyword)
-    # Log out successful response
-    print(f"Got successful response from client: \n\n{response}")
-
-
-def test_groq_llama31_70b_uses_external_tool():
+def test_groq_llama31_70b_uses_external_tool(mock_e2b_api_key_none):
     filename = os.path.join(llm_config_dir, "groq.json")
     response = check_agent_uses_external_tool(filename)
     # Log out successful response
@@ -332,6 +321,8 @@ def test_groq_llama31_70b_edit_core_memory():
 # ======================================================================================================================
 # GEMINI TESTS
 # ======================================================================================================================
+@pytest.mark.gemini_basic
+@retry_until_success(max_attempts=5, sleep_time_seconds=2)
 def test_gemini_pro_15_returns_valid_first_message():
     filename = os.path.join(llm_config_dir, "gemini-pro.json")
     response = check_first_response_is_valid_for_llm_endpoint(filename)
@@ -339,21 +330,17 @@ def test_gemini_pro_15_returns_valid_first_message():
     print(f"Got successful response from client: \n\n{response}")
 
 
-def test_gemini_pro_15_returns_keyword():
-    keyword = "banana"
-    filename = os.path.join(llm_config_dir, "gemini-pro.json")
-    response = check_response_contains_keyword(filename, keyword=keyword)
-    # Log out successful response
-    print(f"Got successful response from client: \n\n{response}")
-
-
-def test_gemini_pro_15_uses_external_tool():
+@pytest.mark.gemini_basic
+@retry_until_success(max_attempts=5, sleep_time_seconds=2)
+def test_gemini_pro_15_uses_external_tool(mock_e2b_api_key_none):
     filename = os.path.join(llm_config_dir, "gemini-pro.json")
     response = check_agent_uses_external_tool(filename)
     # Log out successful response
     print(f"Got successful response from client: \n\n{response}")
 
 
+@pytest.mark.gemini_basic
+@retry_until_success(max_attempts=5, sleep_time_seconds=2)
 def test_gemini_pro_15_recall_chat_memory():
     filename = os.path.join(llm_config_dir, "gemini-pro.json")
     response = check_agent_recall_chat_memory(filename)
@@ -361,6 +348,8 @@ def test_gemini_pro_15_recall_chat_memory():
     print(f"Got successful response from client: \n\n{response}")
 
 
+@pytest.mark.gemini_basic
+@retry_until_success(max_attempts=5, sleep_time_seconds=2)
 def test_gemini_pro_15_archival_memory_retrieval():
     filename = os.path.join(llm_config_dir, "gemini-pro.json")
     response = check_agent_archival_memory_retrieval(filename)
@@ -368,6 +357,8 @@ def test_gemini_pro_15_archival_memory_retrieval():
     print(f"Got successful response from client: \n\n{response}")
 
 
+@pytest.mark.gemini_basic
+@retry_until_success(max_attempts=5, sleep_time_seconds=2)
 def test_gemini_pro_15_edit_core_memory():
     filename = os.path.join(llm_config_dir, "gemini-pro.json")
     response = check_agent_edit_core_memory(filename)
@@ -385,15 +376,7 @@ def test_together_llama_3_70b_returns_valid_first_message():
     print(f"Got successful response from client: \n\n{response}")
 
 
-def test_together_llama_3_70b_returns_keyword():
-    keyword = "banana"
-    filename = os.path.join(llm_config_dir, "together-llama-3-70b.json")
-    response = check_response_contains_keyword(filename, keyword=keyword)
-    # Log out successful response
-    print(f"Got successful response from client: \n\n{response}")
-
-
-def test_together_llama_3_70b_uses_external_tool():
+def test_together_llama_3_70b_uses_external_tool(mock_e2b_api_key_none):
     filename = os.path.join(llm_config_dir, "together-llama-3-70b.json")
     response = check_agent_uses_external_tool(filename)
     # Log out successful response

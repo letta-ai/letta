@@ -7,11 +7,11 @@ from abc import ABC, abstractmethod
 from typing import List, Optional, Tuple, Union
 
 from letta.constants import (
-    BASE_TOOLS,
     CLI_WARNING_PREFIX,
     ERROR_MESSAGE_PREFIX,
     FIRST_MESSAGE_ATTEMPTS,
     FUNC_FAILED_HEARTBEAT_MESSAGE,
+    LETTA_CORE_TOOL_MODULE_NAME,
     LLM_MAX_TOKENS,
     MESSAGE_SUMMARY_TRUNC_KEEP_N_LAST,
     MESSAGE_SUMMARY_TRUNC_TOKEN_FRAC,
@@ -19,6 +19,7 @@ from letta.constants import (
     REQ_HEARTBEAT_MESSAGE,
 )
 from letta.errors import ContextWindowExceededError
+from letta.functions.functions import get_function_from_module
 from letta.helpers import ToolRulesSolver
 from letta.interface import AgentInterface
 from letta.llm_api.helpers import is_context_overflow_error
@@ -26,6 +27,7 @@ from letta.llm_api.llm_api_tools import create
 from letta.local_llm.utils import num_tokens_from_functions, num_tokens_from_messages
 from letta.memory import summarize_messages
 from letta.orm import User
+from letta.orm.enums import ToolType
 from letta.schemas.agent import AgentState, AgentStepResponse, UpdateAgent
 from letta.schemas.block import BlockUpdate
 from letta.schemas.embedding_config import EmbeddingConfig
@@ -153,7 +155,7 @@ class Agent(BaseAgent):
                     raise ValueError(f"Invalid JSON format in message: {msg.text}")
         return None
 
-    def update_memory_if_change(self, new_memory: Memory) -> bool:
+    def update_memory_if_changed(self, new_memory: Memory) -> bool:
         """
         Update internal memory object and system prompt if there have been modifications.
 
@@ -192,39 +194,45 @@ class Agent(BaseAgent):
         Execute tool modifications and persist the state of the agent.
         Note: only some agent state modifications will be persisted, such as data in the AgentState ORM and block data
         """
-        # TODO: Get rid of this. This whole piece is pretty shady, that we exec the function to just get the type hints for args.
-        env = {}
-        env.update(globals())
-        exec(target_letta_tool.source_code, env)
-        callable_func = env[target_letta_tool.json_schema["name"]]
-        spec = inspect.getfullargspec(callable_func).annotations
-        for name, arg in function_args.items():
-            if isinstance(function_args[name], dict):
-                function_args[name] = spec[name](**function_args[name])
-
         # TODO: add agent manager here
         orig_memory_str = self.agent_state.memory.compile()
 
         # TODO: need to have an AgentState object that actually has full access to the block data
         # this is because the sandbox tools need to be able to access block.value to edit this data
         try:
-            # TODO: This is NO BUENO
-            # TODO: Matching purely by names is extremely problematic, users can create tools with these names and run them in the agent loop
-            # TODO: We will have probably have to match the function strings exactly for safety
-            if function_name in BASE_TOOLS:
+            if target_letta_tool.tool_type == ToolType.LETTA_CORE:
                 # base tools are allowed to access the `Agent` object and run on the database
+                callable_func = get_function_from_module(LETTA_CORE_TOOL_MODULE_NAME, function_name)
                 function_args["self"] = self  # need to attach self to arg since it's dynamically linked
                 function_response = callable_func(**function_args)
+            elif target_letta_tool.tool_type == ToolType.LETTA_MEMORY_CORE:
+                callable_func = get_function_from_module(LETTA_CORE_TOOL_MODULE_NAME, function_name)
+                agent_state_copy = self.agent_state.__deepcopy__()
+                function_args["agent_state"] = agent_state_copy  # need to attach self to arg since it's dynamically linked
+                function_response = callable_func(**function_args)
+                self.update_memory_if_changed(agent_state_copy.memory)
             else:
+                # TODO: Get rid of this. This whole piece is pretty shady, that we exec the function to just get the type hints for args.
+                env = {}
+                env.update(globals())
+                exec(target_letta_tool.source_code, env)
+                callable_func = env[target_letta_tool.json_schema["name"]]
+                spec = inspect.getfullargspec(callable_func).annotations
+                for name, arg in function_args.items():
+                    if isinstance(function_args[name], dict):
+                        function_args[name] = spec[name](**function_args[name])
+
                 # execute tool in a sandbox
                 # TODO: allow agent_state to specify which sandbox to execute tools in
-                sandbox_run_result = ToolExecutionSandbox(function_name, function_args, self.user).run(
-                    agent_state=self.agent_state.__deepcopy__()
-                )
+                # TODO: This is only temporary, can remove after we publish a pip package with this object
+                agent_state_copy = self.agent_state.__deepcopy__()
+                agent_state_copy.tools = []
+
+                sandbox_run_result = ToolExecutionSandbox(function_name, function_args, self.user).run(agent_state=agent_state_copy)
                 function_response, updated_agent_state = sandbox_run_result.func_return, sandbox_run_result.agent_state
                 assert orig_memory_str == self.agent_state.memory.compile(), "Memory should not be modified in a sandbox tool"
                 if updated_agent_state is not None:
-                    self.update_memory_if_change(updated_agent_state.memory)
+                    self.update_memory_if_changed(updated_agent_state.memory)
         except Exception as e:
             # Need to catch error here, or else trunction wont happen
             # TODO: modify to function execution error
@@ -677,7 +685,7 @@ class Agent(BaseAgent):
             current_persisted_memory = Memory(
                 blocks=[self.block_manager.get_block_by_id(block.id, actor=self.user) for block in self.agent_state.memory.get_blocks()]
             )  # read blocks from DB
-            self.update_memory_if_change(current_persisted_memory)
+            self.update_memory_if_changed(current_persisted_memory)
 
             # Step 1: add user message
             if isinstance(messages, Message):
