@@ -52,6 +52,7 @@ const CreateAgentBodySchema = z.object({
   context_window_limit: z.number().nullable().optional(),
   embedding_chunk_size: z.number().nullable().optional(),
 
+  tags: z.string().array().nullable().optional(),
   tool_exec_environment_variables: z.record(z.string()).nullable().optional(),
 
   // letta specific fields
@@ -190,6 +191,7 @@ const ListAgentsQuerySchema = z.object({
   project_id: z.string().optional(),
   by_version: z.string().optional(),
   name: z.string().optional(),
+  tags: z.string().array().optional(),
   search: z.string().optional(),
   limit: z.number().optional(),
   offset: z.number().optional(),

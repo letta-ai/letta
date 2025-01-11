@@ -62,6 +62,7 @@ export function attachVariablesToTemplates(
 interface CopyAgentByIdOptions {
   memoryVariables?: Record<string, string>;
   toolVariables?: Record<string, string>;
+  tags?: string[];
 }
 
 export async function copyAgentById(
@@ -101,6 +102,7 @@ export async function copyAgentById(
         tool_ids: agentBody.tool_ids,
         name: agentBody.name,
         tool_exec_environment_variables: toolVariables,
+        tags: options.tags,
         memory_blocks: agentBody.memory_blocks.map((block) => {
           return {
             limit: block.limit,
@@ -212,6 +214,7 @@ export async function createAgent(
     embedding_chunk_size,
     name: preName,
     tool_exec_environment_variables,
+    tags,
     ...agent
   } = req.body;
 
@@ -337,6 +340,7 @@ export async function createAgent(
         {
           requestBody: {
             ...starterKit.agentState,
+            tags,
             tool_ids: toolIdsToAttach,
             llm_config: {
               model: 'gpt-4o-mini',
@@ -501,6 +505,7 @@ export async function createAgent(
       agentTemplateIdToCopy,
       lettaAgentsUserId,
       {
+        tags: tags || [],
         memoryVariables: variables || {},
         toolVariables: tool_exec_environment_variables || {},
       },
@@ -602,6 +607,7 @@ export async function createAgent(
     {
       requestBody: {
         ...agent,
+        tags,
         tool_ids: agent.tool_ids || undefined,
         memory_blocks: agent.memory_blocks || [],
         name: crypto.randomUUID(),
@@ -878,6 +884,97 @@ type ListAgentsResponse = ServerInferResponses<
   typeof sdkContracts.agents.listAgents
 >;
 
+interface QueryAgentsOptions {
+  include_version: boolean;
+  limit: number;
+  offset: number;
+  context: SDKContext;
+  queryBuilder: any[];
+}
+
+async function queryAgents(options: QueryAgentsOptions) {
+  const { include_version, limit, offset, context, queryBuilder } = options;
+
+  const query = await db.query.deployedAgents.findMany({
+    where: and(...queryBuilder),
+    limit,
+    offset,
+    orderBy: [desc(deployedAgents.createdAt)],
+    with: {
+      deployedAgentTemplate: {
+        columns: {
+          version: true,
+        },
+      },
+    },
+  });
+
+  return await Promise.all(
+    query.map(async (agent) => {
+      return AgentsService.getAgent(
+        {
+          agentId: agent.id,
+        },
+        {
+          user_id: context.request.lettaAgentsUserId,
+        },
+      ).then((response) => {
+        return prepareAgentForUser(response, {
+          agentName: agent.key,
+          version: include_version
+            ? agent.deployedAgentTemplate?.version
+            : undefined,
+        });
+      });
+    }),
+  );
+}
+
+interface AgentMetadataLookerOptions {
+  builderConfig: QueryAgentsOptions;
+  tags?: string[];
+}
+
+async function agentMetadataLooker(
+  options: AgentMetadataLookerOptions,
+): Promise<AgentState[]> {
+  const { builderConfig, tags } = options;
+
+  const agents = await queryAgents(builderConfig);
+
+  if (agents.length === 0) {
+    return [];
+  }
+
+  if (!tags) {
+    return agents;
+  }
+
+  // look for agents with the tags that match
+  const remainingAgents = agents.filter((agent) => {
+    return tags.every((tag) => {
+      return agent.tags.includes(tag);
+    });
+  }, []);
+
+  // if the remaining agents are less than the limit, run agentMetadataLooker again with new offset
+
+  if (remainingAgents.length === builderConfig.limit) {
+    return remainingAgents;
+  }
+
+  return [
+    ...remainingAgents,
+    ...(await agentMetadataLooker({
+      builderConfig: {
+        ...builderConfig,
+        offset: builderConfig.offset + builderConfig.limit,
+      },
+      tags,
+    })),
+  ];
+}
+
 export async function listAgents(
   req: ListAgentsRequest,
   context: SDKContext,
@@ -887,11 +984,28 @@ export async function listAgents(
     template,
     by_version,
     name,
+    tags,
     include_version,
     search,
     limit = 5,
     offset = 0,
   } = req.query;
+
+  if (!template && !project_id && !search && !by_version) {
+    const res = await AgentsService.listAgents(
+      {
+        ...req.query,
+      },
+      {
+        user_id: context.request.lettaAgentsUserId,
+      },
+    );
+
+    return {
+      status: 200,
+      body: res,
+    };
+  }
 
   if (template) {
     const queryBuilder = [
@@ -992,39 +1106,16 @@ export async function listAgents(
     queryBuilder.push(eq(deployedAgents.key, name));
   }
 
-  const query = await db.query.deployedAgents.findMany({
-    where: and(...queryBuilder),
-    limit,
-    offset,
-    orderBy: [desc(deployedAgents.createdAt)],
-    with: {
-      deployedAgentTemplate: {
-        columns: {
-          version: true,
-        },
-      },
+  const allAgentsDetails = await agentMetadataLooker({
+    builderConfig: {
+      include_version: !!include_version,
+      limit: Number(limit),
+      offset: Number(offset),
+      context,
+      queryBuilder,
     },
+    tags,
   });
-
-  const allAgentsDetails = await Promise.all(
-    query.map(async (agent) => {
-      return AgentsService.getAgent(
-        {
-          agentId: agent.id,
-        },
-        {
-          user_id: context.request.lettaAgentsUserId,
-        },
-      ).then((response) => {
-        return prepareAgentForUser(response, {
-          agentName: agent.key,
-          version: include_version
-            ? agent.deployedAgentTemplate?.version
-            : undefined,
-        });
-      });
-    }),
-  );
 
   return {
     status: 200,

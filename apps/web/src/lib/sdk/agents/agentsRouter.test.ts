@@ -721,6 +721,7 @@ describe('agentsRouter', () => {
             tool_ids: ['tool-name'],
             tool_exec_environment_variables: {},
             system: 'test',
+            tags: [],
             name: expect.any(String),
             memory_blocks: premadeTemplate.memory_blocks.map((v) => {
               if (v.label === 'human') {
@@ -882,6 +883,7 @@ describe('agentsRouter', () => {
             ...rest,
             tool_ids: ['tool-name'],
             system: 'test',
+            tags: [],
             tool_exec_environment_variables: {},
             name: expect.any(String),
             memory_blocks: premadeTemplate.memory_blocks.map((v) => {
@@ -1028,6 +1030,7 @@ describe('agentsRouter', () => {
             ...rest,
             tool_ids: ['tool-name'],
             system: 'test',
+            tags: [],
             tool_exec_environment_variables: {},
             name: expect.any(String),
             memory_blocks: premadeTemplate.memory_blocks.map((v) => {
