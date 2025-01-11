@@ -1,4 +1,5 @@
 import inspect
+import warnings
 from typing import Any, Dict, List, Optional, Type, Union, get_args, get_origin
 
 from docstring_parser import parse
@@ -44,6 +45,13 @@ def type_to_json_schema_type(py_type) -> dict:
     origin = get_origin(py_type)
     if py_type == list or origin in (list, List):
         args = get_args(py_type)
+        if len(args) == 0:
+            # is this correct
+            warnings.warn("Defaulting to string type for untyped List")
+            return {
+                "type": "array",
+                "items": {"type": "string"},
+            }
 
         if args and inspect.isclass(args[0]) and issubclass(args[0], BaseModel):
             # If it's a list of Pydantic models, return an array with the model schema as items
