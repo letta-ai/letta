@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from pydantic import Field, model_validator
 
@@ -227,7 +227,7 @@ class ToolUpdate(LettaBase):
 
 class ToolRunFromSource(LettaBase):
     source_code: str = Field(..., description="The source code of the function.")
-    args: Dict[str, str] = Field(..., description="The arguments to pass to the tool.")
+    args: Dict[str, Any] = Field(..., description="The arguments to pass to the tool.")
     env_vars: Dict[str, str] = Field(None, description="The environment variables to pass to the tool.")
     name: Optional[str] = Field(None, description="The name of the tool to run.")
     source_type: Optional[str] = Field(None, description="The type of the source code.")

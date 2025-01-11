@@ -1964,7 +1964,7 @@ export type ToolRunFromSource = {
    * The arguments to pass to the tool.
    */
   args: {
-    [key: string]: string;
+    [key: string]: unknown;
   };
   /**
    * The environment variables to pass to the tool.

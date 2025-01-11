@@ -4791,9 +4791,6 @@ export const $ToolRunFromSource = {
       description: 'The source code of the function.',
     },
     args: {
-      additionalProperties: {
-        type: 'string',
-      },
       type: 'object',
       title: 'Args',
       description: 'The arguments to pass to the tool.',
