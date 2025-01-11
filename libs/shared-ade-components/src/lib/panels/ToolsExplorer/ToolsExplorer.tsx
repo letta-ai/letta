@@ -654,11 +654,7 @@ function ViewTool(props: ViewToolProps) {
               {isLocal ? (
                 <Typography overrideEl="span">
                   {t.rich('ViewTool.connectComposio.descriptionLocal', {
-                    code: (chunks) => (
-                      <InlineCode
-                        code={typeof chunks === 'string' ? chunks : ''}
-                      />
-                    ),
+                    code: () => <InlineCode code={COMPOSIO_KEY_NAME} />,
                   })}
                 </Typography>
               ) : (
