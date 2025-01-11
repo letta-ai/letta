@@ -4,13 +4,13 @@ instances:
 title: Letta
 
 tabs:
-  docs: 
-    display-name: Guides and Concepts 
-    icon: fa-sharp fa-light fa-file-lines 
+  docs:
+    display-name: Guides and Concepts
+    icon: fa-sharp fa-light fa-file-lines
     slug: documentation
   ref:
     display-name: API Reference
-    icon: fa-sharp fa-light code 
+    icon: fa-sharp fa-light code
     skip-slug: true
   release:
     display-name: Release Notes
@@ -30,7 +30,7 @@ navigation:
     layout:
       - section: Get Started
         contents:
-          - page: The Letta Platform 
+          - page: The Letta Platform
             path: pages/getting-started/letta_platform.mdx
           - page: Introduction to Stateful Agents
             path: pages/getting-started/stateful_agents.mdx
@@ -48,7 +48,7 @@ navigation:
               path: pages/server/docker.mdx
             - page: Using pip
               path: pages/server/pip.mdx
-            - page: Installing from Source 
+            - page: Installing from Source
               path: pages/server/source.mdx
             - page: Deploying on External Services
               path: pages/deployment/railway.mdx
@@ -88,15 +88,15 @@ navigation:
             path: pages/agents/data_sources.mdx
           - page: Messaging Agents
             path: pages/agents/messages.mdx
-      - section: Agent Templates 
+      - section: Agent Templates
         contents:
           - page: Introduction to Templates
             path: pages/cloud/templates.mdx
-          - page: Memory Variables 
+          - page: Memory Variables
             path: pages/cloud/variables.mdx
           - page: Versioning
             path: pages/cloud/versions.mdx
-      - section: ADE Guide 
+      - section: ADE Guide
         contents:
           - page: Initial Setup
             path: pages/agent-development-environment/connect.mdx
@@ -104,6 +104,10 @@ navigation:
             path: pages/agent-development-environment/usage.mdx
           - page: Troubleshooting
             path: pages/agent-development-environment/troubleshooting.mdx
+      - section: External Tool Libraries
+        contents:
+          - page: Composio
+            path: pages/agents/composio.mdx
       - section: Key Concepts
         contents:
           - page: Letta concepts
@@ -115,28 +119,28 @@ navigation:
           - link: DeepLearning.AI course
             href: https://www.deeplearning.ai/short-courses/llms-as-operating-systems-agent-memory
   - tab: ref
-    layout: 
+    layout:
       - section: Letta API
         contents:
-          - page: API and SDK Overview 
+          - page: API and SDK Overview
             path: pages/api/about.mdx
       - api: API Reference
         display-errors: true
         paginated: true
         flattened: true
-        snippets: 
+        snippets:
           typescript: letta
           python: letta
-        layout: 
+        layout:
           - agents
   - tab: release
   - tab: discord
-  
+
 colors:
-  accent-primary: 
+  accent-primary:
     light: '#0707ac'
     dark: '#FF5533'
-  background: 
+  background:
     light: '#ffffffff'
     dark: '#0d0d0d'
   card-background:
@@ -145,7 +149,7 @@ colors:
   header-background:
     light: '#fbfbfbff'
     dark: '#000000ff'
-  border: 
+  border:
     light: '#eef0f2ff'
     dark: '#202020'
 
@@ -153,26 +157,26 @@ css: assets/styles.css
 
 favicon: assets/favicon.png
 
-logo: 
+logo:
   href: /
   light: assets/logo-light.svg
   dark: assets/logo-dark.svg
-  
-navbar-links: 
+
+navbar-links:
   - type: github
     value: https://github.com/letta-ai/letta
   - type: filled
     text: Launch ADE
     href: https://app.letta.com
-    rounded: false 
+    rounded: false
 
-layout: 
+layout:
   page-width: full
   tabs-placement: header
-  searchbar-placement: header 
+  searchbar-placement: header
 
-typography: 
-  bodyFont: 
+typography:
+  bodyFont:
     name: ManropeRegularBody
     paths:
       - path: assets/fonts/manrope/Manrope-Regular.ttf
@@ -181,11 +185,11 @@ typography:
       - path: assets/fonts/manrope/Manrope-Medium.ttf
         weight: 500 900
         style: normal
-  headingsFont: 
+  headingsFont:
     name: RoobertMediumHeading
     path: assets/fonts/roobert/RoobertMedium.woff2
   codeFont:
-    name: FiraCode 
+    name: FiraCode
     paths:
       - path: assets/fonts/fira-code/FiraCode-Regular.ttf
         weight: 400

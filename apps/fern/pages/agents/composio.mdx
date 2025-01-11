@@ -1,0 +1,92 @@
+---
+title: Connecting Letta to Composio
+slug: guides/agents/composio
+---
+
+[Composio](https://docs.composio.dev) is an external tool service that makes it easy to connect Letta agents to popular services via custom tools.
+For example, you can use Composio tools to connect Letta agents to Google, GitHub, Slack, Cal.com, and [many more services](https://composio.dev/tools).
+
+Composio makes agent authentication to third part platforms easy.
+To use Composio, you need to create an account at [composio.dev](https://composio.dev) and create a Composio API key.
+
+Once you have a Composio API key, you can connect it to Letta to allow your Letta agents to use Composio tools.
+Composio's free tier gives you 2000 API calls per month.
+
+## Connecting Composio Tools to Letta Agents
+Once you have a Composio API key, you can register it with the Letta Server using the environment variable `COMPOSIO_API_KEY`.
+
+If you're self-hosting a Letta server ([instructions](guides/server/docker)), you would pass this environment variable to `docker run`:
+```bash
+docker run \
+  -v ~/.letta/.persist/pgdata:/var/lib/postgresql/data \
+  -p 8283:8283 \
+  -e OPENAI_API_KEY="your_openai_api_key" \
+  -e COMPOSIO_API_KEY="your_composio_api_key" \
+  letta/letta:latest
+```
+
+In Letta Cloud, you can set your `COMPOSIO_API_KEY` under **Settings** > **Integrations** > **Composio**.
+
+## Adding Composio tools via the ADE
+Once you've connected your `COMPOSIO_API_KEY` to the Letta Server (or Letta Cloud), you will be able to view Composio tools when you click the **Add Tool** button (the + button in the bottom left tools panel).
+<img src="../../images/tavily.png" />
+
+<Warning>
+If you did not successfully pass your `COMPOSIO_API_KEY` to the Letta Server, you'll see the following message when you browse Composio tools:
+"To attach this tool and 4000+ other tools to your agent, connect to Composio"
+</Warning>
+
+### Authenticating a Tool in Composio
+In order for the tool to function properly, you must have first authenticated the tool on Composio's website. For example, for Tavily, we need to provide Composio our Tavily API key.
+
+To do this, you can click the **View on Composio** button and follow the instructions on Composio's website to authenticate the tool.
+<img src="../../images/tavily_connect.png" />
+
+### Attaching a Tool to a Letta Agent
+To give your agent access to the tool, you need to click **Attach Tool**. Once the tool is successfully attached (you will see it in the tools panel in the main ADE view), your agent will be able to use the tool.
+Let's try getting the example agent to use the Tavily search tool:
+<img src="../../images/tavily_call.png" />
+
+If we click on the tool execution button in the chat, we can see the exact inputs to the Composio tool, and the exact outputs from the tool:
+<img src="../../images/tavily_call_expanded.png" />
+
+## Using entities in Composio tools
+In multi-user settings (where you have many users all using different agents), you may want to use the concept of [entities](https://docs.composio.dev/patterns/Auth/connected_account#entities) in Composio, which allow you to scope Composio tool execution to specific users.
+
+For example, let's say you're using Letta to create an application where users each get their own personal secretary that can schedule their calendar. As a developer, you only have one `COMPOSIO_API_KEY` to manage the connection between Letta and Composio, but you want to make associate each Composio tool call from a specific agent with a specific user.
+
+Composio allows you to do this through **entities**: each **user** on your Composio account will have a unique Composio entity ID, and in Letta each **agent** will be associated with a specific Composio entity ID.
+
+In Letta, you can use **tool variables** to specify the entity ID. Simply set `COMPOSIO_ENTITY` to be your associated entity ID in the **tool variables** section of the ADE (click the **Variables** button in the Agent Simulator):
+<img src="../../images/tool_variables.png" />
+
+You can also assign tool variables on agent creation in the API with the `tool_exec_environment_variables` parameter:
+```sh
+curl -X POST http://localhost:8283/v1/agents/ \
+     -H "Content-Type: application/json" \
+     -d '{
+  "llm":"openai/gpt-4",
+  "embedding":"openai/text-embedding-ada-002",
+  "tool_exec_environment_variables": {
+      "COMPOSIO_ENTITY": "banana"
+    },
+  "memory_blocks": []
+}'
+```
+
+## Adding Composio tools to agents in the Python SDK
+<Note>
+Adding Composio tools to agents is supported in the Python SDK, but not the TypeScript SDK.
+</Note>
+
+To use Letta with [Composio](https://docs.composio.dev) tools, make sure you install dependencies with `pip install 'letta[external-tools]`. Then, make sure you log in to Composio:
+```bash
+composio login
+```
+
+Next, depending on your desired Composio tool, you need to add the necessary authentication via `composio add` (for example, to connect GitHub tools):
+```bash
+composio add github
+```
+
+Now, you can include the tool to be used with your agent. See a working example [here](https://github.com/letta-ai/letta/blob/main/examples/composio_tool_usage.py).
