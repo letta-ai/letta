@@ -159,6 +159,18 @@ import type {
   UpdateProviderResponse,
   DeleteProviderData,
   DeleteProviderResponse,
+  ListRunsData,
+  ListRunsResponse,
+  ListActiveRunsData,
+  ListActiveRunsResponse,
+  GetRunData,
+  GetRunResponse,
+  DeleteRunData,
+  DeleteRunResponse,
+  GetRunMessagesData,
+  GetRunMessagesResponse,
+  GetRunUsageData,
+  GetRunUsageResponse,
   ListUsersData,
   ListUsersResponse,
   CreateUserData,
@@ -1568,7 +1580,7 @@ export class AgentsService {
    * @param data.agentId
    * @param data.requestBody
    * @param data.userId
-   * @returns Job Successful Response
+   * @returns Run Successful Response
    * @throws ApiError
    */
   public static createAgentMessageAsync(
@@ -2323,6 +2335,192 @@ export class ProvidersService {
       url: '/v1/providers/',
       query: {
         provider_id: data.providerId,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+}
+
+export class RunsService {
+  /**
+   * List Runs
+   * List all runs.
+   * @param data The data for the request.
+   * @param data.userId
+   * @returns Run Successful Response
+   * @throws ApiError
+   */
+  public static listRuns(
+    data: ListRunsData = {},
+    headers?: { user_id: string },
+  ): CancelablePromise<ListRunsResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/runs/',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * List Active Runs
+   * List all active runs.
+   * @param data The data for the request.
+   * @param data.userId
+   * @returns Run Successful Response
+   * @throws ApiError
+   */
+  public static listActiveRuns(
+    data: ListActiveRunsData = {},
+    headers?: { user_id: string },
+  ): CancelablePromise<ListActiveRunsResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/runs/active',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Get Run
+   * Get the status of a run.
+   * @param data The data for the request.
+   * @param data.runId
+   * @param data.userId
+   * @returns Run Successful Response
+   * @throws ApiError
+   */
+  public static getRun(
+    data: GetRunData,
+    headers?: { user_id: string },
+  ): CancelablePromise<GetRunResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/runs/{run_id}',
+      path: {
+        run_id: data.runId,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Delete Run
+   * Delete a run by its run_id.
+   * @param data The data for the request.
+   * @param data.runId
+   * @param data.userId
+   * @returns Run Successful Response
+   * @throws ApiError
+   */
+  public static deleteRun(
+    data: DeleteRunData,
+    headers?: { user_id: string },
+  ): CancelablePromise<DeleteRunResponse> {
+    return __request(OpenAPI, {
+      method: 'DELETE',
+      url: '/v1/runs/{run_id}',
+      path: {
+        run_id: data.runId,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Get Run Messages
+   * Get messages associated with a run with filtering options.
+   *
+   * Args:
+   * run_id: ID of the run
+   * cursor: Cursor for pagination
+   * start_date: Filter messages after this date
+   * end_date: Filter messages before this date
+   * limit: Maximum number of messages to return
+   * query_text: Search text in message content
+   * ascending: Sort order by creation time
+   * tags: Filter by message tags
+   * match_all_tags: If true, match all tags. If false, match any tag
+   * role: Filter by message role (user/assistant/system/tool)
+   * tool_name: Filter by tool call name
+   * user_id: ID of the user making the request
+   * @param data The data for the request.
+   * @param data.runId
+   * @param data.cursor Cursor for pagination
+   * @param data.startDate Filter messages after this date
+   * @param data.endDate Filter messages before this date
+   * @param data.limit Maximum number of messages to return
+   * @param data.queryText Search text in message content
+   * @param data.ascending Sort order by creation time
+   * @param data.tags Filter by message tags
+   * @param data.matchAllTags If true, match all tags. If false, match any tag
+   * @param data.role Filter by message role
+   * @param data.toolName Filter by tool call name
+   * @param data.userId
+   * @returns letta__schemas__message__Message Successful Response
+   * @throws ApiError
+   */
+  public static getRunMessages(
+    data: GetRunMessagesData,
+    headers?: { user_id: string },
+  ): CancelablePromise<GetRunMessagesResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/runs/{run_id}/messages',
+      path: {
+        run_id: data.runId,
+      },
+      query: {
+        cursor: data.cursor,
+        start_date: data.startDate,
+        end_date: data.endDate,
+        limit: data.limit,
+        query_text: data.queryText,
+        ascending: data.ascending,
+        tags: data.tags,
+        match_all_tags: data.matchAllTags,
+        role: data.role,
+        tool_name: data.toolName,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Get Run Usage
+   * Get usage statistics for a run.
+   * @param data The data for the request.
+   * @param data.runId
+   * @param data.userId
+   * @returns UsageStatistics Successful Response
+   * @throws ApiError
+   */
+  public static getRunUsage(
+    data: GetRunUsageData,
+    headers?: { user_id: string },
+  ): CancelablePromise<GetRunUsageResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/runs/{run_id}/usage',
+      path: {
+        run_id: data.runId,
       },
       errors: {
         422: 'Validation Error',

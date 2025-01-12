@@ -1,9 +1,9 @@
 from datetime import datetime
 from enum import Enum
 from functools import wraps
-from typing import TYPE_CHECKING, List, Literal, Optional
+from typing import TYPE_CHECKING, List, Literal, Optional, Tuple, Union
 
-from sqlalchemy import String, desc, func, or_, select
+from sqlalchemy import String, and_, desc, func, or_, select
 from sqlalchemy.exc import DBAPIError, IntegrityError, TimeoutError
 from sqlalchemy.orm import Mapped, Session, mapped_column
 
@@ -61,6 +61,11 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
         ascending: bool = True,
         tags: Optional[List[str]] = None,
         match_all_tags: bool = False,
+        actor: Optional["User"] = None,
+        access: Optional[List[Literal["read", "write", "admin"]]] = ["read"],
+        access_type: AccessType = AccessType.ORGANIZATION,
+        join_model: Optional[Base] = None,
+        join_conditions: Optional[Union[Tuple, List]] = None,
         **kwargs,
     ) -> List["SqlalchemyBase"]:
         """
@@ -94,6 +99,13 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
 
             query = select(cls)
 
+            if join_model and join_conditions:
+                query = query.join(join_model, and_(*join_conditions))
+
+            # Apply access predicate if actor is provided
+            if actor:
+                query = cls.apply_access_predicate(query, actor, access, access_type)
+
             # Handle tag filtering if the model has tags
             if tags and hasattr(cls, "tags"):
                 query = select(cls)
@@ -118,7 +130,15 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
 
             # Apply filtering logic from kwargs
             for key, value in kwargs.items():
-                column = getattr(cls, key)
+                if "." in key:
+                    # Handle joined table columns
+                    table_name, column_name = key.split(".")
+                    joined_table = locals().get(table_name) or globals().get(table_name)
+                    column = getattr(joined_table, column_name)
+                else:
+                    # Handle columns from main table
+                    column = getattr(cls, key)
+
                 if isinstance(value, (list, tuple, set)):
                     query = query.where(column.in_(value))
                 else:

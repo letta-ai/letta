@@ -2795,9 +2795,14 @@ export const $Job = {
       title: 'Metadata ',
       description: 'The metadata of the job.',
     },
+    job_type: {
+      $ref: '#/components/schemas/JobType',
+      description: 'The type of the job.',
+      default: 'job',
+    },
     id: {
       type: 'string',
-      pattern: '^job-[a-fA-F0-9]{8}',
+      pattern: '^(job|run)-[a-fA-F0-9]{8}',
       title: 'Id',
       description: 'The human-friendly ID of the Job',
       examples: ['job-123e4567-e89b-12d3-a456-426614174000'],
@@ -2833,6 +2838,12 @@ export const $JobStatus = {
   enum: ['created', 'running', 'completed', 'failed', 'pending'],
   title: 'JobStatus',
   description: 'Status of the job.',
+} as const;
+
+export const $JobType = {
+  type: 'string',
+  enum: ['job', 'run'],
+  title: 'JobType',
 } as const;
 
 export const $LLMConfig = {
@@ -3824,6 +3835,126 @@ export const $ResponseFormat = {
   },
   type: 'object',
   title: 'ResponseFormat',
+} as const;
+
+export const $Run = {
+  properties: {
+    created_by_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Created By Id',
+      description: 'The id of the user that made this object.',
+    },
+    last_updated_by_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Last Updated By Id',
+      description: 'The id of the user that made this object.',
+    },
+    created_at: {
+      anyOf: [
+        {
+          type: 'string',
+          format: 'date-time',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Created At',
+      description: 'The timestamp when the object was created.',
+    },
+    updated_at: {
+      anyOf: [
+        {
+          type: 'string',
+          format: 'date-time',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Updated At',
+      description: 'The timestamp when the object was last updated.',
+    },
+    status: {
+      $ref: '#/components/schemas/JobStatus',
+      description: 'The status of the job.',
+      default: 'created',
+    },
+    completed_at: {
+      anyOf: [
+        {
+          type: 'string',
+          format: 'date-time',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Completed At',
+      description: 'The unix timestamp of when the job was completed.',
+    },
+    metadata_: {
+      anyOf: [
+        {
+          type: 'object',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Metadata ',
+      description: 'The metadata of the job.',
+    },
+    job_type: {
+      $ref: '#/components/schemas/JobType',
+      default: 'run',
+    },
+    id: {
+      type: 'string',
+      pattern: '^(job|run)-[a-fA-F0-9]{8}',
+      title: 'Id',
+      description: 'The human-friendly ID of the Run',
+      examples: ['run-123e4567-e89b-12d3-a456-426614174000'],
+    },
+    user_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'User Id',
+      description: 'The unique identifier of the user associated with the run.',
+    },
+  },
+  additionalProperties: false,
+  type: 'object',
+  title: 'Run',
+  description: `Representation of a run, which is a job with a 'run' prefix in its ID.
+Inherits all fields and behavior from Job except for the ID prefix.
+
+Parameters:
+    id (str): The unique identifier of the run (prefixed with 'run-').
+    status (JobStatus): The status of the run.
+    created_at (datetime): The unix timestamp of when the run was created.
+    completed_at (datetime): The unix timestamp of when the run was completed.
+    user_id (str): The unique identifier of the user associated with the run.`,
 } as const;
 
 export const $SandboxConfig = {

@@ -15,6 +15,7 @@ from letta.orm import SandboxConfig, SandboxEnvironmentVariable
 from letta.schemas.agent import AgentState
 from letta.schemas.block import CreateBlock
 from letta.schemas.embedding_config import EmbeddingConfig
+from letta.schemas.enums import MessageRole
 from letta.schemas.job import JobStatus
 from letta.schemas.letta_message import ToolReturnMessage
 from letta.schemas.llm_config import LLMConfig
@@ -44,7 +45,8 @@ def run_server():
 @pytest.fixture(
     params=[
         {"server": False},
-    ],  # {"server": True}],  # whether to use REST API server
+        {"server": True},
+    ],  # whether to use REST API server
     # params=[{"server": False}],  # whether to use REST API server
     scope="module",
 )
@@ -296,7 +298,6 @@ def test_add_remove_agent_memory_block(client: Union[LocalClient, RESTClient], a
 #         # TODO we should probably not allow updating the core memory limit if
 
 #         # TODO in which case we should modify this test to actually to a proper token counter check
-
 #     finally:
 #         client.delete_agent(new_agent.id)
 
@@ -453,25 +454,47 @@ async def test_send_message_parallel(client: Union[LocalClient, RESTClient], age
 
 
 def test_send_message_async(client: Union[LocalClient, RESTClient], agent: AgentState):
-    """Test that we can send a message asynchronously"""
+    """
+    Test that we can send a message asynchronously and retrieve the messages, along with usage statistics
+    """
 
     if not isinstance(client, RESTClient):
         pytest.skip("send_message_async is only supported by the RESTClient")
 
     print("Sending message asynchronously")
-    job = client.send_message_async(agent_id=agent.id, role="user", message="This is a test message, no need to respond.")
-    assert job.id is not None
-    assert job.status == JobStatus.created
-    print(f"Job created, job={job}, status={job.status}")
+    test_message = "This is a test message, respond to the user with a sentence."
+    run = client.send_message_async(agent_id=agent.id, role="user", message=test_message)
+    assert run.id is not None
+    assert run.status == JobStatus.created
+    print(f"Run created, run={run}, status={run.status}")
 
     # Wait for the job to complete, cancel it if takes over 10 seconds
     start_time = time.time()
-    while job.status == JobStatus.created:
+    while run.status == JobStatus.created:
         time.sleep(1)
-        job = client.get_job(job_id=job.id)
-        print(f"Job status: {job.status}")
+        run = client.get_run(run_id=run.id)
+        print(f"Run status: {run.status}")
         if time.time() - start_time > 10:
-            pytest.fail("Job took too long to complete")
+            pytest.fail("Run took too long to complete")
 
-    print(f"Job completed in {time.time() - start_time} seconds, job={job}")
-    assert job.status == JobStatus.completed
+    print(f"Run completed in {time.time() - start_time} seconds, run={run}")
+    assert run.status == JobStatus.completed
+
+    # Get messages for the job
+    messages = client.get_run_messages(run_id=run.id)
+    assert len(messages) >= 2  # At least assistant response
+
+    # Check filters
+    assistant_messages = client.get_run_messages(run_id=run.id, role=MessageRole.assistant)
+    assert len(assistant_messages) > 0
+    tool_messages = client.get_run_messages(run_id=run.id, role=MessageRole.tool)
+    assert len(tool_messages) > 0
+    specific_tool_messages = client.get_run_messages(run_id=run.id, tool_name="send_message")
+    assert len(specific_tool_messages) > 0
+
+    # Get and verify usage statistics
+    usage = client.get_run_usage(run_id=run.id)[0]
+    assert usage.completion_tokens >= 0
+    assert usage.prompt_tokens >= 0
+    assert usage.total_tokens >= 0
+    assert usage.total_tokens == usage.completion_tokens + usage.prompt_tokens

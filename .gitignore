@@ -23,7 +23,7 @@ node_modules
 .vscode/*
 !.vscode/settings.json
 !.vscode/tasks.json
-!.vscode/launch.json
+.vscode/launch.json
 !.vscode/extensions.json
 
 # misc
@@ -79,4 +79,3 @@ vitest.config.*.timestamp*
 
 ./openapi_letta.json
 ./openapi_openai.json
-

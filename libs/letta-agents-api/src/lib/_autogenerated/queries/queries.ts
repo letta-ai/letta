@@ -17,6 +17,7 @@ import {
   ModelsService,
   OrganizationService,
   ProvidersService,
+  RunsService,
   SandboxConfigService,
   SourcesService,
   ToolsService,
@@ -31,6 +32,7 @@ import {
   CreateBlock,
   LettaRequest,
   LettaStreamingRequest,
+  MessageRole,
   MessageUpdate,
   OrganizationCreate,
   ProviderCreate,
@@ -1246,6 +1248,222 @@ export const useProvidersServiceListProviders = <
     ...options,
   });
 /**
+ * List Runs
+ * List all runs.
+ * @param data The data for the request.
+ * @param data.userId
+ * @returns Run Successful Response
+ * @throws ApiError
+ */
+export const useRunsServiceListRuns = <
+  TData = Common.RunsServiceListRunsDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[],
+>(
+  {
+    userId,
+  }: {
+    userId?: string;
+  } = {},
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
+) =>
+  useQuery<TData, TError>({
+    queryKey: Common.UseRunsServiceListRunsKeyFn({ userId }, queryKey),
+    queryFn: () => RunsService.listRuns({ userId }) as TData,
+    ...options,
+  });
+/**
+ * List Active Runs
+ * List all active runs.
+ * @param data The data for the request.
+ * @param data.userId
+ * @returns Run Successful Response
+ * @throws ApiError
+ */
+export const useRunsServiceListActiveRuns = <
+  TData = Common.RunsServiceListActiveRunsDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[],
+>(
+  {
+    userId,
+  }: {
+    userId?: string;
+  } = {},
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
+) =>
+  useQuery<TData, TError>({
+    queryKey: Common.UseRunsServiceListActiveRunsKeyFn({ userId }, queryKey),
+    queryFn: () => RunsService.listActiveRuns({ userId }) as TData,
+    ...options,
+  });
+/**
+ * Get Run
+ * Get the status of a run.
+ * @param data The data for the request.
+ * @param data.runId
+ * @param data.userId
+ * @returns Run Successful Response
+ * @throws ApiError
+ */
+export const useRunsServiceGetRun = <
+  TData = Common.RunsServiceGetRunDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[],
+>(
+  {
+    runId,
+    userId,
+  }: {
+    runId: string;
+    userId?: string;
+  },
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
+) =>
+  useQuery<TData, TError>({
+    queryKey: Common.UseRunsServiceGetRunKeyFn({ runId, userId }, queryKey),
+    queryFn: () => RunsService.getRun({ runId, userId }) as TData,
+    ...options,
+  });
+/**
+ * Get Run Messages
+ * Get messages associated with a run with filtering options.
+ *
+ * Args:
+ * run_id: ID of the run
+ * cursor: Cursor for pagination
+ * start_date: Filter messages after this date
+ * end_date: Filter messages before this date
+ * limit: Maximum number of messages to return
+ * query_text: Search text in message content
+ * ascending: Sort order by creation time
+ * tags: Filter by message tags
+ * match_all_tags: If true, match all tags. If false, match any tag
+ * role: Filter by message role (user/assistant/system/tool)
+ * tool_name: Filter by tool call name
+ * user_id: ID of the user making the request
+ * @param data The data for the request.
+ * @param data.runId
+ * @param data.cursor Cursor for pagination
+ * @param data.startDate Filter messages after this date
+ * @param data.endDate Filter messages before this date
+ * @param data.limit Maximum number of messages to return
+ * @param data.queryText Search text in message content
+ * @param data.ascending Sort order by creation time
+ * @param data.tags Filter by message tags
+ * @param data.matchAllTags If true, match all tags. If false, match any tag
+ * @param data.role Filter by message role
+ * @param data.toolName Filter by tool call name
+ * @param data.userId
+ * @returns letta__schemas__message__Message Successful Response
+ * @throws ApiError
+ */
+export const useRunsServiceGetRunMessages = <
+  TData = Common.RunsServiceGetRunMessagesDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[],
+>(
+  {
+    ascending,
+    cursor,
+    endDate,
+    limit,
+    matchAllTags,
+    queryText,
+    role,
+    runId,
+    startDate,
+    tags,
+    toolName,
+    userId,
+  }: {
+    ascending?: boolean;
+    cursor?: string;
+    endDate?: string;
+    limit?: number;
+    matchAllTags?: boolean;
+    queryText?: string;
+    role?: MessageRole;
+    runId: string;
+    startDate?: string;
+    tags?: string[];
+    toolName?: string;
+    userId?: string;
+  },
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
+) =>
+  useQuery<TData, TError>({
+    queryKey: Common.UseRunsServiceGetRunMessagesKeyFn(
+      {
+        ascending,
+        cursor,
+        endDate,
+        limit,
+        matchAllTags,
+        queryText,
+        role,
+        runId,
+        startDate,
+        tags,
+        toolName,
+        userId,
+      },
+      queryKey,
+    ),
+    queryFn: () =>
+      RunsService.getRunMessages({
+        ascending,
+        cursor,
+        endDate,
+        limit,
+        matchAllTags,
+        queryText,
+        role,
+        runId,
+        startDate,
+        tags,
+        toolName,
+        userId,
+      }) as TData,
+    ...options,
+  });
+/**
+ * Get Run Usage
+ * Get usage statistics for a run.
+ * @param data The data for the request.
+ * @param data.runId
+ * @param data.userId
+ * @returns UsageStatistics Successful Response
+ * @throws ApiError
+ */
+export const useRunsServiceGetRunUsage = <
+  TData = Common.RunsServiceGetRunUsageDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[],
+>(
+  {
+    runId,
+    userId,
+  }: {
+    runId: string;
+    userId?: string;
+  },
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
+) =>
+  useQuery<TData, TError>({
+    queryKey: Common.UseRunsServiceGetRunUsageKeyFn(
+      { runId, userId },
+      queryKey,
+    ),
+    queryFn: () => RunsService.getRunUsage({ runId, userId }) as TData,
+    ...options,
+  });
+/**
  * List Users
  * Get a list of all users in the database
  * @param data The data for the request.
@@ -1956,7 +2174,7 @@ export const useAgentsServiceCreateAgentMessageStream = <
  * @param data.agentId
  * @param data.requestBody
  * @param data.userId
- * @returns Job Successful Response
+ * @returns Run Successful Response
  * @throws ApiError
  */
 export const useAgentsServiceCreateAgentMessageAsync = <
@@ -3632,6 +3850,46 @@ export const useProvidersServiceDeleteProvider = <
       ProvidersService.deleteProvider({
         providerId,
       }) as unknown as Promise<TData>,
+    ...options,
+  });
+/**
+ * Delete Run
+ * Delete a run by its run_id.
+ * @param data The data for the request.
+ * @param data.runId
+ * @param data.userId
+ * @returns Run Successful Response
+ * @throws ApiError
+ */
+export const useRunsServiceDeleteRun = <
+  TData = Common.RunsServiceDeleteRunMutationResult,
+  TError = unknown,
+  TContext = unknown,
+>(
+  options?: Omit<
+    UseMutationOptions<
+      TData,
+      TError,
+      {
+        runId: string;
+        userId?: string;
+      },
+      TContext
+    >,
+    'mutationFn'
+  >,
+) =>
+  useMutation<
+    TData,
+    TError,
+    {
+      runId: string;
+      userId?: string;
+    },
+    TContext
+  >({
+    mutationFn: ({ runId, userId }) =>
+      RunsService.deleteRun({ runId, userId }) as unknown as Promise<TData>,
     ...options,
   });
 /**

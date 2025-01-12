@@ -228,8 +228,8 @@ setup:
     @echo "Attaching environment variables..."
     op inject -i .env.template -o .env
     @echo "Installing dependencies..."
-    npm run core:install
     npm install
+    npm run core:install
     @echo "Setting up the database..."
     npm run web:database:migrate
     npm run core:database:migrate

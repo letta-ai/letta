@@ -12,12 +12,13 @@ import {
   ModelsService,
   OrganizationService,
   ProvidersService,
+  RunsService,
   SandboxConfigService,
   SourcesService,
   ToolsService,
   UsersService,
 } from '../requests/services.gen';
-import { SandboxType } from '../requests/types.gen';
+import { MessageRole, SandboxType } from '../requests/types.gen';
 export type ToolsServiceGetToolDefaultResponse = Awaited<
   ReturnType<typeof ToolsService.getTool>
 >;
@@ -778,6 +779,130 @@ export const UseProvidersServiceListProvidersKeyFn = (
   useProvidersServiceListProvidersKey,
   ...(queryKey ?? [{ cursor, limit }]),
 ];
+export type RunsServiceListRunsDefaultResponse = Awaited<
+  ReturnType<typeof RunsService.listRuns>
+>;
+export type RunsServiceListRunsQueryResult<
+  TData = RunsServiceListRunsDefaultResponse,
+  TError = unknown,
+> = UseQueryResult<TData, TError>;
+export const useRunsServiceListRunsKey = 'RunsServiceListRuns';
+export const UseRunsServiceListRunsKeyFn = (
+  {
+    userId,
+  }: {
+    userId?: string;
+  } = {},
+  queryKey?: Array<unknown>,
+) => [useRunsServiceListRunsKey, ...(queryKey ?? [{ userId }])];
+export type RunsServiceListActiveRunsDefaultResponse = Awaited<
+  ReturnType<typeof RunsService.listActiveRuns>
+>;
+export type RunsServiceListActiveRunsQueryResult<
+  TData = RunsServiceListActiveRunsDefaultResponse,
+  TError = unknown,
+> = UseQueryResult<TData, TError>;
+export const useRunsServiceListActiveRunsKey = 'RunsServiceListActiveRuns';
+export const UseRunsServiceListActiveRunsKeyFn = (
+  {
+    userId,
+  }: {
+    userId?: string;
+  } = {},
+  queryKey?: Array<unknown>,
+) => [useRunsServiceListActiveRunsKey, ...(queryKey ?? [{ userId }])];
+export type RunsServiceGetRunDefaultResponse = Awaited<
+  ReturnType<typeof RunsService.getRun>
+>;
+export type RunsServiceGetRunQueryResult<
+  TData = RunsServiceGetRunDefaultResponse,
+  TError = unknown,
+> = UseQueryResult<TData, TError>;
+export const useRunsServiceGetRunKey = 'RunsServiceGetRun';
+export const UseRunsServiceGetRunKeyFn = (
+  {
+    runId,
+    userId,
+  }: {
+    runId: string;
+    userId?: string;
+  },
+  queryKey?: Array<unknown>,
+) => [useRunsServiceGetRunKey, ...(queryKey ?? [{ runId, userId }])];
+export type RunsServiceGetRunMessagesDefaultResponse = Awaited<
+  ReturnType<typeof RunsService.getRunMessages>
+>;
+export type RunsServiceGetRunMessagesQueryResult<
+  TData = RunsServiceGetRunMessagesDefaultResponse,
+  TError = unknown,
+> = UseQueryResult<TData, TError>;
+export const useRunsServiceGetRunMessagesKey = 'RunsServiceGetRunMessages';
+export const UseRunsServiceGetRunMessagesKeyFn = (
+  {
+    ascending,
+    cursor,
+    endDate,
+    limit,
+    matchAllTags,
+    queryText,
+    role,
+    runId,
+    startDate,
+    tags,
+    toolName,
+    userId,
+  }: {
+    ascending?: boolean;
+    cursor?: string;
+    endDate?: string;
+    limit?: number;
+    matchAllTags?: boolean;
+    queryText?: string;
+    role?: MessageRole;
+    runId: string;
+    startDate?: string;
+    tags?: string[];
+    toolName?: string;
+    userId?: string;
+  },
+  queryKey?: Array<unknown>,
+) => [
+  useRunsServiceGetRunMessagesKey,
+  ...(queryKey ?? [
+    {
+      ascending,
+      cursor,
+      endDate,
+      limit,
+      matchAllTags,
+      queryText,
+      role,
+      runId,
+      startDate,
+      tags,
+      toolName,
+      userId,
+    },
+  ]),
+];
+export type RunsServiceGetRunUsageDefaultResponse = Awaited<
+  ReturnType<typeof RunsService.getRunUsage>
+>;
+export type RunsServiceGetRunUsageQueryResult<
+  TData = RunsServiceGetRunUsageDefaultResponse,
+  TError = unknown,
+> = UseQueryResult<TData, TError>;
+export const useRunsServiceGetRunUsageKey = 'RunsServiceGetRunUsage';
+export const UseRunsServiceGetRunUsageKeyFn = (
+  {
+    runId,
+    userId,
+  }: {
+    runId: string;
+    userId?: string;
+  },
+  queryKey?: Array<unknown>,
+) => [useRunsServiceGetRunUsageKey, ...(queryKey ?? [{ runId, userId }])];
 export type UsersServiceListUsersDefaultResponse = Awaited<
   ReturnType<typeof UsersService.listUsers>
 >;
@@ -1029,6 +1154,9 @@ export type SandboxConfigServiceDeleteSandboxEnvVarV1SandboxConfigEnvironmentVar
   >;
 export type ProvidersServiceDeleteProviderMutationResult = Awaited<
   ReturnType<typeof ProvidersService.deleteProvider>
+>;
+export type RunsServiceDeleteRunMutationResult = Awaited<
+  ReturnType<typeof RunsService.deleteRun>
 >;
 export type UsersServiceDeleteUserMutationResult = Awaited<
   ReturnType<typeof UsersService.deleteUser>

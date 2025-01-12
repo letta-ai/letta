@@ -11,12 +11,13 @@ import {
   ModelsService,
   OrganizationService,
   ProvidersService,
+  RunsService,
   SandboxConfigService,
   SourcesService,
   ToolsService,
   UsersService,
 } from '../requests/services.gen';
-import { SandboxType } from '../requests/types.gen';
+import { MessageRole, SandboxType } from '../requests/types.gen';
 import * as Common from './common';
 /**
  * Get Tool
@@ -949,6 +950,186 @@ export const prefetchUseProvidersServiceListProviders = (
   queryClient.prefetchQuery({
     queryKey: Common.UseProvidersServiceListProvidersKeyFn({ cursor, limit }),
     queryFn: () => ProvidersService.listProviders({ cursor, limit }),
+  });
+/**
+ * List Runs
+ * List all runs.
+ * @param data The data for the request.
+ * @param data.userId
+ * @returns Run Successful Response
+ * @throws ApiError
+ */
+export const prefetchUseRunsServiceListRuns = (
+  queryClient: QueryClient,
+  {
+    userId,
+  }: {
+    userId?: string;
+  } = {},
+) =>
+  queryClient.prefetchQuery({
+    queryKey: Common.UseRunsServiceListRunsKeyFn({ userId }),
+    queryFn: () => RunsService.listRuns({ userId }),
+  });
+/**
+ * List Active Runs
+ * List all active runs.
+ * @param data The data for the request.
+ * @param data.userId
+ * @returns Run Successful Response
+ * @throws ApiError
+ */
+export const prefetchUseRunsServiceListActiveRuns = (
+  queryClient: QueryClient,
+  {
+    userId,
+  }: {
+    userId?: string;
+  } = {},
+) =>
+  queryClient.prefetchQuery({
+    queryKey: Common.UseRunsServiceListActiveRunsKeyFn({ userId }),
+    queryFn: () => RunsService.listActiveRuns({ userId }),
+  });
+/**
+ * Get Run
+ * Get the status of a run.
+ * @param data The data for the request.
+ * @param data.runId
+ * @param data.userId
+ * @returns Run Successful Response
+ * @throws ApiError
+ */
+export const prefetchUseRunsServiceGetRun = (
+  queryClient: QueryClient,
+  {
+    runId,
+    userId,
+  }: {
+    runId: string;
+    userId?: string;
+  },
+) =>
+  queryClient.prefetchQuery({
+    queryKey: Common.UseRunsServiceGetRunKeyFn({ runId, userId }),
+    queryFn: () => RunsService.getRun({ runId, userId }),
+  });
+/**
+ * Get Run Messages
+ * Get messages associated with a run with filtering options.
+ *
+ * Args:
+ * run_id: ID of the run
+ * cursor: Cursor for pagination
+ * start_date: Filter messages after this date
+ * end_date: Filter messages before this date
+ * limit: Maximum number of messages to return
+ * query_text: Search text in message content
+ * ascending: Sort order by creation time
+ * tags: Filter by message tags
+ * match_all_tags: If true, match all tags. If false, match any tag
+ * role: Filter by message role (user/assistant/system/tool)
+ * tool_name: Filter by tool call name
+ * user_id: ID of the user making the request
+ * @param data The data for the request.
+ * @param data.runId
+ * @param data.cursor Cursor for pagination
+ * @param data.startDate Filter messages after this date
+ * @param data.endDate Filter messages before this date
+ * @param data.limit Maximum number of messages to return
+ * @param data.queryText Search text in message content
+ * @param data.ascending Sort order by creation time
+ * @param data.tags Filter by message tags
+ * @param data.matchAllTags If true, match all tags. If false, match any tag
+ * @param data.role Filter by message role
+ * @param data.toolName Filter by tool call name
+ * @param data.userId
+ * @returns letta__schemas__message__Message Successful Response
+ * @throws ApiError
+ */
+export const prefetchUseRunsServiceGetRunMessages = (
+  queryClient: QueryClient,
+  {
+    ascending,
+    cursor,
+    endDate,
+    limit,
+    matchAllTags,
+    queryText,
+    role,
+    runId,
+    startDate,
+    tags,
+    toolName,
+    userId,
+  }: {
+    ascending?: boolean;
+    cursor?: string;
+    endDate?: string;
+    limit?: number;
+    matchAllTags?: boolean;
+    queryText?: string;
+    role?: MessageRole;
+    runId: string;
+    startDate?: string;
+    tags?: string[];
+    toolName?: string;
+    userId?: string;
+  },
+) =>
+  queryClient.prefetchQuery({
+    queryKey: Common.UseRunsServiceGetRunMessagesKeyFn({
+      ascending,
+      cursor,
+      endDate,
+      limit,
+      matchAllTags,
+      queryText,
+      role,
+      runId,
+      startDate,
+      tags,
+      toolName,
+      userId,
+    }),
+    queryFn: () =>
+      RunsService.getRunMessages({
+        ascending,
+        cursor,
+        endDate,
+        limit,
+        matchAllTags,
+        queryText,
+        role,
+        runId,
+        startDate,
+        tags,
+        toolName,
+        userId,
+      }),
+  });
+/**
+ * Get Run Usage
+ * Get usage statistics for a run.
+ * @param data The data for the request.
+ * @param data.runId
+ * @param data.userId
+ * @returns UsageStatistics Successful Response
+ * @throws ApiError
+ */
+export const prefetchUseRunsServiceGetRunUsage = (
+  queryClient: QueryClient,
+  {
+    runId,
+    userId,
+  }: {
+    runId: string;
+    userId?: string;
+  },
+) =>
+  queryClient.prefetchQuery({
+    queryKey: Common.UseRunsServiceGetRunUsageKeyFn({ runId, userId }),
+    queryFn: () => RunsService.getRunUsage({ runId, userId }),
   });
 /**
  * List Users

@@ -1055,6 +1055,10 @@ export type Job = {
     [key: string]: unknown;
   } | null;
   /**
+   * The type of the job.
+   */
+  job_type?: JobType;
+  /**
    * The human-friendly ID of the Job
    */
   id?: string;
@@ -1073,6 +1077,8 @@ export type JobStatus =
   | 'completed'
   | 'failed'
   | 'pending';
+
+export type JobType = 'job' | 'run';
 
 /**
  * Configuration for a Language Model (LLM) model. This object specifies all the information necessary to access an LLM model to usage with Letta, except for secret keys.
@@ -1559,6 +1565,59 @@ export type RecallMemorySummary = {
 
 export type ResponseFormat = {
   type?: string;
+};
+
+/**
+ * Representation of a run, which is a job with a 'run' prefix in its ID.
+ * Inherits all fields and behavior from Job except for the ID prefix.
+ *
+ * Parameters:
+ * id (str): The unique identifier of the run (prefixed with 'run-').
+ * status (JobStatus): The status of the run.
+ * created_at (datetime): The unix timestamp of when the run was created.
+ * completed_at (datetime): The unix timestamp of when the run was completed.
+ * user_id (str): The unique identifier of the user associated with the run.
+ */
+export type Run = {
+  /**
+   * The id of the user that made this object.
+   */
+  created_by_id?: string | null;
+  /**
+   * The id of the user that made this object.
+   */
+  last_updated_by_id?: string | null;
+  /**
+   * The timestamp when the object was created.
+   */
+  created_at?: string | null;
+  /**
+   * The timestamp when the object was last updated.
+   */
+  updated_at?: string | null;
+  /**
+   * The status of the job.
+   */
+  status?: JobStatus;
+  /**
+   * The unix timestamp of when the job was completed.
+   */
+  completed_at?: string | null;
+  /**
+   * The metadata of the job.
+   */
+  metadata_?: {
+    [key: string]: unknown;
+  } | null;
+  job_type?: JobType;
+  /**
+   * The human-friendly ID of the Run
+   */
+  id?: string;
+  /**
+   * The unique identifier of the user associated with the run.
+   */
+  user_id?: string | null;
 };
 
 export type SandboxConfig = {
@@ -2835,7 +2894,7 @@ export type CreateAgentMessageAsyncData = {
   userId?: string | null;
 };
 
-export type CreateAgentMessageAsyncResponse = Job;
+export type CreateAgentMessageAsyncResponse = Run;
 
 export type ListModelsResponse = Array<LLMConfig>;
 
@@ -3073,6 +3132,86 @@ export type DeleteProviderData = {
 };
 
 export type DeleteProviderResponse = unknown;
+
+export type ListRunsData = {
+  userId?: string | null;
+};
+
+export type ListRunsResponse = Array<Run>;
+
+export type ListActiveRunsData = {
+  userId?: string | null;
+};
+
+export type ListActiveRunsResponse = Array<Run>;
+
+export type GetRunData = {
+  runId: string;
+  userId?: string | null;
+};
+
+export type GetRunResponse = Run;
+
+export type DeleteRunData = {
+  runId: string;
+  userId?: string | null;
+};
+
+export type DeleteRunResponse = Run;
+
+export type GetRunMessagesData = {
+  /**
+   * Sort order by creation time
+   */
+  ascending?: boolean;
+  /**
+   * Cursor for pagination
+   */
+  cursor?: string | null;
+  /**
+   * Filter messages before this date
+   */
+  endDate?: string | null;
+  /**
+   * Maximum number of messages to return
+   */
+  limit?: number | null;
+  /**
+   * If true, match all tags. If false, match any tag
+   */
+  matchAllTags?: boolean;
+  /**
+   * Search text in message content
+   */
+  queryText?: string | null;
+  /**
+   * Filter by message role
+   */
+  role?: MessageRole | null;
+  runId: string;
+  /**
+   * Filter messages after this date
+   */
+  startDate?: string | null;
+  /**
+   * Filter by message tags
+   */
+  tags?: Array<string> | null;
+  /**
+   * Filter by tool call name
+   */
+  toolName?: string | null;
+  userId?: string | null;
+};
+
+export type GetRunMessagesResponse = Array<letta__schemas__message__Message>;
+
+export type GetRunUsageData = {
+  runId: string;
+  userId?: string | null;
+};
+
+export type GetRunUsageResponse = UsageStatistics;
 
 export type ListUsersData = {
   cursor?: string | null;
@@ -3867,7 +4006,7 @@ export type $OpenApiTs = {
         /**
          * Successful Response
          */
-        200: Job;
+        200: Run;
         /**
          * Validation Error
          */
@@ -4251,6 +4390,94 @@ export type $OpenApiTs = {
          * Successful Response
          */
         200: unknown;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/runs/': {
+    get: {
+      req: ListRunsData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: Array<Run>;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/runs/active': {
+    get: {
+      req: ListActiveRunsData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: Array<Run>;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/runs/{run_id}': {
+    get: {
+      req: GetRunData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: Run;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+    delete: {
+      req: DeleteRunData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: Run;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/runs/{run_id}/messages': {
+    get: {
+      req: GetRunMessagesData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: Array<letta__schemas__message__Message>;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/runs/{run_id}/usage': {
+    get: {
+      req: GetRunUsageData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: UsageStatistics;
         /**
          * Validation Error
          */

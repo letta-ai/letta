@@ -3,6 +3,7 @@ from typing import Optional
 
 from pydantic import Field
 
+from letta.orm.enums import JobType
 from letta.schemas.enums import JobStatus
 from letta.schemas.letta_base import OrmMetadataBase
 
@@ -12,6 +13,7 @@ class JobBase(OrmMetadataBase):
     status: JobStatus = Field(default=JobStatus.created, description="The status of the job.")
     completed_at: Optional[datetime] = Field(None, description="The unix timestamp of when the job was completed.")
     metadata_: Optional[dict] = Field(None, description="The metadata of the job.")
+    job_type: JobType = Field(default=JobType.JOB, description="The type of the job.")
 
 
 class Job(JobBase):

@@ -687,6 +687,7 @@ class SyncServer(Server):
         wrap_user_message: bool = True,
         wrap_system_message: bool = True,
         interface: Union[AgentInterface, None] = None,  # needed to getting responses
+        metadata: Optional[dict] = None,  # Pass through metadata to interface
     ) -> LettaUsageStatistics:
         """Send a list of messages to the agent
 
@@ -731,6 +732,10 @@ class SyncServer(Server):
 
         else:
             raise ValueError(f"All messages must be of type Message or MessageCreate, got {[type(message) for message in messages]}")
+
+        # Store metadata in interface if provided
+        if metadata and hasattr(interface, "metadata"):
+            interface.metadata = metadata
 
         # Run the agent state forward
         return self._step(actor=actor, agent_id=agent_id, input_messages=message_objects, interface=interface)

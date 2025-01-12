@@ -2577,7 +2577,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Job"
+                  "$ref": "#/components/schemas/Run"
                 }
               }
             }
@@ -3335,6 +3335,416 @@
             "content": {
               "application/json": {
                 "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/runs/": {
+      "get": {
+        "tags": ["runs"],
+        "summary": "List Runs",
+        "description": "List all runs.",
+        "operationId": "list_runs",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Run"
+                  },
+                  "title": "Response List Runs"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/runs/active": {
+      "get": {
+        "tags": ["runs"],
+        "summary": "List Active Runs",
+        "description": "List all active runs.",
+        "operationId": "list_active_runs",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Run"
+                  },
+                  "title": "Response List Active Runs"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/runs/{run_id}": {
+      "get": {
+        "tags": ["runs"],
+        "summary": "Get Run",
+        "description": "Get the status of a run.",
+        "operationId": "get_run",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Run Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Run"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["runs"],
+        "summary": "Delete Run",
+        "description": "Delete a run by its run_id.",
+        "operationId": "delete_run",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Run Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Run"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/runs/{run_id}/messages": {
+      "get": {
+        "tags": ["runs"],
+        "summary": "Get Run Messages",
+        "description": "Get messages associated with a run with filtering options.\n\nArgs:\n    run_id: ID of the run\n    cursor: Cursor for pagination\n    start_date: Filter messages after this date\n    end_date: Filter messages before this date\n    limit: Maximum number of messages to return\n    query_text: Search text in message content\n    ascending: Sort order by creation time\n    tags: Filter by message tags\n    match_all_tags: If true, match all tags. If false, match any tag\n    role: Filter by message role (user/assistant/system/tool)\n    tool_name: Filter by tool call name\n    user_id: ID of the user making the request",
+        "operationId": "get_run_messages",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Run Id"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Cursor for pagination",
+              "title": "Cursor"
+            },
+            "description": "Cursor for pagination"
+          },
+          {
+            "name": "start_date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter messages after this date",
+              "title": "Start Date"
+            },
+            "description": "Filter messages after this date"
+          },
+          {
+            "name": "end_date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter messages before this date",
+              "title": "End Date"
+            },
+            "description": "Filter messages before this date"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Maximum number of messages to return",
+              "default": 100,
+              "title": "Limit"
+            },
+            "description": "Maximum number of messages to return"
+          },
+          {
+            "name": "query_text",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Search text in message content",
+              "title": "Query Text"
+            },
+            "description": "Search text in message content"
+          },
+          {
+            "name": "ascending",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Sort order by creation time",
+              "default": true,
+              "title": "Ascending"
+            },
+            "description": "Sort order by creation time"
+          },
+          {
+            "name": "tags",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by message tags",
+              "title": "Tags"
+            },
+            "description": "Filter by message tags"
+          },
+          {
+            "name": "match_all_tags",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "If true, match all tags. If false, match any tag",
+              "default": false,
+              "title": "Match All Tags"
+            },
+            "description": "If true, match all tags. If false, match any tag"
+          },
+          {
+            "name": "role",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/MessageRole"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by message role",
+              "title": "Role"
+            },
+            "description": "Filter by message role"
+          },
+          {
+            "name": "tool_name",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by tool call name",
+              "title": "Tool Name"
+            },
+            "description": "Filter by tool call name"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/letta__schemas__message__Message"
+                  },
+                  "title": "Response Get Run Messages"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/runs/{run_id}/usage": {
+      "get": {
+        "tags": ["runs"],
+        "summary": "Get Run Usage",
+        "description": "Get usage statistics for a run.",
+        "operationId": "get_run_usage",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Run Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UsageStatistics"
+                }
               }
             }
           },
@@ -6432,9 +6842,14 @@
             "title": "Metadata ",
             "description": "The metadata of the job."
           },
+          "job_type": {
+            "$ref": "#/components/schemas/JobType",
+            "description": "The type of the job.",
+            "default": "job"
+          },
           "id": {
             "type": "string",
-            "pattern": "^job-[a-fA-F0-9]{8}",
+            "pattern": "^(job|run)-[a-fA-F0-9]{8}",
             "title": "Id",
             "description": "The human-friendly ID of the Job",
             "examples": ["job-123e4567-e89b-12d3-a456-426614174000"]
@@ -6450,6 +6865,11 @@
         "enum": ["created", "running", "completed", "failed", "pending"],
         "title": "JobStatus",
         "description": "Status of the job."
+      },
+      "JobType": {
+        "type": "string",
+        "enum": ["job", "run"],
+        "title": "JobType"
       },
       "LLMConfig": {
         "properties": {
@@ -7343,6 +7763,105 @@
         },
         "type": "object",
         "title": "ResponseFormat"
+      },
+      "Run": {
+        "properties": {
+          "created_by_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created By Id",
+            "description": "The id of the user that made this object."
+          },
+          "last_updated_by_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Updated By Id",
+            "description": "The id of the user that made this object."
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At",
+            "description": "The timestamp when the object was created."
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At",
+            "description": "The timestamp when the object was last updated."
+          },
+          "status": {
+            "$ref": "#/components/schemas/JobStatus",
+            "description": "The status of the job.",
+            "default": "created"
+          },
+          "completed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At",
+            "description": "The unix timestamp of when the job was completed."
+          },
+          "metadata_": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata ",
+            "description": "The metadata of the job."
+          },
+          "job_type": {
+            "$ref": "#/components/schemas/JobType",
+            "default": "run"
+          },
+          "id": {
+            "type": "string",
+            "pattern": "^(job|run)-[a-fA-F0-9]{8}",
+            "title": "Id",
+            "description": "The human-friendly ID of the Run",
+            "examples": ["run-123e4567-e89b-12d3-a456-426614174000"]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "Run",
+        "description": "Representation of a run, which is a job with a 'run' prefix in its ID.\nInherits all fields and behavior from Job except for the ID prefix.\n\nParameters:\n    id (str): The unique identifier of the run (prefixed with 'run-').\n    status (JobStatus): The status of the run.\n    created_at (datetime): The unix timestamp of when the run was created.\n    completed_at (datetime): The unix timestamp of when the run was completed.\n    user_id (str): The unique identifier of the user associated with the run."
       },
       "SandboxConfig": {
         "properties": {

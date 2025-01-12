@@ -7,6 +7,11 @@ class ToolType(str, Enum):
     LETTA_MEMORY_CORE = "letta_memory_core"
 
 
+class JobType(str, Enum):
+    JOB = "job"
+    RUN = "run"
+
+
 class ToolSourceType(str, Enum):
     """Defines what a tool was derived from"""
 

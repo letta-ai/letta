@@ -52,8 +52,13 @@ class LettaBase(BaseModel):
     @classmethod
     def _id_regex_pattern(cls, prefix: str):
         """generates the regex pattern for a given id"""
+        if cls.__name__ in ("JobBase", "Job", "Run", "RunBase"):
+            prefix_pattern = "(job|run)"
+        else:
+            prefix_pattern = prefix
+
         return (
-            r"^" + prefix + r"-"  # prefix string
+            r"^" + prefix_pattern + r"-"  # prefix string
             r"[a-fA-F0-9]{8}"  # 8 hexadecimal characters
             # r"[a-fA-F0-9]{4}-"  # 4 hexadecimal characters
             # r"[a-fA-F0-9]{4}-"  # 4 hexadecimal characters
