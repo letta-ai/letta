@@ -16,6 +16,10 @@ tabs:
     display-name: Release Notes
     icon: fa-sharp fa-light fa-square-rss
     href: https://www.letta.com/news
+  github:
+    display-name: GitHub
+    icon: fa-brands fa-github
+    href: https://github.com/letta-ai/letta
   discord:
     display-name: Discord Community
     icon: fa-brands fa-discord
@@ -140,6 +144,7 @@ navigation:
         layout:
           - agents
   - tab: release
+  - tab: github
   - tab: discord
 
 colors:
