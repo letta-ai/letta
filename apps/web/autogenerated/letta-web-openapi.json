@@ -212,6 +212,13 @@
                     "type": "number",
                     "nullable": true
                   },
+                  "tags": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "nullable": true
+                  },
                   "tool_exec_environment_variables": {
                     "type": "object",
                     "additionalProperties": {
@@ -352,6 +359,16 @@
             "in": "query",
             "schema": {
               "type": "string"
+            }
+          },
+          {
+            "name": "tags",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
             }
           },
           {
