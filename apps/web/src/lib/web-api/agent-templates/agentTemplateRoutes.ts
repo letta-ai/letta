@@ -276,11 +276,15 @@ async function getAgentTemplateSimulatorSession(
   let id = '';
 
   if (!simulatorSession) {
+    const newAgent = await copyAgentById(agentTemplate.id, lettaAgentsId);
+
+    agentId = newAgent.id;
+
     // create new simulator session
     const [simulatorSession] = await db
       .insert(agentSimulatorSessions)
       .values({
-        agentId: agentTemplate.id,
+        agentId: newAgent.id,
         agentTemplateId: agentTemplate.id,
         organizationId: activeOrganizationId,
         variables: {},
@@ -292,31 +296,29 @@ async function getAgentTemplateSimulatorSession(
       .onConflictDoNothing();
 
     if (!simulatorSession) {
+      if (newAgent.id) {
+        try {
+          setTimeout(() => {
+            AgentsService.deleteAgent(
+              {
+                agentId: newAgent.id,
+              },
+              {
+                user_id: lettaAgentsId,
+              },
+            );
+          }, 500);
+        } catch (e) {
+          console.error('Failed to delete agent', e);
+        }
+      }
+
       return {
         status: 409,
         body: {
           message: 'Simulator session already exists',
         },
       };
-    } else {
-      const newAgent = await copyAgentById(agentTemplate.id, lettaAgentsId);
-
-      if (!newAgent?.id) {
-        return {
-          status: 500,
-          body: {
-            message: 'Failed to copy agent',
-          },
-        };
-      }
-
-      db.update(agentSimulatorSessions)
-        .set({
-          agentId: newAgent.id,
-        })
-        .where(eq(agentSimulatorSessions.id, simulatorSession.id));
-
-      agentId = newAgent.id;
     }
 
     id = simulatorSession.id;
