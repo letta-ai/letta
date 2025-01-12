@@ -80,22 +80,20 @@ navigation:
             path: pages/agents/overview.mdx
           - page: Memory
             path: pages/agents/memory.mdx
-          - page: Tools
-            path: pages/agents/tools.mdx
-          - page: Tool Rules
-            path: pages/agents/tool_rules.mdx
+          - section: Tools
+            contents:
+              - page: Tools Overview
+                path: pages/agents/tools.mdx
+              - page: Tool Rules
+                path: pages/agents/tool_rules.mdx
+              - page: Tool Variables
+                path: pages/agents/tool_variables.mdx
+              - page: Composio Integration
+                path: pages/agents/composio.mdx
           - page: Data Sources
             path: pages/agents/data_sources.mdx
           - page: Messaging Agents
             path: pages/agents/messages.mdx
-      - section: Agent Templates
-        contents:
-          - page: Introduction to Templates
-            path: pages/cloud/templates.mdx
-          - page: Memory Variables
-            path: pages/cloud/variables.mdx
-          - page: Versioning
-            path: pages/cloud/versions.mdx
       - section: ADE Guide
         contents:
           - page: Initial Setup
@@ -104,10 +102,14 @@ navigation:
             path: pages/agent-development-environment/usage.mdx
           - page: Troubleshooting
             path: pages/agent-development-environment/troubleshooting.mdx
-      - section: External Tool Libraries
+      - section: Agent Templates
         contents:
-          - page: Composio
-            path: pages/agents/composio.mdx
+          - page: Introduction to Templates
+            path: pages/cloud/templates.mdx
+          - page: Memory Variables
+            path: pages/cloud/variables.mdx
+          - page: Versioning
+            path: pages/cloud/versions.mdx
       - section: Key Concepts
         contents:
           - page: Letta concepts
@@ -197,3 +199,31 @@ typography:
       - path: assets/fonts/fira-code/FiraCode-Medium.ttf
         weight: 500 900
         style: normal
+
+redirects:
+  - source: "/guides/server/quickstart"
+    destination: "/quickstart"
+  - source: "/agent-development-environment/troubleshooting"
+    destination: "/guides/ade/troubleshooting"
+  - source: "/models/openai"
+    destination: "/guides/server/providers/openai"
+  - source: "/models/openai_proxy"
+    destination: "/guides/server/providers/openai-proxy"
+  - source: "/models/anthropic"
+    destination: "/guides/server/providers/anthropic"
+  - source: "/models/groq"
+    destination: "/guides/server/providers/groq"
+  - source: "/models/together"
+    destination: "/guides/server/providers/together"
+  - source: "/models/google"
+    destination: "/guides/server/providers/google"
+  - source: "/models/ollama"
+    destination: "/guides/server/providers/ollama"
+  - source: "/models/vllm"
+    destination: "/guides/server/providers/vllm"
+  - source: "/models/azure"
+    destination: "/guides/server/providers/azure"
+  - source: "/server/docker"
+    destination: "/guides/server/docker"
+  - source: "/server/pip"
+    destination: "/guides/server/pip"

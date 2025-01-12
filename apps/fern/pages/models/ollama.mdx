@@ -5,14 +5,17 @@ slug: guides/server/providers/ollama
 
 <Tip>To use Letta with Ollama, set the environment variable `OLLAMA_BASE_URL=http://localhost:11434`. </Tip>
 
-> ⚠️ Make sure to use tags when downloading Ollama models!
->
-> Don't do **`ollama pull dolphin2.2-mistral`**, instead do **`ollama pull dolphin2.2-mistral:7b-q6_K`**.
->
-> If you don't specify a tag, Ollama may default to using a highly compressed model variant (e.g. Q4). We highly recommend **NOT** using a compression level below Q5 when using GGUF (stick to Q6 or Q8 if possible). In our testing, certain models start to become extremely unstable (when used with MemGPT) below Q6.
+<Warning>
+Make sure to use **tags** when downloading Ollama models!
 
+For example, don't do **`ollama pull dolphin2.2-mistral`**, instead do **`ollama pull dolphin2.2-mistral:7b-q6_K`** (add the `:7b-q6_K` tag).
 
-## Setup Ollama 
+If you don't specify a tag, Ollama may default to using a highly compressed model variant (e.g. Q4).
+We highly recommend **NOT** using a compression level below Q5 when using GGUF (stick to Q6 or Q8 if possible).
+In our testing, certain models start to become extremely unstable (when used with Letta/MemGPT) below Q6.
+</Warning>
+
+## Setup Ollama
 
 1. Download + install [Ollama](https://github.com/jmorganca/ollama) and the model you want to test with
 2. Download a model to test with by running `ollama pull <MODEL_NAME>` in the terminal (check the [Ollama model library](https://ollama.ai/library) for available models)
@@ -37,12 +40,24 @@ removing any unused layers
 success
 ```
 
-## Enabling Ollama as a provider 
-To enable the Ollama provider, you must set the `OLLAMA_BASE_URL` environment variable. When this is set, Letta will use available LLM and embedding models running on Ollama. 
+## Enabling Ollama as a provider
+To enable the Ollama provider, you must set the `OLLAMA_BASE_URL` environment variable. When this is set, Letta will use available LLM and embedding models running on Ollama.
+
+### Using the `docker run` server with Ollama
+Since Ollama is running on the host network, you will need to use `host.docker.internal` to connect to the Ollama server instead of `localhost`.
+You'll also want to make sure to open the port 11434 (the default port for Ollama) on your host machine.
+```bash
+# replace `~/.letta/.persist/pgdata` with wherever you want to store your agent data
+docker run \
+  -v ~/.letta/.persist/pgdata:/var/lib/postgresql/data \
+  -p 8283:8283 \
+  -p 11434:11434 \
+  -e OLLAMA_BASE_URL="http://host.docker.internal:11434" \
+  letta/letta:latest
+```
 
 <Accordion icon="square-terminal" title="CLI (pypi only)">
-
-### Using `letta run` and `letta server` with Ollama 
+### Using `letta run` and `letta server` with Ollama
 To chat with an agent, run:
 ```bash
 export OLLAMA_BASE_URL="http://localhost:11434"
@@ -54,12 +69,4 @@ export OLLAMA_BASE_URL="http://localhost:11434"
 letta server
 ```
 To select the model used by the server, use the dropdown in the ADE or specify a `LLMConfig` object in the Python SDK.
-</Accordion>
-<Accordion icon="docker" title="Docker Compose">
-### Using the `docker compose` server with Ollama
-Since Ollama is running on the host network, you will need to use `host.docker.internal` to connect to the Ollama server instead of `localhost`.
-```bash
-export OLLAMA_BASE_URL="http://host.docker.internal:11434"
-docker compose up 
-```
 </Accordion>

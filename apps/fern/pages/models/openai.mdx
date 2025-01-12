@@ -7,7 +7,7 @@ slug: guides/server/providers/openai
 
 You can use Letta with OpenAI if you have an OpenAI account and API key. Once you have set your `OPENAI_API_KEY` in your environment variables, you can select what model and configure the context window size.
 
-Currently, Letta supports the following OpenAI models: 
+Currently, Letta supports the following OpenAI models:
 - `gpt-4` (recommended for advanced reasoning)
 - `gpt-4o-mini` (recommended for low latency and cost)
 - `gpt-4o`
@@ -16,19 +16,28 @@ Currently, Letta supports the following OpenAI models:
 
 
 ## Enabling OpenAI models
-To enable the OpenAI provider, set your key as an environment variable:  
+To enable the OpenAI provider, set your key as an environment variable:
 ```
 export OPENAI_API_KEY=...
 ```
 Now, OpenAI models will be enabled with you run `letta run` or the letta service.
 
+### Using the `docker run` server with OpenAI
+To enable OpenAI models, simply set your `OPENAI_API_KEY` as an environment variable:
+```bash
+# replace `~/.letta/.persist/pgdata` with wherever you want to store your agent data
+docker run \
+  -v ~/.letta/.persist/pgdata:/var/lib/postgresql/data \
+  -p 8283:8283 \
+  -e OPENAI_API_KEY="your_openai_api_key" \
+  letta/letta:latest
+```
 
 <Accordion icon="square-terminal" title="CLI (pypi only)">
-
 ### Using `letta run` and `letta server` with OpenAI
 To chat with an agent, run:
 ```bash
-export OPENAI_API_KEY="sk-..." 
+export OPENAI_API_KEY="sk-..."
 letta run
 ```
 This will prompt you to select an OpenAI model.
@@ -55,23 +64,15 @@ This will prompt you to select an OpenAI model.
 ```
 To run the Letta server, run:
 ```bash
-export OPENAI_API_KEY="sk-..." 
+export OPENAI_API_KEY="sk-..."
 letta server
 ```
 To select the model used by the server, use the dropdown in the ADE or specify a `LLMConfig` object in the Python SDK.
 </Accordion>
-<Accordion icon="docker" title="Docker Compose">
-### Using the `docker compose` server with OpenAI
-The `compose.yaml` file will read your local environment variables and pass them to the Letta server running in the container. To use OpenAI with the Letta server, set the `OPENAI_API_KEY` environment variable and run the server with `docker compose up`:
-```bash
-export OPENAI_API_KEY="sk-..." 
-docker compose up 
-```
-</Accordion>
 
-## Configuring OpenAI models
+## Configuring OpenAI models in the Python SDK
 
-When creating agents, you can specify the exactly model configurations to use, such as the model name and context window size (which can be less than the maximum size). 
+When creating agents, you can specify the exactly model configurations to use, such as the model name and context window size (which can be less than the maximum size).
 
 ```python
 from letta import LLMConfig, EmbeddingConfig
@@ -83,7 +84,7 @@ llm_config = LLMConfig(
     model_endpoint="https://api.openai.com/v1",
     context_window=128000
 )
- 
+
 # embedding model specification
 embedding_config = EmbeddingConfig(
     embedding_endpoint_type="openai",
@@ -93,7 +94,7 @@ embedding_config = EmbeddingConfig(
     embedding_chunk_size=300
 )
 ```
-```python 
+```python
 from letta import create_client, LLMConfig, EmbeddingConfig
 
 client = create_client()
@@ -105,11 +106,11 @@ agent_state = client.create_agent(
         model_endpoint_type="openai",
         model_endpoint="https://api.openai.com/v1",
         context_window=128000
-    ), 
+    ),
     embedding_config=EmbeddingConfig.from_default(model_name="text-embedding-ada-002")
 )
 ```
-You can also configure a default `LLMConfig` to use for all agents created by the client. 
+You can also configure a default `LLMConfig` to use for all agents created by the client.
 ```python
 from letta import create_client
 from letta import LLMConfig, EmbeddingConfig
@@ -136,12 +137,12 @@ Similarly, you can override the default embedding config by providing a new `Emb
 from letta import EmbeddingConfig
 
 # use shorthand (embedding config)
-client.set_default_embedding_config( 
+client.set_default_embedding_config(
     EmbeddingConfig.from_default(model_name="text-embedding-ada-002")
 )
 
 # provide full config (embedding config)
-client.set_default_embedding_config( 
+client.set_default_embedding_config(
     EmbeddingConfig(
         embedding_endpoint_type="openai",
         embedding_endpoint="https://api.openai.com/v1",

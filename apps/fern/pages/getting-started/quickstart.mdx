@@ -1,7 +1,7 @@
 ---
 title: Developer quickstart
 subtitle: Create your first Letta agent and view it in the ADE
-slug: guides/server/quickstart
+slug: quickstart
 ---
 
 This quickstart will get guide you through creating your first Letta agent.
@@ -40,7 +40,7 @@ docker run \
   letta/letta:latest
 ```
 
-Once the Letta server is running, you can access it via port `8283` (e.g. sending REST API requests to `http://localhost:8283/v1`). 
+Once the Letta server is running, you can access it via port `8283` (e.g. sending REST API requests to `http://localhost:8283/v1`).
 You can also connect your server to the Letta ADE to access and manage your agents in a visual interface.
 
 ## Access the [Letta ADE](/agent-development-environment) (Agent Development Environment)
@@ -83,7 +83,7 @@ curl --request POST \
       "value": "My name is Sam, the all-knowing sentient AI."
     }
   ],
-  "llm": "anthropic/claude-3-5-sonnet-20241022", 
+  "llm": "anthropic/claude-3-5-sonnet-20241022",
   "context_window_limit": 16000,
   "embedding": "openai/text-embedding-ada-002",
 }'
@@ -182,9 +182,8 @@ Learn how to configure agents, tools, and memory in the ADE
   </Card>
   <Card title="Full API and SDK Reference" icon="fa-sharp fa-light fa-code" iconPosition='left' href="/api-reference/overview">
 View the Letta API and Python/TypeScript SDK reference
-  </Card> 
+  </Card>
   <Card title="Agent Templates" icon="fa-sharp fa-solid fa-rocket" iconPosition='left' href="/guides/templates/overview">
 Create common starting points for agents in production settings
   </Card>
 </CardGroup>
-
