@@ -44,14 +44,14 @@ navigation:
         contents:
           - section: Self-hosted Letta Server
             contents:
-            - page: Using Docker (recommended)
+            - page: Run with Docker (recommended)
               path: pages/server/docker.mdx
-            - page: Using pip
-              path: pages/server/pip.mdx
-            - page: Installing from Source
-              path: pages/server/source.mdx
-            - page: Deploying on External Services
-              path: pages/deployment/railway.mdx
+            - section: Alternate install methods
+              contents:
+              - page: Using pip
+                path: pages/server/pip.mdx
+              - page: Installing from Source
+                path: pages/server/source.mdx
             - section: Connecting API Providers
               contents:
                 - page: OpenAI
@@ -72,6 +72,8 @@ navigation:
                   path: pages/models/vllm.mdx
                 - page: Azure OpenAI
                   path: pages/models/azure.mdx
+            - page: Deploying on External Services
+              path: pages/deployment/railway.mdx
           - page: Letta Cloud
             path: pages/cloud/cloud.mdx
       - section: Stateful Agents
