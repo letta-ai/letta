@@ -1,5 +1,6 @@
 import logging
 import time
+from datetime import datetime
 from typing import Callable, Dict, Generator, List, Optional, Union
 
 import requests
@@ -27,9 +28,11 @@ from letta.schemas.letta_response import LettaResponse, LettaStreamingResponse
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.memory import ArchivalMemorySummary, ChatMemory, CreateArchivalMemory, Memory, RecallMemorySummary
 from letta.schemas.message import Message, MessageCreate, MessageUpdate
+from letta.schemas.openai.chat_completion_response import UsageStatistics
 from letta.schemas.openai.chat_completions import ToolCall
 from letta.schemas.organization import Organization
 from letta.schemas.passage import Passage
+from letta.schemas.run import Run
 from letta.schemas.sandbox_config import E2BSandboxConfig, LocalSandboxConfig, SandboxConfig, SandboxConfigCreate, SandboxConfigUpdate
 from letta.schemas.source import Source, SourceCreate, SourceUpdate
 from letta.schemas.tool import Tool, ToolCreate, ToolUpdate
@@ -985,7 +988,7 @@ class RESTClient(AbstractClient):
         role: str,
         agent_id: Optional[str] = None,
         name: Optional[str] = None,
-    ) -> Job:
+    ) -> Run:
         """
         Send a message to an agent (async, returns a job)
 
@@ -1008,7 +1011,7 @@ class RESTClient(AbstractClient):
         )
         if response.status_code != 200:
             raise ValueError(f"Failed to send message: {response.text}")
-        response = Job(**response.json())
+        response = Run(**response.json())
 
         return response
 
@@ -1981,6 +1984,142 @@ class RESTClient(AbstractClient):
         if response.status_code != 200:
             raise ValueError(f"Failed to update block: {response.text}")
         return Block(**response.json())
+
+    def get_run_messages(
+        self,
+        run_id: str,
+        cursor: Optional[str] = None,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None,
+        limit: Optional[int] = 100,
+        query_text: Optional[str] = None,
+        ascending: bool = True,
+        tags: Optional[List[str]] = None,
+        match_all_tags: bool = False,
+        role: Optional[MessageRole] = None,
+        tool_name: Optional[str] = None,
+    ) -> List[Message]:
+        """
+        Get messages associated with a job with filtering options.
+
+        Args:
+            job_id: ID of the job
+            cursor: Cursor for pagination
+            start_date: Filter messages after this date
+            end_date: Filter messages before this date
+            limit: Maximum number of messages to return
+            query_text: Search text in message content
+            ascending: Sort order by creation time
+            tags: Filter by message tags
+            match_all_tags: If true, match all tags. If false, match any tag
+            role: Filter by message role (user/assistant/system/tool)
+            tool_name: Filter by tool call name
+
+        Returns:
+            List of messages matching the filter criteria
+        """
+        params = {
+            "cursor": cursor,
+            "start_date": start_date.isoformat() if start_date else None,
+            "end_date": end_date.isoformat() if end_date else None,
+            "limit": limit,
+            "query_text": query_text,
+            "ascending": ascending,
+            "tags": tags,
+            "match_all_tags": match_all_tags,
+            "role": role,
+            "tool_name": tool_name,
+        }
+        # Remove None values
+        params = {k: v for k, v in params.items() if v is not None}
+
+        response = requests.get(f"{self.base_url}/{self.api_prefix}/runs/{run_id}/messages", params=params)
+        if response.status_code != 200:
+            raise ValueError(f"Failed to get run messages: {response.text}")
+        return [Message(**message) for message in response.json()]
+
+    def get_run_usage(
+        self,
+        run_id: str,
+    ) -> List[UsageStatistics]:
+        """
+        Get usage statistics associated with a job.
+
+        Args:
+            job_id (str): ID of the job
+
+        Returns:
+            List[UsageStatistics]: List of usage statistics associated with the job
+        """
+        response = requests.get(
+            f"{self.base_url}/{self.api_prefix}/runs/{run_id}/usage",
+            headers=self.headers,
+        )
+        if response.status_code != 200:
+            raise ValueError(f"Failed to get run usage statistics: {response.text}")
+        return [UsageStatistics(**stat) for stat in [response.json()]]
+
+    def get_run(self, run_id: str) -> Run:
+        """
+        Get a run by ID.
+
+        Args:
+            run_id (str): ID of the run
+
+        Returns:
+            run (Run): Run
+        """
+        response = requests.get(
+            f"{self.base_url}/{self.api_prefix}/runs/{run_id}",
+            headers=self.headers,
+        )
+        if response.status_code != 200:
+            raise ValueError(f"Failed to get run: {response.text}")
+        return Run(**response.json())
+
+    def delete_run(self, run_id: str) -> None:
+        """
+        Delete a run by ID.
+
+        Args:
+            run_id (str): ID of the run
+        """
+        response = requests.delete(
+            f"{self.base_url}/{self.api_prefix}/runs/{run_id}",
+            headers=self.headers,
+        )
+        if response.status_code != 200:
+            raise ValueError(f"Failed to delete run: {response.text}")
+
+    def list_runs(self) -> List[Run]:
+        """
+        List all runs.
+
+        Returns:
+            runs (List[Run]): List of runs
+        """
+        response = requests.get(
+            f"{self.base_url}/{self.api_prefix}/runs",
+            headers=self.headers,
+        )
+        if response.status_code != 200:
+            raise ValueError(f"Failed to list runs: {response.text}")
+        return [Run(**run) for run in response.json()]
+
+    def list_active_runs(self) -> List[Run]:
+        """
+        List all active runs.
+
+        Returns:
+            runs (List[Run]): List of active runs
+        """
+        response = requests.get(
+            f"{self.base_url}/{self.api_prefix}/runs/active",
+            headers=self.headers,
+        )
+        if response.status_code != 200:
+            raise ValueError(f"Failed to list active runs: {response.text}")
+        return [Run(**run) for run in response.json()]
 
 
 class LocalClient(AbstractClient):
@@ -3435,3 +3574,108 @@ class LocalClient(AbstractClient):
         if label:
             data["label"] = label
         return self.server.block_manager.update_block(block_id, actor=self.user, block_update=BlockUpdate(**data))
+
+    def get_run_messages(
+        self,
+        run_id: str,
+        cursor: Optional[str] = None,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None,
+        limit: Optional[int] = 100,
+        query_text: Optional[str] = None,
+        ascending: bool = True,
+        tags: Optional[List[str]] = None,
+        match_all_tags: bool = False,
+        role: Optional[MessageRole] = None,
+        tool_name: Optional[str] = None,
+    ) -> List[Message]:
+        """
+        Get messages associated with a job with filtering options.
+
+        Args:
+            run_id: ID of the run
+            cursor: Cursor for pagination
+            start_date: Filter messages after this date
+            end_date: Filter messages before this date
+            limit: Maximum number of messages to return
+            query_text: Search text in message content
+            ascending: Sort order by creation time
+            tags: Filter by message tags
+            match_all_tags: If true, match all tags. If false, match any tag
+            role: Filter by message role (user/assistant/system/tool)
+            tool_name: Filter by tool call name
+
+        Returns:
+            List of messages matching the filter criteria
+        """
+        params = {
+            "cursor": cursor,
+            "start_date": start_date.isoformat() if start_date else None,
+            "end_date": end_date.isoformat() if end_date else None,
+            "limit": limit,
+            "query_text": query_text,
+            "ascending": ascending,
+            "tags": tags,
+            "match_all_tags": match_all_tags,
+            "role": role,
+            "tool_name": tool_name,
+        }
+        return self.server.job_manager.get_job_messages(job_id=run_id, actor=self.user, job_type=JobType.RUN, **params)
+
+    def get_run_usage(
+        self,
+        run_id: str,
+    ) -> List[UsageStatistics]:
+        """
+        Get usage statistics associated with a job.
+
+        Args:
+            run_id (str): ID of the run
+
+        Returns:
+            List[UsageStatistics]: List of usage statistics associated with the run
+        """
+        usage = self.server.job_manager.get_job_usage(job_id=run_id, actor=self.user)
+        return [
+            UsageStatistics(completion_tokens=stat.completion_tokens, prompt_tokens=stat.prompt_tokens, total_tokens=stat.total_tokens)
+            for stat in usage
+        ]
+
+    def get_run(self, run_id: str) -> Run:
+        """
+        Get a run by ID.
+
+        Args:
+            run_id (str): ID of the run
+
+        Returns:
+            run (Run): Run
+        """
+        return self.server.job_manager.get_job_by_id(job_id=run_id, actor=self.user)
+
+    def delete_run(self, run_id: str) -> None:
+        """
+        Delete a run by ID.
+
+        Args:
+            run_id (str): ID of the run
+        """
+        return self.server.job_manager.delete_job_by_id(job_id=run_id, actor=self.user)
+
+    def list_runs(self) -> List[Run]:
+        """
+        List all runs.
+
+        Returns:
+            runs (List[Run]): List of runs
+        """
+        return self.server.job_manager.list_jobs(actor=self.user, job_type=JobType.RUN)
+
+    def list_active_runs(self) -> List[Run]:
+        """
+        List all active runs.
+
+        Returns:
+            runs (List[Run]): List of active runs
+        """
+        return self.server.job_manager.list_jobs(actor=self.user, job_type=JobType.RUN, statuses=[JobStatus.created, JobStatus.running])

@@ -17,6 +17,7 @@ from letta.orm import (
     BlocksAgents,
     FileMetadata,
     Job,
+    JobMessage,
     Message,
     Organization,
     Provider,
@@ -30,7 +31,7 @@ from letta.orm import (
     User,
 )
 from letta.orm.agents_tags import AgentsTags
-from letta.orm.enums import ToolType
+from letta.orm.enums import JobType, ToolType
 from letta.orm.errors import NoResultFound, UniqueConstraintViolationError
 from letta.schemas.agent import CreateAgent, UpdateAgent
 from letta.schemas.block import Block as PydanticBlock
@@ -44,14 +45,17 @@ from letta.schemas.job import JobUpdate
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message as PydanticMessage
 from letta.schemas.message import MessageCreate, MessageUpdate
+from letta.schemas.openai.chat_completions import ToolCall, ToolCallFunction
 from letta.schemas.organization import Organization as PydanticOrganization
 from letta.schemas.passage import Passage as PydanticPassage
+from letta.schemas.run import Run as PydanticRun
 from letta.schemas.sandbox_config import E2BSandboxConfig, LocalSandboxConfig, SandboxConfigCreate, SandboxConfigUpdate, SandboxType
 from letta.schemas.source import Source as PydanticSource
 from letta.schemas.source import SourceUpdate
 from letta.schemas.tool import Tool as PydanticTool
 from letta.schemas.tool import ToolUpdate
 from letta.schemas.tool_rule import InitToolRule
+from letta.schemas.usage import LettaUsageStatistics
 from letta.schemas.user import User as PydanticUser
 from letta.schemas.user import UserUpdate
 from letta.server.server import SyncServer
@@ -81,6 +85,7 @@ def clear_tables(server: SyncServer):
         session.execute(delete(Message))
         session.execute(delete(AgentPassage))
         session.execute(delete(SourcePassage))
+        session.execute(delete(JobMessage))  # Clear JobMessage first
         session.execute(delete(Job))
         session.execute(delete(ToolsAgents))  # Clear ToolsAgents first
         session.execute(delete(BlocksAgents))
@@ -185,6 +190,28 @@ def print_tool(server: SyncServer, default_user, default_organization):
 
     # Yield the created tool
     yield tool
+
+
+@pytest.fixture
+def default_job(server: SyncServer, default_user):
+    """Fixture to create and return a default job."""
+    job_pydantic = PydanticJob(
+        user_id=default_user.id,
+        status=JobStatus.pending,
+    )
+    job = server.job_manager.create_job(pydantic_job=job_pydantic, actor=default_user)
+    yield job
+
+
+@pytest.fixture
+def default_run(server: SyncServer, default_user):
+    """Fixture to create and return a default job."""
+    run_pydantic = PydanticRun(
+        user_id=default_user.id,
+        status=JobStatus.pending,
+    )
+    run = server.job_manager.create_job(pydantic_job=run_pydantic, actor=default_user)
+    yield run
 
 
 @pytest.fixture
@@ -2358,3 +2385,344 @@ def test_list_jobs_by_status(server: SyncServer, default_user):
 
     assert len(completed_jobs) == 1
     assert completed_jobs[0].metadata_["type"] == job_data_completed.metadata_["type"]
+
+
+def test_list_jobs_filter_by_type(server: SyncServer, default_user, default_job):
+    """Test that list_jobs correctly filters by job_type."""
+    # Create a run job
+    run_pydantic = PydanticJob(
+        user_id=default_user.id,
+        status=JobStatus.pending,
+        job_type=JobType.RUN,
+    )
+    run = server.job_manager.create_job(pydantic_job=run_pydantic, actor=default_user)
+
+    # List only regular jobs
+    jobs = server.job_manager.list_jobs(actor=default_user)
+    assert len(jobs) == 1
+    assert jobs[0].id == default_job.id
+
+    # List only run jobs
+    jobs = server.job_manager.list_jobs(actor=default_user, job_type=JobType.RUN)
+    assert len(jobs) == 1
+    assert jobs[0].id == run.id
+
+
+# ======================================================================================================================
+# JobManager Tests - Messages
+# ======================================================================================================================
+
+
+def test_job_messages_add(server: SyncServer, default_run, hello_world_message_fixture, default_user):
+    """Test adding a message to a job."""
+    # Add message to job
+    server.job_manager.add_message_to_job(
+        job_id=default_run.id,
+        message_id=hello_world_message_fixture.id,
+        actor=default_user,
+    )
+
+    # Verify message was added
+    messages = server.job_manager.get_job_messages(
+        job_id=default_run.id,
+        actor=default_user,
+    )
+    assert len(messages) == 1
+    assert messages[0].id == hello_world_message_fixture.id
+    assert messages[0].text == hello_world_message_fixture.text
+
+
+def test_job_messages_pagination(server: SyncServer, default_run, default_user, sarah_agent):
+    """Test pagination of job messages."""
+    # Create multiple messages
+    message_ids = []
+    for i in range(5):
+        message = PydanticMessage(
+            organization_id=default_user.organization_id,
+            agent_id=sarah_agent.id,
+            role=MessageRole.user,
+            text=f"Test message {i}",
+        )
+        msg = server.message_manager.create_message(message, actor=default_user)
+        message_ids.append(msg.id)
+
+        # Add message to job
+        server.job_manager.add_message_to_job(
+            job_id=default_run.id,
+            message_id=msg.id,
+            actor=default_user,
+        )
+
+    # Test pagination with limit
+    messages = server.job_manager.get_job_messages(
+        job_id=default_run.id,
+        actor=default_user,
+        limit=2,
+    )
+    assert len(messages) == 2
+    assert messages[0].id == message_ids[0]
+    assert messages[1].id == message_ids[1]
+
+    # Test pagination with cursor
+    messages = server.job_manager.get_job_messages(
+        job_id=default_run.id,
+        actor=default_user,
+        cursor=message_ids[1],
+        limit=2,
+    )
+    assert len(messages) == 2
+    assert messages[0].id == message_ids[2]
+    assert messages[1].id == message_ids[3]
+
+
+def test_job_messages_ordering(server: SyncServer, default_run, default_user, sarah_agent):
+    """Test that messages are ordered by created_at."""
+    # Create messages with different timestamps
+    base_time = datetime.utcnow()
+    message_times = [
+        base_time - timedelta(minutes=2),
+        base_time - timedelta(minutes=1),
+        base_time,
+    ]
+
+    for i, created_at in enumerate(message_times):
+        message = PydanticMessage(
+            organization_id=default_user.organization_id,
+            agent_id=sarah_agent.id,
+            role=MessageRole.user,
+            text=f"Test message {i}",
+            created_at=created_at,
+        )
+        msg = server.message_manager.create_message(message, actor=default_user)
+
+        # Add message to job
+        server.job_manager.add_message_to_job(
+            job_id=default_run.id,
+            message_id=msg.id,
+            actor=default_user,
+        )
+
+    # Verify messages are returned in chronological order
+    returned_messages = server.job_manager.get_job_messages(
+        job_id=default_run.id,
+        actor=default_user,
+    )
+
+    assert len(returned_messages) == 3
+    assert returned_messages[0].created_at < returned_messages[1].created_at
+    assert returned_messages[1].created_at < returned_messages[2].created_at
+
+    # Verify messages are returned in descending order
+    returned_messages = server.job_manager.get_job_messages(
+        job_id=default_run.id,
+        actor=default_user,
+        ascending=False,
+    )
+
+    assert len(returned_messages) == 3
+    assert returned_messages[0].created_at > returned_messages[1].created_at
+    assert returned_messages[1].created_at > returned_messages[2].created_at
+
+
+def test_job_messages_empty(server: SyncServer, default_run, default_user):
+    """Test getting messages for a job with no messages."""
+    messages = server.job_manager.get_job_messages(
+        job_id=default_run.id,
+        actor=default_user,
+    )
+    assert len(messages) == 0
+
+
+def test_job_messages_add_duplicate(server: SyncServer, default_run, hello_world_message_fixture, default_user):
+    """Test adding the same message to a job twice."""
+    # Add message to job first time
+    server.job_manager.add_message_to_job(
+        job_id=default_run.id,
+        message_id=hello_world_message_fixture.id,
+        actor=default_user,
+    )
+
+    # Attempt to add same message again
+    with pytest.raises(IntegrityError):
+        server.job_manager.add_message_to_job(
+            job_id=default_run.id,
+            message_id=hello_world_message_fixture.id,
+            actor=default_user,
+        )
+
+
+def test_job_messages_filter(server: SyncServer, default_run, default_user, sarah_agent):
+    """Test getting messages associated with a job."""
+    # Create test messages with different roles and tool calls
+    messages = [
+        PydanticMessage(
+            role=MessageRole.user,
+            text="Hello",
+            organization_id=default_user.organization_id,
+            agent_id=sarah_agent.id,
+        ),
+        PydanticMessage(
+            role=MessageRole.assistant,
+            text="Hi there!",
+            organization_id=default_user.organization_id,
+            agent_id=sarah_agent.id,
+        ),
+        PydanticMessage(
+            role=MessageRole.assistant,
+            text="Let me help you with that",
+            organization_id=default_user.organization_id,
+            agent_id=sarah_agent.id,
+            tool_calls=[
+                ToolCall(
+                    id="call_1",
+                    function=ToolCallFunction(
+                        name="test_tool",
+                        arguments='{"arg1": "value1"}',
+                    ),
+                )
+            ],
+        ),
+    ]
+
+    # Add messages to job
+    for msg in messages:
+        created_msg = server.message_manager.create_message(msg, actor=default_user)
+        server.job_manager.add_message_to_job(default_run.id, created_msg.id, actor=default_user)
+
+    # Test getting all messages
+    all_messages = server.job_manager.get_job_messages(job_id=default_run.id, actor=default_user)
+    assert len(all_messages) == 3
+
+    # Test filtering by role
+    user_messages = server.job_manager.get_job_messages(job_id=default_run.id, actor=default_user, role=MessageRole.user)
+    assert len(user_messages) == 1
+    assert user_messages[0].role == MessageRole.user
+
+    # Test filtering by tool name
+    tool_messages = server.job_manager.get_job_messages(job_id=default_run.id, actor=default_user, tool_name="test_tool")
+    assert len(tool_messages) == 1
+    assert tool_messages[0].tool_calls[0].function.name == "test_tool"
+
+    # Test filtering by role and tool name
+    assistant_tool_messages = server.job_manager.get_job_messages(
+        job_id=default_run.id,
+        actor=default_user,
+        role=MessageRole.assistant,
+        tool_name="test_tool",
+    )
+    assert len(assistant_tool_messages) == 1
+    assert assistant_tool_messages[0].role == MessageRole.assistant
+    assert assistant_tool_messages[0].tool_calls[0].function.name == "test_tool"
+
+    # Test limit
+    limited_messages = server.job_manager.get_job_messages(job_id=default_run.id, actor=default_user, limit=2)
+    assert len(limited_messages) == 2
+
+
+# ======================================================================================================================
+# JobManager Tests - Usage Statistics
+# ======================================================================================================================
+
+
+def test_job_usage_stats_add_and_get(server: SyncServer, default_job, default_user):
+    """Test adding and retrieving job usage statistics."""
+    job_manager = server.job_manager
+
+    # Add usage statistics
+    job_manager.add_job_usage(
+        job_id=default_job.id,
+        usage=LettaUsageStatistics(
+            completion_tokens=100,
+            prompt_tokens=50,
+            total_tokens=150,
+            step_count=5,
+        ),
+        step_id="step_1",
+        actor=default_user,
+    )
+
+    # Get usage statistics
+    usage_stats = job_manager.get_job_usage(job_id=default_job.id, actor=default_user)
+
+    # Verify the statistics
+    assert usage_stats.completion_tokens == 100
+    assert usage_stats.prompt_tokens == 50
+    assert usage_stats.total_tokens == 150
+
+
+def test_job_usage_stats_get_no_stats(server: SyncServer, default_job, default_user):
+    """Test getting usage statistics for a job with no stats."""
+    job_manager = server.job_manager
+
+    # Get usage statistics for a job with no stats
+    usage_stats = job_manager.get_job_usage(job_id=default_job.id, actor=default_user)
+
+    # Verify default values
+    assert usage_stats.completion_tokens == 0
+    assert usage_stats.prompt_tokens == 0
+    assert usage_stats.total_tokens == 0
+
+
+def test_job_usage_stats_add_multiple(server: SyncServer, default_job, default_user):
+    """Test adding multiple usage statistics entries for a job."""
+    job_manager = server.job_manager
+
+    # Add first usage statistics entry
+    job_manager.add_job_usage(
+        job_id=default_job.id,
+        usage=LettaUsageStatistics(
+            completion_tokens=100,
+            prompt_tokens=50,
+            total_tokens=150,
+            step_count=5,
+        ),
+        step_id="step_1",
+        actor=default_user,
+    )
+
+    # Add second usage statistics entry
+    job_manager.add_job_usage(
+        job_id=default_job.id,
+        usage=LettaUsageStatistics(
+            completion_tokens=200,
+            prompt_tokens=100,
+            total_tokens=300,
+            step_count=10,
+        ),
+        step_id="step_2",
+        actor=default_user,
+    )
+
+    # Get usage statistics (should return the latest entry)
+    usage_stats = job_manager.get_job_usage(job_id=default_job.id, actor=default_user)
+
+    # Verify we get the most recent statistics
+    assert usage_stats.completion_tokens == 200
+    assert usage_stats.prompt_tokens == 100
+    assert usage_stats.total_tokens == 300
+
+
+def test_job_usage_stats_get_nonexistent_job(server: SyncServer, default_user):
+    """Test getting usage statistics for a nonexistent job."""
+    job_manager = server.job_manager
+
+    with pytest.raises(NoResultFound):
+        job_manager.get_job_usage(job_id="nonexistent_job", actor=default_user)
+
+
+def test_job_usage_stats_add_nonexistent_job(server: SyncServer, default_user):
+    """Test adding usage statistics for a nonexistent job."""
+    job_manager = server.job_manager
+
+    with pytest.raises(NoResultFound):
+        job_manager.add_job_usage(
+            job_id="nonexistent_job",
+            usage=LettaUsageStatistics(
+                completion_tokens=100,
+                prompt_tokens=50,
+                total_tokens=150,
+                step_count=5,
+            ),
+            step_id="step_1",
+            actor=default_user,
+        )

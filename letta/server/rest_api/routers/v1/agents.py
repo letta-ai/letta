@@ -13,13 +13,14 @@ from letta.orm.errors import NoResultFound
 from letta.schemas.agent import AgentState, CreateAgent, UpdateAgent
 from letta.schemas.block import Block, BlockUpdate, CreateBlock  # , BlockLabelUpdate, BlockLimitUpdate
 from letta.schemas.enums import MessageStreamStatus
-from letta.schemas.job import Job, JobStatus, JobUpdate
+from letta.schemas.job import JobStatus, JobUpdate
 from letta.schemas.letta_message import LegacyLettaMessage, LettaMessage, LettaMessageUnion
 from letta.schemas.letta_request import LettaRequest, LettaStreamingRequest
 from letta.schemas.letta_response import LettaResponse
 from letta.schemas.memory import ArchivalMemorySummary, ContextWindowOverview, CreateArchivalMemory, Memory, RecallMemorySummary
 from letta.schemas.message import Message, MessageCreate, MessageUpdate
 from letta.schemas.passage import Passage
+from letta.schemas.run import Run
 from letta.schemas.source import Source
 from letta.schemas.tool import Tool
 from letta.schemas.user import User
@@ -561,6 +562,7 @@ async def process_message_background(
             stream_tokens=False,
             assistant_message_tool_name=assistant_message_tool_name,
             assistant_message_tool_kwarg=assistant_message_tool_kwarg,
+            metadata={"job_id": job_id},  # Pass job_id through metadata
         )
 
         # Update job status to completed
@@ -570,6 +572,9 @@ async def process_message_background(
             metadata_={"result": result.model_dump()},  # Store the result in metadata
         )
         server.job_manager.update_job_by_id(job_id=job_id, job_update=job_update, actor=actor)
+
+        # Add job usage statistics
+        server.job_manager.add_job_usage(job_id=job_id, usage=result.usage, actor=actor)
 
     except Exception as e:
         # Update job status to failed
@@ -584,7 +589,7 @@ async def process_message_background(
 
 @router.post(
     "/{agent_id}/messages/async",
-    response_model=Job,
+    response_model=Run,
     operation_id="create_agent_message_async",
 )
 async def send_message_async(
@@ -601,7 +606,7 @@ async def send_message_async(
     actor = server.user_manager.get_user_or_default(user_id=user_id)
 
     # Create a new job
-    job = Job(
+    run = Run(
         user_id=actor.id,
         status=JobStatus.created,
         metadata_={
@@ -609,12 +614,12 @@ async def send_message_async(
             "agent_id": agent_id,
         },
     )
-    job = server.job_manager.create_job(pydantic_job=job, actor=actor)
+    run = server.job_manager.create_job(pydantic_job=run, actor=actor)
 
     # Add the background task
     background_tasks.add_task(
         process_message_background,
-        job_id=job.id,
+        job_id=run.id,
         server=server,
         actor=actor,
         agent_id=agent_id,
@@ -623,7 +628,7 @@ async def send_message_async(
         assistant_message_tool_kwarg=request.assistant_message_tool_kwarg,
     )
 
-    return job
+    return run
 
 
 # TODO: move this into server.py?
@@ -642,6 +647,7 @@ async def send_message_to_agent(
     use_assistant_message: bool = True,
     assistant_message_tool_name: str = DEFAULT_MESSAGE_TOOL,
     assistant_message_tool_kwarg: str = DEFAULT_MESSAGE_TOOL_KWARG,
+    metadata: Optional[dict] = None,
 ) -> Union[StreamingResponse, LettaResponse]:
     """Split off into a separate function so that it can be imported in the /chat/completion proxy."""
 
@@ -701,6 +707,7 @@ async def send_message_to_agent(
                 agent_id=agent_id,
                 messages=messages,
                 interface=streaming_interface,
+                metadata=metadata,
             )
         )
 
@@ -729,6 +736,17 @@ async def send_message_to_agent(
             # Get rid of the stream status messages
             filtered_stream = [d for d in generated_stream if not isinstance(d, MessageStreamStatus)]
             usage = await task
+
+            # Add messages to job if job_id is provided
+            if "job_id" in streaming_interface.metadata:
+                job_id = streaming_interface.metadata["job_id"]
+                for message in filtered_stream:
+                    if hasattr(message, "id") and message.id is not None:
+                        server.job_manager.add_message_to_job(
+                            job_id=job_id,
+                            message_id=message.id,
+                            actor=actor,
+                        )
 
             # By default the stream will be messages of type LettaMessage or LettaLegacyMessage
             # If we want to convert these to Message, we can use the attached IDs

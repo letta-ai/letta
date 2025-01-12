@@ -281,6 +281,9 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
         # turn function argument to send_message into a normal text stream
         self.streaming_chat_completion_json_reader = FunctionArgumentsStreamHandler(json_key=assistant_message_tool_kwarg)
 
+        # Store metadata passed from server
+        self.metadata = {}
+
         self._chunks = deque()
         self._event = asyncio.Event()  # Use an event to notify when chunks are available
         self._active = True  # This should be set to False to stop the generator
