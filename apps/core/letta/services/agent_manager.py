@@ -510,7 +510,17 @@ class AgentManager:
         if add_default_initial_messages:
             return self.append_initial_message_sequence_to_in_context_messages(actor, agent_state)
         else:
-            return agent_state
+            # We still want to always have a system message
+            init_messages = initialize_message_sequence(
+                agent_state=agent_state, memory_edit_timestamp=get_utc_time(), include_initial_boot_message=True
+            )
+            system_message = PydanticMessage.dict_to_message(
+                agent_id=agent_state.id,
+                user_id=agent_state.created_by_id,
+                model=agent_state.llm_config.model,
+                openai_message_dict=init_messages[0],
+            )
+            return self.append_to_in_context_messages([system_message], agent_id=agent_state.id, actor=actor)
 
     # ======================================================================================================================
     # Source Management

@@ -929,9 +929,9 @@ def test_reset_messages_no_messages(server: SyncServer, sarah_agent, default_use
 
     # Reset messages
     reset_agent = server.agent_manager.reset_messages(agent_id=sarah_agent.id, actor=default_user)
-    assert reset_agent.message_ids == []
+    assert len(reset_agent.message_ids) == 1
     # Double check that physically no messages exist
-    assert server.message_manager.size(agent_id=sarah_agent.id, actor=default_user) == 0
+    assert server.message_manager.size(agent_id=sarah_agent.id, actor=default_user) == 1
 
 
 def test_reset_messages_default_messages(server: SyncServer, sarah_agent, default_user):
@@ -986,10 +986,10 @@ def test_reset_messages_with_existing_messages(server: SyncServer, sarah_agent, 
     reset_agent = server.agent_manager.reset_messages(agent_id=sarah_agent.id, actor=default_user)
 
     # 3. Verify the agent now has zero message_ids
-    assert reset_agent.message_ids == []
+    assert len(reset_agent.message_ids) == 1
 
     # 4. Verify the messages are physically removed
-    assert server.message_manager.size(agent_id=sarah_agent.id, actor=default_user) == 0
+    assert server.message_manager.size(agent_id=sarah_agent.id, actor=default_user) == 1
 
 
 def test_reset_messages_idempotency(server: SyncServer, sarah_agent, default_user):
@@ -1008,13 +1008,13 @@ def test_reset_messages_idempotency(server: SyncServer, sarah_agent, default_use
     )
     # First reset
     reset_agent = server.agent_manager.reset_messages(agent_id=sarah_agent.id, actor=default_user)
-    assert reset_agent.message_ids == []
-    assert server.message_manager.size(agent_id=sarah_agent.id, actor=default_user) == 0
+    assert len(reset_agent.message_ids) == 1
+    assert server.message_manager.size(agent_id=sarah_agent.id, actor=default_user) == 1
 
     # Second reset should do nothing new
     reset_agent_again = server.agent_manager.reset_messages(agent_id=sarah_agent.id, actor=default_user)
-    assert reset_agent_again.message_ids == []
-    assert server.message_manager.size(agent_id=sarah_agent.id, actor=default_user) == 0
+    assert len(reset_agent.message_ids) == 1
+    assert server.message_manager.size(agent_id=sarah_agent.id, actor=default_user) == 1
 
 
 # ======================================================================================================================
