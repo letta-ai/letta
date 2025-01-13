@@ -163,3 +163,5 @@ export * from './lib/core/MiddleTruncate/MiddleTruncate';
 export * from './lib/reusable/StarterKitItem/StarterKitItem';
 
 export * from './lib/core/KeyValueEditor/KeyValueEditor';
+
+export * from './lib/core/VerticalDelineatedTextChunker/VerticalDelineatedTextChunker';

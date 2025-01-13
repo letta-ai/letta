@@ -275,6 +275,7 @@
   "ADELayout": {
     "contextWindow": "Context Window",
     "agentSimulator": "Agent simulator",
+    "contextWindowSimulator": "Context simulator",
     "settings": "{baseName} Settings",
     "advancedSettings": "Advanced settings"
   },

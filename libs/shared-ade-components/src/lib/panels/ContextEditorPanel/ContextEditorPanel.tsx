@@ -7,8 +7,11 @@ import {
   HStack,
   makeFormattedTooltip,
   Typography,
+  VerticalDelineatedTextChunker,
   VStack,
 } from '@letta-cloud/component-library';
+import type { VerticalBarChartChunk } from '@letta-cloud/component-library';
+
 import type { EChartsOption } from 'echarts';
 import { useTranslations } from '@letta-cloud/translations';
 import { atom, useAtom } from 'jotai';
@@ -89,12 +92,7 @@ const supportedModels: TiktokenModel[] = [
   'gpt-4o-realtime-preview-2024-10-01',
 ];
 
-function isTiktokenModel(model: string): model is TiktokenModel {
-  return supportedModels.includes(model as TiktokenModel);
-}
-
-export function ContextWindowPanel() {
-  const t = useTranslations('ADE/ContextEditorPanel');
+function useContextWindowDetails() {
   const { memory, system, id, llm_config } = useCurrentAgent();
   const [computedMemoryString, setComputedMemoryString] = useAtom(
     computedMemoryStringAtom,
@@ -167,6 +165,13 @@ export function ContextWindowPanel() {
     return contextWindow?.num_tokens_messages || 0;
   }, [contextWindow?.num_tokens_messages]);
 
+  const systemPromptSummary = system;
+  const toolSummary = contextWindow?.functions_definitions;
+  const externalSummary = contextWindow?.external_memory_summary;
+  const coreMemorySummary = computedMemoryString;
+  const recursiveMemorySummary = contextWindow?.summary_memory;
+  const messagesTokensSummary = contextWindow?.messages;
+
   const totalUsedLength = useMemo(() => {
     return (
       systemPromptLength +
@@ -193,11 +198,50 @@ export function ContextWindowPanel() {
     return Math.max(0, totalLength - totalUsedLength);
   }, [totalLength, totalUsedLength]);
 
-  const user = useADEUserContext();
-
   const totalLengthForChart = useMemo(() => {
     return Math.max(totalLength, totalUsedLength);
   }, [totalLength, totalUsedLength]);
+
+  return {
+    systemPromptLength,
+    toolLength,
+    externalSummaryLength,
+    coreMemoryLength,
+    recursiveMemoryLength,
+    messagesTokensLength,
+    remainingLength,
+    totalUsedLength,
+    totalLength,
+    totalLengthForChart,
+    systemPromptSummary,
+    toolSummary,
+    externalSummary,
+    coreMemorySummary,
+    recursiveMemorySummary,
+    messagesTokensSummary,
+  };
+}
+
+function isTiktokenModel(model: string): model is TiktokenModel {
+  return supportedModels.includes(model as TiktokenModel);
+}
+
+export function ContextWindowPanel() {
+  const t = useTranslations('ADE/ContextEditorPanel');
+
+  const user = useADEUserContext();
+  const {
+    systemPromptLength,
+    toolLength,
+    externalSummaryLength,
+    coreMemoryLength,
+    recursiveMemoryLength,
+    messagesTokensLength,
+    remainingLength,
+    totalUsedLength,
+    totalLength,
+    totalLengthForChart,
+  } = useContextWindowDetails();
 
   const standardChartOptions = useMemo(() => {
     const commonSeriesStyles = {
@@ -447,6 +491,94 @@ export function ContextWindowPanel() {
       </HStack>
       {/* eslint-disable-next-line react/forbid-component-props */}
       <Chart height={35} options={standardChartOptions} />
+    </VStack>
+  );
+}
+
+export function ContextWindowSimulator() {
+  const {
+    systemPromptLength,
+    toolLength,
+    externalSummaryLength,
+    coreMemoryLength,
+    recursiveMemoryLength,
+    messagesTokensLength,
+    systemPromptSummary,
+    toolSummary,
+    externalSummary,
+    coreMemorySummary,
+    recursiveMemorySummary,
+    messagesTokensSummary,
+  } = useContextWindowDetails();
+
+  const t = useTranslations('ADE/ContextEditorPanel');
+
+  const chunks: VerticalBarChartChunk[] = useMemo(() => {
+    return [
+      {
+        id: 'system',
+        label: t('ContextWindowPreview.systemPrompt'),
+        text: systemPromptSummary,
+        size: systemPromptLength,
+        color: '#3758F9',
+      },
+      {
+        id: 'tool',
+        label: t('ContextWindowPreview.toolPrompt'),
+        text: JSON.stringify(toolSummary, null, 2),
+        size: toolLength,
+        color: '#37e2f9',
+      },
+      {
+        id: 'external',
+        label: t('ContextWindowPreview.externalSummaryLength'),
+        text: externalSummary,
+        size: externalSummaryLength,
+        color: '#37f9a2',
+      },
+      {
+        id: 'coreMemory',
+        label: t('ContextWindowPreview.memoryBlocks'),
+        text: coreMemorySummary || '',
+        size: coreMemoryLength,
+        color: '#76e76e',
+      },
+      {
+        id: 'recursiveMemory',
+        label: t('ContextWindowPreview.summaryMemory'),
+        text: recursiveMemorySummary || '',
+        size: recursiveMemoryLength,
+        color: 'green',
+      },
+      {
+        id: 'messages',
+        label: t('ContextWindowPreview.messagesTokens'),
+        text: (messagesTokensSummary || [])
+          .map((message) => message.text)
+          .join(''),
+        size: messagesTokensLength,
+        color: 'orange',
+      },
+    ];
+  }, [
+    coreMemorySummary,
+    externalSummary,
+    messagesTokensSummary,
+    recursiveMemorySummary,
+    systemPromptSummary,
+    toolSummary,
+    externalSummaryLength,
+    messagesTokensLength,
+    recursiveMemoryLength,
+    systemPromptLength,
+    t,
+    toolLength,
+    coreMemoryLength,
+  ]);
+
+  return (
+    <VStack fullHeight fullWidth>
+      <VerticalDelineatedTextChunker fullHeight fullWidth chunks={chunks} />
     </VStack>
   );
 }

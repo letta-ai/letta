@@ -32,7 +32,10 @@ import {
   useDataSourcesTitle,
 } from '../panels/EditDataSourcesPanel/EditDataSourcesPanel';
 import { AgentSimulator } from '../panels/AgentSimulator/AgentSimulator';
-import { ContextWindowPanel } from '../panels/ContextEditorPanel/ContextEditorPanel';
+import {
+  ContextWindowPanel,
+  ContextWindowSimulator,
+} from '../panels/ContextEditorPanel/ContextEditorPanel';
 import { UserProvider } from '../UserContext/UserContext';
 import type { UserContextData } from '../UserContext/UserContext';
 
@@ -66,6 +69,7 @@ function useADETitleTranslations() {
   };
 }
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
+import { useFeatureFlag } from '@letta-cloud/web-api-client';
 
 function DesktopLayout() {
   const t = useTranslations('ADELayout');
@@ -76,6 +80,10 @@ function DesktopLayout() {
     editCoreMemoriesTitle,
     archivalMemoriesTitle,
   } = useADETitleTranslations();
+
+  const { data: isContextWindowSimulatorEnabled } = useFeatureFlag(
+    'CONTEXT_WINDOW_SIMULATOR',
+  );
 
   return (
     <HStack gap="small" fullWidth fullHeight>
@@ -132,6 +140,15 @@ function DesktopLayout() {
                   id: 'agent-simulator',
                   content: <AgentSimulator />,
                 },
+                ...(isContextWindowSimulatorEnabled
+                  ? [
+                      {
+                        title: t('contextWindowSimulator'),
+                        id: 'context-window-simulator',
+                        content: <ContextWindowSimulator />,
+                      },
+                    ]
+                  : []),
               ]}
             />
           </HStack>
