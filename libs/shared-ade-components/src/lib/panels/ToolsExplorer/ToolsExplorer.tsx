@@ -1305,6 +1305,7 @@ interface ToolSettingsProps {
 function ToolSettings(props: ToolSettingsProps) {
   const { toolId, onUpdateSettings, toolSettings } = props;
   const t = useTranslations('ADE/Tools');
+
   return (
     <VStack overflowY="auto" padding border fullHeight>
       <Section
@@ -1312,7 +1313,6 @@ function ToolSettings(props: ToolSettingsProps) {
         description={t('ToolSettings.description')}
       >
         <RawInput
-          disabled={!!toolId}
           label={t('ToolSettings.returnCharLimit.label')}
           description={t('ToolSettings.returnCharLimit.description')}
           type="number"
@@ -1738,16 +1738,25 @@ function EditTool(props: EditToolProps) {
 
   const [sourceCode, setSourceCode] = useState(tool.source_code || '');
 
+  const [localError, setLocalError] = useState<string | null>(null);
   const { mutate, isPending, error } = useToolsServiceUpdateTool();
 
   const t = useTranslations('ADE/Tools');
 
   const handleUpdateCode = useCallback(() => {
+    setLocalError(null);
+
+    if (z.number().positive().safeParse(settings.returnCharLimit).error) {
+      setLocalError(t('ToolSettings.returnCharLimit.error'));
+      return;
+    }
+
     mutate(
       {
         toolId: tool.id || '',
         requestBody: {
           source_code: sourceCode,
+          return_char_limit: settings.returnCharLimit,
         },
       },
       {
@@ -1765,6 +1774,7 @@ function EditTool(props: EditToolProps) {
 
               return {
                 ...oldData,
+                return_char_limit: settings.returnCharLimit,
                 source_code: sourceCode,
               };
             },
@@ -1775,9 +1785,21 @@ function EditTool(props: EditToolProps) {
         },
       },
     );
-  }, [mutate, queryClient, switchToolState, sourceCode, tool.id]);
+  }, [
+    mutate,
+    queryClient,
+    t,
+    switchToolState,
+    settings.returnCharLimit,
+    sourceCode,
+    tool.id,
+  ]);
 
   const errorMessage = useMemo(() => {
+    if (localError) {
+      return localError;
+    }
+
     if (!error) {
       return '';
     }
@@ -1789,7 +1811,7 @@ function EditTool(props: EditToolProps) {
     }
 
     return JSON.stringify(message || error, null, 2);
-  }, [error]);
+  }, [error, localError]);
 
   return (
     <VStack collapseHeight paddingX paddingBottom flex gap="form">
@@ -1808,7 +1830,13 @@ function EditTool(props: EditToolProps) {
         <Dialog
           title={t('EditTool.updateDialog.title')}
           onConfirm={handleUpdateCode}
-          onOpenChange={setOpen}
+          onOpenChange={(open) => {
+            if (!open) {
+              setLocalError(null);
+            }
+
+            setOpen(open);
+          }}
           isOpen={open}
           errorMessage={errorMessage}
           isConfirmBusy={isPending}

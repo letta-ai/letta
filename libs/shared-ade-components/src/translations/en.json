@@ -493,6 +493,7 @@
       "description": "Edit the settings of this tool",
       "returnCharLimit": {
         "label": "Return character limit",
+        "error": "Return character limit must be a positive integer",
         "placeholder": "1000",
         "description": "Defaults to 6000 if left blank"
       }
