@@ -708,8 +708,6 @@ class Message(BaseMessage):
                     },
                 ]
                 for tc in self.tool_calls:
-                    # TODO better way to pack?
-                    # function_call_text = json.dumps(tc.to_dict())
                     function_name = tc.function["name"]
                     function_args = json.loads(tc.function["arguments"])
                     function_args_str = ",".join([f"{k}={v}" for k, v in function_args.items()])
