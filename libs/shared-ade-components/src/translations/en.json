@@ -307,6 +307,9 @@
     },
     "AdvancedMemoryEditorForm": {
       "error": "There was an error updating your memory, please try again or contact support",
+      "id": {
+        "label": "Block ID"
+      },
       "label": {
         "label": "Label",
         "placeholder": "my-label",

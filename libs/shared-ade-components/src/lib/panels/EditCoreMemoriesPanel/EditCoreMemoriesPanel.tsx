@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { TabGroup } from '@letta-cloud/component-library';
+import { RawInput, TabGroup } from '@letta-cloud/component-library';
 import { InfoTooltip } from '@letta-cloud/component-library';
 import {
   Alert,
@@ -193,18 +193,27 @@ function AdvancedMemoryEditorForm(props: AdvancedMemoryEditorProps) {
       <Form onSubmit={form.handleSubmit(handleUpdate)}>
         <VStack fullHeight fullWidth padding gap="form">
           <MemoryWarning rootLabel={memory.label || ''} />
-          <FormField
-            name="label"
-            render={({ field }) => (
-              <Input
-                fullWidth
-                disabled
-                warned={field.value !== memory.label}
-                label={t('AdvancedMemoryEditorForm.label.label')}
-                {...field}
-              />
-            )}
-          />
+          <HStack>
+            <FormField
+              name="label"
+              render={({ field }) => (
+                <Input
+                  fullWidth
+                  disabled
+                  warned={field.value !== memory.label}
+                  label={t('AdvancedMemoryEditorForm.label.label')}
+                  {...field}
+                />
+              )}
+            />
+            <RawInput
+              fullWidth
+              disabled
+              value={memory.id}
+              allowCopy
+              label={t('AdvancedMemoryEditorForm.id.label')}
+            />
+          </HStack>
 
           <FormField
             name="maxCharacters"
