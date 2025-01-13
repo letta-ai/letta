@@ -1944,10 +1944,6 @@ export type ToolCreate = {
   /**
    * The source code of the function.
    */
-  module?: string | null;
-  /**
-   * The source code of the function.
-   */
   source_code: string;
   /**
    * The source type of the function.
@@ -2056,10 +2052,6 @@ export type ToolUpdate = {
    * Metadata tags.
    */
   tags?: Array<string> | null;
-  /**
-   * The source code of the function.
-   */
-  module?: string | null;
   /**
    * The source code of the function.
    */
@@ -2405,10 +2397,6 @@ export type letta__schemas__tool__Tool = {
    * The type of the source code.
    */
   source_type?: string | null;
-  /**
-   * The module of the function.
-   */
-  module?: string | null;
   /**
    * The unique identifier of the organization associated with the tool.
    */

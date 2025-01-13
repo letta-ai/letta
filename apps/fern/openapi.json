@@ -8619,18 +8619,6 @@
             "description": "Metadata tags.",
             "default": []
           },
-          "module": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Module",
-            "description": "The source code of the function."
-          },
           "source_code": {
             "type": "string",
             "title": "Source Code",
@@ -8876,18 +8864,6 @@
             ],
             "title": "Tags",
             "description": "Metadata tags."
-          },
-          "module": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Module",
-            "description": "The source code of the function."
           },
           "source_code": {
             "anyOf": [
@@ -9714,18 +9690,6 @@
             ],
             "title": "Source Type",
             "description": "The type of the source code."
-          },
-          "module": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Module",
-            "description": "The module of the function."
           },
           "name": {
             "anyOf": [

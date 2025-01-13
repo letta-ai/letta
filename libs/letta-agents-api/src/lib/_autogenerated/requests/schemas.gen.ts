@@ -4737,18 +4737,6 @@ export const $ToolCreate = {
       description: 'Metadata tags.',
       default: [],
     },
-    module: {
-      anyOf: [
-        {
-          type: 'string',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Module',
-      description: 'The source code of the function.',
-    },
     source_code: {
       type: 'string',
       title: 'Source Code',
@@ -5011,18 +4999,6 @@ export const $ToolUpdate = {
       ],
       title: 'Tags',
       description: 'Metadata tags.',
-    },
-    module: {
-      anyOf: [
-        {
-          type: 'string',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Module',
-      description: 'The source code of the function.',
     },
     source_code: {
       anyOf: [
@@ -5935,18 +5911,6 @@ export const $letta__schemas__tool__Tool = {
       ],
       title: 'Source Type',
       description: 'The type of the source code.',
-    },
-    module: {
-      anyOf: [
-        {
-          type: 'string',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Module',
-      description: 'The module of the function.',
     },
     organization_id: {
       anyOf: [
