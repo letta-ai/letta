@@ -535,6 +535,7 @@ async def send_message_streaming(
         stream_steps=True,
         stream_tokens=request.stream_tokens,
         # Support for AssistantMessage
+        use_assistant_message=request.use_assistant_message,
         assistant_message_tool_name=request.assistant_message_tool_name,
         assistant_message_tool_kwarg=request.assistant_message_tool_kwarg,
     )
@@ -547,6 +548,7 @@ async def process_message_background(
     actor: User,
     agent_id: str,
     messages: list,
+    use_assistant_message: bool,
     assistant_message_tool_name: str,
     assistant_message_tool_kwarg: str,
 ) -> None:
@@ -560,6 +562,7 @@ async def process_message_background(
             messages=messages,
             stream_steps=False,  # NOTE(matt)
             stream_tokens=False,
+            use_assistant_message=use_assistant_message,
             assistant_message_tool_name=assistant_message_tool_name,
             assistant_message_tool_kwarg=assistant_message_tool_kwarg,
             metadata={"job_id": job_id},  # Pass job_id through metadata
@@ -624,6 +627,7 @@ async def send_message_async(
         actor=actor,
         agent_id=agent_id,
         messages=request.messages,
+        use_assistant_message=request.use_assistant_message,
         assistant_message_tool_name=request.assistant_message_tool_name,
         assistant_message_tool_kwarg=request.assistant_message_tool_kwarg,
     )

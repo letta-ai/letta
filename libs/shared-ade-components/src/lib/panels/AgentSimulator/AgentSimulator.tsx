@@ -144,6 +144,7 @@ function useSendMessage(agentId: string, options: UseSendMessageOptions = {}) {
           body: JSON.stringify({
             stream_steps: true,
             stream_tokens: true,
+            use_assistant_message: false,
             messages: [
               {
                 role,
