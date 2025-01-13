@@ -168,6 +168,7 @@ class JobManager:
     def add_message_to_job(self, job_id: str, message_id: str, actor: PydanticUser) -> None:
         """
         Associate a message with a job by creating a JobMessage record.
+        Each message can only be associated with one job.
 
         Args:
             job_id: The ID of the job

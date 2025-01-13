@@ -753,17 +753,6 @@ async def send_message_to_agent(
             filtered_stream = [d for d in generated_stream if not isinstance(d, MessageStreamStatus)]
             usage = await task
 
-            # Add messages to job if job_id is provided
-            if "job_id" in streaming_interface.metadata:
-                job_id = streaming_interface.metadata["job_id"]
-                for message in filtered_stream:
-                    if hasattr(message, "id") and message.id is not None:
-                        server.job_manager.add_message_to_job(
-                            job_id=job_id,
-                            message_id=message.id,
-                            actor=actor,
-                        )
-
             # By default the stream will be messages of type LettaMessage or LettaLegacyMessage
             # If we want to convert these to Message, we can use the attached IDs
             # NOTE: we will need to de-duplicate the Messsage IDs though (since Assistant->Inner+Func_Call)

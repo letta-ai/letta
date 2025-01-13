@@ -425,12 +425,17 @@ class SyncServer(Server):
             token_streaming = letta_agent.interface.streaming_mode if hasattr(letta_agent.interface, "streaming_mode") else False
 
             logger.debug(f"Starting agent step")
+            if interface:
+                metadata = interface.metadata if hasattr(interface, "metadata") else None
+            else:
+                metadata = None
             usage_stats = letta_agent.step(
                 messages=input_messages,
                 chaining=self.chaining,
                 max_chaining_steps=self.max_chaining_steps,
                 stream=token_streaming,
                 skip_verify=True,
+                metadata=metadata,
             )
 
         except Exception as e:
