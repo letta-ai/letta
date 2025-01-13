@@ -2038,7 +2038,7 @@ export const $CreateAgentRequest = {
       title: 'From Template',
       description: 'The template id used to configure the agent',
     },
-    project_id: {
+    project: {
       anyOf: [
         {
           type: 'string',
@@ -2047,8 +2047,8 @@ export const $CreateAgentRequest = {
           type: 'null',
         },
       ],
-      title: 'Project Id',
-      description: 'The project id that the agent will be associated with.',
+      title: 'Project',
+      description: 'The project slug that the agent will be associated with.',
     },
     tool_exec_environment_variables: {
       anyOf: [

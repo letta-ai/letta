@@ -687,9 +687,9 @@ export type CreateAgentRequest = {
    */
   from_template?: string | null;
   /**
-   * The project id that the agent will be associated with.
+   * The project slug that the agent will be associated with.
    */
-  project_id?: string | null;
+  project?: string | null;
   /**
    * The environment variables for tool execution specific to this agent.
    */

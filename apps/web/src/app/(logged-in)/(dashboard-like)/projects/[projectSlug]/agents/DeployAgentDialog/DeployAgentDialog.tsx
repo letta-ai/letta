@@ -150,7 +150,7 @@ function FromStarterKit(props: FromStarterKitProps) {
     'projects/(projectSlug)/agents/page/DeployAgentDialog',
   );
 
-  const { id: projectId, slug } = useCurrentProject();
+  const { slug } = useCurrentProject();
 
   const starterKits = useMemo(() => {
     return Object.entries(STARTER_KITS);
@@ -176,11 +176,11 @@ function FromStarterKit(props: FromStarterKitProps) {
         body: {
           template: false,
           from_template: starterKitId,
-          project_id: projectId,
+          project: slug,
         },
       });
     },
-    [mutate, onIsCreating, projectId],
+    [mutate, onIsCreating, slug],
   );
 
   return (

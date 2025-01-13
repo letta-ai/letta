@@ -20,6 +20,7 @@ import {
   deployedAgentTemplates,
   deployedAgentVariables,
   organizationPreferences,
+  projects,
 } from '@letta-cloud/database';
 import { and, asc, count, desc, eq, isNull, like, ne, or } from 'drizzle-orm';
 import { findUniqueAgentTemplateName } from '$web/server';
@@ -204,7 +205,7 @@ export async function createAgent(
 ): Promise<CreateAgentResponse> {
   const { organizationId, lettaAgentsUserId } = context.request;
   const {
-    project_id,
+    project,
     from_template,
     template,
     variables,
@@ -219,11 +220,38 @@ export async function createAgent(
   } = req.body;
 
   let name = preName;
+  let projectId: string | undefined = undefined;
+
+  if (project) {
+    const res = await db.query.projects.findFirst({
+      where: and(
+        eq(projects.organizationId, organizationId),
+        eq(projects.slug, project),
+        isNull(projects.deletedAt),
+      ),
+      columns: {
+        id: true,
+      },
+    });
+
+    if (!res?.id) {
+      return {
+        status: 404,
+        body: {
+          message:
+            'Project slug is not associated with any known project in your organization',
+        },
+      };
+    }
+
+    projectId = res.id;
+  }
+
+  if (!projectId) {
+    projectId = await getCatchAllProjectId({ organizationId });
+  }
 
   if (name) {
-    const projectId =
-      project_id || (await getCatchAllProjectId({ organizationId }));
-
     if (template) {
       const exists = await db.query.agentTemplates.findFirst({
         where: and(
@@ -273,16 +301,6 @@ export async function createAgent(
 
       if (!starterKit) {
         throw new Error('Starter kit not found');
-      }
-
-      if (!project_id) {
-        return {
-          status: 400,
-          body: {
-            message:
-              'project_id is required when creating an agent from a starter kit template',
-          },
-        };
       }
 
       let toolIdsToAttach: string[] = [];
@@ -396,7 +414,7 @@ export async function createAgent(
           .insert(deployedAgents)
           .values({
             id: response.id,
-            projectId: project_id,
+            projectId: projectId,
             key: uniqueId,
             internalAgentCountId: nextInternalAgentCountId,
             deployedAgentTemplateId: '',
@@ -422,7 +440,7 @@ export async function createAgent(
         organizationId,
         name: name,
         id: response.id,
-        projectId: project_id,
+        projectId: projectId,
       });
 
       await versionAgentTemplate(
@@ -530,7 +548,7 @@ export async function createAgent(
         };
       }
 
-      if (!project_id) {
+      if (!projectId) {
         return {
           status: 400,
           body: {
@@ -544,7 +562,7 @@ export async function createAgent(
         organizationId,
         name: name,
         id: copiedAgent.id,
-        projectId: project_id,
+        projectId: projectId,
       });
 
       await versionAgentTemplate(
@@ -631,9 +649,6 @@ export async function createAgent(
       },
     };
   }
-
-  const projectId =
-    project_id || (await getCatchAllProjectId({ organizationId }));
 
   if (template) {
     await db.insert(agentTemplates).values({
@@ -1592,7 +1607,7 @@ async function createTemplateFromAgent(
 ): Promise<CreateTemplateFromAgentResponse> {
   const { agent_id: agentId } = request.params;
   const { lettaAgentsUserId } = context.request;
-  const { project_id } = request.body;
+  const { project } = request.body;
 
   const agent = await AgentsService.getAgent(
     {
@@ -1615,7 +1630,7 @@ async function createTemplateFromAgent(
   const response = await createAgent(
     {
       body: {
-        project_id,
+        project,
         llm_config: agent.llm_config,
         embedding_config: agent.embedding_config,
         system: agent.system,

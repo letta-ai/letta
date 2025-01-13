@@ -125,6 +125,21 @@ const premadeTemplate = {
 describe('agentsRouter', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+
+    mockDatabase.query.projects.findFirst.mockResolvedValue({
+      id: 'test-project-id',
+      name: 'test-project',
+      organizationId: 'test-org-id',
+      slug: 'test-project-id',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    mockDatabase.query.organizationPreferences.findFirst.mockResolvedValue({
+      defaultProjectId: 'new-project-id',
+      id: 'test-org-id',
+      organizationId: 'test-org-id',
+    });
   });
 
   describe('createAgent', () => {
@@ -228,7 +243,7 @@ describe('agentsRouter', () => {
         {
           body: {
             name: 'test-agent',
-            project_id: 'test-project-id',
+            project: 'test-project-slug',
             template: true,
           },
         },
@@ -265,7 +280,7 @@ describe('agentsRouter', () => {
         {
           body: {
             name: 'test-agent',
-            project_id: 'test-project-id',
+            project: 'test-project-slug',
           },
         },
         {
@@ -313,32 +328,6 @@ describe('agentsRouter', () => {
         ]);
       });
 
-      it('should return an error if user is creating a agent from a starter kit and project_id is not specified', async () => {
-        const response = await createAgent(
-          {
-            body: {
-              template: true,
-              from_template: 'personalAssistant',
-            },
-          },
-          {
-            request: {
-              userId: 'test-id',
-              organizationId: 'test-org-id',
-              lettaAgentsUserId: 'test-id',
-            },
-          },
-        );
-
-        expect(response).toEqual({
-          status: 400,
-          body: {
-            message:
-              'project_id is required when creating an agent from a starter kit template',
-          },
-        });
-      });
-
       it('should create an template from a starter kit', async () => {
         const createdAgent = {
           id: 'test-agent-id',
@@ -363,7 +352,7 @@ describe('agentsRouter', () => {
             body: {
               template: true,
               from_template: 'personalAssistant',
-              project_id: 'test-project-id',
+              project: 'test-project-slug',
               name: 'test',
             },
           },
@@ -452,7 +441,7 @@ describe('agentsRouter', () => {
             body: {
               template: false,
               from_template: 'personalAssistant',
-              project_id: 'test-project-id',
+              project: 'test-project-slug',
               name: 'test',
             },
           },
@@ -524,7 +513,7 @@ describe('agentsRouter', () => {
           body: {
             template: true,
             from_template: 'non-existent-template:23',
-            project_id: 'test-project-id',
+            project: 'test-project-slug',
           },
         },
         {
@@ -559,7 +548,7 @@ describe('agentsRouter', () => {
           body: {
             template: false,
             from_template: 'test-template',
-            project_id: 'test-project-id',
+            project: 'test-project-slug',
           },
         },
         {
@@ -597,7 +586,7 @@ describe('agentsRouter', () => {
           body: {
             template: true,
             from_template: `test-template:${version}`,
-            project_id: 'test-project-id',
+            project: 'test-project-slug',
           },
         },
         {
@@ -689,7 +678,7 @@ describe('agentsRouter', () => {
           body: {
             template: false,
             from_template: 'test-template:23',
-            project_id: 'test-project-id',
+            project: 'test-project-slug',
             variables: {
               name: 'Timber',
             },
@@ -851,7 +840,7 @@ describe('agentsRouter', () => {
           body: {
             template: true,
             from_template: 'test-template:23',
-            project_id: 'test-project-id',
+            project: 'test-project-slug',
             variables: {
               name: 'Timber',
             },
@@ -998,7 +987,7 @@ describe('agentsRouter', () => {
           body: {
             template: true,
             from_template: 'test-template',
-            project_id: 'test-project-id',
+            project: 'test-project-slug',
             variables: {
               name: 'Timber',
             },
@@ -1103,7 +1092,7 @@ describe('agentsRouter', () => {
         {
           body: {
             template: true,
-            project_id: 'test-project-id',
+            project: 'test-project-slug',
             name: 'test',
             system: 'swag',
           },
@@ -1171,7 +1160,7 @@ describe('agentsRouter', () => {
       const response = await createAgent(
         {
           body: {
-            project_id: 'test-project-id',
+            project: 'test-project-slug',
             name: 'test',
             system: 'swag',
           },

@@ -428,7 +428,7 @@ function TemplateVersionDisplay() {
 export const isAgentConvertingToTemplateAtom = atom(false);
 
 function CreateTemplateButton() {
-  const { slug, id: currentProjectId } = useCurrentProject();
+  const { slug } = useCurrentProject();
   const { id: agentId } = useCurrentAgent();
   const setConvertingAtom = useSetAtom(isAgentConvertingToTemplateAtom);
   const { mutate, isPending, isSuccess } =
@@ -455,10 +455,10 @@ function CreateTemplateButton() {
     mutate({
       params: { agent_id: agentId },
       body: {
-        project_id: currentProjectId,
+        project: slug,
       },
     });
-  }, [setConvertingAtom, mutate, agentId, currentProjectId]);
+  }, [setConvertingAtom, mutate, agentId, slug]);
 
   return (
     <Popover

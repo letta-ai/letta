@@ -24,7 +24,7 @@ export function CreateNewTemplateDialog(props: CreateNewTemplateDialogProps) {
   const t = useTranslations(
     'projects/(projectSlug)/components/CreateNewTemplateDialog',
   );
-  const { id: projectId, slug } = useCurrentProject();
+  const { slug } = useCurrentProject();
 
   const starterKits = useMemo(() => {
     return Object.entries(STARTER_KITS);
@@ -44,7 +44,7 @@ export function CreateNewTemplateDialog(props: CreateNewTemplateDialogProps) {
           body: {
             template: true,
             from_template: starterKitId,
-            project_id: projectId,
+            project: slug,
           },
         },
         {
@@ -59,7 +59,7 @@ export function CreateNewTemplateDialog(props: CreateNewTemplateDialogProps) {
         },
       );
     },
-    [mutate, projectId, queryClient, push, slug],
+    [mutate, queryClient, push, slug],
   );
 
   return (

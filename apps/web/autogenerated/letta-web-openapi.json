@@ -229,7 +229,7 @@
                   "template": {
                     "type": "boolean"
                   },
-                  "project_id": {
+                  "project": {
                     "type": "string"
                   },
                   "from_template": {
@@ -932,7 +932,7 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "project_id": {
+                  "project": {
                     "type": "string"
                   }
                 }

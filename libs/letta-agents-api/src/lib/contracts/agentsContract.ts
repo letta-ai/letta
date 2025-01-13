@@ -57,7 +57,7 @@ const CreateAgentBodySchema = z.object({
 
   // letta specific fields
   template: z.boolean().optional(),
-  project_id: z.string().optional(),
+  project: z.string().optional(),
   from_template: z.string().optional(),
 
   variables: z.record(z.string()).optional(),
@@ -367,7 +367,7 @@ const createTemplateFromAgentContract = c.mutation({
     agent_id: z.string(),
   }),
   body: z.object({
-    project_id: z.string().optional(),
+    project: z.string().optional(),
   }),
   responses: {
     201: CreateAgentResponseSchema,
