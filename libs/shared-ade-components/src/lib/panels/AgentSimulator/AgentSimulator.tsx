@@ -21,8 +21,8 @@ import {
 import type { ChatInputRef } from '@letta-cloud/component-library';
 import { PanelBar } from '@letta-cloud/component-library';
 import { VStack } from '@letta-cloud/component-library';
-import type { Dispatch, SetStateAction } from 'react';
 import { useEffect } from 'react';
+import type { Dispatch, SetStateAction } from 'react';
 import { useMemo } from 'react';
 import React, { useCallback, useRef, useState } from 'react';
 import type { AgentMessage, AgentState } from '@letta-cloud/letta-agents-api';
@@ -86,16 +86,16 @@ function useSendMessage(agentId: string, options: UseSendMessageOptions = {}) {
   const [errorCode, setErrorCode] = useState<ErrorCode | undefined>(undefined);
 
   const { baseUrl, password } = useLettaAgentsAPI();
+  const setMessagesInFlightCache = useSetAtom(messagesInFlightCacheAtom);
 
   useEffect(() => {
     return () => {
       if (abortController.current) {
         abortController.current.abort();
+        setMessagesInFlightCache({});
       }
     };
-  }, []);
-
-  const setMessagesInFlightCache = useSetAtom(messagesInFlightCacheAtom);
+  }, [setMessagesInFlightCache]);
 
   const sendMessage: SendMessageType = useCallback(
     (payload: SendMessagePayload) => {
@@ -115,7 +115,9 @@ function useSendMessage(agentId: string, options: UseSendMessageOptions = {}) {
         id: `${new Date().getTime()}-user_message`,
       };
 
-      setMessagesInFlightCache([newMessage]);
+      setMessagesInFlightCache({
+        [agentId]: [newMessage],
+      });
 
       if (isLocal) {
         trackClientSideEvent(AnalyticsEvent.LOCAL_AGENT_MESSAGE_CREATED, {
@@ -178,8 +180,9 @@ function useSendMessage(agentId: string, options: UseSendMessageOptions = {}) {
         try {
           const extracted = AgentMessageSchema.parse(JSON.parse(e.data));
 
-          console.log('extracted', extracted);
-          setMessagesInFlightCache((messages) => {
+          setMessagesInFlightCache((obj) => {
+            const messages = obj[agentId];
+
             if (!messages) {
               return messages;
             }
@@ -249,7 +252,9 @@ function useSendMessage(agentId: string, options: UseSendMessageOptions = {}) {
               ];
             }
 
-            return transformedMessages as AgentMessage[];
+            return {
+              [agentId]: transformedMessages as AgentMessage[],
+            };
           });
         } catch (_e) {
           // ignore

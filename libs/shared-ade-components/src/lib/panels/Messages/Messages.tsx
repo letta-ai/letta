@@ -551,7 +551,7 @@ export function Messages(props: MessagesProps) {
       return [];
     }
 
-    const anIdFromMessagesInFlight = messagesInFlight[1]?.id;
+    const anIdFromMessagesInFlight = messagesInFlight[agentId]?.[1]?.id;
     const firstPage = data.pages[0];
 
     const firstPageHasAnIdFromMessagesInFlight = firstPage.some(
@@ -559,7 +559,9 @@ export function Messages(props: MessagesProps) {
     );
 
     const preMessages = [
-      ...(!firstPageHasAnIdFromMessagesInFlight ? messagesInFlight : []),
+      ...(!firstPageHasAnIdFromMessagesInFlight
+        ? messagesInFlight?.[agentId] || []
+        : []),
       ...data.pages.flat(),
     ]
       .map((message, _, allMessages) =>
@@ -597,7 +599,7 @@ export function Messages(props: MessagesProps) {
     });
 
     return groupedMessages;
-  }, [messagesInFlight, extractMessage, mode, data]);
+  }, [messagesInFlight, agentId, extractMessage, mode, data]);
 
   useEffect(() => {
     if (ref.current) {
