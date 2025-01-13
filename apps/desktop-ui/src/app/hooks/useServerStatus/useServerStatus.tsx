@@ -1,12 +1,10 @@
-import { atom, useAtomValue } from 'jotai';
-import { useAtom } from 'jotai';
-import { useEffect, useRef, useState } from 'react';
+import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { HealthService } from '@letta-cloud/letta-agents-api';
 
-const serverStatusAtom = atom<boolean>(false);
+const ServerStatusContext = createContext<boolean>(false);
 
 export function useServerStatus() {
-  return useAtomValue(serverStatusAtom);
+  return useContext(ServerStatusContext);
 }
 
 interface ServerStatusProviderProps {
@@ -14,7 +12,7 @@ interface ServerStatusProviderProps {
 }
 
 export function ServerStatusProvider(props: ServerStatusProviderProps) {
-  const [_, setStatus] = useAtom(serverStatusAtom);
+  const [status, setStatus] = useState(false);
   const { children } = props;
 
   const interval = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -46,5 +44,9 @@ export function ServerStatusProvider(props: ServerStatusProviderProps) {
     };
   }, []);
 
-  return <>{children}</>;
+  return (
+    <ServerStatusContext.Provider value={status}>
+      {children}
+    </ServerStatusContext.Provider>
+  );
 }
