@@ -216,12 +216,16 @@ export function Messages(props: MessagesProps) {
       return res;
     },
     getNextPageParam: (lastPage) => {
+      if (!Array.isArray(lastPage)) {
+        return undefined;
+      }
+
       if (lastPage.length < MESSAGE_LIMIT) {
         return undefined;
       }
 
       return {
-        before: lastPage.sort(
+        before: lastPage.toSorted(
           (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
         )[0].id,
       };
