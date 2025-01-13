@@ -403,7 +403,8 @@
   },
   "components/Messages": {
     "reasoning": "Reasoning",
-    "loadingMessages": "Fetching messages...",
+    "loadingMessages": "Connecting to agent...",
+    "noMessages": "There are no messages for this agent, chat below",
     "toolReturn": "Tool response",
     "reasoningMessage": "Reasoning",
     "hiddenUserMessage": "Internal user message",

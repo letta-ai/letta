@@ -29,7 +29,7 @@ export function LoadingEmptyStatusComponent(
     errorMessage,
     noMinHeight,
     errorAction,
-    loaderVariant,
+    loaderVariant = 'spinner',
     hideText,
     loadingMessage,
     isLoading,
@@ -90,7 +90,7 @@ export function LoadingEmptyStatusComponent(
       justify="center"
     >
       <VStack
-        gap="xlarge"
+        gap={loaderVariant === 'spinner' ? false : 'xlarge'}
         className="relative mt-[-50px] "
         align="center"
         justify="center"

@@ -246,6 +246,10 @@ export function Messages(props: MessagesProps) {
     // most recent message is the first message in the first page
     const mostRecentMessage = data.pages[0][0];
 
+    if (!mostRecentMessage) {
+      return;
+    }
+
     if (
       mostRecentMessage.id !== lastMessageReceived?.id &&
       'date' in mostRecentMessage
@@ -653,11 +657,19 @@ export function Messages(props: MessagesProps) {
       {hasNextPage && messageGroups.length === 0 && mode === 'simple' && (
         <Alert variant="info" title={t('noParsableMessages')} />
       )}
+      {data &&
+        !hasNextPage &&
+        messageGroups.length === 0 &&
+        mode !== 'simple' && (
+          <LoadingEmptyStatusComponent
+            loaderVariant="spinner"
+            emptyMessage={t('noMessages')}
+          />
+        )}
       {!data && (
         <LoadingEmptyStatusComponent
           isLoading
           loadingMessage={t('loadingMessages')}
-          hideText
           loaderVariant="spinner"
         />
       )}
