@@ -1089,6 +1089,9 @@ export type AgentsServiceAddToolToAgentMutationResult = Awaited<
 export type AgentsServiceRemoveToolFromAgentMutationResult = Awaited<
   ReturnType<typeof AgentsService.removeToolFromAgent>
 >;
+export type AgentsServiceResetMessagesMutationResult = Awaited<
+  ReturnType<typeof AgentsService.resetMessages>
+>;
 export type AgentsServiceUpdateAgentMemoryBlockByLabelMutationResult = Awaited<
   ReturnType<typeof AgentsService.updateAgentMemoryBlockByLabel>
 >;

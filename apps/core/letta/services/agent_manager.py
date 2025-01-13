@@ -22,6 +22,7 @@ from letta.schemas.block import Block as PydanticBlock
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message as PydanticMessage
+from letta.schemas.message import MessageCreate
 from letta.schemas.passage import Passage as PydanticPassage
 from letta.schemas.source import Source as PydanticSource
 from letta.schemas.tool_rule import ToolRule as PydanticToolRule
@@ -125,13 +126,17 @@ class AgentManager:
                 actor=actor,
             )
 
-        # TODO: See if we can merge this into the above SQL create call for performance reasons
-        # Generate a sequence of initial messages to put in the buffer
+        return self.append_initial_message_sequence_to_in_context_messages(actor, agent_state, agent_create.initial_message_sequence)
+
+    @enforce_types
+    def append_initial_message_sequence_to_in_context_messages(
+        self, actor: PydanticUser, agent_state: PydanticAgentState, initial_message_sequence: Optional[List[MessageCreate]] = None
+    ) -> PydanticAgentState:
         init_messages = initialize_message_sequence(
             agent_state=agent_state, memory_edit_timestamp=get_utc_time(), include_initial_boot_message=True
         )
 
-        if agent_create.initial_message_sequence is not None:
+        if initial_message_sequence is not None:
             # We always need the system prompt up front
             system_message_obj = PydanticMessage.dict_to_message(
                 agent_id=agent_state.id,
@@ -142,7 +147,7 @@ class AgentManager:
             # Don't use anything else in the pregen sequence, instead use the provided sequence
             init_messages = [system_message_obj]
             init_messages.extend(
-                package_initial_message_sequence(agent_state.id, agent_create.initial_message_sequence, agent_state.llm_config.model, actor)
+                package_initial_message_sequence(agent_state.id, initial_message_sequence, agent_state.llm_config.model, actor)
             )
         else:
             init_messages = [
@@ -467,6 +472,45 @@ class AgentManager:
         message_ids = self.get_agent_by_id(agent_id=agent_id, actor=actor).message_ids or []
         message_ids += [m.id for m in messages]
         return self.set_in_context_messages(agent_id=agent_id, message_ids=message_ids, actor=actor)
+
+    @enforce_types
+    def reset_messages(self, agent_id: str, actor: PydanticUser, add_default_initial_messages: bool = False) -> PydanticAgentState:
+        """
+        Removes all in-context messages for the specified agent by:
+          1) Clearing the agent.messages relationship (which cascades delete-orphans).
+          2) Resetting the message_ids list to empty.
+          3) Committing the transaction.
+
+        This action is destructive and cannot be undone once committed.
+
+        Args:
+            add_default_initial_messages: If true, adds the default initial messages after resetting.
+            agent_id (str): The ID of the agent whose messages will be reset.
+            actor (PydanticUser): The user performing this action.
+
+        Returns:
+            PydanticAgentState: The updated agent state with no linked messages.
+        """
+        with self.session_maker() as session:
+            # Retrieve the existing agent (will raise NoResultFound if invalid)
+            agent = AgentModel.read(db_session=session, identifier=agent_id, actor=actor)
+
+            # Because of cascade="all, delete-orphan" on agent.messages, setting
+            # this relationship to an empty list will physically remove them from the DB.
+            agent.messages = []
+
+            # Also clear out the message_ids field to keep in-context memory consistent
+            agent.message_ids = []
+
+            # Commit the update
+            agent.update(db_session=session, actor=actor)
+
+            agent_state = agent.to_pydantic()
+
+        if add_default_initial_messages:
+            return self.append_initial_message_sequence_to_in_context_messages(actor, agent_state)
+        else:
+            return agent_state
 
     # ======================================================================================================================
     # Source Management

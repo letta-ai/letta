@@ -1569,6 +1569,59 @@
         }
       }
     },
+    "/v1/agents/{agent_id}/reset-messages": {
+      "patch": {
+        "tags": ["agents"],
+        "summary": "Reset Messages",
+        "description": "Resets the messages for an agent",
+        "operationId": "reset_messages",
+        "parameters": [
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Agent Id"
+            }
+          },
+          {
+            "name": "add_default_initial_messages",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "If true, adds the default initial messages after resetting.",
+              "default": false,
+              "title": "Add Default Initial Messages"
+            },
+            "description": "If true, adds the default initial messages after resetting."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentState"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/agents/{agent_id}/sources": {
       "get": {
         "tags": ["agents"],

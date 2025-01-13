@@ -3049,6 +3049,53 @@ export const useAgentsServiceRemoveToolFromAgent = <
     ...options,
   });
 /**
+ * Reset Messages
+ * Resets the messages for an agent
+ * @param data The data for the request.
+ * @param data.agentId
+ * @param data.addDefaultInitialMessages If true, adds the default initial messages after resetting.
+ * @param data.userId
+ * @returns AgentState Successful Response
+ * @throws ApiError
+ */
+export const useAgentsServiceResetMessages = <
+  TData = Common.AgentsServiceResetMessagesMutationResult,
+  TError = unknown,
+  TContext = unknown,
+>(
+  options?: Omit<
+    UseMutationOptions<
+      TData,
+      TError,
+      {
+        addDefaultInitialMessages?: boolean;
+        agentId: string;
+        userId?: string;
+      },
+      TContext
+    >,
+    'mutationFn'
+  >,
+) =>
+  useMutation<
+    TData,
+    TError,
+    {
+      addDefaultInitialMessages?: boolean;
+      agentId: string;
+      userId?: string;
+    },
+    TContext
+  >({
+    mutationFn: ({ addDefaultInitialMessages, agentId, userId }) =>
+      AgentsService.resetMessages({
+        addDefaultInitialMessages,
+        agentId,
+        userId,
+      }) as unknown as Promise<TData>,
+    ...options,
+  });
+/**
  * Update Agent Memory Block
  * Removes a memory block from an agent by unlnking it. If the block is not linked to any other agent, it is deleted.
  * @param data The data for the request.

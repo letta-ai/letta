@@ -2716,6 +2716,17 @@ export type RemoveToolFromAgentData = {
 
 export type RemoveToolFromAgentResponse = AgentState;
 
+export type ResetMessagesData = {
+  /**
+   * If true, adds the default initial messages after resetting.
+   */
+  addDefaultInitialMessages?: boolean;
+  agentId: string;
+  userId?: string | null;
+};
+
+export type ResetMessagesResponse = AgentState;
+
 export type GetAgentSourcesData = {
   agentId: string;
   userId?: string | null;
@@ -3733,6 +3744,21 @@ export type $OpenApiTs = {
   '/v1/agents/{agent_id}/remove-tool/{tool_id}': {
     patch: {
       req: RemoveToolFromAgentData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: AgentState;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/agents/{agent_id}/reset-messages': {
+    patch: {
+      req: ResetMessagesData;
       res: {
         /**
          * Successful Response

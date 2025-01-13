@@ -70,6 +70,8 @@ import type {
   AddToolToAgentResponse,
   RemoveToolFromAgentData,
   RemoveToolFromAgentResponse,
+  ResetMessagesData,
+  ResetMessagesResponse,
   GetAgentSourcesData,
   GetAgentSourcesResponse,
   ListAgentInContextMessagesData,
@@ -1070,6 +1072,36 @@ export class AgentsService {
       path: {
         agent_id: data.agentId,
         tool_id: data.toolId,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Reset Messages
+   * Resets the messages for an agent
+   * @param data The data for the request.
+   * @param data.agentId
+   * @param data.addDefaultInitialMessages If true, adds the default initial messages after resetting.
+   * @param data.userId
+   * @returns AgentState Successful Response
+   * @throws ApiError
+   */
+  public static resetMessages(
+    data: ResetMessagesData,
+    headers?: { user_id: string },
+  ): CancelablePromise<ResetMessagesResponse> {
+    return __request(OpenAPI, {
+      method: 'PATCH',
+      url: '/v1/agents/{agent_id}/reset-messages',
+      path: {
+        agent_id: data.agentId,
+      },
+      query: {
+        add_default_initial_messages: data.addDefaultInitialMessages,
       },
       errors: {
         422: 'Validation Error',
