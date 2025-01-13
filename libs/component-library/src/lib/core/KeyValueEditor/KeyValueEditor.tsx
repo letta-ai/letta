@@ -40,7 +40,7 @@ function KeyValueEditorPrimitive(props: KeyValueEditorProps) {
   } = props;
 
   const keyValuePairs = useMemo(() => {
-    return value;
+    return value || [];
   }, [value]);
 
   const addRow = useCallback(() => {
