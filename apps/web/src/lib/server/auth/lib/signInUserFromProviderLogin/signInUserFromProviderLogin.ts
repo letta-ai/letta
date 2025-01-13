@@ -1,6 +1,5 @@
 'use server';
 import {
-  adePreferences,
   db,
   emailWhitelist,
   organizationInvitedUsers,
@@ -11,9 +10,6 @@ import {
   users,
 } from '@letta-cloud/database';
 import { eq } from 'drizzle-orm';
-import { createAgent } from '$web/sdk';
-import { versionAgentTemplate } from '$web/sdk/agents/lib/versionAgentTemplate/versionAgentTemplate';
-import { generateDefaultADELayout } from '$web/utils';
 import type { UserSession } from '@letta-cloud/web-api-client';
 import type { ProviderUserPayload } from '@letta-cloud/web-api-client';
 import { AdminService } from '@letta-cloud/letta-agents-api';
@@ -34,14 +30,12 @@ function isLettaEmail(email: string) {
   return email.endsWith('@letta.com') || email.endsWith('@memgpt.ai');
 }
 
-interface CreateFirstAgentArgs {
+interface GetDefaultProjectArgs {
   organizationId: string;
-  lettaAgentsUserId: string;
-  userId: string;
 }
 
-async function createFirstAgent(args: CreateFirstAgentArgs) {
-  const { organizationId, lettaAgentsUserId, userId } = args;
+async function getDefaultProject(args: GetDefaultProjectArgs) {
+  const { organizationId } = args;
 
   const orgPreferences = await db.query.organizationPreferences.findFirst({
     where: eq(organizationPreferences.organizationId, organizationId),
@@ -59,87 +53,13 @@ async function createFirstAgent(args: CreateFirstAgentArgs) {
     throw new Error('Project not found');
   }
 
-  const firstProjectSlug = createdProject.slug;
-
-  const createdAgentTemplate = await createAgent(
-    {
-      body: {
-        template: true,
-        project_id: createdProject.id,
-        from_template: 'personalAssistant',
-      },
-    },
-    {
-      request: {
-        source: 'web',
-        lettaAgentsUserId: lettaAgentsUserId,
-        userId: userId,
-        organizationId,
-      },
-    },
-  );
-
-  if (createdAgentTemplate.status !== 201 || !createdAgentTemplate.body.id) {
-    throw new Error(JSON.stringify(createdAgentTemplate.body, null, 2));
-  }
-
-  const [versionedAgentTemplate] = await Promise.all([
-    await versionAgentTemplate(
-      {
-        params: {
-          agent_id: createdAgentTemplate.body.id,
-        },
-        body: {},
-        query: {},
-      },
-      {
-        request: {
-          source: 'web',
-          userId,
-          organizationId,
-          lettaAgentsUserId,
-        },
-      },
-    ),
-    db.insert(adePreferences).values({
-      userId: userId,
-      displayConfig: generateDefaultADELayout().displayConfig,
-      agentId: createdAgentTemplate.body.id,
-    }),
-  ]);
-
-  if (versionedAgentTemplate.status !== 201) {
-    throw new Error('Failed to create source agent');
-  }
-
-  await createAgent(
-    {
-      body: {
-        from_template: versionedAgentTemplate.body.version,
-        name: `${createdAgentTemplate.body.name}-deployed-1`,
-      },
-    },
-    {
-      request: {
-        organizationId,
-        userId,
-        source: 'web',
-        lettaAgentsUserId,
-      },
-    },
-  );
-
-  return {
-    firstProjectSlug,
-    firstCreatedAgentName: createdAgentTemplate.body.name,
-  };
+  return createdProject.slug;
 }
 
 interface CreateUserAndOrganizationResponse {
   user: UserSession;
   newProjectPayload?: {
     firstProjectSlug: string;
-    firstCreatedAgentName: string;
   };
 }
 
@@ -258,18 +178,12 @@ async function createUserAndOrganization(
     }),
   ]);
 
-  let firstCreatedAgentName = '';
   let firstProjectSlug = '';
 
   if (isNewOrganization) {
-    const res = await createFirstAgent({
+    firstProjectSlug = await getDefaultProject({
       organizationId,
-      lettaAgentsUserId: lettaAgentsUser.id,
-      userId: createdUser.userId,
     });
-
-    firstProjectSlug = res.firstProjectSlug;
-    firstCreatedAgentName = res.firstCreatedAgentName;
   }
 
   return {
@@ -281,9 +195,8 @@ async function createUserAndOrganization(
       id: createdUser.userId,
       activeOrganizationId: organizationId,
     },
-    newProjectPayload: firstCreatedAgentName
+    newProjectPayload: firstProjectSlug
       ? {
-          firstCreatedAgentName,
           firstProjectSlug,
         }
       : undefined,
@@ -335,7 +248,6 @@ async function isUserInWhitelist(email: string) {
 
 export interface NewUserDetails {
   firstProjectSlug: string;
-  firstCreatedAgentName: string;
 }
 
 interface UpdateExistingUserArgs {
@@ -402,7 +314,6 @@ async function findOrCreateUserAndOrganizationFromProviderLogin(
     if (res.newProjectPayload && isCloudEnabled) {
       newUserDetails = {
         firstProjectSlug: res.newProjectPayload.firstProjectSlug,
-        firstCreatedAgentName: res.newProjectPayload.firstCreatedAgentName,
       };
     }
 
