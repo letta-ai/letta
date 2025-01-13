@@ -113,10 +113,7 @@ function MemoryItem(props: MemoryItemProps) {
               return oldData;
             }
 
-            return {
-              ...oldData,
-              data: oldData.filter((memory) => memory.id !== memory.id),
-            };
+            return oldData.filter((m) => m.id !== memory.id);
           },
         );
       },
