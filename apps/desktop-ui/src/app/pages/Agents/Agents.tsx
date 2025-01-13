@@ -16,14 +16,23 @@ import { useDateFormatter } from '@letta-cloud/helpful-client-utils';
 import { useTranslations } from '@letta-cloud/translations';
 import { CreateLocalAgentDialog } from './CreateLocalAgentDialog/CreateLocalAgentDialog';
 import { DesktopPageLayout } from '../shared/DesktopPageLayout/DesktopPageLayout';
+import { useServerStatus } from '../../hooks/useServerStatus/useServerStatus';
 
 const LIMIT = 10;
 
 export function Agents() {
   const t = useTranslations('Agents');
   const { formatDateAndTime } = useDateFormatter();
+  const status = useServerStatus();
 
-  const { data, isError } = useAgentsServiceListAgents();
+  const { data, isError } = useAgentsServiceListAgents(
+    { limit: 1000 },
+    undefined,
+    {
+      enabled: status,
+      refetchInterval: 2500,
+    },
+  );
 
   const [search, setSearch] = useState<string>('');
 
