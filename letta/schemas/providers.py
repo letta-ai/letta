@@ -63,7 +63,7 @@ class LettaProvider(Provider):
                 model="letta-free",  # NOTE: renamed
                 model_endpoint_type="openai",
                 model_endpoint="https://inference.memgpt.ai",
-                context_window=16384,
+                context_window=8192,
                 handle=self.get_handle("letta-free"),
             )
         ]
