@@ -915,6 +915,109 @@ def test_list_agents_by_tags_pagination(server: SyncServer, default_user, defaul
 
 
 # ======================================================================================================================
+# AgentManager Tests - Messages Relationship
+# ======================================================================================================================
+def test_reset_messages_no_messages(server: SyncServer, sarah_agent, default_user):
+    """
+    Test that resetting messages on an agent that has zero messages
+    does not fail and clears out message_ids if somehow it's non-empty.
+    """
+    # Force a weird scenario: Suppose the message_ids field was set non-empty (without actual messages).
+    server.agent_manager.update_agent(sarah_agent.id, UpdateAgent(message_ids=["ghost-message-id"]), actor=default_user)
+    updated_agent = server.agent_manager.get_agent_by_id(sarah_agent.id, default_user)
+    assert updated_agent.message_ids == ["ghost-message-id"]
+
+    # Reset messages
+    reset_agent = server.agent_manager.reset_messages(agent_id=sarah_agent.id, actor=default_user)
+    assert reset_agent.message_ids == []
+    # Double check that physically no messages exist
+    assert server.message_manager.size(agent_id=sarah_agent.id, actor=default_user) == 0
+
+
+def test_reset_messages_default_messages(server: SyncServer, sarah_agent, default_user):
+    """
+    Test that resetting messages on an agent that has zero messages
+    does not fail and clears out message_ids if somehow it's non-empty.
+    """
+    # Force a weird scenario: Suppose the message_ids field was set non-empty (without actual messages).
+    server.agent_manager.update_agent(sarah_agent.id, UpdateAgent(message_ids=["ghost-message-id"]), actor=default_user)
+    updated_agent = server.agent_manager.get_agent_by_id(sarah_agent.id, default_user)
+    assert updated_agent.message_ids == ["ghost-message-id"]
+
+    # Reset messages
+    reset_agent = server.agent_manager.reset_messages(agent_id=sarah_agent.id, actor=default_user, add_default_initial_messages=True)
+    assert len(reset_agent.message_ids) == 4
+    # Double check that physically no messages exist
+    assert server.message_manager.size(agent_id=sarah_agent.id, actor=default_user) == 4
+
+
+def test_reset_messages_with_existing_messages(server: SyncServer, sarah_agent, default_user):
+    """
+    Test that resetting messages on an agent with actual messages
+    deletes them from the database and clears message_ids.
+    """
+    # 1. Create multiple messages for the agent
+    msg1 = server.message_manager.create_message(
+        PydanticMessage(
+            agent_id=sarah_agent.id,
+            organization_id=default_user.organization_id,
+            role="user",
+            text="Hello, Sarah!",
+        ),
+        actor=default_user,
+    )
+    msg2 = server.message_manager.create_message(
+        PydanticMessage(
+            agent_id=sarah_agent.id,
+            organization_id=default_user.organization_id,
+            role="assistant",
+            text="Hello, user!",
+        ),
+        actor=default_user,
+    )
+
+    # Verify the messages were created
+    agent_before = server.agent_manager.get_agent_by_id(sarah_agent.id, default_user)
+    # This is 4 because creating the message does not necessarily add it to the in context message ids
+    assert len(agent_before.message_ids) == 4
+    assert server.message_manager.size(agent_id=sarah_agent.id, actor=default_user) == 6
+
+    # 2. Reset all messages
+    reset_agent = server.agent_manager.reset_messages(agent_id=sarah_agent.id, actor=default_user)
+
+    # 3. Verify the agent now has zero message_ids
+    assert reset_agent.message_ids == []
+
+    # 4. Verify the messages are physically removed
+    assert server.message_manager.size(agent_id=sarah_agent.id, actor=default_user) == 0
+
+
+def test_reset_messages_idempotency(server: SyncServer, sarah_agent, default_user):
+    """
+    Test that calling reset_messages multiple times has no adverse effect.
+    """
+    # Create a single message
+    server.message_manager.create_message(
+        PydanticMessage(
+            agent_id=sarah_agent.id,
+            organization_id=default_user.organization_id,
+            role="user",
+            text="Hello, Sarah!",
+        ),
+        actor=default_user,
+    )
+    # First reset
+    reset_agent = server.agent_manager.reset_messages(agent_id=sarah_agent.id, actor=default_user)
+    assert reset_agent.message_ids == []
+    assert server.message_manager.size(agent_id=sarah_agent.id, actor=default_user) == 0
+
+    # Second reset should do nothing new
+    reset_agent_again = server.agent_manager.reset_messages(agent_id=sarah_agent.id, actor=default_user)
+    assert reset_agent_again.message_ids == []
+    assert server.message_manager.size(agent_id=sarah_agent.id, actor=default_user) == 0
+
+
+# ======================================================================================================================
 # AgentManager Tests - Blocks Relationship
 # ======================================================================================================================
 
