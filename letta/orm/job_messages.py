@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING
 
-from sqlalchemy import ForeignKey
+from sqlalchemy import ForeignKey, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from letta.orm.sqlalchemy_base import SqlalchemyBase
@@ -14,6 +14,7 @@ class JobMessage(SqlalchemyBase):
     """Tracks messages that were created during job execution."""
 
     __tablename__ = "job_messages"
+    __table_args__ = (UniqueConstraint("job_id", "message_id", name="unique_job_message"),)
 
     id: Mapped[int] = mapped_column(primary_key=True, doc="Unique identifier for the job message")
     job_id: Mapped[str] = mapped_column(
@@ -23,7 +24,6 @@ class JobMessage(SqlalchemyBase):
     )
     message_id: Mapped[str] = mapped_column(
         ForeignKey("messages.id", ondelete="CASCADE"),
-        unique=True,  # Each message can only belong to one job
         nullable=False,  # A job message must have a message
         doc="ID of the message created by the job",
     )

@@ -2590,10 +2590,10 @@ def test_job_messages_ordering(server: SyncServer, default_run, default_user, sa
 
     for i, created_at in enumerate(message_times):
         message = PydanticMessage(
+            role=MessageRole.user,
+            text="Test message",
             organization_id=default_user.organization_id,
             agent_id=sarah_agent.id,
-            role=MessageRole.user,
-            text=f"Test message {i}",
             created_at=created_at,
         )
         msg = server.message_manager.create_message(message, actor=default_user)

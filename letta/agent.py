@@ -44,6 +44,7 @@ from letta.schemas.usage import LettaUsageStatistics
 from letta.services.agent_manager import AgentManager
 from letta.services.block_manager import BlockManager
 from letta.services.helpers.agent_manager_helper import check_supports_structured_output, compile_memory_metadata_block
+from letta.services.job_manager import JobManager
 from letta.services.message_manager import MessageManager
 from letta.services.passage_manager import PassageManager
 from letta.services.tool_execution_sandbox import ToolExecutionSandbox
@@ -128,6 +129,7 @@ class Agent(BaseAgent):
         self.message_manager = MessageManager()
         self.passage_manager = PassageManager()
         self.agent_manager = AgentManager()
+        self.job_manager = JobManager()
 
         # State needed for heartbeat pausing
 
@@ -675,10 +677,14 @@ class Agent(BaseAgent):
         skip_verify: bool = False,
         stream: bool = False,  # TODO move to config?
         step_count: Optional[int] = None,
+        metadata: Optional[dict] = None,
     ) -> AgentStepResponse:
         """Runs a single step in the agent loop (generates at most one LLM call)"""
 
         try:
+
+            # Extract job_id from metadata if present
+            job_id = metadata.get("job_id") if metadata else None
 
             # Step 0: update core memory
             # only pulling latest block data if shared memory is being used
@@ -754,9 +760,17 @@ class Agent(BaseAgent):
                     f"last response total_tokens ({current_total_tokens}) < {MESSAGE_SUMMARY_WARNING_FRAC * int(self.agent_state.llm_config.context_window)}"
                 )
 
+            # Persisting into Messages
             self.agent_state = self.agent_manager.append_to_in_context_messages(
                 all_new_messages, agent_id=self.agent_state.id, actor=self.user
             )
+            if job_id:
+                for message in all_new_messages:
+                    self.job_manager.add_message_to_job(
+                        job_id=job_id,
+                        message_id=message.id,
+                        actor=self.user,
+                    )
 
             return AgentStepResponse(
                 messages=all_new_messages,
@@ -784,6 +798,7 @@ class Agent(BaseAgent):
                     first_message_retry_limit=first_message_retry_limit,
                     skip_verify=skip_verify,
                     stream=stream,
+                    metadata=metadata,
                 )
 
             else:
