@@ -159,6 +159,7 @@ interface PrepareAgentForUserOptions {
   agentName: string;
   version?: string;
   parentTemplate?: string;
+  project?: string;
 }
 
 export function prepareAgentForUser(
@@ -173,6 +174,9 @@ export function prepareAgentForUser(
       ...agent.metadata_,
       ...(options.parentTemplate
         ? { parentTemplate: options.parentTemplate }
+        : {}),
+      ...(options.project && !agent.metadata_?.project
+        ? { project: options.project }
         : {}),
     },
   };
@@ -201,6 +205,32 @@ async function getCatchAllProjectId(args: GetCatchAllProjectId) {
   }
 
   return orgPrefResponse.defaultProjectId;
+}
+
+interface GetProjectSlugById {
+  organizationId: string;
+  projectId: string | undefined;
+}
+
+async function getProjectSlugById(args: GetProjectSlugById) {
+  const { organizationId, projectId } = args;
+
+  if (!projectId) {
+    return undefined;
+  }
+
+  const project = await db.query.projects.findFirst({
+    where: and(
+      eq(projects.organizationId, organizationId),
+      eq(projects.id, projectId),
+      isNull(projects.deletedAt),
+    ),
+    columns: {
+      slug: true,
+    },
+  });
+
+  return project?.slug;
 }
 
 export async function createAgent(
@@ -249,6 +279,13 @@ export async function createAgent(
   if (!projectId) {
     projectId = await getCatchAllProjectId({ organizationId });
   }
+
+  let projectSlug =
+    project ||
+    (await getProjectSlugById({
+      organizationId,
+      projectId,
+    }));
 
   if (name) {
     if (template) {
@@ -431,6 +468,7 @@ export async function createAgent(
           status: 201,
           body: prepareAgentForUser(response, {
             agentName: name,
+            project: projectSlug,
           }),
         };
       }
@@ -455,7 +493,10 @@ export async function createAgent(
 
       return {
         status: 201,
-        body: prepareAgentForUser(response, { agentName: name }),
+        body: prepareAgentForUser(response, {
+          agentName: name,
+          project: projectSlug,
+        }),
       };
     }
 
@@ -579,6 +620,7 @@ export async function createAgent(
         status: 201,
         body: prepareAgentForUser(copiedAgent, {
           agentName: name,
+          project: projectSlug,
         }),
       };
     }
@@ -612,10 +654,18 @@ export async function createAgent(
       organizationId,
     });
 
+    if (agentTemplate.projectId !== projectId) {
+      projectSlug = await getProjectSlugById({
+        organizationId: organizationId,
+        projectId: agentTemplate.projectId,
+      });
+    }
+
     return {
       status: 201,
       body: prepareAgentForUser(copiedAgent, {
         agentName: name,
+        project: projectSlug,
       }),
     };
   }
@@ -700,6 +750,7 @@ export async function createAgent(
     status: 201,
     body: prepareAgentForUser(response, {
       agentName: name,
+      project: projectSlug,
     }),
   };
 }
@@ -855,24 +906,31 @@ async function queryAgents(options: QueryAgentsOptions) {
     },
   });
 
-  return await Promise.all(
-    query.map(async (agent) => {
-      return AgentsService.getAgent(
-        {
-          agentId: agent.id,
-        },
-        {
-          user_id: context.request.lettaAgentsUserId,
-        },
-      ).then((response) => {
-        return prepareAgentForUser(response, {
+  return Promise.all(
+    query.map((agent) =>
+      Promise.all([
+        AgentsService.getAgent(
+          {
+            agentId: agent.id,
+          },
+          {
+            user_id: context.request.lettaAgentsUserId,
+          },
+        ),
+        getProjectSlugById({
+          organizationId: context.request.organizationId,
+          projectId: agent.projectId,
+        }),
+      ]).then(([response, projectSlug]) =>
+        prepareAgentForUser(response, {
           agentName: agent.key,
           version: include_version
             ? agent.deployedAgentTemplate?.version
             : undefined,
-        });
-      });
-    }),
+          project: projectSlug,
+        }),
+      ),
+    ),
   );
 }
 
@@ -971,20 +1029,27 @@ export async function listAgents(
     });
 
     const allTemplateDetails = await Promise.all(
-      query.map(async (template) => {
-        return AgentsService.getAgent(
-          {
-            agentId: template.id,
-          },
-          {
-            user_id: context.request.lettaAgentsUserId,
-          },
-        ).then((response) => {
+      query.map((template) =>
+        Promise.all([
+          AgentsService.getAgent(
+            {
+              agentId: template.id,
+            },
+            {
+              user_id: context.request.lettaAgentsUserId,
+            },
+          ),
+          getProjectSlugById({
+            organizationId: context.request.organizationId,
+            projectId: template.projectId,
+          }),
+        ]).then(([response, projectSlug]) => {
           return prepareAgentForUser(response, {
             agentName: template.name,
+            project: projectSlug,
           });
-        });
-      }),
+        }),
+      ),
     );
 
     return {
@@ -1129,11 +1194,19 @@ async function getAgentById(
     }
   }
 
+  const projectSlug = agent?.metadata_?.project
+    ? (agent.metadata_.project as string)
+    : await getProjectSlugById({
+        organizationId: context.request.organizationId,
+        projectId: deployedAgent?.projectId || agentTemplate?.projectId,
+      });
+
   return {
     status: 200,
     body: prepareAgentForUser(agent, {
       agentName: deployedAgent?.key || agentTemplate?.name || '',
       parentTemplate: deployedAgent?.deployedAgentTemplateId || '',
+      project: projectSlug,
     }),
   };
 }
@@ -1349,10 +1422,18 @@ export async function updateAgent(
     );
   }
 
+  const projectSlug = response?.metadata_?.project
+    ? (response.metadata_.project as string)
+    : await getProjectSlugById({
+        organizationId: context.request.organizationId,
+        projectId: deployedAgent?.projectId || agentTemplate?.projectId,
+      });
+
   return {
     status: 200,
     body: prepareAgentForUser(response, {
       agentName: deployedAgent?.key || agentTemplate?.name || '',
+      project: projectSlug,
     }),
   };
 }
@@ -1507,25 +1588,32 @@ async function searchDeployedAgents(
   ]);
 
   const allAgentsDetails = await Promise.all(
-    result.slice(0, limit).map(async (agent) => {
-      return AgentsService.getAgent(
-        {
-          agentId: agent.id,
-        },
-        {
-          user_id: context.request.lettaAgentsUserId,
-        },
-      ).then((response) => {
-        return prepareAgentForUser(response, {
+    result.slice(0, limit).map((agent) =>
+      Promise.all([
+        AgentsService.getAgent(
+          {
+            agentId: agent.id,
+          },
+          {
+            user_id: context.request.lettaAgentsUserId,
+          },
+        ),
+        getProjectSlugById({
+          organizationId: context.request.organizationId,
+          projectId: agent.projectId,
+        }),
+      ]).then(([response, projectSlug]) =>
+        prepareAgentForUser(response, {
           agentName: agent.key,
           version: agent.deployedAgentTemplate?.version
             ? `${
                 agent.deployedAgentTemplate?.agentTemplate?.name || 'unknown'
               }:${agent.deployedAgentTemplate?.version}`
             : '',
-        });
-      });
-    }),
+          project: projectSlug,
+        }),
+      ),
+    ),
   );
 
   return {

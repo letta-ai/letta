@@ -131,7 +131,7 @@ describe('agentsRouter', () => {
       id: 'test-project-id',
       name: 'test-project',
       organizationId: 'test-org-id',
-      slug: 'test-project-id',
+      slug: 'test-project-slug',
       createdAt: new Date(),
       updatedAt: new Date(),
     });
@@ -153,7 +153,9 @@ describe('agentsRouter', () => {
 
       const createdAgent = {
         id: 'test-agent-id',
-        metadata_: {},
+        metadata_: {
+          project: 'test-project-slug',
+        },
         name: 'test-agent',
         created_at: new Date().toISOString(),
         system: '',
@@ -163,7 +165,7 @@ describe('agentsRouter', () => {
       createProjectSpy.mockResolvedValue({
         status: 201,
         body: {
-          slug: 'new-project-id',
+          slug: 'new-project-slug',
           name: 'new-project',
           id: 'new-project-id',
         },
@@ -335,7 +337,9 @@ describe('agentsRouter', () => {
           description:
             'Act as a personal assistant to help users with tasks and answer questions.',
           name: 'test-agent',
-          metadata_: {},
+          metadata_: {
+            project: 'test-project-slug',
+          },
           agent_type: 'memgpt_agent',
           created_at: new Date().toISOString(),
           system: '',
@@ -418,7 +422,9 @@ describe('agentsRouter', () => {
         const createdAgent = {
           id: 'test-agent-id',
           name: 'test-agent',
-          metadata_: {},
+          metadata_: {
+            project: 'test-project-slug',
+          },
           agent_type: 'memgpt_agent',
           created_at: new Date().toISOString(),
           system: '',
@@ -750,7 +756,9 @@ describe('agentsRouter', () => {
         status: 201,
         body: {
           ...premadeTemplate,
-          metadata_: {},
+          metadata_: {
+            project: 'test-project-slug',
+          },
           system: 'test',
           agent_type: 'memgpt_agent',
           name: valuesFn.mock.calls[0][0].key,
@@ -819,7 +827,9 @@ describe('agentsRouter', () => {
       const createdAgent: AgentState = {
         id: 'test-agent-id',
         name: 'test',
-        metadata_: {},
+        metadata_: {
+          project: 'test-project-slug',
+        },
         created_at: new Date().toISOString(),
         memory: GetAgentResolvedValue.memory,
       };
@@ -1064,7 +1074,9 @@ describe('agentsRouter', () => {
         status: 201,
         body: {
           ...premadeTemplate,
-          metadata_: {},
+          metadata_: {
+            project: 'test-project-slug',
+          },
           name: valuesFn.mock.calls[0][0].name,
           id: 'test-agent-id',
         },
@@ -1077,7 +1089,9 @@ describe('agentsRouter', () => {
       const createdAgent = {
         id: 'test-agent-id',
         name: 'test-agent',
-        metadata_: {},
+        metadata_: {
+          project: 'test-project-slug',
+        },
         created_at: new Date().toISOString(),
         ...premadeTemplate,
         system: '',
@@ -1140,7 +1154,9 @@ describe('agentsRouter', () => {
       const createdAgent = {
         id: 'test-agent-id',
         name: 'test-agent',
-        metadata_: {},
+        metadata_: {
+          project: 'test-project-slug',
+        },
         created_at: new Date().toISOString(),
         system: '',
         ...premadeTemplate,
@@ -1218,7 +1234,9 @@ describe('agentsRouter', () => {
       const createdAgent = {
         id: 'test-agent-id',
         name: 'test-agent',
-        metadata_: {},
+        metadata_: {
+          project: 'test-project-slug',
+        },
         created_at: new Date().toISOString(),
         system: '',
         ...premadeTemplate,
@@ -1227,7 +1245,7 @@ describe('agentsRouter', () => {
       createProjectSpy.mockResolvedValue({
         status: 201,
         body: {
-          slug: 'new-project-id',
+          slug: 'new-project-slug',
           name: 'new-project',
           id: 'new-project-id',
         },
@@ -1304,7 +1322,9 @@ describe('agentsRouter', () => {
     const createdAgent = {
       id: 'test-agent-id',
       name: 'test-agent',
-      metadata_: {},
+      metadata_: {
+        project: 'test-project-slug',
+      },
       created_at: new Date().toISOString(),
       system: '',
       memory: {
@@ -1319,7 +1339,7 @@ describe('agentsRouter', () => {
     createProjectSpy.mockResolvedValue({
       status: 201,
       body: {
-        slug: 'new-project-id',
+        slug: 'new-project-slug',
         name: 'new-project',
         id: 'new-project-id',
       },
