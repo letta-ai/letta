@@ -264,6 +264,14 @@ desktop:
     npm run desktop:dev
 
 prepare-desktop:
+    @echo "🚧 Preparing the desktop app..."
+    @echo "Removing existing files..."
+    rm -rf apps/desktop-core/letta_desktop/alembic
+    rm -f apps/desktop-core/letta_desktop/alembic.ini
+    rm -f apps/desktop-electron/src/assets/letta
+    rm -rf apps/desktop-electron/src/assets/alembic
+    rm -f apps/desktop-electron/src/assets/alembic.ini
+    rm -rf apps/desktop-core/.venv
     @echo "Moving the alembic migration files to the desktop app..."
     cp -R apps/core/alembic apps/desktop-core/letta_desktop
     cp apps/core/alembic.ini apps/desktop-core/letta_desktop/alembic.ini
