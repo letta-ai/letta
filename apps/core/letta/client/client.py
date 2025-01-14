@@ -548,6 +548,7 @@ class RESTClient(AbstractClient):
             "embedding_config": embedding_config if embedding_config else self._default_embedding_config,
             "initial_message_sequence": initial_message_sequence,
             "tags": tags,
+            "include_base_tools": include_base_tools,
         }
 
         # Only add name if it's not None
