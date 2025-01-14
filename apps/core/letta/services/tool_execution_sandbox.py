@@ -38,7 +38,7 @@ class ToolExecutionSandbox:
     # We make this a long random string to avoid collisions with any variables in the user's code
     LOCAL_SANDBOX_RESULT_VAR_NAME = "result_ZQqiequkcFwRwwGQMqkt"
 
-    def __init__(self, tool_name: str, args: dict, user: User, force_recreate=False, tool_object: Optional[Tool] = None):
+    def __init__(self, tool_name: str, args: dict, user: User, force_recreate=True, tool_object: Optional[Tool] = None):
         self.tool_name = tool_name
         self.args = args
         self.user = user
