@@ -498,3 +498,68 @@ def test_send_message_async(client: Union[LocalClient, RESTClient], agent: Agent
     assert usage.prompt_tokens >= 0
     assert usage.total_tokens >= 0
     assert usage.total_tokens == usage.completion_tokens + usage.prompt_tokens
+
+
+def test_agent_creation(client: Union[LocalClient, RESTClient]):
+    """Test that block IDs are properly attached when creating an agent."""
+    if not isinstance(client, RESTClient):
+        pytest.skip("This test only runs when the server is enabled")
+
+    offline_memory_agent_system = """
+    You are a helpful agent. You will be provided with a list of memory blocks and a user preferences block.
+    You should use the memory blocks to remember information about the user and their preferences.
+    You should also use the user preferences block to remember information about the user's preferences.
+    """
+
+    from letta import BasicBlockMemory
+
+    # Create a test block that will represent user preferences
+    user_preferences_block = client.create_block(label="user_preferences", value="", limit=10000)
+
+    # Create test tools
+    def test_tool():
+        """A simple test tool."""
+        return "Hello from test tool!"
+
+    def another_test_tool():
+        """Another test tool."""
+        return "Hello from another test tool!"
+
+    tool1 = client.create_or_update_tool(func=test_tool, name="test_tool", tags=["test"])
+    tool2 = client.create_or_update_tool(func=another_test_tool, name="another_test_tool", tags=["test"])
+
+    # Create test blocks
+    offline_persona_block = client.create_block(label="persona", value="persona description", limit=5000)
+    mindy_block = client.create_block(label="mindy", value="Mindy is a helpful assistant", limit=5000)
+    memory_blocks = BasicBlockMemory(blocks=[offline_persona_block, mindy_block])
+
+    # Create agent with the blocks and tools
+    agent = client.create_agent(
+        name=f"test_agent_{str(uuid.uuid4())}",
+        memory=memory_blocks,
+        llm_config=LLMConfig.default_config("gpt-4"),
+        embedding_config=EmbeddingConfig.default_config(provider="openai"),
+        tool_ids=[tool1.id, tool2.id],
+        include_base_tools=False,
+        tags=["test"],
+        block_ids=[user_preferences_block.id],
+    )
+
+    # Verify the agent was created successfully
+    assert agent is not None
+    assert agent.id is not None
+
+    # Verify the blocks are properly attached
+    agent_blocks = client.get_agent_memory_blocks(agent.id)
+    agent_block_ids = {block.id for block in agent_blocks}
+
+    # Check that all memory blocks are present
+    memory_block_ids = {block.id for block in memory_blocks.blocks}
+    for block_id in memory_block_ids | {user_preferences_block.id}:
+        assert block_id in agent_block_ids
+
+    # Verify the tools are properly attached
+    agent_tools = client.get_tools_from_agent(agent.id)
+    assert len(agent_tools) == 2
+    tool_ids = {tool1.id, tool2.id}
+    assert all(tool.id in tool_ids for tool in agent_tools)
