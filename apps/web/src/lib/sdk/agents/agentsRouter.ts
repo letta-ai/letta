@@ -742,6 +742,15 @@ export async function updateAgentFromAgentId(options: UpdateAgentFromAgentId) {
     tool_ids: agentTemplateData.tools
       .map((tool) => tool.id || '')
       .filter(Boolean),
+    tool_exec_environment_variables:
+      agentTemplateData.tool_exec_environment_variables?.reduce(
+        (acc, tool) => {
+          acc[tool.key] = tool.value;
+
+          return acc;
+        },
+        {} as Record<string, string>,
+      ) || {},
   };
 
   if (!preserveCoreMemories) {
