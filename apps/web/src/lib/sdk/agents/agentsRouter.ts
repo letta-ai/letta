@@ -25,13 +25,13 @@ import {
 import { and, asc, count, desc, eq, isNull, like, ne, or } from 'drizzle-orm';
 import { findUniqueAgentTemplateName } from '$web/server';
 
-import { getDeployedTemplateByVersion } from '$web/server/lib/getDeployedTemplateByVersion/getDeployedTemplateByVersion';
 import { versionAgentTemplate } from './lib/versionAgentTemplate/versionAgentTemplate';
 import {
   isTemplateNameAStarterKitId,
   STARTER_KITS,
 } from '@letta-cloud/agent-starter-kits';
 import { omit } from 'lodash';
+import { migrateAgent } from '$web/sdk/agents/lib/migrateAgent/migrateAgent';
 
 export function attachVariablesToTemplates(
   agentTemplate: AgentState,
@@ -69,7 +69,7 @@ export async function copyAgentById(
   lettaAgentsUserId: string,
   options: CopyAgentByIdOptions = {},
 ) {
-  const { memoryVariables, toolVariables } = options;
+  const { memoryVariables, tags, toolVariables } = options;
 
   const [baseAgent, agentSources] = await Promise.all([
     AgentsService.getAgent(
@@ -98,8 +98,16 @@ export async function copyAgentById(
         ...omit(baseAgent, omittedFieldsOnCopy),
         tool_ids: agentBody.tool_ids,
         name: agentBody.name,
-        tool_exec_environment_variables: toolVariables,
-        tags: options.tags,
+        tool_exec_environment_variables:
+          baseAgent.tool_exec_environment_variables?.reduce(
+            (acc, tool) => {
+              acc[tool.key] = toolVariables?.[tool.key] || '';
+
+              return acc;
+            },
+            {} as Record<string, string>,
+          ) || {},
+        tags,
         memory_blocks: agentBody.memory_blocks.map((block) => {
           return {
             limit: block.limit,
@@ -812,92 +820,6 @@ export async function updateAgentFromAgentId(options: UpdateAgentFromAgentId) {
   );
 
   return agent;
-}
-
-type MigrateAgentRequest = ServerInferRequest<
-  typeof sdkContracts.agents.migrateAgent
->;
-
-type MigrateAgentResponse = ServerInferResponses<
-  typeof sdkContracts.agents.migrateAgent
->;
-
-export async function migrateAgent(
-  req: MigrateAgentRequest,
-  context: SDKContext,
-): Promise<MigrateAgentResponse> {
-  const { to_template, preserve_core_memories } = req.body;
-  let { variables } = req.body;
-  const { agent_id: agentIdToMigrate } = req.params;
-  const { lettaAgentsUserId } = context.request;
-
-  const split = to_template.split(':');
-  const templateName = split[0];
-  const version = split[1];
-
-  if (!version) {
-    return {
-      status: 400,
-      body: {
-        message: `Please specify a version or add \`latest\` to the template name. Example: ${templateName}:latest`,
-      },
-    };
-  }
-
-  const deployedAgentTemplate = await getDeployedTemplateByVersion(
-    to_template,
-    context.request.organizationId,
-  );
-
-  if (!deployedAgentTemplate) {
-    return {
-      status: 404,
-      body: {
-        message: 'Template version provided does not exist',
-      },
-    };
-  }
-
-  if (!variables) {
-    const deployedAgentVariablesItem =
-      await db.query.deployedAgentVariables.findFirst({
-        where: eq(deployedAgentVariables.deployedAgentId, agentIdToMigrate),
-      });
-
-    variables = deployedAgentVariablesItem?.value || {};
-  }
-
-  if (!deployedAgentTemplate?.id) {
-    return {
-      status: 404,
-      body: {
-        message: 'Template version provided does not exist',
-      },
-    };
-  }
-
-  await updateAgentFromAgentId({
-    memoryVariables: variables || {},
-    baseAgentId: deployedAgentTemplate.id,
-    agentToUpdateId: agentIdToMigrate,
-    lettaAgentsUserId,
-    preserveCoreMemories: preserve_core_memories,
-  });
-
-  // update deployedAgentTemplateId
-  await db
-    .update(deployedAgents)
-    .set({
-      deployedAgentTemplateId: deployedAgentTemplate.id,
-    })
-    .where(eq(deployedAgents.id, agentIdToMigrate));
-
-  return {
-    status: 200,
-    body: {
-      success: true,
-    },
-  };
 }
 
 type ListAgentsRequest = ServerInferRequest<

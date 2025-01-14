@@ -11,7 +11,8 @@ import {
 import { eq } from 'drizzle-orm';
 import * as Sentry from '@sentry/node';
 import { findUniqueAgentTemplateName } from '$web/server';
-import { copyAgentById, updateAgentFromAgentId } from '$web/sdk';
+import { copyAgentById } from '$web/sdk';
+import { migrateAgent } from '../migrateAgent/migrateAgent';
 
 type DeployAgentTemplateRequest = ServerInferRequest<
   typeof sdkContracts.agents.versionAgentTemplate
@@ -148,13 +149,19 @@ export async function versionAgentTemplate(
             where: eq(deployedAgentVariables.deployedAgentId, deployedAgent.id),
           });
 
-        await updateAgentFromAgentId({
-          memoryVariables: deployedAgentVariablesItem?.value || {},
-          baseAgentId: deployedAgentTemplateId,
-          agentToUpdateId: deployedAgent.id,
-          lettaAgentsUserId: context.request.lettaAgentsUserId,
-          preserveCoreMemories: false,
-        });
+        return migrateAgent(
+          {
+            body: {
+              to_template: `${agentTemplateName}:${version}`,
+              variables: deployedAgentVariablesItem?.value || {},
+              preserve_core_memories: false,
+            },
+            params: {
+              agent_id: deployedAgent.id,
+            },
+          },
+          context,
+        );
       }),
     );
   }

@@ -158,7 +158,7 @@ function ToolVariables() {
   const handleSubmit = useCallback(
     (values: EnvironmentVariableFormState) => {
       const updatedVariables = values.variables
-        .filter(({ key, value }) => key && value)
+        .filter(({ key }) => key)
         .map(({ key, value }) => [key, value]);
 
       mutate({
@@ -212,7 +212,7 @@ function ToolVariables() {
                     <KeyValueEditor
                       addVariableLabel={t('ToolVariables.addVariable')}
                       fullWidth
-                      disabled={disableVariableEditing}
+                      freezeRows={disableVariableEditing}
                       hideLabel
                       label={t('ToolVariables.label')}
                       value={field.value}
@@ -224,7 +224,8 @@ function ToolVariables() {
               name="variables"
             />
           </VStack>
-          {!disableVariableEditing && (
+          {(!disableVariableEditing ||
+            (tool_exec_environment_variables || []).length > 0) && (
             <FormActions>
               <Button
                 onClick={() => {
