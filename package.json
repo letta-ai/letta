@@ -94,7 +94,6 @@
     "clsx": "^2.1.1",
     "drizzle-orm": "^0.38.3",
     "echarts": "^5.5.1",
-    "embedded-postgres": "^17.2.0-beta.15",
     "extended-eventsource": "^2.0.0",
     "fern-api": "^0.46.13",
     "gsap": "^3.12.5",
