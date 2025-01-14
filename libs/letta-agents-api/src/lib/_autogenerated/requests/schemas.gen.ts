@@ -1781,10 +1781,17 @@ export const $CreateAgentRequest = {
       description: 'The name of the agent.',
     },
     memory_blocks: {
-      items: {
-        $ref: '#/components/schemas/CreateBlock',
-      },
-      type: 'array',
+      anyOf: [
+        {
+          items: {
+            $ref: '#/components/schemas/CreateBlock',
+          },
+          type: 'array',
+        },
+        {
+          type: 'null',
+        },
+      ],
       title: 'Memory Blocks',
       description: "The blocks to create in the agent's in-context memory.",
     },
@@ -2038,6 +2045,12 @@ export const $CreateAgentRequest = {
       title: 'From Template',
       description: 'The template id used to configure the agent',
     },
+    template: {
+      type: 'boolean',
+      title: 'Template',
+      description: 'Whether the agent is a template',
+      default: false,
+    },
     project: {
       anyOf: [
         {
@@ -2094,7 +2107,6 @@ export const $CreateAgentRequest = {
     },
   },
   type: 'object',
-  required: ['memory_blocks'],
   title: 'CreateAgentRequest',
   description:
     'CreateAgent model specifically for POST request body, excluding user_id which comes from headers',

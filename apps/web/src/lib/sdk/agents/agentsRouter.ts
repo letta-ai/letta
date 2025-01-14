@@ -31,6 +31,7 @@ import {
   isTemplateNameAStarterKitId,
   STARTER_KITS,
 } from '@letta-cloud/agent-starter-kits';
+import { omit } from 'lodash';
 
 export function attachVariablesToTemplates(
   agentTemplate: AgentState,
@@ -50,13 +51,10 @@ export function attachVariablesToTemplates(
   }, []);
 
   return {
-    system: agentTemplate.system,
     tool_ids:
       agentTemplate.tools?.map((tool) => tool.id || '').filter(Boolean) || [],
     name: `name-${crypto.randomUUID()}`,
-    embedding_config: agentTemplate.embedding_config,
     memory_blocks: memoryBlockValues,
-    llm_config: agentTemplate.llm_config,
   };
 }
 
@@ -67,16 +65,16 @@ interface CopyAgentByIdOptions {
 }
 
 export async function copyAgentById(
-  agentId: string,
+  baseAgentId: string,
   lettaAgentsUserId: string,
   options: CopyAgentByIdOptions = {},
 ) {
   const { memoryVariables, toolVariables } = options;
 
-  const [currentAgent, agentSources] = await Promise.all([
+  const [baseAgent, agentSources] = await Promise.all([
     AgentsService.getAgent(
       {
-        agentId: agentId,
+        agentId: baseAgentId,
       },
       {
         user_id: lettaAgentsUserId,
@@ -84,7 +82,7 @@ export async function copyAgentById(
     ),
     AgentsService.getAgentSources(
       {
-        agentId: agentId,
+        agentId: baseAgentId,
       },
       {
         user_id: lettaAgentsUserId,
@@ -92,14 +90,12 @@ export async function copyAgentById(
     ),
   ]);
 
-  const agentBody = attachVariablesToTemplates(currentAgent, memoryVariables);
+  const agentBody = attachVariablesToTemplates(baseAgent, memoryVariables);
 
   const nextAgent = await AgentsService.createAgent(
     {
       requestBody: {
-        llm_config: agentBody.llm_config,
-        embedding_config: agentBody.embedding_config,
-        system: agentBody.system,
+        ...omit(baseAgent, omittedFieldsOnCopy),
         tool_ids: agentBody.tool_ids,
         name: agentBody.name,
         tool_exec_environment_variables: toolVariables,
@@ -124,7 +120,7 @@ export async function copyAgentById(
 
   await Promise.all(
     agentSources.map(async (source) => {
-      if (!source.id || !currentAgent.id) {
+      if (!source.id || !baseAgent.id) {
         return;
       }
 
@@ -209,13 +205,8 @@ export async function createAgent(
     from_template,
     template,
     variables,
-    llm,
-    embedding,
-    context_window_limit,
-    embedding_chunk_size,
     name: preName,
     tool_exec_environment_variables,
-    tags,
     ...agent
   } = req.body;
 
@@ -358,7 +349,7 @@ export async function createAgent(
         {
           requestBody: {
             ...starterKit.agentState,
-            tags,
+            ...agent,
             tool_ids: toolIdsToAttach,
             llm_config: {
               model: 'gpt-4o-mini',
@@ -523,7 +514,7 @@ export async function createAgent(
       agentTemplateIdToCopy,
       lettaAgentsUserId,
       {
-        tags: tags || [],
+        tags: [],
         memoryVariables: variables || {},
         toolVariables: tool_exec_environment_variables || {},
       },
@@ -625,14 +616,8 @@ export async function createAgent(
     {
       requestBody: {
         ...agent,
-        tags,
-        tool_ids: agent.tool_ids || undefined,
         memory_blocks: agent.memory_blocks || [],
         name: crypto.randomUUID(),
-        llm: llm,
-        embedding: embedding,
-        context_window_limit: context_window_limit,
-        embedding_chunk_size: embedding_chunk_size,
         tool_exec_environment_variables: tool_exec_environment_variables,
       },
     },
@@ -719,6 +704,20 @@ interface UpdateAgentFromAgentId {
   lettaAgentsUserId: string;
 }
 
+export const omittedFieldsOnCopy: Array<Partial<keyof AgentState>> = [
+  'message_ids',
+  'id',
+  'tools',
+  'created_at',
+  'updated_at',
+  'created_by_id',
+  'description',
+  'organization_id',
+  'last_updated_by_id',
+  'metadata_',
+  'memory',
+];
+
 export async function updateAgentFromAgentId(options: UpdateAgentFromAgentId) {
   const {
     preserveCoreMemories = false,
@@ -739,6 +738,7 @@ export async function updateAgentFromAgentId(options: UpdateAgentFromAgentId) {
   );
 
   let requestBody: UpdateAgent = {
+    ...omit(agentTemplateData, omittedFieldsOnCopy),
     tool_ids: agentTemplateData.tools
       .map((tool) => tool.id || '')
       .filter(Boolean),

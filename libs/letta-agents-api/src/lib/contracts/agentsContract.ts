@@ -14,55 +14,6 @@ extendZodWithOpenApi(z);
 
 const c = initContract();
 
-/* Create Agent */
-export interface CreateAgentBody extends CreateAgentRequest {
-  /**
-   * Make this Agent a template
-   */
-  template?: boolean;
-  /**
-   * Associate a project with this Agent (does not work when template_key is provided)
-   */
-  project_id?: string;
-  /**
-   * Create an agent based on a template_key
-   */
-  from_template?: string;
-
-  variables?: Record<string, string>;
-}
-
-const CreateAgentBodySchema = z.object({
-  description: z.string().nullable().optional().openapi({
-    description: 'A description of the agent',
-  }),
-  metadata_: z.record(z.unknown()).nullable().optional(),
-  user_id: z.string().nullable().optional(),
-  name: z.string().nullable().optional(),
-  message_ids: z.array(z.string()).nullable().optional().openapi({
-    description: 'A list of message IDs associated with the agent',
-  }),
-  memory_blocks: MemoryBlocksSchema.nullable().optional(),
-  tool_ids: z.string().array().nullable().optional(),
-  system: z.string().nullable().optional(),
-  llm_config: LLMConfigSchema.nullable()?.optional(),
-  embedding_config: EmbeddingConfigSchema.nullable()?.optional(),
-  llm: z.string().nullable().optional(),
-  embedding: z.string().nullable().optional(),
-  context_window_limit: z.number().nullable().optional(),
-  embedding_chunk_size: z.number().nullable().optional(),
-
-  tags: z.string().array().nullable().optional(),
-  tool_exec_environment_variables: z.record(z.string()).nullable().optional(),
-
-  // letta specific fields
-  template: z.boolean().optional(),
-  project: z.string().optional(),
-  from_template: z.string().optional(),
-
-  variables: z.record(z.string()).optional(),
-});
-
 const CreateAgentResponseSchema = c.type<AgentState>();
 
 const CreateAgentResponseErrorSchema = c.type<HTTPValidationError>();
@@ -87,7 +38,7 @@ const createAgentContract = c.mutation({
   path: '/v1/agents',
   summary: 'Create Agent',
   description: 'Create a new agent with the specified configuration.',
-  body: CreateAgentBodySchema,
+  body: c.type<CreateAgentRequest>(),
   responses: {
     201: CreateAgentResponseSchema,
     404: CreateAgentResponse404ErrorSchema,

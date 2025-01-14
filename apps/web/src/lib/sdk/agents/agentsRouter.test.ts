@@ -21,6 +21,7 @@ jest.mock('./lib/versionAgentTemplate/versionAgentTemplate');
 const createProjectSpy = jest.spyOn(router, 'createProject');
 
 const premadeTemplate = {
+  agent_type: 'memgpt_agent',
   system:
     "You are Letta, the latest version of Limnal Corporation's digital companion, developed in 2023.\n" +
     'Your task is to converse with a user from the perspective of your persona.\n' +

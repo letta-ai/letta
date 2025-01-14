@@ -605,7 +605,7 @@ export type CreateAgentRequest = {
   /**
    * The blocks to create in the agent's in-context memory.
    */
-  memory_blocks: Array<CreateBlock>;
+  memory_blocks?: Array<CreateBlock> | null;
   /**
    * The tools used by the agent.
    */
@@ -686,6 +686,10 @@ export type CreateAgentRequest = {
    * The template id used to configure the agent
    */
   from_template?: string | null;
+  /**
+   * Whether the agent is a template
+   */
+  template?: boolean;
   /**
    * The project slug that the agent will be associated with.
    */
