@@ -5,6 +5,8 @@ import {
   Tooltip,
   Logo,
   Breadcrumb,
+  LettaInvaderIcon,
+  type QueryBuilderQuery,
 } from '@letta-cloud/component-library';
 import { TrashIcon } from '@letta-cloud/component-library';
 import {
@@ -545,6 +547,8 @@ export function AgentPage() {
 
   const user = useCurrentUser();
 
+  const { slug } = useCurrentProject();
+
   const isAgentConvertingToTemplate = useAtomValue(
     isAgentConvertingToTemplateAtom,
   );
@@ -590,6 +594,32 @@ export function AgentPage() {
                 </HStack>
                 <HStack paddingRight="small" align="center" gap="small">
                   <DeploymentButton />
+                  {isTemplate && (
+                    <Button
+                      preIcon={<LettaInvaderIcon />}
+                      label={t('viewAgents')}
+                      target="_blank"
+                      href={`/projects/${slug}/agents?query=${JSON.stringify({
+                        root: {
+                          combinator: 'AND',
+                          items: [
+                            {
+                              field: 'version',
+                              queryData: {
+                                operator: { label: 'equals', value: 'eq' },
+                                value: {
+                                  label: `${agentName}:latest`,
+                                  value: `${agentName}:latest`,
+                                },
+                              },
+                            },
+                          ],
+                        },
+                      } satisfies QueryBuilderQuery)}`}
+                      size="small"
+                      color="secondary"
+                    />
+                  )}
                   <ProfilePopover size="small" />
                 </HStack>
               </HStack>

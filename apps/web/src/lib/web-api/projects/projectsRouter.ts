@@ -180,8 +180,7 @@ export async function getProjectDeployedAgentTemplates(
 ): Promise<GetProjectDeployedAgentTemplatesResponse> {
   const organizationId = await getUserActiveOrganizationIdOrThrow();
   const { projectId } = req.params;
-  const { search, offset, agentTemplateId, limit, includeAgentTemplateInfo } =
-    req.query;
+  const { search, offset = 0, agentTemplateId, limit = 10 } = req.query;
 
   const where = [
     isNull(deployedAgentTemplates.deletedAt),
@@ -190,46 +189,53 @@ export async function getProjectDeployedAgentTemplates(
   ];
 
   if (search) {
-    where.push(ilike(deployedAgentTemplates.version, `%${search}%`));
+    const [name, version] = search.split(':');
+
+    console.log(name, version);
+    if (name) {
+      where.push(ilike(agentTemplates.name, `%${name}%`));
+    }
+
+    if (version) {
+      where.push(ilike(deployedAgentTemplates.version, `%${version}%`));
+    }
   }
 
   if (agentTemplateId) {
     where.push(eq(deployedAgentTemplates.agentTemplateId, agentTemplateId));
   }
 
-  const deployedAgentTemplatesList =
-    await db.query.deployedAgentTemplates.findMany({
-      where: and(...where),
-      limit: (limit || 10) + 1,
-      offset,
-      orderBy: [desc(deployedAgentTemplates.createdAt)],
-      columns: {
-        id: true,
-        agentTemplateId: true,
-        createdAt: true,
-        updatedAt: true,
-        version: true,
-      },
-      with: {
-        ...(includeAgentTemplateInfo
-          ? { agentTemplate: { columns: { name: true } } }
-          : {}),
-      },
-    });
+  const deployedAgentTemplatesList = await db
+    .select()
+    .from(deployedAgentTemplates)
+    .innerJoin(
+      agentTemplates,
+      eq(agentTemplates.id, deployedAgentTemplates.agentTemplateId),
+    )
+    .where(and(...where))
+    .offset(offset)
+    .limit(limit + 1);
 
   return {
     status: 200,
     body: {
       deployedAgentTemplates: deployedAgentTemplatesList
         .slice(0, limit)
-        .map(({ agentTemplate, ...rest }) => ({
-          id: rest.id,
-          agentTemplateId: rest.agentTemplateId,
-          testingAgentName: agentTemplate?.name,
-          version: rest.version,
-          createdAt: rest.createdAt.toISOString(),
-          updatedAt: rest.updatedAt.toISOString(),
-        })),
+        .map(
+          ({
+            deployed_agent_templates: deployedAgent,
+            agent_templates: agentTemplate,
+          }) => {
+            return {
+              id: deployedAgent.id,
+              agentTemplateId: deployedAgent.agentTemplateId,
+              testingAgentName: agentTemplate.name,
+              version: deployedAgent.version,
+              createdAt: deployedAgent.createdAt.toISOString(),
+              updatedAt: deployedAgent.updatedAt.toISOString(),
+            };
+          },
+        ),
       hasNextPage: deployedAgentTemplatesList.length === limit,
     },
   };

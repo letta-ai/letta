@@ -12,6 +12,7 @@ interface UseCurrentAgentMetaDataResponse {
   agentId: string;
   agentName: string;
   isFromTemplate: boolean;
+  templateName?: string;
   isTemplate: boolean;
   isLocal: boolean;
 }
@@ -96,6 +97,7 @@ export function useCurrentAgentMetaData(): UseCurrentAgentMetaDataResponse {
   return {
     agentId,
     agentName,
+    templateName,
     isTemplate,
     isFromTemplate,
     isLocal: false,

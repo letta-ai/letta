@@ -175,13 +175,15 @@ function useQueryDefinition() {
 
   const params = useSearchParams();
 
-  const initialFilter = useMemo(() => {
-    const version = params.get('template');
-    const value = version;
-    const label = version;
+  const queryFilter = useMemo(() => {
+    const query = params.get('query');
 
-    if (value && label) {
-      return { value, label };
+    if (query) {
+      try {
+        return JSON.parse(query);
+      } catch {
+        // ignore
+      }
     }
   }, [params]);
 
@@ -231,27 +233,16 @@ function useQueryDefinition() {
       return null;
     }
 
-    let hasInitialFilter = false;
-
     const arr = data.body.deployedAgentTemplates.map((agent) => {
-      if (initialFilter && agent.id === initialFilter.value) {
-        hasInitialFilter = true;
-      }
-
       const version = `${agent.testingAgentName}:${agent.version}`;
 
       return { label: version, value: version };
     });
 
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-    if (initialFilter && !hasInitialFilter) {
-      arr.unshift(initialFilter);
-    }
-
     arr.unshift({ label: t('anyVersion'), value: '' });
 
     return arr;
-  }, [data?.body, initialFilter, t]);
+  }, [data?.body, t]);
 
   return useMemo(() => {
     const fieldDefinitions = {
@@ -337,29 +328,31 @@ function useQueryDefinition() {
       },
     } as const satisfies FieldDefinitions;
 
-    const initialQuery = {
-      root: {
-        combinator: 'AND',
-        items: [
-          {
-            field: fieldDefinitions.name.id,
-            queryData: {
-              operator: fieldDefinitions.name.queries[0].options.options[0],
-              value: {
-                label: '',
-                value: '',
+    const initialQuery =
+      queryFilter ||
+      ({
+        root: {
+          combinator: 'AND',
+          items: [
+            {
+              field: fieldDefinitions.name.id,
+              queryData: {
+                operator: fieldDefinitions.name.queries[0].options.options[0],
+                value: {
+                  label: '',
+                  value: '',
+                },
               },
             },
-          },
-        ],
-      },
-    } satisfies QueryBuilderQuery;
+          ],
+        },
+      } satisfies QueryBuilderQuery);
 
     return {
       fieldDefinitions,
       initialQuery,
     } satisfies UseQueryDefinitionResponse;
-  }, [defaultTemplateSearchOptions, handleLoadOptions, t]);
+  }, [defaultTemplateSearchOptions, queryFilter, handleLoadOptions, t]);
 }
 
 interface TagsShorthandProps {
@@ -411,6 +404,20 @@ function DeployedAgentsPage() {
   const [draftQuery, setDraftQuery] = useState<QueryBuilderQuery>(initialQuery);
   const [query, setQuery] = useState<QueryBuilderQuery>(initialQuery);
   const t = useTranslations('projects/(projectSlug)/agents/page');
+
+  useEffect(() => {
+    // set search params as JSON string of draftQuery
+
+    const searchParams = new URLSearchParams();
+
+    searchParams.set('query', JSON.stringify(draftQuery));
+
+    window.history.replaceState(
+      {},
+      '',
+      `${window.location.pathname}?${searchParams}`,
+    );
+  }, [draftQuery]);
 
   const [limit, setLimit] = useState(0);
 

@@ -1422,7 +1422,6 @@ async function searchDeployedAgents(
 
       if (searchTerm.field === 'version') {
         const [name, versionNumber] = searchTerm.value.split(':');
-
         const agentTemplate = await db.query.agentTemplates.findFirst({
           where: and(
             eq(agentTemplates.organizationId, context.request.organizationId),
@@ -1435,18 +1434,33 @@ async function searchDeployedAgents(
           return;
         }
 
-        const deployedAgentTemplate =
-          await db.query.deployedAgentTemplates.findFirst({
-            where: and(
-              eq(
-                deployedAgentTemplates.organizationId,
-                context.request.organizationId,
+        const deployedAgentTemplate = await (() => {
+          if (versionNumber === 'latest') {
+            return db.query.deployedAgentTemplates.findFirst({
+              where: and(
+                eq(
+                  deployedAgentTemplates.organizationId,
+                  context.request.organizationId,
+                ),
+                eq(deployedAgentTemplates.agentTemplateId, agentTemplate.id),
+                isNull(deployedAgentTemplates.deletedAt),
               ),
-              eq(deployedAgentTemplates.version, versionNumber),
-              eq(deployedAgentTemplates.agentTemplateId, agentTemplate.id),
-              isNull(deployedAgentTemplates.deletedAt),
-            ),
-          });
+              orderBy: [desc(deployedAgentTemplates.createdAt)],
+            });
+          } else {
+            return db.query.deployedAgentTemplates.findFirst({
+              where: and(
+                eq(
+                  deployedAgentTemplates.organizationId,
+                  context.request.organizationId,
+                ),
+                eq(deployedAgentTemplates.version, versionNumber),
+                eq(deployedAgentTemplates.agentTemplateId, agentTemplate.id),
+                isNull(deployedAgentTemplates.deletedAt),
+              ),
+            });
+          }
+        })();
 
         if (!deployedAgentTemplate) {
           return;
