@@ -11,11 +11,6 @@ interface FlagProperties {
 // Generate the flag values here:
 // https://app.launchdarkly.com/projects/default/flags?env=test&selected-env=test
 export const featureFlags = {
-  SHOW_COMPOSIO_TOOLS: {
-    description: 'Show Composio tools',
-    expiryDate: '2024-12-31',
-    flagValue: z.boolean(),
-  },
   ALLOW_MODEL_PROVIDER_CONFIGURATION: {
     description: 'Allow model provider configuration',
     expiryDate: '2024-01-31',

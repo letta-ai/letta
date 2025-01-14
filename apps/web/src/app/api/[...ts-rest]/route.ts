@@ -18,18 +18,25 @@ const nonCloudWhitelist = [
   new RegExp('/api/organizations/self$'),
   new RegExp('/api/user/self(.+)?'),
   new RegExp('/api/development-servers(.+)?'),
-  new RegExp('/api/tool-metadata-summary(.+)?'),
-  new RegExp('/api/tool-metadata(.+)?'),
   new RegExp('/api/feature-flags(.+)?'),
-  new RegExp('/api/tool-group-metadata(.+)?'),
 ];
 
-const publicApis = [new RegExp('/api/invites/(.+)?')];
+const publicApis = [
+  new RegExp('/api/tool-metadata-summary(.+)?'),
+  new RegExp('/api/tool-metadata(.+)?'),
+  new RegExp('/api/tool-group-metadata(.+)?'),
+  new RegExp('/api/invites/(.+)?'),
+];
 
 const handler = createNextHandler(contracts, router, {
   basePath: '/api',
   jsonQuery: true,
   responseValidation: true,
+  cors: {
+    allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    exposeHeaders: [],
+    origin: ['http://localhost:4200'],
+  },
   handlerType: 'app-router',
   requestMiddleware: [
     tsr.middleware<{ $userOverride?: GetUserDataResponse }>(async (req) => {
