@@ -7,6 +7,7 @@ from letta.server.rest_api.routers.v1.providers import router as providers_route
 from letta.server.rest_api.routers.v1.runs import router as runs_router
 from letta.server.rest_api.routers.v1.sandbox_configs import router as sandbox_configs_router
 from letta.server.rest_api.routers.v1.sources import router as sources_router
+from letta.server.rest_api.routers.v1.tags import router as tags_router
 from letta.server.rest_api.routers.v1.tools import router as tools_router
 
 ROUTERS = [
@@ -20,4 +21,5 @@ ROUTERS = [
     sandbox_configs_router,
     providers_router,
     runs_router,
+    tags_router,
 ]

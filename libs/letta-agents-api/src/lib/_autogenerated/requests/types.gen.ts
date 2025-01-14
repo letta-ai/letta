@@ -3216,6 +3216,15 @@ export type GetRunUsageData = {
 
 export type GetRunUsageResponse = UsageStatistics;
 
+export type ListTagsData = {
+  cursor?: string | null;
+  limit?: number | null;
+  queryText?: string | null;
+  userId?: string | null;
+};
+
+export type ListTagsResponse = Array<string>;
+
 export type ListUsersData = {
   cursor?: string | null;
   limit?: number | null;
@@ -4496,6 +4505,21 @@ export type $OpenApiTs = {
          * Successful Response
          */
         200: UsageStatistics;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/tags/': {
+    get: {
+      req: ListTagsData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: Array<string>;
         /**
          * Validation Error
          */

@@ -8,7 +8,7 @@ from letta.constants import BASE_MEMORY_TOOLS, BASE_TOOLS, MAX_EMBEDDING_DIM
 from letta.embeddings import embedding_model
 from letta.log import get_logger
 from letta.orm import Agent as AgentModel
-from letta.orm import AgentPassage
+from letta.orm import AgentPassage, AgentsTags
 from letta.orm import Block as BlockModel
 from letta.orm import Source as SourceModel
 from letta.orm import SourcePassage, SourcesAgents
@@ -999,3 +999,40 @@ class AgentManager:
             # Commit and refresh the agent
             agent.update(session, actor=actor)
             return agent.to_pydantic()
+
+    # ======================================================================================================================
+    # Tag Management
+    # ======================================================================================================================
+    @enforce_types
+    def list_tags(
+        self, actor: PydanticUser, cursor: Optional[str] = None, limit: Optional[int] = 50, query_text: Optional[str] = None
+    ) -> List[str]:
+        """
+        Get all tags a user has created, ordered alphabetically.
+
+        Args:
+            actor: User performing the action.
+            cursor: Cursor for pagination.
+            limit: Maximum number of tags to return.
+            query_text: Query text to filter tags by.
+
+        Returns:
+            List[str]: List of all tags.
+        """
+        with self.session_maker() as session:
+            query = (
+                session.query(AgentsTags.tag)
+                .join(AgentModel, AgentModel.id == AgentsTags.agent_id)
+                .filter(AgentModel.organization_id == actor.organization_id)
+                .distinct()
+            )
+
+            if query_text:
+                query = query.filter(AgentsTags.tag.ilike(f"%{query_text}%"))
+
+            if cursor:
+                query = query.filter(AgentsTags.tag > cursor)
+
+            query = query.order_by(AgentsTags.tag).limit(limit)
+            results = [tag[0] for tag in query.all()]
+            return results

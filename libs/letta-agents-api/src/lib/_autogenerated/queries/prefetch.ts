@@ -14,6 +14,7 @@ import {
   RunsService,
   SandboxConfigService,
   SourcesService,
+  TagService,
   ToolsService,
   UsersService,
 } from '../requests/services.gen';
@@ -1132,27 +1133,72 @@ export const prefetchUseRunsServiceGetRunUsage = (
     queryFn: () => RunsService.getRunUsage({ runId, userId }),
   });
 /**
- * List Users
- * Get a list of all users in the database
+ * Get Tags
+ * Get a list of all tags in the database
  * @param data The data for the request.
  * @param data.cursor
  * @param data.limit
- * @returns User Successful Response
+ * @param data.queryText
+ * @param data.userId
+ * @returns string Successful Response
  * @throws ApiError
  */
-export const prefetchUseUsersServiceListUsers = (
+export const prefetchUseTagServiceListTags = (
   queryClient: QueryClient,
   {
     cursor,
     limit,
+    queryText,
+    userId,
   }: {
     cursor?: string;
     limit?: number;
+    queryText?: string;
+    userId?: string;
   } = {},
 ) =>
   queryClient.prefetchQuery({
-    queryKey: Common.UseUsersServiceListUsersKeyFn({ cursor, limit }),
-    queryFn: () => UsersService.listUsers({ cursor, limit }),
+    queryKey: Common.UseTagServiceListTagsKeyFn({
+      cursor,
+      limit,
+      queryText,
+      userId,
+    }),
+    queryFn: () => TagService.listTags({ cursor, limit, queryText, userId }),
+  });
+/**
+ * Get Tags
+ * Get a list of all tags in the database
+ * @param data The data for the request.
+ * @param data.cursor
+ * @param data.limit
+ * @param data.queryText
+ * @param data.userId
+ * @returns string Successful Response
+ * @throws ApiError
+ */
+export const prefetchUseAdminServiceListTags = (
+  queryClient: QueryClient,
+  {
+    cursor,
+    limit,
+    queryText,
+    userId,
+  }: {
+    cursor?: string;
+    limit?: number;
+    queryText?: string;
+    userId?: string;
+  } = {},
+) =>
+  queryClient.prefetchQuery({
+    queryKey: Common.UseAdminServiceListTagsKeyFn({
+      cursor,
+      limit,
+      queryText,
+      userId,
+    }),
+    queryFn: () => AdminService.listTags({ cursor, limit, queryText, userId }),
   });
 /**
  * List Users
@@ -1199,6 +1245,29 @@ export const prefetchUseAdminServiceListOrgs = (
   queryClient.prefetchQuery({
     queryKey: Common.UseAdminServiceListOrgsKeyFn({ cursor, limit }),
     queryFn: () => AdminService.listOrgs({ cursor, limit }),
+  });
+/**
+ * List Users
+ * Get a list of all users in the database
+ * @param data The data for the request.
+ * @param data.cursor
+ * @param data.limit
+ * @returns User Successful Response
+ * @throws ApiError
+ */
+export const prefetchUseUsersServiceListUsers = (
+  queryClient: QueryClient,
+  {
+    cursor,
+    limit,
+  }: {
+    cursor?: string;
+    limit?: number;
+  } = {},
+) =>
+  queryClient.prefetchQuery({
+    queryKey: Common.UseUsersServiceListUsersKeyFn({ cursor, limit }),
+    queryFn: () => UsersService.listUsers({ cursor, limit }),
   });
 /**
  * Get All Orgs

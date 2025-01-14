@@ -224,6 +224,66 @@ def test_add_and_manage_tags_for_agent(client: Union[LocalClient, RESTClient]):
     client.delete_agent(agent.id)
 
 
+def test_agent_tags(client: Union[LocalClient, RESTClient]):
+    """Test creating agents with tags and retrieving tags via the API."""
+    if not isinstance(client, RESTClient):
+        pytest.skip("This test only runs when the server is enabled")
+
+    # Create multiple agents with different tags
+    agent1 = client.create_agent(
+        name=f"test_agent_{str(uuid.uuid4())}",
+        llm_config=LLMConfig.default_config("gpt-4"),
+        embedding_config=EmbeddingConfig.default_config(provider="openai"),
+        tags=["test", "agent1", "production"],
+    )
+
+    agent2 = client.create_agent(
+        name=f"test_agent_{str(uuid.uuid4())}",
+        llm_config=LLMConfig.default_config("gpt-4"),
+        embedding_config=EmbeddingConfig.default_config(provider="openai"),
+        tags=["test", "agent2", "development"],
+    )
+
+    agent3 = client.create_agent(
+        name=f"test_agent_{str(uuid.uuid4())}",
+        llm_config=LLMConfig.default_config("gpt-4"),
+        embedding_config=EmbeddingConfig.default_config(provider="openai"),
+        tags=["test", "agent3", "production"],
+    )
+
+    # Test getting all tags
+    all_tags = client.get_tags()
+    expected_tags = ["agent1", "agent2", "agent3", "development", "production", "test"]
+    assert sorted(all_tags) == expected_tags
+
+    # Test pagination
+    paginated_tags = client.get_tags(limit=2)
+    assert len(paginated_tags) == 2
+    assert paginated_tags[0] == "agent1"
+    assert paginated_tags[1] == "agent2"
+
+    # Test pagination with cursor
+    next_page_tags = client.get_tags(cursor="agent2", limit=2)
+    assert len(next_page_tags) == 2
+    assert next_page_tags[0] == "agent3"
+    assert next_page_tags[1] == "development"
+
+    # Test text search
+    prod_tags = client.get_tags(query_text="prod")
+    assert sorted(prod_tags) == ["production"]
+
+    dev_tags = client.get_tags(query_text="dev")
+    assert sorted(dev_tags) == ["development"]
+
+    agent_tags = client.get_tags(query_text="agent")
+    assert sorted(agent_tags) == ["agent1", "agent2", "agent3"]
+
+    # Remove agents
+    client.delete_agent(agent1.id)
+    client.delete_agent(agent2.id)
+    client.delete_agent(agent3.id)
+
+
 def test_update_agent_memory_label(client: Union[LocalClient, RESTClient], agent: AgentState):
     """Test that we can update the label of a block in an agent's memory"""
 

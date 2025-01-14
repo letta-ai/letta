@@ -173,6 +173,8 @@ import type {
   GetRunMessagesResponse,
   GetRunUsageData,
   GetRunUsageResponse,
+  ListTagsData,
+  ListTagsResponse,
   ListUsersData,
   ListUsersResponse,
   CreateUserData,
@@ -2562,98 +2564,29 @@ export class RunsService {
   }
 }
 
-export class UsersService {
+export class TagService {
   /**
-   * List Users
-   * Get a list of all users in the database
+   * Get Tags
+   * Get a list of all tags in the database
    * @param data The data for the request.
    * @param data.cursor
    * @param data.limit
-   * @returns User Successful Response
+   * @param data.queryText
+   * @param data.userId
+   * @returns string Successful Response
    * @throws ApiError
    */
-  public static listUsers(
-    data: ListUsersData = {},
+  public static listTags(
+    data: ListTagsData = {},
     headers?: { user_id: string },
-  ): CancelablePromise<ListUsersResponse> {
+  ): CancelablePromise<ListTagsResponse> {
     return __request(OpenAPI, {
       method: 'GET',
-      url: '/v1/admin/users/',
+      url: '/v1/tags/',
       query: {
         cursor: data.cursor,
         limit: data.limit,
-      },
-      errors: {
-        422: 'Validation Error',
-      },
-      headers,
-    });
-  }
-
-  /**
-   * Create User
-   * Create a new user in the database
-   * @param data The data for the request.
-   * @param data.requestBody
-   * @returns User Successful Response
-   * @throws ApiError
-   */
-  public static createUser(
-    data: CreateUserData,
-    headers?: { user_id: string },
-  ): CancelablePromise<CreateUserResponse> {
-    return __request(OpenAPI, {
-      method: 'POST',
-      url: '/v1/admin/users/',
-      body: data.requestBody,
-      mediaType: 'application/json',
-      errors: {
-        422: 'Validation Error',
-      },
-      headers,
-    });
-  }
-
-  /**
-   * Update User
-   * Update a user in the database
-   * @param data The data for the request.
-   * @param data.requestBody
-   * @returns User Successful Response
-   * @throws ApiError
-   */
-  public static updateUser(
-    data: UpdateUserData,
-    headers?: { user_id: string },
-  ): CancelablePromise<UpdateUserResponse> {
-    return __request(OpenAPI, {
-      method: 'PUT',
-      url: '/v1/admin/users/',
-      body: data.requestBody,
-      mediaType: 'application/json',
-      errors: {
-        422: 'Validation Error',
-      },
-      headers,
-    });
-  }
-
-  /**
-   * Delete User
-   * @param data The data for the request.
-   * @param data.userId The user_id key to be deleted.
-   * @returns User Successful Response
-   * @throws ApiError
-   */
-  public static deleteUser(
-    data: DeleteUserData,
-    headers?: { user_id: string },
-  ): CancelablePromise<DeleteUserResponse> {
-    return __request(OpenAPI, {
-      method: 'DELETE',
-      url: '/v1/admin/users/',
-      query: {
-        user_id: data.userId,
+        query_text: data.queryText,
       },
       errors: {
         422: 'Validation Error',
@@ -2664,6 +2597,36 @@ export class UsersService {
 }
 
 export class AdminService {
+  /**
+   * Get Tags
+   * Get a list of all tags in the database
+   * @param data The data for the request.
+   * @param data.cursor
+   * @param data.limit
+   * @param data.queryText
+   * @param data.userId
+   * @returns string Successful Response
+   * @throws ApiError
+   */
+  public static listTags(
+    data: ListTagsData = {},
+    headers?: { user_id: string },
+  ): CancelablePromise<ListTagsResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/tags/',
+      query: {
+        cursor: data.cursor,
+        limit: data.limit,
+        query_text: data.queryText,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
   /**
    * List Users
    * Get a list of all users in the database
@@ -2830,6 +2793,107 @@ export class AdminService {
       url: '/v1/admin/orgs/',
       query: {
         org_id: data.orgId,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+}
+
+export class UsersService {
+  /**
+   * List Users
+   * Get a list of all users in the database
+   * @param data The data for the request.
+   * @param data.cursor
+   * @param data.limit
+   * @returns User Successful Response
+   * @throws ApiError
+   */
+  public static listUsers(
+    data: ListUsersData = {},
+    headers?: { user_id: string },
+  ): CancelablePromise<ListUsersResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/admin/users/',
+      query: {
+        cursor: data.cursor,
+        limit: data.limit,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Create User
+   * Create a new user in the database
+   * @param data The data for the request.
+   * @param data.requestBody
+   * @returns User Successful Response
+   * @throws ApiError
+   */
+  public static createUser(
+    data: CreateUserData,
+    headers?: { user_id: string },
+  ): CancelablePromise<CreateUserResponse> {
+    return __request(OpenAPI, {
+      method: 'POST',
+      url: '/v1/admin/users/',
+      body: data.requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Update User
+   * Update a user in the database
+   * @param data The data for the request.
+   * @param data.requestBody
+   * @returns User Successful Response
+   * @throws ApiError
+   */
+  public static updateUser(
+    data: UpdateUserData,
+    headers?: { user_id: string },
+  ): CancelablePromise<UpdateUserResponse> {
+    return __request(OpenAPI, {
+      method: 'PUT',
+      url: '/v1/admin/users/',
+      body: data.requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Delete User
+   * @param data The data for the request.
+   * @param data.userId The user_id key to be deleted.
+   * @returns User Successful Response
+   * @throws ApiError
+   */
+  public static deleteUser(
+    data: DeleteUserData,
+    headers?: { user_id: string },
+  ): CancelablePromise<DeleteUserResponse> {
+    return __request(OpenAPI, {
+      method: 'DELETE',
+      url: '/v1/admin/users/',
+      query: {
+        user_id: data.userId,
       },
       errors: {
         422: 'Validation Error',

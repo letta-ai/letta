@@ -15,6 +15,7 @@ import {
   RunsService,
   SandboxConfigService,
   SourcesService,
+  TagService,
   ToolsService,
   UsersService,
 } from '../requests/services.gen';
@@ -903,24 +904,56 @@ export const UseRunsServiceGetRunUsageKeyFn = (
   },
   queryKey?: Array<unknown>,
 ) => [useRunsServiceGetRunUsageKey, ...(queryKey ?? [{ runId, userId }])];
-export type UsersServiceListUsersDefaultResponse = Awaited<
-  ReturnType<typeof UsersService.listUsers>
+export type TagServiceListTagsDefaultResponse = Awaited<
+  ReturnType<typeof TagService.listTags>
 >;
-export type UsersServiceListUsersQueryResult<
-  TData = UsersServiceListUsersDefaultResponse,
+export type TagServiceListTagsQueryResult<
+  TData = TagServiceListTagsDefaultResponse,
   TError = unknown,
 > = UseQueryResult<TData, TError>;
-export const useUsersServiceListUsersKey = 'UsersServiceListUsers';
-export const UseUsersServiceListUsersKeyFn = (
+export const useTagServiceListTagsKey = 'TagServiceListTags';
+export const UseTagServiceListTagsKeyFn = (
   {
     cursor,
     limit,
+    queryText,
+    userId,
   }: {
     cursor?: string;
     limit?: number;
+    queryText?: string;
+    userId?: string;
   } = {},
   queryKey?: Array<unknown>,
-) => [useUsersServiceListUsersKey, ...(queryKey ?? [{ cursor, limit }])];
+) => [
+  useTagServiceListTagsKey,
+  ...(queryKey ?? [{ cursor, limit, queryText, userId }]),
+];
+export type AdminServiceListTagsDefaultResponse = Awaited<
+  ReturnType<typeof AdminService.listTags>
+>;
+export type AdminServiceListTagsQueryResult<
+  TData = AdminServiceListTagsDefaultResponse,
+  TError = unknown,
+> = UseQueryResult<TData, TError>;
+export const useAdminServiceListTagsKey = 'AdminServiceListTags';
+export const UseAdminServiceListTagsKeyFn = (
+  {
+    cursor,
+    limit,
+    queryText,
+    userId,
+  }: {
+    cursor?: string;
+    limit?: number;
+    queryText?: string;
+    userId?: string;
+  } = {},
+  queryKey?: Array<unknown>,
+) => [
+  useAdminServiceListTagsKey,
+  ...(queryKey ?? [{ cursor, limit, queryText, userId }]),
+];
 export type AdminServiceListUsersDefaultResponse = Awaited<
   ReturnType<typeof AdminService.listUsers>
 >;
@@ -957,6 +990,24 @@ export const UseAdminServiceListOrgsKeyFn = (
   } = {},
   queryKey?: Array<unknown>,
 ) => [useAdminServiceListOrgsKey, ...(queryKey ?? [{ cursor, limit }])];
+export type UsersServiceListUsersDefaultResponse = Awaited<
+  ReturnType<typeof UsersService.listUsers>
+>;
+export type UsersServiceListUsersQueryResult<
+  TData = UsersServiceListUsersDefaultResponse,
+  TError = unknown,
+> = UseQueryResult<TData, TError>;
+export const useUsersServiceListUsersKey = 'UsersServiceListUsers';
+export const UseUsersServiceListUsersKeyFn = (
+  {
+    cursor,
+    limit,
+  }: {
+    cursor?: string;
+    limit?: number;
+  } = {},
+  queryKey?: Array<unknown>,
+) => [useUsersServiceListUsersKey, ...(queryKey ?? [{ cursor, limit }])];
 export type OrganizationServiceListOrgsDefaultResponse = Awaited<
   ReturnType<typeof OrganizationService.listOrgs>
 >;
@@ -1047,14 +1098,14 @@ export type SandboxConfigServiceCreateSandboxEnvVarV1SandboxConfigSandboxConfigI
 export type ProvidersServiceCreateProviderMutationResult = Awaited<
   ReturnType<typeof ProvidersService.createProvider>
 >;
-export type UsersServiceCreateUserMutationResult = Awaited<
-  ReturnType<typeof UsersService.createUser>
->;
 export type AdminServiceCreateUserMutationResult = Awaited<
   ReturnType<typeof AdminService.createUser>
 >;
 export type AdminServiceCreateOrganizationMutationResult = Awaited<
   ReturnType<typeof AdminService.createOrganization>
+>;
+export type UsersServiceCreateUserMutationResult = Awaited<
+  ReturnType<typeof UsersService.createUser>
 >;
 export type OrganizationServiceCreateOrganizationMutationResult = Awaited<
   ReturnType<typeof OrganizationService.createOrganization>
@@ -1068,11 +1119,11 @@ export type ToolsServiceUpsertToolMutationResult = Awaited<
 export type ProvidersServiceUpdateProviderMutationResult = Awaited<
   ReturnType<typeof ProvidersService.updateProvider>
 >;
-export type UsersServiceUpdateUserMutationResult = Awaited<
-  ReturnType<typeof UsersService.updateUser>
->;
 export type AdminServiceUpdateUserMutationResult = Awaited<
   ReturnType<typeof AdminService.updateUser>
+>;
+export type UsersServiceUpdateUserMutationResult = Awaited<
+  ReturnType<typeof UsersService.updateUser>
 >;
 export type ToolsServiceUpdateToolMutationResult = Awaited<
   ReturnType<typeof ToolsService.updateTool>
@@ -1161,14 +1212,14 @@ export type ProvidersServiceDeleteProviderMutationResult = Awaited<
 export type RunsServiceDeleteRunMutationResult = Awaited<
   ReturnType<typeof RunsService.deleteRun>
 >;
-export type UsersServiceDeleteUserMutationResult = Awaited<
-  ReturnType<typeof UsersService.deleteUser>
->;
 export type AdminServiceDeleteUserMutationResult = Awaited<
   ReturnType<typeof AdminService.deleteUser>
 >;
 export type AdminServiceDeleteOrganizationByIdMutationResult = Awaited<
   ReturnType<typeof AdminService.deleteOrganizationById>
+>;
+export type UsersServiceDeleteUserMutationResult = Awaited<
+  ReturnType<typeof UsersService.deleteUser>
 >;
 export type OrganizationServiceDeleteOrganizationByIdMutationResult = Awaited<
   ReturnType<typeof OrganizationService.deleteOrganizationById>

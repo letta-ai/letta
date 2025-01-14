@@ -14,6 +14,7 @@ import {
   RunsService,
   SandboxConfigService,
   SourcesService,
+  TagService,
   ToolsService,
   UsersService,
 } from '../requests/services.gen';
@@ -1432,32 +1433,81 @@ export const useRunsServiceGetRunUsageSuspense = <
     ...options,
   });
 /**
- * List Users
- * Get a list of all users in the database
+ * Get Tags
+ * Get a list of all tags in the database
  * @param data The data for the request.
  * @param data.cursor
  * @param data.limit
- * @returns User Successful Response
+ * @param data.queryText
+ * @param data.userId
+ * @returns string Successful Response
  * @throws ApiError
  */
-export const useUsersServiceListUsersSuspense = <
-  TData = Common.UsersServiceListUsersDefaultResponse,
+export const useTagServiceListTagsSuspense = <
+  TData = Common.TagServiceListTagsDefaultResponse,
   TError = unknown,
   TQueryKey extends Array<unknown> = unknown[],
 >(
   {
     cursor,
     limit,
+    queryText,
+    userId,
   }: {
     cursor?: string;
     limit?: number;
+    queryText?: string;
+    userId?: string;
   } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useSuspenseQuery<TData, TError>({
-    queryKey: Common.UseUsersServiceListUsersKeyFn({ cursor, limit }, queryKey),
-    queryFn: () => UsersService.listUsers({ cursor, limit }) as TData,
+    queryKey: Common.UseTagServiceListTagsKeyFn(
+      { cursor, limit, queryText, userId },
+      queryKey,
+    ),
+    queryFn: () =>
+      TagService.listTags({ cursor, limit, queryText, userId }) as TData,
+    ...options,
+  });
+/**
+ * Get Tags
+ * Get a list of all tags in the database
+ * @param data The data for the request.
+ * @param data.cursor
+ * @param data.limit
+ * @param data.queryText
+ * @param data.userId
+ * @returns string Successful Response
+ * @throws ApiError
+ */
+export const useAdminServiceListTagsSuspense = <
+  TData = Common.AdminServiceListTagsDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[],
+>(
+  {
+    cursor,
+    limit,
+    queryText,
+    userId,
+  }: {
+    cursor?: string;
+    limit?: number;
+    queryText?: string;
+    userId?: string;
+  } = {},
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
+) =>
+  useSuspenseQuery<TData, TError>({
+    queryKey: Common.UseAdminServiceListTagsKeyFn(
+      { cursor, limit, queryText, userId },
+      queryKey,
+    ),
+    queryFn: () =>
+      AdminService.listTags({ cursor, limit, queryText, userId }) as TData,
     ...options,
   });
 /**
@@ -1516,6 +1566,35 @@ export const useAdminServiceListOrgsSuspense = <
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseAdminServiceListOrgsKeyFn({ cursor, limit }, queryKey),
     queryFn: () => AdminService.listOrgs({ cursor, limit }) as TData,
+    ...options,
+  });
+/**
+ * List Users
+ * Get a list of all users in the database
+ * @param data The data for the request.
+ * @param data.cursor
+ * @param data.limit
+ * @returns User Successful Response
+ * @throws ApiError
+ */
+export const useUsersServiceListUsersSuspense = <
+  TData = Common.UsersServiceListUsersDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[],
+>(
+  {
+    cursor,
+    limit,
+  }: {
+    cursor?: string;
+    limit?: number;
+  } = {},
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
+) =>
+  useSuspenseQuery<TData, TError>({
+    queryKey: Common.UseUsersServiceListUsersKeyFn({ cursor, limit }, queryKey),
+    queryFn: () => UsersService.listUsers({ cursor, limit }) as TData,
     ...options,
   });
 /**

@@ -20,6 +20,7 @@ import {
   RunsService,
   SandboxConfigService,
   SourcesService,
+  TagService,
   ToolsService,
   UsersService,
 } from '../requests/services.gen';
@@ -1464,32 +1465,81 @@ export const useRunsServiceGetRunUsage = <
     ...options,
   });
 /**
- * List Users
- * Get a list of all users in the database
+ * Get Tags
+ * Get a list of all tags in the database
  * @param data The data for the request.
  * @param data.cursor
  * @param data.limit
- * @returns User Successful Response
+ * @param data.queryText
+ * @param data.userId
+ * @returns string Successful Response
  * @throws ApiError
  */
-export const useUsersServiceListUsers = <
-  TData = Common.UsersServiceListUsersDefaultResponse,
+export const useTagServiceListTags = <
+  TData = Common.TagServiceListTagsDefaultResponse,
   TError = unknown,
   TQueryKey extends Array<unknown> = unknown[],
 >(
   {
     cursor,
     limit,
+    queryText,
+    userId,
   }: {
     cursor?: string;
     limit?: number;
+    queryText?: string;
+    userId?: string;
   } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useQuery<TData, TError>({
-    queryKey: Common.UseUsersServiceListUsersKeyFn({ cursor, limit }, queryKey),
-    queryFn: () => UsersService.listUsers({ cursor, limit }) as TData,
+    queryKey: Common.UseTagServiceListTagsKeyFn(
+      { cursor, limit, queryText, userId },
+      queryKey,
+    ),
+    queryFn: () =>
+      TagService.listTags({ cursor, limit, queryText, userId }) as TData,
+    ...options,
+  });
+/**
+ * Get Tags
+ * Get a list of all tags in the database
+ * @param data The data for the request.
+ * @param data.cursor
+ * @param data.limit
+ * @param data.queryText
+ * @param data.userId
+ * @returns string Successful Response
+ * @throws ApiError
+ */
+export const useAdminServiceListTags = <
+  TData = Common.AdminServiceListTagsDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[],
+>(
+  {
+    cursor,
+    limit,
+    queryText,
+    userId,
+  }: {
+    cursor?: string;
+    limit?: number;
+    queryText?: string;
+    userId?: string;
+  } = {},
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
+) =>
+  useQuery<TData, TError>({
+    queryKey: Common.UseAdminServiceListTagsKeyFn(
+      { cursor, limit, queryText, userId },
+      queryKey,
+    ),
+    queryFn: () =>
+      AdminService.listTags({ cursor, limit, queryText, userId }) as TData,
     ...options,
   });
 /**
@@ -1548,6 +1598,35 @@ export const useAdminServiceListOrgs = <
   useQuery<TData, TError>({
     queryKey: Common.UseAdminServiceListOrgsKeyFn({ cursor, limit }, queryKey),
     queryFn: () => AdminService.listOrgs({ cursor, limit }) as TData,
+    ...options,
+  });
+/**
+ * List Users
+ * Get a list of all users in the database
+ * @param data The data for the request.
+ * @param data.cursor
+ * @param data.limit
+ * @returns User Successful Response
+ * @throws ApiError
+ */
+export const useUsersServiceListUsers = <
+  TData = Common.UsersServiceListUsersDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[],
+>(
+  {
+    cursor,
+    limit,
+  }: {
+    cursor?: string;
+    limit?: number;
+  } = {},
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
+) =>
+  useQuery<TData, TError>({
+    queryKey: Common.UseUsersServiceListUsersKeyFn({ cursor, limit }, queryKey),
+    queryFn: () => UsersService.listUsers({ cursor, limit }) as TData,
     ...options,
   });
 /**
@@ -2472,43 +2551,6 @@ export const useProvidersServiceCreateProvider = <
  * @returns User Successful Response
  * @throws ApiError
  */
-export const useUsersServiceCreateUser = <
-  TData = Common.UsersServiceCreateUserMutationResult,
-  TError = unknown,
-  TContext = unknown,
->(
-  options?: Omit<
-    UseMutationOptions<
-      TData,
-      TError,
-      {
-        requestBody: UserCreate;
-      },
-      TContext
-    >,
-    'mutationFn'
-  >,
-) =>
-  useMutation<
-    TData,
-    TError,
-    {
-      requestBody: UserCreate;
-    },
-    TContext
-  >({
-    mutationFn: ({ requestBody }) =>
-      UsersService.createUser({ requestBody }) as unknown as Promise<TData>,
-    ...options,
-  });
-/**
- * Create User
- * Create a new user in the database
- * @param data The data for the request.
- * @param data.requestBody
- * @returns User Successful Response
- * @throws ApiError
- */
 export const useAdminServiceCreateUser = <
   TData = Common.AdminServiceCreateUserMutationResult,
   TError = unknown,
@@ -2575,6 +2617,43 @@ export const useAdminServiceCreateOrganization = <
       AdminService.createOrganization({
         requestBody,
       }) as unknown as Promise<TData>,
+    ...options,
+  });
+/**
+ * Create User
+ * Create a new user in the database
+ * @param data The data for the request.
+ * @param data.requestBody
+ * @returns User Successful Response
+ * @throws ApiError
+ */
+export const useUsersServiceCreateUser = <
+  TData = Common.UsersServiceCreateUserMutationResult,
+  TError = unknown,
+  TContext = unknown,
+>(
+  options?: Omit<
+    UseMutationOptions<
+      TData,
+      TError,
+      {
+        requestBody: UserCreate;
+      },
+      TContext
+    >,
+    'mutationFn'
+  >,
+) =>
+  useMutation<
+    TData,
+    TError,
+    {
+      requestBody: UserCreate;
+    },
+    TContext
+  >({
+    mutationFn: ({ requestBody }) =>
+      UsersService.createUser({ requestBody }) as unknown as Promise<TData>,
     ...options,
   });
 /**
@@ -2747,43 +2826,6 @@ export const useProvidersServiceUpdateProvider = <
  * @returns User Successful Response
  * @throws ApiError
  */
-export const useUsersServiceUpdateUser = <
-  TData = Common.UsersServiceUpdateUserMutationResult,
-  TError = unknown,
-  TContext = unknown,
->(
-  options?: Omit<
-    UseMutationOptions<
-      TData,
-      TError,
-      {
-        requestBody: UserUpdate;
-      },
-      TContext
-    >,
-    'mutationFn'
-  >,
-) =>
-  useMutation<
-    TData,
-    TError,
-    {
-      requestBody: UserUpdate;
-    },
-    TContext
-  >({
-    mutationFn: ({ requestBody }) =>
-      UsersService.updateUser({ requestBody }) as unknown as Promise<TData>,
-    ...options,
-  });
-/**
- * Update User
- * Update a user in the database
- * @param data The data for the request.
- * @param data.requestBody
- * @returns User Successful Response
- * @throws ApiError
- */
 export const useAdminServiceUpdateUser = <
   TData = Common.AdminServiceUpdateUserMutationResult,
   TError = unknown,
@@ -2811,6 +2853,43 @@ export const useAdminServiceUpdateUser = <
   >({
     mutationFn: ({ requestBody }) =>
       AdminService.updateUser({ requestBody }) as unknown as Promise<TData>,
+    ...options,
+  });
+/**
+ * Update User
+ * Update a user in the database
+ * @param data The data for the request.
+ * @param data.requestBody
+ * @returns User Successful Response
+ * @throws ApiError
+ */
+export const useUsersServiceUpdateUser = <
+  TData = Common.UsersServiceUpdateUserMutationResult,
+  TError = unknown,
+  TContext = unknown,
+>(
+  options?: Omit<
+    UseMutationOptions<
+      TData,
+      TError,
+      {
+        requestBody: UserUpdate;
+      },
+      TContext
+    >,
+    'mutationFn'
+  >,
+) =>
+  useMutation<
+    TData,
+    TError,
+    {
+      requestBody: UserUpdate;
+    },
+    TContext
+  >({
+    mutationFn: ({ requestBody }) =>
+      UsersService.updateUser({ requestBody }) as unknown as Promise<TData>,
     ...options,
   });
 /**
@@ -3946,42 +4025,6 @@ export const useRunsServiceDeleteRun = <
  * @returns User Successful Response
  * @throws ApiError
  */
-export const useUsersServiceDeleteUser = <
-  TData = Common.UsersServiceDeleteUserMutationResult,
-  TError = unknown,
-  TContext = unknown,
->(
-  options?: Omit<
-    UseMutationOptions<
-      TData,
-      TError,
-      {
-        userId: string;
-      },
-      TContext
-    >,
-    'mutationFn'
-  >,
-) =>
-  useMutation<
-    TData,
-    TError,
-    {
-      userId: string;
-    },
-    TContext
-  >({
-    mutationFn: ({ userId }) =>
-      UsersService.deleteUser({ userId }) as unknown as Promise<TData>,
-    ...options,
-  });
-/**
- * Delete User
- * @param data The data for the request.
- * @param data.userId The user_id key to be deleted.
- * @returns User Successful Response
- * @throws ApiError
- */
 export const useAdminServiceDeleteUser = <
   TData = Common.AdminServiceDeleteUserMutationResult,
   TError = unknown,
@@ -4047,6 +4090,42 @@ export const useAdminServiceDeleteOrganizationById = <
       AdminService.deleteOrganizationById({
         orgId,
       }) as unknown as Promise<TData>,
+    ...options,
+  });
+/**
+ * Delete User
+ * @param data The data for the request.
+ * @param data.userId The user_id key to be deleted.
+ * @returns User Successful Response
+ * @throws ApiError
+ */
+export const useUsersServiceDeleteUser = <
+  TData = Common.UsersServiceDeleteUserMutationResult,
+  TError = unknown,
+  TContext = unknown,
+>(
+  options?: Omit<
+    UseMutationOptions<
+      TData,
+      TError,
+      {
+        userId: string;
+      },
+      TContext
+    >,
+    'mutationFn'
+  >,
+) =>
+  useMutation<
+    TData,
+    TError,
+    {
+      userId: string;
+    },
+    TContext
+  >({
+    mutationFn: ({ userId }) =>
+      UsersService.deleteUser({ userId }) as unknown as Promise<TData>,
     ...options,
   });
 /**
