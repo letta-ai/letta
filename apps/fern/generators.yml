@@ -1,5 +1,5 @@
-auth-schemes: 
-  token: 
+auth-schemes:
+  token:
     header: Authorization
     prefix: Bearer
     type: optional<string>
@@ -24,7 +24,7 @@ groups:
         config:
           package_name: letta_client
           client_class_name: Letta
-          pydantic_config: 
+          pydantic_config:
             skip_validation: true
   ts-sdk:
     generators:
@@ -41,4 +41,6 @@ groups:
           allowCustomFetcher: true
           skipResponseValidation: true
           includeApiReference: true
+          extraDependencies:
+            dedent: "^1.0.0"
         smart-casing: true
