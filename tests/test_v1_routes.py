@@ -453,3 +453,47 @@ def test_get_run_usage_not_found(client, mock_sync_server):
 
     assert response.status_code == 404
     assert error_message in response.json()["detail"]
+
+
+# ======================================================================================================================
+# Tags Routes Tests
+# ======================================================================================================================
+
+
+def test_get_tags(client, mock_sync_server):
+    """Test basic tag listing"""
+    mock_sync_server.agent_manager.list_tags.return_value = ["tag1", "tag2"]
+
+    response = client.get("/v1/tags", headers={"user_id": "test_user"})
+
+    assert response.status_code == 200
+    assert response.json() == ["tag1", "tag2"]
+    mock_sync_server.agent_manager.list_tags.assert_called_once_with(
+        actor=mock_sync_server.user_manager.get_user_or_default.return_value, cursor=None, limit=50, query_text=None
+    )
+
+
+def test_get_tags_with_pagination(client, mock_sync_server):
+    """Test tag listing with pagination parameters"""
+    mock_sync_server.agent_manager.list_tags.return_value = ["tag3", "tag4"]
+
+    response = client.get("/v1/tags", params={"cursor": "tag2", "limit": 2}, headers={"user_id": "test_user"})
+
+    assert response.status_code == 200
+    assert response.json() == ["tag3", "tag4"]
+    mock_sync_server.agent_manager.list_tags.assert_called_once_with(
+        actor=mock_sync_server.user_manager.get_user_or_default.return_value, cursor="tag2", limit=2, query_text=None
+    )
+
+
+def test_get_tags_with_search(client, mock_sync_server):
+    """Test tag listing with text search"""
+    mock_sync_server.agent_manager.list_tags.return_value = ["user_tag1", "user_tag2"]
+
+    response = client.get("/v1/tags", params={"query_text": "user"}, headers={"user_id": "test_user"})
+
+    assert response.status_code == 200
+    assert response.json() == ["user_tag1", "user_tag2"]
+    mock_sync_server.agent_manager.list_tags.assert_called_once_with(
+        actor=mock_sync_server.user_manager.get_user_or_default.return_value, cursor=None, limit=50, query_text="user"
+    )

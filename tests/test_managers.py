@@ -917,6 +917,8 @@ def test_list_agents_by_tags_pagination(server: SyncServer, default_user, defaul
 # ======================================================================================================================
 # AgentManager Tests - Messages Relationship
 # ======================================================================================================================
+
+
 def test_reset_messages_no_messages(server: SyncServer, sarah_agent, default_user):
     """
     Test that resetting messages on an agent that has zero messages
@@ -1473,6 +1475,8 @@ def test_update_user(server: SyncServer):
 # ======================================================================================================================
 # ToolManager Tests
 # ======================================================================================================================
+
+
 def test_create_tool(server: SyncServer, print_tool, default_user, default_organization):
     # Assertions to ensure the created tool matches the expected values
     assert print_tool.created_by_id == default_user.id
@@ -2829,3 +2833,56 @@ def test_job_usage_stats_add_nonexistent_job(server: SyncServer, default_user):
             step_id="step_1",
             actor=default_user,
         )
+
+
+def test_list_tags(server: SyncServer, default_user, default_organization):
+    """Test listing tags functionality."""
+    # Create multiple agents with different tags
+    agents = []
+    tags = ["alpha", "beta", "gamma", "delta", "epsilon"]
+
+    # Create agents with different combinations of tags
+    for i in range(3):
+        agent = server.agent_manager.create_agent(
+            actor=default_user,
+            agent_create=CreateAgent(
+                name="tag_agent_" + str(i),
+                memory_blocks=[],
+                llm_config=LLMConfig.default_config("gpt-4"),
+                embedding_config=EmbeddingConfig.default_config(provider="openai"),
+                tags=tags[i : i + 3],  # Each agent gets 3 consecutive tags
+            ),
+        )
+        agents.append(agent)
+
+    # Test basic listing - should return all unique tags in alphabetical order
+    all_tags = server.agent_manager.list_tags(actor=default_user)
+    assert all_tags == sorted(tags[:5])  # All tags should be present and sorted
+
+    # Test pagination with limit
+    limited_tags = server.agent_manager.list_tags(actor=default_user, limit=2)
+    assert limited_tags == tags[:2]  # Should return first 2 tags
+
+    # Test pagination with cursor
+    cursor_tags = server.agent_manager.list_tags(actor=default_user, cursor="beta")
+    assert cursor_tags == ["delta", "epsilon", "gamma"]  # Tags after "beta"
+
+    # Test text search
+    search_tags = server.agent_manager.list_tags(actor=default_user, query_text="ta")
+    assert search_tags == ["beta", "delta"]  # Only tags containing "ta"
+
+    # Test with non-matching search
+    no_match_tags = server.agent_manager.list_tags(actor=default_user, query_text="xyz")
+    assert no_match_tags == []  # Should return empty list
+
+    # Test with different organization
+    other_org = server.organization_manager.create_organization(pydantic_org=PydanticOrganization(name="Other Org"))
+    other_user = server.user_manager.create_user(PydanticUser(name="Other User", organization_id=other_org.id))
+
+    # Other org's tags should be empty
+    other_org_tags = server.agent_manager.list_tags(actor=other_user)
+    assert other_org_tags == []
+
+    # Cleanup
+    for agent in agents:
+        server.agent_manager.delete_agent(agent.id, actor=default_user)

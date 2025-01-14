@@ -2122,6 +2122,36 @@ class RESTClient(AbstractClient):
             raise ValueError(f"Failed to list active runs: {response.text}")
         return [Run(**run) for run in response.json()]
 
+    def get_tags(
+        self,
+        cursor: Optional[str] = None,
+        limit: Optional[int] = None,
+        query_text: Optional[str] = None,
+    ) -> List[str]:
+        """
+        Get a list of all unique tags.
+
+        Args:
+            cursor: Optional cursor for pagination (last tag seen)
+            limit: Optional maximum number of tags to return
+            query_text: Optional text to filter tags
+
+        Returns:
+            List[str]: List of unique tags
+        """
+        params = {}
+        if cursor:
+            params["cursor"] = cursor
+        if limit:
+            params["limit"] = limit
+        if query_text:
+            params["query_text"] = query_text
+
+        response = requests.get(f"{self.base_url}/{self.api_prefix}/tags", headers=self.headers, params=params)
+        if response.status_code != 200:
+            raise ValueError(f"Failed to get tags: {response.text}")
+        return response.json()
+
 
 class LocalClient(AbstractClient):
     """
@@ -3680,3 +3710,17 @@ class LocalClient(AbstractClient):
             runs (List[Run]): List of active runs
         """
         return self.server.job_manager.list_jobs(actor=self.user, job_type=JobType.RUN, statuses=[JobStatus.created, JobStatus.running])
+
+    def get_tags(
+        self,
+        cursor: str = None,
+        limit: int = 100,
+        query_text: str = None,
+    ) -> List[str]:
+        """
+        Get all tags.
+
+        Returns:
+            tags (List[str]): List of tags
+        """
+        return self.server.agent_manager.list_tags(actor=self.user, cursor=cursor, limit=limit, query_text=query_text)
