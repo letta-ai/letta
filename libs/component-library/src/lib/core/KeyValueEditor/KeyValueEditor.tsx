@@ -91,10 +91,11 @@ function KeyValueEditorPrimitive(props: KeyValueEditorProps) {
 
   return (
     <VStack gap="small">
-      {!disabled && keyValuePairs.length === 0 && (
+      {!disabled && !freezeRows && keyValuePairs.length === 0 && (
         <Button
           onClick={addRow}
           type="button"
+          data-testid="add-variable-button"
           color="secondary"
           preIcon={<PlusIcon />}
           label={addVariableLabel || t('addVariable')}
@@ -108,6 +109,7 @@ function KeyValueEditorPrimitive(props: KeyValueEditorProps) {
                 className="text-base min-w-[200px] border-r px-2 bg-transparent disabled:bg-background-grey"
                 type="text"
                 value={key}
+                data-testid={`key-value-editor-key-${index}`}
                 disabled={disabled || disableKey}
                 placeholder={keyPlaceholder || 'key'}
                 onChange={(e) => {

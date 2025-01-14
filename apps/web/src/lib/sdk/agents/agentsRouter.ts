@@ -158,6 +158,9 @@ type CreateAgentResponse = ServerInferResponses<
 interface PrepareAgentForUserOptions {
   agentName: string;
   version?: string;
+  projectId?: string;
+  parentTemplateId?: string;
+  parentTemplateName?: string;
   parentTemplate?: string;
   project?: string;
 }
@@ -172,8 +175,12 @@ export function prepareAgentForUser(
     ...(options.version ? { version: options.version } : {}),
     metadata_: {
       ...agent.metadata_,
-      ...(options.parentTemplate
-        ? { parentTemplate: options.parentTemplate }
+      ...(options.projectId ? { projectId: options.projectId } : {}),
+      ...(options.parentTemplateId
+        ? { parentTemplateId: options.parentTemplateId }
+        : {}),
+      ...(options.parentTemplateName
+        ? { parentTemplateName: options.parentTemplateName }
         : {}),
       ...(options.project && !agent.metadata_?.project
         ? { project: options.project }
@@ -1147,7 +1154,10 @@ async function getAgentById(
   context: SDKContext,
 ): Promise<GetAgentByIdResponse> {
   const { agent_id: agentId } = req.params;
-  const { all } = req.query;
+  const { all, template } = req.query;
+
+  const onlyLoadDeployedAgent = template === false;
+  const onlyLoadAgentTemplate = template === true;
 
   const [agent, deployedAgent, agentTemplate] = await Promise.all([
     AgentsService.getAgent(
@@ -1158,20 +1168,38 @@ async function getAgentById(
         user_id: context.request.lettaAgentsUserId,
       },
     ),
-    db.query.deployedAgents.findFirst({
-      where: and(
-        isNull(deployedAgents.deletedAt),
-        eq(deployedAgents.organizationId, context.request.organizationId),
-        eq(deployedAgents.id, agentId),
-      ),
-    }),
-    db.query.agentTemplates.findFirst({
-      where: and(
-        eq(agentTemplates.organizationId, context.request.organizationId),
-        eq(agentTemplates.id, agentId),
-        isNull(agentTemplates.deletedAt),
-      ),
-    }),
+    !onlyLoadAgentTemplate
+      ? db.query.deployedAgents.findFirst({
+          where: and(
+            isNull(deployedAgents.deletedAt),
+            eq(deployedAgents.organizationId, context.request.organizationId),
+            eq(deployedAgents.id, agentId),
+          ),
+          with: {
+            deployedAgentTemplate: {
+              columns: {
+                version: true,
+              },
+              with: {
+                agentTemplate: {
+                  columns: {
+                    name: true,
+                  },
+                },
+              },
+            },
+          },
+        })
+      : null,
+    !onlyLoadDeployedAgent
+      ? db.query.agentTemplates.findFirst({
+          where: and(
+            eq(agentTemplates.organizationId, context.request.organizationId),
+            eq(agentTemplates.id, agentId),
+            isNull(agentTemplates.deletedAt),
+          ),
+        })
+      : null,
   ]);
 
   if (!all) {
@@ -1194,6 +1222,10 @@ async function getAgentById(
     }
   }
 
+  const parentTemplateName = deployedAgent?.deployedAgentTemplate?.agentTemplate
+    ?.name
+    ? `${deployedAgent?.deployedAgentTemplate?.agentTemplate?.name}:${deployedAgent?.deployedAgentTemplate?.version}`
+    : '';
   const projectSlug = agent?.metadata_?.project
     ? (agent.metadata_.project as string)
     : await getProjectSlugById({
@@ -1204,7 +1236,10 @@ async function getAgentById(
   return {
     status: 200,
     body: prepareAgentForUser(agent, {
+      projectId: deployedAgent?.projectId || '',
       agentName: deployedAgent?.key || agentTemplate?.name || '',
+      parentTemplateId: deployedAgent?.deployedAgentTemplateId || '',
+      parentTemplateName: parentTemplateName,
       parentTemplate: deployedAgent?.deployedAgentTemplateId || '',
       project: projectSlug,
     }),

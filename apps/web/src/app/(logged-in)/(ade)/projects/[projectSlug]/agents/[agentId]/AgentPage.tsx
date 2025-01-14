@@ -92,8 +92,12 @@ function LogoContainer() {
 function ADEHeader(props: ADEHeaderProps) {
   const { agent } = props;
   const { name: agentName } = agent;
+  const { parentTemplateName } = useCurrentAgentMetaData();
   const { name: projectName, id, slug: projectSlug } = useCurrentProject();
   const t = useTranslations('ADE/ADEHeader');
+
+  const projectUrl =
+    id === REMOTE_DEVELOPMENT_ID ? projectSlug : `/projects/${projectSlug}`;
 
   return (
     <HStack
@@ -120,11 +124,16 @@ function ADEHeader(props: ADEHeaderProps) {
               items={[
                 {
                   label: projectName,
-                  href:
-                    id === REMOTE_DEVELOPMENT_ID
-                      ? projectSlug
-                      : `/projects/${projectSlug}`,
+                  href: projectUrl,
                 },
+                ...(parentTemplateName
+                  ? [
+                      {
+                        label: parentTemplateName,
+                        href: `${projectUrl}/templates/${parentTemplateName.split(':')[0]}`,
+                      },
+                    ]
+                  : []),
                 {
                   label: agentName,
                 },

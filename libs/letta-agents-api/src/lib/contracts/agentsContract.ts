@@ -175,6 +175,7 @@ const getAgentByIdContract = c.query({
   path: '/v1/agents/:agent_id',
   query: z.object({
     all: z.boolean().optional(),
+    template: z.boolean().optional(),
   }),
   description: 'Get an agent by its ID',
   pathParams: z.object({

@@ -13,6 +13,7 @@ interface UseCurrentAgentMetaDataResponse {
   agentName: string;
   isFromTemplate: boolean;
   isTemplate: boolean;
+  parentTemplateName?: string;
   isLocal: boolean;
 }
 
@@ -52,6 +53,7 @@ export function useCurrentAgentMetaData(): UseCurrentAgentMetaDataResponse {
   let agentName = '';
   let isTemplate = false;
   let isFromTemplate = false;
+  let parentTemplateName = '';
 
   if (templateName) {
     isTemplate = true;
@@ -90,7 +92,10 @@ export function useCurrentAgentMetaData(): UseCurrentAgentMetaDataResponse {
 
     agentId = deployedAgent?.body.id || '';
     agentName = deployedAgent?.body.name || '';
-    isFromTemplate = !!get(deployedAgent?.body.metadata_, 'parentTemplate');
+    isFromTemplate = !!get(deployedAgent?.body.metadata_, 'parentTemplateId');
+    parentTemplateName = String(
+      get(deployedAgent?.body.metadata_, 'parentTemplateName', ''),
+    );
   }
 
   if (!agentId) {
@@ -103,6 +108,7 @@ export function useCurrentAgentMetaData(): UseCurrentAgentMetaDataResponse {
     agentId,
     agentName,
     isTemplate,
+    parentTemplateName,
     isFromTemplate,
     isLocal: false,
   };

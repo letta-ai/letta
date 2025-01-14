@@ -137,6 +137,7 @@ function BreadcrumbItemWrapper(props: BreadcrumbItemWrapperProps) {
   return (
     <BreadcrumbItem>
       <Button
+        data-testid={`breadcrumb-item:${label}`}
         onClick={onClick}
         {...(href ? { href } : {})}
         color="tertiary"

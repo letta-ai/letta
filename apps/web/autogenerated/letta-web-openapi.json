@@ -480,6 +480,13 @@
             "schema": {
               "type": "boolean"
             }
+          },
+          {
+            "name": "template",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
           }
         ],
         "operationId": "agents.getAgentById",

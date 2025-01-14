@@ -614,6 +614,7 @@ function DeployedAgentsPage() {
         cell: ({ row }) => (
           <HStack>
             <Button
+              data-testid="open-in-ade"
               href={`/projects/${currentProjectSlug}/agents/${row.original.id}`}
               color="tertiary"
               label={t('table.openInADE')}

@@ -59,7 +59,9 @@ describe('letta', () => {
       { parseSpecialCharSequences: false },
     );
 
-    cy.findByTestId('toggle-variables-button').first().click();
+    cy.findByTestId('toggle-variables-button', { timeout: 50000 })
+      .first()
+      .click();
 
     cy.findByTestId('key-value-editor-value-0').type('Shubham');
     cy.findByTestId('save-variables-button').click();

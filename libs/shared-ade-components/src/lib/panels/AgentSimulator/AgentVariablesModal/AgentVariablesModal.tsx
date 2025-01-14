@@ -237,6 +237,7 @@ function ToolVariables() {
               <Button
                 busy={isPending}
                 type="submit"
+                data-testid="save-variables-button"
                 color="primary"
                 label={t('ToolVariables.save')}
               />

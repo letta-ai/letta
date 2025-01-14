@@ -93,8 +93,9 @@ function DeployFromTemplate(props: DeployFromTemplateProps) {
           {templates
             ? templates
                 .filter((template) => template.latestDeployedId)
-                .map((template) => (
+                .map((template, index) => (
                   <Card
+                    testId={`deploy-from-template-card:${index}`}
                     onClick={() => {
                       if (template.latestDeployedId) {
                         onSelectTemplate({
@@ -377,22 +378,26 @@ function SelectedTemplateState(props: SelectedTemplateStateProps) {
           >
             <VStack paddingTop flex fullHeight gap="form">
               <VStack fullHeight gap="form" flex>
-                <RawKeyValueEditor
-                  freezeRows
-                  fullWidth
-                  disableKey
-                  label={t('SelectedTemplateState.memoryVariables.label')}
-                  value={memoryVariables}
-                  onValueChange={setMemoryVariables}
-                />
-                <RawKeyValueEditor
-                  freezeRows
-                  disableKey
-                  fullWidth
-                  label={t('SelectedTemplateState.toolVariables.label')}
-                  value={toolVariables}
-                  onValueChange={setToolVariables}
-                />
+                {memoryVariablesInTemplate && (
+                  <RawKeyValueEditor
+                    freezeRows
+                    fullWidth
+                    disableKey
+                    label={t('SelectedTemplateState.memoryVariables.label')}
+                    value={memoryVariables}
+                    onValueChange={setMemoryVariables}
+                  />
+                )}
+                {toolVariablesInTemplate.length > 0 && (
+                  <RawKeyValueEditor
+                    freezeRows
+                    disableKey
+                    fullWidth
+                    label={t('SelectedTemplateState.toolVariables.label')}
+                    value={toolVariables}
+                    onValueChange={setToolVariables}
+                  />
+                )}
               </VStack>
               <FormActions>
                 <Button
@@ -403,6 +408,7 @@ function SelectedTemplateState(props: SelectedTemplateStateProps) {
                 />
                 <Button
                   type="submit"
+                  data-testid="complete-create-agent-button"
                   label={t('SelectedTemplateState.create')}
                   preIcon={<PlusIcon />}
                   color="primary"
@@ -513,7 +519,12 @@ export function DeployAgentDialog() {
       errorMessage={isError ? t('error') : undefined}
       size={selectedTemplate ? 'large' : 'xxlarge'}
       trigger={
-        <Button label={t('trigger')} preIcon={<PlusIcon />} color="primary" />
+        <Button
+          data-testid="deploy-agent-dialog-start"
+          label={t('trigger')}
+          preIcon={<PlusIcon />}
+          color="primary"
+        />
       }
     >
       <div className="min-h-[60vh] h-full flex flex-col">
