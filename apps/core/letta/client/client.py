@@ -1,6 +1,5 @@
 import logging
 import time
-from datetime import datetime
 from typing import Callable, Dict, Generator, List, Optional, Union
 
 import requests
@@ -23,6 +22,7 @@ from letta.schemas.environment_variables import (
 )
 from letta.schemas.file import FileMetadata
 from letta.schemas.job import Job
+from letta.schemas.letta_message import LettaMessage, LettaMessageUnion
 from letta.schemas.letta_request import LettaRequest, LettaStreamingRequest
 from letta.schemas.letta_response import LettaResponse, LettaStreamingResponse
 from letta.schemas.llm_config import LLMConfig
@@ -1999,46 +1999,27 @@ class RESTClient(AbstractClient):
         self,
         run_id: str,
         cursor: Optional[str] = None,
-        start_date: Optional[datetime] = None,
-        end_date: Optional[datetime] = None,
         limit: Optional[int] = 100,
-        query_text: Optional[str] = None,
         ascending: bool = True,
-        tags: Optional[List[str]] = None,
-        match_all_tags: bool = False,
         role: Optional[MessageRole] = None,
-        tool_name: Optional[str] = None,
-    ) -> List[Message]:
+    ) -> List[LettaMessageUnion]:
         """
         Get messages associated with a job with filtering options.
 
         Args:
             job_id: ID of the job
             cursor: Cursor for pagination
-            start_date: Filter messages after this date
-            end_date: Filter messages before this date
             limit: Maximum number of messages to return
-            query_text: Search text in message content
             ascending: Sort order by creation time
-            tags: Filter by message tags
-            match_all_tags: If true, match all tags. If false, match any tag
             role: Filter by message role (user/assistant/system/tool)
-            tool_name: Filter by tool call name
-
         Returns:
             List of messages matching the filter criteria
         """
         params = {
             "cursor": cursor,
-            "start_date": start_date.isoformat() if start_date else None,
-            "end_date": end_date.isoformat() if end_date else None,
             "limit": limit,
-            "query_text": query_text,
             "ascending": ascending,
-            "tags": tags,
-            "match_all_tags": match_all_tags,
             "role": role,
-            "tool_name": tool_name,
         }
         # Remove None values
         params = {k: v for k, v in params.items() if v is not None}
@@ -2046,7 +2027,7 @@ class RESTClient(AbstractClient):
         response = requests.get(f"{self.base_url}/{self.api_prefix}/runs/{run_id}/messages", params=params)
         if response.status_code != 200:
             raise ValueError(f"Failed to get run messages: {response.text}")
-        return [Message(**message) for message in response.json()]
+        return [LettaMessage(**message) for message in response.json()]
 
     def get_run_usage(
         self,
@@ -3621,48 +3602,30 @@ class LocalClient(AbstractClient):
         self,
         run_id: str,
         cursor: Optional[str] = None,
-        start_date: Optional[datetime] = None,
-        end_date: Optional[datetime] = None,
         limit: Optional[int] = 100,
-        query_text: Optional[str] = None,
         ascending: bool = True,
-        tags: Optional[List[str]] = None,
-        match_all_tags: bool = False,
         role: Optional[MessageRole] = None,
-        tool_name: Optional[str] = None,
-    ) -> List[Message]:
+    ) -> List[LettaMessageUnion]:
         """
         Get messages associated with a job with filtering options.
 
         Args:
             run_id: ID of the run
             cursor: Cursor for pagination
-            start_date: Filter messages after this date
-            end_date: Filter messages before this date
             limit: Maximum number of messages to return
-            query_text: Search text in message content
             ascending: Sort order by creation time
-            tags: Filter by message tags
-            match_all_tags: If true, match all tags. If false, match any tag
             role: Filter by message role (user/assistant/system/tool)
-            tool_name: Filter by tool call name
 
         Returns:
             List of messages matching the filter criteria
         """
         params = {
             "cursor": cursor,
-            "start_date": start_date.isoformat() if start_date else None,
-            "end_date": end_date.isoformat() if end_date else None,
             "limit": limit,
-            "query_text": query_text,
             "ascending": ascending,
-            "tags": tags,
-            "match_all_tags": match_all_tags,
             "role": role,
-            "tool_name": tool_name,
         }
-        return self.server.job_manager.get_job_messages(job_id=run_id, actor=self.user, job_type=JobType.RUN, **params)
+        return self.server.job_manager.get_run_messages_cursor(run_id=run_id, actor=self.user, **params)
 
     def get_run_usage(
         self,

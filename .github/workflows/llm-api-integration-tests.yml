@@ -108,19 +108,19 @@ jobs:
       - name: Test OpenAI Basic
         working-directory: apps/core
         run: |
-          poetry run pytest -s -vv tests/test_model_letta_perfomance.py -m openai_basic
+          poetry run pytest -s -vv tests/test_model_letta_performance.py -m openai_basic
 
       - name: Test Anthropic Basic
         working-directory: apps/core
         run: |
-          poetry run pytest -s -vv tests/test_model_letta_perfomance.py -m anthropic_basic
+          poetry run pytest -s -vv tests/test_model_letta_performance.py -m anthropic_basic
 
       - name: Test Azure Basic
         working-directory: apps/core
         run: |
-          poetry run pytest -s -vv tests/test_model_letta_perfomance.py -m azure_basic
+          poetry run pytest -s -vv tests/test_model_letta_performance.py -m azure_basic
 
       - name: Test Gemini Basic
         working-directory: apps/core
         run: |
-          poetry run pytest -s -vv tests/test_model_letta_perfomance.py -m gemini_basic
+          poetry run pytest -s -vv tests/test_model_letta_performance.py -m gemini_basic

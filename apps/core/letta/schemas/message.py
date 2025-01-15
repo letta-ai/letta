@@ -149,9 +149,9 @@ class Message(BaseMessage):
                         # We need to unpack the actual message contents from the function call
                         try:
                             func_args = json.loads(tool_call.function.arguments)
-                            message_string = func_args[DEFAULT_MESSAGE_TOOL_KWARG]
+                            message_string = func_args[assistant_message_tool_kwarg]
                         except KeyError:
-                            raise ValueError(f"Function call {tool_call.function.name} missing {DEFAULT_MESSAGE_TOOL_KWARG} argument")
+                            raise ValueError(f"Function call {tool_call.function.name} missing {assistant_message_tool_kwarg} argument")
                         messages.append(
                             AssistantMessage(
                                 id=self.id,

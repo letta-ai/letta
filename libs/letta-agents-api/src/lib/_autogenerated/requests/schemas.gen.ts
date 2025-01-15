@@ -2970,6 +2970,23 @@ export const $LettaRequest = {
       title: 'Messages',
       description: 'The messages to be sent to the agent.',
     },
+    config: {
+      $ref: '#/components/schemas/LettaRequestConfig',
+      description: 'Configuration options for the LettaRequest.',
+      default: {
+        use_assistant_message: true,
+        assistant_message_tool_name: 'send_message',
+        assistant_message_tool_kwarg: 'message',
+      },
+    },
+  },
+  type: 'object',
+  required: ['messages'],
+  title: 'LettaRequest',
+} as const;
+
+export const $LettaRequestConfig = {
+  properties: {
     use_assistant_message: {
       type: 'boolean',
       title: 'Use Assistant Message',
@@ -2992,8 +3009,7 @@ export const $LettaRequest = {
     },
   },
   type: 'object',
-  required: ['messages'],
-  title: 'LettaRequest',
+  title: 'LettaRequestConfig',
 } as const;
 
 export const $LettaResponse = {
@@ -3054,25 +3070,14 @@ export const $LettaStreamingRequest = {
       title: 'Messages',
       description: 'The messages to be sent to the agent.',
     },
-    use_assistant_message: {
-      type: 'boolean',
-      title: 'Use Assistant Message',
-      description:
-        'Whether the server should parse specific tool call arguments (default `send_message`) as `AssistantMessage` objects.',
-      default: true,
-    },
-    assistant_message_tool_name: {
-      type: 'string',
-      title: 'Assistant Message Tool Name',
-      description: 'The name of the designated message tool.',
-      default: 'send_message',
-    },
-    assistant_message_tool_kwarg: {
-      type: 'string',
-      title: 'Assistant Message Tool Kwarg',
-      description:
-        'The name of the message argument in the designated message tool.',
-      default: 'message',
+    config: {
+      $ref: '#/components/schemas/LettaRequestConfig',
+      description: 'Configuration options for the LettaRequest.',
+      default: {
+        use_assistant_message: true,
+        assistant_message_tool_name: 'send_message',
+        assistant_message_tool_kwarg: 'message',
+      },
     },
     stream_tokens: {
       type: 'boolean',
@@ -3953,6 +3958,17 @@ export const $Run = {
       ],
       title: 'User Id',
       description: 'The unique identifier of the user associated with the run.',
+    },
+    request_config: {
+      anyOf: [
+        {
+          $ref: '#/components/schemas/LettaRequestConfig',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      description: 'The request configuration for the run.',
     },
   },
   additionalProperties: false,

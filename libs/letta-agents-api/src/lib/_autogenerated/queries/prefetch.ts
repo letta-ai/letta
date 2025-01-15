@@ -1027,30 +1027,22 @@ export const prefetchUseRunsServiceGetRun = (
  * Args:
  * run_id: ID of the run
  * cursor: Cursor for pagination
- * start_date: Filter messages after this date
- * end_date: Filter messages before this date
  * limit: Maximum number of messages to return
- * query_text: Search text in message content
  * ascending: Sort order by creation time
- * tags: Filter by message tags
- * match_all_tags: If true, match all tags. If false, match any tag
- * role: Filter by message role (user/assistant/system/tool)
- * tool_name: Filter by tool call name
+ * role: Filter by role (user/assistant/system/tool)
+ * return_message_object: Whether to return Message objects or LettaMessage objects
  * user_id: ID of the user making the request
+ *
+ * Returns:
+ * A list of messages associated with the run. Default is List[LettaMessage].
  * @param data The data for the request.
  * @param data.runId
  * @param data.cursor Cursor for pagination
- * @param data.startDate Filter messages after this date
- * @param data.endDate Filter messages before this date
  * @param data.limit Maximum number of messages to return
- * @param data.queryText Search text in message content
  * @param data.ascending Sort order by creation time
- * @param data.tags Filter by message tags
- * @param data.matchAllTags If true, match all tags. If false, match any tag
- * @param data.role Filter by message role
- * @param data.toolName Filter by tool call name
+ * @param data.role Filter by role
  * @param data.userId
- * @returns letta__schemas__message__Message Successful Response
+ * @returns unknown Successful Response
  * @throws ApiError
  */
 export const prefetchUseRunsServiceGetRunMessages = (
@@ -1058,28 +1050,16 @@ export const prefetchUseRunsServiceGetRunMessages = (
   {
     ascending,
     cursor,
-    endDate,
     limit,
-    matchAllTags,
-    queryText,
     role,
     runId,
-    startDate,
-    tags,
-    toolName,
     userId,
   }: {
     ascending?: boolean;
     cursor?: string;
-    endDate?: string;
     limit?: number;
-    matchAllTags?: boolean;
-    queryText?: string;
     role?: MessageRole;
     runId: string;
-    startDate?: string;
-    tags?: string[];
-    toolName?: string;
     userId?: string;
   },
 ) =>
@@ -1087,30 +1067,18 @@ export const prefetchUseRunsServiceGetRunMessages = (
     queryKey: Common.UseRunsServiceGetRunMessagesKeyFn({
       ascending,
       cursor,
-      endDate,
       limit,
-      matchAllTags,
-      queryText,
       role,
       runId,
-      startDate,
-      tags,
-      toolName,
       userId,
     }),
     queryFn: () =>
       RunsService.getRunMessages({
         ascending,
         cursor,
-        endDate,
         limit,
-        matchAllTags,
-        queryText,
         role,
         runId,
-        startDate,
-        tags,
-        toolName,
         userId,
       }),
   });

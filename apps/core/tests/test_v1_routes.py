@@ -6,6 +6,7 @@ from composio.client.collections import ActionModel, ActionParametersModel, Acti
 from fastapi.testclient import TestClient
 
 from letta.orm.errors import NoResultFound
+from letta.schemas.message import UserMessage
 from letta.schemas.tool import ToolCreate, ToolUpdate
 from letta.server.rest_api.app import app
 from letta.server.rest_api.utils import get_letta_server
@@ -339,62 +340,44 @@ def test_get_run_messages(client, mock_sync_server):
     """Test getting messages for a run."""
     # Create properly formatted mock messages
     current_time = datetime.utcnow()
-    messages_data = [
-        {
-            "id": f"message-{i:08x}",  # Matches pattern '^message-[a-fA-F0-9]{8}'
-            "text": f"Test message {i}",
-            "role": "user",
-            "organization_id": "org-123",
-            "agent_id": "agent-123",
-            "model": "gpt-4",
-            "name": "test-user",
-            "tool_calls": [],
-            "tool_call_id": None,
-            "created_at": current_time,
-            "updated_at": current_time,
-            "created_by_id": "user-123",
-            "last_updated_by_id": "user-123",
-        }
+    mock_messages = [
+        UserMessage(
+            id=f"message-{i:08x}",
+            date=current_time,
+            message=f"Test message {i}",
+        )
         for i in range(2)
     ]
 
-    mock_messages = []
-    for msg_data in messages_data:
-        mock_msg = Mock()
-        for key, value in msg_data.items():
-            setattr(mock_msg, key, value)
-        mock_messages.append(mock_msg)
-
     # Configure mock server responses
     mock_sync_server.user_manager.get_user_or_default.return_value = Mock(id="user-123")
-    mock_sync_server.job_manager.get_job_messages.return_value = mock_messages
+    mock_sync_server.job_manager.get_run_messages_cursor.return_value = mock_messages
 
     # Test successful retrieval
     response = client.get(
         "/v1/runs/run-12345678/messages",
         headers={"user_id": "user-123"},
-        params={"limit": 10, "cursor": messages_data[1]["id"], "role": "user"},
+        params={
+            "limit": 10,
+            "cursor": mock_messages[0].id,
+            "role": "user",
+            "ascending": True,
+        },
     )
     assert response.status_code == 200
     assert len(response.json()) == 2
-    assert response.json()[0]["id"] == messages_data[0]["id"]
-    assert response.json()[1]["id"] == messages_data[1]["id"]
+    assert response.json()[0]["id"] == mock_messages[0].id
+    assert response.json()[1]["id"] == mock_messages[1].id
 
     # Verify mock calls
     mock_sync_server.user_manager.get_user_or_default.assert_called_once_with(user_id="user-123")
-    mock_sync_server.job_manager.get_job_messages.assert_called_once_with(
-        job_id="run-12345678",
+    mock_sync_server.job_manager.get_run_messages_cursor.assert_called_once_with(
+        run_id="run-12345678",
         actor=mock_sync_server.user_manager.get_user_or_default.return_value,
         limit=10,
-        cursor=messages_data[1]["id"],
-        start_date=None,
-        end_date=None,
-        query_text=None,
+        cursor=mock_messages[0].id,
         ascending=True,
-        tags=None,
-        match_all_tags=False,
         role="user",
-        tool_name=None,
     )
 
 
@@ -403,7 +386,7 @@ def test_get_run_messages_not_found(client, mock_sync_server):
     # Configure mock responses
     error_message = "Run 'run-nonexistent' not found"
     mock_sync_server.user_manager.get_user_or_default.return_value = Mock(id="user-123")
-    mock_sync_server.job_manager.get_job_messages.side_effect = NoResultFound(error_message)
+    mock_sync_server.job_manager.get_run_messages_cursor.side_effect = NoResultFound(error_message)
 
     response = client.get("/v1/runs/run-nonexistent/messages", headers={"user_id": "user-123"})
 

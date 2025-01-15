@@ -1171,6 +1171,13 @@ export type LettaRequest = {
    */
   messages: Array<MessageCreate>;
   /**
+   * Configuration options for the LettaRequest.
+   */
+  config?: LettaRequestConfig;
+};
+
+export type LettaRequestConfig = {
+  /**
    * Whether the server should parse specific tool call arguments (default `send_message`) as `AssistantMessage` objects.
    */
   use_assistant_message?: boolean;
@@ -1216,17 +1223,9 @@ export type LettaStreamingRequest = {
    */
   messages: Array<MessageCreate>;
   /**
-   * Whether the server should parse specific tool call arguments (default `send_message`) as `AssistantMessage` objects.
+   * Configuration options for the LettaRequest.
    */
-  use_assistant_message?: boolean;
-  /**
-   * The name of the designated message tool.
-   */
-  assistant_message_tool_name?: string;
-  /**
-   * The name of the message argument in the designated message tool.
-   */
-  assistant_message_tool_kwarg?: string;
+  config?: LettaRequestConfig;
   /**
    * Flag to determine if individual tokens should be streamed. Set to True for token streaming (requires stream_steps = True).
    */
@@ -1622,6 +1621,10 @@ export type Run = {
    * The unique identifier of the user associated with the run.
    */
   user_id?: string | null;
+  /**
+   * The request configuration for the run.
+   */
+  request_config?: LettaRequestConfig | null;
 };
 
 export type SandboxConfig = {
@@ -3176,42 +3179,25 @@ export type GetRunMessagesData = {
    */
   cursor?: string | null;
   /**
-   * Filter messages before this date
-   */
-  endDate?: string | null;
-  /**
    * Maximum number of messages to return
    */
   limit?: number | null;
   /**
-   * If true, match all tags. If false, match any tag
-   */
-  matchAllTags?: boolean;
-  /**
-   * Search text in message content
-   */
-  queryText?: string | null;
-  /**
-   * Filter by message role
+   * Filter by role
    */
   role?: MessageRole | null;
   runId: string;
-  /**
-   * Filter messages after this date
-   */
-  startDate?: string | null;
-  /**
-   * Filter by message tags
-   */
-  tags?: Array<string> | null;
-  /**
-   * Filter by tool call name
-   */
-  toolName?: string | null;
   userId?: string | null;
 };
 
-export type GetRunMessagesResponse = Array<letta__schemas__message__Message>;
+export type GetRunMessagesResponse = Array<
+  | SystemMessage_Output
+  | UserMessage_Output
+  | ReasoningMessage
+  | ToolCallMessage
+  | ToolReturnMessage
+  | AssistantMessage_Output
+>;
 
 export type GetRunUsageData = {
   runId: string;
@@ -4493,7 +4479,14 @@ export type $OpenApiTs = {
         /**
          * Successful Response
          */
-        200: Array<letta__schemas__message__Message>;
+        200: Array<
+          | SystemMessage_Output
+          | UserMessage_Output
+          | ReasoningMessage
+          | ToolCallMessage
+          | ToolReturnMessage
+          | AssistantMessage_Output
+        >;
         /**
          * Validation Error
          */

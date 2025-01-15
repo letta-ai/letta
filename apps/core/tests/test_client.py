@@ -571,8 +571,6 @@ def test_send_message_async(client: Union[LocalClient, RESTClient], agent: Agent
     assert len(assistant_messages) > 0
     tool_messages = client.get_run_messages(run_id=run.id, role=MessageRole.tool)
     assert len(tool_messages) > 0
-    specific_tool_messages = client.get_run_messages(run_id=run.id, tool_name="send_message")
-    assert len(specific_tool_messages) > 0
 
     # Get and verify usage statistics
     usage = client.get_run_usage(run_id=run.id)[0]

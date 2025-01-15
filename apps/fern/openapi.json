@@ -3576,7 +3576,7 @@
       "get": {
         "tags": ["runs"],
         "summary": "Get Run Messages",
-        "description": "Get messages associated with a run with filtering options.\n\nArgs:\n    run_id: ID of the run\n    cursor: Cursor for pagination\n    start_date: Filter messages after this date\n    end_date: Filter messages before this date\n    limit: Maximum number of messages to return\n    query_text: Search text in message content\n    ascending: Sort order by creation time\n    tags: Filter by message tags\n    match_all_tags: If true, match all tags. If false, match any tag\n    role: Filter by message role (user/assistant/system/tool)\n    tool_name: Filter by tool call name\n    user_id: ID of the user making the request",
+        "description": "Get messages associated with a run with filtering options.\n\nArgs:\n    run_id: ID of the run\n    cursor: Cursor for pagination\n    limit: Maximum number of messages to return\n    ascending: Sort order by creation time\n    role: Filter by role (user/assistant/system/tool)\n    return_message_object: Whether to return Message objects or LettaMessage objects\n    user_id: ID of the user making the request\n\nReturns:\n    A list of messages associated with the run. Default is List[LettaMessage].",
         "operationId": "get_run_messages",
         "parameters": [
           {
@@ -3607,44 +3607,6 @@
             "description": "Cursor for pagination"
           },
           {
-            "name": "start_date",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "format": "date-time"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "Filter messages after this date",
-              "title": "Start Date"
-            },
-            "description": "Filter messages after this date"
-          },
-          {
-            "name": "end_date",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "format": "date-time"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "Filter messages before this date",
-              "title": "End Date"
-            },
-            "description": "Filter messages before this date"
-          },
-          {
             "name": "limit",
             "in": "query",
             "required": false,
@@ -3664,24 +3626,6 @@
             "description": "Maximum number of messages to return"
           },
           {
-            "name": "query_text",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "Search text in message content",
-              "title": "Query Text"
-            },
-            "description": "Search text in message content"
-          },
-          {
             "name": "ascending",
             "in": "query",
             "required": false,
@@ -3692,39 +3636,6 @@
               "title": "Ascending"
             },
             "description": "Sort order by creation time"
-          },
-          {
-            "name": "tags",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "array",
-                  "items": {
-                    "type": "string"
-                  }
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "Filter by message tags",
-              "title": "Tags"
-            },
-            "description": "Filter by message tags"
-          },
-          {
-            "name": "match_all_tags",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "boolean",
-              "description": "If true, match all tags. If false, match any tag",
-              "default": false,
-              "title": "Match All Tags"
-            },
-            "description": "If true, match all tags. If false, match any tag"
           },
           {
             "name": "role",
@@ -3739,28 +3650,10 @@
                   "type": "null"
                 }
               ],
-              "description": "Filter by message role",
+              "description": "Filter by role",
               "title": "Role"
             },
-            "description": "Filter by message role"
-          },
-          {
-            "name": "tool_name",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "Filter by tool call name",
-              "title": "Tool Name"
-            },
-            "description": "Filter by tool call name"
+            "description": "Filter by role"
           }
         ],
         "responses": {
@@ -3771,7 +3664,37 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/letta__schemas__message__Message"
+                    "oneOf": [
+                      {
+                        "$ref": "#/components/schemas/SystemMessage-Output"
+                      },
+                      {
+                        "$ref": "#/components/schemas/UserMessage-Output"
+                      },
+                      {
+                        "$ref": "#/components/schemas/ReasoningMessage"
+                      },
+                      {
+                        "$ref": "#/components/schemas/ToolCallMessage"
+                      },
+                      {
+                        "$ref": "#/components/schemas/ToolReturnMessage"
+                      },
+                      {
+                        "$ref": "#/components/schemas/AssistantMessage-Output"
+                      }
+                    ],
+                    "discriminator": {
+                      "propertyName": "message_type",
+                      "mapping": {
+                        "system_message": "#/components/schemas/SystemMessage-Output",
+                        "user_message": "#/components/schemas/UserMessage-Output",
+                        "reasoning_message": "#/components/schemas/ReasoningMessage",
+                        "tool_call_message": "#/components/schemas/ToolCallMessage",
+                        "tool_return_message": "#/components/schemas/ToolReturnMessage",
+                        "assistant_message": "#/components/schemas/AssistantMessage-Output"
+                      }
+                    }
                   },
                   "title": "Response Get Run Messages"
                 }
@@ -7160,6 +7083,22 @@
             "title": "Messages",
             "description": "The messages to be sent to the agent."
           },
+          "config": {
+            "$ref": "#/components/schemas/LettaRequestConfig",
+            "description": "Configuration options for the LettaRequest.",
+            "default": {
+              "use_assistant_message": true,
+              "assistant_message_tool_name": "send_message",
+              "assistant_message_tool_kwarg": "message"
+            }
+          }
+        },
+        "type": "object",
+        "required": ["messages"],
+        "title": "LettaRequest"
+      },
+      "LettaRequestConfig": {
+        "properties": {
           "use_assistant_message": {
             "type": "boolean",
             "title": "Use Assistant Message",
@@ -7180,8 +7119,7 @@
           }
         },
         "type": "object",
-        "required": ["messages"],
-        "title": "LettaRequest"
+        "title": "LettaRequestConfig"
       },
       "LettaResponse": {
         "properties": {
@@ -7235,23 +7173,14 @@
             "title": "Messages",
             "description": "The messages to be sent to the agent."
           },
-          "use_assistant_message": {
-            "type": "boolean",
-            "title": "Use Assistant Message",
-            "description": "Whether the server should parse specific tool call arguments (default `send_message`) as `AssistantMessage` objects.",
-            "default": true
-          },
-          "assistant_message_tool_name": {
-            "type": "string",
-            "title": "Assistant Message Tool Name",
-            "description": "The name of the designated message tool.",
-            "default": "send_message"
-          },
-          "assistant_message_tool_kwarg": {
-            "type": "string",
-            "title": "Assistant Message Tool Kwarg",
-            "description": "The name of the message argument in the designated message tool.",
-            "default": "message"
+          "config": {
+            "$ref": "#/components/schemas/LettaRequestConfig",
+            "description": "Configuration options for the LettaRequest.",
+            "default": {
+              "use_assistant_message": true,
+              "assistant_message_tool_name": "send_message",
+              "assistant_message_tool_kwarg": "message"
+            }
           },
           "stream_tokens": {
             "type": "boolean",
@@ -8044,6 +7973,17 @@
             "title": "Id",
             "description": "The human-friendly ID of the Run",
             "examples": ["run-123e4567-e89b-12d3-a456-426614174000"]
+          },
+          "request_config": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LettaRequestConfig"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The request configuration for the run."
           }
         },
         "additionalProperties": false,

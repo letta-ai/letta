@@ -9,6 +9,7 @@ from letta.orm.mixins import UserMixin
 from letta.orm.sqlalchemy_base import SqlalchemyBase
 from letta.schemas.enums import JobStatus
 from letta.schemas.job import Job as PydanticJob
+from letta.schemas.letta_request import LettaRequestConfig
 
 if TYPE_CHECKING:
     from letta.orm.job_messages import JobMessage
@@ -32,6 +33,9 @@ class Job(SqlalchemyBase, UserMixin):
         String,
         default=JobType.JOB,
         doc="The type of job. This affects whether or not we generate json_schema and source_code on the fly.",
+    )
+    request_config: Mapped[Optional[LettaRequestConfig]] = mapped_column(
+        JSON, nullable=True, doc="The request configuration for the job, stored as JSON."
     )
 
     # relationships

@@ -846,49 +846,22 @@ export const UseRunsServiceGetRunMessagesKeyFn = (
   {
     ascending,
     cursor,
-    endDate,
     limit,
-    matchAllTags,
-    queryText,
     role,
     runId,
-    startDate,
-    tags,
-    toolName,
     userId,
   }: {
     ascending?: boolean;
     cursor?: string;
-    endDate?: string;
     limit?: number;
-    matchAllTags?: boolean;
-    queryText?: string;
     role?: MessageRole;
     runId: string;
-    startDate?: string;
-    tags?: string[];
-    toolName?: string;
     userId?: string;
   },
   queryKey?: Array<unknown>,
 ) => [
   useRunsServiceGetRunMessagesKey,
-  ...(queryKey ?? [
-    {
-      ascending,
-      cursor,
-      endDate,
-      limit,
-      matchAllTags,
-      queryText,
-      role,
-      runId,
-      startDate,
-      tags,
-      toolName,
-      userId,
-    },
-  ]),
+  ...(queryKey ?? [{ ascending, cursor, limit, role, runId, userId }]),
 ];
 export type RunsServiceGetRunUsageDefaultResponse = Awaited<
   ReturnType<typeof RunsService.getRunUsage>
