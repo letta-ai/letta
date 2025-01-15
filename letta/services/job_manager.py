@@ -1,4 +1,3 @@
-from datetime import datetime
 from typing import List, Literal, Optional, Union
 
 from sqlalchemy import select
@@ -14,6 +13,8 @@ from letta.orm.sqlalchemy_base import AccessType
 from letta.schemas.enums import JobStatus, MessageRole
 from letta.schemas.job import Job as PydanticJob
 from letta.schemas.job import JobUpdate
+from letta.schemas.letta_message import LettaMessage
+from letta.schemas.letta_request import LettaRequestConfig
 from letta.schemas.message import Message as PydanticMessage
 from letta.schemas.run import Run as PydanticRun
 from letta.schemas.usage import LettaUsageStatistics
@@ -108,15 +109,9 @@ class JobManager:
         job_id: str,
         actor: PydanticUser,
         cursor: Optional[str] = None,
-        start_date: Optional[datetime] = None,
-        end_date: Optional[datetime] = None,
         limit: Optional[int] = 100,
-        query_text: Optional[str] = None,
-        ascending: bool = True,
-        tags: Optional[List[str]] = None,
-        match_all_tags: bool = False,
         role: Optional[MessageRole] = None,
-        tool_name: Optional[str] = None,
+        ascending: bool = True,
     ) -> List[PydanticMessage]:
         """
         Get all messages associated with a job.
@@ -127,7 +122,7 @@ class JobManager:
             cursor: Cursor for pagination
             limit: Maximum number of messages to return
             role: Optional filter for message role
-            tool_name: Optional filter for tool call name
+            ascending: Optional flag to sort in ascending order
 
         Returns:
             List of messages associated with the job
@@ -145,24 +140,15 @@ class JobManager:
             messages = MessageModel.list(
                 db_session=session,
                 cursor=cursor,
-                start_date=start_date,
-                end_date=end_date,
-                query_text=query_text,
                 ascending=ascending,
                 limit=limit,
-                tags=tags,
-                match_all_tags=match_all_tags,
                 actor=actor,
                 join_model=JobMessage,
                 join_conditions=[MessageModel.id == JobMessage.message_id, JobMessage.job_id == job_id],
                 **filters,
             )
 
-            # Filter by tool name if specified
-            if tool_name is not None:
-                messages = [msg for msg in messages if msg.tool_calls and any(call.function.name == tool_name for call in msg.tool_calls)]
-
-            return [message.to_pydantic() for message in messages]
+        return [message.to_pydantic() for message in messages]
 
     @enforce_types
     def add_message_to_job(self, job_id: str, message_id: str, actor: PydanticUser) -> None:
@@ -268,6 +254,58 @@ class JobManager:
             session.add(usage_stats)
             session.commit()
 
+    @enforce_types
+    def get_run_messages_cursor(
+        self,
+        run_id: str,
+        actor: PydanticUser,
+        cursor: Optional[str] = None,
+        limit: Optional[int] = 100,
+        role: Optional[MessageRole] = None,
+        ascending: bool = True,
+    ) -> List[LettaMessage]:
+        """
+        Get messages associated with a job using cursor-based pagination.
+        This is a wrapper around get_job_messages that provides cursor-based pagination.
+
+        Args:
+            job_id: The ID of the job to get messages for
+            actor: The user making the request
+            cursor: Message ID to get messages after or before
+            limit: Maximum number of messages to return
+            ascending: Whether to return messages in ascending order
+            role: Optional role filter
+
+        Returns:
+            List of LettaMessages associated with the job
+
+        Raises:
+            NoResultFound: If the job does not exist or user does not have access
+        """
+        messages = self.get_job_messages(
+            job_id=run_id,
+            actor=actor,
+            cursor=cursor,
+            limit=limit,
+            role=role,
+            ascending=ascending,
+        )
+
+        request_config = self._get_run_request_config(run_id)
+
+        # Convert messages to LettaMessages
+        messages = [
+            msg
+            for m in messages
+            for msg in m.to_letta_message(
+                assistant_message=request_config["use_assistant_message"],
+                assistant_message_tool_name=request_config["assistant_message_tool_name"],
+                assistant_message_tool_kwarg=request_config["assistant_message_tool_kwarg"],
+            )
+        ]
+
+        return messages
+
     def _verify_job_access(
         self,
         session: Session,
@@ -295,3 +333,18 @@ class JobManager:
         if not job:
             raise NoResultFound(f"Job with id {job_id} does not exist or user does not have access")
         return job
+
+    def _get_run_request_config(self, run_id: str) -> LettaRequestConfig:
+        """
+        Get the request config for a job.
+
+        Args:
+            job_id: The ID of the job to get messages for
+
+        Returns:
+            The request config for the job
+        """
+        with self.session_maker() as session:
+            job = session.query(JobModel).filter(JobModel.id == run_id).first()
+            request_config = job.request_config or LettaRequestConfig()
+        return request_config

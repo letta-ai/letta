@@ -4,6 +4,7 @@ from pydantic import Field
 
 from letta.orm.enums import JobType
 from letta.schemas.job import Job, JobBase
+from letta.schemas.letta_request import LettaRequestConfig
 
 
 class RunBase(JobBase):
@@ -28,6 +29,7 @@ class Run(RunBase):
 
     id: str = RunBase.generate_id_field()
     user_id: Optional[str] = Field(None, description="The unique identifier of the user associated with the run.")
+    request_config: Optional[LettaRequestConfig] = Field(None, description="The request configuration for the run.")
 
     @classmethod
     def from_job(cls, job: Job) -> "Run":

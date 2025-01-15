@@ -502,9 +502,9 @@ async def send_message(
         stream_steps=False,
         stream_tokens=False,
         # Support for AssistantMessage
-        use_assistant_message=request.use_assistant_message,
-        assistant_message_tool_name=request.assistant_message_tool_name,
-        assistant_message_tool_kwarg=request.assistant_message_tool_kwarg,
+        use_assistant_message=request.config.use_assistant_message,
+        assistant_message_tool_name=request.config.assistant_message_tool_name,
+        assistant_message_tool_kwarg=request.config.assistant_message_tool_kwarg,
     )
     return result
 
@@ -542,9 +542,9 @@ async def send_message_streaming(
         stream_steps=True,
         stream_tokens=request.stream_tokens,
         # Support for AssistantMessage
-        use_assistant_message=request.use_assistant_message,
-        assistant_message_tool_name=request.assistant_message_tool_name,
-        assistant_message_tool_kwarg=request.assistant_message_tool_kwarg,
+        use_assistant_message=request.config.use_assistant_message,
+        assistant_message_tool_name=request.config.assistant_message_tool_name,
+        assistant_message_tool_kwarg=request.config.assistant_message_tool_kwarg,
     )
     return result
 
@@ -622,6 +622,7 @@ async def send_message_async(
             "job_type": "send_message_async",
             "agent_id": agent_id,
         },
+        request_config=request.config,
     )
     run = server.job_manager.create_job(pydantic_job=run, actor=actor)
 
@@ -633,9 +634,9 @@ async def send_message_async(
         actor=actor,
         agent_id=agent_id,
         messages=request.messages,
-        use_assistant_message=request.use_assistant_message,
-        assistant_message_tool_name=request.assistant_message_tool_name,
-        assistant_message_tool_kwarg=request.assistant_message_tool_kwarg,
+        use_assistant_message=request.config.use_assistant_message,
+        assistant_message_tool_name=request.config.assistant_message_tool_name,
+        assistant_message_tool_kwarg=request.config.assistant_message_tool_kwarg,
     )
 
     return run
