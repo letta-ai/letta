@@ -436,13 +436,22 @@ class RESTClient(AbstractClient):
         self._default_llm_config = default_llm_config
         self._default_embedding_config = default_embedding_config
 
-    def list_agents(self, tags: Optional[List[str]] = None) -> List[AgentState]:
-        params = {}
+    def list_agents(
+        self, tags: Optional[List[str]] = None, query_text: Optional[str] = None, limit: int = 50, cursor: Optional[str] = None
+    ) -> List[AgentState]:
+        params = {"limit": limit}
         if tags:
             params["tags"] = tags
             params["match_all_tags"] = False
 
+        if query_text:
+            params["query_text"] = query_text
+
+        if cursor:
+            params["cursor"] = cursor
+
         response = requests.get(f"{self.base_url}/{self.api_prefix}/agents", headers=self.headers, params=params)
+        print(f"\nLIST RESPONSE\n{response.json()}\n")
         return [AgentState(**agent) for agent in response.json()]
 
     def agent_exists(self, agent_id: str) -> bool:
@@ -2210,10 +2219,12 @@ class LocalClient(AbstractClient):
         self.organization = self.server.get_organization_or_default(self.org_id)
 
     # agents
-    def list_agents(self, tags: Optional[List[str]] = None) -> List[AgentState]:
+    def list_agents(
+        self, query_text: Optional[str] = None, tags: Optional[List[str]] = None, limit: int = 100, cursor: Optional[str] = None
+    ) -> List[AgentState]:
         self.interface.clear()
 
-        return self.server.agent_manager.list_agents(actor=self.user, tags=tags)
+        return self.server.agent_manager.list_agents(actor=self.user, tags=tags, query_text=query_text, limit=limit, cursor=cursor)
 
     def agent_exists(self, agent_id: Optional[str] = None, agent_name: Optional[str] = None) -> bool:
         """

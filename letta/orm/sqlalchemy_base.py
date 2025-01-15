@@ -163,7 +163,11 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
 
             # Text search
             if query_text:
-                query = query.filter(func.lower(cls.text).contains(func.lower(query_text)))
+                if hasattr(cls, "text"):
+                    query = query.filter(func.lower(cls.text).contains(func.lower(query_text)))
+                elif hasattr(cls, "name"):
+                    # Special case for Agent model - search across name
+                    query = query.filter(func.lower(cls.name).contains(func.lower(query_text)))
 
             # Embedding search (for Passages)
             is_ordered = False

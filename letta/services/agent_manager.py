@@ -268,6 +268,7 @@ class AgentManager:
         match_all_tags: bool = False,
         cursor: Optional[str] = None,
         limit: Optional[int] = 50,
+        query_text: Optional[str] = None,
         **kwargs,
     ) -> List[PydanticAgentState]:
         """
@@ -281,6 +282,7 @@ class AgentManager:
                 cursor=cursor,
                 limit=limit,
                 organization_id=actor.organization_id if actor else None,
+                query_text=query_text,
                 **kwargs,
             )
 
