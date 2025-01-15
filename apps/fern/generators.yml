@@ -23,9 +23,13 @@ groups:
           repository: letta-ai/letta-python
         config:
           package_name: letta_client
-          client_class_name: Letta
           pydantic_config:
             skip_validation: true
+          client:
+            class_name: LettaBase
+            filename: base_client.py
+            exported_class_name: Letta
+            exported_filename: client.py
   ts-sdk:
     generators:
       - name: fernapi/fern-typescript-node-sdk
