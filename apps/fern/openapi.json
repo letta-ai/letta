@@ -2619,7 +2619,7 @@
       "post": {
         "tags": ["agents"],
         "summary": "Send Message Async",
-        "description": "Asynchronously process a user message and return a job ID.\nThe actual processing happens in the background, and the status can be checked using the job ID.",
+        "description": "Asynchronously process a user message and return a run object.\nThe actual processing happens in the background, and the status can be checked using the run ID.",
         "operationId": "create_agent_message_async",
         "parameters": [
           {

@@ -1610,8 +1610,8 @@ export class AgentsService {
 
   /**
    * Send Message Async
-   * Asynchronously process a user message and return a job ID.
-   * The actual processing happens in the background, and the status can be checked using the job ID.
+   * Asynchronously process a user message and return a run object.
+   * The actual processing happens in the background, and the status can be checked using the run ID.
    * @param data The data for the request.
    * @param data.agentId
    * @param data.requestBody

@@ -609,8 +609,8 @@ async def send_message_async(
     user_id: Optional[str] = Header(None, alias="user_id"),
 ):
     """
-    Asynchronously process a user message and return a job ID.
-    The actual processing happens in the background, and the status can be checked using the job ID.
+    Asynchronously process a user message and return a run object.
+    The actual processing happens in the background, and the status can be checked using the run ID.
     """
     actor = server.user_manager.get_user_or_default(user_id=user_id)
 
