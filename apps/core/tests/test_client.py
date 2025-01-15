@@ -80,6 +80,28 @@ def agent(client: Union[LocalClient, RESTClient]):
     client.delete_agent(agent_state.id)
 
 
+# Fixture for test agent
+@pytest.fixture
+def search_agent_one(client: Union[LocalClient, RESTClient]):
+    agent_state = client.create_agent(name="Search Agent One")
+
+    yield agent_state
+
+    # delete agent
+    client.delete_agent(agent_state.id)
+
+
+# Fixture for test agent
+@pytest.fixture
+def search_agent_two(client: Union[LocalClient, RESTClient]):
+    agent_state = client.create_agent(name="Search Agent Two")
+
+    yield agent_state
+
+    # delete agent
+    client.delete_agent(agent_state.id)
+
+
 @pytest.fixture(autouse=True)
 def clear_tables():
     """Clear the sandbox tables before each test."""
@@ -560,16 +582,49 @@ def test_send_message_async(client: Union[LocalClient, RESTClient], agent: Agent
     assert usage.total_tokens == usage.completion_tokens + usage.prompt_tokens
 
 
+# ==========================================
+#  TESTS FOR AGENT LISTING
+# ==========================================
+
+
+def test_agent_listing(client: Union[LocalClient, RESTClient], agent, search_agent_one, search_agent_two):
+    """Test listing agents with pagination and query text filtering."""
+    # Test query text filtering
+    search_results = client.list_agents(query_text="search agent")
+    assert len(search_results) == 2
+    search_agent_ids = {agent.id for agent in search_results}
+    assert search_agent_one.id in search_agent_ids
+    assert search_agent_two.id in search_agent_ids
+    assert agent.id not in search_agent_ids
+
+    different_results = client.list_agents(query_text="client")
+    assert len(different_results) == 1
+    assert different_results[0].id == agent.id
+
+    # Test pagination
+    first_page = client.list_agents(query_text="search agent", limit=1)
+    assert len(first_page) == 1
+    first_agent = first_page[0]
+
+    second_page = client.list_agents(query_text="search agent", cursor=first_agent.id, limit=1)  # Use agent ID as cursor
+    assert len(second_page) == 1
+    assert second_page[0].id != first_agent.id
+
+    # Verify we got both search agents with no duplicates
+    all_ids = {first_page[0].id, second_page[0].id}
+    assert len(all_ids) == 2
+    assert all_ids == {search_agent_one.id, search_agent_two.id}
+
+    # Test listing without any filters
+    all_agents = client.list_agents()
+    assert len(all_agents) == 3
+    assert all(agent.id in {a.id for a in all_agents} for agent in [search_agent_one, search_agent_two, agent])
+
+
 def test_agent_creation(client: Union[LocalClient, RESTClient]):
     """Test that block IDs are properly attached when creating an agent."""
     if not isinstance(client, RESTClient):
         pytest.skip("This test only runs when the server is enabled")
-
-    offline_memory_agent_system = """
-    You are a helpful agent. You will be provided with a list of memory blocks and a user preferences block.
-    You should use the memory blocks to remember information about the user and their preferences.
-    You should also use the user preferences block to remember information about the user's preferences.
-    """
 
     from letta import BasicBlockMemory
 
@@ -623,3 +678,5 @@ def test_agent_creation(client: Union[LocalClient, RESTClient]):
     assert len(agent_tools) == 2
     tool_ids = {tool1.id, tool2.id}
     assert all(tool.id in tool_ids for tool in agent_tools)
+
+    client.delete_agent(agent_id=agent.id)

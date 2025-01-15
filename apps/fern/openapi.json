@@ -1159,7 +1159,7 @@
             "schema": {
               "anyOf": [
                 {
-                  "type": "integer"
+                  "type": "string"
                 },
                 {
                   "type": "null"
@@ -1187,6 +1187,24 @@
               "title": "Limit"
             },
             "description": "Limit for pagination"
+          },
+          {
+            "name": "query_text",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Search agents by name",
+              "title": "Query Text"
+            },
+            "description": "Search agents by name"
           }
         ],
         "responses": {

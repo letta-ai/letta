@@ -914,6 +914,70 @@ def test_list_agents_by_tags_pagination(server: SyncServer, default_user, defaul
     assert agent2.id in all_ids
 
 
+def test_list_agents_query_text_pagination(server: SyncServer, default_user, default_organization):
+    """Test listing agents with query text filtering and pagination."""
+    # Create test agents with specific names and descriptions
+    agent1 = server.agent_manager.create_agent(
+        agent_create=CreateAgent(
+            name="Search Agent One",
+            memory_blocks=[],
+            description="This is a search agent for testing",
+            llm_config=LLMConfig.default_config("gpt-4"),
+            embedding_config=EmbeddingConfig.default_config(provider="openai"),
+        ),
+        actor=default_user,
+    )
+
+    agent2 = server.agent_manager.create_agent(
+        agent_create=CreateAgent(
+            name="Search Agent Two",
+            memory_blocks=[],
+            description="Another search agent for testing",
+            llm_config=LLMConfig.default_config("gpt-4"),
+            embedding_config=EmbeddingConfig.default_config(provider="openai"),
+        ),
+        actor=default_user,
+    )
+
+    agent3 = server.agent_manager.create_agent(
+        agent_create=CreateAgent(
+            name="Different Agent",
+            memory_blocks=[],
+            description="This is a different agent",
+            llm_config=LLMConfig.default_config("gpt-4"),
+            embedding_config=EmbeddingConfig.default_config(provider="openai"),
+        ),
+        actor=default_user,
+    )
+
+    # Test query text filtering
+    search_results = server.agent_manager.list_agents(actor=default_user, query_text="search agent")
+    assert len(search_results) == 2
+    search_agent_ids = {agent.id for agent in search_results}
+    assert agent1.id in search_agent_ids
+    assert agent2.id in search_agent_ids
+    assert agent3.id not in search_agent_ids
+
+    different_results = server.agent_manager.list_agents(actor=default_user, query_text="different agent")
+    assert len(different_results) == 1
+    assert different_results[0].id == agent3.id
+
+    # Test pagination with query text
+    first_page = server.agent_manager.list_agents(actor=default_user, query_text="search agent", limit=1)
+    assert len(first_page) == 1
+    first_agent_id = first_page[0].id
+
+    # Get second page using cursor
+    second_page = server.agent_manager.list_agents(actor=default_user, query_text="search agent", cursor=first_agent_id, limit=1)
+    assert len(second_page) == 1
+    assert second_page[0].id != first_agent_id
+
+    # Verify we got both search agents with no duplicates
+    all_ids = {first_page[0].id, second_page[0].id}
+    assert len(all_ids) == 2
+    assert all_ids == {agent1.id, agent2.id}
+
+
 # ======================================================================================================================
 # AgentManager Tests - Messages Relationship
 # ======================================================================================================================

@@ -356,6 +356,7 @@ export const useSourcesServiceListFilesFromSourceSuspense = <
  * @param data.matchAllTags If True, only returns agents that match ALL given tags. Otherwise, return agents that have ANY of the passed in tags.
  * @param data.cursor Cursor for pagination
  * @param data.limit Limit for pagination
+ * @param data.queryText Search agents by name
  * @param data.userId
  * @returns AgentState Successful Response
  * @throws ApiError
@@ -370,13 +371,15 @@ export const useAgentsServiceListAgentsSuspense = <
     limit,
     matchAllTags,
     name,
+    queryText,
     tags,
     userId,
   }: {
-    cursor?: number;
+    cursor?: string;
     limit?: number;
     matchAllTags?: boolean;
     name?: string;
+    queryText?: string;
     tags?: string[];
     userId?: string;
   } = {},
@@ -385,7 +388,7 @@ export const useAgentsServiceListAgentsSuspense = <
 ) =>
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseAgentsServiceListAgentsKeyFn(
-      { cursor, limit, matchAllTags, name, tags, userId },
+      { cursor, limit, matchAllTags, name, queryText, tags, userId },
       queryKey,
     ),
     queryFn: () =>
@@ -394,6 +397,7 @@ export const useAgentsServiceListAgentsSuspense = <
         limit,
         matchAllTags,
         name,
+        queryText,
         tags,
         userId,
       }) as TData,

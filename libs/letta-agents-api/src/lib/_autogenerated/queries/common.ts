@@ -239,20 +239,24 @@ export const UseAgentsServiceListAgentsKeyFn = (
     limit,
     matchAllTags,
     name,
+    queryText,
     tags,
     userId,
   }: {
-    cursor?: number;
+    cursor?: string;
     limit?: number;
     matchAllTags?: boolean;
     name?: string;
+    queryText?: string;
     tags?: string[];
     userId?: string;
   } = {},
   queryKey?: Array<unknown>,
 ) => [
   useAgentsServiceListAgentsKey,
-  ...(queryKey ?? [{ cursor, limit, matchAllTags, name, tags, userId }]),
+  ...(queryKey ?? [
+    { cursor, limit, matchAllTags, name, queryText, tags, userId },
+  ]),
 ];
 export type AgentsServiceGetAgentContextWindowDefaultResponse = Awaited<
   ReturnType<typeof AgentsService.getAgentContextWindow>

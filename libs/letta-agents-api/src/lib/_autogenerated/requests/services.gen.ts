@@ -843,6 +843,7 @@ export class AgentsService {
    * @param data.matchAllTags If True, only returns agents that match ALL given tags. Otherwise, return agents that have ANY of the passed in tags.
    * @param data.cursor Cursor for pagination
    * @param data.limit Limit for pagination
+   * @param data.queryText Search agents by name
    * @param data.userId
    * @returns AgentState Successful Response
    * @throws ApiError
@@ -860,6 +861,7 @@ export class AgentsService {
         match_all_tags: data.matchAllTags,
         cursor: data.cursor,
         limit: data.limit,
+        query_text: data.queryText,
       },
       errors: {
         422: 'Validation Error',

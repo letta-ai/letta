@@ -2627,7 +2627,7 @@ export type ListAgentsData = {
   /**
    * Cursor for pagination
    */
-  cursor?: number | null;
+  cursor?: string | null;
   /**
    * Limit for pagination
    */
@@ -2640,6 +2640,10 @@ export type ListAgentsData = {
    * Name of the agent
    */
   name?: string | null;
+  /**
+   * Search agents by name
+   */
+  queryText?: string | null;
   /**
    * List of tags to filter agents by
    */

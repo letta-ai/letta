@@ -279,6 +279,7 @@ export const prefetchUseSourcesServiceListFilesFromSource = (
  * @param data.matchAllTags If True, only returns agents that match ALL given tags. Otherwise, return agents that have ANY of the passed in tags.
  * @param data.cursor Cursor for pagination
  * @param data.limit Limit for pagination
+ * @param data.queryText Search agents by name
  * @param data.userId
  * @returns AgentState Successful Response
  * @throws ApiError
@@ -290,13 +291,15 @@ export const prefetchUseAgentsServiceListAgents = (
     limit,
     matchAllTags,
     name,
+    queryText,
     tags,
     userId,
   }: {
-    cursor?: number;
+    cursor?: string;
     limit?: number;
     matchAllTags?: boolean;
     name?: string;
+    queryText?: string;
     tags?: string[];
     userId?: string;
   } = {},
@@ -307,6 +310,7 @@ export const prefetchUseAgentsServiceListAgents = (
       limit,
       matchAllTags,
       name,
+      queryText,
       tags,
       userId,
     }),
@@ -316,6 +320,7 @@ export const prefetchUseAgentsServiceListAgents = (
         limit,
         matchAllTags,
         name,
+        queryText,
         tags,
         userId,
       }),

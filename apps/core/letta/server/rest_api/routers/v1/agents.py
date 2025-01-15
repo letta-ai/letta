@@ -47,9 +47,9 @@ def list_agents(
     ),
     server: "SyncServer" = Depends(get_letta_server),
     user_id: Optional[str] = Header(None, alias="user_id"),
-    cursor: Optional[int] = Query(None, description="Cursor for pagination"),
+    cursor: Optional[str] = Query(None, description="Cursor for pagination"),
     limit: Optional[int] = Query(None, description="Limit for pagination"),
-    # Extract user_id from header, default to None if not present
+    query_text: Optional[str] = Query(None, description="Search agents by name"),
 ):
     """
     List all agents associated with a given user.
@@ -64,6 +64,7 @@ def list_agents(
             "tags": tags,
             "match_all_tags": match_all_tags,
             "name": name,
+            "query_text": query_text,
         }.items()
         if value is not None
     }
