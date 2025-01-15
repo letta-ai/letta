@@ -60,12 +60,12 @@ To connect the ADE with your local Letta server, simply navigate to [https://app
 <img className="block w-300 dark:hidden" src="https://raw.githubusercontent.com/letta-ai/letta/refs/heads/main/assets/example_ade_screenshot_agents_light.png" />
 <img className="hidden w-300 dark:block" src="https://raw.githubusercontent.com/letta-ai/letta/refs/heads/main/assets/example_ade_screenshot_agents.png" />
 
-For information on how to configure the ADE with a Letta server running on a remote server, refer to [our guide on remote servers](/agent-development-environment/connect).
+For information on how to configure the ADE with a Letta server running on a remote server, refer to [our guide on remote servers](/guides/ade/setup).
 
 ## Creating an agent with the Letta API
 Let's create an agent via the Letta API, which we can then view in the ADE (you can also use the ADE to create agents).
 
-To create an agent we'll send a POST request to the Letta Server ([API docs](https://docs.letta.com/api-reference/agents/create-agent)).
+To create an agent we'll send a POST request to the Letta Server ([API docs](/api-reference/agents/create)).
 In this example, we'll use the Claude API for the base LLM model, and the OpenAI API for the embedding model (this requires having configured both `OPENAI_API_KEY` and `ANTHROPIC_API_KEY` on our Letta Server):
 <CodeGroup>
 ```sh REST API (request)
