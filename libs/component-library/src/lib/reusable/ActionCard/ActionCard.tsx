@@ -11,7 +11,7 @@ import { ChevronRightIcon } from '../../icons';
 import { Slot } from '@radix-ui/react-slot';
 import { forwardRef } from 'react';
 import { Skeleton } from '../../core/Skeleton/Skeleton';
-import { Tooltip } from '../../core/Tooltip/Tooltip';
+import { MaybeTooltip } from '../../core/Tooltip/Tooltip';
 
 const actionCardVariants = cva('', {
   variants: {
@@ -43,6 +43,7 @@ interface ToggleCardProps extends VariantProps<typeof actionCardVariants> {
   subtitle?: string;
   isActive?: boolean;
   icon?: React.ReactNode;
+  disableTooltip?: boolean;
   href?: string;
   smallImage?: React.ReactNode;
   largeImage?: React.ReactNode;
@@ -77,6 +78,7 @@ export const ActionCard = forwardRef<HTMLElement, ToggleCardProps>(
       mainAction,
       children,
       description,
+      disableTooltip,
       actions,
       isSkeleton,
     } = props;
@@ -141,7 +143,11 @@ export const ActionCard = forwardRef<HTMLElement, ToggleCardProps>(
                       ''
                     )}
                     <HStack paddingRight fullWidth overflowX="hidden">
-                      <Tooltip content={title} asChild>
+                      <MaybeTooltip
+                        renderTooltip={!disableTooltip}
+                        content={title}
+                        asChild
+                      >
                         <Typography
                           align="left"
                           noWrap
@@ -151,7 +157,7 @@ export const ActionCard = forwardRef<HTMLElement, ToggleCardProps>(
                         >
                           {title}
                         </Typography>
-                      </Tooltip>
+                      </MaybeTooltip>
                     </HStack>
                     {props.subtitle && (
                       <Typography
