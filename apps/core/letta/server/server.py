@@ -1,4 +1,5 @@
 # inspecting tools
+import asyncio
 import os
 import traceback
 import warnings
@@ -9,6 +10,7 @@ from typing import Callable, Dict, List, Optional, Tuple, Union
 from composio.client import Composio
 from composio.client.collections import ActionModel, AppModel
 from fastapi import HTTPException
+from fastapi.responses import StreamingResponse
 
 import letta.constants as constants
 import letta.server.utils as server_utils
@@ -30,10 +32,11 @@ from letta.schemas.block import BlockUpdate
 from letta.schemas.embedding_config import EmbeddingConfig
 
 # openai schemas
-from letta.schemas.enums import JobStatus
+from letta.schemas.enums import JobStatus, MessageStreamStatus
 from letta.schemas.environment_variables import SandboxEnvironmentVariableCreate
 from letta.schemas.job import Job, JobUpdate
-from letta.schemas.letta_message import LettaMessage, ToolReturnMessage
+from letta.schemas.letta_message import LegacyLettaMessage, LettaMessage, ToolReturnMessage
+from letta.schemas.letta_response import LettaResponse
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.memory import ArchivalMemorySummary, ContextWindowOverview, Memory, RecallMemorySummary
 from letta.schemas.message import Message, MessageCreate, MessageRole, MessageUpdate
@@ -57,6 +60,8 @@ from letta.schemas.source import Source
 from letta.schemas.tool import Tool
 from letta.schemas.usage import LettaUsageStatistics
 from letta.schemas.user import User
+from letta.server.rest_api.interface import StreamingServerInterface
+from letta.server.rest_api.utils import sse_async_generator
 from letta.services.agent_manager import AgentManager
 from letta.services.block_manager import BlockManager
 from letta.services.job_manager import JobManager
@@ -1193,3 +1198,125 @@ class SyncServer(Server):
     def get_composio_actions_from_app_name(self, composio_app_name: str, api_key: Optional[str] = None) -> List["ActionModel"]:
         actions = self.get_composio_client(api_key=api_key).actions.get(apps=[composio_app_name])
         return actions
+
+    async def send_message_to_agent(
+        self,
+        agent_id: str,
+        actor: User,
+        # role: MessageRole,
+        messages: Union[List[Message], List[MessageCreate]],
+        stream_steps: bool,
+        stream_tokens: bool,
+        # related to whether or not we return `LettaMessage`s or `Message`s
+        chat_completion_mode: bool = False,
+        timestamp: Optional[datetime] = None,
+        # Support for AssistantMessage
+        use_assistant_message: bool = True,
+        assistant_message_tool_name: str = constants.DEFAULT_MESSAGE_TOOL,
+        assistant_message_tool_kwarg: str = constants.DEFAULT_MESSAGE_TOOL_KWARG,
+        metadata: Optional[dict] = None,
+    ) -> Union[StreamingResponse, LettaResponse]:
+        """Split off into a separate function so that it can be imported in the /chat/completion proxy."""
+
+        # TODO: @charles is this the correct way to handle?
+        include_final_message = True
+
+        if not stream_steps and stream_tokens:
+            raise HTTPException(status_code=400, detail="stream_steps must be 'true' if stream_tokens is 'true'")
+
+        # For streaming response
+        try:
+
+            # TODO: move this logic into server.py
+
+            # Get the generator object off of the agent's streaming interface
+            # This will be attached to the POST SSE request used under-the-hood
+            letta_agent = self.load_agent(agent_id=agent_id, actor=actor)
+
+            # Disable token streaming if not OpenAI
+            # TODO: cleanup this logic
+            llm_config = letta_agent.agent_state.llm_config
+            if stream_tokens and (llm_config.model_endpoint_type != "openai" or "inference.memgpt.ai" in llm_config.model_endpoint):
+                warnings.warn(
+                    "Token streaming is only supported for models with type 'openai' or `inference.memgpt.ai` in the model_endpoint: agent has endpoint type {llm_config.model_endpoint_type} and {llm_config.model_endpoint}. Setting stream_tokens to False."
+                )
+                stream_tokens = False
+
+            # Create a new interface per request
+            letta_agent.interface = StreamingServerInterface(use_assistant_message)
+            streaming_interface = letta_agent.interface
+            if not isinstance(streaming_interface, StreamingServerInterface):
+                raise ValueError(f"Agent has wrong type of interface: {type(streaming_interface)}")
+
+            # Enable token-streaming within the request if desired
+            streaming_interface.streaming_mode = stream_tokens
+            # "chatcompletion mode" does some remapping and ignores inner thoughts
+            streaming_interface.streaming_chat_completion_mode = chat_completion_mode
+
+            # streaming_interface.allow_assistant_message = stream
+            # streaming_interface.function_call_legacy_mode = stream
+
+            # Allow AssistantMessage is desired by client
+            streaming_interface.assistant_message_tool_name = assistant_message_tool_name
+            streaming_interface.assistant_message_tool_kwarg = assistant_message_tool_kwarg
+
+            # Related to JSON buffer reader
+            streaming_interface.inner_thoughts_in_kwargs = (
+                llm_config.put_inner_thoughts_in_kwargs if llm_config.put_inner_thoughts_in_kwargs is not None else False
+            )
+
+            # Offload the synchronous message_func to a separate thread
+            streaming_interface.stream_start()
+            task = asyncio.create_task(
+                asyncio.to_thread(
+                    self.send_messages,
+                    actor=actor,
+                    agent_id=agent_id,
+                    messages=messages,
+                    interface=streaming_interface,
+                    metadata=metadata,
+                )
+            )
+
+            if stream_steps:
+                # return a stream
+                return StreamingResponse(
+                    sse_async_generator(
+                        streaming_interface.get_generator(),
+                        usage_task=task,
+                        finish_message=include_final_message,
+                    ),
+                    media_type="text/event-stream",
+                )
+
+            else:
+                # buffer the stream, then return the list
+                generated_stream = []
+                async for message in streaming_interface.get_generator():
+                    assert (
+                        isinstance(message, LettaMessage)
+                        or isinstance(message, LegacyLettaMessage)
+                        or isinstance(message, MessageStreamStatus)
+                    ), type(message)
+                    generated_stream.append(message)
+                    if message == MessageStreamStatus.done:
+                        break
+
+                # Get rid of the stream status messages
+                filtered_stream = [d for d in generated_stream if not isinstance(d, MessageStreamStatus)]
+                usage = await task
+
+                # By default the stream will be messages of type LettaMessage or LettaLegacyMessage
+                # If we want to convert these to Message, we can use the attached IDs
+                # NOTE: we will need to de-duplicate the Messsage IDs though (since Assistant->Inner+Func_Call)
+                # TODO: eventually update the interface to use `Message` and `MessageChunk` (new) inside the deque instead
+                return LettaResponse(messages=filtered_stream, usage=usage)
+
+        except HTTPException:
+            raise
+        except Exception as e:
+            print(e)
+            import traceback
+
+            traceback.print_exc()
+            raise HTTPException(status_code=500, detail=f"{e}")
