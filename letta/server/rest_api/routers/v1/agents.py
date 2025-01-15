@@ -1,10 +1,8 @@
-import asyncio
-import warnings
 from datetime import datetime
 from typing import List, Optional, Union
 
 from fastapi import APIRouter, BackgroundTasks, Body, Depends, Header, HTTPException, Query, status
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.responses import JSONResponse
 from pydantic import Field
 
 from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG
@@ -12,20 +10,18 @@ from letta.log import get_logger
 from letta.orm.errors import NoResultFound
 from letta.schemas.agent import AgentState, CreateAgent, UpdateAgent
 from letta.schemas.block import Block, BlockUpdate, CreateBlock  # , BlockLabelUpdate, BlockLimitUpdate
-from letta.schemas.enums import MessageStreamStatus
 from letta.schemas.job import JobStatus, JobUpdate
-from letta.schemas.letta_message import LegacyLettaMessage, LettaMessage, LettaMessageUnion
+from letta.schemas.letta_message import LettaMessageUnion
 from letta.schemas.letta_request import LettaRequest, LettaStreamingRequest
 from letta.schemas.letta_response import LettaResponse
 from letta.schemas.memory import ArchivalMemorySummary, ContextWindowOverview, CreateArchivalMemory, Memory, RecallMemorySummary
-from letta.schemas.message import Message, MessageCreate, MessageUpdate
+from letta.schemas.message import Message, MessageUpdate
 from letta.schemas.passage import Passage
 from letta.schemas.run import Run
 from letta.schemas.source import Source
 from letta.schemas.tool import Tool
 from letta.schemas.user import User
-from letta.server.rest_api.interface import StreamingServerInterface
-from letta.server.rest_api.utils import get_letta_server, sse_async_generator
+from letta.server.rest_api.utils import get_letta_server
 from letta.server.server import SyncServer
 
 # These can be forward refs, but because Fastapi needs them at runtime the must be imported normally
@@ -499,8 +495,7 @@ async def send_message(
     This endpoint accepts a message from a user and processes it through the agent.
     """
     actor = server.user_manager.get_user_or_default(user_id=user_id)
-    result = await send_message_to_agent(
-        server=server,
+    result = await server.send_message_to_agent(
         agent_id=agent_id,
         actor=actor,
         messages=request.messages,
@@ -540,8 +535,7 @@ async def send_message_streaming(
     """
 
     actor = server.user_manager.get_user_or_default(user_id=user_id)
-    result = await send_message_to_agent(
-        server=server,
+    result = await server.send_message_to_agent(
         agent_id=agent_id,
         actor=actor,
         messages=request.messages,
@@ -568,8 +562,7 @@ async def process_message_background(
     """Background task to process the message and update job status."""
     try:
         # TODO(matt) we should probably make this stream_steps and log each step as it progresses, so the job update GET can see the total steps so far + partial usage?
-        result = await send_message_to_agent(
-            server=server,
+        result = await server.send_message_to_agent(
             agent_id=agent_id,
             actor=actor,
             messages=messages,
@@ -646,125 +639,3 @@ async def send_message_async(
     )
 
     return run
-
-
-# TODO: move this into server.py?
-async def send_message_to_agent(
-    server: SyncServer,
-    agent_id: str,
-    actor: User,
-    # role: MessageRole,
-    messages: Union[List[Message], List[MessageCreate]],
-    stream_steps: bool,
-    stream_tokens: bool,
-    # related to whether or not we return `LettaMessage`s or `Message`s
-    chat_completion_mode: bool = False,
-    timestamp: Optional[datetime] = None,
-    # Support for AssistantMessage
-    use_assistant_message: bool = True,
-    assistant_message_tool_name: str = DEFAULT_MESSAGE_TOOL,
-    assistant_message_tool_kwarg: str = DEFAULT_MESSAGE_TOOL_KWARG,
-    metadata: Optional[dict] = None,
-) -> Union[StreamingResponse, LettaResponse]:
-    """Split off into a separate function so that it can be imported in the /chat/completion proxy."""
-
-    # TODO: @charles is this the correct way to handle?
-    include_final_message = True
-
-    if not stream_steps and stream_tokens:
-        raise HTTPException(status_code=400, detail="stream_steps must be 'true' if stream_tokens is 'true'")
-
-    # For streaming response
-    try:
-
-        # TODO: move this logic into server.py
-
-        # Get the generator object off of the agent's streaming interface
-        # This will be attached to the POST SSE request used under-the-hood
-        letta_agent = server.load_agent(agent_id=agent_id, actor=actor)
-
-        # Disable token streaming if not OpenAI
-        # TODO: cleanup this logic
-        llm_config = letta_agent.agent_state.llm_config
-        if stream_tokens and (llm_config.model_endpoint_type != "openai" or "inference.memgpt.ai" in llm_config.model_endpoint):
-            warnings.warn(
-                "Token streaming is only supported for models with type 'openai' or `inference.memgpt.ai` in the model_endpoint: agent has endpoint type {llm_config.model_endpoint_type} and {llm_config.model_endpoint}. Setting stream_tokens to False."
-            )
-            stream_tokens = False
-
-        # Create a new interface per request
-        letta_agent.interface = StreamingServerInterface(use_assistant_message)
-        streaming_interface = letta_agent.interface
-        if not isinstance(streaming_interface, StreamingServerInterface):
-            raise ValueError(f"Agent has wrong type of interface: {type(streaming_interface)}")
-
-        # Enable token-streaming within the request if desired
-        streaming_interface.streaming_mode = stream_tokens
-        # "chatcompletion mode" does some remapping and ignores inner thoughts
-        streaming_interface.streaming_chat_completion_mode = chat_completion_mode
-
-        # streaming_interface.allow_assistant_message = stream
-        # streaming_interface.function_call_legacy_mode = stream
-
-        # Allow AssistantMessage is desired by client
-        streaming_interface.assistant_message_tool_name = assistant_message_tool_name
-        streaming_interface.assistant_message_tool_kwarg = assistant_message_tool_kwarg
-
-        # Related to JSON buffer reader
-        streaming_interface.inner_thoughts_in_kwargs = (
-            llm_config.put_inner_thoughts_in_kwargs if llm_config.put_inner_thoughts_in_kwargs is not None else False
-        )
-
-        # Offload the synchronous message_func to a separate thread
-        streaming_interface.stream_start()
-        task = asyncio.create_task(
-            asyncio.to_thread(
-                server.send_messages,
-                actor=actor,
-                agent_id=agent_id,
-                messages=messages,
-                interface=streaming_interface,
-                metadata=metadata,
-            )
-        )
-
-        if stream_steps:
-            # return a stream
-            return StreamingResponse(
-                sse_async_generator(
-                    streaming_interface.get_generator(),
-                    usage_task=task,
-                    finish_message=include_final_message,
-                ),
-                media_type="text/event-stream",
-            )
-
-        else:
-            # buffer the stream, then return the list
-            generated_stream = []
-            async for message in streaming_interface.get_generator():
-                assert (
-                    isinstance(message, LettaMessage) or isinstance(message, LegacyLettaMessage) or isinstance(message, MessageStreamStatus)
-                ), type(message)
-                generated_stream.append(message)
-                if message == MessageStreamStatus.done:
-                    break
-
-            # Get rid of the stream status messages
-            filtered_stream = [d for d in generated_stream if not isinstance(d, MessageStreamStatus)]
-            usage = await task
-
-            # By default the stream will be messages of type LettaMessage or LettaLegacyMessage
-            # If we want to convert these to Message, we can use the attached IDs
-            # NOTE: we will need to de-duplicate the Messsage IDs though (since Assistant->Inner+Func_Call)
-            # TODO: eventually update the interface to use `Message` and `MessageChunk` (new) inside the deque instead
-            return LettaResponse(messages=filtered_stream, usage=usage)
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        print(e)
-        import traceback
-
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"{e}")
