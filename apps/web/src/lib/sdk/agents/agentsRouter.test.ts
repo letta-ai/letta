@@ -109,7 +109,7 @@ const premadeTemplate = {
     model_endpoint_type: 'openai',
     model_endpoint: 'https://api.openai.com/v1',
     model_wrapper: null,
-    context_window: 8192,
+    context_window: 128000,
   },
   embedding_config: {
     embedding_endpoint_type: 'openai',
@@ -309,7 +309,7 @@ describe('agentsRouter', () => {
         model_endpoint_type: 'openai',
         model_endpoint: 'https://api.openai.com/v1',
         model_wrapper: null,
-        context_window: 8192,
+        context_window: 128000,
       } as const;
 
       const embeddingConfig = {
