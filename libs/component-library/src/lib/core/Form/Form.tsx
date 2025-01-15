@@ -273,6 +273,7 @@ export function RawInputContainer(props: RawInputContainerProps) {
     flex,
     inline,
     fullWidth,
+    errorMessage,
     preLabelIcon,
     collapseHeight,
     description,
@@ -311,9 +312,14 @@ export function RawInputContainer(props: RawInputContainerProps) {
         </>
       }
       otherContent={
-        description && (
-          <RawFormDescription id={id || ''}>{description}</RawFormDescription>
-        )
+        <>
+          {errorMessage && (
+            <Typography color="destructive">{errorMessage}</Typography>
+          )}
+          {description && (
+            <RawFormDescription id={id || ''}>{description}</RawFormDescription>
+          )}
+        </>
       }
       inline={inline}
     ></InputWrapper>
@@ -333,7 +339,12 @@ interface MakeInputOptions {
   container?: MakeInputOptionsContainerType;
 }
 
-const omitProps = ['rightOfLabelContent', 'infoTooltip', 'labelVariant'];
+const omitProps = [
+  'rightOfLabelContent',
+  'infoTooltip',
+  'errorMessage',
+  'labelVariant',
+];
 
 export function makeInput<T>(
   Input: React.ComponentType<T>,

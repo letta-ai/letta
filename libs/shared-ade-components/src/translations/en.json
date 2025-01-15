@@ -78,6 +78,9 @@
     "endpointType": "Endpoint type",
     "errorLoadingModelParameters": "There has been an error loading model parameters, please refresh the page or contact support.",
     "contextWindowController": {
+      "errors": {
+        "tooSmall": "Please set your context window size to at least 4000."
+      },
       "label": "Context window size"
     },
     "AdvancedSettingsPanel": {

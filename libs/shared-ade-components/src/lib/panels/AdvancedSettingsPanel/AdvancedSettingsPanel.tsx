@@ -218,6 +218,10 @@ export function AdvancedSettingsPanel() {
 
   const { syncUpdateCurrentAgent } = useSyncUpdateCurrentAgent();
 
+  const [draftContextWindow, setDraftContextWindow] = useState<number>(
+    currentAgent.llm_config?.context_window || MIN_CONTEXT_WINDOW,
+  );
+
   const currentBaseModel = useMemo(() => {
     if (!currentAgent.llm_config?.model) {
       return null;
@@ -234,14 +238,7 @@ export function AdvancedSettingsPanel() {
         return;
       }
 
-      if (value < MIN_CONTEXT_WINDOW) {
-        syncUpdateCurrentAgent((existing) => ({
-          llm_config: {
-            ...existing.llm_config,
-            context_window: MIN_CONTEXT_WINDOW,
-          },
-        }));
-
+      if (MIN_CONTEXT_WINDOW > value) {
         return;
       }
 
@@ -263,6 +260,7 @@ export function AdvancedSettingsPanel() {
     if (
       currentBaseModel.context_window < currentAgent.llm_config.context_window
     ) {
+      setDraftContextWindow(currentBaseModel.context_window);
       handleContextWindowChange(currentBaseModel.context_window);
     }
   }, [currentAgent.llm_config, currentBaseModel, handleContextWindowChange]);
@@ -285,11 +283,22 @@ export function AdvancedSettingsPanel() {
         <RawSlider
           fullWidth
           label={t('contextWindowController.label')}
-          value={[currentAgent.llm_config.context_window]}
+          value={[draftContextWindow]}
+          errorMessage={
+            draftContextWindow < MIN_CONTEXT_WINDOW
+              ? t('contextWindowController.errors.tooSmall')
+              : ''
+          }
           onValueChange={([value]) => {
+            setDraftContextWindow(value);
+
+            if (value < MIN_CONTEXT_WINDOW) {
+              return;
+            }
+
             handleContextWindowChange(value);
           }}
-          min={0}
+          min={MIN_CONTEXT_WINDOW}
           max={currentBaseModel?.context_window || 10000}
         />
         <EmbeddingSelector embeddingConfig={currentAgent.embedding_config} />
