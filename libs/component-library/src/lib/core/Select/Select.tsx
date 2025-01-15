@@ -52,6 +52,7 @@ export function isMultiValue(
 
 interface UseStylesArgs {
   menuWidth?: number;
+  containerWidth?: number;
 }
 
 interface BaseSelectProps {
@@ -195,8 +196,14 @@ const classNames = {
 };
 
 function useStyles(args: UseStylesArgs) {
-  const { menuWidth } = args;
+  const { menuWidth, containerWidth } = args;
   return {
+    container: (base: any) => ({
+      ...base,
+      ...(containerWidth
+        ? { minWidth: containerWidth, width: containerWidth }
+        : {}),
+    }),
     menuPortal: (base: any) => ({ ...base, zIndex: 11 }),
     control: (base: any) => ({ ...base, height: 'auto', minHeight: '36px' }),
     option: () => ({ fontSize: 'var(--font-size-base)' }),

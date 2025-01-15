@@ -890,6 +890,7 @@ type ListAgentsResponse = ServerInferResponses<
 
 interface QueryAgentsOptions {
   include_version: boolean;
+  orderBy?: Array<ReturnType<typeof desc>>;
   limit: number;
   offset: number;
   context: SDKContext;
@@ -897,17 +898,25 @@ interface QueryAgentsOptions {
 }
 
 async function queryAgents(options: QueryAgentsOptions) {
-  const { include_version, limit, offset, context, queryBuilder } = options;
+  const { include_version, limit, orderBy, offset, context, queryBuilder } =
+    options;
 
   const query = await db.query.deployedAgents.findMany({
     where: and(...queryBuilder),
     limit,
     offset,
-    orderBy: [desc(deployedAgents.createdAt)],
+    orderBy: orderBy || [desc(deployedAgents.createdAt)],
     with: {
       deployedAgentTemplate: {
         columns: {
           version: true,
+        },
+        with: {
+          agentTemplate: {
+            columns: {
+              name: true,
+            },
+          },
         },
       },
     },
@@ -932,7 +941,7 @@ async function queryAgents(options: QueryAgentsOptions) {
         prepareAgentForUser(response, {
           agentName: agent.key,
           version: include_version
-            ? agent.deployedAgentTemplate?.version
+            ? `${agent.deployedAgentTemplate?.agentTemplate?.name}:${agent.deployedAgentTemplate?.version}`
             : undefined,
           project: projectSlug,
         }),
@@ -1501,6 +1510,8 @@ async function searchDeployedAgents(
   let isDefaultOrderBy = true;
   let orderBy = [desc(deployedAgents.createdAt)];
 
+  let tags: string[] | undefined;
+
   await Promise.all(
     search.map(async (searchTerm) => {
       if (searchTerm.field === 'order_by') {
@@ -1534,6 +1545,10 @@ async function searchDeployedAgents(
         } else if (searchTerm.operator === 'contains') {
           query.push(like(deployedAgents.key, `%${searchTerm.value || ''}%`));
         }
+      }
+
+      if (searchTerm.field === 'tags') {
+        tags = searchTerm.value;
       }
 
       if (searchTerm.field === 'version') {
@@ -1591,12 +1606,36 @@ async function searchDeployedAgents(
     }),
   );
 
-  const where = and(
+  const queryBuilder = [
     combinatorFunction(...query),
     eq(deployedAgents.organizationId, context.request.organizationId),
     isNull(deployedAgents.deletedAt),
     ...(project_id ? [eq(deployedAgents.projectId, project_id)] : []),
-  );
+  ];
+
+  if (tags?.length) {
+    const result = await agentMetadataLooker({
+      builderConfig: {
+        include_version: true,
+        limit: Number(limit),
+        offset: Number(offset),
+        orderBy,
+        context,
+        queryBuilder,
+      },
+      tags,
+    });
+
+    return {
+      status: 200,
+      body: {
+        agents: result,
+        hasNextPage: result.length > limit,
+      },
+    };
+  }
+
+  const where = and(...queryBuilder);
 
   const [result, [totalCount]] = await Promise.all([
     db.query.deployedAgents.findMany({

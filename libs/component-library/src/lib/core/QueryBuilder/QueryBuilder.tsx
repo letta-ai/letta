@@ -83,8 +83,8 @@ function useQueryBuilder() {
 
 interface InputConstructorProps {
   structure: QueryDefinition;
-  value: OptionType | undefined;
-  onChange: (value: OptionType | undefined) => void;
+  value: OptionType | OptionType[] | undefined;
+  onChange: (value: OptionType | OptionType[] | undefined) => void;
 }
 
 function InputConstructor(props: InputConstructorProps) {
@@ -92,10 +92,13 @@ function InputConstructor(props: InputConstructorProps) {
 
   switch (structure.display) {
     case 'input':
+      if (Array.isArray(value)) {
+        return null;
+      }
+
       return (
         <RawInput
           hideLabel
-          fullWidth
           label={structure.label}
           value={value?.value || ''}
           onChange={(value) => {
@@ -111,7 +114,6 @@ function InputConstructor(props: InputConstructorProps) {
 
       return (
         <RawSelect
-          fullWidth
           hideLabel
           label={structure.label}
           {...options}
@@ -129,7 +131,6 @@ function InputConstructor(props: InputConstructorProps) {
       if (structure.isLoadingDefaultOptions) {
         return (
           <RawSelect
-            fullWidth
             {...structure.options}
             options={[]}
             hideLabel
@@ -148,6 +149,11 @@ function InputConstructor(props: InputConstructorProps) {
           onSelect={(option) => {
             if (!isMultiValue(option)) {
               onChange(option || undefined);
+              return;
+            }
+
+            if (Array.isArray(option)) {
+              onChange(option);
             }
           }}
           label={structure.label}
@@ -209,7 +215,7 @@ function RemoveCondition(props: RemoveConditionProps) {
 
 export interface GenericQueryItem {
   field?: string;
-  queryData?: Record<string, OptionType | undefined>;
+  queryData?: Record<string, OptionType | OptionType[] | undefined>;
 }
 
 interface QueryRowProps extends GenericQueryItem {
@@ -223,7 +229,7 @@ function QueryCondition(props: QueryRowProps) {
   const { setQuery } = useQueryBuilder();
 
   const handleChange = useCallback(
-    (key: string, nextValue: OptionType | undefined) => {
+    (key: string, nextValue: OptionType | OptionType[] | undefined) => {
       setQuery((prevQuery) => {
         const newQuery = { ...prevQuery };
 
@@ -263,6 +269,10 @@ function QueryCondition(props: QueryRowProps) {
           label: 'Field',
           key: 'field',
           options: {
+            fullWidth: false,
+            styleConfig: {
+              containerWidth: 200,
+            },
             options: fieldsOptions,
           },
         }}
@@ -271,6 +281,10 @@ function QueryCondition(props: QueryRowProps) {
           label: definitionType?.name || '',
         }}
         onChange={(value) => {
+          if (Array.isArray(value)) {
+            return;
+          }
+
           handleUpdateField(value?.value || '');
         }}
       />

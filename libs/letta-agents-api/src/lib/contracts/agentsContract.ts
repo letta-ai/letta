@@ -267,6 +267,12 @@ const SearchByAgentName = z.object({
   value: z.string(),
 });
 
+const SearchByAgentTag = z.object({
+  field: z.literal('tags'),
+  operator: z.enum(['contains']),
+  value: z.string().array(),
+});
+
 export const OrderByValuesEnum = z.enum(['created_at', 'updated_at']);
 
 export type OrderByValuesEnumType = z.infer<typeof OrderByValuesEnum>;
@@ -280,7 +286,12 @@ const OrderBySchema = z.object({
 export const SearchDeployedAgentsSchema = z.object({
   search: z
     .array(
-      z.union([SearchByAgentVersionSchema, SearchByAgentName, OrderBySchema]),
+      z.union([
+        SearchByAgentVersionSchema,
+        SearchByAgentName,
+        SearchByAgentTag,
+        OrderBySchema,
+      ]),
     )
     .optional(),
   project_id: z.string().optional(),
@@ -291,7 +302,7 @@ export const SearchDeployedAgentsSchema = z.object({
 
 const SearchDeployedAgentsResponseSchema = c.type<{
   agents: ModifiedAgentState[];
-  totalCount: number;
+  totalCount?: number;
   hasNextPage: boolean;
 }>();
 

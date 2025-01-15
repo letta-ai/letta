@@ -3952,6 +3952,26 @@
                           "properties": {
                             "field": {
                               "type": "string",
+                              "enum": ["tags"]
+                            },
+                            "operator": {
+                              "type": "string",
+                              "enum": ["contains"]
+                            },
+                            "value": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          "required": ["field", "operator", "value"]
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "field": {
+                              "type": "string",
                               "enum": ["order_by"]
                             },
                             "value": {

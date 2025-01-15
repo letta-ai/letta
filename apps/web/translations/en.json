@@ -677,6 +677,19 @@
       "showAll": "+{count} more"
     },
     "useQueryDefinition": {
+      "agentTags": {
+        "name": "Agent Tags",
+        "operator": {
+          "operators": {
+            "contains": "contains"
+          },
+          "label": "Operator"
+        },
+        "value": {
+          "label": "Value",
+          "placeholder": "my-tag"
+        }
+      },
       "agentTemplate": {
         "name": "Agent Template",
         "operator": {
@@ -709,6 +722,8 @@
     },
     "table": {
       "totalResults": "{count} agents found matching your search",
+      "wipResults": "We cannot determine the total number of agents that match this query",
+      "wipResultsInfo": "Some search queries are not indexable yet, we are working on resolving this!",
       "copyId": "Copy id",
       "columns": {
         "tags": "Tags",

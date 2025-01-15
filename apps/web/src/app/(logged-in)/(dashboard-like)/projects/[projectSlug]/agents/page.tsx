@@ -6,6 +6,7 @@ import React, {
   useRef,
   useState,
 } from 'react';
+import { InfoTooltip } from '@letta-cloud/component-library';
 import type {
   FieldDefinitions,
   QueryBuilderQuery,
@@ -45,6 +46,11 @@ import { useCurrentProject } from '../hooks';
 import { useSearchParams } from 'next/navigation';
 import type { ColumnDef } from '@tanstack/react-table';
 import type { AgentState } from '@letta-cloud/letta-agents-api';
+
+import {
+  TagService,
+  useTagServiceListTags,
+} from '@letta-cloud/letta-agents-api';
 import { useAgentsServiceGetAgent } from '@letta-cloud/letta-agents-api';
 import { useTranslations } from '@letta-cloud/translations';
 import { DeployAgentDialog } from './DeployAgentDialog/DeployAgentDialog';
@@ -187,6 +193,23 @@ function useQueryDefinition() {
     }
   }, [params]);
 
+  const { data: defaultTags } = useTagServiceListTags();
+
+  const handleLoadTags = useCallback(async (query: string) => {
+    try {
+      const response = await TagService.listTags({
+        queryText: query,
+      });
+
+      return response.map((tag) => ({
+        label: tag,
+        value: tag,
+      }));
+    } catch {
+      return [];
+    }
+  }, []);
+
   const { id: currentProjectId } = useCurrentProject();
 
   const { data } = webApi.projects.getProjectDeployedAgentTemplates.useQuery({
@@ -255,6 +278,9 @@ function useQueryDefinition() {
             label: t('useQueryDefinition.agentName.operator.label'),
             display: 'select',
             options: {
+              styleConfig: {
+                containerWidth: 150,
+              },
               options: [
                 {
                   label: t(
@@ -287,6 +313,44 @@ function useQueryDefinition() {
           },
         ],
       },
+      tags: {
+        id: 'tags',
+        name: t('useQueryDefinition.agentTags.name'),
+        queries: [
+          {
+            key: 'operator',
+            label: t('useQueryDefinition.agentTags.operator.label'),
+            display: 'select',
+            options: {
+              styleConfig: {
+                containerWidth: 100,
+              },
+              options: [
+                {
+                  label: t(
+                    'useQueryDefinition.agentTags.operator.operators.contains',
+                  ),
+                  value: 'contains',
+                },
+              ],
+            },
+          },
+          {
+            key: 'value',
+            label: t('useQueryDefinition.agentTags.value.label'),
+            display: 'async-select',
+            options: {
+              isMulti: true,
+              placeholder: t('useQueryDefinition.agentTags.value.placeholder'),
+              defaultOptions: (defaultTags || []).map((tag) => ({
+                label: tag,
+                value: tag,
+              })),
+              loadOptions: handleLoadTags,
+            },
+          },
+        ],
+      },
       version: {
         id: 'version',
         name: t('useQueryDefinition.agentTemplate.name'),
@@ -296,6 +360,9 @@ function useQueryDefinition() {
             label: t('useQueryDefinition.agentTemplate.operator.label'),
             display: 'select',
             options: {
+              styleConfig: {
+                containerWidth: 150,
+              },
               options: [
                 {
                   label: t(
@@ -352,7 +419,14 @@ function useQueryDefinition() {
       fieldDefinitions,
       initialQuery,
     } satisfies UseQueryDefinitionResponse;
-  }, [defaultTemplateSearchOptions, queryFilter, handleLoadOptions, t]);
+  }, [
+    defaultTemplateSearchOptions,
+    queryFilter,
+    handleLoadOptions,
+    t,
+    defaultTags,
+    handleLoadTags,
+  ]);
 }
 
 interface TagsShorthandProps {
@@ -539,7 +613,7 @@ function DeployedAgentsPage() {
 
   const agents = data?.body.agents || [];
   const hasNextPage = data?.body.hasNextPage || false;
-  const totalCount = data?.body.totalCount || 0;
+  const totalCount = data?.body.totalCount;
 
   const { slug: currentProjectSlug } = useCurrentProject();
   const { formatDateAndTime } = useDateFormatter();
@@ -674,9 +748,20 @@ function DeployedAgentsPage() {
               >
                 <HStack>
                   {data?.body && (
-                    <Typography variant="body2" color="muted">
-                      {t('table.totalResults', { count: totalCount })}
-                    </Typography>
+                    <>
+                      {typeof totalCount === 'number' ? (
+                        <Typography variant="body2" color="muted">
+                          {t('table.totalResults', { count: totalCount })}
+                        </Typography>
+                      ) : (
+                        <HStack align="center">
+                          <Typography variant="body2" color="muted">
+                            {t('table.wipResults')}
+                          </Typography>
+                          <InfoTooltip text={t('table.wipResultsInfo')} />
+                        </HStack>
+                      )}
+                    </>
                   )}
                 </HStack>
 
