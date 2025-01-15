@@ -18,7 +18,6 @@ import { atom, useAtom } from 'jotai';
 import type { TiktokenModel } from 'js-tiktoken';
 import { encodingForModel } from 'js-tiktoken';
 import './ContextEditorPanel.scss';
-import { useADEUserContext } from '../../UserContext/UserContext';
 import { useCurrentAgent } from '../../hooks';
 
 const computedMemoryStringAtom = atom<string | null>(null);
@@ -229,7 +228,6 @@ function isTiktokenModel(model: string): model is TiktokenModel {
 export function ContextWindowPanel() {
   const t = useTranslations('ADE/ContextEditorPanel');
 
-  const user = useADEUserContext();
   const {
     systemPromptLength,
     toolLength,
@@ -418,7 +416,7 @@ export function ContextWindowPanel() {
             },
           },
           data: [remainingLength / totalLengthForChart],
-          color: user?.theme === 'dark' ? '#333' : '#eee',
+          color: 'transparent',
           name: t('ContextWindowPreview.remaining'),
           itemStyle: {
             borderRadius: [0, 0, 0, 0],
@@ -463,7 +461,6 @@ export function ContextWindowPanel() {
     recursiveMemoryLength,
     messagesTokensLength,
     remainingLength,
-    user?.theme,
   ]);
 
   return (
@@ -490,7 +487,12 @@ export function ContextWindowPanel() {
         </div>
       </HStack>
       {/* eslint-disable-next-line react/forbid-component-props */}
-      <Chart height={35} options={standardChartOptions} />
+      <div className="relative">
+        <div className="relative z-[1]">
+          <Chart height={35} options={standardChartOptions} />
+        </div>
+        <div className="h-[25px] mt-[5px] w-full absolute z-[0] pointer-events-none top-0 bg-background-grey2" />
+      </div>
     </VStack>
   );
 }
