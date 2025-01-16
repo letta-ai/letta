@@ -119,9 +119,12 @@ describe('letta', () => {
 
     cy.findByTestId('messages-list', { timeout: 500000 }).contains('Charles');
 
-    cy.findByTestId('messages-list', { timeout: 500000 }).contains(
-      'DeploymentMan',
-    );
+    cy.findByTestId('edit-memory-block-human-content', { timeout: 50000 })
+      .invoke('val')
+      .then((val) => {
+        expect(val).to.contain('DeploymentMan');
+        expect(val).to.contain('Charles');
+      });
 
     cy.findAllByTestId('breadcrumb-item:DEPLOYMENTAGENT:2').first().click();
 
@@ -159,15 +162,11 @@ describe('letta', () => {
       /\/projects\/(.+)\/agents\/(.+)/,
     );
 
-    cy.findByTestId('chat-simulator-input').type('What is my name?', {
-      force: true,
-    });
-
-    cy.findByTestId('chat-simulator-send').click({
-      force: true,
-    });
-
-    cy.findByTestId('messages-list', { timeout: 500000 }).contains('Charles');
+    cy.findByTestId('edit-memory-block-human-content', { timeout: 50000 })
+      .invoke('val')
+      .then((val) => {
+        expect(val).to.contain('WowCheese');
+      });
 
     cy.findAllByTestId('breadcrumb-item:DEPLOYMENTAGENT:3')
       .first()
