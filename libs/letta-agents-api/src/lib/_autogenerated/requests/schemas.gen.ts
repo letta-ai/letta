@@ -1955,8 +1955,16 @@ export const $CreateAgentRequest = {
     include_base_tools: {
       type: 'boolean',
       title: 'Include Base Tools',
-      description: 'The LLM configuration used by the agent.',
+      description:
+        'If true, attaches the Letta core tools (e.g. archival_memory and core_memory related functions).',
       default: true,
+    },
+    include_multi_agent_tools: {
+      type: 'boolean',
+      title: 'Include Multi Agent Tools',
+      description:
+        'If true, attaches the Letta multi-agent tools (e.g. sending a message to another agent).',
+      default: false,
     },
     description: {
       anyOf: [
@@ -4983,7 +4991,7 @@ export const $ToolRunFromSource = {
 
 export const $ToolType = {
   type: 'string',
-  enum: ['custom', 'letta_core', 'letta_memory_core'],
+  enum: ['custom', 'letta_core', 'letta_memory_core', 'letta_multi_agent_core'],
   title: 'ToolType',
 } as const;
 

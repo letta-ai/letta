@@ -7,7 +7,7 @@ from sqlalchemy import delete
 from sqlalchemy.exc import IntegrityError
 
 from letta.config import LettaConfig
-from letta.constants import BASE_MEMORY_TOOLS, BASE_TOOLS
+from letta.constants import BASE_MEMORY_TOOLS, BASE_TOOLS, MULTI_AGENT_TOOLS
 from letta.embeddings import embedding_model
 from letta.functions.functions import derive_openai_json_schema, parse_source_code
 from letta.orm import (
@@ -1716,7 +1716,7 @@ def test_delete_tool_by_id(server: SyncServer, print_tool, default_user):
 
 def test_upsert_base_tools(server: SyncServer, default_user):
     tools = server.tool_manager.upsert_base_tools(actor=default_user)
-    expected_tool_names = sorted(BASE_TOOLS + BASE_MEMORY_TOOLS)
+    expected_tool_names = sorted(BASE_TOOLS + BASE_MEMORY_TOOLS + MULTI_AGENT_TOOLS)
     assert sorted([t.name for t in tools]) == expected_tool_names
 
     # Call it again to make sure it doesn't create duplicates
@@ -1727,8 +1727,12 @@ def test_upsert_base_tools(server: SyncServer, default_user):
     for t in tools:
         if t.name in BASE_TOOLS:
             assert t.tool_type == ToolType.LETTA_CORE
-        else:
+        elif t.name in BASE_MEMORY_TOOLS:
             assert t.tool_type == ToolType.LETTA_MEMORY_CORE
+        elif t.name in MULTI_AGENT_TOOLS:
+            assert t.tool_type == ToolType.LETTA_MULTI_AGENT_CORE
+        else:
+            pytest.fail(f"The tool name is unrecognized as a base tool: {t.name}")
         assert t.source_code is None
         assert t.json_schema
 

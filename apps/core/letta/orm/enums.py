@@ -5,6 +5,7 @@ class ToolType(str, Enum):
     CUSTOM = "custom"
     LETTA_CORE = "letta_core"
     LETTA_MEMORY_CORE = "letta_memory_core"
+    LETTA_MULTI_AGENT_CORE = "letta_multi_agent_core"
 
 
 class JobType(str, Enum):

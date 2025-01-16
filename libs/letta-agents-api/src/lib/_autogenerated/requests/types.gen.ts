@@ -653,9 +653,13 @@ export type CreateAgentRequest = {
    */
   initial_message_sequence?: Array<MessageCreate> | null;
   /**
-   * The LLM configuration used by the agent.
+   * If true, attaches the Letta core tools (e.g. archival_memory and core_memory related functions).
    */
   include_base_tools?: boolean;
+  /**
+   * If true, attaches the Letta multi-agent tools (e.g. sending a message to another agent).
+   */
+  include_multi_agent_tools?: boolean;
   /**
    * The description of the agent.
    */
@@ -2044,7 +2048,11 @@ export type ToolRunFromSource = {
   source_type?: string | null;
 };
 
-export type ToolType = 'custom' | 'letta_core' | 'letta_memory_core';
+export type ToolType =
+  | 'custom'
+  | 'letta_core'
+  | 'letta_memory_core'
+  | 'letta_multi_agent_core';
 
 export type ToolUpdate = {
   /**

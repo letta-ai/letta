@@ -2,7 +2,12 @@ from typing import Any, Dict, List, Optional
 
 from pydantic import Field, model_validator
 
-from letta.constants import COMPOSIO_TOOL_TAG_NAME, FUNCTION_RETURN_CHAR_LIMIT, LETTA_CORE_TOOL_MODULE_NAME
+from letta.constants import (
+    COMPOSIO_TOOL_TAG_NAME,
+    FUNCTION_RETURN_CHAR_LIMIT,
+    LETTA_CORE_TOOL_MODULE_NAME,
+    LETTA_MULTI_AGENT_TOOL_MODULE_NAME,
+)
 from letta.functions.functions import derive_openai_json_schema, get_json_schema_from_module
 from letta.functions.helpers import generate_composio_tool_wrapper, generate_langchain_tool_wrapper
 from letta.functions.schema_generator import generate_schema_from_args_schema_v2
@@ -64,6 +69,9 @@ class Tool(BaseTool):
         elif self.tool_type in {ToolType.LETTA_CORE, ToolType.LETTA_MEMORY_CORE}:
             # If it's letta core tool, we generate the json_schema on the fly here
             self.json_schema = get_json_schema_from_module(module_name=LETTA_CORE_TOOL_MODULE_NAME, function_name=self.name)
+        elif self.tool_type in {ToolType.LETTA_MULTI_AGENT_CORE}:
+            # If it's letta multi-agent tool, we also generate the json_schema on the fly here
+            self.json_schema = get_json_schema_from_module(module_name=LETTA_MULTI_AGENT_TOOL_MODULE_NAME, function_name=self.name)
 
         # Derive name from the JSON schema if not provided
         if not self.name:

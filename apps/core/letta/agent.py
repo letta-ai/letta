@@ -12,6 +12,7 @@ from letta.constants import (
     FIRST_MESSAGE_ATTEMPTS,
     FUNC_FAILED_HEARTBEAT_MESSAGE,
     LETTA_CORE_TOOL_MODULE_NAME,
+    LETTA_MULTI_AGENT_TOOL_MODULE_NAME,
     LLM_MAX_TOKENS,
     MESSAGE_SUMMARY_TRUNC_KEEP_N_LAST,
     MESSAGE_SUMMARY_TRUNC_TOKEN_FRAC,
@@ -25,6 +26,7 @@ from letta.interface import AgentInterface
 from letta.llm_api.helpers import is_context_overflow_error
 from letta.llm_api.llm_api_tools import create
 from letta.local_llm.utils import num_tokens_from_functions, num_tokens_from_messages
+from letta.log import get_logger
 from letta.memory import summarize_messages
 from letta.orm import User
 from letta.orm.enums import ToolType
@@ -143,6 +145,9 @@ class Agent(BaseAgent):
         # Load last function response from message history
         self.last_function_response = self.load_last_function_response()
 
+        # Logger that the Agent specifically can use, will also report the agent_state ID with the logs
+        self.logger = get_logger(agent_state.id)
+
     def load_last_function_response(self):
         """Load the last function response from message history"""
         in_context_messages = self.agent_manager.get_in_context_messages(agent_id=self.agent_state.id, actor=self.user)
@@ -205,6 +210,10 @@ class Agent(BaseAgent):
             if target_letta_tool.tool_type == ToolType.LETTA_CORE:
                 # base tools are allowed to access the `Agent` object and run on the database
                 callable_func = get_function_from_module(LETTA_CORE_TOOL_MODULE_NAME, function_name)
+                function_args["self"] = self  # need to attach self to arg since it's dynamically linked
+                function_response = callable_func(**function_args)
+            elif target_letta_tool.tool_type == ToolType.LETTA_MULTI_AGENT_CORE:
+                callable_func = get_function_from_module(LETTA_MULTI_AGENT_TOOL_MODULE_NAME, function_name)
                 function_args["self"] = self  # need to attach self to arg since it's dynamically linked
                 function_response = callable_func(**function_args)
             elif target_letta_tool.tool_type == ToolType.LETTA_MEMORY_CORE:
