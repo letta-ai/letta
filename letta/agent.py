@@ -355,7 +355,7 @@ class Agent(BaseAgent):
             if response_message.tool_calls is not None and len(response_message.tool_calls) > 1:
                 # raise NotImplementedError(f">1 tool call not supported")
                 # TODO eventually support sequential tool calling
-                printd(f">1 tool call not supported, using index=0 only\n{response_message.tool_calls}")
+                self.logger.warning(f">1 tool call not supported, using index=0 only\n{response_message.tool_calls}")
                 response_message.tool_calls = [response_message.tool_calls[0]]
             assert response_message.tool_calls is not None and len(response_message.tool_calls) > 0
 
@@ -384,7 +384,7 @@ class Agent(BaseAgent):
                     openai_message_dict=response_message.model_dump(),
                 )
             )  # extend conversation with assistant's reply
-            printd(f"Function call message: {messages[-1]}")
+            self.logger.info(f"Function call message: {messages[-1]}")
 
             nonnull_content = False
             if response_message.content:
@@ -401,7 +401,7 @@ class Agent(BaseAgent):
 
             # Get the name of the function
             function_name = function_call.name
-            printd(f"Request to call function {function_name} with tool_call_id: {tool_call_id}")
+            self.logger.info(f"Request to call function {function_name} with tool_call_id: {tool_call_id}")
 
             # Failure case 1: function name is wrong (not in agent_state.tools)
             target_letta_tool = None
@@ -467,7 +467,7 @@ class Agent(BaseAgent):
                 heartbeat_request = True
 
             if not isinstance(heartbeat_request, bool) or heartbeat_request is None:
-                printd(
+                self.logger.warning(
                     f"{CLI_WARNING_PREFIX}'request_heartbeat' arg parsed was not a bool or None, type={type(heartbeat_request)}, value={heartbeat_request}"
                 )
                 heartbeat_request = False
@@ -503,7 +503,7 @@ class Agent(BaseAgent):
                 # Less detailed - don't provide full args, idea is that it should be in recent context so no need (just adds noise)
                 error_msg = get_friendly_error_msg(function_name=function_name, exception_name=type(e).__name__, exception_message=str(e))
                 error_msg_user = f"{error_msg}\n{traceback.format_exc()}"
-                printd(error_msg_user)
+                self.logger.error(error_msg_user)
                 function_response = package_function_response(False, error_msg)
                 self.last_function_response = function_response
                 # TODO: truncate error message somehow
@@ -630,10 +630,10 @@ class Agent(BaseAgent):
 
             # Chain stops
             if not chaining:
-                printd("No chaining, stopping after one step")
+                self.logger.info("No chaining, stopping after one step")
                 break
             elif max_chaining_steps is not None and counter > max_chaining_steps:
-                printd(f"Hit max chaining steps, stopping after {counter} steps")
+                self.logger.info(f"Hit max chaining steps, stopping after {counter} steps")
                 break
             # Chain handlers
             elif token_warning:
@@ -713,7 +713,7 @@ class Agent(BaseAgent):
             input_message_sequence = in_context_messages + messages
 
             if len(input_message_sequence) > 1 and input_message_sequence[-1].role != "user":
-                printd(f"{CLI_WARNING_PREFIX}Attempting to run ChatCompletion without user as the last message in the queue")
+                self.logger.warning(f"{CLI_WARNING_PREFIX}Attempting to run ChatCompletion without user as the last message in the queue")
 
             # Step 2: send the conversation and available functions to the LLM
             response = self._get_ai_reply(
@@ -755,7 +755,7 @@ class Agent(BaseAgent):
                 )
 
             if current_total_tokens > MESSAGE_SUMMARY_WARNING_FRAC * int(self.agent_state.llm_config.context_window):
-                printd(
+                self.logger.warning(
                     f"{CLI_WARNING_PREFIX}last response total_tokens ({current_total_tokens}) > {MESSAGE_SUMMARY_WARNING_FRAC * int(self.agent_state.llm_config.context_window)}"
                 )
 
@@ -765,7 +765,7 @@ class Agent(BaseAgent):
                     self.agent_alerted_about_memory_pressure = True  # it's up to the outer loop to handle this
 
             else:
-                printd(
+                self.logger.warning(
                     f"last response total_tokens ({current_total_tokens}) < {MESSAGE_SUMMARY_WARNING_FRAC * int(self.agent_state.llm_config.context_window)}"
                 )
 
@@ -790,11 +790,11 @@ class Agent(BaseAgent):
             )
 
         except Exception as e:
-            printd(f"step() failed\nmessages = {messages}\nerror = {e}")
+            self.logger.error(f"step() failed\nmessages = {messages}\nerror = {e}")
 
             # If we got a context alert, try trimming the messages length, then try again
             if is_context_overflow_error(e):
-                printd(
+                self.logger.warning(
                     f"context window exceeded with limit {self.agent_state.llm_config.context_window}, running summarizer to trim messages"
                 )
                 # A separate API call to run a summarizer
@@ -811,7 +811,7 @@ class Agent(BaseAgent):
                 )
 
             else:
-                printd(f"step() failed with an unrecognized exception: '{str(e)}'")
+                self.logger.error(f"step() failed with an unrecognized exception: '{str(e)}'")
                 raise e
 
     def step_user_message(self, user_message_str: str, **kwargs) -> AgentStepResponse:
