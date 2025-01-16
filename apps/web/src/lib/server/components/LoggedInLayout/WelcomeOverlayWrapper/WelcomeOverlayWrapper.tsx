@@ -145,7 +145,7 @@ export function WelcomeOverlayWrapper(props: WelcomeOverlayWrapperProps) {
         padding="xlarge"
         color="background"
       >
-        <div className="overflow-hidden relative flex inner-container-flexer">
+        <div className="overflow-x-hidden relative flex inner-container-flexer">
           <div className="h-auto image-placeholder bg-transparent"></div>
 
           <VStack

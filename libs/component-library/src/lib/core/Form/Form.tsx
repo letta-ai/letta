@@ -19,7 +19,7 @@ import { InfoTooltip } from '../../reusable/InfoTooltip/InfoTooltip';
 export { useForm } from 'react-hook-form';
 
 const labelVariants = cva(
-  'text-base font-medium leading-none whitespace-nowrap peer-disabled:cursor-not-allowed peer-disabled:opacity-70',
+  'text-base font-medium text-left leading-none small:whitespace-nowrap peer-disabled:cursor-not-allowed peer-disabled:opacity-70',
 );
 
 const LabelPrimitive = React.forwardRef<
@@ -174,6 +174,7 @@ function InputContainerHeader(props: InputContainerHeaderProps) {
       <HStack gap="small" align="center">
         {preLabelIcon && <Slot className="h-3">{preLabelIcon}</Slot>}
         <Typography
+          align="left"
           variant={variant === 'default' ? 'body2' : 'body'}
           color={variant === 'default' ? 'lighter' : 'default'}
           uppercase={variant === 'default'}
