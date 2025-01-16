@@ -28,15 +28,7 @@ class LettaResponse(BaseModel):
         description="The messages returned by the agent.",
         json_schema_extra={
             "items": {
-                "oneOf": [
-                    {"$ref": "#/components/schemas/SystemMessage-Output"},
-                    {"$ref": "#/components/schemas/UserMessage-Output"},
-                    {"$ref": "#/components/schemas/ReasoningMessage"},
-                    {"$ref": "#/components/schemas/ToolCallMessage"},
-                    {"$ref": "#/components/schemas/ToolReturnMessage"},
-                    {"$ref": "#/components/schemas/AssistantMessage-Output"},
-                ],
-                "discriminator": {"propertyName": "message_type"},
+                "$ref": "#/components/schemas/LettaMessageUnion",
             }
         },
     )

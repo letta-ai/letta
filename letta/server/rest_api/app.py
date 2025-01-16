@@ -16,6 +16,7 @@ from letta.constants import ADMIN_PREFIX, API_PREFIX, OPENAI_API_PREFIX
 from letta.errors import LettaAgentNotFoundError, LettaUserNotFoundError
 from letta.log import get_logger
 from letta.orm.errors import DatabaseTimeoutError, ForeignKeyConstraintViolationError, NoResultFound, UniqueConstraintViolationError
+from letta.schemas.letta_message import create_letta_message_union_schema
 from letta.server.constants import REST_DEFAULT_PORT
 
 # NOTE(charles): these are extra routes that are not part of v1 but we still need to mount to pass tests
@@ -67,6 +68,7 @@ def generate_openapi_schema(app: FastAPI):
     openai_docs["info"]["title"] = "OpenAI Assistants API"
     letta_docs["paths"] = {k: v for k, v in letta_docs["paths"].items() if not k.startswith("/openai")}
     letta_docs["info"]["title"] = "Letta API"
+    letta_docs["components"]["schemas"]["LettaMessageUnion"] = create_letta_message_union_schema()
 
     # Split the API docs into Letta API, and OpenAI Assistants compatible API
     for name, docs in [

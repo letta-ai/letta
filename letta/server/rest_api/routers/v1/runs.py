@@ -1,6 +1,7 @@
-from typing import List, Optional
+from typing import Annotated, List, Optional
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query
+from pydantic import Field
 
 from letta.orm.enums import JobType
 from letta.orm.errors import NoResultFound
@@ -60,7 +61,16 @@ def get_run(
         raise HTTPException(status_code=404, detail="Run not found")
 
 
-@router.get("/{run_id}/messages", response_model=List[LettaMessageUnion], operation_id="get_run_messages")
+RunMessagesResponse = Annotated[
+    List[LettaMessageUnion], Field(json_schema_extra={"type": "array", "items": {"$ref": "#/components/schemas/LettaMessageUnion"}})
+]
+
+
+@router.get(
+    "/{run_id}/messages",
+    response_model=RunMessagesResponse,
+    operation_id="get_run_messages",
+)
 async def get_run_messages(
     run_id: str,
     server: "SyncServer" = Depends(get_letta_server),
