@@ -43,6 +43,7 @@ jobs:
         test_suite:
           - "test_vector_embeddings.py"
           - "test_client.py"
+          - "test_sdk_client.py"
           - "test_client_legacy.py"
           - "test_server.py"
           - "test_v1_routes.py"
