@@ -9,6 +9,7 @@ from letta import LocalClient, create_client
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.letta_message import ToolReturnMessage
 from letta.schemas.llm_config import LLMConfig
+from tests.helpers.utils import retry_until_success
 
 
 @pytest.fixture(scope="module")
@@ -115,6 +116,8 @@ def test_recall(client, agent_obj):
     assert keyword in result
 
 
+# This test is nondeterministic, so we retry until we get the perfect behavior from the LLM
+@retry_until_success(max_attempts=5, sleep_time_seconds=2)
 def test_send_message_to_agent(client, agent_obj, other_agent_obj):
     long_random_string = "".join(secrets.choice(string.ascii_letters + string.digits) for _ in range(10))
 
@@ -148,6 +151,8 @@ def test_send_message_to_agent(client, agent_obj, other_agent_obj):
     print(response.messages)
 
 
+# This test is nondeterministic, so we retry until we get the perfect behavior from the LLM
+@retry_until_success(max_attempts=5, sleep_time_seconds=2)
 def test_send_message_to_agents_with_tags(client):
     worker_tags = ["worker", "user-456"]
 
@@ -195,10 +200,9 @@ def test_send_message_to_agents_with_tags(client):
             break
 
     # Conversation search the worker agents
-    # TODO: This search if flaky for some reason
-    # for agent in worker_agents:
-    #     result = base_functions.conversation_search(agent, long_random_string)
-    #     assert long_random_string in result
+    for agent in worker_agents:
+        result = base_functions.conversation_search(agent, long_random_string)
+        assert long_random_string in result
 
     # Test that the agent can still receive messages fine
     response = client.send_message(agent_id=manager_agent.agent_state.id, role="user", message="So what did the other agents say?")
