@@ -74,6 +74,16 @@ cors_origins = [
     "http://localhost:4200",
 ]
 
+# read pg_uri from ~/.letta/pg_uri or set to none, this is to support Letta Desktop
+default_pg_uri = None
+
+try:
+    with open(Path.home() / ".letta/pg_uri", "r") as f:
+        default_pg_uri = f.read()
+        print("Read pg_uri from ~/.letta/pg_uri")
+except FileNotFoundError:
+    pass
+
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="letta_", extra="ignore")
@@ -88,7 +98,7 @@ class Settings(BaseSettings):
     pg_password: Optional[str] = None
     pg_host: Optional[str] = None
     pg_port: Optional[int] = None
-    pg_uri: Optional[str] = None  # option to specify full uri
+    pg_uri: Optional[str] = default_pg_uri  # option to specify full uri
     pg_pool_size: int = 20  # Concurrent connections
     pg_max_overflow: int = 10  # Overflow limit
     pg_pool_timeout: int = 30  # Seconds to wait for a connection
