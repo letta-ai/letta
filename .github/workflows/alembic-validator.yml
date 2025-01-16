@@ -1,12 +1,4 @@
-name: 🐍🧪 [Core] LLM API Integration Tests
-
-env:
-  OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-  ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-  AZURE_API_KEY: ${{ secrets.AZURE_API_KEY }}
-  AZURE_BASE_URL: ${{ secrets.AZURE_BASE_URL }}
-  GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-  COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY }}
+name: 🐍🧪 [Core] Alembic Validation
 
 on:
   push:
@@ -31,7 +23,7 @@ jobs:
         with:
           files: |
             apps/core/**
-            .github/workflows/core-integration-tests.yml
+            .github/workflows/alembic-validator.yml
 
   main:
     needs: [ changed-files ]
@@ -104,22 +96,4 @@ jobs:
         run: |
           psql -h localhost -U postgres -d postgres -c 'CREATE EXTENSION vector'
           poetry run alembic upgrade head
-      - name: Test OpenAI Basic
-        working-directory: apps/core
-        run: |
-          poetry run pytest -s -vv tests/test_model_letta_performance.py -m openai_basic
-
-      - name: Test Anthropic Basic
-        working-directory: apps/core
-        run: |
-          poetry run pytest -s -vv tests/test_model_letta_performance.py -m anthropic_basic
-
-      - name: Test Azure Basic
-        working-directory: apps/core
-        run: |
-          poetry run pytest -s -vv tests/test_model_letta_performance.py -m azure_basic
-
-      - name: Test Gemini Basic
-        working-directory: apps/core
-        run: |
-          poetry run pytest -s -vv tests/test_model_letta_performance.py -m gemini_basic
+          poetry run alembic check
