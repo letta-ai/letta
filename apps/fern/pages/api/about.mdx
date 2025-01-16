@@ -55,11 +55,11 @@ npm install @letta-ai/letta-client
 
 Once installed, you can instantiate the client in your TypeScript code with:
 ```typescript
-import { LettaClient, LettaEnvironment } from '@letta-ai/letta-client'
+import { LettaClient } from '@letta-ai/letta-client'
 
 // connect to a local server
 const client = new LettaClient({
-    environment: LettaEnvironment.SelfHosted,
+    baseUrl: "http://localhost:8283",
 });
 
 // connect to Letta Cloud

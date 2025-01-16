@@ -23,9 +23,6 @@ By default, agents in Letta are created with the following tools:
 You can create custom tools in Letta in Python. When you define the function for the tool, you must make sure to have a properly formatting docstring for Letta to parse the function schema.
 ```python
 from letta import Letta
-import inspect
-from textwrap import dedent
-from pprint import pprint
 
 client = Letta(token="LETTA_API_KEY")
 
@@ -47,14 +44,9 @@ def roll_dice() -> str:
     return output_string
 
 
-def parse_source_code(func) -> str:
-    """Parse the source code of a function and remove indendation"""
-    source_code = dedent(inspect.getsource(func))
-    return source_code
-
 # create the tool
-tool = client.tools.create(
-    source_code=parse_source_code(roll_dice)
+tool = client.tools.create_from_function(
+    func=roll_dice
 )
 print(f"Created tool {tool.name}")
 ```
