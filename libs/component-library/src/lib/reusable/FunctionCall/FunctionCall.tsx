@@ -12,18 +12,32 @@ import { Typography } from '../../core/Typography/Typography';
 import { RawCodeEditor } from '../../core/Code/Code';
 import { useTranslations } from '@letta-cloud/translations';
 import { Spinner } from '../../core/Spinner/Spinner';
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
+import { atom, useAtom } from 'jotai';
 
 interface FunctionCallProps {
   name: string;
   inputs: string;
   response?: string;
   status?: string;
+  id: string;
 }
 
+// make sure the open state is stored in an atom, as this component gets refreshed and can lose it's state
+const functionCallOpenStatusAtom = atom<Record<string, boolean>>();
+
 export function FunctionCall(props: FunctionCallProps) {
-  const { name, inputs, response, status } = props;
-  const [open, setOpen] = React.useState(false);
+  const { id, name, inputs, response, status } = props;
+  const [openStates, setOpenStates] = useAtom(functionCallOpenStatusAtom);
+
+  const open = useMemo(() => {
+    return openStates?.[id] || false;
+  }, [id, openStates]);
+
+  const toggleOpen = useCallback(() => {
+    setOpenStates((prev) => ({ ...prev, [id]: !open }));
+  }, [id, open, setOpenStates]);
+
   const t = useTranslations('component-library/FunctionCall');
 
   const statusMessage = useMemo(() => {
@@ -66,9 +80,9 @@ export function FunctionCall(props: FunctionCallProps) {
     <details
       className="bg-background w-full"
       open={open}
-      onToggle={(e) => {
+      onClick={(e) => {
         e.preventDefault();
-        setOpen(!open);
+        toggleOpen();
       }}
     >
       <HStack as="summary">

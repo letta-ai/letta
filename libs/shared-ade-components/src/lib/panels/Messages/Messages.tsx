@@ -325,8 +325,12 @@ export function Messages(props: MessagesProps) {
           );
 
           if (mode === 'simple' || mode === 'interactive') {
+            if (!agentMessage.tool_call.name) {
+              return null;
+            }
+
             if (
-              agentMessage.tool_call.name === 'send_message' &&
+              'send_message'.includes(agentMessage.tool_call.name) &&
               agentMessage.tool_call.arguments
             ) {
               try {
@@ -372,6 +376,8 @@ export function Messages(props: MessagesProps) {
                 id: `${agentMessage.id}-${agentMessage.message_type}`,
                 content: (
                   <FunctionCall
+                    id={`${agentMessage.id}-${agentMessage.message_type}`}
+                    key={`${agentMessage.id}-${agentMessage.message_type}`}
                     name={agentMessage.tool_call.name || ''}
                     inputs={agentMessage.tool_call.arguments || ''}
                     response={get(functionResponse, 'tool_return')}
