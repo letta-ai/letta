@@ -110,6 +110,37 @@ function copyAlembicToLettaDir() {
   console.log('Alembic files copied to Letta directory');
 }
 
+function copyLettaServerToLettaDir() {
+  let lettaServerPath = path.join(
+    __dirname,
+    '..',
+    'desktop-electron',
+    'assets',
+    'letta',
+  );
+
+  if (App.application.isPackaged) {
+    lettaServerPath = path.join(
+      __dirname,
+      '..',
+      'desktop-electron',
+      'assets',
+      'letta',
+    );
+  }
+
+  const lettaPath = path.join(process.env.HOME || '/', '.letta', 'bin');
+
+  if (!fs.existsSync(lettaPath)) {
+    fs.mkdirSync(lettaPath, { recursive: true });
+  }
+
+  fs.copyFileSync(lettaServerPath, path.join(lettaPath, 'letta'));
+
+  // chmod +x
+  fs.chmodSync(path.join(lettaPath, 'letta'), parseInt('755', 8));
+}
+
 export default class App {
   // Keep a global reference of the window object, if you don't, the window will
   // be closed automatically when the JavaScript object is garbage collected.
@@ -184,32 +215,14 @@ export default class App {
 
   static startLettaServer() {
     copyAlembicToLettaDir();
+    copyLettaServerToLettaDir();
 
     let lettaServerPath = path.join(
-      __dirname,
-      '..',
-      'desktop-electron',
-      'assets',
+      process.env.HOME || '/',
+      '.letta',
+      'bin',
       'letta',
     );
-
-    if (App.application.isPackaged) {
-      lettaServerPath = path.join(
-        __dirname,
-        '..',
-        'desktop-electron',
-        'assets',
-        'letta',
-      );
-    } else {
-      // chmod +x
-      fs.chmodSync(
-        lettaServerPath,
-        parseInt('755', 8),
-      )
-    }
-
-
     lettaServer = execFile(lettaServerPath);
 
     if (lettaServer.stdout) {

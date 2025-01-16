@@ -29,7 +29,7 @@
         "command": "poetry run pyinstaller app.spec",
         "cwd": "apps/desktop-core"
       },
-      "cache": true
+      "cache": false
     },
     "install": {
       "executor": "@nxlv/python:install",

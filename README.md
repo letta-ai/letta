@@ -25,7 +25,7 @@ This is the monorepo for all internal Letta web projects. It uses [Nx](https://n
 brew install docker
 ```
 
-- `nvm` - [linky](https://github.com/nvm-sh/nvm) 
+- `nvm` - [linky](https://github.com/nvm-sh/nvm)
 ```sh
 # Install nvm on mac
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
@@ -39,7 +39,7 @@ brew install just
 
 - `1password-cli` - [linky](https://support.1password.com/command-line-getting-started/)
 ```sh
-# Install 1password-cli on mac 
+# Install 1password-cli on mac
 brew install 1password-cli
 ```
 
@@ -77,7 +77,7 @@ just core
 just ready
 
 # in a different terminal (you need core running)
-just core 
+just core
 
 # in a different terminal
 just web
@@ -179,5 +179,5 @@ To modify these variables, update either:
 - Environment variables in `.github/workflows/deploy.yml` for non-sensitive values
 
 
-
-
+# Why is my letta desktop "letta" not updating
+There is a weird caching issue with letta, just edit the main.ts file in apps/electron, and it should work (even adding a new line)

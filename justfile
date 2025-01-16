@@ -266,9 +266,12 @@ desktop:
 prepare-desktop:
     @echo "🚧 Preparing the desktop app..."
     @echo "Removing existing files..."
+    rm -rf apps/desktop-core/dist/
     rm -rf apps/desktop-core/letta_desktop/alembic
     rm -f apps/desktop-core/letta_desktop/alembic.ini
     rm -f apps/desktop-electron/src/assets/letta
+    rm -rf dist/apps/desktop-electron
+    rm -rf dist/apps/desktop-ui
     rm -rf apps/desktop-electron/src/assets/alembic
     rm -f apps/desktop-electron/src/assets/alembic.ini
     rm -rf apps/desktop-core/.venv
@@ -287,6 +290,9 @@ prepare-desktop:
 package-desktop:
     @echo "Packaging the desktop app..."
     NODE_ENV=production npx nx build desktop-ui
+    rm -rf dist/apps/desktop-electron
+    rm -rf dist/apps/desktop-ui
+    npx nx build desktop-ui
     npx nx build desktop-electron --production
     npx nx package desktop-electron
 

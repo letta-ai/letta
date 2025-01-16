@@ -1,8 +1,9 @@
 from dotenv import load_dotenv
 from pathlib import Path
 from os.path import join
+letta_dir = Path.home() / ".letta"
 
-dotenv_path = join(Path.home() / ".letta", "env")
+dotenv_path = join(letta_dir, "env")
 
 # make env file and folder if it doesn't exist
 Path(dotenv_path).parent.mkdir(parents=True, exist_ok=True)
@@ -11,9 +12,6 @@ Path(dotenv_path).parent.mkdir(parents=True, exist_ok=True)
 Path(dotenv_path).touch(exist_ok=True)
 
 load_dotenv(dotenv_path)
-
-from letta.settings import settings
-
 
 import os
 import sys
@@ -25,6 +23,10 @@ import tiktoken # noqa
 
 # read first argument
 
+pg_uri = ''
+
+print("Initializing Letta Desktop Service...")
+
 def get_app_global_path():
   if getattr(sys, 'frozen', False):
     return os.path.dirname(sys.executable)
@@ -34,7 +36,7 @@ def get_app_global_path():
 def initialize_database():
   """Initialize the postgres binary database"""
   # create the pgdata
-  pgdata = settings.letta_dir / "data"
+  pgdata = letta_dir / 'data'
   pgdata.mkdir(parents=True, exist_ok=True)
 
   try:
@@ -47,16 +49,20 @@ def initialize_database():
     raise e
   print("Configuring app with databsase uri...")
 
-  settings.pg_uri = database.get_uri()
-  print("Database URI: %s configured in settings", settings.pg_uri)
+  pg_uri = database.get_uri()
+  print('Saving pg_uri to ~/.letta/pg_uri')
+
+  # save uri to ~/.letta/pg_uri
+  with open(letta_dir / 'pg_uri', 'w') as f:
+    f.write(pg_uri)
 
 def upgrade_db():
   from alembic import command
   from alembic.config import Config
 
-  alembic_cfg = Config(str(settings.letta_dir / 'migrations' / 'alembic.ini'))
-  alembic_cfg.set_main_option('script_location', str(settings.letta_dir / 'migrations' / 'alembic'))
-  alembic_cfg.set_main_option('sqlalchemy.url', settings.letta_pg_uri)
+  alembic_cfg = Config(str(letta_dir / 'migrations' / 'alembic.ini'))
+  alembic_cfg.set_main_option('script_location', str(letta_dir / 'migrations' / 'alembic'))
+  alembic_cfg.set_main_option('sqlalchemy.url', pg_uri)
   command.upgrade(alembic_cfg, 'head')
 
   print('Database upgraded')
