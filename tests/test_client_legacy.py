@@ -11,7 +11,7 @@ from sqlalchemy import delete
 
 from letta import create_client
 from letta.client.client import LocalClient, RESTClient
-from letta.constants import BASE_MEMORY_TOOLS, BASE_TOOLS, DEFAULT_PRESET
+from letta.constants import BASE_MEMORY_TOOLS, BASE_TOOLS, DEFAULT_PRESET, MULTI_AGENT_TOOLS
 from letta.orm import FileMetadata, Source
 from letta.schemas.agent import AgentState
 from letta.schemas.embedding_config import EmbeddingConfig
@@ -339,7 +339,7 @@ def test_list_tools_pagination(client: Union[LocalClient, RESTClient]):
 def test_list_tools(client: Union[LocalClient, RESTClient]):
     tools = client.upsert_base_tools()
     tool_names = [t.name for t in tools]
-    expected = BASE_TOOLS + BASE_MEMORY_TOOLS
+    expected = BASE_TOOLS + BASE_MEMORY_TOOLS + MULTI_AGENT_TOOLS
     assert sorted(tool_names) == sorted(expected)
 
 

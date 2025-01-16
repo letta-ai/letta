@@ -2251,6 +2251,7 @@ class LocalClient(AbstractClient):
         tool_ids: Optional[List[str]] = None,
         tool_rules: Optional[List[BaseToolRule]] = None,
         include_base_tools: Optional[bool] = True,
+        include_multi_agent_tools: bool = False,
         # metadata
         metadata: Optional[Dict] = {"human:": DEFAULT_HUMAN, "persona": DEFAULT_PERSONA},
         description: Optional[str] = None,
@@ -2268,6 +2269,7 @@ class LocalClient(AbstractClient):
             tools (List[str]): List of tools
             tool_rules (Optional[List[BaseToolRule]]): List of tool rules
             include_base_tools (bool): Include base tools
+            include_multi_agent_tools (bool): Include multi agent tools
             metadata (Dict): Metadata
             description (str): Description
             tags (List[str]): Tags for filtering agents
@@ -2277,11 +2279,6 @@ class LocalClient(AbstractClient):
         """
         # construct list of tools
         tool_ids = tool_ids or []
-        tool_names = []
-        if include_base_tools:
-            tool_names += BASE_TOOLS
-            tool_names += BASE_MEMORY_TOOLS
-        tool_ids += [self.server.tool_manager.get_tool_by_name(tool_name=name, actor=self.user).id for name in tool_names]
 
         # check if default configs are provided
         assert embedding_config or self._default_embedding_config, f"Embedding config must be provided"
@@ -2304,6 +2301,7 @@ class LocalClient(AbstractClient):
             "tool_ids": tool_ids,
             "tool_rules": tool_rules,
             "include_base_tools": include_base_tools,
+            "include_multi_agent_tools": include_multi_agent_tools,
             "system": system,
             "agent_type": agent_type,
             "llm_config": llm_config if llm_config else self._default_llm_config,

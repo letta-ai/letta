@@ -4,7 +4,7 @@ from typing import Dict, List, Optional
 import numpy as np
 from sqlalchemy import Select, func, literal, select, union_all
 
-from letta.constants import BASE_MEMORY_TOOLS, BASE_TOOLS, MAX_EMBEDDING_DIM
+from letta.constants import BASE_MEMORY_TOOLS, BASE_TOOLS, MAX_EMBEDDING_DIM, MULTI_AGENT_TOOLS
 from letta.embeddings import embedding_model
 from letta.log import get_logger
 from letta.orm import Agent as AgentModel
@@ -88,6 +88,8 @@ class AgentManager:
         tool_names = []
         if agent_create.include_base_tools:
             tool_names.extend(BASE_TOOLS + BASE_MEMORY_TOOLS)
+        if agent_create.include_multi_agent_tools:
+            tool_names.extend(MULTI_AGENT_TOOLS)
         if agent_create.tools:
             tool_names.extend(agent_create.tools)
         # Remove duplicates
