@@ -1,9 +1,12 @@
+from datetime import datetime
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 from composio.client.collections import ActionModel, ActionParametersModel, ActionResponseModel, AppModel
 from fastapi.testclient import TestClient
 
+from letta.orm.errors import NoResultFound
+from letta.schemas.message import UserMessage
 from letta.schemas.tool import ToolCreate, ToolUpdate
 from letta.server.rest_api.app import app
 from letta.server.rest_api.utils import get_letta_server
@@ -47,7 +50,6 @@ def create_integers_tool(add_integers_tool):
         name=add_integers_tool.name,
         description=add_integers_tool.description,
         tags=add_integers_tool.tags,
-        module=add_integers_tool.module,
         source_code=add_integers_tool.source_code,
         source_type=add_integers_tool.source_type,
         json_schema=add_integers_tool.json_schema,
@@ -61,7 +63,6 @@ def update_integers_tool(add_integers_tool):
         name=add_integers_tool.name,
         description=add_integers_tool.description,
         tags=add_integers_tool.tags,
-        module=add_integers_tool.module,
         source_code=add_integers_tool.source_code,
         source_type=add_integers_tool.source_type,
         json_schema=add_integers_tool.json_schema,
@@ -328,3 +329,154 @@ def test_add_composio_tool(client, mock_sync_server, add_integers_tool):
 
         # Verify the mocked from_composio method was called
         mock_from_composio.assert_called_once_with(action_name=add_integers_tool.name, api_key="mock_composio_api_key")
+
+
+# ======================================================================================================================
+# Runs Routes Tests
+# ======================================================================================================================
+
+
+def test_get_run_messages(client, mock_sync_server):
+    """Test getting messages for a run."""
+    # Create properly formatted mock messages
+    current_time = datetime.utcnow()
+    mock_messages = [
+        UserMessage(
+            id=f"message-{i:08x}",
+            date=current_time,
+            message=f"Test message {i}",
+        )
+        for i in range(2)
+    ]
+
+    # Configure mock server responses
+    mock_sync_server.user_manager.get_user_or_default.return_value = Mock(id="user-123")
+    mock_sync_server.job_manager.get_run_messages_cursor.return_value = mock_messages
+
+    # Test successful retrieval
+    response = client.get(
+        "/v1/runs/run-12345678/messages",
+        headers={"user_id": "user-123"},
+        params={
+            "limit": 10,
+            "cursor": mock_messages[0].id,
+            "role": "user",
+            "ascending": True,
+        },
+    )
+    assert response.status_code == 200
+    assert len(response.json()) == 2
+    assert response.json()[0]["id"] == mock_messages[0].id
+    assert response.json()[1]["id"] == mock_messages[1].id
+
+    # Verify mock calls
+    mock_sync_server.user_manager.get_user_or_default.assert_called_once_with(user_id="user-123")
+    mock_sync_server.job_manager.get_run_messages_cursor.assert_called_once_with(
+        run_id="run-12345678",
+        actor=mock_sync_server.user_manager.get_user_or_default.return_value,
+        limit=10,
+        cursor=mock_messages[0].id,
+        ascending=True,
+        role="user",
+    )
+
+
+def test_get_run_messages_not_found(client, mock_sync_server):
+    """Test getting messages for a non-existent run."""
+    # Configure mock responses
+    error_message = "Run 'run-nonexistent' not found"
+    mock_sync_server.user_manager.get_user_or_default.return_value = Mock(id="user-123")
+    mock_sync_server.job_manager.get_run_messages_cursor.side_effect = NoResultFound(error_message)
+
+    response = client.get("/v1/runs/run-nonexistent/messages", headers={"user_id": "user-123"})
+
+    assert response.status_code == 404
+    assert error_message in response.json()["detail"]
+
+
+def test_get_run_usage(client, mock_sync_server):
+    """Test getting usage statistics for a run."""
+    # Configure mock responses
+    mock_sync_server.user_manager.get_user_or_default.return_value = Mock(id="user-123")
+    mock_usage = Mock(
+        completion_tokens=100,
+        prompt_tokens=200,
+        total_tokens=300,
+    )
+    mock_sync_server.job_manager.get_job_usage.return_value = mock_usage
+
+    # Make request
+    response = client.get("/v1/runs/run-12345678/usage", headers={"user_id": "user-123"})
+
+    # Check response
+    assert response.status_code == 200
+    assert response.json() == {
+        "completion_tokens": 100,
+        "prompt_tokens": 200,
+        "total_tokens": 300,
+    }
+
+    # Verify mock calls
+    mock_sync_server.user_manager.get_user_or_default.assert_called_once_with(user_id="user-123")
+    mock_sync_server.job_manager.get_job_usage.assert_called_once_with(
+        job_id="run-12345678",
+        actor=mock_sync_server.user_manager.get_user_or_default.return_value,
+    )
+
+
+def test_get_run_usage_not_found(client, mock_sync_server):
+    """Test getting usage statistics for a non-existent run."""
+    # Configure mock responses
+    error_message = "Run 'run-nonexistent' not found"
+    mock_sync_server.user_manager.get_user_or_default.return_value = Mock(id="user-123")
+    mock_sync_server.job_manager.get_job_usage.side_effect = NoResultFound(error_message)
+
+    # Make request
+    response = client.get("/v1/runs/run-nonexistent/usage", headers={"user_id": "user-123"})
+
+    assert response.status_code == 404
+    assert error_message in response.json()["detail"]
+
+
+# ======================================================================================================================
+# Tags Routes Tests
+# ======================================================================================================================
+
+
+def test_get_tags(client, mock_sync_server):
+    """Test basic tag listing"""
+    mock_sync_server.agent_manager.list_tags.return_value = ["tag1", "tag2"]
+
+    response = client.get("/v1/tags", headers={"user_id": "test_user"})
+
+    assert response.status_code == 200
+    assert response.json() == ["tag1", "tag2"]
+    mock_sync_server.agent_manager.list_tags.assert_called_once_with(
+        actor=mock_sync_server.user_manager.get_user_or_default.return_value, cursor=None, limit=50, query_text=None
+    )
+
+
+def test_get_tags_with_pagination(client, mock_sync_server):
+    """Test tag listing with pagination parameters"""
+    mock_sync_server.agent_manager.list_tags.return_value = ["tag3", "tag4"]
+
+    response = client.get("/v1/tags", params={"cursor": "tag2", "limit": 2}, headers={"user_id": "test_user"})
+
+    assert response.status_code == 200
+    assert response.json() == ["tag3", "tag4"]
+    mock_sync_server.agent_manager.list_tags.assert_called_once_with(
+        actor=mock_sync_server.user_manager.get_user_or_default.return_value, cursor="tag2", limit=2, query_text=None
+    )
+
+
+def test_get_tags_with_search(client, mock_sync_server):
+    """Test tag listing with text search"""
+    mock_sync_server.agent_manager.list_tags.return_value = ["user_tag1", "user_tag2"]
+
+    response = client.get("/v1/tags", params={"query_text": "user"}, headers={"user_id": "test_user"})
+
+    assert response.status_code == 200
+    assert response.json() == ["user_tag1", "user_tag2"]
+    mock_sync_server.agent_manager.list_tags.assert_called_once_with(
+        actor=mock_sync_server.user_manager.get_user_or_default.return_value, cursor=None, limit=50, query_text="user"
+    )

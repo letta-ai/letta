@@ -1,6 +1,4 @@
-import functools
 import os
-import time
 
 import pytest
 
@@ -13,72 +11,11 @@ from tests.helpers.endpoints_helper import (
     check_first_response_is_valid_for_llm_endpoint,
     run_embedding_endpoint,
 )
+from tests.helpers.utils import retry_until_success, retry_until_threshold
 
 # directories
 embedding_config_dir = "tests/configs/embedding_model_configs"
 llm_config_dir = "tests/configs/llm_model_configs"
-
-
-def retry_until_threshold(threshold=0.5, max_attempts=10, sleep_time_seconds=4):
-    """
-    Decorator to retry a test until a failure threshold is crossed.
-
-    :param threshold: Expected passing rate (e.g., 0.5 means 50% success rate expected).
-    :param max_attempts: Maximum number of attempts to retry the test.
-    """
-
-    def decorator_retry(func):
-        @functools.wraps(func)
-        def wrapper(*args, **kwargs):
-            success_count = 0
-            failure_count = 0
-
-            for attempt in range(max_attempts):
-                try:
-                    func(*args, **kwargs)
-                    success_count += 1
-                except Exception as e:
-                    failure_count += 1
-                    print(f"\033[93mAn attempt failed with error:\n{e}\033[0m")
-
-                time.sleep(sleep_time_seconds)
-
-            rate = success_count / max_attempts
-            if rate >= threshold:
-                print(f"Test met expected passing rate of {threshold:.2f}. Actual rate: {success_count}/{max_attempts}")
-            else:
-                raise AssertionError(
-                    f"Test did not meet expected passing rate of {threshold:.2f}. Actual rate: {success_count}/{max_attempts}"
-                )
-
-        return wrapper
-
-    return decorator_retry
-
-
-def retry_until_success(max_attempts=10, sleep_time_seconds=4):
-    """
-    Decorator to retry a function until it succeeds or the maximum number of attempts is reached.
-
-    :param max_attempts: Maximum number of attempts to retry the function.
-    :param sleep_time_seconds: Time to wait between attempts, in seconds.
-    """
-
-    def decorator_retry(func):
-        @functools.wraps(func)
-        def wrapper(*args, **kwargs):
-            for attempt in range(1, max_attempts + 1):
-                try:
-                    return func(*args, **kwargs)
-                except Exception as e:
-                    print(f"\033[93mAttempt {attempt} failed with error:\n{e}\033[0m")
-                    if attempt == max_attempts:
-                        raise
-                    time.sleep(sleep_time_seconds)
-
-        return wrapper
-
-    return decorator_retry
 
 
 # ======================================================================================================================

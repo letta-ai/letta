@@ -534,12 +534,11 @@ def enforce_types(func):
             origin = get_origin(hint)
             args = get_args(hint)
 
-            if origin is list and isinstance(value, list):  # Handle List[T]
+            if origin is Union:  # Handle Union types (including Optional)
+                return any(matches_type(value, arg) for arg in args)
+            elif origin is list and isinstance(value, list):  # Handle List[T]
                 element_type = args[0] if args else None
                 return all(isinstance(v, element_type) for v in value) if element_type else True
-            elif origin is Union and type(None) in args:  # Handle Optional[T]
-                non_none_type = next(arg for arg in args if arg is not type(None))
-                return value is None or matches_type(value, non_none_type)
             elif origin:  # Handle other generics like Dict, Tuple, etc.
                 return isinstance(value, origin)
             else:  # Handle non-generic types

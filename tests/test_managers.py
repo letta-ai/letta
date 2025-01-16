@@ -7,7 +7,7 @@ from sqlalchemy import delete
 from sqlalchemy.exc import IntegrityError
 
 from letta.config import LettaConfig
-from letta.constants import BASE_MEMORY_TOOLS, BASE_TOOLS
+from letta.constants import BASE_MEMORY_TOOLS, BASE_TOOLS, MULTI_AGENT_TOOLS
 from letta.embeddings import embedding_model
 from letta.functions.functions import derive_openai_json_schema, parse_source_code
 from letta.orm import (
@@ -17,6 +17,7 @@ from letta.orm import (
     BlocksAgents,
     FileMetadata,
     Job,
+    JobMessage,
     Message,
     Organization,
     Provider,
@@ -30,7 +31,7 @@ from letta.orm import (
     User,
 )
 from letta.orm.agents_tags import AgentsTags
-from letta.orm.enums import ToolType
+from letta.orm.enums import JobType, ToolType
 from letta.orm.errors import NoResultFound, UniqueConstraintViolationError
 from letta.schemas.agent import CreateAgent, UpdateAgent
 from letta.schemas.block import Block as PydanticBlock
@@ -41,17 +42,21 @@ from letta.schemas.environment_variables import SandboxEnvironmentVariableCreate
 from letta.schemas.file import FileMetadata as PydanticFileMetadata
 from letta.schemas.job import Job as PydanticJob
 from letta.schemas.job import JobUpdate
+from letta.schemas.letta_request import LettaRequestConfig
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message as PydanticMessage
 from letta.schemas.message import MessageCreate, MessageUpdate
+from letta.schemas.openai.chat_completions import ToolCall, ToolCallFunction
 from letta.schemas.organization import Organization as PydanticOrganization
 from letta.schemas.passage import Passage as PydanticPassage
+from letta.schemas.run import Run as PydanticRun
 from letta.schemas.sandbox_config import E2BSandboxConfig, LocalSandboxConfig, SandboxConfigCreate, SandboxConfigUpdate, SandboxType
 from letta.schemas.source import Source as PydanticSource
 from letta.schemas.source import SourceUpdate
 from letta.schemas.tool import Tool as PydanticTool
 from letta.schemas.tool import ToolUpdate
 from letta.schemas.tool_rule import InitToolRule
+from letta.schemas.usage import LettaUsageStatistics
 from letta.schemas.user import User as PydanticUser
 from letta.schemas.user import UserUpdate
 from letta.server.server import SyncServer
@@ -81,6 +86,7 @@ def clear_tables(server: SyncServer):
         session.execute(delete(Message))
         session.execute(delete(AgentPassage))
         session.execute(delete(SourcePassage))
+        session.execute(delete(JobMessage))  # Clear JobMessage first
         session.execute(delete(Job))
         session.execute(delete(ToolsAgents))  # Clear ToolsAgents first
         session.execute(delete(BlocksAgents))
@@ -185,6 +191,28 @@ def print_tool(server: SyncServer, default_user, default_organization):
 
     # Yield the created tool
     yield tool
+
+
+@pytest.fixture
+def default_job(server: SyncServer, default_user):
+    """Fixture to create and return a default job."""
+    job_pydantic = PydanticJob(
+        user_id=default_user.id,
+        status=JobStatus.pending,
+    )
+    job = server.job_manager.create_job(pydantic_job=job_pydantic, actor=default_user)
+    yield job
+
+
+@pytest.fixture
+def default_run(server: SyncServer, default_user):
+    """Fixture to create and return a default job."""
+    run_pydantic = PydanticRun(
+        user_id=default_user.id,
+        status=JobStatus.pending,
+    )
+    run = server.job_manager.create_job(pydantic_job=run_pydantic, actor=default_user)
+    yield run
 
 
 @pytest.fixture
@@ -887,6 +915,175 @@ def test_list_agents_by_tags_pagination(server: SyncServer, default_user, defaul
     assert agent2.id in all_ids
 
 
+def test_list_agents_query_text_pagination(server: SyncServer, default_user, default_organization):
+    """Test listing agents with query text filtering and pagination."""
+    # Create test agents with specific names and descriptions
+    agent1 = server.agent_manager.create_agent(
+        agent_create=CreateAgent(
+            name="Search Agent One",
+            memory_blocks=[],
+            description="This is a search agent for testing",
+            llm_config=LLMConfig.default_config("gpt-4"),
+            embedding_config=EmbeddingConfig.default_config(provider="openai"),
+        ),
+        actor=default_user,
+    )
+
+    agent2 = server.agent_manager.create_agent(
+        agent_create=CreateAgent(
+            name="Search Agent Two",
+            memory_blocks=[],
+            description="Another search agent for testing",
+            llm_config=LLMConfig.default_config("gpt-4"),
+            embedding_config=EmbeddingConfig.default_config(provider="openai"),
+        ),
+        actor=default_user,
+    )
+
+    agent3 = server.agent_manager.create_agent(
+        agent_create=CreateAgent(
+            name="Different Agent",
+            memory_blocks=[],
+            description="This is a different agent",
+            llm_config=LLMConfig.default_config("gpt-4"),
+            embedding_config=EmbeddingConfig.default_config(provider="openai"),
+        ),
+        actor=default_user,
+    )
+
+    # Test query text filtering
+    search_results = server.agent_manager.list_agents(actor=default_user, query_text="search agent")
+    assert len(search_results) == 2
+    search_agent_ids = {agent.id for agent in search_results}
+    assert agent1.id in search_agent_ids
+    assert agent2.id in search_agent_ids
+    assert agent3.id not in search_agent_ids
+
+    different_results = server.agent_manager.list_agents(actor=default_user, query_text="different agent")
+    assert len(different_results) == 1
+    assert different_results[0].id == agent3.id
+
+    # Test pagination with query text
+    first_page = server.agent_manager.list_agents(actor=default_user, query_text="search agent", limit=1)
+    assert len(first_page) == 1
+    first_agent_id = first_page[0].id
+
+    # Get second page using cursor
+    second_page = server.agent_manager.list_agents(actor=default_user, query_text="search agent", cursor=first_agent_id, limit=1)
+    assert len(second_page) == 1
+    assert second_page[0].id != first_agent_id
+
+    # Verify we got both search agents with no duplicates
+    all_ids = {first_page[0].id, second_page[0].id}
+    assert len(all_ids) == 2
+    assert all_ids == {agent1.id, agent2.id}
+
+
+# ======================================================================================================================
+# AgentManager Tests - Messages Relationship
+# ======================================================================================================================
+
+
+def test_reset_messages_no_messages(server: SyncServer, sarah_agent, default_user):
+    """
+    Test that resetting messages on an agent that has zero messages
+    does not fail and clears out message_ids if somehow it's non-empty.
+    """
+    # Force a weird scenario: Suppose the message_ids field was set non-empty (without actual messages).
+    server.agent_manager.update_agent(sarah_agent.id, UpdateAgent(message_ids=["ghost-message-id"]), actor=default_user)
+    updated_agent = server.agent_manager.get_agent_by_id(sarah_agent.id, default_user)
+    assert updated_agent.message_ids == ["ghost-message-id"]
+
+    # Reset messages
+    reset_agent = server.agent_manager.reset_messages(agent_id=sarah_agent.id, actor=default_user)
+    assert len(reset_agent.message_ids) == 1
+    # Double check that physically no messages exist
+    assert server.message_manager.size(agent_id=sarah_agent.id, actor=default_user) == 1
+
+
+def test_reset_messages_default_messages(server: SyncServer, sarah_agent, default_user):
+    """
+    Test that resetting messages on an agent that has zero messages
+    does not fail and clears out message_ids if somehow it's non-empty.
+    """
+    # Force a weird scenario: Suppose the message_ids field was set non-empty (without actual messages).
+    server.agent_manager.update_agent(sarah_agent.id, UpdateAgent(message_ids=["ghost-message-id"]), actor=default_user)
+    updated_agent = server.agent_manager.get_agent_by_id(sarah_agent.id, default_user)
+    assert updated_agent.message_ids == ["ghost-message-id"]
+
+    # Reset messages
+    reset_agent = server.agent_manager.reset_messages(agent_id=sarah_agent.id, actor=default_user, add_default_initial_messages=True)
+    assert len(reset_agent.message_ids) == 4
+    # Double check that physically no messages exist
+    assert server.message_manager.size(agent_id=sarah_agent.id, actor=default_user) == 4
+
+
+def test_reset_messages_with_existing_messages(server: SyncServer, sarah_agent, default_user):
+    """
+    Test that resetting messages on an agent with actual messages
+    deletes them from the database and clears message_ids.
+    """
+    # 1. Create multiple messages for the agent
+    msg1 = server.message_manager.create_message(
+        PydanticMessage(
+            agent_id=sarah_agent.id,
+            organization_id=default_user.organization_id,
+            role="user",
+            text="Hello, Sarah!",
+        ),
+        actor=default_user,
+    )
+    msg2 = server.message_manager.create_message(
+        PydanticMessage(
+            agent_id=sarah_agent.id,
+            organization_id=default_user.organization_id,
+            role="assistant",
+            text="Hello, user!",
+        ),
+        actor=default_user,
+    )
+
+    # Verify the messages were created
+    agent_before = server.agent_manager.get_agent_by_id(sarah_agent.id, default_user)
+    # This is 4 because creating the message does not necessarily add it to the in context message ids
+    assert len(agent_before.message_ids) == 4
+    assert server.message_manager.size(agent_id=sarah_agent.id, actor=default_user) == 6
+
+    # 2. Reset all messages
+    reset_agent = server.agent_manager.reset_messages(agent_id=sarah_agent.id, actor=default_user)
+
+    # 3. Verify the agent now has zero message_ids
+    assert len(reset_agent.message_ids) == 1
+
+    # 4. Verify the messages are physically removed
+    assert server.message_manager.size(agent_id=sarah_agent.id, actor=default_user) == 1
+
+
+def test_reset_messages_idempotency(server: SyncServer, sarah_agent, default_user):
+    """
+    Test that calling reset_messages multiple times has no adverse effect.
+    """
+    # Create a single message
+    server.message_manager.create_message(
+        PydanticMessage(
+            agent_id=sarah_agent.id,
+            organization_id=default_user.organization_id,
+            role="user",
+            text="Hello, Sarah!",
+        ),
+        actor=default_user,
+    )
+    # First reset
+    reset_agent = server.agent_manager.reset_messages(agent_id=sarah_agent.id, actor=default_user)
+    assert len(reset_agent.message_ids) == 1
+    assert server.message_manager.size(agent_id=sarah_agent.id, actor=default_user) == 1
+
+    # Second reset should do nothing new
+    reset_agent_again = server.agent_manager.reset_messages(agent_id=sarah_agent.id, actor=default_user)
+    assert len(reset_agent.message_ids) == 1
+    assert server.message_manager.size(agent_id=sarah_agent.id, actor=default_user) == 1
+
+
 # ======================================================================================================================
 # AgentManager Tests - Blocks Relationship
 # ======================================================================================================================
@@ -1343,6 +1540,8 @@ def test_update_user(server: SyncServer):
 # ======================================================================================================================
 # ToolManager Tests
 # ======================================================================================================================
+
+
 def test_create_tool(server: SyncServer, print_tool, default_user, default_organization):
     # Assertions to ensure the created tool matches the expected values
     assert print_tool.created_by_id == default_user.id
@@ -1517,7 +1716,7 @@ def test_delete_tool_by_id(server: SyncServer, print_tool, default_user):
 
 def test_upsert_base_tools(server: SyncServer, default_user):
     tools = server.tool_manager.upsert_base_tools(actor=default_user)
-    expected_tool_names = sorted(BASE_TOOLS + BASE_MEMORY_TOOLS)
+    expected_tool_names = sorted(BASE_TOOLS + BASE_MEMORY_TOOLS + MULTI_AGENT_TOOLS)
     assert sorted([t.name for t in tools]) == expected_tool_names
 
     # Call it again to make sure it doesn't create duplicates
@@ -1528,8 +1727,12 @@ def test_upsert_base_tools(server: SyncServer, default_user):
     for t in tools:
         if t.name in BASE_TOOLS:
             assert t.tool_type == ToolType.LETTA_CORE
-        else:
+        elif t.name in BASE_MEMORY_TOOLS:
             assert t.tool_type == ToolType.LETTA_MEMORY_CORE
+        elif t.name in MULTI_AGENT_TOOLS:
+            assert t.tool_type == ToolType.LETTA_MULTI_AGENT_CORE
+        else:
+            pytest.fail(f"The tool name is unrecognized as a base tool: {t.name}")
         assert t.source_code is None
         assert t.json_schema
 
@@ -2358,3 +2561,429 @@ def test_list_jobs_by_status(server: SyncServer, default_user):
 
     assert len(completed_jobs) == 1
     assert completed_jobs[0].metadata_["type"] == job_data_completed.metadata_["type"]
+
+
+def test_list_jobs_filter_by_type(server: SyncServer, default_user, default_job):
+    """Test that list_jobs correctly filters by job_type."""
+    # Create a run job
+    run_pydantic = PydanticJob(
+        user_id=default_user.id,
+        status=JobStatus.pending,
+        job_type=JobType.RUN,
+    )
+    run = server.job_manager.create_job(pydantic_job=run_pydantic, actor=default_user)
+
+    # List only regular jobs
+    jobs = server.job_manager.list_jobs(actor=default_user)
+    assert len(jobs) == 1
+    assert jobs[0].id == default_job.id
+
+    # List only run jobs
+    jobs = server.job_manager.list_jobs(actor=default_user, job_type=JobType.RUN)
+    assert len(jobs) == 1
+    assert jobs[0].id == run.id
+
+
+# ======================================================================================================================
+# JobManager Tests - Messages
+# ======================================================================================================================
+
+
+def test_job_messages_add(server: SyncServer, default_run, hello_world_message_fixture, default_user):
+    """Test adding a message to a job."""
+    # Add message to job
+    server.job_manager.add_message_to_job(
+        job_id=default_run.id,
+        message_id=hello_world_message_fixture.id,
+        actor=default_user,
+    )
+
+    # Verify message was added
+    messages = server.job_manager.get_job_messages(
+        job_id=default_run.id,
+        actor=default_user,
+    )
+    assert len(messages) == 1
+    assert messages[0].id == hello_world_message_fixture.id
+    assert messages[0].text == hello_world_message_fixture.text
+
+
+def test_job_messages_pagination(server: SyncServer, default_run, default_user, sarah_agent):
+    """Test pagination of job messages."""
+    # Create multiple messages
+    message_ids = []
+    for i in range(5):
+        message = PydanticMessage(
+            organization_id=default_user.organization_id,
+            agent_id=sarah_agent.id,
+            role=MessageRole.user,
+            text=f"Test message {i}",
+        )
+        msg = server.message_manager.create_message(message, actor=default_user)
+        message_ids.append(msg.id)
+
+        # Add message to job
+        server.job_manager.add_message_to_job(
+            job_id=default_run.id,
+            message_id=msg.id,
+            actor=default_user,
+        )
+
+    # Test pagination with limit
+    messages = server.job_manager.get_job_messages(
+        job_id=default_run.id,
+        actor=default_user,
+        limit=2,
+    )
+    assert len(messages) == 2
+    assert messages[0].id == message_ids[0]
+    assert messages[1].id == message_ids[1]
+
+    # Test pagination with cursor
+    messages = server.job_manager.get_job_messages(
+        job_id=default_run.id,
+        actor=default_user,
+        cursor=message_ids[1],
+        limit=2,
+    )
+    assert len(messages) == 2
+    assert messages[0].id == message_ids[2]
+    assert messages[1].id == message_ids[3]
+
+
+def test_job_messages_ordering(server: SyncServer, default_run, default_user, sarah_agent):
+    """Test that messages are ordered by created_at."""
+    # Create messages with different timestamps
+    base_time = datetime.utcnow()
+    message_times = [
+        base_time - timedelta(minutes=2),
+        base_time - timedelta(minutes=1),
+        base_time,
+    ]
+
+    for i, created_at in enumerate(message_times):
+        message = PydanticMessage(
+            role=MessageRole.user,
+            text="Test message",
+            organization_id=default_user.organization_id,
+            agent_id=sarah_agent.id,
+            created_at=created_at,
+        )
+        msg = server.message_manager.create_message(message, actor=default_user)
+
+        # Add message to job
+        server.job_manager.add_message_to_job(
+            job_id=default_run.id,
+            message_id=msg.id,
+            actor=default_user,
+        )
+
+    # Verify messages are returned in chronological order
+    returned_messages = server.job_manager.get_job_messages(
+        job_id=default_run.id,
+        actor=default_user,
+    )
+
+    assert len(returned_messages) == 3
+    assert returned_messages[0].created_at < returned_messages[1].created_at
+    assert returned_messages[1].created_at < returned_messages[2].created_at
+
+    # Verify messages are returned in descending order
+    returned_messages = server.job_manager.get_job_messages(
+        job_id=default_run.id,
+        actor=default_user,
+        ascending=False,
+    )
+
+    assert len(returned_messages) == 3
+    assert returned_messages[0].created_at > returned_messages[1].created_at
+    assert returned_messages[1].created_at > returned_messages[2].created_at
+
+
+def test_job_messages_empty(server: SyncServer, default_run, default_user):
+    """Test getting messages for a job with no messages."""
+    messages = server.job_manager.get_job_messages(
+        job_id=default_run.id,
+        actor=default_user,
+    )
+    assert len(messages) == 0
+
+
+def test_job_messages_add_duplicate(server: SyncServer, default_run, hello_world_message_fixture, default_user):
+    """Test adding the same message to a job twice."""
+    # Add message to job first time
+    server.job_manager.add_message_to_job(
+        job_id=default_run.id,
+        message_id=hello_world_message_fixture.id,
+        actor=default_user,
+    )
+
+    # Attempt to add same message again
+    with pytest.raises(IntegrityError):
+        server.job_manager.add_message_to_job(
+            job_id=default_run.id,
+            message_id=hello_world_message_fixture.id,
+            actor=default_user,
+        )
+
+
+def test_job_messages_filter(server: SyncServer, default_run, default_user, sarah_agent):
+    """Test getting messages associated with a job."""
+    # Create test messages with different roles and tool calls
+    messages = [
+        PydanticMessage(
+            role=MessageRole.user,
+            text="Hello",
+            organization_id=default_user.organization_id,
+            agent_id=sarah_agent.id,
+        ),
+        PydanticMessage(
+            role=MessageRole.assistant,
+            text="Hi there!",
+            organization_id=default_user.organization_id,
+            agent_id=sarah_agent.id,
+        ),
+        PydanticMessage(
+            role=MessageRole.assistant,
+            text="Let me help you with that",
+            organization_id=default_user.organization_id,
+            agent_id=sarah_agent.id,
+            tool_calls=[
+                ToolCall(
+                    id="call_1",
+                    function=ToolCallFunction(
+                        name="test_tool",
+                        arguments='{"arg1": "value1"}',
+                    ),
+                )
+            ],
+        ),
+    ]
+
+    # Add messages to job
+    for msg in messages:
+        created_msg = server.message_manager.create_message(msg, actor=default_user)
+        server.job_manager.add_message_to_job(default_run.id, created_msg.id, actor=default_user)
+
+    # Test getting all messages
+    all_messages = server.job_manager.get_job_messages(job_id=default_run.id, actor=default_user)
+    assert len(all_messages) == 3
+
+    # Test filtering by role
+    user_messages = server.job_manager.get_job_messages(job_id=default_run.id, actor=default_user, role=MessageRole.user)
+    assert len(user_messages) == 1
+    assert user_messages[0].role == MessageRole.user
+
+    # Test limit
+    limited_messages = server.job_manager.get_job_messages(job_id=default_run.id, actor=default_user, limit=2)
+    assert len(limited_messages) == 2
+
+
+def test_get_run_messages_cursor(server: SyncServer, default_user: PydanticUser, sarah_agent):
+    """Test getting messages for a run with request config."""
+    # Create a run with custom request config
+    run = server.job_manager.create_job(
+        pydantic_job=PydanticRun(
+            user_id=default_user.id,
+            status=JobStatus.created,
+            request_config=LettaRequestConfig(
+                use_assistant_message=False, assistant_message_tool_name="custom_tool", assistant_message_tool_kwarg="custom_arg"
+            ),
+        ),
+        actor=default_user,
+    )
+
+    # Add some messages
+    messages = [
+        PydanticMessage(
+            organization_id=default_user.organization_id,
+            agent_id=sarah_agent.id,
+            role=MessageRole.user if i % 2 == 0 else MessageRole.assistant,
+            text=f"Test message {i}",
+            tool_calls=(
+                [{"id": f"call_{i}", "function": {"name": "custom_tool", "arguments": '{"custom_arg": "test"}'}}] if i % 2 == 1 else None
+            ),
+        )
+        for i in range(4)
+    ]
+
+    for msg in messages:
+        created_msg = server.message_manager.create_message(msg, actor=default_user)
+        server.job_manager.add_message_to_job(job_id=run.id, message_id=created_msg.id, actor=default_user)
+
+    # Get messages and verify they're converted correctly
+    result = server.job_manager.get_run_messages_cursor(run_id=run.id, actor=default_user)
+
+    # Verify correct number of messages. Assistant messages should be parsed
+    assert len(result) == 6
+
+    # Verify assistant messages are parsed according to request config
+    tool_call_messages = [msg for msg in result if msg.message_type == "tool_call_message"]
+    reasoning_messages = [msg for msg in result if msg.message_type == "reasoning_message"]
+    assert len(tool_call_messages) == 2
+    assert len(reasoning_messages) == 2
+    for msg in tool_call_messages:
+        assert msg.tool_call is not None
+        assert msg.tool_call.name == "custom_tool"
+
+
+# ======================================================================================================================
+# JobManager Tests - Usage Statistics
+# ======================================================================================================================
+
+
+def test_job_usage_stats_add_and_get(server: SyncServer, default_job, default_user):
+    """Test adding and retrieving job usage statistics."""
+    job_manager = server.job_manager
+
+    # Add usage statistics
+    job_manager.add_job_usage(
+        job_id=default_job.id,
+        usage=LettaUsageStatistics(
+            completion_tokens=100,
+            prompt_tokens=50,
+            total_tokens=150,
+            step_count=5,
+        ),
+        step_id="step_1",
+        actor=default_user,
+    )
+
+    # Get usage statistics
+    usage_stats = job_manager.get_job_usage(job_id=default_job.id, actor=default_user)
+
+    # Verify the statistics
+    assert usage_stats.completion_tokens == 100
+    assert usage_stats.prompt_tokens == 50
+    assert usage_stats.total_tokens == 150
+
+
+def test_job_usage_stats_get_no_stats(server: SyncServer, default_job, default_user):
+    """Test getting usage statistics for a job with no stats."""
+    job_manager = server.job_manager
+
+    # Get usage statistics for a job with no stats
+    usage_stats = job_manager.get_job_usage(job_id=default_job.id, actor=default_user)
+
+    # Verify default values
+    assert usage_stats.completion_tokens == 0
+    assert usage_stats.prompt_tokens == 0
+    assert usage_stats.total_tokens == 0
+
+
+def test_job_usage_stats_add_multiple(server: SyncServer, default_job, default_user):
+    """Test adding multiple usage statistics entries for a job."""
+    job_manager = server.job_manager
+
+    # Add first usage statistics entry
+    job_manager.add_job_usage(
+        job_id=default_job.id,
+        usage=LettaUsageStatistics(
+            completion_tokens=100,
+            prompt_tokens=50,
+            total_tokens=150,
+            step_count=5,
+        ),
+        step_id="step_1",
+        actor=default_user,
+    )
+
+    # Add second usage statistics entry
+    job_manager.add_job_usage(
+        job_id=default_job.id,
+        usage=LettaUsageStatistics(
+            completion_tokens=200,
+            prompt_tokens=100,
+            total_tokens=300,
+            step_count=10,
+        ),
+        step_id="step_2",
+        actor=default_user,
+    )
+
+    # Get usage statistics (should return the latest entry)
+    usage_stats = job_manager.get_job_usage(job_id=default_job.id, actor=default_user)
+
+    # Verify we get the most recent statistics
+    assert usage_stats.completion_tokens == 200
+    assert usage_stats.prompt_tokens == 100
+    assert usage_stats.total_tokens == 300
+
+
+def test_job_usage_stats_get_nonexistent_job(server: SyncServer, default_user):
+    """Test getting usage statistics for a nonexistent job."""
+    job_manager = server.job_manager
+
+    with pytest.raises(NoResultFound):
+        job_manager.get_job_usage(job_id="nonexistent_job", actor=default_user)
+
+
+def test_job_usage_stats_add_nonexistent_job(server: SyncServer, default_user):
+    """Test adding usage statistics for a nonexistent job."""
+    job_manager = server.job_manager
+
+    with pytest.raises(NoResultFound):
+        job_manager.add_job_usage(
+            job_id="nonexistent_job",
+            usage=LettaUsageStatistics(
+                completion_tokens=100,
+                prompt_tokens=50,
+                total_tokens=150,
+                step_count=5,
+            ),
+            step_id="step_1",
+            actor=default_user,
+        )
+
+
+def test_list_tags(server: SyncServer, default_user, default_organization):
+    """Test listing tags functionality."""
+    # Create multiple agents with different tags
+    agents = []
+    tags = ["alpha", "beta", "gamma", "delta", "epsilon"]
+
+    # Create agents with different combinations of tags
+    for i in range(3):
+        agent = server.agent_manager.create_agent(
+            actor=default_user,
+            agent_create=CreateAgent(
+                name="tag_agent_" + str(i),
+                memory_blocks=[],
+                llm_config=LLMConfig.default_config("gpt-4"),
+                embedding_config=EmbeddingConfig.default_config(provider="openai"),
+                tags=tags[i : i + 3],  # Each agent gets 3 consecutive tags
+            ),
+        )
+        agents.append(agent)
+
+    # Test basic listing - should return all unique tags in alphabetical order
+    all_tags = server.agent_manager.list_tags(actor=default_user)
+    assert all_tags == sorted(tags[:5])  # All tags should be present and sorted
+
+    # Test pagination with limit
+    limited_tags = server.agent_manager.list_tags(actor=default_user, limit=2)
+    assert limited_tags == tags[:2]  # Should return first 2 tags
+
+    # Test pagination with cursor
+    cursor_tags = server.agent_manager.list_tags(actor=default_user, cursor="beta")
+    assert cursor_tags == ["delta", "epsilon", "gamma"]  # Tags after "beta"
+
+    # Test text search
+    search_tags = server.agent_manager.list_tags(actor=default_user, query_text="ta")
+    assert search_tags == ["beta", "delta"]  # Only tags containing "ta"
+
+    # Test with non-matching search
+    no_match_tags = server.agent_manager.list_tags(actor=default_user, query_text="xyz")
+    assert no_match_tags == []  # Should return empty list
+
+    # Test with different organization
+    other_org = server.organization_manager.create_organization(pydantic_org=PydanticOrganization(name="Other Org"))
+    other_user = server.user_manager.create_user(PydanticUser(name="Other User", organization_id=other_org.id))
+
+    # Other org's tags should be empty
+    other_org_tags = server.agent_manager.list_tags(actor=other_user)
+    assert other_org_tags == []
+
+    # Cleanup
+    for agent in agents:
+        server.agent_manager.delete_agent(agent.id, actor=default_user)

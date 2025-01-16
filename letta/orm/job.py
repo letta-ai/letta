@@ -1,15 +1,20 @@
 from datetime import datetime
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, List, Optional
 
 from sqlalchemy import JSON, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from letta.orm.enums import JobType
 from letta.orm.mixins import UserMixin
 from letta.orm.sqlalchemy_base import SqlalchemyBase
 from letta.schemas.enums import JobStatus
 from letta.schemas.job import Job as PydanticJob
+from letta.schemas.letta_request import LettaRequestConfig
 
 if TYPE_CHECKING:
+    from letta.orm.job_messages import JobMessage
+    from letta.orm.job_usage_statistics import JobUsageStatistics
+    from letta.orm.message import Message
     from letta.orm.user import User
 
 
@@ -23,7 +28,24 @@ class Job(SqlalchemyBase, UserMixin):
 
     status: Mapped[JobStatus] = mapped_column(String, default=JobStatus.created, doc="The current status of the job.")
     completed_at: Mapped[Optional[datetime]] = mapped_column(nullable=True, doc="The unix timestamp of when the job was completed.")
-    metadata_: Mapped[Optional[dict]] = mapped_column(JSON, default=lambda: {}, doc="The metadata of the job.")
+    metadata_: Mapped[Optional[dict]] = mapped_column(JSON, doc="The metadata of the job.")
+    job_type: Mapped[JobType] = mapped_column(
+        String,
+        default=JobType.JOB,
+        doc="The type of job. This affects whether or not we generate json_schema and source_code on the fly.",
+    )
+    request_config: Mapped[Optional[LettaRequestConfig]] = mapped_column(
+        JSON, nullable=True, doc="The request configuration for the job, stored as JSON."
+    )
 
     # relationships
     user: Mapped["User"] = relationship("User", back_populates="jobs")
+    job_messages: Mapped[List["JobMessage"]] = relationship("JobMessage", back_populates="job", cascade="all, delete-orphan")
+    usage_statistics: Mapped[list["JobUsageStatistics"]] = relationship(
+        "JobUsageStatistics", back_populates="job", cascade="all, delete-orphan"
+    )
+
+    @property
+    def messages(self) -> List["Message"]:
+        """Get all messages associated with this job."""
+        return [jm.message for jm in self.job_messages]

@@ -28,3 +28,13 @@ class Message(SqlalchemyBase, OrganizationMixin, AgentMixin):
     # Relationships
     agent: Mapped["Agent"] = relationship("Agent", back_populates="messages", lazy="selectin")
     organization: Mapped["Organization"] = relationship("Organization", back_populates="messages", lazy="selectin")
+
+    # Job relationship
+    job_message: Mapped[Optional["JobMessage"]] = relationship(
+        "JobMessage", back_populates="message", uselist=False, cascade="all, delete-orphan", single_parent=True
+    )
+
+    @property
+    def job(self) -> Optional["Job"]:
+        """Get the job associated with this message, if any."""
+        return self.job_message.job if self.job_message else None

@@ -2,7 +2,7 @@ import importlib
 import warnings
 from typing import List, Optional
 
-from letta.constants import BASE_MEMORY_TOOLS, BASE_TOOLS
+from letta.constants import BASE_MEMORY_TOOLS, BASE_TOOLS, MULTI_AGENT_TOOLS
 from letta.functions.functions import derive_openai_json_schema, load_function_set
 from letta.orm.enums import ToolType
 
@@ -39,7 +39,7 @@ class ToolManager:
         tool = self.get_tool_by_name(tool_name=pydantic_tool.name, actor=actor)
         if tool:
             # Put to dict and remove fields that should not be reset
-            update_data = pydantic_tool.model_dump(exclude={"module"}, exclude_unset=True, exclude_none=True)
+            update_data = pydantic_tool.model_dump(exclude_unset=True, exclude_none=True)
 
             # If there's anything to update
             if update_data:
@@ -133,39 +133,42 @@ class ToolManager:
 
     @enforce_types
     def upsert_base_tools(self, actor: PydanticUser) -> List[PydanticTool]:
-        """Add default tools in base.py"""
-        module_name = "base"
-        full_module_name = f"letta.functions.function_sets.{module_name}"
-        try:
-            module = importlib.import_module(full_module_name)
-        except Exception as e:
-            # Handle other general exceptions
-            raise e
+        """Add default tools in base.py and multi_agent.py"""
+        functions_to_schema = {}
+        module_names = ["base", "multi_agent"]
 
-        functions_to_schema = []
-        try:
-            # Load the function set
-            functions_to_schema = load_function_set(module)
-        except ValueError as e:
-            err = f"Error loading function set '{module_name}': {e}"
-            warnings.warn(err)
+        for module_name in module_names:
+            full_module_name = f"letta.functions.function_sets.{module_name}"
+            try:
+                module = importlib.import_module(full_module_name)
+            except Exception as e:
+                # Handle other general exceptions
+                raise e
+
+            try:
+                # Load the function set
+                functions_to_schema.update(load_function_set(module))
+            except ValueError as e:
+                err = f"Error loading function set '{module_name}': {e}"
+                warnings.warn(err)
 
         # create tool in db
         tools = []
         for name, schema in functions_to_schema.items():
-            if name in BASE_TOOLS + BASE_MEMORY_TOOLS:
-                tags = [module_name]
-                if module_name == "base":
-                    tags.append("letta-base")
-
-                # BASE_MEMORY_TOOLS should be executed in an e2b sandbox
-                # so they should NOT be letta_core tools, instead, treated as custom tools
+            if name in BASE_TOOLS + BASE_MEMORY_TOOLS + MULTI_AGENT_TOOLS:
                 if name in BASE_TOOLS:
                     tool_type = ToolType.LETTA_CORE
+                    tags = [tool_type.value]
                 elif name in BASE_MEMORY_TOOLS:
                     tool_type = ToolType.LETTA_MEMORY_CORE
+                    tags = [tool_type.value]
+                elif name in MULTI_AGENT_TOOLS:
+                    tool_type = ToolType.LETTA_MULTI_AGENT_CORE
+                    tags = [tool_type.value]
                 else:
-                    raise ValueError(f"Tool name {name} is not in the list of base tool names: {BASE_TOOLS + BASE_MEMORY_TOOLS}")
+                    raise ValueError(
+                        f"Tool name {name} is not in the list of base tool names: {BASE_TOOLS + BASE_MEMORY_TOOLS + MULTI_AGENT_TOOLS}"
+                    )
 
                 # create to tool
                 tools.append(
@@ -179,5 +182,7 @@ class ToolManager:
                         actor=actor,
                     )
                 )
+
+        # TODO: Delete any base tools that are stale
 
         return tools

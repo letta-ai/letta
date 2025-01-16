@@ -95,8 +95,8 @@ class CreateAgent(BaseModel, validate_assignment=True):  #
     name: str = Field(default_factory=lambda: create_random_username(), description="The name of the agent.")
 
     # memory creation
-    memory_blocks: List[CreateBlock] = Field(
-        ...,
+    memory_blocks: Optional[List[CreateBlock]] = Field(
+        None,
         description="The blocks to create in the agent's in-context memory.",
     )
     # TODO: This is a legacy field and should be removed ASAP to force `tool_ids` usage
@@ -115,7 +115,12 @@ class CreateAgent(BaseModel, validate_assignment=True):  #
     initial_message_sequence: Optional[List[MessageCreate]] = Field(
         None, description="The initial set of messages to put in the agent's in-context memory."
     )
-    include_base_tools: bool = Field(True, description="The LLM configuration used by the agent.")
+    include_base_tools: bool = Field(
+        True, description="If true, attaches the Letta core tools (e.g. archival_memory and core_memory related functions)."
+    )
+    include_multi_agent_tools: bool = Field(
+        False, description="If true, attaches the Letta multi-agent tools (e.g. sending a message to another agent)."
+    )
     description: Optional[str] = Field(None, description="The description of the agent.")
     metadata_: Optional[Dict] = Field(None, description="The metadata of the agent.", alias="metadata_")
     llm: Optional[str] = Field(
@@ -129,7 +134,8 @@ class CreateAgent(BaseModel, validate_assignment=True):  #
     context_window_limit: Optional[int] = Field(None, description="The context window limit used by the agent.")
     embedding_chunk_size: Optional[int] = Field(DEFAULT_EMBEDDING_CHUNK_SIZE, description="The embedding chunk size used by the agent.")
     from_template: Optional[str] = Field(None, description="The template id used to configure the agent")
-    project_id: Optional[str] = Field(None, description="The project id that the agent will be associated with.")
+    template: bool = Field(False, description="Whether the agent is a template")
+    project: Optional[str] = Field(None, description="The project slug that the agent will be associated with.")
     tool_exec_environment_variables: Optional[Dict[str, str]] = Field(
         None, description="The environment variables for tool execution specific to this agent."
     )

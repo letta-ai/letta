@@ -2,13 +2,17 @@ from typing import Any, Dict, List, Optional
 
 from pydantic import Field, model_validator
 
-from letta.constants import COMPOSIO_TOOL_TAG_NAME, FUNCTION_RETURN_CHAR_LIMIT, LETTA_CORE_TOOL_MODULE_NAME
+from letta.constants import (
+    COMPOSIO_TOOL_TAG_NAME,
+    FUNCTION_RETURN_CHAR_LIMIT,
+    LETTA_CORE_TOOL_MODULE_NAME,
+    LETTA_MULTI_AGENT_TOOL_MODULE_NAME,
+)
 from letta.functions.functions import derive_openai_json_schema, get_json_schema_from_module
 from letta.functions.helpers import generate_composio_tool_wrapper, generate_langchain_tool_wrapper
 from letta.functions.schema_generator import generate_schema_from_args_schema_v2
 from letta.orm.enums import ToolType
 from letta.schemas.letta_base import LettaBase
-from letta.schemas.openai.chat_completions import ToolCall
 
 
 class BaseTool(LettaBase):
@@ -32,7 +36,6 @@ class Tool(BaseTool):
     tool_type: ToolType = Field(ToolType.CUSTOM, description="The type of the tool.")
     description: Optional[str] = Field(None, description="The description of the tool.")
     source_type: Optional[str] = Field(None, description="The type of the source code.")
-    module: Optional[str] = Field(None, description="The module of the function.")
     organization_id: Optional[str] = Field(None, description="The unique identifier of the organization associated with the tool.")
     name: Optional[str] = Field(None, description="The name of the function.")
     tags: List[str] = Field([], description="Metadata tags.")
@@ -66,6 +69,9 @@ class Tool(BaseTool):
         elif self.tool_type in {ToolType.LETTA_CORE, ToolType.LETTA_MEMORY_CORE}:
             # If it's letta core tool, we generate the json_schema on the fly here
             self.json_schema = get_json_schema_from_module(module_name=LETTA_CORE_TOOL_MODULE_NAME, function_name=self.name)
+        elif self.tool_type in {ToolType.LETTA_MULTI_AGENT_CORE}:
+            # If it's letta multi-agent tool, we also generate the json_schema on the fly here
+            self.json_schema = get_json_schema_from_module(module_name=LETTA_MULTI_AGENT_TOOL_MODULE_NAME, function_name=self.name)
 
         # Derive name from the JSON schema if not provided
         if not self.name:
@@ -81,24 +87,11 @@ class Tool(BaseTool):
 
         return self
 
-    def to_dict(self):
-        """
-        Convert tool into OpenAI representation.
-        """
-        return vars(
-            ToolCall(
-                tool_id=self.id,
-                tool_call_type="function",
-                function=self.module,
-            )
-        )
-
 
 class ToolCreate(LettaBase):
     name: Optional[str] = Field(None, description="The name of the function (auto-generated from source_code if not provided).")
     description: Optional[str] = Field(None, description="The description of the tool.")
     tags: List[str] = Field([], description="Metadata tags.")
-    module: Optional[str] = Field(None, description="The source code of the function.")
     source_code: str = Field(..., description="The source code of the function.")
     source_type: str = Field("python", description="The source type of the function.")
     json_schema: Optional[Dict] = Field(
@@ -212,7 +205,6 @@ class ToolUpdate(LettaBase):
     description: Optional[str] = Field(None, description="The description of the tool.")
     name: Optional[str] = Field(None, description="The name of the function.")
     tags: Optional[List[str]] = Field(None, description="Metadata tags.")
-    module: Optional[str] = Field(None, description="The source code of the function.")
     source_code: Optional[str] = Field(None, description="The source code of the function.")
     source_type: Optional[str] = Field(None, description="The type of the source code.")
     json_schema: Optional[Dict] = Field(

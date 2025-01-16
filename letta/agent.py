@@ -12,6 +12,7 @@ from letta.constants import (
     FIRST_MESSAGE_ATTEMPTS,
     FUNC_FAILED_HEARTBEAT_MESSAGE,
     LETTA_CORE_TOOL_MODULE_NAME,
+    LETTA_MULTI_AGENT_TOOL_MODULE_NAME,
     LLM_MAX_TOKENS,
     MESSAGE_SUMMARY_TRUNC_KEEP_N_LAST,
     MESSAGE_SUMMARY_TRUNC_TOKEN_FRAC,
@@ -25,6 +26,7 @@ from letta.interface import AgentInterface
 from letta.llm_api.helpers import is_context_overflow_error
 from letta.llm_api.llm_api_tools import create
 from letta.local_llm.utils import num_tokens_from_functions, num_tokens_from_messages
+from letta.log import get_logger
 from letta.memory import summarize_messages
 from letta.orm import User
 from letta.orm.enums import ToolType
@@ -44,6 +46,7 @@ from letta.schemas.usage import LettaUsageStatistics
 from letta.services.agent_manager import AgentManager
 from letta.services.block_manager import BlockManager
 from letta.services.helpers.agent_manager_helper import check_supports_structured_output, compile_memory_metadata_block
+from letta.services.job_manager import JobManager
 from letta.services.message_manager import MessageManager
 from letta.services.passage_manager import PassageManager
 from letta.services.tool_execution_sandbox import ToolExecutionSandbox
@@ -128,6 +131,7 @@ class Agent(BaseAgent):
         self.message_manager = MessageManager()
         self.passage_manager = PassageManager()
         self.agent_manager = AgentManager()
+        self.job_manager = JobManager()
 
         # State needed for heartbeat pausing
 
@@ -140,6 +144,9 @@ class Agent(BaseAgent):
 
         # Load last function response from message history
         self.last_function_response = self.load_last_function_response()
+
+        # Logger that the Agent specifically can use, will also report the agent_state ID with the logs
+        self.logger = get_logger(agent_state.id)
 
     def load_last_function_response(self):
         """Load the last function response from message history"""
@@ -203,6 +210,10 @@ class Agent(BaseAgent):
             if target_letta_tool.tool_type == ToolType.LETTA_CORE:
                 # base tools are allowed to access the `Agent` object and run on the database
                 callable_func = get_function_from_module(LETTA_CORE_TOOL_MODULE_NAME, function_name)
+                function_args["self"] = self  # need to attach self to arg since it's dynamically linked
+                function_response = callable_func(**function_args)
+            elif target_letta_tool.tool_type == ToolType.LETTA_MULTI_AGENT_CORE:
+                callable_func = get_function_from_module(LETTA_MULTI_AGENT_TOOL_MODULE_NAME, function_name)
                 function_args["self"] = self  # need to attach self to arg since it's dynamically linked
                 function_response = callable_func(**function_args)
             elif target_letta_tool.tool_type == ToolType.LETTA_MEMORY_CORE:
@@ -675,10 +686,14 @@ class Agent(BaseAgent):
         skip_verify: bool = False,
         stream: bool = False,  # TODO move to config?
         step_count: Optional[int] = None,
+        metadata: Optional[dict] = None,
     ) -> AgentStepResponse:
         """Runs a single step in the agent loop (generates at most one LLM call)"""
 
         try:
+
+            # Extract job_id from metadata if present
+            job_id = metadata.get("job_id") if metadata else None
 
             # Step 0: update core memory
             # only pulling latest block data if shared memory is being used
@@ -754,9 +769,17 @@ class Agent(BaseAgent):
                     f"last response total_tokens ({current_total_tokens}) < {MESSAGE_SUMMARY_WARNING_FRAC * int(self.agent_state.llm_config.context_window)}"
                 )
 
+            # Persisting into Messages
             self.agent_state = self.agent_manager.append_to_in_context_messages(
                 all_new_messages, agent_id=self.agent_state.id, actor=self.user
             )
+            if job_id:
+                for message in all_new_messages:
+                    self.job_manager.add_message_to_job(
+                        job_id=job_id,
+                        message_id=message.id,
+                        actor=self.user,
+                    )
 
             return AgentStepResponse(
                 messages=all_new_messages,
@@ -784,6 +807,7 @@ class Agent(BaseAgent):
                     first_message_retry_limit=first_message_retry_limit,
                     skip_verify=skip_verify,
                     stream=stream,
+                    metadata=metadata,
                 )
 
             else:

@@ -96,7 +96,7 @@ class LLMConfig(BaseModel):
                 model="memgpt-openai",
                 model_endpoint_type="openai",
                 model_endpoint="https://inference.memgpt.ai",
-                context_window=16384,
+                context_window=8192,
             )
         else:
             raise ValueError(f"Model {model_name} not supported.")
