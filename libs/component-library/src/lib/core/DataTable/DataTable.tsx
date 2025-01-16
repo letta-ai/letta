@@ -129,6 +129,8 @@ const dataTableVariants = cva('h-full', {
 interface DataTablePropsBase<TData, TValue> {
   columns: Array<ColumnDef<TData, TValue>>;
   data: TData[];
+  page?: number;
+  onSetPage?: Dispatch<SetStateAction<number>>;
   onSearch?: (search: string) => void;
   searchValue?: string;
   onRowClick?: (row: TData) => void;
@@ -159,6 +161,8 @@ export function DataTable<TData, TValue>(props: DataTableProps<TData, TValue>) {
     variant,
     data,
     errorMessage,
+    onSetPage,
+    page,
     onSetCursor,
     loadingText,
     noResultsAction,
@@ -217,10 +221,14 @@ export function DataTable<TData, TValue>(props: DataTableProps<TData, TValue>) {
       return;
     }
 
+    if (onSetPage) {
+      onSetPage((prev) => prev + 1);
+    }
+
     if (onSetOffset) {
       onSetOffset((prev) => prev + limit);
     }
-  }, [data, isLoading, limit, onSetCursor, onSetOffset]);
+  }, [data, isLoading, limit, onSetPage, onSetCursor, onSetOffset]);
 
   const handlePreviousPage = useCallback(() => {
     if (isLoading) {
@@ -231,30 +239,32 @@ export function DataTable<TData, TValue>(props: DataTableProps<TData, TValue>) {
       onSetCursor(lastCursor.current);
     }
 
+    if (onSetPage) {
+      onSetPage((prev) => Math.max(prev - 1, 0));
+    }
+
     if (onSetOffset) {
       onSetOffset((prev) => prev - limit);
     }
-  }, [isLoading, limit, onSetCursor, onSetOffset]);
+  }, [isLoading, limit, onSetPage, onSetCursor, onSetOffset]);
 
   const hasPreviousPage = useMemo(() => {
     if (isLoading) {
       return false;
     }
 
+    if (page) {
+      return page > 0;
+    }
+
     return offset > 0;
-  }, [isLoading, offset]);
+  }, [isLoading, page, offset]);
 
   const table = useReactTable({
     data,
     columns,
     getCoreRowModel: getCoreRowModel(),
   });
-
-  useEffect(() => {
-    if (data.length === 0 && hasPreviousPage && !isLoading) {
-      handlePreviousPage();
-    }
-  }, [data.length, handlePreviousPage, hasPreviousPage, isLoading]);
 
   return (
     <div

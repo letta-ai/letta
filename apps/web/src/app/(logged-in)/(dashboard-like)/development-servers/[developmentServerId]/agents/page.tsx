@@ -13,8 +13,14 @@ import {
   WarningIcon,
 } from '@letta-cloud/component-library';
 import { useTranslations } from '@letta-cloud/translations';
-import type { AgentState } from '@letta-cloud/letta-agents-api';
-import { useAgentsServiceListAgents } from '@letta-cloud/letta-agents-api';
+import {
+  AgentsService,
+  UseAgentsServiceListAgentsKeyFn,
+} from '@letta-cloud/letta-agents-api';
+import type {
+  AgentState,
+  ListAgentsResponse,
+} from '@letta-cloud/letta-agents-api';
 import React, { useEffect, useMemo, useState } from 'react';
 import type { ColumnDef } from '@tanstack/react-table';
 import { useDateFormatter } from '@letta-cloud/helpful-client-utils';
@@ -25,6 +31,9 @@ import { useCurrentUser } from '$web/client/hooks';
 import { trackClientSideEvent } from '@letta-cloud/analytics/client';
 import { AnalyticsEvent } from '@letta-cloud/analytics';
 import CreateAgentDialog from '../components/CreateAgentDialog/CreateAgentDialog';
+import { useInfiniteQuery } from '@tanstack/react-query';
+import { useDebouncedValue } from '@mantine/hooks';
+import type { InfiniteData } from '@tanstack/query-core';
 
 const LIMIT = 10;
 
@@ -110,39 +119,77 @@ function ErrorView(props: ErrorViewProps) {
 
 function LocalProjectPage() {
   const t = useTranslations('development-servers/page');
-  const { data, refetch, isError } = useAgentsServiceListAgents();
   const currentDevelopmentServerConfig = useCurrentDevelopmentServerConfig();
 
   const [search, setSearch] = useState<string>('');
 
-  const [offset, setOffset] = useState(0);
+  const [page, setPage] = useState<number>(0);
   const [limit, setLimit] = useState(LIMIT);
 
+  const [debouncedSearch] = useDebouncedValue(search, 500);
+  const { data, refetch, isFetchingNextPage, isError, fetchNextPage } =
+    useInfiniteQuery<
+      ListAgentsResponse,
+      unknown,
+      InfiniteData<ListAgentsResponse>,
+      unknown[],
+      { cursor?: string | null }
+    >({
+      queryKey: [
+        'infinite',
+        ...UseAgentsServiceListAgentsKeyFn({
+          queryText: debouncedSearch,
+          limit: limit + 1,
+        }),
+      ],
+      queryFn: ({ pageParam }) => {
+        return AgentsService.listAgents({
+          queryText: debouncedSearch,
+          limit: limit + 1,
+          cursor: pageParam?.cursor,
+        });
+      },
+      initialPageParam: { cursor: null },
+      getNextPageParam: (lastPage) => {
+        if (lastPage.length > limit) {
+          return {
+            cursor: lastPage[lastPage.length - 2].id,
+          };
+        }
+
+        return undefined;
+      },
+    });
+
   useEffect(() => {
-    setOffset(0);
+    if (!data?.pages) {
+      return;
+    }
+
+    if (page === data.pages.length) {
+      void fetchNextPage();
+    }
+  }, [page, data, fetchNextPage]);
+
+  useEffect(() => {
+    setPage(0);
   }, [search]);
+
+  const hasNextPage = useMemo(() => {
+    if (!data?.pages?.[page]) {
+      return false;
+    }
+
+    return data.pages[page].length > limit;
+  }, [data, page, limit]);
 
   const filteredData = useMemo(() => {
     if (!data) {
       return [];
     }
 
-    return data?.filter(({ name }) =>
-      name.toLowerCase().includes(search.toLowerCase()),
-    );
-  }, [data, search]);
-
-  const pagedData = useMemo(() => {
-    return filteredData.slice(offset, offset + limit);
-  }, [filteredData, offset, limit]);
-
-  const hasNextPage = useMemo(() => {
-    if (!data) {
-      return false;
-    }
-
-    return data.length > offset + LIMIT;
-  }, [data, offset]);
+    return data.pages?.[page]?.slice(0, limit) || [];
+  }, [data, page, limit]);
 
   const { formatDateAndTime } = useDateFormatter();
   const user = useCurrentUser();
@@ -192,6 +239,18 @@ function LocalProjectPage() {
     [t, formatDateAndTime, currentDevelopmentServerConfig?.id, user?.id],
   );
 
+  const isLoadingPage = useMemo(() => {
+    if (!data) {
+      return true;
+    }
+
+    if (isFetchingNextPage && !data.pages[page]) {
+      return true;
+    }
+
+    return false;
+  }, [data, isFetchingNextPage, page]);
+
   return (
     <DashboardPageLayout
       subtitle={t('description')}
@@ -224,17 +283,17 @@ function LocalProjectPage() {
         ) : (
           <DataTable
             autofitHeight
-            offset={offset}
+            onSetPage={setPage}
+            page={page}
             searchValue={search}
             onSearch={!isError ? setSearch : undefined}
             onLimitChange={setLimit}
             limit={limit}
             hasNextPage={hasNextPage}
             showPagination
-            onSetOffset={setOffset}
             columns={columns}
-            data={pagedData}
-            isLoading={!data}
+            data={filteredData}
+            isLoading={isLoadingPage}
             loadingText={t('table.loading')}
             noResultsText={t('table.noResults')}
           />
