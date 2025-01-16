@@ -729,7 +729,7 @@ function OrganizationPage() {
                 {organization?.name}
               </Typography>
               {organization?.bannedAt && (
-                <Badge content="Banned" color="destructive" />
+                <Badge content="Banned" variant="destructive" />
               )}
             </HStack>
             <HStack>

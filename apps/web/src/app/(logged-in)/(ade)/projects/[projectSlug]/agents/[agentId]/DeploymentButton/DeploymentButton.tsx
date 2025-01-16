@@ -383,7 +383,6 @@ function TemplateVersionDisplay() {
             {deployedAgentTemplate?.version && (
               <HStack>
                 <Badge
-                  color="background-grey"
                   content={t('DeploymentButton.version', {
                     version: deployedAgentTemplate?.version,
                   })}

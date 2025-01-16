@@ -289,7 +289,7 @@ export function Messages(props: MessagesProps) {
                     <Badge
                       size="small"
                       content={agentMessage.status}
-                      color={
+                      variant={
                         agentMessage.status === 'success'
                           ? 'success'
                           : 'destructive'

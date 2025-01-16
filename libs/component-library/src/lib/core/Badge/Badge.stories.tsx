@@ -15,21 +15,14 @@ export const Primary: Story = {
       options: ['default', 'small'],
       control: { type: 'radio' },
     },
-    color: {
-      options: [
-        'background-grey',
-        'background-grey2',
-        'background-black',
-        'transparent',
-        'tertiary',
-        'primary',
-      ],
+    variant: {
+      options: ['default', 'warning', 'destructive', 'success', 'info'],
       control: { type: 'radio' },
     },
   },
   args: {
     content: 'Badge',
-    color: 'background-grey',
     size: 'default',
+    variant: 'destructive',
   },
 };

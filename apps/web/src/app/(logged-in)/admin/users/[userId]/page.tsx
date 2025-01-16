@@ -54,7 +54,7 @@ function UserOrganizationsList() {
           <HStack align="center">
             {row.original.name}
             {user?.activeOrganizationId === row.original.id && (
-              <Badge color="brand" content="Current" />
+              <Badge variant="info" content="Current" />
             )}
           </HStack>
         ),

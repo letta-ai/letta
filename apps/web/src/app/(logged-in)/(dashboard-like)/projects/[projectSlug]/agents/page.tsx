@@ -464,7 +464,6 @@ function TagsShorthand(props: TagsShorthandProps) {
               count: tags.length - maxTags,
             })}
             size="small"
-            color="background-grey"
           />
         </button>
       )}

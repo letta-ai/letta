@@ -954,7 +954,7 @@ function EditDataSourcesContent(props: EditDataSourcesContentProps) {
               <Badge
                 preIcon={<WarningIcon />}
                 content={t('EditDataSourcesContent.notCompatible.title')}
-                color="warning"
+                variant="warning"
               />
             </Tooltip>
           ),
