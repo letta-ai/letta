@@ -21,9 +21,8 @@ jobs:
         uses: tj-actions/changed-files@v44
         with:
           files: |
-            migrations/**
-            alembic.ini
             apps/core/**
+            .github/workflows/alembic-validation.yml
 
   test:
     needs: [ changed-files ]
