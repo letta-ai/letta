@@ -414,6 +414,7 @@ function SystemPromptEditor() {
         <RawTextArea
           fullWidth
           key="system"
+          variant="secondary"
           infoTooltip={{
             text: t('SystemPromptEditor.tooltip'),
           }}
@@ -541,6 +542,7 @@ function TemplateDescription() {
       rows={3}
       value={description || ''}
       fullWidth
+      variant="secondary"
       resize="none"
       autosize
       maxRows={3}

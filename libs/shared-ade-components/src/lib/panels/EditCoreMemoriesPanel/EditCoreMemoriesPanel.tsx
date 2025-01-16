@@ -337,6 +337,7 @@ function EditMemoryForm(props: EditMemoryFormProps) {
       <VStack flex fullHeight>
         <VStack fullWidth fullHeight>
           <RawTextArea
+            variant="secondary"
             rightOfLabelContent={
               <Typography variant="body2" color="muted">
                 {t('EditMemoryForm.characterLimit', {

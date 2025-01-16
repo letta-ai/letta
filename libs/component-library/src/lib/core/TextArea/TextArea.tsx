@@ -15,10 +15,14 @@ import { Skeleton } from '../Skeleton/Skeleton';
 import { VStack } from '../../framing/VStack/VStack';
 
 const defaultClass =
-  'text-base text-text-lighter flex min-h-[40px] w-full border border-input bg-background px-3 py-2 pr-[10px] ring-offset-background placeholder:text-muted-foreground  disabled:cursor-not-allowed disabled:opacity-50';
+  'text-base flex min-h-[40px] w-full border border-input bg-background px-3 py-2 pr-[10px] ring-offset-background placeholder:text-muted-foreground  disabled:cursor-not-allowed disabled:opacity-50';
 
 const textareaVariants = cva(defaultClass, {
   variants: {
+    variant: {
+      primary: 'text-text-default',
+      secondary: 'text-text-lighter',
+    },
     resize: {
       both: 'resize',
       horizontal: 'resize-x',
@@ -27,6 +31,7 @@ const textareaVariants = cva(defaultClass, {
     },
   },
   defaultVariants: {
+    variant: 'primary',
     resize: 'none',
   },
 });
@@ -55,6 +60,7 @@ const PrimitiveTextArea = React.forwardRef<HTMLTextAreaElement, TextAreaProps>(
       autosize = true,
       resize = 'none',
       fullHeight,
+      variant,
       flex,
       hideLabel: _hideLabel,
       fullWidth,
@@ -66,7 +72,7 @@ const PrimitiveTextArea = React.forwardRef<HTMLTextAreaElement, TextAreaProps>(
       return (
         <textarea
           className={cn(
-            textareaVariants({ resize }),
+            textareaVariants({ resize, variant }),
             defaultClass,
             hideFocus
               ? 'focus-visible:outline-none'
@@ -84,7 +90,11 @@ const PrimitiveTextArea = React.forwardRef<HTMLTextAreaElement, TextAreaProps>(
 
     return (
       <TextareaAutosize
-        className={cn(defaultClass, textareaVariants({ resize }), className)}
+        className={cn(
+          defaultClass,
+          textareaVariants({ resize, variant }),
+          className,
+        )}
         ref={ref}
         {...props}
       />

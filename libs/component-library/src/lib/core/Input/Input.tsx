@@ -23,6 +23,10 @@ const inputVariants = cva(
   'flex  items-center overflow-hidden border border-input text-base transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-content focus-visible:outline-none focus-within:ring-1 focus-within:ring-ring',
   {
     variants: {
+      variant: {
+        primary: 'text-default',
+        secondary: 'text-lighter font-light',
+      },
       disabled: {
         true: '',
       },
@@ -51,6 +55,7 @@ const inputVariants = cva(
       },
     ],
     defaultVariants: {
+      variant: 'primary',
       color: 'default',
     },
   },
