@@ -23,12 +23,7 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { queryClientKeys } from '$web/web-api/contracts';
 import { useQueryClient } from '@tanstack/react-query';
-
-interface InferenceModelPageProps {
-  params: Promise<{
-    modelId: string;
-  }>;
-}
+import { useParams } from 'next/navigation';
 
 interface UpdateInferenceModelFormProps {
   model: AdminInferenceModelType;
@@ -164,9 +159,8 @@ function UpdateInferenceModelForm(props: UpdateInferenceModelFormProps) {
   );
 }
 
-async function InferenceModelPage(props: InferenceModelPageProps) {
-  const { params } = props;
-  const { modelId } = await params;
+function InferenceModelPage() {
+  const { modelId } = useParams<{ modelId: string }>();
 
   const {
     data: model,
@@ -179,6 +173,7 @@ async function InferenceModelPage(props: InferenceModelPageProps) {
         id: modelId,
       },
     },
+    enabled: !!modelId,
   });
 
   return (
