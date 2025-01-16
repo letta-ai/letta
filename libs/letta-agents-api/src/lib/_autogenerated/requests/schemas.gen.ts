@@ -3024,29 +3024,7 @@ export const $LettaResponse = {
   properties: {
     messages: {
       items: {
-        oneOf: [
-          {
-            $ref: '#/components/schemas/SystemMessage-Output',
-          },
-          {
-            $ref: '#/components/schemas/UserMessage-Output',
-          },
-          {
-            $ref: '#/components/schemas/ReasoningMessage',
-          },
-          {
-            $ref: '#/components/schemas/ToolCallMessage',
-          },
-          {
-            $ref: '#/components/schemas/ToolReturnMessage',
-          },
-          {
-            $ref: '#/components/schemas/AssistantMessage-Output',
-          },
-        ],
-        discriminator: {
-          propertyName: 'message_type',
-        },
+        $ref: '#/components/schemas/LettaMessageUnion',
       },
       type: 'array',
       title: 'Messages',
@@ -6048,4 +6026,38 @@ Parameters:
     tags (List[str]): Metadata tags.
     source_code (str): The source code of the function.
     json_schema (Dict): The JSON schema of the function.`,
+} as const;
+
+export const $LettaMessageUnion = {
+  oneOf: [
+    {
+      $ref: '#/components/schemas/SystemMessage-Output',
+    },
+    {
+      $ref: '#/components/schemas/UserMessage-Output',
+    },
+    {
+      $ref: '#/components/schemas/ReasoningMessage',
+    },
+    {
+      $ref: '#/components/schemas/ToolCallMessage',
+    },
+    {
+      $ref: '#/components/schemas/ToolReturnMessage',
+    },
+    {
+      $ref: '#/components/schemas/AssistantMessage-Output',
+    },
+  ],
+  discriminator: {
+    propertyName: 'message_type',
+    mapping: {
+      system_message: '#/components/schemas/SystemMessage-Output',
+      user_message: '#/components/schemas/UserMessage-Output',
+      reasoning_message: '#/components/schemas/ReasoningMessage',
+      tool_call_message: '#/components/schemas/ToolCallMessage',
+      tool_return_message: '#/components/schemas/ToolReturnMessage',
+      assistant_message: '#/components/schemas/AssistantMessage-Output',
+    },
+  },
 } as const;

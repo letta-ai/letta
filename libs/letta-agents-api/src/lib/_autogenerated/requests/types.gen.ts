@@ -1207,14 +1207,7 @@ export type LettaResponse = {
   /**
    * The messages returned by the agent.
    */
-  messages: Array<
-    | SystemMessage_Output
-    | UserMessage_Output
-    | ReasoningMessage
-    | ToolCallMessage
-    | ToolReturnMessage
-    | AssistantMessage_Output
-  >;
+  messages: Array<LettaMessageUnion>;
   /**
    * The usage statistics of the agent.
    */
@@ -1561,8 +1554,6 @@ export type ReasoningMessage = {
   reasoning: string;
 };
 
-export type message_type3 = 'reasoning_message';
-
 export type RecallMemorySummary = {
   /**
    * Number of rows in recall memory
@@ -1885,7 +1876,7 @@ export type SystemMessage_Output = {
   message: string;
 };
 
-export type message_type4 = 'system_message';
+export type message_type3 = 'system_message';
 
 /**
  * Represents a terminal tool rule configuration where if this tool gets called, it must end the agent loop.
@@ -1936,8 +1927,6 @@ export type ToolCallMessage = {
   message_type?: 'tool_call_message';
   tool_call: letta__schemas__letta_message__ToolCall | ToolCallDelta;
 };
-
-export type message_type5 = 'tool_call_message';
 
 export type ToolCreate = {
   /**
@@ -2005,8 +1994,6 @@ export type ToolReturnMessage = {
   stdout?: Array<string> | null;
   stderr?: Array<string> | null;
 };
-
-export type message_type6 = 'tool_return_message';
 
 export type status = 'success' | 'error';
 
@@ -2221,7 +2208,7 @@ export type UserMessage_Output = {
   message: string;
 };
 
-export type message_type7 = 'user_message';
+export type message_type4 = 'user_message';
 
 export type UserUpdate = {
   /**
@@ -2447,6 +2434,14 @@ export type letta__schemas__tool__Tool = {
    */
   last_updated_by_id?: string | null;
 };
+
+export type LettaMessageUnion =
+  | SystemMessage_Output
+  | UserMessage_Output
+  | ReasoningMessage
+  | ToolCallMessage
+  | ToolReturnMessage
+  | AssistantMessage_Output;
 
 export type DeleteToolData = {
   toolId: string;
@@ -2872,14 +2867,7 @@ export type ListAgentMessagesData = {
 
 export type ListAgentMessagesResponse =
   | Array<letta__schemas__message__Message>
-  | Array<
-      | SystemMessage_Output
-      | UserMessage_Output
-      | ReasoningMessage
-      | ToolCallMessage
-      | ToolReturnMessage
-      | AssistantMessage_Output
-    >;
+  | Array<LettaMessageUnion>;
 
 export type CreateAgentMessageData = {
   agentId: string;
@@ -3198,14 +3186,7 @@ export type GetRunMessagesData = {
   userId?: string | null;
 };
 
-export type GetRunMessagesResponse = Array<
-  | SystemMessage_Output
-  | UserMessage_Output
-  | ReasoningMessage
-  | ToolCallMessage
-  | ToolReturnMessage
-  | AssistantMessage_Output
->;
+export type GetRunMessagesResponse = Array<LettaMessageUnion>;
 
 export type GetRunUsageData = {
   runId: string;
@@ -3964,16 +3945,7 @@ export type $OpenApiTs = {
         /**
          * Successful Response
          */
-        200:
-          | Array<letta__schemas__message__Message>
-          | Array<
-              | SystemMessage_Output
-              | UserMessage_Output
-              | ReasoningMessage
-              | ToolCallMessage
-              | ToolReturnMessage
-              | AssistantMessage_Output
-            >;
+        200: Array<letta__schemas__message__Message> | Array<LettaMessageUnion>;
         /**
          * Validation Error
          */
@@ -4487,14 +4459,7 @@ export type $OpenApiTs = {
         /**
          * Successful Response
          */
-        200: Array<
-          | SystemMessage_Output
-          | UserMessage_Output
-          | ReasoningMessage
-          | ToolCallMessage
-          | ToolReturnMessage
-          | AssistantMessage_Output
-        >;
+        200: Array<LettaMessageUnion>;
         /**
          * Validation Error
          */

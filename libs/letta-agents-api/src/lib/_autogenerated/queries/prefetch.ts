@@ -1042,7 +1042,7 @@ export const prefetchUseRunsServiceGetRun = (
  * @param data.ascending Sort order by creation time
  * @param data.role Filter by role
  * @param data.userId
- * @returns unknown Successful Response
+ * @returns LettaMessageUnion Successful Response
  * @throws ApiError
  */
 export const prefetchUseRunsServiceGetRunMessages = (
