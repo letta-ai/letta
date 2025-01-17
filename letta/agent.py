@@ -1,4 +1,3 @@
-import inspect
 import json
 import time
 import traceback
@@ -20,6 +19,7 @@ from letta.constants import (
     REQ_HEARTBEAT_MESSAGE,
 )
 from letta.errors import ContextWindowExceededError
+from letta.functions.ast_parsers import coerce_dict_args_by_annotations, get_function_annotations_from_source
 from letta.functions.functions import get_function_from_module
 from letta.helpers import ToolRulesSolver
 from letta.interface import AgentInterface
@@ -223,15 +223,10 @@ class Agent(BaseAgent):
                 function_response = callable_func(**function_args)
                 self.update_memory_if_changed(agent_state_copy.memory)
             else:
-                # TODO: Get rid of this. This whole piece is pretty shady, that we exec the function to just get the type hints for args.
-                env = {}
-                env.update(globals())
-                exec(target_letta_tool.source_code, env)
-                callable_func = env[target_letta_tool.json_schema["name"]]
-                spec = inspect.getfullargspec(callable_func).annotations
-                for name, arg in function_args.items():
-                    if isinstance(function_args[name], dict):
-                        function_args[name] = spec[name](**function_args[name])
+                # Parse the source code to extract function annotations
+                annotations = get_function_annotations_from_source(target_letta_tool.source_code, function_name)
+                # Coerce the function arguments to the correct types based on the annotations
+                function_args = coerce_dict_args_by_annotations(function_args, annotations)
 
                 # execute tool in a sandbox
                 # TODO: allow agent_state to specify which sandbox to execute tools in
