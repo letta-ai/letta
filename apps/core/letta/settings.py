@@ -83,12 +83,16 @@ cors_origins = [
 # read pg_uri from ~/.letta/pg_uri or set to none, this is to support Letta Desktop
 default_pg_uri = None
 
-try:
-    with open(Path.home() / ".letta/pg_uri", "r") as f:
-        default_pg_uri = f.read()
-        print("Read pg_uri from ~/.letta/pg_uri")
-except FileNotFoundError:
-    pass
+## check if --use-file-pg-uri is passed
+import sys
+
+if "--use-file-pg-uri" in sys.argv:
+    try:
+        with open(Path.home() / ".letta/pg_uri", "r") as f:
+            default_pg_uri = f.read()
+            print("Read pg_uri from ~/.letta/pg_uri")
+    except FileNotFoundError:
+        pass
 
 
 class Settings(BaseSettings):

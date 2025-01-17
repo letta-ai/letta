@@ -223,7 +223,7 @@ export default class App {
       'bin',
       'letta',
     );
-    lettaServer = execFile(lettaServerPath);
+    lettaServer = execFile(lettaServerPath, ['--use-file-pg-uri']);
 
     if (lettaServer.stdout) {
       lettaServer.stdout.on('data', (data) => {
