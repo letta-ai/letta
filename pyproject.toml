@@ -76,6 +76,7 @@ grpcio-tools = "^1.68.1"
 llama-index = "^0.12.2"
 llama-index-embeddings-openai = "^0.3.1"
 e2b-code-interpreter = {version = "^1.0.3", optional = true}
+anthropic = "^0.43.0"
 letta_client = "^0.1.16"
 
 [tool.poetry.extras]
@@ -87,6 +88,7 @@ cloud-tool-sandbox = ["e2b-code-interpreter"]
 external-tools = ["docker", "langchain", "wikipedia", "langchain-community"]
 tests = ["wikipedia"]
 all = ["pgvector", "pg8000", "psycopg2-binary", "psycopg2", "pytest", "pytest-asyncio", "pexpect", "black", "pre-commit", "datasets", "pyright", "pytest-order", "autoflake", "isort", "websockets", "fastapi", "uvicorn", "docker", "langchain", "wikipedia", "langchain-community", "locust"]
+bedrock = ["boto3"]
 
 [tool.poetry.group.dev.dependencies]
 black = "^24.4.2"

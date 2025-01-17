@@ -699,3 +699,54 @@ class VLLMCompletionsProvider(Provider):
 
 class CohereProvider(OpenAIProvider):
     pass
+
+
+class AnthropicBedrockProvider(Provider):
+    name: str = "bedrock"
+    aws_region: str = Field(..., description="AWS region for Bedrock")
+
+    def list_llm_models(self):
+        from letta.llm_api.aws_bedrock import bedrock_get_model_list
+
+        models = bedrock_get_model_list(self.aws_region, model_provider="anthropic")
+
+        configs = []
+        for model_summary in models:
+            model_id = model_summary["modelId"]
+            configs.append(
+                LLMConfig(
+                    model=model_id,
+                    model_endpoint_type=self.name,
+                    model_endpoint=None,
+                    context_window=self.get_model_context_window(model_id),
+                )
+            )
+        return configs
+
+    def list_embedding_models(self):
+        from letta.llm_api.aws_bedrock import bedrock_get_model_list
+
+        # Will return nothing
+        models = bedrock_get_model_list(self.aws_region, model_provider="anthropic", output_modality="EMBEDDING")
+
+        configs = []
+        for model_summary in models:
+            model_id = model_summary["modelId"]
+            configs.append(
+                EmbeddingConfig(
+                    model=model_id,
+                    model_endpoint_type=self.name,
+                    model_endpoint=None,
+                    context_window=self.get_model_context_window(model_id),
+                )
+            )
+        return configs
+
+    def get_model_context_window(self, model_name: str) -> Optional[int]:
+        # Context windows for Claude models
+        from letta.llm_api.aws_bedrock import bedrock_get_model_context_window
+
+        return bedrock_get_model_context_window(model_name)
+
+    def get_handle(self, model_name: str) -> str:
+        return f"anthropic/{model_name}"

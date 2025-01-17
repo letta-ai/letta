@@ -23,6 +23,7 @@ class EmbeddingConfig(BaseModel):
     embedding_endpoint_type: Literal[
         "openai",
         "anthropic",
+        "bedrock",
         "cohere",
         "google_ai",
         "azure",

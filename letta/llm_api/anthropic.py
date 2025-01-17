@@ -1,7 +1,8 @@
 import json
 import re
-from typing import List, Optional, Union
+from typing import List, Optional, Tuple, Union
 
+from letta.llm_api.aws_bedrock import get_bedrock_client
 from letta.llm_api.helpers import make_post_request
 from letta.schemas.message import Message
 from letta.schemas.openai.chat_completion_request import ChatCompletionRequest, Tool
@@ -299,23 +300,11 @@ def convert_anthropic_response_to_chatcompletion(
     )
 
 
-def anthropic_chat_completions_request(
-    url: str,
-    api_key: str,
+def _prepare_anthropic_request(
     data: ChatCompletionRequest,
     inner_thoughts_xml_tag: Optional[str] = "thinking",
-) -> ChatCompletionResponse:
-    """https://docs.anthropic.com/claude/docs/tool-use"""
-
-    url = smart_urljoin(url, "messages")
-    headers = {
-        "Content-Type": "application/json",
-        "x-api-key": api_key,
-        # NOTE: beta headers for tool calling
-        "anthropic-version": "2023-06-01",
-        "anthropic-beta": "tools-2024-04-04",
-    }
-
+) -> dict:
+    """Prepare the request data for Anthropic API format."""
     # convert the tools
     anthropic_tools = None if data.tools is None else convert_tools_to_anthropic_format(data.tools)
 
@@ -325,57 +314,105 @@ def anthropic_chat_completions_request(
     if "functions" in data:
         raise ValueError(f"'functions' unexpected in Anthropic API payload")
 
-    # If tools == None, strip from the payload
+    # Handle tools
     if "tools" in data and data["tools"] is None:
         data.pop("tools")
-        data.pop("tool_choice", None)  # extra safe,  should exist always (default="auto")
-    # Remap to our converted tools
-    if anthropic_tools is not None:
+        data.pop("tool_choice", None)
+    elif anthropic_tools is not None:
         data["tools"] = anthropic_tools
-
-        # TODO: Add support for other tool_choice options like "auto", "any"
         if len(anthropic_tools) == 1:
             data["tool_choice"] = {
-                "type": "tool",  # Changed from "function" to "tool"
-                "name": anthropic_tools[0]["name"],  # Directly specify name without nested "function" object
-                "disable_parallel_tool_use": True,  # Force single tool use
+                "type": "tool",
+                "name": anthropic_tools[0]["name"],
+                "disable_parallel_tool_use": True,
             }
 
     # Move 'system' to the top level
-    # 'messages: Unexpected role "system". The Messages API accepts a top-level `system` parameter, not "system" as an input message role.'
     assert data["messages"][0]["role"] == "system", f"Expected 'system' role in messages[0]:\n{data['messages'][0]}"
     data["system"] = data["messages"][0]["content"]
     data["messages"] = data["messages"][1:]
 
-    # set `content` to None if missing
+    # Process messages
     for message in data["messages"]:
         if "content" not in message:
             message["content"] = None
 
     # Convert to Anthropic format
-
     msg_objs = [Message.dict_to_message(user_id=None, agent_id=None, openai_message_dict=m) for m in data["messages"]]
     data["messages"] = [m.to_anthropic_dict(inner_thoughts_xml_tag=inner_thoughts_xml_tag) for m in msg_objs]
 
-    # Handling Anthropic special requirement for 'user' message in front
-    # messages: first message must use the "user" role'
+    # Ensure first message is user
     if data["messages"][0]["role"] != "user":
         data["messages"] = [{"role": "user", "content": DUMMY_FIRST_USER_MESSAGE}] + data["messages"]
 
-    # Handle Anthropic's restriction on alternating user/assistant messages
+    # Handle alternating messages
     data["messages"] = merge_tool_results_into_user_messages(data["messages"])
 
-    # Anthropic also wants max_tokens in the input
-    # It's also part of ChatCompletions
+    # Validate max_tokens
     assert "max_tokens" in data, data
 
-    # Remove extra fields used by OpenAI but not Anthropic
-    data.pop("frequency_penalty", None)
-    data.pop("logprobs", None)
-    data.pop("n", None)
-    data.pop("top_p", None)
-    data.pop("presence_penalty", None)
-    data.pop("user", None)
+    # Remove OpenAI-specific fields
+    for field in ["frequency_penalty", "logprobs", "n", "top_p", "presence_penalty", "user"]:
+        data.pop(field, None)
 
+    return data
+
+
+def get_anthropic_endpoint_and_headers(
+    base_url: str,
+    api_key: str,
+    version: str = "2023-06-01",
+    beta: Optional[str] = "tools-2024-04-04",
+) -> Tuple[str, dict]:
+    """
+    Dynamically generate the Anthropic endpoint and headers.
+    """
+    url = smart_urljoin(base_url, "messages")
+
+    headers = {
+        "Content-Type": "application/json",
+        "x-api-key": api_key,
+        "anthropic-version": version,
+    }
+
+    # Add beta header if specified
+    if beta:
+        headers["anthropic-beta"] = beta
+
+    return url, headers
+
+
+def anthropic_chat_completions_request(
+    url: str,
+    api_key: str,
+    data: ChatCompletionRequest,
+    inner_thoughts_xml_tag: Optional[str] = "thinking",
+) -> ChatCompletionResponse:
+    """https://docs.anthropic.com/claude/docs/tool-use"""
+    url, headers = get_anthropic_endpoint_and_headers(url, api_key)
+    data = _prepare_anthropic_request(data, inner_thoughts_xml_tag)
     response_json = make_post_request(url, headers, data)
     return convert_anthropic_response_to_chatcompletion(response_json=response_json, inner_thoughts_xml_tag=inner_thoughts_xml_tag)
+
+
+def anthropic_bedrock_chat_completions_request(
+    data: ChatCompletionRequest,
+    inner_thoughts_xml_tag: Optional[str] = "thinking",
+) -> ChatCompletionResponse:
+    """Make a chat completion request to Anthropic via AWS Bedrock."""
+    data = _prepare_anthropic_request(data, inner_thoughts_xml_tag)
+
+    # Get the client
+    client = get_bedrock_client()
+
+    # Make the request
+    response = client.messages.create(
+        model=data["model"],
+        max_tokens=data["max_tokens"],
+        messages=data["messages"],
+        tools=data.get("tools", None),
+    )
+
+    return convert_anthropic_response_to_chatcompletion(
+        response_json=json.loads(response.json()), inner_thoughts_xml_tag=inner_thoughts_xml_tag
+    )

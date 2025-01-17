@@ -175,6 +175,11 @@ def test_add_and_manage_tags_for_agent(client):
 
 def test_agent_tags(client):
     """Test creating agents with tags and retrieving tags via the API."""
+    # Clear all agents
+    all_agents = client.agents.list()
+    for agent in all_agents:
+        client.agents.delete(agent.id)
+
     # Create multiple agents with different tags
     agent1 = client.agents.create(
         memory_blocks=[
