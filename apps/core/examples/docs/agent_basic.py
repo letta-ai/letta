@@ -1,29 +1,49 @@
-from letta import EmbeddingConfig, LLMConfig, create_client
+from letta_client import CreateBlock, Letta, MessageCreate
 
-client = create_client()
+"""
+Make sure you run the Letta server before running this example.
+```
+letta server
+```
+"""
 
-# set automatic defaults for LLM/embedding config
-client.set_default_llm_config(LLMConfig.default_config(model_name="gpt-4"))
-client.set_default_embedding_config(EmbeddingConfig.default_config(model_name="text-embedding-ada-002"))
+client = Letta(base_url="http://localhost:8283")
 
 # create a new agent
-agent_state = client.create_agent()
+agent_state = client.agents.create(
+    memory_blocks=[
+        CreateBlock(
+            label="human",
+            value="Name: Sarah",
+        ),
+    ],
+    # set automatic defaults for LLM/embedding config
+    llm="openai/gpt-4",
+    embedding="openai/text-embedding-ada-002",
+)
 print(f"Created agent with name {agent_state.name} and unique ID {agent_state.id}")
 
 # Message an agent
-response = client.send_message(agent_id=agent_state.id, role="user", message="hello")
+response = client.agents.messages.send(
+    agent_id=agent_state.id,
+    messages=[
+        MessageCreate(
+            role="user",
+            text="hello",
+        )
+    ],
+)
 print("Usage", response.usage)
 print("Agent messages", response.messages)
 
 # list all agents
-agents = client.list_agents()
+agents = client.agents.list()
 
 # get the agent by ID
-agent_state = client.get_agent(agent_id=agent_state.id)
+agent_state = client.agents.get(agent_id=agent_state.id)
 
 # get the agent by name
-agent_id = client.get_agent_id(agent_name=agent_state.name)
-agent_state = client.get_agent(agent_id=agent_id)
+agent_state = client.agents.list(name=agent_state.name)[0]
 
 # delete an agent
-client.delete_agent(agent_id=agent_state.id)
+client.agents.delete(agent_id=agent_state.id)
