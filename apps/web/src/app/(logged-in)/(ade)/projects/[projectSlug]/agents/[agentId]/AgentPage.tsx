@@ -2,11 +2,12 @@
 import {
   HiddenOnMobile,
   LoadingEmptyStatusComponent,
-  Tooltip,
   Logo,
   Breadcrumb,
   LettaInvaderIcon,
   type QueryBuilderQuery,
+  DotsHorizontalIcon,
+  VerticalDotsIcon,
 } from '@letta-cloud/component-library';
 import { TrashIcon } from '@letta-cloud/component-library';
 import {
@@ -15,11 +16,7 @@ import {
   Input,
   useForm,
 } from '@letta-cloud/component-library';
-import {
-  CogIcon,
-  DropdownMenu,
-  DropdownMenuItem,
-} from '@letta-cloud/component-library';
+import { DropdownMenu, DropdownMenuItem } from '@letta-cloud/component-library';
 import {
   Alert,
   Button,
@@ -63,7 +60,6 @@ import {
   DeploymentButton,
   isAgentConvertingToTemplateAtom,
 } from './DeploymentButton/DeploymentButton';
-import Link from 'next/link';
 import { useAtomValue } from 'jotai';
 import { ADELayout } from '@letta-cloud/shared-ade-components';
 
@@ -72,6 +68,20 @@ interface ADEHeaderProps {
   agent: {
     name: string;
   };
+}
+
+function MobileADEHeader(props: ADEHeaderProps) {
+  const { agent, children } = props;
+
+  return (
+    <HStack justify="spaceBetween" align="center" fullWidth color="background">
+      <HStack align="center">
+        <LogoContainer />
+        <Typography variant="body">{agent.name}</Typography>
+      </HStack>
+      {children}
+    </HStack>
+  );
 }
 
 function LogoContainer() {
@@ -94,7 +104,6 @@ function ADEHeader(props: ADEHeaderProps) {
   const { name: agentName } = agent;
   const { parentTemplateName } = useCurrentAgentMetaData();
   const { name: projectName, id, slug: projectSlug } = useCurrentProject();
-  const t = useTranslations('ADE/ADEHeader');
 
   const projectUrl =
     id === REMOTE_DEVELOPMENT_ID ? projectSlug : `/projects/${projectSlug}`;
@@ -109,60 +118,39 @@ function ADEHeader(props: ADEHeaderProps) {
       fullWidth
       color="background"
     >
-      <HiddenOnMobile>
-        <HStack overflowX="hidden" align="center" fullHeight gap="small">
-          <ProjectSelector
-            trigger={
-              <button className="h-full flex items-center justify-center">
-                <LogoContainer />
-              </button>
-            }
-          />
-          <HStack gap={false}>
-            <Breadcrumb
-              variant="small"
-              items={[
-                {
-                  label: projectName,
-                  href: projectUrl,
-                },
-                ...(parentTemplateName
-                  ? [
-                      {
-                        label: parentTemplateName,
-                        href: `${projectUrl}/templates/${parentTemplateName.split(':')[0]}`,
-                      },
-                    ]
-                  : []),
-                {
-                  label: agentName,
-                },
-              ]}
-            />
-            <AgentSettingsDropdown />
-          </HStack>
-        </HStack>
-        {props.children}
-      </HiddenOnMobile>
-      <VisibleOnMobile>
-        <HStack
-          position="relative"
-          align="center"
-          fullWidth
-          fullHeight
-          gap={false}
-        >
-          <Tooltip content={t('returnToHome')}>
-            <Link href="/">
+      <HStack overflowX="hidden" align="center" fullHeight gap="small">
+        <ProjectSelector
+          trigger={
+            <button className="h-full flex items-center justify-center">
               <LogoContainer />
-            </Link>
-          </Tooltip>
-          <HStack justify="center" fullWidth align="center">
-            <Typography variant="body">{agentName}</Typography>
-          </HStack>
+            </button>
+          }
+        />
+        <HStack gap={false}>
+          <Breadcrumb
+            variant="small"
+            items={[
+              {
+                label: projectName,
+                href: projectUrl,
+              },
+              ...(parentTemplateName
+                ? [
+                    {
+                      label: parentTemplateName,
+                      href: `${projectUrl}/templates/${parentTemplateName.split(':')[0]}`,
+                    },
+                  ]
+                : []),
+              {
+                label: agentName,
+              },
+            ]}
+          />
+          <AgentSettingsDropdown icon={<DotsHorizontalIcon />} />
         </HStack>
-        {props.children}
-      </VisibleOnMobile>
+      </HStack>
+      {props.children}
     </HStack>
   );
 }
@@ -387,7 +375,12 @@ function LoaderContent(props: LoaderContentProps) {
 
 type Dialogs = 'deleteAgent' | 'forkAgent' | 'renameAgent';
 
-function AgentSettingsDropdown() {
+interface AgentSettingsDropdownProps {
+  icon: React.ReactNode;
+}
+
+function AgentSettingsDropdown(props: AgentSettingsDropdownProps) {
+  const { icon } = props;
   const t = useTranslations(
     'projects/(projectSlug)/agents/(agentId)/AgentPage',
   );
@@ -414,7 +407,7 @@ function AgentSettingsDropdown() {
         triggerAsChild
         trigger={
           <Button
-            preIcon={<CogIcon />}
+            preIcon={icon}
             label={t('AgentSettingsDropdown.trigger', {
               agentBaseType: agentBaseType.capitalized,
             })}
@@ -653,13 +646,15 @@ export function AgentPage() {
         <MobileNavigationProvider>
           <ADEPage
             header={
-              <ADEHeader
+              <MobileADEHeader
                 agent={{
                   name: agentName,
                 }}
               >
-                <AgentSettingsDropdown />
-              </ADEHeader>
+                <AgentSettingsDropdown
+                  icon={<VerticalDotsIcon size="medium" />}
+                />
+              </MobileADEHeader>
             }
           >
             <VStack fullHeight fullWidth flex>

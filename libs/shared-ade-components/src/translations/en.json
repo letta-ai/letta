@@ -276,11 +276,27 @@
     }
   },
   "ADELayout": {
+    "apps": "All apps",
     "contextWindow": "Context Window",
     "agentSimulator": "Agent simulator",
     "contextWindowSimulator": "Context simulator",
     "settings": "{baseName} Settings",
-    "advancedSettings": "Advanced settings"
+    "advancedSettings": "Advanced settings",
+    "MobileAppSelector": {
+      "apps": "All Apps",
+      "close": "Close",
+      "open": "See all apps"
+    },
+    "mobileTitles": {
+      "settings": "Settings",
+      "advancedSettings": "Advanced",
+      "tools": "Tools",
+      "datasources": "Datasources",
+      "agentSimulator": "Simulator",
+      "contextWindow": "Context Window",
+      "coreMemories": "Core Memories",
+      "archivalMemories": "Archival Memories"
+    }
   },
   "ADE/EditCoreMemoriesPanel": {
     "SimulatedMemory": {

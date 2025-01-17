@@ -125,7 +125,6 @@ export * from './lib/core/QueryBuilder/QueryBuilder';
 
 export * from './lib/framing/VisibleOnMobile/VisibleOnMobile';
 
-export * from './lib/core/MobileFooterNavigation/MobileFooterNavigation';
 export * from './lib/icons/IconWrapper';
 
 export * from './lib/core/AdBanner/AdBanner';

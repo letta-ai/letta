@@ -1,6 +1,6 @@
 import {
-  ChevronDownIcon,
-  ChevronUpIcon,
+  AppsIcon,
+  CloseIcon,
   CodeIcon,
   CogIcon,
   ContextWindowIcon,
@@ -11,10 +11,10 @@ import {
   HStack,
   LettaInvaderIcon,
   Logo,
-  MobileFooterNavigation,
-  MobileFooterNavigationButton,
+  NiceGridDisplay,
   SettingsApplicationsIcon,
   ToolsIcon,
+  Typography,
   VisibleOnMobile,
   VStack,
 } from '@letta-cloud/component-library';
@@ -70,6 +70,8 @@ function useADETitleTranslations() {
 }
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import { useFeatureFlag } from '@letta-cloud/web-api-client';
+import { Slot } from '@radix-ui/react-slot';
+import { createPortal } from 'react-dom';
 
 function DesktopLayout() {
   const t = useTranslations('ADELayout');
@@ -191,6 +193,7 @@ function DesktopLayout() {
 
 interface AppPanel {
   title: string;
+  mobileTitle: string;
   icon: React.ReactNode;
   content: React.ReactNode;
 }
@@ -209,41 +212,49 @@ function useAppPanels(): Record<string, AppPanel> {
     () => ({
       settings: {
         title: t('settings', { baseName }),
+        mobileTitle: t('mobileTitles.settings'),
         icon: <SettingsApplicationsIcon />,
         content: <AgentSettingsPanel />,
       },
       advancedSettings: {
         title: t('advancedSettings'),
+        mobileTitle: t('mobileTitles.advancedSettings'),
         icon: <CogIcon />,
         content: <AdvancedSettingsPanel />,
       },
       tools: {
         title: toolsTitle,
+        mobileTitle: t('mobileTitles.tools'),
         icon: <ToolsIcon />,
         content: <ToolsPanel />,
       },
       datasources: {
         title: datasourcesTitle,
+        mobileTitle: t('mobileTitles.datasources'),
         icon: <DatabaseIcon />,
         content: <EditDataSourcesPanel />,
       },
       agentSimulator: {
         title: t('agentSimulator'),
+        mobileTitle: t('mobileTitles.agentSimulator'),
         icon: <LettaInvaderIcon />,
         content: <AgentSimulator />,
       },
       contextWindow: {
         title: t('contextWindow'),
+        mobileTitle: t('mobileTitles.contextWindow'),
         icon: <ContextWindowIcon />,
         content: <ContextWindowPanel />,
       },
       coreMemories: {
         title: editCoreMemoriesTitle,
+        mobileTitle: t('mobileTitles.coreMemories'),
         icon: <CodeIcon />,
         content: <EditMemory />,
       },
       archivalMemories: {
         title: archivalMemoriesTitle,
+        mobileTitle: t('mobileTitles.archivalMemories'),
         icon: <EditIcon />,
         content: <ArchivalMemoriesPanel />,
       },
@@ -259,110 +270,135 @@ function useAppPanels(): Record<string, AppPanel> {
   );
 }
 
-interface AgentMobileNavigationProps {
-  activePanel?: string;
-  setActivePanel?: (panelId: string) => void;
+interface MobileAppSelectorProps {
+  selectedAppId: string;
+  setSelectedAppId: (appId: string) => void;
+  onClose: VoidFunction;
 }
 
-const MORE_PANELS = 'more-panels';
+function MobileAppSelector(props: MobileAppSelectorProps) {
+  const { onClose, selectedAppId, setSelectedAppId } = props;
 
-function AgentMobileNavigation(props: AgentMobileNavigationProps) {
-  const { activePanel, setActivePanel } = props;
-  const t = useTranslations('AgentMobileNavigation');
-
-  const [expanded, setExpanded] = useState(false);
+  const t = useTranslations('ADELayout');
   const appPanels = useAppPanels();
 
-  const panelToShowInMainNavigation = useMemo(() => {
-    const firstElements = ['agentSimulator', 'settings'];
-
-    const activePanelIsFirstElement = firstElements.includes(activePanel || '');
-
-    const defaultPanelIdsToShow = [
-      ...firstElements,
-      !activePanelIsFirstElement ? activePanel : 'coreMemories',
-      MORE_PANELS,
-      'coreMemories',
-      'tools',
-      'datasources',
-      'advancedSettings',
-      'archivalMemories',
-    ];
-
-    const list = Array.from(new Set(defaultPanelIdsToShow));
-
-    if (expanded) {
-      return list;
-    }
-
-    return list.slice(0, 4);
-  }, [activePanel, expanded]);
-
-  return (
-    <MobileFooterNavigation>
-      {panelToShowInMainNavigation.map((panelId) => {
-        if (panelId === MORE_PANELS) {
-          return (
-            <MobileFooterNavigationButton
-              onClick={() => {
-                setExpanded((prev) => !prev);
-              }}
-              id="open-more-panels"
-              key={MORE_PANELS}
-              size="large"
-              preIcon={!expanded ? <ChevronUpIcon /> : <ChevronDownIcon />}
-              color="tertiary"
-              label={!expanded ? t('more') : t('less')}
-            />
-          );
-        }
-
-        if (!panelId) {
-          return null;
-        }
-
-        return (
-          <MobileFooterNavigationButton
-            active={panelId === activePanel}
-            id={panelId}
-            key={panelId}
-            size="large"
-            onClick={() => {
-              setActivePanel?.(panelId);
-              setExpanded(false);
-            }}
-            preIcon={appPanels[panelId].icon}
-            label={appPanels[panelId].title}
-          />
-        );
-      })}
-    </MobileFooterNavigation>
+  return createPortal(
+    <div
+      className="
+    bg-background
+    overflow-hidden
+    w-dvw
+    h-dvh
+    fade-in-0 animate-in
+    p-2
+    fixed top-0 left-0 z-miniapp"
+    >
+      <VStack
+        border
+        gap="large"
+        overflow="hidden"
+        align="center"
+        justify="center"
+        fullWidth
+        fullHeight
+      >
+        <VStack paddingX overflowY="auto" justify="center" fullHeight fullWidth>
+          <NiceGridDisplay itemWidth="100px" itemHeight="100px">
+            {Object.entries(appPanels).map(([appId, appPanel]) => (
+              <VStack
+                fullHeight
+                fullWidth
+                align="center"
+                justify="center"
+                color={selectedAppId === appId ? 'primary' : 'background'}
+                key={appId}
+                onClick={() => {
+                  onClose();
+                  setSelectedAppId(appId);
+                }}
+              >
+                <Slot className="w-8 h-8">{appPanel.icon}</Slot>
+                <Typography>{appPanel.mobileTitle}</Typography>
+              </VStack>
+            ))}
+          </NiceGridDisplay>
+        </VStack>
+        <HStack
+          onClick={() => {
+            onClose();
+          }}
+          as="button"
+          height="header-sm"
+          align="center"
+          borderTop
+          padding="small"
+          fullWidth
+          justify="spaceBetween"
+        >
+          <HStack align="center">
+            <AppsIcon />
+            <Typography className="mt-0.5">
+              {t('MobileAppSelector.apps')}
+            </Typography>
+          </HStack>
+          <div className="sr-only">{t('MobileAppSelector.close')}</div>
+          <CloseIcon />
+        </HStack>
+      </VStack>
+    </div>,
+    document.body,
   );
 }
 
 function MobileLayout() {
   const [selectedAppId, setSelectedAppId] = useState('agentSimulator');
-
+  const [isMobileAppSelectorOpen, setIsMobileAppSelectorOpen] = useState(false);
   const appPanels = useAppPanels();
   const selectedApp = appPanels[selectedAppId];
+  const t = useTranslations('ADELayout');
 
   return (
-    <VStack fullWidth fullHeight>
-      <VStack fullWidth fullHeight>
-        <ADEGroup
-          items={[
-            {
-              title: selectedApp.title,
-              id: 'selected',
-              content: selectedApp.content,
-            },
-          ]}
-        />
+    <VStack gap={false} fullWidth fullHeight overflow="hidden">
+      <VStack
+        gap={false}
+        overflow="hidden"
+        fullWidth
+        border
+        flex
+        collapseHeight
+      >
+        <VStack fullWidth flex collapseHeight>
+          {selectedApp.content}
+        </VStack>
+        <HStack
+          as="button"
+          onClick={() => {
+            setIsMobileAppSelectorOpen(true);
+          }}
+          fullWidth
+          justify="spaceBetween"
+          borderTop
+          height="header-sm"
+          padding="small"
+          align="center"
+        >
+          <HStack align="center">
+            <Slot className="w-5 h-5">{selectedApp.icon}</Slot>
+            <Typography>{selectedApp.title}</Typography>
+          </HStack>
+          <div className={'sr-only'}>{t('MobileAppSelector.open')}</div>
+          <AppsIcon />
+        </HStack>
       </VStack>
-      <AgentMobileNavigation
-        activePanel={selectedAppId}
-        setActivePanel={setSelectedAppId}
-      />
+      {isMobileAppSelectorOpen && (
+        <MobileAppSelector
+          onClose={() => {
+            setIsMobileAppSelectorOpen(false);
+          }}
+          selectedAppId={selectedAppId}
+          setSelectedAppId={setSelectedAppId}
+        />
+      )}
     </VStack>
   );
 }

@@ -6,10 +6,11 @@ interface NiceGridDisplayProps {
   children: React.ReactNode;
   itemWidth?: string;
   itemHeight?: string;
+  fullHeight?: boolean;
 }
 
 export function NiceGridDisplay(props: NiceGridDisplayProps) {
-  const { children, itemWidth, itemHeight } = props;
+  const { children, fullHeight, itemWidth, itemHeight } = props;
 
   return (
     <div
@@ -25,7 +26,7 @@ export function NiceGridDisplay(props: NiceGridDisplayProps) {
             }
           : {}),
       }}
-      className={cn('nice-grid-display w-full')}
+      className={cn('nice-grid-display w-full', fullHeight && 'h-full')}
     >
       {children}
     </div>
