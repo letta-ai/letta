@@ -875,7 +875,8 @@
                           "vllm",
                           "hugging-face",
                           "mistral",
-                          "together"
+                          "together",
+                          "bedrock"
                         ]
                       },
                       "model_endpoint": {
@@ -957,7 +958,8 @@
                           "vllm",
                           "hugging-face",
                           "mistral",
-                          "together"
+                          "together",
+                          "bedrock"
                         ]
                       },
                       "embedding_endpoint": {

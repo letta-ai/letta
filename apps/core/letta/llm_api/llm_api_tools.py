@@ -6,7 +6,8 @@ import requests
 
 from letta.constants import CLI_WARNING_PREFIX
 from letta.errors import LettaConfigurationError, RateLimitExceededError
-from letta.llm_api.anthropic import anthropic_chat_completions_request
+from letta.llm_api.anthropic import anthropic_bedrock_chat_completions_request, anthropic_chat_completions_request
+from letta.llm_api.aws_bedrock import has_valid_aws_credentials
 from letta.llm_api.azure_openai import azure_openai_chat_completions_request
 from letta.llm_api.google_ai import convert_tools_to_google_ai_format, google_ai_chat_completions_request
 from letta.llm_api.helpers import add_inner_thoughts_to_functions, unpack_all_inner_thoughts_from_kwargs
@@ -372,6 +373,34 @@ def create(
             # auth-related
             auth_type="bearer_token",  # NOTE: Together expects bearer token auth
             auth_key=model_settings.together_api_key,
+        )
+
+    elif llm_config.model_endpoint_type == "bedrock":
+        """Anthropic endpoint that goes via /embeddings instead of /chat/completions"""
+
+        if stream:
+            raise NotImplementedError(f"Streaming not yet implemented for Anthropic (via the /embeddings endpoint).")
+        if not use_tool_naming:
+            raise NotImplementedError("Only tool calling supported on Anthropic API requests")
+
+        if not has_valid_aws_credentials():
+            raise LettaConfigurationError(message="Invalid or missing AWS credentials. Please configure valid AWS credentials.")
+
+        tool_call = None
+        if force_tool_call is not None:
+            tool_call = {"type": "function", "function": {"name": force_tool_call}}
+            assert functions is not None
+
+        return anthropic_bedrock_chat_completions_request(
+            data=ChatCompletionRequest(
+                model=llm_config.model,
+                messages=[cast_message_to_subtype(m.to_openai_dict()) for m in messages],
+                tools=[{"type": "function", "function": f} for f in functions] if functions else None,
+                tool_choice=tool_call,
+                # user=str(user_id),
+                # NOTE: max_tokens is required for Anthropic API
+                max_tokens=1024,  # TODO make dynamic
+            ),
         )
 
     # local model

@@ -856,6 +856,7 @@ export type EmbeddingConfig = {
   embedding_endpoint_type:
     | 'openai'
     | 'anthropic'
+    | 'bedrock'
     | 'cohere'
     | 'google_ai'
     | 'azure'
@@ -911,6 +912,7 @@ export type EmbeddingConfig = {
 export type embedding_endpoint_type =
   | 'openai'
   | 'anthropic'
+  | 'bedrock'
   | 'cohere'
   | 'google_ai'
   | 'azure'
@@ -1124,7 +1126,8 @@ export type LLMConfig = {
     | 'vllm'
     | 'hugging-face'
     | 'mistral'
-    | 'together';
+    | 'together'
+    | 'bedrock';
   /**
    * The endpoint for the model.
    */
@@ -1167,7 +1170,8 @@ export type model_endpoint_type =
   | 'vllm'
   | 'hugging-face'
   | 'mistral'
-  | 'together';
+  | 'together'
+  | 'bedrock';
 
 export type LettaRequest = {
   /**

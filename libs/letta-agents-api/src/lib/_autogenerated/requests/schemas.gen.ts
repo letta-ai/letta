@@ -2360,6 +2360,7 @@ export const $EmbeddingConfig = {
       enum: [
         'openai',
         'anthropic',
+        'bedrock',
         'cohere',
         'google_ai',
         'azure',
@@ -2893,6 +2894,7 @@ export const $LLMConfig = {
         'hugging-face',
         'mistral',
         'together',
+        'bedrock',
       ],
       title: 'Model Endpoint Type',
       description: 'The endpoint type for the model.',
