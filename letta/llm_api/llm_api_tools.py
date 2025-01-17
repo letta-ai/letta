@@ -23,7 +23,6 @@ from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message
 from letta.schemas.openai.chat_completion_request import ChatCompletionRequest, Tool, cast_message_to_subtype
 from letta.schemas.openai.chat_completion_response import ChatCompletionResponse
-from letta.services.provider_manager import ProviderManager
 from letta.settings import ModelSettings
 from letta.streaming_interface import AgentChunkStreamingInterface, AgentRefreshStreamingInterface
 
@@ -253,12 +252,7 @@ def create(
             tool_call = {"type": "function", "function": {"name": force_tool_call}}
             assert functions is not None
 
-        # load anthropic key from db in case a custom key has been stored
-        anthropic_key_override = ProviderManager().get_anthropic_key_override()
-
         return anthropic_chat_completions_request(
-            url=llm_config.model_endpoint,
-            api_key=anthropic_key_override if anthropic_key_override else model_settings.anthropic_api_key,
             data=ChatCompletionRequest(
                 model=llm_config.model,
                 messages=[cast_message_to_subtype(m.to_openai_dict()) for m in messages],

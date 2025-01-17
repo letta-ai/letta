@@ -376,14 +376,13 @@ def test_bedrock_claude_sonnet_3_5_uses_external_tool(mock_e2b_api_key_none):
     print(f"Got successful response from client: \n\n{response}")
 
 
-# TODO: Debug later
-# @pytest.mark.anthropic_bedrock_basic
-# @retry_until_success(max_attempts=5, sleep_time_seconds=2)
-# def test_bedrock_claude_sonnet_3_5_recall_chat_memory():
-#     filename = os.path.join(llm_config_dir, "bedrock-claude-3-5-sonnet.json")
-#     response = check_agent_recall_chat_memory(filename)
-#     # Log out successful response
-#     print(f"Got successful response from client: \n\n{response}")
+@pytest.mark.anthropic_bedrock_basic
+@retry_until_success(max_attempts=5, sleep_time_seconds=2)
+def test_bedrock_claude_sonnet_3_5_recall_chat_memory():
+    filename = os.path.join(llm_config_dir, "bedrock-claude-3-5-sonnet.json")
+    response = check_agent_recall_chat_memory(filename)
+    # Log out successful response
+    print(f"Got successful response from client: \n\n{response}")
 
 
 @pytest.mark.anthropic_bedrock_basic
