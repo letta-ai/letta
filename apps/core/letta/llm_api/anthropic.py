@@ -2,8 +2,9 @@ import json
 import re
 from typing import List, Optional, Tuple, Union
 
+import anthropic
+
 from letta.llm_api.aws_bedrock import get_bedrock_client
-from letta.llm_api.helpers import make_post_request
 from letta.schemas.message import Message
 from letta.schemas.openai.chat_completion_request import ChatCompletionRequest, Tool
 from letta.schemas.openai.chat_completion_response import ChatCompletionResponse, Choice, FunctionCall
@@ -11,6 +12,7 @@ from letta.schemas.openai.chat_completion_response import (
     Message as ChoiceMessage,  # NOTE: avoid conflict with our own Letta Message datatype
 )
 from letta.schemas.openai.chat_completion_response import ToolCall, UsageStatistics
+from letta.settings import model_settings
 from letta.utils import get_utc_time, smart_urljoin
 
 BASE_URL = "https://api.anthropic.com/v1"
@@ -34,6 +36,9 @@ MODEL_LIST = [
 ]
 
 DUMMY_FIRST_USER_MESSAGE = "User initializing bootup sequence."
+
+if model_settings.anthropic_api_key:
+    anthropic_client = anthropic.Anthropic()
 
 
 def antropic_get_model_context_window(url: str, api_key: Union[str, None], model: str) -> int:
@@ -196,7 +201,7 @@ def strip_xml_tags(string: str, tag: Optional[str]) -> str:
 
 
 def convert_anthropic_response_to_chatcompletion(
-    response_json: dict,  # REST response from Google AI API
+    response: anthropic.types.Message,
     inner_thoughts_xml_tag: Optional[str] = None,
 ) -> ChatCompletionResponse:
     """
@@ -233,65 +238,67 @@ def convert_anthropic_response_to_chatcompletion(
         }
     }
     """
-    prompt_tokens = response_json["usage"]["input_tokens"]
-    completion_tokens = response_json["usage"]["output_tokens"]
+    prompt_tokens = response.usage.input_tokens
+    completion_tokens = response.usage.output_tokens
+    finish_reason = remap_finish_reason(response.stop_reason)
 
-    finish_reason = remap_finish_reason(response_json["stop_reason"])
+    content = None
+    tool_calls = None
 
-    if isinstance(response_json["content"], list):
-        if len(response_json["content"]) > 1:
-            # inner mono + function call
-            assert len(response_json["content"]) == 2, response_json
-            assert response_json["content"][0]["type"] == "text", response_json
-            assert response_json["content"][1]["type"] == "tool_use", response_json
-            content = strip_xml_tags(string=response_json["content"][0]["text"], tag=inner_thoughts_xml_tag)
+    if len(response.content) > 1:
+        # inner mono + function call
+        assert len(response.content) == 2
+        text_block = response.content[0]
+        tool_block = response.content[1]
+        assert text_block.type == "text"
+        assert tool_block.type == "tool_use"
+        content = strip_xml_tags(string=text_block.text, tag=inner_thoughts_xml_tag)
+        tool_calls = [
+            ToolCall(
+                id=tool_block.id,
+                type="function",
+                function=FunctionCall(
+                    name=tool_block.name,
+                    arguments=json.dumps(tool_block.input, indent=2),
+                ),
+            )
+        ]
+    elif len(response.content) == 1:
+        block = response.content[0]
+        if block.type == "tool_use":
+            # function call only
             tool_calls = [
                 ToolCall(
-                    id=response_json["content"][1]["id"],
+                    id=block.id,
                     type="function",
                     function=FunctionCall(
-                        name=response_json["content"][1]["name"],
-                        arguments=json.dumps(response_json["content"][1]["input"], indent=2),
+                        name=block.name,
+                        arguments=json.dumps(block.input, indent=2),
                     ),
                 )
             ]
-        elif len(response_json["content"]) == 1:
-            if response_json["content"][0]["type"] == "tool_use":
-                # function call only
-                content = None
-                tool_calls = [
-                    ToolCall(
-                        id=response_json["content"][0]["id"],
-                        type="function",
-                        function=FunctionCall(
-                            name=response_json["content"][0]["name"],
-                            arguments=json.dumps(response_json["content"][0]["input"], indent=2),
-                        ),
-                    )
-                ]
-            else:
-                # inner mono only
-                content = strip_xml_tags(string=response_json["content"][0]["text"], tag=inner_thoughts_xml_tag)
-                tool_calls = None
+        else:
+            # inner mono only
+            content = strip_xml_tags(string=block.text, tag=inner_thoughts_xml_tag)
     else:
-        raise RuntimeError("Unexpected type for content in response_json.")
+        raise RuntimeError("Unexpected empty content in response")
 
-    assert response_json["role"] == "assistant", response_json
+    assert response.role == "assistant"
     choice = Choice(
         index=0,
         finish_reason=finish_reason,
         message=ChoiceMessage(
-            role=response_json["role"],
+            role=response.role,
             content=content,
             tool_calls=tool_calls,
         ),
     )
 
     return ChatCompletionResponse(
-        id=response_json["id"],
+        id=response.id,
         choices=[choice],
         created=get_utc_time(),
-        model=response_json["model"],
+        model=response.model,
         usage=UsageStatistics(
             prompt_tokens=prompt_tokens,
             completion_tokens=completion_tokens,
@@ -383,16 +390,17 @@ def get_anthropic_endpoint_and_headers(
 
 
 def anthropic_chat_completions_request(
-    url: str,
-    api_key: str,
     data: ChatCompletionRequest,
     inner_thoughts_xml_tag: Optional[str] = "thinking",
+    betas: List[str] = ["tools-2024-04-04"],
 ) -> ChatCompletionResponse:
     """https://docs.anthropic.com/claude/docs/tool-use"""
-    url, headers = get_anthropic_endpoint_and_headers(url, api_key)
     data = _prepare_anthropic_request(data, inner_thoughts_xml_tag)
-    response_json = make_post_request(url, headers, data)
-    return convert_anthropic_response_to_chatcompletion(response_json=response_json, inner_thoughts_xml_tag=inner_thoughts_xml_tag)
+    response = anthropic_client.beta.messages.create(
+        **data,
+        betas=betas,
+    )
+    return convert_anthropic_response_to_chatcompletion(response=response, inner_thoughts_xml_tag=inner_thoughts_xml_tag)
 
 
 def anthropic_bedrock_chat_completions_request(
@@ -406,13 +414,5 @@ def anthropic_bedrock_chat_completions_request(
     client = get_bedrock_client()
 
     # Make the request
-    response = client.messages.create(
-        model=data["model"],
-        max_tokens=data["max_tokens"],
-        messages=data["messages"],
-        tools=data.get("tools", None),
-    )
-
-    return convert_anthropic_response_to_chatcompletion(
-        response_json=json.loads(response.json()), inner_thoughts_xml_tag=inner_thoughts_xml_tag
-    )
+    response = client.messages.create(**data)
+    return convert_anthropic_response_to_chatcompletion(response=response, inner_thoughts_xml_tag=inner_thoughts_xml_tag)
