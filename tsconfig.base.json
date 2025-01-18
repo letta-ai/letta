@@ -53,6 +53,7 @@
       ],
       "@letta-cloud/redis": ["libs/redis/src/index.ts"],
       "@letta-cloud/runtime": ["libs/runtime/src/index.ts"],
+      "@letta-cloud/server-utils": ["libs/server-utils/src/index.ts"],
       "@letta-cloud/shared-ade-components": [
         "libs/shared-ade-components/src/index.ts"
       ],

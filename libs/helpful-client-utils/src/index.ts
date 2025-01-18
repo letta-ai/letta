@@ -7,3 +7,5 @@ export * from './useDateFormatter/useDateFormatter';
 export * from './useMonthCursor/useMonthCursor';
 export * from './useCurrentDevelopmentServerConfig/useCurrentDevelopmentServerConfig';
 export * from './useCurrentAPIHostConfig/useCurrentAPIHostConfig';
+export * from './useCurrencyFormatter/useCurrencyFormatter';
+export * from './useNumberFormatter/useNumberFormatter';

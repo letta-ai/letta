@@ -15,6 +15,7 @@ import {
   FormField,
   FormProvider,
   HStack,
+  Input,
   LoadedTypography,
   OptionTypeSchemaSingle,
   Typography,
@@ -35,6 +36,9 @@ import type { ServerInferResponses } from '@ts-rest/core';
 import { useDebouncedValue } from '@mantine/hooks';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useCurrencyFormatter } from '@letta-cloud/helpful-client-utils';
+import { creditsToDollars } from '@letta-cloud/generic-utils';
+import { useNumberFormatter } from '@letta-cloud/helpful-client-utils';
 
 function EnableCloudAccess() {
   const organization = useCurrentAdminOrganization();
@@ -345,6 +349,7 @@ function OrganizationMembers() {
         id: 'actions',
         cell: ({ row }) => (
           <DropdownMenu
+            triggerAsChild
             trigger={
               <Button
                 label="Actions"
@@ -657,6 +662,284 @@ function BanOrganizationDialog() {
   );
 }
 
+function CreditTransactionHistory() {
+  const limit = 5;
+  const [offset, setOffset] = useState(0);
+  const organization = useCurrentAdminOrganization();
+
+  const { data, isLoading } =
+    webApi.admin.organizations.adminListOrganizationCreditTransactions.useQuery(
+      {
+        queryKey:
+          webApiQueryKeys.admin.organizations.adminListOrganizationCreditTransactionsWithSearch(
+            organization?.id || '',
+            {
+              limit,
+              offset,
+            },
+          ),
+        queryData: {
+          params: {
+            organizationId: organization?.id || '',
+          },
+          query: {
+            limit,
+            offset,
+          },
+        },
+        enabled: !!organization,
+      },
+    );
+
+  const columns = useMemo(() => {
+    return [
+      {
+        header: 'Amount',
+        accessorKey: 'amount',
+      },
+      {
+        header: 'Notes',
+        accessorKey: 'note',
+      },
+      {
+        header: 'Transaction Type',
+        accessorKey: 'transactionType',
+      },
+      {
+        header: 'Created At',
+        accessorKey: 'createdAt',
+      },
+    ];
+  }, []);
+
+  return (
+    <DataTable
+      columns={columns}
+      data={data?.body.transactions || []}
+      limit={limit}
+      offset={offset}
+      onSetOffset={setOffset}
+      isLoading={isLoading}
+      hasNextPage={data?.body.transactions.length === limit}
+    />
+  );
+}
+
+function RemoveCreditsDialog() {
+  const organization = useCurrentAdminOrganization();
+
+  const form = useForm<z.infer<typeof creditsToAddSchema>>({
+    resolver: zodResolver(creditsToAddSchema),
+    defaultValues: {
+      amount: 0,
+      note: '',
+    },
+  });
+
+  const { mutate, isPending, isError } =
+    webApi.admin.organizations.adminRemoveCreditsFromOrganization.useMutation();
+
+  const handleRemoveCredits = useCallback(
+    async (values: z.infer<typeof creditsToAddSchema>) => {
+      if (!organization) {
+        return;
+      }
+
+      mutate(
+        {
+          params: {
+            organizationId: organization.id,
+          },
+          body: {
+            amount: values.amount,
+            note: values.note,
+          },
+        },
+        {
+          onSuccess: () => {
+            window.location.reload();
+          },
+        },
+      );
+    },
+    [organization, mutate],
+  );
+
+  return (
+    <FormProvider {...form}>
+      <Dialog
+        title="Remove Credits"
+        trigger={
+          <Button size="small" color="destructive" label="Remove Credits" />
+        }
+        isConfirmBusy={isPending}
+        errorMessage={isError ? 'Failed to remove credits' : undefined}
+        onSubmit={form.handleSubmit(handleRemoveCredits)}
+      >
+        <FormField
+          render={({ field }) => (
+            <Input
+              type="number"
+              {...field}
+              fullWidth
+              label="Amount"
+              placeholder="Enter amount"
+            />
+          )}
+          name="amount"
+        />
+        <FormField
+          render={({ field }) => (
+            <Input {...field} fullWidth label="Note" placeholder="Enter note" />
+          )}
+          name="note"
+        />
+      </Dialog>
+    </FormProvider>
+  );
+}
+
+const creditsToAddSchema = z.object({
+  amount: z.coerce.number().positive().int(),
+  note: z.string().optional(),
+});
+
+function AddCreditsDialog() {
+  const organization = useCurrentAdminOrganization();
+
+  const form = useForm<z.infer<typeof creditsToAddSchema>>({
+    resolver: zodResolver(creditsToAddSchema),
+    defaultValues: {
+      amount: 0,
+      note: '',
+    },
+  });
+
+  const { mutate, isPending, isError } =
+    webApi.admin.organizations.adminAddCreditsToOrganization.useMutation();
+
+  const handleAddCredits = useCallback(
+    async (values: z.infer<typeof creditsToAddSchema>) => {
+      if (!organization) {
+        return;
+      }
+
+      mutate(
+        {
+          params: {
+            organizationId: organization.id,
+          },
+          body: {
+            amount: values.amount,
+            note: values.note,
+          },
+        },
+        {
+          onSuccess: () => {
+            window.location.reload();
+          },
+        },
+      );
+    },
+    [organization, mutate],
+  );
+
+  return (
+    <FormProvider {...form}>
+      <Dialog
+        title="Add Credits"
+        trigger={<Button size="small" label="Add Credits" />}
+        isConfirmBusy={isPending}
+        errorMessage={isError ? 'Failed to add credits' : undefined}
+        onSubmit={form.handleSubmit(handleAddCredits)}
+      >
+        <FormField
+          render={({ field }) => (
+            <Input
+              type="number"
+              {...field}
+              fullWidth
+              label="Amount"
+              placeholder="Enter amount"
+            />
+          )}
+          name="amount"
+        />
+        <FormField
+          render={({ field }) => (
+            <Input {...field} fullWidth label="Note" placeholder="Enter note" />
+          )}
+          name="note"
+        />
+      </Dialog>
+    </FormProvider>
+  );
+}
+
+function CreditSection() {
+  const organization = useCurrentAdminOrganization();
+
+  const { data } =
+    webApi.admin.organizations.adminGetOrganizationCredits.useQuery({
+      queryKey: webApiQueryKeys.admin.organizations.adminGetOrganizationCredits(
+        organization?.id || '',
+      ),
+      queryData: {
+        params: {
+          organizationId: organization?.id || '',
+        },
+      },
+      enabled: !!organization,
+    });
+
+  const { formatNumber } = useNumberFormatter();
+
+  const credits = useMemo(() => {
+    if (!data?.body) {
+      return '-';
+    }
+
+    return formatNumber(data.body.credits);
+  }, [data?.body, formatNumber]);
+
+  const { formatCurrency } = useCurrencyFormatter();
+
+  const creditValue = useMemo(() => {
+    if (!data?.body) {
+      return '';
+    }
+
+    return `(${formatCurrency(creditsToDollars(data.body.credits))})`;
+  }, [data?.body, formatCurrency]);
+
+  return (
+    <DashboardPageSection title="Credits">
+      <VStack gap={false}>
+        <HStack
+          align="center"
+          justify="spaceBetween"
+          fullWidth
+          padding="small"
+          borderX
+          borderTop
+        >
+          <HStack>
+            <Typography>Total Credits: </Typography>
+            <Typography>
+              {credits} {creditValue}{' '}
+            </Typography>
+          </HStack>
+          <HStack>
+            <AddCreditsDialog />
+            <RemoveCreditsDialog />
+          </HStack>
+        </HStack>
+        <CreditTransactionHistory />
+      </VStack>
+    </DashboardPageSection>
+  );
+}
+
 function UnBanOrganizationDialog() {
   const organization = useCurrentAdminOrganization();
 
@@ -744,6 +1027,7 @@ function OrganizationPage() {
         </HStack>
       </DashboardPageSection>
       <OrganizationProperties />
+      <CreditSection />
       <OrganizationMembers />
       <UsageDetails />
       <DashboardPageSection title="Ban Organization">

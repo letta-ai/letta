@@ -5,13 +5,19 @@ import {
   db,
   deployedAgents,
   lettaAPIKeys,
+  organizationCredits,
+  organizationCreditTransactions,
   organizations,
   organizationUsers,
   users,
 } from '@letta-cloud/database';
-import { and, count, eq, ilike, inArray } from 'drizzle-orm';
+import { and, count, desc, eq, ilike, inArray } from 'drizzle-orm';
 import { AdminService } from '@letta-cloud/letta-agents-api';
 import { getUsageByModelSummaryAndOrganizationId } from '$web/web-api/usage/usageRouter';
+import {
+  addCreditsToOrganization,
+  removeCreditsFromOrganization,
+} from '@letta-cloud/server-utils';
 
 /* Get Organizations */
 type GetOrganizationsResponse = ServerInferResponses<
@@ -601,6 +607,134 @@ async function adminGetOrganizationInferenceUsage(
   };
 }
 
+type AdminOrganizationCreditsSchema = ServerInferResponses<
+  typeof contracts.admin.organizations.adminGetOrganizationCredits
+>;
+
+type AdminOrganizationCreditsRequest = ServerInferRequest<
+  typeof contracts.admin.organizations.adminGetOrganizationCredits
+>;
+
+async function adminGetOrganizationCredits(
+  req: AdminOrganizationCreditsRequest,
+): Promise<AdminOrganizationCreditsSchema> {
+  const { organizationId } = req.params;
+
+  const organization = await db.query.organizationCredits.findFirst({
+    where: eq(organizationCredits.organizationId, organizationId),
+  });
+
+  if (!organization) {
+    return {
+      status: 404,
+      body: {
+        message: 'Organization not found',
+      },
+    };
+  }
+
+  return {
+    status: 200,
+    body: {
+      credits: parseInt(organization.credits),
+    },
+  };
+}
+
+type AdminAddCreditsToOrganizationRequest = ServerInferRequest<
+  typeof contracts.admin.organizations.adminAddCreditsToOrganization
+>;
+
+type AdminAddCreditsToOrganizationResponse = ServerInferResponses<
+  typeof contracts.admin.organizations.adminAddCreditsToOrganization
+>;
+
+export async function adminAddCreditsToOrganization(
+  req: AdminAddCreditsToOrganizationRequest,
+): Promise<AdminAddCreditsToOrganizationResponse> {
+  const { organizationId } = req.params;
+  const { amount, note } = req.body;
+
+  const response = await addCreditsToOrganization({
+    organizationId,
+    amount,
+    source: 'admin',
+    note,
+  });
+
+  return {
+    status: 200,
+    body: {
+      credits: parseInt(response.credits, 10),
+    },
+  };
+}
+
+type AdminRemoveCreditsFromOrganizationRequest = ServerInferRequest<
+  typeof contracts.admin.organizations.adminRemoveCreditsFromOrganization
+>;
+
+type AdminRemoveCreditsFromOrganizationResponse = ServerInferResponses<
+  typeof contracts.admin.organizations.adminRemoveCreditsFromOrganization
+>;
+
+async function adminRemoveCreditsFromOrganization(
+  req: AdminRemoveCreditsFromOrganizationRequest,
+): Promise<AdminRemoveCreditsFromOrganizationResponse> {
+  const { organizationId } = req.params;
+  const { amount, note } = req.body;
+
+  const response = await removeCreditsFromOrganization({
+    organizationId,
+    amount,
+    source: 'admin',
+    note,
+  });
+
+  return {
+    status: 200,
+    body: {
+      credits: parseInt(response.credits, 10),
+    },
+  };
+}
+
+type OrganizationCreditTransactionsSchema = ServerInferResponses<
+  typeof contracts.admin.organizations.adminListOrganizationCreditTransactions
+>;
+
+type OrganizationCreditTransactionsRequest = ServerInferRequest<
+  typeof contracts.admin.organizations.adminListOrganizationCreditTransactions
+>;
+
+async function adminListOrganizationCreditTransactions(
+  req: OrganizationCreditTransactionsRequest,
+): Promise<OrganizationCreditTransactionsSchema> {
+  const { organizationId } = req.params;
+  const { offset, limit = 10 } = req.query;
+
+  const transactions = await db.query.organizationCreditTransactions.findMany({
+    offset,
+    limit: limit + 1,
+    orderBy: desc(organizationCreditTransactions.createdAt),
+    where: eq(organizationCreditTransactions.organizationId, organizationId),
+  });
+
+  return {
+    status: 200,
+    body: {
+      transactions: transactions.slice(0, limit).map((transaction) => ({
+        id: transaction.id,
+        amount: parseInt(transaction.amount, 10),
+        note: transaction.note || '',
+        transactionType: transaction.transactionType,
+        createdAt: transaction.createdAt.toISOString(),
+      })),
+      hasNextPage: transactions.length > limit,
+    },
+  };
+}
+
 export const adminOrganizationsRouter = {
   getOrganizations,
   getOrganization,
@@ -613,4 +747,8 @@ export const adminOrganizationsRouter = {
   adminListOrganizationUsers,
   adminDeleteOrganization,
   adminGetOrganizationInferenceUsage,
+  adminGetOrganizationCredits,
+  adminAddCreditsToOrganization,
+  adminRemoveCreditsFromOrganization,
+  adminListOrganizationCreditTransactions,
 };

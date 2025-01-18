@@ -705,3 +705,59 @@ export const toolGroupMetadata = pgTable('tool_group_metadata', {
   imageUrl: text('image_url'),
   description: text('description').notNull(),
 });
+
+export const organizationCredits = pgTable('organization_credits', {
+  organizationId: text('organization_id')
+    .notNull()
+    .references(() => organizations.id, { onDelete: 'cascade' })
+    .primaryKey(),
+  credits: numeric('credits').notNull().default('0'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at')
+    .notNull()
+    .$onUpdate(() => new Date()),
+});
+
+export const organizationCreditsRelations = relations(
+  organizationCredits,
+  ({ one }) => ({
+    organization: one(organizations, {
+      fields: [organizationCredits.organizationId],
+      references: [organizations.id],
+    }),
+  }),
+);
+
+export const transactionTypesEnum = pgEnum('transaction_types', [
+  'addition',
+  'subtraction',
+]);
+
+export const organizationCreditTransactions = pgTable(
+  'organization_credit_transactions',
+  {
+    id: text('id')
+      .notNull()
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    organizationId: text('organization_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' })
+      .notNull(),
+    source: text('source').notNull(),
+    amount: numeric('amount').notNull(),
+    transactionType: transactionTypesEnum('transaction_type').notNull(),
+    note: text('note'),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+  },
+);
+
+export const organizationCreditTransactionRelations = relations(
+  organizationCreditTransactions,
+  ({ one }) => ({
+    organization: one(organizations, {
+      fields: [organizationCreditTransactions.organizationId],
+      references: [organizations.id],
+    }),
+  }),
+);

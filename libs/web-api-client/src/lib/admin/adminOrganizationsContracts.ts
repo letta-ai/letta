@@ -225,6 +225,80 @@ const adminGetOrganizationInferenceUsageByModelContract = c.query({
   },
 });
 
+const AdminOrganizationCreditsSchema = z.object({
+  credits: z.number(),
+});
+
+const adminGetOrganizationCreditsContract = c.query({
+  method: 'GET',
+  pathParams: z.object({
+    organizationId: z.string(),
+  }),
+  path: '/admin/organizations/:organizationId/credits',
+  responses: {
+    200: AdminOrganizationCreditsSchema,
+  },
+});
+
+const AddCreditsToOrganizationPayloadSchema = z.object({
+  amount: z.number().positive().int(),
+  note: z.string().optional(),
+});
+
+const adminAddCreditsToOrganizationContract = c.mutation({
+  method: 'POST',
+  pathParams: z.object({
+    organizationId: z.string(),
+  }),
+  path: '/admin/organizations/:organizationId/add-credits',
+  body: AddCreditsToOrganizationPayloadSchema,
+  responses: {
+    200: AdminOrganizationCreditsSchema,
+  },
+});
+
+const RemoveCreditsFromOrganizationPayloadSchema = z.object({
+  amount: z.number().positive().int(),
+  note: z.string().optional(),
+});
+
+const adminRemoveCreditsFromOrganizationContract = c.mutation({
+  method: 'POST',
+  pathParams: z.object({
+    organizationId: z.string(),
+  }),
+  path: '/admin/organizations/:organizationId/remove-credits',
+  body: RemoveCreditsFromOrganizationPayloadSchema,
+  responses: {
+    200: AdminOrganizationCreditsSchema,
+  },
+});
+
+const creditTransactionSchema = z.object({
+  id: z.string(),
+  amount: z.number(),
+  note: z.string().optional(),
+  transactionType: z.enum(['addition', 'subtraction']),
+  createdAt: z.string(),
+});
+
+const organizationCreditTransactionsSchema = z.object({
+  transactions: z.array(creditTransactionSchema),
+  hasNextPage: z.boolean(),
+});
+
+const adminListOrganizationCreditTransactionsContract = c.query({
+  method: 'GET',
+  pathParams: z.object({
+    organizationId: z.string(),
+  }),
+  query: GenericSearchSchema,
+  path: '/admin/organizations/:organizationId/credit-transactions',
+  responses: {
+    200: organizationCreditTransactionsSchema,
+  },
+});
+
 export const adminOrganizationsContracts = {
   getOrganizations: getOrganizationsContract,
   getOrganization: getOrganizationContract,
@@ -238,6 +312,12 @@ export const adminOrganizationsContracts = {
   adminDeleteOrganization: adminDeleteOrganizationContract,
   adminGetOrganizationInferenceUsage:
     adminGetOrganizationInferenceUsageByModelContract,
+  adminGetOrganizationCredits: adminGetOrganizationCreditsContract,
+  adminAddCreditsToOrganization: adminAddCreditsToOrganizationContract,
+  adminRemoveCreditsFromOrganization:
+    adminRemoveCreditsFromOrganizationContract,
+  adminListOrganizationCreditTransactions:
+    adminListOrganizationCreditTransactionsContract,
 };
 
 export const adminOrganizationsQueryClientKeys = {
@@ -274,5 +354,22 @@ export const adminOrganizationsQueryClientKeys = {
     ...adminOrganizationsQueryClientKeys.getOrganization(organizationId),
     'inference-usage',
     query,
+  ],
+  adminGetOrganizationCredits: (organizationId: string) => [
+    ...adminOrganizationsQueryClientKeys.getOrganization(organizationId),
+    'credits',
+  ],
+  adminListOrganizationCreditTransactions: (organizationId: string) => [
+    ...adminOrganizationsQueryClientKeys.getOrganization(organizationId),
+    'credit-transactions',
+  ],
+  adminListOrganizationCreditTransactionsWithSearch: (
+    organizationId: string,
+    search: GenericSearch,
+  ) => [
+    ...adminOrganizationsQueryClientKeys.adminListOrganizationCreditTransactions(
+      organizationId,
+    ),
+    search,
   ],
 };
