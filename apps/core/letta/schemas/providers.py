@@ -168,7 +168,23 @@ class OpenAIProvider(Provider):
                 embedding_dim=1536,
                 embedding_chunk_size=300,
                 handle=self.get_handle("text-embedding-ada-002"),
-            )
+            ),
+            EmbeddingConfig(
+                embedding_model="text-embedding-3-small",
+                embedding_endpoint_type="openai",
+                embedding_endpoint="https://api.openai.com/v1",
+                embedding_dim=2000,
+                embedding_chunk_size=300,
+                handle=self.get_handle("text-embedding-3-small"),
+            ),
+            EmbeddingConfig(
+                embedding_model="text-embedding-3-large",
+                embedding_endpoint_type="openai",
+                embedding_endpoint="https://api.openai.com/v1",
+                embedding_dim=2000,
+                embedding_chunk_size=300,
+                handle=self.get_handle("text-embedding-3-large"),
+            ),
         ]
 
     def get_model_context_window_size(self, model_name: str):

@@ -45,13 +45,11 @@ To enable the Ollama provider, you must set the `OLLAMA_BASE_URL` environment va
 
 ### Using the `docker run` server with Ollama
 Since Ollama is running on the host network, you will need to use `host.docker.internal` to connect to the Ollama server instead of `localhost`.
-You'll also want to make sure to open the port 11434 (the default port for Ollama) on your host machine.
 ```bash
 # replace `~/.letta/.persist/pgdata` with wherever you want to store your agent data
 docker run \
   -v ~/.letta/.persist/pgdata:/var/lib/postgresql/data \
   -p 8283:8283 \
-  -p 11434:11434 \
   -e OLLAMA_BASE_URL="http://host.docker.internal:11434" \
   letta/letta:latest
 ```

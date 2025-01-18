@@ -66,48 +66,104 @@ For information on how to configure the ADE with a Letta server running on a rem
 Let's create an agent via the Letta API, which we can then view in the ADE (you can also use the ADE to create agents).
 
 To create an agent we'll send a POST request to the Letta Server ([API docs](/api-reference/agents/create)).
-In this example, we'll use the Claude API for the base LLM model, and the OpenAI API for the embedding model (this requires having configured both `OPENAI_API_KEY` and `ANTHROPIC_API_KEY` on our Letta Server):
+In this example, we'll use `gpt-4o-mini` as the base LLM model, and `text-embedding-3-small` as the embedding model (this requires having configured both `OPENAI_API_KEY` on our Letta Server).
+
+We'll also artificially set the context window limit to 16k, instead of the 128k default for `gpt-4o-mini` (this can improve stability and performance):
 <CodeGroup>
-```sh REST API (request)
-curl --request POST \
-  --url http://localhost:8283/v1/agents/ \
-  --header 'Content-Type: application/json' \
-  --data '{
+```curl curl
+curl -X POST http://localhost:8283/v1/agents/ \
+     -H "Content-Type: application/json" \
+     -d '{
   "memory_blocks": [
     {
-      "label": "human",
-      "value": "The human'\''s name is Bob the Builder"
+      "value": "The human'\''s name is Bob the Builder.",
+      "label": "human"
     },
     {
-      "label": "persona",
-      "value": "My name is Sam, the all-knowing sentient AI."
+      "value": "My name is Sam, the all-knowing sentient AI.",
+      "label": "persona"
     }
   ],
-  "llm": "anthropic/claude-3-5-sonnet-20241022",
+  "llm": "openai/gpt-4o-mini",
   "context_window_limit": 16000,
-  "embedding": "openai/text-embedding-ada-002",
+  "embedding": "openai/text-embedding-3-small"
 }'
 ```
-</CodeGroup>
-The response will include information about the agent:
-<CodeGroup>
-```sh REST API (response)
-{"description":null,"metadata_":null,"id":"agent-...
+```python title="python" maxLines=50
+# install letta_client with `pip install letta-client`
+from letta_client import Letta
+
+# create a client to connect to your local Letta Server
+client = Letta(
+  base_url="http://localhost:8283"
+)
+
+# create an agent with two basic self-editing memory blocks
+agent_state = client.agents.create(
+    memory_blocks=[
+        {
+          "label": "human",
+          "value": "The human's name is Bob the Builder."
+        },
+        {
+          "label": "persona",
+          "value": "My name is Sam, the all-knowing sentient AI."
+        }
+    ],
+    llm="openai/gpt-4o-mini",
+    context_window_limit=16000,
+    embedding="openai/text-embedding-3-small"
+)
+
+# the AgentState object contains all the information about the agent
+print(agent_state)
+```
+```typescript maxLines=50 title="node.js"
+// install letta-client with `npm install @letta-ai/letta-client`
+import { LettaClient } from '@letta-ai/letta-client'
+
+// create a client to connect to your local Letta Server
+const client = new LettaClient({
+  baseUrl: "http://localhost:8283"
+});
+
+// create an agent with two basic self-editing memory blocks
+const agentState = await client.agents.create({
+    memoryBlocks: [
+        {
+          label: "human",
+          value: "The human's name is Bob the Builder."
+        },
+        {
+          label: "persona",
+          value: "My name is Sam, the all-knowing sentient AI."
+        }
+    ],
+    llm: "openai/gpt-4o-mini",
+    contextWindowLimit: 16000,
+    embedding: "openai/text-embedding-3-small"
+});
+
+// the AgentState object contains all the information about the agent
+console.log(agentState);
 ```
 </CodeGroup>
 
+The response will include information about the agent, including its `id`:
+```json
+{
+  "id": "agent-43f8e098-1021-4545-9395-446f788d7389",
+  "name": "GracefulFirefly",
+  ...
+}
+```
+
 ## Send a message to the agent with the Letta API
-
-<Tip>
-The Letta API supports streaming both agent *steps* and streaming *tokens*.
-For more information on streaming, see [our guide on streaming](/agents/streaming).
-</Tip>
-
-Let's try sending a message to the new agent! We'll use the agent `id` (starting with `agent-...`) that we received in the response above in place of `agent_id` ([route documentation](https://docs.letta.com/api-reference/agents/send-message)):
+Let's try sending a message to the new agent! Replace `AGENT_ID` with the actual agent ID we received in the agent state ([route documentation](https://docs.letta.com/api-reference/agents/send-message)):
 <CodeGroup>
-```sh REST API (request)
+```curl curl
 curl --request POST \
-  --url http://localhost:8283/v1/agents/agent-a6984b2f-9ad6-43a9-b447-6d32d19a248a/messages \
+  --url http://localhost:8283/v1/agents/$AGENT_ID/messages \
   --header 'Content-Type: application/json' \
   --data '{
   "messages": [
@@ -118,11 +174,56 @@ curl --request POST \
   ]
 }'
 ```
+```python title="python" maxLines=50
+# send a message to the agent
+response = client.agents.messages.send(
+    agent_id=agent_state.id,
+    messages=[
+        {
+            "role": "user",
+            "text": "hows it going????"
+        }
+    ]
+)
+
+# the response object contains the messages and usage statistics
+print(response)
+
+# if we want to print the usage stats
+print(response.usage)
+
+# if we want to print the messages
+for message in response.messages:
+    print(message)
+```
+```typescript maxLines=50 title="node.js"
+// send a message to the agent
+const response = await client.agents.messages.send(
+    agentState.id, {
+        messages: [
+            {
+                role: "user",
+                text: "hows it going????"
+            }
+        ]
+    }
+);
+
+// the response object contains the messages and usage statistics
+console.log(response);
+
+// if we want to print the usage stats
+console.log(response.usage)
+
+// if we want to print the messages
+for (const message of response.messages) {
+    console.log(message);
+}
+```
 </CodeGroup>
 
 The response contains the agent's full response to the message, which includes inner thoughts / chain-of-thought, tool calls, tool responses, and agent messages (directed at the user):
-<CodeGroup>
-```sh REST API (response)
+```json maxLines=50
 {
   "messages": [
     {
@@ -158,7 +259,6 @@ The response contains the agent's full response to the message, which includes i
   }
 }
 ```
-</CodeGroup>
 
 ## Viewing the agent in the ADE
 We've created and messaged our first stateful agent. This agent exists in our Letta server, which means we can view it in the ADE (and continue the conversation there!).
