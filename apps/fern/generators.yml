@@ -19,6 +19,7 @@ groups:
         output:
           location: pypi
           package-name: letta-client
+          token: ${PYPI_TOKEN}
         github:
           repository: letta-ai/letta-python
         config:
