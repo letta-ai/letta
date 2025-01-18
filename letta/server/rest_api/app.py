@@ -13,7 +13,7 @@ from starlette.middleware.cors import CORSMiddleware
 
 from letta.__init__ import __version__
 from letta.constants import ADMIN_PREFIX, API_PREFIX, OPENAI_API_PREFIX
-from letta.errors import LettaAgentNotFoundError, LettaUserNotFoundError
+from letta.errors import BedrockPermissionError, LettaAgentNotFoundError, LettaUserNotFoundError
 from letta.log import get_logger
 from letta.orm.errors import DatabaseTimeoutError, ForeignKeyConstraintViolationError, NoResultFound, UniqueConstraintViolationError
 from letta.schemas.letta_message import create_letta_message_union_schema
@@ -207,6 +207,19 @@ def create_application() -> "FastAPI":
     @app.exception_handler(LettaUserNotFoundError)
     async def user_not_found_handler(request: Request, exc: LettaUserNotFoundError):
         return JSONResponse(status_code=404, content={"detail": "User not found"})
+
+    @app.exception_handler(BedrockPermissionError)
+    async def bedrock_permission_error_handler(request, exc: BedrockPermissionError):
+        return JSONResponse(
+            status_code=403,
+            content={
+                "error": {
+                    "type": "bedrock_permission_denied",
+                    "message": "Unable to access the required AI model. Please check your Bedrock permissions or contact support.",
+                    "details": {"model_arn": exc.model_arn, "reason": str(exc)},
+                }
+            },
+        )
 
     settings.cors_origins.append("https://app.letta.com")
 

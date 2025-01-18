@@ -3,7 +3,9 @@ import re
 from typing import List, Optional, Tuple, Union
 
 import anthropic
+from anthropic import PermissionDeniedError
 
+from letta.errors import BedrockError, BedrockPermissionError
 from letta.llm_api.aws_bedrock import get_bedrock_client
 from letta.schemas.message import Message
 from letta.schemas.openai.chat_completion_request import ChatCompletionRequest, Tool
@@ -414,5 +416,10 @@ def anthropic_bedrock_chat_completions_request(
     client = get_bedrock_client()
 
     # Make the request
-    response = client.messages.create(**data)
-    return convert_anthropic_response_to_chatcompletion(response=response, inner_thoughts_xml_tag=inner_thoughts_xml_tag)
+    try:
+        response = client.messages.create(**data)
+        return convert_anthropic_response_to_chatcompletion(response=response, inner_thoughts_xml_tag=inner_thoughts_xml_tag)
+    except PermissionDeniedError:
+        raise BedrockPermissionError(f"User does not have access to the Bedrock model with the specified ID. {data['model']}")
+    except Exception as e:
+        raise BedrockError(f"Bedrock error: {e}")
