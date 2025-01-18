@@ -2309,6 +2309,10 @@ export type letta__schemas__message__Message = {
    * The id of the tool call.
    */
   tool_call_id?: string | null;
+  /**
+   * The id of the step that this message was created in.
+   */
+  step_id?: string | null;
 };
 
 export type letta__schemas__openai__chat_completion_request__Tool = {

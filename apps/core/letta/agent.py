@@ -49,6 +49,8 @@ from letta.services.helpers.agent_manager_helper import check_supports_structure
 from letta.services.job_manager import JobManager
 from letta.services.message_manager import MessageManager
 from letta.services.passage_manager import PassageManager
+from letta.services.provider_manager import ProviderManager
+from letta.services.step_manager import StepManager
 from letta.services.tool_execution_sandbox import ToolExecutionSandbox
 from letta.streaming_interface import StreamingRefreshCLIInterface
 from letta.system import get_heartbeat, get_token_limit_warning, package_function_response, package_summarize_message, package_user_message
@@ -130,8 +132,10 @@ class Agent(BaseAgent):
         # Create the persistence manager object based on the AgentState info
         self.message_manager = MessageManager()
         self.passage_manager = PassageManager()
+        self.provider_manager = ProviderManager()
         self.agent_manager = AgentManager()
         self.job_manager = JobManager()
+        self.step_manager = StepManager()
 
         # State needed for heartbeat pausing
 
@@ -763,6 +767,24 @@ class Agent(BaseAgent):
                 self.logger.warning(
                     f"last response total_tokens ({current_total_tokens}) < {MESSAGE_SUMMARY_WARNING_FRAC * int(self.agent_state.llm_config.context_window)}"
                 )
+
+            # Log step - this must happen before messages are persisted
+            step = self.step_manager.log_step(
+                actor=self.user,
+                provider_name=self.agent_state.llm_config.model_endpoint_type,
+                model=self.agent_state.llm_config.model,
+                context_window_limit=self.agent_state.llm_config.context_window,
+                usage=response.usage,
+                # TODO(@caren): Add full provider support - this line is a workaround for v0 BYOK feature
+                provider_id=(
+                    self.provider_manager.get_anthropic_override_provider_id()
+                    if self.agent_state.llm_config.model_endpoint_type == "anthropic"
+                    else None
+                ),
+                job_id=job_id,
+            )
+            for message in all_new_messages:
+                message.step_id = step.id
 
             # Persisting into Messages
             self.agent_state = self.agent_manager.append_to_in_context_messages(

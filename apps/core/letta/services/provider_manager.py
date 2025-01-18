@@ -48,9 +48,13 @@ class ProviderManager:
     def delete_provider_by_id(self, provider_id: str):
         """Delete a provider."""
         with self.session_maker() as session:
-            # Delete from provider table
-            provider = ProviderModel.read(db_session=session, identifier=provider_id)
-            provider.hard_delete(session)
+            # Clear api key field
+            existing_provider = ProviderModel.read(db_session=session, identifier=provider_id)
+            existing_provider.api_key = None
+            existing_provider.update(session)
+
+            # Soft delete in provider table
+            existing_provider.delete(session)
 
             session.commit()
 
@@ -62,9 +66,17 @@ class ProviderManager:
             return [provider.to_pydantic() for provider in results]
 
     @enforce_types
-    def get_anthropic_key_override(self) -> Optional[str]:
+    def get_anthropic_override_provider_id(self) -> Optional[str]:
+        """Helper function to fetch custom anthropic provider id for v0 BYOK feature"""
+        anthropic_provider = [provider for provider in self.list_providers() if provider.name == "anthropic"]
+        if len(anthropic_provider) != 0:
+            return anthropic_provider[0].id
+        return None
+
+    @enforce_types
+    def get_anthropic_override_key(self) -> Optional[str]:
         """Helper function to fetch custom anthropic key for v0 BYOK feature"""
-        providers = self.list_providers(limit=1)
-        if len(providers) == 1 and providers[0].name == "anthropic":
-            return providers[0].api_key
+        anthropic_provider = [provider for provider in self.list_providers() if provider.name == "anthropic"]
+        if len(anthropic_provider) != 0:
+            return anthropic_provider[0].api_key
         return None

@@ -5682,6 +5682,18 @@ export const $letta__schemas__message__Message = {
       title: 'Tool Call Id',
       description: 'The id of the tool call.',
     },
+    step_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Step Id',
+      description: 'The id of the step that this message was created in.',
+    },
   },
   additionalProperties: false,
   type: 'object',
