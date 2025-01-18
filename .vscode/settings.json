@@ -1,3 +1,6 @@
 {
-  "eslint.validate": ["json"]
+  "eslint.validate": ["json"],
+  "files.associations": {
+    "*.mdx": "markdown"
+  }
 }

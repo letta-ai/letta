@@ -1,5 +1,5 @@
 import os
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from anthropic import AnthropicBedrock
 
@@ -37,7 +37,7 @@ def get_bedrock_client():
     return bedrock
 
 
-def bedrock_get_model_list(region_name: str, model_provider: Optional[str] = None, output_modality: str = "TEXT") -> List[dict]:
+def bedrock_get_model_list(region_name: str) -> List[dict]:
     """
     Get list of available models from Bedrock.
 
@@ -53,8 +53,8 @@ def bedrock_get_model_list(region_name: str, model_provider: Optional[str] = Non
 
     try:
         bedrock = boto3.client("bedrock", region_name=region_name)
-        response = bedrock.list_foundation_models(byProvider=model_provider, byOutputModality=output_modality.upper())
-        return response["modelSummaries"]
+        response = bedrock.list_inference_profiles()
+        return response["inferenceProfileSummaries"]
     except Exception as e:
         print(f"Error getting model list: {str(e)}")
         raise e
