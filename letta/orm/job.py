@@ -13,8 +13,8 @@ from letta.schemas.letta_request import LettaRequestConfig
 
 if TYPE_CHECKING:
     from letta.orm.job_messages import JobMessage
-    from letta.orm.job_usage_statistics import JobUsageStatistics
     from letta.orm.message import Message
+    from letta.orm.step import Step
     from letta.orm.user import User
 
 
@@ -41,9 +41,7 @@ class Job(SqlalchemyBase, UserMixin):
     # relationships
     user: Mapped["User"] = relationship("User", back_populates="jobs")
     job_messages: Mapped[List["JobMessage"]] = relationship("JobMessage", back_populates="job", cascade="all, delete-orphan")
-    usage_statistics: Mapped[list["JobUsageStatistics"]] = relationship(
-        "JobUsageStatistics", back_populates="job", cascade="all, delete-orphan"
-    )
+    steps: Mapped[List["Step"]] = relationship("Step", back_populates="job", cascade="save-update")
 
     @property
     def messages(self) -> List["Message"]:

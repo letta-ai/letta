@@ -72,6 +72,7 @@ from letta.services.per_agent_lock_manager import PerAgentLockManager
 from letta.services.provider_manager import ProviderManager
 from letta.services.sandbox_config_manager import SandboxConfigManager
 from letta.services.source_manager import SourceManager
+from letta.services.step_manager import StepManager
 from letta.services.tool_execution_sandbox import ToolExecutionSandbox
 from letta.services.tool_manager import ToolManager
 from letta.services.user_manager import UserManager
@@ -293,6 +294,7 @@ class SyncServer(Server):
         self.job_manager = JobManager()
         self.agent_manager = AgentManager()
         self.provider_manager = ProviderManager()
+        self.step_manager = StepManager()
 
         # Managers that interface with parallelism
         self.per_agent_lock_manager = PerAgentLockManager()

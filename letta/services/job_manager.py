@@ -1,3 +1,5 @@
+from functools import reduce
+from operator import add
 from typing import List, Literal, Optional, Union
 
 from sqlalchemy import select
@@ -7,9 +9,9 @@ from letta.orm.enums import JobType
 from letta.orm.errors import NoResultFound
 from letta.orm.job import Job as JobModel
 from letta.orm.job_messages import JobMessage
-from letta.orm.job_usage_statistics import JobUsageStatistics
 from letta.orm.message import Message as MessageModel
 from letta.orm.sqlalchemy_base import AccessType
+from letta.orm.step import Step
 from letta.schemas.enums import JobStatus, MessageRole
 from letta.schemas.job import Job as PydanticJob
 from letta.schemas.job import JobUpdate
@@ -193,12 +195,7 @@ class JobManager:
             self._verify_job_access(session, job_id, actor)
 
             # Get the latest usage statistics for the job
-            latest_stats = (
-                session.query(JobUsageStatistics)
-                .filter(JobUsageStatistics.job_id == job_id)
-                .order_by(JobUsageStatistics.created_at.desc())
-                .first()
-            )
+            latest_stats = session.query(Step).filter(Step.job_id == job_id).order_by(Step.created_at.desc()).all()
 
             if not latest_stats:
                 return LettaUsageStatistics(
@@ -209,10 +206,10 @@ class JobManager:
                 )
 
             return LettaUsageStatistics(
-                completion_tokens=latest_stats.completion_tokens,
-                prompt_tokens=latest_stats.prompt_tokens,
-                total_tokens=latest_stats.total_tokens,
-                step_count=latest_stats.step_count,
+                completion_tokens=reduce(add, (step.completion_tokens or 0 for step in latest_stats), 0),
+                prompt_tokens=reduce(add, (step.prompt_tokens or 0 for step in latest_stats), 0),
+                total_tokens=reduce(add, (step.total_tokens or 0 for step in latest_stats), 0),
+                step_count=len(latest_stats),
             )
 
     @enforce_types
@@ -239,8 +236,9 @@ class JobManager:
             # First verify job exists and user has access
             self._verify_job_access(session, job_id, actor, access=["write"])
 
-            # Create new usage statistics entry
-            usage_stats = JobUsageStatistics(
+            # Manually log step with usage data
+            # TODO(@caren): log step under the hood and remove this
+            usage_stats = Step(
                 job_id=job_id,
                 completion_tokens=usage.completion_tokens,
                 prompt_tokens=usage.prompt_tokens,

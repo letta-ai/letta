@@ -14,6 +14,7 @@ from letta.schemas.openai.chat_completion_response import (
     Message as ChoiceMessage,  # NOTE: avoid conflict with our own Letta Message datatype
 )
 from letta.schemas.openai.chat_completion_response import ToolCall, UsageStatistics
+from letta.services.provider_manager import ProviderManager
 from letta.settings import model_settings
 from letta.utils import get_utc_time, smart_urljoin
 
@@ -38,9 +39,6 @@ MODEL_LIST = [
 ]
 
 DUMMY_FIRST_USER_MESSAGE = "User initializing bootup sequence."
-
-if model_settings.anthropic_api_key:
-    anthropic_client = anthropic.Anthropic()
 
 
 def antropic_get_model_context_window(url: str, api_key: Union[str, None], model: str) -> int:
@@ -397,6 +395,12 @@ def anthropic_chat_completions_request(
     betas: List[str] = ["tools-2024-04-04"],
 ) -> ChatCompletionResponse:
     """https://docs.anthropic.com/claude/docs/tool-use"""
+    anthropic_client = None
+    anthropic_override_key = ProviderManager().get_anthropic_override_key()
+    if anthropic_override_key:
+        anthropic_client = anthropic.Anthropic(api_key=anthropic_override_key)
+    elif model_settings.anthropic_api_key:
+        anthropic_client = anthropic.Anthropic()
     data = _prepare_anthropic_request(data, inner_thoughts_xml_tag)
     response = anthropic_client.beta.messages.create(
         **data,

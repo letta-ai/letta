@@ -26,6 +26,7 @@ from letta.orm import (
     Source,
     SourcePassage,
     SourcesAgents,
+    Step,
     Tool,
     ToolsAgents,
     User,
@@ -46,6 +47,7 @@ from letta.schemas.letta_request import LettaRequestConfig
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message as PydanticMessage
 from letta.schemas.message import MessageCreate, MessageUpdate
+from letta.schemas.openai.chat_completion_response import UsageStatistics
 from letta.schemas.openai.chat_completions import ToolCall, ToolCallFunction
 from letta.schemas.organization import Organization as PydanticOrganization
 from letta.schemas.passage import Passage as PydanticPassage
@@ -56,7 +58,6 @@ from letta.schemas.source import SourceUpdate
 from letta.schemas.tool import Tool as PydanticTool
 from letta.schemas.tool import ToolUpdate
 from letta.schemas.tool_rule import InitToolRule
-from letta.schemas.usage import LettaUsageStatistics
 from letta.schemas.user import User as PydanticUser
 from letta.schemas.user import UserUpdate
 from letta.server.server import SyncServer
@@ -100,6 +101,7 @@ def clear_tables(server: SyncServer):
         session.execute(delete(Tool))  # Clear all records from the Tool table
         session.execute(delete(Agent))
         session.execute(delete(User))  # Clear all records from the user table
+        session.execute(delete(Step))
         session.execute(delete(Provider))
         session.execute(delete(Organization))  # Clear all records from the organization table
         session.commit()  # Commit the deletion
@@ -2835,17 +2837,19 @@ def test_get_run_messages_cursor(server: SyncServer, default_user: PydanticUser,
 def test_job_usage_stats_add_and_get(server: SyncServer, default_job, default_user):
     """Test adding and retrieving job usage statistics."""
     job_manager = server.job_manager
+    step_manager = server.step_manager
 
     # Add usage statistics
-    job_manager.add_job_usage(
+    step_manager.log_step(
+        provider_name="openai",
+        model="gpt-4",
+        context_window_limit=8192,
         job_id=default_job.id,
-        usage=LettaUsageStatistics(
+        usage=UsageStatistics(
             completion_tokens=100,
             prompt_tokens=50,
             total_tokens=150,
-            step_count=5,
         ),
-        step_id="step_1",
         actor=default_user,
     )
 
@@ -2874,30 +2878,33 @@ def test_job_usage_stats_get_no_stats(server: SyncServer, default_job, default_u
 def test_job_usage_stats_add_multiple(server: SyncServer, default_job, default_user):
     """Test adding multiple usage statistics entries for a job."""
     job_manager = server.job_manager
+    step_manager = server.step_manager
 
     # Add first usage statistics entry
-    job_manager.add_job_usage(
+    step_manager.log_step(
+        provider_name="openai",
+        model="gpt-4",
+        context_window_limit=8192,
         job_id=default_job.id,
-        usage=LettaUsageStatistics(
+        usage=UsageStatistics(
             completion_tokens=100,
             prompt_tokens=50,
             total_tokens=150,
-            step_count=5,
         ),
-        step_id="step_1",
         actor=default_user,
     )
 
     # Add second usage statistics entry
-    job_manager.add_job_usage(
+    step_manager.log_step(
+        provider_name="openai",
+        model="gpt-4",
+        context_window_limit=8192,
         job_id=default_job.id,
-        usage=LettaUsageStatistics(
+        usage=UsageStatistics(
             completion_tokens=200,
             prompt_tokens=100,
             total_tokens=300,
-            step_count=10,
         ),
-        step_id="step_2",
         actor=default_user,
     )
 
@@ -2905,9 +2912,10 @@ def test_job_usage_stats_add_multiple(server: SyncServer, default_job, default_u
     usage_stats = job_manager.get_job_usage(job_id=default_job.id, actor=default_user)
 
     # Verify we get the most recent statistics
-    assert usage_stats.completion_tokens == 200
-    assert usage_stats.prompt_tokens == 100
-    assert usage_stats.total_tokens == 300
+    assert usage_stats.completion_tokens == 300
+    assert usage_stats.prompt_tokens == 150
+    assert usage_stats.total_tokens == 450
+    assert usage_stats.step_count == 2
 
 
 def test_job_usage_stats_get_nonexistent_job(server: SyncServer, default_user):
@@ -2920,18 +2928,19 @@ def test_job_usage_stats_get_nonexistent_job(server: SyncServer, default_user):
 
 def test_job_usage_stats_add_nonexistent_job(server: SyncServer, default_user):
     """Test adding usage statistics for a nonexistent job."""
-    job_manager = server.job_manager
+    step_manager = server.step_manager
 
     with pytest.raises(NoResultFound):
-        job_manager.add_job_usage(
+        step_manager.log_step(
+            provider_name="openai",
+            model="gpt-4",
+            context_window_limit=8192,
             job_id="nonexistent_job",
-            usage=LettaUsageStatistics(
+            usage=UsageStatistics(
                 completion_tokens=100,
                 prompt_tokens=50,
                 total_tokens=150,
-                step_count=5,
             ),
-            step_id="step_1",
             actor=default_user,
         )
 
