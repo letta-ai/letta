@@ -79,9 +79,10 @@ class AgentManager:
 
         # create blocks (note: cannot be linked into the agent_id is created)
         block_ids = list(agent_create.block_ids or [])  # Create a local copy to avoid modifying the original
-        for create_block in agent_create.memory_blocks:
-            block = self.block_manager.create_or_update_block(PydanticBlock(**create_block.model_dump()), actor=actor)
-            block_ids.append(block.id)
+        if agent_create.memory_blocks:
+            for create_block in agent_create.memory_blocks:
+                block = self.block_manager.create_or_update_block(PydanticBlock(**create_block.model_dump()), actor=actor)
+                block_ids.append(block.id)
 
         # TODO: Remove this block once we deprecate the legacy `tools` field
         # create passed in `tools`

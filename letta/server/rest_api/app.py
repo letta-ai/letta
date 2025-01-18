@@ -146,7 +146,7 @@ def create_application() -> "FastAPI":
         log.error(f"Unhandled error: {exc}", exc_info=True)
 
         # Print the stack trace
-        print(f"Stack trace: {exc.__traceback__}")
+        print(f"Stack trace: {exc}")
         if (os.getenv("SENTRY_DSN") is not None) and (os.getenv("SENTRY_DSN") != ""):
             import sentry_sdk
 
