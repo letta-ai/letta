@@ -290,6 +290,8 @@ def start_server(
         server_logger.addHandler(stream_handler)
 
     if (os.getenv("LOCAL_HTTPS") == "true") or "--localhttps" in sys.argv:
+        print(f"▶ Server running at: https://{host or 'localhost'}:{port or REST_DEFAULT_PORT}\n")
+        print(f"▶ View using ADE at: https://app.letta.com/development-servers/local/dashboard")
         uvicorn.run(
             app,
             host=host or "localhost",
@@ -297,13 +299,11 @@ def start_server(
             ssl_keyfile="certs/localhost-key.pem",
             ssl_certfile="certs/localhost.pem",
         )
-        print(f"▶ Server running at: https://{host or 'localhost'}:{port or REST_DEFAULT_PORT}\n")
     else:
+        print(f"▶ Server running at: http://{host or 'localhost'}:{port or REST_DEFAULT_PORT}\n")
+        print(f"▶ View using ADE at: https://app.letta.com/development-servers/local/dashboard")
         uvicorn.run(
             app,
             host=host or "localhost",
             port=port or REST_DEFAULT_PORT,
         )
-        print(f"▶ Server running at: http://{host or 'localhost'}:{port or REST_DEFAULT_PORT}\n")
-
-    print(f"▶ View using ADE at: https://app.letta.com/development-servers/local/dashboard")
