@@ -159,6 +159,10 @@ The response will include information about the agent, including its `id`:
 ```
 
 ## Send a message to the agent with the Letta API
+<Tip>
+The Letta API supports streaming both agent *steps* and streaming *tokens*.
+For more information on streaming, see [our guide on streaming](/guides/agents/streaming).
+</Tip>
 Let's try sending a message to the new agent! Replace `AGENT_ID` with the actual agent ID we received in the agent state ([route documentation](https://docs.letta.com/api-reference/agents/send-message)):
 <CodeGroup>
 ```curl curl
@@ -222,7 +226,7 @@ for (const message of response.messages) {
 ```
 </CodeGroup>
 
-The response contains the agent's full response to the message, which includes inner thoughts / chain-of-thought, tool calls, tool responses, and agent messages (directed at the user):
+The response contains the agent's full response to the message, which includes reasoning steps (inner thoughts / chain-of-thought), tool calls, tool responses, and agent messages (directed at the user):
 ```json maxLines=50
 {
   "messages": [
