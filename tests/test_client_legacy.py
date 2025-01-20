@@ -262,6 +262,8 @@ def test_streaming_send_message(mock_e2b_api_key_none, client: RESTClient, agent
             inner_thoughts_count += 1
         if isinstance(chunk, ToolCallMessage) and chunk.tool_call and chunk.tool_call.name == "send_message":
             send_message_ran = True
+        if isinstance(chunk, AssistantMessage):
+            send_message_ran = True
         if isinstance(chunk, MessageStreamStatus):
             if chunk == MessageStreamStatus.done:
                 assert not done, "Message stream already done"
@@ -531,16 +533,15 @@ def test_sources(client: Union[LocalClient, RESTClient], agent: AgentState):
 
 def test_message_update(client: Union[LocalClient, RESTClient], agent: AgentState):
     """Test that we can update the details of a message"""
-    import json
 
     # create a message
     message_response = client.send_message(agent_id=agent.id, message="Test message", role="user")
     print("Messages=", message_response)
     assert isinstance(message_response, LettaResponse)
-    assert isinstance(message_response.messages[-1], ToolReturnMessage)
+    assert isinstance(message_response.messages[-1], AssistantMessage)
     message = message_response.messages[-1]
 
-    new_text = json.dumps({"message": "This exact string would never show up in the message???"})
+    new_text = "this is a secret message"
     new_message = client.update_message(message_id=message.id, text=new_text, agent_id=agent.id)
     assert new_message.text == new_text
 

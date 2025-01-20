@@ -1215,7 +1215,6 @@ class SyncServer(Server):
         stream_tokens: bool,
         # related to whether or not we return `LettaMessage`s or `Message`s
         chat_completion_mode: bool = False,
-        timestamp: Optional[datetime] = None,
         # Support for AssistantMessage
         use_assistant_message: bool = True,
         assistant_message_tool_name: str = constants.DEFAULT_MESSAGE_TOOL,
@@ -1249,7 +1248,16 @@ class SyncServer(Server):
                 stream_tokens = False
 
             # Create a new interface per request
-            letta_agent.interface = StreamingServerInterface(use_assistant_message)
+            letta_agent.interface = StreamingServerInterface(
+                # multi_step=True,  # would we ever want to disable this?
+                use_assistant_message=use_assistant_message,
+                assistant_message_tool_name=assistant_message_tool_name,
+                assistant_message_tool_kwarg=assistant_message_tool_kwarg,
+                inner_thoughts_in_kwargs=(
+                    llm_config.put_inner_thoughts_in_kwargs if llm_config.put_inner_thoughts_in_kwargs is not None else False
+                ),
+                # inner_thoughts_kwarg=INNER_THOUGHTS_KWARG,
+            )
             streaming_interface = letta_agent.interface
             if not isinstance(streaming_interface, StreamingServerInterface):
                 raise ValueError(f"Agent has wrong type of interface: {type(streaming_interface)}")
@@ -1263,13 +1271,14 @@ class SyncServer(Server):
             # streaming_interface.function_call_legacy_mode = stream
 
             # Allow AssistantMessage is desired by client
-            streaming_interface.assistant_message_tool_name = assistant_message_tool_name
-            streaming_interface.assistant_message_tool_kwarg = assistant_message_tool_kwarg
+            # streaming_interface.use_assistant_message = use_assistant_message
+            # streaming_interface.assistant_message_tool_name = assistant_message_tool_name
+            # streaming_interface.assistant_message_tool_kwarg = assistant_message_tool_kwarg
 
             # Related to JSON buffer reader
-            streaming_interface.inner_thoughts_in_kwargs = (
-                llm_config.put_inner_thoughts_in_kwargs if llm_config.put_inner_thoughts_in_kwargs is not None else False
-            )
+            # streaming_interface.inner_thoughts_in_kwargs = (
+            #     llm_config.put_inner_thoughts_in_kwargs if llm_config.put_inner_thoughts_in_kwargs is not None else False
+            # )
 
             # Offload the synchronous message_func to a separate thread
             streaming_interface.stream_start()
