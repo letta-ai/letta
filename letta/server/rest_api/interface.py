@@ -264,6 +264,7 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
         self,
         multi_step=True,
         # Related to if we want to try and pass back the AssistantMessage as a special case function
+        use_assistant_message=False,
         assistant_message_tool_name=DEFAULT_MESSAGE_TOOL,
         assistant_message_tool_kwarg=DEFAULT_MESSAGE_TOOL_KWARG,
         # Related to if we expect inner_thoughts to be in the kwargs
@@ -295,9 +296,10 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
         # self.multi_step_gen_indicator = MessageStreamStatus.done_generation
 
         # Support for AssistantMessage
-        self.use_assistant_message = False  # TODO: Remove this
+        self.use_assistant_message = use_assistant_message  # TODO: Remove this (actually? @charles)
         self.assistant_message_tool_name = assistant_message_tool_name
         self.assistant_message_tool_kwarg = assistant_message_tool_kwarg
+        self.prev_assistant_message_id = None  # Used to skip tool call response receipts for `send_message`
 
         # Support for inner_thoughts_in_kwargs
         self.inner_thoughts_in_kwargs = inner_thoughts_in_kwargs
@@ -308,6 +310,8 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
         self.function_name_buffer = None
         self.function_args_buffer = None
         self.function_id_buffer = None
+        # A buffer used to store the last flushed function name
+        self.last_flushed_function_name = None
 
         # extra prints
         self.debug = False
@@ -434,7 +438,8 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
 
             # TODO(charles) merge into logic for internal_monologue
             # special case for trapping `send_message`
-            if self.use_assistant_message and tool_call.function:
+            # if self.use_assistant_message and tool_call.function:
+            if not self.inner_thoughts_in_kwargs and self.use_assistant_message and tool_call.function:
                 if self.inner_thoughts_in_kwargs:
                     raise NotImplementedError("inner_thoughts_in_kwargs with use_assistant_message not yet supported")
 
@@ -535,15 +540,28 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
                         #       however the frontend may expect name first, then args, so to be
                         #       safe we'll output name first in a separate chunk
                         if self.function_name_buffer:
-                            processed_chunk = ToolCallMessage(
-                                id=message_id,
-                                date=message_date,
-                                tool_call=ToolCallDelta(
-                                    name=self.function_name_buffer,
-                                    arguments=None,
-                                    tool_call_id=self.function_id_buffer,
-                                ),
-                            )
+
+                            # use_assisitant_message means that we should also not release main_json raw, and instead should only release the contents of "message": "..."
+                            if self.use_assistant_message and self.function_name_buffer == self.assistant_message_tool_name:
+                                processed_chunk = None
+
+                                # Store the ID of the tool call so allow skipping the corresponding response
+                                if self.function_id_buffer:
+                                    self.prev_assistant_message_id = self.function_id_buffer
+
+                            else:
+                                processed_chunk = ToolCallMessage(
+                                    id=message_id,
+                                    date=message_date,
+                                    tool_call=ToolCallDelta(
+                                        name=self.function_name_buffer,
+                                        arguments=None,
+                                        tool_call_id=self.function_id_buffer,
+                                    ),
+                                )
+
+                            # Record what the last function name we flushed was
+                            self.last_flushed_function_name = self.function_name_buffer
                             # Clear the buffer
                             self.function_name_buffer = None
                             self.function_id_buffer = None
@@ -559,35 +577,94 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
                         # If there was nothing in the name buffer, we can proceed to
                         # output the arguments chunk as a ToolCallMessage
                         else:
-                            # There may be a buffer from a previous chunk, for example
-                            # if the previous chunk had arguments but we needed to flush name
-                            if self.function_args_buffer:
-                                # In this case, we should release the buffer + new data at once
-                                combined_chunk = self.function_args_buffer + updates_main_json
-                                processed_chunk = ToolCallMessage(
-                                    id=message_id,
-                                    date=message_date,
-                                    tool_call=ToolCallDelta(
-                                        name=None,
-                                        arguments=combined_chunk,
-                                        tool_call_id=self.function_id_buffer,
-                                    ),
-                                )
-                                # clear buffer
-                                self.function_args_buffer = None
-                                self.function_id_buffer = None
+
+                            # use_assisitant_message means that we should also not release main_json raw, and instead should only release the contents of "message": "..."
+                            if self.use_assistant_message and (
+                                self.last_flushed_function_name is not None
+                                and self.last_flushed_function_name == self.assistant_message_tool_name
+                            ):
+                                # do an additional parse on the updates_main_json
+                                if self.function_args_buffer:
+
+                                    updates_main_json = self.function_args_buffer + updates_main_json
+                                    self.function_args_buffer = None
+
+                                    # Pretty gross hardcoding that assumes that if we're toggling into the keywords, we have the full prefix
+                                    match_str = '{"' + self.assistant_message_tool_kwarg + '":"'
+                                    if updates_main_json == match_str:
+                                        updates_main_json = None
+
+                                else:
+                                    # Some hardcoding to strip off the trailing "}"
+                                    if updates_main_json in ["}", '"}']:
+                                        updates_main_json = None
+                                    if updates_main_json and len(updates_main_json) > 0 and updates_main_json[-1:] == '"':
+                                        updates_main_json = updates_main_json[:-1]
+
+                                if not updates_main_json:
+                                    # early exit to turn into content mode
+                                    return None
+
+                                # There may be a buffer from a previous chunk, for example
+                                # if the previous chunk had arguments but we needed to flush name
+                                if self.function_args_buffer:
+                                    # In this case, we should release the buffer + new data at once
+                                    combined_chunk = self.function_args_buffer + updates_main_json
+                                    processed_chunk = AssistantMessage(
+                                        id=message_id,
+                                        date=message_date,
+                                        assistant_message=combined_chunk,
+                                    )
+                                    # Store the ID of the tool call so allow skipping the corresponding response
+                                    if self.function_id_buffer:
+                                        self.prev_assistant_message_id = self.function_id_buffer
+                                    # clear buffer
+                                    self.function_args_buffer = None
+                                    self.function_id_buffer = None
+
+                                else:
+                                    # If there's no buffer to clear, just output a new chunk with new data
+                                    processed_chunk = AssistantMessage(
+                                        id=message_id,
+                                        date=message_date,
+                                        assistant_message=updates_main_json,
+                                    )
+                                    # Store the ID of the tool call so allow skipping the corresponding response
+                                    if self.function_id_buffer:
+                                        self.prev_assistant_message_id = self.function_id_buffer
+                                    # clear buffers
+                                    self.function_id_buffer = None
                             else:
-                                # If there's no buffer to clear, just output a new chunk with new data
-                                processed_chunk = ToolCallMessage(
-                                    id=message_id,
-                                    date=message_date,
-                                    tool_call=ToolCallDelta(
-                                        name=None,
-                                        arguments=updates_main_json,
-                                        tool_call_id=self.function_id_buffer,
-                                    ),
-                                )
-                                self.function_id_buffer = None
+
+                                # There may be a buffer from a previous chunk, for example
+                                # if the previous chunk had arguments but we needed to flush name
+                                if self.function_args_buffer:
+                                    # In this case, we should release the buffer + new data at once
+                                    combined_chunk = self.function_args_buffer + updates_main_json
+                                    processed_chunk = ToolCallMessage(
+                                        id=message_id,
+                                        date=message_date,
+                                        tool_call=ToolCallDelta(
+                                            name=None,
+                                            arguments=combined_chunk,
+                                            tool_call_id=self.function_id_buffer,
+                                        ),
+                                    )
+                                    # clear buffer
+                                    self.function_args_buffer = None
+                                    self.function_id_buffer = None
+                                else:
+                                    # If there's no buffer to clear, just output a new chunk with new data
+                                    processed_chunk = ToolCallMessage(
+                                        id=message_id,
+                                        date=message_date,
+                                        tool_call=ToolCallDelta(
+                                            name=None,
+                                            arguments=updates_main_json,
+                                            tool_call_id=self.function_id_buffer,
+                                        ),
+                                    )
+                                    self.function_id_buffer = None
 
                         # # If there's something in the main_json buffer, we should add if to the arguments and release it together
                         # tool_call_delta = {}
@@ -906,6 +983,8 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
                             date=msg_obj.created_at,
                             assistant_message=func_args[self.assistant_message_tool_kwarg],
                         )
+                        # Store the ID of the tool call so allow skipping the corresponding response
+                        self.prev_assistant_message_id = function_call.id
                     else:
                         processed_chunk = ToolCallMessage(
                             id=msg_obj.id,
@@ -938,13 +1017,23 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
             msg = msg.replace("Success: ", "")
             # new_message = {"function_return": msg, "status": "success"}
             assert msg_obj.tool_call_id is not None
-            new_message = ToolReturnMessage(
-                id=msg_obj.id,
-                date=msg_obj.created_at,
-                tool_return=msg,
-                status="success",
-                tool_call_id=msg_obj.tool_call_id,
-            )
+
+            print(f"YYY printing the function call - {msg_obj.tool_call_id} == {self.prev_assistant_message_id} ???")
+
+            # Skip this is use_assistant_message is on
+            if self.use_assistant_message and msg_obj.tool_call_id == self.prev_assistant_message_id:
+                # Wipe the cache
+                self.prev_assistant_message_id = None
+                # Skip this tool call receipt
+                return
+            else:
+                new_message = ToolReturnMessage(
+                    id=msg_obj.id,
+                    date=msg_obj.created_at,
+                    tool_return=msg,
+                    status="success",
+                    tool_call_id=msg_obj.tool_call_id,
+                )
 
         elif msg.startswith("Error: "):
             msg = msg.replace("Error: ", "", 1)
