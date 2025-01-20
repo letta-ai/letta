@@ -7,7 +7,7 @@ from httpx_sse import SSEError, connect_sse
 from letta.constants import OPENAI_CONTEXT_WINDOW_ERROR_SUBSTRING
 from letta.errors import LLMError
 from letta.schemas.enums import MessageStreamStatus
-from letta.schemas.letta_message import ReasoningMessage, ToolCallMessage, ToolReturnMessage
+from letta.schemas.letta_message import AssistantMessage, ReasoningMessage, ToolCallMessage, ToolReturnMessage
 from letta.schemas.letta_response import LettaStreamingResponse
 from letta.schemas.usage import LettaUsageStatistics
 
@@ -50,6 +50,8 @@ def _sse_post(url: str, data: dict, headers: dict) -> Generator[LettaStreamingRe
                         chunk_data = json.loads(sse.data)
                         if "reasoning" in chunk_data:
                             yield ReasoningMessage(**chunk_data)
+                        elif "assistant_message" in chunk_data:
+                            yield AssistantMessage(**chunk_data)
                         elif "tool_call" in chunk_data:
                             yield ToolCallMessage(**chunk_data)
                         elif "tool_return" in chunk_data:

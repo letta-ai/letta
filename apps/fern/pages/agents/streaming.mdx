@@ -68,9 +68,7 @@ for await (const chunk of stream) {
 ```json maxLines=50
 data: {"id":"...","date":"...","message_type":"reasoning_message","reasoning":"User keeps asking the same question; maybe it's part of their style or humor. I\u2019ll respond warmly and play along."}
 
-data: {"id":"...","date":"...","message_type":"tool_call_message","tool_call":{"name":"send_message","arguments":"{\n  \"message\": \"Hey! It\u2019s going well! Still here, ready to chat. How about you? Anything exciting happening?\"\n}","tool_call_id":"..."}}
-
-data: {"id":"...","date":"...","message_type":"tool_return_message","tool_return":"None","status":"success","tool_call_id":"...","stdout":null,"stderr":null}
+data: {"id":"...","date":"...","message_type":"assistant_message","assistant_message":"Hey! It\u2019s going well! Still here, ready to chat. How about you? Anything exciting happening?"}
 
 data: {"message_type":"usage_statistics","completion_tokens":65,"prompt_tokens":2329,"total_tokens":2394,"step_count":1}
 
@@ -145,15 +143,11 @@ data: {"id":"...","date":"...","message_type":"reasoning_message","reasoning":" 
 
 data: {"id":"...","date":"...","message_type":"reasoning_message","reasoning":"!"}
 
-data: {"id":"...","date":"...","message_type":"tool_call_message","tool_call":{"name":"send_message","tool_call_id":"65d2048a-a896-414a-a3d0-5fe83"}}
-
-data: {"id":"...","date":"...","message_type":"tool_call_message","tool_call":{"arguments":"{\"message\":\""}}
+data: {"id":"...","date":"...","message_type":"assistant_message","assistant_message":"Well"}
 
 ... chunks ommited
 
-data: {"id":"...","date":"...","message_type":"tool_call_message","tool_call":{"arguments":"}"}}
-
-data: {"id":"...","date":"...","message_type":"tool_return_message","tool_return":"None","status":"success","tool_call_id":"65d2048a-a896-414a-a3d0-5fe83","stdout":null,"stderr":null}
+data: {"id":"...","date":"...","message_type":"assistant_message","assistant_message":"."}
 
 data: {"message_type":"usage_statistics","completion_tokens":50,"prompt_tokens":2771,"total_tokens":2821,"step_count":1}
 

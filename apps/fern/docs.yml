@@ -100,8 +100,6 @@ navigation:
             path: pages/agents/data_sources.mdx
           - page: Streaming Responses
             path: pages/agents/streaming.mdx
-          - page: Messaging Agents
-            path: pages/agents/messages.mdx
           - page: Multi-User Setup
             path: pages/agents/multiuser.mdx
       - section: ADE Guide

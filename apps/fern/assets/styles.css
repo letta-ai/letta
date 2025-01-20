@@ -106,18 +106,8 @@ code:not(.code-block) {
   display: none !important;
 }
 
-/* disable overscroll */
-html, body {
-  overscroll-behavior: none !important;
-}
-
-/* Or if you need to be more specific for Fern */
-.fern-main {
-  overscroll-behavior: none !important;
-}
-
-/* You might also want to add these to be thorough */
-* {
-  -webkit-overflow-scrolling: auto !important;
-  overscroll-behavior: none !important;
-}
+/* @supports (overscroll-behavior: none) {
+  html, body {
+    overscroll-behavior: none;
+  }
+} */

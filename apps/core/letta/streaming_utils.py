@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Tuple
 
 from letta.constants import DEFAULT_MESSAGE_TOOL_KWARG
 
@@ -48,7 +48,7 @@ class JSONInnerThoughtsExtractor:
         self.hold_main_json = wait_for_first_key
         self.main_json_held_buffer = ""
 
-    def process_fragment(self, fragment):
+    def process_fragment(self, fragment: str) -> Tuple[str, str]:
         updates_main_json = ""
         updates_inner_thoughts = ""
         i = 0
@@ -263,8 +263,10 @@ class FunctionArgumentsStreamHandler:
             self.key_buffer = ""
             self.accumulating = True
             return None
+
         if chunk.strip() == "}":
             self.in_message = False
             self.message_started = False
             return None
+
         return None

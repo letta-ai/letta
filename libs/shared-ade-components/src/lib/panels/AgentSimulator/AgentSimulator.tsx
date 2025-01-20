@@ -144,6 +144,10 @@ function useSendMessage(agentId: string, options: UseSendMessageOptions = {}) {
             ...(password ? { 'X-BARE-PASSWORD': `password ${password}` } : {}),
           },
           body: JSON.stringify({
+            // extra config to turn off the AssistantMessage parsing for the ADE
+            config: {
+              use_assistant_message: false,
+            },
             stream_steps: true,
             stream_tokens: true,
             use_assistant_message: false,
