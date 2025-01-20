@@ -438,7 +438,7 @@ class RESTClient(AbstractClient):
         elif password:
             self.headers = {"accept": "application/json", "X-BARE-PASSWORD": f"password {password}"}
         else:
-            raise ValueError("Either token or password must be provided")
+            self.headers = {"accept": "application/json"}
         if headers:
             self.headers.update(headers)
         self._default_llm_config = default_llm_config
