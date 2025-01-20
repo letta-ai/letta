@@ -168,7 +168,23 @@ class OpenAIProvider(Provider):
                 embedding_dim=1536,
                 embedding_chunk_size=300,
                 handle=self.get_handle("text-embedding-ada-002"),
-            )
+            ),
+            EmbeddingConfig(
+                embedding_model="text-embedding-3-small",
+                embedding_endpoint_type="openai",
+                embedding_endpoint="https://api.openai.com/v1",
+                embedding_dim=2000,
+                embedding_chunk_size=300,
+                handle=self.get_handle("text-embedding-3-small"),
+            ),
+            EmbeddingConfig(
+                embedding_model="text-embedding-3-large",
+                embedding_endpoint_type="openai",
+                embedding_endpoint="https://api.openai.com/v1",
+                embedding_dim=2000,
+                embedding_chunk_size=300,
+                handle=self.get_handle("text-embedding-3-large"),
+            ),
         ]
 
     def get_model_context_window_size(self, model_name: str):
@@ -598,8 +614,13 @@ class AzureProvider(Provider):
             context_window_size = self.get_model_context_window(model_name)
             model_endpoint = get_azure_chat_completions_endpoint(self.base_url, model_name, self.api_version)
             configs.append(
-                LLMConfig(model=model_name, model_endpoint_type="azure", model_endpoint=model_endpoint, context_window=context_window_size),
-                handle=self.get_handle(model_name),
+                LLMConfig(
+                    model=model_name,
+                    model_endpoint_type="azure",
+                    model_endpoint=model_endpoint,
+                    context_window=context_window_size,
+                    handle=self.get_handle(model_name),
+                ),
             )
         return configs
 
@@ -699,3 +720,39 @@ class VLLMCompletionsProvider(Provider):
 
 class CohereProvider(OpenAIProvider):
     pass
+
+
+class AnthropicBedrockProvider(Provider):
+    name: str = "bedrock"
+    aws_region: str = Field(..., description="AWS region for Bedrock")
+
+    def list_llm_models(self):
+        from letta.llm_api.aws_bedrock import bedrock_get_model_list
+
+        models = bedrock_get_model_list(self.aws_region)
+
+        configs = []
+        for model_summary in models:
+            model_arn = model_summary["inferenceProfileArn"]
+            configs.append(
+                LLMConfig(
+                    model=model_arn,
+                    model_endpoint_type=self.name,
+                    model_endpoint=None,
+                    context_window=self.get_model_context_window(model_arn),
+                    handle=self.get_handle(model_arn),
+                )
+            )
+        return configs
+
+    def list_embedding_models(self):
+        return []
+
+    def get_model_context_window(self, model_name: str) -> Optional[int]:
+        # Context windows for Claude models
+        from letta.llm_api.aws_bedrock import bedrock_get_model_context_window
+
+        return bedrock_get_model_context_window(model_name)
+
+    def get_handle(self, model_name: str) -> str:
+        return f"anthropic/{model_name}"

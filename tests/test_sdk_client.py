@@ -1,6 +1,4 @@
 import asyncio
-
-# import json
 import os
 import threading
 import time
@@ -12,8 +10,7 @@ from letta_client import CreateBlock
 from letta_client import Letta as LettaSDKClient
 from letta_client import MessageCreate
 from letta_client.core import ApiError
-from letta_client.runs.types import GetRunMessagesResponseItem_ToolCallMessage
-from letta_client.types import LettaRequestConfig, LettaResponseMessagesItem_ToolReturnMessage
+from letta_client.types import LettaMessageUnion_ToolCallMessage, LettaMessageUnion_ToolReturnMessage, LettaRequestConfig
 
 # Constants
 SERVER_PORT = 8283
@@ -94,7 +91,7 @@ def test_shared_blocks(client):
     )
 
     # update memory
-    client.agents.messages.create(
+    client.agents.messages.send(
         agent_id=agent_state1.id,
         messages=[
             MessageCreate(
@@ -107,7 +104,7 @@ def test_shared_blocks(client):
     # check agent 2 memory
     assert "charles" in client.blocks.get(block_id=block.id).value.lower(), f"Shared block update failed {client.get_block(block.id).value}"
 
-    client.agents.messages.create(
+    client.agents.messages.send(
         agent_id=agent_state2.id,
         messages=[
             MessageCreate(
@@ -178,6 +175,10 @@ def test_add_and_manage_tags_for_agent(client):
 
 def test_agent_tags(client):
     """Test creating agents with tags and retrieving tags via the API."""
+    # Clear all agents
+    all_agents = client.agents.list()
+    for agent in all_agents:
+        client.agents.delete(agent.id)
     # Create multiple agents with different tags
     agent1 = client.agents.create(
         memory_blocks=[
@@ -332,7 +333,7 @@ def test_update_agent_memory_limit(client, agent):
 
 
 def test_messages(client, agent):
-    send_message_response = client.agents.messages.create(
+    send_message_response = client.agents.messages.send(
         agent_id=agent.id,
         messages=[
             MessageCreate(
@@ -352,7 +353,7 @@ def test_messages(client, agent):
 
 def test_send_system_message(client, agent):
     """Important unit test since the Letta API exposes sending system messages, but some backends don't natively support it (eg Anthropic)"""
-    send_system_message_response = client.agents.messages.create(
+    send_system_message_response = client.agents.messages.send(
         agent_id=agent.id,
         messages=[
             MessageCreate(
@@ -381,7 +382,7 @@ def test_function_return_limit(client, agent):
     client.agents.tools.add(agent_id=agent.id, tool_id=tool.id)
 
     # get function response
-    response = client.agents.messages.create(
+    response = client.agents.messages.send(
         agent_id=agent.id,
         messages=[
             MessageCreate(
@@ -394,7 +395,7 @@ def test_function_return_limit(client, agent):
 
     response_message = None
     for message in response.messages:
-        if isinstance(message, LettaResponseMessagesItem_ToolReturnMessage):
+        if isinstance(message, LettaMessageUnion_ToolReturnMessage):
             response_message = message
             break
 
@@ -417,7 +418,7 @@ def test_function_always_error(client, agent):
     client.agents.tools.add(agent_id=agent.id, tool_id=tool.id)
 
     # get function response
-    response = client.agents.messages.create(
+    response = client.agents.messages.send(
         agent_id=agent.id,
         messages=[
             MessageCreate(
@@ -430,7 +431,7 @@ def test_function_always_error(client, agent):
 
     response_message = None
     for message in response.messages:
-        if isinstance(message, LettaResponseMessagesItem_ToolReturnMessage):
+        if isinstance(message, LettaMessageUnion_ToolReturnMessage):
             response_message = message
             break
 
@@ -448,7 +449,7 @@ async def test_send_message_parallel(client, agent):
     # Define a coroutine for sending a message using asyncio.to_thread for synchronous calls
     async def send_message_task(message: str):
         response = await asyncio.to_thread(
-            client.agents.messages.create,
+            client.agents.messages.send,
             agent_id=agent.id,
             messages=[
                 MessageCreate(
@@ -483,7 +484,7 @@ def test_send_message_async(client, agent):
     Test that we can send a message asynchronously and retrieve the messages, along with usage statistics
     """
     test_message = "This is a test message, respond to the user with a sentence."
-    run = client.agents.messages.create_async(
+    run = client.agents.messages.send_async(
         agent_id=agent.id,
         messages=[
             MessageCreate(
@@ -519,9 +520,7 @@ def test_send_message_async(client, agent):
     assert len(tool_messages) > 0
 
     specific_tool_messages = [
-        message
-        for message in client.runs.get_run_messages(run_id=run.id)
-        if isinstance(message, GetRunMessagesResponseItem_ToolCallMessage)
+        message for message in client.runs.get_run_messages(run_id=run.id) if isinstance(message, LettaMessageUnion_ToolCallMessage)
     ]
     assert specific_tool_messages[0].tool_call.name == "send_message"
     assert len(specific_tool_messages) > 0

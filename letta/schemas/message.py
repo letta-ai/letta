@@ -99,6 +99,7 @@ class Message(BaseMessage):
     name: Optional[str] = Field(None, description="The name of the participant.")
     tool_calls: Optional[List[ToolCall]] = Field(None, description="The list of tool calls requested.")
     tool_call_id: Optional[str] = Field(None, description="The id of the tool call.")
+    step_id: Optional[str] = Field(None, description="The id of the step that this message was created in.")
     # This overrides the optional base orm schema, created_at MUST exist on all messages objects
     created_at: datetime = Field(default_factory=get_utc_time, description="The timestamp when the object was created.")
 

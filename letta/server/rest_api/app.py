@@ -13,9 +13,10 @@ from starlette.middleware.cors import CORSMiddleware
 
 from letta.__init__ import __version__
 from letta.constants import ADMIN_PREFIX, API_PREFIX, OPENAI_API_PREFIX
-from letta.errors import LettaAgentNotFoundError, LettaUserNotFoundError
+from letta.errors import BedrockPermissionError, LettaAgentNotFoundError, LettaUserNotFoundError
 from letta.log import get_logger
 from letta.orm.errors import DatabaseTimeoutError, ForeignKeyConstraintViolationError, NoResultFound, UniqueConstraintViolationError
+from letta.schemas.letta_message import create_letta_message_union_schema
 from letta.server.constants import REST_DEFAULT_PORT
 
 # NOTE(charles): these are extra routes that are not part of v1 but we still need to mount to pass tests
@@ -67,6 +68,7 @@ def generate_openapi_schema(app: FastAPI):
     openai_docs["info"]["title"] = "OpenAI Assistants API"
     letta_docs["paths"] = {k: v for k, v in letta_docs["paths"].items() if not k.startswith("/openai")}
     letta_docs["info"]["title"] = "Letta API"
+    letta_docs["components"]["schemas"]["LettaMessageUnion"] = create_letta_message_union_schema()
 
     # Split the API docs into Letta API, and OpenAI Assistants compatible API
     for name, docs in [
@@ -144,7 +146,7 @@ def create_application() -> "FastAPI":
         log.error(f"Unhandled error: {exc}", exc_info=True)
 
         # Print the stack trace
-        print(f"Stack trace: {exc.__traceback__}")
+        print(f"Stack trace: {exc}")
         if (os.getenv("SENTRY_DSN") is not None) and (os.getenv("SENTRY_DSN") != ""):
             import sentry_sdk
 
@@ -205,6 +207,19 @@ def create_application() -> "FastAPI":
     @app.exception_handler(LettaUserNotFoundError)
     async def user_not_found_handler(request: Request, exc: LettaUserNotFoundError):
         return JSONResponse(status_code=404, content={"detail": "User not found"})
+
+    @app.exception_handler(BedrockPermissionError)
+    async def bedrock_permission_error_handler(request, exc: BedrockPermissionError):
+        return JSONResponse(
+            status_code=403,
+            content={
+                "error": {
+                    "type": "bedrock_permission_denied",
+                    "message": "Unable to access the required AI model. Please check your Bedrock permissions or contact support.",
+                    "details": {"model_arn": exc.model_arn, "reason": str(exc)},
+                }
+            },
+        )
 
     settings.cors_origins.append("https://app.letta.com")
 
@@ -275,6 +290,8 @@ def start_server(
         server_logger.addHandler(stream_handler)
 
     if (os.getenv("LOCAL_HTTPS") == "true") or "--localhttps" in sys.argv:
+        print(f"▶ Server running at: https://{host or 'localhost'}:{port or REST_DEFAULT_PORT}\n")
+        print(f"▶ View using ADE at: https://app.letta.com/development-servers/local/dashboard")
         uvicorn.run(
             app,
             host=host or "localhost",
@@ -282,13 +299,11 @@ def start_server(
             ssl_keyfile="certs/localhost-key.pem",
             ssl_certfile="certs/localhost.pem",
         )
-        print(f"▶ Server running at: https://{host or 'localhost'}:{port or REST_DEFAULT_PORT}\n")
     else:
+        print(f"▶ Server running at: http://{host or 'localhost'}:{port or REST_DEFAULT_PORT}\n")
+        print(f"▶ View using ADE at: https://app.letta.com/development-servers/local/dashboard")
         uvicorn.run(
             app,
             host=host or "localhost",
             port=port or REST_DEFAULT_PORT,
         )
-        print(f"▶ Server running at: http://{host or 'localhost'}:{port or REST_DEFAULT_PORT}\n")
-
-    print(f"▶ View using ADE at: https://app.letta.com/development-servers/local/dashboard")

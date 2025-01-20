@@ -17,7 +17,6 @@ import letta.server.utils as server_utils
 import letta.system as system
 from letta.agent import Agent, save_agent
 from letta.chat_only_agent import ChatOnlyAgent
-from letta.credentials import LettaCredentials
 from letta.data_sources.connectors import DataConnector, load_data
 
 # TODO use custom interface
@@ -43,6 +42,7 @@ from letta.schemas.message import Message, MessageCreate, MessageRole, MessageUp
 from letta.schemas.organization import Organization
 from letta.schemas.passage import Passage
 from letta.schemas.providers import (
+    AnthropicBedrockProvider,
     AnthropicProvider,
     AzureProvider,
     GoogleAIProvider,
@@ -72,6 +72,7 @@ from letta.services.per_agent_lock_manager import PerAgentLockManager
 from letta.services.provider_manager import ProviderManager
 from letta.services.sandbox_config_manager import SandboxConfigManager
 from letta.services.source_manager import SourceManager
+from letta.services.step_manager import StepManager
 from letta.services.tool_execution_sandbox import ToolExecutionSandbox
 from letta.services.tool_manager import ToolManager
 from letta.services.user_manager import UserManager
@@ -271,8 +272,6 @@ class SyncServer(Server):
         # The default interface that will get assigned to agents ON LOAD
         self.default_interface_factory = default_interface_factory
 
-        self.credentials = LettaCredentials.load()
-
         # Initialize the metadata store
         config = LettaConfig.load()
         if settings.letta_pg_uri_no_default:
@@ -295,6 +294,7 @@ class SyncServer(Server):
         self.job_manager = JobManager()
         self.agent_manager = AgentManager()
         self.provider_manager = ProviderManager()
+        self.step_manager = StepManager()
 
         # Managers that interface with parallelism
         self.per_agent_lock_manager = PerAgentLockManager()
@@ -382,6 +382,12 @@ class SyncServer(Server):
             self._enabled_providers.append(
                 VLLMChatCompletionsProvider(
                     base_url=model_settings.vllm_api_base,
+                )
+            )
+        if model_settings.aws_access_key and model_settings.aws_secret_access_key and model_settings.aws_region:
+            self._enabled_providers.append(
+                AnthropicBedrockProvider(
+                    aws_region=model_settings.aws_region,
                 )
             )
 

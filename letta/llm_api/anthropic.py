@@ -1,8 +1,12 @@
 import json
 import re
-from typing import List, Optional, Union
+from typing import List, Optional, Tuple, Union
 
-from letta.llm_api.helpers import make_post_request
+import anthropic
+from anthropic import PermissionDeniedError
+
+from letta.errors import BedrockError, BedrockPermissionError
+from letta.llm_api.aws_bedrock import get_bedrock_client
 from letta.schemas.message import Message
 from letta.schemas.openai.chat_completion_request import ChatCompletionRequest, Tool
 from letta.schemas.openai.chat_completion_response import ChatCompletionResponse, Choice, FunctionCall
@@ -10,6 +14,8 @@ from letta.schemas.openai.chat_completion_response import (
     Message as ChoiceMessage,  # NOTE: avoid conflict with our own Letta Message datatype
 )
 from letta.schemas.openai.chat_completion_response import ToolCall, UsageStatistics
+from letta.services.provider_manager import ProviderManager
+from letta.settings import model_settings
 from letta.utils import get_utc_time, smart_urljoin
 
 BASE_URL = "https://api.anthropic.com/v1"
@@ -195,7 +201,7 @@ def strip_xml_tags(string: str, tag: Optional[str]) -> str:
 
 
 def convert_anthropic_response_to_chatcompletion(
-    response_json: dict,  # REST response from Google AI API
+    response: anthropic.types.Message,
     inner_thoughts_xml_tag: Optional[str] = None,
 ) -> ChatCompletionResponse:
     """
@@ -232,65 +238,67 @@ def convert_anthropic_response_to_chatcompletion(
         }
     }
     """
-    prompt_tokens = response_json["usage"]["input_tokens"]
-    completion_tokens = response_json["usage"]["output_tokens"]
+    prompt_tokens = response.usage.input_tokens
+    completion_tokens = response.usage.output_tokens
+    finish_reason = remap_finish_reason(response.stop_reason)
 
-    finish_reason = remap_finish_reason(response_json["stop_reason"])
+    content = None
+    tool_calls = None
 
-    if isinstance(response_json["content"], list):
-        if len(response_json["content"]) > 1:
-            # inner mono + function call
-            assert len(response_json["content"]) == 2, response_json
-            assert response_json["content"][0]["type"] == "text", response_json
-            assert response_json["content"][1]["type"] == "tool_use", response_json
-            content = strip_xml_tags(string=response_json["content"][0]["text"], tag=inner_thoughts_xml_tag)
+    if len(response.content) > 1:
+        # inner mono + function call
+        assert len(response.content) == 2
+        text_block = response.content[0]
+        tool_block = response.content[1]
+        assert text_block.type == "text"
+        assert tool_block.type == "tool_use"
+        content = strip_xml_tags(string=text_block.text, tag=inner_thoughts_xml_tag)
+        tool_calls = [
+            ToolCall(
+                id=tool_block.id,
+                type="function",
+                function=FunctionCall(
+                    name=tool_block.name,
+                    arguments=json.dumps(tool_block.input, indent=2),
+                ),
+            )
+        ]
+    elif len(response.content) == 1:
+        block = response.content[0]
+        if block.type == "tool_use":
+            # function call only
             tool_calls = [
                 ToolCall(
-                    id=response_json["content"][1]["id"],
+                    id=block.id,
                     type="function",
                     function=FunctionCall(
-                        name=response_json["content"][1]["name"],
-                        arguments=json.dumps(response_json["content"][1]["input"], indent=2),
+                        name=block.name,
+                        arguments=json.dumps(block.input, indent=2),
                     ),
                 )
             ]
-        elif len(response_json["content"]) == 1:
-            if response_json["content"][0]["type"] == "tool_use":
-                # function call only
-                content = None
-                tool_calls = [
-                    ToolCall(
-                        id=response_json["content"][0]["id"],
-                        type="function",
-                        function=FunctionCall(
-                            name=response_json["content"][0]["name"],
-                            arguments=json.dumps(response_json["content"][0]["input"], indent=2),
-                        ),
-                    )
-                ]
-            else:
-                # inner mono only
-                content = strip_xml_tags(string=response_json["content"][0]["text"], tag=inner_thoughts_xml_tag)
-                tool_calls = None
+        else:
+            # inner mono only
+            content = strip_xml_tags(string=block.text, tag=inner_thoughts_xml_tag)
     else:
-        raise RuntimeError("Unexpected type for content in response_json.")
+        raise RuntimeError("Unexpected empty content in response")
 
-    assert response_json["role"] == "assistant", response_json
+    assert response.role == "assistant"
     choice = Choice(
         index=0,
         finish_reason=finish_reason,
         message=ChoiceMessage(
-            role=response_json["role"],
+            role=response.role,
             content=content,
             tool_calls=tool_calls,
         ),
     )
 
     return ChatCompletionResponse(
-        id=response_json["id"],
+        id=response.id,
         choices=[choice],
         created=get_utc_time(),
-        model=response_json["model"],
+        model=response.model,
         usage=UsageStatistics(
             prompt_tokens=prompt_tokens,
             completion_tokens=completion_tokens,
@@ -299,23 +307,11 @@ def convert_anthropic_response_to_chatcompletion(
     )
 
 
-def anthropic_chat_completions_request(
-    url: str,
-    api_key: str,
+def _prepare_anthropic_request(
     data: ChatCompletionRequest,
     inner_thoughts_xml_tag: Optional[str] = "thinking",
-) -> ChatCompletionResponse:
-    """https://docs.anthropic.com/claude/docs/tool-use"""
-
-    url = smart_urljoin(url, "messages")
-    headers = {
-        "Content-Type": "application/json",
-        "x-api-key": api_key,
-        # NOTE: beta headers for tool calling
-        "anthropic-version": "2023-06-01",
-        "anthropic-beta": "tools-2024-04-04",
-    }
-
+) -> dict:
+    """Prepare the request data for Anthropic API format."""
     # convert the tools
     anthropic_tools = None if data.tools is None else convert_tools_to_anthropic_format(data.tools)
 
@@ -325,57 +321,109 @@ def anthropic_chat_completions_request(
     if "functions" in data:
         raise ValueError(f"'functions' unexpected in Anthropic API payload")
 
-    # If tools == None, strip from the payload
+    # Handle tools
     if "tools" in data and data["tools"] is None:
         data.pop("tools")
-        data.pop("tool_choice", None)  # extra safe,  should exist always (default="auto")
-    # Remap to our converted tools
-    if anthropic_tools is not None:
+        data.pop("tool_choice", None)
+    elif anthropic_tools is not None:
         data["tools"] = anthropic_tools
-
-        # TODO: Add support for other tool_choice options like "auto", "any"
         if len(anthropic_tools) == 1:
             data["tool_choice"] = {
-                "type": "tool",  # Changed from "function" to "tool"
-                "name": anthropic_tools[0]["name"],  # Directly specify name without nested "function" object
-                "disable_parallel_tool_use": True,  # Force single tool use
+                "type": "tool",
+                "name": anthropic_tools[0]["name"],
+                "disable_parallel_tool_use": True,
             }
 
     # Move 'system' to the top level
-    # 'messages: Unexpected role "system". The Messages API accepts a top-level `system` parameter, not "system" as an input message role.'
     assert data["messages"][0]["role"] == "system", f"Expected 'system' role in messages[0]:\n{data['messages'][0]}"
     data["system"] = data["messages"][0]["content"]
     data["messages"] = data["messages"][1:]
 
-    # set `content` to None if missing
+    # Process messages
     for message in data["messages"]:
         if "content" not in message:
             message["content"] = None
 
     # Convert to Anthropic format
-
     msg_objs = [Message.dict_to_message(user_id=None, agent_id=None, openai_message_dict=m) for m in data["messages"]]
     data["messages"] = [m.to_anthropic_dict(inner_thoughts_xml_tag=inner_thoughts_xml_tag) for m in msg_objs]
 
-    # Handling Anthropic special requirement for 'user' message in front
-    # messages: first message must use the "user" role'
+    # Ensure first message is user
     if data["messages"][0]["role"] != "user":
         data["messages"] = [{"role": "user", "content": DUMMY_FIRST_USER_MESSAGE}] + data["messages"]
 
-    # Handle Anthropic's restriction on alternating user/assistant messages
+    # Handle alternating messages
     data["messages"] = merge_tool_results_into_user_messages(data["messages"])
 
-    # Anthropic also wants max_tokens in the input
-    # It's also part of ChatCompletions
+    # Validate max_tokens
     assert "max_tokens" in data, data
 
-    # Remove extra fields used by OpenAI but not Anthropic
-    data.pop("frequency_penalty", None)
-    data.pop("logprobs", None)
-    data.pop("n", None)
-    data.pop("top_p", None)
-    data.pop("presence_penalty", None)
-    data.pop("user", None)
+    # Remove OpenAI-specific fields
+    for field in ["frequency_penalty", "logprobs", "n", "top_p", "presence_penalty", "user"]:
+        data.pop(field, None)
 
-    response_json = make_post_request(url, headers, data)
-    return convert_anthropic_response_to_chatcompletion(response_json=response_json, inner_thoughts_xml_tag=inner_thoughts_xml_tag)
+    return data
+
+
+def get_anthropic_endpoint_and_headers(
+    base_url: str,
+    api_key: str,
+    version: str = "2023-06-01",
+    beta: Optional[str] = "tools-2024-04-04",
+) -> Tuple[str, dict]:
+    """
+    Dynamically generate the Anthropic endpoint and headers.
+    """
+    url = smart_urljoin(base_url, "messages")
+
+    headers = {
+        "Content-Type": "application/json",
+        "x-api-key": api_key,
+        "anthropic-version": version,
+    }
+
+    # Add beta header if specified
+    if beta:
+        headers["anthropic-beta"] = beta
+
+    return url, headers
+
+
+def anthropic_chat_completions_request(
+    data: ChatCompletionRequest,
+    inner_thoughts_xml_tag: Optional[str] = "thinking",
+    betas: List[str] = ["tools-2024-04-04"],
+) -> ChatCompletionResponse:
+    """https://docs.anthropic.com/claude/docs/tool-use"""
+    anthropic_client = None
+    anthropic_override_key = ProviderManager().get_anthropic_override_key()
+    if anthropic_override_key:
+        anthropic_client = anthropic.Anthropic(api_key=anthropic_override_key)
+    elif model_settings.anthropic_api_key:
+        anthropic_client = anthropic.Anthropic()
+    data = _prepare_anthropic_request(data, inner_thoughts_xml_tag)
+    response = anthropic_client.beta.messages.create(
+        **data,
+        betas=betas,
+    )
+    return convert_anthropic_response_to_chatcompletion(response=response, inner_thoughts_xml_tag=inner_thoughts_xml_tag)
+
+
+def anthropic_bedrock_chat_completions_request(
+    data: ChatCompletionRequest,
+    inner_thoughts_xml_tag: Optional[str] = "thinking",
+) -> ChatCompletionResponse:
+    """Make a chat completion request to Anthropic via AWS Bedrock."""
+    data = _prepare_anthropic_request(data, inner_thoughts_xml_tag)
+
+    # Get the client
+    client = get_bedrock_client()
+
+    # Make the request
+    try:
+        response = client.messages.create(**data)
+        return convert_anthropic_response_to_chatcompletion(response=response, inner_thoughts_xml_tag=inner_thoughts_xml_tag)
+    except PermissionDeniedError:
+        raise BedrockPermissionError(f"User does not have access to the Bedrock model with the specified ID. {data['model']}")
+    except Exception as e:
+        raise BedrockError(f"Bedrock error: {e}")

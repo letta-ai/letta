@@ -13,6 +13,7 @@ from letta.orm.provider import Provider
 from letta.orm.sandbox_config import AgentEnvironmentVariable, SandboxConfig, SandboxEnvironmentVariable
 from letta.orm.source import Source
 from letta.orm.sources_agents import SourcesAgents
+from letta.orm.step import Step
 from letta.orm.tool import Tool
 from letta.orm.tools_agents import ToolsAgents
 from letta.orm.user import User

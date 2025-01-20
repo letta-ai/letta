@@ -339,3 +339,65 @@ def test_together_llama_3_70b_edit_core_memory():
     response = check_agent_edit_core_memory(filename)
     # Log out successful response
     print(f"Got successful response from client: \n\n{response}")
+
+
+# ======================================================================================================================
+# ANTHROPIC BEDROCK TESTS
+# ======================================================================================================================
+@pytest.mark.anthropic_bedrock_basic
+def test_bedrock_claude_sonnet_3_5_valid_config():
+    import json
+
+    from letta.schemas.llm_config import LLMConfig
+    from letta.settings import model_settings
+
+    filename = os.path.join(llm_config_dir, "bedrock-claude-3-5-sonnet.json")
+    config_data = json.load(open(filename, "r"))
+    llm_config = LLMConfig(**config_data)
+    model_region = llm_config.model.split(":")[3]
+    assert model_settings.aws_region == model_region, "Model region in config file does not match model region in ModelSettings"
+
+
+@pytest.mark.anthropic_bedrock_basic
+@retry_until_success(max_attempts=5, sleep_time_seconds=2)
+def test_bedrock_claude_sonnet_3_5_returns_valid_first_message():
+    filename = os.path.join(llm_config_dir, "bedrock-claude-3-5-sonnet.json")
+    response = check_first_response_is_valid_for_llm_endpoint(filename)
+    # Log out successful response
+    print(f"Got successful response from client: \n\n{response}")
+
+
+@pytest.mark.anthropic_bedrock_basic
+@retry_until_success(max_attempts=5, sleep_time_seconds=2)
+def test_bedrock_claude_sonnet_3_5_uses_external_tool(mock_e2b_api_key_none):
+    filename = os.path.join(llm_config_dir, "bedrock-claude-3-5-sonnet.json")
+    response = check_agent_uses_external_tool(filename)
+    # Log out successful response
+    print(f"Got successful response from client: \n\n{response}")
+
+
+@pytest.mark.anthropic_bedrock_basic
+@retry_until_success(max_attempts=5, sleep_time_seconds=2)
+def test_bedrock_claude_sonnet_3_5_recall_chat_memory():
+    filename = os.path.join(llm_config_dir, "bedrock-claude-3-5-sonnet.json")
+    response = check_agent_recall_chat_memory(filename)
+    # Log out successful response
+    print(f"Got successful response from client: \n\n{response}")
+
+
+@pytest.mark.anthropic_bedrock_basic
+@retry_until_success(max_attempts=5, sleep_time_seconds=2)
+def test_bedrock_claude_sonnet_3_5_archival_memory_retrieval():
+    filename = os.path.join(llm_config_dir, "bedrock-claude-3-5-sonnet.json")
+    response = check_agent_archival_memory_retrieval(filename)
+    # Log out successful response
+    print(f"Got successful response from client: \n\n{response}")
+
+
+@pytest.mark.anthropic_bedrock_basic
+@retry_until_success(max_attempts=5, sleep_time_seconds=2)
+def test_bedrock_claude_sonnet_3_5_edit_core_memory():
+    filename = os.path.join(llm_config_dir, "bedrock-claude-3-5-sonnet.json")
+    response = check_agent_edit_core_memory(filename)
+    # Log out successful response
+    print(f"Got successful response from client: \n\n{response}")
