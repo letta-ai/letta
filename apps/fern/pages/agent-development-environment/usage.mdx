@@ -2,8 +2,14 @@
 title: Using the Agent Development Environment (ADE)
 slug: guides/ade/usage
 ---
+<Tip>
+The ADE is currently in open beta.
+During the beta period, you can access the ADE at [https://app.letta.com](https://app.letta.com) and connect it to your local Letta server or self-hosted deployments.
+</Tip>
 
-<Note>The [ADE](https://app.letta.com) is currently in public beta. Your feedback (e.g. via [Discord](https://discord.gg/letta)) is appreciated!</Note>
+<Frame>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/OzSCFR0Lp5s?si=pyJMo7eKBcW2zaan" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+</Frame>
 
 The ADE is an integrated development environment which allows you to create, edit, interact with and monitor Letta agents.
 You can use the ADE to chat with agents you've already created, or to design new agents from scratch - editing their memory state, data sources, and even customizing their tools all from within the ADE.
@@ -19,15 +25,15 @@ The agent's event history is comprised of *messages*, which can be:
   <Accordion title="User messages" icon="user">
     Chat messages from the user to the agent.
   </Accordion>
-  
+
   <Accordion title="System messages" icon="window">
     Non-user messages, for example, event notices like `[Alert] The user just logged on`.
   </Accordion>
-  
+
   <Accordion title="Agent messages" icon="alien-8bit">
     Assistant messages are messages sent by the agent to the user.
   </Accordion>
-  
+
   <Accordion title="Function (tool) messages" icon="rectangle-terminal">
     Tools that the agent has attempted to execute, and the result of their execution.
   </Accordion>
@@ -40,23 +46,23 @@ The context window viewer visualizes the current status of the agent's context w
   <Accordion title="System instructions">
     The top-level system prompt which guides the behavior of the agent (this can often be left unchanged).
   </Accordion>
-  
+
   <Accordion title="Function (tool) definitions">
     The JSON schema definitions of the tools available to the agent, which describe to the agent how to use them.
   </Accordion>
-  
+
   <Accordion title="Core (in-context) memory blocks">
     The long-term memory of the agent, for example the long-term memory about the user ("human") and agent's own "persona".
   </Accordion>
-  
+
   <Accordion title="External (out-of-context) memory statistics">
     Statistics about the archival memory (out-of-context) of the agent, such as the total number of memories available.
   </Accordion>
-  
+
   <Accordion title="Recursive summary">
     A recursive (rolling) summary of the event history, which is updated when the context window is truncated.
   </Accordion>
-  
+
   <Accordion title="Event (message) queue">
     The current event queue, which stores a chronological list of events (messages) that the agent has processed.
   </Accordion>
