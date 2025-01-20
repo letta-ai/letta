@@ -1,19 +1,30 @@
+from datetime import datetime
 from typing import List, Optional
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import Field, model_validator
 
 from letta.constants import LLM_MAX_TOKENS, MIN_CONTEXT_WINDOW
-from letta.llm_api.azure_openai import (
-    get_azure_chat_completions_endpoint,
-    get_azure_embeddings_endpoint,
-)
+from letta.llm_api.azure_openai import get_azure_chat_completions_endpoint, get_azure_embeddings_endpoint
 from letta.llm_api.azure_openai_constants import AZURE_MODEL_TO_CONTEXT_LENGTH
 from letta.schemas.embedding_config import EmbeddingConfig
+from letta.schemas.letta_base import LettaBase
 from letta.schemas.llm_config import LLMConfig
 
 
-class Provider(BaseModel):
+class ProviderBase(LettaBase):
+    __id_prefix__ = "provider"
+
+
+class Provider(ProviderBase):
+    id: Optional[str] = Field(None, description="The id of the provider, lazily created by the database manager.")
     name: str = Field(..., description="The name of the provider")
+    api_key: Optional[str] = Field(None, description="API key used for requests to the provider.")
+    organization_id: Optional[str] = Field(None, description="The organization id of the user")
+    updated_at: Optional[datetime] = Field(None, description="The last update timestamp of the provider.")
+
+    def resolve_identifier(self):
+        if not self.id:
+            self.id = ProviderBase._generate_id(prefix=ProviderBase.__id_prefix__)
 
     def list_llm_models(self) -> List[LLMConfig]:
         return []
@@ -27,10 +38,19 @@ class Provider(BaseModel):
     def provider_tag(self) -> str:
         """String representation of the provider for display purposes"""
         raise NotImplementedError
-    
+
     def get_handle(self, model_name: str) -> str:
         return f"{self.name}/{model_name}"
 
+
+class ProviderCreate(ProviderBase):
+    name: str = Field(..., description="The name of the provider.")
+    api_key: str = Field(..., description="API key used for requests to the provider.")
+
+
+class ProviderUpdate(ProviderBase):
+    id: str = Field(..., description="The id of the provider to update.")
+    api_key: str = Field(..., description="API key used for requests to the provider.")
 
 
 class LettaProvider(Provider):
@@ -43,8 +63,8 @@ class LettaProvider(Provider):
                 model="letta-free",  # NOTE: renamed
                 model_endpoint_type="openai",
                 model_endpoint="https://inference.memgpt.ai",
-                context_window=16384,
-                handle=self.get_handle("letta-free")
+                context_window=8192,
+                handle=self.get_handle("letta-free"),
             )
         ]
 
@@ -56,7 +76,7 @@ class LettaProvider(Provider):
                 embedding_endpoint="https://embeddings.memgpt.ai",
                 embedding_dim=1024,
                 embedding_chunk_size=300,
-                handle=self.get_handle("letta-free")
+                handle=self.get_handle("letta-free"),
             )
         ]
 
@@ -121,7 +141,13 @@ class OpenAIProvider(Provider):
                 # continue
 
             configs.append(
-                LLMConfig(model=model_name, model_endpoint_type="openai", model_endpoint=self.base_url, context_window=context_window_size, handle=self.get_handle(model_name))
+                LLMConfig(
+                    model=model_name,
+                    model_endpoint_type="openai",
+                    model_endpoint=self.base_url,
+                    context_window=context_window_size,
+                    handle=self.get_handle(model_name),
+                )
             )
 
         # for OpenAI, sort in reverse order
@@ -141,8 +167,24 @@ class OpenAIProvider(Provider):
                 embedding_endpoint="https://api.openai.com/v1",
                 embedding_dim=1536,
                 embedding_chunk_size=300,
-                handle=self.get_handle("text-embedding-ada-002")
-            )
+                handle=self.get_handle("text-embedding-ada-002"),
+            ),
+            EmbeddingConfig(
+                embedding_model="text-embedding-3-small",
+                embedding_endpoint_type="openai",
+                embedding_endpoint="https://api.openai.com/v1",
+                embedding_dim=2000,
+                embedding_chunk_size=300,
+                handle=self.get_handle("text-embedding-3-small"),
+            ),
+            EmbeddingConfig(
+                embedding_model="text-embedding-3-large",
+                embedding_endpoint_type="openai",
+                embedding_endpoint="https://api.openai.com/v1",
+                embedding_dim=2000,
+                embedding_chunk_size=300,
+                handle=self.get_handle("text-embedding-3-large"),
+            ),
         ]
 
     def get_model_context_window_size(self, model_name: str):
@@ -170,7 +212,7 @@ class AnthropicProvider(Provider):
                     model_endpoint_type="anthropic",
                     model_endpoint=self.base_url,
                     context_window=model["context_window"],
-                    handle=self.get_handle(model["name"])
+                    handle=self.get_handle(model["name"]),
                 )
             )
         return configs
@@ -203,7 +245,7 @@ class MistralProvider(Provider):
                         model_endpoint_type="openai",
                         model_endpoint=self.base_url,
                         context_window=model["max_context_length"],
-                        handle=self.get_handle(model["id"])
+                        handle=self.get_handle(model["id"]),
                     )
                 )
 
@@ -259,7 +301,7 @@ class OllamaProvider(OpenAIProvider):
                     model_endpoint=self.base_url,
                     model_wrapper=self.default_prompt_formatter,
                     context_window=context_window,
-                    handle=self.get_handle(model["name"])
+                    handle=self.get_handle(model["name"]),
                 )
             )
         return configs
@@ -335,7 +377,7 @@ class OllamaProvider(OpenAIProvider):
                     embedding_endpoint=self.base_url,
                     embedding_dim=embedding_dim,
                     embedding_chunk_size=300,
-                    handle=self.get_handle(model["name"])
+                    handle=self.get_handle(model["name"]),
                 )
             )
         return configs
@@ -356,7 +398,11 @@ class GroqProvider(OpenAIProvider):
                 continue
             configs.append(
                 LLMConfig(
-                    model=model["id"], model_endpoint_type="groq", model_endpoint=self.base_url, context_window=model["context_window"], handle=self.get_handle(model["id"])
+                    model=model["id"],
+                    model_endpoint_type="groq",
+                    model_endpoint=self.base_url,
+                    context_window=model["context_window"],
+                    handle=self.get_handle(model["id"]),
                 )
             )
         return configs
@@ -424,7 +470,7 @@ class TogetherProvider(OpenAIProvider):
                     model_endpoint=self.base_url,
                     model_wrapper=self.default_prompt_formatter,
                     context_window=context_window_size,
-                    handle=self.get_handle(model_name)
+                    handle=self.get_handle(model_name),
                 )
             )
 
@@ -505,7 +551,7 @@ class GoogleAIProvider(Provider):
                     model_endpoint_type="google_ai",
                     model_endpoint=self.base_url,
                     context_window=self.get_model_context_window(model),
-                    handle=self.get_handle(model)
+                    handle=self.get_handle(model),
                 )
             )
         return configs
@@ -529,7 +575,7 @@ class GoogleAIProvider(Provider):
                     embedding_endpoint=self.base_url,
                     embedding_dim=768,
                     embedding_chunk_size=300,  # NOTE: max is 2048
-                    handle=self.get_handle(model)
+                    handle=self.get_handle(model),
                 )
             )
         return configs
@@ -559,9 +605,7 @@ class AzureProvider(Provider):
         return values
 
     def list_llm_models(self) -> List[LLMConfig]:
-        from letta.llm_api.azure_openai import (
-            azure_openai_get_chat_completion_model_list,
-        )
+        from letta.llm_api.azure_openai import azure_openai_get_chat_completion_model_list
 
         model_options = azure_openai_get_chat_completion_model_list(self.base_url, api_key=self.api_key, api_version=self.api_version)
         configs = []
@@ -570,7 +614,13 @@ class AzureProvider(Provider):
             context_window_size = self.get_model_context_window(model_name)
             model_endpoint = get_azure_chat_completions_endpoint(self.base_url, model_name, self.api_version)
             configs.append(
-                LLMConfig(model=model_name, model_endpoint_type="azure", model_endpoint=model_endpoint, context_window=context_window_size), handle=self.get_handle(model_name)
+                LLMConfig(
+                    model=model_name,
+                    model_endpoint_type="azure",
+                    model_endpoint=model_endpoint,
+                    context_window=context_window_size,
+                    handle=self.get_handle(model_name),
+                ),
             )
         return configs
 
@@ -591,7 +641,7 @@ class AzureProvider(Provider):
                     embedding_endpoint=model_endpoint,
                     embedding_dim=768,
                     embedding_chunk_size=300,  # NOTE: max is 2048
-                    handle=self.get_handle(model_name)
+                    handle=self.get_handle(model_name),
                 )
             )
         return configs
@@ -625,7 +675,7 @@ class VLLMChatCompletionsProvider(Provider):
                     model_endpoint_type="openai",
                     model_endpoint=self.base_url,
                     context_window=model["max_model_len"],
-                    handle=self.get_handle(model["id"])
+                    handle=self.get_handle(model["id"]),
                 )
             )
         return configs
@@ -658,7 +708,7 @@ class VLLMCompletionsProvider(Provider):
                     model_endpoint=self.base_url,
                     model_wrapper=self.default_prompt_formatter,
                     context_window=model["max_model_len"],
-                    handle=self.get_handle(model["id"])
+                    handle=self.get_handle(model["id"]),
                 )
             )
         return configs
@@ -670,3 +720,39 @@ class VLLMCompletionsProvider(Provider):
 
 class CohereProvider(OpenAIProvider):
     pass
+
+
+class AnthropicBedrockProvider(Provider):
+    name: str = "bedrock"
+    aws_region: str = Field(..., description="AWS region for Bedrock")
+
+    def list_llm_models(self):
+        from letta.llm_api.aws_bedrock import bedrock_get_model_list
+
+        models = bedrock_get_model_list(self.aws_region)
+
+        configs = []
+        for model_summary in models:
+            model_arn = model_summary["inferenceProfileArn"]
+            configs.append(
+                LLMConfig(
+                    model=model_arn,
+                    model_endpoint_type=self.name,
+                    model_endpoint=None,
+                    context_window=self.get_model_context_window(model_arn),
+                    handle=self.get_handle(model_arn),
+                )
+            )
+        return configs
+
+    def list_embedding_models(self):
+        return []
+
+    def get_model_context_window(self, model_name: str) -> Optional[int]:
+        # Context windows for Claude models
+        from letta.llm_api.aws_bedrock import bedrock_get_model_context_window
+
+        return bedrock_get_model_context_window(model_name)
+
+    def get_handle(self, model_name: str) -> str:
+        return f"anthropic/{model_name}"

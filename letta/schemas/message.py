@@ -6,24 +6,13 @@ from typing import List, Literal, Optional
 
 from pydantic import BaseModel, Field, field_validator
 
-from letta.constants import (
-    DEFAULT_MESSAGE_TOOL,
-    DEFAULT_MESSAGE_TOOL_KWARG,
-    TOOL_CALL_ID_MAX_LEN,
-)
+from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG, TOOL_CALL_ID_MAX_LEN
 from letta.local_llm.constants import INNER_THOUGHTS_KWARG
 from letta.schemas.enums import MessageRole
 from letta.schemas.letta_base import OrmMetadataBase
-from letta.schemas.letta_message import (
-    AssistantMessage,
-    ToolCall as LettaToolCall,
-    ToolCallMessage,
-    ToolReturnMessage,
-    ReasoningMessage,
-    LettaMessage,
-    SystemMessage,
-    UserMessage,
-)
+from letta.schemas.letta_message import AssistantMessage, LettaMessage, ReasoningMessage, SystemMessage
+from letta.schemas.letta_message import ToolCall as LettaToolCall
+from letta.schemas.letta_message import ToolCallMessage, ToolReturnMessage, UserMessage
 from letta.schemas.openai.chat_completions import ToolCall, ToolCallFunction
 from letta.utils import get_utc_time, is_utc_datetime, json_dumps
 
@@ -110,6 +99,7 @@ class Message(BaseMessage):
     name: Optional[str] = Field(None, description="The name of the participant.")
     tool_calls: Optional[List[ToolCall]] = Field(None, description="The list of tool calls requested.")
     tool_call_id: Optional[str] = Field(None, description="The id of the tool call.")
+    step_id: Optional[str] = Field(None, description="The id of the step that this message was created in.")
     # This overrides the optional base orm schema, created_at MUST exist on all messages objects
     created_at: datetime = Field(default_factory=get_utc_time, description="The timestamp when the object was created.")
 
@@ -160,9 +150,9 @@ class Message(BaseMessage):
                         # We need to unpack the actual message contents from the function call
                         try:
                             func_args = json.loads(tool_call.function.arguments)
-                            message_string = func_args[DEFAULT_MESSAGE_TOOL_KWARG]
+                            message_string = func_args[assistant_message_tool_kwarg]
                         except KeyError:
-                            raise ValueError(f"Function call {tool_call.function.name} missing {DEFAULT_MESSAGE_TOOL_KWARG} argument")
+                            raise ValueError(f"Function call {tool_call.function.name} missing {assistant_message_tool_kwarg} argument")
                         messages.append(
                             AssistantMessage(
                                 id=self.id,
@@ -719,8 +709,6 @@ class Message(BaseMessage):
                     },
                 ]
                 for tc in self.tool_calls:
-                    # TODO better way to pack?
-                    # function_call_text = json.dumps(tc.to_dict())
                     function_name = tc.function["name"]
                     function_args = json.loads(tc.function["arguments"])
                     function_args_str = ",".join([f"{k}={v}" for k, v in function_args.items()])

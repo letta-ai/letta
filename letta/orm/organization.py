@@ -9,6 +9,8 @@ if TYPE_CHECKING:
 
     from letta.orm.agent import Agent
     from letta.orm.file import FileMetadata
+    from letta.orm.provider import Provider
+    from letta.orm.sandbox_config import AgentEnvironmentVariable
     from letta.orm.tool import Tool
     from letta.orm.user import User
 
@@ -33,24 +35,20 @@ class Organization(SqlalchemyBase):
     sandbox_environment_variables: Mapped[List["SandboxEnvironmentVariable"]] = relationship(
         "SandboxEnvironmentVariable", back_populates="organization", cascade="all, delete-orphan"
     )
+    agent_environment_variables: Mapped[List["AgentEnvironmentVariable"]] = relationship(
+        "AgentEnvironmentVariable", back_populates="organization", cascade="all, delete-orphan"
+    )
 
     # relationships
     agents: Mapped[List["Agent"]] = relationship("Agent", back_populates="organization", cascade="all, delete-orphan")
     messages: Mapped[List["Message"]] = relationship("Message", back_populates="organization", cascade="all, delete-orphan")
     source_passages: Mapped[List["SourcePassage"]] = relationship(
-        "SourcePassage", 
-        back_populates="organization", 
-        cascade="all, delete-orphan"
+        "SourcePassage", back_populates="organization", cascade="all, delete-orphan"
     )
-    agent_passages: Mapped[List["AgentPassage"]] = relationship(
-        "AgentPassage", 
-        back_populates="organization", 
-        cascade="all, delete-orphan"
-    )
+    agent_passages: Mapped[List["AgentPassage"]] = relationship("AgentPassage", back_populates="organization", cascade="all, delete-orphan")
+    providers: Mapped[List["Provider"]] = relationship("Provider", back_populates="organization", cascade="all, delete-orphan")
 
     @property
     def passages(self) -> List[Union["SourcePassage", "AgentPassage"]]:
         """Convenience property to get all passages"""
         return self.source_passages + self.agent_passages
-
-

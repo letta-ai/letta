@@ -5,14 +5,7 @@ from typing import Callable, Dict, Generator, List, Optional, Union
 import requests
 
 import letta.utils
-from letta.constants import (
-    ADMIN_PREFIX,
-    BASE_MEMORY_TOOLS,
-    BASE_TOOLS,
-    DEFAULT_HUMAN,
-    DEFAULT_PERSONA,
-    FUNCTION_RETURN_CHAR_LIMIT,
-)
+from letta.constants import ADMIN_PREFIX, BASE_MEMORY_TOOLS, BASE_TOOLS, DEFAULT_HUMAN, DEFAULT_PERSONA, FUNCTION_RETURN_CHAR_LIMIT
 from letta.data_sources.connectors import DataConnector
 from letta.functions.functions import parse_source_code
 from letta.orm.errors import NoResultFound
@@ -22,37 +15,29 @@ from letta.schemas.embedding_config import EmbeddingConfig
 
 # new schemas
 from letta.schemas.enums import JobStatus, MessageRole
-from letta.schemas.file import FileMetadata
-from letta.schemas.job import Job
-from letta.schemas.letta_request import LettaRequest, LettaStreamingRequest
-from letta.schemas.letta_response import LettaResponse, LettaStreamingResponse
-from letta.schemas.llm_config import LLMConfig
-from letta.schemas.memory import (
-    ArchivalMemorySummary,
-    ChatMemory,
-    CreateArchivalMemory,
-    Memory,
-    RecallMemorySummary,
-)
-from letta.schemas.message import Message, MessageCreate, MessageUpdate
-from letta.schemas.openai.chat_completions import ToolCall
-from letta.schemas.organization import Organization
-from letta.schemas.passage import Passage
-from letta.schemas.sandbox_config import (
-    E2BSandboxConfig,
-    LocalSandboxConfig,
-    SandboxConfig,
-    SandboxConfigCreate,
-    SandboxConfigUpdate,
+from letta.schemas.environment_variables import (
     SandboxEnvironmentVariable,
     SandboxEnvironmentVariableCreate,
     SandboxEnvironmentVariableUpdate,
 )
+from letta.schemas.file import FileMetadata
+from letta.schemas.job import Job
+from letta.schemas.letta_message import LettaMessage, LettaMessageUnion
+from letta.schemas.letta_request import LettaRequest, LettaStreamingRequest
+from letta.schemas.letta_response import LettaResponse, LettaStreamingResponse
+from letta.schemas.llm_config import LLMConfig
+from letta.schemas.memory import ArchivalMemorySummary, ChatMemory, CreateArchivalMemory, Memory, RecallMemorySummary
+from letta.schemas.message import Message, MessageCreate, MessageUpdate
+from letta.schemas.openai.chat_completion_response import UsageStatistics
+from letta.schemas.openai.chat_completions import ToolCall
+from letta.schemas.organization import Organization
+from letta.schemas.passage import Passage
+from letta.schemas.run import Run
+from letta.schemas.sandbox_config import E2BSandboxConfig, LocalSandboxConfig, SandboxConfig, SandboxConfigCreate, SandboxConfigUpdate
 from letta.schemas.source import Source, SourceCreate, SourceUpdate
 from letta.schemas.tool import Tool, ToolCreate, ToolUpdate
 from letta.schemas.tool_rule import BaseToolRule
 from letta.server.rest_api.interface import QueuingInterface
-from letta.server.server import SyncServer
 from letta.utils import get_human_text, get_persona_text
 
 
@@ -425,7 +410,8 @@ class RESTClient(AbstractClient):
     def __init__(
         self,
         base_url: str,
-        token: str,
+        token: Optional[str] = None,
+        password: Optional[str] = None,
         api_prefix: str = "v1",
         debug: bool = False,
         default_llm_config: Optional[LLMConfig] = None,
@@ -441,23 +427,39 @@ class RESTClient(AbstractClient):
             default_llm_config (Optional[LLMConfig]): The default LLM configuration.
             default_embedding_config (Optional[EmbeddingConfig]): The default embedding configuration.
             headers (Optional[Dict]): The additional headers for the REST API.
+            token (Optional[str]): The token for the REST API when using managed letta service.
+            password (Optional[str]): The password for the REST API when using self hosted letta service.
         """
         super().__init__(debug=debug)
         self.base_url = base_url
         self.api_prefix = api_prefix
-        self.headers = {"accept": "application/json", "authorization": f"Bearer {token}"}
+        if token:
+            self.headers = {"accept": "application/json", "Authorization": f"Bearer {token}"}
+        elif password:
+            self.headers = {"accept": "application/json", "X-BARE-PASSWORD": f"password {password}"}
+        else:
+            raise ValueError("Either token or password must be provided")
         if headers:
             self.headers.update(headers)
         self._default_llm_config = default_llm_config
         self._default_embedding_config = default_embedding_config
 
-    def list_agents(self, tags: Optional[List[str]] = None) -> List[AgentState]:
-        params = {}
+    def list_agents(
+        self, tags: Optional[List[str]] = None, query_text: Optional[str] = None, limit: int = 50, cursor: Optional[str] = None
+    ) -> List[AgentState]:
+        params = {"limit": limit}
         if tags:
             params["tags"] = tags
             params["match_all_tags"] = False
 
+        if query_text:
+            params["query_text"] = query_text
+
+        if cursor:
+            params["cursor"] = cursor
+
         response = requests.get(f"{self.base_url}/{self.api_prefix}/agents", headers=self.headers, params=params)
+        print(f"\nLIST RESPONSE\n{response.json()}\n")
         return [AgentState(**agent) for agent in response.json()]
 
     def agent_exists(self, agent_id: str) -> bool:
@@ -563,6 +565,7 @@ class RESTClient(AbstractClient):
             "embedding_config": embedding_config if embedding_config else self._default_embedding_config,
             "initial_message_sequence": initial_message_sequence,
             "tags": tags,
+            "include_base_tools": include_base_tools,
         }
 
         # Only add name if it's not None
@@ -1003,7 +1006,7 @@ class RESTClient(AbstractClient):
         role: str,
         agent_id: Optional[str] = None,
         name: Optional[str] = None,
-    ) -> Job:
+    ) -> Run:
         """
         Send a message to an agent (async, returns a job)
 
@@ -1026,7 +1029,7 @@ class RESTClient(AbstractClient):
         )
         if response.status_code != 200:
             raise ValueError(f"Failed to send message: {response.text}")
-        response = Job(**response.json())
+        response = Run(**response.json())
 
         return response
 
@@ -1048,9 +1051,10 @@ class RESTClient(AbstractClient):
     def create_block(
         self, label: str, value: str, limit: Optional[int] = None, template_name: Optional[str] = None, is_template: bool = False
     ) -> Block:  #
-        request = CreateBlock(label=label, value=value, template=is_template, template_name=template_name)
+        request_kwargs = dict(label=label, value=value, template=is_template, template_name=template_name)
         if limit:
-            request.limit = limit
+            request_kwargs["limit"] = limit
+        request = CreateBlock(**request_kwargs)
         response = requests.post(f"{self.base_url}/{self.api_prefix}/blocks", json=request.model_dump(), headers=self.headers)
         if response.status_code != 200:
             raise ValueError(f"Failed to create block: {response.text}")
@@ -1999,6 +2003,153 @@ class RESTClient(AbstractClient):
             raise ValueError(f"Failed to update block: {response.text}")
         return Block(**response.json())
 
+    def get_run_messages(
+        self,
+        run_id: str,
+        cursor: Optional[str] = None,
+        limit: Optional[int] = 100,
+        ascending: bool = True,
+        role: Optional[MessageRole] = None,
+    ) -> List[LettaMessageUnion]:
+        """
+        Get messages associated with a job with filtering options.
+
+        Args:
+            job_id: ID of the job
+            cursor: Cursor for pagination
+            limit: Maximum number of messages to return
+            ascending: Sort order by creation time
+            role: Filter by message role (user/assistant/system/tool)
+        Returns:
+            List of messages matching the filter criteria
+        """
+        params = {
+            "cursor": cursor,
+            "limit": limit,
+            "ascending": ascending,
+            "role": role,
+        }
+        # Remove None values
+        params = {k: v for k, v in params.items() if v is not None}
+
+        response = requests.get(f"{self.base_url}/{self.api_prefix}/runs/{run_id}/messages", params=params)
+        if response.status_code != 200:
+            raise ValueError(f"Failed to get run messages: {response.text}")
+        return [LettaMessage(**message) for message in response.json()]
+
+    def get_run_usage(
+        self,
+        run_id: str,
+    ) -> List[UsageStatistics]:
+        """
+        Get usage statistics associated with a job.
+
+        Args:
+            job_id (str): ID of the job
+
+        Returns:
+            List[UsageStatistics]: List of usage statistics associated with the job
+        """
+        response = requests.get(
+            f"{self.base_url}/{self.api_prefix}/runs/{run_id}/usage",
+            headers=self.headers,
+        )
+        if response.status_code != 200:
+            raise ValueError(f"Failed to get run usage statistics: {response.text}")
+        return [UsageStatistics(**stat) for stat in [response.json()]]
+
+    def get_run(self, run_id: str) -> Run:
+        """
+        Get a run by ID.
+
+        Args:
+            run_id (str): ID of the run
+
+        Returns:
+            run (Run): Run
+        """
+        response = requests.get(
+            f"{self.base_url}/{self.api_prefix}/runs/{run_id}",
+            headers=self.headers,
+        )
+        if response.status_code != 200:
+            raise ValueError(f"Failed to get run: {response.text}")
+        return Run(**response.json())
+
+    def delete_run(self, run_id: str) -> None:
+        """
+        Delete a run by ID.
+
+        Args:
+            run_id (str): ID of the run
+        """
+        response = requests.delete(
+            f"{self.base_url}/{self.api_prefix}/runs/{run_id}",
+            headers=self.headers,
+        )
+        if response.status_code != 200:
+            raise ValueError(f"Failed to delete run: {response.text}")
+
+    def list_runs(self) -> List[Run]:
+        """
+        List all runs.
+
+        Returns:
+            runs (List[Run]): List of runs
+        """
+        response = requests.get(
+            f"{self.base_url}/{self.api_prefix}/runs",
+            headers=self.headers,
+        )
+        if response.status_code != 200:
+            raise ValueError(f"Failed to list runs: {response.text}")
+        return [Run(**run) for run in response.json()]
+
+    def list_active_runs(self) -> List[Run]:
+        """
+        List all active runs.
+
+        Returns:
+            runs (List[Run]): List of active runs
+        """
+        response = requests.get(
+            f"{self.base_url}/{self.api_prefix}/runs/active",
+            headers=self.headers,
+        )
+        if response.status_code != 200:
+            raise ValueError(f"Failed to list active runs: {response.text}")
+        return [Run(**run) for run in response.json()]
+
+    def get_tags(
+        self,
+        cursor: Optional[str] = None,
+        limit: Optional[int] = None,
+        query_text: Optional[str] = None,
+    ) -> List[str]:
+        """
+        Get a list of all unique tags.
+
+        Args:
+            cursor: Optional cursor for pagination (last tag seen)
+            limit: Optional maximum number of tags to return
+            query_text: Optional text to filter tags
+
+        Returns:
+            List[str]: List of unique tags
+        """
+        params = {}
+        if cursor:
+            params["cursor"] = cursor
+        if limit:
+            params["limit"] = limit
+        if query_text:
+            params["query_text"] = query_text
+
+        response = requests.get(f"{self.base_url}/{self.api_prefix}/tags", headers=self.headers, params=params)
+        if response.status_code != 200:
+            raise ValueError(f"Failed to get tags: {response.text}")
+        return response.json()
+
 
 class LocalClient(AbstractClient):
     """
@@ -2026,6 +2177,8 @@ class LocalClient(AbstractClient):
             user_id (str): The user ID.
             debug (bool): Whether to print debug information.
         """
+
+        from letta.server.server import SyncServer
 
         # set logging levels
         letta.utils.DEBUG = debug
@@ -2055,10 +2208,12 @@ class LocalClient(AbstractClient):
         self.organization = self.server.get_organization_or_default(self.org_id)
 
     # agents
-    def list_agents(self, tags: Optional[List[str]] = None) -> List[AgentState]:
+    def list_agents(
+        self, query_text: Optional[str] = None, tags: Optional[List[str]] = None, limit: int = 100, cursor: Optional[str] = None
+    ) -> List[AgentState]:
         self.interface.clear()
 
-        return self.server.agent_manager.list_agents(actor=self.user, tags=tags)
+        return self.server.agent_manager.list_agents(actor=self.user, tags=tags, query_text=query_text, limit=limit, cursor=cursor)
 
     def agent_exists(self, agent_id: Optional[str] = None, agent_name: Optional[str] = None) -> bool:
         """
@@ -2104,6 +2259,7 @@ class LocalClient(AbstractClient):
         tool_ids: Optional[List[str]] = None,
         tool_rules: Optional[List[BaseToolRule]] = None,
         include_base_tools: Optional[bool] = True,
+        include_multi_agent_tools: bool = False,
         # metadata
         metadata: Optional[Dict] = {"human:": DEFAULT_HUMAN, "persona": DEFAULT_PERSONA},
         description: Optional[str] = None,
@@ -2121,6 +2277,7 @@ class LocalClient(AbstractClient):
             tools (List[str]): List of tools
             tool_rules (Optional[List[BaseToolRule]]): List of tool rules
             include_base_tools (bool): Include base tools
+            include_multi_agent_tools (bool): Include multi agent tools
             metadata (Dict): Metadata
             description (str): Description
             tags (List[str]): Tags for filtering agents
@@ -2130,11 +2287,6 @@ class LocalClient(AbstractClient):
         """
         # construct list of tools
         tool_ids = tool_ids or []
-        tool_names = []
-        if include_base_tools:
-            tool_names += BASE_TOOLS
-            tool_names += BASE_MEMORY_TOOLS
-        tool_ids += [self.server.tool_manager.get_tool_by_name(tool_name=name, actor=self.user).id for name in tool_names]
 
         # check if default configs are provided
         assert embedding_config or self._default_embedding_config, f"Embedding config must be provided"
@@ -2157,6 +2309,7 @@ class LocalClient(AbstractClient):
             "tool_ids": tool_ids,
             "tool_rules": tool_rules,
             "include_base_tools": include_base_tools,
+            "include_multi_agent_tools": include_multi_agent_tools,
             "system": system,
             "agent_type": agent_type,
             "llm_config": llm_config if llm_config else self._default_llm_config,
@@ -3450,3 +3603,104 @@ class LocalClient(AbstractClient):
         if label:
             data["label"] = label
         return self.server.block_manager.update_block(block_id, actor=self.user, block_update=BlockUpdate(**data))
+
+    def get_run_messages(
+        self,
+        run_id: str,
+        cursor: Optional[str] = None,
+        limit: Optional[int] = 100,
+        ascending: bool = True,
+        role: Optional[MessageRole] = None,
+    ) -> List[LettaMessageUnion]:
+        """
+        Get messages associated with a job with filtering options.
+
+        Args:
+            run_id: ID of the run
+            cursor: Cursor for pagination
+            limit: Maximum number of messages to return
+            ascending: Sort order by creation time
+            role: Filter by message role (user/assistant/system/tool)
+
+        Returns:
+            List of messages matching the filter criteria
+        """
+        params = {
+            "cursor": cursor,
+            "limit": limit,
+            "ascending": ascending,
+            "role": role,
+        }
+        return self.server.job_manager.get_run_messages_cursor(run_id=run_id, actor=self.user, **params)
+
+    def get_run_usage(
+        self,
+        run_id: str,
+    ) -> List[UsageStatistics]:
+        """
+        Get usage statistics associated with a job.
+
+        Args:
+            run_id (str): ID of the run
+
+        Returns:
+            List[UsageStatistics]: List of usage statistics associated with the run
+        """
+        usage = self.server.job_manager.get_job_usage(job_id=run_id, actor=self.user)
+        return [
+            UsageStatistics(completion_tokens=stat.completion_tokens, prompt_tokens=stat.prompt_tokens, total_tokens=stat.total_tokens)
+            for stat in usage
+        ]
+
+    def get_run(self, run_id: str) -> Run:
+        """
+        Get a run by ID.
+
+        Args:
+            run_id (str): ID of the run
+
+        Returns:
+            run (Run): Run
+        """
+        return self.server.job_manager.get_job_by_id(job_id=run_id, actor=self.user)
+
+    def delete_run(self, run_id: str) -> None:
+        """
+        Delete a run by ID.
+
+        Args:
+            run_id (str): ID of the run
+        """
+        return self.server.job_manager.delete_job_by_id(job_id=run_id, actor=self.user)
+
+    def list_runs(self) -> List[Run]:
+        """
+        List all runs.
+
+        Returns:
+            runs (List[Run]): List of runs
+        """
+        return self.server.job_manager.list_jobs(actor=self.user, job_type=JobType.RUN)
+
+    def list_active_runs(self) -> List[Run]:
+        """
+        List all active runs.
+
+        Returns:
+            runs (List[Run]): List of active runs
+        """
+        return self.server.job_manager.list_jobs(actor=self.user, job_type=JobType.RUN, statuses=[JobStatus.created, JobStatus.running])
+
+    def get_tags(
+        self,
+        cursor: str = None,
+        limit: int = 100,
+        query_text: str = None,
+    ) -> List[str]:
+        """
+        Get all tags.
+
+        Returns:
+            tags (List[str]): List of tags
+        """
+        return self.server.agent_manager.list_tags(actor=self.user, cursor=cursor, limit=limit, query_text=query_text)

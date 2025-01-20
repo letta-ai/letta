@@ -2,10 +2,17 @@ import os
 from logging import CRITICAL, DEBUG, ERROR, INFO, NOTSET, WARN, WARNING
 
 LETTA_DIR = os.path.join(os.path.expanduser("~"), ".letta")
+LETTA_DIR_TOOL_SANDBOX = os.path.join(LETTA_DIR, "tool_sandbox_dir")
 
 ADMIN_PREFIX = "/v1/admin"
 API_PREFIX = "/v1"
 OPENAI_API_PREFIX = "/openai"
+
+COMPOSIO_ENTITY_ENV_VAR_KEY = "COMPOSIO_ENTITY"
+COMPOSIO_TOOL_TAG_NAME = "composio"
+
+LETTA_CORE_TOOL_MODULE_NAME = "letta.functions.function_sets.base"
+LETTA_MULTI_AGENT_TOOL_MODULE_NAME = "letta.functions.function_sets.multi_agent"
 
 # String in the error message for when the context window is too large
 # Example full message:
@@ -40,9 +47,12 @@ DEFAULT_PRESET = "memgpt_chat"
 # Base tools that cannot be edited, as they access agent state directly
 # Note that we don't include "conversation_search_date" for now
 BASE_TOOLS = ["send_message", "conversation_search", "archival_memory_insert", "archival_memory_search"]
-O1_BASE_TOOLS = ["send_thinking_message", "send_final_message"]
 # Base memory tools CAN be edited, and are added by default by the server
 BASE_MEMORY_TOOLS = ["core_memory_append", "core_memory_replace"]
+# Multi agent tools
+MULTI_AGENT_TOOLS = ["send_message_to_specific_agent", "send_message_to_agents_matching_all_tags"]
+MULTI_AGENT_SEND_MESSAGE_MAX_RETRIES = 3
+MULTI_AGENT_SEND_MESSAGE_TIMEOUT = 20 * 60
 
 # The name of the tool used to send message to the user
 # May not be relevant in cases where the agent has multiple ways to message to user (send_imessage, send_discord_mesasge, ...)

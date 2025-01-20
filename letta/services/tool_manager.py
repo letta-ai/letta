@@ -1,10 +1,10 @@
 import importlib
-import inspect
 import warnings
 from typing import List, Optional
 
-from letta.constants import BASE_MEMORY_TOOLS, BASE_TOOLS
+from letta.constants import BASE_MEMORY_TOOLS, BASE_TOOLS, MULTI_AGENT_TOOLS
 from letta.functions.functions import derive_openai_json_schema, load_function_set
+from letta.orm.enums import ToolType
 
 # TODO: Remove this once we translate all of these to the ORM
 from letta.orm.errors import NoResultFound
@@ -32,14 +32,14 @@ class ToolManager:
 
         self.session_maker = db_context
 
+    # TODO: Refactor this across the codebase to use CreateTool instead of passing in a Tool object
     @enforce_types
     def create_or_update_tool(self, pydantic_tool: PydanticTool, actor: PydanticUser) -> PydanticTool:
         """Create a new tool based on the ToolCreate schema."""
-        # Derive json_schema
         tool = self.get_tool_by_name(tool_name=pydantic_tool.name, actor=actor)
         if tool:
             # Put to dict and remove fields that should not be reset
-            update_data = pydantic_tool.model_dump(exclude={"module"}, exclude_unset=True, exclude_none=True)
+            update_data = pydantic_tool.model_dump(exclude_unset=True, exclude_none=True)
 
             # If there's anything to update
             if update_data:
@@ -63,6 +63,7 @@ class ToolManager:
             if pydantic_tool.description is None:
                 pydantic_tool.description = pydantic_tool.json_schema.get("description", None)
             tool_data = pydantic_tool.model_dump()
+
             tool = ToolModel(**tool_data)
             tool.create(session, actor=actor)  # Re-raise other database-related errors
         return tool.to_pydantic()
@@ -113,8 +114,6 @@ class ToolManager:
             # If source code is changed and a new json_schema is not provided, we want to auto-refresh the schema
             if "source_code" in update_data.keys() and "json_schema" not in update_data.keys():
                 pydantic_tool = tool.to_pydantic()
-
-                update_data["name"] if "name" in update_data.keys() else None
                 new_schema = derive_openai_json_schema(source_code=pydantic_tool.source_code)
 
                 tool.json_schema = new_schema
@@ -134,32 +133,42 @@ class ToolManager:
 
     @enforce_types
     def upsert_base_tools(self, actor: PydanticUser) -> List[PydanticTool]:
-        """Add default tools in base.py"""
-        module_name = "base"
-        full_module_name = f"letta.functions.function_sets.{module_name}"
-        try:
-            module = importlib.import_module(full_module_name)
-        except Exception as e:
-            # Handle other general exceptions
-            raise e
+        """Add default tools in base.py and multi_agent.py"""
+        functions_to_schema = {}
+        module_names = ["base", "multi_agent"]
 
-        functions_to_schema = []
-        try:
-            # Load the function set
-            functions_to_schema = load_function_set(module)
-        except ValueError as e:
-            err = f"Error loading function set '{module_name}': {e}"
-            warnings.warn(err)
+        for module_name in module_names:
+            full_module_name = f"letta.functions.function_sets.{module_name}"
+            try:
+                module = importlib.import_module(full_module_name)
+            except Exception as e:
+                # Handle other general exceptions
+                raise e
+
+            try:
+                # Load the function set
+                functions_to_schema.update(load_function_set(module))
+            except ValueError as e:
+                err = f"Error loading function set '{module_name}': {e}"
+                warnings.warn(err)
 
         # create tool in db
         tools = []
         for name, schema in functions_to_schema.items():
-            if name in BASE_TOOLS + BASE_MEMORY_TOOLS:
-                # print([str(inspect.getsource(line)) for line in schema["imports"]])
-                source_code = inspect.getsource(schema["python_function"])
-                tags = [module_name]
-                if module_name == "base":
-                    tags.append("letta-base")
+            if name in BASE_TOOLS + BASE_MEMORY_TOOLS + MULTI_AGENT_TOOLS:
+                if name in BASE_TOOLS:
+                    tool_type = ToolType.LETTA_CORE
+                    tags = [tool_type.value]
+                elif name in BASE_MEMORY_TOOLS:
+                    tool_type = ToolType.LETTA_MEMORY_CORE
+                    tags = [tool_type.value]
+                elif name in MULTI_AGENT_TOOLS:
+                    tool_type = ToolType.LETTA_MULTI_AGENT_CORE
+                    tags = [tool_type.value]
+                else:
+                    raise ValueError(
+                        f"Tool name {name} is not in the list of base tool names: {BASE_TOOLS + BASE_MEMORY_TOOLS + MULTI_AGENT_TOOLS}"
+                    )
 
                 # create to tool
                 tools.append(
@@ -168,12 +177,12 @@ class ToolManager:
                             name=name,
                             tags=tags,
                             source_type="python",
-                            module=schema["module"],
-                            source_code=source_code,
-                            json_schema=schema["json_schema"],
+                            tool_type=tool_type,
                         ),
                         actor=actor,
                     )
                 )
+
+        # TODO: Delete any base tools that are stale
 
         return tools

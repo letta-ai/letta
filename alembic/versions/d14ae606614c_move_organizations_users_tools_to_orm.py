@@ -21,10 +21,6 @@ branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
 
-def deprecated_tool():
-    return "this is a deprecated tool, please remove it from your tools list"
-
-
 def upgrade() -> None:
     # Delete all tools
     op.execute("DELETE FROM tools")

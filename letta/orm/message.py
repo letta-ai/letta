@@ -1,6 +1,6 @@
 from typing import Optional
 
-from sqlalchemy import Index
+from sqlalchemy import ForeignKey, Index
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from letta.orm.custom_columns import ToolCallColumn
@@ -24,7 +24,21 @@ class Message(SqlalchemyBase, OrganizationMixin, AgentMixin):
     name: Mapped[Optional[str]] = mapped_column(nullable=True, doc="Name for multi-agent scenarios")
     tool_calls: Mapped[ToolCall] = mapped_column(ToolCallColumn, doc="Tool call information")
     tool_call_id: Mapped[Optional[str]] = mapped_column(nullable=True, doc="ID of the tool call")
+    step_id: Mapped[Optional[str]] = mapped_column(
+        ForeignKey("steps.id", ondelete="SET NULL"), nullable=True, doc="ID of the step that this message belongs to"
+    )
 
     # Relationships
     agent: Mapped["Agent"] = relationship("Agent", back_populates="messages", lazy="selectin")
     organization: Mapped["Organization"] = relationship("Organization", back_populates="messages", lazy="selectin")
+    step: Mapped["Step"] = relationship("Step", back_populates="messages", lazy="selectin")
+
+    # Job relationship
+    job_message: Mapped[Optional["JobMessage"]] = relationship(
+        "JobMessage", back_populates="message", uselist=False, cascade="all, delete-orphan", single_parent=True
+    )
+
+    @property
+    def job(self) -> Optional["Job"]:
+        """Get the job associated with this message, if any."""
+        return self.job_message.job if self.job_message else None

@@ -1,33 +1,48 @@
 # inspecting tools
-import json
+import asyncio
 import os
 import traceback
 import warnings
 from abc import abstractmethod
 from datetime import datetime
-from typing import Callable, List, Optional, Tuple, Union
+from typing import Callable, Dict, List, Optional, Tuple, Union
 
 from composio.client import Composio
 from composio.client.collections import ActionModel, AppModel
 from fastapi import HTTPException
+from fastapi.responses import StreamingResponse
 
 import letta.constants as constants
 import letta.server.utils as server_utils
 import letta.system as system
 from letta.agent import Agent, save_agent
 from letta.chat_only_agent import ChatOnlyAgent
-from letta.credentials import LettaCredentials
 from letta.data_sources.connectors import DataConnector, load_data
 
 # TODO use custom interface
 from letta.interface import AgentInterface  # abstract
 from letta.interface import CLIInterface  # for printing to terminal
 from letta.log import get_logger
-from letta.o1_agent import O1Agent
 from letta.offline_memory_agent import OfflineMemoryAgent
 from letta.orm import Base
 from letta.orm.errors import NoResultFound
-from letta.providers import (
+from letta.schemas.agent import AgentState, AgentType, CreateAgent
+from letta.schemas.block import BlockUpdate
+from letta.schemas.embedding_config import EmbeddingConfig
+
+# openai schemas
+from letta.schemas.enums import JobStatus, MessageStreamStatus
+from letta.schemas.environment_variables import SandboxEnvironmentVariableCreate
+from letta.schemas.job import Job, JobUpdate
+from letta.schemas.letta_message import LegacyLettaMessage, LettaMessage, ToolReturnMessage
+from letta.schemas.letta_response import LettaResponse
+from letta.schemas.llm_config import LLMConfig
+from letta.schemas.memory import ArchivalMemorySummary, ContextWindowOverview, Memory, RecallMemorySummary
+from letta.schemas.message import Message, MessageCreate, MessageRole, MessageUpdate
+from letta.schemas.organization import Organization
+from letta.schemas.passage import Passage
+from letta.schemas.providers import (
+    AnthropicBedrockProvider,
     AnthropicProvider,
     AzureProvider,
     GoogleAIProvider,
@@ -40,28 +55,13 @@ from letta.providers import (
     VLLMChatCompletionsProvider,
     VLLMCompletionsProvider,
 )
-from letta.schemas.agent import AgentState, AgentType, CreateAgent
-from letta.schemas.block import BlockUpdate
-from letta.schemas.embedding_config import EmbeddingConfig
-
-# openai schemas
-from letta.schemas.enums import JobStatus
-from letta.schemas.job import Job, JobUpdate
-from letta.schemas.letta_message import LettaMessage, ToolReturnMessage
-from letta.schemas.llm_config import LLMConfig
-from letta.schemas.memory import (
-    ArchivalMemorySummary,
-    ContextWindowOverview,
-    Memory,
-    RecallMemorySummary,
-)
-from letta.schemas.message import Message, MessageCreate, MessageRole, MessageUpdate
-from letta.schemas.organization import Organization
-from letta.schemas.passage import Passage
+from letta.schemas.sandbox_config import SandboxType
 from letta.schemas.source import Source
 from letta.schemas.tool import Tool
 from letta.schemas.usage import LettaUsageStatistics
 from letta.schemas.user import User
+from letta.server.rest_api.interface import StreamingServerInterface
+from letta.server.rest_api.utils import sse_async_generator
 from letta.services.agent_manager import AgentManager
 from letta.services.block_manager import BlockManager
 from letta.services.job_manager import JobManager
@@ -69,8 +69,10 @@ from letta.services.message_manager import MessageManager
 from letta.services.organization_manager import OrganizationManager
 from letta.services.passage_manager import PassageManager
 from letta.services.per_agent_lock_manager import PerAgentLockManager
+from letta.services.provider_manager import ProviderManager
 from letta.services.sandbox_config_manager import SandboxConfigManager
 from letta.services.source_manager import SourceManager
+from letta.services.step_manager import StepManager
 from letta.services.tool_execution_sandbox import ToolExecutionSandbox
 from letta.services.tool_manager import ToolManager
 from letta.services.user_manager import UserManager
@@ -183,6 +185,7 @@ def db_error_handler():
         exit(1)
 
 
+print("Creating engine", settings.letta_pg_uri)
 if settings.letta_pg_uri_no_default:
     config.recall_storage_type = "postgres"
     config.recall_storage_uri = settings.letta_pg_uri_no_default
@@ -269,8 +272,6 @@ class SyncServer(Server):
         # The default interface that will get assigned to agents ON LOAD
         self.default_interface_factory = default_interface_factory
 
-        self.credentials = LettaCredentials.load()
-
         # Initialize the metadata store
         config = LettaConfig.load()
         if settings.letta_pg_uri_no_default:
@@ -292,6 +293,8 @@ class SyncServer(Server):
         self.message_manager = MessageManager()
         self.job_manager = JobManager()
         self.agent_manager = AgentManager()
+        self.provider_manager = ProviderManager()
+        self.step_manager = StepManager()
 
         # Managers that interface with parallelism
         self.per_agent_lock_manager = PerAgentLockManager()
@@ -302,6 +305,17 @@ class SyncServer(Server):
             self.default_user = self.user_manager.create_default_user()
             self.block_manager.add_default_blocks(actor=self.default_user)
             self.tool_manager.upsert_base_tools(actor=self.default_user)
+
+            # Add composio keys to the tool sandbox env vars of the org
+            if tool_settings.composio_api_key:
+                manager = SandboxConfigManager(tool_settings)
+                sandbox_config = manager.get_or_create_default_sandbox_config(sandbox_type=SandboxType.LOCAL, actor=self.default_user)
+
+                manager.create_sandbox_env_var(
+                    SandboxEnvironmentVariableCreate(key="COMPOSIO_API_KEY", value=tool_settings.composio_api_key),
+                    sandbox_config_id=sandbox_config.id,
+                    actor=self.default_user,
+                )
 
         # collect providers (always has Letta as a default)
         self._enabled_providers: List[Provider] = [LettaProvider()]
@@ -370,6 +384,12 @@ class SyncServer(Server):
                     base_url=model_settings.vllm_api_base,
                 )
             )
+        if model_settings.aws_access_key and model_settings.aws_secret_access_key and model_settings.aws_region:
+            self._enabled_providers.append(
+                AnthropicBedrockProvider(
+                    aws_region=model_settings.aws_region,
+                )
+            )
 
     def load_agent(self, agent_id: str, actor: User, interface: Union[AgentInterface, None] = None) -> Agent:
         """Updated method to load agents from persisted storage"""
@@ -380,8 +400,6 @@ class SyncServer(Server):
             interface = interface or self.default_interface_factory()
             if agent_state.agent_type == AgentType.memgpt_agent:
                 agent = Agent(agent_state=agent_state, interface=interface, user=actor)
-            elif agent_state.agent_type == AgentType.o1_agent:
-                agent = O1Agent(agent_state=agent_state, interface=interface, user=actor)
             elif agent_state.agent_type == AgentType.offline_memory_agent:
                 agent = OfflineMemoryAgent(agent_state=agent_state, interface=interface, user=actor)
             elif agent_state.agent_type == AgentType.chat_only_agent:
@@ -418,12 +436,17 @@ class SyncServer(Server):
             token_streaming = letta_agent.interface.streaming_mode if hasattr(letta_agent.interface, "streaming_mode") else False
 
             logger.debug(f"Starting agent step")
+            if interface:
+                metadata = interface.metadata if hasattr(interface, "metadata") else None
+            else:
+                metadata = None
             usage_stats = letta_agent.step(
                 messages=input_messages,
                 chaining=self.chaining,
                 max_chaining_steps=self.max_chaining_steps,
                 stream=token_streaming,
                 skip_verify=True,
+                metadata=metadata,
             )
 
         except Exception as e:
@@ -680,6 +703,7 @@ class SyncServer(Server):
         wrap_user_message: bool = True,
         wrap_system_message: bool = True,
         interface: Union[AgentInterface, None] = None,  # needed to getting responses
+        metadata: Optional[dict] = None,  # Pass through metadata to interface
     ) -> LettaUsageStatistics:
         """Send a list of messages to the agent
 
@@ -724,6 +748,10 @@ class SyncServer(Server):
 
         else:
             raise ValueError(f"All messages must be of type Message or MessageCreate, got {[type(message) for message in messages]}")
+
+        # Store metadata in interface if provided
+        if metadata and hasattr(interface, "metadata"):
+            interface.metadata = metadata
 
         # Run the agent state forward
         return self._step(actor=actor, agent_id=agent_id, input_messages=message_objects, interface=interface)
@@ -1021,7 +1049,7 @@ class SyncServer(Server):
         """List available models"""
 
         llm_models = []
-        for provider in self._enabled_providers:
+        for provider in self.get_enabled_providers():
             try:
                 llm_models.extend(provider.list_llm_models())
             except Exception as e:
@@ -1031,12 +1059,18 @@ class SyncServer(Server):
     def list_embedding_models(self) -> List[EmbeddingConfig]:
         """List available embedding models"""
         embedding_models = []
-        for provider in self._enabled_providers:
+        for provider in self.get_enabled_providers():
             try:
                 embedding_models.extend(provider.list_embedding_models())
             except Exception as e:
                 warnings.warn(f"An error occurred while listing embedding models for provider {provider}: {e}")
         return embedding_models
+
+    def get_enabled_providers(self):
+        providers_from_env = {p.name: p for p in self._enabled_providers}
+        providers_from_db = {p.name: p for p in self.provider_manager.list_providers()}
+        # Merge the two dictionaries, keeping the values from providers_from_db where conflicts occur
+        return {**providers_from_env, **providers_from_db}.values()
 
     def get_llm_config_from_handle(self, handle: str, context_window_limit: Optional[int] = None) -> LLMConfig:
         provider_name, model_name = handle.split("/", 1)
@@ -1100,22 +1134,17 @@ class SyncServer(Server):
     def run_tool_from_source(
         self,
         actor: User,
-        tool_args: str,
+        tool_args: Dict[str, str],
         tool_source: str,
+        tool_env_vars: Optional[Dict[str, str]] = None,
         tool_source_type: Optional[str] = None,
         tool_name: Optional[str] = None,
     ) -> ToolReturnMessage:
         """Run a tool from source code"""
-
-        try:
-            tool_args_dict = json.loads(tool_args)
-        except json.JSONDecodeError:
-            raise ValueError("Invalid JSON string for tool_args")
-
         if tool_source_type is not None and tool_source_type != "python":
             raise ValueError("Only Python source code is supported at this time")
 
-        # NOTE: we're creating a floating Tool object and NOT persiting to DB
+        # NOTE: we're creating a floating Tool object and NOT persisting to DB
         tool = Tool(
             name=tool_name,
             source_code=tool_source,
@@ -1127,7 +1156,9 @@ class SyncServer(Server):
 
         # Next, attempt to run the tool with the sandbox
         try:
-            sandbox_run_result = ToolExecutionSandbox(tool.name, tool_args_dict, actor, tool_object=tool).run(agent_state=agent_state)
+            sandbox_run_result = ToolExecutionSandbox(tool.name, tool_args, actor, tool_object=tool).run(
+                agent_state=agent_state, additional_env_vars=tool_env_vars
+            )
             return ToolReturnMessage(
                 id="null",
                 tool_call_id="null",
@@ -1173,3 +1204,125 @@ class SyncServer(Server):
     def get_composio_actions_from_app_name(self, composio_app_name: str, api_key: Optional[str] = None) -> List["ActionModel"]:
         actions = self.get_composio_client(api_key=api_key).actions.get(apps=[composio_app_name])
         return actions
+
+    async def send_message_to_agent(
+        self,
+        agent_id: str,
+        actor: User,
+        # role: MessageRole,
+        messages: Union[List[Message], List[MessageCreate]],
+        stream_steps: bool,
+        stream_tokens: bool,
+        # related to whether or not we return `LettaMessage`s or `Message`s
+        chat_completion_mode: bool = False,
+        timestamp: Optional[datetime] = None,
+        # Support for AssistantMessage
+        use_assistant_message: bool = True,
+        assistant_message_tool_name: str = constants.DEFAULT_MESSAGE_TOOL,
+        assistant_message_tool_kwarg: str = constants.DEFAULT_MESSAGE_TOOL_KWARG,
+        metadata: Optional[dict] = None,
+    ) -> Union[StreamingResponse, LettaResponse]:
+        """Split off into a separate function so that it can be imported in the /chat/completion proxy."""
+
+        # TODO: @charles is this the correct way to handle?
+        include_final_message = True
+
+        if not stream_steps and stream_tokens:
+            raise HTTPException(status_code=400, detail="stream_steps must be 'true' if stream_tokens is 'true'")
+
+        # For streaming response
+        try:
+
+            # TODO: move this logic into server.py
+
+            # Get the generator object off of the agent's streaming interface
+            # This will be attached to the POST SSE request used under-the-hood
+            letta_agent = self.load_agent(agent_id=agent_id, actor=actor)
+
+            # Disable token streaming if not OpenAI
+            # TODO: cleanup this logic
+            llm_config = letta_agent.agent_state.llm_config
+            if stream_tokens and (llm_config.model_endpoint_type != "openai" or "inference.memgpt.ai" in llm_config.model_endpoint):
+                warnings.warn(
+                    "Token streaming is only supported for models with type 'openai' or `inference.memgpt.ai` in the model_endpoint: agent has endpoint type {llm_config.model_endpoint_type} and {llm_config.model_endpoint}. Setting stream_tokens to False."
+                )
+                stream_tokens = False
+
+            # Create a new interface per request
+            letta_agent.interface = StreamingServerInterface(use_assistant_message)
+            streaming_interface = letta_agent.interface
+            if not isinstance(streaming_interface, StreamingServerInterface):
+                raise ValueError(f"Agent has wrong type of interface: {type(streaming_interface)}")
+
+            # Enable token-streaming within the request if desired
+            streaming_interface.streaming_mode = stream_tokens
+            # "chatcompletion mode" does some remapping and ignores inner thoughts
+            streaming_interface.streaming_chat_completion_mode = chat_completion_mode
+
+            # streaming_interface.allow_assistant_message = stream
+            # streaming_interface.function_call_legacy_mode = stream
+
+            # Allow AssistantMessage is desired by client
+            streaming_interface.assistant_message_tool_name = assistant_message_tool_name
+            streaming_interface.assistant_message_tool_kwarg = assistant_message_tool_kwarg
+
+            # Related to JSON buffer reader
+            streaming_interface.inner_thoughts_in_kwargs = (
+                llm_config.put_inner_thoughts_in_kwargs if llm_config.put_inner_thoughts_in_kwargs is not None else False
+            )
+
+            # Offload the synchronous message_func to a separate thread
+            streaming_interface.stream_start()
+            task = asyncio.create_task(
+                asyncio.to_thread(
+                    self.send_messages,
+                    actor=actor,
+                    agent_id=agent_id,
+                    messages=messages,
+                    interface=streaming_interface,
+                    metadata=metadata,
+                )
+            )
+
+            if stream_steps:
+                # return a stream
+                return StreamingResponse(
+                    sse_async_generator(
+                        streaming_interface.get_generator(),
+                        usage_task=task,
+                        finish_message=include_final_message,
+                    ),
+                    media_type="text/event-stream",
+                )
+
+            else:
+                # buffer the stream, then return the list
+                generated_stream = []
+                async for message in streaming_interface.get_generator():
+                    assert (
+                        isinstance(message, LettaMessage)
+                        or isinstance(message, LegacyLettaMessage)
+                        or isinstance(message, MessageStreamStatus)
+                    ), type(message)
+                    generated_stream.append(message)
+                    if message == MessageStreamStatus.done:
+                        break
+
+                # Get rid of the stream status messages
+                filtered_stream = [d for d in generated_stream if not isinstance(d, MessageStreamStatus)]
+                usage = await task
+
+                # By default the stream will be messages of type LettaMessage or LettaLegacyMessage
+                # If we want to convert these to Message, we can use the attached IDs
+                # NOTE: we will need to de-duplicate the Messsage IDs though (since Assistant->Inner+Func_Call)
+                # TODO: eventually update the interface to use `Message` and `MessageChunk` (new) inside the deque instead
+                return LettaResponse(messages=filtered_stream, usage=usage)
+
+        except HTTPException:
+            raise
+        except Exception as e:
+            print(e)
+            import traceback
+
+            traceback.print_exc()
+            raise HTTPException(status_code=500, detail=f"{e}")

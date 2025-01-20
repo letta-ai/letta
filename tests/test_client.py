@@ -15,6 +15,7 @@ from letta.orm import SandboxConfig, SandboxEnvironmentVariable
 from letta.schemas.agent import AgentState
 from letta.schemas.block import CreateBlock
 from letta.schemas.embedding_config import EmbeddingConfig
+from letta.schemas.enums import MessageRole
 from letta.schemas.job import JobStatus
 from letta.schemas.letta_message import ToolReturnMessage
 from letta.schemas.llm_config import LLMConfig
@@ -42,8 +43,11 @@ def run_server():
 
 
 @pytest.fixture(
-    params=[{"server": False}, {"server": True}],  # whether to use REST API server
-    # params=[{"server": True}],  # whether to use REST API server
+    params=[
+        {"server": False},
+        {"server": True},
+    ],  # whether to use REST API server
+    # params=[{"server": False}],  # whether to use REST API server
     scope="module",
 )
 def client(request):
@@ -69,6 +73,28 @@ def client(request):
 @pytest.fixture(scope="module")
 def agent(client: Union[LocalClient, RESTClient]):
     agent_state = client.create_agent(name=f"test_client_{str(uuid.uuid4())}")
+
+    yield agent_state
+
+    # delete agent
+    client.delete_agent(agent_state.id)
+
+
+# Fixture for test agent
+@pytest.fixture
+def search_agent_one(client: Union[LocalClient, RESTClient]):
+    agent_state = client.create_agent(name="Search Agent One")
+
+    yield agent_state
+
+    # delete agent
+    client.delete_agent(agent_state.id)
+
+
+# Fixture for test agent
+@pytest.fixture
+def search_agent_two(client: Union[LocalClient, RESTClient]):
+    agent_state = client.create_agent(name="Search Agent Two")
 
     yield agent_state
 
@@ -121,7 +147,6 @@ def test_shared_blocks(mock_e2b_api_key_none, client: Union[LocalClient, RESTCli
     assert (
         "charles" in client.get_core_memory(agent_state2.id).get_block("human").value.lower()
     ), f"Shared block update failed {client.get_core_memory(agent_state2.id).get_block('human').value}"
-    # assert "charles" in response.messages[1].text.lower(), f"Shared block update failed {response.messages[0].text}"
 
     # cleanup
     client.delete_agent(agent_state1.id)
@@ -221,6 +246,66 @@ def test_add_and_manage_tags_for_agent(client: Union[LocalClient, RESTClient]):
     client.delete_agent(agent.id)
 
 
+def test_agent_tags(client: Union[LocalClient, RESTClient]):
+    """Test creating agents with tags and retrieving tags via the API."""
+    if not isinstance(client, RESTClient):
+        pytest.skip("This test only runs when the server is enabled")
+
+    # Create multiple agents with different tags
+    agent1 = client.create_agent(
+        name=f"test_agent_{str(uuid.uuid4())}",
+        llm_config=LLMConfig.default_config("gpt-4"),
+        embedding_config=EmbeddingConfig.default_config(provider="openai"),
+        tags=["test", "agent1", "production"],
+    )
+
+    agent2 = client.create_agent(
+        name=f"test_agent_{str(uuid.uuid4())}",
+        llm_config=LLMConfig.default_config("gpt-4"),
+        embedding_config=EmbeddingConfig.default_config(provider="openai"),
+        tags=["test", "agent2", "development"],
+    )
+
+    agent3 = client.create_agent(
+        name=f"test_agent_{str(uuid.uuid4())}",
+        llm_config=LLMConfig.default_config("gpt-4"),
+        embedding_config=EmbeddingConfig.default_config(provider="openai"),
+        tags=["test", "agent3", "production"],
+    )
+
+    # Test getting all tags
+    all_tags = client.get_tags()
+    expected_tags = ["agent1", "agent2", "agent3", "development", "production", "test"]
+    assert sorted(all_tags) == expected_tags
+
+    # Test pagination
+    paginated_tags = client.get_tags(limit=2)
+    assert len(paginated_tags) == 2
+    assert paginated_tags[0] == "agent1"
+    assert paginated_tags[1] == "agent2"
+
+    # Test pagination with cursor
+    next_page_tags = client.get_tags(cursor="agent2", limit=2)
+    assert len(next_page_tags) == 2
+    assert next_page_tags[0] == "agent3"
+    assert next_page_tags[1] == "development"
+
+    # Test text search
+    prod_tags = client.get_tags(query_text="prod")
+    assert sorted(prod_tags) == ["production"]
+
+    dev_tags = client.get_tags(query_text="dev")
+    assert sorted(dev_tags) == ["development"]
+
+    agent_tags = client.get_tags(query_text="agent")
+    assert sorted(agent_tags) == ["agent1", "agent2", "agent3"]
+
+    # Remove agents
+    client.delete_agent(agent1.id)
+    client.delete_agent(agent2.id)
+    client.delete_agent(agent3.id)
+
+
 def test_update_agent_memory_label(client: Union[LocalClient, RESTClient], agent: AgentState):
     """Test that we can update the label of a block in an agent's memory"""
 
@@ -295,7 +380,6 @@ def test_add_remove_agent_memory_block(client: Union[LocalClient, RESTClient], a
 #         # TODO we should probably not allow updating the core memory limit if
 
 #         # TODO in which case we should modify this test to actually to a proper token counter check
-
 #     finally:
 #         client.delete_agent(new_agent.id)
 
@@ -341,7 +425,9 @@ def test_messages(client: Union[LocalClient, RESTClient], agent: AgentState):
 
 def test_send_system_message(client: Union[LocalClient, RESTClient], agent: AgentState):
     """Important unit test since the Letta API exposes sending system messages, but some backends don't natively support it (eg Anthropic)"""
-    send_system_message_response = client.send_message(agent_id=agent.id, message="Event occurred: The user just logged off.", role="system")
+    send_system_message_response = client.send_message(
+        agent_id=agent.id, message="Event occurred: The user just logged off.", role="system"
+    )
     assert send_system_message_response, "Sending message failed"
 
 
@@ -390,7 +476,7 @@ def test_function_always_error(client: Union[LocalClient, RESTClient]):
         """
         Always throw an error.
         """
-        return 5/0
+        return 5 / 0
 
     tool = client.create_or_update_tool(func=always_error)
     agent = client.create_agent(tool_ids=[tool.id])
@@ -406,12 +492,13 @@ def test_function_always_error(client: Union[LocalClient, RESTClient]):
 
     assert response_message, "ToolReturnMessage message not found in response"
     assert response_message.status == "error"
+
     if isinstance(client, RESTClient):
         assert response_message.tool_return == "Error executing function always_error: ZeroDivisionError: division by zero"
     else:
         response_json = json.loads(response_message.tool_return)
-        assert response_json['status'] == "Failed"
-        assert response_json['message'] == "Error executing function always_error: ZeroDivisionError: division by zero"
+        assert response_json["status"] == "Failed"
+        assert response_json["message"] == "Error executing function always_error: ZeroDivisionError: division by zero"
 
     client.delete_agent(agent_id=agent.id)
 
@@ -449,25 +536,145 @@ async def test_send_message_parallel(client: Union[LocalClient, RESTClient], age
 
 
 def test_send_message_async(client: Union[LocalClient, RESTClient], agent: AgentState):
-    """Test that we can send a message asynchronously"""
+    """
+    Test that we can send a message asynchronously and retrieve the messages, along with usage statistics
+    """
 
     if not isinstance(client, RESTClient):
         pytest.skip("send_message_async is only supported by the RESTClient")
 
     print("Sending message asynchronously")
-    job = client.send_message_async(agent_id=agent.id, role="user", message="This is a test message, no need to respond.")
-    assert job.id is not None
-    assert job.status == JobStatus.created
-    print(f"Job created, job={job}, status={job.status}")
+    test_message = "This is a test message, respond to the user with a sentence."
+    run = client.send_message_async(agent_id=agent.id, role="user", message=test_message)
+    assert run.id is not None
+    assert run.status == JobStatus.created
+    print(f"Run created, run={run}, status={run.status}")
 
     # Wait for the job to complete, cancel it if takes over 10 seconds
     start_time = time.time()
-    while job.status == JobStatus.created:
+    while run.status == JobStatus.created:
         time.sleep(1)
-        job = client.get_job(job_id=job.id)
-        print(f"Job status: {job.status}")
+        run = client.get_run(run_id=run.id)
+        print(f"Run status: {run.status}")
         if time.time() - start_time > 10:
-            pytest.fail("Job took too long to complete")
+            pytest.fail("Run took too long to complete")
 
-    print(f"Job completed in {time.time() - start_time} seconds, job={job}")
-    assert job.status == JobStatus.completed
+    print(f"Run completed in {time.time() - start_time} seconds, run={run}")
+    assert run.status == JobStatus.completed
+
+    # Get messages for the job
+    messages = client.get_run_messages(run_id=run.id)
+    assert len(messages) >= 2  # At least assistant response
+
+    # Check filters
+    assistant_messages = client.get_run_messages(run_id=run.id, role=MessageRole.assistant)
+    assert len(assistant_messages) > 0
+    tool_messages = client.get_run_messages(run_id=run.id, role=MessageRole.tool)
+    assert len(tool_messages) > 0
+
+    # Get and verify usage statistics
+    usage = client.get_run_usage(run_id=run.id)[0]
+    assert usage.completion_tokens >= 0
+    assert usage.prompt_tokens >= 0
+    assert usage.total_tokens >= 0
+    assert usage.total_tokens == usage.completion_tokens + usage.prompt_tokens
+
+
+# ==========================================
+#  TESTS FOR AGENT LISTING
+# ==========================================
+
+
+def test_agent_listing(client: Union[LocalClient, RESTClient], agent, search_agent_one, search_agent_two):
+    """Test listing agents with pagination and query text filtering."""
+    # Test query text filtering
+    search_results = client.list_agents(query_text="search agent")
+    assert len(search_results) == 2
+    search_agent_ids = {agent.id for agent in search_results}
+    assert search_agent_one.id in search_agent_ids
+    assert search_agent_two.id in search_agent_ids
+    assert agent.id not in search_agent_ids
+
+    different_results = client.list_agents(query_text="client")
+    assert len(different_results) == 1
+    assert different_results[0].id == agent.id
+
+    # Test pagination
+    first_page = client.list_agents(query_text="search agent", limit=1)
+    assert len(first_page) == 1
+    first_agent = first_page[0]
+
+    second_page = client.list_agents(query_text="search agent", cursor=first_agent.id, limit=1)  # Use agent ID as cursor
+    assert len(second_page) == 1
+    assert second_page[0].id != first_agent.id
+
+    # Verify we got both search agents with no duplicates
+    all_ids = {first_page[0].id, second_page[0].id}
+    assert len(all_ids) == 2
+    assert all_ids == {search_agent_one.id, search_agent_two.id}
+
+    # Test listing without any filters
+    all_agents = client.list_agents()
+    assert len(all_agents) == 3
+    assert all(agent.id in {a.id for a in all_agents} for agent in [search_agent_one, search_agent_two, agent])
+
+
+def test_agent_creation(client: Union[LocalClient, RESTClient]):
+    """Test that block IDs are properly attached when creating an agent."""
+    if not isinstance(client, RESTClient):
+        pytest.skip("This test only runs when the server is enabled")
+
+    from letta import BasicBlockMemory
+
+    # Create a test block that will represent user preferences
+    user_preferences_block = client.create_block(label="user_preferences", value="", limit=10000)
+
+    # Create test tools
+    def test_tool():
+        """A simple test tool."""
+        return "Hello from test tool!"
+
+    def another_test_tool():
+        """Another test tool."""
+        return "Hello from another test tool!"
+
+    tool1 = client.create_or_update_tool(func=test_tool, name="test_tool", tags=["test"])
+    tool2 = client.create_or_update_tool(func=another_test_tool, name="another_test_tool", tags=["test"])
+
+    # Create test blocks
+    offline_persona_block = client.create_block(label="persona", value="persona description", limit=5000)
+    mindy_block = client.create_block(label="mindy", value="Mindy is a helpful assistant", limit=5000)
+    memory_blocks = BasicBlockMemory(blocks=[offline_persona_block, mindy_block])
+
+    # Create agent with the blocks and tools
+    agent = client.create_agent(
+        name=f"test_agent_{str(uuid.uuid4())}",
+        memory=memory_blocks,
+        llm_config=LLMConfig.default_config("gpt-4"),
+        embedding_config=EmbeddingConfig.default_config(provider="openai"),
+        tool_ids=[tool1.id, tool2.id],
+        include_base_tools=False,
+        tags=["test"],
+        block_ids=[user_preferences_block.id],
+    )
+
+    # Verify the agent was created successfully
+    assert agent is not None
+    assert agent.id is not None
+
+    # Verify the blocks are properly attached
+    agent_blocks = client.get_agent_memory_blocks(agent.id)
+    agent_block_ids = {block.id for block in agent_blocks}
+
+    # Check that all memory blocks are present
+    memory_block_ids = {block.id for block in memory_blocks.blocks}
+    for block_id in memory_block_ids | {user_preferences_block.id}:
+        assert block_id in agent_block_ids
+
+    # Verify the tools are properly attached
+    agent_tools = client.get_tools_from_agent(agent.id)
+    assert len(agent_tools) == 2
+    tool_ids = {tool1.id, tool2.id}
+    assert all(tool.id in tool_ids for tool in agent_tools)
+
+    client.delete_agent(agent_id=agent.id)

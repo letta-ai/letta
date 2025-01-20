@@ -4,9 +4,10 @@ import uuid
 
 from letta import create_client
 from letta.schemas.embedding_config import EmbeddingConfig
+from letta.schemas.environment_variables import SandboxEnvironmentVariableCreate
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.memory import ChatMemory
-from letta.schemas.sandbox_config import SandboxEnvironmentVariableCreate, SandboxType
+from letta.schemas.sandbox_config import SandboxType
 from letta.services.sandbox_config_manager import SandboxConfigManager
 from letta.settings import tool_settings
 

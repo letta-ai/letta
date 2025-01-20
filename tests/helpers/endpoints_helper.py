@@ -14,12 +14,7 @@ from letta.agent import Agent
 from letta.config import LettaConfig
 from letta.constants import DEFAULT_HUMAN, DEFAULT_PERSONA
 from letta.embeddings import embedding_model
-from letta.errors import (
-    InvalidInnerMonologueError,
-    InvalidToolCallError,
-    MissingInnerMonologueError,
-    MissingToolCallError,
-)
+from letta.errors import InvalidInnerMonologueError, InvalidToolCallError, MissingInnerMonologueError, MissingToolCallError
 from letta.llm_api.llm_api_tools import create
 from letta.local_llm.constants import INNER_THOUGHTS_KWARG
 from letta.schemas.agent import AgentState
@@ -28,12 +23,7 @@ from letta.schemas.letta_message import LettaMessage, ReasoningMessage, ToolCall
 from letta.schemas.letta_response import LettaResponse
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.memory import ChatMemory
-from letta.schemas.openai.chat_completion_response import (
-    ChatCompletionResponse,
-    Choice,
-    FunctionCall,
-    Message,
-)
+from letta.schemas.openai.chat_completion_response import ChatCompletionResponse, Choice, FunctionCall, Message
 from letta.utils import get_human_text, get_persona_text, json_dumps
 from tests.helpers.utils import cleanup
 
@@ -183,14 +173,14 @@ def check_agent_uses_external_tool(filename: str) -> LettaResponse:
 
     My name is Letta.
 
-    I am a personal assistant who answers a user's questions about a website `example.com`. When a user asks me a question about `example.com`, I will use a tool called {tool.name} which will search `example.com` and answer the relevant question.
+    I am a personal assistant who uses a tool called {tool.name} to star a desired github repo.
 
     Don’t forget - inner monologue / inner thoughts should always be different than the contents of send_message! send_message is how you communicate with the user, whereas inner thoughts are your own personal inner thoughts.
     """
 
     agent_state = setup_agent(client, filename, memory_persona_str=persona, tool_ids=[tool.id])
 
-    response = client.user_message(agent_id=agent_state.id, message="What's on the example.com website?")
+    response = client.user_message(agent_id=agent_state.id, message="Please star the repo with owner=letta-ai and repo=letta")
 
     # Basic checks
     assert_sanity_checks(response)

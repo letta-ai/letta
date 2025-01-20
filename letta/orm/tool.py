@@ -4,7 +4,7 @@ from sqlalchemy import JSON, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 # TODO everything in functions should live in this model
-from letta.orm.enums import ToolSourceType
+from letta.orm.enums import ToolSourceType, ToolType
 from letta.orm.mixins import OrganizationMixin
 from letta.orm.sqlalchemy_base import SqlalchemyBase
 from letta.schemas.tool import Tool as PydanticTool
@@ -29,15 +29,17 @@ class Tool(SqlalchemyBase, OrganizationMixin):
     __table_args__ = (UniqueConstraint("name", "organization_id", name="uix_name_organization"),)
 
     name: Mapped[str] = mapped_column(doc="The display name of the tool.")
+    tool_type: Mapped[ToolType] = mapped_column(
+        String,
+        default=ToolType.CUSTOM,
+        doc="The type of tool. This affects whether or not we generate json_schema and source_code on the fly.",
+    )
     return_char_limit: Mapped[int] = mapped_column(nullable=True, doc="The maximum number of characters the tool can return.")
     description: Mapped[Optional[str]] = mapped_column(nullable=True, doc="The description of the tool.")
     tags: Mapped[List] = mapped_column(JSON, doc="Metadata tags used to filter tools.")
     source_type: Mapped[ToolSourceType] = mapped_column(String, doc="The type of the source code.", default=ToolSourceType.json)
     source_code: Mapped[Optional[str]] = mapped_column(String, doc="The source code of the function.")
-    json_schema: Mapped[dict] = mapped_column(JSON, default=lambda: {}, doc="The OAI compatable JSON schema of the function.")
-    module: Mapped[Optional[str]] = mapped_column(
-        String, nullable=True, doc="the module path from which this tool was derived in the codebase."
-    )
+    json_schema: Mapped[Optional[dict]] = mapped_column(JSON, default=lambda: {}, doc="The OAI compatable JSON schema of the function.")
 
     # relationships
     organization: Mapped["Organization"] = relationship("Organization", back_populates="tools", lazy="selectin")

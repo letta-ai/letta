@@ -1,3 +1,5 @@
+import functools
+import time
 from typing import Union
 
 from letta import LocalClient, RESTClient
@@ -5,6 +7,69 @@ from letta.functions.functions import parse_source_code
 from letta.functions.schema_generator import generate_schema
 from letta.schemas.agent import AgentState, CreateAgent, UpdateAgent
 from letta.schemas.tool import Tool
+from letta.schemas.user import User as PydanticUser
+
+
+def retry_until_threshold(threshold=0.5, max_attempts=10, sleep_time_seconds=4):
+    """
+    Decorator to retry a test until a failure threshold is crossed.
+
+    :param threshold: Expected passing rate (e.g., 0.5 means 50% success rate expected).
+    :param max_attempts: Maximum number of attempts to retry the test.
+    """
+
+    def decorator_retry(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            success_count = 0
+            failure_count = 0
+
+            for attempt in range(max_attempts):
+                try:
+                    func(*args, **kwargs)
+                    success_count += 1
+                except Exception as e:
+                    failure_count += 1
+                    print(f"\033[93mAn attempt failed with error:\n{e}\033[0m")
+
+                time.sleep(sleep_time_seconds)
+
+            rate = success_count / max_attempts
+            if rate >= threshold:
+                print(f"Test met expected passing rate of {threshold:.2f}. Actual rate: {success_count}/{max_attempts}")
+            else:
+                raise AssertionError(
+                    f"Test did not meet expected passing rate of {threshold:.2f}. Actual rate: {success_count}/{max_attempts}"
+                )
+
+        return wrapper
+
+    return decorator_retry
+
+
+def retry_until_success(max_attempts=10, sleep_time_seconds=4):
+    """
+    Decorator to retry a function until it succeeds or the maximum number of attempts is reached.
+
+    :param max_attempts: Maximum number of attempts to retry the function.
+    :param sleep_time_seconds: Time to wait between attempts, in seconds.
+    """
+
+    def decorator_retry(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            for attempt in range(1, max_attempts + 1):
+                try:
+                    return func(*args, **kwargs)
+                except Exception as e:
+                    print(f"\033[93mAttempt {attempt} failed with error:\n{e}\033[0m")
+                    if attempt == max_attempts:
+                        raise
+                    time.sleep(sleep_time_seconds)
+
+        return wrapper
+
+    return decorator_retry
 
 
 def cleanup(client: Union[LocalClient, RESTClient], agent_uuid: str):
@@ -27,11 +92,18 @@ def create_tool_from_func(func: callable):
     )
 
 
-def comprehensive_agent_checks(agent: AgentState, request: Union[CreateAgent, UpdateAgent]):
+def comprehensive_agent_checks(agent: AgentState, request: Union[CreateAgent, UpdateAgent], actor: PydanticUser):
     # Assert scalar fields
     assert agent.system == request.system, f"System prompt mismatch: {agent.system} != {request.system}"
     assert agent.description == request.description, f"Description mismatch: {agent.description} != {request.description}"
     assert agent.metadata_ == request.metadata_, f"Metadata mismatch: {agent.metadata_} != {request.metadata_}"
+
+    # Assert agent env vars
+    if hasattr(request, "tool_exec_environment_variables"):
+        for agent_env_var in agent.tool_exec_environment_variables:
+            assert agent_env_var.key in request.tool_exec_environment_variables
+            assert request.tool_exec_environment_variables[agent_env_var.key] == agent_env_var.value
+            assert agent_env_var.organization_id == actor.organization_id
 
     # Assert agent type
     if hasattr(request, "agent_type"):

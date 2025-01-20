@@ -1,22 +1,19 @@
 import json
+import os
 import uuid
 import warnings
 from typing import List, Tuple
 
 import pytest
+from sqlalchemy import delete
 
 import letta.utils as utils
 from letta.constants import BASE_MEMORY_TOOLS, BASE_TOOLS
+from letta.orm import Provider, Step
 from letta.schemas.block import CreateBlock
 from letta.schemas.enums import MessageRole
-from letta.schemas.letta_message import (
-    LettaMessage,
-    ReasoningMessage,
-    SystemMessage,
-    ToolCallMessage,
-    ToolReturnMessage,
-    UserMessage,
-)
+from letta.schemas.letta_message import LettaMessage, ReasoningMessage, SystemMessage, ToolCallMessage, ToolReturnMessage, UserMessage
+from letta.schemas.providers import Provider as PydanticProvider
 from letta.schemas.user import User
 
 utils.DEBUG = True
@@ -284,6 +281,10 @@ def org_id(server):
     yield org.id
 
     # cleanup
+    with server.organization_manager.session_maker() as session:
+        session.execute(delete(Step))
+        session.execute(delete(Provider))
+        session.commit()
     server.organization_manager.delete_organization_by_id(org.id)
 
 
@@ -694,6 +695,18 @@ def ingest(message: str):
 
 '''
 
+EXAMPLE_TOOL_SOURCE_WITH_ENV_VAR = '''
+def ingest():
+    """
+    Ingest a message into the system.
+
+    Returns:
+        str: The result of ingesting the message.
+    """
+    import os
+    return os.getenv("secret")
+'''
+
 
 EXAMPLE_TOOL_SOURCE_WITH_DISTRACTOR = '''
 def util_do_nothing():
@@ -728,7 +741,7 @@ def test_tool_run(server, mock_e2b_api_key_none, user, agent_id):
         actor=user,
         tool_source=EXAMPLE_TOOL_SOURCE,
         tool_source_type="python",
-        tool_args=json.dumps({"message": "Hello, world!"}),
+        tool_args={"message": "Hello, world!"},
         # tool_name="ingest",
     )
     print(result)
@@ -739,9 +752,22 @@ def test_tool_run(server, mock_e2b_api_key_none, user, agent_id):
 
     result = server.run_tool_from_source(
         actor=user,
+        tool_source=EXAMPLE_TOOL_SOURCE_WITH_ENV_VAR,
+        tool_source_type="python",
+        tool_args={},
+        tool_env_vars={"secret": "banana"},
+    )
+    print(result)
+    assert result.status == "success"
+    assert result.tool_return == "banana", result.tool_return
+    assert not result.stdout
+    assert not result.stderr
+
+    result = server.run_tool_from_source(
+        actor=user,
         tool_source=EXAMPLE_TOOL_SOURCE,
         tool_source_type="python",
-        tool_args=json.dumps({"message": "Well well well"}),
+        tool_args={"message": "Well well well"},
         # tool_name="ingest",
     )
     print(result)
@@ -754,7 +780,7 @@ def test_tool_run(server, mock_e2b_api_key_none, user, agent_id):
         actor=user,
         tool_source=EXAMPLE_TOOL_SOURCE,
         tool_source_type="python",
-        tool_args=json.dumps({"bad_arg": "oh no"}),
+        tool_args={"bad_arg": "oh no"},
         # tool_name="ingest",
     )
     print(result)
@@ -770,7 +796,7 @@ def test_tool_run(server, mock_e2b_api_key_none, user, agent_id):
         actor=user,
         tool_source=EXAMPLE_TOOL_SOURCE_WITH_DISTRACTOR,
         tool_source_type="python",
-        tool_args=json.dumps({"message": "Well well well"}),
+        tool_args={"message": "Well well well"},
         # tool_name="ingest",
     )
     print(result)
@@ -785,7 +811,7 @@ def test_tool_run(server, mock_e2b_api_key_none, user, agent_id):
         actor=user,
         tool_source=EXAMPLE_TOOL_SOURCE_WITH_DISTRACTOR,
         tool_source_type="python",
-        tool_args=json.dumps({"message": "Well well well"}),
+        tool_args={"message": "Well well well"},
         tool_name="ingest",
     )
     print(result)
@@ -800,7 +826,7 @@ def test_tool_run(server, mock_e2b_api_key_none, user, agent_id):
         actor=user,
         tool_source=EXAMPLE_TOOL_SOURCE_WITH_DISTRACTOR,
         tool_source_type="python",
-        tool_args=json.dumps({}),
+        tool_args={},
         tool_name="util_do_nothing",
     )
     print(result)
@@ -1080,3 +1106,72 @@ def test_add_remove_tools_update_agent(server: SyncServer, user_id: str, base_to
     request.tool_ids = [b.id for b in base_tools[:-2]]
     agent_state = server.agent_manager.update_agent(agent_state.id, agent_update=request, actor=actor)
     assert len(agent_state.tools) == len(base_tools) - 2
+
+
+def test_messages_with_provider_override(server: SyncServer, user_id: str):
+    actor = server.user_manager.get_user_or_default(user_id)
+    provider = server.provider_manager.create_provider(
+        provider=PydanticProvider(
+            name="anthropic",
+            api_key=os.getenv("ANTHROPIC_API_KEY"),
+        ),
+        actor=actor,
+    )
+    agent = server.create_agent(
+        request=CreateAgent(
+            memory_blocks=[], llm="anthropic/claude-3-opus-20240229", context_window_limit=200000, embedding="openai/text-embedding-ada-002"
+        ),
+        actor=actor,
+    )
+
+    existing_messages = server.message_manager.list_messages_for_agent(agent_id=agent.id, actor=actor)
+
+    usage = server.user_message(user_id=actor.id, agent_id=agent.id, message="Test message")
+    assert usage, "Sending message failed"
+
+    get_messages_response = server.message_manager.list_messages_for_agent(agent_id=agent.id, actor=actor, cursor=existing_messages[-1].id)
+    assert len(get_messages_response) > 0, "Retrieving messages failed"
+
+    step_ids = set([msg.step_id for msg in get_messages_response])
+    completion_tokens, prompt_tokens, total_tokens = 0, 0, 0
+    for step_id in step_ids:
+        step = server.step_manager.get_step(step_id=step_id)
+        assert step, "Step was not logged correctly"
+        assert step.provider_id == provider.id
+        assert step.provider_name == agent.llm_config.model_endpoint_type
+        assert step.model == agent.llm_config.model
+        assert step.context_window_limit == agent.llm_config.context_window
+        completion_tokens += int(step.completion_tokens)
+        prompt_tokens += int(step.prompt_tokens)
+        total_tokens += int(step.total_tokens)
+
+    assert completion_tokens == usage.completion_tokens
+    assert prompt_tokens == usage.prompt_tokens
+    assert total_tokens == usage.total_tokens
+
+    server.provider_manager.delete_provider_by_id(provider.id)
+
+    existing_messages = server.message_manager.list_messages_for_agent(agent_id=agent.id, actor=actor)
+
+    usage = server.user_message(user_id=actor.id, agent_id=agent.id, message="Test message")
+    assert usage, "Sending message failed"
+
+    get_messages_response = server.message_manager.list_messages_for_agent(agent_id=agent.id, actor=actor, cursor=existing_messages[-1].id)
+    assert len(get_messages_response) > 0, "Retrieving messages failed"
+
+    step_ids = set([msg.step_id for msg in get_messages_response])
+    completion_tokens, prompt_tokens, total_tokens = 0, 0, 0
+    for step_id in step_ids:
+        step = server.step_manager.get_step(step_id=step_id)
+        assert step, "Step was not logged correctly"
+        assert step.provider_id == None
+        assert step.provider_name == agent.llm_config.model_endpoint_type
+        assert step.model == agent.llm_config.model
+        assert step.context_window_limit == agent.llm_config.context_window
+        completion_tokens += int(step.completion_tokens)
+        prompt_tokens += int(step.prompt_tokens)
+        total_tokens += int(step.total_tokens)
+
+    assert completion_tokens == usage.completion_tokens
+    assert prompt_tokens == usage.prompt_tokens
+    assert total_tokens == usage.total_tokens

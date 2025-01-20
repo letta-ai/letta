@@ -3,7 +3,7 @@ import json
 import os
 import warnings
 from enum import Enum
-from typing import AsyncGenerator, Optional, Union
+from typing import TYPE_CHECKING, AsyncGenerator, Optional, Union
 
 from fastapi import Header
 from pydantic import BaseModel
@@ -11,7 +11,9 @@ from pydantic import BaseModel
 from letta.errors import ContextWindowExceededError, RateLimitExceededError
 from letta.schemas.usage import LettaUsageStatistics
 from letta.server.rest_api.interface import StreamingServerInterface
-from letta.server.server import SyncServer
+
+if TYPE_CHECKING:
+    from letta.server.server import SyncServer
 
 # from letta.orm.user import User
 # from letta.orm.utilities import get_db_session
@@ -86,7 +88,7 @@ async def sse_async_generator(
 
 
 # TODO: why does this double up the interface?
-def get_letta_server() -> SyncServer:
+def get_letta_server() -> "SyncServer":
     # Check if a global server is already instantiated
     from letta.server.rest_api.app import server
 
@@ -101,6 +103,7 @@ def get_user_id(user_id: Optional[str] = Header(None, alias="user_id")) -> Optio
 
 def get_current_interface() -> StreamingServerInterface:
     return StreamingServerInterface
+
 
 def log_error_to_sentry(e):
     import traceback

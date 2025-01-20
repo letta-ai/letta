@@ -1,16 +1,18 @@
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from pydantic import Field, model_validator
 
-from letta.constants import FUNCTION_RETURN_CHAR_LIMIT
-from letta.functions.functions import derive_openai_json_schema
-from letta.functions.helpers import (
-    generate_composio_tool_wrapper,
-    generate_langchain_tool_wrapper,
+from letta.constants import (
+    COMPOSIO_TOOL_TAG_NAME,
+    FUNCTION_RETURN_CHAR_LIMIT,
+    LETTA_CORE_TOOL_MODULE_NAME,
+    LETTA_MULTI_AGENT_TOOL_MODULE_NAME,
 )
+from letta.functions.functions import derive_openai_json_schema, get_json_schema_from_module
+from letta.functions.helpers import generate_composio_tool_wrapper, generate_langchain_tool_wrapper
 from letta.functions.schema_generator import generate_schema_from_args_schema_v2
+from letta.orm.enums import ToolType
 from letta.schemas.letta_base import LettaBase
-from letta.schemas.openai.chat_completions import ToolCall
 
 
 class BaseTool(LettaBase):
@@ -31,15 +33,15 @@ class Tool(BaseTool):
     """
 
     id: str = BaseTool.generate_id_field()
+    tool_type: ToolType = Field(ToolType.CUSTOM, description="The type of the tool.")
     description: Optional[str] = Field(None, description="The description of the tool.")
     source_type: Optional[str] = Field(None, description="The type of the source code.")
-    module: Optional[str] = Field(None, description="The module of the function.")
     organization_id: Optional[str] = Field(None, description="The unique identifier of the organization associated with the tool.")
     name: Optional[str] = Field(None, description="The name of the function.")
     tags: List[str] = Field([], description="Metadata tags.")
 
     # code
-    source_code: str = Field(..., description="The source code of the function.")
+    source_code: Optional[str] = Field(None, description="The source code of the function.")
     json_schema: Optional[Dict] = Field(None, description="The JSON schema of the function.")
 
     # tool configuration
@@ -54,9 +56,22 @@ class Tool(BaseTool):
         """
         Populate missing fields: name, description, and json_schema.
         """
-        # Derive JSON schema if not provided
-        if not self.json_schema:
-            self.json_schema = derive_openai_json_schema(source_code=self.source_code)
+        if self.tool_type == ToolType.CUSTOM:
+            # If it's a custom tool, we need to ensure source_code is present
+            if not self.source_code:
+                raise ValueError(f"Custom tool with id={self.id} is missing source_code field.")
+
+            # Always derive json_schema for freshest possible json_schema
+            # TODO: Instead of checking the tag, we should having `COMPOSIO` as a specific ToolType
+            # TODO: We skip this for Composio bc composio json schemas are derived differently
+            if not (COMPOSIO_TOOL_TAG_NAME in self.tags):
+                self.json_schema = derive_openai_json_schema(source_code=self.source_code)
+        elif self.tool_type in {ToolType.LETTA_CORE, ToolType.LETTA_MEMORY_CORE}:
+            # If it's letta core tool, we generate the json_schema on the fly here
+            self.json_schema = get_json_schema_from_module(module_name=LETTA_CORE_TOOL_MODULE_NAME, function_name=self.name)
+        elif self.tool_type in {ToolType.LETTA_MULTI_AGENT_CORE}:
+            # If it's letta multi-agent tool, we also generate the json_schema on the fly here
+            self.json_schema = get_json_schema_from_module(module_name=LETTA_MULTI_AGENT_TOOL_MODULE_NAME, function_name=self.name)
 
         # Derive name from the JSON schema if not provided
         if not self.name:
@@ -72,24 +87,11 @@ class Tool(BaseTool):
 
         return self
 
-    def to_dict(self):
-        """
-        Convert tool into OpenAI representation.
-        """
-        return vars(
-            ToolCall(
-                tool_id=self.id,
-                tool_call_type="function",
-                function=self.module,
-            )
-        )
-
 
 class ToolCreate(LettaBase):
     name: Optional[str] = Field(None, description="The name of the function (auto-generated from source_code if not provided).")
     description: Optional[str] = Field(None, description="The description of the tool.")
     tags: List[str] = Field([], description="Metadata tags.")
-    module: Optional[str] = Field(None, description="The source code of the function.")
     source_code: str = Field(..., description="The source code of the function.")
     source_type: str = Field("python", description="The source type of the function.")
     json_schema: Optional[Dict] = Field(
@@ -128,7 +130,7 @@ class ToolCreate(LettaBase):
 
         description = composio_tool.description
         source_type = "python"
-        tags = ["composio"]
+        tags = [COMPOSIO_TOOL_TAG_NAME]
         wrapper_func_name, wrapper_function_str = generate_composio_tool_wrapper(action_name)
         json_schema = generate_schema_from_args_schema_v2(composio_tool.args_schema, name=wrapper_func_name, description=description)
 
@@ -203,25 +205,21 @@ class ToolUpdate(LettaBase):
     description: Optional[str] = Field(None, description="The description of the tool.")
     name: Optional[str] = Field(None, description="The name of the function.")
     tags: Optional[List[str]] = Field(None, description="Metadata tags.")
-    module: Optional[str] = Field(None, description="The source code of the function.")
     source_code: Optional[str] = Field(None, description="The source code of the function.")
     source_type: Optional[str] = Field(None, description="The type of the source code.")
     json_schema: Optional[Dict] = Field(
         None, description="The JSON schema of the function (auto-generated from source_code if not provided)"
     )
+    return_char_limit: Optional[int] = Field(None, description="The maximum number of characters in the response.")
 
     class Config:
         extra = "ignore"  # Allows extra fields without validation errors
         # TODO: Remove this, and clean usage of ToolUpdate everywhere else
 
 
-class ToolRun(LettaBase):
-    id: str = Field(..., description="The ID of the tool to run.")
-    args: str = Field(..., description="The arguments to pass to the tool (as stringified JSON).")
-
-
 class ToolRunFromSource(LettaBase):
     source_code: str = Field(..., description="The source code of the function.")
-    args: str = Field(..., description="The arguments to pass to the tool (as stringified JSON).")
+    args: Dict[str, Any] = Field(..., description="The arguments to pass to the tool.")
+    env_vars: Dict[str, str] = Field(None, description="The environment variables to pass to the tool.")
     name: Optional[str] = Field(None, description="The name of the tool to run.")
     source_type: Optional[str] = Field(None, description="The type of the source code.")

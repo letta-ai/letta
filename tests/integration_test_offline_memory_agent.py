@@ -1,7 +1,7 @@
 import pytest
 
 from letta import BasicBlockMemory
-from letta.client.client import Block, create_client
+from letta.client.client import create_client
 from letta.constants import DEFAULT_HUMAN, DEFAULT_PERSONA
 from letta.offline_memory_agent import (
     finish_rethinking_memory,
@@ -37,15 +37,14 @@ def test_ripple_edit(client, mock_e2b_api_key_none):
     trigger_rethink_memory_tool = client.create_or_update_tool(trigger_rethink_memory)
     send_message = client.server.tool_manager.get_tool_by_name(tool_name="send_message", actor=client.user)
 
-    conversation_human_block = Block(name="human", label="human", value=get_human_text(DEFAULT_HUMAN), limit=2000)
-    conversation_persona_block = Block(name="persona", label="persona", value=get_persona_text(DEFAULT_PERSONA), limit=2000)
-    offline_human_block = Block(name="human", label="human", value=get_human_text(DEFAULT_HUMAN), limit=2000)
-    offline_persona_block = Block(name="persona", label="persona", value=get_persona_text("offline_memory_persona"), limit=2000)
+    conversation_human_block = client.create_block(label="human", value=get_human_text(DEFAULT_HUMAN), limit=2000)
+    conversation_persona_block = client.create_block(label="persona", value=get_persona_text(DEFAULT_PERSONA), limit=2000)
+    offline_human_block = client.create_block(label="human", value=get_human_text(DEFAULT_HUMAN), limit=2000)
+    offline_persona_block = client.create_block(label="persona", value=get_persona_text("offline_memory_persona"), limit=2000)
 
     # Figure 1. from Evaluating the Ripple Effects of Knowledge Editing in Language Models (Cohen et al., 2023)
     # https://arxiv.org/pdf/2307.12976
-    fact_block = Block(
-        name="fact_block",
+    fact_block = client.create_block(
         label="fact_block",
         value="""Messi resides in the Paris.
                Messi plays in the league Ligue 1.
@@ -55,8 +54,27 @@ def test_ripple_edit(client, mock_e2b_api_key_none):
                Victor Ulloa plays for Inter Miami""",
         limit=2000,
     )
+    new_memory = client.create_block(label="rethink_memory_block", value="[empty]", limit=2000)
 
-    new_memory = Block(name="rethink_memory_block", label="rethink_memory_block", value="[empty]", limit=2000)
+    # conversation_human_block = Block(name="human", label="human", value=get_human_text(DEFAULT_HUMAN), limit=2000)
+    # conversation_persona_block = Block(name="persona", label="persona", value=get_persona_text(DEFAULT_PERSONA), limit=2000)
+    # offline_human_block = Block(name="human", label="human", value=get_human_text(DEFAULT_HUMAN), limit=2000)
+    # offline_persona_block = Block(name="persona", label="persona", value=get_persona_text("offline_memory_persona"), limit=2000)
+
+    ## Figure 1. from Evaluating the Ripple Effects of Knowledge Editing in Language Models (Cohen et al., 2023)
+    ## https://arxiv.org/pdf/2307.12976
+    # fact_block = Block(
+    #    name="fact_block",
+    #    label="fact_block",
+    #    value="""Messi resides in the Paris.
+    #           Messi plays in the league Ligue 1.
+    #           Messi plays for the team Paris Saint-Germain.
+    #           The national team Messi plays for is the Argentina team.
+    #           Messi is also known as Leo Messi
+    #           Victor Ulloa plays for Inter Miami""",
+    #    limit=2000,
+    # )
+    # new_memory = Block(name="rethink_memory_block", label="rethink_memory_block", value="[empty]", limit=2000)
     conversation_memory = BasicBlockMemory(blocks=[conversation_persona_block, conversation_human_block, fact_block, new_memory])
     offline_memory = BasicBlockMemory(blocks=[offline_persona_block, offline_human_block, fact_block, new_memory])
 
@@ -107,10 +125,13 @@ def test_chat_only_agent(client, mock_e2b_api_key_none):
     rethink_memory = client.create_or_update_tool(rethink_memory_convo)
     finish_rethinking_memory = client.create_or_update_tool(finish_rethinking_memory_convo)
 
-    conversation_human_block = Block(name="chat_agent_human", label="chat_agent_human", value=get_human_text(DEFAULT_HUMAN), limit=2000)
-    conversation_persona_block = Block(
-        name="chat_agent_persona", label="chat_agent_persona", value=get_persona_text(DEFAULT_PERSONA), limit=2000
-    )
+    # conversation_human_block = Block(name="chat_agent_human", label="chat_agent_human", value=get_human_text(DEFAULT_HUMAN), limit=2000)
+    # conversation_persona_block = Block(
+    #    name="chat_agent_persona", label="chat_agent_persona", value=get_persona_text(DEFAULT_PERSONA), limit=2000
+    # )
+
+    conversation_human_block = client.create_block(label="chat_agent_human", value=get_human_text(DEFAULT_HUMAN), limit=2000)
+    conversation_persona_block = client.create_block(label="chat_agent_persona", value=get_persona_text(DEFAULT_PERSONA), limit=2000)
     conversation_memory = BasicBlockMemory(blocks=[conversation_persona_block, conversation_human_block])
 
     send_message = client.server.tool_manager.get_tool_by_name(tool_name="send_message", actor=client.user)

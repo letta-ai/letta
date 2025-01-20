@@ -5,10 +5,7 @@ import sys
 import pexpect
 import pytest
 
-from letta.local_llm.constants import (
-    ASSISTANT_MESSAGE_CLI_SYMBOL,
-    INNER_THOUGHTS_CLI_SYMBOL,
-)
+from letta.local_llm.constants import ASSISTANT_MESSAGE_CLI_SYMBOL, INNER_THOUGHTS_CLI_SYMBOL
 
 original_letta_path = os.path.expanduser("~/.letta")
 backup_letta_path = os.path.expanduser("~/.letta_backup")

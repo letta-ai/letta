@@ -2,14 +2,10 @@ from typing import List, Optional
 
 from fastapi import APIRouter, Depends, Query
 
+from letta.schemas.environment_variables import SandboxEnvironmentVariable as PydanticEnvVar
+from letta.schemas.environment_variables import SandboxEnvironmentVariableCreate, SandboxEnvironmentVariableUpdate
 from letta.schemas.sandbox_config import SandboxConfig as PydanticSandboxConfig
-from letta.schemas.sandbox_config import SandboxConfigCreate, SandboxConfigUpdate
-from letta.schemas.sandbox_config import SandboxEnvironmentVariable as PydanticEnvVar
-from letta.schemas.sandbox_config import (
-    SandboxEnvironmentVariableCreate,
-    SandboxEnvironmentVariableUpdate,
-    SandboxType,
-)
+from letta.schemas.sandbox_config import SandboxConfigCreate, SandboxConfigUpdate, SandboxType
 from letta.server.rest_api.utils import get_letta_server, get_user_id
 from letta.server.server import SyncServer
 
@@ -73,11 +69,12 @@ def delete_sandbox_config(
 def list_sandbox_configs(
     limit: int = Query(1000, description="Number of results to return"),
     cursor: Optional[str] = Query(None, description="Pagination cursor to fetch the next set of results"),
+    sandbox_type: Optional[SandboxType] = Query(None, description="Filter for this specific sandbox type"),
     server: SyncServer = Depends(get_letta_server),
     user_id: str = Depends(get_user_id),
 ):
     actor = server.user_manager.get_user_or_default(user_id=user_id)
-    return server.sandbox_config_manager.list_sandbox_configs(actor, limit=limit, cursor=cursor)
+    return server.sandbox_config_manager.list_sandbox_configs(actor, limit=limit, cursor=cursor, sandbox_type=sandbox_type)
 
 
 ### Sandbox Environment Variable Routes

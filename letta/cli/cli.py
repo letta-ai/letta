@@ -10,12 +10,7 @@ import letta.utils as utils
 from letta import create_client
 from letta.agent import Agent, save_agent
 from letta.config import LettaConfig
-from letta.constants import (
-    CLI_WARNING_PREFIX,
-    CORE_MEMORY_BLOCK_CHAR_LIMIT,
-    LETTA_DIR,
-    MIN_CONTEXT_WINDOW,
-)
+from letta.constants import CLI_WARNING_PREFIX, CORE_MEMORY_BLOCK_CHAR_LIMIT, LETTA_DIR, MIN_CONTEXT_WINDOW
 from letta.local_llm.constants import ASSISTANT_MESSAGE_CLI_SYMBOL
 from letta.log import get_logger
 from letta.schemas.enums import OptionState
@@ -23,9 +18,7 @@ from letta.schemas.memory import ChatMemory, Memory
 from letta.server.server import logger as server_logger
 
 # from letta.interface import CLIInterface as interface  # for printing to terminal
-from letta.streaming_interface import (
-    StreamingRefreshCLIInterface as interface,  # for printing to terminal
-)
+from letta.streaming_interface import StreamingRefreshCLIInterface as interface  # for printing to terminal
 from letta.utils import open_folder_in_explorer, printd
 
 logger = get_logger(__name__)

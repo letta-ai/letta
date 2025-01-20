@@ -8,21 +8,16 @@ import pytest
 from sqlalchemy import delete
 
 from letta import create_client
+from letta.constants import COMPOSIO_ENTITY_ENV_VAR_KEY
 from letta.functions.function_sets.base import core_memory_append, core_memory_replace
-from letta.orm import SandboxConfig, SandboxEnvironmentVariable
+from letta.orm.sandbox_config import SandboxConfig, SandboxEnvironmentVariable
 from letta.schemas.agent import AgentState
 from letta.schemas.embedding_config import EmbeddingConfig
+from letta.schemas.environment_variables import AgentEnvironmentVariable, SandboxEnvironmentVariableCreate
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.memory import ChatMemory
 from letta.schemas.organization import Organization
-from letta.schemas.sandbox_config import (
-    E2BSandboxConfig,
-    LocalSandboxConfig,
-    SandboxConfigCreate,
-    SandboxConfigUpdate,
-    SandboxEnvironmentVariableCreate,
-    SandboxType,
-)
+from letta.schemas.sandbox_config import E2BSandboxConfig, LocalSandboxConfig, SandboxConfigCreate, SandboxConfigUpdate, SandboxType
 from letta.schemas.tool import Tool, ToolCreate
 from letta.schemas.user import User
 from letta.services.organization_manager import OrganizationManager
@@ -49,12 +44,6 @@ def clear_tables():
         session.execute(delete(SandboxEnvironmentVariable))
         session.execute(delete(SandboxConfig))
         session.commit()  # Commit the deletion
-
-    # Kill all sandboxes
-    from e2b_code_interpreter import Sandbox
-
-    for sandbox in Sandbox.list():
-        Sandbox.connect(sandbox.sandbox_id).kill()
 
 
 @pytest.fixture
@@ -199,8 +188,16 @@ def composio_github_star_tool(test_user):
 
 
 @pytest.fixture
+def composio_gmail_get_profile_tool(test_user):
+    tool_manager = ToolManager()
+    tool_create = ToolCreate.from_composio(action_name="GMAIL_GET_PROFILE")
+    tool = tool_manager.create_or_update_tool(pydantic_tool=Tool(**tool_create.model_dump()), actor=test_user)
+    yield tool
+
+
+@pytest.fixture
 def clear_core_memory_tool(test_user):
-    def clear_memory(agent_state: AgentState):
+    def clear_memory(agent_state: "AgentState"):
         """Clear the core memory"""
         agent_state.memory.get_block("human").value = ""
         agent_state.memory.get_block("persona").value = ""
@@ -212,9 +209,7 @@ def clear_core_memory_tool(test_user):
 
 @pytest.fixture
 def external_codebase_tool(test_user):
-    from tests.test_tool_sandbox.restaurant_management_system.adjust_menu_prices import (
-        adjust_menu_prices,
-    )
+    from tests.test_tool_sandbox.restaurant_management_system.adjust_menu_prices import adjust_menu_prices
 
     tool = create_tool_from_func(adjust_menu_prices)
     tool = ToolManager().create_or_update_tool(tool, test_user)
@@ -338,6 +333,41 @@ def test_local_sandbox_env(mock_e2b_api_key_none, get_env_tool, test_user):
 
 
 @pytest.mark.local_sandbox
+def test_local_sandbox_per_agent_env(mock_e2b_api_key_none, get_env_tool, agent_state, test_user):
+    manager = SandboxConfigManager(tool_settings)
+    key = "secret_word"
+
+    # Make a custom local sandbox config
+    sandbox_dir = str(Path(__file__).parent / "test_tool_sandbox")
+    config_create = SandboxConfigCreate(config=LocalSandboxConfig(sandbox_dir=sandbox_dir).model_dump())
+    config = manager.create_or_update_sandbox_config(config_create, test_user)
+
+    # Make a environment variable with a long random string
+    # Note: This has an overlapping key with agent state's environment variables
+    # We expect that the agent's env var supersedes this
+    wrong_long_random_string = "".join(secrets.choice(string.ascii_letters + string.digits) for _ in range(20))
+    manager.create_sandbox_env_var(
+        SandboxEnvironmentVariableCreate(key=key, value=wrong_long_random_string), sandbox_config_id=config.id, actor=test_user
+    )
+
+    # Make a environment variable with a long random string and put into agent state
+    correct_long_random_string = "".join(secrets.choice(string.ascii_letters + string.digits) for _ in range(20))
+    agent_state.tool_exec_environment_variables = [
+        AgentEnvironmentVariable(key=key, value=correct_long_random_string, agent_id=agent_state.id)
+    ]
+
+    # Create tool and args
+    args = {}
+
+    # Run the custom sandbox
+    sandbox = ToolExecutionSandbox(get_env_tool.name, args, user=test_user)
+    result = sandbox.run(agent_state=agent_state)
+
+    assert wrong_long_random_string not in result.func_return
+    assert correct_long_random_string in result.func_return
+
+
+@pytest.mark.local_sandbox
 def test_local_sandbox_e2e_composio_star_github(mock_e2b_api_key_none, check_composio_key_set, composio_github_star_tool, test_user):
     # Add the composio key
     manager = SandboxConfigManager(tool_settings)
@@ -349,6 +379,49 @@ def test_local_sandbox_e2e_composio_star_github(mock_e2b_api_key_none, check_com
         actor=test_user,
     )
 
+    result = ToolExecutionSandbox(composio_github_star_tool.name, {"owner": "letta-ai", "repo": "letta"}, user=test_user).run()
+    assert result.func_return["details"] == "Action executed successfully"
+
+    # Missing args causes error
+    result = ToolExecutionSandbox(composio_github_star_tool.name, {}, user=test_user).run()
+    assert "Invalid request data provided" in result.func_return
+
+
+@pytest.mark.local_sandbox
+def test_local_sandbox_multiple_composio_entities(
+    mock_e2b_api_key_none, check_composio_key_set, composio_gmail_get_profile_tool, agent_state, test_user
+):
+    # Agent state with no composio entity ID
+    result = ToolExecutionSandbox(composio_gmail_get_profile_tool.name, {}, user=test_user).run(agent_state=agent_state)
+    assert result.func_return["response_data"]["emailAddress"] == "sarah@letta.com"
+
+    # Agent state with the composio entity set to 'matt'
+    agent_state.tool_exec_environment_variables = [
+        AgentEnvironmentVariable(key=COMPOSIO_ENTITY_ENV_VAR_KEY, value="matt", agent_id=agent_state.id)
+    ]
+    result = ToolExecutionSandbox(composio_gmail_get_profile_tool.name, {}, user=test_user).run(agent_state=agent_state)
+    assert result.func_return["response_data"]["emailAddress"] == "matt@letta.com"
+
+    # Agent state with composio entity ID set to default
+    agent_state.tool_exec_environment_variables = [
+        AgentEnvironmentVariable(key=COMPOSIO_ENTITY_ENV_VAR_KEY, value="default", agent_id=agent_state.id)
+    ]
+    result = ToolExecutionSandbox(composio_gmail_get_profile_tool.name, {}, user=test_user).run(agent_state=agent_state)
+    assert result.func_return["response_data"]["emailAddress"] == "sarah@letta.com"
+
+
+@pytest.mark.local_sandbox
+def test_local_sandbox_e2e_composio_star_github_without_setting_db_env_vars(
+    mock_e2b_api_key_none, check_composio_key_set, composio_github_star_tool, test_user
+):
+    result = ToolExecutionSandbox(composio_github_star_tool.name, {"owner": "letta-ai", "repo": "letta"}, user=test_user).run()
+    assert result.func_return["details"] == "Action executed successfully"
+
+
+@pytest.mark.local_sandbox
+def test_local_sandbox_e2e_composio_star_github_without_setting_db_env_vars(
+    mock_e2b_api_key_none, check_composio_key_set, composio_github_star_tool, test_user
+):
     result = ToolExecutionSandbox(composio_github_star_tool.name, {"owner": "letta-ai", "repo": "letta"}, user=test_user).run()
     assert result.func_return["details"] == "Action executed successfully"
 
@@ -458,7 +531,7 @@ def test_e2b_sandbox_inject_env_var_existing_sandbox(check_e2b_key_is_set, get_e
     config = manager.create_or_update_sandbox_config(config_create, test_user)
 
     # Run the custom sandbox once, assert nothing returns because missing env variable
-    sandbox = ToolExecutionSandbox(get_env_tool.name, {}, user=test_user, force_recreate=True)
+    sandbox = ToolExecutionSandbox(get_env_tool.name, {}, user=test_user)
     result = sandbox.run()
     # response should be None
     assert result.func_return is None
@@ -474,6 +547,42 @@ def test_e2b_sandbox_inject_env_var_existing_sandbox(check_e2b_key_is_set, get_e
     sandbox = ToolExecutionSandbox(get_env_tool.name, {}, user=test_user)
     result = sandbox.run()
     assert long_random_string in result.func_return
+
+
+# TODO: There is a near dupe of this test above for local sandbox - we should try to make it parameterized tests to minimize code bloat
+@pytest.mark.e2b_sandbox
+def test_e2b_sandbox_per_agent_env(check_e2b_key_is_set, get_env_tool, agent_state, test_user):
+    manager = SandboxConfigManager(tool_settings)
+    key = "secret_word"
+
+    # Make a custom local sandbox config
+    sandbox_dir = str(Path(__file__).parent / "test_tool_sandbox")
+    config_create = SandboxConfigCreate(config=LocalSandboxConfig(sandbox_dir=sandbox_dir).model_dump())
+    config = manager.create_or_update_sandbox_config(config_create, test_user)
+
+    # Make a environment variable with a long random string
+    # Note: This has an overlapping key with agent state's environment variables
+    # We expect that the agent's env var supersedes this
+    wrong_long_random_string = "".join(secrets.choice(string.ascii_letters + string.digits) for _ in range(20))
+    manager.create_sandbox_env_var(
+        SandboxEnvironmentVariableCreate(key=key, value=wrong_long_random_string), sandbox_config_id=config.id, actor=test_user
+    )
+
+    # Make a environment variable with a long random string and put into agent state
+    correct_long_random_string = "".join(secrets.choice(string.ascii_letters + string.digits) for _ in range(20))
+    agent_state.tool_exec_environment_variables = [
+        AgentEnvironmentVariable(key=key, value=correct_long_random_string, agent_id=agent_state.id)
+    ]
+
+    # Create tool and args
+    args = {}
+
+    # Run the custom sandbox
+    sandbox = ToolExecutionSandbox(get_env_tool.name, args, user=test_user)
+    result = sandbox.run(agent_state=agent_state)
+
+    assert wrong_long_random_string not in result.func_return
+    assert correct_long_random_string in result.func_return
 
 
 @pytest.mark.e2b_sandbox
@@ -512,7 +621,7 @@ def test_e2b_sandbox_with_list_rv(check_e2b_key_is_set, list_tool, test_user):
     assert len(result.func_return) == 5
 
 
-@pytest.mark.e2b_sandboxfunc
+@pytest.mark.e2b_sandbox
 def test_e2b_e2e_composio_star_github(check_e2b_key_is_set, check_composio_key_set, composio_github_star_tool, test_user):
     # Add the composio key
     manager = SandboxConfigManager(tool_settings)
@@ -526,6 +635,42 @@ def test_e2b_e2e_composio_star_github(check_e2b_key_is_set, check_composio_key_s
 
     result = ToolExecutionSandbox(composio_github_star_tool.name, {"owner": "letta-ai", "repo": "letta"}, user=test_user).run()
     assert result.func_return["details"] == "Action executed successfully"
+
+    # Missing args causes error
+    result = ToolExecutionSandbox(composio_github_star_tool.name, {}, user=test_user).run()
+    assert "Invalid request data provided" in result.func_return
+
+
+@pytest.mark.e2b_sandbox
+def test_e2b_multiple_composio_entities(
+    check_e2b_key_is_set, check_composio_key_set, composio_gmail_get_profile_tool, agent_state, test_user
+):
+    manager = SandboxConfigManager(tool_settings)
+    config = manager.get_or_create_default_sandbox_config(sandbox_type=SandboxType.E2B, actor=test_user)
+
+    manager.create_sandbox_env_var(
+        SandboxEnvironmentVariableCreate(key="COMPOSIO_API_KEY", value=tool_settings.composio_api_key),
+        sandbox_config_id=config.id,
+        actor=test_user,
+    )
+
+    # Agent state with no composio entity ID
+    result = ToolExecutionSandbox(composio_gmail_get_profile_tool.name, {}, user=test_user).run(agent_state=agent_state)
+    assert result.func_return["response_data"]["emailAddress"] == "sarah@letta.com"
+
+    # Agent state with the composio entity set to 'matt'
+    agent_state.tool_exec_environment_variables = [
+        AgentEnvironmentVariable(key=COMPOSIO_ENTITY_ENV_VAR_KEY, value="matt", agent_id=agent_state.id)
+    ]
+    result = ToolExecutionSandbox(composio_gmail_get_profile_tool.name, {}, user=test_user).run(agent_state=agent_state)
+    assert result.func_return["response_data"]["emailAddress"] == "matt@letta.com"
+
+    # Agent state with composio entity ID set to default
+    agent_state.tool_exec_environment_variables = [
+        AgentEnvironmentVariable(key=COMPOSIO_ENTITY_ENV_VAR_KEY, value="default", agent_id=agent_state.id)
+    ]
+    result = ToolExecutionSandbox(composio_gmail_get_profile_tool.name, {}, user=test_user).run(agent_state=agent_state)
+    assert result.func_return["response_data"]["emailAddress"] == "sarah@letta.com"
 
 
 # Core memory integration tests

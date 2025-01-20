@@ -12,22 +12,19 @@ from letta.local_llm.constants import INNER_THOUGHTS_KWARG
 from letta.schemas.enums import MessageStreamStatus
 from letta.schemas.letta_message import (
     AssistantMessage,
+    LegacyFunctionCallMessage,
+    LegacyLettaMessage,
+    LettaMessage,
+    ReasoningMessage,
     ToolCall,
     ToolCallDelta,
     ToolCallMessage,
     ToolReturnMessage,
-    ReasoningMessage,
-    LegacyFunctionCallMessage,
-    LegacyLettaMessage,
-    LettaMessage,
 )
 from letta.schemas.message import Message
 from letta.schemas.openai.chat_completion_response import ChatCompletionChunkResponse
 from letta.streaming_interface import AgentChunkStreamingInterface
-from letta.streaming_utils import (
-    FunctionArgumentsStreamHandler,
-    JSONInnerThoughtsExtractor,
-)
+from letta.streaming_utils import FunctionArgumentsStreamHandler, JSONInnerThoughtsExtractor
 from letta.utils import is_utc_datetime
 
 
@@ -201,10 +198,6 @@ class QueuingInterface(AgentInterface):
             assert is_utc_datetime(msg_obj.created_at), msg_obj.created_at
             new_message["date"] = msg_obj.created_at.isoformat()
         else:
-            # FIXME this is a total hack
-            assert self.buffer.qsize() > 1, "Tried to reach back to grab function call data, but couldn't find a buffer message."
-            # TODO also should not be accessing protected member here
-
             new_message["id"] = self.buffer.queue[-1]["message_api"]["id"]
             # assert is_utc_datetime(msg_obj.created_at), msg_obj.created_at
             new_message["date"] = self.buffer.queue[-1]["message_api"]["date"]
@@ -288,6 +281,9 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
         # turn function argument to send_message into a normal text stream
         self.streaming_chat_completion_json_reader = FunctionArgumentsStreamHandler(json_key=assistant_message_tool_kwarg)
 
+        # Store metadata passed from server
+        self.metadata = {}
+
         self._chunks = deque()
         self._event = asyncio.Event()  # Use an event to notify when chunks are available
         self._active = True  # This should be set to False to stop the generator
@@ -295,8 +291,8 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
         # if multi_step = True, the stream ends when the agent yields
         # if multi_step = False, the stream ends when the step ends
         self.multi_step = multi_step
-        self.multi_step_indicator = MessageStreamStatus.done_step
-        self.multi_step_gen_indicator = MessageStreamStatus.done_generation
+        # self.multi_step_indicator = MessageStreamStatus.done_step
+        # self.multi_step_gen_indicator = MessageStreamStatus.done_generation
 
         # Support for AssistantMessage
         self.use_assistant_message = False  # TODO: Remove this
@@ -381,8 +377,8 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
         """Clean up the stream by deactivating and clearing chunks."""
         self.streaming_chat_completion_mode_function_name = None
 
-        if not self.streaming_chat_completion_mode and not self.nonstreaming_legacy_mode:
-            self._push_to_buffer(self.multi_step_gen_indicator)
+        # if not self.streaming_chat_completion_mode and not self.nonstreaming_legacy_mode:
+        #     self._push_to_buffer(self.multi_step_gen_indicator)
 
         # Wipe the inner thoughts buffers
         self._reset_inner_thoughts_json_reader()
@@ -393,9 +389,9 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
             # end the stream
             self._active = False
             self._event.set()  # Unblock the generator if it's waiting to allow it to complete
-        elif not self.streaming_chat_completion_mode and not self.nonstreaming_legacy_mode:
-            # signal that a new step has started in the stream
-            self._push_to_buffer(self.multi_step_indicator)
+        # elif not self.streaming_chat_completion_mode and not self.nonstreaming_legacy_mode:
+        #     # signal that a new step has started in the stream
+        #     self._push_to_buffer(self.multi_step_indicator)
 
         # Wipe the inner thoughts buffers
         self._reset_inner_thoughts_json_reader()

@@ -52,16 +52,28 @@ class LettaConfigurationError(LettaError):
 
 class LettaAgentNotFoundError(LettaError):
     """Error raised when an agent is not found."""
-    pass
 
 
 class LettaUserNotFoundError(LettaError):
     """Error raised when a user is not found."""
-    pass
 
 
 class LLMError(LettaError):
     pass
+
+
+class BedrockPermissionError(LettaError):
+    """Exception raised for errors in the Bedrock permission process."""
+
+    def __init__(self, message="User does not have access to the Bedrock model with the specified ID."):
+        super().__init__(message=message)
+
+
+class BedrockError(LettaError):
+    """Exception raised for errors in the Bedrock process."""
+
+    def __init__(self, message="Error with Bedrock model."):
+        super().__init__(message=message)
 
 
 class LLMJSONParsingError(LettaError):

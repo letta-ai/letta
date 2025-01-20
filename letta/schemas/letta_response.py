@@ -23,8 +23,19 @@ class LettaResponse(BaseModel):
         usage (LettaUsageStatistics): The usage statistics
     """
 
-    messages: List[LettaMessageUnion] = Field(..., description="The messages returned by the agent.")
-    usage: LettaUsageStatistics = Field(..., description="The usage statistics of the agent.")
+    messages: List[LettaMessageUnion] = Field(
+        ...,
+        description="The messages returned by the agent.",
+        json_schema_extra={
+            "items": {
+                "$ref": "#/components/schemas/LettaMessageUnion",
+            }
+        },
+    )
+    usage: LettaUsageStatistics = Field(
+        ...,
+        description="The usage statistics of the agent.",
+    )
 
     def __str__(self):
         return json_dumps(

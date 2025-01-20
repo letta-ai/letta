@@ -10,9 +10,12 @@ from letta.local_llm.constants import DEFAULT_WRAPPER_NAME
 class ToolSettings(BaseSettings):
     composio_api_key: Optional[str] = None
 
-    # Sandbox configurations
+    # E2B Sandbox configurations
     e2b_api_key: Optional[str] = None
     e2b_sandbox_template_id: Optional[str] = None  # Updated manually
+
+    # Local Sandbox configurations
+    local_sandbox_dir: Optional[str] = None
 
 
 class ModelSettings(BaseSettings):
@@ -31,6 +34,12 @@ class ModelSettings(BaseSettings):
 
     # groq
     groq_api_key: Optional[str] = None
+
+    # Bedrock
+    aws_access_key: Optional[str] = None
+    aws_secret_access_key: Optional[str] = None
+    aws_region: Optional[str] = None
+    bedrock_anthropic_version: Optional[str] = "bedrock-2023-05-31"
 
     # anthropic
     anthropic_api_key: Optional[str] = None
@@ -59,8 +68,31 @@ class ModelSettings(BaseSettings):
     openllm_auth_type: Optional[str] = None
     openllm_api_key: Optional[str] = None
 
+    # disable openapi schema generation
+    disable_schema_generation: bool = False
 
-cors_origins = ["http://letta.localhost", "http://localhost:8283", "http://localhost:8083", "http://localhost:3000"]
+
+cors_origins = [
+    "http://letta.localhost",
+    "http://localhost:8283",
+    "http://localhost:8083",
+    "http://localhost:3000",
+    "http://localhost:4200",
+]
+
+# read pg_uri from ~/.letta/pg_uri or set to none, this is to support Letta Desktop
+default_pg_uri = None
+
+## check if --use-file-pg-uri is passed
+import sys
+
+if "--use-file-pg-uri" in sys.argv:
+    try:
+        with open(Path.home() / ".letta/pg_uri", "r") as f:
+            default_pg_uri = f.read()
+            print("Read pg_uri from ~/.letta/pg_uri")
+    except FileNotFoundError:
+        pass
 
 
 class Settings(BaseSettings):
@@ -76,7 +108,7 @@ class Settings(BaseSettings):
     pg_password: Optional[str] = None
     pg_host: Optional[str] = None
     pg_port: Optional[int] = None
-    pg_uri: Optional[str] = None  # option to specify full uri
+    pg_uri: Optional[str] = default_pg_uri  # option to specify full uri
     pg_pool_size: int = 20  # Concurrent connections
     pg_max_overflow: int = 10  # Overflow limit
     pg_pool_timeout: int = 30  # Seconds to wait for a connection

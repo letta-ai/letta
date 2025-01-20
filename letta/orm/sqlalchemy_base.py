@@ -1,20 +1,15 @@
 from datetime import datetime
 from enum import Enum
 from functools import wraps
-from typing import TYPE_CHECKING, List, Literal, Optional
+from typing import TYPE_CHECKING, List, Literal, Optional, Tuple, Union
 
-from sqlalchemy import String, desc, func, or_, select
+from sqlalchemy import String, and_, desc, func, or_, select
 from sqlalchemy.exc import DBAPIError, IntegrityError, TimeoutError
 from sqlalchemy.orm import Mapped, Session, mapped_column
 
 from letta.log import get_logger
 from letta.orm.base import Base, CommonSqlalchemyMetaMixins
-from letta.orm.errors import (
-    DatabaseTimeoutError,
-    ForeignKeyConstraintViolationError,
-    NoResultFound,
-    UniqueConstraintViolationError,
-)
+from letta.orm.errors import DatabaseTimeoutError, ForeignKeyConstraintViolationError, NoResultFound, UniqueConstraintViolationError
 from letta.orm.sqlite_functions import adapt_array
 
 if TYPE_CHECKING:
@@ -66,6 +61,11 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
         ascending: bool = True,
         tags: Optional[List[str]] = None,
         match_all_tags: bool = False,
+        actor: Optional["User"] = None,
+        access: Optional[List[Literal["read", "write", "admin"]]] = ["read"],
+        access_type: AccessType = AccessType.ORGANIZATION,
+        join_model: Optional[Base] = None,
+        join_conditions: Optional[Union[Tuple, List]] = None,
         **kwargs,
     ) -> List["SqlalchemyBase"]:
         """
@@ -99,15 +99,26 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
 
             query = select(cls)
 
+            if join_model and join_conditions:
+                query = query.join(join_model, and_(*join_conditions))
+
+            # Apply access predicate if actor is provided
+            if actor:
+                query = cls.apply_access_predicate(query, actor, access, access_type)
+
             # Handle tag filtering if the model has tags
             if tags and hasattr(cls, "tags"):
                 query = select(cls)
 
                 if match_all_tags:
                     # Match ALL tags - use subqueries
-                    for tag in tags:
-                        subquery = select(cls.tags.property.mapper.class_.agent_id).where(cls.tags.property.mapper.class_.tag == tag)
-                        query = query.filter(cls.id.in_(subquery))
+                    subquery = (
+                        select(cls.tags.property.mapper.class_.agent_id)
+                        .where(cls.tags.property.mapper.class_.tag.in_(tags))
+                        .group_by(cls.tags.property.mapper.class_.agent_id)
+                        .having(func.count() == len(tags))
+                    )
+                    query = query.filter(cls.id.in_(subquery))
                 else:
                     # Match ANY tag - use join and filter
                     query = (
@@ -119,7 +130,15 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
 
             # Apply filtering logic from kwargs
             for key, value in kwargs.items():
-                column = getattr(cls, key)
+                if "." in key:
+                    # Handle joined table columns
+                    table_name, column_name = key.split(".")
+                    joined_table = locals().get(table_name) or globals().get(table_name)
+                    column = getattr(joined_table, column_name)
+                else:
+                    # Handle columns from main table
+                    column = getattr(cls, key)
+
                 if isinstance(value, (list, tuple, set)):
                     query = query.where(column.in_(value))
                 else:
@@ -144,7 +163,11 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
 
             # Text search
             if query_text:
-                query = query.filter(func.lower(cls.text).contains(func.lower(query_text)))
+                if hasattr(cls, "text"):
+                    query = query.filter(func.lower(cls.text).contains(func.lower(query_text)))
+                elif hasattr(cls, "name"):
+                    # Special case for Agent model - search across name
+                    query = query.filter(func.lower(cls.name).contains(func.lower(query_text)))
 
             # Embedding search (for Passages)
             is_ordered = False
@@ -279,6 +302,8 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
         logger.debug(f"Updating {self.__class__.__name__} with ID: {self.id} with actor={actor}")
         if actor:
             self._set_created_and_updated_by_fields(actor.id)
+
+        self.set_updated_at()
 
         with db_session as session:
             session.add(self)

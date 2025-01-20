@@ -3,18 +3,11 @@ from typing import TYPE_CHECKING, Optional
 
 from fastapi import APIRouter, Body, Depends, Header, HTTPException
 
-from letta.schemas.enums import MessageRole
-from letta.schemas.letta_message import ToolCall, LettaMessage
+from letta.schemas.letta_message import LettaMessage, ToolCall
 from letta.schemas.openai.chat_completion_request import ChatCompletionRequest
-from letta.schemas.openai.chat_completion_response import (
-    ChatCompletionResponse,
-    Choice,
-    Message,
-    UsageStatistics,
-)
+from letta.schemas.openai.chat_completion_response import ChatCompletionResponse, Choice, Message, UsageStatistics
 
 # TODO this belongs in a controller!
-from letta.server.rest_api.routers.v1.agents import send_message_to_agent
 from letta.server.rest_api.utils import get_letta_server
 
 if TYPE_CHECKING:
@@ -57,12 +50,10 @@ async def create_chat_completion(
         # TODO(charles) support multimodal parts
         assert isinstance(input_message.content, str)
 
-        return await send_message_to_agent(
-            server=server,
+        return await server.send_message_to_agent(
             agent_id=agent_id,
-            user_id=actor.id,
-            role=MessageRole(input_message.role),
-            message=input_message.content,
+            actor=actor,
+            message=input_message.content,  # TODO: This is broken
             # Turn streaming ON
             stream_steps=True,
             stream_tokens=True,
@@ -76,12 +67,10 @@ async def create_chat_completion(
         # TODO(charles) support multimodal parts
         assert isinstance(input_message.content, str)
 
-        response_messages = await send_message_to_agent(
-            server=server,
+        response_messages = await server.send_message_to_agent(
             agent_id=agent_id,
-            user_id=actor.id,
-            role=MessageRole(input_message.role),
-            message=input_message.content,
+            actor=actor,
+            message=input_message.content,  # TODO: This is broken
             # Turn streaming OFF
             stream_steps=False,
             stream_tokens=False,

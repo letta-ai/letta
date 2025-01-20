@@ -2,13 +2,7 @@ from datetime import datetime
 from typing import Optional
 
 from sqlalchemy import Boolean, DateTime, String, func, text
-from sqlalchemy.orm import (
-    DeclarativeBase,
-    Mapped,
-    declarative_mixin,
-    declared_attr,
-    mapped_column,
-)
+from sqlalchemy.orm import DeclarativeBase, Mapped, declarative_mixin, declared_attr, mapped_column
 
 
 class Base(DeclarativeBase):
@@ -22,6 +16,16 @@ class CommonSqlalchemyMetaMixins(Base):
     created_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), server_default=func.now(), server_onupdate=func.now())
     is_deleted: Mapped[bool] = mapped_column(Boolean, server_default=text("FALSE"))
+
+    def set_updated_at(self, timestamp: Optional[datetime] = None) -> None:
+        """
+        Set the updated_at timestamp for the model instance.
+
+        Args:
+            timestamp (Optional[datetime]): The timestamp to set.
+                                            If None, uses the current UTC time.
+        """
+        self.updated_at = timestamp or datetime.utcnow()
 
     def _set_created_and_updated_by_fields(self, actor_id: str) -> None:
         """Populate created_by_id and last_updated_by_id based on actor."""

@@ -60,7 +60,6 @@ def list(arg: Annotated[ListChoice, typer.Argument]):
         table.field_names = ["Name", "Text"]
         for human in client.list_humans():
             table.add_row([human.template_name, human.value.replace("\n", "")[:100]])
-        print(table)
     elif arg == ListChoice.personas:
         """List all personas"""
         table.field_names = ["Name", "Text"]

@@ -2,17 +2,14 @@ from typing import Dict, Iterator, List, Tuple
 
 import typer
 
-from letta.data_sources.connectors_helper import (
-    assert_all_files_exist_locally,
-    extract_metadata_from_files,
-    get_filenames_in_dir,
-)
+from letta.data_sources.connectors_helper import assert_all_files_exist_locally, extract_metadata_from_files, get_filenames_in_dir
 from letta.embeddings import embedding_model
 from letta.schemas.file import FileMetadata
 from letta.schemas.passage import Passage
 from letta.schemas.source import Source
 from letta.services.passage_manager import PassageManager
 from letta.services.source_manager import SourceManager
+
 
 class DataConnector:
     """

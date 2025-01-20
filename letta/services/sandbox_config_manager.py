@@ -1,19 +1,15 @@
-from pathlib import Path
 from typing import Dict, List, Optional
 
+from letta.constants import LETTA_DIR_TOOL_SANDBOX
 from letta.log import get_logger
 from letta.orm.errors import NoResultFound
 from letta.orm.sandbox_config import SandboxConfig as SandboxConfigModel
 from letta.orm.sandbox_config import SandboxEnvironmentVariable as SandboxEnvVarModel
+from letta.schemas.environment_variables import SandboxEnvironmentVariable as PydanticEnvVar
+from letta.schemas.environment_variables import SandboxEnvironmentVariableCreate, SandboxEnvironmentVariableUpdate
 from letta.schemas.sandbox_config import LocalSandboxConfig
 from letta.schemas.sandbox_config import SandboxConfig as PydanticSandboxConfig
-from letta.schemas.sandbox_config import SandboxConfigCreate, SandboxConfigUpdate
-from letta.schemas.sandbox_config import SandboxEnvironmentVariable as PydanticEnvVar
-from letta.schemas.sandbox_config import (
-    SandboxEnvironmentVariableCreate,
-    SandboxEnvironmentVariableUpdate,
-    SandboxType,
-)
+from letta.schemas.sandbox_config import SandboxConfigCreate, SandboxConfigUpdate, SandboxType
 from letta.schemas.user import User as PydanticUser
 from letta.utils import enforce_types, printd
 
@@ -39,7 +35,7 @@ class SandboxConfigManager:
                 default_config = {}  # Empty
             else:
                 # TODO: May want to move this to environment variables v.s. persisting in database
-                default_local_sandbox_path = str(Path(__file__).parent / "tool_sandbox_env")
+                default_local_sandbox_path = LETTA_DIR_TOOL_SANDBOX
                 default_config = LocalSandboxConfig(sandbox_dir=default_local_sandbox_path).model_dump(exclude_none=True)
 
             sandbox_config = self.create_or_update_sandbox_config(SandboxConfigCreate(config=default_config), actor=actor)
@@ -115,16 +111,15 @@ class SandboxConfigManager:
 
     @enforce_types
     def list_sandbox_configs(
-        self, actor: PydanticUser, cursor: Optional[str] = None, limit: Optional[int] = 50
+        self, actor: PydanticUser, cursor: Optional[str] = None, limit: Optional[int] = 50, sandbox_type: Optional[SandboxType] = None
     ) -> List[PydanticSandboxConfig]:
         """List all sandbox configurations with optional pagination."""
+        kwargs = {"organization_id": actor.organization_id}
+        if sandbox_type:
+            kwargs.update({"type": sandbox_type})
+
         with self.session_maker() as session:
-            sandboxes = SandboxConfigModel.list(
-                db_session=session,
-                cursor=cursor,
-                limit=limit,
-                organization_id=actor.organization_id,
-            )
+            sandboxes = SandboxConfigModel.list(db_session=session, cursor=cursor, limit=limit, **kwargs)
             return [sandbox.to_pydantic() for sandbox in sandboxes]
 
     @enforce_types

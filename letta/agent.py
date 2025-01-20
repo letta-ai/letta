@@ -1,4 +1,3 @@
-import inspect
 import json
 import time
 import traceback
@@ -7,60 +6,54 @@ from abc import ABC, abstractmethod
 from typing import List, Optional, Tuple, Union
 
 from letta.constants import (
-    BASE_TOOLS,
     CLI_WARNING_PREFIX,
     ERROR_MESSAGE_PREFIX,
     FIRST_MESSAGE_ATTEMPTS,
     FUNC_FAILED_HEARTBEAT_MESSAGE,
+    LETTA_CORE_TOOL_MODULE_NAME,
+    LETTA_MULTI_AGENT_TOOL_MODULE_NAME,
     LLM_MAX_TOKENS,
     MESSAGE_SUMMARY_TRUNC_KEEP_N_LAST,
     MESSAGE_SUMMARY_TRUNC_TOKEN_FRAC,
     MESSAGE_SUMMARY_WARNING_FRAC,
-    O1_BASE_TOOLS,
     REQ_HEARTBEAT_MESSAGE,
 )
 from letta.errors import ContextWindowExceededError
+from letta.functions.ast_parsers import coerce_dict_args_by_annotations, get_function_annotations_from_source
+from letta.functions.functions import get_function_from_module
 from letta.helpers import ToolRulesSolver
 from letta.interface import AgentInterface
 from letta.llm_api.helpers import is_context_overflow_error
 from letta.llm_api.llm_api_tools import create
 from letta.local_llm.utils import num_tokens_from_functions, num_tokens_from_messages
+from letta.log import get_logger
 from letta.memory import summarize_messages
 from letta.orm import User
+from letta.orm.enums import ToolType
 from letta.schemas.agent import AgentState, AgentStepResponse, UpdateAgent
 from letta.schemas.block import BlockUpdate
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import MessageRole
 from letta.schemas.memory import ContextWindowOverview, Memory
 from letta.schemas.message import Message
-from letta.schemas.openai.chat_completion_request import (
-    Tool as ChatCompletionRequestTool,
-)
+from letta.schemas.openai.chat_completion_request import Tool as ChatCompletionRequestTool
 from letta.schemas.openai.chat_completion_response import ChatCompletionResponse
-from letta.schemas.openai.chat_completion_response import (
-    Message as ChatCompletionMessage,
-)
+from letta.schemas.openai.chat_completion_response import Message as ChatCompletionMessage
 from letta.schemas.openai.chat_completion_response import UsageStatistics
 from letta.schemas.tool import Tool
 from letta.schemas.tool_rule import TerminalToolRule
 from letta.schemas.usage import LettaUsageStatistics
 from letta.services.agent_manager import AgentManager
 from letta.services.block_manager import BlockManager
-from letta.services.helpers.agent_manager_helper import (
-    check_supports_structured_output,
-    compile_memory_metadata_block,
-)
+from letta.services.helpers.agent_manager_helper import check_supports_structured_output, compile_memory_metadata_block
+from letta.services.job_manager import JobManager
 from letta.services.message_manager import MessageManager
 from letta.services.passage_manager import PassageManager
+from letta.services.provider_manager import ProviderManager
+from letta.services.step_manager import StepManager
 from letta.services.tool_execution_sandbox import ToolExecutionSandbox
 from letta.streaming_interface import StreamingRefreshCLIInterface
-from letta.system import (
-    get_heartbeat,
-    get_token_limit_warning,
-    package_function_response,
-    package_summarize_message,
-    package_user_message,
-)
+from letta.system import get_heartbeat, get_token_limit_warning, package_function_response, package_summarize_message, package_user_message
 from letta.utils import (
     count_tokens,
     get_friendly_error_msg,
@@ -139,7 +132,10 @@ class Agent(BaseAgent):
         # Create the persistence manager object based on the AgentState info
         self.message_manager = MessageManager()
         self.passage_manager = PassageManager()
+        self.provider_manager = ProviderManager()
         self.agent_manager = AgentManager()
+        self.job_manager = JobManager()
+        self.step_manager = StepManager()
 
         # State needed for heartbeat pausing
 
@@ -152,6 +148,9 @@ class Agent(BaseAgent):
 
         # Load last function response from message history
         self.last_function_response = self.load_last_function_response()
+
+        # Logger that the Agent specifically can use, will also report the agent_state ID with the logs
+        self.logger = get_logger(agent_state.id)
 
     def load_last_function_response(self):
         """Load the last function response from message history"""
@@ -167,7 +166,7 @@ class Agent(BaseAgent):
                     raise ValueError(f"Invalid JSON format in message: {msg.text}")
         return None
 
-    def update_memory_if_change(self, new_memory: Memory) -> bool:
+    def update_memory_if_changed(self, new_memory: Memory) -> bool:
         """
         Update internal memory object and system prompt if there have been modifications.
 
@@ -206,39 +205,44 @@ class Agent(BaseAgent):
         Execute tool modifications and persist the state of the agent.
         Note: only some agent state modifications will be persisted, such as data in the AgentState ORM and block data
         """
-        # TODO: Get rid of this. This whole piece is pretty shady, that we exec the function to just get the type hints for args.
-        env = {}
-        env.update(globals())
-        exec(target_letta_tool.source_code, env)
-        callable_func = env[target_letta_tool.json_schema["name"]]
-        spec = inspect.getfullargspec(callable_func).annotations
-        for name, arg in function_args.items():
-            if isinstance(function_args[name], dict):
-                function_args[name] = spec[name](**function_args[name])
-
         # TODO: add agent manager here
         orig_memory_str = self.agent_state.memory.compile()
 
         # TODO: need to have an AgentState object that actually has full access to the block data
         # this is because the sandbox tools need to be able to access block.value to edit this data
         try:
-            # TODO: This is NO BUENO
-            # TODO: Matching purely by names is extremely problematic, users can create tools with these names and run them in the agent loop
-            # TODO: We will have probably have to match the function strings exactly for safety
-            if function_name in BASE_TOOLS or function_name in O1_BASE_TOOLS:
+            if target_letta_tool.tool_type == ToolType.LETTA_CORE:
                 # base tools are allowed to access the `Agent` object and run on the database
+                callable_func = get_function_from_module(LETTA_CORE_TOOL_MODULE_NAME, function_name)
                 function_args["self"] = self  # need to attach self to arg since it's dynamically linked
                 function_response = callable_func(**function_args)
+            elif target_letta_tool.tool_type == ToolType.LETTA_MULTI_AGENT_CORE:
+                callable_func = get_function_from_module(LETTA_MULTI_AGENT_TOOL_MODULE_NAME, function_name)
+                function_args["self"] = self  # need to attach self to arg since it's dynamically linked
+                function_response = callable_func(**function_args)
+            elif target_letta_tool.tool_type == ToolType.LETTA_MEMORY_CORE:
+                callable_func = get_function_from_module(LETTA_CORE_TOOL_MODULE_NAME, function_name)
+                agent_state_copy = self.agent_state.__deepcopy__()
+                function_args["agent_state"] = agent_state_copy  # need to attach self to arg since it's dynamically linked
+                function_response = callable_func(**function_args)
+                self.update_memory_if_changed(agent_state_copy.memory)
             else:
+                # Parse the source code to extract function annotations
+                annotations = get_function_annotations_from_source(target_letta_tool.source_code, function_name)
+                # Coerce the function arguments to the correct types based on the annotations
+                function_args = coerce_dict_args_by_annotations(function_args, annotations)
+
                 # execute tool in a sandbox
                 # TODO: allow agent_state to specify which sandbox to execute tools in
-                sandbox_run_result = ToolExecutionSandbox(function_name, function_args, self.user).run(
-                    agent_state=self.agent_state.__deepcopy__()
-                )
+                # TODO: This is only temporary, can remove after we publish a pip package with this object
+                agent_state_copy = self.agent_state.__deepcopy__()
+                agent_state_copy.tools = []
+
+                sandbox_run_result = ToolExecutionSandbox(function_name, function_args, self.user).run(agent_state=agent_state_copy)
                 function_response, updated_agent_state = sandbox_run_result.func_return, sandbox_run_result.agent_state
                 assert orig_memory_str == self.agent_state.memory.compile(), "Memory should not be modified in a sandbox tool"
                 if updated_agent_state is not None:
-                    self.update_memory_if_change(updated_agent_state.memory)
+                    self.update_memory_if_changed(updated_agent_state.memory)
         except Exception as e:
             # Need to catch error here, or else trunction wont happen
             # TODO: modify to function execution error
@@ -350,7 +354,7 @@ class Agent(BaseAgent):
             if response_message.tool_calls is not None and len(response_message.tool_calls) > 1:
                 # raise NotImplementedError(f">1 tool call not supported")
                 # TODO eventually support sequential tool calling
-                printd(f">1 tool call not supported, using index=0 only\n{response_message.tool_calls}")
+                self.logger.warning(f">1 tool call not supported, using index=0 only\n{response_message.tool_calls}")
                 response_message.tool_calls = [response_message.tool_calls[0]]
             assert response_message.tool_calls is not None and len(response_message.tool_calls) > 0
 
@@ -379,7 +383,7 @@ class Agent(BaseAgent):
                     openai_message_dict=response_message.model_dump(),
                 )
             )  # extend conversation with assistant's reply
-            printd(f"Function call message: {messages[-1]}")
+            self.logger.info(f"Function call message: {messages[-1]}")
 
             nonnull_content = False
             if response_message.content:
@@ -396,7 +400,7 @@ class Agent(BaseAgent):
 
             # Get the name of the function
             function_name = function_call.name
-            printd(f"Request to call function {function_name} with tool_call_id: {tool_call_id}")
+            self.logger.info(f"Request to call function {function_name} with tool_call_id: {tool_call_id}")
 
             # Failure case 1: function name is wrong (not in agent_state.tools)
             target_letta_tool = None
@@ -462,7 +466,7 @@ class Agent(BaseAgent):
                 heartbeat_request = True
 
             if not isinstance(heartbeat_request, bool) or heartbeat_request is None:
-                printd(
+                self.logger.warning(
                     f"{CLI_WARNING_PREFIX}'request_heartbeat' arg parsed was not a bool or None, type={type(heartbeat_request)}, value={heartbeat_request}"
                 )
                 heartbeat_request = False
@@ -498,7 +502,7 @@ class Agent(BaseAgent):
                 # Less detailed - don't provide full args, idea is that it should be in recent context so no need (just adds noise)
                 error_msg = get_friendly_error_msg(function_name=function_name, exception_name=type(e).__name__, exception_message=str(e))
                 error_msg_user = f"{error_msg}\n{traceback.format_exc()}"
-                printd(error_msg_user)
+                self.logger.error(error_msg_user)
                 function_response = package_function_response(False, error_msg)
                 self.last_function_response = function_response
                 # TODO: truncate error message somehow
@@ -625,10 +629,10 @@ class Agent(BaseAgent):
 
             # Chain stops
             if not chaining:
-                printd("No chaining, stopping after one step")
+                self.logger.info("No chaining, stopping after one step")
                 break
             elif max_chaining_steps is not None and counter > max_chaining_steps:
-                printd(f"Hit max chaining steps, stopping after {counter} steps")
+                self.logger.info(f"Hit max chaining steps, stopping after {counter} steps")
                 break
             # Chain handlers
             elif token_warning:
@@ -681,17 +685,21 @@ class Agent(BaseAgent):
         skip_verify: bool = False,
         stream: bool = False,  # TODO move to config?
         step_count: Optional[int] = None,
+        metadata: Optional[dict] = None,
     ) -> AgentStepResponse:
         """Runs a single step in the agent loop (generates at most one LLM call)"""
 
         try:
+
+            # Extract job_id from metadata if present
+            job_id = metadata.get("job_id") if metadata else None
 
             # Step 0: update core memory
             # only pulling latest block data if shared memory is being used
             current_persisted_memory = Memory(
                 blocks=[self.block_manager.get_block_by_id(block.id, actor=self.user) for block in self.agent_state.memory.get_blocks()]
             )  # read blocks from DB
-            self.update_memory_if_change(current_persisted_memory)
+            self.update_memory_if_changed(current_persisted_memory)
 
             # Step 1: add user message
             if isinstance(messages, Message):
@@ -704,7 +712,7 @@ class Agent(BaseAgent):
             input_message_sequence = in_context_messages + messages
 
             if len(input_message_sequence) > 1 and input_message_sequence[-1].role != "user":
-                printd(f"{CLI_WARNING_PREFIX}Attempting to run ChatCompletion without user as the last message in the queue")
+                self.logger.warning(f"{CLI_WARNING_PREFIX}Attempting to run ChatCompletion without user as the last message in the queue")
 
             # Step 2: send the conversation and available functions to the LLM
             response = self._get_ai_reply(
@@ -746,7 +754,7 @@ class Agent(BaseAgent):
                 )
 
             if current_total_tokens > MESSAGE_SUMMARY_WARNING_FRAC * int(self.agent_state.llm_config.context_window):
-                printd(
+                self.logger.warning(
                     f"{CLI_WARNING_PREFIX}last response total_tokens ({current_total_tokens}) > {MESSAGE_SUMMARY_WARNING_FRAC * int(self.agent_state.llm_config.context_window)}"
                 )
 
@@ -756,13 +764,39 @@ class Agent(BaseAgent):
                     self.agent_alerted_about_memory_pressure = True  # it's up to the outer loop to handle this
 
             else:
-                printd(
+                self.logger.warning(
                     f"last response total_tokens ({current_total_tokens}) < {MESSAGE_SUMMARY_WARNING_FRAC * int(self.agent_state.llm_config.context_window)}"
                 )
 
+            # Log step - this must happen before messages are persisted
+            step = self.step_manager.log_step(
+                actor=self.user,
+                provider_name=self.agent_state.llm_config.model_endpoint_type,
+                model=self.agent_state.llm_config.model,
+                context_window_limit=self.agent_state.llm_config.context_window,
+                usage=response.usage,
+                # TODO(@caren): Add full provider support - this line is a workaround for v0 BYOK feature
+                provider_id=(
+                    self.provider_manager.get_anthropic_override_provider_id()
+                    if self.agent_state.llm_config.model_endpoint_type == "anthropic"
+                    else None
+                ),
+                job_id=job_id,
+            )
+            for message in all_new_messages:
+                message.step_id = step.id
+
+            # Persisting into Messages
             self.agent_state = self.agent_manager.append_to_in_context_messages(
                 all_new_messages, agent_id=self.agent_state.id, actor=self.user
             )
+            if job_id:
+                for message in all_new_messages:
+                    self.job_manager.add_message_to_job(
+                        job_id=job_id,
+                        message_id=message.id,
+                        actor=self.user,
+                    )
 
             return AgentStepResponse(
                 messages=all_new_messages,
@@ -773,11 +807,11 @@ class Agent(BaseAgent):
             )
 
         except Exception as e:
-            printd(f"step() failed\nmessages = {messages}\nerror = {e}")
+            self.logger.error(f"step() failed\nmessages = {messages}\nerror = {e}")
 
             # If we got a context alert, try trimming the messages length, then try again
             if is_context_overflow_error(e):
-                printd(
+                self.logger.warning(
                     f"context window exceeded with limit {self.agent_state.llm_config.context_window}, running summarizer to trim messages"
                 )
                 # A separate API call to run a summarizer
@@ -790,10 +824,11 @@ class Agent(BaseAgent):
                     first_message_retry_limit=first_message_retry_limit,
                     skip_verify=skip_verify,
                     stream=stream,
+                    metadata=metadata,
                 )
 
             else:
-                printd(f"step() failed with an unrecognized exception: '{str(e)}'")
+                self.logger.error(f"step() failed with an unrecognized exception: '{str(e)}'")
                 raise e
 
     def step_user_message(self, user_message_str: str, **kwargs) -> AgentStepResponse:
@@ -1088,6 +1123,8 @@ def save_agent(agent: Agent):
         message_ids=agent_state.message_ids,
         description=agent_state.description,
         metadata_=agent_state.metadata_,
+        # TODO: Add this back in later
+        # tool_exec_environment_variables=agent_state.get_agent_env_vars_as_dict(),
     )
     agent_manager.update_agent(agent_id=agent_state.id, agent_update=update_agent, actor=agent.user)
 

@@ -5,12 +5,7 @@ import pytest
 
 from letta import create_client
 from letta.schemas.letta_message import ToolCallMessage
-from letta.schemas.tool_rule import (
-    ChildToolRule,
-    ConditionalToolRule,
-    InitToolRule,
-    TerminalToolRule,
-)
+from letta.schemas.tool_rule import ChildToolRule, ConditionalToolRule, InitToolRule, TerminalToolRule
 from tests.helpers.endpoints_helper import (
     assert_invoked_function_call,
     assert_invoked_send_message_with_keyword,
@@ -609,3 +604,59 @@ def test_agent_reload_remembers_function_response(mock_e2b_api_key_none):
 
     print(f"Got successful response from client: \n\n{response}")
     cleanup(client=client, agent_uuid=agent_uuid)
+
+
+@pytest.mark.timeout(60)  # Sets a 60-second timeout for the test since this could loop infinitely
+def test_simple_tool_rule(mock_e2b_api_key_none):
+    """
+    Test a simple tool rule where fourth_secret_word must be called after flip_coin.
+
+    Tool Flow:
+        flip_coin
+           |
+           v
+    fourth_secret_word
+    """
+    client = create_client()
+    cleanup(client=client, agent_uuid=agent_uuid)
+
+    # Create tools
+    flip_coin_name = "flip_coin"
+    another_secret_word = "first_secret_word"
+    secret_word = "fourth_secret_word"
+    random_tool = "can_play_game"
+    flip_coin_tool = client.create_or_update_tool(flip_coin, name=flip_coin_name)
+    secret_word_tool = client.create_or_update_tool(fourth_secret_word, name=secret_word)
+    another_secret_word_tool = client.create_or_update_tool(first_secret_word, name=another_secret_word)
+    random_tool = client.create_or_update_tool(can_play_game, name=random_tool)
+    tools = [flip_coin_tool, secret_word_tool, another_secret_word_tool, random_tool]
+
+    # Create tool rule: after flip_coin, must call fourth_secret_word
+    tool_rule = ConditionalToolRule(
+        tool_name=flip_coin_name,
+        default_child=secret_word,
+        child_output_mapping={"*": secret_word},
+    )
+
+    # Set up agent with the tool rule
+    agent_state = setup_agent(
+        client, config_file, agent_uuid, tool_rules=[tool_rule], tool_ids=[t.id for t in tools], include_base_tools=False
+    )
+
+    # Start conversation
+    response = client.user_message(agent_id=agent_state.id, message="Help me test the tools.")
+
+    # Verify the tool calls
+    tool_calls = [msg for msg in response.messages if isinstance(msg, ToolCallMessage)]
+    assert len(tool_calls) >= 2  # Should have at least flip_coin and fourth_secret_word calls
+    assert_invoked_function_call(response.messages, flip_coin_name)
+    assert_invoked_function_call(response.messages, secret_word)
+
+    # Find the flip_coin call
+    flip_coin_call = next((call for call in tool_calls if call.tool_call.name == "flip_coin"), None)
+
+    # Verify that fourth_secret_word was called after flip_coin
+    flip_coin_call_index = tool_calls.index(flip_coin_call)
+    assert tool_calls[flip_coin_call_index + 1].tool_call.name == secret_word, "Fourth secret word should be called after flip_coin"
+
+    cleanup(client, agent_uuid=agent_state.id)

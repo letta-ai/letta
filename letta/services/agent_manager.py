@@ -4,16 +4,17 @@ from typing import Dict, List, Optional
 import numpy as np
 from sqlalchemy import Select, func, literal, select, union_all
 
-from letta.constants import BASE_MEMORY_TOOLS, BASE_TOOLS, MAX_EMBEDDING_DIM
+from letta.constants import BASE_MEMORY_TOOLS, BASE_TOOLS, MAX_EMBEDDING_DIM, MULTI_AGENT_TOOLS
 from letta.embeddings import embedding_model
 from letta.log import get_logger
 from letta.orm import Agent as AgentModel
-from letta.orm import AgentPassage
+from letta.orm import AgentPassage, AgentsTags
 from letta.orm import Block as BlockModel
 from letta.orm import Source as SourceModel
 from letta.orm import SourcePassage, SourcesAgents
 from letta.orm import Tool as ToolModel
 from letta.orm.errors import NoResultFound
+from letta.orm.sandbox_config import AgentEnvironmentVariable as AgentEnvironmentVariableModel
 from letta.orm.sqlite_functions import adapt_array
 from letta.schemas.agent import AgentState as PydanticAgentState
 from letta.schemas.agent import AgentType, CreateAgent, UpdateAgent
@@ -21,6 +22,7 @@ from letta.schemas.block import Block as PydanticBlock
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message as PydanticMessage
+from letta.schemas.message import MessageCreate
 from letta.schemas.passage import Passage as PydanticPassage
 from letta.schemas.source import Source as PydanticSource
 from letta.schemas.tool_rule import ToolRule as PydanticToolRule
@@ -77,15 +79,18 @@ class AgentManager:
 
         # create blocks (note: cannot be linked into the agent_id is created)
         block_ids = list(agent_create.block_ids or [])  # Create a local copy to avoid modifying the original
-        for create_block in agent_create.memory_blocks:
-            block = self.block_manager.create_or_update_block(PydanticBlock(**create_block.model_dump()), actor=actor)
-            block_ids.append(block.id)
+        if agent_create.memory_blocks:
+            for create_block in agent_create.memory_blocks:
+                block = self.block_manager.create_or_update_block(PydanticBlock(**create_block.model_dump()), actor=actor)
+                block_ids.append(block.id)
 
         # TODO: Remove this block once we deprecate the legacy `tools` field
         # create passed in `tools`
         tool_names = []
         if agent_create.include_base_tools:
             tool_names.extend(BASE_TOOLS + BASE_MEMORY_TOOLS)
+        if agent_create.include_multi_agent_tools:
+            tool_names.extend(MULTI_AGENT_TOOLS)
         if agent_create.tools:
             tool_names.extend(agent_create.tools)
         # Remove duplicates
@@ -116,13 +121,25 @@ class AgentManager:
             actor=actor,
         )
 
-        # TODO: See if we can merge this into the above SQL create call for performance reasons
-        # Generate a sequence of initial messages to put in the buffer
+        # If there are provided environment variables, add them in
+        if agent_create.tool_exec_environment_variables:
+            agent_state = self._set_environment_variables(
+                agent_id=agent_state.id,
+                env_vars=agent_create.tool_exec_environment_variables,
+                actor=actor,
+            )
+
+        return self.append_initial_message_sequence_to_in_context_messages(actor, agent_state, agent_create.initial_message_sequence)
+
+    @enforce_types
+    def append_initial_message_sequence_to_in_context_messages(
+        self, actor: PydanticUser, agent_state: PydanticAgentState, initial_message_sequence: Optional[List[MessageCreate]] = None
+    ) -> PydanticAgentState:
         init_messages = initialize_message_sequence(
             agent_state=agent_state, memory_edit_timestamp=get_utc_time(), include_initial_boot_message=True
         )
 
-        if agent_create.initial_message_sequence is not None:
+        if initial_message_sequence is not None:
             # We always need the system prompt up front
             system_message_obj = PydanticMessage.dict_to_message(
                 agent_id=agent_state.id,
@@ -133,7 +150,7 @@ class AgentManager:
             # Don't use anything else in the pregen sequence, instead use the provided sequence
             init_messages = [system_message_obj]
             init_messages.extend(
-                package_initial_message_sequence(agent_state.id, agent_create.initial_message_sequence, agent_state.llm_config.model, actor)
+                package_initial_message_sequence(agent_state.id, initial_message_sequence, agent_state.llm_config.model, actor)
             )
         else:
             init_messages = [
@@ -192,6 +209,14 @@ class AgentManager:
     def update_agent(self, agent_id: str, agent_update: UpdateAgent, actor: PydanticUser) -> PydanticAgentState:
         agent_state = self._update_agent(agent_id=agent_id, agent_update=agent_update, actor=actor)
 
+        # If there are provided environment variables, add them in
+        if agent_update.tool_exec_environment_variables:
+            agent_state = self._set_environment_variables(
+                agent_id=agent_state.id,
+                env_vars=agent_update.tool_exec_environment_variables,
+                actor=actor,
+            )
+
         # Rebuild the system prompt if it's different
         if agent_update.system and agent_update.system != agent_state.system:
             agent_state = self.rebuild_system_prompt(agent_id=agent_state.id, actor=actor, force=True, update_timestamp=False)
@@ -246,6 +271,7 @@ class AgentManager:
         match_all_tags: bool = False,
         cursor: Optional[str] = None,
         limit: Optional[int] = 50,
+        query_text: Optional[str] = None,
         **kwargs,
     ) -> List[PydanticAgentState]:
         """
@@ -259,6 +285,7 @@ class AgentManager:
                 cursor=cursor,
                 limit=limit,
                 organization_id=actor.organization_id if actor else None,
+                query_text=query_text,
                 **kwargs,
             )
 
@@ -279,7 +306,7 @@ class AgentManager:
             return agent.to_pydantic()
 
     @enforce_types
-    def delete_agent(self, agent_id: str, actor: PydanticUser) -> PydanticAgentState:
+    def delete_agent(self, agent_id: str, actor: PydanticUser) -> None:
         """
         Deletes an agent and its associated relationships.
         Ensures proper permission checks and cascades where applicable.
@@ -288,15 +315,69 @@ class AgentManager:
             agent_id: ID of the agent to be deleted.
             actor: User performing the action.
 
-        Returns:
-            PydanticAgentState: The deleted agent state
+        Raises:
+            NoResultFound: If agent doesn't exist
         """
         with self.session_maker() as session:
             # Retrieve the agent
             agent = AgentModel.read(db_session=session, identifier=agent_id, actor=actor)
-            agent_state = agent.to_pydantic()
             agent.hard_delete(session)
-            return agent_state
+
+    # ======================================================================================================================
+    # Per Agent Environment Variable Management
+    # ======================================================================================================================
+    @enforce_types
+    def _set_environment_variables(
+        self,
+        agent_id: str,
+        env_vars: Dict[str, str],
+        actor: PydanticUser,
+    ) -> PydanticAgentState:
+        """
+        Adds or replaces the environment variables for the specified agent.
+
+        Args:
+            agent_id: The agent id.
+            env_vars: A dictionary of environment variable key-value pairs.
+            actor: The user performing the action.
+
+        Returns:
+            PydanticAgentState: The updated agent as a Pydantic model.
+        """
+        with self.session_maker() as session:
+            # Retrieve the agent
+            agent = AgentModel.read(db_session=session, identifier=agent_id, actor=actor)
+
+            # Fetch existing environment variables as a dictionary
+            existing_vars = {var.key: var for var in agent.tool_exec_environment_variables}
+
+            # Update or create environment variables
+            updated_vars = []
+            for key, value in env_vars.items():
+                if key in existing_vars:
+                    # Update existing variable
+                    existing_vars[key].value = value
+                    updated_vars.append(existing_vars[key])
+                else:
+                    # Create new variable
+                    updated_vars.append(
+                        AgentEnvironmentVariableModel(
+                            key=key,
+                            value=value,
+                            agent_id=agent_id,
+                            organization_id=actor.organization_id,
+                        )
+                    )
+
+            # Remove stale variables
+            stale_keys = set(existing_vars) - set(env_vars)
+            agent.tool_exec_environment_variables = [var for var in updated_vars if var.key not in stale_keys]
+
+            # Update the agent in the database
+            agent.update(session, actor=actor)
+
+            # Return the updated agent state
+            return agent.to_pydantic()
 
     # ======================================================================================================================
     # In Context Messages Management
@@ -396,6 +477,55 @@ class AgentManager:
         message_ids = self.get_agent_by_id(agent_id=agent_id, actor=actor).message_ids or []
         message_ids += [m.id for m in messages]
         return self.set_in_context_messages(agent_id=agent_id, message_ids=message_ids, actor=actor)
+
+    @enforce_types
+    def reset_messages(self, agent_id: str, actor: PydanticUser, add_default_initial_messages: bool = False) -> PydanticAgentState:
+        """
+        Removes all in-context messages for the specified agent by:
+          1) Clearing the agent.messages relationship (which cascades delete-orphans).
+          2) Resetting the message_ids list to empty.
+          3) Committing the transaction.
+
+        This action is destructive and cannot be undone once committed.
+
+        Args:
+            add_default_initial_messages: If true, adds the default initial messages after resetting.
+            agent_id (str): The ID of the agent whose messages will be reset.
+            actor (PydanticUser): The user performing this action.
+
+        Returns:
+            PydanticAgentState: The updated agent state with no linked messages.
+        """
+        with self.session_maker() as session:
+            # Retrieve the existing agent (will raise NoResultFound if invalid)
+            agent = AgentModel.read(db_session=session, identifier=agent_id, actor=actor)
+
+            # Because of cascade="all, delete-orphan" on agent.messages, setting
+            # this relationship to an empty list will physically remove them from the DB.
+            agent.messages = []
+
+            # Also clear out the message_ids field to keep in-context memory consistent
+            agent.message_ids = []
+
+            # Commit the update
+            agent.update(db_session=session, actor=actor)
+
+            agent_state = agent.to_pydantic()
+
+        if add_default_initial_messages:
+            return self.append_initial_message_sequence_to_in_context_messages(actor, agent_state)
+        else:
+            # We still want to always have a system message
+            init_messages = initialize_message_sequence(
+                agent_state=agent_state, memory_edit_timestamp=get_utc_time(), include_initial_boot_message=True
+            )
+            system_message = PydanticMessage.dict_to_message(
+                agent_id=agent_state.id,
+                user_id=agent_state.created_by_id,
+                model=agent_state.llm_config.model,
+                openai_message_dict=init_messages[0],
+            )
+            return self.append_to_in_context_messages([system_message], agent_id=agent_state.id, actor=actor)
 
     # ======================================================================================================================
     # Source Management
@@ -874,3 +1004,40 @@ class AgentManager:
             # Commit and refresh the agent
             agent.update(session, actor=actor)
             return agent.to_pydantic()
+
+    # ======================================================================================================================
+    # Tag Management
+    # ======================================================================================================================
+    @enforce_types
+    def list_tags(
+        self, actor: PydanticUser, cursor: Optional[str] = None, limit: Optional[int] = 50, query_text: Optional[str] = None
+    ) -> List[str]:
+        """
+        Get all tags a user has created, ordered alphabetically.
+
+        Args:
+            actor: User performing the action.
+            cursor: Cursor for pagination.
+            limit: Maximum number of tags to return.
+            query_text: Query text to filter tags by.
+
+        Returns:
+            List[str]: List of all tags.
+        """
+        with self.session_maker() as session:
+            query = (
+                session.query(AgentsTags.tag)
+                .join(AgentModel, AgentModel.id == AgentsTags.agent_id)
+                .filter(AgentModel.organization_id == actor.organization_id)
+                .distinct()
+            )
+
+            if query_text:
+                query = query.filter(AgentsTags.tag.ilike(f"%{query_text}%"))
+
+            if cursor:
+                query = query.filter(AgentsTags.tag > cursor)
+
+            query = query.order_by(AgentsTags.tag).limit(limit)
+            results = [tag[0] for tag in query.all()]
+            return results

@@ -1,5 +1,4 @@
-from letta import create_client
-from letta.schemas.memory import ChatMemory
+from letta_client import CreateBlock, Letta, MessageCreate
 
 """
 Make sure you run the Letta server before running this example.
@@ -11,30 +10,47 @@ letta server
 
 def main():
     # Connect to the server as a user
-    client = create_client(base_url="http://localhost:8283")
+    client = Letta(base_url="http://localhost:8283")
 
     # list available configs on the server
-    llm_configs = client.list_llm_configs()
+    llm_configs = client.models.list_llms()
     print(f"Available LLM configs: {llm_configs}")
-    embedding_configs = client.list_embedding_configs()
+    embedding_configs = client.models.list_embedding_models()
     print(f"Available embedding configs: {embedding_configs}")
 
     # Create an agent
-    agent_state = client.create_agent(
+    agent_state = client.agents.create(
         name="my_agent",
-        memory=ChatMemory(human="My name is Sarah.", persona="I am a friendly AI."),
-        embedding_config=embedding_configs[0],
-        llm_config=llm_configs[0],
+        memory_blocks=[
+            CreateBlock(
+                label="human",
+                value="My name is Sarah",
+            ),
+            CreateBlock(
+                label="persona",
+                value="I am a friendly AI",
+            ),
+        ],
+        llm=llm_configs[0].handle,
+        embedding=embedding_configs[0].handle,
     )
     print(f"Created agent: {agent_state.name} with ID {str(agent_state.id)}")
 
     # Send a message to the agent
     print(f"Created agent: {agent_state.name} with ID {str(agent_state.id)}")
-    response = client.user_message(agent_id=agent_state.id, message="Whats my name?")
+    response = client.agents.messages.send(
+        agent_id=agent_state.id, 
+        messages=[
+            MessageCreate(
+                role="user",
+                text="Whats my name?",
+            )
+        ],
+    )
     print(f"Received response:", response.messages)
 
     # Delete agent
-    client.delete_agent(agent_id=agent_state.id)
+    client.agents.delete(agent_id=agent_state.id)
     print(f"Deleted agent: {agent_state.name} with ID {str(agent_state.id)}")
 
 

@@ -1,15 +1,11 @@
 import uuid
 from typing import TYPE_CHECKING, List, Optional
 
-from sqlalchemy import JSON, String, UniqueConstraint
+from sqlalchemy import JSON, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from letta.orm.block import Block
-from letta.orm.custom_columns import (
-    EmbeddingConfigColumn,
-    LLMConfigColumn,
-    ToolRulesColumn,
-)
+from letta.orm.custom_columns import EmbeddingConfigColumn, LLMConfigColumn, ToolRulesColumn
 from letta.orm.message import Message
 from letta.orm.mixins import OrganizationMixin
 from letta.orm.organization import Organization
@@ -31,11 +27,10 @@ if TYPE_CHECKING:
 class Agent(SqlalchemyBase, OrganizationMixin):
     __tablename__ = "agents"
     __pydantic_model__ = PydanticAgentState
-    __table_args__ = (UniqueConstraint("organization_id", "name", name="unique_org_agent_name"),)
 
     # agent generates its own id
     # TODO: We want to migrate all the ORM models to do this, so we will need to move this to the SqlalchemyBase
-    # TODO: Move this in this PR? at the very end?
+    # TODO: Some still rely on the Pydantic object to do this
     id: Mapped[str] = mapped_column(String, primary_key=True, default=lambda: f"agent-{uuid.uuid4()}")
 
     # Descriptor fields
@@ -65,6 +60,13 @@ class Agent(SqlalchemyBase, OrganizationMixin):
 
     # relationships
     organization: Mapped["Organization"] = relationship("Organization", back_populates="agents")
+    tool_exec_environment_variables: Mapped[List["AgentEnvironmentVariable"]] = relationship(
+        "AgentEnvironmentVariable",
+        back_populates="agent",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+        doc="Environment variables associated with this agent.",
+    )
     tools: Mapped[List["Tool"]] = relationship("Tool", secondary="tools_agents", lazy="selectin", passive_deletes=True)
     sources: Mapped[List["Source"]] = relationship("Source", secondary="sources_agents", lazy="selectin")
     core_memory: Mapped[List["Block"]] = relationship("Block", secondary="blocks_agents", lazy="selectin")
@@ -106,6 +108,7 @@ class Agent(SqlalchemyBase, OrganizationMixin):
         """converts to the basic pydantic model counterpart"""
         state = {
             "id": self.id,
+            "organization_id": self.organization_id,
             "name": self.name,
             "description": self.description,
             "message_ids": self.message_ids,
@@ -123,5 +126,6 @@ class Agent(SqlalchemyBase, OrganizationMixin):
             "last_updated_by_id": self.last_updated_by_id,
             "created_at": self.created_at,
             "updated_at": self.updated_at,
+            "tool_exec_environment_variables": self.tool_exec_environment_variables,
         }
         return self.__pydantic_model__(**state)

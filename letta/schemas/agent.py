@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field, field_validator
 from letta.constants import DEFAULT_EMBEDDING_CHUNK_SIZE
 from letta.schemas.block import CreateBlock
 from letta.schemas.embedding_config import EmbeddingConfig
+from letta.schemas.environment_variables import AgentEnvironmentVariable
 from letta.schemas.letta_base import OrmMetadataBase
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.memory import Memory
@@ -24,7 +25,6 @@ class AgentType(str, Enum):
 
     memgpt_agent = "memgpt_agent"
     split_thread_agent = "split_thread_agent"
-    o1_agent = "o1_agent"
     offline_memory_agent = "offline_memory_agent"
     chat_only_agent = "chat_only_agent"
 
@@ -78,6 +78,16 @@ class AgentState(OrmMetadataBase, validate_assignment=True):
     tools: List[Tool] = Field(..., description="The tools used by the agent.")
     sources: List[Source] = Field(..., description="The sources used by the agent.")
     tags: List[str] = Field(..., description="The tags associated with the agent.")
+    tool_exec_environment_variables: List[AgentEnvironmentVariable] = Field(
+        default_factory=list, description="The environment variables for tool execution specific to this agent."
+    )
+
+    def get_agent_env_vars_as_dict(self) -> Dict[str, str]:
+        # Get environment variables for this agent specifically
+        per_agent_env_vars = {}
+        for agent_env_var_obj in self.tool_exec_environment_variables:
+            per_agent_env_vars[agent_env_var_obj.key] = agent_env_var_obj.value
+        return per_agent_env_vars
 
 
 class CreateAgent(BaseModel, validate_assignment=True):  #
@@ -85,8 +95,8 @@ class CreateAgent(BaseModel, validate_assignment=True):  #
     name: str = Field(default_factory=lambda: create_random_username(), description="The name of the agent.")
 
     # memory creation
-    memory_blocks: List[CreateBlock] = Field(
-        ...,
+    memory_blocks: Optional[List[CreateBlock]] = Field(
+        None,
         description="The blocks to create in the agent's in-context memory.",
     )
     # TODO: This is a legacy field and should be removed ASAP to force `tool_ids` usage
@@ -105,7 +115,12 @@ class CreateAgent(BaseModel, validate_assignment=True):  #
     initial_message_sequence: Optional[List[MessageCreate]] = Field(
         None, description="The initial set of messages to put in the agent's in-context memory."
     )
-    include_base_tools: bool = Field(True, description="The LLM configuration used by the agent.")
+    include_base_tools: bool = Field(
+        True, description="If true, attaches the Letta core tools (e.g. archival_memory and core_memory related functions)."
+    )
+    include_multi_agent_tools: bool = Field(
+        False, description="If true, attaches the Letta multi-agent tools (e.g. sending a message to another agent)."
+    )
     description: Optional[str] = Field(None, description="The description of the agent.")
     metadata_: Optional[Dict] = Field(None, description="The metadata of the agent.", alias="metadata_")
     llm: Optional[str] = Field(
@@ -119,6 +134,12 @@ class CreateAgent(BaseModel, validate_assignment=True):  #
     context_window_limit: Optional[int] = Field(None, description="The context window limit used by the agent.")
     embedding_chunk_size: Optional[int] = Field(DEFAULT_EMBEDDING_CHUNK_SIZE, description="The embedding chunk size used by the agent.")
     from_template: Optional[str] = Field(None, description="The template id used to configure the agent")
+    template: bool = Field(False, description="Whether the agent is a template")
+    project: Optional[str] = Field(None, description="The project slug that the agent will be associated with.")
+    tool_exec_environment_variables: Optional[Dict[str, str]] = Field(
+        None, description="The environment variables for tool execution specific to this agent."
+    )
+    variables: Optional[Dict[str, str]] = Field(None, description="The variables that should be set for the agent.")
 
     @field_validator("name")
     @classmethod
@@ -183,6 +204,9 @@ class UpdateAgent(BaseModel):
     message_ids: Optional[List[str]] = Field(None, description="The ids of the messages in the agent's in-context memory.")
     description: Optional[str] = Field(None, description="The description of the agent.")
     metadata_: Optional[Dict] = Field(None, description="The metadata of the agent.", alias="metadata_")
+    tool_exec_environment_variables: Optional[Dict[str, str]] = Field(
+        None, description="The environment variables for tool execution specific to this agent."
+    )
 
     class Config:
         extra = "ignore"  # Ignores extra fields
