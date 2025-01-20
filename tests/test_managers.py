@@ -58,6 +58,7 @@ from letta.schemas.source import SourceUpdate
 from letta.schemas.tool import Tool as PydanticTool
 from letta.schemas.tool import ToolUpdate
 from letta.schemas.tool_rule import InitToolRule
+from letta.schemas.usage import LettaUsageStatistics
 from letta.schemas.user import User as PydanticUser
 from letta.schemas.user import UserUpdate
 from letta.server.server import SyncServer
