@@ -614,8 +614,13 @@ class AzureProvider(Provider):
             context_window_size = self.get_model_context_window(model_name)
             model_endpoint = get_azure_chat_completions_endpoint(self.base_url, model_name, self.api_version)
             configs.append(
-                LLMConfig(model=model_name, model_endpoint_type="azure", model_endpoint=model_endpoint, context_window=context_window_size),
-                handle=self.get_handle(model_name),
+                LLMConfig(
+                    model=model_name,
+                    model_endpoint_type="azure",
+                    model_endpoint=model_endpoint,
+                    context_window=context_window_size,
+                    handle=self.get_handle(model_name),
+                ),
             )
         return configs
 
