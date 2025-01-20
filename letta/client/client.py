@@ -410,7 +410,8 @@ class RESTClient(AbstractClient):
     def __init__(
         self,
         base_url: str,
-        token: str,
+        token: Optional[str] = None,
+        password: Optional[str] = None,
         api_prefix: str = "v1",
         debug: bool = False,
         default_llm_config: Optional[LLMConfig] = None,
@@ -426,11 +427,18 @@ class RESTClient(AbstractClient):
             default_llm_config (Optional[LLMConfig]): The default LLM configuration.
             default_embedding_config (Optional[EmbeddingConfig]): The default embedding configuration.
             headers (Optional[Dict]): The additional headers for the REST API.
+            token (Optional[str]): The token for the REST API when using managed letta service.
+            password (Optional[str]): The password for the REST API when using self hosted letta service.
         """
         super().__init__(debug=debug)
         self.base_url = base_url
         self.api_prefix = api_prefix
-        self.headers = {"accept": "application/json", "authorization": f"Bearer {token}"}
+        if token:
+            self.headers = {"accept": "application/json", "Authorization": f"Bearer {token}"}
+        elif password:
+            self.headers = {"accept": "application/json", "X-BARE-PASSWORD": f"password {password}"}
+        else:
+            raise ValueError("Either token or password must be provided")
         if headers:
             self.headers.update(headers)
         self._default_llm_config = default_llm_config
