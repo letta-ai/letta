@@ -1319,7 +1319,7 @@
       "patch": {
         "tags": ["agents"],
         "summary": "Update Agent",
-        "description": "Update an exsiting agent",
+        "description": "Update an existing agent",
         "operationId": "update_agent",
         "parameters": [
           {

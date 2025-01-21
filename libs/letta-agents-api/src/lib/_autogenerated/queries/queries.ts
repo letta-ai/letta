@@ -2953,7 +2953,7 @@ export const useSourcesServiceUpdateSource = <
   });
 /**
  * Update Agent
- * Update an exsiting agent
+ * Update an existing agent
  * @param data The data for the request.
  * @param data.agentId
  * @param data.requestBody
