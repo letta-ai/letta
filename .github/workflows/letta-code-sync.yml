@@ -1,4 +1,4 @@
-name: Notify Letta Cloud
+name: Sync Code
 
 on:
   push:
