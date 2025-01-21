@@ -113,7 +113,7 @@ def update_agent(
     server: "SyncServer" = Depends(get_letta_server),
     user_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
-    """Update an exsiting agent"""
+    """Update an existing agent"""
     actor = server.user_manager.get_user_or_default(user_id=user_id)
     return server.agent_manager.update_agent(agent_id=agent_id, agent_update=update_agent, actor=actor)
 
